@@ -47,7 +47,7 @@ import org.slf4j.LoggerFactory;
 
 /**
  * MavenWebAppContext
- *
+ * <p>
  * Extends the WebAppContext to specialize for the maven environment. We pass in
  * the list of files that should form the classpath for the webapp when
  * executing in the plugin, and any jetty-env.xml file that may have been
@@ -71,7 +71,7 @@ public class MavenWebAppContext extends WebAppContext
 
     private final List<File> _webInfJars = new ArrayList<>();
 
-    private final Map<String, File> _webInfJarMap = new HashMap<String, File>();
+    private final Map<String, File> _webInfJarMap = new HashMap<>();
 
     private List<URI> _classpathUris; // webInfClasses+testClasses+webInfJars
 
@@ -318,8 +318,8 @@ public class MavenWebAppContext extends WebAppContext
             // inject configurations with config from maven plugin
             for (Configuration c : configurations)
             {
-                if (c instanceof EnvConfiguration)
-                    ((EnvConfiguration)c).setJettyEnvResource(this.getResourceFactory().newResource(getJettyEnvXml()));
+                if (c instanceof EnvConfiguration envConfiguration)
+                    setAttribute(EnvConfiguration.JETTY_ENV_XML, getJettyEnvXml());
             }
         }
 
@@ -343,9 +343,9 @@ public class MavenWebAppContext extends WebAppContext
         _webInfJars.clear();
 
         // CHECK setShutdown(true);
-        // just wait a little while to ensure no requests are still being
-        // processed
-        Thread.currentThread().sleep(500L);
+        // just wait a little while to ensure no requests are still being processed
+        // TODO do better than a sleep
+        Thread.sleep(500L);
 
         super.doStop();
 
@@ -361,7 +361,7 @@ public class MavenWebAppContext extends WebAppContext
     @Override
     public Resource getResource(String pathInContext) throws MalformedURLException
     {
-        Resource resource = null;
+        Resource resource;
         // Try to get regular resource
         resource = super.getResource(pathInContext);
 
@@ -433,8 +433,7 @@ public class MavenWebAppContext extends WebAppContext
 
         if (path != null)
         {
-            TreeSet<String> allPaths = new TreeSet<>();
-            allPaths.addAll(paths);
+            TreeSet<String> allPaths = new TreeSet<>(paths);
 
             // add in the dependency jars as a virtual WEB-INF/lib entry
             if (path.startsWith(WEB_INF_LIB_PREFIX))
@@ -480,12 +479,12 @@ public class MavenWebAppContext extends WebAppContext
 
     public void initCDI()
     {
-        Class<?> cdiInitializer = null;
+        Class<?> cdiInitializer;
         try
         {
             cdiInitializer = Thread.currentThread().getContextClassLoader().loadClass("org.eclipse.jetty.ee10.cdi.servlet.JettyWeldInitializer");
-            Method initWebAppMethod = cdiInitializer.getMethod("initWebApp", new Class[]{WebAppContext.class});
-            initWebAppMethod.invoke(null, new Object[]{this});
+            Method initWebAppMethod = cdiInitializer.getMethod("initWebApp", WebAppContext.class);
+            initWebAppMethod.invoke(null, this);
         }
         catch (ClassNotFoundException e)
         {

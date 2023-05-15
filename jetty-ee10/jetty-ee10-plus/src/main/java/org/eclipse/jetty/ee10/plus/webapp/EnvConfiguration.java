@@ -13,7 +13,6 @@
 
 package org.eclipse.jetty.ee10.plus.webapp;
 
-import java.net.URL;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
@@ -39,9 +38,7 @@ import org.eclipse.jetty.jndi.ContextFactory;
 import org.eclipse.jetty.jndi.NamingContext;
 import org.eclipse.jetty.jndi.NamingUtil;
 import org.eclipse.jetty.jndi.local.localContextRoot;
-import org.eclipse.jetty.util.IO;
 import org.eclipse.jetty.util.resource.Resource;
-import org.eclipse.jetty.util.resource.ResourceFactory;
 import org.eclipse.jetty.util.resource.Resources;
 import org.eclipse.jetty.xml.XmlConfiguration;
 import org.slf4j.Logger;
@@ -52,34 +49,22 @@ import org.slf4j.LoggerFactory;
  */
 public class EnvConfiguration extends AbstractConfiguration
 {
+    public static final String JETTY_ENV_XML = "org.eclipse.jetty.jndi.JettyEnvXml";
     private static final Logger LOG = LoggerFactory.getLogger(EnvConfiguration.class);
 
     private static final String JETTY_ENV_BINDINGS = "org.eclipse.jetty.jndi.EnvConfiguration";
-    private Resource jettyEnvXmlResource;
-    private NamingDump _dumper;
-    private ResourceFactory.Closeable _resourceFactory;
 
     public EnvConfiguration()
     {
-        addDependencies(WebXmlConfiguration.class, MetaInfConfiguration.class, FragmentConfiguration.class);
-        addDependents(PlusConfiguration.class, JettyWebXmlConfiguration.class);
-        protectAndExpose("org.eclipse.jetty.jndi.");
-    }
-
-    public void setJettyEnvResource(Resource resource)
-    {
-        this.jettyEnvXmlResource = resource;
-    }
-
-    public void setJettyEnvXml(URL url)
-    {
-        this.jettyEnvXmlResource = _resourceFactory.newResource(url);
+        super(new Builder()
+            .addDependencies(WebXmlConfiguration.class, MetaInfConfiguration.class, FragmentConfiguration.class)
+            .addDependents(PlusConfiguration.class, JettyWebXmlConfiguration.class)
+            .protectAndExpose("org.eclipse.jetty.jndi."));
     }
 
     @Override
     public void preConfigure(WebAppContext context) throws Exception
     {
-        _resourceFactory = ResourceFactory.closeable();
         //create a java:comp/env
         createEnvContext(context);
     }
@@ -92,16 +77,18 @@ public class EnvConfiguration extends AbstractConfiguration
 
         //check to see if an explicit file has been set, if not,
         //look in WEB-INF/jetty-env.xml
+
+        Resource jettyEnvXmlResource = (Resource)context.getAttribute(JETTY_ENV_XML);
         if (jettyEnvXmlResource == null)
         {
             //look for a file called WEB-INF/jetty-env.xml
             //and process it if it exists
-            org.eclipse.jetty.util.resource.Resource webInf = context.getWebInf();
+            Resource webInf = context.getWebInf();
             if (webInf != null && webInf.isDirectory())
             {
                 // TODO: should never return from WEB-INF/lib/foo.jar!/WEB-INF/jetty-env.xml
                 // TODO: should also never return from a META-INF/versions/#/WEB-INF/jetty-env.xml location
-                org.eclipse.jetty.util.resource.Resource jettyEnv = webInf.resolve("jetty-env.xml");
+                Resource jettyEnv = webInf.resolve("jetty-env.xml");
                 if (Resources.exists(jettyEnv))
                 {
                     jettyEnvXmlResource = jettyEnv;
@@ -152,8 +139,7 @@ public class EnvConfiguration extends AbstractConfiguration
         //add java:comp/env entries for any EnvEntries that have been defined so far
         bindEnvEntries(context);
 
-        _dumper = new NamingDump(context.getClassLoader(), "java:comp");
-        context.addBean(_dumper);
+        context.addBean(new NamingDump(context.getClassLoader(), "java:comp"));
     }
 
     /**
@@ -164,8 +150,9 @@ public class EnvConfiguration extends AbstractConfiguration
     @Override
     public void deconfigure(WebAppContext context) throws Exception
     {
-        context.removeBean(_dumper);
-        _dumper = null;
+        Dumper dumper = context.getBean(Dumper.class);
+        if (dumper != null)
+            context.removeBean(dumper);
 
         //get rid of any bindings for comp/env for webapp
         ClassLoader oldLoader = Thread.currentThread().getContextClassLoader();
@@ -198,8 +185,6 @@ public class EnvConfiguration extends AbstractConfiguration
         {
             ContextFactory.disassociateClassLoader();
             Thread.currentThread().setContextClassLoader(oldLoader);
-            IO.close(_resourceFactory);
-            _resourceFactory = null;
         }
     }
 
@@ -231,7 +216,7 @@ public class EnvConfiguration extends AbstractConfiguration
     /**
      * Bind all EnvEntries that have been declared, so that the processing of the
      * web.xml file can potentially override them.
-     *
+     * <p>
      * We first bind EnvEntries declared in Server scope, then WebAppContext scope.
      *
      * @param context the context to use for the object scope
@@ -294,6 +279,14 @@ public class EnvConfiguration extends AbstractConfiguration
         {
             _context = context;
             _name = name;
+        }
+    }
+
+    private static class Dumper extends NamingDump
+    {
+        Dumper(ClassLoader loader, String name)
+        {
+            super(loader, name);
         }
     }
 }

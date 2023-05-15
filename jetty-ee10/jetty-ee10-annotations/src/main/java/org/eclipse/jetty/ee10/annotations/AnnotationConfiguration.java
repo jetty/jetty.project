@@ -16,7 +16,6 @@ package org.eclipse.jetty.ee10.annotations;
 import java.net.URI;
 import java.util.ArrayList;
 import java.util.Arrays;
-import java.util.Collections;
 import java.util.Comparator;
 import java.util.HashMap;
 import java.util.HashSet;
@@ -31,7 +30,6 @@ import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.Semaphore;
 import java.util.concurrent.TimeUnit;
 import java.util.regex.Pattern;
-import java.util.stream.Collectors;
 import java.util.stream.Stream;
 
 import jakarta.servlet.ServletContainerInitializer;
@@ -50,7 +48,6 @@ import org.eclipse.jetty.ee10.webapp.WebAppContext;
 import org.eclipse.jetty.ee10.webapp.WebDescriptor;
 import org.eclipse.jetty.ee10.webapp.WebXmlConfiguration;
 import org.eclipse.jetty.util.ExceptionUtil;
-import org.eclipse.jetty.util.IO;
 import org.eclipse.jetty.util.JavaVersion;
 import org.eclipse.jetty.util.Loader;
 import org.eclipse.jetty.util.NanoTime;
@@ -77,28 +74,36 @@ public class AnnotationConfiguration extends AbstractConfiguration
     public static final String CONTAINER_INITIALIZER_STARTER = "org.eclipse.jetty.containerInitializerStarter";
     public static final String MULTI_THREADED = "org.eclipse.jetty.annotations.multiThreaded";
     public static final String MAX_SCAN_WAIT = "org.eclipse.jetty.annotations.maxWait";
+    protected static final String STATE = "org.eclipse.jetty.annotations.state";
 
     public static final int DEFAULT_MAX_SCAN_WAIT = 60; /* time in sec */
     public static final boolean DEFAULT_MULTI_THREADED = true;
 
-    protected final List<AbstractDiscoverableAnnotationHandler> _discoverableAnnotationHandlers = new ArrayList<>();
-    protected ClassInheritanceHandler _classInheritanceHandler;
-    protected final List<ContainerInitializerAnnotationHandler> _containerInitializerAnnotationHandlers = new ArrayList<>();
-    protected final List<DiscoveredServletContainerInitializerHolder> _sciHolders = new ArrayList<>();
+    protected static class State
+    {
+        State(WebAppContext context)
+        {
+            _context = context;
+        }
 
-    protected List<ParserTask> _parserTasks;
-
-    protected CounterStatistic _containerPathStats;
-    protected CounterStatistic _webInfLibStats;
-    protected CounterStatistic _webInfClassesStats;
-    protected Pattern _sciExcludePattern;
-    private ResourceFactory.Closeable _resourceFactory;
+        public final WebAppContext _context;
+        public final List<AbstractDiscoverableAnnotationHandler> _discoverableAnnotationHandlers = new ArrayList<>();
+        public final List<ContainerInitializerAnnotationHandler> _containerInitializerAnnotationHandlers = new ArrayList<>();
+        public final List<DiscoveredServletContainerInitializerHolder> _sciHolders = new ArrayList<>();
+        public ClassInheritanceHandler _classInheritanceHandler;
+        public List<ParserTask> _parserTasks;
+        public CounterStatistic _containerPathStats;
+        public CounterStatistic _webInfLibStats;
+        public CounterStatistic _webInfClassesStats;
+        public Pattern _sciExcludePattern;
+    }
 
     public AnnotationConfiguration()
     {
-        addDependencies(WebXmlConfiguration.class, MetaInfConfiguration.class, FragmentConfiguration.class, PlusConfiguration.class);
-        addDependents(JettyWebXmlConfiguration.class);
-        hide("org.objectweb.asm.");
+        super(new Builder()
+            .addDependencies(WebXmlConfiguration.class, MetaInfConfiguration.class, FragmentConfiguration.class, PlusConfiguration.class)
+            .addDependents(JettyWebXmlConfiguration.class)
+            .hide("org.objectweb.asm."));
     }
 
     /**
@@ -127,12 +132,11 @@ public class AnnotationConfiguration extends AbstractConfiguration
 
     /**
      * ParserTask
-     *
+     * <p>
      * Task to executing scanning of a resource for annotations.
      */
-    public class ParserTask implements Callable<Void>
+    public static class ParserTask implements Callable<Void>
     {
-        protected Exception _exception;
         protected final AnnotationParser _parser;
         protected final Set<? extends AnnotationParser.Handler> _handlers;
         protected final Resource _resource;
@@ -182,9 +186,9 @@ public class AnnotationConfiguration extends AbstractConfiguration
      * wildcard which matches any other ServletContainerInitializer name not already
      * matched.</p>
      */
-    public class ServletContainerInitializerOrdering
+    public static class ServletContainerInitializerOrdering
     {
-        private Map<String, Integer> _indexMap = new HashMap<>();
+        private final Map<String, Integer> _indexMap = new HashMap<>();
         private Integer _star = null;
         private String _ordering = null;
 
@@ -225,7 +229,7 @@ public class AnnotationConfiguration extends AbstractConfiguration
         {
             if (!hasWildcard())
                 return -1;
-            return _star.intValue();
+            return _star;
         }
 
         /**
@@ -247,7 +251,7 @@ public class AnnotationConfiguration extends AbstractConfiguration
             Integer i = _indexMap.get(name);
             if (i == null)
                 return -1;
-            return i.intValue();
+            return i;
         }
 
         /**
@@ -271,16 +275,16 @@ public class AnnotationConfiguration extends AbstractConfiguration
 
     /**
      * ServletContainerInitializerComparator
-     *
+     * <p>
      * Comparator impl that orders a set of ServletContainerInitializers according to the
      * list of classnames (optionally containing a "*" wildcard character) established in a
      * ServletContainerInitializerOrdering.
      *
      * @see ServletContainerInitializerOrdering
      */
-    public class ServletContainerInitializerComparator implements Comparator<ServletContainerInitializer>
+    public static class ServletContainerInitializerComparator implements Comparator<ServletContainerInitializer>
     {
-        private ServletContainerInitializerOrdering _ordering;
+        private final ServletContainerInitializerOrdering _ordering;
 
         public ServletContainerInitializerComparator(ServletContainerInitializerOrdering ordering)
         {
@@ -309,8 +313,8 @@ public class AnnotationConfiguration extends AbstractConfiguration
     
     public static class DiscoveredServletContainerInitializerHolder extends ServletContainerInitializerHolder
     {
-        private Set<Class<?>> _handlesTypes = new HashSet<>();
-        private Set<String> _discoveredClassNames = new HashSet<>();
+        private final Set<Class<?>> _handlesTypes = new HashSet<>();
+        private final Set<String> _discoveredClassNames = new HashSet<>();
         
         public DiscoveredServletContainerInitializerHolder(Source source, ServletContainerInitializer sci, Class<?>... startupClasses)
         {
@@ -379,7 +383,7 @@ public class AnnotationConfiguration extends AbstractConfiguration
                 {
                     //find all subclasses/implementations of the classes (not annotations) named in @HandlesTypes
                     if (!c.isAnnotation())
-                        addInheritedTypes(finalClassnames, classMap, (Set<String>)classMap.get(c.getName()));
+                        addInheritedTypes(finalClassnames, classMap, classMap.get(c.getName()));
                 }
 
                 for (String classname:_discoveredClassNames)
@@ -387,7 +391,7 @@ public class AnnotationConfiguration extends AbstractConfiguration
                     //add each of the classes that were discovered to have an annotation listed in @HandlesTypes
                     finalClassnames.add(classname);
                     //walk its hierarchy and find all types that extend or implement the class
-                    addInheritedTypes(finalClassnames, classMap, (Set<String>)classMap.get(classname));
+                    addInheritedTypes(finalClassnames, classMap, classMap.get(classname));
                 }
             }
             
@@ -412,34 +416,32 @@ public class AnnotationConfiguration extends AbstractConfiguration
                 results.add(s);
 
                 //walk the hierarchy and find all types that extend or implement the class
-                addInheritedTypes(results, classMap, (Set<String>)classMap.get(s));
+                addInheritedTypes(results, classMap, classMap.get(s));
             }
         }
     }
 
     @Override
-    public void preConfigure(final WebAppContext context) throws Exception
+    public void preConfigure(final WebAppContext context)
     {
         String tmp = (String)context.getAttribute(SERVLET_CONTAINER_INITIALIZER_EXCLUSION_PATTERN);
-        _sciExcludePattern = (tmp == null ? null : Pattern.compile(tmp));
-        _resourceFactory = ResourceFactory.closeable();
+        State state = new State(context);
+        context.setAttribute(STATE, state);
+        state._sciExcludePattern = (tmp == null ? null : Pattern.compile(tmp));
     }
 
-    @Override
-    public void deconfigure(WebAppContext context) throws Exception
+    private State getState(WebAppContext context)
     {
-        IO.close(_resourceFactory);
-        _resourceFactory = null;
+        if (context.getAttribute(STATE) instanceof State state)
+            return state;
+        throw new IllegalStateException("No state");
     }
-
-    public void addDiscoverableAnnotationHandler(AbstractDiscoverableAnnotationHandler handler)
-    {
-        _discoverableAnnotationHandlers.add(handler);
-    }
-
+    
     @Override
     public void configure(WebAppContext context) throws Exception
     {
+        State state = getState(context);
+
         //handle introspectable annotations (postconstruct,predestroy, multipart etc etc)
         context.getObjectFactory().addDecorator(new AnnotationDecorator(context));
 
@@ -449,21 +451,21 @@ public class AnnotationConfiguration extends AbstractConfiguration
             //or configDiscovered is true, we need to search for annotations
             if (context.getServletContext().getEffectiveMajorVersion() >= 3 || context.isConfigurationDiscovered())
             {
-                _discoverableAnnotationHandlers.add(new WebServletAnnotationHandler(context));
-                _discoverableAnnotationHandlers.add(new WebFilterAnnotationHandler(context));
-                _discoverableAnnotationHandlers.add(new WebListenerAnnotationHandler(context));
+                state._discoverableAnnotationHandlers.add(new WebServletAnnotationHandler(context));
+                state._discoverableAnnotationHandlers.add(new WebFilterAnnotationHandler(context));
+                state._discoverableAnnotationHandlers.add(new WebListenerAnnotationHandler(context));
             }
         }
 
         //Regardless of metadata, if there are any ServletContainerInitializers with @HandlesTypes, then we need to scan all the
         //classes so we can call their onStartup() methods correctly
-        createServletContainerInitializerAnnotationHandlers(context, getNonExcludedInitializers(context));
+        createServletContainerInitializerAnnotationHandlers(context, getNonExcludedInitializers(state));
 
-        if (!_discoverableAnnotationHandlers.isEmpty() || _classInheritanceHandler != null || !_containerInitializerAnnotationHandlers.isEmpty())
-            scanForAnnotations(context);
+        if (!state._discoverableAnnotationHandlers.isEmpty() || state._classInheritanceHandler != null || !state._containerInitializerAnnotationHandlers.isEmpty())
+            scanForAnnotations(context, state);
         
         Map<String, Set<String>> map = (Map<String, Set<String>>)context.getAttribute(AnnotationConfiguration.CLASS_INHERITANCE_MAP);
-        for (DiscoveredServletContainerInitializerHolder holder:_sciHolders)
+        for (DiscoveredServletContainerInitializerHolder holder: state._sciHolders)
         {
             holder.resolveClasses(map);
             context.addServletContainerInitializer(holder); //only add the holder now all classes are fully available
@@ -478,15 +480,17 @@ public class AnnotationConfiguration extends AbstractConfiguration
             classMap.clear();
         context.removeAttribute(CLASS_INHERITANCE_MAP);
 
-        _discoverableAnnotationHandlers.clear();
-        _classInheritanceHandler = null;
-        _containerInitializerAnnotationHandlers.clear();
-        _sciHolders.clear();
+        if (!(context.removeAttribute(STATE) instanceof State state))
+            throw new IllegalStateException("No state");
+        state._discoverableAnnotationHandlers.clear();
+        state._classInheritanceHandler = null;
+        state._containerInitializerAnnotationHandlers.clear();
+        state._sciHolders.clear();
 
-        if (_parserTasks != null)
+        if (state._parserTasks != null)
         {
-            _parserTasks.clear();
-            _parserTasks = null;
+            state._parserTasks.clear();
+            state._parserTasks = null;
         }
 
         super.postConfigure(context);
@@ -499,7 +503,7 @@ public class AnnotationConfiguration extends AbstractConfiguration
      * @param context the context for the scan
      * @throws Exception if unable to scan
      */
-    protected void scanForAnnotations(WebAppContext context)
+    protected void scanForAnnotations(WebAppContext context, State state)
         throws Exception
     {
         int javaPlatform = 0;
@@ -507,7 +511,7 @@ public class AnnotationConfiguration extends AbstractConfiguration
         if (target != null)
             javaPlatform = Integer.parseInt(target.toString());
         AnnotationParser parser = createAnnotationParser(javaPlatform);
-        _parserTasks = new ArrayList<ParserTask>();
+        state._parserTasks = new ArrayList<>();
 
         if (LOG.isDebugEnabled())
             LOG.debug("Annotation scanning commencing: webxml={}, metadatacomplete={}, configurationDiscovered={}, multiThreaded={}, maxScanWait={}",
@@ -524,18 +528,18 @@ public class AnnotationConfiguration extends AbstractConfiguration
         //          WEB-INF/classes the order of the declared elements + others.
         //    In case there is no others then it is
         //          WEB-INF/classes + order of the elements.
-        parseWebInfClasses(context, parser);
+        parseWebInfClasses(state, parser);
         //scan non-excluded, non medatadata-complete jars in web-inf lib
-        parseWebInfLib(context, parser);
+        parseWebInfLib(state, parser);
 
         long start = NanoTime.now();
 
         //execute scan, either effectively synchronously (1 thread only), or asynchronously (limited by number of processors available) 
         final Semaphore task_limit = (isUseMultiThreading(context) ? new Semaphore(ProcessorUtils.availableProcessors()) : new Semaphore(1));
-        final CountDownLatch latch = new CountDownLatch(_parserTasks.size());
+        final CountDownLatch latch = new CountDownLatch(state._parserTasks.size());
         final ExceptionUtil.MultiException multiException = new ExceptionUtil.MultiException();
 
-        for (final ParserTask p : _parserTasks)
+        for (final ParserTask p : state._parserTasks)
         {
             task_limit.acquire();
             context.getServer().getThreadPool().execute(() ->
@@ -552,15 +556,15 @@ public class AnnotationConfiguration extends AbstractConfiguration
         if (LOG.isDebugEnabled())
         {
             LOG.debug("Annotation scanning elapsed time={}ms", elapsedMs);
-            for (ParserTask p : _parserTasks)
+            for (ParserTask p : state._parserTasks)
             {
                 LOG.debug("Scanned {} in {}ms", p.getResource(), TimeUnit.NANOSECONDS.toMillis(p.getStatistic().getElapsedNanos()));
             }
 
             LOG.debug("Scanned {} container path jars, {} WEB-INF/lib jars, {} WEB-INF/classes dirs in {}ms for context {}",
-                (_containerPathStats == null ? -1 : _containerPathStats.getTotal()),
-                (_webInfLibStats == null ? -1 : _webInfLibStats.getTotal()),
-                (_webInfClassesStats == null ? -1 : _webInfClassesStats.getTotal()),
+                (state._containerPathStats == null ? -1 : state._containerPathStats.getTotal()),
+                (state._webInfLibStats == null ? -1 : state._webInfLibStats.getTotal()),
+                (state._webInfClassesStats == null ? -1 : state._webInfClassesStats.getTotal()),
                 elapsedMs,
                 context);
         }
@@ -593,13 +597,13 @@ public class AnnotationConfiguration extends AbstractConfiguration
         Object o = context.getAttribute(MULTI_THREADED);
         if (o instanceof Boolean)
         {
-            return ((Boolean)o).booleanValue();
+            return (Boolean)o;
         }
         //try server attribute to see if we should use multithreading
         o = context.getServer().getAttribute(MULTI_THREADED);
         if (o instanceof Boolean)
         {
-            return ((Boolean)o).booleanValue();
+            return (Boolean)o;
         }
         //try system property to see if we should use multithreading
         return Boolean.parseBoolean(System.getProperty(MULTI_THREADED, Boolean.toString(DEFAULT_MULTI_THREADED)));
@@ -616,24 +620,18 @@ public class AnnotationConfiguration extends AbstractConfiguration
     {
         //try context attribute to get max time in sec to wait for scan completion
         Object o = context.getAttribute(MAX_SCAN_WAIT);
-        if (o != null && o instanceof Number)
+        if (o instanceof Number)
         {
             return ((Number)o).intValue();
         }
         //try server attribute to get max time in sec to wait for scan completion
         o = context.getServer().getAttribute(MAX_SCAN_WAIT);
-        if (o != null && o instanceof Number)
+        if (o instanceof Number)
         {
             return ((Number)o).intValue();
         }
         //try system property to get max time in sec to wait for scan completion
-        return Integer.getInteger(MAX_SCAN_WAIT, DEFAULT_MAX_SCAN_WAIT).intValue();
-    }
-
-    @Override
-    public void cloneConfigure(WebAppContext template, WebAppContext context) throws Exception
-    {
-        context.getObjectFactory().addDecorator(new AnnotationDecorator(context));
+        return Integer.getInteger(MAX_SCAN_WAIT, DEFAULT_MAX_SCAN_WAIT);
     }
 
     public void createServletContainerInitializerAnnotationHandlers(WebAppContext context, List<ServletContainerInitializer> scis)
@@ -641,7 +639,9 @@ public class AnnotationConfiguration extends AbstractConfiguration
     {
         if (scis == null || scis.isEmpty())
             return; // nothing to do
-        
+
+        State state = getState(context);
+
         for (ServletContainerInitializer sci : scis)
         {
             Class<?>[] classes = new Class<?>[0];
@@ -650,7 +650,7 @@ public class AnnotationConfiguration extends AbstractConfiguration
                 classes = annotation.value();
             
             DiscoveredServletContainerInitializerHolder holder = new DiscoveredServletContainerInitializerHolder(new Source(Origin.ANNOTATION, sci.getClass()), sci);
-            _sciHolders.add(holder);
+            state._sciHolders.add(holder);
             
             if (classes.length > 0)
             {   
@@ -663,7 +663,7 @@ public class AnnotationConfiguration extends AbstractConfiguration
                 {
                     Map<String, Set<String>> map = new ClassInheritanceMap();
                     context.setAttribute(CLASS_INHERITANCE_MAP, map);
-                    _classInheritanceHandler = new ClassInheritanceHandler(map);
+                    state._classInheritanceHandler = new ClassInheritanceHandler(map);
                 }
                 
                 for (Class<?> c : classes)
@@ -674,7 +674,7 @@ public class AnnotationConfiguration extends AbstractConfiguration
                     {
                         if (LOG.isDebugEnabled())
                             LOG.debug("Registering annotation handler for {}", c.getName());
-                        _containerInitializerAnnotationHandlers.add(new ContainerInitializerAnnotationHandler(holder, c));
+                        state._containerInitializerAnnotationHandlers.add(new ContainerInitializerAnnotationHandler(holder, c));
                     }
 
                     holder.addStartupClasses(c);
@@ -683,12 +683,12 @@ public class AnnotationConfiguration extends AbstractConfiguration
         }
     }
 
-    public Resource getJarFor(ServletContainerInitializer service)
+    protected Resource getJarFor(WebAppContext context, ServletContainerInitializer service)
     {
         URI uri = TypeUtil.getLocationOfClass(service.getClass());
         if (uri == null)
             return null;
-        return _resourceFactory.newResource(uri);
+        return ResourceFactory.of(context).newResource(uri);
     }
 
     /**
@@ -699,10 +699,8 @@ public class AnnotationConfiguration extends AbstractConfiguration
      * @param sci the servlet container initializer
      * @param sciResource the resource for the servlet container initializer
      * @return true if excluded
-     * @throws Exception if unable to determine exclusion
      */
     public boolean isFromExcludedJar(WebAppContext context, ServletContainerInitializer sci, Resource sciResource)
-        throws Exception
     {
         if (sci == null)
             throw new IllegalArgumentException("ServletContainerInitializer null");
@@ -770,19 +768,20 @@ public class AnnotationConfiguration extends AbstractConfiguration
      * Test if the ServletContainerIntializer is excluded by the
      * o.e.j.containerInitializerExclusionPattern
      *
+     * @param state the state of the Annotation parsing
      * @param sci the ServletContainerIntializer
      * @return true if the ServletContainerIntializer is excluded
      */
-    public boolean matchesExclusionPattern(ServletContainerInitializer sci)
+    public boolean matchesExclusionPattern(State state, ServletContainerInitializer sci)
     {
         //no exclusion pattern, no SCI is excluded by it
-        if (_sciExcludePattern == null)
+        if (state._sciExcludePattern == null)
             return false;
 
         //test if name of class matches the regex
         if (LOG.isDebugEnabled())
             LOG.debug("Checking {} against containerInitializerExclusionPattern", sci.getClass().getName());
-        return _sciExcludePattern.matcher(sci.getClass().getName()).matches();
+        return state._sciExcludePattern.matcher(sci.getClass().getName()).matches();
     }
 
     /**
@@ -841,14 +840,13 @@ public class AnnotationConfiguration extends AbstractConfiguration
     /**
      * Get SCIs that are not excluded from consideration
      *
-     * @param context the web app context
+     * @param state the web app annotation parse state
      * @return the list of non-excluded servlet container initializers
-     * @throws Exception if unable to get list
      */
-    public List<ServletContainerInitializer> getNonExcludedInitializers(WebAppContext context)
-        throws Exception
+    protected List<ServletContainerInitializer> getNonExcludedInitializers(State state)
     {
-        ArrayList<ServletContainerInitializer> nonExcludedInitializers = new ArrayList<ServletContainerInitializer>();
+        WebAppContext context = state._context;
+        ArrayList<ServletContainerInitializer> nonExcludedInitializers = new ArrayList<>();
 
         //We use the ServiceLoader mechanism to find the ServletContainerInitializer classes to inspect
         long start = NanoTime.now();
@@ -862,12 +860,12 @@ public class AnnotationConfiguration extends AbstractConfiguration
             {
                 // Probably a SCI discovered on the system classpath that is hidden by the context classloader
                 if (LOG.isDebugEnabled())
-                    LOG.debug("Error: {} for {}", e.getMessage(), context, e);
+                    LOG.debug("Error: {} for {}", e.getMessage(), state._context, e);
                 else
-                    LOG.info("Error: {} for {}", e.getMessage(), context);
+                    LOG.info("Error: {} for {}", e.getMessage(), state._context);
                 return Stream.of();
             }
-        }).collect(Collectors.toList());
+        }).toList();
 
         if (LOG.isDebugEnabled())
             LOG.debug("Service loaders found in {}ms", NanoTime.millisSince(start));
@@ -879,14 +877,14 @@ public class AnnotationConfiguration extends AbstractConfiguration
         //because containerInitializerOrdering omits it
         for (ServletContainerInitializer sci : scis)
         {
-            if (matchesExclusionPattern(sci))
+            if (matchesExclusionPattern(state, sci))
             {
                 if (LOG.isDebugEnabled())
                     LOG.debug("{} excluded by pattern", sci);
                 continue;
             }
 
-            Resource sciResource = getJarFor(sci);
+            Resource sciResource = getJarFor(context, sci);
             if (isFromExcludedJar(context, sci, sciResource))
             {
                 if (LOG.isDebugEnabled())
@@ -915,7 +913,7 @@ public class AnnotationConfiguration extends AbstractConfiguration
             //There is an ordering that is not just "*".
             //Arrange ServletContainerInitializers according to the ordering of classnames given, irrespective of coming from container or webapp classpaths
             nonExcludedInitializers.addAll(sciResourceMap.keySet());
-            Collections.sort(nonExcludedInitializers, new ServletContainerInitializerComparator(initializerOrdering));
+            nonExcludedInitializers.sort(new ServletContainerInitializerComparator(initializerOrdering));
         }
         else
         {
@@ -1031,31 +1029,31 @@ public class AnnotationConfiguration extends AbstractConfiguration
      *
      * @param context the context for the scan
      * @param parser the parser to scan with
-     * @throws Exception if unable to scan
      */
-    public void parseContainerPath(final WebAppContext context, final AnnotationParser parser) throws Exception
+    public void parseContainerPath(final WebAppContext context, final AnnotationParser parser)
     {
+        State state = getState(context);
         //always parse for discoverable annotations as well as class hierarchy and servletcontainerinitializer related annotations
-        final Set<AnnotationParser.Handler> handlers = new HashSet<AnnotationParser.Handler>();
-        handlers.addAll(_discoverableAnnotationHandlers);
-        handlers.addAll(_containerInitializerAnnotationHandlers);
-        if (_classInheritanceHandler != null)
-            handlers.add(_classInheritanceHandler);
+        final Set<AnnotationParser.Handler> handlers = new HashSet<>();
+        handlers.addAll(state._discoverableAnnotationHandlers);
+        handlers.addAll(state._containerInitializerAnnotationHandlers);
+        if (state._classInheritanceHandler != null)
+            handlers.add(state._classInheritanceHandler);
 
         if (LOG.isDebugEnabled())
-            _containerPathStats = new CounterStatistic();
+            state._containerPathStats = new CounterStatistic();
 
         //scan the container classpath jars that were selected by
         //filtering in MetaInfConfiguration
         for (Resource r : context.getMetaData().getContainerResources())
         {
-            if (_parserTasks != null)
+            if (state._parserTasks != null)
             {
                 ParserTask task = new ParserTask(parser, handlers, r);
-                _parserTasks.add(task);
+                state._parserTasks.add(task);
                 if (LOG.isDebugEnabled())
                 {
-                    _containerPathStats.increment();
+                    state._containerPathStats.increment();
                     task.setStatistic(new TimeStatistic());
                 }
             }
@@ -1064,15 +1062,15 @@ public class AnnotationConfiguration extends AbstractConfiguration
 
     /**
      * Scan jars in WEB-INF/lib.
-     *
+     * <p>
      * Only jars selected by MetaInfConfiguration, and that are not excluded
      * by an ordering will be considered.
      *
-     * @param context the context for the scan
+     * @param state the state for the scan
      * @param parser the annotation parser to use
      * @throws Exception if unable to scan and/or parse
      */
-    public void parseWebInfLib(final WebAppContext context, final AnnotationParser parser) throws Exception
+    protected void parseWebInfLib(State state, final AnnotationParser parser) throws Exception
     {
         //email from Rajiv Mordani jsrs 315 7 April 2010
         //jars that do not have a web-fragment.xml are still considered fragments
@@ -1080,18 +1078,19 @@ public class AnnotationConfiguration extends AbstractConfiguration
 
         //if there is an ordering, the ordered jars should be used.
         //If there is no ordering, jars will be unordered.
+        WebAppContext context = state._context;
         List<Resource> jars = context.getMetaData().getWebInfResources(context.getMetaData().isOrdered());
 
         if (LOG.isDebugEnabled())
         {
-            if (_webInfLibStats == null)
-                _webInfLibStats = new CounterStatistic();
+            if (state._webInfLibStats == null)
+                state._webInfLibStats = new CounterStatistic();
         }
 
         for (Resource r : jars)
         {
             //for each jar, we decide which set of annotations we need to parse for
-            final Set<AnnotationParser.Handler> handlers = new HashSet<AnnotationParser.Handler>();
+            final Set<AnnotationParser.Handler> handlers = new HashSet<>();
 
             FragmentDescriptor f = context.getMetaData().getFragmentDescriptorForJar(r);
 
@@ -1099,26 +1098,26 @@ public class AnnotationConfiguration extends AbstractConfiguration
             // but yet we still need to do the scanning for the classes on behalf of  the servletcontainerinitializers
             //if a jar has no web-fragment.xml we scan it (because it is not excluded by the ordering)
             //or if it has a fragment we scan it if it is not metadata complete
-            if (f == null || !WebDescriptor.isMetaDataComplete(f) || _classInheritanceHandler != null || !_containerInitializerAnnotationHandlers.isEmpty())
+            if (!WebDescriptor.isMetaDataComplete(f) || state._classInheritanceHandler != null || !state._containerInitializerAnnotationHandlers.isEmpty())
             {
                 //register the classinheritance handler if there is one
-                if (_classInheritanceHandler != null)
-                    handlers.add(_classInheritanceHandler);
+                if (state._classInheritanceHandler != null)
+                    handlers.add(state._classInheritanceHandler);
 
                 //register the handlers for the @HandlesTypes values that are themselves annotations if there are any
-                handlers.addAll(_containerInitializerAnnotationHandlers);
+                handlers.addAll(state._containerInitializerAnnotationHandlers);
 
                 //only register the discoverable annotation handlers if this fragment is not metadata complete, or has no fragment descriptor
-                if (f == null || !WebDescriptor.isMetaDataComplete(f))
-                    handlers.addAll(_discoverableAnnotationHandlers);
+                if (!WebDescriptor.isMetaDataComplete(f))
+                    handlers.addAll(state._discoverableAnnotationHandlers);
 
-                if (_parserTasks != null)
+                if (state._parserTasks != null)
                 {
                     ParserTask task = new ParserTask(parser, handlers, r);
-                    _parserTasks.add(task);
+                    state._parserTasks.add(task);
                     if (LOG.isDebugEnabled())
                     {
-                        _webInfLibStats.increment();
+                        state._webInfLibStats.increment();
                         task.setStatistic(new TimeStatistic());
                     }
                 }
@@ -1129,31 +1128,29 @@ public class AnnotationConfiguration extends AbstractConfiguration
     /**
      * Scan classes in WEB-INF/classes.
      *
-     * @param context the context for the scan
+     * @param state the state for the scan
      * @param parser the annotation parser to use
-     * @throws Exception if unable to scan and/or parse
      */
-    public void parseWebInfClasses(final WebAppContext context, final AnnotationParser parser)
-        throws Exception
+    protected void parseWebInfClasses(State state, AnnotationParser parser)
     {
-        Set<AnnotationParser.Handler> handlers = new HashSet<AnnotationParser.Handler>();
-        handlers.addAll(_discoverableAnnotationHandlers);
-        if (_classInheritanceHandler != null)
-            handlers.add(_classInheritanceHandler);
-        handlers.addAll(_containerInitializerAnnotationHandlers);
+        WebAppContext context = state._context;
+        Set<AnnotationParser.Handler> handlers = new HashSet<>(state._discoverableAnnotationHandlers);
+        if (state._classInheritanceHandler != null)
+            handlers.add(state._classInheritanceHandler);
+        handlers.addAll(state._containerInitializerAnnotationHandlers);
 
         if (LOG.isDebugEnabled())
-            _webInfClassesStats = new CounterStatistic();
+            state._webInfClassesStats = new CounterStatistic();
 
         for (Resource dir : context.getMetaData().getWebInfClassesResources())
         {
-            if (_parserTasks != null)
+            if (state._parserTasks != null)
             {
                 ParserTask task = new ParserTask(parser, handlers, dir);
-                _parserTasks.add(task);
+                state._parserTasks.add(task);
                 if (LOG.isDebugEnabled())
                 {
-                    _webInfClassesStats.increment();
+                    state._webInfClassesStats.increment();
                     task.setStatistic(new TimeStatistic());
                 }
             }

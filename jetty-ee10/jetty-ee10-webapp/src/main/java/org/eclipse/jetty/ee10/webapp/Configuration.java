@@ -36,6 +36,7 @@ import org.eclipse.jetty.util.TopologicalSort;
  * {@link WebAppContext#setConfigurations(Configuration[])}, {@link WebAppContext#addConfiguration(Configuration...)}
  * or {@link WebAppContext#getConfigurations()}.
  * </p>
+ * <p>Since EE10 in Jetty-12, Configuration implementations must be stateless/immutable.</p>
  * <p>Since Jetty-9.4, Configurations are self ordering using the {@link #getDependencies()} and
  * {@link #getDependents()} methods for a {@link TopologicalSort} initiated by {@link Configurations#sort()}
  * when a {@link WebAppContext} is started.  This means that feature configurations
@@ -48,8 +49,6 @@ import org.eclipse.jetty.util.TopologicalSort;
  */
 public interface Configuration
 {
-    String ATTR = "org.eclipse.jetty.webapp.configuration";
-
     /**
      * @return True if the feature this configuration represents is available and has all its dependencies.
      */
@@ -174,74 +173,4 @@ public interface Configuration
      * @return true if configuration should be aborted
      */
     boolean abort(WebAppContext context);
-
-    /**
-     * Experimental Wrapper mechanism for WebApp Configuration components.
-     * <p>
-     * Beans in WebAppContext that implement this interface
-     * will be called to optionally wrap any newly created {@link Configuration}
-     * objects before they are used for the first time.
-     * </p>
-     */
-    interface WrapperFunction
-    {
-        Configuration wrapConfiguration(Configuration configuration);
-    }
-
-    class Wrapper implements Configuration
-    {
-        private Configuration delegate;
-
-        public Wrapper(Configuration delegate)
-        {
-            this.delegate = delegate;
-        }
-
-        public Configuration getWrapped()
-        {
-            return delegate;
-        }
-
-        @Override
-        public void preConfigure(WebAppContext context) throws Exception
-        {
-            delegate.preConfigure(context);
-        }
-
-        @Override
-        public void configure(WebAppContext context) throws Exception
-        {
-            delegate.configure(context);
-        }
-
-        @Override
-        public void postConfigure(WebAppContext context) throws Exception
-        {
-            delegate.postConfigure(context);
-        }
-
-        @Override
-        public void deconfigure(WebAppContext context) throws Exception
-        {
-            delegate.deconfigure(context);
-        }
-
-        @Override
-        public void destroy(WebAppContext context) throws Exception
-        {
-            delegate.destroy(context);
-        }
-
-        @Override
-        public boolean isEnabledByDefault()
-        {
-            return delegate.isEnabledByDefault();
-        }
-
-        @Override
-        public boolean abort(WebAppContext context)
-        {
-            return delegate.abort(context);
-        }
-    }
 }

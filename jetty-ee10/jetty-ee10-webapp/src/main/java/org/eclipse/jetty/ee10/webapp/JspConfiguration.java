@@ -31,11 +31,12 @@ public class JspConfiguration extends AbstractConfiguration
 
     public JspConfiguration()
     {
-        addDependencies(WebXmlConfiguration.class, MetaInfConfiguration.class, WebInfConfiguration.class, FragmentConfiguration.class);
-        addDependents(WebAppConfiguration.class);
-        protectAndExpose("org.eclipse.jetty.ee10.jsp.");
-        expose("org.eclipse.jetty.ee10.apache.");
-        hide("org.eclipse.jdt.");
+        super(new Builder()
+            .addDependencies(WebXmlConfiguration.class, MetaInfConfiguration.class, WebInfConfiguration.class, FragmentConfiguration.class)
+            .addDependents(WebAppConfiguration.class)
+            .protectAndExpose("org.eclipse.jetty.ee10.jsp.")
+            .expose("org.eclipse.jetty.ee10.apache.")
+            .hide("org.eclipse.jdt."));
     }
 
     @Override

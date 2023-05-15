@@ -38,7 +38,8 @@ public class JettyWebXmlConfiguration extends AbstractConfiguration
 
     public JettyWebXmlConfiguration()
     {
-        addDependencies(WebXmlConfiguration.class, FragmentConfiguration.class, MetaInfConfiguration.class);
+        super(new Builder()
+            .addDependencies(WebXmlConfiguration.class, FragmentConfiguration.class, MetaInfConfiguration.class));
     }
 
     /**

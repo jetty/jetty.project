@@ -250,7 +250,7 @@ public interface Request extends Attributes, Content.Source
     /**
      * <p>Adds a listener for asynchronous errors.</p>
      * <p>The listener is a predicate function that should return {@code true} to indicate
-     * that the function has completed (either successfully or with a failure) the callback
+     * that the function will complete (either successfully or with a failure) the callback
      * received from {@link org.eclipse.jetty.server.Handler#handle(Request, Response, Callback)}, or
      * {@code false} otherwise.</p>
      * <p>Listeners are processed in sequence, and the first that returns {@code true}

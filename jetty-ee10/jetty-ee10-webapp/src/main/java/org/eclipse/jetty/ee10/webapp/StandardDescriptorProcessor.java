@@ -1312,7 +1312,11 @@ public class StandardDescriptorProcessor extends IterativeDescriptorProcessor
                 {
                     case ConstraintSecurityHandler.ANY_KNOWN_ROLE -> // "*"
                     {
-                        if (scBase.getAuthorization() == null)
+                        //The hierarchy of role authorizations is:
+                        // ANY_USER
+                        // KNOWN_ROLE
+                        // SPECIFIC_ROLE
+                        if (scBase.getAuthorization() != Constraint.Authorization.ANY_USER)
                         {
                             scBase.authorization(Constraint.Authorization.KNOWN_ROLE);
                             roles = null;

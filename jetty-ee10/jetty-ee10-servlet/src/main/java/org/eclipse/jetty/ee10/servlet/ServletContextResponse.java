@@ -14,7 +14,6 @@
 package org.eclipse.jetty.ee10.servlet;
 
 import java.io.IOException;
-import java.util.Iterator;
 import java.util.Locale;
 import java.util.Map;
 import java.util.function.Supplier;
@@ -26,7 +25,6 @@ import jakarta.servlet.http.HttpServletResponse;
 import jakarta.servlet.http.HttpSession;
 import org.eclipse.jetty.ee10.servlet.writer.ResponseWriter;
 import org.eclipse.jetty.http.HttpCookie;
-import org.eclipse.jetty.http.HttpField;
 import org.eclipse.jetty.http.HttpFields;
 import org.eclipse.jetty.http.HttpGenerator;
 import org.eclipse.jetty.http.HttpHeader;
@@ -357,26 +355,7 @@ public class ServletContextResponse extends ContextResponse
         _encodingFrom = EncodingFrom.NOT_SET;
 
         // remove the content related response headers and keep all others
-        for (Iterator<HttpField> i = getHeaders().iterator(); i.hasNext(); )
-        {
-            HttpField field = i.next();
-            if (field.getHeader() == null)
-                continue;
-
-            switch (field.getHeader())
-            {
-                case CONTENT_TYPE, CONTENT_LENGTH, CONTENT_ENCODING, CONTENT_LANGUAGE, CONTENT_RANGE, CONTENT_MD5,
-                    CONTENT_LOCATION, TRANSFER_ENCODING, CACHE_CONTROL, LAST_MODIFIED, EXPIRES, VARY -> i.remove();
-                case ETAG ->
-                {
-                    if (getStatus() != HttpStatus.NOT_MODIFIED_304)
-                        i.remove();
-                }
-                default ->
-                {
-                }
-            }
-        }
+        getHeaders().remove(getStatus() == HttpStatus.NOT_MODIFIED_304 ? HttpHeader.CONTENT_HEADERS_304 : HttpHeader.CONTENT_HEADERS);
     }
 
     /**

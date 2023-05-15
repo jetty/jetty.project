@@ -14,6 +14,7 @@
 package org.eclipse.jetty.util;
 
 import java.util.Arrays;
+import java.util.Collections;
 import java.util.HashSet;
 import java.util.Objects;
 import java.util.Set;
@@ -37,26 +38,19 @@ public class IncludeExcludeSet<T, P> implements Predicate<P>
     private final Set<T> _excludes;
     private final Predicate<P> _excludePredicate;
 
-    private static class SetContainsPredicate<T> implements Predicate<T>
+    private record SetContainsPredicate<T>(Set<T> set) implements Predicate<T>
     {
-        private final Set<T> set;
-
-        public SetContainsPredicate(Set<T> set)
-        {
-            this.set = set;
-        }
-
         @Override
         public boolean test(T item)
-        {
-            return set.contains(item);
-        }
+            {
+                return set.contains(item);
+            }
 
         @Override
         public String toString()
-        {
-            return "CONTAINS";
-        }
+            {
+                return "CONTAINS";
+            }
     }
 
     /**
@@ -136,12 +130,22 @@ public class IncludeExcludeSet<T, P> implements Predicate<P>
         _excludePredicate = excludePredicate;
     }
 
+    public IncludeExcludeSet<T, P> asImmutable()
+    {
+        return new IncludeExcludeSet<>(
+            Collections.unmodifiableSet(_includes),
+            _includePredicate,
+            Collections.unmodifiableSet(_excludes),
+            _excludePredicate);
+    }
+
     public void include(T element)
     {
         _includes.add(element);
     }
 
-    public void include(T... element)
+    @SafeVarargs
+    public final void include(T... element)
     {
         _includes.addAll(Arrays.asList(element));
     }
@@ -151,7 +155,8 @@ public class IncludeExcludeSet<T, P> implements Predicate<P>
         _excludes.add(element);
     }
 
-    public void exclude(T... element)
+    @SafeVarargs
+    public final void exclude(T... element)
     {
         _excludes.addAll(Arrays.asList(element));
     }

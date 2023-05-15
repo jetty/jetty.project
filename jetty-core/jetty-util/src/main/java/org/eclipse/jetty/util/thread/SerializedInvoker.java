@@ -205,7 +205,7 @@ public class SerializedInvoker
         @Override
         public String toString()
         {
-            return String.format("%s@%x[%s] -> %s", getClass().getSimpleName(), hashCode(), _task, _next);
+            return String.format("%s@%x{%s -> %s}", getClass().getSimpleName(), hashCode(), _task, _next);
         }
     }
 

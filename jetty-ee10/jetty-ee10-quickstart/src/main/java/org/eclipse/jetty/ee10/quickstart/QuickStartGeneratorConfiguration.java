@@ -93,7 +93,7 @@ public class QuickStartGeneratorConfiguration extends AbstractConfiguration
 
     public QuickStartGeneratorConfiguration(boolean abort)
     {
-        super(false);
+        super(new Builder().enabledByDefault(false));
         _count = 0;
         _abort = abort;
     }

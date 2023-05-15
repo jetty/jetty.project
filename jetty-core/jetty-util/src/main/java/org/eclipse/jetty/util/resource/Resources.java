@@ -31,6 +31,17 @@ public final class Resources
     }
 
     /**
+     * True if the resource has been created by {@link ResourceFactory#combine(java.util.List) combining} other resources.
+     *
+     * @param resource the resource to test
+     * @return true if resource is a combination of other resources
+     */
+    public static boolean isCombined(Resource resource)
+    {
+        return resource instanceof CombinedResource;
+    }
+
+    /**
      * True if the resource is missing.
      *
      * @param resource the resource to test
