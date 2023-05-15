@@ -198,6 +198,7 @@ public class JettyWebSocketFrameHandler implements FrameHandler
                     break;
 
                 case SUSPENDING:
+                    assert (delayedFrame == null && delayedCallback == null);
                     delayedFrame = frame;
                     delayedCallback = callback;
                     state = SuspendState.SUSPENDED;
@@ -283,18 +284,18 @@ public class JettyWebSocketFrameHandler implements FrameHandler
     @Override
     public void onClosed(CloseStatus closeStatus, Callback callback)
     {
-        Callback suspendedCallback;
+        Callback delayedCallback;
         try (AutoLock l = lock.lock())
         {
             // We are now closed and cannot suspend or resume.
             state = SuspendState.CLOSED;
-            delayedFrame = null;
-            suspendedCallback = delayedCallback;
-            delayedCallback = null;
+            this.delayedFrame = null;
+            delayedCallback = this.delayedCallback;
+            this.delayedCallback = null;
         }
 
-        if (suspendedCallback != null)
-            suspendedCallback.failed(new CloseException(closeStatus.getCode(), closeStatus.getCause()));
+        if (delayedCallback != null)
+            delayedCallback.failed(new CloseException(closeStatus.getCode(), closeStatus.getCause()));
 
         notifyOnClose(closeStatus, callback);
         container.notifySessionListeners((listener) -> listener.onWebSocketSessionClosed(session));
