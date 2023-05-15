@@ -13,12 +13,13 @@
 
 package org.eclipse.jetty.quic.quiche.foreign.incubator;
 
-import java.io.File;
 import java.io.IOException;
+import java.io.InputStream;
 import java.net.InetSocketAddress;
 import java.nio.ByteBuffer;
 import java.nio.charset.StandardCharsets;
-import java.nio.file.Paths;
+import java.nio.file.Path;
+import java.security.KeyStore;
 import java.util.AbstractMap;
 import java.util.ArrayList;
 import java.util.Collection;
@@ -29,9 +30,13 @@ import java.util.Objects;
 import org.eclipse.jetty.quic.quiche.QuicheConfig;
 import org.eclipse.jetty.quic.quiche.QuicheConnection;
 import org.eclipse.jetty.quic.quiche.SSLKeyPair;
+import org.eclipse.jetty.toolchain.test.jupiter.WorkDir;
+import org.eclipse.jetty.toolchain.test.jupiter.WorkDirExtension;
+import org.eclipse.jetty.util.resource.Resource;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.extension.ExtendWith;
 
 import static org.eclipse.jetty.quic.quiche.Quiche.QUICHE_MIN_CLIENT_INITIAL_LEN;
 import static org.hamcrest.MatcherAssert.assertThat;
@@ -39,8 +44,11 @@ import static org.hamcrest.Matchers.not;
 import static org.hamcrest.Matchers.nullValue;
 import static org.hamcrest.core.Is.is;
 
+@ExtendWith(WorkDirExtension.class)
 public class LowLevelQuicheTest
 {
+    public WorkDir workDir;
+
     private final Collection<ForeignIncubatorQuicheConnection> connectionsToDisposeOf = new ArrayList<>();
 
     private InetSocketAddress clientSocketAddress;
@@ -69,11 +77,16 @@ public class LowLevelQuicheTest
         clientQuicheConfig.setInitialMaxStreamsBidi(100L);
         clientQuicheConfig.setCongestionControl(QuicheConfig.CongestionControl.CUBIC);
 
-        SSLKeyPair serverKeyPair = new SSLKeyPair(Paths.get(Objects.requireNonNull(getClass().getResource("/keystore.p12")).toURI()).toFile(), "PKCS12", "storepwd".toCharArray(), "mykey", "storepwd".toCharArray());
-        File[] pemFiles = serverKeyPair.export(new File(System.getProperty("java.io.tmpdir")));
+        KeyStore keyStore = KeyStore.getInstance("PKCS12");
+        try (InputStream is = getClass().getResourceAsStream("/keystore.p12"))
+        {
+            keyStore.load(is, "storepwd".toCharArray());
+        }
+        SSLKeyPair serverKeyPair = new SSLKeyPair(keyStore, "mykey", "storepwd".toCharArray());
+        Path[] pemFiles = serverKeyPair.export(workDir.getEmptyPathDir());
         serverQuicheConfig = new QuicheConfig();
-        serverQuicheConfig.setPrivKeyPemPath(pemFiles[0].getPath());
-        serverQuicheConfig.setCertChainPemPath(pemFiles[1].getPath());
+        serverQuicheConfig.setPrivKeyPemPath(pemFiles[0].toString());
+        serverQuicheConfig.setCertChainPemPath(pemFiles[1].toString());
         serverQuicheConfig.setApplicationProtos("http/0.9");
         serverQuicheConfig.setVerifyPeer(false);
         serverQuicheConfig.setMaxIdleTimeout(1_000L);
