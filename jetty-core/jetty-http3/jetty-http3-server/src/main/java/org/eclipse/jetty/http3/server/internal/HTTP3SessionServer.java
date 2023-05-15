@@ -18,6 +18,7 @@ import org.eclipse.jetty.http3.api.Session;
 import org.eclipse.jetty.http3.frames.Frame;
 import org.eclipse.jetty.http3.frames.GoAwayFrame;
 import org.eclipse.jetty.http3.frames.HeadersFrame;
+import org.eclipse.jetty.http3.frames.SettingsFrame;
 import org.eclipse.jetty.quic.common.QuicStreamEndPoint;
 import org.eclipse.jetty.util.Callback;
 import org.slf4j.Logger;
@@ -58,7 +59,7 @@ public class HTTP3SessionServer extends HTTP3Session implements Session.Server
     }
 
     @Override
-    public void onHeaders(long streamId, HeadersFrame frame)
+    public void onHeaders(long streamId, HeadersFrame frame, boolean wasBlocked)
     {
         if (frame.getMetaData().isRequest())
         {
@@ -71,8 +72,17 @@ public class HTTP3SessionServer extends HTTP3Session implements Session.Server
         }
         else
         {
-            super.onHeaders(streamId, frame);
+            super.onHeaders(streamId, frame, wasBlocked);
         }
+    }
+
+    @Override
+    public void onSettings(SettingsFrame frame)
+    {
+        if (LOG.isDebugEnabled())
+            LOG.debug("received {} on {}", frame, this);
+        getProtocolSession().onSettings(frame);
+        super.onSettings(frame);
     }
 
     @Override
@@ -93,26 +103,6 @@ public class HTTP3SessionServer extends HTTP3Session implements Session.Server
         if (graceful)
             return GoAwayFrame.SERVER_GRACEFUL;
         return super.newGoAwayFrame(graceful);
-    }
-
-    @Override
-    protected void onSettingMaxTableCapacity(long value)
-    {
-        getProtocolSession().getQpackEncoder().setCapacity((int)value);
-    }
-
-    @Override
-    protected void onSettingMaxFieldSectionSize(long value)
-    {
-        getProtocolSession().getQpackDecoder().setMaxHeaderSize((int)value);
-    }
-
-    @Override
-    protected void onSettingMaxBlockedStreams(long value)
-    {
-        ServerHTTP3Session session = getProtocolSession();
-        session.getQpackDecoder().setMaxBlockedStreams((int)value);
-        session.getQpackEncoder().setMaxBlockedStreams((int)value);
     }
 
     private void notifyAccept()

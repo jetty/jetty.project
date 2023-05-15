@@ -22,6 +22,7 @@ import org.eclipse.jetty.http3.api.Stream;
 import org.eclipse.jetty.http3.frames.Frame;
 import org.eclipse.jetty.http3.frames.GoAwayFrame;
 import org.eclipse.jetty.http3.frames.HeadersFrame;
+import org.eclipse.jetty.http3.frames.SettingsFrame;
 import org.eclipse.jetty.quic.common.ProtocolSession;
 import org.eclipse.jetty.quic.common.QuicStreamEndPoint;
 import org.eclipse.jetty.quic.common.StreamType;
@@ -63,7 +64,7 @@ public class HTTP3SessionClient extends HTTP3Session implements Session.Client
     }
 
     @Override
-    public void onHeaders(long streamId, HeadersFrame frame)
+    public void onHeaders(long streamId, HeadersFrame frame, boolean wasBlocked)
     {
         if (frame.getMetaData().isResponse())
         {
@@ -76,8 +77,17 @@ public class HTTP3SessionClient extends HTTP3Session implements Session.Client
         }
         else
         {
-            super.onHeaders(streamId, frame);
+            super.onHeaders(streamId, frame, wasBlocked);
         }
+    }
+
+    @Override
+    public void onSettings(SettingsFrame frame)
+    {
+        if (LOG.isDebugEnabled())
+            LOG.debug("received {} on {}", frame, this);
+        getProtocolSession().onSettings(frame);
+        super.onSettings(frame);
     }
 
     @Override
@@ -146,25 +156,5 @@ public class HTTP3SessionClient extends HTTP3Session implements Session.Client
         if (graceful)
             return GoAwayFrame.CLIENT_GRACEFUL;
         return super.newGoAwayFrame(graceful);
-    }
-
-    @Override
-    protected void onSettingMaxTableCapacity(long value)
-    {
-        getProtocolSession().getQpackEncoder().setCapacity((int)value);
-    }
-
-    @Override
-    protected void onSettingMaxFieldSectionSize(long value)
-    {
-        getProtocolSession().getQpackDecoder().setMaxHeaderSize((int)value);
-    }
-
-    @Override
-    protected void onSettingMaxBlockedStreams(long value)
-    {
-        ClientHTTP3Session session = getProtocolSession();
-        session.getQpackDecoder().setMaxBlockedStreams((int)value);
-        session.getQpackEncoder().setMaxBlockedStreams((int)value);
     }
 }

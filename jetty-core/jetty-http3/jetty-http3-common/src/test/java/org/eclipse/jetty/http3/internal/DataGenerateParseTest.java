@@ -55,7 +55,7 @@ public class DataGenerateParseTest
 
         ByteBufferPool.NonPooling bufferPool = new ByteBufferPool.NonPooling();
         ByteBufferPool.Accumulator accumulator = new ByteBufferPool.Accumulator();
-        new MessageGenerator(bufferPool, null, 8192, true).generate(accumulator, 0, input, null);
+        new MessageGenerator(bufferPool, null, true).generate(accumulator, 0, input, null);
 
         List<DataFrame> frames = new ArrayList<>();
         MessageParser parser = new MessageParser(new ParserListener()

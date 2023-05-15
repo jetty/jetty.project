@@ -24,10 +24,10 @@ public class MessageGenerator
 {
     private final FrameGenerator[] generators = new FrameGenerator[FrameType.maxType() + 1];
 
-    public MessageGenerator(ByteBufferPool bufferPool, QpackEncoder encoder, int maxHeadersLength, boolean useDirectByteBuffers)
+    public MessageGenerator(ByteBufferPool bufferPool, QpackEncoder encoder, boolean useDirectByteBuffers)
     {
         generators[FrameType.DATA.type()] = new DataGenerator(bufferPool, useDirectByteBuffers);
-        generators[FrameType.HEADERS.type()] = new HeadersGenerator(bufferPool, encoder, maxHeadersLength, useDirectByteBuffers);
+        generators[FrameType.HEADERS.type()] = new HeadersGenerator(bufferPool, encoder, useDirectByteBuffers);
         generators[FrameType.PUSH_PROMISE.type()] = new PushPromiseGenerator(bufferPool);
     }
 

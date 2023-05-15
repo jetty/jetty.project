@@ -95,14 +95,15 @@ public class QpackEncoder implements Dumpable
     private final Map<Long, StreamInfo> _streamInfoMap = new HashMap<>();
     private final EncoderInstructionParser _parser;
     private final InstructionHandler _instructionHandler = new InstructionHandler();
-    private int _knownInsertCount = 0;
-    private int _blockedStreams = 0;
+    private int _knownInsertCount;
+    private int _blockedStreams;
+    private int _maxHeadersSize;
+    private int _maxTableCapacity;
 
-    public QpackEncoder(Instruction.Handler handler, int maxBlockedStreams)
+    public QpackEncoder(Instruction.Handler handler)
     {
         _handler = handler;
         _context = new QpackContext();
-        _maxBlockedStreams = maxBlockedStreams;
         _parser = new EncoderInstructionParser(_instructionHandler);
     }
 
@@ -121,7 +122,30 @@ public class QpackEncoder implements Dumpable
         _maxBlockedStreams = maxBlockedStreams;
     }
 
-    public int getCapacity()
+    public int getMaxHeadersSize()
+    {
+        return _maxHeadersSize;
+    }
+
+    public void setMaxHeadersSize(int maxHeadersSize)
+    {
+        _maxHeadersSize = maxHeadersSize;
+    }
+
+    public int getMaxTableCapacity()
+    {
+        return _maxTableCapacity;
+    }
+
+    public void setMaxTableCapacity(int maxTableCapacity)
+    {
+        _maxTableCapacity = maxTableCapacity;
+        int capacity = getTableCapacity();
+        if (capacity > maxTableCapacity)
+            setTableCapacity(maxTableCapacity);
+    }
+
+    public int getTableCapacity()
     {
         return _context.getDynamicTable().getCapacity();
     }
@@ -131,11 +155,16 @@ public class QpackEncoder implements Dumpable
      *
      * @param capacity the new capacity.
      */
-    public void setCapacity(int capacity)
+    public void setTableCapacity(int capacity)
     {
-        _context.getDynamicTable().setCapacity(capacity);
-        _handler.onInstructions(List.of(new SetCapacityInstruction(capacity)));
-        notifyInstructionHandler();
+        try (AutoLock ignored = lock.lock())
+        {
+            if (capacity > getMaxTableCapacity())
+                throw new IllegalArgumentException("DynamicTable capacity exceeds max capacity");
+            _context.getDynamicTable().setCapacity(capacity);
+            _handler.onInstructions(List.of(new SetCapacityInstruction(capacity)));
+            notifyInstructionHandler();
+        }
     }
 
     /**
@@ -151,7 +180,7 @@ public class QpackEncoder implements Dumpable
      */
     public void encode(ByteBuffer buffer, long streamId, MetaData metadata) throws QpackException
     {
-        try (AutoLock l = lock.lock())
+        try (AutoLock ignored = lock.lock())
         {
             if (LOG.isDebugEnabled())
                 LOG.debug("Encoding: streamId={}, metadata={}", streamId, metadata);
@@ -159,6 +188,9 @@ public class QpackEncoder implements Dumpable
             // Verify that we can encode without errors.
             if (metadata.getHttpFields() != null)
             {
+                // TODO: enforce that the length of the header is less than maxHeadersSize.
+                //  See RFC 9114, section 4.2.2.
+
                 for (HttpField field : metadata.getHttpFields())
                 {
                     String name = field.getName();
@@ -252,7 +284,7 @@ public class QpackEncoder implements Dumpable
      */
     public void parseInstructions(ByteBuffer buffer) throws QpackException
     {
-        try (AutoLock l = lock.lock())
+        try (AutoLock ignored = lock.lock())
         {
             while (BufferUtil.hasContent(buffer))
             {
@@ -279,43 +311,46 @@ public class QpackEncoder implements Dumpable
      */
     public boolean insert(HttpField field)
     {
-        DynamicTable dynamicTable = _context.getDynamicTable();
-        if (field.getValue() == null)
-            field = new HttpField(field.getHeader(), field.getName(), "");
-
-        // If we should not index this entry or there is no room to insert it, then just return false.
-        boolean canCreateEntry = shouldIndex(field) && dynamicTable.canInsert(field);
-        if (!canCreateEntry)
-            return false;
-
-        // Can we insert by duplicating an existing entry?
-        Entry entry = _context.get(field);
-        if (entry != null)
+        try (AutoLock ignored = lock.lock())
         {
-            int index = _context.indexOf(entry);
+            DynamicTable dynamicTable = _context.getDynamicTable();
+            if (field.getValue() == null)
+                field = new HttpField(field.getHeader(), field.getName(), "");
+
+            // If we should not index this entry or there is no room to insert it, then just return false.
+            boolean canCreateEntry = shouldIndex(field) && dynamicTable.canInsert(field);
+            if (!canCreateEntry)
+                return false;
+
+            // Can we insert by duplicating an existing entry?
+            Entry entry = _context.get(field);
+            if (entry != null)
+            {
+                int index = _context.indexOf(entry);
+                dynamicTable.add(new Entry(field));
+                _instructions.add(new DuplicateInstruction(index));
+                notifyInstructionHandler();
+                return true;
+            }
+
+            // Can we insert by referencing a name?
+            boolean huffman = shouldHuffmanEncode(field);
+            Entry nameEntry = _context.get(field.getName());
+            if (nameEntry != null)
+            {
+                int index = _context.indexOf(nameEntry);
+                dynamicTable.add(new Entry(field));
+                _instructions.add(new IndexedNameEntryInstruction(!nameEntry.isStatic(), index, huffman, field.getValue()));
+                notifyInstructionHandler();
+                return true;
+            }
+
+            // Add the entry without referencing an existing entry.
             dynamicTable.add(new Entry(field));
-            _instructions.add(new DuplicateInstruction(index));
+            _instructions.add(new LiteralNameEntryInstruction(field, huffman));
             notifyInstructionHandler();
             return true;
         }
-
-        // Can we insert by referencing a name?
-        boolean huffman = shouldHuffmanEncode(field);
-        Entry nameEntry = _context.get(field.getName());
-        if (nameEntry != null)
-        {
-            int index = _context.indexOf(nameEntry);
-            dynamicTable.add(new Entry(field));
-            _instructions.add(new IndexedNameEntryInstruction(!nameEntry.isStatic(), index, huffman, field.getValue()));
-            notifyInstructionHandler();
-            return true;
-        }
-
-        // Add the entry without referencing an existing entry.
-        dynamicTable.add(new Entry(field));
-        _instructions.add(new LiteralNameEntryInstruction(field, huffman));
-        notifyInstructionHandler();
-        return true;
     }
 
     /**
@@ -327,8 +362,11 @@ public class QpackEncoder implements Dumpable
      */
     public void streamCancellation(long streamId)
     {
-        _instructionHandler.onStreamCancellation(streamId);
-        notifyInstructionHandler();
+        try (AutoLock ignored = lock.lock())
+        {
+            _instructionHandler.onStreamCancellation(streamId);
+            notifyInstructionHandler();
+        }
     }
 
     protected boolean shouldIndex(HttpField httpField)

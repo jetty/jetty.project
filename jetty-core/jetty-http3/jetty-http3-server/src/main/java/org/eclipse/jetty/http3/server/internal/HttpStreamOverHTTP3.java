@@ -98,11 +98,6 @@ public class HttpStreamOverHTTP3 implements HttpStream
 
             expects100Continue = fields.contains(HttpHeader.EXPECT, HttpHeaderValue.CONTINUE.asString());
 
-            boolean connect = requestMetaData instanceof MetaData.ConnectRequest;
-
-            if (!connect)
-                connection.setApplicationMode(true);
-
             if (LOG.isDebugEnabled())
             {
                 LOG.debug("HTTP3 request #{}/{}, {} {} {}{}{}",

@@ -41,9 +41,6 @@ import static org.junit.jupiter.api.Assertions.assertTrue;
 
 public class BlockedStreamsTest
 {
-    private static final int MAX_BLOCKED_STREAMS = 5;
-    private static final int MAX_HEADER_SIZE = 1024;
-
     private QpackEncoder _encoder;
     private QpackDecoder _decoder;
     private TestDecoderHandler _decoderHandler;
@@ -54,8 +51,8 @@ public class BlockedStreamsTest
     {
         _encoderHandler = new TestEncoderHandler();
         _decoderHandler = new TestDecoderHandler();
-        _encoder = new QpackEncoder(_encoderHandler, MAX_BLOCKED_STREAMS);
-        _decoder = new QpackDecoder(_decoderHandler, MAX_HEADER_SIZE);
+        _encoder = new QpackEncoder(_encoderHandler);
+        _decoder = new QpackDecoder(_decoderHandler);
     }
 
     @Test
@@ -67,7 +64,10 @@ public class BlockedStreamsTest
 
         // Set capacity of the encoder & decoder to allow entries to be added to the table.
         int capacity = 1024;
-        _encoder.setCapacity(capacity);
+        _encoder.setMaxTableCapacity(capacity);
+        _encoder.setTableCapacity(capacity);
+        _decoder.setMaxTableCapacity(capacity);
+
         Instruction instruction = _encoderHandler.getInstruction();
         assertThat(instruction, instanceOf(SetCapacityInstruction.class));
         _decoder.parseInstructions(QpackTestUtil.toBuffer(instruction));
@@ -178,7 +178,10 @@ public class BlockedStreamsTest
 
         // Set capacity of the encoder & decoder to allow entries to be added to the table.
         int capacity = 1024;
-        _encoder.setCapacity(capacity);
+        _encoder.setMaxTableCapacity(capacity);
+        _encoder.setTableCapacity(capacity);
+        _decoder.setMaxTableCapacity(capacity);
+
         Instruction instruction = _encoderHandler.getInstruction();
         assertThat(instruction, instanceOf(SetCapacityInstruction.class));
         _decoder.parseInstructions(QpackTestUtil.toBuffer(instruction));
