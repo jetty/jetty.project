@@ -48,6 +48,6 @@ public class InsertCountIncrementInstruction implements Instruction
     @Override
     public String toString()
     {
-        return String.format("%s@%x", getClass().getSimpleName(), hashCode());
+        return String.format("%s@%x[increment=%d]", getClass().getSimpleName(), hashCode(), getIncrement());
     }
 }

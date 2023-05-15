@@ -39,10 +39,10 @@ public class MessageFlusher extends IteratingCallback
     private final MessageGenerator generator;
     private Entry entry;
 
-    public MessageFlusher(ByteBufferPool byteBufferPool, QpackEncoder encoder, int maxHeadersLength, boolean useDirectByteBuffers)
+    public MessageFlusher(ByteBufferPool byteBufferPool, QpackEncoder encoder, boolean useDirectByteBuffers)
     {
         this.lease = new ByteBufferPool.Lease(byteBufferPool);
-        this.generator = new MessageGenerator(encoder, maxHeadersLength, useDirectByteBuffers);
+        this.generator = new MessageGenerator(encoder, useDirectByteBuffers);
     }
 
     public boolean offer(QuicStreamEndPoint endPoint, Frame frame, Callback callback)

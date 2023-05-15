@@ -83,6 +83,6 @@ public class IndexedNameEntryInstruction implements Instruction
     @Override
     public String toString()
     {
-        return String.format("%s@%x", getClass().getSimpleName(), hashCode());
+        return String.format("%s@%x[index=%d,name=%s]", getClass().getSimpleName(), hashCode(), getIndex(), getValue());
     }
 }

@@ -16,6 +16,7 @@ package org.eclipse.jetty.http3.internal;
 import java.nio.ByteBuffer;
 import java.util.concurrent.Executor;
 
+import org.eclipse.jetty.http3.internal.parser.ParserListener;
 import org.eclipse.jetty.http3.qpack.QpackException;
 import org.eclipse.jetty.io.AbstractConnection;
 import org.eclipse.jetty.io.ByteBufferPool;
@@ -29,13 +30,15 @@ public abstract class InstructionStreamConnection extends AbstractConnection imp
 {
     private static final Logger LOG = LoggerFactory.getLogger(InstructionStreamConnection.class);
     private final ByteBufferPool byteBufferPool;
+    private final ParserListener listener;
     private boolean useInputDirectByteBuffers = true;
     private ByteBuffer buffer;
 
-    public InstructionStreamConnection(EndPoint endPoint, Executor executor, ByteBufferPool byteBufferPool)
+    public InstructionStreamConnection(EndPoint endPoint, Executor executor, ByteBufferPool byteBufferPool, ParserListener listener)
     {
         super(endPoint, executor);
         this.byteBufferPool = byteBufferPool;
+        this.listener = listener;
     }
 
     public boolean isUseInputDirectByteBuffers()
@@ -102,13 +105,34 @@ public abstract class InstructionStreamConnection extends AbstractConnection imp
                 }
             }
         }
+        catch (QpackException.SessionException x)
+        {
+            fail(x.getErrorCode(), x.getMessage(), x);
+        }
         catch (Throwable x)
         {
-            if (LOG.isDebugEnabled())
-                LOG.debug("could not process decoder stream {}", getEndPoint(), x);
-            byteBufferPool.release(buffer);
-            buffer = null;
-            getEndPoint().close(x);
+            fail(HTTP3ErrorCode.INTERNAL_ERROR.code(), "internal_error", x);
+        }
+    }
+
+    private void fail(long errorCode, String message, Throwable failure)
+    {
+        byteBufferPool.release(buffer);
+        buffer = null;
+        if (LOG.isDebugEnabled())
+            LOG.debug("could not process instruction stream {}", getEndPoint(), failure);
+        notifySessionFailure(errorCode, message, failure);
+    }
+
+    protected void notifySessionFailure(long error, String reason, Throwable failure)
+    {
+        try
+        {
+            listener.onSessionFailure(error, reason, failure);
+        }
+        catch (Throwable x)
+        {
+            LOG.info("failure while notifying listener {}", listener, x);
         }
     }
 
