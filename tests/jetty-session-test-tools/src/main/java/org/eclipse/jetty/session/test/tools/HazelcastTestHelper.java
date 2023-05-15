@@ -11,9 +11,10 @@
 // ========================================================================
 //
 
-package org.eclipse.jetty.ee10.session.hazelcast;
+package org.eclipse.jetty.session.test.tools;
 
 import java.util.Collections;
+import java.util.Objects;
 
 import com.hazelcast.client.HazelcastClient;
 import com.hazelcast.client.config.ClientConfig;
@@ -27,19 +28,17 @@ import org.eclipse.jetty.hazelcast.session.HazelcastSessionDataStoreFactory;
 import org.eclipse.jetty.hazelcast.session.SessionDataSerializer;
 import org.eclipse.jetty.session.SessionData;
 import org.eclipse.jetty.session.SessionDataStoreFactory;
-import org.eclipse.jetty.util.NanoTime;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
-import static org.junit.jupiter.api.Assertions.assertTrue;
 
 /**
  * HazelcastTestHelper
  */
 public class HazelcastTestHelper
 {
-    static final String _name = Long.toString(NanoTime.now());
+    private final String mapName;
 
-    static final String _hazelcastInstanceName = "SESSION_TEST_" + _name;
+    static final String _hazelcastInstanceName = "SESSION_TEST_" + System.nanoTime();
 
     static SerializerConfig _serializerConfig;
 
@@ -60,21 +59,22 @@ public class HazelcastTestHelper
         Config config = new Config();
         config.setInstanceName(_hazelcastInstanceName);
         config.getNetworkConfig().getJoin().getAutoDetectionConfig().setEnabled(false);
-        config.addMapConfig(new MapConfig().setName(_name)).setClassLoader(null);
         config.getSerializationConfig().addSerializerConfig(_serializerConfig);
         _instance = Hazelcast.getOrCreateHazelcastInstance(config);
     }
 
-    public HazelcastTestHelper()
+    public HazelcastTestHelper(String mapName)
     {
-        // noop
+        Objects.requireNonNull(mapName, "Hazelcast mapName cannot be null");
+        this.mapName = mapName;
+        _instance.getConfig().addMapConfig(new MapConfig().setName(this.mapName)).setClassLoader(null);
     }
 
     public SessionDataStoreFactory createSessionDataStoreFactory(boolean onlyClient)
     {
         HazelcastSessionDataStoreFactory factory = new HazelcastSessionDataStoreFactory();
         factory.setOnlyClient(onlyClient);
-        factory.setMapName(_name);
+        factory.setMapName(this.mapName);
         factory.setUseQueries(true);
         if (onlyClient)
         {
@@ -99,22 +99,22 @@ public class HazelcastTestHelper
 
     public void tearDown()
     {
-        _instance.getMap(_name).clear();
+        _instance.getMap(this.mapName).clear();
     }
 
     public void createSession(SessionData data)
     {
-        Object o = _instance.getMap(_name).put(data.getContextPath() + "_" + data.getVhost() + "_" + data.getId(), data);
+        _instance.getMap(this.mapName).put(data.getContextPath() + "_" + data.getVhost() + "_" + data.getId(), data);
     }
 
     public boolean checkSessionExists(SessionData data)
     {
-        return (_instance.getMap(_name).get(data.getContextPath() + "_" + data.getVhost() + "_" + data.getId()) != null);
+        return (_instance.getMap(this.mapName).get(data.getContextPath() + "_" + data.getVhost() + "_" + data.getId()) != null);
     }
 
     public boolean checkSessionPersisted(SessionData data)
     {
-        Object obj = _instance.getMap(_name).get(data.getContextPath() + "_" + data.getVhost() + "_" + data.getId());
+        Object obj = _instance.getMap(this.mapName).get(data.getContextPath() + "_" + data.getVhost() + "_" + data.getId());
         if (obj == null)
             return false;
 
@@ -134,11 +134,11 @@ public class HazelcastTestHelper
         //same number of attributes
         assertEquals(data.getAllAttributes().size(), saved.getAllAttributes().size());
         //same keys
-        assertTrue(data.getKeys().equals(saved.getKeys()));
+        assertEquals(data.getKeys(), saved.getKeys());
         //same values
         for (String name : data.getKeys())
         {
-            assertTrue(data.getAttribute(name).equals(saved.getAttribute(name)));
+            assertEquals(data.getAttribute(name), saved.getAttribute(name));
         }
         return true;
     }

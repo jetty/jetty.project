@@ -14,7 +14,6 @@
 package org.eclipse.jetty.ee10.session.hazelcast.client;
 
 import org.eclipse.jetty.ee10.servlet.ServletContextHandler;
-import org.eclipse.jetty.ee10.session.hazelcast.HazelcastTestHelper;
 import org.eclipse.jetty.hazelcast.session.HazelcastSessionDataStore;
 import org.eclipse.jetty.server.Server;
 import org.eclipse.jetty.session.AbstractSessionDataStoreFactory;
@@ -25,6 +24,7 @@ import org.eclipse.jetty.session.SessionData;
 import org.eclipse.jetty.session.SessionDataStore;
 import org.eclipse.jetty.session.SessionDataStoreFactory;
 import org.eclipse.jetty.session.UnreadableSessionDataException;
+import org.eclipse.jetty.session.test.tools.HazelcastTestHelper;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
@@ -41,18 +41,12 @@ public class HazelcastSessionDataStoreClientTest extends AbstractSessionDataStor
         super();
     }
 
-    HazelcastTestHelper _testHelper;
+    HazelcastTestHelper _testHelper = new HazelcastTestHelper(getClass().getSimpleName() + System.nanoTime());
 
     @Override
     public SessionDataStoreFactory createSessionDataStoreFactory()
     {
         return _testHelper.createSessionDataStoreFactory(true);
-    }
-
-    @BeforeEach
-    public void configure()
-    {
-        _testHelper = new HazelcastTestHelper();
     }
 
     @AfterEach

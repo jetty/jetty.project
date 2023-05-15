@@ -101,6 +101,24 @@
       <optional>true</optional>
       <scope>compile</scope>
     </dependency>
+    <dependency>
+      <groupId>org.eclipse.jetty</groupId>
+      <artifactId>jetty-hazelcast</artifactId>
+      <optional>true</optional>
+      <scope>compile</scope>
+      <exclusions>
+        <exclusion>
+          <groupId>com.hazelcast</groupId>
+          <artifactId>hazelcast</artifactId>
+        </exclusion>
+      </exclusions>
+    </dependency>
+    <dependency>
+      <groupId>com.hazelcast</groupId>
+      <artifactId>hazelcast</artifactId>
+      <optional>true</optional>
+      <scope>compile</scope>
+    </dependency>
   </dependencies>
 
 </project>
