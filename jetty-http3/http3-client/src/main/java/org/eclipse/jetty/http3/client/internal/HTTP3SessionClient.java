@@ -106,6 +106,7 @@ public class HTTP3SessionClient extends HTTP3Session implements Session.Client
             return promise;
 
         stream.setListener(listener);
+        stream.onOpen();
 
         stream.writeFrame(frame)
             .whenComplete((r, x) ->
