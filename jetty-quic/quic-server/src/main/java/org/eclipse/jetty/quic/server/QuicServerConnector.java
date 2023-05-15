@@ -174,9 +174,26 @@ public class QuicServerConnector extends AbstractNetworkConnector
             alias,
             password
         );
-        Path[] pemFiles = keyPair.export(Path.of(System.getProperty("java.io.tmpdir")));
+        Path[] pemFiles = keyPair.export(findTargetPath());
         privateKeyPath = pemFiles[0];
         certificateChainPath = pemFiles[1];
+    }
+
+    private Path findTargetPath() throws IOException
+    {
+        Path target;
+        String jettyBase = System.getProperty("jetty.base");
+        if (jettyBase != null)
+        {
+            target = Path.of(jettyBase).resolve("work");
+        }
+        else
+        {
+            target = sslContextFactory.getKeyStoreResource().getFile().getParentFile().toPath();
+            if (!Files.isDirectory(target))
+                target = Path.of(".");
+        }
+        return target;
     }
 
     @Override
