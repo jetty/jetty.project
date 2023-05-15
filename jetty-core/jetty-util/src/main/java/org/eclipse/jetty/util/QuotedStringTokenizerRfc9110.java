@@ -267,52 +267,51 @@ public class QuotedStringTokenizerRfc9110 implements QuotedStringTokenizer
     @Override
     public String quoteIfNeeded(String s)
     {
-        if (s == null)
-            return null;
-        if (s.length() == 0)
-            return "\"\"";
-
-        for (int i = 0; i < s.length(); i++)
-        {
-            char c = s.charAt(i);
-            if (c == '\\' || c == '"' || _delim.indexOf(c) >= 0)
-            {
-                StringBuffer b = new StringBuffer(s.length() + 8);
-                quote(b, s);
-                return b.toString();
-            }
-        }
-
-        return s;
+        return quoteIfNeededImpl(null, s);
     }
 
     @Override
     public void quoteIfNeeded(StringBuilder buf, String str)
     {
+        quoteIfNeededImpl(buf, str);
+    }
+
+    @Override
+    public boolean needsQuoting(char c)
+    {
+        return c == '\\' || c == '"' || _optionalWhiteSpace && Character.isWhitespace(c) || _delim.indexOf(c) >= 0;
+    }
+
+    private String quoteIfNeededImpl(StringBuilder buf, String str)
+    {
         if (str == null)
-            return;
+            return null;
         if (str.length() == 0)
         {
+            if (buf == null)
+                return "\"\"";
+
             buf.append("\"\"");
-            return;
+            return null;
         }
 
         for (int i = 0; i < str.length(); i++)
         {
             char c = str.charAt(i);
-            if (c == '\\' ||
-                c == '"' ||
-                _delim.indexOf(c) >= 0 ||
-                _optionalWhiteSpace && c == ' '
-            )
+            if (needsQuoting(c))
             {
+                if (buf == null)
+                    return quote(str);
                 quote(buf, str);
-                return;
+                return null;
             }
         }
 
         // no special delimiters used, no quote needed.
+        if (buf == null)
+            return str;
         buf.append(str);
+        return null;
     }
 
     /**

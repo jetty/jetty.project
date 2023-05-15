@@ -20,7 +20,6 @@ import java.time.Instant;
 import java.util.Base64;
 import java.util.Objects;
 
-import org.eclipse.jetty.util.QuotedStringTokenizer;
 import org.eclipse.jetty.util.StringUtil;
 import org.eclipse.jetty.util.resource.Resource;
 
@@ -306,8 +305,8 @@ public final class EtagUtils
             return false;
 
         // compare unquoted strong etags
-        etag = etagQuoted ? QuotedStringTokenizer.CSV.unquote(etag) : etag;
-        etagWithOptionalSuffix = etagSuffixQuoted ? QuotedStringTokenizer.CSV.unquote(etagWithOptionalSuffix) : etagWithOptionalSuffix;
+        etag = etagQuoted ? QuotedCSV.unquote(etag) : etag;
+        etagWithOptionalSuffix = etagSuffixQuoted ? QuotedCSV.unquote(etagWithOptionalSuffix) : etagWithOptionalSuffix;
         separator = etagWithOptionalSuffix.lastIndexOf(ETAG_SEPARATOR);
         if (separator > 0)
             return etag.regionMatches(0, etagWithOptionalSuffix, 0, separator);

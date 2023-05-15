@@ -66,6 +66,30 @@ public interface QuotedStringTokenizer
      */
     String unquote(String s);
 
+    Iterator<String> tokenize(String string);
+
+    boolean needsQuoting(char c);
+
+    /**
+     * Quote a string.
+     * The string is quoted only if quoting is required due to
+     * embedded delimiters, quote characters or the empty string.
+     *
+     * @param s The string to quote.
+     * @return quoted string
+     */
+    String quoteIfNeeded(String s);
+
+    /**
+     * Append into buf the provided string, adding quotes if needed.
+     * <p>
+     * Quoting is determined if any of the characters in the {@code delim} are found in the input {@code str}.
+     *
+     * @param buf the buffer to append to
+     * @param str the string to possibly quote
+     */
+    void quoteIfNeeded(StringBuilder buf, String str);
+
     class Builder
     {
         private String _delim = "\t\n\r";
@@ -147,26 +171,4 @@ public interface QuotedStringTokenizer
             return new QuotedStringTokenizerRfc9110(_delim, _optionalWhiteSpace, _returnDelimiters, _returnQuotes, _embeddedQuotes, _escapeOnlyQuote);
         }
     }
-
-    Iterator<String> tokenize(String string);
-
-    /**
-     * Quote a string.
-     * The string is quoted only if quoting is required due to
-     * embedded delimiters, quote characters or the empty string.
-     *
-     * @param s The string to quote.
-     * @return quoted string
-     */
-    String quoteIfNeeded(String s);
-
-    /**
-     * Append into buf the provided string, adding quotes if needed.
-     * <p>
-     * Quoting is determined if any of the characters in the {@code delim} are found in the input {@code str}.
-     *
-     * @param buf the buffer to append to
-     * @param str the string to possibly quote
-     */
-    void quoteIfNeeded(StringBuilder buf, String str);
 }

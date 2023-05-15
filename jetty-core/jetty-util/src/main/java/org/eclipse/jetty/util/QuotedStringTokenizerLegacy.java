@@ -58,6 +58,12 @@ public class QuotedStringTokenizerLegacy implements QuotedStringTokenizer
     }
 
     @Override
+    public boolean needsQuoting(char c)
+    {
+        return LegacyTokenizer.needsQuoting(c, _delim);
+    }
+
+    @Override
     public String quoteIfNeeded(String s)
     {
         return LegacyTokenizer.quoteIfNeeded(s, _delim);
@@ -269,6 +275,11 @@ public class QuotedStringTokenizerLegacy implements QuotedStringTokenizer
             return -1;
         }
 
+        public static boolean needsQuoting(char c, String delim)
+        {
+            return c == '\\' || c == '"' || c == '\'' || Character.isWhitespace(c) || delim.indexOf(c) >= 0;
+        }
+
         /**
          * Quote a string.
          * The string is quoted only if quoting is required due to
@@ -289,7 +300,7 @@ public class QuotedStringTokenizerLegacy implements QuotedStringTokenizer
             for (int i = 0; i < s.length(); i++)
             {
                 char c = s.charAt(i);
-                if (c == '\\' || c == '"' || c == '\'' || Character.isWhitespace(c) || delim.indexOf(c) >= 0)
+                if (needsQuoting(c, delim))
                 {
                     StringBuffer b = new StringBuffer(s.length() + 8);
                     quote(b, s);
