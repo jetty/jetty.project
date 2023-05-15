@@ -147,6 +147,7 @@ public class RemoteInfinispanSessionDataStoreTest extends AbstractSessionDataSto
         ServletContextHandler context = new ServletContextHandler(ServletContextHandler.SESSIONS);
         context.setContextPath("/test");
         context.getSessionHandler().setSessionIdManager(idMgr);
+        idMgr.setWorkerName("");
         SessionDataStoreFactory factory = createSessionDataStoreFactory();
         ((AbstractSessionDataStoreFactory)factory).setGracePeriodSec(GRACE_PERIOD_SEC);
         SessionDataStore store = factory.getSessionDataStore(context.getSessionHandler());

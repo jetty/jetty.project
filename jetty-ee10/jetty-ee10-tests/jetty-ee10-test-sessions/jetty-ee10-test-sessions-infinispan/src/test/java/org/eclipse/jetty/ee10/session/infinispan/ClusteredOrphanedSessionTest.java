@@ -32,10 +32,14 @@ public class ClusteredOrphanedSessionTest extends AbstractClusteredOrphanedSessi
     public WorkDir workDir;
     public InfinispanTestSupport testSupport;
 
+    public ClusteredOrphanedSessionTest()
+    {
+        testSupport = new InfinispanTestSupport(getClass().getSimpleName() + System.nanoTime());
+    }
+
     @BeforeEach
     public void setup() throws Exception
     {
-        testSupport = new InfinispanTestSupport(getClass().getSimpleName() + System.nanoTime());
         testSupport.setup(workDir.getEmptyPathDir());
     }
 
