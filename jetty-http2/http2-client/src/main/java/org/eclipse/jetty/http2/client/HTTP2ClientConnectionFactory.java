@@ -55,7 +55,7 @@ public class HTTP2ClientConnectionFactory implements ClientConnectionFactory
         Scheduler scheduler = client.getScheduler();
         Session.Listener listener = (Session.Listener)context.get(SESSION_LISTENER_CONTEXT_KEY);
         @SuppressWarnings("unchecked")
-        Promise<Session> promise = (Promise<Session>)context.get(SESSION_PROMISE_CONTEXT_KEY);
+        Promise<Session> sessionPromise = (Promise<Session>)context.get(SESSION_PROMISE_CONTEXT_KEY);
 
         Generator generator = new Generator(byteBufferPool, client.getMaxDynamicTableSize(), client.getMaxHeaderBlockFragment());
         FlowControlStrategy flowControl = client.getFlowControlStrategyFactory().newFlowControlStrategy();
@@ -72,7 +72,7 @@ public class HTTP2ClientConnectionFactory implements ClientConnectionFactory
 
         RetainableByteBufferPool retainableByteBufferPool = byteBufferPool.asRetainableByteBufferPool();
         HTTP2ClientConnection connection = new HTTP2ClientConnection(client, retainableByteBufferPool, executor, endPoint,
-            session, client.getInputBufferSize(), promise, listener);
+            session, client.getInputBufferSize(), sessionPromise, listener);
         connection.setUseInputDirectByteBuffers(client.isUseInputDirectByteBuffers());
         connection.setUseOutputDirectByteBuffers(client.isUseOutputDirectByteBuffers());
         connection.addEventListener(connectionListener);
@@ -87,11 +87,11 @@ public class HTTP2ClientConnectionFactory implements ClientConnectionFactory
         private final Promise<Session> promise;
         private final Session.Listener listener;
 
-        private HTTP2ClientConnection(HTTP2Client client, RetainableByteBufferPool retainableByteBufferPool, Executor executor, EndPoint endpoint, HTTP2ClientSession session, int bufferSize, Promise<Session> promise, Session.Listener listener)
+        private HTTP2ClientConnection(HTTP2Client client, RetainableByteBufferPool retainableByteBufferPool, Executor executor, EndPoint endpoint, HTTP2ClientSession session, int bufferSize, Promise<Session> sessionPromise, Session.Listener listener)
         {
             super(retainableByteBufferPool, executor, endpoint, session, bufferSize);
             this.client = client;
-            this.promise = promise;
+            this.promise = sessionPromise;
             this.listener = listener;
         }
 
