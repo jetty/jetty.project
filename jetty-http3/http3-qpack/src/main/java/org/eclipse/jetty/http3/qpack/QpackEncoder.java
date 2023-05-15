@@ -318,43 +318,46 @@ public class QpackEncoder implements Dumpable
      */
     public boolean insert(HttpField field)
     {
-        DynamicTable dynamicTable = _context.getDynamicTable();
-        if (field.getValue() == null)
-            field = new HttpField(field.getHeader(), field.getName(), "");
-
-        // If we should not index this entry or there is no room to insert it, then just return false.
-        boolean canCreateEntry = shouldIndex(field) && dynamicTable.canInsert(field);
-        if (!canCreateEntry)
-            return false;
-
-        // Can we insert by duplicating an existing entry?
-        Entry entry = _context.get(field);
-        if (entry != null)
+        try (AutoLock ignored = lock.lock())
         {
-            int index = _context.indexOf(entry);
+            DynamicTable dynamicTable = _context.getDynamicTable();
+            if (field.getValue() == null)
+                field = new HttpField(field.getHeader(), field.getName(), "");
+
+            // If we should not index this entry or there is no room to insert it, then just return false.
+            boolean canCreateEntry = shouldIndex(field) && dynamicTable.canInsert(field);
+            if (!canCreateEntry)
+                return false;
+
+            // Can we insert by duplicating an existing entry?
+            Entry entry = _context.get(field);
+            if (entry != null)
+            {
+                int index = _context.indexOf(entry);
+                dynamicTable.add(new Entry(field));
+                _instructions.add(new DuplicateInstruction(index));
+                notifyInstructionHandler();
+                return true;
+            }
+
+            // Can we insert by referencing a name?
+            boolean huffman = shouldHuffmanEncode(field);
+            Entry nameEntry = _context.get(field.getName());
+            if (nameEntry != null)
+            {
+                int index = _context.indexOf(nameEntry);
+                dynamicTable.add(new Entry(field));
+                _instructions.add(new IndexedNameEntryInstruction(!nameEntry.isStatic(), index, huffman, field.getValue()));
+                notifyInstructionHandler();
+                return true;
+            }
+
+            // Add the entry without referencing an existing entry.
             dynamicTable.add(new Entry(field));
-            _instructions.add(new DuplicateInstruction(index));
+            _instructions.add(new LiteralNameEntryInstruction(field, huffman));
             notifyInstructionHandler();
             return true;
         }
-
-        // Can we insert by referencing a name?
-        boolean huffman = shouldHuffmanEncode(field);
-        Entry nameEntry = _context.get(field.getName());
-        if (nameEntry != null)
-        {
-            int index = _context.indexOf(nameEntry);
-            dynamicTable.add(new Entry(field));
-            _instructions.add(new IndexedNameEntryInstruction(!nameEntry.isStatic(), index, huffman, field.getValue()));
-            notifyInstructionHandler();
-            return true;
-        }
-
-        // Add the entry without referencing an existing entry.
-        dynamicTable.add(new Entry(field));
-        _instructions.add(new LiteralNameEntryInstruction(field, huffman));
-        notifyInstructionHandler();
-        return true;
     }
 
     /**
@@ -366,8 +369,11 @@ public class QpackEncoder implements Dumpable
      */
     public void streamCancellation(long streamId)
     {
-        _instructionHandler.onStreamCancellation(streamId);
-        notifyInstructionHandler();
+        try (AutoLock ignored = lock.lock())
+        {
+            _instructionHandler.onStreamCancellation(streamId);
+            notifyInstructionHandler();
+        }
     }
 
     protected boolean shouldIndex(HttpField httpField)

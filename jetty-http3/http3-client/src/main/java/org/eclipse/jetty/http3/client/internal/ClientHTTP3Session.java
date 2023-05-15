@@ -67,6 +67,7 @@ public class ClientHTTP3Session extends ClientProtocolSession
         QuicStreamEndPoint encoderEndPoint = openInstructionEndPoint(encoderStreamId);
         InstructionFlusher encoderInstructionFlusher = new InstructionFlusher(quicSession, encoderEndPoint, EncoderStreamConnection.STREAM_TYPE);
         encoder = new QpackEncoder(new InstructionHandler(encoderInstructionFlusher));
+        encoder.setMaxHeadersSize(configuration.getMaxRequestHeadersSize());
         addBean(encoder);
         if (LOG.isDebugEnabled())
             LOG.debug("created encoder stream #{} on {}", encoderStreamId, encoderEndPoint);
@@ -154,8 +155,6 @@ public class ClientHTTP3Session extends ClientProtocolSession
             else if (key == SettingsFrame.MAX_BLOCKED_STREAMS)
                 decoder.setMaxBlockedStreams(value.intValue());
         });
-
-        encoder.setMaxHeadersSize(configuration.getMaxRequestHeadersSize());
 
         // Queue the mandatory SETTINGS frame.
         SettingsFrame frame = new SettingsFrame(settings);
