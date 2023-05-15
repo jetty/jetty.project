@@ -13,13 +13,14 @@
 
 package org.eclipse.jetty.quic.server;
 
-import java.io.File;
 import java.io.IOException;
 import java.net.InetSocketAddress;
 import java.nio.channels.DatagramChannel;
 import java.nio.channels.SelectableChannel;
 import java.nio.channels.SelectionKey;
 import java.nio.file.Files;
+import java.nio.file.Path;
+import java.security.KeyStore;
 import java.util.EventListener;
 import java.util.List;
 import java.util.Set;
@@ -60,8 +61,8 @@ public class QuicServerConnector extends AbstractNetworkConnector
     private final QuicSessionContainer container = new QuicSessionContainer();
     private final ServerDatagramSelectorManager selectorManager;
     private final SslContextFactory.Server sslContextFactory;
-    private File privateKeyFile;
-    private File certificateChainFile;
+    private Path privateKeyPath;
+    private Path certificateChainPath;
     private volatile DatagramChannel datagramChannel;
     private volatile int localPort = -1;
     private int inputBufferSize = 2048;
@@ -163,19 +164,19 @@ public class QuicServerConnector extends AbstractNetworkConnector
             throw new IllegalStateException("Invalid KeyStore: no aliases");
         String alias = sslContextFactory.getCertAlias();
         if (alias == null)
-            alias = aliases.stream().findFirst().orElse("mykey");
-        char[] keyStorePassword = sslContextFactory.getKeyStorePassword().toCharArray();
+            alias = aliases.stream().findFirst().orElseThrow();
         String keyManagerPassword = sslContextFactory.getKeyManagerPassword();
+        char[] password = keyManagerPassword == null ? sslContextFactory.getKeyStorePassword().toCharArray() : keyManagerPassword.toCharArray();
+
+        KeyStore keyStore = sslContextFactory.getKeyStore();
         SSLKeyPair keyPair = new SSLKeyPair(
-            sslContextFactory.getKeyStoreResource().getFile(),
-            sslContextFactory.getKeyStoreType(),
-            keyStorePassword,
+            keyStore,
             alias,
-            keyManagerPassword == null ? keyStorePassword : keyManagerPassword.toCharArray()
+            password
         );
-        File[] pemFiles = keyPair.export(new File(System.getProperty("java.io.tmpdir")));
-        privateKeyFile = pemFiles[0];
-        certificateChainFile = pemFiles[1];
+        Path[] pemFiles = keyPair.export(Path.of(System.getProperty("java.io.tmpdir")));
+        privateKeyPath = pemFiles[0];
+        certificateChainPath = pemFiles[1];
     }
 
     @Override
@@ -211,8 +212,8 @@ public class QuicServerConnector extends AbstractNetworkConnector
     QuicheConfig newQuicheConfig()
     {
         QuicheConfig quicheConfig = new QuicheConfig();
-        quicheConfig.setPrivKeyPemPath(privateKeyFile.getPath());
-        quicheConfig.setCertChainPemPath(certificateChainFile.getPath());
+        quicheConfig.setPrivKeyPemPath(privateKeyPath.toString());
+        quicheConfig.setCertChainPemPath(certificateChainPath.toString());
         quicheConfig.setVerifyPeer(quicConfiguration.isVerifyPeerCertificates());
         // Idle timeouts must not be managed by Quiche.
         quicheConfig.setMaxIdleTimeout(0L);
@@ -240,8 +241,8 @@ public class QuicServerConnector extends AbstractNetworkConnector
     @Override
     protected void doStop() throws Exception
     {
-        deleteFile(privateKeyFile);
-        deleteFile(certificateChainFile);
+        deleteFile(privateKeyPath);
+        deleteFile(certificateChainPath);
 
         // We want the DatagramChannel to be stopped by the SelectorManager.
         super.doStop();
@@ -254,12 +255,12 @@ public class QuicServerConnector extends AbstractNetworkConnector
             selectorManager.removeEventListener(l);
     }
 
-    private void deleteFile(File file)
+    private void deleteFile(Path file)
     {
         try
         {
             if (file != null)
-                Files.delete(file.toPath());
+                Files.delete(file);
         }
         catch (IOException x)
         {
