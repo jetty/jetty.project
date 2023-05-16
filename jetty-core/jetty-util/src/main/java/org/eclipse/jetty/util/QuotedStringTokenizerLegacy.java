@@ -31,7 +31,7 @@ public class QuotedStringTokenizerLegacy implements QuotedStringTokenizer
                                 boolean returnQuotes,
                                 boolean singleQuotes)
     {
-        _delim = delim;
+        _delim = delim == null ? "\t\n\r" : delim;
         _returnDelimiters = returnDelimiters;
         _returnQuotes = returnQuotes;
         _singleQuotes = singleQuotes;

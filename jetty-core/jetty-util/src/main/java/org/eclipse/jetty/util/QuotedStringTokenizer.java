@@ -205,9 +205,6 @@ public interface QuotedStringTokenizer
          */
         public QuotedStringTokenizer build()
         {
-            if (StringUtil.isEmpty(_delim))
-                throw new IllegalArgumentException("Delimiters must be provided");
-
             if (_legacy)
             {
                 if (_optionalWhiteSpace)
@@ -218,6 +215,8 @@ public interface QuotedStringTokenizer
                     throw new IllegalArgumentException("EmbeddedQuotes must be used with legacy");
                 return new QuotedStringTokenizerLegacy(_delim, _returnDelimiters, _returnQuotes, _singleQuotes);
             }
+            if (StringUtil.isEmpty(_delim))
+                throw new IllegalArgumentException("Delimiters must be provided");
             if (_singleQuotes)
                 throw new IllegalArgumentException("Single quotes not supported by RFC9110");
             return new QuotedStringTokenizerRfc9110(_delim, _optionalWhiteSpace, _returnDelimiters, _returnQuotes, _embeddedQuotes, _escapeOnlyQuote);
