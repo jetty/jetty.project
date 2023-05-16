@@ -286,7 +286,7 @@ public class LowLevelQuicheTest
         for (String proto : clientQuicheConfig.getApplicationProtos())
             protosLen += 1 + proto.getBytes(LibQuiche.CHARSET).length;
 
-        drainServerToFeedClient(entry, 300 + protosLen);
+        drainServerToFeedClient(entry, 420 + protosLen);
         assertThat(serverQuicheConnection.isConnectionEstablished(), is(false));
         assertThat(clientQuicheConnection.isConnectionEstablished(), is(true));
 
