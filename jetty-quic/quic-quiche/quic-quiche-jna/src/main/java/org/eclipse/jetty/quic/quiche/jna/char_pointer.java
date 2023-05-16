@@ -23,4 +23,9 @@ public class char_pointer extends PointerByReference
     {
         return new String(getValue().getByteArray(0, len), charset);
     }
+
+    public byte[] getValueAsBytes(int len)
+    {
+        return getValue().getByteArray(0, len);
+    }
 }

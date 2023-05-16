@@ -483,6 +483,31 @@ public class ForeignIncubatorQuicheConnection extends QuicheConnection
         }
     }
 
+    public byte[] getPeerCertificate()
+    {
+        try (AutoLock ignore = lock.lock())
+        {
+            if (quicheConn == null)
+                throw new IllegalStateException("connection was released");
+
+            try (ResourceScope scope = ResourceScope.newConfinedScope())
+            {
+                MemorySegment outSegment = MemorySegment.allocateNative(CLinker.C_POINTER, scope);
+                MemorySegment outLenSegment = MemorySegment.allocateNative(CLinker.C_LONG, scope);
+                quiche_h.quiche_conn_peer_cert(quicheConn, outSegment.address(), outLenSegment.address());
+
+                long outLen = getLong(outLenSegment);
+                if (outLen == 0L)
+                    return null;
+                byte[] out = new byte[(int)outLen];
+                // dereference outSegment pointer
+                MemoryAddress memoryAddress = MemoryAddress.ofLong(getLong(outSegment));
+                memoryAddress.asSegment(outLen, ResourceScope.globalScope()).asByteBuffer().get(out);
+                return out;
+            }
+        }
+    }
+
     @Override
     protected List<Long> iterableStreamIds(boolean write)
     {
