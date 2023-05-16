@@ -125,7 +125,7 @@ public abstract class HTTP3Session extends ContainerLifeCycle implements Session
 
         boolean failStreams = false;
         boolean sendGoAway = false;
-        try (AutoLock l = lock.lock())
+        try (AutoLock ignored = lock.lock())
         {
             switch (closeState)
             {
@@ -231,7 +231,7 @@ public abstract class HTTP3Session extends ContainerLifeCycle implements Session
     public CompletableFuture<Void> shutdown()
     {
         CompletableFuture<Void> result;
-        try (AutoLock l = lock.lock())
+        try (AutoLock ignored = lock.lock())
         {
             if (shutdown != null)
                 return shutdown;
@@ -287,7 +287,7 @@ public abstract class HTTP3Session extends ContainerLifeCycle implements Session
     private HTTP3Stream newHTTP3Stream(QuicStreamEndPoint endPoint, Consumer<Throwable> fail, boolean local)
     {
         Throwable failure = null;
-        try (AutoLock l = lock.lock())
+        try (AutoLock ignored = lock.lock())
         {
             if (closeState == CloseState.NOT_CLOSED)
                 streamCount.incrementAndGet();
@@ -349,7 +349,7 @@ public abstract class HTTP3Session extends ContainerLifeCycle implements Session
     {
         Map<Long, Long> settings = notifyPreface();
         if (LOG.isDebugEnabled())
-            LOG.debug("produced settings {} on {}", settings, this);
+            LOG.debug("application produced settings {} on {}", settings, this);
         return settings;
     }
 
@@ -369,32 +369,7 @@ public abstract class HTTP3Session extends ContainerLifeCycle implements Session
     @Override
     public void onSettings(SettingsFrame frame)
     {
-        if (LOG.isDebugEnabled())
-            LOG.debug("received {} on {}", frame, this);
-
-        frame.getSettings().forEach((key, value) ->
-        {
-            if (key == SettingsFrame.MAX_TABLE_CAPACITY)
-                onSettingMaxTableCapacity(value);
-            else if (key == SettingsFrame.MAX_FIELD_SECTION_SIZE)
-                onSettingMaxFieldSectionSize(value);
-            else if (key == SettingsFrame.MAX_BLOCKED_STREAMS)
-                onSettingMaxBlockedStreams(value);
-        });
-
         notifySettings(frame);
-    }
-
-    protected void onSettingMaxTableCapacity(long value)
-    {
-    }
-
-    protected void onSettingMaxFieldSectionSize(long value)
-    {
-    }
-
-    protected void onSettingMaxBlockedStreams(long value)
-    {
     }
 
     private void notifySettings(SettingsFrame frame)
@@ -435,7 +410,7 @@ public abstract class HTTP3Session extends ContainerLifeCycle implements Session
     }
 
     @Override
-    public void onHeaders(long streamId, HeadersFrame frame)
+    public void onHeaders(long streamId, HeadersFrame frame, boolean wasBlocked)
     {
         MetaData metaData = frame.getMetaData();
         if (metaData.isRequest() || metaData.isResponse())
@@ -480,7 +455,7 @@ public abstract class HTTP3Session extends ContainerLifeCycle implements Session
             LOG.debug("received {} on {}", frame, this);
 
         boolean failStreams = false;
-        try (AutoLock l = lock.lock())
+        try (AutoLock ignored = lock.lock())
         {
             switch (closeState)
             {
@@ -591,7 +566,7 @@ public abstract class HTTP3Session extends ContainerLifeCycle implements Session
     public boolean onIdleTimeout()
     {
         boolean notify = false;
-        try (AutoLock l = lock.lock())
+        try (AutoLock ignored = lock.lock())
         {
             switch (closeState)
             {
@@ -647,7 +622,7 @@ public abstract class HTTP3Session extends ContainerLifeCycle implements Session
     public void inwardClose(long error, String reason)
     {
         GoAwayFrame goAwayFrame = null;
-        try (AutoLock l = lock.lock())
+        try (AutoLock ignored = lock.lock())
         {
             switch (closeState)
             {
@@ -751,7 +726,7 @@ public abstract class HTTP3Session extends ContainerLifeCycle implements Session
         streamTimeouts.destroy();
         // Notify the shutdown completable.
         CompletableFuture<Void> shutdown;
-        try (AutoLock l = lock.lock())
+        try (AutoLock ignored = lock.lock())
         {
             shutdown = this.shutdown;
         }
@@ -762,7 +737,7 @@ public abstract class HTTP3Session extends ContainerLifeCycle implements Session
     private void tryRunZeroStreamsAction()
     {
         Runnable action = null;
-        try (AutoLock l = lock.lock())
+        try (AutoLock ignored = lock.lock())
         {
             long count = streamCount.get();
             if (count > 0)
@@ -835,7 +810,7 @@ public abstract class HTTP3Session extends ContainerLifeCycle implements Session
         // A close at the QUIC level does not allow any
         // data to be sent, update the state and notify.
         boolean notifyFailure;
-        try (AutoLock l = lock.lock())
+        try (AutoLock ignored = lock.lock())
         {
             notifyFailure = closeState == CloseState.NOT_CLOSED;
             closeState = CloseState.CLOSED;

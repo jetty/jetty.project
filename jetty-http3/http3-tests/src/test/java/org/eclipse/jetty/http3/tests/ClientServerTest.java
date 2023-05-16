@@ -26,6 +26,7 @@ import org.eclipse.jetty.http.HttpMethod;
 import org.eclipse.jetty.http.HttpStatus;
 import org.eclipse.jetty.http.HttpVersion;
 import org.eclipse.jetty.http.MetaData;
+import org.eclipse.jetty.http3.HTTP3Configuration;
 import org.eclipse.jetty.http3.api.Session;
 import org.eclipse.jetty.http3.api.Stream;
 import org.eclipse.jetty.http3.client.internal.HTTP3SessionClient;
@@ -42,9 +43,12 @@ import org.junit.jupiter.api.Test;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.ValueSource;
 
+import static org.awaitility.Awaitility.await;
+import static org.hamcrest.Matchers.notNullValue;
 import static org.junit.jupiter.api.Assertions.assertArrayEquals;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertNotNull;
+import static org.junit.jupiter.api.Assertions.assertNull;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
 public class ClientServerTest extends AbstractClientServerTest
@@ -135,15 +139,15 @@ public class ClientServerTest extends AbstractClientServerTest
         assertTrue(settingsLatch.await(5, TimeUnit.SECONDS));
 
         HTTP3SessionServer serverSession = serverSessionRef.get();
-        assertEquals(maxTableCapacity.getValue(), serverSession.getProtocolSession().getQpackEncoder().getCapacity());
+        assertEquals(maxTableCapacity.getValue(), serverSession.getProtocolSession().getQpackEncoder().getMaxTableCapacity());
         assertEquals(maxBlockedStreams.getValue(), serverSession.getProtocolSession().getQpackEncoder().getMaxBlockedStreams());
         assertEquals(maxBlockedStreams.getValue(), serverSession.getProtocolSession().getQpackDecoder().getMaxBlockedStreams());
-        assertEquals(maxHeaderSize.getValue(), serverSession.getProtocolSession().getQpackDecoder().getMaxHeaderSize());
+        assertEquals(maxHeaderSize.getValue(), serverSession.getProtocolSession().getQpackDecoder().getMaxHeadersSize());
 
-        assertEquals(maxTableCapacity.getValue(), clientSession.getProtocolSession().getQpackEncoder().getCapacity());
+        assertEquals(maxTableCapacity.getValue(), clientSession.getProtocolSession().getQpackEncoder().getMaxTableCapacity());
         assertEquals(maxBlockedStreams.getValue(), clientSession.getProtocolSession().getQpackEncoder().getMaxBlockedStreams());
         assertEquals(maxBlockedStreams.getValue(), clientSession.getProtocolSession().getQpackDecoder().getMaxBlockedStreams());
-        assertEquals(maxHeaderSize.getValue(), clientSession.getProtocolSession().getQpackDecoder().getMaxHeaderSize());
+        assertEquals(maxHeaderSize.getValue(), clientSession.getProtocolSession().getQpackDecoder().getMaxHeadersSize());
     }
 
     @Test
@@ -370,7 +374,11 @@ public class ClientServerTest extends AbstractClientServerTest
         });
 
         int maxRequestHeadersSize = 128;
-        http3Client.getHTTP3Configuration().setMaxRequestHeadersSize(maxRequestHeadersSize);
+        HTTP3Configuration http3Configuration = http3Client.getHTTP3Configuration();
+        http3Configuration.setMaxRequestHeadersSize(maxRequestHeadersSize);
+        // Disable the dynamic table, otherwise the large header
+        // is sent as string literal on the encoder stream.
+        http3Configuration.setInitialEncoderTableCapacity(0);
         Session.Client clientSession = newSession(new Session.Client.Listener() {});
 
         CountDownLatch requestFailureLatch = new CountDownLatch(1);
@@ -406,10 +414,17 @@ public class ClientServerTest extends AbstractClientServerTest
     public void testResponseHeadersTooLarge() throws Exception
     {
         int maxResponseHeadersSize = 128;
+        CountDownLatch settingsLatch = new CountDownLatch(2);
         AtomicReference<Session> serverSessionRef = new AtomicReference<>();
         CountDownLatch responseFailureLatch = new CountDownLatch(1);
         start(new Session.Server.Listener()
         {
+            @Override
+            public void onSettings(Session session, SettingsFrame frame)
+            {
+                settingsLatch.countDown();
+            }
+
             @Override
             public Stream.Server.Listener onRequest(Stream.Server stream, HeadersFrame frame)
             {
@@ -441,9 +456,22 @@ public class ClientServerTest extends AbstractClientServerTest
         });
         AbstractHTTP3ServerConnectionFactory h3 = connector.getConnectionFactory(AbstractHTTP3ServerConnectionFactory.class);
         assertNotNull(h3);
-        h3.getHTTP3Configuration().setMaxResponseHeadersSize(maxResponseHeadersSize);
+        HTTP3Configuration http3Configuration = h3.getHTTP3Configuration();
+        // Disable the dynamic table, otherwise the large header
+        // is sent as string literal on the encoder stream.
+        http3Configuration.setInitialEncoderTableCapacity(0);
+        http3Configuration.setMaxResponseHeadersSize(maxResponseHeadersSize);
 
-        Session.Client clientSession = newSession(new Session.Client.Listener() {});
+        Session.Client clientSession = newSession(new Session.Client.Listener()
+        {
+            @Override
+            public void onSettings(Session session, SettingsFrame frame)
+            {
+                settingsLatch.countDown();
+            }
+        });
+
+        assertTrue(settingsLatch.await(5, TimeUnit.SECONDS));
 
         CountDownLatch streamFailureLatch = new CountDownLatch(1);
         clientSession.newRequest(new HeadersFrame(newRequest("/large"), true), new Stream.Client.Listener()
@@ -474,5 +502,118 @@ public class ClientServerTest extends AbstractClientServerTest
         assertTrue(responseLatch.await(5, TimeUnit.SECONDS));
     }
 
-    // TODO: write a test calling readData() from onRequest() (not from onDataAvailable()).
+    @Test
+    public void testHeadersThenTrailers() throws Exception
+    {
+        CountDownLatch requestLatch = new CountDownLatch(1);
+        CountDownLatch trailerLatch = new CountDownLatch(1);
+        start(new Session.Server.Listener()
+        {
+            @Override
+            public Stream.Server.Listener onRequest(Stream.Server stream, HeadersFrame frame)
+            {
+                stream.demand();
+                requestLatch.countDown();
+                return new Stream.Server.Listener()
+                {
+                    @Override
+                    public void onDataAvailable(Stream.Server stream)
+                    {
+                        // TODO: we should not be needing this!!!
+                        Stream.Data data = stream.readData();
+                        assertNull(data);
+                        stream.demand();
+                    }
+
+                    @Override
+                    public void onTrailer(Stream.Server stream, HeadersFrame frame)
+                    {
+                        trailerLatch.countDown();
+                        stream.respond(new HeadersFrame(new MetaData.Response(HttpVersion.HTTP_3, HttpStatus.OK_200, HttpFields.EMPTY), true));
+                    }
+                };
+            }
+        });
+
+        Session.Client clientSession = newSession(new Session.Client.Listener() {});
+
+        CountDownLatch responseLatch = new CountDownLatch(1);
+        Stream clientStream = clientSession.newRequest(new HeadersFrame(newRequest("/large"), false), new Stream.Client.Listener()
+            {
+                @Override
+                public void onResponse(Stream.Client stream, HeadersFrame frame)
+                {
+                    MetaData.Response response = (MetaData.Response)frame.getMetaData();
+                    assertEquals(HttpStatus.OK_200, response.getStatus());
+                    responseLatch.countDown();
+                }
+            })
+            .get(5, TimeUnit.SECONDS);
+
+        assertTrue(requestLatch.await(5, TimeUnit.SECONDS));
+
+        clientStream.trailer(new HeadersFrame(new MetaData(HttpVersion.HTTP_3, HttpFields.EMPTY), true));
+
+        assertTrue(trailerLatch.await(5, TimeUnit.SECONDS));
+        assertTrue(responseLatch.await(5, TimeUnit.SECONDS));
+    }
+
+    @Test
+    public void testReadDataFromOnRequest() throws Exception
+    {
+        CountDownLatch requestLatch = new CountDownLatch(1);
+        CountDownLatch data1Latch = new CountDownLatch(1);
+        start(new Session.Server.Listener()
+        {
+            @Override
+            public Stream.Server.Listener onRequest(Stream.Server stream, HeadersFrame frame)
+            {
+                requestLatch.countDown();
+                Stream.Data data = await().atMost(5, TimeUnit.SECONDS).until(stream::readData, notNullValue());
+                data.complete();
+                stream.demand();
+                data1Latch.countDown();
+                return new Stream.Server.Listener()
+                {
+                    @Override
+                    public void onDataAvailable(Stream.Server stream)
+                    {
+                        Stream.Data data = stream.readData();
+                        if (data == null)
+                        {
+                            stream.demand();
+                            return;
+                        }
+                        data.complete();
+                        if (!data.isLast())
+                        {
+                            stream.demand();
+                            return;
+                        }
+                        stream.respond(new HeadersFrame(new MetaData.Response(HttpVersion.HTTP_3, HttpStatus.OK_200, HttpFields.EMPTY), true));
+                    }
+                };
+            }
+        });
+
+        Session.Client clientSession = newSession(new Session.Client.Listener() {});
+
+        CountDownLatch responseLatch = new CountDownLatch(1);
+        Stream clientStream = clientSession.newRequest(new HeadersFrame(newRequest("/large"), false), new Stream.Client.Listener()
+            {
+                @Override
+                public void onResponse(Stream.Client stream, HeadersFrame frame)
+                {
+                    responseLatch.countDown();
+                }
+            })
+            .get(5, TimeUnit.SECONDS);
+        assertTrue(requestLatch.await(5, TimeUnit.SECONDS));
+
+        clientStream.data(new DataFrame(ByteBuffer.allocate(1024), false));
+        assertTrue(data1Latch.await(555, TimeUnit.SECONDS));
+
+        clientStream.data(new DataFrame(ByteBuffer.allocate(512), true));
+        assertTrue(responseLatch.await(5, TimeUnit.SECONDS));
+    }
 }

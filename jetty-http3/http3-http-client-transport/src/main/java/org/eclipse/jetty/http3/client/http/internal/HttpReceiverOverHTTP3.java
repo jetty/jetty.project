@@ -59,9 +59,24 @@ public class HttpReceiverOverHTTP3 extends HttpReceiver implements Stream.Client
             return;
 
         if (notifySuccess)
+        {
             responseSuccess(exchange);
+        }
         else
-            getHttpChannel().getStream().demand();
+        {
+            Stream stream = getHttpChannel().getStream();
+            if (LOG.isDebugEnabled())
+                LOG.debug("Demanding from {} in {}", stream, this);
+            if (stream == null)
+                return;
+            stream.demand();
+        }
+    }
+
+    @Override
+    public void onNewStream(Stream.Client stream)
+    {
+        getHttpChannel().setStream(stream);
     }
 
     @Override

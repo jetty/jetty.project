@@ -48,6 +48,6 @@ public class SetCapacityInstruction implements Instruction
     @Override
     public String toString()
     {
-        return String.format("%s@%x", getClass().getSimpleName(), hashCode());
+        return String.format("%s@%x[capacity=%d]", getClass().getSimpleName(), hashCode(), getCapacity());
     }
 }

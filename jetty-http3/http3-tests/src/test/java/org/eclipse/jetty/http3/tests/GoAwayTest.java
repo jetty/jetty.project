@@ -1177,6 +1177,9 @@ public class GoAwayTest extends AbstractClientServerTest
 
         assertTrue(settingsLatch.await(5, TimeUnit.SECONDS));
 
+        // Wait a bit more to allow the unidirectional streams to be setup.
+        Thread.sleep(1000);
+
         // Stopping the HttpClient will also stop the HTTP3Client.
         httpClient.stop();
 
@@ -1233,6 +1236,9 @@ public class GoAwayTest extends AbstractClientServerTest
         });
 
         assertTrue(settingsLatch.await(5, TimeUnit.SECONDS));
+
+        // Wait a bit more to allow the unidirectional streams to be setup.
+        Thread.sleep(1000);
 
         server.stop();
 

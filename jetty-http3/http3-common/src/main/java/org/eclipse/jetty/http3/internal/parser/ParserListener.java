@@ -20,7 +20,7 @@ import org.eclipse.jetty.http3.frames.SettingsFrame;
 
 public interface ParserListener
 {
-    public default void onHeaders(long streamId, HeadersFrame frame)
+    public default void onHeaders(long streamId, HeadersFrame frame, boolean wasBlocked)
     {
     }
 
@@ -54,9 +54,9 @@ public interface ParserListener
         }
 
         @Override
-        public void onHeaders(long streamId, HeadersFrame frame)
+        public void onHeaders(long streamId, HeadersFrame frame, boolean wasBlocked)
         {
-            listener.onHeaders(streamId, frame);
+            listener.onHeaders(streamId, frame, wasBlocked);
         }
 
         @Override

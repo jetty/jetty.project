@@ -16,6 +16,7 @@ package org.eclipse.jetty.http3.internal;
 import java.nio.ByteBuffer;
 import java.util.concurrent.Executor;
 
+import org.eclipse.jetty.http3.internal.parser.ParserListener;
 import org.eclipse.jetty.http3.qpack.QpackEncoder;
 import org.eclipse.jetty.http3.qpack.QpackException;
 import org.eclipse.jetty.io.ByteBufferPool;
@@ -28,9 +29,9 @@ public class DecoderStreamConnection extends InstructionStreamConnection
 
     private final QpackEncoder encoder;
 
-    public DecoderStreamConnection(EndPoint endPoint, Executor executor, ByteBufferPool byteBufferPool, QpackEncoder encoder)
+    public DecoderStreamConnection(EndPoint endPoint, Executor executor, ByteBufferPool byteBufferPool, QpackEncoder encoder, ParserListener listener)
     {
-        super(endPoint, executor, byteBufferPool);
+        super(endPoint, executor, byteBufferPool, listener);
         this.encoder = encoder;
     }
 
