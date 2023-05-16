@@ -14,7 +14,6 @@
 package org.eclipse.jetty.quic.quiche;
 
 import java.io.IOException;
-import java.io.InputStream;
 import java.io.OutputStream;
 import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
@@ -22,56 +21,62 @@ import java.nio.file.Path;
 import java.nio.file.attribute.PosixFilePermission;
 import java.security.Key;
 import java.security.KeyStore;
-import java.security.KeyStoreException;
-import java.security.NoSuchAlgorithmException;
-import java.security.UnrecoverableKeyException;
 import java.security.cert.Certificate;
 import java.security.cert.CertificateEncodingException;
-import java.security.cert.CertificateException;
 import java.util.Base64;
+import java.util.Enumeration;
 import java.util.Set;
 
-import org.eclipse.jetty.util.resource.Resource;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-public class SSLKeyPair
+public class PemExporter
 {
-    private static final Logger LOG = LoggerFactory.getLogger(SSLKeyPair.class);
+    private static final Logger LOG = LoggerFactory.getLogger(PemExporter.class);
 
     private static final byte[] BEGIN_KEY = "-----BEGIN PRIVATE KEY-----".getBytes(StandardCharsets.US_ASCII);
     private static final byte[] END_KEY = "-----END PRIVATE KEY-----".getBytes(StandardCharsets.US_ASCII);
     private static final byte[] BEGIN_CERT = "-----BEGIN CERTIFICATE-----".getBytes(StandardCharsets.US_ASCII);
     private static final byte[] END_CERT = "-----END CERTIFICATE-----".getBytes(StandardCharsets.US_ASCII);
     private static final byte[] LINE_SEPARATOR = System.getProperty("line.separator").getBytes(StandardCharsets.US_ASCII);
-    private static final int LINE_LENGTH = 64;
+    private static final Base64.Encoder ENCODER = Base64.getMimeEncoder(64, LINE_SEPARATOR);
 
-    private final Base64.Encoder encoder = Base64.getMimeEncoder(LINE_LENGTH, LINE_SEPARATOR);
-    private final Key key;
-    private final Certificate[] certChain;
-    private final String alias;
-
-    public SSLKeyPair(KeyStore keyStore, String alias, char[] keyPassword) throws KeyStoreException, UnrecoverableKeyException, NoSuchAlgorithmException
+    private PemExporter()
     {
-        this.alias = alias;
-        this.key = keyStore.getKey(alias, keyPassword);
-        this.certChain = keyStore.getCertificateChain(alias);
+    }
+
+    public static Path exportTrustStore(KeyStore keyStore, Path targetFolder) throws Exception
+    {
+        if (!Files.isDirectory(targetFolder))
+            throw new IllegalArgumentException("Target folder is not a directory: " + targetFolder);
+
+        Path path = Files.createTempFile(targetFolder, "truststore-", ".crt");
+        try (OutputStream os = Files.newOutputStream(path))
+        {
+            Enumeration<String> aliases = keyStore.aliases();
+            while (aliases.hasMoreElements())
+            {
+                String alias = aliases.nextElement();
+                Certificate cert = keyStore.getCertificate(alias);
+                writeAsPEM(os, cert);
+            }
+        }
+        return path;
     }
 
     /**
      * @return [0] is the key file, [1] is the cert file.
      */
-    public Path[] export(Path targetFolder) throws Exception
+    public static Path[] exportKeyPair(KeyStore keyStore, String alias, char[] keyPassword, Path targetFolder) throws Exception
     {
         if (!Files.isDirectory(targetFolder))
             throw new IllegalArgumentException("Target folder is not a directory: " + targetFolder);
 
         Path[] paths = new Path[2];
-        paths[0] = targetFolder.resolve(alias + ".key");
         paths[1] = targetFolder.resolve(alias + ".crt");
-
         try (OutputStream os = Files.newOutputStream(paths[1]))
         {
+            Certificate[] certChain = keyStore.getCertificateChain(alias);
             for (Certificate cert : certChain)
                 writeAsPEM(os, cert);
             Files.setPosixFilePermissions(paths[1], Set.of(PosixFilePermission.OWNER_READ, PosixFilePermission.OWNER_WRITE));
@@ -82,8 +87,10 @@ public class SSLKeyPair
             if (LOG.isDebugEnabled())
                 LOG.debug("Unable to set Posix file permissions", e);
         }
+        paths[0] = targetFolder.resolve(alias + ".key");
         try (OutputStream os = Files.newOutputStream(paths[0]))
         {
+            Key key = keyStore.getKey(alias, keyPassword);
             writeAsPEM(os, key);
             Files.setPosixFilePermissions(paths[0], Set.of(PosixFilePermission.OWNER_READ, PosixFilePermission.OWNER_WRITE));
         }
@@ -93,13 +100,12 @@ public class SSLKeyPair
             if (LOG.isDebugEnabled())
                 LOG.debug("Unable to set Posix file permissions", e);
         }
-
         return paths;
     }
 
-    private void writeAsPEM(OutputStream outputStream, Key key) throws IOException
+    private static void writeAsPEM(OutputStream outputStream, Key key) throws IOException
     {
-        byte[] encoded = encoder.encode(key.getEncoded());
+        byte[] encoded = ENCODER.encode(key.getEncoded());
         outputStream.write(BEGIN_KEY);
         outputStream.write(LINE_SEPARATOR);
         outputStream.write(encoded);
@@ -108,9 +114,9 @@ public class SSLKeyPair
         outputStream.write(LINE_SEPARATOR);
     }
 
-    private void writeAsPEM(OutputStream outputStream, Certificate certificate) throws CertificateEncodingException, IOException
+    private static void writeAsPEM(OutputStream outputStream, Certificate certificate) throws CertificateEncodingException, IOException
     {
-        byte[] encoded = encoder.encode(certificate.getEncoded());
+        byte[] encoded = ENCODER.encode(certificate.getEncoded());
         outputStream.write(BEGIN_CERT);
         outputStream.write(LINE_SEPARATOR);
         outputStream.write(encoded);

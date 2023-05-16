@@ -28,6 +28,7 @@ import jdk.incubator.foreign.CLinker;
 import jdk.incubator.foreign.MemoryAddress;
 import jdk.incubator.foreign.MemorySegment;
 import jdk.incubator.foreign.ResourceScope;
+import org.eclipse.jetty.quic.quiche.Quiche;
 import org.eclipse.jetty.quic.quiche.Quiche.quiche_error;
 import org.eclipse.jetty.quic.quiche.QuicheConfig;
 import org.eclipse.jetty.quic.quiche.QuicheConnection;
@@ -148,7 +149,7 @@ public class ForeignIncubatorQuicheConnection extends QuicheConnection
 
             MemorySegment localSockaddr = sockaddr.convert(local, scope);
             MemorySegment peerSockaddr = sockaddr.convert(peer, scope);
-            MemoryAddress quicheConn = quiche_h.quiche_connect(CLinker.toCString(peer.getHostName(), scope), scid, scid.byteSize(), localSockaddr, localSockaddr.byteSize(), peerSockaddr, peerSockaddr.byteSize(), libQuicheConfig);
+            MemoryAddress quicheConn = quiche_h.quiche_connect(CLinker.toCString(peer.getHostString(), scope), scid, scid.byteSize(), localSockaddr, localSockaddr.byteSize(), peerSockaddr, peerSockaddr.byteSize(), libQuicheConfig);
             ForeignIncubatorQuicheConnection connection = new ForeignIncubatorQuicheConnection(quicheConn, libQuicheConfig, scope);
             keepScope = true;
             return connection;
@@ -170,13 +171,29 @@ public class ForeignIncubatorQuicheConnection extends QuicheConnection
         if (verifyPeer != null)
             quiche_h.quiche_config_verify_peer(quicheConfig, verifyPeer ? C_TRUE : C_FALSE);
 
+        String trustedCertsPemPath = config.getTrustedCertsPemPath();
+        if (trustedCertsPemPath != null)
+        {
+            int rc = quiche_h.quiche_config_load_verify_locations_from_file(quicheConfig, CLinker.toCString(trustedCertsPemPath, scope).address());
+            if (rc < 0)
+                throw new IOException("Error loading trusted certificates file " + trustedCertsPemPath + " : " + Quiche.quiche_error.errToString(rc));
+        }
+
         String certChainPemPath = config.getCertChainPemPath();
         if (certChainPemPath != null)
-            quiche_h.quiche_config_load_cert_chain_from_pem_file(quicheConfig, CLinker.toCString(certChainPemPath, scope).address());
+        {
+            int rc = quiche_h.quiche_config_load_cert_chain_from_pem_file(quicheConfig, CLinker.toCString(certChainPemPath, scope).address());
+            if (rc < 0)
+                throw new IOException("Error loading certificate chain file " + certChainPemPath + " : " + Quiche.quiche_error.errToString(rc));
+        }
 
         String privKeyPemPath = config.getPrivKeyPemPath();
         if (privKeyPemPath != null)
-            quiche_h.quiche_config_load_priv_key_from_pem_file(quicheConfig, CLinker.toCString(privKeyPemPath, scope).address());
+        {
+            int rc = quiche_h.quiche_config_load_priv_key_from_pem_file(quicheConfig, CLinker.toCString(privKeyPemPath, scope).address());
+            if (rc < 0)
+                throw new IOException("Error loading private key file " + privKeyPemPath + " : " + Quiche.quiche_error.errToString(rc));
+        }
 
         String[] applicationProtos = config.getApplicationProtos();
         if (applicationProtos != null)
@@ -566,6 +583,9 @@ public class ForeignIncubatorQuicheConnection extends QuicheConnection
                     received = quiche_h.quiche_conn_recv(quicheConn, bufferSegment.address(), buffer.remaining(), recvInfo.address());
                 }
             }
+            // If quiche_conn_recv() fails, quiche_conn_local_error() can be called to get the SSL alert; the err_code would contain
+            // a value from which 100 must be substracted to get one of the codes specified in
+            // https://datatracker.ietf.org/doc/html/rfc5246#section-7.2 ; see https://github.com/curl/curl/pull/8275 for details.
             if (received < 0)
                 throw new IOException("failed to receive packet; err=" + quiche_error.errToString(received));
             buffer.position((int)(buffer.position() + received));

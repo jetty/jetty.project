@@ -19,6 +19,8 @@ import java.nio.channels.DatagramChannel;
 import java.nio.channels.SelectableChannel;
 import java.nio.channels.SelectionKey;
 import java.nio.channels.SocketChannel;
+import java.nio.file.Path;
+import java.security.KeyStore;
 import java.util.Map;
 import java.util.Objects;
 import java.util.function.UnaryOperator;
@@ -30,6 +32,8 @@ import org.eclipse.jetty.io.EndPoint;
 import org.eclipse.jetty.io.ManagedSelector;
 import org.eclipse.jetty.io.SocketChannelEndPoint;
 import org.eclipse.jetty.quic.common.QuicConfiguration;
+import org.eclipse.jetty.quic.quiche.PemExporter;
+import org.eclipse.jetty.util.ssl.SslContextFactory;
 
 /**
  * <p>A QUIC specific {@link ClientConnector.Configurator}.</p>
@@ -41,6 +45,8 @@ import org.eclipse.jetty.quic.common.QuicConfiguration;
  */
 public class QuicClientConnectorConfigurator extends ClientConnector.Configurator
 {
+    static final String TRUSTSTORE_PATH_KEY = QuicClientConnectorConfigurator.class.getName() + ".trustStorePath";
+
     private final QuicConfiguration configuration = new QuicConfiguration();
     private final UnaryOperator<Connection> configurator;
 
@@ -56,12 +62,24 @@ public class QuicClientConnectorConfigurator extends ClientConnector.Configurato
         configuration.setSessionRecvWindow(16 * 1024 * 1024);
         configuration.setBidirectionalStreamRecvWindow(8 * 1024 * 1024);
         configuration.setDisableActiveMigration(true);
-        configuration.setVerifyPeerCertificates(true);
     }
 
     public QuicConfiguration getQuicConfiguration()
     {
         return configuration;
+    }
+
+    @Override
+    protected void doStart() throws Exception
+    {
+        ClientConnector clientConnector = getBean(ClientConnector.class);
+        SslContextFactory.Client sslContextFactory = clientConnector.getSslContextFactory();
+        KeyStore trustStore = sslContextFactory.getTrustStore();
+        if (trustStore != null)
+        {
+            Path trustStorePath = PemExporter.exportTrustStore(trustStore, Path.of(System.getProperty("java.io.tmpdir")));
+            configuration.getImplementationSpecifixContext().put(TRUSTSTORE_PATH_KEY, trustStorePath);
+        }
     }
 
     @Override
@@ -74,6 +92,7 @@ public class QuicClientConnectorConfigurator extends ClientConnector.Configurato
     public ChannelWithAddress newChannelWithAddress(ClientConnector clientConnector, SocketAddress address, Map<String, Object> context) throws IOException
     {
         context.put(QuicConfiguration.CONTEXT_KEY, configuration);
+
         DatagramChannel channel = DatagramChannel.open();
         if (clientConnector.getBindAddress() == null)
         {

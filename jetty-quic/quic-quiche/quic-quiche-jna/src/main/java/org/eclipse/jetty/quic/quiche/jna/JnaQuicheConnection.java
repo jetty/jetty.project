@@ -22,6 +22,7 @@ import java.security.SecureRandom;
 import java.util.ArrayList;
 import java.util.List;
 
+import org.eclipse.jetty.quic.quiche.Quiche;
 import org.eclipse.jetty.quic.quiche.Quiche.quiche_error;
 import org.eclipse.jetty.quic.quiche.QuicheConfig;
 import org.eclipse.jetty.quic.quiche.QuicheConnection;
@@ -114,7 +115,7 @@ public class JnaQuicheConnection extends QuicheConnection
 
         SizedStructure<sockaddr> localSockaddr = sockaddr.convert(local);
         SizedStructure<sockaddr> peerSockaddr = sockaddr.convert(peer);
-        LibQuiche.quiche_conn quicheConn = LibQuiche.INSTANCE.quiche_connect(peer.getHostName(), scid, new size_t(scid.length), localSockaddr.getStructure(), localSockaddr.getSize(), peerSockaddr.getStructure(), peerSockaddr.getSize(), libQuicheConfig);
+        LibQuiche.quiche_conn quicheConn = LibQuiche.INSTANCE.quiche_connect(peer.getHostString(), scid, new size_t(scid.length), localSockaddr.getStructure(), localSockaddr.getSize(), peerSockaddr.getStructure(), peerSockaddr.getSize(), libQuicheConfig);
         return new JnaQuicheConnection(quicheConn, libQuicheConfig);
     }
 
@@ -128,13 +129,29 @@ public class JnaQuicheConnection extends QuicheConnection
         if (verifyPeer != null)
             LibQuiche.INSTANCE.quiche_config_verify_peer(quicheConfig, verifyPeer);
 
+        String trustedCertsPemPath = config.getTrustedCertsPemPath();
+        if (trustedCertsPemPath != null)
+        {
+            int rc = LibQuiche.INSTANCE.quiche_config_load_verify_locations_from_file(quicheConfig, trustedCertsPemPath);
+            if (rc != 0)
+                throw new IOException("Error loading trusted certificates file " + trustedCertsPemPath + " : " + Quiche.quiche_error.errToString(rc));
+        }
+
         String certChainPemPath = config.getCertChainPemPath();
         if (certChainPemPath != null)
-            LibQuiche.INSTANCE.quiche_config_load_cert_chain_from_pem_file(quicheConfig, certChainPemPath);
+        {
+            int rc = LibQuiche.INSTANCE.quiche_config_load_cert_chain_from_pem_file(quicheConfig, certChainPemPath);
+            if (rc < 0)
+                throw new IOException("Error loading certificate chain file " + certChainPemPath + " : " + Quiche.quiche_error.errToString(rc));
+        }
 
         String privKeyPemPath = config.getPrivKeyPemPath();
         if (privKeyPemPath != null)
-            LibQuiche.INSTANCE.quiche_config_load_priv_key_from_pem_file(quicheConfig, privKeyPemPath);
+        {
+            int rc = LibQuiche.INSTANCE.quiche_config_load_priv_key_from_pem_file(quicheConfig, privKeyPemPath);
+            if (rc < 0)
+                throw new IOException("Error loading private key file " + privKeyPemPath + " : " + Quiche.quiche_error.errToString(rc));
+        }
 
         String[] applicationProtos = config.getApplicationProtos();
         if (applicationProtos != null)
@@ -450,6 +467,9 @@ public class JnaQuicheConnection extends QuicheConnection
             SizedStructure<sockaddr> peerSockaddr = sockaddr.convert(peer);
             info.from = peerSockaddr.getStructure().byReference();
             info.from_len = peerSockaddr.getSize();
+            // If quiche_conn_recv() fails, quiche_conn_local_error() can be called to get the SSL alert; the err_code would contain
+            // a value from which 100 must be substracted to get one of the codes specified in
+            // https://datatracker.ietf.org/doc/html/rfc5246#section-7.2 ; see https://github.com/curl/curl/pull/8275 for details.
             int received = LibQuiche.INSTANCE.quiche_conn_recv(quicheConn, buffer, new size_t(buffer.remaining()), info).intValue();
             if (received < 0)
                 throw new IOException("failed to receive packet; err=" + quiche_error.errToString(received));

@@ -86,6 +86,9 @@ public interface LibQuiche extends Library
     // Configures whether to verify the peer's certificate.
     void quiche_config_verify_peer(quiche_config config, boolean v);
 
+    // Specifies a file where trusted CA certificates are stored for the purposes of certificate verification.
+    int quiche_config_load_verify_locations_from_file(quiche_config config, String path);
+
     // Configures the list of supported application protocols.
     int quiche_config_set_application_protos(quiche_config config, byte[] protos, size_t protos_len);
 
