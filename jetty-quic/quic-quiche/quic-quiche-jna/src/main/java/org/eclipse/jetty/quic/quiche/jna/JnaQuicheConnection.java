@@ -385,8 +385,29 @@ public class JnaQuicheConnection extends QuicheConnection
 
     public void enableQlog(String filename, String title, String desc) throws IOException
     {
-        if (!LibQuiche.INSTANCE.quiche_conn_set_qlog_path(quicheConn, filename, title, desc))
-            throw new IOException("unable to set qlog path to " + filename);
+        try (AutoLock ignore = lock.lock())
+        {
+            if (quicheConn == null)
+                throw new IllegalStateException("connection was released");
+
+            if (!LibQuiche.INSTANCE.quiche_conn_set_qlog_path(quicheConn, filename, title, desc))
+                throw new IOException("unable to set qlog path to " + filename);
+        }
+    }
+
+    public byte[] getPeerCertificate()
+    {
+        try (AutoLock ignore = lock.lock())
+        {
+            if (quicheConn == null)
+                throw new IllegalStateException("connection was released");
+
+            char_pointer out = new char_pointer();
+            size_t_pointer out_len = new size_t_pointer();
+            LibQuiche.INSTANCE.quiche_conn_peer_cert(quicheConn, out, out_len);
+            int len = out_len.getPointee().intValue();
+            return out.getValueAsBytes(len);
+        }
     }
 
     @Override

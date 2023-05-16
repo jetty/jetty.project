@@ -20,19 +20,19 @@ import java.nio.ByteBuffer;
 import java.nio.charset.StandardCharsets;
 import java.nio.file.Path;
 import java.security.KeyStore;
+import java.security.cert.Certificate;
 import java.util.AbstractMap;
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.Collection;
 import java.util.List;
 import java.util.Map;
-import java.util.Objects;
 
 import org.eclipse.jetty.quic.quiche.QuicheConfig;
 import org.eclipse.jetty.quic.quiche.QuicheConnection;
 import org.eclipse.jetty.quic.quiche.SSLKeyPair;
 import org.eclipse.jetty.toolchain.test.jupiter.WorkDir;
 import org.eclipse.jetty.toolchain.test.jupiter.WorkDirExtension;
-import org.eclipse.jetty.util.resource.Resource;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
@@ -57,6 +57,7 @@ public class LowLevelQuicheTest
     private QuicheConfig serverQuicheConfig;
     private ForeignIncubatorQuicheConnection.TokenMinter tokenMinter;
     private ForeignIncubatorQuicheConnection.TokenValidator tokenValidator;
+    private Certificate[] serverCertificateChain;
 
     @BeforeEach
     protected void setUp() throws Exception
@@ -82,6 +83,7 @@ public class LowLevelQuicheTest
         {
             keyStore.load(is, "storepwd".toCharArray());
         }
+        serverCertificateChain = keyStore.getCertificateChain("mykey");
         SSLKeyPair serverKeyPair = new SSLKeyPair(keyStore, "mykey", "storepwd".toCharArray());
         Path[] pemFiles = serverKeyPair.export(workDir.getEmptyPathDir());
         serverQuicheConfig = new QuicheConfig();
@@ -147,6 +149,11 @@ public class LowLevelQuicheTest
 
         // assert that stream 0 is finished on server
         assertThat(serverQuicheConnection.isStreamFinished(0), is(true));
+
+        // assert that the server certificate was correctly received by the client
+        byte[] peerCertificate = clientQuicheConnection.getPeerCertificate();
+        byte[] serverCert = serverCertificateChain[0].getEncoded();
+        assertThat(Arrays.equals(serverCert, peerCertificate), is(true));
     }
 
     @Test
@@ -180,6 +187,11 @@ public class LowLevelQuicheTest
 
         // assert that stream 0 is finished on server
         assertThat(serverQuicheConnection.isStreamFinished(0), is(true));
+
+        // assert that the server certificate was correctly received by the client
+        byte[] peerCertificate = clientQuicheConnection.getPeerCertificate();
+        byte[] serverCert = serverCertificateChain[0].getEncoded();
+        assertThat(Arrays.equals(serverCert, peerCertificate), is(true));
     }
 
     @Test
@@ -195,6 +207,11 @@ public class LowLevelQuicheTest
 
         assertThat(clientQuicheConnection.getNegotiatedProtocol(), is("€"));
         assertThat(serverQuicheConnection.getNegotiatedProtocol(), is("€"));
+
+        // assert that the server certificate was correctly received by the client
+        byte[] peerCertificate = clientQuicheConnection.getPeerCertificate();
+        byte[] serverCert = serverCertificateChain[0].getEncoded();
+        assertThat(Arrays.equals(serverCert, peerCertificate), is(true));
     }
 
     private void drainServerToFeedClient(Map.Entry<ForeignIncubatorQuicheConnection, ForeignIncubatorQuicheConnection> entry, int expectedSize) throws IOException

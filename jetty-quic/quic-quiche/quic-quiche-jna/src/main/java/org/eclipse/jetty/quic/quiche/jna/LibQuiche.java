@@ -425,6 +425,9 @@ public interface LibQuiche extends Library
     // Returns true if the connection was closed due to the idle timeout.
     boolean quiche_conn_is_timed_out(quiche_conn conn);
 
+    // Returns the peer's leaf certificate (if any) as a DER-encoded buffer.
+    void quiche_conn_peer_cert(quiche_conn conn, char_pointer out, size_t_pointer out_len);
+
     // Returns true if a connection error was received, and updates the provided
     // parameters accordingly.
     boolean quiche_conn_peer_error(quiche_conn conn,
