@@ -373,6 +373,7 @@ public class ClientConnector extends ContainerLifeCycle
         selectorManager = newSelectorManager();
         selectorManager.setConnectTimeout(getConnectTimeout().toMillis());
         addBean(selectorManager);
+        configurator.addBean(this);
         super.doStart();
     }
 
@@ -381,6 +382,7 @@ public class ClientConnector extends ContainerLifeCycle
     {
         super.doStop();
         removeBean(selectorManager);
+        configurator.removeBean(this);
     }
 
     protected SslContextFactory.Client newSslContextFactory()
@@ -588,7 +590,7 @@ public class ClientConnector extends ContainerLifeCycle
     /**
      * <p>Configures a {@link ClientConnector}.</p>
      */
-    public static class Configurator
+    public static class Configurator extends ContainerLifeCycle
     {
         /**
          * <p>Returns whether the connection to a given {@link SocketAddress} is intrinsically secure.</p>

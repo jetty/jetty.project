@@ -29,7 +29,7 @@ import java.util.Map;
 
 import org.eclipse.jetty.quic.quiche.QuicheConfig;
 import org.eclipse.jetty.quic.quiche.QuicheConnection;
-import org.eclipse.jetty.quic.quiche.SSLKeyPair;
+import org.eclipse.jetty.quic.quiche.PemExporter;
 import org.eclipse.jetty.toolchain.test.jupiter.WorkDir;
 import org.eclipse.jetty.toolchain.test.jupiter.WorkDirExtension;
 import org.junit.jupiter.api.AfterEach;
@@ -64,10 +64,18 @@ public class LowLevelQuicheTest
         clientSocketAddress = new InetSocketAddress("localhost", 9999);
         serverSocketAddress = new InetSocketAddress("localhost", 8888);
 
+        KeyStore keyStore = KeyStore.getInstance("PKCS12");
+        try (InputStream is = getClass().getResourceAsStream("/keystore.p12"))
+        {
+            keyStore.load(is, "storepwd".toCharArray());
+        }
+        Path targetFolder = workDir.getEmptyPathDir();
+
         clientQuicheConfig = new QuicheConfig();
         clientQuicheConfig.setApplicationProtos("http/0.9");
         clientQuicheConfig.setDisableActiveMigration(true);
-        clientQuicheConfig.setVerifyPeer(false);
+        clientQuicheConfig.setVerifyPeer(true);
+        clientQuicheConfig.setTrustedCertsPemPath(PemExporter.exportTrustStore(keyStore, targetFolder).toString());
         clientQuicheConfig.setMaxIdleTimeout(1_000L);
         clientQuicheConfig.setInitialMaxData(10_000_000L);
         clientQuicheConfig.setInitialMaxStreamDataBidiLocal(10_000_000L);
@@ -77,17 +85,11 @@ public class LowLevelQuicheTest
         clientQuicheConfig.setInitialMaxStreamsBidi(100L);
         clientQuicheConfig.setCongestionControl(QuicheConfig.CongestionControl.CUBIC);
 
-        KeyStore keyStore = KeyStore.getInstance("PKCS12");
-        try (InputStream is = getClass().getResourceAsStream("/keystore.p12"))
-        {
-            keyStore.load(is, "storepwd".toCharArray());
-        }
         serverCertificateChain = keyStore.getCertificateChain("mykey");
-        SSLKeyPair serverKeyPair = new SSLKeyPair(keyStore, "mykey", "storepwd".toCharArray());
-        Path[] pemFiles = serverKeyPair.export(workDir.getEmptyPathDir());
         serverQuicheConfig = new QuicheConfig();
-        serverQuicheConfig.setPrivKeyPemPath(pemFiles[0].toString());
-        serverQuicheConfig.setCertChainPemPath(pemFiles[1].toString());
+        Path[] keyPair = PemExporter.exportKeyPair(keyStore, "mykey", "storepwd".toCharArray(), targetFolder);
+        serverQuicheConfig.setPrivKeyPemPath(keyPair[0].toString());
+        serverQuicheConfig.setCertChainPemPath(keyPair[1].toString());
         serverQuicheConfig.setApplicationProtos("http/0.9");
         serverQuicheConfig.setVerifyPeer(false);
         serverQuicheConfig.setMaxIdleTimeout(1_000L);

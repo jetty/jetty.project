@@ -13,7 +13,10 @@
 
 package org.eclipse.jetty.quic.common;
 
+import java.nio.file.Path;
+import java.util.HashMap;
 import java.util.List;
+import java.util.Map;
 
 /**
  * <p>A record that captures QUIC configuration parameters.</p>
@@ -24,12 +27,13 @@ public class QuicConfiguration
 
     private List<String> protocols = List.of();
     private boolean disableActiveMigration;
-    private boolean verifyPeerCertificates;
     private int maxBidirectionalRemoteStreams;
     private int maxUnidirectionalRemoteStreams;
     private int sessionRecvWindow;
     private int bidirectionalStreamRecvWindow;
     private int unidirectionalStreamRecvWindow;
+    private Path pemWorkDirectory;
+    private final Map<String, Object> implementationSpecifixContext = new HashMap<>();
 
     public List<String> getProtocols()
     {
@@ -49,16 +53,6 @@ public class QuicConfiguration
     public void setDisableActiveMigration(boolean disableActiveMigration)
     {
         this.disableActiveMigration = disableActiveMigration;
-    }
-
-    public boolean isVerifyPeerCertificates()
-    {
-        return verifyPeerCertificates;
-    }
-
-    public void setVerifyPeerCertificates(boolean verifyPeerCertificates)
-    {
-        this.verifyPeerCertificates = verifyPeerCertificates;
     }
 
     public int getMaxBidirectionalRemoteStreams()
@@ -109,5 +103,20 @@ public class QuicConfiguration
     public void setUnidirectionalStreamRecvWindow(int unidirectionalStreamRecvWindow)
     {
         this.unidirectionalStreamRecvWindow = unidirectionalStreamRecvWindow;
+    }
+
+    public Path getPemWorkDirectory()
+    {
+        return pemWorkDirectory;
+    }
+
+    public void setPemWorkDirectory(Path pemWorkDirectory)
+    {
+        this.pemWorkDirectory = pemWorkDirectory;
+    }
+
+    public Map<String, Object> getImplementationSpecifixContext()
+    {
+        return implementationSpecifixContext;
     }
 }

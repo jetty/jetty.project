@@ -23,7 +23,6 @@ import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.nio.file.StandardCopyOption;
 import java.nio.file.StandardOpenOption;
-import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
 import java.util.Queue;
@@ -1141,7 +1140,7 @@ public class DistributionTests extends AbstractJettyHomeTest
                 assertTrue(run2.awaitConsoleLogsFor("Started Server@", 10, TimeUnit.SECONDS));
 
                 HTTP3Client http3Client = new HTTP3Client();
-                http3Client.getQuicConfiguration().setVerifyPeerCertificates(false);
+                http3Client.getClientConnector().setSslContextFactory(new SslContextFactory.Client(true));
                 this.client = new HttpClient(new HttpClientTransportOverHTTP3(http3Client));
                 this.client.start();
                 ContentResponse response = this.client.newRequest("localhost", h3Port)
