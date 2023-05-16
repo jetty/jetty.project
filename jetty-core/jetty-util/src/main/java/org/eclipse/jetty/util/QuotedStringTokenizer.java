@@ -15,10 +15,16 @@ package org.eclipse.jetty.util;
 
 import java.util.Iterator;
 
+/**
+ * A Tokenizer that splits a string into parts, allowing for quotes.
+ */
 public interface QuotedStringTokenizer
 {
     QuotedStringTokenizer CSV = QuotedStringTokenizer.builder().delimiters(",").optionalWhiteSpace().build();
 
+    /**
+     * @return A Builder for a {@link QuotedStringTokenizer}.
+     */
     static Builder builder()
     {
         return new Builder();
@@ -92,7 +98,7 @@ public interface QuotedStringTokenizer
 
     class Builder
     {
-        private String _delim = "\t\n\r";
+        private String _delim;
         private boolean _returnQuotes;
         private boolean _returnDelimiters;
         private boolean _optionalWhiteSpace;
@@ -105,48 +111,88 @@ public interface QuotedStringTokenizer
         {
         }
 
+        /**
+         * @param delim A string containing the set of characters that are considered delimiters.
+         * @return this {@code Builder}
+         */
         public Builder delimiters(String delim)
         {
             _delim = delim;
             return this;
         }
 
+        /**
+         * If called, the built {@link QuotedStringTokenizer} will return tokens with quotes interpreted but not removed.
+         * @return this {@code Builder}
+         */
         public Builder returnQuotes()
         {
             _returnQuotes = true;
             return this;
         }
 
+        /**
+         * If called, the built {@link QuotedStringTokenizer} will return delimiter characters as individual tokens.
+         * @return this {@code Builder}
+         */
         public Builder returnDelimiters()
         {
             _returnDelimiters = true;
             return this;
         }
 
+        /**
+         * If called, the built {@link QuotedStringTokenizer} will ignore optional white space characters before
+         * and after delimiters. This is not supported together with {@link #legacy()}.
+         * @return this {@code Builder}
+         */
         public Builder optionalWhiteSpace()
         {
             _optionalWhiteSpace = true;
             return this;
         }
 
+        /**
+         * If called, the built {@link QuotedStringTokenizer} will allow quotes to be within a token, not just as
+         * initial/final characters as per the RFC.  For example the RFC illegal string {@code 'one, two", "three' }
+         * with comma delimiter, would result in two tokens: {@code 'one' & 'two, three'}.
+         * @return this {@code Builder}
+         */
         public Builder embeddedQuotes()
         {
             _embeddedQuotes = true;
             return this;
         }
 
+        /**
+         * If called, the built {@link QuotedStringTokenizer} will allow single quotes. This can only be used with
+         * {@link #legacy()}.
+         * @return this {@code Builder}
+         */
         public Builder singleQuotes()
         {
             _singleQuotes = true;
             return this;
         }
 
+        /**
+         * If called, the built {@link QuotedStringTokenizer} will only allow escapes for quote characters.
+         * For example the string {@code '"test\"tokenizer\escape"'} will be unquoted as
+         * {@code 'test"tokenizer\escape'}.
+         * @return this {@code Builder}
+         */
         public Builder escapeOnlyQuote()
         {
             _escapeOnlyQuote = true;
             return this;
         }
 
+        /**
+         * If called, the built {@link QuotedStringTokenizer} will use the legacy implementation from prior to
+         * jetty-12. The legacy implementation does not comply with any current RFC. Using {@code legacy} also
+         * implies {@link #embeddedQuotes()}.
+         * @return this {@code Builder}
+         */
         public Builder legacy()
         {
             _legacy = true;
@@ -154,8 +200,14 @@ public interface QuotedStringTokenizer
             return this;
         }
 
+        /**
+         * @return The built immutable {@link QuotedStringTokenizer}.
+         */
         public QuotedStringTokenizer build()
         {
+            if (StringUtil.isEmpty(_delim))
+                throw new IllegalArgumentException("Delimiters must be provided");
+
             if (_legacy)
             {
                 if (_optionalWhiteSpace)

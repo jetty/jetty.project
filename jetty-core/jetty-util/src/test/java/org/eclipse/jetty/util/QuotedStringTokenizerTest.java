@@ -149,13 +149,14 @@ public class QuotedStringTokenizerTest
     @Test
     public void testQuoteIfNeeded()
     {
-        QuotedStringTokenizer tokenizer = QuotedStringTokenizer.CSV;
+        QuotedStringTokenizer tokenizer = QuotedStringTokenizer.CSV; // OWS
         assertEquals("abc", tokenizer.quoteIfNeeded("abc"));
-        assertEquals("a c", tokenizer.quoteIfNeeded("a c"));
+        assertEquals("\"a c\"", tokenizer.quoteIfNeeded("a c"));
+        assertEquals("a c", QuotedStringTokenizer.builder().delimiters(",").build().quoteIfNeeded("a c")); // No OWS
         assertEquals("a'c", tokenizer.quoteIfNeeded("a'c"));
         assertEquals("\"a\\\"c\"", tokenizer.quoteIfNeeded("a\"c"));
-        assertEquals("a\n\r\t", tokenizer.quoteIfNeeded("a\n\r\t"));
-        assertEquals("\u0000\u001f", tokenizer.quoteIfNeeded("\u0000\u001f"));
+        assertEquals("\"a\n\r\t\"", tokenizer.quoteIfNeeded("a\n\r\t"));
+        assertEquals("\"\u0000\u001f\"", tokenizer.quoteIfNeeded("\u0000\u001f"));
         assertEquals("\"a\\\"c\"", tokenizer.quoteIfNeeded("a\"c"));
     }
 
