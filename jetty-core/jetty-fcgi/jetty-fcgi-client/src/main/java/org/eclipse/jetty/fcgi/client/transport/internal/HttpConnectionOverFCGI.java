@@ -412,11 +412,6 @@ public class HttpConnectionOverFCGI extends AbstractConnection implements IConne
             destroy();
         }
 
-        protected void close(Throwable failure)
-        {
-            HttpConnectionOverFCGI.this.close(failure);
-        }
-
         @Override
         public boolean isClosed()
         {
@@ -524,7 +519,7 @@ public class HttpConnectionOverFCGI extends AbstractConnection implements IConne
         public void onFailure(int request, Throwable failure)
         {
             if (LOG.isDebugEnabled())
-                LOG.debug("onFailure r={},f={}", request, failure);
+                LOG.debug("onFailure request={}", request, failure);
             HttpChannelOverFCGI channel = HttpConnectionOverFCGI.this.channel;
             if (channel != null)
             {

@@ -46,8 +46,8 @@ public class SectionAcknowledgmentTest
     {
         _encoderHandler = new TestEncoderHandler();
         _decoderHandler = new TestDecoderHandler();
-        _encoder = new QpackEncoder(_encoderHandler, MAX_BLOCKED_STREAMS);
-        _decoder = new QpackDecoder(_decoderHandler, MAX_HEADER_SIZE);
+        _encoder = new QpackEncoder(_encoderHandler);
+        _decoder = new QpackDecoder(_decoderHandler);
     }
 
     @Test

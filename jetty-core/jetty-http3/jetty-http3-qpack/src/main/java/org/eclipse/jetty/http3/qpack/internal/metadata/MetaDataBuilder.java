@@ -78,7 +78,7 @@ public class MetaDataBuilder
         String value = field.getValue();
         int fieldSize = name.length() + (value == null ? 0 : value.length());
         _size += fieldSize + 32;
-        if (_size > _maxSize)
+        if (_maxSize > 0 && _size > _maxSize)
             throw new QpackException.SessionException(QpackException.QPACK_DECOMPRESSION_FAILED, String.format("Header size %d > %d", _size, _maxSize));
 
         if (field instanceof StaticTableHttpField)

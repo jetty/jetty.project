@@ -45,7 +45,6 @@ public abstract class HTTP3StreamConnection extends AbstractConnection
     private boolean useInputDirectByteBuffers = true;
     private HTTP3Stream stream;
     private RetainableByteBuffer networkBuffer;
-    private boolean applicationMode;
     private boolean remotelyClosed;
 
     public HTTP3StreamConnection(QuicStreamEndPoint endPoint, Executor executor, ByteBufferPool bufferPool, MessageParser parser)
@@ -75,11 +74,6 @@ public abstract class HTTP3StreamConnection extends AbstractConnection
     void setStream(HTTP3Stream stream)
     {
         this.stream = stream;
-    }
-
-    public void setApplicationMode(boolean mode)
-    {
-        this.applicationMode = mode;
     }
 
     @Override
@@ -123,7 +117,7 @@ public abstract class HTTP3StreamConnection extends AbstractConnection
             switch (result)
             {
                 case NO_FRAME -> tryReleaseBuffer(false);
-                case MODE_SWITCH ->
+                case SWITCH_MODE ->
                 {
                     parser.setDataMode(false);
                     processNonDataFrames();
@@ -163,17 +157,28 @@ public abstract class HTTP3StreamConnection extends AbstractConnection
                         tryReleaseBuffer(false);
                         return;
                     }
-                    case MODE_SWITCH ->
+                    case BLOCKED_FRAME ->
+                    {
+                        // Return immediately because another thread may
+                        // resume the processing as the stream is unblocked.
+                        tryReleaseBuffer(false);
+                        return;
+                    }
+                    case SWITCH_MODE ->
                     {
                         // MODE_SWITCH is only reported when parsing DATA frames.
                         throw new IllegalStateException();
                     }
                     case FRAME ->
                     {
-                        action.getAndSet(null).run();
+                        Runnable action = this.action.getAndSet(null);
+                        if (action == null)
+                            throw new IllegalStateException();
+                        action.run();
 
                         // TODO: we should also exit if the connection was closed due to errors.
-                        //  There is not yet a isClosed() primitive though.
+                        //  This can be done by overriding relevant methods in MessageListener.
+
                         if (remotelyClosed)
                         {
                             // We have detected the end of the stream,
@@ -185,32 +190,32 @@ public abstract class HTTP3StreamConnection extends AbstractConnection
                             return;
                         }
 
-                        if (parser.isDataMode())
+                        if (!parser.isDataMode())
+                            throw new IllegalStateException();
+
+                        if (stream.hasDemandOrStall())
                         {
-                            // TODO: handle applicationMode here?
-
-                            if (stream.hasDemandOrStall())
+                            if (networkBuffer != null && networkBuffer.hasRemaining())
                             {
-                                if (networkBuffer != null && networkBuffer.hasRemaining())
-                                {
-                                    // There are bytes left in the buffer; if there are not
-                                    // enough bytes to parse a DATA frame and call the
-                                    // application (so that it can drive), set fill interest.
-                                    processDataFrames(true);
-                                }
-                                else
-                                {
-                                    // No bytes left in the buffer, but there is demand.
-                                    // Set fill interest to call the application when bytes arrive.
-                                    fillInterested();
-                                }
+                                // There are bytes left in the buffer; if there are not
+                                // enough bytes to parse a DATA frame and call the
+                                // application (so that it can drive), set fill interest.
+                                processDataFrames(true);
                             }
-
-                            // From now on it's the application that drives
-                            // demand, reads, parse+fill and fill interest.
-                            return;
+                            else
+                            {
+                                // No bytes left in the buffer, but there is demand.
+                                // Set fill interest to call the application when bytes arrive.
+                                tryReleaseBuffer(false);
+                                fillInterested();
+                            }
                         }
 
+                        // From now on it's the application that drives
+                        // demand, reads, parse+fill and fill interest.
+                        return;
+
+                        // TODO: do we loop here?
                         // There might be a trailer, loop around.
                     }
                     default -> throw new IllegalStateException("unknown message parser result: " + result);
@@ -273,7 +278,7 @@ public abstract class HTTP3StreamConnection extends AbstractConnection
                 MessageParser.Result result = parser.parse(byteBuffer);
                 if (LOG.isDebugEnabled())
                     LOG.debug("parsed {} on {} with buffer {}", result, this, networkBuffer);
-                if (result == MessageParser.Result.FRAME || result == MessageParser.Result.MODE_SWITCH)
+                if (result != MessageParser.Result.NO_FRAME)
                     return result;
 
                 if (networkBuffer.isRetained())
@@ -333,6 +338,81 @@ public abstract class HTTP3StreamConnection extends AbstractConnection
         }
     }
 
+    private void processHeaders(HeadersFrame frame, boolean wasBlocked, Runnable delegate)
+    {
+        MetaData metaData = frame.getMetaData();
+        if (metaData.isRequest())
+        {
+            // Expect DATA frames now.
+            parser.setDataMode(true);
+            if (LOG.isDebugEnabled())
+                LOG.debug("switching to dataMode=true for request {} on {}", metaData, this);
+        }
+        else if (metaData.isResponse())
+        {
+            MetaData.Response response = (MetaData.Response)metaData;
+            if (HttpStatus.isInformational(response.getStatus()))
+            {
+                if (LOG.isDebugEnabled())
+                    LOG.debug("staying in dataMode=false for response {} on {}", metaData, this);
+            }
+            else
+            {
+                // Expect DATA frames now.
+                parser.setDataMode(true);
+                if (LOG.isDebugEnabled())
+                    LOG.debug("switching to dataMode=true for response {} on {}", metaData, this);
+            }
+        }
+        else
+        {
+            // Trailer.
+            if (!frame.isLast())
+                frame = new HeadersFrame(metaData, true);
+        }
+
+        if (frame.isLast())
+            shutdownInput();
+
+        delegate.run();
+
+        if (wasBlocked)
+            onFillable();
+    }
+
+    private void processData(DataFrame frame, Runnable delegate)
+    {
+        if (frame.isLast())
+            shutdownInput();
+
+        Stream.Data data;
+        if (!frame.getByteBuffer().hasRemaining() && frame.isLast())
+        {
+            data = Stream.Data.EOF;
+        }
+        else
+        {
+            // No need to call networkBuffer.retain() here, since we know
+            // that the action will be run before releasing the networkBuffer.
+            data = new StreamData(frame, networkBuffer);
+        }
+
+        delegate.run();
+
+        if (LOG.isDebugEnabled())
+            LOG.debug("notifying {} on {}", data, stream);
+        stream.onData(data);
+    }
+
+    private void shutdownInput()
+    {
+        remotelyClosed = true;
+        // We want to shutdown the input to avoid "spurious" wakeups where
+        // zero bytes could be spuriously read from the EndPoint after the
+        // stream is remotely closed by receiving a frame with last=true.
+        getEndPoint().shutdownInput(HTTP3ErrorCode.NO_ERROR.code());
+    }
+
     @Override
     public String toConnectionString()
     {
@@ -376,90 +456,26 @@ public abstract class HTTP3StreamConnection extends AbstractConnection
         }
 
         @Override
-        public void onHeaders(long streamId, HeadersFrame frame)
+        public void onHeaders(long streamId, HeadersFrame frame, boolean wasBlocked)
         {
             if (LOG.isDebugEnabled())
-                LOG.debug("onHeaders #{} {} on {}", streamId, frame, this);
-
-            MetaData metaData = frame.getMetaData();
-            if (metaData.isRequest())
-            {
-                // Expect DATA frames now.
-                parser.setDataMode(true);
-                if (LOG.isDebugEnabled())
-                    LOG.debug("switching to dataMode=true for request {} on {}", metaData, this);
-            }
-            else if (metaData.isResponse())
-            {
-                MetaData.Response response = (MetaData.Response)metaData;
-                if (HttpStatus.isInformational(response.getStatus()))
-                {
-                    if (LOG.isDebugEnabled())
-                        LOG.debug("staying in dataMode=false for response {} on {}", metaData, this);
-                }
-                else
-                {
-                    // Expect DATA frames now.
-                    parser.setDataMode(true);
-                    if (LOG.isDebugEnabled())
-                        LOG.debug("switching to dataMode=true for response {} on {}", metaData, this);
-                }
-            }
-            else
-            {
-                // Trailer.
-                if (!frame.isLast())
-                    frame = new HeadersFrame(metaData, true);
-            }
-
-            HeadersFrame headersFrame = frame;
-            if (headersFrame.isLast())
-                shutdownInput();
-
-            Runnable existing = action.getAndSet(() -> super.onHeaders(streamId, headersFrame));
-            if (existing != null)
-                throw new IllegalStateException("existing onHeaders action " + existing);
+                LOG.debug("received {}#{} wasBlocked={}", frame, streamId, wasBlocked);
+            Runnable delegate = () -> super.onHeaders(streamId, frame, wasBlocked);
+            Runnable action = () -> processHeaders(frame, wasBlocked, delegate);
+            if (wasBlocked)
+                action.run();
+            else if (!HTTP3StreamConnection.this.action.compareAndSet(null, action))
+                throw new IllegalStateException();
         }
 
         @Override
         public void onData(long streamId, DataFrame frame)
         {
             if (LOG.isDebugEnabled())
-                LOG.debug("onData #{} {} on {}", streamId, frame, this);
-
-            if (frame.isLast())
-                shutdownInput();
-
-            Stream.Data data;
-            if (!frame.getByteBuffer().hasRemaining() && frame.isLast())
-            {
-                data = Stream.Data.EOF;
-            }
-            else
-            {
-                // No need to call networkBuffer.retain() here, since we know
-                // that the action will be run before releasing the networkBuffer.
-                data = new StreamData(frame, networkBuffer);
-            }
-
-            Runnable existing = action.getAndSet(() ->
-            {
-                super.onData(streamId, frame);
-                if (LOG.isDebugEnabled())
-                    LOG.debug("notifying {} on {}", data, stream);
-                stream.onData(data);
-            });
-            if (existing != null)
-                throw new IllegalStateException("existing onData action " + existing);
-        }
-
-        private void shutdownInput()
-        {
-            remotelyClosed = true;
-            // We want to shutdown the input to avoid "spurious" wakeups where
-            // zero bytes could be spuriously read from the EndPoint after the
-            // stream is remotely closed by receiving a frame with last=true.
-            getEndPoint().shutdownInput(HTTP3ErrorCode.NO_ERROR.code());
+                LOG.debug("received {}#{}", frame, streamId);
+            Runnable delegate = () -> super.onData(streamId, frame);
+            if (!HTTP3StreamConnection.this.action.compareAndSet(null, () -> processData(frame, delegate)))
+                throw new IllegalStateException();
         }
     }
 }

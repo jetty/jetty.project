@@ -51,6 +51,6 @@ public class SectionAcknowledgmentInstruction implements Instruction
     @Override
     public String toString()
     {
-        return String.format("%s@%x", getClass().getSimpleName(), hashCode());
+        return String.format("%s@%x[stream=%d]", getClass().getSimpleName(), hashCode(), _streamId);
     }
 }

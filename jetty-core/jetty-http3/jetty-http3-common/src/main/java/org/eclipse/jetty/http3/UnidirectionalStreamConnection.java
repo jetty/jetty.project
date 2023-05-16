@@ -145,7 +145,7 @@ public class UnidirectionalStreamConnection extends AbstractConnection implement
         }
         else if (streamType == EncoderStreamConnection.STREAM_TYPE)
         {
-            EncoderStreamConnection newConnection = new EncoderStreamConnection(getEndPoint(), getExecutor(), bufferPool, decoder);
+            EncoderStreamConnection newConnection = new EncoderStreamConnection(getEndPoint(), getExecutor(), bufferPool, decoder, listener);
             newConnection.setInputBufferSize(getInputBufferSize());
             newConnection.setUseInputDirectByteBuffers(isUseInputDirectByteBuffers());
             if (LOG.isDebugEnabled())
@@ -154,7 +154,7 @@ public class UnidirectionalStreamConnection extends AbstractConnection implement
         }
         else if (streamType == DecoderStreamConnection.STREAM_TYPE)
         {
-            DecoderStreamConnection newConnection = new DecoderStreamConnection(getEndPoint(), getExecutor(), bufferPool, encoder);
+            DecoderStreamConnection newConnection = new DecoderStreamConnection(getEndPoint(), getExecutor(), bufferPool, encoder, listener);
             newConnection.setInputBufferSize(getInputBufferSize());
             newConnection.setUseInputDirectByteBuffers(isUseInputDirectByteBuffers());
             if (LOG.isDebugEnabled())

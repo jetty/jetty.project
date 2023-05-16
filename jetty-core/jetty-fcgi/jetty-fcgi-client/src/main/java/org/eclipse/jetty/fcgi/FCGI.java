@@ -69,7 +69,7 @@ public class FCGI
                 case 8 -> DATA;
                 case 9 -> GET_VALUES;
                 case 10 -> GET_VALUES_RESULT;
-                default -> throw new IllegalArgumentException();
+                default -> throw new IllegalArgumentException("unknown frame type " + code);
             };
         }
 
