@@ -83,8 +83,8 @@ public class CrossOriginFilterTest
         String rawResponse = connector.getResponse(request);
         HttpTester.Response response = HttpTester.parseResponse(rawResponse);
 
-        assertThat(response.toString(), response.getStatus(), is(HttpStatus.OK_200));
         assertTrue(latch.await(1, TimeUnit.SECONDS));
+        assertThat(response.toString(), response.getStatus(), is(HttpStatus.OK_200));
         assertThat(response.get(HttpHeader.VARY), is(HttpHeader.ORIGIN.asString()));
     }
 
