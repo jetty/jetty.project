@@ -559,8 +559,8 @@ public class ServletApiRequest implements HttpServletRequest
     @Override
     public <T extends HttpUpgradeHandler> T upgrade(Class<T> handlerClass) throws IOException, ServletException
     {
-        // TODO NYI
-        return null;
+        // Not implemented. Throw ServletException as per spec.
+        throw new ServletException("Not implemented");
     }
 
     @Override
