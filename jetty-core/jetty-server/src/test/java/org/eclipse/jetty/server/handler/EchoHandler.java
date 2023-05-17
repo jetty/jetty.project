@@ -45,9 +45,9 @@ public class EchoHandler extends Handler.Abstract.NonBlocking
             {
                 switch (field.getHeader())
                 {
+                    case CONTENT_LENGTH -> response.getHeaders().add(HttpHeader.CONTENT_LENGTH, contentLength = field.getLongValue());
                     case CONTENT_TYPE -> response.getHeaders().add(field);
                     case TRAILER -> response.setTrailersSupplier(HttpFields.build());
-                    case CONTENT_LENGTH -> response.getHeaders().add(HttpHeader.CONTENT_LENGTH, contentLength = field.getLongValue());
                     case TRANSFER_ENCODING -> contentLength = Long.MAX_VALUE;
                 }
             }
