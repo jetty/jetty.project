@@ -92,9 +92,8 @@ public interface HttpFields extends Iterable<HttpField>, Supplier<HttpFields>
     }
 
     /**
-     * Implements the {@link Supplier} of {@code HttpFields} contract so a {@code HttpFields} instance can be
-     * supply itself.
-     * @return The HttpFields itself.
+     * <p>Supplies this instance, typically used to supply HTTP trailers.</p>
+     * @return this instance
      */
     @Override
     default HttpFields get()
