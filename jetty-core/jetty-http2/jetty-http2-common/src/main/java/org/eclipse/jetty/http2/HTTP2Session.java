@@ -625,12 +625,14 @@ public abstract class HTTP2Session extends ContainerLifeCycle implements Session
         streamsState.push(frame, new Promise.Wrapper<>(promise)
         {
             @Override
-            public void succeeded(Stream pushedStream)
+            public void succeeded(Stream pushed)
             {
                 // Pushed streams are implicitly remotely closed.
                 // They are closed when sending an end-stream DATA frame.
-                ((HTTP2Stream)pushedStream).updateClose(true, CloseState.Event.RECEIVED);
-                super.succeeded(pushedStream);
+                HTTP2Stream http2Pushed = (HTTP2Stream)pushed;
+                http2Pushed.process(Stream.Data.eof(pushed.getId()));
+                http2Pushed.updateClose(true, CloseState.Event.RECEIVED);
+                super.succeeded(pushed);
             }
         }, listener);
     }
