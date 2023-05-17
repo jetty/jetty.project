@@ -14,6 +14,7 @@
 package org.eclipse.jetty.session.test.tools;
 
 import java.io.ByteArrayOutputStream;
+import java.io.IOException;
 import java.io.InputStream;
 import java.lang.annotation.ElementType;
 import java.nio.charset.StandardCharsets;
@@ -51,11 +52,11 @@ public class RemoteInfinispanTestSupport
     private static final Logger LOG = LoggerFactory.getLogger(RemoteInfinispanTestSupport.class);
     public RemoteCache<String, InfinispanSessionData> _cache;
     private final String _name;
-    public RemoteCacheManager _manager;
+    public static RemoteCacheManager _manager;
     private static final Logger INFINISPAN_LOG =
             LoggerFactory.getLogger("org.eclipse.jetty.server.session.remote.infinispanLogs");
 
-    private static final String INFINISPAN_VERSION = System.getProperty("infinispan.docker.image.version", "11.0.9.Final");
+    private static final String INFINISPAN_VERSION = System.getProperty("infinispan.docker.image.version", "11.0.14.Final");
     private static final String IMAGE_NAME = System.getProperty("infinispan.docker.image.name", "infinispan/server") +
             ":" + INFINISPAN_VERSION;
 
@@ -73,35 +74,10 @@ public class RemoteInfinispanTestSupport
                 .withLogConsumer(new Slf4jLogConsumer(INFINISPAN_LOG))
                 .withClasspathResourceMapping("/config.yaml", "/user-config/config.yaml", BindMode.READ_ONLY)
                 .start();
-    }
 
-    public RemoteInfinispanTestSupport(String cacheName)
-    {
-        Objects.requireNonNull(cacheName, "cacheName cannot be null");
-        _name = cacheName;
-
-        if (!infinispan.isRunning())
+        // setup instance
         {
-            try
-            {
-                long start = System.currentTimeMillis();
 
-                infinispan.start();
-                System.setProperty("hotrod.host", infinispan.getHost());
-
-                LOG.info("Infinispan container started for {}:{} - {}ms",
-                        infinispan.getHost(),
-                        infinispan.getMappedPort(11222),
-                        System.currentTimeMillis() - start);
-            }
-            catch (Exception e)
-            {
-                LOG.error(e.getMessage(), e);
-                throw new RuntimeException(e);
-            }
-        }
-        try
-        {
             SearchMapping mapping = new SearchMapping();
             mapping.entity(InfinispanSessionData.class).indexed().providedId()
                     .property("expiry", ElementType.METHOD).field();
@@ -140,16 +116,31 @@ public class RemoteInfinispanTestSupport
                 baos = new ByteArrayOutputStream();
                 IO.copy(is, baos);
             }
+            catch (IOException e)
+            {
+                throw new RuntimeException(e.getMessage(), e);
+            }
 
             String content = baos.toString(StandardCharsets.UTF_8);
             _manager.administration().getOrCreateCache("___protobuf_metadata", (String)null).put("session.proto", content);
-        }
-        catch (Exception e)
-        {
-            LOG.error(e.getMessage(), e);
-            throw new RuntimeException(e);
+
         }
 
+    }
+
+    public RemoteInfinispanTestSupport(String cacheName)
+    {
+        Objects.requireNonNull(cacheName, "cacheName cannot be null");
+        _name = cacheName;
+        String xml = String.format("<infinispan>"  +
+                "<cache-container>" + "<distributed-cache name=\"%s\" mode=\"SYNC\">" +
+                "<encoding media-type=\"application/x-protostream\"/>" +
+                "</distributed-cache>" +
+                "</cache-container>" +
+                "</infinispan>", _name);
+
+        XMLStringConfiguration xmlConfig = new XMLStringConfiguration(xml);
+        _cache = _manager.administration().getOrCreateCache(_name, xmlConfig);
     }
 
     public RemoteCache<String, InfinispanSessionData> getCache()
@@ -159,15 +150,7 @@ public class RemoteInfinispanTestSupport
 
     public void setup() throws Exception
     {
-        String xml = String.format("<infinispan>"  + 
-            "<cache-container>" + "<distributed-cache name=\"%s\" mode=\"SYNC\">" +
-            "<encoding media-type=\"application/x-protostream\"/>" +
-            "</distributed-cache>" +
-            "</cache-container>" +
-            "</infinispan>", _name);
-
-        XMLStringConfiguration xmlConfig = new XMLStringConfiguration(xml);
-        _cache = _manager.administration().getOrCreateCache(_name, xmlConfig);
+        // noop
     }
 
     public void clearCache() throws Exception

@@ -41,7 +41,7 @@ public class HazelcastSessionDataStoreTest extends AbstractSessionDataStoreTest
     }
 
     HazelcastTestHelper _testHelper  = new HazelcastTestHelper(getClass().getSimpleName() + System.nanoTime());
-    
+
     @Override
     public SessionDataStoreFactory createSessionDataStoreFactory()
     {
