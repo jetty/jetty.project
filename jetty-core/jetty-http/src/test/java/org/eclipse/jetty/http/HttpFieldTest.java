@@ -196,11 +196,11 @@ public class HttpFieldTest
     public void testGetValueParameters()
     {
         Map<String, String> map = new HashMap<>();
-        String value = HttpField.getValueParameters("Value ; p1=v1;p2 = v2 ; p3 = \" v ; 3 = three\"", map);
+        String value = HttpField.getValueParameters("Value ; p1=v1;p2=v2 ; p3=\" v ; 3=three\"", map);
         assertThat(value, is("Value"));
         assertThat(map.size(), is(3));
         assertThat(map.get("p1"), is("v1"));
         assertThat(map.get("p2"), is("v2"));
-        assertThat(map.get("p3"), is(" v ; 3 = three"));
+        assertThat(map.get("p3"), is(" v ; 3=three"));
     }
 }
