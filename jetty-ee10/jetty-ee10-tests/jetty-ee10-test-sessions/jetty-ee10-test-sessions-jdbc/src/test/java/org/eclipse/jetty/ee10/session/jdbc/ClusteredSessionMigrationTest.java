@@ -23,7 +23,7 @@ import jakarta.servlet.http.HttpSession;
 import org.eclipse.jetty.client.ContentResponse;
 import org.eclipse.jetty.client.HttpClient;
 import org.eclipse.jetty.client.Request;
-import org.eclipse.jetty.ee10.session.AbstractSessionTestBase;
+import org.eclipse.jetty.session.test.AbstractSessionTestBase;
 import org.eclipse.jetty.ee10.session.SessionTestSupport;
 import org.eclipse.jetty.http.HttpField;
 import org.eclipse.jetty.session.AbstractSessionDataStoreFactory;

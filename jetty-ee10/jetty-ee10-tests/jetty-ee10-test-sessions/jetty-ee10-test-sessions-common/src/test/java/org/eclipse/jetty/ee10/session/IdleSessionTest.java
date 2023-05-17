@@ -32,6 +32,8 @@ import org.eclipse.jetty.session.DefaultSessionCacheFactory;
 import org.eclipse.jetty.session.ManagedSession;
 import org.eclipse.jetty.session.NullSessionCacheFactory;
 import org.eclipse.jetty.session.SessionDataStoreFactory;
+import org.eclipse.jetty.session.test.TestSessionDataStore;
+import org.eclipse.jetty.session.test.TestSessionDataStoreFactory;
 import org.eclipse.jetty.util.thread.AutoLock;
 import org.junit.jupiter.api.Test;
 

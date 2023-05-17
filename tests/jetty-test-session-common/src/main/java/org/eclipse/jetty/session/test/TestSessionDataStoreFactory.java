@@ -11,14 +11,22 @@
 // ========================================================================
 //
 
-package org.eclipse.jetty.ee10.session;
+package org.eclipse.jetty.session.test;
 
-import org.eclipse.jetty.session.SessionDataStoreFactory;
+import org.eclipse.jetty.session.AbstractSessionDataStoreFactory;
+import org.eclipse.jetty.session.SessionDataStore;
+import org.eclipse.jetty.session.SessionManager;
 
 /**
- * AbstractTestBase
+ * TestSessionDataStoreFactory
  */
-public abstract class AbstractSessionTestBase
+public class TestSessionDataStoreFactory extends AbstractSessionDataStoreFactory
 {
-    public abstract SessionDataStoreFactory createSessionDataStoreFactory();
+    @Override
+    public SessionDataStore getSessionDataStore(SessionManager sessionManager) throws Exception
+    {
+        TestSessionDataStore store = new TestSessionDataStore();
+        store.setSavePeriodSec(getSavePeriodSec());
+        return store;
+    }
 }

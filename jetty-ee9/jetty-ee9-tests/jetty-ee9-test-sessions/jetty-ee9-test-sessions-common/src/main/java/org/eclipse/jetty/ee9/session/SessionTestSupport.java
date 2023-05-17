@@ -42,7 +42,6 @@ public class SessionTestSupport
     protected final ContextHandlerCollection _contexts;
     protected SessionIdManager _sessionIdManager;
     private HouseKeeper _housekeeper;
-    protected Object _config;
     protected SessionCacheFactory _cacheFactory;
     protected SessionDataStoreFactory _storeFactory;
 
@@ -75,7 +74,7 @@ public class SessionTestSupport
         ((DefaultSessionIdManager)_sessionIdManager).setServer(_server);
         _housekeeper = new HouseKeeper();
         _housekeeper.setIntervalSec(_scavengePeriod);
-        ((DefaultSessionIdManager)_sessionIdManager).setSessionHouseKeeper(_housekeeper);
+        _sessionIdManager.setSessionHouseKeeper(_housekeeper);
     }
 
     public SessionIdManager newSessionIdManager()

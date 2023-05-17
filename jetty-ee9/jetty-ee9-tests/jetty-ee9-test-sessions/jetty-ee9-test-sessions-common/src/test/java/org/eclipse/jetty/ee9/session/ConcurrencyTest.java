@@ -31,6 +31,7 @@ import org.eclipse.jetty.client.Request;
 import org.eclipse.jetty.session.DefaultSessionCacheFactory;
 import org.eclipse.jetty.session.SessionCache;
 import org.eclipse.jetty.session.SessionDataStoreFactory;
+import org.eclipse.jetty.session.test.TestSessionDataStoreFactory;
 import org.eclipse.jetty.util.NanoTime;
 import org.junit.jupiter.api.Test;
 
@@ -75,7 +76,7 @@ public class ConcurrencyTest
                 ContentResponse response1 = client.GET(url + "?action=init");
                 assertEquals(HttpServletResponse.SC_OK, response1.getStatus());
                 String sessionCookie = response1.getHeaders().get("Set-Cookie");
-                assertTrue(sessionCookie != null);
+                assertNotNull(sessionCookie);
 
                 //simulate 10 clients making 10 requests each for the same session
                 ExecutorService executor = Executors.newCachedThreadPool();
@@ -140,7 +141,7 @@ public class ConcurrencyTest
             this.requestsCount = requestsCount;
             this.sessionCookie = sessionCookie;
             this.url = url;
-            this.name = "" + (COUNT++);
+            this.name = Integer.toString(COUNT++);
         }
 
         @Override
