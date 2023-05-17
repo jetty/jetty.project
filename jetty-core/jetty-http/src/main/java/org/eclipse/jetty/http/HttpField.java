@@ -398,6 +398,11 @@ public class HttpField
         return _name.equalsIgnoreCase(name);
     }
 
+    public boolean is(HttpHeader header)
+    {
+        return Objects.equals(_header, header);
+    }
+
     private int nameHashCode()
     {
         int h = this._hash;
