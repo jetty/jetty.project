@@ -9,7 +9,6 @@
   <artifactId>jetty-ee10-test-sessions-infinispan</artifactId>
   <name>EE10 :: Tests :: Sessions :: Infinispan</name>
   <properties>
-<!--    <junit.jupiter.execution.parallel.enabled>true</junit.jupiter.execution.parallel.enabled>-->
     <bundle-symbolic-name>${project.groupId}.sessions.infinispan</bundle-symbolic-name>
     <!-- from 10.xx it has changed to jboss/infinispan -->
     <infinispan.docker.image.name>infinispan/server</infinispan.docker.image.name>
