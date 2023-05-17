@@ -6,7 +6,7 @@
   </parent>
 
   <modelVersion>4.0.0</modelVersion>
-  <artifactId>jetty-session-test-tools</artifactId>
+  <artifactId>jetty-test-session-common</artifactId>
   <name>Tests :: Session Test Tools</name>
   <packaging>jar</packaging>
 

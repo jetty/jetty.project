@@ -95,7 +95,7 @@
     </dependency>
     <dependency>
       <groupId>org.eclipse.jetty.tests</groupId>
-      <artifactId>jetty-session-test-tools</artifactId>
+      <artifactId>jetty-test-session-common</artifactId>
       <scope>test</scope>
     </dependency>
   </dependencies>
