@@ -19,14 +19,14 @@ import java.util.Iterator;
 import java.util.NoSuchElementException;
 import java.util.StringTokenizer;
 
-public class QuotedStringTokenizerLegacy implements QuotedStringTokenizer
+public class LegacyQuotedStringTokenizer implements QuotedStringTokenizer
 {
     private final String _delim;
     private final boolean _returnQuotes;
     private final boolean _returnDelimiters;
     private final boolean _singleQuotes;
 
-    QuotedStringTokenizerLegacy(String delim,
+    LegacyQuotedStringTokenizer(String delim,
                                 boolean returnDelimiters,
                                 boolean returnQuotes,
                                 boolean singleQuotes)

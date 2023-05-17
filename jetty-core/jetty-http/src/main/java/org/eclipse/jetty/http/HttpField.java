@@ -30,7 +30,7 @@ public class HttpField
      * A constant {@link QuotedStringTokenizer} configured for quoting/tokenizing {@code parameters} lists as defined by
      * <a href="https://www.rfc-editor.org/rfc/rfc9110#name-parameters">RFC9110</a>
      */
-    public static final QuotedStringTokenizer PARAMETER_TOKENIZER = QuotedStringTokenizer.builder().delimiters(";").allowOptionalWhiteSpace().allowEmbeddedQuotes().returnQuotes().build();
+    public static final QuotedStringTokenizer PARAMETER_TOKENIZER = QuotedStringTokenizer.builder().delimiters(";").ignoreOptionalWhiteSpace().allowEmbeddedQuotes().returnQuotes().build();
 
     /**
      * A constant {@link QuotedStringTokenizer} configured for quoting/tokenizing a single {@code parameter} as defined by

@@ -70,7 +70,7 @@ public class MultiPart
     private static final Logger LOG = LoggerFactory.getLogger(MultiPart.class);
     private static final QuotedStringTokenizer CONTENT_DISPOSITION_TOKENIZER = QuotedStringTokenizer.builder()
         .delimiters(";")
-        .allowOptionalWhiteSpace()
+        .ignoreOptionalWhiteSpace()
         .allowEmbeddedQuotes()
         .allowEscapeOnlyForQuotes()
         .build();

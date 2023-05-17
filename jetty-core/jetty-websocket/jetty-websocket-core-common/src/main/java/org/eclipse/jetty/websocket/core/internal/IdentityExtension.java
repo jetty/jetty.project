@@ -24,7 +24,7 @@ import org.eclipse.jetty.websocket.core.WebSocketComponents;
 @ManagedObject("Identity Extension")
 public class IdentityExtension extends AbstractExtension
 {
-    private static final QuotedStringTokenizer PARAM_VALUE_QUOTING = QuotedStringTokenizer.builder().delimiters(";=").allowOptionalWhiteSpace().build();
+    private static final QuotedStringTokenizer PARAM_VALUE_QUOTING = QuotedStringTokenizer.builder().delimiters(";=").ignoreOptionalWhiteSpace().build();
 
     private String id;
 

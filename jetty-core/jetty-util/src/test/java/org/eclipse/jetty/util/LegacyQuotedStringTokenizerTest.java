@@ -22,7 +22,7 @@ import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
 // @checkstyle-disable-check : AvoidEscapedUnicodeCharactersCheck
-public class QuotedStringTokenizerLegacyTest
+public class LegacyQuotedStringTokenizerTest
 {
     /*
      * Test for String nextToken()
@@ -202,7 +202,7 @@ public class QuotedStringTokenizerLegacyTest
             if (returnQuotes)
                 builder.returnQuotes();
             if (singleQuotes)
-                builder.allowSingleQuotes();
+                builder.allowSingleQuote();
             _tokenizer = builder.build();
         }
 

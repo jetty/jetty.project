@@ -23,7 +23,7 @@ public interface QuotedStringTokenizer
     /**
      * A QuotedStringTokenizer for comma separated values with optional white space.
      */
-    QuotedStringTokenizer CSV = QuotedStringTokenizer.builder().delimiters(",").allowOptionalWhiteSpace().build();
+    QuotedStringTokenizer CSV = QuotedStringTokenizer.builder().delimiters(",").ignoreOptionalWhiteSpace().build();
 
     /**
      * @return A Builder for a {@link QuotedStringTokenizer}.
@@ -162,19 +162,24 @@ public interface QuotedStringTokenizer
 
         /**
          * If called, the built {@link QuotedStringTokenizer} will ignore optional white space characters before
-         * and after delimiters. This is not supported together with {@link #legacy()}.
+         * and after delimiters. This is not supported together with {@link #legacy()}. For example, the
+         * string {@code a, b ,c} with delimiter {@code ,} will be tokenized with this option as {@code a},
+         * {@code b} and {@code c}, all trimmed of spaces. Without this option, the second token would be {@code b} with one
+         * space before and after.
          * @return this {@code Builder}
          */
-        public Builder allowOptionalWhiteSpace()
+        public Builder ignoreOptionalWhiteSpace()
         {
             _optionalWhiteSpace = true;
             return this;
         }
 
         /**
-         * If called, the built {@link QuotedStringTokenizer} will allow quotes to be within a token, not just as
-         * initial/final characters as per the RFC.  For example the RFC illegal string {@code one, two", "three }
-         * with comma delimiter, would result in two tokens: {@code one} & {@code two, three}.
+         * If called, the built {@link QuotedStringTokenizer} will interpret quote characters within a token as initiating
+         * a sequence of quoted characters, rather than being part of the token value itself.
+         * For example the string {@code name1=value1; name2="value;2" with {@code ;} delimiter, would result in
+         * two tokens: {@code name1=value1} & {@code name2=value;2}. Without this option
+         * the result would be three tokens: {@code name1=value1}, {@code name2="value} and {@code 2"}.
          * @return this {@code Builder}
          */
         public Builder allowEmbeddedQuotes()
@@ -184,12 +189,11 @@ public interface QuotedStringTokenizer
         }
 
         /**
-         * If called, the built {@link QuotedStringTokenizer} will allow quoting with the single quote character.
-         * This can only be used with
-         * {@link #legacy()}.
+         * If called, the built {@link QuotedStringTokenizer} will allow quoting with the single quote character {@code '}.
+         * This can only be used with {@link #legacy()}.
          * @return this {@code Builder}
          */
-        public Builder allowSingleQuotes()
+        public Builder allowSingleQuote()
         {
             _singleQuotes = true;
             return this;
@@ -197,10 +201,10 @@ public interface QuotedStringTokenizer
 
         /**
          * If called, the built {@link QuotedStringTokenizer} will only allow escapes to be used with
-         * the quote characters.  Specifically the escape character itself cannot be escaped.
+         * the quote character.  Specifically the escape character itself cannot be escaped.
          * Any usage of the escape character, other than for quotes, is considered as a literal escape character.
-         * For example the string {@code "test\"tokenizer\escape"} will be unquoted as
-         * {@code test"tokenizer\escape}.
+         * For example the string {@code "test\"tokenizer\test"} will be unquoted as
+         * {@code test"tokenizer\test}.
          * @return this {@code Builder}
          */
         public Builder allowEscapeOnlyForQuotes()
@@ -235,7 +239,7 @@ public interface QuotedStringTokenizer
                     throw new IllegalArgumentException("EscapeOnlyQuote not supported by legacy");
                 if (!_embeddedQuotes)
                     throw new IllegalArgumentException("EmbeddedQuotes must be used with legacy");
-                return new QuotedStringTokenizerLegacy(_delim, _returnDelimiters, _returnQuotes, _singleQuotes);
+                return new LegacyQuotedStringTokenizer(_delim, _returnDelimiters, _returnQuotes, _singleQuotes);
             }
             if (StringUtil.isEmpty(_delim))
                 throw new IllegalArgumentException("Delimiters must be provided");

@@ -290,7 +290,7 @@ public class MultiPartCaptureTest
             if (StringUtil.isBlank(contentType))
                 return defaultCharset;
 
-            QuotedStringTokenizer tok = QuotedStringTokenizer.builder().delimiters(";").allowOptionalWhiteSpace().build();
+            QuotedStringTokenizer tok = QuotedStringTokenizer.builder().delimiters(";").ignoreOptionalWhiteSpace().build();
             for (Iterator<String> i = tok.tokenize(contentType); i.hasNext();)
             {
                 String str = i.next().trim();

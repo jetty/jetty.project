@@ -33,11 +33,11 @@ public class QuotedStringTokenizerTest
     public static Stream<Arguments> tokenizerTests()
     {
         QuotedStringTokenizer commaList = QuotedStringTokenizer.builder().delimiters(",").build();
-        QuotedStringTokenizer commaListOws = QuotedStringTokenizer.builder().delimiters(",").allowOptionalWhiteSpace().build();
-        QuotedStringTokenizer commaListOwsEmbedded = QuotedStringTokenizer.builder().delimiters(",").allowOptionalWhiteSpace().allowEmbeddedQuotes().build();
+        QuotedStringTokenizer commaListOws = QuotedStringTokenizer.builder().delimiters(",").ignoreOptionalWhiteSpace().build();
+        QuotedStringTokenizer commaListOwsEmbedded = QuotedStringTokenizer.builder().delimiters(",").ignoreOptionalWhiteSpace().allowEmbeddedQuotes().build();
         QuotedStringTokenizer commaListDelimiters = QuotedStringTokenizer.builder().delimiters(",").returnDelimiters().build();
-        QuotedStringTokenizer commaListOwsDelimiters = QuotedStringTokenizer.builder().delimiters(",").allowOptionalWhiteSpace().returnDelimiters().build();
-        QuotedStringTokenizer commaListOwsEmbeddedQuotes = QuotedStringTokenizer.builder().delimiters(",").allowOptionalWhiteSpace().returnQuotes().allowEmbeddedQuotes().build();
+        QuotedStringTokenizer commaListOwsDelimiters = QuotedStringTokenizer.builder().delimiters(",").ignoreOptionalWhiteSpace().returnDelimiters().build();
+        QuotedStringTokenizer commaListOwsEmbeddedQuotes = QuotedStringTokenizer.builder().delimiters(",").ignoreOptionalWhiteSpace().returnQuotes().allowEmbeddedQuotes().build();
         QuotedStringTokenizer commaListEscapeOQ = QuotedStringTokenizer.builder().delimiters(",").allowEscapeOnlyForQuotes().build();
 
         return Stream.of(
@@ -184,7 +184,7 @@ public class QuotedStringTokenizerTest
     {
         String contentDisposition = "form-data; name=\"fileup\"; filename=\"C:\\Pictures\\20120504.jpg\"";
 
-        QuotedStringTokenizer tok = QuotedStringTokenizer.builder().delimiters(";").allowOptionalWhiteSpace().returnQuotes().allowEmbeddedQuotes().allowEscapeOnlyForQuotes().build();
+        QuotedStringTokenizer tok = QuotedStringTokenizer.builder().delimiters(";").ignoreOptionalWhiteSpace().returnQuotes().allowEmbeddedQuotes().allowEscapeOnlyForQuotes().build();
         Iterator<String> iter = tok.tokenize(contentDisposition);
 
         assertEquals("form-data", iter.next());
