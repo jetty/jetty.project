@@ -17,7 +17,6 @@ import java.util.EnumSet;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.TimeoutException;
 
-import org.eclipse.jetty.http3.HTTP3ErrorCode;
 import org.eclipse.jetty.http3.HTTP3Session;
 import org.eclipse.jetty.http3.HTTP3Stream;
 import org.eclipse.jetty.http3.MessageFlusher;
@@ -27,7 +26,6 @@ import org.eclipse.jetty.http3.frames.HeadersFrame;
 import org.eclipse.jetty.quic.common.QuicStreamEndPoint;
 import org.eclipse.jetty.util.Callback;
 import org.eclipse.jetty.util.Promise;
-import org.eclipse.jetty.util.thread.Invocable;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -49,11 +47,7 @@ public class HTTP3StreamServer extends HTTP3Stream implements Stream.Server
             onHeaders(frame);
             Listener listener = this.listener = notifyRequest(frame);
             if (listener == null)
-            {
-                QuicStreamEndPoint endPoint = getEndPoint();
-                Callback callback = Callback.from(Invocable.InvocationType.NON_BLOCKING, () -> endPoint.shutdownInput(HTTP3ErrorCode.NO_ERROR.code()));
-                getSession().writeMessageFrame(getId(), new MessageFlusher.FlushFrame(), callback);
-            }
+                getSession().writeMessageFrame(getId(), new MessageFlusher.FlushFrame(), Callback.NOOP);
             updateClose(frame.isLast(), false);
         }
     }

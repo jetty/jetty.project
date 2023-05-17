@@ -123,8 +123,6 @@ public class HTTP3SessionClient extends HTTP3Session implements Session.Client
             {
                 if (x == null)
                 {
-                    if (listener == null)
-                        endPoint.shutdownInput(HTTP3ErrorCode.NO_ERROR.code());
                     stream.updateClose(frame.isLast(), true);
                     promise.succeeded(stream);
                 }

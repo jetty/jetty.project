@@ -44,7 +44,6 @@ import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.ValueSource;
 
 import static org.awaitility.Awaitility.await;
-import static org.hamcrest.Matchers.notNullValue;
 import static org.junit.jupiter.api.Assertions.assertArrayEquals;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertNotNull;
@@ -564,40 +563,47 @@ public class ClientServerTest extends AbstractClientServerTest
     }
 
     @Test
-    public void testReadDataFromOnRequest() throws Exception
+    public void testReadDataFromOnRequestWithoutDemanding() throws Exception
     {
         CountDownLatch requestLatch = new CountDownLatch(1);
-        CountDownLatch data1Latch = new CountDownLatch(1);
         start(new Session.Server.Listener()
         {
             @Override
             public Stream.Server.Listener onRequest(Stream.Server stream, HeadersFrame frame)
             {
                 requestLatch.countDown();
-                Stream.Data data = await().atMost(5, TimeUnit.SECONDS).until(stream::readData, notNullValue());
-                data.release();
-                stream.demand();
-                data1Latch.countDown();
-                return new Stream.Server.Listener()
+
+                // This thread cannot be blocked otherwise we never
+                // read from the network what the client is sending.
+                // Therefore, spawn a new thread to read the content
+                // in a spin loop without calling demand().
+                new Thread(() -> readWithoutDemanding(stream)).start();
+                return null;
+            }
+
+            private void readWithoutDemanding(Stream.Server stream)
+            {
+                try
                 {
-                    @Override
-                    public void onDataAvailable(Stream.Server stream)
+                    while (true)
                     {
                         Stream.Data data = stream.readData();
                         if (data == null)
                         {
-                            stream.demand();
-                            return;
+                            Thread.sleep(100);
+                            continue;
                         }
                         data.release();
-                        if (!data.isLast())
+                        if (data.isLast())
                         {
-                            stream.demand();
-                            return;
+                            stream.respond(new HeadersFrame(new MetaData.Response(HttpStatus.OK_200, null, HttpVersion.HTTP_3, HttpFields.EMPTY), true));
+                            break;
                         }
-                        stream.respond(new HeadersFrame(new MetaData.Response(HttpStatus.OK_200, null, HttpVersion.HTTP_3, HttpFields.EMPTY), true));
                     }
-                };
+                }
+                catch (InterruptedException ignored)
+                {
+                }
             }
         });
 
@@ -615,10 +621,12 @@ public class ClientServerTest extends AbstractClientServerTest
             .get(5, TimeUnit.SECONDS);
         assertTrue(requestLatch.await(5, TimeUnit.SECONDS));
 
+        Thread.sleep(500);
         clientStream.data(new DataFrame(ByteBuffer.allocate(1024), false));
-        assertTrue(data1Latch.await(555, TimeUnit.SECONDS));
 
+        Thread.sleep(500);
         clientStream.data(new DataFrame(ByteBuffer.allocate(512), true));
+
         assertTrue(responseLatch.await(5, TimeUnit.SECONDS));
     }
 }
