@@ -33,12 +33,12 @@ public class QuotedStringTokenizerTest
     public static Stream<Arguments> tokenizerTests()
     {
         QuotedStringTokenizer commaList = QuotedStringTokenizer.builder().delimiters(",").build();
-        QuotedStringTokenizer commaListOws = QuotedStringTokenizer.builder().delimiters(",").optionalWhiteSpace().build();
-        QuotedStringTokenizer commaListOwsEmbedded = QuotedStringTokenizer.builder().delimiters(",").optionalWhiteSpace().embeddedQuotes().build();
+        QuotedStringTokenizer commaListOws = QuotedStringTokenizer.builder().delimiters(",").allowOptionalWhiteSpace().build();
+        QuotedStringTokenizer commaListOwsEmbedded = QuotedStringTokenizer.builder().delimiters(",").allowOptionalWhiteSpace().allowEmbeddedQuotes().build();
         QuotedStringTokenizer commaListDelimiters = QuotedStringTokenizer.builder().delimiters(",").returnDelimiters().build();
-        QuotedStringTokenizer commaListOwsDelimiters = QuotedStringTokenizer.builder().delimiters(",").optionalWhiteSpace().returnDelimiters().build();
-        QuotedStringTokenizer commaListOwsEmbeddedQuotes = QuotedStringTokenizer.builder().delimiters(",").optionalWhiteSpace().returnQuotes().embeddedQuotes().build();
-        QuotedStringTokenizer commaListEscapeOQ = QuotedStringTokenizer.builder().delimiters(",").escapeOnlyQuote().build();
+        QuotedStringTokenizer commaListOwsDelimiters = QuotedStringTokenizer.builder().delimiters(",").allowOptionalWhiteSpace().returnDelimiters().build();
+        QuotedStringTokenizer commaListOwsEmbeddedQuotes = QuotedStringTokenizer.builder().delimiters(",").allowOptionalWhiteSpace().returnQuotes().allowEmbeddedQuotes().build();
+        QuotedStringTokenizer commaListEscapeOQ = QuotedStringTokenizer.builder().delimiters(",").allowEscapeOnlyForQuotes().build();
 
         return Stream.of(
             Arguments.of(commaList, "", new String[] {}),
@@ -184,7 +184,7 @@ public class QuotedStringTokenizerTest
     {
         String contentDisposition = "form-data; name=\"fileup\"; filename=\"C:\\Pictures\\20120504.jpg\"";
 
-        QuotedStringTokenizer tok = QuotedStringTokenizer.builder().delimiters(";").optionalWhiteSpace().returnQuotes().embeddedQuotes().escapeOnlyQuote().build();
+        QuotedStringTokenizer tok = QuotedStringTokenizer.builder().delimiters(";").allowOptionalWhiteSpace().returnQuotes().allowEmbeddedQuotes().allowEscapeOnlyForQuotes().build();
         Iterator<String> iter = tok.tokenize(contentDisposition);
 
         assertEquals("form-data", iter.next());

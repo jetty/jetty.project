@@ -26,8 +26,18 @@ import org.eclipse.jetty.util.StringUtil;
  */
 public class HttpField
 {
-    public static final QuotedStringTokenizer PARAMETER_TOKENIZER = QuotedStringTokenizer.builder().delimiters(";").optionalWhiteSpace().embeddedQuotes().returnQuotes().build();
-    public static final QuotedStringTokenizer NAME_VALUE_TOKENIZER = QuotedStringTokenizer.builder().delimiters("=").optionalWhiteSpace().build();
+    /**
+     * A constant {@link QuotedStringTokenizer} configured for quoting/tokenizing {@code parameters} lists as defined by
+     * <a href="https://www.rfc-editor.org/rfc/rfc9110#name-parameters">RFC9110</a>
+     */
+    public static final QuotedStringTokenizer PARAMETER_TOKENIZER = QuotedStringTokenizer.builder().delimiters(";").allowOptionalWhiteSpace().allowEmbeddedQuotes().returnQuotes().build();
+
+    /**
+     * A constant {@link QuotedStringTokenizer} configured for quoting/tokenizing a single {@code parameter} as defined by
+     * <a href="https://www.rfc-editor.org/rfc/rfc9110#name-parameters">RFC9110</a>
+     */
+    public static final QuotedStringTokenizer NAME_VALUE_TOKENIZER = QuotedStringTokenizer.builder().delimiters("=").build();
+
     private static final String __zeroQuality = "q=0";
     private final HttpHeader _header;
     private final String _name;

@@ -30,8 +30,8 @@ public abstract class QuotedCSVParser
     public static final String DELIMITERS = ",;=";
     public static final QuotedStringTokenizer LIST_TOKENIZER = QuotedStringTokenizer.builder()
         .delimiters(DELIMITERS)
-        .optionalWhiteSpace()
-        .embeddedQuotes()
+        .allowOptionalWhiteSpace()
+        .allowEmbeddedQuotes()
         .returnDelimiters()
         .returnQuotes()
         .build();

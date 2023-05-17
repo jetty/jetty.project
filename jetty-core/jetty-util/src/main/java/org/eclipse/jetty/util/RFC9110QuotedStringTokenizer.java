@@ -17,20 +17,15 @@ import java.io.IOException;
 import java.util.Iterator;
 import java.util.NoSuchElementException;
 import java.util.Objects;
-import java.util.StringTokenizer;
 
 /**
- * StringTokenizer with Quoting support.
- * <p>
- * This class extends {@link StringTokenizer} with partial handling of
+ * An implementation of {@link QuotedStringTokenizer} with partial handling of
  * <a href="https://www.rfc-editor.org/rfc/rfc9110#name-quoted-strings">RFC9110 quoted-string</a>s.
  * The deviation from the RFC is that characters are not enforced to be
  * {@code qdtext = HTAB / SP / %x21 / %x23-5B / %x5D-7E / obs-text} and it is expected
  * that the caller will enforce any character restrictions.
- *
- * @see java.util.StringTokenizer
  */
-public class QuotedStringTokenizerRfc9110 implements QuotedStringTokenizer
+public class RFC9110QuotedStringTokenizer implements QuotedStringTokenizer
 {
     private final String _delim;
     private final boolean _optionalWhiteSpace;
@@ -39,7 +34,7 @@ public class QuotedStringTokenizerRfc9110 implements QuotedStringTokenizer
     private final boolean _embeddedQuotes;
     private final boolean _escapeOnlyQuote;
 
-    QuotedStringTokenizerRfc9110(String delim,
+    RFC9110QuotedStringTokenizer(String delim,
                                  boolean optionalWhiteSpace,
                                  boolean returnDelimiters,
                                  boolean returnQuotes,
@@ -59,7 +54,7 @@ public class QuotedStringTokenizerRfc9110 implements QuotedStringTokenizer
             throw new IllegalArgumentException("Can't delimit with space with optional white space");
     }
 
-    protected boolean isOWS(char c)
+    protected boolean isOptionalWhiteSpace(char c)
     {
         return Character.isWhitespace(c);
     }
@@ -115,7 +110,7 @@ public class QuotedStringTokenizerRfc9110 implements QuotedStringTokenizer
                                 _ows = -1;
                                 _state = State.QUOTE;
                             }
-                            else if (!_optionalWhiteSpace || !isOWS(c))
+                            else if (!_optionalWhiteSpace || !isOptionalWhiteSpace(c))
                             {
                                 _token.append(c);
                                 _hasToken = true;
@@ -142,7 +137,7 @@ public class QuotedStringTokenizerRfc9110 implements QuotedStringTokenizer
                                 _ows = -1;
                                 _state = State.QUOTE;
                             }
-                            else if (_optionalWhiteSpace && isOWS(c))
+                            else if (_optionalWhiteSpace && isOptionalWhiteSpace(c))
                             {
                                 if (_ows < 0)
                                     _ows = _token.length();
@@ -204,7 +199,7 @@ public class QuotedStringTokenizerRfc9110 implements QuotedStringTokenizer
                                     return _hasToken = true;
                                 }
                             }
-                            else if (!_optionalWhiteSpace || !isOWS(c))
+                            else if (!_optionalWhiteSpace || !isOptionalWhiteSpace(c))
                                 throw new IllegalArgumentException("characters after end quote");
                         }
                         default -> throw new IllegalStateException();
@@ -233,12 +228,6 @@ public class QuotedStringTokenizerRfc9110 implements QuotedStringTokenizer
         };
     }
 
-    /**
-     * Quote a string into an Appendable.
-     *
-     * @param buffer The Appendable
-     * @param input The String to quote.
-     */
     @Override
     public void quote(Appendable buffer, String input)
     {
@@ -314,12 +303,7 @@ public class QuotedStringTokenizerRfc9110 implements QuotedStringTokenizer
         return null;
     }
 
-    /**
-     * Unquote a string.
-     *
-     * @param s The string to unquote.
-     * @return unquoted string
-     */
+    @Override
     public String unquote(String s)
     {
         if (s == null)

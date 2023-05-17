@@ -13,6 +13,7 @@
 
 package org.eclipse.jetty.security.authentication;
 
+import java.io.Serial;
 import java.nio.charset.StandardCharsets;
 import java.security.MessageDigest;
 import java.security.SecureRandom;
@@ -50,13 +51,13 @@ import org.slf4j.LoggerFactory;
 public class DigestAuthenticator extends LoginAuthenticator
 {
     private static final Logger LOG = LoggerFactory.getLogger(DigestAuthenticator.class);
-    private static final QuotedStringTokenizer __tokenizer = QuotedStringTokenizer.builder().delimiters("=, ").returnDelimiters().embeddedQuotes().build();
+    private static final QuotedStringTokenizer TOKENIZER = QuotedStringTokenizer.builder().delimiters("=, ").returnDelimiters().allowEmbeddedQuotes().build();
 
     private final SecureRandom _random = new SecureRandom();
+    private final Queue<Nonce> _nonceQueue = new ConcurrentLinkedQueue<>();
+    private final ConcurrentMap<String, Nonce> _nonceMap = new ConcurrentHashMap<>();
     private long _maxNonceAgeMs = 60 * 1000;
     private int _maxNC = 1024;
-    private ConcurrentMap<String, Nonce> _nonceMap = new ConcurrentHashMap<>();
-    private Queue<Nonce> _nonceQueue = new ConcurrentLinkedQueue<>();
 
     @Override
     public void setConfiguration(Configuration configuration)
@@ -111,7 +112,7 @@ public class DigestAuthenticator extends LoginAuthenticator
             String last = null;
             String name = null;
 
-            for (Iterator<String> i = __tokenizer.tokenize(credentials); i.hasNext();)
+            for (Iterator<String> i = TOKENIZER.tokenize(credentials); i.hasNext();)
             {
                 String tok = i.next();
                 char c = (tok.length() == 1) ? tok.charAt(0) : '\0';
@@ -269,7 +270,7 @@ public class DigestAuthenticator extends LoginAuthenticator
 
         public boolean seen(int count)
         {
-            try (AutoLock l = _lock.lock())
+            try (AutoLock ignored = _lock.lock())
             {
                 if (count >= _seen.size())
                     return true;
@@ -282,6 +283,7 @@ public class DigestAuthenticator extends LoginAuthenticator
 
     private static class Digest extends Credential
     {
+        @Serial
         private static final long serialVersionUID = -2484639019549527724L;
         final String method;
         String username = "";

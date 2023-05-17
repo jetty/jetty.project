@@ -202,7 +202,7 @@ public class QuotedStringTokenizerLegacyTest
             if (returnQuotes)
                 builder.returnQuotes();
             if (singleQuotes)
-                builder.singleQuotes();
+                builder.allowSingleQuotes();
             _tokenizer = builder.build();
         }
 

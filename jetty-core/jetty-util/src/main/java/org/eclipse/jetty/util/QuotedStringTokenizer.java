@@ -20,7 +20,10 @@ import java.util.Iterator;
  */
 public interface QuotedStringTokenizer
 {
-    QuotedStringTokenizer CSV = QuotedStringTokenizer.builder().delimiters(",").optionalWhiteSpace().build();
+    /**
+     * A QuotedStringTokenizer for comma separated values with optional white space.
+     */
+    QuotedStringTokenizer CSV = QuotedStringTokenizer.builder().delimiters(",").allowOptionalWhiteSpace().build();
 
     /**
      * @return A Builder for a {@link QuotedStringTokenizer}.
@@ -30,6 +33,10 @@ public interface QuotedStringTokenizer
         return new Builder();
     }
 
+    /**
+     * @param s The string to test
+     * @return True if the string is quoted.
+     */
     static boolean isQuoted(String s)
     {
         return s != null && s.length() > 0 && s.charAt(0) == '"' && s.charAt(s.length() - 1) == '"';
@@ -57,23 +64,35 @@ public interface QuotedStringTokenizer
     }
 
     /**
-     * Quote a string into an Appendable.
+     * Quote a string into an Appendable, escaping any characters that
+     * need to be escaped.
      *
-     * @param buffer The Appendable
+     * @param buffer The Appendable to append the quoted and escaped string into.
      * @param input The String to quote.
      */
     void quote(Appendable buffer, String input);
 
     /**
-     * Unquote a string.
+     * Unquote a string and expand any escaped characters
      *
      * @param s The string to unquote.
-     * @return unquoted string
+     * @return unquoted string with escaped characters expanded.
      */
     String unquote(String s);
 
+    /**
+     * Tokenize the passed string into an {@link Iterator} of tokens
+     * split from the string by delimiters. Tokenization is done as the
+     * iterator is advanced.
+     * @param string The string to be tokenized
+     * @return An iterator of token strings.
+     */
     Iterator<String> tokenize(String string);
 
+    /**
+     * @param c A character
+     * @return True if a string containing the character should be quoted.
+     */
     boolean needsQuoting(char c);
 
     /**
@@ -146,7 +165,7 @@ public interface QuotedStringTokenizer
          * and after delimiters. This is not supported together with {@link #legacy()}.
          * @return this {@code Builder}
          */
-        public Builder optionalWhiteSpace()
+        public Builder allowOptionalWhiteSpace()
         {
             _optionalWhiteSpace = true;
             return this;
@@ -154,34 +173,37 @@ public interface QuotedStringTokenizer
 
         /**
          * If called, the built {@link QuotedStringTokenizer} will allow quotes to be within a token, not just as
-         * initial/final characters as per the RFC.  For example the RFC illegal string {@code 'one, two", "three' }
-         * with comma delimiter, would result in two tokens: {@code 'one' & 'two, three'}.
+         * initial/final characters as per the RFC.  For example the RFC illegal string {@code one, two", "three }
+         * with comma delimiter, would result in two tokens: {@code one} & {@code two, three}.
          * @return this {@code Builder}
          */
-        public Builder embeddedQuotes()
+        public Builder allowEmbeddedQuotes()
         {
             _embeddedQuotes = true;
             return this;
         }
 
         /**
-         * If called, the built {@link QuotedStringTokenizer} will allow single quotes. This can only be used with
+         * If called, the built {@link QuotedStringTokenizer} will allow quoting with the single quote character.
+         * This can only be used with
          * {@link #legacy()}.
          * @return this {@code Builder}
          */
-        public Builder singleQuotes()
+        public Builder allowSingleQuotes()
         {
             _singleQuotes = true;
             return this;
         }
 
         /**
-         * If called, the built {@link QuotedStringTokenizer} will only allow escapes for quote characters.
-         * For example the string {@code '"test\"tokenizer\escape"'} will be unquoted as
-         * {@code 'test"tokenizer\escape'}.
+         * If called, the built {@link QuotedStringTokenizer} will only allow escapes to be used with
+         * the quote characters.  Specifically the escape character itself cannot be escaped.
+         * Any usage of the escape character, other than for quotes, is considered as a literal escape character.
+         * For example the string {@code "test\"tokenizer\escape"} will be unquoted as
+         * {@code test"tokenizer\escape}.
          * @return this {@code Builder}
          */
-        public Builder escapeOnlyQuote()
+        public Builder allowEscapeOnlyForQuotes()
         {
             _escapeOnlyQuote = true;
             return this;
@@ -190,7 +212,7 @@ public interface QuotedStringTokenizer
         /**
          * If called, the built {@link QuotedStringTokenizer} will use the legacy implementation from prior to
          * jetty-12. The legacy implementation does not comply with any current RFC. Using {@code legacy} also
-         * implies {@link #embeddedQuotes()}.
+         * implies {@link #allowEmbeddedQuotes()}.
          * @return this {@code Builder}
          */
         public Builder legacy()
@@ -219,7 +241,7 @@ public interface QuotedStringTokenizer
                 throw new IllegalArgumentException("Delimiters must be provided");
             if (_singleQuotes)
                 throw new IllegalArgumentException("Single quotes not supported by RFC9110");
-            return new QuotedStringTokenizerRfc9110(_delim, _optionalWhiteSpace, _returnDelimiters, _returnQuotes, _embeddedQuotes, _escapeOnlyQuote);
+            return new RFC9110QuotedStringTokenizer(_delim, _optionalWhiteSpace, _returnDelimiters, _returnQuotes, _embeddedQuotes, _escapeOnlyQuote);
         }
     }
 }
