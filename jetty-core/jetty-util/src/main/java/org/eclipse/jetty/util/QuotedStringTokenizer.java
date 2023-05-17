@@ -177,8 +177,8 @@ public interface QuotedStringTokenizer
         /**
          * If called, the built {@link QuotedStringTokenizer} will interpret quote characters within a token as initiating
          * a sequence of quoted characters, rather than being part of the token value itself.
-         * For example the string {@code name1=value1; name2="value;2" with {@code ;} delimiter, would result in
-         * two tokens: {@code name1=value1} & {@code name2=value;2}. Without this option
+         * For example the string {@code name1=value1; name2="value;2"} with {@code ;} delimiter, would result in
+         * two tokens: {@code name1=value1} and {@code name2=value;2}. Without this option
          * the result would be three tokens: {@code name1=value1}, {@code name2="value} and {@code 2"}.
          * @return this {@code Builder}
          */
