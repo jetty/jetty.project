@@ -259,13 +259,22 @@ public interface Response extends Content.Sink
     static void sendRedirect(Request request, Response response, Callback callback, int code, String location, boolean consumeAvailable)
     {
         if (!HttpStatus.isRedirection(code))
-            throw new IllegalArgumentException("Not a 3xx redirect code");
+        {
+            callback.failed(new IllegalArgumentException("Not a 3xx redirect code"));
+            return;
+        }
 
         if (location == null)
-            throw new IllegalArgumentException("No location");
+        {
+            callback.failed(new IllegalArgumentException("No location"));
+            return;
+        }
 
         if (response.isCommitted())
-            throw new IllegalStateException("Committed");
+        {
+            callback.failed(new IllegalStateException("Committed"));
+            return;
+        }
 
         if (consumeAvailable)
         {

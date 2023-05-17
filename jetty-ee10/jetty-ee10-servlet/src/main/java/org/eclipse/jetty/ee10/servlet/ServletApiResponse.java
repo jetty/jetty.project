@@ -43,7 +43,6 @@ import org.eclipse.jetty.server.Response;
 import org.eclipse.jetty.session.ManagedSession;
 import org.eclipse.jetty.session.SessionManager;
 import org.eclipse.jetty.util.Blocker;
-import org.eclipse.jetty.util.FutureCallback;
 import org.eclipse.jetty.util.StringUtil;
 
 /**
@@ -159,9 +158,11 @@ public class ServletApiResponse implements HttpServletResponse
     public void sendRedirect(int code, String location) throws IOException
     {
         resetBuffer();
-        FutureCallback callback = new FutureCallback();
-        Response.sendRedirect(_response.getServletContextRequest(), _response, callback, code, location, false);
-        callback.block();
+        try (Blocker.Callback callback = Blocker.callback())
+        {
+            Response.sendRedirect(_response.getServletContextRequest(), _response, callback, code, location, false);
+            callback.block();
+        }
     }
 
     @Override

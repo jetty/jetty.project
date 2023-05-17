@@ -13,6 +13,7 @@
 
 package org.eclipse.jetty.ee10.servlet;
 
+import java.util.Objects;
 import java.util.Set;
 
 import jakarta.servlet.http.PushBuilder;
@@ -43,8 +44,10 @@ class PushBuilderImpl implements PushBuilder
     @Override
     public PushBuilder method(String method)
     {
-        HttpMethod httpMethod = HttpMethod.fromString(method);
-        if (httpMethod == null || !httpMethod.isSafe())
+        HttpMethod httpMethod = HttpMethod.fromString(Objects.requireNonNull(method));
+        if (httpMethod == null || !httpMethod.isSafe() ||
+            // While OPTIONS and TRACE are safe, they are forbidden (wrongly) by the javadoc.
+            httpMethod == HttpMethod.OPTIONS || httpMethod == HttpMethod.TRACE)
             throw new IllegalArgumentException("method not allowed for push: " + method);
         _method = httpMethod.asString();
         return this;
