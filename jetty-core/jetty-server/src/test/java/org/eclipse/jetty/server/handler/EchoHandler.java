@@ -33,7 +33,7 @@ public class EchoHandler extends Handler.Abstract.NonBlocking
     }
 
     @Override
-    public boolean handle(Request request, Response response, Callback callback) throws Exception
+    public boolean handle(Request request, Response response, Callback callback)
     {
         response.setStatus(200);
 
