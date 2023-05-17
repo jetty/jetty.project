@@ -2712,9 +2712,6 @@ public class ServletContextHandler extends ContextHandler implements Graceful
         public ServletContext getContext(String uripath)
         {
             //TODO jetty-12 does not currently support cross context dispatch
-            String myPath = getContextPath();
-            if (myPath != null && myPath.equals(uripath))
-                return this;
             return null;
         }
 

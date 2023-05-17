@@ -1747,9 +1747,7 @@ public class ContextHandler extends ScopedHandler implements Attributes, Gracefu
         @Override
         public ServletContext getContext(String uripath)
         {
-            if (getContextPath().equals(uripath))
-                return _apiContext;
-            // No cross context dispatch
+            // TODO No cross context dispatch
             return null;
         }
 
