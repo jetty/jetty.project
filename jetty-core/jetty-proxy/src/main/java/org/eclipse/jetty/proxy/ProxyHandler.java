@@ -49,7 +49,6 @@ import org.eclipse.jetty.server.Request;
 import org.eclipse.jetty.server.Response;
 import org.eclipse.jetty.util.BufferUtil;
 import org.eclipse.jetty.util.Callback;
-import org.eclipse.jetty.util.QuotedStringTokenizer;
 import org.eclipse.jetty.util.StringUtil;
 import org.eclipse.jetty.util.component.LifeCycle;
 import org.eclipse.jetty.util.thread.QueuedThreadPool;
@@ -364,9 +363,9 @@ public abstract class ProxyHandler extends Handler.Abstract
         // server (so the scheme is http), but securely with the forward proxy (so isSecure() is true).
         String protoAttr = scheme == null ? (clientToProxyRequest.isSecure() ? "https" : "http") : scheme;
         String forwardedValue = "by=%s;for=%s;host=%s;proto=%s".formatted(
-            QuotedStringTokenizer.quote(byAttr),
-            QuotedStringTokenizer.quote(forAttr),
-            QuotedStringTokenizer.quote(hostAttr),
+            HttpField.PARAMETER_TOKENIZER.quote(byAttr),
+            HttpField.PARAMETER_TOKENIZER.quote(forAttr),
+            HttpField.PARAMETER_TOKENIZER.quote(hostAttr),
             protoAttr
         );
 

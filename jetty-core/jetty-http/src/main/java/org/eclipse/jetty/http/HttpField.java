@@ -13,10 +13,10 @@
 
 package org.eclipse.jetty.http;
 
+import java.util.Iterator;
 import java.util.List;
 import java.util.Map;
 import java.util.Objects;
-import java.util.StringTokenizer;
 
 import org.eclipse.jetty.util.QuotedStringTokenizer;
 import org.eclipse.jetty.util.StringUtil;
@@ -26,6 +26,18 @@ import org.eclipse.jetty.util.StringUtil;
  */
 public class HttpField
 {
+    /**
+     * A constant {@link QuotedStringTokenizer} configured for quoting/tokenizing {@code parameters} lists as defined by
+     * <a href="https://www.rfc-editor.org/rfc/rfc9110#name-parameters">RFC9110</a>
+     */
+    public static final QuotedStringTokenizer PARAMETER_TOKENIZER = QuotedStringTokenizer.builder().delimiters(";").ignoreOptionalWhiteSpace().allowEmbeddedQuotes().returnQuotes().build();
+
+    /**
+     * A constant {@link QuotedStringTokenizer} configured for quoting/tokenizing a single {@code parameter} as defined by
+     * <a href="https://www.rfc-editor.org/rfc/rfc9110#name-parameters">RFC9110</a>
+     */
+    public static final QuotedStringTokenizer NAME_VALUE_TOKENIZER = QuotedStringTokenizer.builder().delimiters("=").build();
+
     private static final String __zeroQuality = "q=0";
     private final HttpHeader _header;
     private final String _name;
@@ -67,37 +79,38 @@ public class HttpField
      *
      * </PRE>
      *
-     * @param value The Field value, possibly with parameters.
+     * @param valueParams The Field value, possibly with parameters.
      * @param parameters A map to populate with the parameters, or null
      * @return The value.
      */
-    public static String getValueParameters(String value, Map<String, String> parameters)
+    public static String getValueParameters(String valueParams, Map<String, String> parameters)
     {
-        if (value == null)
+        if (valueParams == null)
             return null;
 
-        int i = value.indexOf(';');
-        if (i < 0)
-            return value;
-        if (parameters == null)
-            return value.substring(0, i).trim();
-
-        StringTokenizer tok1 = new QuotedStringTokenizer(value.substring(i), ";", false, true);
-        while (tok1.hasMoreTokens())
+        Iterator<String> tokens = PARAMETER_TOKENIZER.tokenize(valueParams);
+        if (!tokens.hasNext())
+            return null;
+        String value = tokens.next();
+        if (parameters != null)
         {
-            String token = tok1.nextToken();
-            StringTokenizer tok2 = new QuotedStringTokenizer(token, "= ");
-            if (tok2.hasMoreTokens())
+            while (tokens.hasNext())
             {
-                String paramName = tok2.nextToken();
-                String paramVal = null;
-                if (tok2.hasMoreTokens())
-                    paramVal = tok2.nextToken();
-                parameters.put(paramName, paramVal);
+                String token = tokens.next();
+
+                Iterator<String> nameValue = NAME_VALUE_TOKENIZER.tokenize(token);
+                if (nameValue.hasNext())
+                {
+                    String paramName = nameValue.next();
+                    String paramVal = null;
+                    if (nameValue.hasNext())
+                        paramVal = nameValue.next();
+                    parameters.put(paramName, paramVal);
+                }
             }
         }
 
-        return value.substring(0, i).trim();
+        return value;
     }
 
     /**

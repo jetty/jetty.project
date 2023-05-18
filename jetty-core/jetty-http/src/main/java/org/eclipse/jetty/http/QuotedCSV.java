@@ -18,8 +18,6 @@ import java.util.Arrays;
 import java.util.Iterator;
 import java.util.List;
 
-import org.eclipse.jetty.util.QuotedStringTokenizer;
-
 /**
  * Implements a quoted comma separated list of values
  * in accordance with RFC7230.
@@ -30,11 +28,6 @@ import org.eclipse.jetty.util.QuotedStringTokenizer;
  */
 public class QuotedCSV extends QuotedCSVParser implements Iterable<String>
 {
-    /**
-     * ABNF from RFC 2616, RFC 822, and RFC 6455 specified characters requiring quoting.
-     */
-    public static final String ABNF_REQUIRED_QUOTING = "\"'\\\n\r\t\f\b%+ ;=,";
-
     /**
      * Join a list into Quoted CSV string
      *
@@ -104,7 +97,7 @@ public class QuotedCSV extends QuotedCSVParser implements Iterable<String>
                 builder.append(", ");
             else
                 needsDelim = true;
-            QuotedStringTokenizer.quoteIfNeeded(builder, value, ABNF_REQUIRED_QUOTING);
+            LIST_TOKENIZER.quoteIfNeeded(builder, value);
         }
     }
 

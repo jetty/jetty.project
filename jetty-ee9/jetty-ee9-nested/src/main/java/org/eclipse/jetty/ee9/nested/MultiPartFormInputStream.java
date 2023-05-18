@@ -31,12 +31,14 @@ import java.nio.file.StandardOpenOption;
 import java.util.Collection;
 import java.util.Collections;
 import java.util.EnumSet;
+import java.util.Iterator;
 import java.util.List;
 import java.util.stream.Collectors;
 
 import jakarta.servlet.MultipartConfigElement;
 import jakarta.servlet.ServletInputStream;
 import jakarta.servlet.http.Part;
+import org.eclipse.jetty.http.HttpField;
 import org.eclipse.jetty.util.BufferUtil;
 import org.eclipse.jetty.util.ByteArrayOutputStream2;
 import org.eclipse.jetty.util.ExceptionUtil;
@@ -91,6 +93,7 @@ public class MultiPartFormInputStream
     }
 
     private static final Logger LOG = LoggerFactory.getLogger(MultiPartFormInputStream.class);
+    private static final QuotedStringTokenizer QUOTED_STRING_TOKENIZER = QuotedStringTokenizer.builder().delimiters(";").ignoreOptionalWhiteSpace().allowEmbeddedQuotes().build();
 
     private final AutoLock _lock = new AutoLock();
     private final MultiMap<Part> _parts = new MultiMap<>();
@@ -103,7 +106,6 @@ public class MultiPartFormInputStream
     private int _numParts = 0;
     private volatile Throwable _err;
     private volatile Path _tmpDir;
-    private volatile boolean _deleteOnExit;
     private volatile boolean _writeFilesWithFilenames;
     private volatile int _bufferSize = 16 * 1024;
     private State state = State.UNPARSED;
@@ -586,7 +588,7 @@ public class MultiPartFormInputStream
             {
                 int bend = _contentType.indexOf(";", bstart);
                 bend = (bend < 0 ? _contentType.length() : bend);
-                contentTypeBoundary = QuotedStringTokenizer.unquote(value(_contentType.substring(bstart, bend)).trim());
+                contentTypeBoundary = HttpField.PARAMETER_TOKENIZER.unquote(value(_contentType.substring(bstart, bend)).trim());
             }
 
             parser = new MultiPartParser(new Handler(), contentTypeBoundary);
@@ -734,12 +736,13 @@ public class MultiPartFormInputStream
                     throw new IOException("Missing content-disposition");
                 }
 
-                QuotedStringTokenizer tok = new QuotedStringTokenizer(contentDisposition, ";", false, true);
+                QUOTED_STRING_TOKENIZER.tokenize(contentDisposition);
+
                 String name = null;
                 String filename = null;
-                while (tok.hasMoreTokens())
+                for (Iterator<String> i = QUOTED_STRING_TOKENIZER.tokenize(contentDisposition); i.hasNext();)
                 {
-                    String t = tok.nextToken().trim();
+                    String t = i.next();
                     String tl = StringUtil.asciiToLowerCase(t);
                     if (tl.startsWith("form-data"))
                         formData = true;
@@ -888,7 +891,7 @@ public class MultiPartFormInputStream
     {
         int idx = nameEqualsValue.indexOf('=');
         String value = nameEqualsValue.substring(idx + 1).trim();
-        return QuotedStringTokenizer.unquoteOnly(value);
+        return HttpField.PARAMETER_TOKENIZER.unquote(value);
     }
 
     private static String filenameValue(String nameEqualsValue)
@@ -910,11 +913,7 @@ public class MultiPartFormInputStream
             return value;
         }
         else
-            // unquote the string, but allow any backslashes that don't
-            // form a valid escape sequence to remain as many browsers
-            // even on *nix systems will not escape a filename containing
-            // backslashes
-            return QuotedStringTokenizer.unquoteOnly(value, true);
+            return HttpField.PARAMETER_TOKENIZER.unquote(value);
     }
 
     /**

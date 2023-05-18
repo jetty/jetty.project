@@ -41,7 +41,6 @@ import static org.junit.jupiter.api.Assertions.assertTrue;
 
 public class QuickStartTest
 {
-
     @Test
     public void testStandardTestWar() throws Exception
     {
