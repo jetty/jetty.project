@@ -13,14 +13,13 @@
 
 package org.eclipse.jetty.server.handler;
 
+import org.eclipse.jetty.http.HttpField;
 import org.eclipse.jetty.http.HttpFields;
-import org.eclipse.jetty.http.HttpHeader;
 import org.eclipse.jetty.io.Content;
 import org.eclipse.jetty.server.Handler;
 import org.eclipse.jetty.server.Request;
 import org.eclipse.jetty.server.Response;
 import org.eclipse.jetty.util.Callback;
-import org.eclipse.jetty.util.StringUtil;
 
 /**
  * Dump request handler.
@@ -32,26 +31,32 @@ public class EchoHandler extends Handler.Abstract.NonBlocking
     public EchoHandler()
     {
     }
-    
+
     @Override
-    public boolean handle(Request request, Response response, Callback callback) throws Exception
+    public boolean handle(Request request, Response response, Callback callback)
     {
         response.setStatus(200);
-        String contentType = request.getHeaders().get(HttpHeader.CONTENT_TYPE);
-        if (StringUtil.isNotBlank(contentType))
-            response.getHeaders().put(HttpHeader.CONTENT_TYPE, contentType);
 
-        if (request.getHeaders().contains(HttpHeader.TRAILER))
+        long contentLength = -1;
+        for (HttpField field : request.getHeaders())
         {
-            HttpFields.Mutable responseTrailers = HttpFields.build();
-            response.setTrailersSupplier(() -> responseTrailers);
+            if (field.getHeader() != null)
+            {
+                switch (field.getHeader())
+                {
+                    case CONTENT_LENGTH ->
+                    {
+                        response.getHeaders().add(field);
+                        contentLength = field.getLongValue();
+                    }
+                    case CONTENT_TYPE -> response.getHeaders().add(field);
+                    case TRAILER -> response.setTrailersSupplier(HttpFields.build());
+                    case TRANSFER_ENCODING -> contentLength = Long.MAX_VALUE;
+                }
+            }
         }
 
-        long contentLength = request.getHeaders().getLongField(HttpHeader.CONTENT_LENGTH);
-        if (contentLength >= 0)
-            response.getHeaders().put(HttpHeader.CONTENT_LENGTH, contentLength);
-
-        if (contentLength > 0 || contentLength == -1 && request.getHeaders().contains(HttpHeader.TRANSFER_ENCODING))
+        if (contentLength > 0)
             Content.copy(request, response, Response.newTrailersChunkProcessor(response), callback);
         else
             callback.succeeded();

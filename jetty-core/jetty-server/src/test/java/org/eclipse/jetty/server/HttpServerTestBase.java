@@ -1872,7 +1872,7 @@ public abstract class HttpServerTestBase extends HttpServerTestFixture
         }
 
         @Override
-        public boolean handle(Request request, Response response, Callback callback) throws Exception
+        public boolean handle(Request request, Response response, Callback callback)
         {
             AtomicBoolean hasContent = new AtomicBoolean();
             Request.Wrapper wrapper = new Request.Wrapper(request)

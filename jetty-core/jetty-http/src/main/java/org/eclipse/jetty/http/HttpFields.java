@@ -29,6 +29,7 @@ import java.util.Spliterators;
 import java.util.function.BiFunction;
 import java.util.function.BiPredicate;
 import java.util.function.Function;
+import java.util.function.Supplier;
 import java.util.function.ToIntFunction;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
@@ -41,7 +42,7 @@ import java.util.stream.StreamSupport;
  * To implement this interface, only the {@link #iterator()} method
  * need be implemented, however default implementations may be inefficient
  */
-public interface HttpFields extends Iterable<HttpField>
+public interface HttpFields extends Iterable<HttpField>, Supplier<HttpFields>
 {
     HttpField EXPIRES_01JAN1970 = new PreEncodedHttpField(HttpHeader.EXPIRES, DateGenerator.__01Jan1970);
     HttpField CONNECTION_CLOSE = new PreEncodedHttpField(HttpHeader.CONNECTION, HttpHeaderValue.CLOSE.asString());
@@ -88,6 +89,16 @@ public interface HttpFields extends Iterable<HttpField>
     default HttpFields asImmutable()
     {
         return HttpFields.build(this).asImmutable();
+    }
+
+    /**
+     * <p>Supplies this instance, typically used to supply HTTP trailers.</p>
+     * @return this instance
+     */
+    @Override
+    default HttpFields get()
+    {
+        return this;
     }
 
     /**
