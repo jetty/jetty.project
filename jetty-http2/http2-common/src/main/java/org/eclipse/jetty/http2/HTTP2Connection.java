@@ -241,7 +241,9 @@ public class HTTP2Connection extends AbstractConnection implements Parser.Listen
     public void onData(DataFrame frame)
     {
         NetworkBuffer networkBuffer = producer.networkBuffer;
+        // Retain the network buffer because the frame payload is a slice of it.
         networkBuffer.retain();
+        // The network buffer is also the callback used to release the frame payload.
         Callback callback = networkBuffer;
         session.onData(frame, callback);
     }
