@@ -297,7 +297,7 @@ public class HpackEncoderTest
         ByteBuffer buffer = BufferUtil.allocate(4096);
         int pos = BufferUtil.flipToFill(buffer);
         encoder.encodeMaxDynamicTableSize(buffer, 0);
-        encoder.setRemoteMaxDynamicTableSize(50);
+        encoder.setMaxTableSize(50);
         encoder.encode(buffer, new MetaData(HttpVersion.HTTP_2, fields));
         BufferUtil.flipToFlush(buffer, pos);
 

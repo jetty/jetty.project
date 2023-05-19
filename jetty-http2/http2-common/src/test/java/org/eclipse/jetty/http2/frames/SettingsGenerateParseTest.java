@@ -228,7 +228,7 @@ public class SettingsGenerateParseTest
         AtomicInteger errorRef = new AtomicInteger();
         Parser parser = new Parser(byteBufferPool, 4096, 8192);
         parser.setMaxSettingsKeys(maxSettingsKeys);
-        parser.setMaxFrameLength(Frame.DEFAULT_MAX_LENGTH);
+        parser.setMaxFrameSize(Frame.DEFAULT_MAX_LENGTH);
         parser.init(new Parser.Listener.Adapter()
         {
             @Override

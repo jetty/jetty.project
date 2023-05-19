@@ -377,8 +377,11 @@ public abstract class HTTP2Session extends ContainerLifeCycle implements ISessio
                 case SettingsFrame.HEADER_TABLE_SIZE:
                 {
                     if (LOG.isDebugEnabled())
-                        LOG.debug("Updating HPACK header table size to {} for {}", value, this);
-                    generator.setHeaderTableSize(value);
+                        LOG.debug("Updating HPACK {} max table size to {} for {}", local ? "decoder" : "encoder", value, this);
+                    if (local)
+                        parser.getHpackDecoder().setMaxTableSizeLimit(value);
+                    else
+                        generator.getHpackEncoder().setMaxTableSize(value);
                     break;
                 }
                 case SettingsFrame.ENABLE_PUSH:
@@ -392,8 +395,11 @@ public abstract class HTTP2Session extends ContainerLifeCycle implements ISessio
                 case SettingsFrame.MAX_CONCURRENT_STREAMS:
                 {
                     if (LOG.isDebugEnabled())
-                        LOG.debug("Updating max local concurrent streams to {} for {}", value, this);
-                    maxLocalStreams = value;
+                        LOG.debug("Updating max {} concurrent streams to {} for {}", local ? "remote" : "local", value, this);
+                    if (local)
+                        maxRemoteStreams = value;
+                    else
+                        maxLocalStreams = value;
                     break;
                 }
                 case SettingsFrame.INITIAL_WINDOW_SIZE:
@@ -406,9 +412,9 @@ public abstract class HTTP2Session extends ContainerLifeCycle implements ISessio
                 case SettingsFrame.MAX_FRAME_SIZE:
                 {
                     if (LOG.isDebugEnabled())
-                        LOG.debug("Updating max frame size to {} for {}", value, this);
+                        LOG.debug("Updating {} max frame size to {} for {}", local ? "parser" : "generator", value, this);
                     if (local)
-                        parser.setMaxFrameLength(value);
+                        parser.setMaxFrameSize(value);
                     else
                         generator.setMaxFrameSize(value);
                     break;
@@ -416,8 +422,11 @@ public abstract class HTTP2Session extends ContainerLifeCycle implements ISessio
                 case SettingsFrame.MAX_HEADER_LIST_SIZE:
                 {
                     if (LOG.isDebugEnabled())
-                        LOG.debug("Updating max header list size to {} for {}", value, this);
-                    generator.setMaxHeaderListSize(value);
+                        LOG.debug("Updating {} max header list size to {} for {}", local ? "decoder" : "encoder", value, this);
+                    if (local)
+                        parser.getHpackDecoder().setMaxHeaderListSize(value);
+                    else
+                        generator.getHpackEncoder().setMaxHeaderListSize(value);
                     break;
                 }
                 case SettingsFrame.ENABLE_CONNECT_PROTOCOL:

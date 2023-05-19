@@ -57,11 +57,11 @@ public class HTTP2ClientConnectionFactory implements ClientConnectionFactory
         @SuppressWarnings("unchecked")
         Promise<Session> sessionPromise = (Promise<Session>)context.get(SESSION_PROMISE_CONTEXT_KEY);
 
-        Generator generator = new Generator(byteBufferPool, client.getMaxDynamicTableSize(), client.getMaxHeaderBlockFragment());
+        Generator generator = new Generator(byteBufferPool, client.getMaxEncoderTableSize(), client.getMaxHeaderBlockFragment());
         FlowControlStrategy flowControl = client.getFlowControlStrategyFactory().newFlowControlStrategy();
 
-        Parser parser = new Parser(byteBufferPool, 4096, 8192);
-        parser.setMaxFrameLength(client.getMaxFrameLength());
+        Parser parser = new Parser(byteBufferPool, client.getMaxDecoderTableSize(), client.getMaxResponseHeadersSize());
+        parser.setMaxFrameSize(client.getMaxFrameSize());
         parser.setMaxSettingsKeys(client.getMaxSettingsKeys());
 
         HTTP2ClientSession session = new HTTP2ClientSession(scheduler, endPoint, parser, generator, listener, flowControl);
@@ -102,7 +102,7 @@ public class HTTP2ClientConnectionFactory implements ClientConnectionFactory
             if (settings == null)
                 settings = new HashMap<>();
 
-            // Here we want to populate any settings to send to the server
+            // Below we want to populate any settings to send to the server
             // that have a different default than what prescribed by the RFC.
             // Changing the configuration is done when the SETTINGS is sent.
 
@@ -110,7 +110,7 @@ public class HTTP2ClientConnectionFactory implements ClientConnectionFactory
             {
                 if (v == null)
                 {
-                    v = client.getMaxDynamicTableSize();
+                    v = client.getMaxDecoderTableSize();
                     if (v == 4096)
                         v = null;
                 }
@@ -131,8 +131,18 @@ public class HTTP2ClientConnectionFactory implements ClientConnectionFactory
             {
                 if (v == null)
                 {
-                    v = client.getMaxFrameLength();
+                    v = client.getMaxFrameSize();
                     if (v == Frame.DEFAULT_MAX_LENGTH)
+                        v = null;
+                }
+                return v;
+            });
+            settings.compute(SettingsFrame.MAX_HEADER_LIST_SIZE, (k, v) ->
+            {
+                if (v == null)
+                {
+                    v = client.getMaxResponseHeadersSize();
+                    if (v <= 0)
                         v = null;
                 }
                 return v;

@@ -158,7 +158,7 @@ public class HpackTest
     @Test
     public void evictReferencedFieldTest() throws Exception
     {
-        HpackEncoder encoder = new HpackEncoder(200, 200);
+        HpackEncoder encoder = new HpackEncoder(200);
         HpackDecoder decoder = new HpackDecoder(200, 1024);
         ByteBuffer buffer = BufferUtil.allocateDirect(16 * 1024);
 

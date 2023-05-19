@@ -66,14 +66,21 @@ public class Generator
         return byteBufferPool;
     }
 
-    public void setValidateHpackEncoding(boolean validateEncoding)
+    public HpackEncoder getHpackEncoder()
     {
-        hpackEncoder.setValidateEncoding(validateEncoding);
+        return hpackEncoder;
     }
 
-    public void setHeaderTableSize(int headerTableSize)
+    @Deprecated
+    public void setValidateHpackEncoding(boolean validateEncoding)
     {
-        hpackEncoder.setRemoteMaxDynamicTableSize(headerTableSize);
+        getHpackEncoder().setValidateEncoding(validateEncoding);
+    }
+
+    @Deprecated
+    public void setHeaderTableSize(int maxTableSize)
+    {
+        getHpackEncoder().setMaxTableSize(maxTableSize);
     }
 
     public void setMaxFrameSize(int maxFrameSize)
@@ -91,8 +98,9 @@ public class Generator
         return dataGenerator.generate(lease, frame, maxLength);
     }
 
+    @Deprecated
     public void setMaxHeaderListSize(int value)
     {
-        hpackEncoder.setMaxHeaderListSize(value);
+        getHpackEncoder().setMaxHeaderListSize(value);
     }
 }

@@ -94,34 +94,64 @@ public class HpackEncoder
 
     private final HpackContext _context;
     private final boolean _debug;
-    private int _remoteMaxDynamicTableSize;
-    private int _localMaxDynamicTableSize;
+    private int _maxTableSizeLimit;
+    private int _maxTableSize;
     private int _maxHeaderListSize;
     private int _headerListSize;
     private boolean _validateEncoding = true;
 
     public HpackEncoder()
     {
-        this(4096, 4096, -1);
+        this(4096);
     }
 
-    public HpackEncoder(int localMaxDynamicTableSize)
+    public HpackEncoder(int maxTableSizeLimit)
     {
-        this(localMaxDynamicTableSize, 4096, -1);
+        this(maxTableSizeLimit, -1);
     }
 
-    public HpackEncoder(int localMaxDynamicTableSize, int remoteMaxDynamicTableSize)
+    public HpackEncoder(int maxTableSizeLimit, int maxHeaderListSize)
     {
-        this(localMaxDynamicTableSize, remoteMaxDynamicTableSize, -1);
-    }
-
-    public HpackEncoder(int localMaxDynamicTableSize, int remoteMaxDynamicTableSize, int maxHeaderListSize)
-    {
-        _context = new HpackContext(remoteMaxDynamicTableSize);
-        _remoteMaxDynamicTableSize = remoteMaxDynamicTableSize;
-        _localMaxDynamicTableSize = localMaxDynamicTableSize;
+        _context = new HpackContext(maxTableSizeLimit);
+        _maxTableSizeLimit = maxTableSizeLimit;
+        _maxTableSize = maxTableSizeLimit;
         _maxHeaderListSize = maxHeaderListSize;
         _debug = LOG.isDebugEnabled();
+    }
+
+    public int getMaxTableSizeLimit()
+    {
+        return _maxTableSizeLimit;
+    }
+
+    /**
+     * <p>Sets the desired limit for the max size of the dynamic header table.</p>
+     * <p>This value acts as a limit for the values sent by the remote peer
+     * via the {@code SETTINGS_HEADER_TABLE_SIZE} setting.</p>
+     *
+     * @param maxTableSizeLimit the limit for max size of the dynamic header table
+     */
+    public void setMaxTableSizeLimit(int maxTableSizeLimit)
+    {
+        _maxTableSizeLimit = maxTableSizeLimit;
+    }
+
+    public int getMaxTableSize()
+    {
+        return _maxTableSize;
+    }
+
+    /**
+     * <p>Sets the max size of the dynamic header table.</p>
+     * <p>This value is set by the remote peer via the
+     * {@code SETTINGS_HEADER_TABLE_SIZE} setting and
+     * limited by {@link #setMaxTableSizeLimit(int)}.</p>
+     *
+     * @param maxTableSize the max size of the dynamic header table
+     */
+    public void setMaxTableSize(int maxTableSize)
+    {
+        _maxTableSize = Math.min(maxTableSize, getMaxTableSizeLimit());
     }
 
     public int getMaxHeaderListSize()
@@ -139,14 +169,16 @@ public class HpackEncoder
         return _context;
     }
 
-    public void setRemoteMaxDynamicTableSize(int remoteMaxDynamicTableSize)
+    @Deprecated
+    public void setRemoteMaxDynamicTableSize(int maxTableSize)
     {
-        _remoteMaxDynamicTableSize = remoteMaxDynamicTableSize;
+        setMaxTableSize(maxTableSize);
     }
 
-    public void setLocalMaxDynamicTableSize(int localMaxDynamicTableSize)
+    @Deprecated
+    public void setLocalMaxDynamicTableSize(int maxTableSizeLimit)
     {
-        _localMaxDynamicTableSize = localMaxDynamicTableSize;
+        setMaxTableSizeLimit(maxTableSizeLimit);
     }
 
     public boolean isValidateEncoding()
@@ -182,10 +214,10 @@ public class HpackEncoder
             _headerListSize = 0;
             int pos = buffer.position();
 
-            // Check the dynamic table sizes!
-            int maxDynamicTableSize = Math.min(_remoteMaxDynamicTableSize, _localMaxDynamicTableSize);
-            if (maxDynamicTableSize != _context.getMaxDynamicTableSize())
-                encodeMaxDynamicTableSize(buffer, maxDynamicTableSize);
+            // If max table size changed, send the correspondent instruction.
+            int maxTableSize = getMaxTableSize();
+            if (maxTableSize != _context.getMaxDynamicTableSize())
+                encodeMaxDynamicTableSize(buffer, maxTableSize);
 
             // Add Request/response meta fields
             if (metadata.isRequest())
@@ -259,14 +291,9 @@ public class HpackEncoder
                 }
             }
 
-            // Check size
-            if (_maxHeaderListSize > 0 && _headerListSize > _maxHeaderListSize)
-            {
-                if (LOG.isDebugEnabled())
-                    LOG.warn("Header list size too large {} > {} metadata={}", _headerListSize, _maxHeaderListSize, metadata);
-                else
-                    LOG.warn("Header list size too large {} > {}", _headerListSize, _maxHeaderListSize);
-            }
+            int maxHeaderListSize = getMaxHeaderListSize();
+            if (maxHeaderListSize > 0 && _headerListSize > maxHeaderListSize)
+                throw new HpackException.SessionException("Header size %d > %d", _headerListSize, maxHeaderListSize);
 
             if (LOG.isDebugEnabled())
                 LOG.debug(String.format("CtxTbl[%x] encoded %d octets", _context.hashCode(), buffer.position() - pos));
@@ -283,13 +310,13 @@ public class HpackEncoder
         }
     }
 
-    public void encodeMaxDynamicTableSize(ByteBuffer buffer, int maxDynamicTableSize)
+    public void encodeMaxDynamicTableSize(ByteBuffer buffer, int maxTableSize)
     {
-        if (maxDynamicTableSize > _remoteMaxDynamicTableSize)
+        if (maxTableSize > getMaxTableSize())
             throw new IllegalArgumentException();
         buffer.put((byte)0x20);
-        NBitIntegerEncoder.encode(buffer, 5, maxDynamicTableSize);
-        _context.resize(maxDynamicTableSize);
+        NBitIntegerEncoder.encode(buffer, 5, maxTableSize);
+        _context.resize(maxTableSize);
     }
 
     public void encode(ByteBuffer buffer, HttpField field)

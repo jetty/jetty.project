@@ -56,7 +56,7 @@ public class UnknownParseTest
                 failure.set(error);
             }
         });
-        parser.setMaxFrameLength(Frame.DEFAULT_MAX_LENGTH);
+        parser.setMaxFrameSize(Frame.DEFAULT_MAX_LENGTH);
 
         // 0x4001 == 16385 which is > Frame.DEFAULT_MAX_LENGTH.
         byte[] bytes = new byte[]{0, 0x40, 0x01, 64, 0, 0, 0, 0, 0};

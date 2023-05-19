@@ -585,7 +585,8 @@ public class HttpClientTransportOverHTTP2Test extends AbstractTest
             public Stream.Listener onNewStream(Stream stream, HeadersFrame frame)
             {
                 // Disable checks for invalid headers.
-                ((HTTP2Session)stream.getSession()).getGenerator().setValidateHpackEncoding(false);
+                Generator generator = ((HTTP2Session)stream.getSession()).getGenerator();
+                generator.getHpackEncoder().setValidateEncoding(false);
                 // Produce an invalid HPACK block by adding a request pseudo-header to the response.
                 HttpFields fields = HttpFields.build()
                     .put(":method", "get");

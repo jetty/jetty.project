@@ -42,16 +42,17 @@ public class HpackDecoder
     private final MetaDataBuilder _builder;
     private final HuffmanDecoder _huffmanDecoder;
     private final NBitIntegerDecoder _integerDecoder;
-    private int _localMaxDynamicTableSize;
+    private int _maxTableSizeLimit;
 
     /**
-     * @param localMaxDynamicTableSize The maximum allowed size of the local dynamic header field table.
-     * @param maxHeaderSize The maximum allowed size of a headers block, expressed as total of all name and value characters, plus 32 per field
+     * @param maxTableSizeLimit The maximum allowed size of the dynamic header table.
+     * @param maxHeaderSize The maximum allowed size of a decoded headers block,
+     * expressed as total of all name and value bytes, plus 32 bytes per field
      */
-    public HpackDecoder(int localMaxDynamicTableSize, int maxHeaderSize)
+    public HpackDecoder(int maxTableSizeLimit, int maxHeaderSize)
     {
-        _context = new HpackContext(localMaxDynamicTableSize);
-        _localMaxDynamicTableSize = localMaxDynamicTableSize;
+        _context = new HpackContext(maxTableSizeLimit);
+        _maxTableSizeLimit = maxTableSizeLimit;
         _builder = new MetaDataBuilder(maxHeaderSize);
         _huffmanDecoder = new HuffmanDecoder();
         _integerDecoder = new NBitIntegerDecoder();
@@ -62,9 +63,39 @@ public class HpackDecoder
         return _context;
     }
 
-    public void setLocalMaxDynamicTableSize(int localMaxdynamciTableSize)
+    public int getMaxTableSizeLimit()
     {
-        _localMaxDynamicTableSize = localMaxdynamciTableSize;
+        return _maxTableSizeLimit;
+    }
+
+    /**
+     * <p>Sets the desired limit for the max size of the dynamic header table.</p>
+     * <p>This value acts as a limit for the values sent by the remote peer
+     * via the HPACK dynamic table size update instruction.</p>
+     * <p>After calling this method, a SETTINGS frame must be sent to the other
+     * peer, containing the {@code SETTINGS_HEADER_TABLE_SIZE} setting with
+     * the value passed as argument to this method.</p>
+     *
+     * @param maxTableSizeLimit the limit for max size of the dynamic header table
+     */
+    public void setMaxTableSizeLimit(int maxTableSizeLimit)
+    {
+        _maxTableSizeLimit = maxTableSizeLimit;
+    }
+
+    /**
+     * @param maxTableSizeLimit the local dynamic table max size
+     * @deprecated use {@link #setMaxTableSizeLimit(int)} instead
+     */
+    @Deprecated
+    public void setLocalMaxDynamicTableSize(int maxTableSizeLimit)
+    {
+        setMaxTableSizeLimit(maxTableSizeLimit);
+    }
+
+    public void setMaxHeaderListSize(int maxHeaderListSize)
+    {
+        _builder.setMaxSize(maxHeaderListSize);
     }
 
     public MetaData decode(ByteBuffer buffer) throws HpackException.SessionException, HpackException.StreamException
@@ -72,13 +103,12 @@ public class HpackDecoder
         if (LOG.isDebugEnabled())
             LOG.debug(String.format("CtxTbl[%x] decoding %d octets", _context.hashCode(), buffer.remaining()));
 
-        // If the buffer is big, don't even think about decoding it.
-        // Huffman may double the size, but it will only be a temporary allocation until detected in MetaDataBuilder.emit().
-        if (buffer.remaining() > _builder.getMaxSize())
-            throw new HpackException.SessionException("431 Request Header Fields too large");
+        // If the buffer is larger than the max headers size, don't even start decoding it.
+        int maxSize = _builder.getMaxSize();
+        if (maxSize > 0 && buffer.remaining() > maxSize)
+            throw new HpackException.SessionException("Header fields size too large");
 
         boolean emitted = false;
-
         while (buffer.hasRemaining())
         {
             if (LOG.isDebugEnabled())
@@ -132,8 +162,8 @@ public class HpackDecoder
                         int size = integerDecode(buffer, 5);
                         if (LOG.isDebugEnabled())
                             LOG.debug("decode resize={}", size);
-                        if (size > _localMaxDynamicTableSize)
-                            throw new IllegalArgumentException();
+                        if (size > getMaxTableSizeLimit())
+                            throw new HpackException.CompressionException("Dynamic table resize exceeded max limit");
                         if (emitted)
                             throw new HpackException.CompressionException("Dynamic table resize after fields");
                         _context.resize(size);
