@@ -13,7 +13,6 @@
 
 package org.eclipse.jetty.server;
 
-import org.eclipse.jetty.http.CookieCompliance;
 import org.eclipse.jetty.http.HttpCookie;
 import org.eclipse.jetty.http.HttpField;
 import org.eclipse.jetty.http.HttpHeader;
@@ -247,27 +246,16 @@ public class ResponseTest
             {
                 response.addHttpFieldProcessor(field ->
                     {
-                        if (!field.is(HttpHeader.SET_COOKIE))
+                        HttpCookie cookie = HttpCookieUtils.getSetCookie(field);
+                        if (cookie == null)
                             return field;
 
-                        HttpCookie cookie;
-                        CookieCompliance compliance;
-                        if (field instanceof HttpCookieUtils.SetCookieHttpField setCookieHttpField)
-                        {
-                            cookie = setCookieHttpField.getHttpCookie();
-                            compliance = setCookieHttpField.getCookieCompliance();
-                        }
-                        else
-                        {
-                            cookie = HttpCookieUtils.parseSetCookie(field.getValue());
-                            compliance = request.getConnectionMetaData().getHttpConfiguration().getResponseCookieCompliance();
-                        }
-                        return cookie == null ? null : new HttpCookieUtils.SetCookieHttpField(
+                        return new HttpCookieUtils.SetCookieHttpField(
                             HttpCookie.build(cookie)
                                 .domain("customized")
                                 .sameSite(HttpCookie.SameSite.LAX)
                                 .build(),
-                            compliance);
+                            request.getConnectionMetaData().getHttpConfiguration().getResponseCookieCompliance());
                     });
                 response.setStatus(200);
                 Response.addCookie(response, HttpCookie.from("name", "test1"));

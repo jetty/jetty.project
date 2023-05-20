@@ -406,6 +406,23 @@ public final class HttpCookieUtils
         return oldPath.equals(newPath);
     }
 
+    /**
+     * Get a {@link HttpHeader#SET_COOKIE} field as a {@link HttpCookie}, either
+     * by optimally checking for a {@link SetCookieHttpField} or by parsing
+     * the value with {@link #parseSetCookie(String)}.
+     * @param field The field
+     * @return The field value as a {@link HttpCookie} or null if the field
+     *         is not a {@link HttpHeader#SET_COOKIE} or cannot be parsed.
+     */
+    public static HttpCookie getSetCookie(HttpField field)
+    {
+        if (field == null || !field.is(HttpHeader.SET_COOKIE))
+            return null;
+        if (field instanceof SetCookieHttpField setCookieHttpField)
+            return setCookieHttpField.getHttpCookie();
+        return parseSetCookie(field.getValue());
+    }
+
     public static HttpCookie parseSetCookie(String value)
     {
         AtomicReference<HttpCookie.Builder> builder = new AtomicReference<>();
@@ -447,6 +464,11 @@ public final class HttpCookieUtils
     {
     }
 
+    /**
+     * A {@link HttpField} that holds an {@link HttpHeader#SET_COOKIE} as a
+     * {@link HttpCookie} instance, delaying any value generation until
+     * {@link #getValue()} is called.
+     */
     public static class SetCookieHttpField extends HttpField
     {
         private final HttpCookie _cookie;
@@ -462,11 +484,6 @@ public final class HttpCookieUtils
         public HttpCookie getHttpCookie()
         {
             return _cookie;
-        }
-
-        public CookieCompliance getCookieCompliance()
-        {
-            return _compliance;
         }
 
         @Override
