@@ -13,27 +13,43 @@
 
 package org.eclipse.jetty.server.internal;
 
-import java.util.EnumSet;
 import java.util.Iterator;
-import java.util.List;
 import java.util.ListIterator;
 import java.util.concurrent.atomic.AtomicBoolean;
-import java.util.function.BiFunction;
+import java.util.function.Function;
 import java.util.stream.Stream;
 
 import org.eclipse.jetty.http.HttpField;
 import org.eclipse.jetty.http.HttpFields;
-import org.eclipse.jetty.http.HttpHeader;
-import org.eclipse.jetty.http.HttpHeaderValue;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-// TODO: review whether it needs to override these many methods, as it may be enough to override iterator().
 public class ResponseHttpFields implements HttpFields.Mutable
 {
     private static final Logger LOG = LoggerFactory.getLogger(ResponseHttpFields.class);
     private final Mutable _fields = HttpFields.build();
     private final AtomicBoolean _committed = new AtomicBoolean();
+    private Function<HttpField, HttpField> _httpFieldProcessor;
+
+    public void addHttpFieldProcessor(Function<HttpField, HttpField> httpFieldProcessor)
+    {
+        if (_httpFieldProcessor == null)
+            _httpFieldProcessor = httpFieldProcessor;
+        else if (httpFieldProcessor != null)
+        {
+            Function<HttpField, HttpField> prior = _httpFieldProcessor;
+            _httpFieldProcessor = field ->
+            {
+                field = httpFieldProcessor.apply(field);
+                return field == null ? field : prior.apply(field);
+            };
+        }
+    }
+
+    private HttpField process(HttpField field)
+    {
+        return _httpFieldProcessor == null ? field : _httpFieldProcessor.apply(field);
+    }
 
     public HttpFields.Mutable getMutableHttpFields()
     {
@@ -57,6 +73,12 @@ public class ResponseHttpFields implements HttpFields.Mutable
     {
         _committed.set(false);
         _fields.clear();
+    }
+
+    public void recycle()
+    {
+        reset();
+        _httpFieldProcessor = null;
     }
 
     @Override
@@ -86,51 +108,15 @@ public class ResponseHttpFields implements HttpFields.Mutable
     }
 
     @Override
-    public Mutable add(String name, String value)
-    {
-        return _committed.get() ? this : _fields.add(name, value);
-    }
-
-    @Override
-    public Mutable add(HttpHeader header, HttpHeaderValue value)
-    {
-        return _fields.add(header, value);
-    }
-
-    @Override
-    public Mutable add(HttpHeader header, String value)
-    {
-        return _committed.get() ? this : _fields.add(header, value);
-    }
-
-    @Override
     public Mutable add(HttpField field)
     {
-        return _committed.get() ? this : _fields.add(field);
-    }
-
-    @Override
-    public Mutable add(HttpFields fields)
-    {
-        return _committed.get() ? this : _fields.add(fields);
-    }
-
-    @Override
-    public Mutable addCSV(HttpHeader header, String... values)
-    {
-        return _committed.get() ? this : _fields.addCSV(header, values);
-    }
-
-    @Override
-    public Mutable addCSV(String name, String... values)
-    {
-        return _committed.get() ? this : _fields.addCSV(name, values);
-    }
-
-    @Override
-    public Mutable addDateField(String name, long date)
-    {
-        return _committed.get() ? this : _fields.addDateField(name, date);
+        if (!_committed.get())
+        {
+            field = process(field);
+            if (field != null)
+                _fields.add(field);
+        }
+        return this;
     }
 
     @Override
@@ -231,107 +217,25 @@ public class ResponseHttpFields implements HttpFields.Mutable
             }
 
             @Override
-            public void set(HttpField httpField)
+            public void set(HttpField field)
             {
                 if (_committed.get())
                     throw new UnsupportedOperationException("Read Only");
-                i.set(httpField);
+                field = process(field);
+                if (field != null)
+                    i.set(field);
             }
 
             @Override
-            public void add(HttpField httpField)
+            public void add(HttpField field)
             {
                 if (_committed.get())
                     throw new UnsupportedOperationException("Read Only");
-                i.add(httpField);
+                field = process(field);
+                if (field != null)
+                    i.add(field);
             }
         };
-    }
-
-    @Override
-    public Mutable put(HttpField field)
-    {
-        return _committed.get() ? this : _fields.put(field);
-    }
-
-    @Override
-    public Mutable put(String name, String value)
-    {
-        return _committed.get() ? this : _fields.put(name, value);
-    }
-
-    @Override
-    public Mutable put(HttpHeader header, HttpHeaderValue value)
-    {
-        return _committed.get() ? this : _fields.put(header, value);
-    }
-
-    @Override
-    public Mutable put(HttpHeader header, String value)
-    {
-        return _committed.get() ? this : _fields.put(header, value);
-    }
-
-    @Override
-    public Mutable put(String name, List<String> list)
-    {
-        return _committed.get() ? this : _fields.put(name, list);
-    }
-
-    @Override
-    public Mutable putDate(HttpHeader name, long date)
-    {
-        return _committed.get() ? this : _fields.putDate(name, date);
-    }
-
-    @Override
-    public Mutable putDate(String name, long date)
-    {
-        return _committed.get() ? this : _fields.putDate(name, date);
-    }
-
-    @Override
-    public Mutable put(HttpHeader header, long value)
-    {
-        return _committed.get() ? this : _fields.put(header, value);
-    }
-
-    @Override
-    public Mutable put(String name, long value)
-    {
-        return _committed.get() ? this : _fields.put(name, value);
-    }
-
-    @Override
-    public void computeField(HttpHeader header, BiFunction<HttpHeader, List<HttpField>, HttpField> computeFn)
-    {
-        if (!_committed.get())
-            _fields.computeField(header, computeFn);
-    }
-
-    @Override
-    public void computeField(String name, BiFunction<String, List<HttpField>, HttpField> computeFn)
-    {
-        if (!_committed.get())
-            _fields.computeField(name, computeFn);
-    }
-
-    @Override
-    public Mutable remove(HttpHeader name)
-    {
-        return _committed.get() ? this : _fields.remove(name);
-    }
-
-    @Override
-    public Mutable remove(EnumSet<HttpHeader> fields)
-    {
-        return _committed.get() ? this : _fields.remove(fields);
-    }
-
-    @Override
-    public Mutable remove(String name)
-    {
-        return _committed.get() ? this : _fields.remove(name);
     }
 
     @Override

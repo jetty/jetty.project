@@ -419,16 +419,29 @@ public final class HttpCookieUtils
     public static class SetCookieHttpField extends HttpField
     {
         private final HttpCookie _cookie;
+        private final CookieCompliance _compliance;
 
         public SetCookieHttpField(HttpCookie cookie, CookieCompliance compliance)
         {
-            super(HttpHeader.SET_COOKIE, getSetCookie(cookie, compliance));
+            super(HttpHeader.SET_COOKIE, HttpHeader.SET_COOKIE.asString(), null);
             this._cookie = cookie;
+            _compliance = compliance;
         }
 
         public HttpCookie getHttpCookie()
         {
             return _cookie;
+        }
+
+        public CookieCompliance getCookieCompliance()
+        {
+            return _compliance;
+        }
+
+        @Override
+        public String getValue()
+        {
+            return getSetCookie(_cookie, _compliance);
         }
     }
 }

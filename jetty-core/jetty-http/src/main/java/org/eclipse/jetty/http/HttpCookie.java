@@ -592,6 +592,12 @@ public interface HttpCookie
             return this;
         }
 
+        public Builder sameSite(SameSite sameSite)
+        {
+            _attributes = lazyAttributePut(_attributes, SAME_SITE_ATTRIBUTE, sameSite.attributeValue);
+            return this;
+        }
+
         /**
          * @return an immutable {@link HttpCookie} instance.
          */

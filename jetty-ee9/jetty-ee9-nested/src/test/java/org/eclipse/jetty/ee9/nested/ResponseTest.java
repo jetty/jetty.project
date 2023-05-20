@@ -2425,6 +2425,11 @@ public class ResponseTest
         }
 
         @Override
+        public void addHttpFieldProcessor(Function<HttpField, HttpField> httpFieldProcessor)
+        {
+        }
+
+        @Override
         public org.eclipse.jetty.server.Request getRequest()
         {
             return _coreRequest;

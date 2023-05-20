@@ -152,7 +152,7 @@ public class HttpField
      */
     public boolean contains(String search)
     {
-        return contains(_value, search);
+        return contains(getValue(), search);
     }
 
     /**
@@ -337,7 +337,7 @@ public class HttpField
             return false;
         if (!_name.equalsIgnoreCase(field.getName()))
             return false;
-        return Objects.equals(_value, field.getValue());
+        return Objects.equals(getValue(), field.getValue());
     }
 
     public HttpHeader getHeader()
@@ -347,12 +347,12 @@ public class HttpField
 
     public int getIntValue()
     {
-        return Integer.parseInt(_value);
+        return Integer.parseInt(getValue());
     }
 
     public long getLongValue()
     {
-        return Long.parseLong(_value);
+        return Long.parseLong(getValue());
     }
 
     public String getLowerCaseName()
@@ -380,16 +380,17 @@ public class HttpField
 
     public List<String> getValueList()
     {
-        if (_value == null)
+        String value = getValue();
+        if (value == null)
             return null;
-        QuotedCSV list = new QuotedCSV(false, _value);
+        QuotedCSV list = new QuotedCSV(false, value);
         return list.getValues();
     }
 
     @Override
     public int hashCode()
     {
-        int vhc = Objects.hashCode(_value);
+        int vhc = Objects.hashCode(getValue());
         if (_header == null)
             return vhc ^ nameHashCode();
         return vhc ^ _header.hashCode();
@@ -409,6 +410,11 @@ public class HttpField
     public boolean is(String name)
     {
         return _name.equalsIgnoreCase(name);
+    }
+
+    public boolean is(HttpHeader header)
+    {
+        return Objects.equals(_header, header);
     }
 
     private int nameHashCode()

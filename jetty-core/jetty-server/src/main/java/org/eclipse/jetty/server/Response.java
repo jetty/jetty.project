@@ -17,6 +17,8 @@ import java.nio.ByteBuffer;
 import java.util.ListIterator;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.TimeoutException;
+import java.util.function.BiFunction;
+import java.util.function.Function;
 import java.util.function.Supplier;
 
 import org.eclipse.jetty.http.CookieCompliance;
@@ -73,6 +75,14 @@ public interface Response extends Content.Sink
      * @param trailers a supplier for the HTTP trailers
      */
     void setTrailersSupplier(Supplier<HttpFields> trailers);
+
+    /**
+     * Add a {@link BiFunction} that is called whenever a {@code put} or {@code add} method
+     * is called on the {@link HttpFields.Mutable} returned from {@link #getHeaders()}.
+     * @param httpFieldProcessor A {@link BiFunction} to process the response header, that
+     * returns the {@link HttpField} to use (or null if it will not be set).
+     */
+    void addHttpFieldProcessor(Function<HttpField, HttpField> httpFieldProcessor);
 
     /**
      * <p>Returns whether this response has already been committed.</p>
@@ -309,7 +319,8 @@ public interface Response extends Content.Sink
             throw new IllegalArgumentException("Cookie.name cannot be blank/null");
 
         Request request = response.getRequest();
-        response.getHeaders().add(new HttpCookieUtils.SetCookieHttpField(HttpCookieUtils.checkSameSite(cookie, request.getContext()),
+        response.getHeaders().add(new HttpCookieUtils.SetCookieHttpField(
+            HttpCookieUtils.checkSameSite(cookie, request.getContext()),
             request.getConnectionMetaData().getHttpConfiguration().getResponseCookieCompliance()));
 
         // Expire responses with set-cookie headers so they do not get cached.
@@ -557,6 +568,12 @@ public interface Response extends Content.Sink
         public void setTrailersSupplier(Supplier<HttpFields> trailers)
         {
             getWrapped().setTrailersSupplier(trailers);
+        }
+
+        @Override
+        public void addHttpFieldProcessor(Function<HttpField, HttpField> httpFieldProcessor)
+        {
+            getWrapped().addHttpFieldProcessor(httpFieldProcessor);
         }
 
         @Override
