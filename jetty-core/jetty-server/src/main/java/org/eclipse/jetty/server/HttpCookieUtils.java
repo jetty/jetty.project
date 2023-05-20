@@ -19,11 +19,13 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Locale;
 import java.util.Map;
+import java.util.concurrent.atomic.AtomicReference;
 
 import org.eclipse.jetty.http.CookieCompliance;
 import org.eclipse.jetty.http.HttpCookie;
 import org.eclipse.jetty.http.HttpField;
 import org.eclipse.jetty.http.HttpHeader;
+import org.eclipse.jetty.http.QuotedCSVParser;
 import org.eclipse.jetty.http.Syntax;
 import org.eclipse.jetty.util.Attributes;
 import org.eclipse.jetty.util.Index;
@@ -402,6 +404,35 @@ public final class HttpCookieUtils
             return newPath == null;
 
         return oldPath.equals(newPath);
+    }
+
+    public static HttpCookie parseSetCookie(String value)
+    {
+        AtomicReference<HttpCookie.Builder> builder = new AtomicReference<>();
+        new QuotedCSVParser(false)
+        {
+            @Override
+            protected void parsedParam(StringBuffer buffer, int valueLength, int paramName, int paramValue)
+            {
+                String name = buffer.substring(paramName, paramValue - 1);
+                String value = buffer.substring(paramValue);
+                HttpCookie.Builder b = builder.get();
+                if (b == null)
+                {
+                    b = HttpCookie.build(name, value);
+                    builder.set(b);
+                }
+                else
+                {
+                    b.attribute(name, value);
+                }
+            }
+        }.addValue(value);
+
+        HttpCookie.Builder b = builder.get();
+        if (b == null)
+            return null;
+        return b.build();
     }
 
     private static void quoteIfNeededAndAppend(String text, StringBuilder builder)

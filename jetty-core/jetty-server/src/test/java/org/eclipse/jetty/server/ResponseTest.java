@@ -28,6 +28,7 @@ import org.junit.jupiter.api.Test;
 
 import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.Matchers.contains;
+import static org.hamcrest.Matchers.containsInAnyOrder;
 import static org.hamcrest.Matchers.is;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
@@ -258,9 +259,10 @@ public class ResponseTest
                         }
                         else
                         {
-                            return null; // TODO parse the setCookie value into a new HttpCookie
+                            cookie = HttpCookieUtils.parseSetCookie(field.getValue());
+                            compliance = request.getConnectionMetaData().getHttpConfiguration().getResponseCookieCompliance();
                         }
-                        return new HttpCookieUtils.SetCookieHttpField(
+                        return cookie == null ? null : new HttpCookieUtils.SetCookieHttpField(
                             HttpCookie.build(cookie)
                                 .domain("customized")
                                 .sameSite(HttpCookie.SameSite.LAX)
@@ -268,7 +270,8 @@ public class ResponseTest
                             compliance);
                     });
                 response.setStatus(200);
-                Response.addCookie(response, HttpCookie.from("Cookie", "test"));
+                Response.addCookie(response, HttpCookie.from("name", "test1"));
+                response.getHeaders().add(HttpHeader.SET_COOKIE, "other=test2; Domain=wrong; SameSite=wrong; Attr=x");
                 Content.Sink.write(response, true, "OK", callback);
                 return true;
             }
@@ -282,6 +285,8 @@ public class ResponseTest
                 """;
         HttpTester.Response response = HttpTester.parseResponse(connector.getResponse(request));
         assertEquals(HttpStatus.OK_200, response.getStatus());
-        assertThat(response.get(HttpHeader.SET_COOKIE), is("Cookie=test; Domain=customized; SameSite=Lax"));
+        assertThat(response.getValuesList(HttpHeader.SET_COOKIE), containsInAnyOrder(
+            "name=test1; Domain=customized; SameSite=Lax",
+            "other=test2; Domain=customized; SameSite=Lax; Attr=x"));
     }
 }
