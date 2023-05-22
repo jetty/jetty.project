@@ -890,6 +890,12 @@ public class DefaultServlet extends HttpServlet
             return _httpFields;
         }
 
+        @Override
+        public void addHttpFieldProcessor(Function<HttpField, HttpField> httpFieldProcessor)
+        {
+            _coreResponse.addHttpFieldProcessor(httpFieldProcessor);
+        }
+
         public ServletContextResponse getServletContextResponse()
         {
             if (_response instanceof ServletApiResponse)

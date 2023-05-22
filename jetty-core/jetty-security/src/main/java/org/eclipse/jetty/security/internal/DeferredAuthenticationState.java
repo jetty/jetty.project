@@ -15,8 +15,10 @@ package org.eclipse.jetty.security.internal;
 
 import java.nio.ByteBuffer;
 import java.util.concurrent.CompletableFuture;
+import java.util.function.Function;
 import java.util.function.Supplier;
 
+import org.eclipse.jetty.http.HttpField;
 import org.eclipse.jetty.http.HttpFields;
 import org.eclipse.jetty.http.HttpFields.Mutable;
 import org.eclipse.jetty.security.AuthenticationState;
@@ -139,6 +141,11 @@ public class DeferredAuthenticationState implements AuthenticationState.Deferred
         public Request getRequest()
         {
             return null;
+        }
+
+        @Override
+        public void addHttpFieldProcessor(Function<HttpField, HttpField> httpFieldProcessor)
+        {
         }
 
         @Override
