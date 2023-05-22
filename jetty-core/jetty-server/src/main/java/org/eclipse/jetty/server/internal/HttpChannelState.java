@@ -266,7 +266,7 @@ public class HttpChannelState implements HttpChannel, Components
             if (_request != null)
                 throw new IllegalStateException("duplicate request");
             _request = new ChannelRequest(this, request);
-            _response = new ChannelResponse(_request);
+            _response = new ChannelResponse(this, _request);
 
             HttpFields.Mutable responseHeaders = _response.getHeaders();
             if (getHttpConfiguration().getSendServerVersion())
@@ -354,7 +354,7 @@ public class HttpChannelState implements HttpChannel, Components
                 // If the channel doesn't have a request, then the error must have occurred during the parsing of
                 // the request line / headers, so make a temp request for logging and producing an error response.
                 _request = new ChannelRequest(this, ERROR_REQUEST);
-                _response = new ChannelResponse(_request);
+                _response = new ChannelResponse(this, _request);
             }
 
             // Set the error to arrange for any subsequent reads, demands or writes to fail.
@@ -545,6 +545,7 @@ public class HttpChannelState implements HttpChannel, Components
             Server server = _connectionMetaData.getConnector().getServer();
 
             boolean handled = false;
+            Throwable failure = null;
             try
             {
                 if (!HttpMethod.PRI.is(request.getMethod()) &&
@@ -586,11 +587,12 @@ public class HttpChannelState implements HttpChannel, Components
             catch (Throwable t)
             {
                 request._callback.failed(t);
+                failure = t;
             }
+
             _combinedListener.onAfterHandling(request, handled, failure);
 
             HttpStream stream;
-            Throwable failure;
             boolean completeStream;
             boolean callbackCompleted;
             boolean lastStreamSendComplete;
@@ -716,8 +718,7 @@ public class HttpChannelState implements HttpChannel, Components
             _id = httpChannelState.getHttpStream().getId(); // Copy ID now, as stream will ultimately be nulled
             _connectionMetaData = httpChannelState.getConnectionMetaData();
             _metaData = Objects.requireNonNull(metaData);
-            _listener = httpChannel._combinedListener;
-            _response = new ChannelResponse(this, _listener);
+            _listener = httpChannelState._combinedListener;
             _lock = httpChannelState._lock;
         }
 
@@ -1034,10 +1035,10 @@ public class HttpChannelState implements HttpChannel, Components
         private Callback _writeCallback;
         protected boolean _errorMode;
 
-        private ChannelResponse(ChannelRequest request, HttpChannel.Listener listener)
+        private ChannelResponse(HttpChannelState httpChannelState, ChannelRequest request)
         {
             _request = request;
-            _listener = listener;
+            _listener = httpChannelState._combinedListener;
         }
 
         private void lockedPrepareErrorResponse()
@@ -1208,7 +1209,7 @@ public class HttpChannelState implements HttpChannel, Components
             }
 
             Throwable t = failure;
-            httpChannel._serializedInvoker.run(() ->
+            httpChannelState._serializedInvoker.run(() ->
             {
                 _listener.onResponseWrite(_request, last, content.slice(), t);
                 callback.succeeded();

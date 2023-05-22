@@ -191,7 +191,7 @@ public class HttpChannelListeners implements HttpChannel.Listener
     {
         try
         {
-            onResponseCommittedHandle.invoke(request, response);
+            onResponseCommittedHandle.invoke(request, status, response);
         }
         catch (Throwable ignore)
         {
@@ -205,7 +205,7 @@ public class HttpChannelListeners implements HttpChannel.Listener
     {
         try
         {
-            onResponseWriteHandle.invoke(request, last, content);
+            onResponseWriteHandle.invoke(request, last, content, failure);
         }
         catch (Throwable ignore)
         {

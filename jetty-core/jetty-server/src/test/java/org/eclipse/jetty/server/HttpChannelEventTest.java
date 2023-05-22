@@ -82,7 +82,6 @@ public class HttpChannelEventTest
         Foo, Bar
         This is the Request, This is the Response
         """)
-    @Disabled("re-enable once PR #9684 is merged")
     public void testRequestReadResponseWrite(String requestBody, String expectedResponseBody) throws Exception
     {
         start(new Handler.Abstract()
@@ -250,7 +249,6 @@ public class HttpChannelEventTest
     }
 
     @Test
-    @Disabled("re-enable once PR #9684 is merged")
     public void testResponseContentSlice() throws Exception
     {
         byte[] data = new byte[]{'y'};
