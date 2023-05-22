@@ -1168,9 +1168,10 @@ public class HttpChannelState implements HttpChannel, Components
                 else if (failure != null)
                 {
                     Throwable throwable = failure;
+                    ByteBuffer slice = content != null ? content.slice() : BufferUtil.EMPTY_BUFFER;
                     httpChannelState._serializedInvoker.run(() ->
                     {
-                        _listener.onResponseWrite(_request, last, content.slice(), throwable);
+                        _listener.onResponseWrite(_request, last, slice, throwable);
                         callback.failed(throwable);
                     });
                 }
@@ -1192,10 +1193,10 @@ public class HttpChannelState implements HttpChannel, Components
             {
                 if (LOG.isDebugEnabled())
                     LOG.debug("writing last={} {} {}", last, BufferUtil.toDetailString(content), this);
-                ByteBuffer contentSlice = content.slice();
+                ByteBuffer slice = content != null ? content.slice() : BufferUtil.EMPTY_BUFFER;
                 Callback listenerCallback = Callback.from(() ->
                 {
-                    _listener.onResponseWrite(_request, last, contentSlice, null);
+                    _listener.onResponseWrite(_request, last, slice, null);
                 }, this);
                 stream.send(_request._metaData, responseMetaData, last, content, listenerCallback);
             }
