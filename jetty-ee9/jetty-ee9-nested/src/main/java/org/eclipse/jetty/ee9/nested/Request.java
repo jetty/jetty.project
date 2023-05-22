@@ -27,7 +27,9 @@ import java.nio.charset.Charset;
 import java.nio.charset.StandardCharsets;
 import java.nio.charset.UnsupportedCharsetException;
 import java.security.Principal;
+import java.util.AbstractList;
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.Collection;
 import java.util.Collections;
 import java.util.EnumSet;
@@ -64,6 +66,8 @@ import jakarta.servlet.http.Part;
 import jakarta.servlet.http.PushBuilder;
 import org.eclipse.jetty.http.BadMessageException;
 import org.eclipse.jetty.http.ComplianceViolation;
+import org.eclipse.jetty.http.CookieCache;
+import org.eclipse.jetty.http.CookieCompliance;
 import org.eclipse.jetty.http.HttpCompliance;
 import org.eclipse.jetty.http.HttpCookie;
 import org.eclipse.jetty.http.HttpField;
@@ -167,14 +171,12 @@ public class Request implements HttpServletRequest
     private ServletPathMapping _servletPathMapping;
     private Object _asyncNotSupportedSource = null;
     private boolean _secure;
-    private boolean _cookiesExtracted = false;
     private boolean _handled = false;
     private boolean _contentParamsExtracted;
     private Attributes _attributes;
     private Authentication _authentication;
     private String _contentType;
     private String _characterEncoding;
-    private Cookies _cookies;
     private DispatcherType _dispatcherType;
     private int _inputState = INPUT_NONE;
     private BufferedReader _reader;
@@ -743,39 +745,37 @@ public class Request implements HttpServletRequest
     @Override
     public Cookie[] getCookies()
     {
-        MetaData.Request metadata = _metaData;
-        if (metadata == null || _cookiesExtracted)
-        {
-            if (_cookies == null || _cookies.getCookies().length == 0)
-                return null;
-
-            return _cookies.getCookies();
-        }
-
-        _cookiesExtracted = true;
-
-        for (HttpField field : metadata.getHttpFields())
-        {
-            if (field.getHeader() == HttpHeader.COOKIE)
-            {
-                if (_cookies == null)
-                    _cookies = new Cookies(getHttpChannel().getHttpConfiguration().getRequestCookieCompliance(), getComplianceViolationListener());
-                _cookies.addCookieField(field.getValue());
-            }
-        }
-
-        //Javadoc for Request.getCookies() stipulates null for no cookies
-        if (_cookies == null || _cookies.getCookies().length == 0)
+        ContextHandler.CoreContextRequest coreRequest = getCoreRequest();
+        if (coreRequest == null)
             return null;
 
-        return _cookies.getCookies();
+        List<HttpCookie> httpCookies = org.eclipse.jetty.server.Request.getCookies(coreRequest);
+        if (httpCookies.isEmpty())
+            return null;
+
+        if (httpCookies instanceof ServletCookieList servletCookieList)
+            return servletCookieList.getServletCookies();
+
+        ServletCookieList servletCookieList = new ServletCookieList(httpCookies, coreRequest.getConnectionMetaData().getHttpConfiguration().getRequestCookieCompliance());
+        coreRequest.setAttribute(org.eclipse.jetty.server.Request.COOKIE_ATTRIBUTE, servletCookieList);
+        if (coreRequest.getComponents().getCache().getAttribute(org.eclipse.jetty.server.Request.CACHE_ATTRIBUTE) instanceof CookieCache cookieCache)
+            cookieCache.replaceCookieList(servletCookieList);
+        return servletCookieList.getServletCookies();
     }
 
     @Override
     public long getDateHeader(String name)
     {
         HttpFields fields = _httpFields;
-        return fields == null ? -1 : fields.getDateField(name);
+        if (fields == null)
+            return -1;
+        HttpField field = fields.getField(name);
+        if (field == null)
+            return -1;
+        long date = fields.getDateField(name);
+        if (date == -1)
+            throw new IllegalArgumentException("Cannot parse date");
+        return date;
     }
 
     @Override
@@ -1555,15 +1555,12 @@ public class Request implements HttpServletRequest
         _servletPathMapping = null;
         _asyncNotSupportedSource = null;
         _secure = false;
-        _cookiesExtracted = false;
         _handled = false;
         _contentParamsExtracted = false;
         _attributes = null;
         setAuthentication(Authentication.NOT_CHECKED);
         _contentType = null;
         _characterEncoding = null;
-        if (_cookies != null)
-            _cookies.reset();
         _dispatcherType = null;
         _inputState = INPUT_NONE;
         // _reader can be reused
@@ -1768,16 +1765,6 @@ public class Request implements HttpServletRequest
     public void setContentType(String contentType)
     {
         _contentType = contentType;
-    }
-
-    /**
-     * @param cookies The cookies to set.
-     */
-    public void setCookies(Cookie[] cookies)
-    {
-        if (_cookies == null)
-            _cookies = new Cookies(getHttpChannel().getHttpConfiguration().getRequestCookieCompliance(), getComplianceViolationListener());
-        _cookies.setCookies(cookies);
     }
 
     public void setDispatcherType(DispatcherType type)
@@ -2161,5 +2148,68 @@ public class Request implements HttpServletRequest
         // INCLUDE dispatch, in which case this method returns the mapping of the source servlet,
         // which we recover from the IncludeAttributes wrapper.
         return findServletPathMapping();
+    }
+
+    /**
+     * Extended list of HttpCookies that converts and caches a servlet Cookie array.
+     */
+    private static class ServletCookieList extends AbstractList<HttpCookie>
+    {
+        private final List<HttpCookie> _httpCookies;
+        private final Cookie[] _cookies;
+
+        ServletCookieList(List<HttpCookie> httpCookies, CookieCompliance compliance)
+        {
+            _httpCookies = httpCookies;
+            Cookie[] cookies = new Cookie[_httpCookies.size()];
+            int i = 0;
+            for (HttpCookie httpCookie : _httpCookies)
+            {
+                Cookie cookie = convertCookie(httpCookie, compliance);
+                if (cookie == null)
+                    cookies = Arrays.copyOf(cookies, cookies.length - 1);
+                else
+                    cookies[i++] = cookie;
+            }
+            _cookies = cookies;
+        }
+
+        @Override
+        public HttpCookie get(int index)
+        {
+            return _httpCookies.get(index);
+        }
+
+        public Cookie[] getServletCookies()
+        {
+            return _cookies;
+        }
+
+        @Override
+        public int size()
+        {
+            return _cookies.length;
+        }
+
+        private static Cookie convertCookie(HttpCookie cookie, CookieCompliance compliance)
+        {
+            try
+            {
+                Cookie result = new Cookie(cookie.getName(), cookie.getValue());
+                //RFC2965 defines the cookie header as supporting path and domain but RFC6265 permits only name=value
+                if (CookieCompliance.RFC2965.equals(compliance))
+                {
+                    result.setPath(cookie.getPath());
+                    result.setDomain(cookie.getDomain());
+                }
+                return result;
+            }
+            catch (Exception ignore)
+            {
+                if (LOG.isDebugEnabled())
+                    LOG.debug("Bad Cookie", ignore);
+            }
+            return null;
+        }
     }
 }

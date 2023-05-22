@@ -29,14 +29,12 @@ import org.eclipse.jetty.util.BufferUtil;
 public class HeadersGenerator extends FrameGenerator
 {
     private final QpackEncoder encoder;
-    private final int maxLength;
     private final boolean useDirectByteBuffers;
 
-    public HeadersGenerator(ByteBufferPool bufferPool, QpackEncoder encoder, int maxLength, boolean useDirectByteBuffers)
+    public HeadersGenerator(ByteBufferPool bufferPool, QpackEncoder encoder, boolean useDirectByteBuffers)
     {
         super(bufferPool);
         this.encoder = encoder;
-        this.maxLength = maxLength;
         this.useDirectByteBuffers = useDirectByteBuffers;
     }
 
@@ -55,6 +53,7 @@ public class HeadersGenerator extends FrameGenerator
             int frameTypeLength = VarLenInt.length(FrameType.HEADERS.type());
             int maxHeaderLength = frameTypeLength + VarLenInt.MAX_LENGTH;
             // The capacity of the buffer is larger than maxLength, but we need to enforce at most maxLength.
+            int maxLength = encoder.getMaxHeadersSize();
             RetainableByteBuffer buffer = getByteBufferPool().acquire(maxHeaderLength + maxLength, useDirectByteBuffers);
             ByteBuffer byteBuffer = buffer.getByteBuffer();
             BufferUtil.clearToFill(byteBuffer);

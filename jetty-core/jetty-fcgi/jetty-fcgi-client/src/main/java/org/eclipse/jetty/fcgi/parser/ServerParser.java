@@ -23,6 +23,7 @@ public class ServerParser extends Parser
 
     public ServerParser(Listener listener)
     {
+        super(listener);
         contentParsers.put(FCGI.FrameType.BEGIN_REQUEST, new BeginRequestContentParser(headerParser, listener));
         contentParsers.put(FCGI.FrameType.PARAMS, new ParamsContentParser(headerParser, listener));
         contentParsers.put(FCGI.FrameType.STDIN, new StreamContentParser(headerParser, FCGI.StreamType.STD_IN, listener));
@@ -31,7 +32,10 @@ public class ServerParser extends Parser
     @Override
     protected ContentParser findContentParser(FCGI.FrameType frameType)
     {
-        return contentParsers.get(frameType);
+        ContentParser contentParser = contentParsers.get(frameType);
+        if (contentParser == null)
+            throw new IllegalArgumentException("unsupported frame type " + frameType);
+        return contentParser;
     }
 
     public interface Listener extends Parser.Listener

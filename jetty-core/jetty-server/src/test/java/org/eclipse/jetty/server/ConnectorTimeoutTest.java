@@ -212,7 +212,7 @@ public abstract class ConnectorTimeoutTest extends HttpServerTestFixture
         startServer(new EchoHandler()
         {
             @Override
-            public boolean handle(Request request, Response response, Callback callback) throws Exception
+            public boolean handle(Request request, Response response, Callback callback)
             {
                 try
                 {

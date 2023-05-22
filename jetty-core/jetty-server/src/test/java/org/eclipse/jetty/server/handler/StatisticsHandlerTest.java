@@ -408,17 +408,17 @@ public class StatisticsHandlerTest
             assertThat(response, containsString("HTTP/1.1 500 Server Error"));
         }
 
-        assertEquals(1, _statsHandler.getRequests());
-        assertEquals(0, _statsHandler.getRequestsActive());
-        assertEquals(1, _statsHandler.getRequestsActiveMax());
+        assertEquals(1, _statsHandler.getRequests(), "stats.requests");
+        assertEquals(0, _statsHandler.getRequestsActive(), "stats.requestActive");
+        assertEquals(1, _statsHandler.getRequestsActiveMax(), "stats.requestsActiveMax");
 
         // We get no recorded status, but we get a recorded thrown response.
-        assertEquals(0, _statsHandler.getResponses1xx());
-        assertEquals(0, _statsHandler.getResponses2xx());
-        assertEquals(0, _statsHandler.getResponses3xx());
-        assertEquals(0, _statsHandler.getResponses4xx());
-        assertEquals(1, _statsHandler.getResponses5xx());
-        assertEquals(1, _statsHandler.getHandlingFailures());
+        assertEquals(0, _statsHandler.getResponses1xx(), "stats.responses1xx");
+        assertEquals(0, _statsHandler.getResponses2xx(), "stats.responses2xx");
+        assertEquals(0, _statsHandler.getResponses3xx(), "stats.responses3xx");
+        assertEquals(0, _statsHandler.getResponses4xx(), "stats.responses4xx");
+        assertEquals(1, _statsHandler.getResponses5xx(), "stats.responses5xx");
+        assertEquals(1, _statsHandler.getHandlingFailures(), "stats.handlingFailures");
     }
 
     @Test

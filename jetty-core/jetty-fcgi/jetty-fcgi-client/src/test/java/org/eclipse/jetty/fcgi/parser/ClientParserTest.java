@@ -15,6 +15,8 @@ package org.eclipse.jetty.fcgi.parser;
 
 import java.nio.ByteBuffer;
 import java.util.Locale;
+import java.util.concurrent.CountDownLatch;
+import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicInteger;
 
@@ -25,6 +27,8 @@ import org.eclipse.jetty.http.HttpFields;
 import org.eclipse.jetty.io.ArrayByteBufferPool;
 import org.eclipse.jetty.io.ByteBufferPool;
 import org.junit.jupiter.api.Test;
+import org.junit.jupiter.params.ParameterizedTest;
+import org.junit.jupiter.params.provider.ValueSource;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
@@ -102,7 +106,7 @@ public class ClientParserTest
     }
 
     @Test
-    public void testParseNoResponseContent() throws Exception
+    public void testParseNoResponseContent()
     {
         int id = 13;
         HttpFields fields = HttpFields.build()
@@ -145,7 +149,7 @@ public class ClientParserTest
     }
 
     @Test
-    public void testParseSmallResponseContent() throws Exception
+    public void testParseSmallResponseContent()
     {
         int id = 13;
         HttpFields.Mutable fields = HttpFields.build();
@@ -196,7 +200,7 @@ public class ClientParserTest
     }
 
     @Test
-    public void testParseLargeResponseContent() throws Exception
+    public void testParseLargeResponseContent()
     {
         int id = 13;
         HttpFields.Mutable fields = HttpFields.build();
@@ -245,5 +249,67 @@ public class ClientParserTest
         assertTrue(verifier.get());
 
         accumulator.release();
+    }
+
+    @ParameterizedTest
+    // Frame type 0x01 is BEGIN_REQUEST, cannot be received by clients.
+    // Frame type 0x7F is unknown to FCGI.
+    @ValueSource(ints = {0x01, 0x7F})
+    public void testClientUnknownFrameType(int frameType) throws Exception
+    {
+        CountDownLatch failureLatch = new CountDownLatch(1);
+        ClientParser parser = new ClientParser(new ClientParser.Listener()
+        {
+            @Override
+            public void onFailure(int request, Throwable failure)
+            {
+                failureLatch.countDown();
+            }
+        });
+
+        // See Parser for the FCGI record structure.
+        ByteBuffer byteBuffer = ByteBuffer.allocate(8)
+            .put((byte)1)
+            .put((byte)frameType)
+            .putShort((short)13)
+            .putShort((short)0)
+            .put((byte)0)
+            .put((byte)0)
+            .flip();
+        parser.parse(byteBuffer);
+        assertFalse(byteBuffer.hasRemaining());
+
+        assertTrue(failureLatch.await(5, TimeUnit.SECONDS));
+    }
+
+    @ParameterizedTest
+    // Frame type 0x06 is STDOUT, cannot be received by servers.
+    // Frame type 0x7F is unknown to FCGI.
+    @ValueSource(ints = {0x06, 0x7F})
+    public void testServerUnknownFrameType(int frameType) throws Exception
+    {
+        CountDownLatch failureLatch = new CountDownLatch(1);
+        ServerParser parser = new ServerParser(new ServerParser.Listener()
+        {
+            @Override
+            public void onFailure(int request, Throwable failure)
+            {
+                failureLatch.countDown();
+            }
+        });
+
+        // See Parser for the FCGI record structure.
+        ByteBuffer byteBuffer = ByteBuffer.allocate(8)
+            .put((byte)1)
+            .put((byte)frameType)
+            .putShort((short)13)
+            .putShort((short)0)
+            .put((byte)0)
+            .put((byte)0)
+            .flip();
+        parser.parse(byteBuffer);
+        assertFalse(byteBuffer.hasRemaining());
+
+        assertTrue(failureLatch.await(5, TimeUnit.SECONDS));
     }
 }

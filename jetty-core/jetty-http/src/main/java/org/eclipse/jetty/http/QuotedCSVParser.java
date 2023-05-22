@@ -13,13 +13,12 @@
 
 package org.eclipse.jetty.http;
 
+import org.eclipse.jetty.util.QuotedStringTokenizer;
+
 /**
  * Implements a quoted comma separated list parser
- * in accordance with RFC7230.
+ * in accordance with <a href="https://datatracker.ietf.org/doc/html/rfc9110#section-5.6">RFC9110 section 5.6</a>.
  * OWS is removed and quoted characters ignored for parsing.
- *
- * @see "https://tools.ietf.org/html/rfc7230#section-3.2.6"
- * @see "https://tools.ietf.org/html/rfc7230#section-7"
  */
 public abstract class QuotedCSVParser
 {
@@ -28,6 +27,15 @@ public abstract class QuotedCSVParser
         VALUE, PARAM_NAME, PARAM_VALUE
     }
 
+    public static final String DELIMITERS = ",;=";
+    public static final QuotedStringTokenizer LIST_TOKENIZER = QuotedStringTokenizer.builder()
+        .delimiters(DELIMITERS)
+        .ignoreOptionalWhiteSpace()
+        .allowEmbeddedQuotes()
+        .returnDelimiters()
+        .returnQuotes()
+        .build();
+
     protected final boolean _keepQuotes;
 
     public QuotedCSVParser(boolean keepQuotes)
@@ -35,52 +43,19 @@ public abstract class QuotedCSVParser
         _keepQuotes = keepQuotes;
     }
 
+    public static String quote(String s)
+    {
+        return LIST_TOKENIZER.quote(s);
+    }
+
+    public static String quoteIfNeeded(String s)
+    {
+        return LIST_TOKENIZER.quoteIfNeeded(s);
+    }
+
     public static String unquote(String s)
     {
-        // handle trivial cases
-        int l = s.length();
-        if (s == null || l == 0)
-            return s;
-
-        // Look for any quotes
-        int i = 0;
-        for (; i < l; i++)
-        {
-            char c = s.charAt(i);
-            if (c == '"')
-                break;
-        }
-        if (i == l)
-            return s;
-
-        boolean quoted = true;
-        boolean sloshed = false;
-        StringBuffer buffer = new StringBuffer();
-        buffer.append(s, 0, i);
-        i++;
-        for (; i < l; i++)
-        {
-            char c = s.charAt(i);
-            if (quoted)
-            {
-                if (sloshed)
-                {
-                    buffer.append(c);
-                    sloshed = false;
-                }
-                else if (c == '"')
-                    quoted = false;
-                else if (c == '\\')
-                    sloshed = true;
-                else
-                    buffer.append(c);
-            }
-            else if (c == '"')
-                quoted = true;
-            else
-                buffer.append(c);
-        }
-        return buffer.toString();
+        return LIST_TOKENIZER.unquote(s);
     }
 
     /**
@@ -92,6 +67,11 @@ public abstract class QuotedCSVParser
     {
         if (value == null)
             return;
+
+        // The parser does not actually use LIST_TOKENIZER as we wish to keep the tokens in the StringBuffer
+        // and allow them to be mutated by the callbacks.
+
+        // TODO update to RFC9110, specifically no OWS around '='
 
         StringBuffer buffer = new StringBuffer();
 

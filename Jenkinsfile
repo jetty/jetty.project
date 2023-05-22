@@ -7,6 +7,7 @@ pipeline {
     skipDefaultCheckout()
     durabilityHint('PERFORMANCE_OPTIMIZED')
     buildDiscarder logRotator( numToKeepStr: '60' )
+    disableRestartFromStage()
   }
   stages {
     stage("Parallel Stage") {

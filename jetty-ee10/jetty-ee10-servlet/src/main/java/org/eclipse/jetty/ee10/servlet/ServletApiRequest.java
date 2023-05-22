@@ -22,6 +22,7 @@ import java.nio.charset.Charset;
 import java.nio.charset.StandardCharsets;
 import java.nio.charset.UnsupportedCharsetException;
 import java.security.Principal;
+import java.util.AbstractList;
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.Collections;
@@ -56,6 +57,7 @@ import jakarta.servlet.http.HttpUpgradeHandler;
 import jakarta.servlet.http.Part;
 import jakarta.servlet.http.PushBuilder;
 import org.eclipse.jetty.http.BadMessageException;
+import org.eclipse.jetty.http.CookieCache;
 import org.eclipse.jetty.http.CookieCompliance;
 import org.eclipse.jetty.http.HttpCookie;
 import org.eclipse.jetty.http.HttpException;
@@ -237,28 +239,29 @@ public class ServletApiRequest implements HttpServletRequest
         List<HttpCookie> httpCookies = Request.getCookies(getServletContextRequest());
         if (httpCookies.isEmpty())
             return null;
-        return httpCookies.stream()
-            .map(this::convertCookie)
-            .toArray(Cookie[]::new);
-    }
+        if (httpCookies instanceof ServletCookieList servletCookieList)
+            return servletCookieList.getServletCookies();
 
-    public Cookie convertCookie(HttpCookie cookie)
-    {
-        Cookie result = new Cookie(cookie.getName(), cookie.getValue());
-        //RFC2965 defines the cookie header as supporting path and domain but RFC6265 permits only name=value
-        if (CookieCompliance.RFC2965.equals(getServletContextRequest().getConnectionMetaData().getHttpConfiguration().getRequestCookieCompliance()))
-        {
-            result.setPath(cookie.getPath());
-            result.setDomain(cookie.getDomain());
-        }
-        return result;
+        ServletCookieList servletCookieList = new ServletCookieList(httpCookies, getServletContextRequest().getConnectionMetaData().getHttpConfiguration().getRequestCookieCompliance());
+        _request.setAttribute(Request.COOKIE_ATTRIBUTE, servletCookieList);
+        if (_request.getComponents().getCache().getAttribute(Request.CACHE_ATTRIBUTE) instanceof CookieCache cookieCache)
+            cookieCache.replaceCookieList(servletCookieList);
+        return servletCookieList.getServletCookies();
     }
 
     @Override
     public long getDateHeader(String name)
     {
         HttpFields fields = getFields();
-        return fields == null ? -1 : fields.getDateField(name);
+        if (fields == null)
+            return -1;
+        HttpField field = fields.getField(name);
+        if (field == null)
+            return -1;
+        long date = fields.getDateField(name);
+        if (date == -1)
+            throw new IllegalArgumentException("Cannot parse date");
+        return date;
     }
 
     @Override
@@ -1274,6 +1277,53 @@ public class ServletApiRequest implements HttpServletRequest
         public String getServletPath()
         {
             throw new HttpException.IllegalArgumentException(HttpStatus.BAD_REQUEST_400, "Ambiguous URI encoding");
+        }
+    }
+
+    /**
+     * Extended list of HttpCookies that converts and caches a servlet Cookie array.
+     */
+    private static class ServletCookieList extends AbstractList<HttpCookie>
+    {
+        private final List<HttpCookie> _httpCookies;
+        private final Cookie[] _cookies;
+
+        ServletCookieList(List<HttpCookie> httpCookies, CookieCompliance compliance)
+        {
+            _httpCookies = httpCookies;
+            _cookies = new Cookie[_httpCookies.size()];
+            int i = 0;
+            for (HttpCookie httpCookie : _httpCookies)
+                _cookies[i++] = convertCookie(httpCookie, compliance);
+        }
+
+        @Override
+        public HttpCookie get(int index)
+        {
+            return _httpCookies.get(index);
+        }
+
+        public Cookie[] getServletCookies()
+        {
+            return _cookies;
+        }
+
+        @Override
+        public int size()
+        {
+            return _cookies.length;
+        }
+
+        private static Cookie convertCookie(HttpCookie cookie, CookieCompliance compliance)
+        {
+            Cookie result = new Cookie(cookie.getName(), cookie.getValue());
+            //RFC2965 defines the cookie header as supporting path and domain but RFC6265 permits only name=value
+            if (CookieCompliance.RFC2965.equals(compliance))
+            {
+                result.setPath(cookie.getPath());
+                result.setDomain(cookie.getDomain());
+            }
+            return result;
         }
     }
 }

@@ -959,20 +959,13 @@ public class HttpConnection extends AbstractConnection implements Runnable, Writ
         @Override
         protected void onCompleteSuccess()
         {
-            // TODO is this too late to get the request? And is that the right attribute and the right thing to do?
-            boolean upgrading = _httpChannel.getRequest() != null && _httpChannel.getRequest().getAttribute(HttpStream.UPGRADE_CONNECTION_ATTRIBUTE) != null;
             release().succeeded();
-            // If successfully upgraded it is responsibility of the next protocol to close the connection.
-            if (_shutdownOut && !upgrading)
-                getEndPoint().shutdownOutput();
         }
 
         @Override
         public void onCompleteFailure(final Throwable x)
         {
             failedCallback(release(), x);
-            if (_shutdownOut)
-                getEndPoint().shutdownOutput();
         }
 
         @Override
@@ -1573,6 +1566,9 @@ public class HttpConnection extends AbstractConnection implements Runnable, Writ
             if (LOG.isDebugEnabled())
                 LOG.debug("non-current completion {}", this);
 
+            if (_sendCallback._shutdownOut)
+                getEndPoint().shutdownOutput();
+
             // If we are looking for the next request
             if (_parser.isStart())
             {
@@ -1619,6 +1615,8 @@ public class HttpConnection extends AbstractConnection implements Runnable, Writ
                     LOG.debug("ignored", x);
                 return;
             }
+            if (LOG.isDebugEnabled())
+                LOG.debug("aborting", x);
             abort(x);
         }
 

@@ -105,7 +105,7 @@ public class MessageParser
                             state = State.BODY;
                             // If we are in data mode, but we did not parse a DATA frame, bail out.
                             if (isDataMode() && headerParser.getFrameType() != FrameType.DATA.type())
-                                return Result.MODE_SWITCH;
+                                return Result.SWITCH_MODE;
                         }
                         else
                         {
@@ -149,18 +149,32 @@ public class MessageParser
                                 if (LOG.isDebugEnabled())
                                     LOG.debug("parsed {} empty frame body from {}", FrameType.from(frameType), BufferUtil.toDetailString(buffer));
                                 reset();
+                                return Result.FRAME;
                             }
                             else
                             {
                                 BodyParser.Result result = bodyParser.parse(buffer);
+                                if (LOG.isDebugEnabled())
+                                    LOG.debug("parsed {} {} body from {}", result, FrameType.from(frameType), BufferUtil.toDetailString(buffer));
+
+                                // Not enough bytes, there is no frame.
                                 if (result == BodyParser.Result.NO_FRAME)
                                     return Result.NO_FRAME;
-                                if (LOG.isDebugEnabled())
-                                    LOG.debug("parsed {} frame body from {}", FrameType.from(frameType), BufferUtil.toDetailString(buffer));
+
+                                // Do not reset() if it is a fragment frame.
+                                if (result == BodyParser.Result.FRAGMENT_FRAME)
+                                    return Result.FRAME;
+
+                                reset();
+
+                                if (result == BodyParser.Result.BLOCKED_FRAME)
+                                    return Result.BLOCKED_FRAME;
+
                                 if (result == BodyParser.Result.WHOLE_FRAME)
-                                    reset();
+                                    return Result.FRAME;
+
+                                throw new IllegalStateException();
                             }
-                            return Result.FRAME;
                         }
                     }
                     default -> throw new IllegalStateException();
@@ -183,7 +197,23 @@ public class MessageParser
 
     public enum Result
     {
-        NO_FRAME, FRAME, MODE_SWITCH
+        /**
+         * Indicates that no frame was parsed, either for lack of bytes, or because or errors.
+         */
+        NO_FRAME,
+        /**
+         * Indicates that a frame was parsed.
+         */
+        FRAME,
+        /**
+         * Indicates that a frame was parsed but its notification was deferred.
+         * This is the case of HEADERS frames that are waiting to be unblocked.
+         */
+        BLOCKED_FRAME,
+        /**
+         * Indicates that a DATA frame was expected, but a HEADERS was found instead.
+         */
+        SWITCH_MODE
     }
 
     private enum State

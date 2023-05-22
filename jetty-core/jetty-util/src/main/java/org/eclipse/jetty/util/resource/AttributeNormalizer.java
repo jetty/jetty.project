@@ -23,9 +23,7 @@ import java.nio.file.Files;
 import java.nio.file.Path;
 import java.util.ArrayList;
 import java.util.Comparator;
-import java.util.HashSet;
 import java.util.List;
-import java.util.Set;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 import java.util.stream.Stream;
@@ -204,31 +202,27 @@ public class AttributeNormalizer
     {
         if (baseResource == null)
             throw new IllegalArgumentException("No base resource!");
+        // Combined resources currently are not supported (see #8921) but such support
+        // could be added. That would require some form of (potentially expensive)
+        // existence check in expand() to figure out which URIAttribute actually
+        // contains the resource.
+        if (Resources.isCombined(baseResource))
+            throw new IllegalArgumentException("Base resource cannot be combined!");
 
         addSystemProperty("jetty.base", 9);
         addSystemProperty("jetty.home", 8);
         addSystemProperty("user.home", 7);
         addSystemProperty("user.dir", 6);
 
-        Set<Path> rootPaths = new HashSet<>();
-        for (Resource r : baseResource)
-        {
-            if (r instanceof MountedPathResource mpr && rootPaths.contains(mpr.getContainerPath()))
-                return;
+        URI warURI = toCanonicalURI(baseResource.getURI());
+        if (!warURI.isAbsolute())
+            throw new IllegalArgumentException("WAR URI is not absolute: " + warURI);
 
-            URI warURI = toCanonicalURI(r.getURI());
-            if (!warURI.isAbsolute())
-                throw new IllegalArgumentException("WAR URI is not absolute: " + warURI);
-
-            Path path = r.getPath();
-            if (path != null)
-            {
-                rootPaths.add(path);
-                paths.add(new PathAttribute("WAR.path", toCanonicalPath(path), 10));
-            }
-            uris.add(new URIAttribute("WAR.uri", warURI, 9)); // preferred encoding
-            uris.add(new URIAttribute("WAR", warURI, 8)); // legacy encoding
-        }
+        Path path = baseResource.getPath();
+        if (path != null)
+            paths.add(new PathAttribute("WAR.path", toCanonicalPath(path), 10));
+        uris.add(new URIAttribute("WAR.uri", warURI, 9)); // preferred encoding
+        uris.add(new URIAttribute("WAR", warURI, 8)); // legacy encoding
 
         paths.sort(attrComparator);
         uris.sort(attrComparator);
@@ -364,9 +358,9 @@ public class AttributeNormalizer
                 if (path.equals(a.path) || Files.isSameFile(path, a.path))
                     return String.format("${%s}", a.key);
             }
-            catch (IOException ignore)
+            catch (IOException x)
             {
-                LOG.trace("IGNORED", ignore);
+                LOG.trace("IGNORED", x);
             }
 
             if (path.startsWith(a.path))
@@ -407,33 +401,18 @@ public class AttributeNormalizer
         if (property == null)
             return null;
 
+        // Check for URI matches
         for (URIAttribute attr : uris)
         {
             if (property.equals(attr.key))
-            {
-                try
-                {
-                    String uri = prefix + attr.value + suffix;
-                    Resource resource = ResourceFactory.root().newResource(uri);
-                    if (resource.exists())
-                        return uri;
-                }
-                catch (Exception ex)
-                {
-                    if (LOG.isDebugEnabled())
-                        LOG.trace("ignored", ex);
-                }
-            }
+                return prefix + attr.value + suffix;
         }
 
+        // Check for path matches
         for (PathAttribute attr : paths)
         {
             if (property.equals(attr.key))
-            {
-                String path = prefix + attr.value + suffix;
-                if (Files.exists(Path.of(path)))
-                    return path;
-            }
+                return prefix + attr.value + suffix;
         }
 
         // Use system properties next

@@ -14,9 +14,13 @@
 package org.eclipse.jetty.ee10.servlet;
 
 import java.io.IOException;
+import java.util.ArrayList;
+import java.util.Arrays;
+import java.util.List;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.concurrent.atomic.AtomicReference;
 
+import jakarta.servlet.http.Cookie;
 import jakarta.servlet.http.HttpServlet;
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletResponse;
@@ -32,9 +36,12 @@ import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.Test;
 
 import static org.hamcrest.MatcherAssert.assertThat;
+import static org.hamcrest.Matchers.contains;
 import static org.hamcrest.Matchers.containsString;
 import static org.hamcrest.Matchers.equalTo;
 import static org.hamcrest.Matchers.is;
+import static org.hamcrest.Matchers.not;
+import static org.hamcrest.Matchers.sameInstance;
 
 public class RequestTest
 {
@@ -221,5 +228,58 @@ public class RequestTest
         assertThat(response.getStatus(), is(HttpStatus.OK_200));
         assertThat("request.getRequestURI", resultRequestURI.get(), is("/test/path%20info/foo%2cbar"));
         assertThat("request.getPathInfo", resultPathInfo.get(), is("/test/path info/foo,bar"));
+    }
+
+    @Test
+    public void testCachedServletCookies() throws Exception
+    {
+        final List<Cookie> cookieHistory = new ArrayList<>();
+
+        startServer(new HttpServlet()
+        {
+            @Override
+            protected void service(HttpServletRequest request, HttpServletResponse resp)
+            {
+                Cookie[] cookies = request.getCookies();
+                if (cookies != null)
+                    cookieHistory.addAll(Arrays.asList(cookies));
+            }
+        });
+
+        try (LocalConnector.LocalEndPoint connection = _connector.connect())
+        {
+            connection.addInput("""
+                GET /one HTTP/1.1\r
+                Host: myhost\r
+                Cookie: name1=value1; name2=value2\r
+                \r
+                GET /two HTTP/1.1\r
+                Host: myhost\r
+                Cookie: name1=value1; name2=value2\r
+                \r
+                GET /three HTTP/1.1\r
+                Host: myhost\r
+                Cookie: name1=value1; name3=value3\r
+                Connection: close\r
+                \r
+                """);
+
+            assertThat(connection.getResponse(), containsString(" 200 OK"));
+            assertThat(connection.getResponse(), containsString(" 200 OK"));
+            assertThat(connection.getResponse(), containsString(" 200 OK"));
+        }
+
+        assertThat(cookieHistory.size(), is(6));
+        assertThat(cookieHistory.stream().map(c -> c.getName() + "=" + c.getValue()).toList(), contains(
+            "name1=value1",
+            "name2=value2",
+            "name1=value1",
+            "name2=value2",
+            "name1=value1",
+            "name3=value3"
+        ));
+
+        assertThat(cookieHistory.get(0), sameInstance(cookieHistory.get(2)));
+        assertThat(cookieHistory.get(2), not(sameInstance(cookieHistory.get(4))));
     }
 }

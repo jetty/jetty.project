@@ -61,7 +61,6 @@ import org.eclipse.jetty.toolchain.test.MavenTestingUtils;
 import org.eclipse.jetty.toolchain.test.jupiter.WorkDir;
 import org.eclipse.jetty.toolchain.test.jupiter.WorkDirExtension;
 import org.eclipse.jetty.util.IO;
-import org.eclipse.jetty.util.QuotedStringTokenizer;
 import org.eclipse.jetty.util.StringUtil;
 import org.eclipse.jetty.util.resource.FileSystemPool;
 import org.eclipse.jetty.util.resource.ResourceFactory;
@@ -1444,7 +1443,7 @@ public class ResourceHandlerTest
             String eTag1 = response1.get(ETAG);
             assertThat(eTag1, endsWith("--gzip\""));
             assertThat(eTag1, startsWith("W/"));
-            String nakedEtag1 = QuotedStringTokenizer.unquote(eTag1.substring(2));
+            String nakedEtag1 = HttpField.PARAMETER_TOKENIZER.unquote(eTag1.substring(2));
             // Load big.txt.gz into a byte array and assert its contents byte per byte.
             try (ByteArrayOutputStream baos = new ByteArrayOutputStream())
             {
@@ -1464,7 +1463,7 @@ public class ResourceHandlerTest
             assertThat(response2.get(CONTENT_ENCODING), is(nullValue()));
             String eTag2 = response2.get(ETAG);
             assertThat(eTag2, startsWith("W/"));
-            String nakedEtag2 = QuotedStringTokenizer.unquote(eTag2.substring(2));
+            String nakedEtag2 = HttpField.PARAMETER_TOKENIZER.unquote(eTag2.substring(2));
             assertThat(nakedEtag1, startsWith(nakedEtag2));
             assertThat(response2.getContent(), startsWith("     1\tThis is a big file"));
             assertThat(response2.getContent(), endsWith("   400\tThis is a big file\n"));

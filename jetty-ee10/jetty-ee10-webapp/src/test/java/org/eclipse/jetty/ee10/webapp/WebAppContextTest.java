@@ -53,6 +53,7 @@ import org.eclipse.jetty.util.resource.ResourceFactory;
 import org.hamcrest.Matchers;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.Disabled;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.junit.jupiter.api.parallel.Isolated;
@@ -223,7 +224,7 @@ public class WebAppContextTest
         //test that explicit config instances override any from server
         String[] classNames = {"x.y.z"};
         Server server = newServer();
-        server.setAttribute(Configuration.ATTR, classNames);
+        server.setAttribute(Configurations.SERVER_DEFAULT_ATTR, classNames);
         wac.setServer(server);
         assertThat(wac.getConfigurations(), Matchers.contains(configs));
     }
@@ -246,6 +247,7 @@ public class WebAppContextTest
      *
      * @throws Exception on test failure
      */
+    @Disabled // Reenabled when cross context dispatch is implemented.
     @Test
     public void testContextWhiteList() throws Exception
     {
@@ -429,7 +431,7 @@ public class WebAppContextTest
 
         String rawResponse = connector.getResponse("GET http://localhost:8080 HTTP/1.1\r\nHost: localhost:8080\r\nConnection: close\r\n\r\n");
         HttpTester.Response response = HttpTester.parseResponse(rawResponse);
-        assertThat("Response OK", response.getStatus(), is(HttpStatus.OK_200));
+        assertThat(response.getStatus(), is(HttpStatus.OK_200));
     }
 
     @Test

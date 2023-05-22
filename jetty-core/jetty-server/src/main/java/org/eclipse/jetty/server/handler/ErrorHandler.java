@@ -41,13 +41,13 @@ import org.eclipse.jetty.http.PreEncodedHttpField;
 import org.eclipse.jetty.http.QuotedQualityCSV;
 import org.eclipse.jetty.io.ByteBufferOutputStream;
 import org.eclipse.jetty.io.Content;
+import org.eclipse.jetty.io.Retainable;
 import org.eclipse.jetty.io.RetainableByteBuffer;
 import org.eclipse.jetty.server.Request;
 import org.eclipse.jetty.server.Response;
 import org.eclipse.jetty.server.Server;
 import org.eclipse.jetty.util.BufferUtil;
 import org.eclipse.jetty.util.Callback;
-import org.eclipse.jetty.util.QuotedStringTokenizer;
 import org.eclipse.jetty.util.StringUtil;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -86,6 +86,8 @@ public class ErrorHandler implements Request.Handler
     @Override
     public boolean handle(Request request, Response response, Callback callback)
     {
+        if (LOG.isDebugEnabled())
+            LOG.debug("handle({}, {}, {})", request, response, callback);
         if (_cacheControl != null)
             response.getHeaders().put(_cacheControl);
 
@@ -256,22 +258,7 @@ public class ErrorHandler implements Request.Handler
             }
 
             response.getHeaders().put(type.getContentTypeField(charset));
-            response.write(true, buffer.getByteBuffer(), new Callback.Nested(callback)
-            {
-                @Override
-                public void succeeded()
-                {
-                    buffer.release();
-                    super.succeeded();
-                }
-
-                @Override
-                public void failed(Throwable x)
-                {
-                    buffer.release();
-                    super.failed(x);
-                }
-            });
+            response.write(true, buffer.getByteBuffer(), new WriteErrorCallback(callback, buffer));
 
             return true;
         }
@@ -396,9 +383,7 @@ public class ErrorHandler implements Request.Handler
         }
 
         writer.append(json.entrySet().stream()
-            .map(e -> QuotedStringTokenizer.quote(e.getKey()) +
-                ":" +
-                QuotedStringTokenizer.quote(StringUtil.sanitizeXmlString((e.getValue()))))
+            .map(e -> HttpField.NAME_VALUE_TOKENIZER.quote(e.getKey()) + ":" + HttpField.NAME_VALUE_TOKENIZER.quote(StringUtil.sanitizeXmlString((e.getValue()))))
             .collect(Collectors.joining(",\n", "{\n", "\n}")));
     }
 
@@ -575,6 +560,35 @@ public class ErrorHandler implements Request.Handler
             if (_cause != null)
                 names.add(ERROR_EXCEPTION);
             return names;
+        }
+
+        @Override
+        public String toString()
+        {
+            return "%s@%x:%s".formatted(getClass().getSimpleName(), hashCode(), getWrapped());
+        }
+    }
+
+    /**
+     * The callback used by
+     * {@link ErrorHandler#generateAcceptableResponse(Request, Response, Callback, String, List, int, String, Throwable)}
+     * when calling {@link Response#write(boolean, ByteBuffer, Callback)} to wrap the passed in {@link Callback}
+     * so that the {@link RetainableByteBuffer} used can be released.
+     */
+    private static class WriteErrorCallback extends Callback.Nested
+    {
+        private final Retainable _retainable;
+
+        public WriteErrorCallback(Callback callback, Retainable retainable)
+        {
+            super(callback);
+            _retainable = retainable;
+        }
+
+        @Override
+        public void completed()
+        {
+            _retainable.release();
         }
     }
 }

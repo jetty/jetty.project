@@ -20,6 +20,7 @@ import java.nio.file.Path;
 import java.util.List;
 
 import jakarta.servlet.ServletContainerInitializer;
+import org.eclipse.jetty.ee10.annotations.AnnotationConfiguration.State;
 import org.eclipse.jetty.ee10.webapp.RelativeOrdering;
 import org.eclipse.jetty.ee10.webapp.WebAppContext;
 import org.eclipse.jetty.ee10.webapp.WebDescriptor;
@@ -48,12 +49,13 @@ public class TestAnnotationConfiguration
 {
     public static class TestableAnnotationConfiguration extends AnnotationConfiguration
     {
-        public void assertAnnotationDiscovery(boolean b)
+        public void assertAnnotationDiscovery(WebAppContext context, boolean b)
         {
+            State state = (State)context.getAttribute(STATE);
             if (!b)
-                assertTrue(_discoverableAnnotationHandlers.isEmpty());
+                assertTrue(state._discoverableAnnotationHandlers.isEmpty());
             else
-                assertFalse(_discoverableAnnotationHandlers.isEmpty());
+                assertFalse(state._discoverableAnnotationHandlers.isEmpty());
         }
     }
 
@@ -111,6 +113,7 @@ public class TestAnnotationConfiguration
         //check that a 2.5 webapp with configurationDiscovered will discover annotations
         TestableAnnotationConfiguration config25 = new TestableAnnotationConfiguration();
         WebAppContext context25 = new WebAppContext();
+        config25.preConfigure(context25);
         context25.setClassLoader(Thread.currentThread().getContextClassLoader());
         context25.setAttribute(AnnotationConfiguration.MULTI_THREADED, Boolean.FALSE);
         context25.setAttribute(AnnotationConfiguration.MAX_SCAN_WAIT, 0);
@@ -119,11 +122,12 @@ public class TestAnnotationConfiguration
         context25.getContext().getServletContext().setEffectiveMajorVersion(2);
         context25.getContext().getServletContext().setEffectiveMinorVersion(5);
         config25.configure(context25);
-        config25.assertAnnotationDiscovery(false);
+        config25.assertAnnotationDiscovery(context25, false);
 
         //check that a 2.5 webapp discover annotations
         TestableAnnotationConfiguration config25b = new TestableAnnotationConfiguration();
         WebAppContext context25b = new WebAppContext();
+        config25b.preConfigure(context25b);
         context25b.setClassLoader(Thread.currentThread().getContextClassLoader());
         context25b.setAttribute(AnnotationConfiguration.MULTI_THREADED, Boolean.FALSE);
         context25b.setAttribute(AnnotationConfiguration.MAX_SCAN_WAIT, 0);
@@ -131,11 +135,12 @@ public class TestAnnotationConfiguration
         context25b.getContext().getServletContext().setEffectiveMajorVersion(2);
         context25b.getContext().getServletContext().setEffectiveMinorVersion(5);
         config25b.configure(context25b);
-        config25b.assertAnnotationDiscovery(true);
+        config25b.assertAnnotationDiscovery(context25b, true);
 
         //check that a 3.x webapp with metadata true won't discover annotations
         TestableAnnotationConfiguration config31 = new TestableAnnotationConfiguration();
         WebAppContext context31 = new WebAppContext();
+        config31.preConfigure(context31);
         context31.setClassLoader(Thread.currentThread().getContextClassLoader());
         context31.setAttribute(AnnotationConfiguration.MULTI_THREADED, Boolean.FALSE);
         context31.setAttribute(AnnotationConfiguration.MAX_SCAN_WAIT, 0);
@@ -143,11 +148,12 @@ public class TestAnnotationConfiguration
         context31.getContext().getServletContext().setEffectiveMajorVersion(3);
         context31.getContext().getServletContext().setEffectiveMinorVersion(1);
         config31.configure(context31);
-        config31.assertAnnotationDiscovery(false);
+        config31.assertAnnotationDiscovery(context31, false);
 
         //check that a 3.x webapp with metadata false will discover annotations
         TestableAnnotationConfiguration config31b = new TestableAnnotationConfiguration();
         WebAppContext context31b = new WebAppContext();
+        config31b.preConfigure(context31b);
         context31b.setClassLoader(Thread.currentThread().getContextClassLoader());
         context31b.setAttribute(AnnotationConfiguration.MULTI_THREADED, Boolean.FALSE);
         context31b.setAttribute(AnnotationConfiguration.MAX_SCAN_WAIT, 0);
@@ -155,7 +161,7 @@ public class TestAnnotationConfiguration
         context31b.getContext().getServletContext().setEffectiveMajorVersion(3);
         context31b.getContext().getServletContext().setEffectiveMinorVersion(1);
         config31b.configure(context31b);
-        config31b.assertAnnotationDiscovery(true);
+        config31b.assertAnnotationDiscovery(context31b, true);
     }
 
     @Test
@@ -178,7 +184,9 @@ public class TestAnnotationConfiguration
             context.getMetaData().setWebInfClassesResources(classes);
             context.getContext().getServletContext().setEffectiveMajorVersion(3);
             context.getContext().getServletContext().setEffectiveMinorVersion(1);
-            scis = config.getNonExcludedInitializers(context);
+            config.preConfigure(context);
+            State state = (State)context.getAttribute(AnnotationConfiguration.STATE);
+            scis = config.getNonExcludedInitializers(state);
             assertNotNull(scis);
             assertEquals(3, scis.size());
             assertEquals("com.acme.ServerServletContainerInitializer", scis.get(0).getClass().getName()); //container path
@@ -208,12 +216,13 @@ public class TestAnnotationConfiguration
                 @Override
                 public void createServletContainerInitializerAnnotationHandlers(WebAppContext context, List<ServletContainerInitializer> scis) throws Exception
                 {
+                    State state = (State)context.getAttribute(STATE);
                     super.createServletContainerInitializerAnnotationHandlers(context, scis);
                     //check class hierarchy scanner handler is registered
-                    assertNotNull(_classInheritanceHandler);
+                    assertNotNull(state._classInheritanceHandler);
                     //check 
-                    assertEquals(1, _containerInitializerAnnotationHandlers.size());
-                    ContainerInitializerAnnotationHandler handler = _containerInitializerAnnotationHandlers.get(0);
+                    assertEquals(1, state._containerInitializerAnnotationHandlers.size());
+                    ContainerInitializerAnnotationHandler handler = state._containerInitializerAnnotationHandlers.get(0);
                     assertThat(handler._holder.toString(), containsString("com.acme.initializer.FooInitializer"));
                     assertEquals("com.acme.initializer.Foo", handler._annotation.getName());
                 }
@@ -231,7 +240,9 @@ public class TestAnnotationConfiguration
             context.getMetaData().setWebInfClassesResources(classes);
             context.getContext().getServletContext().setEffectiveMajorVersion(3);
             context.getContext().getServletContext().setEffectiveMinorVersion(1);
-            scis = config.getNonExcludedInitializers(context);
+            config.preConfigure(context);
+            State state = (State)context.getAttribute(AnnotationConfiguration.STATE);
+            scis = config.getNonExcludedInitializers(state);
             assertNotNull(scis);
             assertEquals(3, scis.size());
 
@@ -263,7 +274,9 @@ public class TestAnnotationConfiguration
             context.getMetaData().addWebInfResource(ResourceFactory.root().newResource(testSciJar));
             context.getContext().getServletContext().setEffectiveMajorVersion(3);
             context.getContext().getServletContext().setEffectiveMinorVersion(1);
-            scis = config.getNonExcludedInitializers(context);
+            config.preConfigure(context);
+            State state = (State)context.getAttribute(AnnotationConfiguration.STATE);
+            scis = config.getNonExcludedInitializers(state);
             assertNotNull(scis);
             assertEquals(3, scis.size());
             assertEquals("com.acme.ServerServletContainerInitializer", scis.get(0).getClass().getName()); // container
@@ -313,7 +326,9 @@ public class TestAnnotationConfiguration
             context.getMetaData().orderFragments();
             context.getContext().getServletContext().setEffectiveMajorVersion(3);
             context.getContext().getServletContext().setEffectiveMinorVersion(1);
-            scis = config.getNonExcludedInitializers(context);
+            config.preConfigure(context);
+            State state = (State)context.getAttribute(AnnotationConfiguration.STATE);
+            scis = config.getNonExcludedInitializers(state);
             assertNotNull(scis);
             assertEquals(4, scis.size());
             assertEquals("com.acme.ServerServletContainerInitializer", scis.get(0).getClass().getName()); //container path
@@ -346,7 +361,9 @@ public class TestAnnotationConfiguration
             context.getMetaData().addWebInfResource(ResourceFactory.root().newResource(testSciJar));
             context.getContext().getServletContext().setEffectiveMajorVersion(2);
             context.getContext().getServletContext().setEffectiveMinorVersion(5);
-            scis = config.getNonExcludedInitializers(context);
+            config.preConfigure(context);
+            State state = (State)context.getAttribute(AnnotationConfiguration.STATE);
+            scis = config.getNonExcludedInitializers(state);
             assertNotNull(scis);
             for (ServletContainerInitializer s : scis)
             {
@@ -384,7 +401,9 @@ public class TestAnnotationConfiguration
             context.getMetaData().addWebInfResource(ResourceFactory.root().newResource(testSciJar));
             context.getContext().getServletContext().setEffectiveMajorVersion(2);
             context.getContext().getServletContext().setEffectiveMinorVersion(5);
-            scis = config.getNonExcludedInitializers(context);
+            config.preConfigure(context);
+            State state = (State)context.getAttribute(AnnotationConfiguration.STATE);
+            scis = config.getNonExcludedInitializers(state);
             assertNotNull(scis);
             assertEquals(3, scis.size(), scis::toString);
             assertEquals("com.acme.ServerServletContainerInitializer", scis.get(0).getClass().getName()); //container path

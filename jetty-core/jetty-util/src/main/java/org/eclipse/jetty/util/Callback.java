@@ -422,6 +422,12 @@ public interface Callback extends Invocable
         {
             return callback.getInvocationType();
         }
+
+        @Override
+        public String toString()
+        {
+            return "%s@%x:%s".formatted(getClass().getSimpleName(), hashCode(), callback);
+        }
     }
 
     static Callback combine(Callback cb1, Callback cb2)

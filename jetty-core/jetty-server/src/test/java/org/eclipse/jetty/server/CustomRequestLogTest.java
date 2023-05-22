@@ -13,7 +13,9 @@
 
 package org.eclipse.jetty.server;
 
+import java.io.BufferedReader;
 import java.io.IOException;
+import java.io.InputStreamReader;
 import java.io.OutputStream;
 import java.net.InetAddress;
 import java.net.NetworkInterface;
@@ -48,6 +50,7 @@ import static org.hamcrest.Matchers.greaterThanOrEqualTo;
 import static org.hamcrest.Matchers.is;
 import static org.hamcrest.Matchers.lessThanOrEqualTo;
 import static org.hamcrest.Matchers.not;
+import static org.hamcrest.Matchers.nullValue;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertNotNull;
 import static org.junit.jupiter.api.Assertions.assertNull;
@@ -623,15 +626,7 @@ public class CustomRequestLogTest
             @Override
             public boolean handle(Request request, Response response, Callback callback)
             {
-                if (Request.getPathInContext(request).equals("/abort"))
-                {
-                    Callback cbk = Callback.from(() -> callback.failed(new QuietException.Exception("test fail")), callback::failed);
-                    Content.Sink.write(response, false, "data", cbk);
-                }
-                else
-                {
-                    callback.succeeded();
-                }
+                callback.succeeded();
                 return true;
             }
         });
@@ -675,13 +670,52 @@ public class CustomRequestLogTest
         assertEquals(HttpStatus.BAD_REQUEST_400, response.getStatus());
         log = _logs.poll(5, TimeUnit.SECONDS);
         assertThat(log, is("/no/host ConnectionStatus: 400 X"));
+    }
 
-        getResponses("""
-            GET /abort HTTP/1.1
-            Host: localhost
+    @Test
+    public void testLogAbortConnectionStatus() throws Exception
+    {
+        start("%U ConnectionStatus: %s %X", new SimpleHandler()
+        {
+            @Override
+            public boolean handle(Request request, Response response, Callback callback)
+            {
+                Callback cbk = Callback.from(() -> callback.failed(new QuietException.Exception("test fail")), callback::failed);
+                Content.Sink.write(response, false, "data", cbk);
+                return true;
+            }
+        });
 
-            """, 1);
-        log = _logs.poll(5, TimeUnit.SECONDS);
+        try (Socket socket = new Socket("localhost", _serverConnector.getLocalPort()))
+        {
+            socket.setSoTimeout(10000);
+            socket.setTcpNoDelay(true);
+
+            OutputStream output = socket.getOutputStream();
+            output.write("""
+                GET /abort HTTP/1.1
+                Host: localhost
+                    
+                """.getBytes(StandardCharsets.ISO_8859_1));
+            output.flush();
+
+            // Not using HttpTester here because we want to check that last chunk is not received.
+            BufferedReader in = new BufferedReader(new InputStreamReader(socket.getInputStream(), StandardCharsets.ISO_8859_1));
+
+            String line = in.readLine();
+            assertThat(line, is("HTTP/1.1 200 OK"));
+            while (line != null && line.length() > 0)
+                line = in.readLine();
+
+            line = in.readLine();
+            assertThat("chunk", line, is("4"));
+            line = in.readLine();
+            assertThat("data", line, is("data"));
+            line = in.readLine();
+            // This is the crucial part of the test. abort is indicated by no last chunk.
+            assertThat(line, nullValue());
+        }
+        String log = _logs.poll(5, TimeUnit.SECONDS);
         assertThat(log, is("/abort ConnectionStatus: 200 X"));
     }
 

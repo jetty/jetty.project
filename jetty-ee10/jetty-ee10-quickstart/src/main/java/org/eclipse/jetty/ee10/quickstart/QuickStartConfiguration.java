@@ -84,9 +84,10 @@ public class QuickStartConfiguration extends AbstractConfiguration
 
     public QuickStartConfiguration()
     {
-        super(true);
-        addDependencies(WebInfConfiguration.class);
-        addDependents(WebXmlConfiguration.class);
+        super(new Builder()
+            .enabledByDefault(true)
+            .addDependencies(WebInfConfiguration.class)
+            .addDependents(WebXmlConfiguration.class));
     }
 
     @Override

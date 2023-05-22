@@ -29,12 +29,12 @@ public class JakartaWebSocketConfiguration extends AbstractConfiguration
 {
     public JakartaWebSocketConfiguration()
     {
-        addDependencies(WebXmlConfiguration.class, MetaInfConfiguration.class, WebInfConfiguration.class, FragmentConfiguration.class);
-        addDependents("org.eclipse.jetty.ee10.annotations.AnnotationConfiguration", WebAppConfiguration.class.getName());
-
-        protectAndExpose("org.eclipse.jetty.ee10.websocket.servlet."); // For WebSocketUpgradeFilter
-        protectAndExpose("org.eclipse.jetty.ee10.websocket.jakarta.server.config.");
-        protectAndExpose("org.eclipse.jetty.ee10.websocket.jakarta.client.JakartaWebSocketClientContainerProvider");
-        protectAndExpose("org.eclipse.jetty.ee10.websocket.jakarta.client.internal.JakartaWebSocketShutdownContainer");
+        super(new Builder()
+            .addDependencies(WebXmlConfiguration.class, MetaInfConfiguration.class, WebInfConfiguration.class, FragmentConfiguration.class)
+            .addDependents("org.eclipse.jetty.ee10.annotations.AnnotationConfiguration", WebAppConfiguration.class.getName())
+            .protectAndExpose("org.eclipse.jetty.ee10.websocket.servlet.") // For WebSocketUpgradeFilter
+            .protectAndExpose("org.eclipse.jetty.ee10.websocket.jakarta.server.config.")
+            .protectAndExpose("org.eclipse.jetty.ee10.websocket.jakarta.client.JakartaWebSocketClientContainerProvider")
+            .protectAndExpose("org.eclipse.jetty.ee10.websocket.jakarta.client.internal.JakartaWebSocketShutdownContainer"));
     }
 }

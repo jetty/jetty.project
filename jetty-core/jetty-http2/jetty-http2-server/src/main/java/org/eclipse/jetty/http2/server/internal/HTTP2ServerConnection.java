@@ -153,7 +153,7 @@ public class HTTP2ServerConnection extends HTTP2Connection implements Connection
     public void onStreamTimeout(Stream stream, Throwable failure, Promise<Boolean> promise)
     {
         if (LOG.isDebugEnabled())
-            LOG.debug("Idle timeout on {}: {}", stream, failure);
+            LOG.debug("Idle timeout on {}", stream, failure);
         HTTP2Channel.Server channel = (HTTP2Channel.Server)((HTTP2Stream)stream).getAttachment();
         if (channel != null)
         {
@@ -202,7 +202,7 @@ public class HTTP2ServerConnection extends HTTP2Connection implements Connection
                 .map(HTTP2Channel.Server::isIdle)
                 .reduce(true, Boolean::logicalAnd);
         if (LOG.isDebugEnabled())
-            LOG.debug("{} idle timeout on {}: {}", result ? "Processed" : "Ignored", session, failure);
+            LOG.debug("{} idle timeout on {}", result ? "Processed" : "Ignored", session, failure);
         return result;
     }
 
@@ -224,7 +224,7 @@ public class HTTP2ServerConnection extends HTTP2Connection implements Connection
         httpChannel.setHttpStream(httpStream);
         Runnable task = httpStream.onPushRequest(request);
         if (task != null)
-            offerTask(task, false);
+            offerTask(task, true);
     }
 
 /*

@@ -933,7 +933,7 @@ public class DispatcherTest
         @Override
         public void init(FilterConfig filterConfig) throws ServletException
         {
-            servletContext = filterConfig.getServletContext().getContext("/context");
+            servletContext = filterConfig.getServletContext();
         }
 
         @Override

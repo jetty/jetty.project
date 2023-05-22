@@ -56,7 +56,7 @@ public class EncodeDecodeTest
     {
         _encoderHandler = new TestEncoderHandler();
         _decoderHandler = new TestDecoderHandler();
-        _encoder = new QpackEncoder(_encoderHandler, MAX_BLOCKED_STREAMS)
+        _encoder = new QpackEncoder(_encoderHandler)
         {
             @Override
             protected boolean shouldHuffmanEncode(HttpField httpField)
@@ -64,7 +64,7 @@ public class EncodeDecodeTest
                 return false;
             }
         };
-        _decoder = new QpackDecoder(_decoderHandler, MAX_HEADER_SIZE);
+        _decoder = new QpackDecoder(_decoderHandler);
 
         _encoderInstructionParser = new EncoderInstructionParser(new EncoderParserDebugHandler(_encoder));
         _decoderInstructionParser = new DecoderInstructionParser(new DecoderParserDebugHandler(_decoder));
@@ -96,7 +96,7 @@ public class EncodeDecodeTest
         // B.2. Dynamic Table.
 
         // Set capacity to 220.
-        _encoder.setCapacity(220);
+        _encoder.setTableCapacity(220);
         Instruction instruction = _encoderHandler.getInstruction();
         assertThat(instruction, instanceOf(SetCapacityInstruction.class));
         assertThat(((SetCapacityInstruction)instruction).getCapacity(), is(220));
