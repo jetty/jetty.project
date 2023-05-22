@@ -14,9 +14,12 @@
 package org.eclipse.jetty.fcgi.server;
 
 import java.io.OutputStream;
+import java.net.InetSocketAddress;
 import java.net.URI;
 import java.net.URLEncoder;
 import java.nio.ByteBuffer;
+import java.nio.channels.ServerSocketChannel;
+import java.nio.channels.SocketChannel;
 import java.util.Arrays;
 import java.util.List;
 import java.util.Random;
@@ -31,14 +34,19 @@ import org.eclipse.jetty.client.AsyncRequestContent;
 import org.eclipse.jetty.client.BytesRequestContent;
 import org.eclipse.jetty.client.ContentResponse;
 import org.eclipse.jetty.client.FutureResponseListener;
+import org.eclipse.jetty.client.HttpClient;
 import org.eclipse.jetty.client.Request;
 import org.eclipse.jetty.client.Response;
+import org.eclipse.jetty.fcgi.client.transport.HttpClientTransportOverFCGI;
+import org.eclipse.jetty.http.HttpFields;
 import org.eclipse.jetty.http.HttpHeader;
 import org.eclipse.jetty.http.HttpMethod;
+import org.eclipse.jetty.http.MetaData;
 import org.eclipse.jetty.io.Content;
 import org.eclipse.jetty.logging.StacklessLogging;
 import org.eclipse.jetty.server.Handler;
 import org.eclipse.jetty.server.HttpChannel;
+import org.eclipse.jetty.server.HttpStream;
 import org.eclipse.jetty.toolchain.test.Net;
 import org.eclipse.jetty.util.Callback;
 import org.eclipse.jetty.util.Fields;
@@ -100,6 +108,87 @@ public class HttpClientTest extends AbstractHttpClientServerTest
             assertEquals(200, response.getStatus());
             byte[] content = response.getContent();
             assertArrayEquals(data, content);
+        }
+    }
+
+    @Test
+    public void testGETResponseWithContentNoContentLength() throws Exception
+    {
+        byte[] data = new byte[]{0, 1, 2, 3, 4, 5, 6, 7};
+        start(new Handler.Abstract()
+        {
+            @Override
+            public boolean handle(org.eclipse.jetty.server.Request request, org.eclipse.jetty.server.Response response, Callback callback)
+            {
+                request.addHttpStreamWrapper(stream -> new HttpStream.Wrapper(stream)
+                {
+                    @Override
+                    public void send(MetaData.Request req, MetaData.Response rsp, boolean last, ByteBuffer content, Callback cbk)
+                    {
+                        HttpFields.Mutable rspHeaders = HttpFields.build(rsp.getHttpFields())
+                            .remove(HttpHeader.CONTENT_LENGTH);
+                        rsp = new MetaData.Response(rsp.getStatus(), rsp.getReason(), rsp.getHttpVersion(), rspHeaders, rsp.getContentLength(), rsp.getTrailersSupplier());
+                        super.send(req, rsp, last, content, cbk);
+                    }
+                });
+                response.write(true, ByteBuffer.wrap(data), callback);
+                return true;
+            }
+        });
+
+        ContentResponse response = client.GET(scheme + "://localhost:" + connector.getLocalPort());
+        assertNotNull(response);
+        assertEquals(200, response.getStatus());
+        byte[] content = response.getContent();
+        assertArrayEquals(data, content);
+    }
+
+    @Test
+    public void testGETResponseWithHeadersAndContentInSingleFrame() throws Exception
+    {
+        // WordPress generates headers and content in a single FrameType.STDOUT frame.
+        try (ServerSocketChannel serverChannel = ServerSocketChannel.open())
+        {
+            serverChannel.bind(new InetSocketAddress(0));
+
+            client = new HttpClient(new HttpClientTransportOverFCGI(1, ""));
+            client.start();
+
+            Request request = client.newRequest("localhost", serverChannel.socket().getLocalPort());
+            FutureResponseListener listener = new FutureResponseListener(request);
+            request.send(listener);
+
+            try (SocketChannel channel = serverChannel.accept())
+            {
+                channel.read(ByteBuffer.allocate(1024));
+
+                byte[] responseBytes = """
+                    Status: 200 OK\r
+                    Server: Jetty\r
+                    \r
+                    hello world
+                    """.getBytes(UTF_8);
+
+                ByteBuffer responseByteBuffer = ByteBuffer.allocate(1024)
+                    .put((byte)0x01) //FCGI version
+                    .put((byte)0x06) // FCGI frame type STDOUT
+                    .putShort((short)0x01) // FCGI request id
+                    .putShort((short)responseBytes.length) // FCGI content length
+                    .put((byte)0) // FCGI padding length
+                    .put((byte)0) // FCGI reserved
+                    .put(responseBytes)
+                    // FCGI end of STDOUT stream.
+                    .put(new byte[]{1, 6, 0, 1, 0, 0, 0, 0})
+                    // FCGI end request.
+                    .put(new byte[]{1, 3, 0, 1, 0, 8, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0})
+                    .flip();
+                channel.write(responseByteBuffer);
+
+                ContentResponse response = listener.get(5, TimeUnit.SECONDS);
+                assertEquals(200, response.getStatus());
+                String content = response.getContentAsString();
+                assertEquals("hello world\n", content);
+            }
         }
     }
 

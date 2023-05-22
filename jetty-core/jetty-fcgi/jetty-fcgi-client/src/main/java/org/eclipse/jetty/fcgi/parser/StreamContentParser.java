@@ -58,12 +58,16 @@ public class StreamContentParser extends ContentParser
                     int limit = buffer.limit();
                     buffer.limit(buffer.position() + length);
                     ByteBuffer slice = buffer.slice();
-                    buffer.position(buffer.limit());
                     buffer.limit(limit);
-                    contentLength -= length;
+                    // Only parse the content of this FCGI frame.
+                    boolean result = onContent(slice);
+                    // Not all the content may have been parsed.
+                    int consumed = length - slice.remaining();
+                    buffer.position(buffer.position() + consumed);
+                    contentLength -= consumed;
                     if (contentLength <= 0)
                         state = State.EOF;
-                    if (onContent(slice))
+                    if (result)
                         return Result.ASYNC;
                     break;
                 }
