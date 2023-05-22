@@ -1168,7 +1168,11 @@ public class HttpChannelState implements HttpChannel, Components
                 else if (failure != null)
                 {
                     Throwable throwable = failure;
-                    httpChannelState._serializedInvoker.run(() -> callback.failed(throwable));
+                    httpChannelState._serializedInvoker.run(() ->
+                    {
+                        _listener.onResponseWrite(_request, last, content.slice(), throwable);
+                        callback.failed(throwable);
+                    });
                 }
                 else
                 {
@@ -1189,31 +1193,12 @@ public class HttpChannelState implements HttpChannel, Components
                 if (LOG.isDebugEnabled())
                     LOG.debug("writing last={} {} {}", last, BufferUtil.toDetailString(content), this);
                 ByteBuffer contentSlice = content.slice();
-                Callback listenerCallback = new Callback()
+                Callback listenerCallback = Callback.from(() ->
                 {
-                    @Override
-                    public void succeeded()
-                    {
-                        _listener.onResponseWrite(_request, last, contentSlice, null);
-                        callback.succeeded();
-                    }
-
-                    @Override
-                    public void failed(Throwable x)
-                    {
-                        _listener.onResponseWrite(_request, last, contentSlice, x);
-                        callback.failed(x);
-                    }
-                };
+                    _listener.onResponseWrite(_request, last, contentSlice, null);
+                }, this);
                 stream.send(_request._metaData, responseMetaData, last, content, listenerCallback);
             }
-
-            Throwable t = failure;
-            httpChannelState._serializedInvoker.run(() ->
-            {
-                _listener.onResponseWrite(_request, last, content.slice(), t);
-                callback.succeeded();
-            });
         }
 
         /**
