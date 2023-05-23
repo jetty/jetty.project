@@ -545,7 +545,7 @@ public class HttpChannelState implements HttpChannel, Components
             Server server = _connectionMetaData.getConnector().getServer();
 
             boolean handled = false;
-            Throwable failure = null;
+            Throwable thrownFailure = null;
             try
             {
                 if (!HttpMethod.PRI.is(request.getMethod()) &&
@@ -587,12 +587,13 @@ public class HttpChannelState implements HttpChannel, Components
             catch (Throwable t)
             {
                 request._callback.failed(t);
-                failure = t;
+                thrownFailure = t;
             }
 
-            _combinedListener.onAfterHandling(request, handled, failure);
+            _combinedListener.onAfterHandling(request, handled, thrownFailure);
 
             HttpStream stream;
+            Throwable failure;
             boolean completeStream;
             boolean callbackCompleted;
             boolean lastStreamSendComplete;
@@ -1124,16 +1125,19 @@ public class HttpChannelState implements HttpChannel, Components
         @Override
         public void write(boolean last, ByteBuffer content, Callback callback)
         {
-            boolean isCommitted = isCommitted();
             long length = BufferUtil.length(content);
+
             long totalWritten;
             HttpChannelState httpChannelState;
             HttpStream stream = null;
             Throwable failure = null;
             MetaData.Response responseMetaData = null;
+            boolean isCommitted;
+
             try (AutoLock ignored = _request._lock.lock())
             {
                 httpChannelState = _request.lockedGetHttpChannelState();
+                isCommitted = isCommitted();
                 long committedContentLength = httpChannelState._committedContentLength;
                 totalWritten = _contentBytesWritten + length;
                 long contentLength = committedContentLength >= 0 ? committedContentLength : getHeaders().getLongField(HttpHeader.CONTENT_LENGTH);

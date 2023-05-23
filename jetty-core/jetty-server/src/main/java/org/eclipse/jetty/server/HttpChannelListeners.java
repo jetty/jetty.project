@@ -14,6 +14,7 @@
 package org.eclipse.jetty.server;
 
 import java.lang.invoke.MethodHandle;
+import java.lang.invoke.MethodHandleInfo;
 import java.lang.invoke.MethodHandles;
 import java.lang.invoke.MethodType;
 import java.nio.ByteBuffer;
@@ -115,19 +116,36 @@ public class HttpChannelListeners implements HttpChannel.Listener
         if (listeners == null)
             return;
 
-        for (HttpChannel.Listener listener : listeners)
+        try
         {
-            onHandlingBeforeHandle = MethodHandles.foldArguments(onHandlingBeforeHandle, LISTENER_HANDLER_ON_HANDLING_BEFORE.bindTo(listener));
-            onHandlingAfterHandle = MethodHandles.foldArguments(onHandlingAfterHandle, LISTENER_HANDLER_ON_HANDLING_AFTER.bindTo(listener));
-
-            onRequestBeginHandle = MethodHandles.foldArguments(onRequestBeginHandle, LISTENER_HANDLER_ON_REQUEST_BEGIN.bindTo(listener));
-            onRequestReadHandle = MethodHandles.foldArguments(onRequestReadHandle, LISTENER_HANDLER_ON_REQUEST_READ.bindTo(listener));
-
-            onResponseCommittedHandle = MethodHandles.foldArguments(onResponseCommittedHandle, LISTENER_HANDLER_ON_RESPONSE_COMMITTED.bindTo(listener));
-            onResponseWriteHandle = MethodHandles.foldArguments(onResponseWriteHandle, LISTENER_HANDLER_ON_RESPONSE_WRITE.bindTo(listener));
-
-            onCompleteHandle = MethodHandles.foldArguments(onCompleteHandle, LISTENER_HANDLER_ON_COMPLETE.bindTo(listener));
+            for (HttpChannel.Listener listener : listeners)
+            {
+                if (notDefault(LISTENER_HANDLER_ON_HANDLING_BEFORE, listener))
+                    onHandlingBeforeHandle = MethodHandles.foldArguments(onHandlingBeforeHandle, LISTENER_HANDLER_ON_HANDLING_BEFORE.bindTo(listener));
+                if (notDefault(LISTENER_HANDLER_ON_HANDLING_AFTER, listener))
+                    onHandlingAfterHandle = MethodHandles.foldArguments(onHandlingAfterHandle, LISTENER_HANDLER_ON_HANDLING_AFTER.bindTo(listener));
+                if (notDefault(LISTENER_HANDLER_ON_REQUEST_BEGIN, listener))
+                    onRequestBeginHandle = MethodHandles.foldArguments(onRequestBeginHandle, LISTENER_HANDLER_ON_REQUEST_BEGIN.bindTo(listener));
+                if (notDefault(LISTENER_HANDLER_ON_REQUEST_READ, listener))
+                    onRequestReadHandle = MethodHandles.foldArguments(onRequestReadHandle, LISTENER_HANDLER_ON_REQUEST_READ.bindTo(listener));
+                if (notDefault(LISTENER_HANDLER_ON_RESPONSE_COMMITTED, listener))
+                    onResponseCommittedHandle = MethodHandles.foldArguments(onResponseCommittedHandle, LISTENER_HANDLER_ON_RESPONSE_COMMITTED.bindTo(listener));
+                if (notDefault(LISTENER_HANDLER_ON_RESPONSE_WRITE, listener))
+                    onResponseWriteHandle = MethodHandles.foldArguments(onResponseWriteHandle, LISTENER_HANDLER_ON_RESPONSE_WRITE.bindTo(listener));
+                if (notDefault(LISTENER_HANDLER_ON_COMPLETE, listener))
+                    onCompleteHandle = MethodHandles.foldArguments(onCompleteHandle, LISTENER_HANDLER_ON_COMPLETE.bindTo(listener));
+            }
         }
+        catch (NoSuchMethodException e)
+        {
+            throw new RuntimeException("Invalid HttpChannel.Listener: " + listeners.getClass().getName(), e);
+        }
+    }
+
+    private boolean notDefault(MethodHandle methodHandle, HttpChannel.Listener listener) throws NoSuchMethodException
+    {
+        MethodHandleInfo methodHandleInfo = MethodHandles.lookup().in(listener.getClass()).revealDirect(methodHandle);
+        return !listener.getClass().getMethod(methodHandleInfo.getName(), methodHandleInfo.getMethodType().parameterArray()).isDefault();
     }
 
     @Override
