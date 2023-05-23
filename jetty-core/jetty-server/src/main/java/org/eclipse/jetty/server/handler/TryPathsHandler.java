@@ -13,18 +13,16 @@
 
 package org.eclipse.jetty.server.handler;
 
-import java.nio.ByteBuffer;
-import java.util.Iterator;
 import java.util.List;
 
-import org.eclipse.jetty.http.HttpStatus;
 import org.eclipse.jetty.http.HttpURI;
 import org.eclipse.jetty.server.Handler;
 import org.eclipse.jetty.server.Request;
 import org.eclipse.jetty.server.Response;
 import org.eclipse.jetty.util.Callback;
-import org.eclipse.jetty.util.IteratingNestedCallback;
 import org.eclipse.jetty.util.URIUtil;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 /**
  * <p>Inspired by nginx's {@code try_files} functionality.</p>
@@ -67,6 +65,8 @@ import org.eclipse.jetty.util.URIUtil;
  */
 public class TryPathsHandler extends Handler.Wrapper
 {
+    private static final Logger LOG = LoggerFactory.getLogger(TryPathsHandler.class);
+
     private String originalPathAttribute;
     private String originalQueryAttribute;
     private List<String> paths;
@@ -137,19 +137,19 @@ public class TryPathsHandler extends Handler.Wrapper
         Handler next = getHandler();
         if (next == null)
             return false;
-        if (paths.size() == 0)
-            return false;
-        if (paths.size() == 1)
+        for (String path : paths)
         {
-            if (!super.handle(new TryPathsRequest(request, interpolate(request, paths.get(0))), response, callback))
-                Response.writeError(request, response, callback, HttpStatus.NOT_FOUND_404);
+            String interpolated = interpolate(request, path);
+            TryPathsRequest tryRequest = new TryPathsRequest(request, interpolated);
+            if (LOG.isDebugEnabled())
+                LOG.debug("rewritten request URI {} -> {}", request.getHttpURI(), tryRequest.getHttpURI());
+            boolean handled = super.handle(tryRequest, response, callback);
+            if (LOG.isDebugEnabled())
+                LOG.debug("handled {} {}", handled, tryRequest.getHttpURI());
+            if (handled)
+                return true;
         }
-        else
-        {
-            // Iterate of all the paths trying them out
-            new PathsIterator(request, response, callback).iterate();
-        }
-        return true;
+        return false;
     }
 
     private String interpolate(Request request, String value)
@@ -158,54 +158,9 @@ public class TryPathsHandler extends Handler.Wrapper
         return value.replace("$path", path);
     }
 
-    private class PathsIterator extends IteratingNestedCallback
-    {
-        private final Request request;
-        private final Response response;
-        private final Iterator<String> paths = TryPathsHandler.this.paths.iterator();
-        private boolean trying;
-
-        private PathsIterator(Request request, Response response, Callback callback)
-        {
-            super(callback);
-            this.request = request;
-            this.response = response;
-        }
-
-        @Override
-        protected Action process() throws Throwable
-        {
-            if (trying)
-            {
-                if (response.getStatus() != HttpStatus.NOT_FOUND_404)
-                    return Action.SUCCEEDED;
-                trying = false;
-                response.reset();
-            }
-
-            while (paths.hasNext())
-            {
-                String path = paths.next();
-                String interpolated = interpolate(request, path);
-                TryPathsRequest tryRequest = new TryPathsRequest(request, interpolated);
-                TryPathsResponse tryResponse = new TryPathsResponse(tryRequest, response);
-                trying = true;
-                if (TryPathsHandler.super.handle(tryRequest, tryResponse, this))
-                    return Action.SCHEDULED;
-                trying = false;
-            }
-
-            if (response.isCommitted())
-                return Action.SUCCEEDED;
-
-            Response.writeError(request, response, this, HttpStatus.NOT_FOUND_404);
-            return Action.SCHEDULED;
-        }
-    }
-
     private class TryPathsRequest extends Request.Wrapper
     {
-        private final HttpURI _uri;
+        private final HttpURI uri;
 
         public TryPathsRequest(Request wrapped, String newPathQuery)
         {
@@ -239,30 +194,13 @@ public class TryPathsHandler extends Handler.Wrapper
             {
                 rewrittenURI.path(URIUtil.addPaths(originalContextPath, newPathQuery));
             }
-            _uri = rewrittenURI.asImmutable();
+            uri = rewrittenURI.asImmutable();
         }
 
         @Override
         public HttpURI getHttpURI()
         {
-            return _uri;
-        }
-    }
-
-    private class TryPathsResponse extends Response.Wrapper implements Callback
-    {
-        private TryPathsResponse(TryPathsRequest request, Response response)
-        {
-            super(request, response);
-        }
-
-        @Override
-        public void write(boolean last, ByteBuffer byteBuffer, Callback callback)
-        {
-            if (getStatus() == HttpStatus.NOT_FOUND_404)
-                getRequest().getComponents().getThreadPool().execute(callback::succeeded);
-            else
-                super.write(last, byteBuffer, callback);
+            return uri;
         }
     }
 }
