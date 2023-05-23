@@ -55,10 +55,7 @@ public class StreamContentParser extends ContentParser
                 case CONTENT:
                 {
                     int length = Math.min(contentLength, buffer.remaining());
-                    int limit = buffer.limit();
-                    buffer.limit(buffer.position() + length);
-                    ByteBuffer slice = buffer.slice();
-                    buffer.limit(limit);
+                    ByteBuffer slice = buffer.slice(buffer.position(), length);
                     // Only parse the content of this FCGI frame.
                     boolean result = onContent(slice);
                     // Not all the content may have been parsed.
@@ -104,7 +101,9 @@ public class StreamContentParser extends ContentParser
     {
         try
         {
-            return listener.onContent(getRequest(), streamType, buffer);
+            ByteBuffer content = buffer.asReadOnlyBuffer();
+            buffer.position(buffer.limit());
+            return listener.onContent(getRequest(), streamType, content);
         }
         catch (Throwable x)
         {
