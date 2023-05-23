@@ -32,6 +32,7 @@ import org.eclipse.jetty.http2.api.server.ServerSessionListener;
 import org.eclipse.jetty.http2.frames.Frame;
 import org.eclipse.jetty.http2.frames.SettingsFrame;
 import org.eclipse.jetty.http2.generator.Generator;
+import org.eclipse.jetty.http2.hpack.HpackContext;
 import org.eclipse.jetty.http2.parser.RateControl;
 import org.eclipse.jetty.http2.parser.ServerParser;
 import org.eclipse.jetty.http2.parser.WindowRateControl;
@@ -53,8 +54,8 @@ public abstract class AbstractHTTP2ServerConnectionFactory extends AbstractConne
 {
     private final HTTP2SessionContainer sessionContainer = new HTTP2SessionContainer();
     private final HttpConfiguration httpConfiguration;
-    private int maxDecoderTableSize = 4096;
-    private int maxEncoderTableSize = 4096;
+    private int maxDecoderTableSize = HpackContext.DEFAULT_MAX_TABLE_SIZE;
+    private int maxEncoderTableSize = HpackContext.DEFAULT_MAX_TABLE_SIZE;
     private int initialSessionRecvWindow = 1024 * 1024;
     private int initialStreamRecvWindow = 512 * 1024;
     private int maxConcurrentStreams = 128;
@@ -290,7 +291,7 @@ public abstract class AbstractHTTP2ServerConnectionFactory extends AbstractConne
     {
         Map<Integer, Integer> settings = new HashMap<>();
         int maxTableSize = getMaxDecoderTableSize();
-        if (maxTableSize != 4096)
+        if (maxTableSize != HpackContext.DEFAULT_MAX_TABLE_SIZE)
             settings.put(SettingsFrame.HEADER_TABLE_SIZE, maxTableSize);
         int initialStreamRecvWindow = getInitialStreamRecvWindow();
         if (initialStreamRecvWindow != FlowControlStrategy.DEFAULT_WINDOW_SIZE)

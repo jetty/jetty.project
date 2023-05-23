@@ -28,6 +28,7 @@ import org.eclipse.jetty.http2.FlowControlStrategy;
 import org.eclipse.jetty.http2.api.Session;
 import org.eclipse.jetty.http2.frames.Frame;
 import org.eclipse.jetty.http2.frames.SettingsFrame;
+import org.eclipse.jetty.http2.hpack.HpackContext;
 import org.eclipse.jetty.io.ByteBufferPool;
 import org.eclipse.jetty.io.ClientConnectionFactory;
 import org.eclipse.jetty.io.ClientConnector;
@@ -109,8 +110,8 @@ public class HTTP2Client extends ContainerLifeCycle
     private int maxFrameSize = Frame.DEFAULT_MAX_LENGTH;
     private int maxConcurrentPushedStreams = 32;
     private int maxSettingsKeys = SettingsFrame.DEFAULT_MAX_KEYS;
-    private int maxDecoderTableSize = 4096;
-    private int maxEncoderTableSize = 4096;
+    private int maxDecoderTableSize = HpackContext.DEFAULT_MAX_TABLE_SIZE;
+    private int maxEncoderTableSize = HpackContext.DEFAULT_MAX_TABLE_SIZE;
     private int maxHeaderBlockFragment = 0;
     private int maxResponseHeadersSize = -1;
     private FlowControlStrategy.Factory flowControlStrategyFactory = () -> new BufferingFlowControlStrategy(0.5F);

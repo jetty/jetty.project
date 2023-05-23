@@ -27,6 +27,7 @@ import org.eclipse.jetty.http2.frames.PrefaceFrame;
 import org.eclipse.jetty.http2.frames.SettingsFrame;
 import org.eclipse.jetty.http2.frames.WindowUpdateFrame;
 import org.eclipse.jetty.http2.generator.Generator;
+import org.eclipse.jetty.http2.hpack.HpackContext;
 import org.eclipse.jetty.http2.parser.Parser;
 import org.eclipse.jetty.io.ByteBufferPool;
 import org.eclipse.jetty.io.ClientConnectionFactory;
@@ -111,7 +112,7 @@ public class HTTP2ClientConnectionFactory implements ClientConnectionFactory
                 if (v == null)
                 {
                     v = client.getMaxDecoderTableSize();
-                    if (v == 4096)
+                    if (v == HpackContext.DEFAULT_MAX_TABLE_SIZE)
                         v = null;
                 }
                 return v;
