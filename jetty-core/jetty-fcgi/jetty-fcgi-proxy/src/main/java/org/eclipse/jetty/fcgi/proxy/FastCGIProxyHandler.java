@@ -291,25 +291,25 @@ public class FastCGIProxyHandler extends ProxyHandler.Reverse
         String scheme = clientToProxyRequest.getHttpURI().getScheme();
         proxyToServerRequest.attribute(SCHEME_ATTRIBUTE, scheme);
 
-        // Has the original URI been rewritten?
-        String originalURI = null;
+        // If the request URI been rewritten, use the original request URI.
+        String originalPath = null;
         String originalQuery = null;
         String originalPathAttribute = getOriginalPathAttribute();
         if (originalPathAttribute != null)
-            originalURI = (String)clientToProxyRequest.getAttribute(originalPathAttribute);
-        if (originalURI != null)
+            originalPath = (String)clientToProxyRequest.getAttribute(originalPathAttribute);
+        if (originalPath != null)
         {
             String originalQueryAttribute = getOriginalQueryAttribute();
             if (originalQueryAttribute != null)
             {
                 originalQuery = (String)clientToProxyRequest.getAttribute(originalQueryAttribute);
                 if (originalQuery != null)
-                    originalURI += "?" + originalQuery;
+                    originalPath += "?" + originalQuery;
             }
         }
 
-        if (originalURI != null)
-            proxyToServerRequest.attribute(REQUEST_URI_ATTRIBUTE, originalURI);
+        if (originalPath != null)
+            proxyToServerRequest.attribute(REQUEST_URI_ATTRIBUTE, originalPath);
         if (originalQuery != null)
             proxyToServerRequest.attribute(REQUEST_QUERY_ATTRIBUTE, originalQuery);
 
