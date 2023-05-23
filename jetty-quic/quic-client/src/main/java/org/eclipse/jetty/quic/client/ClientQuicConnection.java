@@ -18,7 +18,6 @@ import java.net.InetSocketAddress;
 import java.net.SocketAddress;
 import java.net.SocketTimeoutException;
 import java.nio.ByteBuffer;
-import java.nio.file.Path;
 import java.util.Collection;
 import java.util.List;
 import java.util.Map;
@@ -82,9 +81,10 @@ public class ClientQuicConnection extends QuicConnection
             quicheConfig.setApplicationProtos(protocols.toArray(String[]::new));
             quicheConfig.setDisableActiveMigration(quicConfiguration.isDisableActiveMigration());
             quicheConfig.setVerifyPeer(!connector.getSslContextFactory().isTrustAll());
-            Path trustStorePath = (Path)quicConfiguration.getImplementationSpecifixContext().get(QuicClientConnectorConfigurator.TRUSTSTORE_PATH_KEY);
-            if (trustStorePath != null)
-                quicheConfig.setTrustedCertsPemPath(trustStorePath.toString());
+            Map<String, Object> implCtx = quicConfiguration.getImplementationSpecifixContext();
+            quicheConfig.setTrustedCertsPemPath((String)implCtx.get(QuicClientConnectorConfigurator.TRUSTSTORE_PATH_KEY));
+            quicheConfig.setPrivKeyPemPath((String)implCtx.get(QuicClientConnectorConfigurator.PRIVATE_KEY_PATH_KEY));
+            quicheConfig.setCertChainPemPath((String)implCtx.get(QuicClientConnectorConfigurator.CERTIFICATE_CHAIN_PATH_KEY));
             // Idle timeouts must not be managed by Quiche.
             quicheConfig.setMaxIdleTimeout(0L);
             quicheConfig.setInitialMaxData((long)quicConfiguration.getSessionRecvWindow());

@@ -45,6 +45,9 @@ public class PemExporter
     {
     }
 
+    /**
+     * @return a temp file that gets deleted on exit
+     */
     public static Path exportTrustStore(KeyStore keyStore, Path targetFolder) throws Exception
     {
         if (!Files.isDirectory(targetFolder))

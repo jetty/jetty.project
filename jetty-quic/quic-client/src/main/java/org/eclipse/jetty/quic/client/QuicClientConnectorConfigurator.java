@@ -19,6 +19,7 @@ import java.nio.channels.DatagramChannel;
 import java.nio.channels.SelectableChannel;
 import java.nio.channels.SelectionKey;
 import java.nio.channels.SocketChannel;
+import java.nio.file.Files;
 import java.nio.file.Path;
 import java.security.KeyStore;
 import java.util.Map;
@@ -34,6 +35,8 @@ import org.eclipse.jetty.io.SocketChannelEndPoint;
 import org.eclipse.jetty.quic.common.QuicConfiguration;
 import org.eclipse.jetty.quic.quiche.PemExporter;
 import org.eclipse.jetty.util.ssl.SslContextFactory;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 /**
  * <p>A QUIC specific {@link ClientConnector.Configurator}.</p>
@@ -45,10 +48,17 @@ import org.eclipse.jetty.util.ssl.SslContextFactory;
  */
 public class QuicClientConnectorConfigurator extends ClientConnector.Configurator
 {
+    private static final Logger LOG = LoggerFactory.getLogger(QuicClientConnectorConfigurator.class);
+
+    static final String PRIVATE_KEY_PATH_KEY = QuicClientConnectorConfigurator.class.getName() + ".privateKeyPath";
+    static final String CERTIFICATE_CHAIN_PATH_KEY = QuicClientConnectorConfigurator.class.getName() + ".certificateChainPath";
     static final String TRUSTSTORE_PATH_KEY = QuicClientConnectorConfigurator.class.getName() + ".trustStorePath";
 
     private final QuicConfiguration configuration = new QuicConfiguration();
     private final UnaryOperator<Connection> configurator;
+    private Path privateKeyPath;
+    private Path certificateChainPath;
+    private Path trustStorePath;
 
     public QuicClientConnectorConfigurator()
     {
@@ -72,13 +82,58 @@ public class QuicClientConnectorConfigurator extends ClientConnector.Configurato
     @Override
     protected void doStart() throws Exception
     {
+        Path pemWorkDirectory = configuration.getPemWorkDirectory();
         ClientConnector clientConnector = getBean(ClientConnector.class);
         SslContextFactory.Client sslContextFactory = clientConnector.getSslContextFactory();
         KeyStore trustStore = sslContextFactory.getTrustStore();
         if (trustStore != null)
         {
-            Path trustStorePath = PemExporter.exportTrustStore(trustStore, Path.of(System.getProperty("java.io.tmpdir")));
-            configuration.getImplementationSpecifixContext().put(TRUSTSTORE_PATH_KEY, trustStorePath);
+            trustStorePath = PemExporter.exportTrustStore(trustStore, pemWorkDirectory != null ? pemWorkDirectory : Path.of(System.getProperty("java.io.tmpdir")));
+            configuration.getImplementationSpecifixContext().put(TRUSTSTORE_PATH_KEY, trustStorePath.toString());
+        }
+        String certAlias = sslContextFactory.getCertAlias();
+        if (certAlias != null)
+        {
+            if (pemWorkDirectory == null)
+                throw new IllegalStateException("No PEM work directory configured");
+            KeyStore keyStore = sslContextFactory.getKeyStore();
+            String keyManagerPassword = sslContextFactory.getKeyManagerPassword();
+            char[] password = keyManagerPassword == null ? sslContextFactory.getKeyStorePassword().toCharArray() : keyManagerPassword.toCharArray();
+            Path[] keyPair = PemExporter.exportKeyPair(keyStore, certAlias, password, pemWorkDirectory);
+            privateKeyPath = keyPair[0];
+            certificateChainPath = keyPair[1];
+            configuration.getImplementationSpecifixContext().put(PRIVATE_KEY_PATH_KEY, privateKeyPath.toString());
+            configuration.getImplementationSpecifixContext().put(CERTIFICATE_CHAIN_PATH_KEY, certificateChainPath.toString());
+        }
+        super.doStart();
+    }
+
+    @Override
+    protected void doStop() throws Exception
+    {
+        super.doStop();
+        deleteFile(privateKeyPath);
+        privateKeyPath = null;
+        configuration.getImplementationSpecifixContext().remove(PRIVATE_KEY_PATH_KEY);
+        deleteFile(certificateChainPath);
+        certificateChainPath = null;
+        configuration.getImplementationSpecifixContext().remove(CERTIFICATE_CHAIN_PATH_KEY);
+        deleteFile(trustStorePath);
+        trustStorePath = null;
+        configuration.getImplementationSpecifixContext().remove(TRUSTSTORE_PATH_KEY);
+    }
+
+    private void deleteFile(Path file)
+    {
+        try
+        {
+            if (file != null)
+                Files.delete(file);
+        }
+        catch (IOException x)
+        {
+            if (LOG.isDebugEnabled())
+                LOG.debug("could not delete {}", file, x);
         }
     }
 
