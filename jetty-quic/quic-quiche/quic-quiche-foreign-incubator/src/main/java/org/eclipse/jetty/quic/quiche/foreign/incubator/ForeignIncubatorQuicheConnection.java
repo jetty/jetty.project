@@ -30,6 +30,7 @@ import jdk.incubator.foreign.MemorySegment;
 import jdk.incubator.foreign.ResourceScope;
 import org.eclipse.jetty.quic.quiche.Quiche;
 import org.eclipse.jetty.quic.quiche.Quiche.quiche_error;
+import org.eclipse.jetty.quic.quiche.Quiche.tls_alert;
 import org.eclipse.jetty.quic.quiche.QuicheConfig;
 import org.eclipse.jetty.quic.quiche.QuicheConnection;
 import org.eclipse.jetty.util.BufferUtil;
@@ -584,10 +585,13 @@ public class ForeignIncubatorQuicheConnection extends QuicheConnection
                 }
             }
             // If quiche_conn_recv() fails, quiche_conn_local_error() can be called to get the SSL alert; the err_code would contain
-            // a value from which 100 must be substracted to get one of the codes specified in
-            // https://datatracker.ietf.org/doc/html/rfc5246#section-7.2 ; see https://github.com/curl/curl/pull/8275 for details.
+            // a value from which 0x100 must be substracted to get one of the codes specified at
+            // https://www.iana.org/assignments/tls-parameters/tls-parameters.xhtml#tls-parameters-6
+            // see https://github.com/curl/curl/pull/8275 for details.
             if (received < 0)
-                throw new IOException("failed to receive packet; err=" + quiche_error.errToString(received));
+                throw new IOException("failed to receive packet;" +
+                    " quiche_err=" + quiche_error.errToString(received) +
+                    " tls_alert=" + tls_alert.errToString(getLocalCloseInfo().error() - 0x100));
             buffer.position((int)(buffer.position() + received));
             return (int)received;
         }
@@ -624,7 +628,7 @@ public class ForeignIncubatorQuicheConnection extends QuicheConnection
             if (written == quiche_error.QUICHE_ERR_DONE)
                 return 0;
             if (written < 0L)
-                throw new IOException("failed to send packet; err=" + quiche_error.errToString(written));
+                throw new IOException("failed to send packet; quiche_err=" + quiche_error.errToString(written));
             buffer.position((int)(prevPosition + written));
             return (int)written;
         }
@@ -807,7 +811,7 @@ public class ForeignIncubatorQuicheConnection extends QuicheConnection
             if (value < 0)
             {
                 if (LOG.isDebugEnabled())
-                    LOG.debug("could not read window capacity for stream {} err={}", streamId, quiche_error.errToString(value));
+                    LOG.debug("could not read window capacity for stream {} quiche_err={}", streamId, quiche_error.errToString(value));
             }
             return value;
         }
@@ -866,7 +870,7 @@ public class ForeignIncubatorQuicheConnection extends QuicheConnection
             if (written == quiche_error.QUICHE_ERR_DONE)
                 return 0;
             if (written < 0L)
-                throw new IOException("failed to write to stream " + streamId + "; err=" + quiche_error.errToString(written));
+                throw new IOException("failed to write to stream " + streamId + "; quiche_err=" + quiche_error.errToString(written));
             buffer.position((int)(buffer.position() + written));
             return (int)written;
         }
@@ -907,7 +911,7 @@ public class ForeignIncubatorQuicheConnection extends QuicheConnection
             if (read == quiche_error.QUICHE_ERR_DONE)
                 return isStreamFinished(streamId) ? -1 : 0;
             if (read < 0L)
-                throw new IOException("failed to read from stream " + streamId + "; err=" + quiche_error.errToString(read));
+                throw new IOException("failed to read from stream " + streamId + "; quiche_err=" + quiche_error.errToString(read));
             buffer.position((int)(buffer.position() + read));
             return (int)read;
         }
@@ -938,6 +942,45 @@ public class ForeignIncubatorQuicheConnection extends QuicheConnection
                 MemorySegment reason = MemorySegment.allocateNative(CLinker.C_POINTER, scope);
                 MemorySegment reasonLength = MemorySegment.allocateNative(CLinker.C_LONG, scope);
                 if (quiche_h.quiche_conn_peer_error(quicheConn, app.address(), error.address(), reason.address(), reasonLength.address()) != C_FALSE)
+                {
+                    long errorValue = getLong(error);
+                    long reasonLengthValue = getLong(reasonLength);
+
+                    String reasonValue;
+                    if (reasonLengthValue == 0L)
+                    {
+                        reasonValue = null;
+                    }
+                    else
+                    {
+                        byte[] reasonBytes = new byte[(int)reasonLengthValue];
+                        // dereference reason pointer
+                        MemoryAddress memoryAddress = MemoryAddress.ofLong(getLong(reason));
+                        memoryAddress.asSegment(reasonLengthValue, ResourceScope.globalScope()).asByteBuffer().get(reasonBytes);
+                        reasonValue = new String(reasonBytes, StandardCharsets.UTF_8);
+                    }
+
+                    return new CloseInfo(errorValue, reasonValue);
+                }
+                return null;
+            }
+        }
+    }
+
+    @Override
+    public CloseInfo getLocalCloseInfo()
+    {
+        try (AutoLock ignore = lock.lock())
+        {
+            if (quicheConn == null)
+                throw new IllegalStateException("connection was released");
+            try (ResourceScope scope = ResourceScope.newConfinedScope())
+            {
+                MemorySegment app = MemorySegment.allocateNative(CLinker.C_CHAR, scope);
+                MemorySegment error = MemorySegment.allocateNative(CLinker.C_LONG, scope);
+                MemorySegment reason = MemorySegment.allocateNative(CLinker.C_POINTER, scope);
+                MemorySegment reasonLength = MemorySegment.allocateNative(CLinker.C_LONG, scope);
+                if (quiche_h.quiche_conn_local_error(quicheConn, app.address(), error.address(), reason.address(), reasonLength.address()) != C_FALSE)
                 {
                     long errorValue = getLong(error);
                     long reasonLengthValue = getLong(reasonLength);

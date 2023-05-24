@@ -268,6 +268,12 @@ public class quiche_h
         FunctionDescriptor.of(C_CHAR, C_POINTER, C_POINTER, C_POINTER, C_POINTER, C_POINTER)
     );
 
+    private static final MethodHandle quiche_conn_local_error$MH = downcallHandle(
+        "quiche_conn_local_error",
+        "(Ljdk/incubator/foreign/MemoryAddress;Ljdk/incubator/foreign/MemoryAddress;Ljdk/incubator/foreign/MemoryAddress;Ljdk/incubator/foreign/MemoryAddress;Ljdk/incubator/foreign/MemoryAddress;)B",
+        FunctionDescriptor.of(C_CHAR, C_POINTER, C_POINTER, C_POINTER, C_POINTER, C_POINTER)
+    );
+
     private static final MethodHandle quiche_conn_stats$MH = downcallHandle(
         "quiche_conn_stats",
         "(Ljdk/incubator/foreign/MemoryAddress;Ljdk/incubator/foreign/MemoryAddress;)V",
@@ -729,6 +735,18 @@ public class quiche_h
         try
         {
             return (byte) quiche_conn_peer_error$MH.invokeExact(conn, is_app, error_code, reason, reason_len);
+        }
+        catch (Throwable ex)
+        {
+            throw new AssertionError("should not reach here", ex);
+        }
+    }
+
+    public static byte quiche_conn_local_error(MemoryAddress conn, MemoryAddress is_app, MemoryAddress error_code, MemoryAddress reason, MemoryAddress reason_len)
+    {
+        try
+        {
+            return (byte) quiche_conn_local_error$MH.invokeExact(conn, is_app, error_code, reason, reason_len);
         }
         catch (Throwable ex)
         {

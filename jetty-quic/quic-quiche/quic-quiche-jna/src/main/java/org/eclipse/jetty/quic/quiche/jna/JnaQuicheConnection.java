@@ -24,6 +24,7 @@ import java.util.List;
 
 import org.eclipse.jetty.quic.quiche.Quiche;
 import org.eclipse.jetty.quic.quiche.Quiche.quiche_error;
+import org.eclipse.jetty.quic.quiche.Quiche.tls_alert;
 import org.eclipse.jetty.quic.quiche.QuicheConfig;
 import org.eclipse.jetty.quic.quiche.QuicheConnection;
 import org.eclipse.jetty.util.BufferUtil;
@@ -468,11 +469,14 @@ public class JnaQuicheConnection extends QuicheConnection
             info.from = peerSockaddr.getStructure().byReference();
             info.from_len = peerSockaddr.getSize();
             // If quiche_conn_recv() fails, quiche_conn_local_error() can be called to get the SSL alert; the err_code would contain
-            // a value from which 100 must be substracted to get one of the codes specified in
-            // https://datatracker.ietf.org/doc/html/rfc5246#section-7.2 ; see https://github.com/curl/curl/pull/8275 for details.
+            // a value from which 0x100 must be substracted to get one of the codes specified at
+            // https://www.iana.org/assignments/tls-parameters/tls-parameters.xhtml#tls-parameters-6
+            // see https://github.com/curl/curl/pull/8275 for details.
             int received = LibQuiche.INSTANCE.quiche_conn_recv(quicheConn, buffer, new size_t(buffer.remaining()), info).intValue();
             if (received < 0)
-                throw new IOException("failed to receive packet; err=" + quiche_error.errToString(received));
+                throw new IOException("failed to receive packet;" +
+                    " quiche_err=" + quiche_error.errToString(received) +
+                    " tls_alert=" + tls_alert.errToString(getLocalCloseInfo().error() - 0x100));
             buffer.position(buffer.position() + received);
             return received;
         }
@@ -501,7 +505,7 @@ public class JnaQuicheConnection extends QuicheConnection
             if (written == quiche_error.QUICHE_ERR_DONE)
                 return 0;
             if (written < 0L)
-                throw new IOException("failed to send packet; err=" + quiche_error.errToString(written));
+                throw new IOException("failed to send packet; quiche_err=" + quiche_error.errToString(written));
             int prevPosition = buffer.position();
             buffer.position(prevPosition + written);
             return written;
@@ -661,7 +665,7 @@ public class JnaQuicheConnection extends QuicheConnection
             if (value < 0)
             {
                 if (LOG.isDebugEnabled())
-                    LOG.debug("could not read window capacity for stream {} err={}", streamId, quiche_error.errToString(value));
+                    LOG.debug("could not read window capacity for stream {} quiche_err={}", streamId, quiche_error.errToString(value));
             }
             return value;
         }
@@ -693,7 +697,7 @@ public class JnaQuicheConnection extends QuicheConnection
             if (written == quiche_error.QUICHE_ERR_DONE)
                 return 0;
             if (written < 0L)
-                throw new IOException("failed to write to stream " + streamId + "; err=" + quiche_error.errToString(written));
+                throw new IOException("failed to write to stream " + streamId + "; quiche_err=" + quiche_error.errToString(written));
             buffer.position(buffer.position() + written);
             return written;
         }
@@ -711,7 +715,7 @@ public class JnaQuicheConnection extends QuicheConnection
             if (read == quiche_error.QUICHE_ERR_DONE)
                 return isStreamFinished(streamId) ? -1 : 0;
             if (read < 0L)
-                throw new IOException("failed to read from stream " + streamId + "; err=" + quiche_error.errToString(read));
+                throw new IOException("failed to read from stream " + streamId + "; quiche_err=" + quiche_error.errToString(read));
             buffer.position(buffer.position() + read);
             return read;
         }
@@ -740,6 +744,23 @@ public class JnaQuicheConnection extends QuicheConnection
             char_pointer reason = new char_pointer();
             size_t_pointer reasonLength = new size_t_pointer();
             if (LibQuiche.INSTANCE.quiche_conn_peer_error(quicheConn, app, error, reason, reasonLength))
+                return new CloseInfo(error.getValue(), reason.getValueAsString((int)reasonLength.getValue(), LibQuiche.CHARSET));
+            return null;
+        }
+    }
+
+    @Override
+    public CloseInfo getLocalCloseInfo()
+    {
+        try (AutoLock ignore = lock.lock())
+        {
+            if (quicheConn == null)
+                throw new IllegalStateException("connection was released");
+            bool_pointer app = new bool_pointer();
+            uint64_t_pointer error = new uint64_t_pointer();
+            char_pointer reason = new char_pointer();
+            size_t_pointer reasonLength = new size_t_pointer();
+            if (LibQuiche.INSTANCE.quiche_conn_local_error(quicheConn, app, error, reason, reasonLength))
                 return new CloseInfo(error.getValue(), reason.getValueAsString((int)reasonLength.getValue(), LibQuiche.CHARSET));
             return null;
         }
