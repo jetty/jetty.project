@@ -71,6 +71,7 @@
     <module>jetty-ee9-tests</module>
     <module>jetty-ee9-bom</module>
     <module>jetty-ee9-home</module>
+    <module>jetty-ee9-fcgi-proxy</module>
   </modules>
 
   <dependencyManagement>
@@ -90,6 +91,11 @@
       <dependency>
         <groupId>org.eclipse.jetty.ee9</groupId>
         <artifactId>jetty-ee9-cdi</artifactId>
+        <version>${project.version}</version>
+      </dependency>
+      <dependency>
+        <groupId>org.eclipse.jetty.ee9</groupId>
+        <artifactId>jetty-ee9-fcgi-proxy</artifactId>
         <version>${project.version}</version>
       </dependency>
       <dependency>
