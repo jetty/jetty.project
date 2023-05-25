@@ -64,6 +64,7 @@
     <module>jetty-ee10-examples</module>
     <module>jetty-ee10-bom</module>
     <module>jetty-ee10-home</module>
+    <module>jetty-ee10-fcgi-proxy</module>
   </modules>
 
   <dependencyManagement>
@@ -82,6 +83,11 @@
       <dependency>
         <groupId>org.eclipse.jetty.ee10</groupId>
         <artifactId>jetty-ee10-cdi</artifactId>
+        <version>${project.version}</version>
+      </dependency>
+      <dependency>
+        <groupId>org.eclipse.jetty.ee10</groupId>
+        <artifactId>jetty-ee10-fcgi-proxy</artifactId>
         <version>${project.version}</version>
       </dependency>
       <dependency>

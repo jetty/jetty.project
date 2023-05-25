@@ -157,7 +157,7 @@ public class DistributionTests extends AbstractJettyHomeTest
 
     @ParameterizedTest
     @ValueSource(strings = {"ee9", "ee10"})
-    public void testSimpleWebAppWithJSPandJSTL(String env) throws Exception
+    public void testSimpleWebAppWithJSPAndJSTL(String env) throws Exception
     {
         Path jettyBase = newTestJettyBaseDirectory();
         String jettyVersion = System.getProperty("jettyVersion");
@@ -1302,7 +1302,7 @@ public class DistributionTests extends AbstractJettyHomeTest
     }
 
     @ParameterizedTest
-    @ValueSource(strings = "ee9")
+    @ValueSource(strings = {"ee9", "ee10"})
     public void testEEFastCGIProxying(String env) throws Exception
     {
         Path jettyBase = newTestJettyBaseDirectory();
