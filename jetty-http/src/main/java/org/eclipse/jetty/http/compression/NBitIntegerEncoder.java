@@ -25,96 +25,64 @@ public class NBitIntegerEncoder
     }
 
     /**
-     * @param n the prefix used to encode this long.
-     * @param i the integer to encode.
+     * @param prefix the prefix used to encode this long.
+     * @param value the integer to encode.
      * @return the number of octets it would take to encode the long.
      */
-    public static int octetsNeeded(int n, long i)
+    public static int octetsNeeded(int prefix, long value)
     {
-        if (n == 8)
-        {
-            int nbits = 0xFF;
-            i = i - nbits;
-            if (i < 0)
-                return 1;
-            if (i == 0)
-                return 2;
-            int lz = Long.numberOfLeadingZeros(i);
-            int log = 64 - lz;
-            return 1 + (log + 6) / 7;
-        }
+        if (prefix <= 0 || prefix > 8)
+            throw new IllegalArgumentException();
 
-        int nbits = 0xFF >>> (8 - n);
-        i = i - nbits;
-        if (i < 0)
-            return 0;
-        if (i == 0)
+        int nbits = 0xFF >>> (8 - prefix);
+        value = value - nbits;
+        if (value < 0)
             return 1;
-        int lz = Long.numberOfLeadingZeros(i);
+        if (value == 0)
+            return 2;
+        int lz = Long.numberOfLeadingZeros(value);
         int log = 64 - lz;
-        return (log + 6) / 7;
+
+        // The return value is 1 for the prefix + the number of 7-bit groups used to encode the value.
+        return 1 + (log + 6) / 7;
     }
 
     /**
      *
-     * @param buf the buffer to encode into.
-     * @param n the prefix used to encode this long.
-     * @param i the long to encode into the buffer.
+     * @param buffer the buffer to encode into.
+     * @param prefix the prefix used to encode this long.
+     * @param value the long to encode into the buffer.
      */
-    public static void encode(ByteBuffer buf, int n, long i)
+    public static void encode(ByteBuffer buffer, int prefix, long value)
     {
-        if (n == 8)
-        {
-            if (i < 0xFF)
-            {
-                buf.put((byte)i);
-            }
-            else
-            {
-                buf.put((byte)0xFF);
+        if (prefix <= 0 || prefix > 8)
+            throw new IllegalArgumentException();
 
-                long length = i - 0xFF;
-                while (true)
-                {
-                    if ((length & ~0x7F) == 0)
-                    {
-                        buf.put((byte)length);
-                        return;
-                    }
-                    else
-                    {
-                        buf.put((byte)((length & 0x7F) | 0x80));
-                        length >>>= 7;
-                    }
-                }
-            }
+        // If prefix is 8 we add an empty byte as we initially modify last byte from the buffer.
+        if (prefix == 8)
+            buffer.put((byte)0x00);
+
+        int bits = 0xFF >>> (8 - prefix);
+        int p = buffer.position() - 1;
+        if (value < bits)
+        {
+            buffer.put(p, (byte)((buffer.get(p) & ~bits) | value));
         }
         else
         {
-            int p = buf.position() - 1;
-            int bits = 0xFF >>> (8 - n);
-
-            if (i < bits)
+            buffer.put(p, (byte)(buffer.get(p) | bits));
+            long length = value - bits;
+            while (true)
             {
-                buf.put(p, (byte)((buf.get(p) & ~bits) | i));
-            }
-            else
-            {
-                buf.put(p, (byte)(buf.get(p) | bits));
-
-                long length = i - bits;
-                while (true)
+                if ((length & ~0x7F) == 0)
                 {
-                    if ((length & ~0x7F) == 0)
-                    {
-                        buf.put((byte)length);
-                        return;
-                    }
-                    else
-                    {
-                        buf.put((byte)((length & 0x7F) | 0x80));
-                        length >>>= 7;
-                    }
+                    buffer.put((byte)length);
+                    return;
+                }
+                else
+                {
+                    buffer.put((byte)((length & 0x7F) | 0x80));
+                    length >>>= 7;
                 }
             }
         }

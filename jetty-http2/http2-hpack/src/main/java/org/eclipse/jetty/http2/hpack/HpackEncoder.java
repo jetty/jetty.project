@@ -25,12 +25,12 @@ import org.eclipse.jetty.http.HttpHeader;
 import org.eclipse.jetty.http.HttpMethod;
 import org.eclipse.jetty.http.HttpScheme;
 import org.eclipse.jetty.http.HttpStatus;
-import org.eclipse.jetty.http.HttpTokens;
 import org.eclipse.jetty.http.HttpVersion;
 import org.eclipse.jetty.http.MetaData;
 import org.eclipse.jetty.http.PreEncodedHttpField;
 import org.eclipse.jetty.http.compression.HuffmanEncoder;
 import org.eclipse.jetty.http.compression.NBitIntegerEncoder;
+import org.eclipse.jetty.http.compression.NBitStringEncoder;
 import org.eclipse.jetty.http2.hpack.HpackContext.Entry;
 import org.eclipse.jetty.http2.hpack.HpackContext.StaticEntry;
 import org.eclipse.jetty.util.BufferUtil;
@@ -319,7 +319,7 @@ public class HpackEncoder
                 buffer.put((byte)0x80);
                 NBitIntegerEncoder.encode(buffer, 7, index);
                 if (_debug)
-                    encoding = "IdxField" + (entry.isStatic() ? "S" : "") + (1 + NBitIntegerEncoder.octetsNeeded(7, index));
+                    encoding = "IdxField" + (entry.isStatic() ? "S" : "") + NBitIntegerEncoder.octetsNeeded(7, index);
             }
         }
         else
@@ -452,25 +452,6 @@ public class HpackEncoder
 
     static void encodeValue(ByteBuffer buffer, boolean huffman, String value)
     {
-        if (huffman)
-        {
-            // huffman literal value
-            buffer.put((byte)0x80);
-            int needed = HuffmanEncoder.octetsNeeded(value);
-            NBitIntegerEncoder.encode(buffer, 7, needed);
-            HuffmanEncoder.encode(buffer, value);
-        }
-        else
-        {
-            // add literal assuming iso_8859_1
-            buffer.put((byte)0x00).mark();
-            NBitIntegerEncoder.encode(buffer, 7, value.length());
-            for (int i = 0; i < value.length(); i++)
-            {
-                char c = value.charAt(i);
-                c = HttpTokens.sanitizeFieldVchar(c);
-                buffer.put((byte)c);
-            }
-        }
+        NBitStringEncoder.encode(buffer, 8, value, huffman);
     }
 }
