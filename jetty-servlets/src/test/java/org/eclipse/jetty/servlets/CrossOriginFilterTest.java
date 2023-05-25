@@ -24,6 +24,7 @@ import javax.servlet.http.HttpServlet;
 import javax.servlet.http.HttpServletRequest;
 import javax.servlet.http.HttpServletResponse;
 
+import org.eclipse.jetty.http.HttpHeader;
 import org.eclipse.jetty.http.HttpStatus;
 import org.eclipse.jetty.http.HttpTester;
 import org.eclipse.jetty.server.LocalConnector;
@@ -82,8 +83,9 @@ public class CrossOriginFilterTest
         String rawResponse = connector.getResponse(request);
         HttpTester.Response response = HttpTester.parseResponse(rawResponse);
 
-        assertThat(response.toString(), response.getStatus(), is(HttpStatus.OK_200));
         assertTrue(latch.await(1, TimeUnit.SECONDS));
+        assertThat(response.toString(), response.getStatus(), is(HttpStatus.OK_200));
+        assertThat(response.get(HttpHeader.VARY), is(HttpHeader.ORIGIN.asString()));
     }
 
     @Test
