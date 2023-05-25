@@ -158,8 +158,10 @@ public class HpackTest
     @Test
     public void evictReferencedFieldTest() throws Exception
     {
-        HpackEncoder encoder = new HpackEncoder(200);
         HpackDecoder decoder = new HpackDecoder(200, 1024);
+        HpackEncoder encoder = new HpackEncoder();
+        encoder.setMaxTableCapacity(decoder.getMaxTableCapacity());
+        encoder.setTableCapacity(decoder.getMaxTableCapacity());
         ByteBuffer buffer = BufferUtil.allocateDirect(16 * 1024);
 
         String longEnoughToBeEvicted = "012345678901234567890123456789012345678901234567890";

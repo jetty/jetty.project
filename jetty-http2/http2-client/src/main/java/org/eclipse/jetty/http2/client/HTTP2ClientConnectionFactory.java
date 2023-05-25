@@ -58,15 +58,16 @@ public class HTTP2ClientConnectionFactory implements ClientConnectionFactory
         @SuppressWarnings("unchecked")
         Promise<Session> sessionPromise = (Promise<Session>)context.get(SESSION_PROMISE_CONTEXT_KEY);
 
-        Generator generator = new Generator(byteBufferPool, client.getMaxEncoderTableSize(), client.getMaxHeaderBlockFragment());
+        Generator generator = new Generator(byteBufferPool, client.isUseOutputDirectByteBuffers(), client.getMaxHeaderBlockFragment());
         FlowControlStrategy flowControl = client.getFlowControlStrategyFactory().newFlowControlStrategy();
 
-        Parser parser = new Parser(byteBufferPool, client.getMaxDecoderTableSize(), client.getMaxResponseHeadersSize());
+        Parser parser = new Parser(byteBufferPool, client.getMaxDecoderTableCapacity(), client.getMaxResponseHeadersSize());
         parser.setMaxFrameSize(client.getMaxFrameSize());
         parser.setMaxSettingsKeys(client.getMaxSettingsKeys());
 
         HTTP2ClientSession session = new HTTP2ClientSession(scheduler, endPoint, parser, generator, listener, flowControl);
         session.setMaxRemoteStreams(client.getMaxConcurrentPushedStreams());
+        session.setMaxEncoderTableCapacity(client.getMaxEncoderTableCapacity());
         long streamIdleTimeout = client.getStreamIdleTimeout();
         if (streamIdleTimeout > 0)
             session.setStreamIdleTimeout(streamIdleTimeout);
@@ -111,8 +112,8 @@ public class HTTP2ClientConnectionFactory implements ClientConnectionFactory
             {
                 if (v == null)
                 {
-                    v = client.getMaxDecoderTableSize();
-                    if (v == HpackContext.DEFAULT_MAX_TABLE_SIZE)
+                    v = client.getMaxDecoderTableCapacity();
+                    if (v == HpackContext.DEFAULT_MAX_TABLE_CAPACITY)
                         v = null;
                 }
                 return v;

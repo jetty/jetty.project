@@ -30,20 +30,32 @@ public class Generator
 
     public Generator(ByteBufferPool byteBufferPool)
     {
-        this(byteBufferPool, 4096, 0);
+        this(byteBufferPool, 0);
     }
 
-    public Generator(ByteBufferPool byteBufferPool, int maxDynamicTableSize, int maxHeaderBlockFragment)
+    @Deprecated
+    public Generator(ByteBufferPool byteBufferPool, int maxTableCapacity, int maxHeaderBlockFragment)
     {
-        this(byteBufferPool, true, maxDynamicTableSize, maxHeaderBlockFragment);
+        this(byteBufferPool, maxHeaderBlockFragment);
     }
 
-    public Generator(ByteBufferPool byteBufferPool, boolean useDirectByteBuffers, int maxDynamicTableSize, int maxHeaderBlockFragment)
+    @Deprecated
+    public Generator(ByteBufferPool byteBufferPool, boolean useDirectByteBuffers, int maxTableCapacity, int maxHeaderBlockFragment)
+    {
+        this(byteBufferPool, useDirectByteBuffers, maxHeaderBlockFragment);
+    }
+
+    public Generator(ByteBufferPool byteBufferPool, int maxHeaderBlockFragment)
+    {
+        this(byteBufferPool, true, maxHeaderBlockFragment);
+    }
+
+    public Generator(ByteBufferPool byteBufferPool, boolean useDirectByteBuffers, int maxHeaderBlockFragment)
     {
         this.byteBufferPool = byteBufferPool;
 
         headerGenerator = new HeaderGenerator(useDirectByteBuffers);
-        hpackEncoder = new HpackEncoder(maxDynamicTableSize);
+        hpackEncoder = new HpackEncoder();
 
         this.generators = new FrameGenerator[FrameType.values().length];
         this.generators[FrameType.HEADERS.getType()] = new HeadersGenerator(headerGenerator, hpackEncoder, maxHeaderBlockFragment);
@@ -80,7 +92,7 @@ public class Generator
     @Deprecated
     public void setHeaderTableSize(int maxTableSize)
     {
-        getHpackEncoder().setMaxTableSize(maxTableSize);
+        getHpackEncoder().setTableCapacity(maxTableSize);
     }
 
     public void setMaxFrameSize(int maxFrameSize)

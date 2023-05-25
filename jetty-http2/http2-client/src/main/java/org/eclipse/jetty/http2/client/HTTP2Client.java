@@ -110,8 +110,8 @@ public class HTTP2Client extends ContainerLifeCycle
     private int maxFrameSize = Frame.DEFAULT_MAX_LENGTH;
     private int maxConcurrentPushedStreams = 32;
     private int maxSettingsKeys = SettingsFrame.DEFAULT_MAX_KEYS;
-    private int maxDecoderTableSize = HpackContext.DEFAULT_MAX_TABLE_SIZE;
-    private int maxEncoderTableSize = HpackContext.DEFAULT_MAX_TABLE_SIZE;
+    private int maxDecoderTableCapacity = HpackContext.DEFAULT_MAX_TABLE_CAPACITY;
+    private int maxEncoderTableCapacity = HpackContext.DEFAULT_MAX_TABLE_CAPACITY;
     private int maxHeaderBlockFragment = 0;
     private int maxResponseHeadersSize = -1;
     private FlowControlStrategy.Factory flowControlStrategyFactory = () -> new BufferingFlowControlStrategy(0.5F);
@@ -330,38 +330,44 @@ public class HTTP2Client extends ContainerLifeCycle
         this.maxSettingsKeys = maxSettingsKeys;
     }
 
-    @ManagedAttribute("The HPACK encoder dynamic table maximum size")
-    public int getMaxEncoderTableSize()
+    @ManagedAttribute("The HPACK encoder dynamic table maximum capacity")
+    public int getMaxEncoderTableCapacity()
     {
-        return maxEncoderTableSize;
+        return maxEncoderTableCapacity;
     }
 
-    public void setMaxEncoderTableSize(int maxEncoderTableSize)
+    /**
+     * <p>Sets the limit for the encoder HPACK dynamic table capacity.</p>
+     * <p>Setting this value to {@code 0} disables the use of the dynamic table.</p>
+     *
+     * @param maxEncoderTableCapacity The HPACK encoder dynamic table maximum capacity
+     */
+    public void setMaxEncoderTableCapacity(int maxEncoderTableCapacity)
     {
-        this.maxEncoderTableSize = maxEncoderTableSize;
+        this.maxEncoderTableCapacity = maxEncoderTableCapacity;
     }
 
-    @ManagedAttribute("The HPACK decoder dynamic table maximum size")
-    public int getMaxDecoderTableSize()
+    @ManagedAttribute("The HPACK decoder dynamic table maximum capacity")
+    public int getMaxDecoderTableCapacity()
     {
-        return maxDecoderTableSize;
+        return maxDecoderTableCapacity;
     }
 
-    public void setMaxDecoderTableSize(int maxDecoderTableSize)
+    public void setMaxDecoderTableCapacity(int maxDecoderTableCapacity)
     {
-        this.maxDecoderTableSize = maxDecoderTableSize;
+        this.maxDecoderTableCapacity = maxDecoderTableCapacity;
     }
 
     @Deprecated
     public int getMaxDynamicTableSize()
     {
-        return getMaxDecoderTableSize();
+        return getMaxDecoderTableCapacity();
     }
 
     @Deprecated
     public void setMaxDynamicTableSize(int maxTableSize)
     {
-        setMaxDecoderTableSize(maxTableSize);
+        setMaxDecoderTableCapacity(maxTableSize);
     }
 
     @ManagedAttribute("The max size of header block fragments")

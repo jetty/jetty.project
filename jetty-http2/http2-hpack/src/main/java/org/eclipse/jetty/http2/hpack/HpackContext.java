@@ -114,7 +114,7 @@ public class HpackContext
     private static final StaticEntry[] __staticTableByHeader = new StaticEntry[HttpHeader.values().length];
     private static final StaticEntry[] __staticTable = new StaticEntry[STATIC_TABLE.length];
     public static final int STATIC_SIZE = STATIC_TABLE.length - 1;
-    public static final int DEFAULT_MAX_TABLE_SIZE = 4096;
+    public static final int DEFAULT_MAX_TABLE_CAPACITY = 4096;
 
     static
     {

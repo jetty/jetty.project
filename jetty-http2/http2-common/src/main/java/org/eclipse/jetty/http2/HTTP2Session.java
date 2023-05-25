@@ -54,6 +54,7 @@ import org.eclipse.jetty.http2.frames.SettingsFrame;
 import org.eclipse.jetty.http2.frames.StreamFrame;
 import org.eclipse.jetty.http2.frames.WindowUpdateFrame;
 import org.eclipse.jetty.http2.generator.Generator;
+import org.eclipse.jetty.http2.hpack.HpackEncoder;
 import org.eclipse.jetty.http2.hpack.HpackException;
 import org.eclipse.jetty.http2.parser.Parser;
 import org.eclipse.jetty.io.ByteBufferPool;
@@ -105,6 +106,7 @@ public abstract class HTTP2Session extends ContainerLifeCycle implements ISessio
     private long streamIdleTimeout;
     private int initialSessionRecvWindow;
     private int writeThreshold;
+    private int maxEncoderTableCapacity;
     private boolean pushEnabled;
     private boolean connectProtocolEnabled;
 
@@ -207,6 +209,17 @@ public abstract class HTTP2Session extends ContainerLifeCycle implements ISessio
     public void setWriteThreshold(int writeThreshold)
     {
         this.writeThreshold = writeThreshold;
+    }
+
+    @ManagedAttribute("The HPACK encoder dynamic table maximum capacity")
+    public int getMaxEncoderTableCapacity()
+    {
+        return maxEncoderTableCapacity;
+    }
+
+    public void setMaxEncoderTableCapacity(int maxEncoderTableCapacity)
+    {
+        this.maxEncoderTableCapacity = maxEncoderTableCapacity;
     }
 
     public EndPoint getEndPoint()
@@ -377,11 +390,17 @@ public abstract class HTTP2Session extends ContainerLifeCycle implements ISessio
                 case SettingsFrame.HEADER_TABLE_SIZE:
                 {
                     if (LOG.isDebugEnabled())
-                        LOG.debug("Updating HPACK {} max table size to {} for {}", local ? "decoder" : "encoder", value, this);
+                        LOG.debug("Updating HPACK {} max table capacity to {} for {}", local ? "decoder" : "encoder", value, this);
                     if (local)
-                        parser.getHpackDecoder().setMaxTableSizeLimit(value);
+                    {
+                        parser.getHpackDecoder().setMaxTableCapacity(value);
+                    }
                     else
-                        generator.getHpackEncoder().setMaxTableSize(value);
+                    {
+                        HpackEncoder hpackEncoder = generator.getHpackEncoder();
+                        hpackEncoder.setMaxTableCapacity(value);
+                        hpackEncoder.setTableCapacity(Math.min(value, getMaxEncoderTableCapacity()));
+                    }
                     break;
                 }
                 case SettingsFrame.ENABLE_PUSH:

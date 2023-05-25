@@ -560,7 +560,7 @@ public class HTTP2ServerTest extends AbstractServerTest
                 return null;
             }
         });
-        generator = new Generator(byteBufferPool, 4096, 4);
+        generator = new Generator(byteBufferPool, 4);
 
         ByteBufferPool.Lease lease = frames.call();
 
