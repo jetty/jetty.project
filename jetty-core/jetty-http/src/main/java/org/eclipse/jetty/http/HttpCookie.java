@@ -884,7 +884,7 @@ public interface HttpCookie
     private static Map<String, String> lazyAttributePut(Map<String, String> attributes, String key, String value)
     {
         if (value == null)
-            return attributes;
+            return lazyAttributeRemove(attributes, key);
         if (attributes == null)
             attributes = new TreeMap<>(String.CASE_INSENSITIVE_ORDER);
         attributes.put(key, value);
