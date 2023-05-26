@@ -120,6 +120,72 @@ public interface Quiche
         }
     }
 
+    // QUIC Transport Error Codes: https://www.iana.org/assignments/quic/quic.xhtml#quic-transport-error-codes
+    interface quic_error
+    {
+        long NO_ERROR = 0,
+            INTERNAL_ERROR = 1,
+            CONNECTION_REFUSED = 2,
+            FLOW_CONTROL_ERROR = 3,
+            STREAM_LIMIT_ERROR = 4,
+            STREAM_STATE_ERROR = 5,
+            FINAL_SIZE_ERROR = 6,
+            FRAME_ENCODING_ERROR = 7,
+            TRANSPORT_PARAMETER_ERROR = 8,
+            CONNECTION_ID_LIMIT_ERROR = 9,
+            PROTOCOL_VIOLATION = 10,
+            INVALID_TOKEN = 11,
+            APPLICATION_ERROR = 12,
+            CRYPTO_BUFFER_EXCEEDED = 13,
+            KEY_UPDATE_ERROR = 14,
+            AEAD_LIMIT_REACHED = 15,
+            NO_VIABLE_PATH = 16,
+            VERSION_NEGOTIATION_ERROR = 17;
+
+        static String errToString(long err)
+        {
+            if (err == NO_ERROR)
+                return "NO_ERROR";
+            if (err == INTERNAL_ERROR)
+                return "INTERNAL_ERROR";
+            if (err == CONNECTION_REFUSED)
+                return "CONNECTION_REFUSED";
+            if (err == FLOW_CONTROL_ERROR)
+                return "FLOW_CONTROL_ERROR";
+            if (err == STREAM_LIMIT_ERROR)
+                return "STREAM_LIMIT_ERROR";
+            if (err == STREAM_STATE_ERROR)
+                return "STREAM_STATE_ERROR";
+            if (err == FINAL_SIZE_ERROR)
+                return "FINAL_SIZE_ERROR";
+            if (err == FRAME_ENCODING_ERROR)
+                return "FRAME_ENCODING_ERROR";
+            if (err == TRANSPORT_PARAMETER_ERROR)
+                return "TRANSPORT_PARAMETER_ERROR";
+            if (err == CONNECTION_ID_LIMIT_ERROR)
+                return "CONNECTION_ID_LIMIT_ERROR";
+            if (err == PROTOCOL_VIOLATION)
+                return "PROTOCOL_VIOLATION";
+            if (err == INVALID_TOKEN)
+                return "INVALID_TOKEN";
+            if (err == APPLICATION_ERROR)
+                return "APPLICATION_ERROR";
+            if (err == CRYPTO_BUFFER_EXCEEDED)
+                return "CRYPTO_BUFFER_EXCEEDED";
+            if (err == KEY_UPDATE_ERROR)
+                return "KEY_UPDATE_ERROR";
+            if (err == AEAD_LIMIT_REACHED)
+                return "AEAD_LIMIT_REACHED";
+            if (err == NO_VIABLE_PATH)
+                return "NO_VIABLE_PATH";
+            if (err == VERSION_NEGOTIATION_ERROR)
+                return "VERSION_NEGOTIATION_ERROR";
+            if (err >= 0x100 && err <= 0x01FF)
+                return "CRYPTO_ERROR " + tls_alert.errToString(err - 0x100);
+            return "?? " + err;
+        }
+    }
+
     // TLS Alerts: https://www.iana.org/assignments/tls-parameters/tls-parameters.xhtml#tls-parameters-6
     interface tls_alert
     {

@@ -50,15 +50,15 @@ public class QuicClientConnectorConfigurator extends ClientConnector.Configurato
 {
     private static final Logger LOG = LoggerFactory.getLogger(QuicClientConnectorConfigurator.class);
 
-    static final String PRIVATE_KEY_PATH_KEY = QuicClientConnectorConfigurator.class.getName() + ".privateKeyPath";
-    static final String CERTIFICATE_CHAIN_PATH_KEY = QuicClientConnectorConfigurator.class.getName() + ".certificateChainPath";
-    static final String TRUSTSTORE_PATH_KEY = QuicClientConnectorConfigurator.class.getName() + ".trustStorePath";
+    static final String PRIVATE_KEY_PEM_PATH_KEY = QuicClientConnectorConfigurator.class.getName() + ".privateKeyPemPath";
+    static final String CERTIFICATE_CHAIN_PEM_PATH_KEY = QuicClientConnectorConfigurator.class.getName() + ".certificateChainPemPath";
+    static final String TRUSTED_CERTIFICATES_PEM_PATH_KEY = QuicClientConnectorConfigurator.class.getName() + ".trustedCertificatesPemPath";
 
     private final QuicConfiguration configuration = new QuicConfiguration();
     private final UnaryOperator<Connection> configurator;
-    private Path privateKeyPath;
-    private Path certificateChainPath;
-    private Path trustStorePath;
+    private Path privateKeyPemPath;
+    private Path certificateChainPemPath;
+    private Path trustedCertificatesPemPath;
 
     public QuicClientConnectorConfigurator()
     {
@@ -88,8 +88,8 @@ public class QuicClientConnectorConfigurator extends ClientConnector.Configurato
         KeyStore trustStore = sslContextFactory.getTrustStore();
         if (trustStore != null)
         {
-            trustStorePath = PemExporter.exportTrustStore(trustStore, pemWorkDirectory != null ? pemWorkDirectory : Path.of(System.getProperty("java.io.tmpdir")));
-            configuration.getImplementationSpecifixContext().put(TRUSTSTORE_PATH_KEY, trustStorePath.toString());
+            trustedCertificatesPemPath = PemExporter.exportTrustStore(trustStore, pemWorkDirectory != null ? pemWorkDirectory : Path.of(System.getProperty("java.io.tmpdir")));
+            configuration.getImplementationConfiguration().put(TRUSTED_CERTIFICATES_PEM_PATH_KEY, trustedCertificatesPemPath.toString());
         }
         String certAlias = sslContextFactory.getCertAlias();
         if (certAlias != null)
@@ -100,10 +100,10 @@ public class QuicClientConnectorConfigurator extends ClientConnector.Configurato
             String keyManagerPassword = sslContextFactory.getKeyManagerPassword();
             char[] password = keyManagerPassword == null ? sslContextFactory.getKeyStorePassword().toCharArray() : keyManagerPassword.toCharArray();
             Path[] keyPair = PemExporter.exportKeyPair(keyStore, certAlias, password, pemWorkDirectory);
-            privateKeyPath = keyPair[0];
-            certificateChainPath = keyPair[1];
-            configuration.getImplementationSpecifixContext().put(PRIVATE_KEY_PATH_KEY, privateKeyPath.toString());
-            configuration.getImplementationSpecifixContext().put(CERTIFICATE_CHAIN_PATH_KEY, certificateChainPath.toString());
+            privateKeyPemPath = keyPair[0];
+            certificateChainPemPath = keyPair[1];
+            configuration.getImplementationConfiguration().put(PRIVATE_KEY_PEM_PATH_KEY, privateKeyPemPath.toString());
+            configuration.getImplementationConfiguration().put(CERTIFICATE_CHAIN_PEM_PATH_KEY, certificateChainPemPath.toString());
         }
         super.doStart();
     }
@@ -112,15 +112,15 @@ public class QuicClientConnectorConfigurator extends ClientConnector.Configurato
     protected void doStop() throws Exception
     {
         super.doStop();
-        deleteFile(privateKeyPath);
-        privateKeyPath = null;
-        configuration.getImplementationSpecifixContext().remove(PRIVATE_KEY_PATH_KEY);
-        deleteFile(certificateChainPath);
-        certificateChainPath = null;
-        configuration.getImplementationSpecifixContext().remove(CERTIFICATE_CHAIN_PATH_KEY);
-        deleteFile(trustStorePath);
-        trustStorePath = null;
-        configuration.getImplementationSpecifixContext().remove(TRUSTSTORE_PATH_KEY);
+        deleteFile(privateKeyPemPath);
+        privateKeyPemPath = null;
+        configuration.getImplementationConfiguration().remove(PRIVATE_KEY_PEM_PATH_KEY);
+        deleteFile(certificateChainPemPath);
+        certificateChainPemPath = null;
+        configuration.getImplementationConfiguration().remove(CERTIFICATE_CHAIN_PEM_PATH_KEY);
+        deleteFile(trustedCertificatesPemPath);
+        trustedCertificatesPemPath = null;
+        configuration.getImplementationConfiguration().remove(TRUSTED_CERTIFICATES_PEM_PATH_KEY);
     }
 
     private void deleteFile(Path file)

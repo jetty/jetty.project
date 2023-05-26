@@ -81,10 +81,10 @@ public class ClientQuicConnection extends QuicConnection
             quicheConfig.setApplicationProtos(protocols.toArray(String[]::new));
             quicheConfig.setDisableActiveMigration(quicConfiguration.isDisableActiveMigration());
             quicheConfig.setVerifyPeer(!connector.getSslContextFactory().isTrustAll());
-            Map<String, Object> implCtx = quicConfiguration.getImplementationSpecifixContext();
-            quicheConfig.setTrustedCertsPemPath((String)implCtx.get(QuicClientConnectorConfigurator.TRUSTSTORE_PATH_KEY));
-            quicheConfig.setPrivKeyPemPath((String)implCtx.get(QuicClientConnectorConfigurator.PRIVATE_KEY_PATH_KEY));
-            quicheConfig.setCertChainPemPath((String)implCtx.get(QuicClientConnectorConfigurator.CERTIFICATE_CHAIN_PATH_KEY));
+            Map<String, Object> implCtx = quicConfiguration.getImplementationConfiguration();
+            quicheConfig.setTrustedCertsPemPath((String)implCtx.get(QuicClientConnectorConfigurator.TRUSTED_CERTIFICATES_PEM_PATH_KEY));
+            quicheConfig.setPrivKeyPemPath((String)implCtx.get(QuicClientConnectorConfigurator.PRIVATE_KEY_PEM_PATH_KEY));
+            quicheConfig.setCertChainPemPath((String)implCtx.get(QuicClientConnectorConfigurator.CERTIFICATE_CHAIN_PEM_PATH_KEY));
             // Idle timeouts must not be managed by Quiche.
             quicheConfig.setMaxIdleTimeout(0L);
             quicheConfig.setInitialMaxData((long)quicConfiguration.getSessionRecvWindow());

@@ -33,7 +33,7 @@ public class QuicConfiguration
     private int bidirectionalStreamRecvWindow;
     private int unidirectionalStreamRecvWindow;
     private Path pemWorkDirectory;
-    private final Map<String, Object> implementationSpecifixContext = new HashMap<>();
+    private final Map<String, Object> implementationConfiguration = new HashMap<>();
 
     public List<String> getProtocols()
     {
@@ -115,8 +115,8 @@ public class QuicConfiguration
         this.pemWorkDirectory = pemWorkDirectory;
     }
 
-    public Map<String, Object> getImplementationSpecifixContext()
+    public Map<String, Object> getImplementationConfiguration()
     {
-        return implementationSpecifixContext;
+        return implementationConfiguration;
     }
 }

@@ -30,7 +30,7 @@ import jdk.incubator.foreign.MemorySegment;
 import jdk.incubator.foreign.ResourceScope;
 import org.eclipse.jetty.quic.quiche.Quiche;
 import org.eclipse.jetty.quic.quiche.Quiche.quiche_error;
-import org.eclipse.jetty.quic.quiche.Quiche.tls_alert;
+import org.eclipse.jetty.quic.quiche.Quiche.quic_error;
 import org.eclipse.jetty.quic.quiche.QuicheConfig;
 import org.eclipse.jetty.quic.quiche.QuicheConnection;
 import org.eclipse.jetty.util.BufferUtil;
@@ -584,14 +584,11 @@ public class ForeignIncubatorQuicheConnection extends QuicheConnection
                     received = quiche_h.quiche_conn_recv(quicheConn, bufferSegment.address(), buffer.remaining(), recvInfo.address());
                 }
             }
-            // If quiche_conn_recv() fails, quiche_conn_local_error() can be called to get the SSL alert; the err_code would contain
-            // a value from which 0x100 must be substracted to get one of the codes specified at
-            // https://www.iana.org/assignments/tls-parameters/tls-parameters.xhtml#tls-parameters-6
-            // see https://github.com/curl/curl/pull/8275 for details.
+            // If quiche_conn_recv() fails, quiche_conn_local_error() can be called to get the standard error.
             if (received < 0)
                 throw new IOException("failed to receive packet;" +
                     " quiche_err=" + quiche_error.errToString(received) +
-                    " tls_alert=" + tls_alert.errToString(getLocalCloseInfo().error() - 0x100));
+                    " quic_err=" + quic_error.errToString(getLocalCloseInfo().error()));
             buffer.position((int)(buffer.position() + received));
             return (int)received;
         }
