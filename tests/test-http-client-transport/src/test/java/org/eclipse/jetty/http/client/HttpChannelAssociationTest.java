@@ -183,7 +183,6 @@ public class HttpChannelAssociationTest extends AbstractTest<TransportScenario>
                 HTTP3Client http3Client = new HTTP3Client();
                 http3Client.getClientConnector().setSelectors(1);
                 http3Client.getClientConnector().setSslContextFactory(scenario.newClientSslContextFactory());
-                http3Client.getQuicConfiguration().setVerifyPeerCertificates(false);
                 return new HttpClientTransportOverHTTP3(http3Client)
                 {
                     @Override

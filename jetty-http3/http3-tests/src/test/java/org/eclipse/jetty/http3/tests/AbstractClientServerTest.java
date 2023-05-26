@@ -13,8 +13,10 @@
 
 package org.eclipse.jetty.http3.tests;
 
+import java.io.InputStream;
 import java.lang.management.ManagementFactory;
 import java.net.InetSocketAddress;
+import java.security.KeyStore;
 import java.util.concurrent.TimeUnit;
 import javax.management.MBeanServer;
 
@@ -35,15 +37,21 @@ import org.eclipse.jetty.jmx.MBeanContainer;
 import org.eclipse.jetty.server.ConnectionFactory;
 import org.eclipse.jetty.server.Handler;
 import org.eclipse.jetty.server.Server;
+import org.eclipse.jetty.toolchain.test.jupiter.WorkDir;
+import org.eclipse.jetty.toolchain.test.jupiter.WorkDirExtension;
 import org.eclipse.jetty.util.component.LifeCycle;
 import org.eclipse.jetty.util.ssl.SslContextFactory;
 import org.eclipse.jetty.util.thread.QueuedThreadPool;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.extension.BeforeTestExecutionCallback;
+import org.junit.jupiter.api.extension.ExtendWith;
 import org.junit.jupiter.api.extension.RegisterExtension;
 
+@ExtendWith(WorkDirExtension.class)
 public class AbstractClientServerTest
 {
+    public WorkDir workDir;
+
     @RegisterExtension
     final BeforeTestExecutionCallback printMethodName = context ->
         System.err.printf("Running %s.%s() %s%n", context.getRequiredTestClass().getSimpleName(), context.getRequiredTestMethod().getName(), context.getDisplayName());
@@ -81,6 +89,7 @@ public class AbstractClientServerTest
         serverThreads.setName("server");
         server = new Server(serverThreads);
         connector = new HTTP3ServerConnector(server, sslContextFactory, serverConnectionFactory);
+        connector.getQuicConfiguration().setPemWorkDirectory(workDir.getEmptyPathDir());
         server.addConnector(connector);
         MBeanContainer mbeanContainer = new MBeanContainer(ManagementFactory.getPlatformMBeanServer());
         server.addBean(mbeanContainer);
@@ -88,8 +97,16 @@ public class AbstractClientServerTest
 
     protected void startClient() throws Exception
     {
+        KeyStore trustStore = KeyStore.getInstance("PKCS12");
+        try (InputStream is = getClass().getResourceAsStream("/keystore.p12"))
+        {
+            trustStore.load(is, "storepwd".toCharArray());
+        }
+
         http3Client = new HTTP3Client();
-        http3Client.getQuicConfiguration().setVerifyPeerCertificates(false);
+        SslContextFactory.Client clientSslContextFactory = new SslContextFactory.Client();
+        clientSslContextFactory.setTrustStore(trustStore);
+        http3Client.getClientConnector().setSslContextFactory(clientSslContextFactory);
         httpClient = new HttpClient(new HttpClientTransportDynamic(new ClientConnectionFactoryOverHTTP3.HTTP3(http3Client)));
         QueuedThreadPool clientThreads = new QueuedThreadPool();
         clientThreads.setName("client");

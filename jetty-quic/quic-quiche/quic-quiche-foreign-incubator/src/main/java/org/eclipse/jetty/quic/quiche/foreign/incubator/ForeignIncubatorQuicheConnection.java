@@ -28,7 +28,9 @@ import jdk.incubator.foreign.CLinker;
 import jdk.incubator.foreign.MemoryAddress;
 import jdk.incubator.foreign.MemorySegment;
 import jdk.incubator.foreign.ResourceScope;
+import org.eclipse.jetty.quic.quiche.Quiche;
 import org.eclipse.jetty.quic.quiche.Quiche.quiche_error;
+import org.eclipse.jetty.quic.quiche.Quiche.quic_error;
 import org.eclipse.jetty.quic.quiche.QuicheConfig;
 import org.eclipse.jetty.quic.quiche.QuicheConnection;
 import org.eclipse.jetty.util.BufferUtil;
@@ -148,7 +150,7 @@ public class ForeignIncubatorQuicheConnection extends QuicheConnection
 
             MemorySegment localSockaddr = sockaddr.convert(local, scope);
             MemorySegment peerSockaddr = sockaddr.convert(peer, scope);
-            MemoryAddress quicheConn = quiche_h.quiche_connect(CLinker.toCString(peer.getHostName(), scope), scid, scid.byteSize(), localSockaddr, localSockaddr.byteSize(), peerSockaddr, peerSockaddr.byteSize(), libQuicheConfig);
+            MemoryAddress quicheConn = quiche_h.quiche_connect(CLinker.toCString(peer.getHostString(), scope), scid, scid.byteSize(), localSockaddr, localSockaddr.byteSize(), peerSockaddr, peerSockaddr.byteSize(), libQuicheConfig);
             ForeignIncubatorQuicheConnection connection = new ForeignIncubatorQuicheConnection(quicheConn, libQuicheConfig, scope);
             keepScope = true;
             return connection;
@@ -170,13 +172,29 @@ public class ForeignIncubatorQuicheConnection extends QuicheConnection
         if (verifyPeer != null)
             quiche_h.quiche_config_verify_peer(quicheConfig, verifyPeer ? C_TRUE : C_FALSE);
 
+        String trustedCertsPemPath = config.getTrustedCertsPemPath();
+        if (trustedCertsPemPath != null)
+        {
+            int rc = quiche_h.quiche_config_load_verify_locations_from_file(quicheConfig, CLinker.toCString(trustedCertsPemPath, scope).address());
+            if (rc < 0)
+                throw new IOException("Error loading trusted certificates file " + trustedCertsPemPath + " : " + Quiche.quiche_error.errToString(rc));
+        }
+
         String certChainPemPath = config.getCertChainPemPath();
         if (certChainPemPath != null)
-            quiche_h.quiche_config_load_cert_chain_from_pem_file(quicheConfig, CLinker.toCString(certChainPemPath, scope).address());
+        {
+            int rc = quiche_h.quiche_config_load_cert_chain_from_pem_file(quicheConfig, CLinker.toCString(certChainPemPath, scope).address());
+            if (rc < 0)
+                throw new IOException("Error loading certificate chain file " + certChainPemPath + " : " + Quiche.quiche_error.errToString(rc));
+        }
 
         String privKeyPemPath = config.getPrivKeyPemPath();
         if (privKeyPemPath != null)
-            quiche_h.quiche_config_load_priv_key_from_pem_file(quicheConfig, CLinker.toCString(privKeyPemPath, scope).address());
+        {
+            int rc = quiche_h.quiche_config_load_priv_key_from_pem_file(quicheConfig, CLinker.toCString(privKeyPemPath, scope).address());
+            if (rc < 0)
+                throw new IOException("Error loading private key file " + privKeyPemPath + " : " + Quiche.quiche_error.errToString(rc));
+        }
 
         String[] applicationProtos = config.getApplicationProtos();
         if (applicationProtos != null)
@@ -483,6 +501,31 @@ public class ForeignIncubatorQuicheConnection extends QuicheConnection
         }
     }
 
+    public byte[] getPeerCertificate()
+    {
+        try (AutoLock ignore = lock.lock())
+        {
+            if (quicheConn == null)
+                throw new IllegalStateException("connection was released");
+
+            try (ResourceScope scope = ResourceScope.newConfinedScope())
+            {
+                MemorySegment outSegment = MemorySegment.allocateNative(CLinker.C_POINTER, scope);
+                MemorySegment outLenSegment = MemorySegment.allocateNative(CLinker.C_LONG, scope);
+                quiche_h.quiche_conn_peer_cert(quicheConn, outSegment.address(), outLenSegment.address());
+
+                long outLen = getLong(outLenSegment);
+                if (outLen == 0L)
+                    return null;
+                byte[] out = new byte[(int)outLen];
+                // dereference outSegment pointer
+                MemoryAddress memoryAddress = MemoryAddress.ofLong(getLong(outSegment));
+                memoryAddress.asSegment(outLen, ResourceScope.globalScope()).asByteBuffer().get(out);
+                return out;
+            }
+        }
+    }
+
     @Override
     protected List<Long> iterableStreamIds(boolean write)
     {
@@ -541,8 +584,11 @@ public class ForeignIncubatorQuicheConnection extends QuicheConnection
                     received = quiche_h.quiche_conn_recv(quicheConn, bufferSegment.address(), buffer.remaining(), recvInfo.address());
                 }
             }
+            // If quiche_conn_recv() fails, quiche_conn_local_error() can be called to get the standard error.
             if (received < 0)
-                throw new IOException("failed to receive packet; err=" + quiche_error.errToString(received));
+                throw new IOException("failed to receive packet;" +
+                    " quiche_err=" + quiche_error.errToString(received) +
+                    " quic_err=" + quic_error.errToString(getLocalCloseInfo().error()));
             buffer.position((int)(buffer.position() + received));
             return (int)received;
         }
@@ -579,7 +625,7 @@ public class ForeignIncubatorQuicheConnection extends QuicheConnection
             if (written == quiche_error.QUICHE_ERR_DONE)
                 return 0;
             if (written < 0L)
-                throw new IOException("failed to send packet; err=" + quiche_error.errToString(written));
+                throw new IOException("failed to send packet; quiche_err=" + quiche_error.errToString(written));
             buffer.position((int)(prevPosition + written));
             return (int)written;
         }
@@ -762,7 +808,7 @@ public class ForeignIncubatorQuicheConnection extends QuicheConnection
             if (value < 0)
             {
                 if (LOG.isDebugEnabled())
-                    LOG.debug("could not read window capacity for stream {} err={}", streamId, quiche_error.errToString(value));
+                    LOG.debug("could not read window capacity for stream {} quiche_err={}", streamId, quiche_error.errToString(value));
             }
             return value;
         }
@@ -821,7 +867,7 @@ public class ForeignIncubatorQuicheConnection extends QuicheConnection
             if (written == quiche_error.QUICHE_ERR_DONE)
                 return 0;
             if (written < 0L)
-                throw new IOException("failed to write to stream " + streamId + "; err=" + quiche_error.errToString(written));
+                throw new IOException("failed to write to stream " + streamId + "; quiche_err=" + quiche_error.errToString(written));
             buffer.position((int)(buffer.position() + written));
             return (int)written;
         }
@@ -862,7 +908,7 @@ public class ForeignIncubatorQuicheConnection extends QuicheConnection
             if (read == quiche_error.QUICHE_ERR_DONE)
                 return isStreamFinished(streamId) ? -1 : 0;
             if (read < 0L)
-                throw new IOException("failed to read from stream " + streamId + "; err=" + quiche_error.errToString(read));
+                throw new IOException("failed to read from stream " + streamId + "; quiche_err=" + quiche_error.errToString(read));
             buffer.position((int)(buffer.position() + read));
             return (int)read;
         }
@@ -893,6 +939,45 @@ public class ForeignIncubatorQuicheConnection extends QuicheConnection
                 MemorySegment reason = MemorySegment.allocateNative(CLinker.C_POINTER, scope);
                 MemorySegment reasonLength = MemorySegment.allocateNative(CLinker.C_LONG, scope);
                 if (quiche_h.quiche_conn_peer_error(quicheConn, app.address(), error.address(), reason.address(), reasonLength.address()) != C_FALSE)
+                {
+                    long errorValue = getLong(error);
+                    long reasonLengthValue = getLong(reasonLength);
+
+                    String reasonValue;
+                    if (reasonLengthValue == 0L)
+                    {
+                        reasonValue = null;
+                    }
+                    else
+                    {
+                        byte[] reasonBytes = new byte[(int)reasonLengthValue];
+                        // dereference reason pointer
+                        MemoryAddress memoryAddress = MemoryAddress.ofLong(getLong(reason));
+                        memoryAddress.asSegment(reasonLengthValue, ResourceScope.globalScope()).asByteBuffer().get(reasonBytes);
+                        reasonValue = new String(reasonBytes, StandardCharsets.UTF_8);
+                    }
+
+                    return new CloseInfo(errorValue, reasonValue);
+                }
+                return null;
+            }
+        }
+    }
+
+    @Override
+    public CloseInfo getLocalCloseInfo()
+    {
+        try (AutoLock ignore = lock.lock())
+        {
+            if (quicheConn == null)
+                throw new IllegalStateException("connection was released");
+            try (ResourceScope scope = ResourceScope.newConfinedScope())
+            {
+                MemorySegment app = MemorySegment.allocateNative(CLinker.C_CHAR, scope);
+                MemorySegment error = MemorySegment.allocateNative(CLinker.C_LONG, scope);
+                MemorySegment reason = MemorySegment.allocateNative(CLinker.C_POINTER, scope);
+                MemorySegment reasonLength = MemorySegment.allocateNative(CLinker.C_LONG, scope);
+                if (quiche_h.quiche_conn_local_error(quicheConn, app.address(), error.address(), reason.address(), reasonLength.address()) != C_FALSE)
                 {
                     long errorValue = getLong(error);
                     long reasonLengthValue = getLong(reasonLength);

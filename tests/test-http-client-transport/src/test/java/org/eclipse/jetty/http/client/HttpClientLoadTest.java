@@ -16,6 +16,7 @@ package org.eclipse.jetty.http.client;
 import java.io.IOException;
 import java.io.InterruptedIOException;
 import java.nio.ByteBuffer;
+import java.nio.file.Path;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Locale;
@@ -56,7 +57,6 @@ import org.eclipse.jetty.util.ProcessorUtils;
 import org.eclipse.jetty.util.ssl.SslContextFactory;
 import org.eclipse.jetty.util.thread.Scheduler;
 import org.hamcrest.Matchers;
-import org.junit.jupiter.api.Assumptions;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.ArgumentsSource;
 import org.slf4j.Logger;
@@ -389,7 +389,9 @@ public class HttpClientLoadTest extends AbstractTest<HttpClientLoadTest.LoadTran
                 case FCGI:
                     return new ServerConnector(server, null, null, byteBufferPool, 1, selectors, provideServerConnectionFactory(transport));
                 case H3:
-                    return new HTTP3ServerConnector(server, null, null, byteBufferPool, sslContextFactory, provideServerConnectionFactory(transport));
+                    HTTP3ServerConnector http3ServerConnector = new HTTP3ServerConnector(server, null, null, byteBufferPool, sslContextFactory, provideServerConnectionFactory(transport));
+                    http3ServerConnector.getQuicConfiguration().setPemWorkDirectory(Path.of(System.getProperty("java.io.tmpdir")));
+                    return http3ServerConnector;
                 case UNIX_DOMAIN:
                     UnixDomainServerConnector unixSocketConnector = new UnixDomainServerConnector(server, null, null, byteBufferPool, 1, selectors, provideServerConnectionFactory(transport));
                     unixSocketConnector.setUnixDomainPath(unixDomainPath);
