@@ -43,7 +43,7 @@ public class NBitIntegerEncoder
         int lz = Long.numberOfLeadingZeros(value);
         int log = 64 - lz;
 
-        // The return value is 1 for the prefix + the number of 7-bit groups used to encode the value.
+        // The return value is 1 for the prefix + the number of 7-bit groups necessary to encode the value.
         return 1 + (log + 6) / 7;
     }
 
@@ -74,7 +74,8 @@ public class NBitIntegerEncoder
             long length = value - bits;
             while (true)
             {
-                if ((length & ~0x7F) == 0)
+                // The value of ~0x7F is different to 0x80 because of all the 1s from the MSB.
+                if ((length & ~0x7FL) == 0)
                 {
                     buffer.put((byte)length);
                     return;
