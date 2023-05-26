@@ -61,9 +61,9 @@ public class QuicServerConnector extends AbstractNetworkConnector
     private final QuicSessionContainer container = new QuicSessionContainer();
     private final ServerDatagramSelectorManager selectorManager;
     private final SslContextFactory.Server sslContextFactory;
-    private Path privateKeyPath;
-    private Path certificateChainPath;
-    private Path trustStorePath;
+    private Path privateKeyPemPath;
+    private Path certificateChainPemPath;
+    private Path trustedCertificatesPemPath;
     private volatile DatagramChannel datagramChannel;
     private volatile int localPort = -1;
     private int inputBufferSize = 2048;
@@ -168,16 +168,16 @@ public class QuicServerConnector extends AbstractNetworkConnector
         String keyManagerPassword = sslContextFactory.getKeyManagerPassword();
         char[] password = keyManagerPassword == null ? sslContextFactory.getKeyStorePassword().toCharArray() : keyManagerPassword.toCharArray();
         KeyStore keyStore = sslContextFactory.getKeyStore();
-        Path certificateWorkPath = findCertificateWorkPath();
+        Path certificateWorkPath = findPemWorkDirectory();
         Path[] keyPair = PemExporter.exportKeyPair(keyStore, alias, password, certificateWorkPath);
-        privateKeyPath = keyPair[0];
-        certificateChainPath = keyPair[1];
+        privateKeyPemPath = keyPair[0];
+        certificateChainPemPath = keyPair[1];
         KeyStore trustStore = sslContextFactory.getTrustStore();
         if (trustStore != null)
-            trustStorePath = PemExporter.exportTrustStore(trustStore, certificateWorkPath);
+            trustedCertificatesPemPath = PemExporter.exportTrustStore(trustStore, certificateWorkPath);
     }
 
-    private Path findCertificateWorkPath()
+    private Path findPemWorkDirectory()
     {
         Path pemWorkDirectory = getQuicConfiguration().getPemWorkDirectory();
         if (pemWorkDirectory != null)
@@ -225,9 +225,9 @@ public class QuicServerConnector extends AbstractNetworkConnector
     QuicheConfig newQuicheConfig()
     {
         QuicheConfig quicheConfig = new QuicheConfig();
-        quicheConfig.setPrivKeyPemPath(privateKeyPath.toString());
-        quicheConfig.setCertChainPemPath(certificateChainPath.toString());
-        quicheConfig.setTrustedCertsPemPath(trustStorePath == null ? null : trustStorePath.toString());
+        quicheConfig.setPrivKeyPemPath(privateKeyPemPath.toString());
+        quicheConfig.setCertChainPemPath(certificateChainPemPath.toString());
+        quicheConfig.setTrustedCertsPemPath(trustedCertificatesPemPath == null ? null : trustedCertificatesPemPath.toString());
         quicheConfig.setVerifyPeer(sslContextFactory.getNeedClientAuth() || sslContextFactory.getWantClientAuth());
         // Idle timeouts must not be managed by Quiche.
         quicheConfig.setMaxIdleTimeout(0L);
@@ -255,12 +255,12 @@ public class QuicServerConnector extends AbstractNetworkConnector
     @Override
     protected void doStop() throws Exception
     {
-        deleteFile(privateKeyPath);
-        privateKeyPath = null;
-        deleteFile(certificateChainPath);
-        certificateChainPath = null;
-        deleteFile(trustStorePath);
-        trustStorePath = null;
+        deleteFile(privateKeyPemPath);
+        privateKeyPemPath = null;
+        deleteFile(certificateChainPemPath);
+        certificateChainPemPath = null;
+        deleteFile(trustedCertificatesPemPath);
+        trustedCertificatesPemPath = null;
 
         // We want the DatagramChannel to be stopped by the SelectorManager.
         super.doStop();

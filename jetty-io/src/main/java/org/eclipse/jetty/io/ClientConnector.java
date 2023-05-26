@@ -117,6 +117,7 @@ public class ClientConnector extends ContainerLifeCycle
     {
         this.configurator = Objects.requireNonNull(configurator);
         addBean(configurator);
+        configurator.addBean(this, false);
     }
 
     /**
@@ -373,7 +374,6 @@ public class ClientConnector extends ContainerLifeCycle
         selectorManager = newSelectorManager();
         selectorManager.setConnectTimeout(getConnectTimeout().toMillis());
         addBean(selectorManager);
-        configurator.addBean(this);
         super.doStart();
     }
 
@@ -382,7 +382,6 @@ public class ClientConnector extends ContainerLifeCycle
     {
         super.doStop();
         removeBean(selectorManager);
-        configurator.removeBean(this);
     }
 
     protected SslContextFactory.Client newSslContextFactory()

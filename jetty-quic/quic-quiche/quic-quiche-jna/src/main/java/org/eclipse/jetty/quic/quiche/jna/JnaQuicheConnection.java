@@ -24,7 +24,7 @@ import java.util.List;
 
 import org.eclipse.jetty.quic.quiche.Quiche;
 import org.eclipse.jetty.quic.quiche.Quiche.quiche_error;
-import org.eclipse.jetty.quic.quiche.Quiche.tls_alert;
+import org.eclipse.jetty.quic.quiche.Quiche.quic_error;
 import org.eclipse.jetty.quic.quiche.QuicheConfig;
 import org.eclipse.jetty.quic.quiche.QuicheConnection;
 import org.eclipse.jetty.util.BufferUtil;
@@ -468,15 +468,12 @@ public class JnaQuicheConnection extends QuicheConnection
             SizedStructure<sockaddr> peerSockaddr = sockaddr.convert(peer);
             info.from = peerSockaddr.getStructure().byReference();
             info.from_len = peerSockaddr.getSize();
-            // If quiche_conn_recv() fails, quiche_conn_local_error() can be called to get the SSL alert; the err_code would contain
-            // a value from which 0x100 must be substracted to get one of the codes specified at
-            // https://www.iana.org/assignments/tls-parameters/tls-parameters.xhtml#tls-parameters-6
-            // see https://github.com/curl/curl/pull/8275 for details.
+            // If quiche_conn_recv() fails, quiche_conn_local_error() can be called to get the standard error.
             int received = LibQuiche.INSTANCE.quiche_conn_recv(quicheConn, buffer, new size_t(buffer.remaining()), info).intValue();
             if (received < 0)
                 throw new IOException("failed to receive packet;" +
                     " quiche_err=" + quiche_error.errToString(received) +
-                    " tls_alert=" + tls_alert.errToString(getLocalCloseInfo().error() - 0x100));
+                    " quic_err=" + quic_error.errToString(getLocalCloseInfo().error()));
             buffer.position(buffer.position() + received);
             return received;
         }
