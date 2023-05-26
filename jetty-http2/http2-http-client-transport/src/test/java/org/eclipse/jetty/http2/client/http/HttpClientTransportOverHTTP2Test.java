@@ -459,7 +459,7 @@ public class HttpClientTransportOverHTTP2Test extends AbstractTest
                 OutputStream output = socket.getOutputStream();
                 InputStream input = socket.getInputStream();
 
-                ServerParser parser = new ServerParser(byteBufferPool, 4096, 8192, RateControl.NO_RATE_CONTROL);
+                ServerParser parser = new ServerParser(byteBufferPool, 8192, RateControl.NO_RATE_CONTROL);
                 parser.init(new ServerParser.Listener.Adapter()
                 {
                     @Override

@@ -53,16 +53,28 @@ public class Parser
     private boolean continuation;
     private State state = State.HEADER;
 
-    public Parser(ByteBufferPool byteBufferPool, int maxTableSize, int maxHeaderSize)
+    @Deprecated
+    public Parser(ByteBufferPool byteBufferPool, int maxTableCapacity, int maxHeaderSize)
     {
-        this(byteBufferPool, maxTableSize, maxHeaderSize, RateControl.NO_RATE_CONTROL);
+        this(byteBufferPool, maxHeaderSize);
     }
 
+    public Parser(ByteBufferPool byteBufferPool, int maxHeaderSize)
+    {
+        this(byteBufferPool, maxHeaderSize, RateControl.NO_RATE_CONTROL);
+    }
+
+    @Deprecated
     public Parser(ByteBufferPool byteBufferPool, int maxTableSize, int maxHeaderSize, RateControl rateControl)
+    {
+        this(byteBufferPool, maxHeaderSize, rateControl);
+    }
+
+    public Parser(ByteBufferPool byteBufferPool, int maxHeaderSize, RateControl rateControl)
     {
         this.byteBufferPool = byteBufferPool;
         this.headerParser = new HeaderParser(rateControl == null ? RateControl.NO_RATE_CONTROL : rateControl);
-        this.hpackDecoder = new HpackDecoder(maxTableSize, maxHeaderSize);
+        this.hpackDecoder = new HpackDecoder(maxHeaderSize);
         this.bodyParsers = new BodyParser[FrameType.values().length];
     }
 

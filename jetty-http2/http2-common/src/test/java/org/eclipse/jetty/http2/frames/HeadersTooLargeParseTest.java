@@ -66,7 +66,7 @@ public class HeadersTooLargeParseTest
         HeadersGenerator generator = new HeadersGenerator(new HeaderGenerator(), new HpackEncoder());
 
         AtomicInteger failure = new AtomicInteger();
-        Parser parser = new Parser(byteBufferPool, 4096, maxHeaderSize);
+        Parser parser = new Parser(byteBufferPool, maxHeaderSize);
         parser.init(new Parser.Listener.Adapter()
         {
             @Override

@@ -45,7 +45,7 @@ public class ContinuationParseTest
         HeadersGenerator generator = new HeadersGenerator(new HeaderGenerator(), new HpackEncoder());
 
         final List<HeadersFrame> frames = new ArrayList<>();
-        Parser parser = new Parser(byteBufferPool, 4096, 8192);
+        Parser parser = new Parser(byteBufferPool, 8192);
         parser.init(new Parser.Listener.Adapter()
         {
             @Override

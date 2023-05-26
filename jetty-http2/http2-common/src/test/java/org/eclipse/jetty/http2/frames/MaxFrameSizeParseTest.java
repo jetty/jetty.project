@@ -34,7 +34,7 @@ public class MaxFrameSizeParseTest
         int maxFrameLength = Frame.DEFAULT_MAX_LENGTH + 16;
 
         AtomicInteger failure = new AtomicInteger();
-        Parser parser = new Parser(byteBufferPool, 4096, 8192);
+        Parser parser = new Parser(byteBufferPool, 8192);
         parser.setMaxFrameSize(maxFrameLength);
         parser.init(new Parser.Listener.Adapter()
         {

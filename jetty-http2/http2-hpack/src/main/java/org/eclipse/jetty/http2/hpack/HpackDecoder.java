@@ -45,17 +45,16 @@ public class HpackDecoder
     private int _maxTableCapacity;
 
     /**
-     * @param maxTableCapacity The maximum allowed size of the dynamic header table.
      * @param maxHeaderSize The maximum allowed size of a decoded headers block,
      * expressed as total of all name and value bytes, plus 32 bytes per field
      */
-    public HpackDecoder(int maxTableCapacity, int maxHeaderSize)
+    public HpackDecoder(int maxHeaderSize)
     {
-        _context = new HpackContext(maxTableCapacity);
-        _maxTableCapacity = maxTableCapacity;
+        _context = new HpackContext(0);
         _builder = new MetaDataBuilder(maxHeaderSize);
         _huffmanDecoder = new HuffmanDecoder();
         _integerDecoder = new NBitIntegerDecoder();
+        setMaxTableCapacity(HpackContext.DEFAULT_MAX_TABLE_CAPACITY);
     }
 
     public HpackContext getHpackContext()

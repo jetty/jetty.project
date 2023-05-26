@@ -71,7 +71,7 @@ public class SettingsGenerateParseTest
         SettingsGenerator generator = new SettingsGenerator(new HeaderGenerator());
 
         List<SettingsFrame> frames = new ArrayList<>();
-        Parser parser = new Parser(byteBufferPool, 4096, 8192);
+        Parser parser = new Parser(byteBufferPool, 8192);
         parser.init(new Parser.Listener.Adapter()
         {
             @Override
@@ -106,7 +106,7 @@ public class SettingsGenerateParseTest
         SettingsGenerator generator = new SettingsGenerator(new HeaderGenerator());
 
         AtomicInteger errorRef = new AtomicInteger();
-        Parser parser = new Parser(byteBufferPool, 4096, 8192);
+        Parser parser = new Parser(byteBufferPool, 8192);
         parser.init(new Parser.Listener.Adapter()
         {
             @Override
@@ -141,7 +141,7 @@ public class SettingsGenerateParseTest
         SettingsGenerator generator = new SettingsGenerator(new HeaderGenerator());
 
         List<SettingsFrame> frames = new ArrayList<>();
-        Parser parser = new Parser(byteBufferPool, 4096, 8192);
+        Parser parser = new Parser(byteBufferPool, 8192);
         parser.init(new Parser.Listener.Adapter()
         {
             @Override
@@ -186,7 +186,7 @@ public class SettingsGenerateParseTest
         SettingsGenerator generator = new SettingsGenerator(new HeaderGenerator());
 
         AtomicInteger errorRef = new AtomicInteger();
-        Parser parser = new Parser(byteBufferPool, 4096, 8192);
+        Parser parser = new Parser(byteBufferPool, 8192);
         int maxSettingsKeys = 32;
         parser.setMaxSettingsKeys(maxSettingsKeys);
         parser.init(new Parser.Listener.Adapter()
@@ -226,7 +226,7 @@ public class SettingsGenerateParseTest
         int maxSettingsKeys = pairs / 2;
 
         AtomicInteger errorRef = new AtomicInteger();
-        Parser parser = new Parser(byteBufferPool, 4096, 8192);
+        Parser parser = new Parser(byteBufferPool, 8192);
         parser.setMaxSettingsKeys(maxSettingsKeys);
         parser.setMaxFrameSize(Frame.DEFAULT_MAX_LENGTH);
         parser.init(new Parser.Listener.Adapter()
@@ -267,7 +267,7 @@ public class SettingsGenerateParseTest
         SettingsGenerator generator = new SettingsGenerator(new HeaderGenerator());
 
         AtomicInteger errorRef = new AtomicInteger();
-        Parser parser = new Parser(byteBufferPool, 4096, 8192);
+        Parser parser = new Parser(byteBufferPool, 8192);
         int maxSettingsKeys = 32;
         parser.setMaxSettingsKeys(maxSettingsKeys);
         parser.init(new Parser.Listener.Adapter()

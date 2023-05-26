@@ -164,7 +164,7 @@ public class PrefaceTest extends AbstractTest
             socket.write(buffers.toArray(new ByteBuffer[buffers.size()]));
 
             Queue<SettingsFrame> settings = new ArrayDeque<>();
-            Parser parser = new Parser(byteBufferPool, 4096, 8192);
+            Parser parser = new Parser(byteBufferPool, 8192);
             parser.init(new Parser.Listener.Adapter()
             {
                 @Override
@@ -297,7 +297,7 @@ public class PrefaceTest extends AbstractTest
 
             CountDownLatch clientSettingsLatch = new CountDownLatch(1);
             AtomicBoolean responded = new AtomicBoolean();
-            Parser parser = new Parser(byteBufferPool, 4096, 8192);
+            Parser parser = new Parser(byteBufferPool, 8192);
             parser.init(new Parser.Listener.Adapter()
             {
                 @Override

@@ -87,7 +87,7 @@ public class HTTP2ServerTest extends AbstractServerTest
             }
 
             final CountDownLatch latch = new CountDownLatch(1);
-            Parser parser = new Parser(byteBufferPool, 4096, 8192);
+            Parser parser = new Parser(byteBufferPool, 8192);
             parser.init(new Parser.Listener.Adapter()
             {
                 @Override
@@ -131,7 +131,7 @@ public class HTTP2ServerTest extends AbstractServerTest
             }
 
             final AtomicReference<HeadersFrame> frameRef = new AtomicReference<>();
-            Parser parser = new Parser(byteBufferPool, 4096, 8192);
+            Parser parser = new Parser(byteBufferPool, 8192);
             parser.init(new Parser.Listener.Adapter()
             {
                 @Override
@@ -190,7 +190,7 @@ public class HTTP2ServerTest extends AbstractServerTest
 
             final AtomicReference<HeadersFrame> headersRef = new AtomicReference<>();
             final AtomicReference<DataFrame> dataRef = new AtomicReference<>();
-            Parser parser = new Parser(byteBufferPool, 4096, 8192);
+            Parser parser = new Parser(byteBufferPool, 8192);
             parser.init(new Parser.Listener.Adapter()
             {
                 @Override
@@ -250,7 +250,7 @@ public class HTTP2ServerTest extends AbstractServerTest
                 output.write(BufferUtil.toArray(buffer));
             }
 
-            Parser parser = new Parser(byteBufferPool, 4096, 8192);
+            Parser parser = new Parser(byteBufferPool, 8192);
             parser.init(new Parser.Listener.Adapter()
             {
                 @Override
@@ -288,7 +288,7 @@ public class HTTP2ServerTest extends AbstractServerTest
                 output.write(BufferUtil.toArray(buffer));
             }
 
-            Parser parser = new Parser(byteBufferPool, 4096, 8192);
+            Parser parser = new Parser(byteBufferPool, 8192);
             parser.init(new Parser.Listener.Adapter()
             {
                 @Override
@@ -365,7 +365,7 @@ public class HTTP2ServerTest extends AbstractServerTest
 
             // The server will close the connection abruptly since it
             // cannot write and therefore cannot even send the GO_AWAY.
-            Parser parser = new Parser(byteBufferPool, 4096, 8192);
+            Parser parser = new Parser(byteBufferPool, 8192);
             parser.init(new Parser.Listener.Adapter());
             boolean closed = parseResponse(client, parser, 2 * delay);
             assertTrue(closed);
@@ -403,7 +403,7 @@ public class HTTP2ServerTest extends AbstractServerTest
                 }
                 output.flush();
 
-                Parser parser = new Parser(byteBufferPool, 4096, 8192);
+                Parser parser = new Parser(byteBufferPool, 8192);
                 parser.init(new Parser.Listener.Adapter());
                 boolean closed = parseResponse(client, parser);
 
@@ -576,7 +576,7 @@ public class HTTP2ServerTest extends AbstractServerTest
             assertTrue(serverLatch.await(5, TimeUnit.SECONDS));
 
             final CountDownLatch clientLatch = new CountDownLatch(1);
-            Parser parser = new Parser(byteBufferPool, 4096, 8192);
+            Parser parser = new Parser(byteBufferPool, 8192);
             parser.init(new Parser.Listener.Adapter()
             {
                 @Override

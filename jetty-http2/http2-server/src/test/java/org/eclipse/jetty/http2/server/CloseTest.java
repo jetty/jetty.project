@@ -86,7 +86,7 @@ public class CloseTest extends AbstractServerTest
                 output.write(BufferUtil.toArray(buffer));
             }
 
-            Parser parser = new Parser(byteBufferPool, 4096, 8192);
+            Parser parser = new Parser(byteBufferPool, 8192);
             parser.init(new Parser.Listener.Adapter()
             {
                 @Override
@@ -151,7 +151,7 @@ public class CloseTest extends AbstractServerTest
             // Don't close the connection; the server should close.
 
             final CountDownLatch responseLatch = new CountDownLatch(1);
-            Parser parser = new Parser(byteBufferPool, 4096, 8192);
+            Parser parser = new Parser(byteBufferPool, 8192);
             parser.init(new Parser.Listener.Adapter()
             {
                 @Override
@@ -216,7 +216,7 @@ public class CloseTest extends AbstractServerTest
 
             final CountDownLatch responseLatch = new CountDownLatch(1);
             final CountDownLatch closeLatch = new CountDownLatch(1);
-            Parser parser = new Parser(byteBufferPool, 4096, 8192);
+            Parser parser = new Parser(byteBufferPool, 8192);
             parser.init(new Parser.Listener.Adapter()
             {
                 @Override

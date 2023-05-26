@@ -122,7 +122,7 @@ public class FrameFloodTest
     private void testFrameFlood(byte[] preamble, byte[] bytes)
     {
         AtomicBoolean failed = new AtomicBoolean();
-        Parser parser = new Parser(byteBufferPool, 4096, 8192, new WindowRateControl(8, Duration.ofSeconds(1)));
+        Parser parser = new Parser(byteBufferPool, 8192, new WindowRateControl(8, Duration.ofSeconds(1)));
         parser.init(new Parser.Listener.Adapter()
         {
             @Override

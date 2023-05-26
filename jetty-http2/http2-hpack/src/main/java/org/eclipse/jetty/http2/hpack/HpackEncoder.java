@@ -104,6 +104,8 @@ public class HpackEncoder
     {
         _context = new HpackContext(0);
         _debug = LOG.isDebugEnabled();
+        setMaxTableCapacity(HpackContext.DEFAULT_MAX_TABLE_CAPACITY);
+        setTableCapacity(HpackContext.DEFAULT_MAX_TABLE_CAPACITY);
     }
 
     public int getMaxTableCapacity()

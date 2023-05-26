@@ -61,7 +61,7 @@ public class HTTP2ClientConnectionFactory implements ClientConnectionFactory
         Generator generator = new Generator(byteBufferPool, client.isUseOutputDirectByteBuffers(), client.getMaxHeaderBlockFragment());
         FlowControlStrategy flowControl = client.getFlowControlStrategyFactory().newFlowControlStrategy();
 
-        Parser parser = new Parser(byteBufferPool, client.getMaxDecoderTableCapacity(), client.getMaxResponseHeadersSize());
+        Parser parser = new Parser(byteBufferPool, client.getMaxResponseHeadersSize());
         parser.setMaxFrameSize(client.getMaxFrameSize());
         parser.setMaxSettingsKeys(client.getMaxSettingsKeys());
 
