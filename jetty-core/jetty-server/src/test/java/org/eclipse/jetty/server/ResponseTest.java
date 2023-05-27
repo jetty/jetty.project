@@ -13,8 +13,11 @@
 
 package org.eclipse.jetty.server;
 
+import java.util.ListIterator;
+
 import org.eclipse.jetty.http.HttpCookie;
 import org.eclipse.jetty.http.HttpField;
+import org.eclipse.jetty.http.HttpFields;
 import org.eclipse.jetty.http.HttpHeader;
 import org.eclipse.jetty.http.HttpStatus;
 import org.eclipse.jetty.http.HttpTester;
@@ -257,6 +260,60 @@ public class ResponseTest
                                 .build(),
                             request.getConnectionMetaData().getHttpConfiguration().getResponseCookieCompliance());
                     });
+                response.setStatus(200);
+                Response.addCookie(response, HttpCookie.from("name", "test1"));
+                response.getHeaders().add(HttpHeader.SET_COOKIE, "other=test2; Domain=wrong; SameSite=wrong; Attr=x");
+                Content.Sink.write(response, true, "OK", callback);
+                return true;
+            }
+        });
+        server.start();
+
+        String request = """
+                POST /path HTTP/1.0\r
+                Host: hostname\r
+                \r
+                """;
+        HttpTester.Response response = HttpTester.parseResponse(connector.getResponse(request));
+        assertEquals(HttpStatus.OK_200, response.getStatus());
+        assertThat(response.getValuesList(HttpHeader.SET_COOKIE), containsInAnyOrder(
+            "name=test1; Domain=customized; SameSite=Lax",
+            "other=test2; Domain=customized; SameSite=Lax; Attr=x"));
+    }
+
+    @Test
+    public void testHttpCookieProcessorAlt() throws Exception
+    {
+        server.setHandler(new Handler.Abstract()
+        {
+            @Override
+            public boolean handle(Request request, Response response, Callback callback) throws Exception
+            {
+                request.addHttpStreamWrapper(httpStream -> new HttpStream.Wrapper(httpStream)
+                {
+                    @Override
+                    public void prepareResponse(HttpFields.Mutable headers)
+                    {
+                        super.prepareResponse(headers);
+                        for (ListIterator<HttpField> i = headers.listIterator(); i.hasNext();)
+                        {
+                            HttpField field = i.next();
+                            if (!field.is(HttpHeader.SET_COOKIE))
+                                continue;
+
+                            HttpCookie cookie = HttpCookieUtils.getSetCookie(field);
+                            if (cookie == null)
+                                continue;
+
+                            i.set(new HttpCookieUtils.SetCookieHttpField(
+                                HttpCookie.build(cookie)
+                                    .domain("customized")
+                                    .sameSite(HttpCookie.SameSite.LAX)
+                                    .build(),
+                                request.getConnectionMetaData().getHttpConfiguration().getResponseCookieCompliance()));
+                        }
+                    }
+                });
                 response.setStatus(200);
                 Response.addCookie(response, HttpCookie.from("name", "test1"));
                 response.getHeaders().add(HttpHeader.SET_COOKIE, "other=test2; Domain=wrong; SameSite=wrong; Attr=x");
