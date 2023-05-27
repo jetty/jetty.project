@@ -14,7 +14,6 @@
 package org.eclipse.jetty.http2.parser;
 
 import java.nio.ByteBuffer;
-import java.util.function.UnaryOperator;
 
 import org.eclipse.jetty.http2.ErrorCode;
 import org.eclipse.jetty.http2.Flags;
@@ -44,33 +43,46 @@ public class Parser
     private static final Logger LOG = LoggerFactory.getLogger(Parser.class);
 
     private final ByteBufferPool byteBufferPool;
-    private final Listener listener;
     private final HeaderParser headerParser;
     private final HpackDecoder hpackDecoder;
     private final BodyParser[] bodyParsers;
+    private Listener listener;
     private UnknownBodyParser unknownBodyParser;
-    private int maxFrameLength = Frame.DEFAULT_MAX_LENGTH;
+    private int maxFrameSize = Frame.DEFAULT_MAX_LENGTH;
     private int maxSettingsKeys = SettingsFrame.DEFAULT_MAX_KEYS;
     private boolean continuation;
     private State state = State.HEADER;
 
-    public Parser(ByteBufferPool byteBufferPool, Listener listener, int maxDynamicTableSize, int maxHeaderSize)
+    @Deprecated
+    public Parser(ByteBufferPool byteBufferPool, int maxTableCapacity, int maxHeaderSize)
     {
-        this(byteBufferPool, listener, maxDynamicTableSize, maxHeaderSize, RateControl.NO_RATE_CONTROL);
+        this(byteBufferPool, maxHeaderSize);
     }
 
-    public Parser(ByteBufferPool byteBufferPool, Listener listener, int maxDynamicTableSize, int maxHeaderSize, RateControl rateControl)
+    public Parser(ByteBufferPool byteBufferPool, int maxHeaderSize)
+    {
+        this(byteBufferPool, maxHeaderSize, RateControl.NO_RATE_CONTROL);
+    }
+
+    @Deprecated
+    public Parser(ByteBufferPool byteBufferPool, int maxTableSize, int maxHeaderSize, RateControl rateControl)
+    {
+        this(byteBufferPool, maxHeaderSize, rateControl);
+    }
+
+    public Parser(ByteBufferPool byteBufferPool, int maxHeaderSize, RateControl rateControl)
     {
         this.byteBufferPool = byteBufferPool;
-        this.listener = listener;
         this.headerParser = new HeaderParser(rateControl == null ? RateControl.NO_RATE_CONTROL : rateControl);
-        this.hpackDecoder = new HpackDecoder(maxDynamicTableSize, maxHeaderSize);
+        this.hpackDecoder = new HpackDecoder(maxHeaderSize);
         this.bodyParsers = new BodyParser[FrameType.values().length];
     }
 
-    public void init(UnaryOperator<Listener> wrapper)
+    public void init(Listener listener)
     {
-        Listener listener = wrapper.apply(this.listener);
+        if (this.listener != null)
+            throw new IllegalStateException("Invalid parser initialization");
+        this.listener = listener;
         unknownBodyParser = new UnknownBodyParser(headerParser, listener);
         HeaderBlockParser headerBlockParser = new HeaderBlockParser(headerParser, byteBufferPool, hpackDecoder, unknownBodyParser);
         HeaderBlockFragments headerBlockFragments = new HeaderBlockFragments(byteBufferPool);
@@ -84,6 +96,16 @@ public class Parser
         bodyParsers[FrameType.GO_AWAY.getType()] = new GoAwayBodyParser(headerParser, listener);
         bodyParsers[FrameType.WINDOW_UPDATE.getType()] = new WindowUpdateBodyParser(headerParser, listener);
         bodyParsers[FrameType.CONTINUATION.getType()] = new ContinuationBodyParser(headerParser, listener, headerBlockParser, headerBlockFragments);
+    }
+
+    protected Listener getListener()
+    {
+        return listener;
+    }
+
+    public HpackDecoder getHpackDecoder()
+    {
+        return hpackDecoder;
     }
 
     private void reset()
@@ -146,7 +168,7 @@ public class Parser
         if (LOG.isDebugEnabled())
             LOG.debug("Parsed {} frame header from {}@{}", headerParser, buffer, Integer.toHexString(buffer.hashCode()));
 
-        if (headerParser.getLength() > getMaxFrameLength())
+        if (headerParser.getLength() > getMaxFrameSize())
             return connectionFailure(buffer, ErrorCode.FRAME_SIZE_ERROR, "invalid_frame_length");
 
         FrameType frameType = FrameType.from(getFrameType());
@@ -214,14 +236,26 @@ public class Parser
         return headerParser.hasFlag(bit);
     }
 
+    @Deprecated
     public int getMaxFrameLength()
     {
-        return maxFrameLength;
+        return getMaxFrameSize();
     }
 
-    public void setMaxFrameLength(int maxFrameLength)
+    @Deprecated
+    public void setMaxFrameLength(int maxFrameSize)
     {
-        this.maxFrameLength = maxFrameLength;
+        setMaxFrameSize(maxFrameSize);
+    }
+
+    public int getMaxFrameSize()
+    {
+        return maxFrameSize;
+    }
+
+    public void setMaxFrameSize(int maxFrameSize)
+    {
+        this.maxFrameSize = maxFrameSize;
     }
 
     public int getMaxSettingsKeys()

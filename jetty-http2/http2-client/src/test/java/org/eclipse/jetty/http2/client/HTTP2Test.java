@@ -47,10 +47,7 @@ import org.eclipse.jetty.http2.frames.HeadersFrame;
 import org.eclipse.jetty.http2.frames.ResetFrame;
 import org.eclipse.jetty.http2.frames.SettingsFrame;
 import org.eclipse.jetty.http2.hpack.HpackException;
-import org.eclipse.jetty.http2.parser.RateControl;
-import org.eclipse.jetty.http2.parser.ServerParser;
 import org.eclipse.jetty.http2.server.RawHTTP2ServerConnectionFactory;
-import org.eclipse.jetty.server.Connector;
 import org.eclipse.jetty.server.HttpConfiguration;
 import org.eclipse.jetty.util.BufferUtil;
 import org.eclipse.jetty.util.Callback;
@@ -737,6 +734,7 @@ public class HTTP2Test extends AbstractTest
     @Test
     public void testGoAwayRespondedWithGoAway() throws Exception
     {
+        CountDownLatch goAwayLatch = new CountDownLatch(1);
         ServerSessionListener.Adapter serverListener = new ServerSessionListener.Adapter()
         {
             @Override
@@ -748,24 +746,14 @@ public class HTTP2Test extends AbstractTest
                 stream.getSession().close(ErrorCode.NO_ERROR.code, null, Callback.NOOP);
                 return null;
             }
-        };
-        CountDownLatch goAwayLatch = new CountDownLatch(1);
-        RawHTTP2ServerConnectionFactory connectionFactory = new RawHTTP2ServerConnectionFactory(new HttpConfiguration(), serverListener)
-        {
+
             @Override
-            protected ServerParser newServerParser(Connector connector, ServerParser.Listener listener, RateControl rateControl)
+            public void onGoAway(Session session, GoAwayFrame frame)
             {
-                return super.newServerParser(connector, new ServerParser.Listener.Wrapper(listener)
-                {
-                    @Override
-                    public void onGoAway(GoAwayFrame frame)
-                    {
-                        super.onGoAway(frame);
-                        goAwayLatch.countDown();
-                    }
-                }, rateControl);
+                goAwayLatch.countDown();
             }
         };
+        RawHTTP2ServerConnectionFactory connectionFactory = new RawHTTP2ServerConnectionFactory(new HttpConfiguration(), serverListener);
         prepareServer(connectionFactory);
         server.start();
 
