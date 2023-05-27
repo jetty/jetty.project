@@ -16,7 +16,6 @@ package org.eclipse.jetty.http2.frames;
 import java.nio.ByteBuffer;
 import java.time.Duration;
 import java.util.concurrent.atomic.AtomicBoolean;
-import java.util.function.UnaryOperator;
 
 import org.eclipse.jetty.http.HttpVersion;
 import org.eclipse.jetty.http.MetaData;
@@ -123,15 +122,15 @@ public class FrameFloodTest
     private void testFrameFlood(byte[] preamble, byte[] bytes)
     {
         AtomicBoolean failed = new AtomicBoolean();
-        Parser parser = new Parser(byteBufferPool, new Parser.Listener.Adapter()
+        Parser parser = new Parser(byteBufferPool, 8192, new WindowRateControl(8, Duration.ofSeconds(1)));
+        parser.init(new Parser.Listener.Adapter()
         {
             @Override
             public void onConnectionFailure(int error, String reason)
             {
                 failed.set(true);
             }
-        }, 4096, 8192, new WindowRateControl(8, Duration.ofSeconds(1)));
-        parser.init(UnaryOperator.identity());
+        });
 
         if (preamble != null)
         {

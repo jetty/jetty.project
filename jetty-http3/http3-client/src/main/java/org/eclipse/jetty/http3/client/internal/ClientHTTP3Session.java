@@ -173,7 +173,7 @@ public class ClientHTTP3Session extends ClientProtocolSession
             {
                 int maxTableCapacity = value.intValue();
                 encoder.setMaxTableCapacity(maxTableCapacity);
-                encoder.setTableCapacity(Math.min(maxTableCapacity, configuration.getInitialEncoderTableCapacity()));
+                encoder.setTableCapacity(Math.min(maxTableCapacity, configuration.getMaxEncoderTableCapacity()));
             }
             else if (key == SettingsFrame.MAX_FIELD_SECTION_SIZE)
             {
