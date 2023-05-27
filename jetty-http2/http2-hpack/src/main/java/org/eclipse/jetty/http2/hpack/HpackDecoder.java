@@ -50,7 +50,7 @@ public class HpackDecoder
      */
     public HpackDecoder(int maxHeaderSize)
     {
-        _context = new HpackContext(0);
+        _context = new HpackContext(HpackContext.DEFAULT_MAX_TABLE_CAPACITY);
         _builder = new MetaDataBuilder(maxHeaderSize);
         _huffmanDecoder = new HuffmanDecoder();
         _integerDecoder = new NBitIntegerDecoder();

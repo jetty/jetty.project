@@ -58,8 +58,6 @@ public class HpackDecoderTest
     public void testDecodeD3() throws Exception
     {
         HpackDecoder decoder = new HpackDecoder(8192);
-        decoder.setMaxTableCapacity(HpackContext.DEFAULT_MAX_TABLE_CAPACITY);
-        decoder.getHpackContext().resize(decoder.getMaxTableCapacity());
 
         // First request
         String encoded = "828684410f7777772e6578616d706c652e636f6d";
@@ -108,8 +106,6 @@ public class HpackDecoderTest
     public void testDecodeD4() throws Exception
     {
         HpackDecoder decoder = new HpackDecoder(8192);
-        decoder.setMaxTableCapacity(HpackContext.DEFAULT_MAX_TABLE_CAPACITY);
-        decoder.getHpackContext().resize(decoder.getMaxTableCapacity());
 
         // First request
         String encoded = "828684418cf1e3c2e5f23a6ba0ab90f4ff";
