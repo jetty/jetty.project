@@ -35,6 +35,7 @@ public class QuicheConfig
 
     private int version = Quiche.QUICHE_PROTOCOL_VERSION;
     private Boolean verifyPeer;
+    private String trustedCertsPemPath;
     private String certChainPemPath;
     private String privKeyPemPath;
     private String[] applicationProtos;
@@ -63,6 +64,11 @@ public class QuicheConfig
     public Boolean getVerifyPeer()
     {
         return verifyPeer;
+    }
+
+    public String getTrustedCertsPemPath()
+    {
+        return trustedCertsPemPath;
     }
 
     public String getCertChainPemPath()
@@ -148,6 +154,11 @@ public class QuicheConfig
     public void setVerifyPeer(Boolean verify)
     {
         this.verifyPeer = verify;
+    }
+
+    public void setTrustedCertsPemPath(String trustedCertsPemPath)
+    {
+        this.trustedCertsPemPath = trustedCertsPemPath;
     }
 
     public void setCertChainPemPath(String path)

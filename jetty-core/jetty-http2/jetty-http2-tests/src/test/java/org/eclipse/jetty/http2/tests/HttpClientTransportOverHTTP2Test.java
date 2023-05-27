@@ -31,7 +31,6 @@ import java.util.concurrent.TimeUnit;
 import java.util.concurrent.TimeoutException;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.concurrent.atomic.AtomicReference;
-import java.util.function.UnaryOperator;
 import java.util.stream.IntStream;
 
 import org.eclipse.jetty.client.Connection;
@@ -550,7 +549,8 @@ public class HttpClientTransportOverHTTP2Test extends AbstractTest
                 OutputStream output = socket.getOutputStream();
                 InputStream input = socket.getInputStream();
 
-                ServerParser parser = new ServerParser(bufferPool, new ServerParser.Listener()
+                ServerParser parser = new ServerParser(bufferPool, 8192, RateControl.NO_RATE_CONTROL);
+                parser.init(new ServerParser.Listener()
                 {
                     @Override
                     public void onPreface()
@@ -602,8 +602,7 @@ public class HttpClientTransportOverHTTP2Test extends AbstractTest
                             x.printStackTrace();
                         }
                     }
-                }, 4096, 8192, RateControl.NO_RATE_CONTROL);
-                parser.init(UnaryOperator.identity());
+                });
 
                 byte[] bytes = new byte[1024];
                 while (true)
@@ -674,7 +673,8 @@ public class HttpClientTransportOverHTTP2Test extends AbstractTest
             public Stream.Listener onNewStream(Stream stream, HeadersFrame frame)
             {
                 // Disable checks for invalid headers.
-                ((HTTP2Session)stream.getSession()).getGenerator().setValidateHpackEncoding(false);
+                Generator generator = ((HTTP2Session)stream.getSession()).getGenerator();
+                generator.getHpackEncoder().setValidateEncoding(false);
                 // Produce an invalid HPACK block by adding a request pseudo-header to the response.
                 HttpFields fields = HttpFields.build()
                     .put(":method", "get");

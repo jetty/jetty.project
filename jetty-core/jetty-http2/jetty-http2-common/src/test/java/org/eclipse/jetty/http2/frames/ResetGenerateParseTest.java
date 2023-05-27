@@ -16,7 +16,6 @@ package org.eclipse.jetty.http2.frames;
 import java.nio.ByteBuffer;
 import java.util.ArrayList;
 import java.util.List;
-import java.util.function.UnaryOperator;
 
 import org.eclipse.jetty.http2.generator.HeaderGenerator;
 import org.eclipse.jetty.http2.generator.ResetGenerator;
@@ -37,15 +36,15 @@ public class ResetGenerateParseTest
         ResetGenerator generator = new ResetGenerator(new HeaderGenerator(bufferPool));
 
         final List<ResetFrame> frames = new ArrayList<>();
-        Parser parser = new Parser(bufferPool, new Parser.Listener()
+        Parser parser = new Parser(bufferPool, 8192);
+        parser.init(new Parser.Listener()
         {
             @Override
             public void onReset(ResetFrame frame)
             {
                 frames.add(frame);
             }
-        }, 4096, 8192);
-        parser.init(UnaryOperator.identity());
+        });
 
         int streamId = 13;
         int error = 17;
@@ -78,15 +77,15 @@ public class ResetGenerateParseTest
         ResetGenerator generator = new ResetGenerator(new HeaderGenerator(bufferPool));
 
         final List<ResetFrame> frames = new ArrayList<>();
-        Parser parser = new Parser(bufferPool, new Parser.Listener()
+        Parser parser = new Parser(bufferPool, 8192);
+        parser.init(new Parser.Listener()
         {
             @Override
             public void onReset(ResetFrame frame)
             {
                 frames.add(frame);
             }
-        }, 4096, 8192);
-        parser.init(UnaryOperator.identity());
+        });
 
         int streamId = 13;
         int error = 17;

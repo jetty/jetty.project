@@ -15,7 +15,6 @@ package org.eclipse.jetty.http2.frames;
 
 import java.nio.ByteBuffer;
 import java.util.concurrent.atomic.AtomicInteger;
-import java.util.function.UnaryOperator;
 
 import org.eclipse.jetty.http.HostPortHttpField;
 import org.eclipse.jetty.http.HttpFields;
@@ -67,15 +66,15 @@ public class HeadersTooLargeParseTest
         HeadersGenerator generator = new HeadersGenerator(new HeaderGenerator(bufferPool), new HpackEncoder());
 
         AtomicInteger failure = new AtomicInteger();
-        Parser parser = new Parser(bufferPool, new Parser.Listener()
+        Parser parser = new Parser(bufferPool, maxHeaderSize);
+        parser.init(new Parser.Listener()
         {
             @Override
             public void onConnectionFailure(int error, String reason)
             {
                 failure.set(error);
             }
-        }, 4096, maxHeaderSize);
-        parser.init(UnaryOperator.identity());
+        });
 
         int streamId = 48;
         ByteBufferPool.Accumulator accumulator = new ByteBufferPool.Accumulator();

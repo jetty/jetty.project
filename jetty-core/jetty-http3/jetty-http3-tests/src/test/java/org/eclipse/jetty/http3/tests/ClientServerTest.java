@@ -382,7 +382,7 @@ public class ClientServerTest extends AbstractClientServerTest
         http3Configuration.setMaxRequestHeadersSize(maxRequestHeadersSize);
         // Disable the dynamic table, otherwise the large header
         // is sent as string literal on the encoder stream.
-        http3Configuration.setInitialEncoderTableCapacity(0);
+        http3Configuration.setMaxEncoderTableCapacity(0);
         Session.Client clientSession = newSession(new Session.Client.Listener() {});
 
         CountDownLatch requestFailureLatch = new CountDownLatch(1);
@@ -463,7 +463,7 @@ public class ClientServerTest extends AbstractClientServerTest
         HTTP3Configuration http3Configuration = h3.getHTTP3Configuration();
         // Disable the dynamic table, otherwise the large header
         // is sent as string literal on the encoder stream.
-        http3Configuration.setInitialEncoderTableCapacity(0);
+        http3Configuration.setMaxEncoderTableCapacity(0);
         http3Configuration.setMaxResponseHeadersSize(maxResponseHeadersSize);
 
         Session.Client clientSession = newSession(new Session.Client.Listener()

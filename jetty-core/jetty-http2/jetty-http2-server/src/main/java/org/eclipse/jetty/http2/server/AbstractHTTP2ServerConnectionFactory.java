@@ -34,10 +34,10 @@ import org.eclipse.jetty.http2.api.server.ServerSessionListener;
 import org.eclipse.jetty.http2.frames.Frame;
 import org.eclipse.jetty.http2.frames.SettingsFrame;
 import org.eclipse.jetty.http2.generator.Generator;
+import org.eclipse.jetty.http2.hpack.HpackContext;
 import org.eclipse.jetty.http2.parser.ServerParser;
 import org.eclipse.jetty.http2.server.internal.HTTP2ServerConnection;
 import org.eclipse.jetty.http2.server.internal.HTTP2ServerSession;
-import org.eclipse.jetty.io.ByteBufferPool;
 import org.eclipse.jetty.io.Connection;
 import org.eclipse.jetty.io.EndPoint;
 import org.eclipse.jetty.server.AbstractConnectionFactory;
@@ -64,12 +64,13 @@ public abstract class AbstractHTTP2ServerConnectionFactory extends AbstractConne
 
     private final HTTP2SessionContainer sessionContainer = new HTTP2SessionContainer();
     private final HttpConfiguration httpConfiguration;
-    private int maxDynamicTableSize = 4096;
+    private int maxDecoderTableCapacity = HpackContext.DEFAULT_MAX_TABLE_CAPACITY;
+    private int maxEncoderTableCapacity = HpackContext.DEFAULT_MAX_TABLE_CAPACITY;
     private int initialSessionRecvWindow = 1024 * 1024;
     private int initialStreamRecvWindow = 512 * 1024;
     private int maxConcurrentStreams = 128;
     private int maxHeaderBlockFragment = 0;
-    private int maxFrameLength = Frame.DEFAULT_MAX_LENGTH;
+    private int maxFrameSize = Frame.DEFAULT_MAX_SIZE;
     private int maxSettingsKeys = SettingsFrame.DEFAULT_MAX_KEYS;
     private boolean connectProtocolEnabled = true;
     private RateControl.Factory rateControlFactory = new WindowRateControl.Factory(50);
@@ -94,20 +95,37 @@ public abstract class AbstractHTTP2ServerConnectionFactory extends AbstractConne
         addBean(sessionContainer);
         this.httpConfiguration = Objects.requireNonNull(httpConfiguration);
         addBean(httpConfiguration);
-        setInputBufferSize(Frame.DEFAULT_MAX_LENGTH + Frame.HEADER_LENGTH);
+        setInputBufferSize(Frame.DEFAULT_MAX_SIZE + Frame.HEADER_LENGTH);
         setUseInputDirectByteBuffers(httpConfiguration.isUseInputDirectByteBuffers());
         setUseOutputDirectByteBuffers(httpConfiguration.isUseOutputDirectByteBuffers());
     }
 
-    @ManagedAttribute("The HPACK dynamic table maximum size")
-    public int getMaxDynamicTableSize()
+    @ManagedAttribute("The HPACK encoder dynamic table maximum capacity")
+    public int getMaxEncoderTableCapacity()
     {
-        return maxDynamicTableSize;
+        return maxEncoderTableCapacity;
     }
 
-    public void setMaxDynamicTableSize(int maxDynamicTableSize)
+    /**
+     * <p>Sets the limit for the encoder HPACK dynamic table capacity.</p>
+     * <p>Setting this value to {@code 0} disables the use of the dynamic table.</p>
+     *
+     * @param maxEncoderTableCapacity The HPACK encoder dynamic table maximum capacity
+     */
+    public void setMaxEncoderTableCapacity(int maxEncoderTableCapacity)
     {
-        this.maxDynamicTableSize = maxDynamicTableSize;
+        this.maxEncoderTableCapacity = maxEncoderTableCapacity;
+    }
+
+    @ManagedAttribute("The HPACK decoder dynamic table maximum capacity")
+    public int getMaxDecoderTableCapacity()
+    {
+        return maxDecoderTableCapacity;
+    }
+
+    public void setMaxDecoderTableCapacity(int maxDecoderTableCapacity)
+    {
+        this.maxDecoderTableCapacity = maxDecoderTableCapacity;
     }
 
     @ManagedAttribute("The initial size of session's flow control receive window")
@@ -175,15 +193,15 @@ public abstract class AbstractHTTP2ServerConnectionFactory extends AbstractConne
         this.streamIdleTimeout = streamIdleTimeout;
     }
 
-    @ManagedAttribute("The max frame length in bytes")
-    public int getMaxFrameLength()
+    @ManagedAttribute("The max frame size in bytes")
+    public int getMaxFrameSize()
     {
-        return maxFrameLength;
+        return maxFrameSize;
     }
 
-    public void setMaxFrameLength(int maxFrameLength)
+    public void setMaxFrameSize(int maxFrameSize)
     {
-        this.maxFrameLength = maxFrameLength;
+        this.maxFrameSize = maxFrameSize;
     }
 
     @ManagedAttribute("The max number of keys in all SETTINGS frames")
@@ -256,12 +274,16 @@ public abstract class AbstractHTTP2ServerConnectionFactory extends AbstractConne
     protected Map<Integer, Integer> newSettings()
     {
         Map<Integer, Integer> settings = new HashMap<>();
-        settings.put(SettingsFrame.HEADER_TABLE_SIZE, getMaxDynamicTableSize());
-        settings.put(SettingsFrame.INITIAL_WINDOW_SIZE, getInitialStreamRecvWindow());
-        int maxConcurrentStreams = getMaxConcurrentStreams();
-        if (maxConcurrentStreams >= 0)
-            settings.put(SettingsFrame.MAX_CONCURRENT_STREAMS, maxConcurrentStreams);
-        settings.put(SettingsFrame.MAX_HEADER_LIST_SIZE, getHttpConfiguration().getRequestHeaderSize());
+        int maxTableSize = getMaxDecoderTableCapacity();
+        if (maxTableSize != HpackContext.DEFAULT_MAX_TABLE_CAPACITY)
+            settings.put(SettingsFrame.HEADER_TABLE_SIZE, maxTableSize);
+        int initialStreamRecvWindow = getInitialStreamRecvWindow();
+        if (initialStreamRecvWindow != FlowControlStrategy.DEFAULT_WINDOW_SIZE)
+            settings.put(SettingsFrame.INITIAL_WINDOW_SIZE, initialStreamRecvWindow);
+        settings.put(SettingsFrame.MAX_CONCURRENT_STREAMS, getMaxConcurrentStreams());
+        int maxHeadersSize = getHttpConfiguration().getRequestHeaderSize();
+        if (maxHeadersSize > 0)
+            settings.put(SettingsFrame.MAX_HEADER_LIST_SIZE, maxHeadersSize);
         settings.put(SettingsFrame.ENABLE_CONNECT_PROTOCOL, isConnectProtocolEnabled() ? 1 : 0);
         return settings;
     }
@@ -271,11 +293,17 @@ public abstract class AbstractHTTP2ServerConnectionFactory extends AbstractConne
     {
         ServerSessionListener listener = newSessionListener(connector, endPoint);
 
-        Generator generator = new Generator(connector.getByteBufferPool(), isUseOutputDirectByteBuffers(), getMaxDynamicTableSize(), getMaxHeaderBlockFragment());
+        Generator generator = new Generator(connector.getByteBufferPool(), isUseOutputDirectByteBuffers(), getMaxHeaderBlockFragment());
         FlowControlStrategy flowControl = getFlowControlStrategyFactory().newFlowControlStrategy();
-        HTTP2ServerSession session = new HTTP2ServerSession(connector.getScheduler(), endPoint, generator, listener, flowControl);
+
+        ServerParser parser = newServerParser(connector, getRateControlFactory().newRateControl(endPoint));
+        parser.setMaxFrameSize(getMaxFrameSize());
+        parser.setMaxSettingsKeys(getMaxSettingsKeys());
+
+        HTTP2ServerSession session = new HTTP2ServerSession(connector.getScheduler(), endPoint, parser, generator, listener, flowControl);
         session.setMaxLocalStreams(getMaxConcurrentStreams());
         session.setMaxRemoteStreams(getMaxConcurrentStreams());
+        session.setMaxEncoderTableCapacity(getMaxEncoderTableCapacity());
         // For a single stream in a connection, there will be a race between
         // the stream idle timeout and the connection idle timeout. However,
         // the typical case is that the connection will be busier and the
@@ -287,25 +315,21 @@ public abstract class AbstractHTTP2ServerConnectionFactory extends AbstractConne
         session.setWriteThreshold(getHttpConfiguration().getOutputBufferSize());
         session.setConnectProtocolEnabled(isConnectProtocolEnabled());
 
-        ServerParser parser = newServerParser(connector, session, getRateControlFactory().newRateControl(endPoint));
-        parser.setMaxFrameLength(getMaxFrameLength());
-        parser.setMaxSettingsKeys(getMaxSettingsKeys());
-
-        ByteBufferPool byteBufferPool = connector.getByteBufferPool();
-
-        HTTP2Connection connection = new HTTP2ServerConnection(byteBufferPool, connector,
-            endPoint, httpConfiguration, parser, session, getInputBufferSize(), listener);
+        HTTP2Connection connection = new HTTP2ServerConnection(connector,
+            endPoint, httpConfiguration, session, getInputBufferSize(), listener);
         connection.setUseInputDirectByteBuffers(isUseInputDirectByteBuffers());
         connection.setUseOutputDirectByteBuffers(isUseOutputDirectByteBuffers());
         connection.addEventListener(sessionContainer);
+        parser.init(connection);
+
         return configure(connection, connector, endPoint);
     }
 
     protected abstract ServerSessionListener newSessionListener(Connector connector, EndPoint endPoint);
 
-    private ServerParser newServerParser(Connector connector, ServerParser.Listener listener, RateControl rateControl)
+    private ServerParser newServerParser(Connector connector, RateControl rateControl)
     {
-        return new ServerParser(connector.getByteBufferPool(), listener, getMaxDynamicTableSize(), getHttpConfiguration().getRequestHeaderSize(), rateControl);
+        return new ServerParser(connector.getByteBufferPool(), getHttpConfiguration().getRequestHeaderSize(), rateControl);
     }
 
     @ManagedObject("The container of HTTP/2 sessions")

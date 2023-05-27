@@ -32,7 +32,7 @@ import static org.junit.jupiter.api.Assertions.assertNotNull;
 
 public class HpackPerfTest
 {
-    int _maxDynamicTableSize = 4 * 1024;
+    int _tableCapacity = 4 * 1024;
     int _unencodedSize;
     int _encodedSize;
 
@@ -46,7 +46,7 @@ public class HpackPerfTest
     @AfterEach
     public void after()
     {
-        System.err.printf("dynamictable=%d unencoded=%d encoded=%d p=%3.1f%%%n", _maxDynamicTableSize, _unencodedSize, _encodedSize, 100.0 * _encodedSize / _unencodedSize);
+        System.err.printf("dynamictable=%d unencoded=%d encoded=%d p=%3.1f%%%n", _tableCapacity, _unencodedSize, _encodedSize, 100.0 * _encodedSize / _unencodedSize);
     }
 
     @Test
@@ -92,7 +92,9 @@ public class HpackPerfTest
         {
             if (type.equals(story.get("context")))
             {
-                HpackEncoder encoder = new HpackEncoder(_maxDynamicTableSize, _maxDynamicTableSize);
+                HpackEncoder encoder = new HpackEncoder();
+                encoder.setMaxTableCapacity(_tableCapacity);
+                encoder.setTableCapacity(_tableCapacity);
                 encoder.setValidateEncoding(false);
 
                 Object[] cases = (Object[])story.get("cases");

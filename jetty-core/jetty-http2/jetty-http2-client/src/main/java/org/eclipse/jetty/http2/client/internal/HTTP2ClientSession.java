@@ -13,6 +13,8 @@
 
 package org.eclipse.jetty.http2.client.internal;
 
+import java.util.Map;
+
 import org.eclipse.jetty.http.MetaData;
 import org.eclipse.jetty.http2.ErrorCode;
 import org.eclipse.jetty.http2.FlowControlStrategy;
@@ -22,7 +24,9 @@ import org.eclipse.jetty.http2.api.Session;
 import org.eclipse.jetty.http2.api.Stream;
 import org.eclipse.jetty.http2.frames.HeadersFrame;
 import org.eclipse.jetty.http2.frames.PushPromiseFrame;
+import org.eclipse.jetty.http2.frames.SettingsFrame;
 import org.eclipse.jetty.http2.generator.Generator;
+import org.eclipse.jetty.http2.parser.Parser;
 import org.eclipse.jetty.io.EndPoint;
 import org.eclipse.jetty.util.Callback;
 import org.eclipse.jetty.util.thread.Scheduler;
@@ -33,9 +37,9 @@ public class HTTP2ClientSession extends HTTP2Session
 {
     private static final Logger LOG = LoggerFactory.getLogger(HTTP2ClientSession.class);
 
-    public HTTP2ClientSession(Scheduler scheduler, EndPoint endPoint, Generator generator, Session.Listener listener, FlowControlStrategy flowControl)
+    public HTTP2ClientSession(Scheduler scheduler, EndPoint endPoint, Parser parser, Generator generator, Session.Listener listener, FlowControlStrategy flowControl)
     {
-        super(scheduler, endPoint, generator, listener, flowControl, 1);
+        super(scheduler, endPoint, parser, generator, listener, flowControl, 1);
     }
 
     @Override
@@ -79,10 +83,28 @@ public class HTTP2ClientSession extends HTTP2Session
     }
 
     @Override
+    public void onSettings(SettingsFrame frame)
+    {
+        Map<Integer, Integer> settings = frame.getSettings();
+        Integer value = settings.get(SettingsFrame.ENABLE_PUSH);
+        // SPEC: servers can only send ENABLE_PUSH=0.
+        if (value != null && value != 0)
+            onConnectionFailure(ErrorCode.PROTOCOL_ERROR.code, "invalid_settings_frame");
+        else
+            super.onSettings(frame);
+    }
+
+    @Override
     public void onPushPromise(PushPromiseFrame frame)
     {
         if (LOG.isDebugEnabled())
             LOG.debug("Received {}", frame);
+
+        if (!isPushEnabled())
+        {
+            onConnectionFailure(ErrorCode.PROTOCOL_ERROR.code, "unexpected_push_promise_frame");
+            return;
+        }
 
         int streamId = frame.getStreamId();
         int pushStreamId = frame.getPromisedStreamId();

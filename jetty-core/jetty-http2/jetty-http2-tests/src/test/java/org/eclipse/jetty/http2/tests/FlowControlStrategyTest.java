@@ -35,6 +35,7 @@ import org.eclipse.jetty.http.HttpScheme;
 import org.eclipse.jetty.http.HttpStatus;
 import org.eclipse.jetty.http.HttpVersion;
 import org.eclipse.jetty.http.MetaData;
+import org.eclipse.jetty.http2.AbstractFlowControlStrategy;
 import org.eclipse.jetty.http2.BufferingFlowControlStrategy;
 import org.eclipse.jetty.http2.ErrorCode;
 import org.eclipse.jetty.http2.FlowControlStrategy;
@@ -63,6 +64,7 @@ import org.eclipse.jetty.util.thread.QueuedThreadPool;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.Test;
 
+import static org.awaitility.Awaitility.await;
 import static org.junit.jupiter.api.Assertions.assertArrayEquals;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
@@ -203,11 +205,9 @@ public abstract class FlowControlStrategyTest
         SettingsFrame frame = new SettingsFrame(settings, false);
         FutureCallback callback = new FutureCallback();
         clientSession.settings(frame, callback);
-        callback.get(5, TimeUnit.SECONDS);
 
+        await().atMost(5, TimeUnit.SECONDS).until(() -> clientStream1.getRecvWindow() == 0);
         assertEquals(FlowControlStrategy.DEFAULT_WINDOW_SIZE, clientStream1.getSendWindow());
-        assertEquals(0, clientStream1.getRecvWindow());
-        settingsLatch.await(5, TimeUnit.SECONDS);
 
         // Now create a new stream, it must pick up the new value.
         MetaData.Request request2 = newRequest("POST", HttpFields.EMPTY);
@@ -344,6 +344,11 @@ public abstract class FlowControlStrategyTest
             .thenRun(settingsLatch::countDown);
 
         assertTrue(settingsLatch.await(5, TimeUnit.SECONDS));
+        await().atMost(5, TimeUnit.SECONDS).until(() ->
+        {
+            AbstractFlowControlStrategy flow = (AbstractFlowControlStrategy)((HTTP2Session)session).getFlowControlStrategy();
+            return flow.getInitialStreamRecvWindow() == windowSize;
+        });
 
         CountDownLatch dataLatch = new CountDownLatch(1);
         Exchanger<Stream.Data> exchanger = new Exchanger<>();
@@ -408,13 +413,14 @@ public abstract class FlowControlStrategyTest
     {
         int windowSize = 1536;
         Exchanger<Stream.Data> exchanger = new Exchanger<>();
-        CountDownLatch settingsLatch = new CountDownLatch(1);
         CountDownLatch dataLatch = new CountDownLatch(1);
+        AtomicReference<HTTP2Session> serverSessionRef = new AtomicReference<>();
         start(new ServerSessionListener()
         {
             @Override
             public Map<Integer, Integer> onPreface(Session session)
             {
+                serverSessionRef.set((HTTP2Session)session);
                 Map<Integer, Integer> settings = new HashMap<>();
                 settings.put(SettingsFrame.INITIAL_WINDOW_SIZE, windowSize);
                 return settings;
@@ -468,21 +474,18 @@ public abstract class FlowControlStrategyTest
             }
         });
 
-        Session session = newClient(new Session.Listener()
-        {
-            @Override
-            public void onSettings(Session session, SettingsFrame frame)
-            {
-                settingsLatch.countDown();
-            }
-        });
+        Session clientSession = newClient(new Session.Listener() {});
 
-        assertTrue(settingsLatch.await(5, TimeUnit.SECONDS));
+        await().atMost(5, TimeUnit.SECONDS).until(() ->
+        {
+            AbstractFlowControlStrategy flow = (AbstractFlowControlStrategy)serverSessionRef.get().getFlowControlStrategy();
+            return flow.getInitialStreamRecvWindow() == windowSize;
+        });
 
         MetaData.Request metaData = newRequest("GET", HttpFields.EMPTY);
         HeadersFrame requestFrame = new HeadersFrame(metaData, null, false);
         FuturePromise<Stream> streamPromise = new FuturePromise<>();
-        session.newStream(requestFrame, streamPromise, null);
+        clientSession.newStream(requestFrame, streamPromise, null);
         Stream stream = streamPromise.get(5, TimeUnit.SECONDS);
 
         int length = 5 * windowSize;

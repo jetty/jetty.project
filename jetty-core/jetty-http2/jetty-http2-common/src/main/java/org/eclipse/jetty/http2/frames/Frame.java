@@ -16,8 +16,8 @@ package org.eclipse.jetty.http2.frames;
 public abstract class Frame
 {
     public static final int HEADER_LENGTH = 9;
-    public static final int DEFAULT_MAX_LENGTH = 0x40_00;
-    public static final int MAX_MAX_LENGTH = 0xFF_FF_FF;
+    public static final int DEFAULT_MAX_SIZE = 0x40_00;
+    public static final int MAX_MAX_SIZE = 0xFF_FF_FF;
     public static final Frame[] EMPTY_ARRAY = new Frame[0];
 
     private final FrameType type;

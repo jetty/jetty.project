@@ -39,6 +39,7 @@ import org.eclipse.jetty.http2.api.Session;
 import org.eclipse.jetty.http2.api.Stream;
 import org.eclipse.jetty.http2.api.server.ServerSessionListener;
 import org.eclipse.jetty.http2.frames.DataFrame;
+import org.eclipse.jetty.http2.frames.FrameType;
 import org.eclipse.jetty.http2.frames.GoAwayFrame;
 import org.eclipse.jetty.http2.frames.HeadersFrame;
 import org.eclipse.jetty.http2.frames.ResetFrame;
@@ -1251,5 +1252,74 @@ public class GoAwayTest extends AbstractTest
         // because the first connection has been removed from the pool.
         long afterPort = response.getHeaders().getLongField("X-Remote-Port");
         assertNotEquals(primePort, afterPort);
+    }
+
+    @Test
+    public void testGoAwayNonZeroStreamId() throws Exception
+    {
+        CountDownLatch serverGoAwayLatch = new CountDownLatch(1);
+        CountDownLatch serverFailureLatch = new CountDownLatch(1);
+        CountDownLatch serverCloseLatch = new CountDownLatch(1);
+        start(new ServerSessionListener()
+        {
+            @Override
+            public void onGoAway(Session session, GoAwayFrame frame)
+            {
+                serverGoAwayLatch.countDown();
+            }
+
+            @Override
+            public void onFailure(Session session, Throwable failure, Callback callback)
+            {
+                serverFailureLatch.countDown();
+                callback.succeeded();
+            }
+
+            @Override
+            public void onClose(Session session, GoAwayFrame frame, Callback callback)
+            {
+                serverCloseLatch.countDown();
+                callback.succeeded();
+            }
+        });
+
+        CountDownLatch clientGoAwayLatch = new CountDownLatch(1);
+        CountDownLatch clientCloseLatch = new CountDownLatch(1);
+        Session clientSession = newClientSession(new Session.Listener()
+        {
+            @Override
+            public void onGoAway(Session session, GoAwayFrame frame)
+            {
+                clientGoAwayLatch.countDown();
+            }
+
+            @Override
+            public void onClose(Session session, GoAwayFrame frame, Callback callback)
+            {
+                clientCloseLatch.countDown();
+                callback.succeeded();
+            }
+        });
+
+        // Wait until the client has finished the previous writes.
+        Thread.sleep(1000);
+        // Write an invalid GOAWAY frame.
+        ByteBuffer byteBuffer = ByteBuffer.allocate(17)
+            .put((byte)0)
+            .put((byte)0)
+            .put((byte)8)
+            .put((byte)FrameType.GO_AWAY.getType())
+            .put((byte)0)
+            .putInt(1) // Non-Zero Stream ID
+            .putInt(0)
+            .putInt(ErrorCode.PROTOCOL_ERROR.code)
+            .flip();
+        ((HTTP2Session)clientSession).getEndPoint().write(Callback.NOOP, byteBuffer);
+
+        assertFalse(serverGoAwayLatch.await(1, TimeUnit.SECONDS));
+        assertTrue(serverFailureLatch.await(5, TimeUnit.SECONDS));
+        assertTrue(serverCloseLatch.await(5, TimeUnit.SECONDS));
+        assertTrue(clientGoAwayLatch.await(5, TimeUnit.SECONDS));
+        assertTrue(clientCloseLatch.await(5, TimeUnit.SECONDS));
     }
 }

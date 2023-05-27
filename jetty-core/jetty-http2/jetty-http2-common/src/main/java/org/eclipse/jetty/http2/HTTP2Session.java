@@ -53,6 +53,7 @@ import org.eclipse.jetty.http2.frames.SettingsFrame;
 import org.eclipse.jetty.http2.frames.StreamFrame;
 import org.eclipse.jetty.http2.frames.WindowUpdateFrame;
 import org.eclipse.jetty.http2.generator.Generator;
+import org.eclipse.jetty.http2.hpack.HpackEncoder;
 import org.eclipse.jetty.http2.hpack.HpackException;
 import org.eclipse.jetty.http2.internal.HTTP2Flusher;
 import org.eclipse.jetty.http2.parser.Parser;
@@ -94,6 +95,7 @@ public abstract class HTTP2Session extends ContainerLifeCycle implements Session
     private final AtomicInteger recvWindow = new AtomicInteger();
     private final AtomicLong bytesWritten = new AtomicLong();
     private final EndPoint endPoint;
+    private final Parser parser;
     private final Generator generator;
     private final Session.Listener listener;
     private final FlowControlStrategy flowControl;
@@ -104,12 +106,14 @@ public abstract class HTTP2Session extends ContainerLifeCycle implements Session
     private long streamIdleTimeout;
     private int initialSessionRecvWindow;
     private int writeThreshold;
+    private int maxEncoderTableCapacity;
     private boolean pushEnabled;
     private boolean connectProtocolEnabled;
 
-    public HTTP2Session(Scheduler scheduler, EndPoint endPoint, Generator generator, Session.Listener listener, FlowControlStrategy flowControl, int initialStreamId)
+    public HTTP2Session(Scheduler scheduler, EndPoint endPoint, Parser parser, Generator generator, Session.Listener listener, FlowControlStrategy flowControl, int initialStreamId)
     {
         this.endPoint = endPoint;
+        this.parser = parser;
         this.generator = generator;
         this.listener = listener;
         this.flowControl = flowControl;
@@ -207,9 +211,25 @@ public abstract class HTTP2Session extends ContainerLifeCycle implements Session
         this.writeThreshold = writeThreshold;
     }
 
+    @ManagedAttribute("The HPACK encoder dynamic table maximum capacity")
+    public int getMaxEncoderTableCapacity()
+    {
+        return maxEncoderTableCapacity;
+    }
+
+    public void setMaxEncoderTableCapacity(int maxEncoderTableCapacity)
+    {
+        this.maxEncoderTableCapacity = maxEncoderTableCapacity;
+    }
+
     public EndPoint getEndPoint()
     {
         return endPoint;
+    }
+
+    public Parser getParser()
+    {
+        return parser;
     }
 
     public Generator getGenerator()
@@ -352,8 +372,20 @@ public abstract class HTTP2Session extends ContainerLifeCycle implements Session
         if (frame.isReply())
             return;
 
-        // Iterate over all settings
-        for (Map.Entry<Integer, Integer> entry : frame.getSettings().entrySet())
+        Map<Integer, Integer> settings = frame.getSettings();
+        configure(settings, false);
+        notifySettings(this, frame);
+
+        if (reply)
+        {
+            SettingsFrame replyFrame = new SettingsFrame(Collections.emptyMap(), true);
+            settings(replyFrame, Callback.NOOP);
+        }
+    }
+
+    private void configure(Map<Integer, Integer> settings, boolean local)
+    {
+        for (Map.Entry<Integer, Integer> entry : settings.entrySet())
         {
             int key = entry.getKey();
             int value = entry.getValue();
@@ -362,8 +394,17 @@ public abstract class HTTP2Session extends ContainerLifeCycle implements Session
                 case SettingsFrame.HEADER_TABLE_SIZE ->
                 {
                     if (LOG.isDebugEnabled())
-                        LOG.debug("Updating HPACK header table size to {} for {}", value, this);
-                    generator.setHeaderTableSize(value);
+                        LOG.debug("Updating HPACK {} max table capacity to {} for {}", local ? "decoder" : "encoder", value, this);
+                    if (local)
+                    {
+                        parser.getHpackDecoder().setMaxTableCapacity(value);
+                    }
+                    else
+                    {
+                        HpackEncoder hpackEncoder = generator.getHpackEncoder();
+                        hpackEncoder.setMaxTableCapacity(value);
+                        hpackEncoder.setTableCapacity(Math.min(value, getMaxEncoderTableCapacity()));
+                    }
                 }
                 case SettingsFrame.ENABLE_PUSH ->
                 {
@@ -375,26 +416,35 @@ public abstract class HTTP2Session extends ContainerLifeCycle implements Session
                 case SettingsFrame.MAX_CONCURRENT_STREAMS ->
                 {
                     if (LOG.isDebugEnabled())
-                        LOG.debug("Updating max local concurrent streams to {} for {}", value, this);
-                    maxLocalStreams = value;
+                        LOG.debug("Updating max {} concurrent streams to {} for {}", local ? "remote" : "local", value, this);
+                    if (local)
+                        maxRemoteStreams = value;
+                    else
+                        maxLocalStreams = value;
                 }
                 case SettingsFrame.INITIAL_WINDOW_SIZE ->
                 {
                     if (LOG.isDebugEnabled())
                         LOG.debug("Updating initial stream window size to {} for {}", value, this);
-                    flowControl.updateInitialStreamWindow(this, value, false);
+                    flowControl.updateInitialStreamWindow(this, value, local);
                 }
                 case SettingsFrame.MAX_FRAME_SIZE ->
                 {
                     if (LOG.isDebugEnabled())
-                        LOG.debug("Updating max frame size to {} for {}", value, this);
-                    generator.setMaxFrameSize(value);
+                        LOG.debug("Updating {} max frame size to {} for {}", local ? "parser" : "generator", value, this);
+                    if (local)
+                        parser.setMaxFrameSize(value);
+                    else
+                        generator.setMaxFrameSize(value);
                 }
                 case SettingsFrame.MAX_HEADER_LIST_SIZE ->
                 {
                     if (LOG.isDebugEnabled())
-                        LOG.debug("Updating max header list size to {} for {}", value, this);
-                    generator.setMaxHeaderListSize(value);
+                        LOG.debug("Updating {} max header list size to {} for {}", local ? "decoder" : "encoder", value, this);
+                    if (local)
+                        parser.getHpackDecoder().setMaxHeaderListSize(value);
+                    else
+                        generator.getHpackEncoder().setMaxHeaderListSize(value);
                 }
                 case SettingsFrame.ENABLE_CONNECT_PROTOCOL ->
                 {
@@ -409,13 +459,6 @@ public abstract class HTTP2Session extends ContainerLifeCycle implements Session
                         LOG.debug("Unknown setting {}:{} for {}", key, value, this);
                 }
             }
-        }
-        notifySettings(this, frame);
-
-        if (reply)
-        {
-            SettingsFrame replyFrame = new SettingsFrame(Collections.emptyMap(), true);
-            settings(replyFrame, Callback.NOOP);
         }
     }
 
@@ -622,6 +665,8 @@ public abstract class HTTP2Session extends ContainerLifeCycle implements Session
 
     public void push(Stream stream, Promise<Stream> promise, PushPromiseFrame frame, Stream.Listener listener)
     {
+        if (!isPushEnabled())
+            throw new IllegalStateException("Push is disabled");
         streamsState.push(frame, new Promise.Wrapper<>(promise)
         {
             @Override
@@ -1343,9 +1388,8 @@ public abstract class HTTP2Session extends ContainerLifeCycle implements Session
                 case SETTINGS ->
                 {
                     SettingsFrame settingsFrame = (SettingsFrame)frame;
-                    Integer initialWindow = settingsFrame.getSettings().get(SettingsFrame.INITIAL_WINDOW_SIZE);
-                    if (initialWindow != null)
-                        flowControl.updateInitialStreamWindow(HTTP2Session.this, initialWindow, true);
+                    if (!settingsFrame.isReply())
+                        configure(settingsFrame.getSettings(), true);
                 }
             }
         }
