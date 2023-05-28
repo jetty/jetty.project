@@ -234,19 +234,6 @@ public class QuotedStringTokenizer
         return nextToken();
     }
 
-    @Override
-    public boolean hasMoreElements()
-    {
-        return hasMoreTokens();
-    }
-
-    @Override
-    public Object nextElement()
-        throws NoSuchElementException
-    {
-        return nextToken();
-    }
-
     /**
      * Not implemented.
      */
