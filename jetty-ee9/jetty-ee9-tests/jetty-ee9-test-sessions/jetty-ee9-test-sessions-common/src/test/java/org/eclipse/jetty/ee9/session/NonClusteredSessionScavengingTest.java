@@ -32,7 +32,6 @@ import org.eclipse.jetty.session.SessionDataStore;
 import org.eclipse.jetty.session.SessionDataStoreFactory;
 import org.eclipse.jetty.session.SessionManager;
 import org.eclipse.jetty.session.test.AbstractSessionTestBase;
-import org.eclipse.jetty.session.test.TestHttpSessionListener;
 import org.eclipse.jetty.session.test.TestSessionDataStoreFactory;
 import org.hamcrest.Matchers;
 import org.junit.jupiter.api.Test;

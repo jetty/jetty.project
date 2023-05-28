@@ -11,7 +11,7 @@
 // ========================================================================
 //
 
-package org.eclipse.jetty.session.test;
+package org.eclipse.jetty.ee10.session;
 
 import java.util.ArrayList;
 import java.util.List;

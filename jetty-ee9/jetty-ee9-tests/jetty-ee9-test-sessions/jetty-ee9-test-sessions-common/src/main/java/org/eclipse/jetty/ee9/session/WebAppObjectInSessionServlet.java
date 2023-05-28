@@ -11,7 +11,7 @@
 // ========================================================================
 //
 
-package org.eclipse.jetty.session.test;
+package org.eclipse.jetty.ee9.session;
 
 import java.io.IOException;
 import java.io.Serializable;
