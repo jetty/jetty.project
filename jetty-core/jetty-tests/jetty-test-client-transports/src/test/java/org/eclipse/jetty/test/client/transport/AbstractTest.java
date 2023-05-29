@@ -159,6 +159,7 @@ public class AbstractTest
         {
             keystore.load(is, "storepwd".toCharArray());
         }
+        sslContextFactory.setTrustStore(keystore);
         sslContextFactory.setKeyStore(keystore);
         sslContextFactory.setKeyStorePassword("storepwd");
         sslContextFactory.setUseCipherSuitesOrder(true);
