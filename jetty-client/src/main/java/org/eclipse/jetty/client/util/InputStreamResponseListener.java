@@ -359,8 +359,11 @@ public class InputStreamResponseListener extends Listener.Adapter
             if (LOG.isDebugEnabled())
                 LOG.debug("InputStream close");
 
-            Throwable failure = new AsynchronousCloseException();
-            callbacks.forEach(callback -> callback.failed(failure));
+            if (!callbacks.isEmpty())
+            {
+                Throwable failure = new AsynchronousCloseException();
+                callbacks.forEach(callback -> callback.failed(failure));
+            }
 
             super.close();
         }

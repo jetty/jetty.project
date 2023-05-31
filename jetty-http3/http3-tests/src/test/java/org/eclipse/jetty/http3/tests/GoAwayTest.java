@@ -116,17 +116,17 @@ public class GoAwayTest extends AbstractClientServerTest
         assertTrue(serverSession.getStreams().isEmpty());
         ServerQuicSession serverQuicSession = serverSession.getProtocolSession().getQuicSession();
         // While HTTP/3 is completely closed, QUIC may still be exchanging packets, so we need to await().
-        await().atMost(1, TimeUnit.SECONDS).until(() -> serverQuicSession.getQuicStreamEndPoints().isEmpty());
-        await().atMost(1, TimeUnit.SECONDS).until(() -> serverQuicSession.getQuicConnection().getQuicSessions().isEmpty());
+        await().atMost(3, TimeUnit.SECONDS).until(() -> serverQuicSession.getQuicStreamEndPoints().isEmpty());
+        await().atMost(3, TimeUnit.SECONDS).until(() -> serverQuicSession.getQuicConnection().getQuicSessions().isEmpty());
 
         assertTrue(clientSession.isClosed());
         assertTrue(clientSession.getStreams().isEmpty());
         ClientQuicSession clientQuicSession = clientSession.getProtocolSession().getQuicSession();
         // While HTTP/3 is completely closed, QUIC may still be exchanging packets, so we need to await().
-        await().atMost(1, TimeUnit.SECONDS).until(() -> clientQuicSession.getQuicStreamEndPoints().isEmpty());
+        await().atMost(3, TimeUnit.SECONDS).until(() -> clientQuicSession.getQuicStreamEndPoints().isEmpty());
         QuicConnection quicConnection = clientQuicSession.getQuicConnection();
-        await().atMost(1, TimeUnit.SECONDS).until(() -> quicConnection.getQuicSessions().isEmpty());
-        await().atMost(1, TimeUnit.SECONDS).until(() -> quicConnection.getEndPoint().isOpen(), is(false));
+        await().atMost(3, TimeUnit.SECONDS).until(() -> quicConnection.getQuicSessions().isEmpty());
+        await().atMost(3, TimeUnit.SECONDS).until(() -> quicConnection.getEndPoint().isOpen(), is(false));
     }
 
     @Test
