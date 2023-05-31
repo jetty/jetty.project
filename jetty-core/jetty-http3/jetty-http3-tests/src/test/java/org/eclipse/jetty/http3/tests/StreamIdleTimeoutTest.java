@@ -26,7 +26,11 @@ import org.eclipse.jetty.http3.api.Session;
 import org.eclipse.jetty.http3.api.Stream;
 import org.eclipse.jetty.http3.frames.HeadersFrame;
 import org.eclipse.jetty.http3.server.AbstractHTTP3ServerConnectionFactory;
+import org.eclipse.jetty.http3.server.internal.HTTP3StreamServer;
+import org.eclipse.jetty.logging.StacklessLogging;
 import org.eclipse.jetty.util.Promise;
+import org.junit.jupiter.api.AfterEach;
+import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 
 import static org.awaitility.Awaitility.await;
@@ -36,6 +40,20 @@ import static org.junit.jupiter.api.Assertions.assertTrue;
 
 public class StreamIdleTimeoutTest extends AbstractClientServerTest
 {
+    private StacklessLogging sll;
+
+    @BeforeEach
+    public void setUp()
+    {
+        sll = new StacklessLogging(HTTP3StreamServer.class);
+    }
+
+    @AfterEach
+    public void tearDown()
+    {
+        sll.close();
+    }
+
     @Test
     public void testClientStreamIdleTimeout() throws Exception
     {
