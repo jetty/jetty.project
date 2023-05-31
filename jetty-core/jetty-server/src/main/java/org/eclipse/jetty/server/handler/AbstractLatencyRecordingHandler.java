@@ -25,26 +25,36 @@ import org.slf4j.LoggerFactory;
 /**
  * <p>A <code>Handler</code> that allows recording the latency of the requests executed by the wrapped handler.</p>
  * <p>The latency reported by {@link #onRequestComplete(long)} is the delay between the first notice of the request
- * (obtained from {@link HttpStream#getNanoTime()}) until the stream completion event has been handled by
- * {@link HttpStream#succeeded()} or {@link HttpStream#failed(Throwable)}.</p>
+ * (obtained from {@link Request#getNanoTime()}, or when {@link #handle(Request, Response, Callback)} gets called if
+ * {@code legacy} mode is chosen) until the stream gets completed and {@link HttpStream#succeeded()} or
+ * {@link HttpStream#failed(Throwable)} is called.</p>
+ * @deprecated use {@link org.eclipse.jetty.server.LatencyRecorder} instead.
  */
+@Deprecated(forRemoval = true)
 public abstract class AbstractLatencyRecordingHandler extends Handler.Wrapper
 {
     private static final Logger LOG = LoggerFactory.getLogger(AbstractLatencyRecordingHandler.class);
+    private final boolean legacy;
 
-    public AbstractLatencyRecordingHandler()
+    protected AbstractLatencyRecordingHandler()
     {
+        this(false);
     }
 
-    private HttpStream recordingWrapper(HttpStream httpStream)
+    protected AbstractLatencyRecordingHandler(boolean legacy)
     {
-        return new HttpStream.Wrapper(httpStream)
+        this.legacy = legacy;
+    }
+
+    @Override
+    public boolean handle(Request request, Response response, Callback callback) throws Exception
+    {
+        long begin = legacy ? NanoTime.now() : request.getNanoTime();
+        request.addHttpStreamWrapper(httpStream -> new HttpStream.Wrapper(httpStream)
         {
             @Override
             public void succeeded()
             {
-                // Take the httpStream nano timestamp before calling super.
-                long begin = httpStream.getNanoTime();
                 super.succeeded();
                 fireOnRequestComplete(begin);
             }
@@ -52,32 +62,24 @@ public abstract class AbstractLatencyRecordingHandler extends Handler.Wrapper
             @Override
             public void failed(Throwable x)
             {
-                // Take the httpStream nano timestamp before calling super.
-                long begin = httpStream.getNanoTime();
                 super.failed(x);
                 fireOnRequestComplete(begin);
             }
-
-            private void fireOnRequestComplete(long begin)
-            {
-                try
-                {
-                    onRequestComplete(NanoTime.since(begin));
-                }
-                catch (Throwable t)
-                {
-                    if (LOG.isDebugEnabled())
-                        LOG.debug("Error thrown by onRequestComplete", t);
-                }
-            }
-        };
+        });
+        return super.handle(request, response, callback);
     }
 
-    @Override
-    public boolean handle(Request request, Response response, Callback callback) throws Exception
+    private void fireOnRequestComplete(long begin)
     {
-        request.addHttpStreamWrapper(this::recordingWrapper);
-        return super.handle(request, response, callback);
+        try
+        {
+            onRequestComplete(NanoTime.since(begin));
+        }
+        catch (Throwable t)
+        {
+            if (LOG.isDebugEnabled())
+                LOG.debug("Error thrown by onRequestComplete", t);
+        }
     }
 
     /**

@@ -20,7 +20,6 @@ import java.util.concurrent.TimeUnit;
 import org.awaitility.Awaitility;
 import org.eclipse.jetty.logging.JettyLevel;
 import org.eclipse.jetty.logging.JettyLogger;
-import org.eclipse.jetty.server.handler.AbstractLatencyRecordingHandler;
 import org.eclipse.jetty.server.handler.ContextHandler;
 import org.eclipse.jetty.util.Callback;
 import org.junit.jupiter.api.AfterEach;
@@ -33,7 +32,7 @@ import static org.hamcrest.Matchers.containsString;
 import static org.hamcrest.Matchers.greaterThan;
 import static org.hamcrest.Matchers.is;
 
-public class LatencyRecordingHandlerTest
+public class LatencyRecorderTest
 {
     private JettyLevel _oldLevel;
     private Server _server;
@@ -60,20 +59,11 @@ public class LatencyRecordingHandlerTest
                 return true;
             }
         };
-        AbstractLatencyRecordingHandler latencyRecordingHandler = new AbstractLatencyRecordingHandler()
-        {
-            @Override
-            protected void onRequestComplete(long durationInNs)
-            {
-                _latencies.add(durationInNs);
-            }
-        };
-        latencyRecordingHandler.setHandler(handler);
-
         ContextHandler contextHandler = new ContextHandler("/ctx");
-        contextHandler.setHandler(latencyRecordingHandler);
+        contextHandler.setHandler(handler);
 
         _server.setHandler(contextHandler);
+        _server.addBean((LatencyRecorder)_latencies::add);
         _server.start();
 
         // Disable WARN logs of failed requests.

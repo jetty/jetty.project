@@ -93,6 +93,7 @@ public class Server extends Handler.Wrapper implements Attributes
     private long _stopTimeout;
     private InvocationType _invocationType = InvocationType.NON_BLOCKING;
     private File _tempDirectory;
+    private HttpChannel.Listener _latencyRecorderChannelListener;
 
     public Server()
     {
@@ -549,11 +550,15 @@ public class Server extends Handler.Wrapper implements Attributes
                 throw new StopException();
             }
 
+            _latencyRecorderChannelListener = buildLatencyRecorderChannelListener();
+
             // start connectors
             for (Connector connector : _connectors)
             {
                 try
                 {
+                    if (_latencyRecorderChannelListener != null)
+                        connector.addBean(_latencyRecorderChannelListener, false);
                     connector.start();
                 }
                 catch (Throwable e)
@@ -589,6 +594,34 @@ public class Server extends Handler.Wrapper implements Attributes
             if (isDumpAfterStart() && !(_dryRun && isDumpBeforeStop()))
                 dumpStdErr();
         }
+    }
+
+    private HttpChannel.Listener buildLatencyRecorderChannelListener()
+    {
+        java.util.Collection<LatencyRecorder> latencyRecorders = getBeans(LatencyRecorder.class);
+        if (latencyRecorders.isEmpty())
+            return null;
+        return new HttpChannel.Listener()
+        {
+            @Override
+            public void onComplete(Request request, Throwable failure)
+            {
+                long begin = request.getNanoTime();
+                long delay = NanoTime.since(begin);
+                for (LatencyRecorder latencyRecorder : latencyRecorders)
+                {
+                    try
+                    {
+                        latencyRecorder.accept(delay);
+                    }
+                    catch (Throwable t)
+                    {
+                        if (LOG.isDebugEnabled())
+                            LOG.debug("Error thrown by onRequestComplete", t);
+                    }
+                }
+            }
+        };
     }
 
     @Override
@@ -638,7 +671,10 @@ public class Server extends Handler.Wrapper implements Attributes
             {
                 multiException = ExceptionUtil.combine(multiException, e);
             }
+            if (_latencyRecorderChannelListener != null)
+                connector.removeBean(_latencyRecorderChannelListener);
         }
+        _latencyRecorderChannelListener = null;
 
         // And finally stop everything else
         try
