@@ -603,10 +603,18 @@ public class Server extends Handler.Wrapper implements Attributes
             return null;
         return new HttpChannel.Listener()
         {
+            private final boolean legacy = latencyRecorders.stream().anyMatch(r -> r.getClass().isAnnotationPresent(LatencyRecorder.Legacy.class));
+            private long begin;
+
+            @Override
+            public void onRequestBegin(Request request)
+            {
+                begin = legacy ? NanoTime.now() : request.getNanoTime();
+            }
+
             @Override
             public void onComplete(Request request, Throwable failure)
             {
-                long begin = request.getNanoTime();
                 long delay = NanoTime.since(begin);
                 for (LatencyRecorder latencyRecorder : latencyRecorders)
                 {
@@ -617,7 +625,7 @@ public class Server extends Handler.Wrapper implements Attributes
                     catch (Throwable t)
                     {
                         if (LOG.isDebugEnabled())
-                            LOG.debug("Error thrown by onRequestComplete", t);
+                            LOG.debug("Error thrown by {}", latencyRecorder, t);
                     }
                 }
             }

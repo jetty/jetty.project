@@ -13,14 +13,29 @@
 
 package org.eclipse.jetty.server;
 
+import java.lang.annotation.ElementType;
+import java.lang.annotation.Retention;
+import java.lang.annotation.RetentionPolicy;
+import java.lang.annotation.Target;
 import java.util.function.LongConsumer;
 
 /**
  * <p>A marker interface whose implementation records the latency of the executed requests when registered
  * as a bean on a {@link Server} instance.</p>
- * <p>The reported latency is the delay between the first notice of the request and when it has completed.</p>
+ * <p>The reported latency is the delay between {@link Request#getNanoTime() the first notice of the request} and
+ * {@link HttpChannel.Listener#onComplete(Request, Throwable) when it has completed}.</p>
  */
 @FunctionalInterface
 public interface LatencyRecorder extends LongConsumer
 {
+    /**
+     * When a {@link LatencyRecorder} is annotated as legacy, the reported latency is the delay between
+     * {@link HttpChannel.Listener#onRequestBegin(Request) the beginning of the request} and
+     * {@link HttpChannel.Listener#onComplete(Request, Throwable) when it has completed}.
+     */
+    @Retention(RetentionPolicy.RUNTIME)
+    @Target(ElementType.TYPE)
+    @interface Legacy
+    {
+    }
 }
