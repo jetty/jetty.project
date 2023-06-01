@@ -253,19 +253,6 @@ public class LegacyQuotedStringTokenizer implements QuotedStringTokenizer
             throw new UnsupportedOperationException();
         }
 
-        @Override
-        public boolean hasMoreElements()
-        {
-            return hasMoreTokens();
-        }
-
-        @Override
-        public Object nextElement()
-            throws NoSuchElementException
-        {
-            return nextToken();
-        }
-
         /**
          * Not implemented.
          */
