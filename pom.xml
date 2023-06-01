@@ -97,7 +97,7 @@
     <jnr-posix.version>3.1.15</jnr-posix.version>
     <jnr-unixsocket.version>0.38.17</jnr-unixsocket.version>
     <json-simple.version>1.1.1</json-simple.version>
-    <json-smart.version>2.4.10</json-smart.version>
+    <json-smart.version>2.4.11</json-smart.version>
     <jsp.impl.version>10.0.14</jsp.impl.version>
     <junit.version>5.9.1</junit.version>
     <kerb-simplekdc.version>2.0.3</kerb-simplekdc.version>
