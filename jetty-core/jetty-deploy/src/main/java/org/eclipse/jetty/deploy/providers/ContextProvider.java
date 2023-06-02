@@ -359,8 +359,10 @@ public class ContextProvider extends ScanningAppProvider
                 xmlc.getIdMap().put("Environment", environment);
                 xmlc.setJettyStandardIdsAndProperties(getDeploymentManager().getServer(), path);
 
-                ClassLoader contextClassLoader = Environment.CORE.equals(environment) ? findCoreContextClassLoader(path) : environment.getClassLoader();
-                Thread.currentThread().setContextClassLoader(contextClassLoader);
+                // If it is a core context environment, then look for a classloader
+                ClassLoader coreContextClassLoader = Environment.CORE.equals(environment) ? findCoreContextClassLoader(path) : null;
+                if (coreContextClassLoader != null)
+                    Thread.currentThread().setContextClassLoader(coreContextClassLoader);
 
                 // Create the context by running the configuration
                 Object context = xmlc.configure();
@@ -378,7 +380,9 @@ public class ContextProvider extends ScanningAppProvider
                 if (contextHandler == null)
                     throw new IllegalStateException("Unknown context type of " + context);
 
-                contextHandler.setClassLoader(contextClassLoader);
+                // Set the classloader if we have a coreContextClassLoader
+                if (coreContextClassLoader != null)
+                    contextHandler.setClassLoader(coreContextClassLoader);
 
                 return contextHandler;
             }
@@ -441,7 +445,7 @@ public class ContextProvider extends ScanningAppProvider
             }
         }
 
-        // Is there a matching classes directory?
+        // Is there a matching lib directory?
         Path classesDir = webapps.resolve(basename + ".d" + path.getFileSystem().getSeparator() + "classes");
         if (Files.exists(classesDir) && Files.isDirectory(libDir))
             urls.add(classesDir.toUri().toURL());
@@ -449,8 +453,9 @@ public class ContextProvider extends ScanningAppProvider
         if (LOG.isDebugEnabled())
             LOG.debug("Core classloader for {}", urls);
 
-        ClassLoader coreClassLoader = Environment.CORE.getClassLoader();
-        return urls.isEmpty() ? coreClassLoader : new URLClassLoader(urls.toArray(URL[]::new), coreClassLoader);
+        if (urls.isEmpty())
+            return null;
+        return new URLClassLoader(urls.toArray(new URL[0]), Environment.CORE.getClassLoader());
     }
 
     protected void initializeContextPath(ContextHandler context, Path path)
