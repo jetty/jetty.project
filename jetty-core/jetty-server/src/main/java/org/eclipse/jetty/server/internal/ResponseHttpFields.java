@@ -16,7 +16,6 @@ package org.eclipse.jetty.server.internal;
 import java.util.Iterator;
 import java.util.ListIterator;
 import java.util.concurrent.atomic.AtomicBoolean;
-import java.util.function.Function;
 import java.util.stream.Stream;
 
 import org.eclipse.jetty.http.HttpField;
@@ -29,27 +28,6 @@ public class ResponseHttpFields implements HttpFields.Mutable
     private static final Logger LOG = LoggerFactory.getLogger(ResponseHttpFields.class);
     private final Mutable _fields = HttpFields.build();
     private final AtomicBoolean _committed = new AtomicBoolean();
-    private Function<HttpField, HttpField> _httpFieldProcessor;
-
-    public void addHttpFieldProcessor(Function<HttpField, HttpField> httpFieldProcessor)
-    {
-        if (_httpFieldProcessor == null)
-            _httpFieldProcessor = httpFieldProcessor;
-        else if (httpFieldProcessor != null)
-        {
-            Function<HttpField, HttpField> prior = _httpFieldProcessor;
-            _httpFieldProcessor = field ->
-            {
-                field = httpFieldProcessor.apply(field);
-                return field == null ? field : prior.apply(field);
-            };
-        }
-    }
-
-    private HttpField process(HttpField field)
-    {
-        return _httpFieldProcessor == null ? field : _httpFieldProcessor.apply(field);
-    }
 
     public HttpFields.Mutable getMutableHttpFields()
     {
@@ -73,12 +51,6 @@ public class ResponseHttpFields implements HttpFields.Mutable
     {
         _committed.set(false);
         _fields.clear();
-    }
-
-    public void recycle()
-    {
-        reset();
-        _httpFieldProcessor = null;
     }
 
     @Override
@@ -110,12 +82,8 @@ public class ResponseHttpFields implements HttpFields.Mutable
     @Override
     public Mutable add(HttpField field)
     {
-        if (!_committed.get())
-        {
-            field = process(field);
-            if (field != null)
-                _fields.add(field);
-        }
+        if (field != null && !_committed.get())
+            _fields.add(field);
         return this;
     }
 
@@ -221,8 +189,9 @@ public class ResponseHttpFields implements HttpFields.Mutable
             {
                 if (_committed.get())
                     throw new UnsupportedOperationException("Read Only");
-                field = process(field);
-                if (field != null)
+                if (field == null)
+                    i.remove();
+                else
                     i.set(field);
             }
 
@@ -231,7 +200,6 @@ public class ResponseHttpFields implements HttpFields.Mutable
             {
                 if (_committed.get())
                     throw new UnsupportedOperationException("Read Only");
-                field = process(field);
                 if (field != null)
                     i.add(field);
             }

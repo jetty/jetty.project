@@ -29,11 +29,9 @@ import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 
 import static org.hamcrest.MatcherAssert.assertThat;
-import static org.hamcrest.Matchers.contains;
 import static org.hamcrest.Matchers.containsInAnyOrder;
 import static org.hamcrest.Matchers.is;
 import static org.junit.jupiter.api.Assertions.assertEquals;
-import static org.junit.jupiter.api.Assertions.assertFalse;
 
 public class ResponseTest
 {
@@ -62,7 +60,7 @@ public class ResponseTest
         server.setHandler(new Handler.Abstract()
         {
             @Override
-            public boolean handle(Request request, Response response, Callback callback) throws Exception
+            public boolean handle(Request request, Response response, Callback callback)
             {
                 Response.sendRedirect(request, response, callback, "/somewhere/else");
                 return true;
@@ -98,7 +96,7 @@ public class ResponseTest
         server.setHandler(new Handler.Abstract()
         {
             @Override
-            public boolean handle(Request request, Response response, Callback callback) throws Exception
+            public boolean handle(Request request, Response response, Callback callback)
             {
                 Response.sendRedirect(request, response, callback, "/somewhere/else");
                 return true;
@@ -132,7 +130,7 @@ public class ResponseTest
         server.setHandler(new Handler.Abstract()
         {
             @Override
-            public boolean handle(Request request, Response response, Callback callback) throws Exception
+            public boolean handle(Request request, Response response, Callback callback)
             {
                 Response.sendRedirect(request, response, callback, "/somewhere/else");
                 return true;
@@ -168,7 +166,7 @@ public class ResponseTest
         server.setHandler(new Handler.Abstract()
         {
             @Override
-            public boolean handle(Request request, Response response, Callback callback) throws Exception
+            public boolean handle(Request request, Response response, Callback callback)
             {
                 Response.sendRedirect(request, response, callback, "/somewhere/else");
                 return true;
@@ -197,97 +195,12 @@ public class ResponseTest
     }
 
     @Test
-    public void testHttpFieldProcessor() throws Exception
+    public void testHttpCookieProcessing() throws Exception
     {
         server.setHandler(new Handler.Abstract()
         {
             @Override
-            public boolean handle(Request request, Response response, Callback callback) throws Exception
-            {
-                response.addHttpFieldProcessor(field ->
-                    (field.is("TestA"))
-                        ? new HttpField.LongValueHttpField(field.getName(), field.getLongValue() + 1)
-                        : field);
-                response.addHttpFieldProcessor(field ->
-                    (field.is("TestB"))
-                        ? new HttpField.LongValueHttpField("TestA", field.getLongValue() * 2)
-                        : field);
-                response.addHttpFieldProcessor(field ->
-                    (field.is("TestC"))
-                        ? null
-                        : field);
-
-                response.setStatus(200);
-                response.getHeaders().add("TestA", "1");
-                response.getHeaders().add("TestB", "42");
-                response.getHeaders().add("TestC", "999");
-                Content.Sink.write(response, true, "OK", callback);
-                return true;
-            }
-        });
-        server.start();
-
-        String request = """
-                POST /path HTTP/1.0\r
-                Host: hostname\r
-                \r
-                """;
-        HttpTester.Response response = HttpTester.parseResponse(connector.getResponse(request));
-        assertEquals(HttpStatus.OK_200, response.getStatus());
-        assertThat(response.getValuesList("TestA"), contains("2", "85"));
-        assertFalse(response.contains("TestB"));
-        assertFalse(response.contains("TestC"));
-    }
-
-    @Test
-    public void testHttpCookieProcessor() throws Exception
-    {
-        server.setHandler(new Handler.Abstract()
-        {
-            @Override
-            public boolean handle(Request request, Response response, Callback callback) throws Exception
-            {
-                response.addHttpFieldProcessor(field ->
-                    {
-                        HttpCookie cookie = HttpCookieUtils.getSetCookie(field);
-                        if (cookie == null)
-                            return field;
-
-                        return new HttpCookieUtils.SetCookieHttpField(
-                            HttpCookie.build(cookie)
-                                .domain("customized")
-                                .sameSite(HttpCookie.SameSite.LAX)
-                                .build(),
-                            request.getConnectionMetaData().getHttpConfiguration().getResponseCookieCompliance());
-                    });
-                response.setStatus(200);
-                Response.addCookie(response, HttpCookie.from("name", "test1"));
-                response.getHeaders().add(HttpHeader.SET_COOKIE, "other=test2; Domain=wrong; SameSite=wrong; Attr=x");
-                Content.Sink.write(response, true, "OK", callback);
-                return true;
-            }
-        });
-        server.start();
-
-        String request = """
-                POST /path HTTP/1.0\r
-                Host: hostname\r
-                \r
-                """;
-        HttpTester.Response response = HttpTester.parseResponse(connector.getResponse(request));
-        assertEquals(HttpStatus.OK_200, response.getStatus());
-        assertThat(response.getValuesList(HttpHeader.SET_COOKIE), containsInAnyOrder(
-            "name=test1; Domain=customized; SameSite=Lax",
-            "other=test2; Domain=customized; SameSite=Lax; Attr=x"));
-    }
-
-    @Test
-    public void testHttpCookieProcessorAlt() throws Exception
-    {
-        server.setHandler(new Handler.Abstract()
-        {
-            @Override
-            public boolean handle(Request request, Response response, Callback callback) throws Exception
+            public boolean handle(Request request, Response response, Callback callback)
             {
                 request.addHttpStreamWrapper(httpStream -> new HttpStream.Wrapper(httpStream)
                 {

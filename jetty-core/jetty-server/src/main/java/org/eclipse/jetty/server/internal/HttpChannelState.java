@@ -145,7 +145,7 @@ public class HttpChannelState implements HttpChannel, Components
 
             // Recycle.
             _requestAttributes.clearAttributes();
-            _responseHeaders.recycle();
+            _responseHeaders.reset();
             _handling = null;
             _handled = false;
             _callbackCompleted = false;
@@ -1046,12 +1046,6 @@ public class HttpChannelState implements HttpChannel, Components
             Callback writeCallback = _writeCallback;
             _writeCallback = null;
             return writeCallback == null ? null : () -> writeCallback.failed(x);
-        }
-
-        @Override
-        public void addHttpFieldProcessor(Function<HttpField, HttpField> httpFieldProcessor)
-        {
-            _request.getHttpChannelState()._responseHeaders.addHttpFieldProcessor(httpFieldProcessor);
         }
 
         public long getContentBytesWritten()
