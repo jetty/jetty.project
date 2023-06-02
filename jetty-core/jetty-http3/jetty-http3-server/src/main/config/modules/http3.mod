@@ -12,6 +12,7 @@ experimental
 http2
 jna
 quiche
+work
 
 [lib]
 lib/http3/*.jar

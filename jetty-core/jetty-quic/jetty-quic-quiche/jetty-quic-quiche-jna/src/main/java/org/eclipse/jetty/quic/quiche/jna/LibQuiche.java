@@ -86,6 +86,9 @@ public interface LibQuiche extends Library
     // Configures whether to verify the peer's certificate.
     void quiche_config_verify_peer(quiche_config config, boolean v);
 
+    // Specifies a file where trusted CA certificates are stored for the purposes of certificate verification.
+    int quiche_config_load_verify_locations_from_file(quiche_config config, String path);
+
     // Configures the list of supported application protocols.
     int quiche_config_set_application_protos(quiche_config config, byte[] protos, size_t protos_len);
 
@@ -424,6 +427,9 @@ public interface LibQuiche extends Library
 
     // Returns true if the connection was closed due to the idle timeout.
     boolean quiche_conn_is_timed_out(quiche_conn conn);
+
+    // Returns the peer's leaf certificate (if any) as a DER-encoded buffer.
+    void quiche_conn_peer_cert(quiche_conn conn, char_pointer out, size_t_pointer out_len);
 
     // Returns true if a connection error was received, and updates the provided
     // parameters accordingly.

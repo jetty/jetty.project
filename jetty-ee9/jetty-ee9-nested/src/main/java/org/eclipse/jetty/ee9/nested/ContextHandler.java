@@ -1093,11 +1093,7 @@ public class ContextHandler extends ScopedHandler implements Attributes, Gracefu
         }
 
         _coreContextHandler.setContextPath(contextPath);
-        _contextPathEncoded = URIUtil.encodePath(contextPath);
 
-        // update context mappings
-        if (getServer() != null && getServer().isRunning())
-            getServer().getDescendants(ContextHandlerCollection.class).forEach(ContextHandlerCollection::mapContexts);
     }
 
     /**
@@ -2434,6 +2430,17 @@ public class ContextHandler extends ScopedHandler implements Attributes, Gracefu
         {
             super.setHandler(new CoreToNestedHandler());
             addBean(ContextHandler.this, true);
+        }
+
+        @Override
+        public void setContextPath(String contextPath)
+        {
+            super.setContextPath(contextPath);
+            _contextPathEncoded = URIUtil.encodePath(contextPath);
+
+            // update context mappings
+            if (getServer() != null && getServer().isRunning())
+                getServer().getDescendants(ContextHandlerCollection.class).forEach(ContextHandlerCollection::mapContexts);
         }
 
         @Override

@@ -51,6 +51,9 @@ public class GoAwayBodyParser extends BodyParser
             {
                 case PREPARE:
                 {
+                    // SPEC: wrong streamId is treated as connection error.
+                    if (getStreamId() != 0)
+                        return connectionFailure(buffer, ErrorCode.PROTOCOL_ERROR.code, "invalid_go_away_frame");
                     state = State.LAST_STREAM_ID;
                     length = getBodyLength();
                     break;

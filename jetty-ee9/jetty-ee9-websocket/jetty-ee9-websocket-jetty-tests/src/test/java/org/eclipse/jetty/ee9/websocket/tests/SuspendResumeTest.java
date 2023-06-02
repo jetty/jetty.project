@@ -15,18 +15,23 @@ package org.eclipse.jetty.ee9.websocket.tests;
 
 import java.io.IOException;
 import java.net.URI;
+import java.time.Duration;
 import java.util.concurrent.Future;
 import java.util.concurrent.TimeUnit;
 
 import org.eclipse.jetty.ee9.servlet.ServletContextHandler;
 import org.eclipse.jetty.ee9.servlet.ServletHolder;
+import org.eclipse.jetty.ee9.websocket.api.BatchMode;
 import org.eclipse.jetty.ee9.websocket.api.Session;
+import org.eclipse.jetty.ee9.websocket.api.StatusCode;
 import org.eclipse.jetty.ee9.websocket.api.SuspendToken;
 import org.eclipse.jetty.ee9.websocket.api.annotations.WebSocket;
+import org.eclipse.jetty.ee9.websocket.api.exceptions.WebSocketTimeoutException;
 import org.eclipse.jetty.ee9.websocket.client.WebSocketClient;
 import org.eclipse.jetty.ee9.websocket.server.JettyWebSocketServlet;
 import org.eclipse.jetty.ee9.websocket.server.JettyWebSocketServletFactory;
 import org.eclipse.jetty.ee9.websocket.server.config.JettyWebSocketServletContainerInitializer;
+import org.eclipse.jetty.io.ArrayByteBufferPool;
 import org.eclipse.jetty.server.Server;
 import org.eclipse.jetty.server.ServerConnector;
 import org.junit.jupiter.api.AfterEach;
@@ -34,7 +39,10 @@ import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 
 import static org.hamcrest.MatcherAssert.assertThat;
+import static org.hamcrest.Matchers.equalTo;
+import static org.hamcrest.Matchers.instanceOf;
 import static org.hamcrest.Matchers.is;
+import static org.junit.jupiter.api.Assertions.assertNotNull;
 import static org.junit.jupiter.api.Assertions.assertNull;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.api.Assertions.assertTrue;
@@ -64,14 +72,15 @@ public class SuspendResumeTest
         }
     }
 
-    private Server server = new Server();
-    private WebSocketClient client = new WebSocketClient();
-    private SuspendSocket serverSocket = new SuspendSocket();
+    private Server server;
+    private WebSocketClient client;
+    private SuspendSocket serverSocket;
     private ServerConnector connector;
 
     @BeforeEach
     public void start() throws Exception
     {
+        server = new Server();
         connector = new ServerConnector(server);
         server.addConnector(connector);
 
@@ -79,10 +88,12 @@ public class SuspendResumeTest
         contextHandler.setContextPath("/");
         server.setHandler(contextHandler);
         contextHandler.addServlet(new ServletHolder(new UpgradeServlet()), "/suspend");
+        serverSocket = new SuspendSocket();
 
         JettyWebSocketServletContainerInitializer.configure(contextHandler, null);
 
         server.start();
+        client = new WebSocketClient();
         client.start();
     }
 
@@ -188,5 +199,50 @@ public class SuspendResumeTest
 
         // suspend after closed throws ISE
         assertThrows(IllegalStateException.class, () -> clientSocket.session.suspend());
+    }
+
+    @Test
+    public void testTimeoutWhileSuspended() throws Exception
+    {
+        URI uri = new URI("ws://localhost:" + connector.getLocalPort() + "/suspend");
+        EventSocket clientSocket = new EventSocket();
+        Future<Session> connect = client.connect(clientSocket, uri);
+        connect.get(5, TimeUnit.SECONDS);
+        assertTrue(serverSocket.openLatch.await(5, TimeUnit.SECONDS));
+
+        // Set short idleTimeout on server.
+        int idleTimeout = 1000;
+        serverSocket.session.setIdleTimeout(Duration.ofMillis(idleTimeout));
+
+        // Suspend on the server.
+        clientSocket.session.getRemote().sendString("suspend");
+        assertThat(serverSocket.textMessages.poll(5, TimeUnit.SECONDS), is("suspend"));
+
+        // Send two messages, with batching on, so they are read into same network buffer on the server.
+        // First frame is read and delayed inside the JettyWebSocketFrameHandler suspendState, second frame remains in the network buffer.
+        clientSocket.session.getRemote().setBatchMode(BatchMode.ON);
+        clientSocket.session.getRemote().sendString("no demand");
+        clientSocket.session.getRemote().sendString("this should sit in network buffer");
+        clientSocket.session.getRemote().flush();
+        assertNotNull(serverSocket.suspendToken);
+
+        // Make sure both sides are closed.
+        assertTrue(serverSocket.closeLatch.await(5, TimeUnit.SECONDS));
+        assertTrue(clientSocket.closeLatch.await(5, TimeUnit.SECONDS));
+
+        // We received no additional messages.
+        assertNull(serverSocket.textMessages.poll());
+        assertNull(serverSocket.binaryMessages.poll());
+
+        // Check the idleTimeout occurred.
+        assertThat(serverSocket.error, instanceOf(WebSocketTimeoutException.class));
+        assertNull(clientSocket.error);
+        assertThat(clientSocket.closeCode, equalTo(StatusCode.SHUTDOWN));
+        assertThat(clientSocket.closeReason, equalTo("Connection Idle Timeout"));
+
+        // We should have no used buffers in the pool.
+        ArrayByteBufferPool pool = (ArrayByteBufferPool)connector.getByteBufferPool();
+        assertThat(pool.getHeapByteBufferCount(), equalTo(pool.getAvailableHeapByteBufferCount()));
+        assertThat(pool.getDirectByteBufferCount(), equalTo(pool.getAvailableDirectByteBufferCount()));
     }
 }

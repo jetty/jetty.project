@@ -141,6 +141,7 @@ public class HttpClient extends ContainerLifeCycle
     private String defaultRequestContentType = "application/octet-stream";
     private boolean useInputDirectByteBuffers = true;
     private boolean useOutputDirectByteBuffers = true;
+    private int maxResponseHeadersSize = -1;
     private Sweeper destinationSweeper;
 
     /**
@@ -1109,6 +1110,23 @@ public class HttpClient extends ContainerLifeCycle
     public void setUseOutputDirectByteBuffers(boolean useOutputDirectByteBuffers)
     {
         this.useOutputDirectByteBuffers = useOutputDirectByteBuffers;
+    }
+
+    /**
+     * @return the max size in bytes of the response headers
+     */
+    @ManagedAttribute("The max size in bytes of the response headers")
+    public int getMaxResponseHeadersSize()
+    {
+        return maxResponseHeadersSize;
+    }
+
+    /**
+     * @param maxResponseHeadersSize the max size in bytes of the response headers
+     */
+    public void setMaxResponseHeadersSize(int maxResponseHeadersSize)
+    {
+        this.maxResponseHeadersSize = maxResponseHeadersSize;
     }
 
     /**

@@ -61,6 +61,7 @@ public class TryPathsHandlerTest
     private SslContextFactory.Server sslContextFactory;
     private ServerConnector connector;
     private ServerConnector sslConnector;
+    private TryPathsHandler tryPathsHandler;
 
     private void start(List<String> paths, Handler handler, Path tmpPath) throws Exception
     {
@@ -78,11 +79,11 @@ public class TryPathsHandlerTest
         context.setBaseResourceAsPath(tmpPath);
         server.setHandler(context);
 
-        TryPathsHandler tryPaths = new TryPathsHandler();
-        context.setHandler(tryPaths);
+        tryPathsHandler = new TryPathsHandler();
+        context.setHandler(tryPathsHandler);
 
-        tryPaths.setPaths(paths);
-        tryPaths.setHandler(handler);
+        tryPathsHandler.setPaths(paths);
+        tryPathsHandler.setHandler(handler);
 
         server.start();
     }
@@ -184,7 +185,7 @@ public class TryPathsHandlerTest
         pathMappingsHandler.addMapping(new ServletPathSpec("*.php"), new Handler.Abstract()
         {
             @Override
-            public boolean handle(Request request, Response response, Callback callback) throws Exception
+            public boolean handle(Request request, Response response, Callback callback)
             {
                 response.setStatus(HttpStatus.OK_200);
                 response.getHeaders().put(HttpHeader.CONTENT_TYPE, "text/plain; charset=utf-8");
@@ -196,7 +197,7 @@ public class TryPathsHandlerTest
         pathMappingsHandler.addMapping(new ServletPathSpec("/forward"), new Handler.Abstract()
         {
             @Override
-            public boolean handle(Request request, Response response, Callback callback) throws Exception
+            public boolean handle(Request request, Response response, Callback callback)
             {
                 assertThat(Request.getPathInContext(request), equalTo("/forward"));
                 assertThat(request.getHttpURI().getQuery(), equalTo("p=/last"));
@@ -257,94 +258,6 @@ public class TryPathsHandlerTest
     }
 
     @Test
-    public void testTryPathsAsync404(WorkDir workDir) throws Exception
-    {
-        Path tmpPath = workDir.getEmptyPathDir();
-        ResourceHandler resourceHandler = new ResourceHandler()
-        {
-            @Override
-            protected HttpContent.Factory newHttpContentFactory()
-            {
-                // We don't want to cache not found entries for this test.
-                return new ResourceHttpContentFactory(ResourceFactory.of(getBaseResource()), getMimeTypes());
-            }
-        };
-
-        resourceHandler.setDirAllowed(false);
-        resourceHandler.setHandler(new Handler.Abstract()
-        {
-            @Override
-            public boolean handle(Request request, Response response, Callback callback)
-            {
-                if (Request.getPathInContext(request).endsWith("/notFound"))
-                {
-                    request.getComponents().getThreadPool().execute(() ->
-                    {
-                        try
-                        {
-                            Thread.sleep(100);
-                            Response.writeError(request, response, callback, HttpStatus.NOT_FOUND_404);
-                        }
-                        catch (InterruptedException e)
-                        {
-                            callback.failed(e);
-                        }
-                    });
-                    return true;
-                }
-
-                if (!Request.getPathInContext(request).startsWith("/forward"))
-                    return false;
-
-                assertThat(Request.getPathInContext(request), equalTo("/forward"));
-                assertThat(request.getHttpURI().getQuery(), equalTo("p=/last"));
-                response.setStatus(HttpStatus.NO_CONTENT_204);
-                callback.succeeded();
-                return true;
-            }
-        });
-
-        start(List.of("/notFound", "/maintenance.txt", "$path", "/forward?p=$path"), resourceHandler, tmpPath);
-
-        try (SocketChannel channel = SocketChannel.open())
-        {
-            channel.connect(new InetSocketAddress("localhost", connector.getLocalPort()));
-
-            // Make a first request without existing file paths.
-            HttpTester.Request request = HttpTester.newRequest();
-            request.setURI(CONTEXT_PATH + "/last");
-            channel.write(request.generate());
-            HttpTester.Response response = HttpTester.parseResponse(channel);
-            assertNotNull(response);
-            assertEquals(HttpStatus.NO_CONTENT_204, response.getStatus());
-
-            // Create the specific static file that is requested.
-            String path = "idx.txt";
-            Files.writeString(tmpPath.resolve(path), "hello", StandardOpenOption.CREATE);
-            // Make a second request with the specific file.
-            request = HttpTester.newRequest();
-            request.setURI(CONTEXT_PATH + "/" + path);
-            channel.write(request.generate());
-            response = HttpTester.parseResponse(channel);
-            assertNotNull(response);
-            assertEquals(HttpStatus.OK_200, response.getStatus());
-            assertEquals("hello", response.getContent());
-
-            // Create the "maintenance" file, it should be served first.
-            path = "maintenance.txt";
-            Files.writeString(tmpPath.resolve(path), "maintenance", StandardOpenOption.CREATE);
-            // Make a third request with any path, we should get the maintenance file.
-            request = HttpTester.newRequest();
-            request.setURI(CONTEXT_PATH + "/whatever");
-            channel.write(request.generate());
-            response = HttpTester.parseResponse(channel);
-            assertNotNull(response);
-            assertEquals(HttpStatus.OK_200, response.getStatus());
-            assertEquals("maintenance", response.getContent());
-        }
-    }
-
-    @Test
     public void testSecureRequestIsForwarded(WorkDir workDir) throws Exception
     {
         Path tmpPath = workDir.getEmptyPathDir();
@@ -376,6 +289,60 @@ public class TryPathsHandlerTest
             HttpTester.Response response = HttpTester.parseResponse(sslSocket.getInputStream());
             assertNotNull(response);
             assertEquals(HttpStatus.OK_200, response.getStatus());
+        }
+    }
+
+    @Test
+    public void testTryPathsHandlerAttributes(WorkDir workDir) throws Exception
+    {
+        String pathAttribute = "test.path";
+        String queryAttribute = "test.query";
+        ResourceHandler resourceHandler = new ResourceHandler()
+        {
+            @Override
+            protected HttpContent.Factory newHttpContentFactory()
+            {
+                // We don't want to cache not found entries for this test.
+                return new ResourceHttpContentFactory(ResourceFactory.of(getBaseResource()), getMimeTypes());
+            }
+        };
+        resourceHandler.setDirAllowed(false);
+        resourceHandler.setHandler(new Handler.Abstract()
+        {
+            @Override
+            public boolean handle(Request request, Response response, Callback callback)
+            {
+                String pathInContext = Request.getPathInContext(request);
+                assertEquals("/index.php", pathInContext);
+
+                Object originalPath = request.getAttribute(pathAttribute);
+                assertNotNull(originalPath);
+                assertEquals("/hello/", originalPath);
+
+                Object originalQuery = request.getAttribute(queryAttribute);
+                assertNotNull(originalQuery);
+                assertEquals("a=b&c=%2F", originalQuery);
+
+                response.setStatus(HttpStatus.NO_CONTENT_204);
+                callback.succeeded();
+                return true;
+            }
+        });
+
+        start(List.of("/index.php"), resourceHandler, workDir.getEmptyPathDir());
+        tryPathsHandler.setOriginalPathAttribute(pathAttribute);
+        tryPathsHandler.setOriginalQueryAttribute(queryAttribute);
+
+        try (SocketChannel channel = SocketChannel.open())
+        {
+            channel.connect(new InetSocketAddress("localhost", connector.getLocalPort()));
+
+            HttpTester.Request request = HttpTester.newRequest();
+            request.setURI(CONTEXT_PATH + "/hello/?a=b&c=%2F");
+            channel.write(request.generate());
+            HttpTester.Response response = HttpTester.parseResponse(channel);
+            assertNotNull(response);
+            assertEquals(HttpStatus.NO_CONTENT_204, response.getStatus());
         }
     }
 }

@@ -26,8 +26,8 @@ import org.eclipse.jetty.http2.hpack.HpackException.SessionException;
 
 public class MetaDataBuilder
 {
-    private final int _maxSize;
     private final HttpFields.Mutable _fields = HttpFields.build();
+    private int _maxSize;
     private int _size;
     private Integer _status;
     private String _method;
@@ -49,13 +49,16 @@ public class MetaDataBuilder
     }
 
     /**
-     * Get the maxSize.
-     *
      * @return the maxSize
      */
     public int getMaxSize()
     {
         return _maxSize;
+    }
+
+    public void setMaxSize(int maxSize)
+    {
+        _maxSize = maxSize;
     }
 
     /**
@@ -77,8 +80,9 @@ public class MetaDataBuilder
         String value = field.getValue();
         int fieldSize = name.length() + (value == null ? 0 : value.length());
         _size += fieldSize + 32;
-        if (_size > _maxSize)
-            throw new SessionException("Header size %d > %d", _size, _maxSize);
+        int maxSize = getMaxSize();
+        if (maxSize > 0 && _size > maxSize)
+            throw new SessionException("Header size %d > %d", _size, maxSize);
 
         if (field instanceof StaticTableHttpField staticField)
         {

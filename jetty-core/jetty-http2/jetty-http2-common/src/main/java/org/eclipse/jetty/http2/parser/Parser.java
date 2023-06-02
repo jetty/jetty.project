@@ -14,7 +14,6 @@
 package org.eclipse.jetty.http2.parser;
 
 import java.nio.ByteBuffer;
-import java.util.function.UnaryOperator;
 
 import org.eclipse.jetty.http2.ErrorCode;
 import org.eclipse.jetty.http2.RateControl;
@@ -45,33 +44,34 @@ public class Parser
     private static final Logger LOG = LoggerFactory.getLogger(Parser.class);
 
     private final ByteBufferPool bufferPool;
-    private final Listener listener;
     private final HeaderParser headerParser;
     private final HpackDecoder hpackDecoder;
     private final BodyParser[] bodyParsers;
+    private Listener listener;
     private UnknownBodyParser unknownBodyParser;
-    private int maxFrameLength = Frame.DEFAULT_MAX_LENGTH;
+    private int maxFrameSize = Frame.DEFAULT_MAX_SIZE;
     private int maxSettingsKeys = SettingsFrame.DEFAULT_MAX_KEYS;
     private boolean continuation;
     private State state = State.HEADER;
 
-    public Parser(ByteBufferPool bufferPool, Listener listener, int maxDynamicTableSize, int maxHeaderSize)
+    public Parser(ByteBufferPool bufferPool, int maxHeaderSize)
     {
-        this(bufferPool, listener, maxDynamicTableSize, maxHeaderSize, RateControl.NO_RATE_CONTROL);
+        this(bufferPool, maxHeaderSize, RateControl.NO_RATE_CONTROL);
     }
 
-    public Parser(ByteBufferPool bufferPool, Listener listener, int maxDynamicTableSize, int maxHeaderSize, RateControl rateControl)
+    public Parser(ByteBufferPool bufferPool, int maxHeaderSize, RateControl rateControl)
     {
         this.bufferPool = bufferPool;
-        this.listener = listener;
         this.headerParser = new HeaderParser(rateControl == null ? RateControl.NO_RATE_CONTROL : rateControl);
-        this.hpackDecoder = new HpackDecoder(maxDynamicTableSize, maxHeaderSize);
+        this.hpackDecoder = new HpackDecoder(maxHeaderSize);
         this.bodyParsers = new BodyParser[FrameType.values().length];
     }
 
-    public void init(UnaryOperator<Listener> wrapper)
+    public void init(Listener listener)
     {
-        Listener listener = wrapper.apply(this.listener);
+        if (this.listener != null)
+            throw new IllegalStateException("Invalid parser initialization");
+        this.listener = listener;
         unknownBodyParser = new UnknownBodyParser(headerParser, listener);
         HeaderBlockParser headerBlockParser = new HeaderBlockParser(headerParser, bufferPool, hpackDecoder, unknownBodyParser);
         HeaderBlockFragments headerBlockFragments = new HeaderBlockFragments(bufferPool);
@@ -85,6 +85,16 @@ public class Parser
         bodyParsers[FrameType.GO_AWAY.getType()] = new GoAwayBodyParser(headerParser, listener);
         bodyParsers[FrameType.WINDOW_UPDATE.getType()] = new WindowUpdateBodyParser(headerParser, listener);
         bodyParsers[FrameType.CONTINUATION.getType()] = new ContinuationBodyParser(headerParser, listener, headerBlockParser, headerBlockFragments);
+    }
+
+    protected Listener getListener()
+    {
+        return listener;
+    }
+
+    public HpackDecoder getHpackDecoder()
+    {
+        return hpackDecoder;
     }
 
     private void reset()
@@ -147,7 +157,7 @@ public class Parser
         if (LOG.isDebugEnabled())
             LOG.debug("Parsed {} frame header from {}@{}", headerParser, buffer, Integer.toHexString(buffer.hashCode()));
 
-        if (headerParser.getLength() > getMaxFrameLength())
+        if (headerParser.getLength() > getMaxFrameSize())
             return connectionFailure(buffer, ErrorCode.FRAME_SIZE_ERROR, "invalid_frame_length");
 
         FrameType frameType = FrameType.from(getFrameType());
@@ -215,14 +225,14 @@ public class Parser
         return headerParser.hasFlag(bit);
     }
 
-    public int getMaxFrameLength()
+    public int getMaxFrameSize()
     {
-        return maxFrameLength;
+        return maxFrameSize;
     }
 
-    public void setMaxFrameLength(int maxFrameLength)
+    public void setMaxFrameSize(int maxFrameSize)
     {
-        this.maxFrameLength = maxFrameLength;
+        this.maxFrameSize = maxFrameSize;
     }
 
     public int getMaxSettingsKeys()

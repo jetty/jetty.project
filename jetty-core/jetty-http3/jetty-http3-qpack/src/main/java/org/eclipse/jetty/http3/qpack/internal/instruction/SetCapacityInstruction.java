@@ -38,7 +38,7 @@ public class SetCapacityInstruction implements Instruction
     @Override
     public void encode(ByteBufferPool byteBufferPool, ByteBufferPool.Accumulator accumulator)
     {
-        int size = NBitIntegerEncoder.octetsNeeded(5, _capacity) + 1;
+        int size = NBitIntegerEncoder.octetsNeeded(5, _capacity);
         RetainableByteBuffer retainableByteBuffer = byteBufferPool.acquire(size, false);
         ByteBuffer buffer = retainableByteBuffer.getByteBuffer();
         BufferUtil.clearToFill(buffer);

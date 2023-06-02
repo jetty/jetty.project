@@ -69,12 +69,25 @@ public class SettingsBodyParser extends BodyParser
     @Override
     protected void emptyBody(ByteBuffer buffer)
     {
+        if (!validateFrame(buffer, getStreamId(), 0))
+            return;
         boolean isReply = hasFlag(Flags.ACK);
         SettingsFrame frame = new SettingsFrame(Collections.emptyMap(), isReply);
         if (!isReply && !rateControlOnEvent(frame))
             connectionFailure(buffer, ErrorCode.ENHANCE_YOUR_CALM_ERROR.code, "invalid_settings_frame_rate");
         else
             onSettings(frame);
+    }
+
+    private boolean validateFrame(ByteBuffer buffer, int streamId, int bodyLength)
+    {
+        // SPEC: wrong streamId is treated as connection error.
+        if (streamId != 0)
+            return connectionFailure(buffer, ErrorCode.PROTOCOL_ERROR.code, "invalid_settings_frame");
+        // SPEC: reply with body is treated as connection error.
+        if (hasFlag(Flags.ACK) && bodyLength > 0)
+            return connectionFailure(buffer, ErrorCode.FRAME_SIZE_ERROR.code, "invalid_settings_frame");
+        return true;
     }
 
     @Override
@@ -91,9 +104,8 @@ public class SettingsBodyParser extends BodyParser
             {
                 case PREPARE:
                 {
-                    // SPEC: wrong streamId is treated as connection error.
-                    if (streamId != 0)
-                        return connectionFailure(buffer, ErrorCode.PROTOCOL_ERROR.code, "invalid_settings_frame");
+                    if (!validateFrame(buffer, streamId, bodyLength))
+                        return false;
                     length = bodyLength;
                     settings = new HashMap<>();
                     state = State.SETTING_ID;
@@ -202,8 +214,8 @@ public class SettingsBodyParser extends BodyParser
         if (initialWindowSize != null && initialWindowSize < 0)
             return connectionFailure(buffer, ErrorCode.FLOW_CONTROL_ERROR.code, "invalid_settings_initial_window_size");
 
-        Integer maxFrameLength = settings.get(SettingsFrame.MAX_FRAME_SIZE);
-        if (maxFrameLength != null && (maxFrameLength < Frame.DEFAULT_MAX_LENGTH || maxFrameLength > Frame.MAX_MAX_LENGTH))
+        Integer maxFrameSize = settings.get(SettingsFrame.MAX_FRAME_SIZE);
+        if (maxFrameSize != null && (maxFrameSize < Frame.DEFAULT_MAX_SIZE || maxFrameSize > Frame.MAX_MAX_SIZE))
             return connectionFailure(buffer, ErrorCode.PROTOCOL_ERROR.code, "invalid_settings_max_frame_size");
 
         SettingsFrame frame = new SettingsFrame(settings, hasFlag(Flags.ACK));

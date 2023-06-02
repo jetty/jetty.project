@@ -15,12 +15,24 @@ package org.eclipse.jetty.quic.quiche.jna;
 
 import java.nio.charset.Charset;
 
+import com.sun.jna.Pointer;
 import com.sun.jna.ptr.PointerByReference;
 
 public class char_pointer extends PointerByReference
 {
     public String getValueAsString(int len, Charset charset)
     {
-        return new String(getValue().getByteArray(0, len), charset);
+        Pointer value = getValue();
+        if (value == null)
+            return null;
+        return new String(value.getByteArray(0, len), charset);
+    }
+
+    public byte[] getValueAsBytes(int len)
+    {
+        Pointer value = getValue();
+        if (value == null)
+            return null;
+        return value.getByteArray(0, len);
     }
 }

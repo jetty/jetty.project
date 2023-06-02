@@ -16,17 +16,18 @@ package org.eclipse.jetty.http2.client;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
-import java.util.concurrent.Executor;
 
 import org.eclipse.jetty.http2.FlowControlStrategy;
 import org.eclipse.jetty.http2.HTTP2Connection;
 import org.eclipse.jetty.http2.HTTP2Session;
 import org.eclipse.jetty.http2.api.Session;
 import org.eclipse.jetty.http2.client.internal.HTTP2ClientSession;
+import org.eclipse.jetty.http2.frames.Frame;
 import org.eclipse.jetty.http2.frames.PrefaceFrame;
 import org.eclipse.jetty.http2.frames.SettingsFrame;
 import org.eclipse.jetty.http2.frames.WindowUpdateFrame;
 import org.eclipse.jetty.http2.generator.Generator;
+import org.eclipse.jetty.http2.hpack.HpackContext;
 import org.eclipse.jetty.http2.parser.Parser;
 import org.eclipse.jetty.io.ByteBufferPool;
 import org.eclipse.jetty.io.ClientConnectionFactory;
@@ -34,7 +35,6 @@ import org.eclipse.jetty.io.Connection;
 import org.eclipse.jetty.io.EndPoint;
 import org.eclipse.jetty.util.Callback;
 import org.eclipse.jetty.util.Promise;
-import org.eclipse.jetty.util.thread.Scheduler;
 
 public class HTTP2ClientConnectionFactory implements ClientConnectionFactory
 {
@@ -49,29 +49,28 @@ public class HTTP2ClientConnectionFactory implements ClientConnectionFactory
     {
         HTTP2Client client = (HTTP2Client)context.get(CLIENT_CONTEXT_KEY);
         ByteBufferPool bufferPool = client.getByteBufferPool();
-        Executor executor = client.getExecutor();
-        Scheduler scheduler = client.getScheduler();
         Session.Listener listener = (Session.Listener)context.get(SESSION_LISTENER_CONTEXT_KEY);
         @SuppressWarnings("unchecked")
-        Promise<Session> promise = (Promise<Session>)context.get(SESSION_PROMISE_CONTEXT_KEY);
+        Promise<Session> sessionPromise = (Promise<Session>)context.get(SESSION_PROMISE_CONTEXT_KEY);
 
-        Generator generator = new Generator(bufferPool, client.getMaxDynamicTableSize(), client.getMaxHeaderBlockFragment());
+        Generator generator = new Generator(bufferPool, client.isUseOutputDirectByteBuffers(), client.getMaxHeaderBlockFragment());
         FlowControlStrategy flowControl = client.getFlowControlStrategyFactory().newFlowControlStrategy();
-        HTTP2ClientSession session = new HTTP2ClientSession(scheduler, endPoint, generator, listener, flowControl);
+
+        Parser parser = new Parser(bufferPool, client.getMaxResponseHeadersSize());
+        parser.setMaxFrameSize(client.getMaxFrameSize());
+        parser.setMaxSettingsKeys(client.getMaxSettingsKeys());
+
+        HTTP2ClientSession session = new HTTP2ClientSession(client.getScheduler(), endPoint, parser, generator, listener, flowControl);
         session.setMaxRemoteStreams(client.getMaxConcurrentPushedStreams());
+        session.setMaxEncoderTableCapacity(client.getMaxEncoderTableCapacity());
         long streamIdleTimeout = client.getStreamIdleTimeout();
         if (streamIdleTimeout > 0)
             session.setStreamIdleTimeout(streamIdleTimeout);
 
-        Parser parser = new Parser(bufferPool, session, 4096, 8192);
-        parser.setMaxFrameLength(client.getMaxFrameLength());
-        parser.setMaxSettingsKeys(client.getMaxSettingsKeys());
-
-        HTTP2ClientConnection connection = new HTTP2ClientConnection(client, bufferPool, executor, endPoint,
-            parser, session, client.getInputBufferSize(), promise, listener);
-        connection.setUseInputDirectByteBuffers(client.isUseInputDirectByteBuffers());
-        connection.setUseOutputDirectByteBuffers(client.isUseOutputDirectByteBuffers());
+        HTTP2ClientConnection connection = new HTTP2ClientConnection(client, endPoint, session, sessionPromise, listener);
         connection.addEventListener(connectionListener);
+        parser.init(connection);
+
         return customize(connection, context);
     }
 
@@ -81,12 +80,14 @@ public class HTTP2ClientConnectionFactory implements ClientConnectionFactory
         private final Promise<Session> promise;
         private final Session.Listener listener;
 
-        private HTTP2ClientConnection(HTTP2Client client, ByteBufferPool byteBufferPool, Executor executor, EndPoint endpoint, Parser parser, HTTP2Session session, int bufferSize, Promise<Session> promise, Session.Listener listener)
+        private HTTP2ClientConnection(HTTP2Client client, EndPoint endpoint, HTTP2ClientSession session, Promise<Session> sessionPromise, Session.Listener listener)
         {
-            super(byteBufferPool, executor, endpoint, parser, session, bufferSize);
+            super(client.getByteBufferPool(), client.getExecutor(), endpoint, session, client.getInputBufferSize());
             this.client = client;
-            this.promise = promise;
+            this.promise = sessionPromise;
             this.listener = listener;
+            setUseInputDirectByteBuffers(client.isUseInputDirectByteBuffers());
+            setUseOutputDirectByteBuffers(client.isUseOutputDirectByteBuffers());
         }
 
         @Override
@@ -95,12 +96,52 @@ public class HTTP2ClientConnectionFactory implements ClientConnectionFactory
             Map<Integer, Integer> settings = listener.onPreface(getSession());
             if (settings == null)
                 settings = new HashMap<>();
-            settings.computeIfAbsent(SettingsFrame.INITIAL_WINDOW_SIZE, k -> client.getInitialStreamRecvWindow());
-            settings.computeIfAbsent(SettingsFrame.MAX_CONCURRENT_STREAMS, k -> client.getMaxConcurrentPushedStreams());
 
-            Integer maxFrameLength = settings.get(SettingsFrame.MAX_FRAME_SIZE);
-            if (maxFrameLength != null)
-                getParser().setMaxFrameLength(maxFrameLength);
+            // Below we want to populate any settings to send to the server
+            // that have a different default than what prescribed by the RFC.
+            // Changing the configuration is done when the SETTINGS is sent.
+
+            settings.compute(SettingsFrame.HEADER_TABLE_SIZE, (k, v) ->
+            {
+                if (v == null)
+                {
+                    v = client.getMaxDecoderTableCapacity();
+                    if (v == HpackContext.DEFAULT_MAX_TABLE_CAPACITY)
+                        v = null;
+                }
+                return v;
+            });
+            settings.computeIfAbsent(SettingsFrame.MAX_CONCURRENT_STREAMS, k -> client.getMaxConcurrentPushedStreams());
+            settings.compute(SettingsFrame.INITIAL_WINDOW_SIZE, (k, v) ->
+            {
+                if (v == null)
+                {
+                    v = client.getInitialStreamRecvWindow();
+                    if (v == FlowControlStrategy.DEFAULT_WINDOW_SIZE)
+                        v = null;
+                }
+                return v;
+            });
+            settings.compute(SettingsFrame.MAX_FRAME_SIZE, (k, v) ->
+            {
+                if (v == null)
+                {
+                    v = client.getMaxFrameSize();
+                    if (v == Frame.DEFAULT_MAX_SIZE)
+                        v = null;
+                }
+                return v;
+            });
+            settings.compute(SettingsFrame.MAX_HEADER_LIST_SIZE, (k, v) ->
+            {
+                if (v == null)
+                {
+                    v = client.getMaxResponseHeadersSize();
+                    if (v <= 0)
+                        v = null;
+                }
+                return v;
+            });
 
             PrefaceFrame prefaceFrame = new PrefaceFrame();
             SettingsFrame settingsFrame = new SettingsFrame(settings, false);

@@ -13,13 +13,14 @@
 
 package org.eclipse.jetty.quic.server;
 
-import java.io.File;
 import java.io.IOException;
 import java.net.InetSocketAddress;
 import java.nio.channels.DatagramChannel;
 import java.nio.channels.SelectableChannel;
 import java.nio.channels.SelectionKey;
 import java.nio.file.Files;
+import java.nio.file.Path;
+import java.security.KeyStore;
 import java.util.EventListener;
 import java.util.List;
 import java.util.Set;
@@ -36,8 +37,8 @@ import org.eclipse.jetty.quic.common.QuicConfiguration;
 import org.eclipse.jetty.quic.common.QuicSession;
 import org.eclipse.jetty.quic.common.QuicSessionContainer;
 import org.eclipse.jetty.quic.common.QuicStreamEndPoint;
+import org.eclipse.jetty.quic.quiche.PemExporter;
 import org.eclipse.jetty.quic.quiche.QuicheConfig;
-import org.eclipse.jetty.quic.quiche.SSLKeyPair;
 import org.eclipse.jetty.server.AbstractNetworkConnector;
 import org.eclipse.jetty.server.ConnectionFactory;
 import org.eclipse.jetty.server.Server;
@@ -60,8 +61,9 @@ public class QuicServerConnector extends AbstractNetworkConnector
     private final QuicSessionContainer container = new QuicSessionContainer();
     private final ServerDatagramSelectorManager selectorManager;
     private final SslContextFactory.Server sslContextFactory;
-    private File privateKeyFile;
-    private File certificateChainFile;
+    private Path privateKeyPemPath;
+    private Path certificateChainPemPath;
+    private Path trustedCertificatesPemPath;
     private volatile DatagramChannel datagramChannel;
     private volatile int localPort = -1;
     private int inputBufferSize = 2048;
@@ -89,7 +91,6 @@ public class QuicServerConnector extends AbstractNetworkConnector
         // One bidirectional stream to simulate the TCP stream, and no unidirectional streams.
         quicConfiguration.setMaxBidirectionalRemoteStreams(1);
         quicConfiguration.setMaxUnidirectionalRemoteStreams(0);
-        quicConfiguration.setVerifyPeerCertificates(false);
     }
 
     public QuicConfiguration getQuicConfiguration()
@@ -163,19 +164,32 @@ public class QuicServerConnector extends AbstractNetworkConnector
             throw new IllegalStateException("Invalid KeyStore: no aliases");
         String alias = sslContextFactory.getCertAlias();
         if (alias == null)
-            alias = aliases.stream().findFirst().orElse("mykey");
-        char[] keyStorePassword = sslContextFactory.getKeyStorePassword().toCharArray();
+            alias = aliases.stream().findFirst().orElseThrow();
         String keyManagerPassword = sslContextFactory.getKeyManagerPassword();
-        SSLKeyPair keyPair = new SSLKeyPair(
-            sslContextFactory.getKeyStoreResource().getPath(),
-            sslContextFactory.getKeyStoreType(),
-            keyStorePassword,
-            alias,
-            keyManagerPassword == null ? keyStorePassword : keyManagerPassword.toCharArray()
-        );
-        File[] pemFiles = keyPair.export(new File(System.getProperty("java.io.tmpdir")));
-        privateKeyFile = pemFiles[0];
-        certificateChainFile = pemFiles[1];
+        char[] password = keyManagerPassword == null ? sslContextFactory.getKeyStorePassword().toCharArray() : keyManagerPassword.toCharArray();
+        KeyStore keyStore = sslContextFactory.getKeyStore();
+        Path certificateWorkPath = findPemWorkDirectory();
+        Path[] keyPair = PemExporter.exportKeyPair(keyStore, alias, password, certificateWorkPath);
+        privateKeyPemPath = keyPair[0];
+        certificateChainPemPath = keyPair[1];
+        KeyStore trustStore = sslContextFactory.getTrustStore();
+        if (trustStore != null)
+            trustedCertificatesPemPath = PemExporter.exportTrustStore(trustStore, certificateWorkPath);
+    }
+
+    private Path findPemWorkDirectory()
+    {
+        Path pemWorkDirectory = getQuicConfiguration().getPemWorkDirectory();
+        if (pemWorkDirectory != null)
+            return pemWorkDirectory;
+        String jettyBase = System.getProperty("jetty.base");
+        if (jettyBase != null)
+        {
+            pemWorkDirectory = Path.of(jettyBase).resolve("work");
+            if (Files.exists(pemWorkDirectory))
+                return pemWorkDirectory;
+        }
+        throw new IllegalStateException("No PEM work directory configured");
     }
 
     @Override
@@ -211,9 +225,10 @@ public class QuicServerConnector extends AbstractNetworkConnector
     QuicheConfig newQuicheConfig()
     {
         QuicheConfig quicheConfig = new QuicheConfig();
-        quicheConfig.setPrivKeyPemPath(privateKeyFile.getPath());
-        quicheConfig.setCertChainPemPath(certificateChainFile.getPath());
-        quicheConfig.setVerifyPeer(quicConfiguration.isVerifyPeerCertificates());
+        quicheConfig.setPrivKeyPemPath(privateKeyPemPath.toString());
+        quicheConfig.setCertChainPemPath(certificateChainPemPath.toString());
+        quicheConfig.setTrustedCertsPemPath(trustedCertificatesPemPath == null ? null : trustedCertificatesPemPath.toString());
+        quicheConfig.setVerifyPeer(sslContextFactory.getNeedClientAuth() || sslContextFactory.getWantClientAuth());
         // Idle timeouts must not be managed by Quiche.
         quicheConfig.setMaxIdleTimeout(0L);
         quicheConfig.setInitialMaxData((long)quicConfiguration.getSessionRecvWindow());
@@ -240,8 +255,12 @@ public class QuicServerConnector extends AbstractNetworkConnector
     @Override
     protected void doStop() throws Exception
     {
-        deleteFile(privateKeyFile);
-        deleteFile(certificateChainFile);
+        deleteFile(privateKeyPemPath);
+        privateKeyPemPath = null;
+        deleteFile(certificateChainPemPath);
+        certificateChainPemPath = null;
+        deleteFile(trustedCertificatesPemPath);
+        trustedCertificatesPemPath = null;
 
         // We want the DatagramChannel to be stopped by the SelectorManager.
         super.doStop();
@@ -254,12 +273,12 @@ public class QuicServerConnector extends AbstractNetworkConnector
             selectorManager.removeEventListener(l);
     }
 
-    private void deleteFile(File file)
+    private void deleteFile(Path file)
     {
         try
         {
             if (file != null)
-                Files.delete(file.toPath());
+                Files.delete(file);
         }
         catch (IOException x)
         {
