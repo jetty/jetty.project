@@ -120,7 +120,7 @@
     <taglibs-standard-impl.version>1.2.5</taglibs-standard-impl.version>
     <taglibs-standard-spec.version>1.2.5</taglibs-standard-spec.version>
 <<<<<<< HEAD
-    <testcontainers.version>1.18.0</testcontainers.version>
+    <testcontainers.version>1.18.3</testcontainers.version>
     <weld.version>4.0.3.Final</weld.version>
 =======
     <testcontainers.version>1.18.3</testcontainers.version>
