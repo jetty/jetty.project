@@ -172,19 +172,28 @@ public class ContextHandler extends Handler.Wrapper implements Attributes, Grace
 
     public ContextHandler(String contextPath)
     {
-        this(null, contextPath);
+        _context = newContext();
+        if (contextPath != null)
+            setContextPath(contextPath);
+
+        if (File.separatorChar == '/')
+            addAliasCheck(new SymlinkAllowedResourceAliasChecker(this));
+
+        // If the current classloader (or the one that loaded this class) is different
+        // from the Server classloader, then use that as the initial classloader for the context.
+        ClassLoader classLoader = Thread.currentThread().getContextClassLoader();
+        if (classLoader == null)
+            classLoader = this.getClass().getClassLoader();
+        if (classLoader != Server.class.getClassLoader())
+            _classLoader = classLoader;
     }
 
     @Deprecated
     public ContextHandler(Handler.Container parent, String contextPath)
     {
-        _context = newContext();
-        if (contextPath != null)
-            setContextPath(contextPath);
+        this(contextPath);
         Container.setAsParent(parent, this);
 
-        if (File.separatorChar == '/')
-            addAliasCheck(new SymlinkAllowedResourceAliasChecker(this));
     }
 
     @Override
