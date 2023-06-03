@@ -19,20 +19,27 @@ import java.io.Writer;
 import java.net.URL;
 import java.net.URLClassLoader;
 import java.nio.ByteBuffer;
+import java.util.ArrayList;
 import java.util.Arrays;
+import java.util.List;
+import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicReference;
 import java.util.stream.Stream;
 
+import org.awaitility.Awaitility;
 import org.eclipse.jetty.http.HttpFields;
 import org.eclipse.jetty.http.HttpHeader;
+import org.eclipse.jetty.http.HttpStatus;
+import org.eclipse.jetty.http.HttpTester;
 import org.eclipse.jetty.http.HttpURI;
 import org.eclipse.jetty.http.HttpVersion;
 import org.eclipse.jetty.http.MetaData;
 import org.eclipse.jetty.http.MimeTypes;
 import org.eclipse.jetty.io.Content;
+import org.eclipse.jetty.io.QuietException;
 import org.eclipse.jetty.logging.StacklessLogging;
 import org.eclipse.jetty.server.ConnectionMetaData;
 import org.eclipse.jetty.server.Connector;
@@ -40,6 +47,7 @@ import org.eclipse.jetty.server.Context;
 import org.eclipse.jetty.server.Handler;
 import org.eclipse.jetty.server.HttpChannel;
 import org.eclipse.jetty.server.HttpStream;
+import org.eclipse.jetty.server.LocalConnector;
 import org.eclipse.jetty.server.MockConnectionMetaData;
 import org.eclipse.jetty.server.MockConnector;
 import org.eclipse.jetty.server.MockHttpStream;
@@ -890,5 +898,163 @@ public class ContextHandlerTest
             else
                 assertThat(r, sameInstance(request));
         }
+    }
+
+    @Test
+    public void testGraceful() throws Exception
+    {
+        CountDownLatch latch0 = new CountDownLatch(1);
+        CountDownLatch latch1 = new CountDownLatch(1);
+
+        CountDownLatch requests = new CountDownLatch(7);
+
+        Handler handler = new AbstractHandler()
+        {
+            @Override
+            public boolean handle(Request request, Response response, Callback callback) throws Exception
+            {
+                requests.countDown();
+                switch (request.getContext().getPathInContext(request.getHttpURI().getCanonicalPath()))
+                {
+                    case "/ignore0" ->
+                    {
+                        try
+                        {
+                            latch0.await();
+                        }
+                        catch (InterruptedException e)
+                        {
+                            throw new RuntimeException(e);
+                        }
+                        return false;
+                    }
+
+                    case "/ignore1" ->
+                    {
+                        try
+                        {
+                            latch1.await();
+                        }
+                        catch (InterruptedException e)
+                        {
+                            throw new RuntimeException(e);
+                        }
+                        return false;
+                    }
+
+                    case "/ok0" ->
+                    {
+                        try
+                        {
+                            latch0.await();
+                        }
+                        catch (InterruptedException e)
+                        {
+                            throw new RuntimeException(e);
+                        }
+                    }
+
+                    case "/ok1" ->
+                    {
+                        try
+                        {
+                            latch1.await();
+                        }
+                        catch (InterruptedException e)
+                        {
+                            throw new RuntimeException(e);
+                        }
+                    }
+
+                    case "/fail0" ->
+                    {
+                        try
+                        {
+                            latch0.await();
+                        }
+                        catch (InterruptedException e)
+                        {
+                            throw new RuntimeException(e);
+                        }
+                        throw new QuietException.Exception("expected0");
+                    }
+
+                    case "/fail1" ->
+                    {
+                        try
+                        {
+                            latch1.await();
+                        }
+                        catch (InterruptedException e)
+                        {
+                            throw new RuntimeException(e);
+                        }
+                        callback.failed(new QuietException.Exception("expected1"));
+                    }
+
+                    default ->
+                    {
+                    }
+                }
+
+                response.setStatus(HttpStatus.OK_200);
+                callback.succeeded();
+                return true;
+            }
+        };
+        _contextHandler.setHandler(handler);
+        _contextHandler.setGraceful(true);
+        LocalConnector connector = new LocalConnector(_server);
+        _server.addConnector(connector);
+        _server.start();
+
+        HttpTester.Response response = HttpTester.parseResponse(connector.getResponse("GET /ctx/ HTTP/1.0\r\n\r\n"));
+        assertThat(response.getStatus(), is(HttpStatus.OK_200));
+
+        List<LocalConnector.LocalEndPoint> endPoints = new ArrayList<>();
+        for (String target : new String[] {"/ignore", "/ok", "/fail"})
+        {
+            for (int batch = 0; batch <= 1; batch++)
+            {
+                LocalConnector.LocalEndPoint endPoint = connector.executeRequest("GET /ctx%s%d HTTP/1.0\r\n\r\n".formatted(target, batch));
+                endPoints.add(endPoint);
+            }
+        }
+
+        assertTrue(requests.await(10, TimeUnit.SECONDS));
+        assertThat(_contextHandler.getCurrentRequests(), is(6L));
+
+        CompletableFuture<Void> shutdown = _contextHandler.shutdown();
+        assertFalse(shutdown.isDone());
+        assertThat(_contextHandler.getCurrentRequests(), is(6L));
+
+        response = HttpTester.parseResponse(connector.getResponse("GET /ctx/ HTTP/1.0\r\n\r\n"));
+        assertThat(response.getStatus(), is(HttpStatus.SERVICE_UNAVAILABLE_503));
+
+        latch0.countDown();
+
+        response = HttpTester.parseResponse(endPoints.get(0).getResponse());
+        assertThat(response.getStatus(), is(HttpStatus.NOT_FOUND_404));
+        response = HttpTester.parseResponse(endPoints.get(2).getResponse());
+        assertThat(response.getStatus(), is(HttpStatus.OK_200));
+        response = HttpTester.parseResponse(endPoints.get(4).getResponse());
+        assertThat(response.getStatus(), is(HttpStatus.INTERNAL_SERVER_ERROR_500));
+
+        assertFalse(shutdown.isDone());
+        Awaitility.waitAtMost(10, TimeUnit.SECONDS).until(() -> _contextHandler.getCurrentRequests() == 3L);
+        assertThat(_contextHandler.getCurrentRequests(), is(3L));
+
+        latch1.countDown();
+
+        response = HttpTester.parseResponse(endPoints.get(1).getResponse());
+        assertThat(response.getStatus(), is(HttpStatus.NOT_FOUND_404));
+        response = HttpTester.parseResponse(endPoints.get(3).getResponse());
+        assertThat(response.getStatus(), is(HttpStatus.OK_200));
+        response = HttpTester.parseResponse(endPoints.get(5).getResponse());
+        assertThat(response.getStatus(), is(HttpStatus.INTERNAL_SERVER_ERROR_500));
+
+        shutdown.get(10, TimeUnit.SECONDS);
+        assertTrue(shutdown.isDone());
+        assertThat(_contextHandler.getCurrentRequests(), is(0L));
     }
 }

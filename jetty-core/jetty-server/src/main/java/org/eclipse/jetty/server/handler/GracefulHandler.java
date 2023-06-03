@@ -91,8 +91,8 @@ public class GracefulHandler extends Handler.Wrapper implements Graceful
         }
         catch (Throwable t)
         {
-            shutdownCallback.decrement();
-            throw t;
+            Response.writeError(request, response, shutdownCallback, t);
+            return true;
         }
         finally
         {
