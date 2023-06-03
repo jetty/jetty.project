@@ -86,7 +86,7 @@ public class GracefulHandler extends Handler.Wrapper implements Graceful
         {
             boolean handled = super.handle(request, response, shutdownCallback);
             if (!handled)
-                shutdownCallback.decrement();
+                shutdownCallback.completed();
             return handled;
         }
         catch (Throwable t)
@@ -128,19 +128,9 @@ public class GracefulHandler extends Handler.Wrapper implements Graceful
         }
 
         @Override
-        public void failed(Throwable x)
+        public void completed()
         {
-            decrement();
-            super.failed(x);
-            if (isShutdown())
-                shutdown.check();
-        }
-
-        @Override
-        public void succeeded()
-        {
-            decrement();
-            super.succeeded();
+            dispatchedStats.decrement();
             if (isShutdown())
                 shutdown.check();
         }

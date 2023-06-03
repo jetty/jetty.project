@@ -278,32 +278,40 @@ public interface Callback extends Invocable
     {
         return new Callback()
         {
+            private final AtomicBoolean _completed = new AtomicBoolean();
+
             @Override
             public void succeeded()
             {
-                try
+                if (_completed.compareAndSet(false, true))
                 {
-                    completed.run();
-                    callback.succeeded();
-                }
-                catch (Throwable t)
-                {
-                    callback.failed(t);
+                    try
+                    {
+                        completed.run();
+                        callback.succeeded();
+                    }
+                    catch (Throwable t)
+                    {
+                        callback.failed(t);
+                    }
                 }
             }
 
             @Override
             public void failed(Throwable x)
             {
-                try
+                if (_completed.compareAndSet(false, true))
                 {
-                    completed.run();
+                    try
+                    {
+                        completed.run();
+                    }
+                    catch (Throwable t)
+                    {
+                        x.addSuppressed(t);
+                    }
+                    callback.failed(x);
                 }
-                catch (Throwable t)
-                {
-                    x.addSuppressed(t);
-                }
-                callback.failed(x);
             }
         };
     }
@@ -357,6 +365,12 @@ public interface Callback extends Invocable
             {
                 callback1.failed(x);
                 callback2.failed(x);
+            }
+
+            @Override
+            public InvocationType getInvocationType()
+            {
+                return Invocable.combine(Invocable.getInvocationType(callback1), Invocable.getInvocationType(callback2));
             }
         };
     }
@@ -447,45 +461,7 @@ public interface Callback extends Invocable
         if (cb2 == null)
             return cb1;
 
-        return new Callback()
-        {
-            @Override
-            public void succeeded()
-            {
-                try
-                {
-                    cb1.succeeded();
-                }
-                finally
-                {
-                    cb2.succeeded();
-                }
-            }
-
-            @Override
-            public void failed(Throwable x)
-            {
-                try
-                {
-                    cb1.failed(x);
-                }
-                catch (Throwable t)
-                {
-                    if (x != t)
-                        x.addSuppressed(t);
-                }
-                finally
-                {
-                    cb2.failed(x);
-                }
-            }
-
-            @Override
-            public InvocationType getInvocationType()
-            {
-                return Invocable.combine(Invocable.getInvocationType(cb1), Invocable.getInvocationType(cb2));
-            }
-        };
+        return from(cb1, cb2);
     }
 
     /**
