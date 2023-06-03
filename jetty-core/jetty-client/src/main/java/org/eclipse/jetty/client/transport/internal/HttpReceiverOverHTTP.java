@@ -59,7 +59,7 @@ public class HttpReceiverOverHTTP extends HttpReceiver implements HttpParser.Res
     {
         super(channel);
         HttpClient httpClient = channel.getHttpDestination().getHttpClient();
-        parser = new HttpParser(this, -1, httpClient.getHttpCompliance());
+        parser = new HttpParser(this, httpClient.getMaxResponseHeadersSize(), httpClient.getHttpCompliance());
         HttpClientTransport transport = httpClient.getTransport();
         if (transport instanceof HttpClientTransportOverHTTP httpTransport)
         {

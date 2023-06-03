@@ -76,7 +76,7 @@ public class HeaderParser
                     length = (length << 8) + octet;
                     if (++cursor == 3)
                     {
-                        length &= Frame.MAX_MAX_LENGTH;
+                        length &= Frame.MAX_MAX_SIZE;
                         state = State.TYPE;
                     }
                     break;

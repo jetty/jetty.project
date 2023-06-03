@@ -43,7 +43,6 @@ import org.eclipse.jetty.http.HttpMethod;
 import org.eclipse.jetty.http.HttpStatus;
 import org.eclipse.jetty.http.HttpURI;
 import org.eclipse.jetty.http2.FlowControlStrategy;
-import org.eclipse.jetty.http3.client.transport.HttpClientTransportOverHTTP3;
 import org.eclipse.jetty.io.Content;
 import org.eclipse.jetty.server.Handler;
 import org.eclipse.jetty.server.NetworkConnector;
@@ -353,15 +352,10 @@ public class HttpClientTest extends AbstractTest
         client.stop();
         client.setSslContextFactory(clientTLS);
         client.start();
-        if (transport == Transport.H3)
-        {
-            assumeTrue(false, "certificate verification not yet supported in quic");
-            // TODO: the lines below should be enough, but they don't work. To be investigated.
-            HttpClientTransportOverHTTP3 http3Transport = (HttpClientTransportOverHTTP3)client.getTransport();
-            http3Transport.getHTTP3Client().getQuicConfiguration().setVerifyPeerCertificates(true);
-        }
 
-        assertThrows(ExecutionException.class, () ->
+        // H3 times out b/c it is QUIC's way of figuring out a connection cannot be established.
+        Class<? extends Exception> expectedType = transport == Transport.H3 ? TimeoutException.class : ExecutionException.class;
+        assertThrows(expectedType, () ->
         {
             // Use an IP address not present in the certificate.
             int serverPort = newURI(transport).getPort();

@@ -38,7 +38,7 @@ public class DuplicateInstruction implements Instruction
     @Override
     public void encode(ByteBufferPool byteBufferPool, ByteBufferPool.Accumulator accumulator)
     {
-        int size = NBitIntegerEncoder.octetsNeeded(5, _index) + 1;
+        int size = NBitIntegerEncoder.octetsNeeded(5, _index);
         RetainableByteBuffer retainableByteBuffer = byteBufferPool.acquire(size, false);
         ByteBuffer buffer = retainableByteBuffer.getByteBuffer();
         BufferUtil.clearToFill(buffer);

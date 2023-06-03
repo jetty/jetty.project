@@ -22,7 +22,6 @@ import java.util.HashMap;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicReference;
-import java.util.function.UnaryOperator;
 
 import org.eclipse.jetty.http.HttpFields;
 import org.eclipse.jetty.http.HttpVersion;
@@ -88,7 +87,8 @@ public class CloseTest extends AbstractServerTest
                 output.write(BufferUtil.toArray(buffer));
             }
 
-            Parser parser = new Parser(bufferPool, new Parser.Listener()
+            Parser parser = new Parser(bufferPool, 8192);
+            parser.init(new Parser.Listener()
             {
                 @Override
                 public void onHeaders(HeadersFrame frame)
@@ -105,8 +105,7 @@ public class CloseTest extends AbstractServerTest
                         throw new RuntimeIOException(x);
                     }
                 }
-            }, 4096, 8192);
-            parser.init(UnaryOperator.identity());
+            });
 
             parseResponse(client, parser);
 
@@ -153,7 +152,8 @@ public class CloseTest extends AbstractServerTest
             // Don't close the connection; the server should close.
 
             final CountDownLatch responseLatch = new CountDownLatch(1);
-            Parser parser = new Parser(bufferPool, new Parser.Listener()
+            Parser parser = new Parser(bufferPool, 8192);
+            parser.init(new Parser.Listener()
             {
                 @Override
                 public void onHeaders(HeadersFrame frame)
@@ -162,8 +162,7 @@ public class CloseTest extends AbstractServerTest
                     // HEADERS, the server is able to send us the response.
                     responseLatch.countDown();
                 }
-            }, 4096, 8192);
-            parser.init(UnaryOperator.identity());
+            });
 
             parseResponse(client, parser);
 
@@ -218,7 +217,8 @@ public class CloseTest extends AbstractServerTest
 
             final CountDownLatch responseLatch = new CountDownLatch(1);
             final CountDownLatch closeLatch = new CountDownLatch(1);
-            Parser parser = new Parser(bufferPool, new Parser.Listener()
+            Parser parser = new Parser(bufferPool, 8192);
+            parser.init(new Parser.Listener()
             {
                 @Override
                 public void onHeaders(HeadersFrame frame)
@@ -231,8 +231,7 @@ public class CloseTest extends AbstractServerTest
                 {
                     closeLatch.countDown();
                 }
-            }, 4096, 8192);
-            parser.init(UnaryOperator.identity());
+            });
 
             parseResponse(client, parser);
 

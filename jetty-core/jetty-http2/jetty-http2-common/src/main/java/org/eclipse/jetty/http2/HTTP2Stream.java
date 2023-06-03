@@ -438,8 +438,16 @@ public class HTTP2Stream implements Stream, Attachable, Closeable, Callback, Dum
             }
         }
 
-        if (offer(data))
-            processData();
+        if (getListener() != null)
+        {
+            if (offer(data))
+                processData();
+        }
+        else
+        {
+            if (updateClose(data.frame().isEndStream(), CloseState.Event.RECEIVED))
+                session.removeStream(this);
+        }
     }
 
     private boolean offer(Data data)
@@ -904,9 +912,8 @@ public class HTTP2Stream implements Stream, Attachable, Closeable, Callback, Dum
     @Override
     public String toString()
     {
-        return String.format("%s@%x#%d@%x{sendWindow=%s,recvWindow=%s,queue=%d,demand=%b,reset=%b/%b,%s,age=%d,attachment=%s}",
+        return String.format("%s#%d@%x{sendWindow=%s,recvWindow=%s,queue=%d,demand=%b,reset=%b/%b,%s,age=%d,attachment=%s}",
             getClass().getSimpleName(),
-            hashCode(),
             getId(),
             session.hashCode(),
             sendWindow,

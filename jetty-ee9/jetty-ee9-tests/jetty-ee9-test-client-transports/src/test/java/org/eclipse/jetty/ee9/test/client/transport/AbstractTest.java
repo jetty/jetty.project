@@ -248,7 +248,6 @@ public class AbstractTest
                 ClientConnector clientConnector = http3Client.getClientConnector();
                 clientConnector.setSelectors(1);
                 clientConnector.setSslContextFactory(newSslContextFactoryClient());
-                http3Client.getQuicConfiguration().setVerifyPeerCertificates(false);
                 yield new HttpClientTransportOverHTTP3(http3Client);
             }
             case FCGI -> new HttpClientTransportOverFCGI(1, "");

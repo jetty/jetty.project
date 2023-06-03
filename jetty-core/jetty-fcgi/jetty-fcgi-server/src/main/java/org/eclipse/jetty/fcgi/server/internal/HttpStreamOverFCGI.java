@@ -220,7 +220,7 @@ public class HttpStreamOverFCGI implements HttpStream
         ByteBuffer content = byteBuffer != null ? byteBuffer : BufferUtil.EMPTY_BUFFER;
 
         if (LOG.isDebugEnabled())
-            LOG.debug("send {} {} l={}", this, request, last);
+            LOG.debug("send {} l={} {} {}", request, last, BufferUtil.toDetailString(byteBuffer), this);
         boolean head = HttpMethod.HEAD.is(request.getMethod());
         if (response != null)
         {
@@ -362,5 +362,11 @@ public class HttpStreamOverFCGI implements HttpStream
         {
             return Invocable.getInvocationType(_httpChannel);
         }
+    }
+
+    @Override
+    public String toString()
+    {
+        return "%s@%x".formatted(getClass().getSimpleName(), hashCode());
     }
 }

@@ -31,7 +31,6 @@ import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicReference;
-import java.util.function.UnaryOperator;
 
 import org.eclipse.jetty.http.HttpFields;
 import org.eclipse.jetty.http.HttpStatus;
@@ -147,6 +146,7 @@ public class PrefaceTest extends AbstractTest
                 session.close(ErrorCode.NO_ERROR.code, null, Callback.NOOP);
             }
         });
+        connector.setIdleTimeout(1000);
 
         ByteBufferPool bufferPool = http2Client.getByteBufferPool();
         try (SocketChannel socket = SocketChannel.open())
@@ -167,7 +167,8 @@ public class PrefaceTest extends AbstractTest
 
             Queue<SettingsFrame> settings = new ArrayDeque<>();
             AtomicBoolean closed = new AtomicBoolean();
-            Parser parser = new Parser(bufferPool, new Parser.Listener()
+            Parser parser = new Parser(bufferPool, 8192);
+            parser.init(new Parser.Listener()
             {
                 @Override
                 public void onSettings(SettingsFrame frame)
@@ -180,8 +181,7 @@ public class PrefaceTest extends AbstractTest
                 {
                     closed.set(true);
                 }
-            }, 4096, 8192);
-            parser.init(UnaryOperator.identity());
+            });
 
             ByteBuffer buffer = ByteBuffer.allocateDirect(1024);
             while (true)
@@ -311,7 +311,8 @@ public class PrefaceTest extends AbstractTest
 
             CountDownLatch clientSettingsLatch = new CountDownLatch(1);
             AtomicBoolean responded = new AtomicBoolean();
-            Parser parser = new Parser(bufferPool, new Parser.Listener()
+            Parser parser = new Parser(bufferPool, 8192);
+            parser.init(new Parser.Listener()
             {
                 @Override
                 public void onSettings(SettingsFrame frame)
@@ -328,8 +329,7 @@ public class PrefaceTest extends AbstractTest
                     if (frame.isEndStream())
                         responded.set(true);
                 }
-            }, 4096, 8192);
-            parser.init(UnaryOperator.identity());
+            });
 
             // HTTP/2 parsing.
             while (true)

@@ -14,15 +14,16 @@
 package org.eclipse.jetty.quic.client;
 
 import java.io.InputStream;
+import java.nio.file.Files;
+import java.nio.file.Path;
 import java.security.KeyStore;
-import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.TimeUnit;
+import java.util.concurrent.TimeoutException;
 
 import org.eclipse.jetty.client.ContentResponse;
 import org.eclipse.jetty.client.HttpClient;
 import org.eclipse.jetty.client.transport.HttpClientConnectionFactory;
 import org.eclipse.jetty.client.transport.HttpClientTransportDynamic;
-import org.eclipse.jetty.http.HttpVersion;
 import org.eclipse.jetty.http2.client.HTTP2Client;
 import org.eclipse.jetty.http2.client.transport.ClientConnectionFactoryOverHTTP2;
 import org.eclipse.jetty.http2.server.HTTP2ServerConnectionFactory;
@@ -35,6 +36,7 @@ import org.eclipse.jetty.server.HttpConfiguration;
 import org.eclipse.jetty.server.HttpConnectionFactory;
 import org.eclipse.jetty.server.Request;
 import org.eclipse.jetty.server.Response;
+import org.eclipse.jetty.server.SecureRequestCustomizer;
 import org.eclipse.jetty.server.Server;
 import org.eclipse.jetty.toolchain.test.jupiter.WorkDir;
 import org.eclipse.jetty.toolchain.test.jupiter.WorkDirExtension;
@@ -43,15 +45,15 @@ import org.eclipse.jetty.util.component.LifeCycle;
 import org.eclipse.jetty.util.ssl.SslContextFactory;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
-import org.junit.jupiter.api.Tag;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 
 import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.core.Is.is;
+import static org.junit.jupiter.api.Assertions.assertThrows;
 
 @ExtendWith(WorkDirExtension.class)
-public class End2EndClientTest
+public class End2EndClientWithClientCertAuthTest
 {
     public WorkDir workDir;
 
@@ -60,32 +62,41 @@ public class End2EndClientTest
     private HttpClient client;
     private final String responseContent = """
         <html>
-          <body>
-            Request served
-          </body>
-        </html>
-        """;
+        \t<body>
+        \t\tRequest served
+        \t</body>
+        </html>""";
+    private SslContextFactory.Server serverSslContextFactory;
 
     @BeforeEach
     public void setUp() throws Exception
     {
+        Path workPath = workDir.getEmptyPathDir();
+        Path serverWorkPath = workPath.resolve("server");
+        Files.createDirectories(serverWorkPath);
+        Path clientWorkPath = workPath.resolve("client");
+        Files.createDirectories(clientWorkPath);
+
         KeyStore keyStore = KeyStore.getInstance("PKCS12");
         try (InputStream is = getClass().getResourceAsStream("/keystore.p12"))
         {
             keyStore.load(is, "storepwd".toCharArray());
         }
 
-        SslContextFactory.Server sslContextFactory = new SslContextFactory.Server();
-        sslContextFactory.setKeyStore(keyStore);
-        sslContextFactory.setKeyStorePassword("storepwd");
+        serverSslContextFactory = new SslContextFactory.Server();
+        serverSslContextFactory.setKeyStore(keyStore);
+        serverSslContextFactory.setKeyStorePassword("storepwd");
+        serverSslContextFactory.setTrustStore(keyStore);
+        serverSslContextFactory.setNeedClientAuth(true);
 
         server = new Server();
 
         HttpConfiguration httpConfiguration = new HttpConfiguration();
+        httpConfiguration.addCustomizer(new SecureRequestCustomizer());
         HttpConnectionFactory http1 = new HttpConnectionFactory(httpConfiguration);
         HTTP2ServerConnectionFactory http2 = new HTTP2ServerConnectionFactory(httpConfiguration);
-        connector = new QuicServerConnector(server, sslContextFactory, http1, http2);
-        connector.getQuicConfiguration().setPemWorkDirectory(workDir.getEmptyPathDir());
+        connector = new QuicServerConnector(server, serverSslContextFactory, http1, http2);
+        connector.getQuicConfiguration().setPemWorkDirectory(serverWorkPath);
         server.addConnector(connector);
 
         server.setHandler(new Handler.Abstract()
@@ -100,8 +111,13 @@ public class End2EndClientTest
 
         server.start();
 
-        ClientConnector clientConnector = new ClientConnector(new QuicClientConnectorConfigurator());
+        QuicClientConnectorConfigurator configurator = new QuicClientConnectorConfigurator();
+        configurator.getQuicConfiguration().setPemWorkDirectory(clientWorkPath);
+        ClientConnector clientConnector = new ClientConnector(configurator);
         SslContextFactory.Client clientSslContextFactory = new SslContextFactory.Client();
+        clientSslContextFactory.setCertAlias("mykey");
+        clientSslContextFactory.setKeyStore(keyStore);
+        clientSslContextFactory.setKeyStorePassword("storepwd");
         clientSslContextFactory.setTrustStore(keyStore);
         clientConnector.setSslContextFactory(clientSslContextFactory);
         ClientConnectionFactory.Info http1Info = HttpClientConnectionFactory.HTTP11;
@@ -119,8 +135,7 @@ public class End2EndClientTest
     }
 
     @Test
-    @Tag("flaky") // Issue #8815
-    public void testSimpleHTTP1() throws Exception
+    public void testWorkingClientAuth() throws Exception
     {
         ContentResponse response = client.newRequest("https://localhost:" + connector.getLocalPort())
             .timeout(5, TimeUnit.SECONDS)
@@ -131,57 +146,15 @@ public class End2EndClientTest
     }
 
     @Test
-    public void testSimpleHTTP2() throws Exception
+    public void testServerRejectsClientInvalidCert() throws Exception
     {
-        ContentResponse response = client.newRequest("https://localhost:" + connector.getLocalPort())
-            .version(HttpVersion.HTTP_2)
+        // remove the trust store config from the server
+        server.stop();
+        serverSslContextFactory.setTrustStore(null);
+        server.start();
+
+        assertThrows(TimeoutException.class, () -> client.newRequest("https://localhost:" + connector.getLocalPort())
             .timeout(5, TimeUnit.SECONDS)
-            .send();
-        assertThat(response.getStatus(), is(200));
-        String contentAsString = response.getContentAsString();
-        assertThat(contentAsString, is(responseContent));
-    }
-
-    @Test
-    public void testManyHTTP1() throws Exception
-    {
-        for (int i = 0; i < 1000; i++)
-        {
-            ContentResponse response = client.newRequest("https://localhost:" + connector.getLocalPort() + "/" + i)
-                .timeout(5, TimeUnit.SECONDS)
-                .send();
-            assertThat(response.getStatus(), is(200));
-            String contentAsString = response.getContentAsString();
-            assertThat(contentAsString, is(responseContent));
-        }
-    }
-
-    @Test
-    @Tag("flaky") // Issue #8815
-    public void testMultiThreadedHTTP1()
-    {
-        int count = 1000;
-        CompletableFuture<?>[] futures = new CompletableFuture[count];
-        for (int i = 0; i < count; ++i)
-        {
-            String path = "/" + i;
-            futures[i] = CompletableFuture.runAsync(() ->
-            {
-                try
-                {
-                    ContentResponse response = client.GET("https://localhost:" + connector.getLocalPort() + path);
-                    assertThat(response.getStatus(), is(200));
-                    String contentAsString = response.getContentAsString();
-                    assertThat(contentAsString, is(responseContent));
-                }
-                catch (Exception e)
-                {
-                    throw new RuntimeException(e);
-                }
-            });
-        }
-        CompletableFuture.allOf(futures)
-            .orTimeout(15, TimeUnit.SECONDS)
-            .join();
+            .send());
     }
 }

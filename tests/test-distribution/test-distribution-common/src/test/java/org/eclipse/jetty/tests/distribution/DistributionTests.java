@@ -1105,7 +1105,7 @@ public class DistributionTests extends AbstractJettyHomeTest
                 assertTrue(run2.awaitConsoleLogsFor("Started oejs.Server@", START_TIMEOUT, TimeUnit.SECONDS));
 
                 HTTP3Client http3Client = new HTTP3Client();
-                http3Client.getQuicConfiguration().setVerifyPeerCertificates(false);
+                http3Client.getClientConnector().setSslContextFactory(new SslContextFactory.Client(true));
                 this.client = new HttpClient(new HttpClientTransportOverHTTP3(http3Client));
                 this.client.start();
                 ContentResponse response = this.client.newRequest("localhost", h3Port)

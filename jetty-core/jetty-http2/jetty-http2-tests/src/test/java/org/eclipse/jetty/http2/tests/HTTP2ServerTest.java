@@ -27,7 +27,6 @@ import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicReference;
-import java.util.function.UnaryOperator;
 
 import org.eclipse.jetty.http.HttpFields;
 import org.eclipse.jetty.http.HttpVersion;
@@ -97,15 +96,15 @@ public class HTTP2ServerTest extends AbstractServerTest
             }
 
             CountDownLatch latch = new CountDownLatch(1);
-            Parser parser = new Parser(bufferPool, new Parser.Listener()
+            Parser parser = new Parser(bufferPool, 8192);
+            parser.init(new Parser.Listener()
             {
                 @Override
                 public void onGoAway(GoAwayFrame frame)
                 {
                     latch.countDown();
                 }
-            }, 4096, 8192);
-            parser.init(UnaryOperator.identity());
+            });
 
             parseResponse(client, parser);
 
@@ -143,7 +142,8 @@ public class HTTP2ServerTest extends AbstractServerTest
             }
 
             AtomicReference<HeadersFrame> frameRef = new AtomicReference<>();
-            Parser parser = new Parser(bufferPool, new Parser.Listener()
+            Parser parser = new Parser(bufferPool, 8192);
+            parser.init(new Parser.Listener()
             {
                 @Override
                 public void onSettings(SettingsFrame frame)
@@ -157,8 +157,7 @@ public class HTTP2ServerTest extends AbstractServerTest
                     frameRef.set(frame);
                     latch.countDown();
                 }
-            }, 4096, 8192);
-            parser.init(UnaryOperator.identity());
+            });
 
             parseResponse(client, parser);
 
@@ -203,7 +202,8 @@ public class HTTP2ServerTest extends AbstractServerTest
 
             AtomicReference<HeadersFrame> headersRef = new AtomicReference<>();
             AtomicReference<DataFrame> dataRef = new AtomicReference<>();
-            Parser parser = new Parser(bufferPool, new Parser.Listener()
+            Parser parser = new Parser(bufferPool, 8192);
+            parser.init(new Parser.Listener()
             {
                 @Override
                 public void onSettings(SettingsFrame frame)
@@ -224,8 +224,7 @@ public class HTTP2ServerTest extends AbstractServerTest
                     dataRef.set(frame);
                     latch.countDown();
                 }
-            }, 4096, 8192);
-            parser.init(UnaryOperator.identity());
+            });
 
             parseResponse(client, parser);
 
@@ -271,7 +270,8 @@ public class HTTP2ServerTest extends AbstractServerTest
                 output.write(BufferUtil.toArray(buffer));
             }
 
-            Parser parser = new Parser(bufferPool, new Parser.Listener()
+            Parser parser = new Parser(bufferPool, 8192);
+            parser.init(new Parser.Listener()
             {
                 @Override
                 public void onGoAway(GoAwayFrame frame)
@@ -279,8 +279,7 @@ public class HTTP2ServerTest extends AbstractServerTest
                     assertEquals(ErrorCode.FRAME_SIZE_ERROR.code, frame.getError());
                     latch.countDown();
                 }
-            }, 4096, 8192);
-            parser.init(UnaryOperator.identity());
+            });
 
             parseResponse(client, parser);
 
@@ -317,7 +316,8 @@ public class HTTP2ServerTest extends AbstractServerTest
                 output.write(BufferUtil.toArray(buffer));
             }
 
-            Parser parser = new Parser(bufferPool, new Parser.Listener()
+            Parser parser = new Parser(bufferPool, 8192);
+            parser.init(new Parser.Listener()
             {
                 @Override
                 public void onGoAway(GoAwayFrame frame)
@@ -325,8 +325,7 @@ public class HTTP2ServerTest extends AbstractServerTest
                     assertEquals(ErrorCode.PROTOCOL_ERROR.code, frame.getError());
                     latch.countDown();
                 }
-            }, 4096, 8192);
-            parser.init(UnaryOperator.identity());
+            });
 
             parseResponse(client, parser);
 
@@ -389,8 +388,8 @@ public class HTTP2ServerTest extends AbstractServerTest
 
             // The server will close the connection abruptly since it
             // cannot write and therefore cannot even send the GO_AWAY.
-            Parser parser = new Parser(bufferPool, new Parser.Listener() {}, 4096, 8192);
-            parser.init(UnaryOperator.identity());
+            Parser parser = new Parser(bufferPool, 8192);
+            parser.init(new Parser.Listener() {});
             boolean closed = parseResponse(client, parser, 2 * delay);
             assertTrue(closed);
         }
@@ -429,8 +428,8 @@ public class HTTP2ServerTest extends AbstractServerTest
                 }
                 output.flush();
 
-                Parser parser = new Parser(bufferPool, new Parser.Listener() {}, 4096, 8192);
-                parser.init(UnaryOperator.identity());
+                Parser parser = new Parser(bufferPool, 8192);
+                parser.init(new Parser.Listener() {});
                 boolean closed = parseResponse(client, parser);
 
                 assertTrue(closed);
@@ -586,7 +585,7 @@ public class HTTP2ServerTest extends AbstractServerTest
                 return null;
             }
         });
-        generator = new Generator(bufferPool, 4096, 4);
+        generator = new Generator(bufferPool, 4);
 
         ByteBufferPool.Accumulator accumulator = frames.call();
 
@@ -602,7 +601,8 @@ public class HTTP2ServerTest extends AbstractServerTest
             assertTrue(serverLatch.await(5, TimeUnit.SECONDS));
 
             CountDownLatch clientLatch = new CountDownLatch(1);
-            Parser parser = new Parser(bufferPool, new Parser.Listener()
+            Parser parser = new Parser(bufferPool, 8192);
+            parser.init(new Parser.Listener()
             {
                 @Override
                 public void onHeaders(HeadersFrame frame)
@@ -610,8 +610,7 @@ public class HTTP2ServerTest extends AbstractServerTest
                     if (frame.isEndStream())
                         clientLatch.countDown();
                 }
-            }, 4096, 8192);
-            parser.init(UnaryOperator.identity());
+            });
             boolean closed = parseResponse(client, parser);
 
             assertTrue(clientLatch.await(5, TimeUnit.SECONDS));

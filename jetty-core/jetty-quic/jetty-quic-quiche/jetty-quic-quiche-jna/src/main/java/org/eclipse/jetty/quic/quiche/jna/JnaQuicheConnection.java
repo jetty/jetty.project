@@ -22,6 +22,8 @@ import java.security.SecureRandom;
 import java.util.ArrayList;
 import java.util.List;
 
+import org.eclipse.jetty.quic.quiche.Quiche;
+import org.eclipse.jetty.quic.quiche.Quiche.quic_error;
 import org.eclipse.jetty.quic.quiche.Quiche.quiche_error;
 import org.eclipse.jetty.quic.quiche.QuicheConfig;
 import org.eclipse.jetty.quic.quiche.QuicheConnection;
@@ -114,7 +116,7 @@ public class JnaQuicheConnection extends QuicheConnection
 
         SizedStructure<sockaddr> localSockaddr = sockaddr.convert(local);
         SizedStructure<sockaddr> peerSockaddr = sockaddr.convert(peer);
-        LibQuiche.quiche_conn quicheConn = LibQuiche.INSTANCE.quiche_connect(peer.getHostName(), scid, new size_t(scid.length), localSockaddr.getStructure(), localSockaddr.getSize(), peerSockaddr.getStructure(), peerSockaddr.getSize(), libQuicheConfig);
+        LibQuiche.quiche_conn quicheConn = LibQuiche.INSTANCE.quiche_connect(peer.getHostString(), scid, new size_t(scid.length), localSockaddr.getStructure(), localSockaddr.getSize(), peerSockaddr.getStructure(), peerSockaddr.getSize(), libQuicheConfig);
         return new JnaQuicheConnection(quicheConn, libQuicheConfig);
     }
 
@@ -128,13 +130,29 @@ public class JnaQuicheConnection extends QuicheConnection
         if (verifyPeer != null)
             LibQuiche.INSTANCE.quiche_config_verify_peer(quicheConfig, verifyPeer);
 
+        String trustedCertsPemPath = config.getTrustedCertsPemPath();
+        if (trustedCertsPemPath != null)
+        {
+            int rc = LibQuiche.INSTANCE.quiche_config_load_verify_locations_from_file(quicheConfig, trustedCertsPemPath);
+            if (rc != 0)
+                throw new IOException("Error loading trusted certificates file " + trustedCertsPemPath + " : " + Quiche.quiche_error.errToString(rc));
+        }
+
         String certChainPemPath = config.getCertChainPemPath();
         if (certChainPemPath != null)
-            LibQuiche.INSTANCE.quiche_config_load_cert_chain_from_pem_file(quicheConfig, certChainPemPath);
+        {
+            int rc = LibQuiche.INSTANCE.quiche_config_load_cert_chain_from_pem_file(quicheConfig, certChainPemPath);
+            if (rc < 0)
+                throw new IOException("Error loading certificate chain file " + certChainPemPath + " : " + Quiche.quiche_error.errToString(rc));
+        }
 
         String privKeyPemPath = config.getPrivKeyPemPath();
         if (privKeyPemPath != null)
-            LibQuiche.INSTANCE.quiche_config_load_priv_key_from_pem_file(quicheConfig, privKeyPemPath);
+        {
+            int rc = LibQuiche.INSTANCE.quiche_config_load_priv_key_from_pem_file(quicheConfig, privKeyPemPath);
+            if (rc < 0)
+                throw new IOException("Error loading private key file " + privKeyPemPath + " : " + Quiche.quiche_error.errToString(rc));
+        }
 
         String[] applicationProtos = config.getApplicationProtos();
         if (applicationProtos != null)
@@ -385,8 +403,29 @@ public class JnaQuicheConnection extends QuicheConnection
 
     public void enableQlog(String filename, String title, String desc) throws IOException
     {
-        if (!LibQuiche.INSTANCE.quiche_conn_set_qlog_path(quicheConn, filename, title, desc))
-            throw new IOException("unable to set qlog path to " + filename);
+        try (AutoLock ignore = lock.lock())
+        {
+            if (quicheConn == null)
+                throw new IllegalStateException("connection was released");
+
+            if (!LibQuiche.INSTANCE.quiche_conn_set_qlog_path(quicheConn, filename, title, desc))
+                throw new IOException("unable to set qlog path to " + filename);
+        }
+    }
+
+    public byte[] getPeerCertificate()
+    {
+        try (AutoLock ignore = lock.lock())
+        {
+            if (quicheConn == null)
+                throw new IllegalStateException("connection was released");
+
+            char_pointer out = new char_pointer();
+            size_t_pointer out_len = new size_t_pointer();
+            LibQuiche.INSTANCE.quiche_conn_peer_cert(quicheConn, out, out_len);
+            int len = out_len.getPointee().intValue();
+            return out.getValueAsBytes(len);
+        }
     }
 
     @Override
@@ -429,9 +468,12 @@ public class JnaQuicheConnection extends QuicheConnection
             SizedStructure<sockaddr> peerSockaddr = sockaddr.convert(peer);
             info.from = peerSockaddr.getStructure().byReference();
             info.from_len = peerSockaddr.getSize();
+            // If quiche_conn_recv() fails, quiche_conn_local_error() can be called to get the standard error.
             int received = LibQuiche.INSTANCE.quiche_conn_recv(quicheConn, buffer, new size_t(buffer.remaining()), info).intValue();
             if (received < 0)
-                throw new IOException("failed to receive packet; err=" + quiche_error.errToString(received));
+                throw new IOException("failed to receive packet;" +
+                    " quiche_err=" + quiche_error.errToString(received) +
+                    " quic_err=" + quic_error.errToString(getLocalCloseInfo().error()));
             buffer.position(buffer.position() + received);
             return received;
         }
@@ -459,7 +501,7 @@ public class JnaQuicheConnection extends QuicheConnection
             if (written == quiche_error.QUICHE_ERR_DONE)
                 return 0;
             if (written < 0L)
-                throw new IOException("failed to send packet; err=" + quiche_error.errToString(written));
+                throw new IOException("failed to send packet; quiche_err=" + quiche_error.errToString(written));
             int prevPosition = buffer.position();
             buffer.position(prevPosition + written);
             return written;
@@ -619,7 +661,7 @@ public class JnaQuicheConnection extends QuicheConnection
             if (value < 0)
             {
                 if (LOG.isDebugEnabled())
-                    LOG.debug("could not read window capacity for stream {} err={}", streamId, quiche_error.errToString(value));
+                    LOG.debug("could not read window capacity for stream {} quiche_err={}", streamId, quiche_error.errToString(value));
             }
             return value;
         }
@@ -651,7 +693,7 @@ public class JnaQuicheConnection extends QuicheConnection
             if (written == quiche_error.QUICHE_ERR_DONE)
                 return 0;
             if (written < 0L)
-                throw new IOException("failed to write to stream " + streamId + "; err=" + quiche_error.errToString(written));
+                throw new IOException("failed to write to stream " + streamId + "; quiche_err=" + quiche_error.errToString(written));
             buffer.position(buffer.position() + written);
             return written;
         }
@@ -669,7 +711,7 @@ public class JnaQuicheConnection extends QuicheConnection
             if (read == quiche_error.QUICHE_ERR_DONE)
                 return isStreamFinished(streamId) ? -1 : 0;
             if (read < 0L)
-                throw new IOException("failed to read from stream " + streamId + "; err=" + quiche_error.errToString(read));
+                throw new IOException("failed to read from stream " + streamId + "; quiche_err=" + quiche_error.errToString(read));
             buffer.position(buffer.position() + read);
             return read;
         }
@@ -698,6 +740,23 @@ public class JnaQuicheConnection extends QuicheConnection
             char_pointer reason = new char_pointer();
             size_t_pointer reasonLength = new size_t_pointer();
             if (LibQuiche.INSTANCE.quiche_conn_peer_error(quicheConn, app, error, reason, reasonLength))
+                return new CloseInfo(error.getValue(), reason.getValueAsString((int)reasonLength.getValue(), LibQuiche.CHARSET));
+            return null;
+        }
+    }
+
+    @Override
+    public CloseInfo getLocalCloseInfo()
+    {
+        try (AutoLock ignore = lock.lock())
+        {
+            if (quicheConn == null)
+                throw new IllegalStateException("connection was released");
+            bool_pointer app = new bool_pointer();
+            uint64_t_pointer error = new uint64_t_pointer();
+            char_pointer reason = new char_pointer();
+            size_t_pointer reasonLength = new size_t_pointer();
+            if (LibQuiche.INSTANCE.quiche_conn_local_error(quicheConn, app, error, reason, reasonLength))
                 return new CloseInfo(error.getValue(), reason.getValueAsString((int)reasonLength.getValue(), LibQuiche.CHARSET));
             return null;
         }

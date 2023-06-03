@@ -25,7 +25,6 @@ import java.util.AbstractMap;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collection;
-import java.util.List;
 import java.util.Map;
 
 import org.eclipse.jetty.quic.quiche.PemExporter;
@@ -36,8 +35,6 @@ import org.eclipse.jetty.toolchain.test.jupiter.WorkDirExtension;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
-import org.junit.jupiter.api.condition.EnabledOnJre;
-import org.junit.jupiter.api.condition.JRE;
 import org.junit.jupiter.api.extension.ExtendWith;
 
 import static org.eclipse.jetty.quic.quiche.Quiche.QUICHE_MIN_CLIENT_INITIAL_LEN;
@@ -46,10 +43,8 @@ import static org.hamcrest.Matchers.not;
 import static org.hamcrest.Matchers.nullValue;
 import static org.hamcrest.core.Is.is;
 
-// TODO: make this test work in Java 18 too.
-@EnabledOnJre(value = JRE.JAVA_17, disabledReason = "Java 18's Foreign APIs are incompatible with Java 17's Foreign APIs")
 @ExtendWith(WorkDirExtension.class)
-public class LowLevelQuicheTest
+public class LowLevelQuicheClientCertTest
 {
     public WorkDir workDir;
 
@@ -75,12 +70,16 @@ public class LowLevelQuicheTest
             keyStore.load(is, "storepwd".toCharArray());
         }
         Path targetFolder = workDir.getEmptyPathDir();
+        Path[] keyPair = PemExporter.exportKeyPair(keyStore, "mykey", "storepwd".toCharArray(), targetFolder);
+        Path trustStorePath = PemExporter.exportTrustStore(keyStore, targetFolder);
 
         clientQuicheConfig = new QuicheConfig();
         clientQuicheConfig.setApplicationProtos("http/0.9");
         clientQuicheConfig.setDisableActiveMigration(true);
+        clientQuicheConfig.setPrivKeyPemPath(keyPair[0].toString());
+        clientQuicheConfig.setCertChainPemPath(keyPair[1].toString());
         clientQuicheConfig.setVerifyPeer(true);
-        clientQuicheConfig.setTrustedCertsPemPath(PemExporter.exportTrustStore(keyStore, targetFolder).toString());
+        clientQuicheConfig.setTrustedCertsPemPath(trustStorePath.toString());
         clientQuicheConfig.setMaxIdleTimeout(1_000L);
         clientQuicheConfig.setInitialMaxData(10_000_000L);
         clientQuicheConfig.setInitialMaxStreamDataBidiLocal(10_000_000L);
@@ -92,11 +91,11 @@ public class LowLevelQuicheTest
 
         serverCertificateChain = keyStore.getCertificateChain("mykey");
         serverQuicheConfig = new QuicheConfig();
-        Path[] keyPair = PemExporter.exportKeyPair(keyStore, "mykey", "storepwd".toCharArray(), targetFolder);
         serverQuicheConfig.setPrivKeyPemPath(keyPair[0].toString());
         serverQuicheConfig.setCertChainPemPath(keyPair[1].toString());
         serverQuicheConfig.setApplicationProtos("http/0.9");
-        serverQuicheConfig.setVerifyPeer(false);
+        serverQuicheConfig.setVerifyPeer(true);
+        serverQuicheConfig.setTrustedCertsPemPath(trustStorePath.toString());
         serverQuicheConfig.setMaxIdleTimeout(1_000L);
         serverQuicheConfig.setInitialMaxData(10_000_000L);
         serverQuicheConfig.setInitialMaxStreamDataBidiLocal(10_000_000L);
@@ -118,115 +117,22 @@ public class LowLevelQuicheTest
     }
 
     @Test
-    public void testFinishedAsSoonAsFinIsFed() throws Exception
+    public void testClientCert() throws Exception
     {
         // establish connection
         Map.Entry<ForeignIncubatorQuicheConnection, ForeignIncubatorQuicheConnection> entry = connectClientToServer();
         ForeignIncubatorQuicheConnection clientQuicheConnection = entry.getKey();
         ForeignIncubatorQuicheConnection serverQuicheConnection = entry.getValue();
 
-        // client sends 16 bytes of payload over stream 0
-        assertThat(clientQuicheConnection.feedClearBytesForStream(0, ByteBuffer.allocate(16)
-            .putInt(0xdeadbeef)
-            .putInt(0xcafebabe)
-            .putInt(0xdeadc0de)
-            .putInt(0xbaddecaf)
-            .flip()), is(16));
-        drainClientToFeedServer(entry, 59);
-
-        // server checks that stream 0 is readable
-        List<Long> readableStreamIds = serverQuicheConnection.readableStreamIds();
-        assertThat(readableStreamIds.size(), is(1));
-        assertThat(readableStreamIds.get(0), is(0L));
-
-        // server reads 16 bytes from stream 0
-        assertThat(serverQuicheConnection.drainClearBytesForStream(0, ByteBuffer.allocate(1000)), is(16));
-
-        // assert that stream 0 is not finished on server
-        assertThat(serverQuicheConnection.isStreamFinished(0), is(false));
-
-        // client finishes stream 0
-        clientQuicheConnection.feedFinForStream(0);
-
-        drainClientToFeedServer(entry, 43);
-        readableStreamIds = serverQuicheConnection.readableStreamIds();
-        assertThat(readableStreamIds.size(), is(1));
-        assertThat(readableStreamIds.get(0), is(0L));
-
-        // assert that stream 0 is finished on server
-        assertThat(serverQuicheConnection.isStreamFinished(0), is(true));
-
-        // assert that there is not client certificate
-        assertThat(serverQuicheConnection.getPeerCertificate(), nullValue());
+        // assert that the client certificate was correctly received by the server
+        byte[] receivedClientCertificate = serverQuicheConnection.getPeerCertificate();
+        byte[] configuredClientCertificate = serverCertificateChain[0].getEncoded();
+        assertThat(Arrays.equals(configuredClientCertificate, receivedClientCertificate), is(true));
 
         // assert that the server certificate was correctly received by the client
-        byte[] peerCertificate = clientQuicheConnection.getPeerCertificate();
-        byte[] serverCert = serverCertificateChain[0].getEncoded();
-        assertThat(Arrays.equals(serverCert, peerCertificate), is(true));
-    }
-
-    @Test
-    public void testNotFinishedAsLongAsStreamHasReadableBytes() throws Exception
-    {
-        // establish connection
-        Map.Entry<ForeignIncubatorQuicheConnection, ForeignIncubatorQuicheConnection> entry = connectClientToServer();
-        ForeignIncubatorQuicheConnection clientQuicheConnection = entry.getKey();
-        ForeignIncubatorQuicheConnection serverQuicheConnection = entry.getValue();
-
-        // client sends 16 bytes of payload over stream 0 and finish it
-        assertThat(clientQuicheConnection.feedClearBytesForStream(0, ByteBuffer.allocate(16)
-            .putInt(0xdeadbeef)
-            .putInt(0xcafebabe)
-            .putInt(0xdeadc0de)
-            .putInt(0xbaddecaf)
-            .flip()), is(16));
-        clientQuicheConnection.feedFinForStream(0);
-        drainClientToFeedServer(entry, 59);
-
-        // server checks that stream 0 is readable
-        List<Long> readableStreamIds = serverQuicheConnection.readableStreamIds();
-        assertThat(readableStreamIds.size(), is(1));
-        assertThat(readableStreamIds.get(0), is(0L));
-
-        // assert that stream 0 is not finished on server
-        assertThat(serverQuicheConnection.isStreamFinished(0), is(false));
-
-        // server reads 16 bytes from stream 0
-        assertThat(serverQuicheConnection.drainClearBytesForStream(0, ByteBuffer.allocate(1000)), is(16));
-
-        // assert that stream 0 is finished on server
-        assertThat(serverQuicheConnection.isStreamFinished(0), is(true));
-
-        // assert that there is not client certificate
-        assertThat(serverQuicheConnection.getPeerCertificate(), nullValue());
-
-        // assert that the server certificate was correctly received by the client
-        byte[] peerCertificate = clientQuicheConnection.getPeerCertificate();
-        byte[] serverCert = serverCertificateChain[0].getEncoded();
-        assertThat(Arrays.equals(serverCert, peerCertificate), is(true));
-    }
-
-    @Test
-    public void testApplicationProtocol() throws Exception
-    {
-        serverQuicheConfig.setApplicationProtos("€");
-        clientQuicheConfig.setApplicationProtos("€");
-
-        // establish connection
-        Map.Entry<ForeignIncubatorQuicheConnection, ForeignIncubatorQuicheConnection> entry = connectClientToServer();
-        ForeignIncubatorQuicheConnection clientQuicheConnection = entry.getKey();
-        ForeignIncubatorQuicheConnection serverQuicheConnection = entry.getValue();
-
-        assertThat(clientQuicheConnection.getNegotiatedProtocol(), is("€"));
-        assertThat(serverQuicheConnection.getNegotiatedProtocol(), is("€"));
-
-        // assert that there is not client certificate
-        assertThat(serverQuicheConnection.getPeerCertificate(), nullValue());
-
-        // assert that the server certificate was correctly received by the client
-        byte[] peerCertificate = clientQuicheConnection.getPeerCertificate();
-        byte[] serverCert = serverCertificateChain[0].getEncoded();
-        assertThat(Arrays.equals(serverCert, peerCertificate), is(true));
+        byte[] receivedServerCertificate = clientQuicheConnection.getPeerCertificate();
+        byte[] configuredServerCertificate = serverCertificateChain[0].getEncoded();
+        assertThat(Arrays.equals(configuredServerCertificate, receivedServerCertificate), is(true));
     }
 
     private void drainServerToFeedClient(Map.Entry<ForeignIncubatorQuicheConnection, ForeignIncubatorQuicheConnection> entry, int expectedSize) throws IOException
@@ -302,11 +208,21 @@ public class LowLevelQuicheTest
         for (String proto : clientQuicheConfig.getApplicationProtos())
             protosLen += 1 + proto.getBytes(StandardCharsets.UTF_8).length;
 
-        drainServerToFeedClient(entry, 420 + protosLen);
+        // 1st round
+        drainServerToFeedClient(entry, 451 + protosLen);
         assertThat(serverQuicheConnection.isConnectionEstablished(), is(false));
         assertThat(clientQuicheConnection.isConnectionEstablished(), is(true));
 
         drainClientToFeedServer(entry, 1200);
+        assertThat(serverQuicheConnection.isConnectionEstablished(), is(false));
+        assertThat(clientQuicheConnection.isConnectionEstablished(), is(true));
+
+        // 2nd round (needed b/c of client cert)
+        drainServerToFeedClient(entry, 71);
+        assertThat(serverQuicheConnection.isConnectionEstablished(), is(false));
+        assertThat(clientQuicheConnection.isConnectionEstablished(), is(true));
+
+        drainClientToFeedServer(entry, 222);
         assertThat(serverQuicheConnection.isConnectionEstablished(), is(true));
         assertThat(clientQuicheConnection.isConnectionEstablished(), is(true));
 

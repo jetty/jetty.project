@@ -28,8 +28,8 @@ public class HTTP3Configuration
     private boolean useInputDirectByteBuffers = true;
     private boolean useOutputDirectByteBuffers = true;
     private int maxBlockedStreams = 64;
-    private int maxTableCapacity = 64 * 1024;
-    private int initialTableCapacity = 64 * 1024;
+    private int maxDecoderTableCapacity = 64 * 1024;
+    private int maxEncoderTableCapacity = 64 * 1024;
     private int maxRequestHeadersSize = 8 * 1024;
     private int maxResponseHeadersSize = 8 * 1024;
 
@@ -122,7 +122,7 @@ public class HTTP3Configuration
     @ManagedAttribute("The local QPACK max decoder dynamic table capacity")
     public int getMaxDecoderTableCapacity()
     {
-        return maxTableCapacity;
+        return maxDecoderTableCapacity;
     }
 
     /**
@@ -132,17 +132,17 @@ public class HTTP3Configuration
      * communicated to the remote QPACK encoder via the SETTINGS frame.</p>
      *
      * @param maxTableCapacity the QPACK decoder dynamic table max capacity
-     * @see #setInitialEncoderTableCapacity(int)
+     * @see #setMaxEncoderTableCapacity(int)
      */
     public void setMaxDecoderTableCapacity(int maxTableCapacity)
     {
-        this.maxTableCapacity = maxTableCapacity;
+        this.maxDecoderTableCapacity = maxTableCapacity;
     }
 
     @ManagedAttribute("The local QPACK initial encoder dynamic table capacity")
-    public int getInitialEncoderTableCapacity()
+    public int getMaxEncoderTableCapacity()
     {
-        return initialTableCapacity;
+        return maxEncoderTableCapacity;
     }
 
     /**
@@ -151,12 +151,12 @@ public class HTTP3Configuration
      * <p>This value is configured in the local QPACK encoder, and may be
      * overwritten by a smaller value received via the SETTINGS frame.</p>
      *
-     * @param initialTableCapacity the QPACK encoder dynamic table initial capacity
+     * @param maxTableCapacity the QPACK encoder dynamic table initial capacity
      * @see #setMaxDecoderTableCapacity(int)
      */
-    public void setInitialEncoderTableCapacity(int initialTableCapacity)
+    public void setMaxEncoderTableCapacity(int maxTableCapacity)
     {
-        this.initialTableCapacity = initialTableCapacity;
+        this.maxEncoderTableCapacity = maxTableCapacity;
     }
 
     @ManagedAttribute("The max number of QPACK blocked streams")

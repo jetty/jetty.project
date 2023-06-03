@@ -43,7 +43,7 @@ public class HpackTest
     public void encodeDecodeResponseTest() throws Exception
     {
         HpackEncoder encoder = new HpackEncoder();
-        HpackDecoder decoder = new HpackDecoder(4096, 8192);
+        HpackDecoder decoder = new HpackDecoder(8192);
         ByteBuffer buffer = BufferUtil.allocateDirect(16 * 1024);
 
         long contentLength = 1024;
@@ -99,7 +99,7 @@ public class HpackTest
     public void encodeDecodeTooLargeTest() throws Exception
     {
         HpackEncoder encoder = new HpackEncoder();
-        HpackDecoder decoder = new HpackDecoder(4096, 164);
+        HpackDecoder decoder = new HpackDecoder(164);
         ByteBuffer buffer = BufferUtil.allocateDirect(16 * 1024);
 
         HttpFields fields0 = HttpFields.build()
@@ -159,8 +159,11 @@ public class HpackTest
     @Test
     public void evictReferencedFieldTest() throws Exception
     {
-        HpackEncoder encoder = new HpackEncoder(200, 200);
-        HpackDecoder decoder = new HpackDecoder(200, 1024);
+        HpackDecoder decoder = new HpackDecoder(1024);
+        decoder.setMaxTableCapacity(200);
+        HpackEncoder encoder = new HpackEncoder();
+        encoder.setMaxTableCapacity(decoder.getMaxTableCapacity());
+        encoder.setTableCapacity(decoder.getMaxTableCapacity());
         ByteBuffer buffer = BufferUtil.allocateDirect(16 * 1024);
 
         String longEnoughToBeEvicted = "012345678901234567890123456789012345678901234567890";
@@ -203,7 +206,7 @@ public class HpackTest
     public void testHopHeadersAreRemoved() throws Exception
     {
         HpackEncoder encoder = new HpackEncoder();
-        HpackDecoder decoder = new HpackDecoder(4096, 16384);
+        HpackDecoder decoder = new HpackDecoder(16384);
 
         HttpFields input = HttpFields.build()
             .add(HttpHeader.ACCEPT, "*")
@@ -230,7 +233,7 @@ public class HpackTest
     public void testTETrailers() throws Exception
     {
         HpackEncoder encoder = new HpackEncoder();
-        HpackDecoder decoder = new HpackDecoder(4096, 16384);
+        HpackDecoder decoder = new HpackDecoder(16384);
 
         String teValue = "trailers";
         String trailerValue = "Custom";
@@ -255,7 +258,7 @@ public class HpackTest
     public void testColonHeaders() throws Exception
     {
         HpackEncoder encoder = new HpackEncoder();
-        HpackDecoder decoder = new HpackDecoder(4096, 16384);
+        HpackDecoder decoder = new HpackDecoder(16384);
 
         HttpFields input = HttpFields.build()
             .add(":status", "200")

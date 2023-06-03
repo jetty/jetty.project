@@ -47,7 +47,7 @@ public class GoAwayGenerator extends FrameGenerator
         int fixedLength = 4 + 4;
 
         // Make sure we don't exceed the default frame max length.
-        int maxPayloadLength = Frame.DEFAULT_MAX_LENGTH - fixedLength;
+        int maxPayloadLength = Frame.DEFAULT_MAX_SIZE - fixedLength;
         if (payload != null && payload.length > maxPayloadLength)
             payload = Arrays.copyOfRange(payload, 0, maxPayloadLength);
 
