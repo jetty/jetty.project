@@ -31,7 +31,6 @@ import java.util.concurrent.atomic.AtomicReference;
 import java.util.concurrent.atomic.LongAdder;
 import java.util.function.Consumer;
 import java.util.stream.Collectors;
-import java.util.stream.Stream;
 
 import org.eclipse.jetty.http.HttpField;
 import org.eclipse.jetty.http.HttpHeader;
@@ -483,21 +482,11 @@ public class ContextHandler extends Handler.Wrapper implements Attributes, Grace
     @ManagedAttribute("The file classpath")
     public String getClassPath()
     {
+        // TODO may need to handle one level of parent classloader for API ?
         if (_classLoader == null || !(_classLoader instanceof URLClassLoader loader))
             return null;
 
-        Stream<URI> stream = URIUtil.streamOf(loader);
-
-        // Add paths from any parent loader that is not the Server loader
-        ClassLoader parent = loader.getParent();
-        while (parent != null && parent != Server.class.getClassLoader())
-        {
-            if (parent instanceof URLClassLoader parentUrlLoader)
-                stream = Stream.concat(stream, URIUtil.streamOf(parentUrlLoader));
-            parent = parent.getParent();
-        }
-
-        String classpath = stream
+        String classpath = URIUtil.streamOf(loader)
             .map(URI::toASCIIString)
             .collect(Collectors.joining(File.pathSeparator));
         if (StringUtil.isBlank(classpath))
