@@ -1530,7 +1530,7 @@ public class HttpChannel implements Runnable, HttpOutput.Interceptor
             if (x instanceof HttpException httpException)
             {
                 MetaData.Response responseMeta = new MetaData.Response(httpException.getCode(), httpException.getReason(), HttpVersion.HTTP_1_1, HttpFields.build().add(HttpFields.CONNECTION_CLOSE), 0);
-                send(_request.getMetaData(), responseMeta, null, true, new Nested(this)
+                send(_request.getMetaData(), responseMeta, null, true, new Nested(this.getCallback())
                 {
                     @Override
                     public void succeeded()
