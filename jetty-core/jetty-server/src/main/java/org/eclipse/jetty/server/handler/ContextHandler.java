@@ -1186,7 +1186,7 @@ public class ContextHandler extends Handler.Wrapper implements Attributes, Grace
 
     private String normalizeHostname(String host)
     {
-        // TODO is this needed? if so, should be it somewhere else?
+        // TODO is this needed? if so, should be it somewhere eles?
         if (host == null)
             return null;
         int connectorIndex = host.indexOf('@');
