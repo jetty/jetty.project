@@ -472,6 +472,11 @@
       <artifactId>jetty-ee9-jndi</artifactId>
       <optional>true</optional>
     </dependency>
+    <dependency>
+      <groupId>org.eclipse.jetty.ee9</groupId>
+      <artifactId>jetty-ee9-fcgi-proxy</artifactId>
+      <optional>true</optional>
+    </dependency>
     <!-- Demo ee9 Apps -->
     <dependency>
       <groupId>org.eclipse.jetty.ee9.demos</groupId>
