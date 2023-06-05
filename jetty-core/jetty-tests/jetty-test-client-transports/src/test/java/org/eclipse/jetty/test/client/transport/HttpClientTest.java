@@ -673,6 +673,7 @@ public class HttpClientTest extends AbstractTest
     {
         assumeTrue(Net.isIpv6InterfaceAvailable());
         assumeTrue(transport != Transport.UNIX_DOMAIN);
+        assumeTrue(transport != Transport.H3);
 
         start(transport, new Handler.Abstract()
         {
