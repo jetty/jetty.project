@@ -111,6 +111,7 @@ def mavenBuild(jdk, cmdline, mvnName) {
           //-Dmaven.build.cache.configPath=$MVN_BUILD_CACHE_CONFIG
           buildCache = useBuildCache()
           if (buildCache) {
+          echo "Using build cache"
             extraArgs = " -Dmaven.build.cache.lazyRestore=true -Dmaven.build.cache.restoreGeneratedSources=false -Dmaven.build.cache.remote.url=dav:http://nginx-cache-service.jenkins.svc.cluster.local:80 -Dmaven.build.cache.remote.enabled=true -Dmaven.build.cache.remote.save.enabled=true -Dmaven.build.cache.remote.server.id=remote-build-cache-server "
           } else {
             // when not using cache
