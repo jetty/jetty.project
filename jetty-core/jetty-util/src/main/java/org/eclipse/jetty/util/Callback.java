@@ -13,9 +13,8 @@
 
 package org.eclipse.jetty.util;
 
+import java.util.Objects;
 import java.util.concurrent.CompletableFuture;
-import java.util.concurrent.atomic.AtomicBoolean;
-import java.util.concurrent.atomic.AtomicReference;
 import java.util.function.Consumer;
 
 import org.eclipse.jetty.util.thread.Invocable;
@@ -157,20 +156,16 @@ public interface Callback extends Invocable
     {
         return new Callback()
         {
-            private final AtomicBoolean _completed = new AtomicBoolean();
-
             @Override
             public void succeeded()
             {
-                if (_completed.compareAndSet(false, true))
-                    success.run();
+                success.run();
             }
 
             @Override
             public void failed(Throwable x)
             {
-                if (_completed.compareAndSet(false, true))
-                    failure.accept(x);
+                failure.accept(x);
             }
 
             @Override
@@ -182,7 +177,7 @@ public interface Callback extends Invocable
             @Override
             public String toString()
             {
-                return "Callback@%x{%s, %s,%s,%b}".formatted(hashCode(), invocationType, success, failure, _completed.get());
+                return "Callback@%x{%s, %s,%s}".formatted(hashCode(), invocationType, success, failure);
             }
         };
     }
@@ -210,8 +205,6 @@ public interface Callback extends Invocable
     {
         return new Completing()
         {
-            private final AtomicBoolean _completed = new AtomicBoolean();
-
             @Override
             public void completed()
             {
@@ -221,15 +214,13 @@ public interface Callback extends Invocable
             @Override
             public void succeeded()
             {
-                if (_completed.compareAndSet(false, true))
-                    completed();
+                completed();
             }
 
             @Override
             public void failed(Throwable x)
             {
-                if (_completed.compareAndSet(false, true))
-                    completed();
+                completed();
             }
 
             @Override
@@ -241,7 +232,7 @@ public interface Callback extends Invocable
             @Override
             public String toString()
             {
-                return "Callback@%x{%s,%s,%b}".formatted(hashCode(), invocationType, completed, _completed.get());
+                return "Callback@%x{%s,%s}".formatted(hashCode(), invocationType, completed);
             }
         };
     }
@@ -278,40 +269,32 @@ public interface Callback extends Invocable
     {
         return new Callback()
         {
-            private final AtomicBoolean _completed = new AtomicBoolean();
-
             @Override
             public void succeeded()
             {
-                if (_completed.compareAndSet(false, true))
+                try
                 {
-                    try
-                    {
-                        completed.run();
-                        callback.succeeded();
-                    }
-                    catch (Throwable t)
-                    {
-                        callback.failed(t);
-                    }
+                    completed.run();
+                    callback.succeeded();
+                }
+                catch (Throwable t)
+                {
+                    callback.failed(t);
                 }
             }
 
             @Override
             public void failed(Throwable x)
             {
-                if (_completed.compareAndSet(false, true))
+                try
                 {
-                    try
-                    {
-                        completed.run();
-                    }
-                    catch (Throwable t)
-                    {
-                        x.addSuppressed(t);
-                    }
-                    callback.failed(x);
+                    completed.run();
                 }
+                catch (Throwable t)
+                {
+                    x.addSuppressed(t);
+                }
+                callback.failed(x);
             }
         };
     }
@@ -389,16 +372,16 @@ public interface Callback extends Invocable
      */
     class Nested implements Completing
     {
-        private final AtomicReference<Callback> _callback;
+        private final Callback callback;
 
         public Nested(Callback callback)
         {
-            _callback = new AtomicReference<>(callback);
+            this.callback = Objects.requireNonNull(callback);
         }
 
         public Callback getCallback()
         {
-            return _callback.get();
+            return callback;
         }
 
         @Override
@@ -409,48 +392,39 @@ public interface Callback extends Invocable
         @Override
         public void succeeded()
         {
-            Callback callback = _callback.getAndSet(null);
-            if (callback != null)
+            try
             {
-                try
-                {
-                    callback.succeeded();
-                }
-                finally
-                {
-                    completed();
-                }
+                callback.succeeded();
+            }
+            finally
+            {
+                completed();
             }
         }
 
         @Override
         public void failed(Throwable x)
         {
-            Callback callback = _callback.getAndSet(null);
-            if (callback != null)
+            try
             {
-                try
-                {
-                    callback.failed(x);
-                }
-                finally
-                {
-                    completed();
-                }
+                callback.failed(x);
+            }
+            finally
+            {
+                completed();
             }
         }
 
         @Override
         public InvocationType getInvocationType()
         {
-            Callback callback = _callback.get();
-            return callback == null ? InvocationType.NON_BLOCKING : callback.getInvocationType();
+            return callback.getInvocationType();
         }
 
         @Override
         public String toString()
         {
-            return "%s@%x:%s".formatted(getClass().getSimpleName(), hashCode(), _callback.get());
+            return "%s@%x:%s".formatted(getClass().getSimpleName(), hashCode(), callback);
         }
     }
 

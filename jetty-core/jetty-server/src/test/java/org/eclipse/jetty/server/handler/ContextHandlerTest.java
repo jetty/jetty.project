@@ -60,6 +60,7 @@ import org.eclipse.jetty.toolchain.test.MavenTestingUtils;
 import org.eclipse.jetty.util.BufferUtil;
 import org.eclipse.jetty.util.Callback;
 import org.eclipse.jetty.util.IO;
+import org.eclipse.jetty.util.component.Graceful;
 import org.junit.jupiter.api.AfterAll;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
@@ -903,12 +904,14 @@ public class ContextHandlerTest
     @Test
     public void testGraceful() throws Exception
     {
+        // This is really just another test of GracefulHandler, but good to check it works inside of ContextHandler
+
         CountDownLatch latch0 = new CountDownLatch(1);
         CountDownLatch latch1 = new CountDownLatch(1);
 
         CountDownLatch requests = new CountDownLatch(7);
 
-        Handler handler = new AbstractHandler()
+        Handler handler = new Handler.Abstract()
         {
             @Override
             public boolean handle(Request request, Response response, Callback callback) throws Exception
@@ -1003,7 +1006,8 @@ public class ContextHandlerTest
             }
         };
         _contextHandler.setHandler(handler);
-        _contextHandler.setGraceful(true);
+        GracefulHandler gracefulHandler = new GracefulHandler();
+        _contextHandler.insertHandler(gracefulHandler);
         LocalConnector connector = new LocalConnector(_server);
         _server.addConnector(connector);
         _server.start();
@@ -1022,11 +1026,11 @@ public class ContextHandlerTest
         }
 
         assertTrue(requests.await(10, TimeUnit.SECONDS));
-        assertThat(_contextHandler.getCurrentRequests(), is(6L));
+        assertThat(gracefulHandler.getCurrentRequests(), is(6L));
 
-        CompletableFuture<Void> shutdown = _contextHandler.shutdown();
+        CompletableFuture<Void> shutdown = Graceful.shutdown(_contextHandler);
         assertFalse(shutdown.isDone());
-        assertThat(_contextHandler.getCurrentRequests(), is(6L));
+        assertThat(gracefulHandler.getCurrentRequests(), is(6L));
 
         response = HttpTester.parseResponse(connector.getResponse("GET /ctx/ HTTP/1.0\r\n\r\n"));
         assertThat(response.getStatus(), is(HttpStatus.SERVICE_UNAVAILABLE_503));
@@ -1041,8 +1045,8 @@ public class ContextHandlerTest
         assertThat(response.getStatus(), is(HttpStatus.INTERNAL_SERVER_ERROR_500));
 
         assertFalse(shutdown.isDone());
-        Awaitility.waitAtMost(10, TimeUnit.SECONDS).until(() -> _contextHandler.getCurrentRequests() == 3L);
-        assertThat(_contextHandler.getCurrentRequests(), is(3L));
+        Awaitility.waitAtMost(10, TimeUnit.SECONDS).until(() -> gracefulHandler.getCurrentRequests() == 3L);
+        assertThat(gracefulHandler.getCurrentRequests(), is(3L));
 
         latch1.countDown();
 
@@ -1055,6 +1059,6 @@ public class ContextHandlerTest
 
         shutdown.get(10, TimeUnit.SECONDS);
         assertTrue(shutdown.isDone());
-        assertThat(_contextHandler.getCurrentRequests(), is(0L));
+        assertThat(gracefulHandler.getCurrentRequests(), is(0L));
     }
 }

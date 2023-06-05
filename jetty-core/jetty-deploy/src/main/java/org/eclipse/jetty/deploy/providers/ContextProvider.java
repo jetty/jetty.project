@@ -317,9 +317,6 @@ public class ContextProvider extends ScanningAppProvider
         if (context instanceof Deployable deployable)
             deployable.initializeDefaults(properties);
 
-        if (Boolean.valueOf(properties.get("graceful")))
-            contextHandler.setGraceful(true);
-
         return contextHandler;
     }
 

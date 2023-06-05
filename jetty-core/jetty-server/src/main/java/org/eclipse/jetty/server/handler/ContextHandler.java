@@ -25,10 +25,8 @@ import java.util.EventListener;
 import java.util.List;
 import java.util.Objects;
 import java.util.Set;
-import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.CopyOnWriteArrayList;
 import java.util.concurrent.atomic.AtomicReference;
-import java.util.concurrent.atomic.LongAdder;
 import java.util.function.Consumer;
 import java.util.stream.Collectors;
 
@@ -55,7 +53,6 @@ import org.eclipse.jetty.util.URIUtil;
 import org.eclipse.jetty.util.annotation.ManagedAttribute;
 import org.eclipse.jetty.util.component.ClassLoaderDump;
 import org.eclipse.jetty.util.component.Dumpable;
-import org.eclipse.jetty.util.component.Graceful;
 import org.eclipse.jetty.util.component.LifeCycle;
 import org.eclipse.jetty.util.resource.Resource;
 import org.eclipse.jetty.util.resource.ResourceFactory;
@@ -64,7 +61,7 @@ import org.eclipse.jetty.util.thread.Invocable;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-public class ContextHandler extends Handler.Wrapper implements Attributes, Graceful, AliasCheck
+public class ContextHandler extends Handler.Wrapper implements Attributes, AliasCheck
 {
     private static final Logger LOG = LoggerFactory.getLogger(ContextHandler.class);
     private static final ThreadLocal<Context> __context = new ThreadLocal<>();
@@ -125,8 +122,6 @@ public class ContextHandler extends Handler.Wrapper implements Attributes, Grace
     private final MimeTypes.Wrapper _mimeTypes = new MimeTypes.Wrapper();
     private final List<ContextScopeListener> _contextListeners = new CopyOnWriteArrayList<>();
     private final List<VHost> _vhosts = new ArrayList<>();
-    private final LongAdder _requests = new LongAdder();
-    private CompletableFuture<Void> _shutdown;
 
     private String _displayName;
     private String _contextPath = "/";
@@ -140,7 +135,6 @@ public class ContextHandler extends Handler.Wrapper implements Attributes, Grace
     private File _tempDirectory;
     private boolean _tempDirectoryPersisted = false;
     private boolean _tempDirectoryCreated = false;
-    private boolean _graceful;
 
     public enum Availability
     {
@@ -148,7 +142,6 @@ public class ContextHandler extends Handler.Wrapper implements Attributes, Grace
         STARTING,       // starting inside doStart. It may go to any of the next states.
         AVAILABLE,      // running normally
         UNAVAILABLE,    // Either a startup error or explicit call to setAvailable(false)
-        SHUTDOWN,       // graceful shutdown
     }
 
     /**
@@ -195,40 +188,6 @@ public class ContextHandler extends Handler.Wrapper implements Attributes, Grace
     protected ScopedContext newContext()
     {
         return new ScopedContext();
-    }
-
-    /**
-     * @return true if {@link #shutdown()} will wait for all requests to complete.
-     */
-    public boolean isGraceful()
-    {
-        return _graceful;
-    }
-
-    /**
-     * Set if this context should gracefully shutdown by waiting for all current requests to
-     * complete.  This can be set via the "graceful" property of the {@code DeploymentManager}.
-     * @see #shutdown()
-     * @see #getCurrentRequests()
-     * @param graceful true if {@link #shutdown()} will wait for all requests to complete.
-     */
-    public void setGraceful(boolean graceful)
-    {
-        if (graceful && isStarted())
-            throw new IllegalStateException(getState());
-        _graceful = graceful;
-
-        _requests.reset();
-        if (!graceful && _shutdown != null)
-            _shutdown.complete(null);
-    }
-
-    /**
-     * @return The number of current requests, or -1 if {@link #isGraceful()} is false.
-     */
-    public long getCurrentRequests()
-    {
-        return _graceful ? _requests.sum() : -1;
     }
 
     /**
@@ -606,49 +565,6 @@ public class ContextHandler extends Handler.Wrapper implements Attributes, Grace
         }
     }
 
-    @ManagedAttribute("true for graceful shutdown, which allows existing requests to complete")
-    public boolean isShutdown()
-    {
-        return _availability.get() == Availability.SHUTDOWN;
-    }
-
-    /**
-     * Set shutdown status. This field allows for graceful shutdown of a context. A started context may be put into non accepting state so that existing
-     * requests can complete, but no new requests are accepted.
-     */
-    @Override
-    public CompletableFuture<Void> shutdown()
-    {
-        while (true)
-        {
-            Availability availability = _availability.get();
-            switch (availability)
-            {
-                case STOPPED ->
-                {
-                    return CompletableFuture.completedFuture(null);
-                }
-                case SHUTDOWN ->
-                {
-                    return _shutdown;
-                }
-                default ->
-                {
-                    if (!_availability.compareAndSet(availability, Availability.SHUTDOWN))
-                        continue;
-                    checkShutdown();
-                    return _shutdown;
-                }
-            }
-        }
-    }
-
-    protected void checkShutdown()
-    {
-        if (_graceful && !_shutdown.isDone() && _requests.sum() == 0)
-            _shutdown.complete(null);
-    }
-
     /**
      * @return false if this context is unavailable (sends 503)
      */
@@ -714,8 +630,6 @@ public class ContextHandler extends Handler.Wrapper implements Attributes, Grace
         if (getContextPath() == null)
             throw new IllegalStateException("Null contextPath");
 
-        _shutdown = _graceful ? new CompletableFuture<>() : CompletableFuture.completedFuture(null);
-        _requests.reset();
         _availability.set(Availability.STARTING);
         try
         {
@@ -768,8 +682,6 @@ public class ContextHandler extends Handler.Wrapper implements Attributes, Grace
     @Override
     protected void doStop() throws Exception
     {
-        if (_shutdown != null && !_shutdown.isDone())
-            _shutdown.complete(null);
         _context.call(super::doStop, null);
 
         File tempDirectory = getTempDirectory();
@@ -871,15 +783,9 @@ public class ContextHandler extends Handler.Wrapper implements Attributes, Grace
         // Past this point we are calling the downstream handler in scope.
         ClassLoader lastLoader = enterScope(contextRequest);
         ContextResponse contextResponse = wrapResponse(contextRequest, response);
-        if (_graceful)
-            callback = new CompletionCallback(callback);
         try
         {
-            boolean handled = handler.handle(contextRequest, contextResponse, callback);
-            if (_graceful && !handled && callback instanceof CompletionCallback completionCallback)
-                completionCallback.completed();
-
-            return handled;
+            return handler.handle(contextRequest, contextResponse, callback);
         }
         catch (Throwable t)
         {
@@ -891,8 +797,6 @@ public class ContextHandler extends Handler.Wrapper implements Attributes, Grace
             // We exit scope here, even though handle() is asynchronous,
             // as we have wrapped all our callbacks to re-enter the scope.
             exitScope(contextRequest, request.getContext(), lastLoader);
-            if (_graceful && isShutdown())
-                checkShutdown();
         }
     }
 
@@ -1164,8 +1068,6 @@ public class ContextHandler extends Handler.Wrapper implements Attributes, Grace
         b.append(getContextPath());
         b.append(",b=").append(getBaseResource());
         b.append(",a=").append(_availability.get());
-        if (_graceful)
-            b.append(",r=").append(_requests.sum());
 
         if (!vhosts.isEmpty())
         {
@@ -1425,23 +1327,6 @@ public class ContextHandler extends Handler.Wrapper implements Attributes, Grace
                 ", _wild=" + _wild +
                 ", _vConnector='" + _vConnector + '\'' +
                 '}';
-        }
-    }
-
-    private class CompletionCallback extends Callback.Nested
-    {
-        public CompletionCallback(Callback callback)
-        {
-            super(callback);
-            _requests.increment();
-        }
-
-        @Override
-        public void completed()
-        {
-            _requests.decrement();
-            if (isShutdown())
-                checkShutdown();
         }
     }
 }
