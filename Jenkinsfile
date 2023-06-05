@@ -109,11 +109,13 @@ def mavenBuild(jdk, cmdline, mvnName) {
           configFile(fileId: 'maven-build-cache-config.xml', variable: 'MVN_BUILD_CACHE_CONFIG')]) {
           //sh "cp $MVN_BUILD_CACHE_CONFIG .mvn/maven-build-cache-config.xml"
           //-Dmaven.build.cache.configPath=$MVN_BUILD_CACHE_CONFIG
-          if ( env.BRANCH_NAME == 'jetty-12.0.x' ) {
-            // when not using cache
-            extraArgs " -Dmaven.test.failure.ignore=true -Dmaven.build.cache.enabled=false "
-          } else {
+          buildCache = useBuildCache()
+          if (buildCache) {
             extraArgs = " -Dmaven.build.cache.lazyRestore=true -Dmaven.build.cache.restoreGeneratedSources=false -Dmaven.build.cache.remote.url=dav:http://nginx-cache-service.jenkins.svc.cluster.local:80 -Dmaven.build.cache.remote.enabled=true -Dmaven.build.cache.remote.save.enabled=true -Dmaven.build.cache.remote.server.id=remote-build-cache-server "
+          } else {
+            // when not using cache
+            echo "Not using build cache"
+            extraArgs " -Dmaven.test.failure.ignore=true -Dmaven.build.cache.enabled=false "
           }
           sh "mvn $extraArgs -Dmaven.repo.uri=http://nexus-service.nexus.svc.cluster.local:8081/repository/maven-public/ -ntp -s $GLOBAL_MVN_SETTINGS -Dmaven.repo.local=.repository -Pci -V -B -e -U $cmdline"
         }
@@ -124,6 +126,19 @@ def mavenBuild(jdk, cmdline, mvnName) {
       junit testResults: '**/target/surefire-reports/*.xml,**/target/invoker-reports/TEST*.xml', allowEmptyResults: true
     }
   }
+}
+
+/**
+ * calculate to use cache or not. per default will not run
+ */
+def useBuildCache() {
+  def labelNoBuildCache = false
+  if (env.BRANCH_NAME ==~ /PR-\d+/) {
+    labelNoBuildCache = pullRequest.labels.contains("build-no-cache")
+  }
+  def buildCache = (env.BRANCH_NAME != 'jetty-12.0.x') && !labelNoBuildCache;
+  return buildCache;
+
 }
 
 // vim: et:ts=2:sw=2:ft=groovy
