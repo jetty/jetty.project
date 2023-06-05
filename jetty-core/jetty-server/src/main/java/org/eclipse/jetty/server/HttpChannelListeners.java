@@ -45,7 +45,6 @@ public class HttpChannelListeners implements HttpChannel.Listener
 
     private static final MethodType LISTENER_TYPE_ON_RESPONSE_COMMITTED = methodType(Void.TYPE, Request.class, Integer.TYPE, HttpFields.class);
     private static final MethodType LISTENER_TYPE_ON_RESPONSE_WRITE = methodType(Void.TYPE, Request.class, Boolean.TYPE, ByteBuffer.class);
-    public static final MethodHandle EMPTY_ON_RESPONSE_WRITE_HANDLE = MethodHandles.empty(LISTENER_TYPE_ON_RESPONSE_WRITE);
     private static final MethodType LISTENER_TYPE_ON_RESPONSE_WRITE_COMPLETE = methodType(Void.TYPE, Request.class, Throwable.class);
 
     private static final MethodType LISTENER_TYPE_ON_COMPLETE = methodType(Void.TYPE, Request.class, Throwable.class);
@@ -95,6 +94,7 @@ public class HttpChannelListeners implements HttpChannel.Listener
     private MethodHandle onResponseWriteHandle;
     private MethodHandle onResponseWriteCompleteHandle;
     private MethodHandle onCompleteHandle;
+    private boolean invokeOnResponseWrite;
 
     public HttpChannelListeners()
     {
@@ -110,10 +110,11 @@ public class HttpChannelListeners implements HttpChannel.Listener
         onRequestReadHandle = MethodHandles.empty(LISTENER_TYPE_ON_REQUEST_READ);
 
         onResponseCommittedHandle = MethodHandles.empty(LISTENER_TYPE_ON_RESPONSE_COMMITTED);
-        onResponseWriteHandle = EMPTY_ON_RESPONSE_WRITE_HANDLE;
+        onResponseWriteHandle = MethodHandles.empty(LISTENER_TYPE_ON_RESPONSE_WRITE);
         onResponseWriteCompleteHandle = MethodHandles.empty(LISTENER_TYPE_ON_RESPONSE_WRITE_COMPLETE);
 
         onCompleteHandle = MethodHandles.empty(LISTENER_TYPE_ON_COMPLETE);
+        invokeOnResponseWrite = false;
 
         if (listeners == null)
             return;
@@ -133,7 +134,10 @@ public class HttpChannelListeners implements HttpChannel.Listener
                 if (notDefault(LISTENER_HANDLER_ON_RESPONSE_COMMITTED, listener))
                     onResponseCommittedHandle = MethodHandles.foldArguments(onResponseCommittedHandle, LISTENER_HANDLER_ON_RESPONSE_COMMITTED.bindTo(listener));
                 if (notDefault(LISTENER_HANDLER_ON_RESPONSE_WRITE, listener))
+                {
+                    invokeOnResponseWrite = true;
                     onResponseWriteHandle = MethodHandles.foldArguments(onResponseWriteHandle, LISTENER_HANDLER_ON_RESPONSE_WRITE.bindTo(listener));
+                }
                 if (notDefault(LISTENER_HANDLER_ON_RESPONSE_WRITE_COMPLETE, listener))
                     onResponseWriteCompleteHandle = MethodHandles.foldArguments(onResponseWriteCompleteHandle, LISTENER_HANDLER_ON_RESPONSE_WRITE_COMPLETE.bindTo(listener));
                 if (notDefault(LISTENER_HANDLER_ON_COMPLETE, listener))
@@ -227,7 +231,7 @@ public class HttpChannelListeners implements HttpChannel.Listener
     {
         try
         {
-            if (onResponseWriteHandle != EMPTY_ON_RESPONSE_WRITE_HANDLE)
+            if (invokeOnResponseWrite)
                 onResponseWriteHandle.invoke(request, last, content.asReadOnlyBuffer());
         }
         catch (Throwable ignore)
