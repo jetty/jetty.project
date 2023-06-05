@@ -115,7 +115,7 @@ def mavenBuild(jdk, cmdline, mvnName) {
           } else {
             // when not using cache
             echo "Not using build cache"
-            extraArgs " -Dmaven.test.failure.ignore=true -Dmaven.build.cache.enabled=false "
+            extraArgs = " -Dmaven.test.failure.ignore=true -Dmaven.build.cache.enabled=false "
           }
           sh "mvn $extraArgs -Dmaven.repo.uri=http://nexus-service.nexus.svc.cluster.local:8081/repository/maven-public/ -ntp -s $GLOBAL_MVN_SETTINGS -Dmaven.repo.local=.repository -Pci -V -B -e -U $cmdline"
         }
