@@ -135,7 +135,7 @@ public class WebAppContext extends ServletContextHandler implements WebAppClassL
     private Throwable _unavailableException;
 
     private Map<String, String> _resourceAliases;
-    private boolean _ownClassLoader = false;
+    private ClassLoader _initialClassLoader;
     private boolean _configurationDiscovered = true;
     private boolean _allowDuplicateFragmentNames = false;
     private boolean _throwUnavailableOnStartupException = false;
@@ -471,13 +471,9 @@ public class WebAppContext extends ServletContextHandler implements WebAppClassL
         }
 
         // Configure classloader
-        _ownClassLoader = false;
-        if (getClassLoader() == null)
-        {
-            WebAppClassLoader classLoader = new WebAppClassLoader(this);
-            setClassLoader(classLoader);
-            _ownClassLoader = true;
-        }
+        _initialClassLoader = getClassLoader();
+        if (!(_initialClassLoader instanceof WebAppClassLoader))
+            setClassLoader(new WebAppClassLoader(_initialClassLoader, this));
 
         if (LOG.isDebugEnabled())
         {
@@ -1305,13 +1301,13 @@ public class WebAppContext extends ServletContextHandler implements WebAppClassL
         }
         finally
         {
-            if (_ownClassLoader)
+            if (!(_initialClassLoader instanceof WebAppClassLoader))
             {
                 ClassLoader loader = getClassLoader();
                 if (loader instanceof URLClassLoader)
                     ((URLClassLoader)loader).close();
-                setClassLoader(null);
             }
+            setClassLoader(_initialClassLoader);
 
             _unavailableException = null;
         }
