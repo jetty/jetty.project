@@ -586,11 +586,13 @@ public class HttpChannelState implements HttpChannel, Components
             }
             catch (Throwable t)
             {
-                request._callback.failed(t);
                 thrownFailure = t;
+                request._callback.failed(thrownFailure);
             }
-
-            _combinedListener.onAfterHandling(request, handled, thrownFailure);
+            finally
+            {
+                _combinedListener.onAfterHandling(request, handled, thrownFailure);
+            }
 
             HttpStream stream;
             Throwable failure;
@@ -1172,10 +1174,9 @@ public class HttpChannelState implements HttpChannel, Components
                 else if (failure != null)
                 {
                     Throwable throwable = failure;
-                    ByteBuffer slice = content != null ? content.slice() : BufferUtil.EMPTY_BUFFER;
                     httpChannelState._serializedInvoker.run(() ->
                     {
-                        _listener.onResponseWrite(_request, last, slice, throwable);
+                        _listener.onResponseWriteComplete(_request, throwable);
                         callback.failed(throwable);
                     });
                 }
@@ -1197,12 +1198,9 @@ public class HttpChannelState implements HttpChannel, Components
             {
                 if (LOG.isDebugEnabled())
                     LOG.debug("writing last={} {} {}", last, BufferUtil.toDetailString(content), this);
-                ByteBuffer slice = content != null ? content.slice() : BufferUtil.EMPTY_BUFFER;
-                Callback listenerCallback = Callback.from(() ->
-                {
-                    _listener.onResponseWrite(_request, last, slice, null);
-                }, this);
-                stream.send(_request._metaData, responseMetaData, last, content, listenerCallback);
+
+                _listener.onResponseWrite(_request, last, content);
+                stream.send(_request._metaData, responseMetaData, last, content, this);
             }
         }
 
@@ -1229,7 +1227,10 @@ public class HttpChannelState implements HttpChannel, Components
                 httpChannel.lockedStreamSendCompleted(true);
             }
             if (callback != null)
+            {
+                _listener.onResponseWriteComplete(_request, null);
                 httpChannel._serializedInvoker.run(callback::succeeded);
+            }
         }
 
         /**
@@ -1257,7 +1258,10 @@ public class HttpChannelState implements HttpChannel, Components
                 httpChannel.lockedStreamSendCompleted(false);
             }
             if (callback != null)
+            {
+                _listener.onResponseWriteComplete(_request, x);
                 httpChannel._serializedInvoker.run(() -> callback.failed(x));
+            }
         }
 
         @Override

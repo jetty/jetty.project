@@ -147,11 +147,16 @@ public class HttpChannelEventTest
             }
 
             @Override
-            public void onResponseWrite(Request request, boolean last, ByteBuffer content, Throwable failure)
+            public void onResponseWrite(Request request, boolean last, ByteBuffer content)
             {
                 if (last)
                     responseLastSeen.set(true);
                 responseWriteLength.addAndGet(content.remaining());
+            }
+
+            @Override
+            public void onResponseWriteComplete(Request request, Throwable failure)
+            {
                 if (failure != null)
                     responseFailure.set(failure);
             }
@@ -266,11 +271,19 @@ public class HttpChannelEventTest
         AtomicLong contentSeenLength = new AtomicLong();
         connector.addBean(new HttpChannel.Listener()
         {
+            AtomicBoolean lastSeen = new AtomicBoolean(false);
             @Override
-            public void onResponseWrite(Request request, boolean last, ByteBuffer content, Throwable failure)
+            public void onResponseWrite(Request request, boolean last, ByteBuffer content)
             {
                 contentSeenLength.addAndGet(content.remaining());
-                if (last || failure != null)
+                if (last)
+                    lastSeen.set(true);
+            }
+
+            @Override
+            public void onResponseWriteComplete(Request request, Throwable failure)
+            {
+                if (lastSeen.get() || failure != null)
                     latch.countDown();
             }
         });

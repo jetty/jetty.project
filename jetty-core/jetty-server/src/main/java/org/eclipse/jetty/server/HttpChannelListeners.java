@@ -44,7 +44,8 @@ public class HttpChannelListeners implements HttpChannel.Listener
     private static final MethodType LISTENER_TYPE_ON_REQUEST_READ = methodType(Void.TYPE, Request.class, Content.Chunk.class);
 
     private static final MethodType LISTENER_TYPE_ON_RESPONSE_COMMITTED = methodType(Void.TYPE, Request.class, Integer.TYPE, HttpFields.class);
-    private static final MethodType LISTENER_TYPE_ON_RESPONSE_WRITE = methodType(Void.TYPE, Request.class, Boolean.TYPE, ByteBuffer.class, Throwable.class);
+    private static final MethodType LISTENER_TYPE_ON_RESPONSE_WRITE = methodType(Void.TYPE, Request.class, Boolean.TYPE, ByteBuffer.class);
+    private static final MethodType LISTENER_TYPE_ON_RESPONSE_WRITE_COMPLETE = methodType(Void.TYPE, Request.class, Throwable.class);
 
     private static final MethodType LISTENER_TYPE_ON_COMPLETE = methodType(Void.TYPE, Request.class, Throwable.class);
 
@@ -57,6 +58,7 @@ public class HttpChannelListeners implements HttpChannel.Listener
 
     private static final MethodHandle LISTENER_HANDLER_ON_RESPONSE_COMMITTED;
     private static final MethodHandle LISTENER_HANDLER_ON_RESPONSE_WRITE;
+    private static final MethodHandle LISTENER_HANDLER_ON_RESPONSE_WRITE_COMPLETE;
 
     private static final MethodHandle LISTENER_HANDLER_ON_COMPLETE;
 
@@ -73,14 +75,11 @@ public class HttpChannelListeners implements HttpChannel.Listener
 
             LISTENER_HANDLER_ON_RESPONSE_COMMITTED = lookup.findVirtual(HttpChannel.Listener.class, "onResponseCommitted", LISTENER_TYPE_ON_RESPONSE_COMMITTED);
             LISTENER_HANDLER_ON_RESPONSE_WRITE = lookup.findVirtual(HttpChannel.Listener.class, "onResponseWrite", LISTENER_TYPE_ON_RESPONSE_WRITE);
+            LISTENER_HANDLER_ON_RESPONSE_WRITE_COMPLETE = lookup.findVirtual(HttpChannel.Listener.class, "onResponseWriteComplete", LISTENER_TYPE_ON_RESPONSE_WRITE_COMPLETE);
 
             LISTENER_HANDLER_ON_COMPLETE = lookup.findVirtual(HttpChannel.Listener.class, "onComplete", LISTENER_TYPE_ON_COMPLETE);
         }
-        catch (NoSuchMethodException e)
-        {
-            throw new RuntimeException(e);
-        }
-        catch (IllegalAccessException e)
+        catch (NoSuchMethodException | IllegalAccessException e)
         {
             throw new RuntimeException(e);
         }
@@ -93,6 +92,7 @@ public class HttpChannelListeners implements HttpChannel.Listener
     private MethodHandle onRequestReadHandle;
     private MethodHandle onResponseCommittedHandle;
     private MethodHandle onResponseWriteHandle;
+    private MethodHandle onResponseWriteCompleteHandle;
     private MethodHandle onCompleteHandle;
 
     public HttpChannelListeners()
@@ -110,6 +110,7 @@ public class HttpChannelListeners implements HttpChannel.Listener
 
         onResponseCommittedHandle = MethodHandles.empty(LISTENER_TYPE_ON_RESPONSE_COMMITTED);
         onResponseWriteHandle = MethodHandles.empty(LISTENER_TYPE_ON_RESPONSE_WRITE);
+        onResponseWriteCompleteHandle = MethodHandles.empty(LISTENER_TYPE_ON_RESPONSE_WRITE_COMPLETE);
 
         onCompleteHandle = MethodHandles.empty(LISTENER_TYPE_ON_COMPLETE);
 
@@ -132,6 +133,8 @@ public class HttpChannelListeners implements HttpChannel.Listener
                     onResponseCommittedHandle = MethodHandles.foldArguments(onResponseCommittedHandle, LISTENER_HANDLER_ON_RESPONSE_COMMITTED.bindTo(listener));
                 if (notDefault(LISTENER_HANDLER_ON_RESPONSE_WRITE, listener))
                     onResponseWriteHandle = MethodHandles.foldArguments(onResponseWriteHandle, LISTENER_HANDLER_ON_RESPONSE_WRITE.bindTo(listener));
+                if (notDefault(LISTENER_HANDLER_ON_RESPONSE_WRITE_COMPLETE, listener))
+                    onResponseWriteCompleteHandle = MethodHandles.foldArguments(onResponseWriteCompleteHandle, LISTENER_HANDLER_ON_RESPONSE_WRITE_COMPLETE.bindTo(listener));
                 if (notDefault(LISTENER_HANDLER_ON_COMPLETE, listener))
                     onCompleteHandle = MethodHandles.foldArguments(onCompleteHandle, LISTENER_HANDLER_ON_COMPLETE.bindTo(listener));
             }
@@ -219,11 +222,25 @@ public class HttpChannelListeners implements HttpChannel.Listener
     }
 
     @Override
-    public void onResponseWrite(Request request, boolean last, ByteBuffer content, Throwable failure)
+    public void onResponseWrite(Request request, boolean last, ByteBuffer content)
     {
         try
         {
-            onResponseWriteHandle.invoke(request, last, content, failure);
+            onResponseWriteHandle.invoke(request, last, content);
+        }
+        catch (Throwable ignore)
+        {
+            if (LOG.isTraceEnabled())
+                LOG.trace("IGNORED", ignore);
+        }
+    }
+
+    @Override
+    public void onResponseWriteComplete(Request request, Throwable throwable)
+    {
+        try
+        {
+            onResponseWriteCompleteHandle.invoke(request, throwable);
         }
         catch (Throwable ignore)
         {

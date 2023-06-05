@@ -128,47 +128,48 @@ public interface HttpChannel extends Invocable
      * <p>Listener instances that are set as a bean on the {@link Connector} are
      * efficiently added to {@link HttpChannel}.
      */
-    public interface Listener extends EventListener
+    interface Listener extends EventListener
     {
         /**
-         * Invoked just after the HTTP request line and headers have been parsed.
+         * Invoked just after the HTTP request line and headers have been parsed
+         * (i.e. from within the call to {@link HttpChannel#onRequest(MetaData.Request)}).
          *
          * <p>
          * This the state of the request from the network, and does not include
          * any request customizations (eg: forwarding, secure, etc)
          * </p>
          *
-         * <p>
-         * Implementations must not block!
-         * </p>
-         *
-         * @param request the request object
+         * @param request the request object, which should not be mutated in any way.
+         * @see HttpChannel#onRequest(MetaData.Request)
          */
         default void onRequestBegin(Request request)
         {
         }
 
         /**
-         * Invoked just before calling the server handler tree.
+         * Invoked just before calling the server handler tree (i.e. just before the {@link Runnable}
+         * returned from {@link HttpChannel#onRequest(MetaData.Request)} is run).
          *
          * <p>
          * This is the final state of the request before the handlers are called.
          * This includes any request customization.
          * </p>
          *
-         * @param request the request object
+         * @param request the request object, which should not be mutated in any way.
+         * @see HttpChannel#onRequest(MetaData.Request)
          */
         default void onBeforeHandling(Request request)
         {
         }
 
         /**
-         * Invoked after application handling
+         * Invoked after application handling (i.e. just after the call to the {@link Runnable} returned from
+         * {@link HttpChannel#onRequest(MetaData.Request)} returns).
          *
-         * @param request the request object
+         * @param request the request object, which should not be mutated in any way.
          * @param handled if the server handlers handled the request
          * @param failure the exception thrown by the application
-         * @see Handler#handle(Request, Response, Callback)
+         * @see HttpChannel#onRequest(MetaData.Request)
          */
         default void onAfterHandling(Request request, boolean handled, Throwable failure)
         {
@@ -176,47 +177,67 @@ public interface HttpChannel extends Invocable
 
         /**
          * Invoked every time a request content chunk has been parsed, just before
-         * making it available to the application.
+         * making it available to the application (i.e. from within a call to
+         * {@link Request#read()}).
          *
-         * <p>
-         *     TODO: make notes about Trailers / EOF / Errors
-         * </p>
-         *
-         * @param request the request object
-         * @param chunk a request content chunk TODO: make bytebuffer a slice?
+         * @param request the request object, which should not be mutated in any way.
+         * @param chunk a request content chunk, including {@link org.eclipse.jetty.io.Content.Chunk.Error}
+         *              and {@link org.eclipse.jetty.http.Trailers} chunks.
+         *              If a reference to the chunk (or its {@link ByteBuffer}) is kept,
+         *              then {@link Content.Chunk#retain()} must be called.
+         * @see Request#read()
          */
         default void onRequestRead(Request request, Content.Chunk chunk)
         {
         }
 
         /**
-         * Invoked just before the response line is written to the network.
+         * Invoked just before the response is line written to the network (i.e. from
+         * within the first call to {@link Response#write(boolean, ByteBuffer, Callback)}).
          *
-         * @param request the request object
+         * @param request the request object, which should not be mutated in any way.
          * @param status the response status
-         * @param response the response object
+         * @param response the immutable fields of the response object
+         * @see Response#write(boolean, ByteBuffer, Callback)
          */
         default void onResponseCommitted(Request request, int status, HttpFields response)
         {
         }
 
         /**
-         * Invoked after a response content chunk has been written to the network.
+         * Invoked before each response content chunk has been written (i.e. from
+         * within the any call to {@link Response#write(boolean, ByteBuffer, Callback)}).
          *
-         * @param request the request object
+         * @param request the request object, which should not be mutated in any way.
          * @param last indicating last write
-         * @param content a {@link ByteBuffer#slice() slice} of the response content chunk
-         * @param failure if there was a failure to write the given content
+         * @param content The {@link ByteBuffer} of the response content chunk. This should not be modified nor consumed.
+         * @see Response#write(boolean, ByteBuffer, Callback)
          */
-        default void onResponseWrite(Request request, boolean last, ByteBuffer content, Throwable failure)
+        default void onResponseWrite(Request request, boolean last, ByteBuffer content)
+        {
+        }
+
+        /**
+         * Invoked after each response content chunk has been written
+         * (i.e. immediately before calling the {@link Callback} passed to
+         * {@link Response#write(boolean, ByteBuffer, Callback)}).
+         *
+         * @param request the request object, which should not be mutated in any way.
+         * @param failure if there was a failure to write the given content
+         * @see Response#write(boolean, ByteBuffer, Callback)
+         */
+        default void onResponseWriteComplete(Request request, Throwable failure)
         {
         }
 
         /**
          * Invoked when the request <em>and</em> response processing are complete,
-         * just before the request and response will be recycled.
+         * just before the request and response will be recycled (i.e. after the
+         * {@link Runnable} return from {@link HttpChannel#onRequest(MetaData.Request)}
+         * has returned and the {@link Callback} passed to {@link Handler#handle(Request, Response, Callback)}
+         * has been completed).
          *
-         * @param request the request object
+         * @param request the request object, which should not be mutated in any way.
          * @param failure if there was a failure to complete
          */
         default void onComplete(Request request, Throwable failure)
