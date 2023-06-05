@@ -210,7 +210,7 @@ public interface HttpChannel extends Invocable
          *
          * @param request the request object, which should not be mutated in any way.
          * @param last indicating last write
-         * @param content The {@link ByteBuffer} of the response content chunk. This should not be modified nor consumed.
+         * @param content The {@link ByteBuffer} of the response content chunk (readonly).
          * @see Response#write(boolean, ByteBuffer, Callback)
          */
         default void onResponseWrite(Request request, boolean last, ByteBuffer content)
