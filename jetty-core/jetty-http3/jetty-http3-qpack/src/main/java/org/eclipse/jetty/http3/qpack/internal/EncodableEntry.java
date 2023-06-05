@@ -14,14 +14,13 @@
 package org.eclipse.jetty.http3.qpack.internal;
 
 import java.nio.ByteBuffer;
-import java.nio.charset.StandardCharsets;
 import java.util.Objects;
 
 import org.eclipse.jetty.http.HttpField;
 import org.eclipse.jetty.http.HttpVersion;
 import org.eclipse.jetty.http.PreEncodedHttpField;
-import org.eclipse.jetty.http.compression.HuffmanEncoder;
 import org.eclipse.jetty.http.compression.NBitIntegerEncoder;
+import org.eclipse.jetty.http.compression.NBitStringEncoder;
 import org.eclipse.jetty.http3.qpack.internal.table.Entry;
 
 public abstract class EncodableEntry
@@ -96,19 +95,19 @@ public abstract class EncodableEntry
             {
                 // Indexed Field Line with Static Reference.
                 int relativeIndex = _entry.getIndex();
-                return 1 + NBitIntegerEncoder.octetsNeeded(6, relativeIndex);
+                return NBitIntegerEncoder.octetsNeeded(6, relativeIndex);
             }
             else if (_entry.getIndex() < base)
             {
                 // Indexed Field Line with Dynamic Reference.
                 int relativeIndex =  base - (_entry.getIndex() + 1);
-                return 1 + NBitIntegerEncoder.octetsNeeded(6, relativeIndex);
+                return NBitIntegerEncoder.octetsNeeded(6, relativeIndex);
             }
             else
             {
                 // Indexed Field Line with Post-Base Index.
                 int relativeIndex = _entry.getIndex() - base;
-                return 1 + NBitIntegerEncoder.octetsNeeded(4, relativeIndex);
+                return NBitIntegerEncoder.octetsNeeded(4, relativeIndex);
             }
         }
 
@@ -163,27 +162,12 @@ public abstract class EncodableEntry
             }
 
             // Encode the value.
-            String value = getValue();
-            if (_huffman)
-            {
-                buffer.put((byte)0x80);
-                NBitIntegerEncoder.encode(buffer, 7, HuffmanEncoder.octetsNeeded(value));
-                HuffmanEncoder.encode(buffer, value);
-            }
-            else
-            {
-                buffer.put((byte)0x00);
-                NBitIntegerEncoder.encode(buffer, 7, value.length());
-                buffer.put(value.getBytes(StandardCharsets.ISO_8859_1));
-            }
+            NBitStringEncoder.encode(buffer, 8, getValue(), _huffman);
         }
 
         @Override
         public int getRequiredSize(int base)
         {
-            String value = getValue();
-            int valueLength = _huffman ? HuffmanEncoder.octetsNeeded(value) : value.length();
-
             int nameOctets;
             if (_nameEntry.isStatic())
             {
@@ -201,7 +185,7 @@ public abstract class EncodableEntry
                 nameOctets = NBitIntegerEncoder.octetsNeeded(3, relativeIndex);
             }
 
-            return 1 + nameOctets + 1 + NBitIntegerEncoder.octetsNeeded(7, valueLength) + valueLength;
+            return nameOctets + NBitStringEncoder.octetsNeeded(8, getValue(), _huffman);
         }
 
         @Override
@@ -232,38 +216,19 @@ public abstract class EncodableEntry
         public void encode(ByteBuffer buffer, int base)
         {
             byte allowIntermediary = 0x00; // TODO: this is 0x10 bit, when should this be set?
-            String name = getName();
-            String value = getValue();
 
             // Encode the prefix code and the name.
-            if (_huffman)
-            {
-                buffer.put((byte)(0x28 | allowIntermediary));
-                NBitIntegerEncoder.encode(buffer, 3, HuffmanEncoder.octetsNeeded(name));
-                HuffmanEncoder.encode(buffer, name);
-                buffer.put((byte)0x80);
-                NBitIntegerEncoder.encode(buffer, 7, HuffmanEncoder.octetsNeeded(value));
-                HuffmanEncoder.encode(buffer, value);
-            }
-            else
-            {
-                buffer.put((byte)(0x20 | allowIntermediary));
-                NBitIntegerEncoder.encode(buffer, 3, name.length());
-                buffer.put(name.getBytes(StandardCharsets.ISO_8859_1));
-                buffer.put((byte)0x00);
-                NBitIntegerEncoder.encode(buffer, 7, value.length());
-                buffer.put(value.getBytes(StandardCharsets.ISO_8859_1));
-            }
+            buffer.put((byte)(0x20 | allowIntermediary));
+            NBitStringEncoder.encode(buffer, 4, getName(), _huffman);
+            NBitStringEncoder.encode(buffer, 8, getValue(), _huffman);
         }
 
         @Override
         public int getRequiredSize(int base)
         {
-            String name = getName();
-            String value = getValue();
-            int nameLength = _huffman ? HuffmanEncoder.octetsNeeded(name) : name.length();
-            int valueLength = _huffman ? HuffmanEncoder.octetsNeeded(value) : value.length();
-            return 2 + NBitIntegerEncoder.octetsNeeded(3, nameLength) + nameLength + NBitIntegerEncoder.octetsNeeded(7, valueLength) + valueLength;
+            int encodedNameSize = NBitStringEncoder.octetsNeeded(4, getName(), _huffman);
+            int encodedValueSize = NBitStringEncoder.octetsNeeded(8, getValue(), _huffman);
+            return encodedNameSize + encodedValueSize;
         }
 
         @Override

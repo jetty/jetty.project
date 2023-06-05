@@ -27,6 +27,7 @@ import org.eclipse.jetty.http.HttpHeader;
 import org.eclipse.jetty.http.HttpParser;
 import org.eclipse.jetty.http.HttpStatus;
 import org.eclipse.jetty.http.HttpVersion;
+import org.eclipse.jetty.util.BufferUtil;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -102,7 +103,7 @@ public class ResponseContentParser extends StreamContentParser
             while (remaining > 0)
             {
                 if (LOG.isDebugEnabled())
-                    LOG.debug("Response {} {}, state {} {}", request, FCGI.StreamType.STD_OUT, state, buffer);
+                    LOG.debug("Response {} {}, state {} {}", request, FCGI.StreamType.STD_OUT, state, BufferUtil.toDetailString(buffer));
 
                 switch (state)
                 {
@@ -131,7 +132,9 @@ public class ResponseContentParser extends StreamContentParser
                     }
                     case RAW_CONTENT:
                     {
-                        if (notifyContent(buffer))
+                        ByteBuffer content = buffer.asReadOnlyBuffer();
+                        buffer.position(buffer.limit());
+                        if (notifyContent(content))
                             return true;
                         remaining = 0;
                         break;

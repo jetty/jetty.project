@@ -153,7 +153,7 @@ public class HttpConnectionOverFCGI extends AbstractConnection implements IConne
     boolean parseAndFill()
     {
         if (LOG.isDebugEnabled())
-            LOG.debug("parseAndFill");
+            LOG.debug("parseAndFill {}", networkBuffer);
         if (networkBuffer == null)
             networkBuffer = newNetworkBuffer();
         EndPoint endPoint = getEndPoint();
@@ -455,7 +455,7 @@ public class HttpConnectionOverFCGI extends AbstractConnection implements IConne
         public boolean onHeaders(int request)
         {
             if (LOG.isDebugEnabled())
-                LOG.debug("onHeaders r={}", request);
+                LOG.debug("onHeaders r={} {}", request, networkBuffer);
             HttpChannelOverFCGI channel = HttpConnectionOverFCGI.this.channel;
             if (channel != null)
             {
@@ -471,7 +471,7 @@ public class HttpConnectionOverFCGI extends AbstractConnection implements IConne
         public boolean onContent(int request, FCGI.StreamType stream, ByteBuffer buffer)
         {
             if (LOG.isDebugEnabled())
-                LOG.debug("onContent r={},t={},b={}", request, stream, BufferUtil.toDetailString(buffer));
+                LOG.debug("onContent r={},t={},b={} {}", request, stream, BufferUtil.toDetailString(buffer), networkBuffer);
             switch (stream)
             {
                 case STD_OUT ->

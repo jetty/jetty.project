@@ -148,6 +148,8 @@ public abstract class QuicheConnection
 
     public abstract CloseInfo getRemoteCloseInfo();
 
+    public abstract CloseInfo getLocalCloseInfo();
+
     public static class CloseInfo
     {
         private final long error;

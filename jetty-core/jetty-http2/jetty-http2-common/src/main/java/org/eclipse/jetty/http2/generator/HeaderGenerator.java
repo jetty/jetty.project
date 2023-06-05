@@ -23,7 +23,7 @@ import org.eclipse.jetty.util.BufferUtil;
 
 public class HeaderGenerator
 {
-    private int maxFrameSize = Frame.DEFAULT_MAX_LENGTH;
+    private int maxFrameSize = Frame.DEFAULT_MAX_SIZE;
     private final ByteBufferPool bufferPool;
     private final boolean useDirectByteBuffers;
 

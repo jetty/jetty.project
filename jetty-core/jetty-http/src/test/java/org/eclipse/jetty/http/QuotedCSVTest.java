@@ -144,7 +144,7 @@ public class QuotedCSVTest
         assertThat(QuotedCSV.unquote("\"\""), is(""));
         assertThat(QuotedCSV.unquote("foo"), is("foo"));
         assertThat(QuotedCSV.unquote("\"foo\""), is("foo"));
-        assertThat(QuotedCSV.unquote("f\"o\"o"), is("foo"));
+        assertThat(QuotedCSV.unquote("f\"o\"o"), is("f\"o\"o"));
         assertThat(QuotedCSV.unquote("\"\\\"foo\""), is("\"foo"));
         assertThat(QuotedCSV.unquote("\\foo"), is("\\foo"));
     }
@@ -157,6 +157,6 @@ public class QuotedCSVTest
         assertThat(QuotedCSV.join(Collections.singletonList("hi")), is("hi"));
         assertThat(QuotedCSV.join("hi", "ho"), is("hi, ho"));
         assertThat(QuotedCSV.join("h i", "h,o"), is("\"h i\", \"h,o\""));
-        assertThat(QuotedCSV.join("h\"i", "h\to"), is("\"h\\\"i\", \"h\\to\""));
+        assertThat(QuotedCSV.join("h\"i", "h\to"), is("\"h\\\"i\", \"h\to\""));
     }
 }

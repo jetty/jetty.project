@@ -40,7 +40,6 @@ import org.eclipse.jetty.http2.frames.PrefaceFrame;
 import org.eclipse.jetty.http2.frames.SettingsFrame;
 import org.eclipse.jetty.http2.parser.ServerParser;
 import org.eclipse.jetty.http2.parser.SettingsBodyParser;
-import org.eclipse.jetty.io.ByteBufferPool;
 import org.eclipse.jetty.io.Connection;
 import org.eclipse.jetty.io.EndPoint;
 import org.eclipse.jetty.io.ssl.SslConnection;
@@ -57,7 +56,7 @@ import org.eclipse.jetty.util.StringUtil;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-public class HTTP2ServerConnection extends HTTP2Connection implements ConnectionMetaData
+public class HTTP2ServerConnection extends HTTP2Connection implements ConnectionMetaData, ServerParser.Listener
 {
     private static final Logger LOG = LoggerFactory.getLogger(HTTP2ServerConnection.class);
 
@@ -69,9 +68,9 @@ public class HTTP2ServerConnection extends HTTP2Connection implements Connection
     private final HttpConfiguration httpConfig;
     private final String id;
 
-    public HTTP2ServerConnection(ByteBufferPool byteBufferPool, Connector connector, EndPoint endPoint, HttpConfiguration httpConfig, ServerParser parser, HTTP2Session session, int inputBufferSize, ServerSessionListener listener)
+    public HTTP2ServerConnection(Connector connector, EndPoint endPoint, HttpConfiguration httpConfig, HTTP2ServerSession session, int inputBufferSize, ServerSessionListener listener)
     {
-        super(byteBufferPool, connector.getExecutor(), endPoint, parser, session, inputBufferSize);
+        super(connector.getByteBufferPool(), connector.getExecutor(), endPoint, session, inputBufferSize);
         this.connector = connector;
         this.listener = listener;
         this.httpConfig = httpConfig;
@@ -79,9 +78,9 @@ public class HTTP2ServerConnection extends HTTP2Connection implements Connection
     }
 
     @Override
-    protected ServerParser getParser()
+    public HTTP2ServerSession getSession()
     {
-        return (ServerParser)super.getParser();
+        return (HTTP2ServerSession)super.getSession();
     }
 
     @Override
@@ -107,6 +106,12 @@ public class HTTP2ServerConnection extends HTTP2Connection implements Connection
         {
             LOG.info("Failure while notifying listener {}", listener, x);
         }
+    }
+
+    @Override
+    public void onPreface()
+    {
+        getSession().onPreface();
     }
 
     public void onNewStream(HTTP2Stream stream, HeadersFrame frame)
@@ -153,7 +158,7 @@ public class HTTP2ServerConnection extends HTTP2Connection implements Connection
     public void onStreamTimeout(Stream stream, Throwable failure, Promise<Boolean> promise)
     {
         if (LOG.isDebugEnabled())
-            LOG.debug("Idle timeout on {}: {}", stream, failure);
+            LOG.debug("Idle timeout on {}", stream, failure);
         HTTP2Channel.Server channel = (HTTP2Channel.Server)((HTTP2Stream)stream).getAttachment();
         if (channel != null)
         {
@@ -202,7 +207,7 @@ public class HTTP2ServerConnection extends HTTP2Connection implements Connection
                 .map(HTTP2Channel.Server::isIdle)
                 .reduce(true, Boolean::logicalAnd);
         if (LOG.isDebugEnabled())
-            LOG.debug("{} idle timeout on {}: {}", result ? "Processed" : "Ignored", session, failure);
+            LOG.debug("{} idle timeout on {}", result ? "Processed" : "Ignored", session, failure);
         return result;
     }
 
@@ -224,7 +229,7 @@ public class HTTP2ServerConnection extends HTTP2Connection implements Connection
         httpChannel.setHttpStream(httpStream);
         Runnable task = httpStream.onPushRequest(request);
         if (task != null)
-            offerTask(task, false);
+            offerTask(task, true);
     }
 
 /*
@@ -301,7 +306,7 @@ public class HTTP2ServerConnection extends HTTP2Connection implements Connection
     {
         if (HttpMethod.PRI.is(request.getMethod()))
         {
-            getParser().directUpgrade();
+            getSession().directUpgrade();
         }
         else
         {
@@ -324,7 +329,7 @@ public class HTTP2ServerConnection extends HTTP2Connection implements Connection
             responseFields.put(HttpHeader.UPGRADE, "h2c");
             responseFields.put(HttpHeader.CONNECTION, "Upgrade");
 
-            getParser().standardUpgrade();
+            getSession().standardUpgrade();
 
             // We fake that we received a client preface, so that we can send the
             // server preface as the first HTTP/2 frame as required by the spec.

@@ -13,27 +13,32 @@
 
 package org.eclipse.jetty.quic.quiche.foreign.incubator;
 
-import java.io.File;
 import java.io.IOException;
+import java.io.InputStream;
 import java.net.InetSocketAddress;
 import java.nio.ByteBuffer;
 import java.nio.charset.StandardCharsets;
-import java.nio.file.Paths;
+import java.nio.file.Path;
+import java.security.KeyStore;
+import java.security.cert.Certificate;
 import java.util.AbstractMap;
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.Collection;
 import java.util.List;
 import java.util.Map;
-import java.util.Objects;
 
+import org.eclipse.jetty.quic.quiche.PemExporter;
 import org.eclipse.jetty.quic.quiche.QuicheConfig;
 import org.eclipse.jetty.quic.quiche.QuicheConnection;
-import org.eclipse.jetty.quic.quiche.SSLKeyPair;
+import org.eclipse.jetty.toolchain.test.jupiter.WorkDir;
+import org.eclipse.jetty.toolchain.test.jupiter.WorkDirExtension;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.condition.EnabledOnJre;
 import org.junit.jupiter.api.condition.JRE;
+import org.junit.jupiter.api.extension.ExtendWith;
 
 import static org.eclipse.jetty.quic.quiche.Quiche.QUICHE_MIN_CLIENT_INITIAL_LEN;
 import static org.hamcrest.MatcherAssert.assertThat;
@@ -43,8 +48,11 @@ import static org.hamcrest.core.Is.is;
 
 // TODO: make this test work in Java 18 too.
 @EnabledOnJre(value = JRE.JAVA_17, disabledReason = "Java 18's Foreign APIs are incompatible with Java 17's Foreign APIs")
+@ExtendWith(WorkDirExtension.class)
 public class LowLevelQuicheTest
 {
+    public WorkDir workDir;
+
     private final Collection<ForeignIncubatorQuicheConnection> connectionsToDisposeOf = new ArrayList<>();
 
     private InetSocketAddress clientSocketAddress;
@@ -53,6 +61,7 @@ public class LowLevelQuicheTest
     private QuicheConfig serverQuicheConfig;
     private ForeignIncubatorQuicheConnection.TokenMinter tokenMinter;
     private ForeignIncubatorQuicheConnection.TokenValidator tokenValidator;
+    private Certificate[] serverCertificateChain;
 
     @BeforeEach
     protected void setUp() throws Exception
@@ -60,10 +69,18 @@ public class LowLevelQuicheTest
         clientSocketAddress = new InetSocketAddress("localhost", 9999);
         serverSocketAddress = new InetSocketAddress("localhost", 8888);
 
+        KeyStore keyStore = KeyStore.getInstance("PKCS12");
+        try (InputStream is = getClass().getResourceAsStream("/keystore.p12"))
+        {
+            keyStore.load(is, "storepwd".toCharArray());
+        }
+        Path targetFolder = workDir.getEmptyPathDir();
+
         clientQuicheConfig = new QuicheConfig();
         clientQuicheConfig.setApplicationProtos("http/0.9");
         clientQuicheConfig.setDisableActiveMigration(true);
-        clientQuicheConfig.setVerifyPeer(false);
+        clientQuicheConfig.setVerifyPeer(true);
+        clientQuicheConfig.setTrustedCertsPemPath(PemExporter.exportTrustStore(keyStore, targetFolder).toString());
         clientQuicheConfig.setMaxIdleTimeout(1_000L);
         clientQuicheConfig.setInitialMaxData(10_000_000L);
         clientQuicheConfig.setInitialMaxStreamDataBidiLocal(10_000_000L);
@@ -73,11 +90,11 @@ public class LowLevelQuicheTest
         clientQuicheConfig.setInitialMaxStreamsBidi(100L);
         clientQuicheConfig.setCongestionControl(QuicheConfig.CongestionControl.CUBIC);
 
-        SSLKeyPair serverKeyPair = new SSLKeyPair(Paths.get(Objects.requireNonNull(getClass().getResource("/keystore.p12")).toURI()), "PKCS12", "storepwd".toCharArray(), "mykey", "storepwd".toCharArray());
-        File[] pemFiles = serverKeyPair.export(new File(System.getProperty("java.io.tmpdir")));
+        serverCertificateChain = keyStore.getCertificateChain("mykey");
         serverQuicheConfig = new QuicheConfig();
-        serverQuicheConfig.setPrivKeyPemPath(pemFiles[0].getPath());
-        serverQuicheConfig.setCertChainPemPath(pemFiles[1].getPath());
+        Path[] keyPair = PemExporter.exportKeyPair(keyStore, "mykey", "storepwd".toCharArray(), targetFolder);
+        serverQuicheConfig.setPrivKeyPemPath(keyPair[0].toString());
+        serverQuicheConfig.setCertChainPemPath(keyPair[1].toString());
         serverQuicheConfig.setApplicationProtos("http/0.9");
         serverQuicheConfig.setVerifyPeer(false);
         serverQuicheConfig.setMaxIdleTimeout(1_000L);
@@ -138,6 +155,14 @@ public class LowLevelQuicheTest
 
         // assert that stream 0 is finished on server
         assertThat(serverQuicheConnection.isStreamFinished(0), is(true));
+
+        // assert that there is not client certificate
+        assertThat(serverQuicheConnection.getPeerCertificate(), nullValue());
+
+        // assert that the server certificate was correctly received by the client
+        byte[] peerCertificate = clientQuicheConnection.getPeerCertificate();
+        byte[] serverCert = serverCertificateChain[0].getEncoded();
+        assertThat(Arrays.equals(serverCert, peerCertificate), is(true));
     }
 
     @Test
@@ -171,6 +196,14 @@ public class LowLevelQuicheTest
 
         // assert that stream 0 is finished on server
         assertThat(serverQuicheConnection.isStreamFinished(0), is(true));
+
+        // assert that there is not client certificate
+        assertThat(serverQuicheConnection.getPeerCertificate(), nullValue());
+
+        // assert that the server certificate was correctly received by the client
+        byte[] peerCertificate = clientQuicheConnection.getPeerCertificate();
+        byte[] serverCert = serverCertificateChain[0].getEncoded();
+        assertThat(Arrays.equals(serverCert, peerCertificate), is(true));
     }
 
     @Test
@@ -186,6 +219,14 @@ public class LowLevelQuicheTest
 
         assertThat(clientQuicheConnection.getNegotiatedProtocol(), is("€"));
         assertThat(serverQuicheConnection.getNegotiatedProtocol(), is("€"));
+
+        // assert that there is not client certificate
+        assertThat(serverQuicheConnection.getPeerCertificate(), nullValue());
+
+        // assert that the server certificate was correctly received by the client
+        byte[] peerCertificate = clientQuicheConnection.getPeerCertificate();
+        byte[] serverCert = serverCertificateChain[0].getEncoded();
+        assertThat(Arrays.equals(serverCert, peerCertificate), is(true));
     }
 
     private void drainServerToFeedClient(Map.Entry<ForeignIncubatorQuicheConnection, ForeignIncubatorQuicheConnection> entry, int expectedSize) throws IOException
@@ -261,7 +302,7 @@ public class LowLevelQuicheTest
         for (String proto : clientQuicheConfig.getApplicationProtos())
             protosLen += 1 + proto.getBytes(StandardCharsets.UTF_8).length;
 
-        drainServerToFeedClient(entry, 300 + protosLen);
+        drainServerToFeedClient(entry, 420 + protosLen);
         assertThat(serverQuicheConnection.isConnectionEstablished(), is(false));
         assertThat(clientQuicheConnection.isConnectionEstablished(), is(true));
 

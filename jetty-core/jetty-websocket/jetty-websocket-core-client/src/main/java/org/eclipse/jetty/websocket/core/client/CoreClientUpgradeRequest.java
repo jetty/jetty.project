@@ -62,6 +62,7 @@ import org.slf4j.LoggerFactory;
 
 public abstract class CoreClientUpgradeRequest implements Response.CompleteListener, HttpUpgrader.Factory
 {
+
     public static CoreClientUpgradeRequest from(WebSocketCoreClient webSocketClient, URI requestURI, FrameHandler frameHandler)
     {
         return new CoreClientUpgradeRequest(webSocketClient, requestURI)
@@ -377,10 +378,9 @@ public abstract class CoreClientUpgradeRequest implements Response.CompleteListe
             {
                 for (String extVal : extValues)
                 {
-                    QuotedStringTokenizer tok = new QuotedStringTokenizer(extVal, ",");
-                    while (tok.hasMoreTokens())
+                    for (Iterator<String> i = QuotedStringTokenizer.CSV.tokenize(extVal); i.hasNext();)
                     {
-                        negotiatedExtensions.add(ExtensionConfig.parse(tok.nextToken()));
+                        negotiatedExtensions.add(ExtensionConfig.parse(i.next()));
                     }
                 }
             }

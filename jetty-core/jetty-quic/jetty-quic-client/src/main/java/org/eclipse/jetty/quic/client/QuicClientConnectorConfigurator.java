@@ -19,6 +19,9 @@ import java.nio.channels.DatagramChannel;
 import java.nio.channels.SelectableChannel;
 import java.nio.channels.SelectionKey;
 import java.nio.channels.SocketChannel;
+import java.nio.file.Files;
+import java.nio.file.Path;
+import java.security.KeyStore;
 import java.util.Map;
 import java.util.Objects;
 import java.util.function.UnaryOperator;
@@ -30,6 +33,10 @@ import org.eclipse.jetty.io.EndPoint;
 import org.eclipse.jetty.io.ManagedSelector;
 import org.eclipse.jetty.io.SocketChannelEndPoint;
 import org.eclipse.jetty.quic.common.QuicConfiguration;
+import org.eclipse.jetty.quic.quiche.PemExporter;
+import org.eclipse.jetty.util.ssl.SslContextFactory;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 /**
  * <p>A QUIC specific {@link ClientConnector.Configurator}.</p>
@@ -41,8 +48,17 @@ import org.eclipse.jetty.quic.common.QuicConfiguration;
  */
 public class QuicClientConnectorConfigurator extends ClientConnector.Configurator
 {
+    private static final Logger LOG = LoggerFactory.getLogger(QuicClientConnectorConfigurator.class);
+
+    static final String PRIVATE_KEY_PEM_PATH_KEY = QuicClientConnectorConfigurator.class.getName() + ".privateKeyPemPath";
+    static final String CERTIFICATE_CHAIN_PEM_PATH_KEY = QuicClientConnectorConfigurator.class.getName() + ".certificateChainPemPath";
+    static final String TRUSTED_CERTIFICATES_PEM_PATH_KEY = QuicClientConnectorConfigurator.class.getName() + ".trustedCertificatesPemPath";
+
     private final QuicConfiguration configuration = new QuicConfiguration();
     private final UnaryOperator<Connection> configurator;
+    private Path privateKeyPemPath;
+    private Path certificateChainPemPath;
+    private Path trustedCertificatesPemPath;
 
     public QuicClientConnectorConfigurator()
     {
@@ -56,12 +72,69 @@ public class QuicClientConnectorConfigurator extends ClientConnector.Configurato
         configuration.setSessionRecvWindow(16 * 1024 * 1024);
         configuration.setBidirectionalStreamRecvWindow(8 * 1024 * 1024);
         configuration.setDisableActiveMigration(true);
-        configuration.setVerifyPeerCertificates(true);
     }
 
     public QuicConfiguration getQuicConfiguration()
     {
         return configuration;
+    }
+
+    @Override
+    protected void doStart() throws Exception
+    {
+        Path pemWorkDirectory = configuration.getPemWorkDirectory();
+        ClientConnector clientConnector = getBean(ClientConnector.class);
+        SslContextFactory.Client sslContextFactory = clientConnector.getSslContextFactory();
+        KeyStore trustStore = sslContextFactory.getTrustStore();
+        if (trustStore != null)
+        {
+            trustedCertificatesPemPath = PemExporter.exportTrustStore(trustStore, pemWorkDirectory != null ? pemWorkDirectory : Path.of(System.getProperty("java.io.tmpdir")));
+            configuration.getImplementationConfiguration().put(TRUSTED_CERTIFICATES_PEM_PATH_KEY, trustedCertificatesPemPath.toString());
+        }
+        String certAlias = sslContextFactory.getCertAlias();
+        if (certAlias != null)
+        {
+            if (pemWorkDirectory == null)
+                throw new IllegalStateException("No PEM work directory configured");
+            KeyStore keyStore = sslContextFactory.getKeyStore();
+            String keyManagerPassword = sslContextFactory.getKeyManagerPassword();
+            char[] password = keyManagerPassword == null ? sslContextFactory.getKeyStorePassword().toCharArray() : keyManagerPassword.toCharArray();
+            Path[] keyPair = PemExporter.exportKeyPair(keyStore, certAlias, password, pemWorkDirectory);
+            privateKeyPemPath = keyPair[0];
+            certificateChainPemPath = keyPair[1];
+            configuration.getImplementationConfiguration().put(PRIVATE_KEY_PEM_PATH_KEY, privateKeyPemPath.toString());
+            configuration.getImplementationConfiguration().put(CERTIFICATE_CHAIN_PEM_PATH_KEY, certificateChainPemPath.toString());
+        }
+        super.doStart();
+    }
+
+    @Override
+    protected void doStop() throws Exception
+    {
+        super.doStop();
+        deleteFile(privateKeyPemPath);
+        privateKeyPemPath = null;
+        configuration.getImplementationConfiguration().remove(PRIVATE_KEY_PEM_PATH_KEY);
+        deleteFile(certificateChainPemPath);
+        certificateChainPemPath = null;
+        configuration.getImplementationConfiguration().remove(CERTIFICATE_CHAIN_PEM_PATH_KEY);
+        deleteFile(trustedCertificatesPemPath);
+        trustedCertificatesPemPath = null;
+        configuration.getImplementationConfiguration().remove(TRUSTED_CERTIFICATES_PEM_PATH_KEY);
+    }
+
+    private void deleteFile(Path file)
+    {
+        try
+        {
+            if (file != null)
+                Files.delete(file);
+        }
+        catch (IOException x)
+        {
+            if (LOG.isDebugEnabled())
+                LOG.debug("could not delete {}", file, x);
+        }
     }
 
     @Override
@@ -74,6 +147,7 @@ public class QuicClientConnectorConfigurator extends ClientConnector.Configurato
     public ChannelWithAddress newChannelWithAddress(ClientConnector clientConnector, SocketAddress address, Map<String, Object> context) throws IOException
     {
         context.put(QuicConfiguration.CONTEXT_KEY, configuration);
+
         DatagramChannel channel = DatagramChannel.open();
         if (clientConnector.getBindAddress() == null)
         {

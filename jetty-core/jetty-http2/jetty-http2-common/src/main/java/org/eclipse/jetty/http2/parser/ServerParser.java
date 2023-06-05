@@ -28,16 +28,26 @@ public class ServerParser extends Parser
 {
     private static final Logger LOG = LoggerFactory.getLogger(ServerParser.class);
 
-    private final Listener listener;
-    private final PrefaceParser prefaceParser;
+    private PrefaceParser prefaceParser;
     private State state = State.PREFACE;
     private boolean notifyPreface = true;
 
-    public ServerParser(ByteBufferPool bufferPool, Listener listener, int maxDynamicTableSize, int maxHeaderSize, RateControl rateControl)
+    public ServerParser(ByteBufferPool bufferPool, int maxHeaderSize, RateControl rateControl)
     {
-        super(bufferPool, listener, maxDynamicTableSize, maxHeaderSize, rateControl);
-        this.listener = listener;
+        super(bufferPool, maxHeaderSize, rateControl);
+    }
+
+    @Override
+    public void init(Parser.Listener listener)
+    {
+        super.init(listener);
         this.prefaceParser = new PrefaceParser(listener);
+    }
+
+    @Override
+    protected Listener getListener()
+    {
+        return (Listener)super.getListener();
     }
 
     /**
@@ -133,6 +143,7 @@ public class ServerParser extends Parser
 
     private void notifyPreface()
     {
+        Listener listener = getListener();
         try
         {
             listener.onPreface();

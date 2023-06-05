@@ -30,20 +30,20 @@ public class Generator
 
     public Generator(ByteBufferPool bufferPool)
     {
-        this(bufferPool, 4096, 0);
+        this(bufferPool, 0);
     }
 
-    public Generator(ByteBufferPool bufferPool, int maxDynamicTableSize, int maxHeaderBlockFragment)
+    public Generator(ByteBufferPool bufferPool, int maxHeaderBlockFragment)
     {
-        this(bufferPool, true, maxDynamicTableSize, maxHeaderBlockFragment);
+        this(bufferPool, true, maxHeaderBlockFragment);
     }
 
-    public Generator(ByteBufferPool bufferPool, boolean useDirectByteBuffers, int maxDynamicTableSize, int maxHeaderBlockFragment)
+    public Generator(ByteBufferPool bufferPool, boolean useDirectByteBuffers, int maxHeaderBlockFragment)
     {
         this.bufferPool = bufferPool;
 
         headerGenerator = new HeaderGenerator(bufferPool, useDirectByteBuffers);
-        hpackEncoder = new HpackEncoder(maxDynamicTableSize);
+        hpackEncoder = new HpackEncoder();
 
         this.generators = new FrameGenerator[FrameType.values().length];
         this.generators[FrameType.HEADERS.getType()] = new HeadersGenerator(headerGenerator, hpackEncoder, maxHeaderBlockFragment);
@@ -66,14 +66,9 @@ public class Generator
         return bufferPool;
     }
 
-    public void setValidateHpackEncoding(boolean validateEncoding)
+    public HpackEncoder getHpackEncoder()
     {
-        hpackEncoder.setValidateEncoding(validateEncoding);
-    }
-
-    public void setHeaderTableSize(int headerTableSize)
-    {
-        hpackEncoder.setRemoteMaxDynamicTableSize(headerTableSize);
+        return hpackEncoder;
     }
 
     public void setMaxFrameSize(int maxFrameSize)
@@ -89,10 +84,5 @@ public class Generator
     public int data(ByteBufferPool.Accumulator accumulator, DataFrame frame, int maxLength)
     {
         return dataGenerator.generate(accumulator, frame, maxLength);
-    }
-
-    public void setMaxHeaderListSize(int value)
-    {
-        hpackEncoder.setMaxHeaderListSize(value);
     }
 }

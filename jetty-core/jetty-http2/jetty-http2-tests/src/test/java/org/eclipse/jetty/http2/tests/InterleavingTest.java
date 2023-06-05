@@ -68,7 +68,7 @@ public class InterleavingTest extends AbstractTest
             }
         });
 
-        int maxFrameSize = Frame.DEFAULT_MAX_LENGTH + 1;
+        int maxFrameSize = Frame.DEFAULT_MAX_SIZE + 1;
         Session session = newClientSession(new Session.Listener()
         {
             @Override

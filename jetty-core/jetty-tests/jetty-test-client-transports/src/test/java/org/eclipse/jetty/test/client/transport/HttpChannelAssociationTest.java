@@ -105,7 +105,7 @@ public class HttpChannelAssociationTest extends AbstractTest
         assertTrue(latch.await(5 * idleTimeout, TimeUnit.MILLISECONDS));
     }
 
-    private HttpClientTransport newHttpClientTransport(Transport transport, Predicate<HttpExchange> code)
+    private HttpClientTransport newHttpClientTransport(Transport transport, Predicate<HttpExchange> code) throws Exception
     {
         return switch (transport)
         {
@@ -173,7 +173,6 @@ public class HttpChannelAssociationTest extends AbstractTest
                 HTTP3Client http3Client = new HTTP3Client();
                 http3Client.getClientConnector().setSelectors(1);
                 http3Client.getClientConnector().setSslContextFactory(newSslContextFactoryClient());
-                http3Client.getQuicConfiguration().setVerifyPeerCertificates(false);
                 yield new HttpClientTransportOverHTTP3(http3Client)
                 {
                     @Override

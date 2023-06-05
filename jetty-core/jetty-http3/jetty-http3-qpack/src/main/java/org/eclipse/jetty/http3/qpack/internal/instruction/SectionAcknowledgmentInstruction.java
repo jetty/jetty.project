@@ -38,7 +38,7 @@ public class SectionAcknowledgmentInstruction implements Instruction
     @Override
     public void encode(ByteBufferPool byteBufferPool, ByteBufferPool.Accumulator accumulator)
     {
-        int size = NBitIntegerEncoder.octetsNeeded(7, _streamId) + 1;
+        int size = NBitIntegerEncoder.octetsNeeded(7, _streamId);
         RetainableByteBuffer retainableByteBuffer = byteBufferPool.acquire(size, false);
         ByteBuffer buffer = retainableByteBuffer.getByteBuffer();
         BufferUtil.clearToFill(buffer);

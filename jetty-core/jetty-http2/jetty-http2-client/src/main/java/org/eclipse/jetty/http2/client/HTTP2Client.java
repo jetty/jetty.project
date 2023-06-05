@@ -28,6 +28,7 @@ import org.eclipse.jetty.http2.FlowControlStrategy;
 import org.eclipse.jetty.http2.api.Session;
 import org.eclipse.jetty.http2.frames.Frame;
 import org.eclipse.jetty.http2.frames.SettingsFrame;
+import org.eclipse.jetty.http2.hpack.HpackContext;
 import org.eclipse.jetty.io.ByteBufferPool;
 import org.eclipse.jetty.io.ClientConnectionFactory;
 import org.eclipse.jetty.io.ClientConnector;
@@ -106,11 +107,13 @@ public class HTTP2Client extends ContainerLifeCycle
     private List<String> protocols = List.of("h2");
     private int initialSessionRecvWindow = 16 * 1024 * 1024;
     private int initialStreamRecvWindow = 8 * 1024 * 1024;
-    private int maxFrameLength = Frame.DEFAULT_MAX_LENGTH;
+    private int maxFrameSize = Frame.DEFAULT_MAX_SIZE;
     private int maxConcurrentPushedStreams = 32;
     private int maxSettingsKeys = SettingsFrame.DEFAULT_MAX_KEYS;
-    private int maxDynamicTableSize = 4096;
+    private int maxDecoderTableCapacity = HpackContext.DEFAULT_MAX_TABLE_CAPACITY;
+    private int maxEncoderTableCapacity = HpackContext.DEFAULT_MAX_TABLE_CAPACITY;
     private int maxHeaderBlockFragment = 0;
+    private int maxResponseHeadersSize = -1;
     private FlowControlStrategy.Factory flowControlStrategyFactory = () -> new BufferingFlowControlStrategy(0.5F);
     private long streamIdleTimeout;
     private boolean useInputDirectByteBuffers = true;
@@ -282,15 +285,15 @@ public class HTTP2Client extends ContainerLifeCycle
         this.initialStreamRecvWindow = initialStreamRecvWindow;
     }
 
-    @ManagedAttribute("The max frame length in bytes")
-    public int getMaxFrameLength()
+    @ManagedAttribute("The max frame size in bytes")
+    public int getMaxFrameSize()
     {
-        return maxFrameLength;
+        return maxFrameSize;
     }
 
-    public void setMaxFrameLength(int maxFrameLength)
+    public void setMaxFrameSize(int maxFrameSize)
     {
-        this.maxFrameLength = maxFrameLength;
+        this.maxFrameSize = maxFrameSize;
     }
 
     @ManagedAttribute("The max number of concurrent pushed streams")
@@ -315,15 +318,32 @@ public class HTTP2Client extends ContainerLifeCycle
         this.maxSettingsKeys = maxSettingsKeys;
     }
 
-    @ManagedAttribute("The HPACK dynamic table maximum size")
-    public int getMaxDynamicTableSize()
+    @ManagedAttribute("The HPACK encoder dynamic table maximum capacity")
+    public int getMaxEncoderTableCapacity()
     {
-        return maxDynamicTableSize;
+        return maxEncoderTableCapacity;
     }
 
-    public void setMaxDynamicTableSize(int maxDynamicTableSize)
+    /**
+     * <p>Sets the limit for the encoder HPACK dynamic table capacity.</p>
+     * <p>Setting this value to {@code 0} disables the use of the dynamic table.</p>
+     *
+     * @param maxEncoderTableCapacity The HPACK encoder dynamic table maximum capacity
+     */
+    public void setMaxEncoderTableCapacity(int maxEncoderTableCapacity)
     {
-        this.maxDynamicTableSize = maxDynamicTableSize;
+        this.maxEncoderTableCapacity = maxEncoderTableCapacity;
+    }
+
+    @ManagedAttribute("The HPACK decoder dynamic table maximum capacity")
+    public int getMaxDecoderTableCapacity()
+    {
+        return maxDecoderTableCapacity;
+    }
+
+    public void setMaxDecoderTableCapacity(int maxDecoderTableCapacity)
+    {
+        this.maxDecoderTableCapacity = maxDecoderTableCapacity;
     }
 
     @ManagedAttribute("The max size of header block fragments")
@@ -335,6 +355,17 @@ public class HTTP2Client extends ContainerLifeCycle
     public void setMaxHeaderBlockFragment(int maxHeaderBlockFragment)
     {
         this.maxHeaderBlockFragment = maxHeaderBlockFragment;
+    }
+
+    @ManagedAttribute("The max size of response headers")
+    public int getMaxResponseHeadersSize()
+    {
+        return maxResponseHeadersSize;
+    }
+
+    public void setMaxResponseHeadersSize(int maxResponseHeadersSize)
+    {
+        this.maxResponseHeadersSize = maxResponseHeadersSize;
     }
 
     @ManagedAttribute("Whether to use direct ByteBuffers for reading")

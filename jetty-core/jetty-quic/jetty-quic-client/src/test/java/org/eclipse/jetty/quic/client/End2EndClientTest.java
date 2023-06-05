@@ -13,6 +13,8 @@
 
 package org.eclipse.jetty.quic.client;
 
+import java.io.InputStream;
+import java.security.KeyStore;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.TimeUnit;
 
@@ -34,6 +36,8 @@ import org.eclipse.jetty.server.HttpConnectionFactory;
 import org.eclipse.jetty.server.Request;
 import org.eclipse.jetty.server.Response;
 import org.eclipse.jetty.server.Server;
+import org.eclipse.jetty.toolchain.test.jupiter.WorkDir;
+import org.eclipse.jetty.toolchain.test.jupiter.WorkDirExtension;
 import org.eclipse.jetty.util.Callback;
 import org.eclipse.jetty.util.component.LifeCycle;
 import org.eclipse.jetty.util.ssl.SslContextFactory;
@@ -41,12 +45,16 @@ import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Tag;
 import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.extension.ExtendWith;
 
 import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.core.Is.is;
 
+@ExtendWith(WorkDirExtension.class)
 public class End2EndClientTest
 {
+    public WorkDir workDir;
+
     private Server server;
     private QuicServerConnector connector;
     private HttpClient client;
@@ -61,8 +69,14 @@ public class End2EndClientTest
     @BeforeEach
     public void setUp() throws Exception
     {
+        KeyStore keyStore = KeyStore.getInstance("PKCS12");
+        try (InputStream is = getClass().getResourceAsStream("/keystore.p12"))
+        {
+            keyStore.load(is, "storepwd".toCharArray());
+        }
+
         SslContextFactory.Server sslContextFactory = new SslContextFactory.Server();
-        sslContextFactory.setKeyStorePath("src/test/resources/keystore.p12");
+        sslContextFactory.setKeyStore(keyStore);
         sslContextFactory.setKeyStorePassword("storepwd");
 
         server = new Server();
@@ -71,6 +85,7 @@ public class End2EndClientTest
         HttpConnectionFactory http1 = new HttpConnectionFactory(httpConfiguration);
         HTTP2ServerConnectionFactory http2 = new HTTP2ServerConnectionFactory(httpConfiguration);
         connector = new QuicServerConnector(server, sslContextFactory, http1, http2);
+        connector.getQuicConfiguration().setPemWorkDirectory(workDir.getEmptyPathDir());
         server.addConnector(connector);
 
         server.setHandler(new Handler.Abstract()
@@ -85,11 +100,13 @@ public class End2EndClientTest
 
         server.start();
 
+        ClientConnector clientConnector = new ClientConnector(new QuicClientConnectorConfigurator());
+        SslContextFactory.Client clientSslContextFactory = new SslContextFactory.Client();
+        clientSslContextFactory.setTrustStore(keyStore);
+        clientConnector.setSslContextFactory(clientSslContextFactory);
         ClientConnectionFactory.Info http1Info = HttpClientConnectionFactory.HTTP11;
-        ClientConnectionFactoryOverHTTP2.HTTP2 http2Info = new ClientConnectionFactoryOverHTTP2.HTTP2(new HTTP2Client());
-        QuicClientConnectorConfigurator configurator = new QuicClientConnectorConfigurator();
-        configurator.getQuicConfiguration().setVerifyPeerCertificates(false);
-        HttpClientTransportDynamic transport = new HttpClientTransportDynamic(new ClientConnector(configurator), http1Info, http2Info);
+        ClientConnectionFactoryOverHTTP2.HTTP2 http2Info = new ClientConnectionFactoryOverHTTP2.HTTP2(new HTTP2Client(clientConnector));
+        HttpClientTransportDynamic transport = new HttpClientTransportDynamic(clientConnector, http1Info, http2Info);
         client = new HttpClient(transport);
         client.start();
     }

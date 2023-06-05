@@ -18,6 +18,7 @@ import java.net.URI;
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.HashSet;
+import java.util.Iterator;
 import java.util.List;
 
 import jakarta.servlet.ServletContext;
@@ -144,10 +145,10 @@ public class QuickStartDescriptorProcessor extends IterativeDescriptorProcessor 
             {
                 context.removeAttribute(name);
 
-                QuotedStringTokenizer tok = new QuotedStringTokenizer(value, ",");
-                while (tok.hasMoreElements())
+                for (Iterator<String> i = QuotedStringTokenizer.CSV.tokenize(value); i.hasNext();)
                 {
-                    values.add(tok.nextToken().trim());
+                    String token = i.next();
+                    values.add(token);
                 }
             }
             default -> values.add(value);

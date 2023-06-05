@@ -29,7 +29,6 @@ import java.util.concurrent.CompletableFuture;
 
 import org.eclipse.jetty.io.Content;
 import org.eclipse.jetty.util.IO;
-import org.eclipse.jetty.util.QuotedStringTokenizer;
 import org.eclipse.jetty.util.thread.AutoLock;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -402,10 +401,10 @@ public class MultiPartFormData extends CompletableFuture<MultiPartFormData.Parts
             String value = "form-data";
             String name = part.getName();
             if (name != null)
-                value += "; name=" + QuotedStringTokenizer.quote(name);
+                value += "; name=" + QuotedCSV.quote(name);
             String fileName = part.getFileName();
             if (fileName != null)
-                value += "; filename=" + QuotedStringTokenizer.quote(fileName);
+                value += "; filename=" + QuotedCSV.quote(fileName);
             return HttpFields.build(headers).put(HttpHeader.CONTENT_DISPOSITION, value);
         }
     }

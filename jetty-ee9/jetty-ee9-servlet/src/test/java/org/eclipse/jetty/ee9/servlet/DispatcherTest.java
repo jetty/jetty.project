@@ -64,14 +64,12 @@ import org.eclipse.jetty.server.LocalConnector;
 import org.eclipse.jetty.server.Server;
 import org.eclipse.jetty.server.handler.ContextHandlerCollection;
 import org.eclipse.jetty.toolchain.test.MavenPaths;
-import org.eclipse.jetty.toolchain.test.MavenTestingUtils;
 import org.eclipse.jetty.util.MultiMap;
 import org.eclipse.jetty.util.TypeUtil;
 import org.eclipse.jetty.util.UrlEncoded;
 import org.eclipse.jetty.util.component.LifeCycle;
 import org.hamcrest.Matcher;
 import org.junit.jupiter.api.AfterEach;
-import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Disabled;
 import org.junit.jupiter.api.Test;
 import org.slf4j.Logger;
@@ -875,7 +873,7 @@ public class DispatcherTest
         @Override
         public void init(FilterConfig filterConfig) throws ServletException
         {
-            servletContext = filterConfig.getServletContext().getContext("/context");
+            servletContext = filterConfig.getServletContext();
         }
 
         @Override
@@ -1071,7 +1069,7 @@ public class DispatcherTest
         @Override
         public void service(HttpServletRequest req, HttpServletResponse res) throws ServletException, IOException
         {
-            ServletContext targetContext = getServletConfig().getServletContext().getContext("/resource");
+            ServletContext targetContext = getServletConfig().getServletContext();
 
             RequestDispatcher dispatcher = targetContext.getRequestDispatcher(req.getPathInfo());
 
