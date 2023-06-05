@@ -39,6 +39,9 @@ import org.junit.jupiter.api.extension.ExtendWith;
 
 import static org.eclipse.jetty.quic.quiche.Quiche.QUICHE_MIN_CLIENT_INITIAL_LEN;
 import static org.hamcrest.MatcherAssert.assertThat;
+import static org.hamcrest.Matchers.both;
+import static org.hamcrest.Matchers.greaterThanOrEqualTo;
+import static org.hamcrest.Matchers.lessThanOrEqualTo;
 import static org.hamcrest.Matchers.not;
 import static org.hamcrest.Matchers.nullValue;
 import static org.hamcrest.core.Is.is;
@@ -148,6 +151,20 @@ public class LowLevelQuicheClientCertTest
         assertThat(fed, is(expectedSize));
     }
 
+    private void drainServerToFeedClient(Map.Entry<ForeignIncubatorQuicheConnection, ForeignIncubatorQuicheConnection> entry, int expectedSizeLowerBound, int expectedSizeUpperBound) throws IOException
+    {
+        ForeignIncubatorQuicheConnection clientQuicheConnection = entry.getKey();
+        ForeignIncubatorQuicheConnection serverQuicheConnection = entry.getValue();
+        ByteBuffer buffer = ByteBuffer.allocate(QUICHE_MIN_CLIENT_INITIAL_LEN);
+
+        int drained = serverQuicheConnection.drainCipherBytes(buffer);
+
+        assertThat(drained, is(both(greaterThanOrEqualTo(expectedSizeLowerBound)).and(lessThanOrEqualTo(expectedSizeUpperBound))));
+        buffer.flip();
+        int fed = clientQuicheConnection.feedCipherBytes(buffer, clientSocketAddress, serverSocketAddress);
+        assertThat(fed, is(both(greaterThanOrEqualTo(expectedSizeLowerBound)).and(lessThanOrEqualTo(expectedSizeUpperBound))));
+    }
+
     private void drainClientToFeedServer(Map.Entry<ForeignIncubatorQuicheConnection, ForeignIncubatorQuicheConnection> entry, int expectedSize) throws IOException
     {
         ForeignIncubatorQuicheConnection clientQuicheConnection = entry.getKey();
@@ -218,7 +235,7 @@ public class LowLevelQuicheClientCertTest
         assertThat(clientQuicheConnection.isConnectionEstablished(), is(true));
 
         // 2nd round (needed b/c of client cert)
-        drainServerToFeedClient(entry, 71);
+        drainServerToFeedClient(entry, 71, 72);
         assertThat(serverQuicheConnection.isConnectionEstablished(), is(false));
         assertThat(clientQuicheConnection.isConnectionEstablished(), is(true));
 
