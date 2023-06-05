@@ -190,7 +190,7 @@ public abstract class HTTP3StreamConnection extends AbstractConnection
                         }
 
                         if (!parser.isDataMode())
-                            throw new IllegalStateException();
+                            continue;
 
                         if (stream.hasDemandOrStall())
                         {
