@@ -125,8 +125,14 @@ public abstract class HTTP3StreamConnection extends AbstractConnection
                 case FRAME ->
                 {
                     action.getAndSet(null).run();
-                    // Do not release the buffer here to avoid races with
-                    // user-spawned threads that may call Stream.read().
+                    // Do not release the buffer before the stream started closing
+                    // to avoid races with user-spawned threads that may call Stream.read().
+                    if (remotelyClosed)
+                    {
+                        // The last frame may have caused a write that we need to flush.
+                        getEndPoint().getQuicSession().flush();
+                        tryReleaseBuffer(false);
+                    }
                 }
             }
         }
@@ -213,9 +219,6 @@ public abstract class HTTP3StreamConnection extends AbstractConnection
                         // From now on it's the application that drives
                         // demand, reads, parse+fill and fill interest.
                         return;
-
-                        // TODO: do we loop here?
-                        // There might be a trailer, loop around.
                     }
                     default -> throw new IllegalStateException("unknown message parser result: " + result);
                 }
