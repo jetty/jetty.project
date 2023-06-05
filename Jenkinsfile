@@ -136,8 +136,8 @@ def useBuildCache() {
   if (env.BRANCH_NAME ==~ /PR-\d+/) {
     labelNoBuildCache = pullRequest.labels.contains("build-no-cache")
   }
-  def buildCache = (env.BRANCH_NAME != 'jetty-12.0.x') && !labelNoBuildCache;
-  return buildCache;
+  def noBuildCache = (env.BRANCH_NAME == 'jetty-12.0.x') || labelNoBuildCache;
+  return !noBuildCache;
 
 }
 
