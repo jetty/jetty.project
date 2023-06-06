@@ -139,7 +139,8 @@ def useBuildCache() {
   }
   def noBuildCache = (env.BRANCH_NAME == 'jetty-12.0.x') || labelNoBuildCache;
   return !noBuildCache;
-
+  // want to skip build cache
+  // return false
 }
 
 // vim: et:ts=2:sw=2:ft=groovy
