@@ -1008,8 +1008,6 @@ public class ContextHandler extends ScopedHandler implements Attributes, Gracefu
      */
     public void handle(Request request, Runnable runnable)
     {
-        ClassLoader oldClassloader = null;
-        Thread currentThread = null;
         APIContext oldContext = __context.get();
 
         // Are we already in the scope?
