@@ -105,7 +105,7 @@ public class HttpChannelState implements HttpChannel, Components
     private final SerializedInvoker _serializedInvoker;
     private final Attributes _requestAttributes = new Attributes.Lazy();
     private final ResponseHttpFields _responseHeaders = new ResponseHttpFields();
-    private final HttpChannel.Listener _combinedListener;
+    private final HttpChannel.Listener _httpChannelListeners;
     private Thread _handling;
     private boolean _handled;
     private StreamSendState _streamSendState = StreamSendState.SENDING;
@@ -127,7 +127,7 @@ public class HttpChannelState implements HttpChannel, Components
         _serializedInvoker = new HttpChannelSerializedInvoker();
 
         Connector connector = connectionMetaData.getConnector();
-        _combinedListener = (connector instanceof AbstractConnector)
+        _httpChannelListeners = (connector instanceof AbstractConnector)
             ? ((AbstractConnector)connector).getHttpChannelListeners()
             : AbstractConnector.NOOP_LISTENER;
     }
@@ -276,7 +276,7 @@ public class HttpChannelState implements HttpChannel, Components
             if (getHttpConfiguration().getSendDateHeader())
                 responseHeaders.add(getConnectionMetaData().getConnector().getServer().getDateField());
 
-            _combinedListener.onRequestBegin(_request);
+            _httpChannelListeners.onRequestBegin(_request);
 
             // This is deliberately not serialized to allow a handler to block.
             return _handlerInvoker;
@@ -578,7 +578,7 @@ public class HttpChannelState implements HttpChannel, Components
                 if (customized != request && server.getRequestLog() != null)
                     request.setLoggedRequest(customized);
 
-                _combinedListener.onBeforeHandling(request);
+                _httpChannelListeners.onBeforeHandling(request);
 
                 handled = server.handle(customized, response, request._callback);
                 if (!handled)
@@ -586,11 +586,13 @@ public class HttpChannelState implements HttpChannel, Components
             }
             catch (Throwable t)
             {
-                request._callback.failed(t);
                 thrownFailure = t;
+                request._callback.failed(thrownFailure);
             }
-
-            _combinedListener.onAfterHandling(request, handled, thrownFailure);
+            finally
+            {
+                _httpChannelListeners.onAfterHandling(request, handled, thrownFailure);
+            }
 
             HttpStream stream;
             Throwable failure;
@@ -683,7 +685,7 @@ public class HttpChannelState implements HttpChannel, Components
             }
             finally
             {
-                _combinedListener.onComplete(_request, failure);
+                _httpChannelListeners.onComplete(_request, failure);
                 // This is THE ONLY PLACE the stream is succeeded or failed.
                 if (failure == null)
                     stream.succeeded();
@@ -719,7 +721,7 @@ public class HttpChannelState implements HttpChannel, Components
             _id = httpChannelState.getHttpStream().getId(); // Copy ID now, as stream will ultimately be nulled
             _connectionMetaData = httpChannelState.getConnectionMetaData();
             _metaData = Objects.requireNonNull(metaData);
-            _listener = httpChannelState._combinedListener;
+            _listener = httpChannelState._httpChannelListeners;
             _lock = httpChannelState._lock;
         }
 
@@ -1039,7 +1041,7 @@ public class HttpChannelState implements HttpChannel, Components
         private ChannelResponse(HttpChannelState httpChannelState, ChannelRequest request)
         {
             _request = request;
-            _listener = httpChannelState._combinedListener;
+            _listener = httpChannelState._httpChannelListeners;
         }
 
         private void lockedPrepareErrorResponse()
@@ -1172,10 +1174,9 @@ public class HttpChannelState implements HttpChannel, Components
                 else if (failure != null)
                 {
                     Throwable throwable = failure;
-                    ByteBuffer slice = content != null ? content.slice() : BufferUtil.EMPTY_BUFFER;
                     httpChannelState._serializedInvoker.run(() ->
                     {
-                        _listener.onResponseWrite(_request, last, slice, throwable);
+                        _listener.onResponseWriteComplete(_request, throwable);
                         callback.failed(throwable);
                     });
                 }
@@ -1197,12 +1198,9 @@ public class HttpChannelState implements HttpChannel, Components
             {
                 if (LOG.isDebugEnabled())
                     LOG.debug("writing last={} {} {}", last, BufferUtil.toDetailString(content), this);
-                ByteBuffer slice = content != null ? content.slice() : BufferUtil.EMPTY_BUFFER;
-                Callback listenerCallback = Callback.from(() ->
-                {
-                    _listener.onResponseWrite(_request, last, slice, null);
-                }, this);
-                stream.send(_request._metaData, responseMetaData, last, content, listenerCallback);
+
+                _listener.onResponseWrite(_request, last, content);
+                stream.send(_request._metaData, responseMetaData, last, content, this);
             }
         }
 
@@ -1229,7 +1227,10 @@ public class HttpChannelState implements HttpChannel, Components
                 httpChannel.lockedStreamSendCompleted(true);
             }
             if (callback != null)
+            {
+                _listener.onResponseWriteComplete(_request, null);
                 httpChannel._serializedInvoker.run(callback::succeeded);
+            }
         }
 
         /**
@@ -1257,7 +1258,10 @@ public class HttpChannelState implements HttpChannel, Components
                 httpChannel.lockedStreamSendCompleted(false);
             }
             if (callback != null)
+            {
+                _listener.onResponseWriteComplete(_request, x);
                 httpChannel._serializedInvoker.run(() -> callback.failed(x));
+            }
         }
 
         @Override
