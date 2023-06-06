@@ -102,6 +102,9 @@
           </execution>
         </executions>
         <configuration>
+          <extraArtifacts>
+            <extraArtifact>org.eclipse.jetty:jetty-slf4j-impl:${project.version}</extraArtifact>
+          </extraArtifacts>
           <junitPackageName>org.eclipse.jetty.maven.its.ee10</junitPackageName>
           <streamLogsOnFailures>true</streamLogsOnFailures>
           <addTestClassPath>true</addTestClassPath>
