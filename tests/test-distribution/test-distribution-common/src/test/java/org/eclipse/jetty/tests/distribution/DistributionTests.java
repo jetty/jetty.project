@@ -157,7 +157,7 @@ public class DistributionTests extends AbstractJettyHomeTest
 
     @ParameterizedTest
     @ValueSource(strings = {"ee9", "ee10"})
-    public void testSimpleWebAppWithJSPandJSTL(String env) throws Exception
+    public void testSimpleWebAppWithJSPAndJSTL(String env) throws Exception
     {
         Path jettyBase = newTestJettyBaseDirectory();
         String jettyVersion = System.getProperty("jettyVersion");
@@ -1285,6 +1285,131 @@ public class DistributionTests extends AbstractJettyHomeTest
                   </Set>
                 </Configure>
                 """.replace("$P", String.valueOf(fcgiPort)), StandardOpenOption.CREATE);
+
+            int httpPort = distribution.freePort();
+            try (JettyHomeTester.Run run2 = distribution.start("jetty.http.port=" + httpPort, "etc/fcgi-connector.xml"))
+            {
+                assertTrue(run2.awaitConsoleLogsFor("Started oejs.Server@", START_TIMEOUT, TimeUnit.SECONDS));
+
+                startHttpClient();
+                // Make a request to the /proxy context on the httpPort; it should be converted to FastCGI
+                // and reverse proxied to the simulated php-fpm /php context on the fcgiPort.
+                ContentResponse response = client.GET("http://localhost:" + httpPort + "/proxy/test.txt");
+                assertThat(response.getStatus(), is(HttpStatus.OK_200));
+                assertThat(response.getContentAsString(), is(testFileContent));
+            }
+        }
+    }
+
+    @ParameterizedTest
+    @ValueSource(strings = {"ee9", "ee10"})
+    public void testEEFastCGIProxying(String env) throws Exception
+    {
+        Path jettyBase = newTestJettyBaseDirectory();
+        String jettyVersion = System.getProperty("jettyVersion");
+        JettyHomeTester distribution = JettyHomeTester.Builder.newInstance()
+            .jettyVersion(jettyVersion)
+            .jettyBase(jettyBase)
+            .mavenLocalRepository(System.getProperty("mavenRepoPath"))
+            .build();
+
+        String mods = String.join(",",
+            "resources", "http", "fcgi", "core-deploy",
+            toEnvironment("deploy", env),
+            toEnvironment("fcgi-proxy", env)
+        );
+        try (JettyHomeTester.Run run1 = distribution.start(List.of("--add-modules=" + mods)))
+        {
+            assertTrue(run1.awaitFor(START_TIMEOUT, TimeUnit.SECONDS));
+            assertEquals(0, run1.getExitValue());
+
+            Path jettyLogging = distribution.getJettyBase().resolve("resources/jetty-logging.properties");
+            String loggingConfig = """
+                org.eclipse.jetty.LEVEL=DEBUG
+                """;
+            Files.writeString(jettyLogging, loggingConfig, StandardOpenOption.TRUNCATE_EXISTING);
+
+            // Add a FastCGI connector to simulate, for example, php-fpm.
+            int fcgiPort = distribution.freePort();
+            Path jettyBaseEtc = jettyBase.resolve("etc");
+            Files.createDirectories(jettyBaseEtc);
+            Path fcgiConnectorXML = jettyBaseEtc.resolve("fcgi-connector.xml");
+            Files.writeString(fcgiConnectorXML, """
+                <?xml version="1.0"?>
+                <!DOCTYPE Configure PUBLIC "-//Jetty//Configure//EN" "https://www.eclipse.org/jetty/configure_10_0.dtd">
+                <Configure id="Server">
+                  <Call name="addConnector">
+                    <Arg>
+                      <New id="fcgiConnector" class="org.eclipse.jetty.server.ServerConnector">
+                        <Arg><Ref refid="Server" /></Arg>
+                        <Arg type="int">1</Arg>
+                        <Arg type="int">1</Arg>
+                        <Arg>
+                          <Array type="org.eclipse.jetty.server.ConnectionFactory">
+                            <Item>
+                              <New class="org.eclipse.jetty.fcgi.server.ServerFCGIConnectionFactory">
+                                <Arg><Ref refid="httpConfig" /></Arg>
+                              </New>
+                            </Item>
+                          </Array>
+                        </Arg>
+                        <Set name="port">$P</Set>
+                      </New>
+                    </Arg>
+                  </Call>
+                </Configure>
+                """.replace("$P", String.valueOf(fcgiPort)), StandardOpenOption.CREATE);
+
+            // Deploy a Jetty context XML file that is only necessary for the test,
+            // as it simulates, for example, what the php-fpm server would return.
+            Path jettyBaseWork = jettyBase.resolve("work");
+            Path phpXML = jettyBase.resolve("webapps").resolve("php.xml");
+            Files.writeString(phpXML, """
+                <?xml version="1.0"?>
+                <!DOCTYPE Configure PUBLIC "-//Jetty//Configure//EN" "https://www.eclipse.org/jetty/configure_10_0.dtd">
+                <Configure class="org.eclipse.jetty.server.handler.ContextHandler">
+                  <Set name="contextPath">/php</Set>
+                  <Set name="baseResourceAsPath">
+                    <Call class="java.nio.file.Path" name="of">
+                      <Arg>$R</Arg>
+                    </Call>
+                  </Set>
+                  <Set name="handler">
+                    <New class="org.eclipse.jetty.server.handler.ResourceHandler" />
+                  </Set>
+                </Configure>
+                """.replace("$R", jettyBaseWork.toAbsolutePath().toString()), StandardOpenOption.CREATE);
+            // Save a file in $JETTY_BASE/work so that it can be requested.
+            String testFileContent = "hello";
+            Files.writeString(jettyBaseWork.resolve("test.txt"), testFileContent, StandardOpenOption.CREATE);
+
+            // Deploy a Jetty context XML file that sets up the FastCGIProxyServlet.
+            // Converts URIs from http://host:<httpPort>/proxy/foo to http://host:<fcgiPort>/php/foo.
+            Path proxyXML = jettyBase.resolve("webapps").resolve("proxy.xml");
+            Files.writeString(proxyXML, """
+                <?xml version="1.0"?>
+                <!DOCTYPE Configure PUBLIC "-//Jetty//Configure//EN" "https://www.eclipse.org/jetty/configure_10_0.dtd">
+                <Configure class="org.eclipse.jetty.$ENV.servlet.ServletContextHandler">
+                  <Set name="contextPath">/proxy</Set>
+                  <Call name="addServlet">
+                    <Arg>org.eclipse.jetty.$ENV.fcgi.proxy.FastCGIProxyServlet</Arg>
+                    <Arg>*.txt</Arg>
+                    <Call name="setInitParameter">
+                      <Arg>proxyTo</Arg>
+                      <Arg>http://localhost:$P/php</Arg>
+                    </Call>
+                    <Call name="setInitParameter">
+                      <Arg>scriptRoot</Arg>
+                      <Arg>/var/wordpress</Arg>
+                    </Call>
+                  </Call>
+                </Configure>
+                """.replace("$ENV", env).replace("$P", String.valueOf(fcgiPort)), StandardOpenOption.CREATE);
+
+            Path proxyProps = jettyBase.resolve("webapps").resolve("proxy.properties");
+            Files.writeString(proxyProps, """
+                environment=$ENV
+                """.replace("$ENV", env), StandardOpenOption.CREATE);
 
             int httpPort = distribution.freePort();
             try (JettyHomeTester.Run run2 = distribution.start("jetty.http.port=" + httpPort, "etc/fcgi-connector.xml"))
