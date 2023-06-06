@@ -217,7 +217,7 @@ public class HttpConnectionOverFCGI extends AbstractConnection implements IConne
     }
 
     @Override
-    public boolean onIdleExpired()
+    public boolean onIdleExpired(TimeoutException timeoutException)
     {
         long idleTimeout = getEndPoint().getIdleTimeout();
         TimeoutException failure = new TimeoutException("Idle timeout " + idleTimeout + " ms");

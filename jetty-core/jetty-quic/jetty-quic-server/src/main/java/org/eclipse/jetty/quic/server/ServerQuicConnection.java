@@ -18,6 +18,7 @@ import java.net.InetSocketAddress;
 import java.net.SocketAddress;
 import java.nio.ByteBuffer;
 import java.util.Iterator;
+import java.util.concurrent.TimeoutException;
 
 import org.eclipse.jetty.io.ByteBufferPool;
 import org.eclipse.jetty.io.CyclicTimeouts;
@@ -99,7 +100,7 @@ public class ServerQuicConnection extends QuicConnection
     }
 
     @Override
-    public boolean onIdleExpired()
+    public boolean onIdleExpired(TimeoutException timeoutException)
     {
         // The current server architecture only has one listening
         // DatagramChannelEndPoint, so we ignore idle timeouts.

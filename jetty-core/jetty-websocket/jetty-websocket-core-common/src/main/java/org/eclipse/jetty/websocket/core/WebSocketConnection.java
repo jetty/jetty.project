@@ -21,6 +21,7 @@ import java.security.SecureRandom;
 import java.util.Objects;
 import java.util.Random;
 import java.util.concurrent.Executor;
+import java.util.concurrent.TimeoutException;
 import java.util.concurrent.atomic.LongAdder;
 
 import org.eclipse.jetty.io.AbstractConnection;
@@ -218,13 +219,13 @@ public class WebSocketConnection extends AbstractConnection implements Connectio
     }
 
     @Override
-    public boolean onIdleExpired()
+    public boolean onIdleExpired(TimeoutException timeoutException)
     {
         if (LOG.isDebugEnabled())
             LOG.debug("onIdleExpired()");
 
         // treat as a handler error because socket is still open
-        coreSession.processHandlerError(new WebSocketTimeoutException("Connection Idle Timeout"), Callback.NOOP);
+        coreSession.processHandlerError(new WebSocketTimeoutException("Connection Idle Timeout", timeoutException), Callback.NOOP);
         return true;
     }
 

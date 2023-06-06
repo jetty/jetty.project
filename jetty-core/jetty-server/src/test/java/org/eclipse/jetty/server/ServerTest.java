@@ -46,6 +46,7 @@ import static org.hamcrest.Matchers.not;
 
 public class ServerTest
 {
+    private static final long IDLE_TIMEOUT = 1000L;
     private Server _server;
     private LocalConnector _connector;
     private final AtomicReference<Runnable> _afterHandle = new AtomicReference<>();
@@ -95,7 +96,7 @@ public class ServerTest
                 return configure(connection, connector, endPoint);
             }
         });
-        _connector.setIdleTimeout(60000);
+        _connector.setIdleTimeout(IDLE_TIMEOUT);
         _server.addConnector(_connector);
     }
 
@@ -211,5 +212,37 @@ public class ServerTest
         {
             assertThat(rawResponse, containsString("Content-Length:"));
         }
+    }
+
+    private record Handle(Request request, Response response, Callback callback)
+    {
+    }
+
+    @Test
+    public void testIdleTimeout() throws Exception
+    {
+        AtomicReference<Handle> handle = new AtomicReference<>();
+
+        _server.setHandler(new Handler.Abstract()
+        {
+            @Override
+            public boolean handle(Request request, Response response, Callback callback) throws Exception
+            {
+                handle.set(new Handle(request, response, callback));
+                return true;
+            }
+        });
+        _server.start();
+
+        String request = """
+                GET /path HTTP/1.0\r
+                Host: hostname\r
+                \r
+                """;
+        String rawResponse = _connector.getResponse(request);
+        System.err.println("rawResponse:\n" + rawResponse);
+        HttpTester.Response response = HttpTester.parseResponse(rawResponse);
+        assertThat(response.getStatus(), is(HttpStatus.INTERNAL_SERVER_ERROR_500));
+        assertThat(response.getContent(), containsString("HTTP ERROR 500 java.util.concurrent.TimeoutException: Idle timeout expired:"));
     }
 }

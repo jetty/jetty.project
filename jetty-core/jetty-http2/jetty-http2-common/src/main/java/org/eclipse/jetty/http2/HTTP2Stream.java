@@ -840,7 +840,7 @@ public class HTTP2Stream implements Stream, Attachable, Closeable, Callback, Dum
         }
     }
 
-    private void notifyIdleTimeout(Stream stream, Throwable failure, Promise<Boolean> promise)
+    private void notifyIdleTimeout(Stream stream, TimeoutException failure, Promise<Boolean> promise)
     {
         Listener listener = this.listener;
         if (listener != null)

@@ -268,7 +268,7 @@ public abstract class AbstractConnection implements Connection, Invocable
     }
 
     @Override
-    public boolean onIdleExpired()
+    public boolean onIdleExpired(TimeoutException timeoutException)
     {
         return true;
     }

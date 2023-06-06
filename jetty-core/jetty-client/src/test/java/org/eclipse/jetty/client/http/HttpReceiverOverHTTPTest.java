@@ -45,6 +45,7 @@ import org.junit.jupiter.params.provider.MethodSource;
 
 import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.Matchers.instanceOf;
+import static org.hamcrest.Matchers.sameInstance;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertNotNull;
 import static org.junit.jupiter.api.Assertions.assertNull;
@@ -186,10 +187,12 @@ public class HttpReceiverOverHTTPTest
         // ByteArrayEndPoint has an idle timeout of 0 by default,
         // so to simulate an idle timeout is enough to wait a bit.
         Thread.sleep(100);
-        connection.onIdleExpired();
+        TimeoutException timeoutException = new TimeoutException();
+        connection.onIdleExpired(timeoutException);
 
         ExecutionException e = assertThrows(ExecutionException.class, () -> listener.get(5, TimeUnit.SECONDS));
         assertThat(e.getCause(), instanceOf(TimeoutException.class));
+        assertThat(e.getCause(), sameInstance(timeoutException));
     }
 
     @ParameterizedTest

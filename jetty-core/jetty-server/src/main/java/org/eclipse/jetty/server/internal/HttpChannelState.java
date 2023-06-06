@@ -387,7 +387,7 @@ public class HttpChannelState implements HttpChannel, Components
                     {
                         if (LOG.isDebugEnabled())
                             LOG.debug("invokeListeners {} {}", HttpChannelState.this, onError, x);
-                        if (onError.test(x))
+                        if (onError != null && onError.test(x))
                             return;
                     }
                     catch (Throwable throwable)
