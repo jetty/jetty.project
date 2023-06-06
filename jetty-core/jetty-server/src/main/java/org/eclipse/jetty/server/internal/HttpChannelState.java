@@ -105,7 +105,7 @@ public class HttpChannelState implements HttpChannel, Components
     private final SerializedInvoker _serializedInvoker;
     private final Attributes _requestAttributes = new Attributes.Lazy();
     private final ResponseHttpFields _responseHeaders = new ResponseHttpFields();
-    private final HttpChannel.Listener _combinedListener;
+    private final HttpChannel.Listener _httpChannelListeners;
     private Thread _handling;
     private boolean _handled;
     private StreamSendState _streamSendState = StreamSendState.SENDING;
@@ -127,7 +127,7 @@ public class HttpChannelState implements HttpChannel, Components
         _serializedInvoker = new HttpChannelSerializedInvoker();
 
         Connector connector = connectionMetaData.getConnector();
-        _combinedListener = (connector instanceof AbstractConnector)
+        _httpChannelListeners = (connector instanceof AbstractConnector)
             ? ((AbstractConnector)connector).getHttpChannelListeners()
             : AbstractConnector.NOOP_LISTENER;
     }
@@ -276,7 +276,7 @@ public class HttpChannelState implements HttpChannel, Components
             if (getHttpConfiguration().getSendDateHeader())
                 responseHeaders.add(getConnectionMetaData().getConnector().getServer().getDateField());
 
-            _combinedListener.onRequestBegin(_request);
+            _httpChannelListeners.onRequestBegin(_request);
 
             // This is deliberately not serialized to allow a handler to block.
             return _handlerInvoker;
@@ -578,7 +578,7 @@ public class HttpChannelState implements HttpChannel, Components
                 if (customized != request && server.getRequestLog() != null)
                     request.setLoggedRequest(customized);
 
-                _combinedListener.onBeforeHandling(request);
+                _httpChannelListeners.onBeforeHandling(request);
 
                 handled = server.handle(customized, response, request._callback);
                 if (!handled)
@@ -591,7 +591,7 @@ public class HttpChannelState implements HttpChannel, Components
             }
             finally
             {
-                _combinedListener.onAfterHandling(request, handled, thrownFailure);
+                _httpChannelListeners.onAfterHandling(request, handled, thrownFailure);
             }
 
             HttpStream stream;
@@ -685,7 +685,7 @@ public class HttpChannelState implements HttpChannel, Components
             }
             finally
             {
-                _combinedListener.onComplete(_request, failure);
+                _httpChannelListeners.onComplete(_request, failure);
                 // This is THE ONLY PLACE the stream is succeeded or failed.
                 if (failure == null)
                     stream.succeeded();
@@ -721,7 +721,7 @@ public class HttpChannelState implements HttpChannel, Components
             _id = httpChannelState.getHttpStream().getId(); // Copy ID now, as stream will ultimately be nulled
             _connectionMetaData = httpChannelState.getConnectionMetaData();
             _metaData = Objects.requireNonNull(metaData);
-            _listener = httpChannelState._combinedListener;
+            _listener = httpChannelState._httpChannelListeners;
             _lock = httpChannelState._lock;
         }
 
@@ -1041,7 +1041,7 @@ public class HttpChannelState implements HttpChannel, Components
         private ChannelResponse(HttpChannelState httpChannelState, ChannelRequest request)
         {
             _request = request;
-            _listener = httpChannelState._combinedListener;
+            _listener = httpChannelState._httpChannelListeners;
         }
 
         private void lockedPrepareErrorResponse()

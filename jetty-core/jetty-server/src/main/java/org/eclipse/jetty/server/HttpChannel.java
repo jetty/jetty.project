@@ -139,7 +139,7 @@ public interface HttpChannel extends Invocable
          * any request customizations (eg: forwarding, secure, etc)
          * </p>
          *
-         * @param request the request object, which should not be mutated in any way.
+         * @param request the request object. The {@code read()} and {@code demand(Runnable)} methods must not be called by the listener.
          * @see HttpChannel#onRequest(MetaData.Request)
          */
         default void onRequestBegin(Request request)
@@ -155,7 +155,7 @@ public interface HttpChannel extends Invocable
          * This includes any request customization.
          * </p>
          *
-         * @param request the request object, which should not be mutated in any way.
+         * @param request the request object. The {@code read()} and {@code demand(Runnable)} methods must not be called by the listener.
          * @see HttpChannel#onRequest(MetaData.Request)
          */
         default void onBeforeHandling(Request request)
@@ -166,7 +166,7 @@ public interface HttpChannel extends Invocable
          * Invoked after application handling (i.e. just after the call to the {@link Runnable} returned from
          * {@link HttpChannel#onRequest(MetaData.Request)} returns).
          *
-         * @param request the request object, which should not be mutated in any way.
+         * @param request the request object. The {@code read()} and {@code demand(Runnable)} methods must not be called by the listener.
          * @param handled if the server handlers handled the request
          * @param failure the exception thrown by the application
          * @see HttpChannel#onRequest(MetaData.Request)
@@ -180,7 +180,7 @@ public interface HttpChannel extends Invocable
          * making it available to the application (i.e. from within a call to
          * {@link Request#read()}).
          *
-         * @param request the request object, which should not be mutated in any way.
+         * @param request the request object. The {@code read()} and {@code demand(Runnable)} methods must not be called by the listener.
          * @param chunk a request content chunk, including {@link org.eclipse.jetty.io.Content.Chunk.Error}
          *              and {@link org.eclipse.jetty.http.Trailers} chunks.
          *              If a reference to the chunk (or its {@link ByteBuffer}) is kept,
@@ -195,7 +195,7 @@ public interface HttpChannel extends Invocable
          * Invoked just before the response is line written to the network (i.e. from
          * within the first call to {@link Response#write(boolean, ByteBuffer, Callback)}).
          *
-         * @param request the request object, which should not be mutated in any way.
+         * @param request the request object. The {@code read()} and {@code demand(Runnable)} methods must not be called by the listener.
          * @param status the response status
          * @param response the immutable fields of the response object
          * @see Response#write(boolean, ByteBuffer, Callback)
@@ -208,7 +208,7 @@ public interface HttpChannel extends Invocable
          * Invoked before each response content chunk has been written (i.e. from
          * within the any call to {@link Response#write(boolean, ByteBuffer, Callback)}).
          *
-         * @param request the request object, which should not be mutated in any way.
+         * @param request the request object. The {@code read()} and {@code demand(Runnable)} methods must not be called by the listener.
          * @param last indicating last write
          * @param content The {@link ByteBuffer} of the response content chunk (readonly).
          * @see Response#write(boolean, ByteBuffer, Callback)
@@ -222,7 +222,7 @@ public interface HttpChannel extends Invocable
          * (i.e. immediately before calling the {@link Callback} passed to
          * {@link Response#write(boolean, ByteBuffer, Callback)}).
          *
-         * @param request the request object, which should not be mutated in any way.
+         * @param request the request object. The {@code read()} and {@code demand(Runnable)} methods must not be called by the listener.
          * @param failure if there was a failure to write the given content
          * @see Response#write(boolean, ByteBuffer, Callback)
          */
@@ -237,7 +237,7 @@ public interface HttpChannel extends Invocable
          * has returned and the {@link Callback} passed to {@link Handler#handle(Request, Response, Callback)}
          * has been completed).
          *
-         * @param request the request object, which should not be mutated in any way.
+         * @param request the request object. The {@code read()} and {@code demand(Runnable)} methods must not be called by the listener.
          * @param failure if there was a failure to complete
          */
         default void onComplete(Request request, Throwable failure)
