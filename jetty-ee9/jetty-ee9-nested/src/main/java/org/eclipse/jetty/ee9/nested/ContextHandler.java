@@ -91,6 +91,7 @@ import org.eclipse.jetty.util.annotation.ManagedObject;
 import org.eclipse.jetty.util.component.DumpableCollection;
 import org.eclipse.jetty.util.component.Environment;
 import org.eclipse.jetty.util.component.Graceful;
+import org.eclipse.jetty.util.component.LifeCycle;
 import org.eclipse.jetty.util.resource.Resource;
 import org.eclipse.jetty.util.resource.ResourceFactory;
 import org.eclipse.jetty.util.resource.Resources;
@@ -230,6 +231,12 @@ public class ContextHandler extends ScopedHandler implements Attributes, Gracefu
         this(null, null, contextPath);
     }
 
+    public ContextHandler(String contextPath, org.eclipse.jetty.ee9.nested.Handler handler)
+    {
+        this(contextPath);
+        setHandler(handler);
+    }
+
     public ContextHandler(org.eclipse.jetty.server.Handler.Container parent)
     {
         this(null, parent, "/");
@@ -296,6 +303,8 @@ public class ContextHandler extends ScopedHandler implements Attributes, Gracefu
     public void setServer(Server server)
     {
         super.setServer(server);
+        if (!Objects.equals(server, _coreContextHandler.getServer()))
+            _coreContextHandler.setServer(server);
         if (_errorHandler != null)
             _errorHandler.setServer(server);
     }
@@ -603,12 +612,49 @@ public class ContextHandler extends ScopedHandler implements Attributes, Gracefu
     protected void doStart() throws Exception
     {
         // If we are being started directly (rather than via a start of the CoreContextHandler), then
-        // we need to run ourselves in the core context
+        // we need to run ourselves in the core context.
         if (org.eclipse.jetty.server.handler.ContextHandler.getCurrentContext() != _coreContextHandler.getContext())
         {
+            // Make the CoreContextHandler lifecycle responsible for calling the doStartContext() and doStopContext().
             _coreContextHandler.unmanage(this);
+            unmanage(_coreContextHandler);
+            _coreContextHandler.addEventListener(new LifeCycle.Listener()
+            {
+                @Override
+                public void lifeCycleStarting(LifeCycle event)
+                {
+                    try
+                    {
+                        _coreContextHandler.getContext().call(() -> doStartInContext(), null);
+                    }
+                    catch (Exception e)
+                    {
+                        throw new RuntimeException(e);
+                    }
+                }
+
+                @Override
+                public void lifeCycleStopping(LifeCycle event)
+                {
+                    try
+                    {
+                        _coreContextHandler.getContext().call(() -> doStopInContext(), null);
+                    }
+                    catch (Exception e)
+                    {
+                        throw new RuntimeException(e);
+                    }
+                }
+
+                @Override
+                public void lifeCycleStopped(LifeCycle event)
+                {
+                    _coreContextHandler.removeEventListener(this);
+                }
+            });
+
             _coreContextHandler.start();
-            _coreContextHandler.manage(this);
+            return;
         }
 
         _coreContextHandler.getContext().call(this::doStartInContext, null);
@@ -634,14 +680,14 @@ public class ContextHandler extends ScopedHandler implements Attributes, Gracefu
     @Override
     protected void doStop() throws Exception
     {
-        // If we are being stopped directly (rather than via a start of the CoreContextHandler), then
-        // we need to stop ourselves in the core context
+        // If we are being stopped directly (rather than via a start of the CoreContextHandler),
+        // then doStopInContext() will be called by the listener on the lifecycle of CoreContextHandler.
         if (org.eclipse.jetty.server.handler.ContextHandler.getCurrentContext() != _coreContextHandler.getContext())
         {
-            _coreContextHandler.unmanage(this);
             _coreContextHandler.stop();
-            _coreContextHandler.manage(this);
+            return;
         }
+
         _coreContextHandler.getContext().call(this::doStopInContext, null);
     }
 
@@ -827,7 +873,22 @@ public class ContextHandler extends ScopedHandler implements Attributes, Gracefu
         if (LOG.isDebugEnabled())
             LOG.debug("scope {}|{}|{} @ {}", baseRequest.getContextPath(), baseRequest.getServletPath(), baseRequest.getPathInfo(), this);
 
-        nextScope(target, baseRequest, request, response);
+        try
+        {
+            org.eclipse.jetty.server.handler.ContextHandler.ScopedContext context = getCoreContextHandler().getContext();
+            if (context == org.eclipse.jetty.server.handler.ContextHandler.getCurrentContext())
+                nextScope(target, baseRequest, request, response);
+            else
+                context.call(() -> nextScope(target, baseRequest, request, response), baseRequest.getCoreRequest());
+        }
+        catch (IOException | ServletException e)
+        {
+            throw e;
+        }
+        catch (Throwable t)
+        {
+            throw new ServletException("Unexpected Exception", t);
+        }
     }
 
     protected void requestInitialized(Request baseRequest, HttpServletRequest request)
@@ -2507,7 +2568,7 @@ public class ContextHandler extends ScopedHandler implements Attributes, Gracefu
         }
 
         @Override
-        protected CoreContext newContext()
+        protected ScopedContext newContext()
         {
             return new CoreContext();
         }
@@ -2566,7 +2627,6 @@ public class ContextHandler extends ScopedHandler implements Attributes, Gracefu
 
         public ContextHandler getContextHandler()
         {
-
             return ContextHandler.this;
         }
 
