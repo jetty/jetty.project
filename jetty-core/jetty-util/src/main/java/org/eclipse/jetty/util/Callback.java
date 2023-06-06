@@ -232,7 +232,7 @@ public interface Callback extends Invocable
             @Override
             public String toString()
             {
-                return "Callback@%x{%s,%s}".formatted(hashCode(), invocationType, completed);
+                return "Callback.Completing@%x{%s,%s}".formatted(hashCode(), invocationType, completed);
             }
         };
     }
