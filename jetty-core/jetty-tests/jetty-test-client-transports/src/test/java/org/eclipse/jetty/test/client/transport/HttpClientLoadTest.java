@@ -45,7 +45,6 @@ import org.eclipse.jetty.util.NanoTime;
 import org.eclipse.jetty.util.thread.Scheduler;
 import org.hamcrest.Matchers;
 import org.junit.jupiter.api.Assumptions;
-import org.junit.jupiter.api.Tag;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.MethodSource;
 import org.slf4j.Logger;
@@ -181,7 +180,11 @@ public class HttpClientLoadTest extends AbstractTest
     {
         ThreadLocalRandom random = ThreadLocalRandom.current();
         // Choose a random destination
-        String host = random.nextBoolean() ? "localhost" : "127.0.0.1";
+        String host;
+        if (transport == Transport.H3)
+            host = "localhost";
+        else
+            host = random.nextBoolean() ? "localhost" : "127.0.0.1";
         // Choose a random method
         HttpMethod method = random.nextBoolean() ? HttpMethod.GET : HttpMethod.POST;
 

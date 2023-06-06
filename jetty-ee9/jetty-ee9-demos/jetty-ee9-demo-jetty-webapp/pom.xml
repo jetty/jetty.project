@@ -197,5 +197,10 @@
       <artifactId>jetty-ee9-websocket-jakarta-server</artifactId>
       <scope>test</scope>
     </dependency>
+    <dependency>
+      <groupId>org.eclipse.jetty</groupId>
+      <artifactId>jetty-slf4j-impl</artifactId>
+      <scope>test</scope>
+    </dependency>
   </dependencies>
 </project>
