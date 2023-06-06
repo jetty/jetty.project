@@ -416,7 +416,7 @@ public final class HttpCookieUtils
      */
     public static HttpCookie getSetCookie(HttpField field)
     {
-        if (field == null || !field.is(HttpHeader.SET_COOKIE))
+        if (field == null || field.getHeader() != HttpHeader.SET_COOKIE)
             return null;
         if (field instanceof SetCookieHttpField setCookieHttpField)
             return setCookieHttpField.getHttpCookie();

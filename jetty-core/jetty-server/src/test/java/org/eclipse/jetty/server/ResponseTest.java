@@ -211,7 +211,7 @@ public class ResponseTest
                         for (ListIterator<HttpField> i = headers.listIterator(); i.hasNext();)
                         {
                             HttpField field = i.next();
-                            if (!field.is(HttpHeader.SET_COOKIE))
+                            if (field.getHeader() != HttpHeader.SET_COOKIE)
                                 continue;
 
                             HttpCookie cookie = HttpCookieUtils.getSetCookie(field);
