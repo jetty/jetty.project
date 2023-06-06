@@ -11,7 +11,7 @@
 // ========================================================================
 //
 
-package org.eclipse.jetty.ee;
+package org.eclipse.jetty.server;
 
 import java.util.Comparator;
 import java.util.Map;
@@ -19,6 +19,12 @@ import java.util.function.Predicate;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
+/**
+ * Deployable
+ *
+ * Communicates to the DeploymentManager that a context can be deployed and should
+ * have its defaults initialized.
+ */
 public interface Deployable
 {
     Pattern EE_ENVIRONMENT_NAME_PATTERN = Pattern.compile("ee(\\d*)");
