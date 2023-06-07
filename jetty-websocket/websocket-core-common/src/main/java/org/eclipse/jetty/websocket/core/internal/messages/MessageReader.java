@@ -88,6 +88,12 @@ public class MessageReader extends Reader implements MessageSink
     }
 
     @Override
+    public void fail(Throwable failure)
+    {
+        stream.fail(failure);
+    }
+
+    @Override
     public void accept(Frame frame, Callback callback)
     {
         stream.accept(frame, callback);

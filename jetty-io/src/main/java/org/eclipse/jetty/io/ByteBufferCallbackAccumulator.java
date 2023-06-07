@@ -89,11 +89,14 @@ public class ByteBufferCallbackAccumulator
 
     public void fail(Throwable t)
     {
-        for (Entry entry : _entries)
+        // In some usages the callback recursively fails the accumulator.
+        // So we copy and clear to avoid double completing the callback.
+        ArrayList<Entry> entries = new ArrayList<>(_entries);
+        _entries.clear();
+        _length = 0;
+        for (Entry entry : entries)
         {
             entry.callback.failed(t);
         }
-        _entries.clear();
-        _length = 0;
     }
 }

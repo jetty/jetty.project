@@ -127,40 +127,6 @@ public class MessageInputStream extends InputStream implements MessageSink
         return fillLen;
     }
 
-    @Override
-    public void close() throws IOException
-    {
-        if (LOG.isDebugEnabled())
-            LOG.debug("close()");
-
-        ArrayList<Entry> entries = new ArrayList<>();
-        try (AutoLock l = lock.lock())
-        {
-            if (closed)
-                return;
-            closed = true;
-
-            if (currentEntry != null)
-            {
-                entries.add(currentEntry);
-                currentEntry = null;
-            }
-
-            // Clear queue and fail all entries.
-            entries.addAll(buffers);
-            buffers.clear();
-            buffers.offer(CLOSED);
-        }
-
-        // Succeed all entries as we don't need them anymore (failing would close the connection).
-        for (Entry e : entries)
-        {
-            e.callback.succeeded();
-        }
-
-        super.close();
-    }
-
     public void setTimeout(long timeoutMs)
     {
         this.timeoutMs = timeoutMs;
@@ -215,6 +181,56 @@ public class MessageInputStream extends InputStream implements MessageSink
         {
             close();
             throw new InterruptedIOException();
+        }
+    }
+
+    @Override
+    public void close() throws IOException
+    {
+        fail(null);
+    }
+
+    @Override
+    public void fail(Throwable failure)
+    {
+        if (LOG.isDebugEnabled())
+            LOG.debug("close()");
+
+        ArrayList<Entry> entries = new ArrayList<>();
+        try (AutoLock l = lock.lock())
+        {
+            if (closed)
+                return;
+            closed = true;
+
+            if (currentEntry != null)
+            {
+                entries.add(currentEntry);
+                currentEntry = null;
+            }
+
+            // Clear queue and fail all entries.
+            entries.addAll(buffers);
+            buffers.clear();
+            buffers.offer(CLOSED);
+        }
+
+        // Succeed all entries as we don't need them anymore (failing would close the connection).
+        for (Entry e : entries)
+        {
+            if (failure == null)
+                e.callback.succeeded();
+            else
+                e.callback.failed(failure);
+        }
+
+        try
+        {
+            super.close();
+        }
+        catch (IOException e)
+        {
+            LOG.debug("Failure Closing InputStream", e);
         }
     }
 
