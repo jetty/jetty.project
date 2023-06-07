@@ -617,7 +617,6 @@ public class ContextHandler extends ScopedHandler implements Attributes, Gracefu
         {
             // Make the CoreContextHandler lifecycle responsible for calling the doStartContext() and doStopContext().
             _coreContextHandler.unmanage(this);
-            unmanage(_coreContextHandler);
             _coreContextHandler.addEventListener(new LifeCycle.Listener()
             {
                 @Override
@@ -631,25 +630,16 @@ public class ContextHandler extends ScopedHandler implements Attributes, Gracefu
                     {
                         throw new RuntimeException(e);
                     }
-                }
-
-                @Override
-                public void lifeCycleStopping(LifeCycle event)
-                {
-                    try
+                    finally
                     {
-                        _coreContextHandler.getContext().call(() -> doStopInContext(), null);
-                    }
-                    catch (Exception e)
-                    {
-                        throw new RuntimeException(e);
+                        _coreContextHandler.removeEventListener(this);
                     }
                 }
 
                 @Override
-                public void lifeCycleStopped(LifeCycle event)
+                public void lifeCycleStarted(LifeCycle event)
                 {
-                    _coreContextHandler.removeEventListener(this);
+                    _coreContextHandler.manage(this);
                 }
             });
 
@@ -684,6 +674,34 @@ public class ContextHandler extends ScopedHandler implements Attributes, Gracefu
         // then doStopInContext() will be called by the listener on the lifecycle of CoreContextHandler.
         if (org.eclipse.jetty.server.handler.ContextHandler.getCurrentContext() != _coreContextHandler.getContext())
         {
+            // Make the CoreContextHandler lifecycle responsible for calling the doStartContext() and doStopContext().
+            _coreContextHandler.unmanage(this);
+            _coreContextHandler.addEventListener(new LifeCycle.Listener()
+            {
+                @Override
+                public void lifeCycleStopping(LifeCycle event)
+                {
+                    try
+                    {
+                        _coreContextHandler.getContext().call(() -> doStopInContext(), null);
+                    }
+                    catch (Exception e)
+                    {
+                        throw new RuntimeException(e);
+                    }
+                    finally
+                    {
+                        _coreContextHandler.removeEventListener(this);
+                    }
+                }
+
+                @Override
+                public void lifeCycleStopped(LifeCycle event)
+                {
+                    _coreContextHandler.manage(this);
+                }
+            });
+
             _coreContextHandler.stop();
             return;
         }
