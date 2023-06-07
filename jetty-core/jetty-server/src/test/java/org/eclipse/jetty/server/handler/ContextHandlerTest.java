@@ -925,9 +925,9 @@ public class ContextHandlerTest
         contextHandler.getContext().setAttribute("transient1", "value1");
         contextHandler.getContext().setAttribute("transient2", Dumpable.named("named", "value2"));
 
-        String dump = contextHandler.dump();
+        String dump = contextHandler.dump().replaceAll("\\r?\\n", "\n");
         assertThat(dump, containsString("oejsh.ContextHandler@"));
-        assertThat(dump, containsString("""
+        String expected = """
             +> No ClassLoader
             +> handler attributes size=3
             |  +> name: hidden
@@ -939,6 +939,7 @@ public class ContextHandlerTest
                +> persistent2: named: value2
                +> transient1: value1
                +> transient2: named: value2
-        """));
+            """;
+        assertThat(dump, containsString(expected));
     }
 }
