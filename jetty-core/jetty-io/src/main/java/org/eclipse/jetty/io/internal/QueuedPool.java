@@ -18,6 +18,7 @@ import java.util.Collection;
 import java.util.Objects;
 import java.util.Queue;
 import java.util.concurrent.ConcurrentLinkedQueue;
+import java.util.concurrent.atomic.AtomicInteger;
 import java.util.concurrent.atomic.AtomicMarkableReference;
 import java.util.concurrent.locks.ReadWriteLock;
 import java.util.concurrent.locks.ReentrantReadWriteLock;
@@ -40,6 +41,7 @@ public class QueuedPool<P> implements Pool<P>
 {
     private final int maxSize;
     private final Queue<Entry<P>> queue = new ConcurrentLinkedQueue<>();
+    private final AtomicInteger queueSize = new AtomicInteger();
 
     // This lock protects the 'terminated' field.
     private final ReadWriteLock rwLock = new ReentrantReadWriteLock();
@@ -56,7 +58,7 @@ public class QueuedPool<P> implements Pool<P>
         rwLock.readLock().lock();
         try
         {
-            if (terminated || queue.size() == maxSize)
+            if (terminated || queueSize.get() == maxSize)
                 return null;
             return new QueuedEntry<>(this);
         }
@@ -71,8 +73,9 @@ public class QueuedPool<P> implements Pool<P>
         rwLock.readLock().lock();
         try
         {
-            if (terminated || queue.size() == maxSize)
+            if (terminated || queueSize.get() == maxSize)
                 return false;
+            queueSize.incrementAndGet();
             queue.add(entry);
             return true;
         }
@@ -92,7 +95,10 @@ public class QueuedPool<P> implements Pool<P>
                 return null;
             QueuedEntry<P> entry = (QueuedEntry<P>)queue.poll();
             if (entry != null)
+            {
+                queueSize.decrementAndGet();
                 entry.acquire();
+            }
             return entry;
         }
         finally
@@ -124,6 +130,7 @@ public class QueuedPool<P> implements Pool<P>
             terminated = true;
             Collection<Entry<P>> copy = new ArrayList<>(queue);
             queue.clear();
+            queueSize.set(0);
             return copy;
         }
         finally
@@ -135,7 +142,7 @@ public class QueuedPool<P> implements Pool<P>
     @Override
     public int size()
     {
-        return queue.size();
+        return queueSize.get();
     }
 
     @Override
