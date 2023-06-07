@@ -41,21 +41,21 @@
             <goal>install</goal>
           </goals>
         </goalsList>
-        <goalsList artifactId="maven-invoker-plugin">
+<!--        <goalsList artifactId="maven-invoker-plugin">
           <goals>
             <goal>install</goal>
           </goals>
-        </goalsList>
+        </goalsList>-->
       </goalsLists>
     </runAlways>
     <reconcile>
       <plugins>
         <!-- workaround for https://issues.apache.org/jira/browse/MBUILDCACHE-56 -->
-<!--        <plugin artifactId="maven-enforcer-plugin" goal="enforce">
+        <plugin artifactId="maven-enforcer-plugin" goal="enforce">
           <nologs>
             <nolog propertyName="commandLineRules"/>
           </nologs>
-        </plugin>-->
+        </plugin>
         <plugin artifactId="maven-invoker-plugin" goal="integration-test">
           <reconciles>
             <reconcile propertyName="scriptVariables" skipValue="true"/>
