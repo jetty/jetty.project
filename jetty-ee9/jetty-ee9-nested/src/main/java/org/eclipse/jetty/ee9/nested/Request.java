@@ -2199,15 +2199,20 @@ public class Request implements HttpServletRequest
                 //RFC2965 defines the cookie header as supporting path and domain but RFC6265 permits only name=value
                 if (CookieCompliance.RFC2965.equals(compliance))
                 {
-                    result.setPath(cookie.getPath());
-                    result.setDomain(cookie.getDomain());
+                    String path = cookie.getPath();
+                    if (StringUtil.isNotBlank(path))
+                        result.setPath(path);
+
+                    String domain = cookie.getDomain();
+                    if (StringUtil.isNotBlank(domain))
+                        result.setDomain(domain);
                 }
                 return result;
             }
-            catch (Exception ignore)
+            catch (Exception x)
             {
                 if (LOG.isDebugEnabled())
-                    LOG.debug("Bad Cookie", ignore);
+                    LOG.debug("Bad Cookie", x);
             }
             return null;
         }

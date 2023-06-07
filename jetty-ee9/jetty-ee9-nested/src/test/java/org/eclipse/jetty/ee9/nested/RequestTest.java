@@ -1479,8 +1479,8 @@ public class RequestTest
     public void testSpecCookies() throws Exception
     {
         _server.stop();
-        _connector.getConnectionFactory(HttpConnectionFactory.class).
-            getHttpConfiguration().setRequestCookieCompliance(CookieCompliance.RFC2965);
+        _connector.getConnectionFactory(HttpConnectionFactory.class)
+            .getHttpConfiguration().setRequestCookieCompliance(CookieCompliance.RFC2965);
         _server.start();
 
         final ArrayList<Cookie> cookies = new ArrayList<>();
