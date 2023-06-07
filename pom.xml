@@ -264,7 +264,7 @@
       <extension>
         <groupId>org.apache.maven.extensions</groupId>
         <artifactId>maven-build-cache-extension</artifactId>
-        <version>1.0.1-SNAPSHOT</version>
+        <version>1.0.2-revert-MBUILDCACHE-25-SNAPSHOT</version>
       </extension>
     </extensions>
     <plugins>
