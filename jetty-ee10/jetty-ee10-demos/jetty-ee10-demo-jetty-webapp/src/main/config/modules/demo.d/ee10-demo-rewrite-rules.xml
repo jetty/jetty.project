@@ -26,8 +26,8 @@
       <Call name="addRule">
         <Arg>
           <New class="org.eclipse.jetty.rewrite.handler.RewritePatternRule">
-            <Arg>/test/rewrite/</Arg>
-            <Arg>/test/rewrite/info.html</Arg>
+            <Arg>/ee10-test/rewrite/</Arg>
+            <Arg>/ee10-test/rewrite/info.html</Arg>
           </New>
         </Arg>
       </Call>
@@ -36,8 +36,8 @@
       <Call name="addRule">
         <Arg>
           <New class="org.eclipse.jetty.rewrite.handler.RewritePatternRule">
-            <Arg>/test/some/old/context</Arg>
-            <Arg>/test/rewritten/newcontext</Arg>
+            <Arg>/ee10-test/some/old/context</Arg>
+            <Arg>/ee10-test/rewritten/newcontext</Arg>
           </New>
         </Arg>
       </Call>
@@ -46,8 +46,8 @@
       <Call name="addRule">
         <Arg>
           <New class="org.eclipse.jetty.rewrite.handler.RewritePatternRule">
-            <Arg>/test/rewrite/for/*</Arg>
-            <Arg>/test/rewritten/</Arg>
+            <Arg>/ee10-test/rewrite/for/*</Arg>
+            <Arg>/ee10-test/rewritten/</Arg>
           </New>
         </Arg>
       </Call>
@@ -77,8 +77,8 @@
       <Call name="addRule">
         <Arg>
           <New class="org.eclipse.jetty.rewrite.handler.RedirectPatternRule">
-            <Arg>/test/redirect/*</Arg>
-            <Arg>/test/redirected</Arg>
+            <Arg>/ee10-test/redirect/*</Arg>
+            <Arg>/ee10-test/redirected</Arg>
           </New>
         </Arg>
       </Call>

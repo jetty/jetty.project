@@ -21,6 +21,8 @@ import org.eclipse.jetty.server.Handler;
 import org.eclipse.jetty.server.Request;
 import org.eclipse.jetty.server.Response;
 import org.eclipse.jetty.util.Callback;
+import org.eclipse.jetty.util.CountingCallback;
+import org.eclipse.jetty.util.annotation.ManagedAttribute;
 import org.eclipse.jetty.util.component.Graceful;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -32,22 +34,28 @@ public class GracefulHandler extends Handler.Wrapper implements Graceful
 {
     private static final Logger LOG = LoggerFactory.getLogger(GracefulHandler.class);
 
-    private final LongAdder dispatchedStats = new LongAdder();
-    private final Shutdown shutdown;
+    private final LongAdder _requests = new LongAdder();
+    private final Shutdown _shutdown;
 
     public GracefulHandler()
     {
-        shutdown = new Shutdown(this)
+        _shutdown = new Shutdown(this)
         {
             @Override
             public boolean isShutdownDone()
             {
-                long count = dispatchedStats.sum();
+                long count = getCurrentRequestCount();
                 if (LOG.isDebugEnabled())
                     LOG.debug("isShutdownDone: count {}", count);
                 return count == 0;
             }
         };
+    }
+
+    @ManagedAttribute("number of requests being currently handled")
+    public long getCurrentRequestCount()
+    {
+        return _requests.sum();
     }
 
     /**
@@ -59,7 +67,7 @@ public class GracefulHandler extends Handler.Wrapper implements Graceful
     @Override
     public boolean isShutdown()
     {
-        return shutdown.isShutdown();
+        return _shutdown.isShutdown();
     }
 
     @Override
@@ -86,18 +94,18 @@ public class GracefulHandler extends Handler.Wrapper implements Graceful
         {
             boolean handled = super.handle(request, response, shutdownCallback);
             if (!handled)
-                shutdownCallback.decrement();
+                shutdownCallback.completed();
             return handled;
         }
         catch (Throwable t)
         {
-            shutdownCallback.decrement();
-            throw t;
+            Response.writeError(request, response, shutdownCallback, t);
+            return true;
         }
         finally
         {
             if (isShutdown())
-                shutdown.check();
+                _shutdown.check();
         }
     }
 
@@ -106,43 +114,28 @@ public class GracefulHandler extends Handler.Wrapper implements Graceful
     {
         if (LOG.isDebugEnabled())
             LOG.debug("Shutdown requested");
-        return shutdown.shutdown();
+        return _shutdown.shutdown();
     }
 
-    private class ShutdownTrackingCallback extends Callback.Nested
+    private class ShutdownTrackingCallback extends CountingCallback
     {
         final Request request;
         final Response response;
 
         public ShutdownTrackingCallback(Request request, Response response, Callback callback)
         {
-            super(callback);
+            super(callback, 1);
             this.request = request;
             this.response = response;
-            dispatchedStats.increment();
-        }
-
-        public void decrement()
-        {
-            dispatchedStats.decrement();
+            _requests.increment();
         }
 
         @Override
-        public void failed(Throwable x)
+        public void completed()
         {
-            decrement();
-            super.failed(x);
+            _requests.decrement();
             if (isShutdown())
-                shutdown.check();
-        }
-
-        @Override
-        public void succeeded()
-        {
-            decrement();
-            super.succeeded();
-            if (isShutdown())
-                shutdown.check();
+                _shutdown.check();
         }
     }
 }

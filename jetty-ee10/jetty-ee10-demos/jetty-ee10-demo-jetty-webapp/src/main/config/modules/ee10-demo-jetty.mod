@@ -21,6 +21,7 @@ ee10-servlets
 ee10-websocket-jakarta
 ee10-websocket-jetty
 demo-realm
+ee10-demo-rewrite
 
 [files]
 webapps/ee10-demo-jetty.d/

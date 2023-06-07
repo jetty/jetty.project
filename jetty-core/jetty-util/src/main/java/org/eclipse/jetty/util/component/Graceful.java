@@ -108,6 +108,11 @@ public interface Graceful
                 done.complete(null);
         }
 
+        /**
+         * This method can be called after {@link #shutdown()} has been called, but before
+         * {@link #check()} has been called with {@link #isShutdownDone()} having returned
+         * true to cancel the effects of the {@link #shutdown()} call.
+         */
         public void cancel()
         {
             CompletableFuture<Void> done = _done.get();

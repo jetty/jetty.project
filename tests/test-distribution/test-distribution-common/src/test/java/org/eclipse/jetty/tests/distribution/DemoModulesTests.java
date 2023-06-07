@@ -492,6 +492,49 @@ public class DemoModulesTests extends AbstractJettyHomeTest
         }
     }
 
+    @ParameterizedTest
+    @MethodSource("provideEnvironmentsToTest")
+    public void testRewrite(String env) throws Exception
+    {
+        Path jettyBase = newTestJettyBaseDirectory();
+        String jettyVersion = System.getProperty("jettyVersion");
+        JettyHomeTester distribution = JettyHomeTester.Builder.newInstance()
+            .jettyVersion(jettyVersion)
+            .jettyBase(jettyBase)
+            .mavenLocalRepository(System.getProperty("mavenRepoPath"))
+            .build();
+
+        String[] argsConfig = {
+            "--add-modules=http," + toEnvironment("demos", env)
+        };
+
+        try (JettyHomeTester.Run runConfig = distribution.start(argsConfig))
+        {
+            assertTrue(runConfig.awaitFor(START_TIMEOUT, TimeUnit.SECONDS));
+            assertEquals(0, runConfig.getExitValue());
+
+            int httpPort = distribution.freePort();
+            String[] argsStart = {
+                "jetty.http.port=" + httpPort
+            };
+            try (JettyHomeTester.Run runStart = distribution.start(argsStart))
+            {
+                assertTrue(runStart.awaitConsoleLogsFor("Started oejs.Server@", START_TIMEOUT, TimeUnit.SECONDS),
+                    String.join("", runStart.getLogs()));
+
+                String baseURI = "http://localhost:%d/%s-test".formatted(httpPort, env);
+
+                startHttpClient();
+                client.setFollowRedirects(true);
+                ContentResponse response = client.GET(baseURI + "/rewrite/");
+                assertEquals(HttpStatus.OK_200, response.getStatus(), new ResponseDetails(response));
+
+                String content = response.getContentAsString();
+                assertThat("Content", content, containsString("Links to test the RewriteHandler"));
+            }
+        }
+    }
+
     @Test
     public void testDemoHandler() throws Exception
     {

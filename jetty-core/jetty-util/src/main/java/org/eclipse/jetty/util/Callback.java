@@ -13,6 +13,7 @@
 
 package org.eclipse.jetty.util;
 
+import java.util.Objects;
 import java.util.concurrent.CompletableFuture;
 import java.util.function.Consumer;
 
@@ -172,6 +173,12 @@ public interface Callback extends Invocable
             {
                 return invocationType;
             }
+
+            @Override
+            public String toString()
+            {
+                return "Callback@%x{%s, %s,%s}".formatted(hashCode(), invocationType, success, failure);
+            }
         };
     }
 
@@ -183,13 +190,7 @@ public interface Callback extends Invocable
      */
     static Callback from(Runnable completed)
     {
-        return new Completing()
-        {
-            public void completed()
-            {
-                completed.run();
-            }
-        };
+        return from(Invocable.getInvocationType(completed), completed);
     }
 
     /**
@@ -202,12 +203,24 @@ public interface Callback extends Invocable
      */
     static Callback from(InvocationType invocationType, Runnable completed)
     {
-        return new Completing(invocationType)
+        return new Completing()
         {
             @Override
             public void completed()
             {
                 completed.run();
+            }
+
+            @Override
+            public InvocationType getInvocationType()
+            {
+                return invocationType;
+            }
+
+            @Override
+            public String toString()
+            {
+                return "Callback.Completing@%x{%s,%s}".formatted(hashCode(), invocationType, completed);
             }
         };
     }
@@ -309,61 +322,26 @@ public interface Callback extends Invocable
      */
     static Callback from(Callback callback1, Callback callback2)
     {
-        return new Callback()
-        {
-            @Override
-            public void succeeded()
-            {
-                callback1.succeeded();
-                callback2.succeeded();
-            }
-
-            @Override
-            public void failed(Throwable x)
-            {
-                callback1.failed(x);
-                callback2.failed(x);
-            }
-        };
+        return combine(callback1, callback2);
     }
 
     /**
      * <p>A Callback implementation that calls the {@link #completed()} method when it either succeeds or fails.</p>
      */
-    class Completing implements Callback
+    interface Completing extends Callback
     {
-        private final InvocationType invocationType;
-
-        public Completing()
-        {
-            this(InvocationType.BLOCKING);
-        }
-
-        public Completing(InvocationType invocationType)
-        {
-            this.invocationType = invocationType;
-        }
+        void completed();
 
         @Override
-        public void succeeded()
+        default void succeeded()
         {
             completed();
         }
 
         @Override
-        public void failed(Throwable x)
+        default void failed(Throwable x)
         {
             completed();
-        }
-
-        @Override
-        public InvocationType getInvocationType()
-        {
-            return invocationType;
-        }
-
-        public void completed()
-        {
         }
     }
 
@@ -371,24 +349,23 @@ public interface Callback extends Invocable
      * Nested Completing Callback that completes after
      * completing the nested callback
      */
-    class Nested extends Completing
+    class Nested implements Completing
     {
         private final Callback callback;
 
         public Nested(Callback callback)
         {
-            super(Invocable.getInvocationType(callback));
-            this.callback = callback;
-        }
-
-        public Nested(Nested nested)
-        {
-            this(nested.callback);
+            this.callback = Objects.requireNonNull(callback);
         }
 
         public Callback getCallback()
         {
             return callback;
+        }
+
+        @Override
+        public void completed()
+        {
         }
 
         @Override
@@ -461,7 +438,7 @@ public interface Callback extends Invocable
                 }
                 catch (Throwable t)
                 {
-                    if (x != t)
+                    if (ExceptionUtil.areNotAssociated(x, t))
                         x.addSuppressed(t);
                 }
                 finally
