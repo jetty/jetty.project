@@ -53,7 +53,7 @@ import org.eclipse.jetty.util.TypeUtil;
 import org.eclipse.jetty.util.URIUtil;
 import org.eclipse.jetty.util.annotation.ManagedAttribute;
 import org.eclipse.jetty.util.component.ClassLoaderDump;
-import org.eclipse.jetty.util.component.Dumpable;
+import org.eclipse.jetty.util.component.DumpableAttributes;
 import org.eclipse.jetty.util.component.Graceful;
 import org.eclipse.jetty.util.component.LifeCycle;
 import org.eclipse.jetty.util.resource.Resource;
@@ -281,8 +281,8 @@ public class ContextHandler extends Handler.Wrapper implements Attributes, Grace
     {
         dumpObjects(out, indent,
             new ClassLoaderDump(getClassLoader()),
-            Dumpable.named("context " + this, _context),
-            Dumpable.named("handler attributes " + this, _persistentAttributes));
+            new DumpableAttributes("handler attributes", _persistentAttributes),
+            new DumpableAttributes("attributes", _context));
     }
 
     @ManagedAttribute(value = "Context")

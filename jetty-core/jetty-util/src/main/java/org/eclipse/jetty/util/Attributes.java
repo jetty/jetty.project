@@ -67,18 +67,25 @@ public interface Attributes
     // TODO something better than this
     default Map<String, Object> asAttributeMap()
     {
+        final Set<String> attributeNameSet = getAttributeNameSet();
+
         return new AbstractMap<>()
         {
+            @Override
+            public int size()
+            {
+                return attributeNameSet.size();
+            }
+
             @Override
             public Set<Entry<String, Object>> entrySet()
             {
                 return new AbstractSet<>()
                 {
-                    Iterator<String> names = getAttributeNameSet().iterator();
-
                     @Override
                     public Iterator<Entry<String, Object>> iterator()
                     {
+                        Iterator<String> names = attributeNameSet.iterator();
                         return new Iterator<>()
                         {
                             @Override
@@ -118,7 +125,7 @@ public interface Attributes
                     @Override
                     public int size()
                     {
-                        return 0;
+                        return attributeNameSet.size();
                     }
                 };
             }
@@ -509,6 +516,12 @@ public interface Attributes
                 if (p == null)
                     _layer.removeAttribute(name);
             }
+        }
+
+        @Override
+        public Map<String, Object> asAttributeMap()
+        {
+            return Attributes.super.asAttributeMap();
         }
 
         @Override
