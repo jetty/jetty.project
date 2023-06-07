@@ -73,11 +73,16 @@ public class QueuedPool<P> implements Pool<P>
         rwLock.readLock().lock();
         try
         {
-            if (terminated || queueSize.get() == maxSize)
-                return false;
-            queueSize.incrementAndGet();
-            queue.add(entry);
-            return true;
+            while (true)
+            {
+                int size = queueSize.get();
+                if (terminated || size == maxSize)
+                    return false;
+                if (!queueSize.compareAndSet(size, size + 1))
+                    continue;
+                queue.add(entry);
+                return true;
+            }
         }
         finally
         {
