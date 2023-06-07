@@ -20,10 +20,8 @@ import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
 /**
- * Deployable
- *
- * Communicates to the DeploymentManager that a context can be deployed and should
- * have its defaults initialized.
+ * Interface that can be implemented by ContextHandlers within Environments to allow configuration
+ * to be passed from the DeploymentManager without dependencies on the Deployment module itself. 
  */
 public interface Deployable
 {
