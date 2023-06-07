@@ -1476,6 +1476,36 @@ public class RequestTest
     }
 
     @Test
+    public void testSpecCookies() throws Exception
+    {
+        _server.stop();
+        _connector.getConnectionFactory(HttpConnectionFactory.class).
+            getHttpConfiguration().setRequestCookieCompliance(CookieCompliance.RFC2965);
+        _server.start();
+
+        final ArrayList<Cookie> cookies = new ArrayList<>();
+
+        _handler._checker = (request, response) ->
+        {
+            Cookie[] ca = request.getCookies();
+            if (ca != null)
+                cookies.addAll(Arrays.asList(ca));
+            response.getOutputStream().println("Cookie monster!");
+            return true;
+        };
+
+        String response = _connector.getResponse(
+            "GET / HTTP/1.1\n" +
+                "Host: whatever\n" +
+                "Cookie: name1=value1\n" +
+                "Connection: close\n" +
+                "\n"
+        );
+        assertTrue(response.startsWith("HTTP/1.1 200 OK"));
+        assertEquals(1, cookies.size());
+    }
+
+    @Test
     public void testCookies() throws Exception
     {
         final ArrayList<Cookie> cookies = new ArrayList<>();
