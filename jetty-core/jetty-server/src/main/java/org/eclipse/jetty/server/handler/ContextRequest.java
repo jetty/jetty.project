@@ -42,13 +42,7 @@ public class ContextRequest extends Request.Wrapper implements Invocable
     @Override
     public boolean addErrorListener(Predicate<Throwable> onError)
     {
-        return super.addErrorListener(t ->
-        {
-            // TODO: implement the line below
-            // return _context.apply(onError::test, t, ContextRequest.this);
-            _context.accept(onError::test, t, ContextRequest.this);
-            return true;
-        });
+        return super.addErrorListener(t -> _context.test(onError::test, t, ContextRequest.this));
     }
 
     @Override

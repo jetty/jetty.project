@@ -522,6 +522,8 @@ public class HttpClientTest extends AbstractHttpClientServerTest
             @Override
             public boolean handle(org.eclipse.jetty.server.Request request, org.eclipse.jetty.server.Response response, Callback callback) throws Exception
             {
+                // Handler says it will handle the idletimeout
+                request.addErrorListener(t -> true);
                 TimeUnit.MILLISECONDS.sleep(2 * idleTimeout);
                 callback.succeeded();
                 return true;
@@ -530,7 +532,7 @@ public class HttpClientTest extends AbstractHttpClientServerTest
 
         connector.setIdleTimeout(idleTimeout);
 
-        // Request does not fail because idle timeouts while dispatched are ignored.
+        // Request does not fail because handler says it will handle it.
         ContentResponse response1 = client.newRequest("localhost", connector.getLocalPort())
             .scheme(scheme)
             .idleTimeout(4 * idleTimeout, TimeUnit.MILLISECONDS)
