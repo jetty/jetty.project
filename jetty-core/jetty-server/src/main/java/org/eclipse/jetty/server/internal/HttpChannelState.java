@@ -353,10 +353,9 @@ public class HttpChannelState implements HttpChannel, Components
             {
                 _error = Content.Chunk.from(x);
             }
-            else if (_error.getCause() != x)
+            else if (ExceptionUtil.areNotAssociated(_error.getCause(), x) && _error.getCause().getClass() != x.getClass())
             {
                 _error.getCause().addSuppressed(x);
-                return null;
             }
 
             // If not handled, then we just fail the request callback

@@ -412,7 +412,7 @@ public abstract class AbstractEndPoint extends IdleTimeout implements EndPoint
 
         // If the endpoint is open and there was no fill/write handling, then close here.
         if (isOpen && !(fillFailed || writeFailed))
-            close();
+            close(timeout);
     }
 
     @Override
