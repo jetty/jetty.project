@@ -107,6 +107,7 @@
     <mariadb.version>3.1.4</mariadb.version>
     <mariadb.docker.version>10.3.6</mariadb.docker.version>
     <maven.deps.version>3.9.0</maven.deps.version>
+    <maven-build-cache.version>1.0.1</maven-build-cache.version>
     <maven-artifact-transfer.version>0.13.1</maven-artifact-transfer.version>
     <maven.resolver.version>1.9.15</maven.resolver.version>
     <maven.version>3.9.0</maven.version>
@@ -264,7 +265,7 @@
       <extension>
         <groupId>org.apache.maven.extensions</groupId>
         <artifactId>maven-build-cache-extension</artifactId>
-        <version>1.0.2-revert-MBUILDCACHE-25-SNAPSHOT</version>
+        <version>${maven-build-cache.version}</version>
       </extension>
     </extensions>
     <plugins>
