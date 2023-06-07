@@ -119,6 +119,7 @@ def mavenBuild(jdk, cmdline, mvnName) {
             extraArgs = " -Dmaven.test.failure.ignore=true -Dmaven.build.cache.enabled=false "
           }
           sh "mvn $extraArgs -Dmaven.repo.uri=http://nexus-service.nexus.svc.cluster.local:8081/repository/maven-public/ -ntp -s $GLOBAL_MVN_SETTINGS -Dmaven.repo.local=.repository -Pci -V -B -e -U $cmdline"
+          sh "cat jetty-ee10/jetty-ee10-maven-plugin/target/it/jetty-start-distro-mojo-it/jetty-simple-webapp/target/jetty-start.out"
         }
       }
     }
