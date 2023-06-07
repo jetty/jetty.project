@@ -52,12 +52,11 @@ public class GracefulHandlerTest
 {
     private static final Logger LOG = LoggerFactory.getLogger(GracefulHandlerTest.class);
     private Server server;
-    private ServerConnector connector;
 
     public Server createServer(Handler handler) throws Exception
     {
         server = new Server();
-        connector = new ServerConnector(server, 1, 1);
+        ServerConnector connector = new ServerConnector(server, 1, 1);
         connector.setIdleTimeout(10000);
         connector.setShutdownIdleTimeout(1000);
         connector.setPort(0);
