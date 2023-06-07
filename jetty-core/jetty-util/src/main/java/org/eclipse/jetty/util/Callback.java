@@ -212,18 +212,6 @@ public interface Callback extends Invocable
             }
 
             @Override
-            public void succeeded()
-            {
-                completed();
-            }
-
-            @Override
-            public void failed(Throwable x)
-            {
-                completed();
-            }
-
-            @Override
             public InvocationType getInvocationType()
             {
                 return invocationType;
@@ -334,28 +322,7 @@ public interface Callback extends Invocable
      */
     static Callback from(Callback callback1, Callback callback2)
     {
-        return new Callback()
-        {
-            @Override
-            public void succeeded()
-            {
-                callback1.succeeded();
-                callback2.succeeded();
-            }
-
-            @Override
-            public void failed(Throwable x)
-            {
-                callback1.failed(x);
-                callback2.failed(x);
-            }
-
-            @Override
-            public InvocationType getInvocationType()
-            {
-                return Invocable.combine(Invocable.getInvocationType(callback1), Invocable.getInvocationType(callback2));
-            }
-        };
+        return combine(callback1, callback2);
     }
 
     /**
@@ -364,6 +331,18 @@ public interface Callback extends Invocable
     interface Completing extends Callback
     {
         void completed();
+
+        @Override
+        default void succeeded()
+        {
+            completed();
+        }
+
+        @Override
+        default void failed(Throwable x)
+        {
+            completed();
+        }
     }
 
     /**
@@ -435,7 +414,45 @@ public interface Callback extends Invocable
         if (cb2 == null)
             return cb1;
 
-        return from(cb1, cb2);
+        return new Callback()
+        {
+            @Override
+            public void succeeded()
+            {
+                try
+                {
+                    cb1.succeeded();
+                }
+                finally
+                {
+                    cb2.succeeded();
+                }
+            }
+
+            @Override
+            public void failed(Throwable x)
+            {
+                try
+                {
+                    cb1.failed(x);
+                }
+                catch (Throwable t)
+                {
+                    if (ExceptionUtil.areNotAssociated(x, t))
+                        x.addSuppressed(t);
+                }
+                finally
+                {
+                    cb2.failed(x);
+                }
+            }
+
+            @Override
+            public InvocationType getInvocationType()
+            {
+                return Invocable.combine(Invocable.getInvocationType(cb1), Invocable.getInvocationType(cb2));
+            }
+        };
     }
 
     /**

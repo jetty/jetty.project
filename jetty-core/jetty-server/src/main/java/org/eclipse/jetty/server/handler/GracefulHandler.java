@@ -44,7 +44,7 @@ public class GracefulHandler extends Handler.Wrapper implements Graceful
             @Override
             public boolean isShutdownDone()
             {
-                long count = getCurrentRequests();
+                long count = getCurrentRequestCount();
                 if (LOG.isDebugEnabled())
                     LOG.debug("isShutdownDone: count {}", count);
                 return count == 0;
@@ -52,8 +52,8 @@ public class GracefulHandler extends Handler.Wrapper implements Graceful
         };
     }
 
-    @ManagedAttribute("current requests")
-    public long getCurrentRequests()
+    @ManagedAttribute("number of requests being currently handled")
+    public long getCurrentRequestCount()
     {
         return _requests.sum();
     }
