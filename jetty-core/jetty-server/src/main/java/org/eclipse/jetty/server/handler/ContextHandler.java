@@ -25,7 +25,6 @@ import java.util.EventListener;
 import java.util.List;
 import java.util.Objects;
 import java.util.Set;
-import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.CopyOnWriteArrayList;
 import java.util.concurrent.atomic.AtomicReference;
 import java.util.function.Consumer;
@@ -55,7 +54,6 @@ import org.eclipse.jetty.util.URIUtil;
 import org.eclipse.jetty.util.annotation.ManagedAttribute;
 import org.eclipse.jetty.util.component.ClassLoaderDump;
 import org.eclipse.jetty.util.component.Dumpable;
-import org.eclipse.jetty.util.component.Graceful;
 import org.eclipse.jetty.util.component.LifeCycle;
 import org.eclipse.jetty.util.resource.Resource;
 import org.eclipse.jetty.util.resource.ResourceFactory;
@@ -64,14 +62,8 @@ import org.eclipse.jetty.util.thread.Invocable;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-public class ContextHandler extends Handler.Wrapper implements Attributes, Graceful, AliasCheck
+public class ContextHandler extends Handler.Wrapper implements Attributes, AliasCheck
 {
-    // TODO where should the alias checking go?
-    // TODO add protected paths to ServletContextHandler?
-    // TODO what about ObjectFactory stuff
-    // TODO what about a Context logger?
-    // TODO init param stuff to ServletContextHandler
-
     private static final Logger LOG = LoggerFactory.getLogger(ContextHandler.class);
     private static final ThreadLocal<Context> __context = new ThreadLocal<>();
 
@@ -148,10 +140,9 @@ public class ContextHandler extends Handler.Wrapper implements Attributes, Grace
     public enum Availability
     {
         STOPPED,        // stopped and can't be made unavailable nor shutdown
-        STARTING,       // starting inside of doStart. It may go to any of the next states.
+        STARTING,       // starting inside doStart. It may go to any of the next states.
         AVAILABLE,      // running normally
         UNAVAILABLE,    // Either a startup error or explicit call to setAvailable(false)
-        SHUTDOWN,       // graceful shutdown
     }
 
     /**
@@ -585,29 +576,6 @@ public class ContextHandler extends Handler.Wrapper implements Attributes, Grace
     }
 
     /**
-     * @return true if this context is shutting down
-     */
-    @ManagedAttribute("true for graceful shutdown, which allows existing requests to complete")
-    public boolean isShutdown()
-    {
-        // TODO
-        return false;
-    }
-
-    /**
-     * Set shutdown status. This field allows for graceful shutdown of a context. A started context may be put into non accepting state so that existing
-     * requests can complete, but no new requests are accepted.
-     */
-    @Override
-    public CompletableFuture<Void> shutdown()
-    {
-        // TODO
-        CompletableFuture<Void> completableFuture = new CompletableFuture<>();
-        completableFuture.complete(null);
-        return completableFuture;
-    }
-
-    /**
      * @return false if this context is unavailable (sends 503)
      */
     public boolean isAvailable()
@@ -652,15 +620,16 @@ public class ContextHandler extends Handler.Wrapper implements Attributes, Grace
                 Availability availability = _availability.get();
                 switch (availability)
                 {
-                    case STARTING:
-                    case AVAILABLE:
-                        if (!_availability.compareAndSet(availability, Availability.UNAVAILABLE))
-                            continue;
-                        break;
-                    default:
-                        break;
+                    case STARTING, AVAILABLE ->
+                    {
+                        if (_availability.compareAndSet(availability, Availability.UNAVAILABLE))
+                            return;
+                    }
+                    default ->
+                    {
+                        return;
+                    }
                 }
-                break;
             }
         }
     }
@@ -1159,14 +1128,6 @@ public class ContextHandler extends Handler.Wrapper implements Attributes, Grace
         public <H extends ContextHandler> H getContextHandler()
         {
             return (H)ContextHandler.this;
-        }
-
-        @Override
-        public Object getAttribute(String name)
-        {
-            // TODO the Attributes.Layer is a little different to previous
-            //      behaviour.  We need to verify if that is OK
-            return super.getAttribute(name);
         }
 
         @Override

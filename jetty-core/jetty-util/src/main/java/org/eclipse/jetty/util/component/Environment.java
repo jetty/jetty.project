@@ -127,7 +127,7 @@ public interface Environment extends Attributes
         @Override
         public String toString()
         {
-            return "%s@%s{%s}".formatted(TypeUtil.toShortName(this.getClass()), hashCode(), _name);
+            return "%s@%x{%s}".formatted(TypeUtil.toShortName(this.getClass()), hashCode(), _name);
         }
     }
 
