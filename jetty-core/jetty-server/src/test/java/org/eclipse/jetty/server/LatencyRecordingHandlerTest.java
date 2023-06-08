@@ -20,7 +20,7 @@ import java.util.concurrent.TimeUnit;
 import org.awaitility.Awaitility;
 import org.eclipse.jetty.logging.JettyLevel;
 import org.eclipse.jetty.logging.JettyLogger;
-import org.eclipse.jetty.server.handler.AbstractLatencyRecordingHandler;
+import org.eclipse.jetty.server.handler.LatencyRecordingHandler;
 import org.eclipse.jetty.server.handler.ContextHandler;
 import org.eclipse.jetty.util.Callback;
 import org.junit.jupiter.api.AfterEach;
@@ -60,7 +60,7 @@ public class LatencyRecordingHandlerTest
                 return true;
             }
         };
-        AbstractLatencyRecordingHandler latencyRecordingHandler = new AbstractLatencyRecordingHandler()
+        LatencyRecordingHandler latencyRecordingHandler = new LatencyRecordingHandler()
         {
             @Override
             protected void onRequestComplete(long durationInNs)

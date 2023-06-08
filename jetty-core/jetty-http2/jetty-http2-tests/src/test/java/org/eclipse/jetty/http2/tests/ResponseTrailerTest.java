@@ -85,7 +85,7 @@ public class ResponseTrailerTest extends AbstractTest
             Session session = sessionPromise.get(5, TimeUnit.SECONDS);
 
             HttpURI uri = HttpURI.from("http://" + host + ":" + port + "/");
-            MetaData.Request request = new MetaData.Request(HttpMethod.GET.asString(), uri, HttpVersion.HTTP_2, HttpFields.EMPTY);
+            MetaData.Request request = new MetaData.Request(HttpMethod.GET.asString(), uri, HttpVersion.HTTP_2, HttpFields.EMPTY, 0);
             HeadersFrame frame = new HeadersFrame(request, null, true);
             BlockingQueue<HeadersFrame> headers = new LinkedBlockingQueue<>();
             CountDownLatch latch = new CountDownLatch(1);

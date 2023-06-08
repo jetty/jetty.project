@@ -43,7 +43,7 @@ public class HeadersTooLargeParseTest
     {
         HttpFields fields = HttpFields.build()
                 .put("B", "test");
-        MetaData.Request metaData = new MetaData.Request("GET", HttpScheme.HTTP.asString(), new HostPortHttpField("localhost:8080"), "/nested/uri/path/too/long", HttpVersion.HTTP_2, fields, -1);
+        MetaData.Request metaData = new MetaData.Request("GET", HttpScheme.HTTP.asString(), new HostPortHttpField("localhost:8080"), "/nested/uri/path/too/long", HttpVersion.HTTP_2, fields, -1, 0);
         int maxHeaderSize = 48;
 
         assertProtocolError(maxHeaderSize, metaData);
@@ -55,7 +55,7 @@ public class HeadersTooLargeParseTest
         HttpFields fields = HttpFields.build()
                 .put("X-Large-Header", "lorem-ipsum-dolor-sit")
                 .put("X-Other-Header", "test");
-        MetaData.Request metaData = new MetaData.Request("GET", HttpScheme.HTTP.asString(), new HostPortHttpField("localhost:8080"), "/", HttpVersion.HTTP_2, fields, -1);
+        MetaData.Request metaData = new MetaData.Request("GET", HttpScheme.HTTP.asString(), new HostPortHttpField("localhost:8080"), "/", HttpVersion.HTTP_2, fields, -1, 0);
         int maxHeaderSize = 64;
 
         assertProtocolError(maxHeaderSize, metaData);

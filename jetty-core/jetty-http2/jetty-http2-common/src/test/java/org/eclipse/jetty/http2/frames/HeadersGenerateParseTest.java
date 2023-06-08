@@ -48,7 +48,7 @@ public class HeadersGenerateParseTest
         HttpFields fields = HttpFields.build()
             .put("Accept", "text/html")
             .put("User-Agent", "Jetty");
-        MetaData.Request metaData = new MetaData.Request("GET", HttpScheme.HTTP.asString(), new HostPortHttpField("localhost:8080"), "/path", HttpVersion.HTTP_2, fields, -1);
+        MetaData.Request metaData = new MetaData.Request("GET", HttpScheme.HTTP.asString(), new HostPortHttpField("localhost:8080"), "/path", HttpVersion.HTTP_2, fields, -1, 0);
 
         final List<HeadersFrame> frames = new ArrayList<>();
         Parser parser = new Parser(bufferPool, 8192);
@@ -121,7 +121,7 @@ public class HeadersGenerateParseTest
             HttpFields.Mutable fields = HttpFields.build()
                 .put("Accept", "text/html")
                 .put("User-Agent", "Jetty");
-            MetaData.Request metaData = new MetaData.Request("GET", HttpScheme.HTTP.asString(), new HostPortHttpField("localhost:8080"), "/path", HttpVersion.HTTP_2, fields, -1);
+            MetaData.Request metaData = new MetaData.Request("GET", HttpScheme.HTTP.asString(), new HostPortHttpField("localhost:8080"), "/path", HttpVersion.HTTP_2, fields, -1, 0);
 
             ByteBufferPool.Accumulator accumulator = new ByteBufferPool.Accumulator();
             PriorityFrame priorityFrame = new PriorityFrame(streamId, 3 * streamId, 200, true);

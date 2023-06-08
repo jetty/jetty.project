@@ -63,7 +63,7 @@ public class PushedResourcesTest extends AbstractTest
             public Stream.Listener onNewStream(Stream stream, HeadersFrame frame)
             {
                 HttpURI pushURI = HttpURI.from("http://localhost:" + connector.getLocalPort() + pushPath);
-                MetaData.Request pushRequest = new MetaData.Request(HttpMethod.GET.asString(), pushURI, HttpVersion.HTTP_2, HttpFields.EMPTY);
+                MetaData.Request pushRequest = new MetaData.Request(HttpMethod.GET.asString(), pushURI, HttpVersion.HTTP_2, HttpFields.EMPTY, 0);
                 stream.push(new PushPromiseFrame(stream.getId(), pushRequest), new Promise.Adapter<>()
                 {
                     @Override
@@ -124,9 +124,9 @@ public class PushedResourcesTest extends AbstractTest
                 }
                 else
                 {
-                    MetaData.Request push1 = new MetaData.Request("GET", HttpURI.build(request.getHttpURI()).path(path1), HttpVersion.HTTP_2, HttpFields.EMPTY);
+                    MetaData.Request push1 = new MetaData.Request("GET", HttpURI.build(request.getHttpURI()).path(path1), HttpVersion.HTTP_2, HttpFields.EMPTY, 0);
                     request.push(push1);
-                    MetaData.Request push2 = new MetaData.Request("GET", HttpURI.build(request.getHttpURI()).path(path2), HttpVersion.HTTP_2, HttpFields.EMPTY);
+                    MetaData.Request push2 = new MetaData.Request("GET", HttpURI.build(request.getHttpURI()).path(path2), HttpVersion.HTTP_2, HttpFields.EMPTY, 0);
                     request.push(push2);
                     response.write(true, ByteBuffer.wrap(bytes), callback);
                 }
@@ -189,7 +189,7 @@ public class PushedResourcesTest extends AbstractTest
                 }
                 else
                 {
-                    request.push(new MetaData.Request("GET", HttpURI.build(request.getHttpURI()).path(oldPath), HttpVersion.HTTP_2, HttpFields.EMPTY));
+                    request.push(new MetaData.Request("GET", HttpURI.build(request.getHttpURI()).path(oldPath), HttpVersion.HTTP_2, HttpFields.EMPTY, 0));
                     callback.succeeded();
                 }
                 return true;

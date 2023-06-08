@@ -30,6 +30,7 @@ import org.eclipse.jetty.http2.api.Stream;
 import org.eclipse.jetty.http2.client.HTTP2Client;
 import org.eclipse.jetty.http2.frames.HeadersFrame;
 import org.eclipse.jetty.util.Callback;
+import org.eclipse.jetty.util.NanoTime;
 
 @SuppressWarnings("unused")
 public class HTTP2Docs
@@ -44,7 +45,7 @@ public class HTTP2Docs
 
         HttpFields requestHeaders = HttpFields.build()
             .put(HttpHeader.USER_AGENT, "Jetty HTTP2Client {version}");
-        MetaData.Request request = new MetaData.Request("GET", HttpURI.from("http://localhost:8080/path"), HttpVersion.HTTP_2, requestHeaders);
+        MetaData.Request request = new MetaData.Request("GET", HttpURI.from("http://localhost:8080/path"), HttpVersion.HTTP_2, requestHeaders, NanoTime.now());
         HeadersFrame headersFrame = new HeadersFrame(request, null, true);
 
         // tag::dataUnwrap[]

@@ -107,7 +107,8 @@ public class BadURITest
             "/foo/..;/bar",
             HttpVersion.HTTP_2,
             HttpFields.EMPTY,
-            -1
+            -1,
+            0
         );
         ByteBufferPool.Accumulator accumulator = new ByteBufferPool.Accumulator();
         generator.control(accumulator, new PrefaceFrame());
@@ -134,7 +135,8 @@ public class BadURITest
                 "/valid",
                 HttpVersion.HTTP_2,
                 HttpFields.EMPTY,
-                -1
+                -1,
+                0
             );
             generator.control(accumulator, new HeadersFrame(3, metaData2, null, true));
             for (ByteBuffer buffer : accumulator.getByteBuffers())

@@ -58,7 +58,7 @@ public class JDK9HTTP2ClientTest
 
             HttpFields.Mutable requestFields = HttpFields.build();
             requestFields.put("User-Agent", client.getClass().getName() + "/" + Jetty.VERSION);
-            MetaData.Request metaData = new MetaData.Request("GET", HttpURI.from("https://" + host + ":" + port + "/"), HttpVersion.HTTP_2, requestFields);
+            MetaData.Request metaData = new MetaData.Request("GET", HttpURI.from("https://" + host + ":" + port + "/"), HttpVersion.HTTP_2, requestFields, 0);
             HeadersFrame headersFrame = new HeadersFrame(metaData, null, true);
             CountDownLatch latch = new CountDownLatch(1);
             session.newStream(headersFrame, new Promise.Adapter<>(), new Stream.Listener()

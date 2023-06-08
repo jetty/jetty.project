@@ -896,7 +896,7 @@ public class StreamResetTest extends AbstractTest
             generator.control(accumulator, new WindowUpdateFrame(0, Integer.MAX_VALUE - FlowControlStrategy.DEFAULT_WINDOW_SIZE));
 
             HttpURI uri = HttpURI.from("http", host, port, "/");
-            MetaData.Request request = new MetaData.Request(HttpMethod.GET.asString(), uri, HttpVersion.HTTP_2, HttpFields.EMPTY);
+            MetaData.Request request = new MetaData.Request(HttpMethod.GET.asString(), uri, HttpVersion.HTTP_2, HttpFields.EMPTY, 0);
             int streamId = 3;
             HeadersFrame headersFrame = new HeadersFrame(streamId, request, null, true);
             generator.control(accumulator, headersFrame);
@@ -987,7 +987,7 @@ public class StreamResetTest extends AbstractTest
             generator.control(accumulator, new WindowUpdateFrame(0, Integer.MAX_VALUE - FlowControlStrategy.DEFAULT_WINDOW_SIZE));
 
             HttpURI uri = HttpURI.from("http", host, port, "/1");
-            MetaData.Request request = new MetaData.Request(HttpMethod.GET.asString(), uri, HttpVersion.HTTP_2, HttpFields.EMPTY);
+            MetaData.Request request = new MetaData.Request(HttpMethod.GET.asString(), uri, HttpVersion.HTTP_2, HttpFields.EMPTY, 0);
             HeadersFrame headersFrame = new HeadersFrame(3, request, null, true);
             generator.control(accumulator, headersFrame);
 
@@ -998,7 +998,7 @@ public class StreamResetTest extends AbstractTest
 
             // Send a second request.
             uri = HttpURI.from("http", host, port, "/2");
-            request = new MetaData.Request(HttpMethod.GET.asString(), uri, HttpVersion.HTTP_2, HttpFields.EMPTY);
+            request = new MetaData.Request(HttpMethod.GET.asString(), uri, HttpVersion.HTTP_2, HttpFields.EMPTY, 0);
             int streamId = 5;
             headersFrame = new HeadersFrame(streamId, request, null, true);
             generator.control(accumulator, headersFrame);

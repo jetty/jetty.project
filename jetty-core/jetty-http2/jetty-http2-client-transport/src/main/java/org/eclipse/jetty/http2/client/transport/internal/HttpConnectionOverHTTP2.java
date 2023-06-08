@@ -43,6 +43,7 @@ import org.eclipse.jetty.http2.api.Session;
 import org.eclipse.jetty.http2.api.Stream;
 import org.eclipse.jetty.http2.frames.HeadersFrame;
 import org.eclipse.jetty.util.Callback;
+import org.eclipse.jetty.util.NanoTime;
 import org.eclipse.jetty.util.thread.Sweeper;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -126,7 +127,7 @@ public class HttpConnectionOverHTTP2 extends HttpConnection implements Sweeper.S
         http2Channel.associate(newExchange);
 
         // Create the implicit stream#1 so that it can receive the HTTP/2 response.
-        MetaData.Request metaData = new MetaData.Request(request.getMethod(), HttpURI.from(request.getURI()), HttpVersion.HTTP_2, request.getHeaders());
+        MetaData.Request metaData = new MetaData.Request(request.getMethod(), HttpURI.from(request.getURI()), HttpVersion.HTTP_2, request.getHeaders(), NanoTime.now());
         // We do not support upgrade requests with content, so endStream=true.
         HeadersFrame frame = new HeadersFrame(metaData, null, true);
         Stream stream = ((HTTP2Session)session).newUpgradeStream(frame, http2Channel.getStreamListener(), failure ->

@@ -2393,13 +2393,7 @@ public class RequestTest
         }
 
         @Override
-        public long getTimeStamp()
-        {
-            return 0;
-        }
-
-        @Override
-        public long getNanoTime()
+        public long getHeadersNanoTime()
         {
             return 0;
         }

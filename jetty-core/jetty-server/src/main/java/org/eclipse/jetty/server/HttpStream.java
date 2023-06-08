@@ -47,11 +47,6 @@ public interface HttpStream extends Callback
     String getId();
 
     /**
-     * @return the nanoTime when this HttpStream was created
-     */
-    long getNanoTime();
-
-    /**
      * <p>Reads a chunk of content, with the same semantic as {@link Content.Source#read()}.</p>
      * <p>This method is called from the implementation of {@link Request#read()}.</p>
      *
@@ -154,12 +149,6 @@ public interface HttpStream extends Callback
         public final String getId()
         {
             return getWrapped().getId();
-        }
-
-        @Override
-        public final long getNanoTime()
-        {
-            return getWrapped().getNanoTime();
         }
 
         @Override

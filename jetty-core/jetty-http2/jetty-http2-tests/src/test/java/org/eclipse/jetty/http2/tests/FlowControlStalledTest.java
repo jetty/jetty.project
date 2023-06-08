@@ -96,7 +96,7 @@ public class FlowControlStalledTest
         String host = "localhost";
         int port = connector.getLocalPort();
         String authority = host + ":" + port;
-        return new MetaData.Request(method, HttpScheme.HTTP.asString(), new HostPortHttpField(authority), target, HttpVersion.HTTP_2, fields, -1);
+        return new MetaData.Request(method, HttpScheme.HTTP.asString(), new HostPortHttpField(authority), target, HttpVersion.HTTP_2, fields, -1, 0);
     }
 
     @AfterEach

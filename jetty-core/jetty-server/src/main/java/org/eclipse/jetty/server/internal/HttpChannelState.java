@@ -60,6 +60,7 @@ import org.eclipse.jetty.util.Attributes;
 import org.eclipse.jetty.util.BufferUtil;
 import org.eclipse.jetty.util.Callback;
 import org.eclipse.jetty.util.ExceptionUtil;
+import org.eclipse.jetty.util.NanoTime;
 import org.eclipse.jetty.util.thread.AutoLock;
 import org.eclipse.jetty.util.thread.Invocable;
 import org.eclipse.jetty.util.thread.Scheduler;
@@ -94,7 +95,6 @@ public class HttpChannelState implements HttpChannel, Components
 
     private static final Logger LOG = LoggerFactory.getLogger(HttpChannelState.class);
     private static final Throwable DO_NOT_SEND = new Throwable("No Send");
-    private static final MetaData.Request ERROR_REQUEST = new MetaData.Request("GET", HttpURI.from("/"), HttpVersion.HTTP_1_0, HttpFields.EMPTY);
     private static final HttpField SERVER_VERSION = new PreEncodedHttpField(HttpHeader.SERVER, HttpConfiguration.SERVER_VERSION);
     private static final HttpField POWERED_BY = new PreEncodedHttpField(HttpHeader.X_POWERED_BY, HttpConfiguration.SERVER_VERSION);
 
@@ -344,7 +344,8 @@ public class HttpChannelState implements HttpChannel, Components
             {
                 // If the channel doesn't have a request, then the error must have occurred during the parsing of
                 // the request line / headers, so make a temp request for logging and producing an error response.
-                _request = new ChannelRequest(this, ERROR_REQUEST);
+                MetaData.Request errorRequest = new MetaData.Request("GET", HttpURI.from("/"), HttpVersion.HTTP_1_0, HttpFields.EMPTY, NanoTime.now());
+                _request = new ChannelRequest(this, errorRequest);
                 _response = new ChannelResponse(_request);
             }
 
@@ -683,7 +684,7 @@ public class HttpChannelState implements HttpChannel, Components
 
     public static class ChannelRequest implements Attributes, Request
     {
-        private final long _timeStamp = System.currentTimeMillis();
+        private final long _headersNanoTime = NanoTime.now();
         private final ChannelCallback _callback = new ChannelCallback(this);
         private final String _id;
         private final ConnectionMetaData _connectionMetaData;
@@ -833,18 +834,15 @@ public class HttpChannelState implements HttpChannel, Components
         }
 
         @Override
-        public long getTimeStamp()
+        public long getBeginNanoTime()
         {
-            return _timeStamp;
+            return _metaData.getBeginNanoTime();
         }
 
         @Override
-        public long getNanoTime()
+        public long getHeadersNanoTime()
         {
-            HttpStream stream = _httpChannelState.getHttpStream();
-            if (stream != null)
-                return stream.getNanoTime();
-            throw new IllegalStateException();
+            return _headersNanoTime;
         }
 
         @Override

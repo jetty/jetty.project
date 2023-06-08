@@ -22,6 +22,7 @@ import org.eclipse.jetty.http.HttpScheme;
 import org.eclipse.jetty.http.HttpVersion;
 import org.eclipse.jetty.http.MetaData;
 import org.eclipse.jetty.http3.qpack.QpackException;
+import org.eclipse.jetty.util.NanoTime;
 
 import static org.eclipse.jetty.http3.qpack.QpackException.H3_GENERAL_PROTOCOL_ERROR;
 
@@ -247,7 +248,7 @@ public class MetaDataBuilder
                         throw new QpackException.StreamException(H3_GENERAL_PROTOCOL_ERROR, "No Path");
                 }
                 if (isConnect)
-                    return new MetaData.ConnectRequest(_scheme, _authority, _path, fields, _protocol);
+                    return new MetaData.ConnectRequest(_scheme, _authority, _path, fields, _protocol, NanoTime.now()); // TODO #9900 make beginNanoTime accurate
                 else
                     return new MetaData.Request(
                         _method,
@@ -256,7 +257,8 @@ public class MetaDataBuilder
                         _path,
                         HttpVersion.HTTP_3,
                         fields,
-                        _contentLength);
+                        _contentLength,
+                        NanoTime.now()); // TODO #9900 make beginNanoTime accurate
             }
             if (_response)
             {

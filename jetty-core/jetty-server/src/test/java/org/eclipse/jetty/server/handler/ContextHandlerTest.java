@@ -138,7 +138,7 @@ public class ContextHandlerTest
         MockHttpStream stream = new MockHttpStream(channel);
 
         HttpFields fields = HttpFields.build().add(HttpHeader.HOST, "localhost").asImmutable();
-        MetaData.Request request = new MetaData.Request("GET", HttpURI.from("http://localhost/other"), HttpVersion.HTTP_1_1, fields, 0);
+        MetaData.Request request = new MetaData.Request("GET", HttpURI.from("http://localhost/other"), HttpVersion.HTTP_1_1, fields, 0, 0);
         Runnable task = channel.onRequest(request);
         task.run();
 
@@ -160,7 +160,7 @@ public class ContextHandlerTest
         MockHttpStream stream = new MockHttpStream(channel);
 
         HttpFields fields = HttpFields.build().add(HttpHeader.HOST, "localhost").asImmutable();
-        MetaData.Request request = new MetaData.Request("GET", HttpURI.from("http://localhost/ctx/"), HttpVersion.HTTP_1_1, fields, 0);
+        MetaData.Request request = new MetaData.Request("GET", HttpURI.from("http://localhost/ctx/"), HttpVersion.HTTP_1_1, fields, 0, 0);
         Runnable task = channel.onRequest(request);
         task.run();
 
@@ -185,7 +185,7 @@ public class ContextHandlerTest
         HttpChannel channel = new HttpChannelState(connectionMetaData);
         MockHttpStream stream = new MockHttpStream(channel);
         HttpFields fields = HttpFields.build().add(HttpHeader.HOST, "localhost").asImmutable();
-        MetaData.Request request = new MetaData.Request("GET", HttpURI.from("http://localhost/ctx"), HttpVersion.HTTP_1_1, fields, 0);
+        MetaData.Request request = new MetaData.Request("GET", HttpURI.from("http://localhost/ctx"), HttpVersion.HTTP_1_1, fields, 0, 0);
         Runnable task = channel.onRequest(request);
         task.run();
 
@@ -201,7 +201,7 @@ public class ContextHandlerTest
 
         stream = new MockHttpStream(channel);
         fields = HttpFields.build().add(HttpHeader.HOST, "localhost").asImmutable();
-        request = new MetaData.Request("GET", HttpURI.from("http://localhost/ctx"), HttpVersion.HTTP_1_1, fields, 0);
+        request = new MetaData.Request("GET", HttpURI.from("http://localhost/ctx"), HttpVersion.HTTP_1_1, fields, 0, 0);
         task = channel.onRequest(request);
         task.run();
 
@@ -224,7 +224,7 @@ public class ContextHandlerTest
 
         MockHttpStream stream = new MockHttpStream(channel);
         HttpFields fields = HttpFields.build().add(HttpHeader.HOST, "localhost").asImmutable();
-        MetaData.Request request = new MetaData.Request("GET", HttpURI.from("http://localhost/ctx/"), HttpVersion.HTTP_1_1, fields, 0);
+        MetaData.Request request = new MetaData.Request("GET", HttpURI.from("http://localhost/ctx/"), HttpVersion.HTTP_1_1, fields, 0, 0);
         channel.onRequest(request).run();
 
         assertThat(stream.getResponse().getStatus(), equalTo(200));
@@ -234,7 +234,7 @@ public class ContextHandlerTest
         _contextHandler.setAvailable(false);
 
         stream = new MockHttpStream(channel);
-        request = new MetaData.Request("GET", HttpURI.from("http://localhost/ctx/"), HttpVersion.HTTP_1_1, fields, 0);
+        request = new MetaData.Request("GET", HttpURI.from("http://localhost/ctx/"), HttpVersion.HTTP_1_1, fields, 0, 0);
         channel.onRequest(request).run();
 
         assertThat(stream.getResponse().getStatus(), equalTo(503));
@@ -244,7 +244,7 @@ public class ContextHandlerTest
         _contextHandler.setAvailable(true);
 
         stream = new MockHttpStream(channel);
-        request = new MetaData.Request("GET", HttpURI.from("http://localhost/ctx/"), HttpVersion.HTTP_1_1, fields, 0);
+        request = new MetaData.Request("GET", HttpURI.from("http://localhost/ctx/"), HttpVersion.HTTP_1_1, fields, 0, 0);
         channel.onRequest(request).run();
 
         assertThat(stream.getResponse().getStatus(), equalTo(200));
@@ -297,7 +297,7 @@ public class ContextHandlerTest
         MockHttpStream stream = new MockHttpStream(channel);
 
         HttpFields fields = HttpFields.build().add(HttpHeader.HOST, "localhost").asImmutable();
-        MetaData.Request request = new MetaData.Request("GET", HttpURI.from("http://localhost/ctx/path"), HttpVersion.HTTP_1_1, fields, 0);
+        MetaData.Request request = new MetaData.Request("GET", HttpURI.from("http://localhost/ctx/path"), HttpVersion.HTTP_1_1, fields, 0, 0);
         Runnable task = channel.onRequest(request);
         task.run();
 
@@ -373,7 +373,7 @@ public class ContextHandlerTest
         };
 
         HttpFields fields = HttpFields.build().add(HttpHeader.HOST, "localhost").asImmutable();
-        MetaData.Request request = new MetaData.Request("POST", HttpURI.from("http://localhost/ctx/path"), HttpVersion.HTTP_1_1, fields, 0);
+        MetaData.Request request = new MetaData.Request("POST", HttpURI.from("http://localhost/ctx/path"), HttpVersion.HTTP_1_1, fields, 0, 0);
         Runnable todo = channel.onRequest(request);
         todo.run();
 
@@ -429,7 +429,7 @@ public class ContextHandlerTest
         MockHttpStream stream = new MockHttpStream(channel, false);
 
         HttpFields fields = HttpFields.build().add(HttpHeader.HOST, "localhost").asImmutable();
-        MetaData.Request request = new MetaData.Request("POST", HttpURI.from("http://localhost/ctx/path"), HttpVersion.HTTP_1_1, fields, 0);
+        MetaData.Request request = new MetaData.Request("POST", HttpURI.from("http://localhost/ctx/path"), HttpVersion.HTTP_1_1, fields, 0, 0);
         Runnable todo = channel.onRequest(request);
         new Thread(todo).start();
         assertTrue(blocking.await(5, TimeUnit.SECONDS));
@@ -481,7 +481,7 @@ public class ContextHandlerTest
         MockHttpStream stream = new MockHttpStream(channel);
 
         HttpFields fields = HttpFields.build().add(HttpHeader.HOST, "localhost").asImmutable();
-        MetaData.Request request = new MetaData.Request("GET", HttpURI.from("http://localhost/ctx/path"), HttpVersion.HTTP_1_1, fields, 0);
+        MetaData.Request request = new MetaData.Request("GET", HttpURI.from("http://localhost/ctx/path"), HttpVersion.HTTP_1_1, fields, 0, 0);
         Runnable task = channel.onRequest(request);
         task.run();
         assertTrue(complete.await(10, TimeUnit.SECONDS));
@@ -521,38 +521,38 @@ public class ContextHandlerTest
         HttpFields fields = HttpFields.build().asImmutable();
 
         MockHttpStream stream = new MockHttpStream(channel);
-        channel.onRequest(new MetaData.Request("GET", HttpURI.from("http://localhost/ctx/"), HttpVersion.HTTP_1_1, fields, 0)).run();
+        channel.onRequest(new MetaData.Request("GET", HttpURI.from("http://localhost/ctx/"), HttpVersion.HTTP_1_1, fields, 0, 0)).run();
         assertThat(stream.isComplete(), is(true));
         assertThat(stream.getResponse().getStatus(), equalTo(404));
 
         stream = new MockHttpStream(channel);
-        channel.onRequest(new MetaData.Request("GET", HttpURI.from("http://nope.example.com/ctx/"), HttpVersion.HTTP_1_1, fields, 0)).run();
+        channel.onRequest(new MetaData.Request("GET", HttpURI.from("http://nope.example.com/ctx/"), HttpVersion.HTTP_1_1, fields, 0, 0)).run();
         assertThat(stream.isComplete(), is(true));
         assertThat(stream.getResponse().getStatus(), equalTo(404));
 
         stream = new MockHttpStream(channel);
-        channel.onRequest(new MetaData.Request("GET", HttpURI.from("http://example.com/ctx/"), HttpVersion.HTTP_1_1, fields, 0)).run();
+        channel.onRequest(new MetaData.Request("GET", HttpURI.from("http://example.com/ctx/"), HttpVersion.HTTP_1_1, fields, 0, 0)).run();
         assertThat(stream.isComplete(), is(true));
         assertThat(stream.getResponse().getStatus(), equalTo(200));
 
         stream = new MockHttpStream(channel);
-        channel.onRequest(new MetaData.Request("GET", HttpURI.from("http://wild.org/ctx/"), HttpVersion.HTTP_1_1, fields, 0)).run();
+        channel.onRequest(new MetaData.Request("GET", HttpURI.from("http://wild.org/ctx/"), HttpVersion.HTTP_1_1, fields, 0, 0)).run();
         assertThat(stream.isComplete(), is(true));
         assertThat(stream.getResponse().getStatus(), equalTo(404));
 
         stream = new MockHttpStream(channel);
-        channel.onRequest(new MetaData.Request("GET", HttpURI.from("http://match.wild.org/ctx/"), HttpVersion.HTTP_1_1, fields, 0)).run();
+        channel.onRequest(new MetaData.Request("GET", HttpURI.from("http://match.wild.org/ctx/"), HttpVersion.HTTP_1_1, fields, 0, 0)).run();
         assertThat(stream.isComplete(), is(true));
         assertThat(stream.getResponse().getStatus(), equalTo(200));
 
         stream = new MockHttpStream(channel);
-        channel.onRequest(new MetaData.Request("GET", HttpURI.from("http://acme.com/ctx/"), HttpVersion.HTTP_1_1, fields, 0)).run();
+        channel.onRequest(new MetaData.Request("GET", HttpURI.from("http://acme.com/ctx/"), HttpVersion.HTTP_1_1, fields, 0, 0)).run();
         assertThat(stream.isComplete(), is(true));
         assertThat(stream.getResponse().getStatus(), equalTo(404));
 
         connectorName.set("special");
         stream = new MockHttpStream(channel);
-        channel.onRequest(new MetaData.Request("GET", HttpURI.from("http://acme.com/ctx/"), HttpVersion.HTTP_1_1, fields, 0)).run();
+        channel.onRequest(new MetaData.Request("GET", HttpURI.from("http://acme.com/ctx/"), HttpVersion.HTTP_1_1, fields, 0, 0)).run();
         assertThat(stream.isComplete(), is(true));
         assertThat(stream.getResponse().getStatus(), equalTo(200));
     }
@@ -586,7 +586,7 @@ public class ContextHandlerTest
         MockHttpStream stream = new MockHttpStream(channel);
 
         HttpFields fields = HttpFields.build().add(HttpHeader.HOST, "localhost").asImmutable();
-        MetaData.Request request = new MetaData.Request("GET", HttpURI.from("http://localhost/ctx/"), HttpVersion.HTTP_1_1, fields, 0);
+        MetaData.Request request = new MetaData.Request("GET", HttpURI.from("http://localhost/ctx/"), HttpVersion.HTTP_1_1, fields, 0, 0);
         Runnable task = channel.onRequest(request);
         try (StacklessLogging ignored = new StacklessLogging(Response.class))
         {
@@ -645,7 +645,7 @@ public class ContextHandlerTest
         MockHttpStream stream = new MockHttpStream(channel);
 
         HttpFields fields = HttpFields.build().add(HttpHeader.HOST, "localhost").asImmutable();
-        MetaData.Request request = new MetaData.Request("GET", HttpURI.from("http://localhost/ctx/path"), HttpVersion.HTTP_1_1, fields, 0);
+        MetaData.Request request = new MetaData.Request("GET", HttpURI.from("http://localhost/ctx/path"), HttpVersion.HTTP_1_1, fields, 0, 0);
         Runnable task = channel.onRequest(request);
         task.run();
 

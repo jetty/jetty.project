@@ -33,6 +33,7 @@ import org.eclipse.jetty.http3.api.Stream;
 import org.eclipse.jetty.http3.client.HTTP3Client;
 import org.eclipse.jetty.http3.frames.DataFrame;
 import org.eclipse.jetty.http3.frames.HeadersFrame;
+import org.eclipse.jetty.util.NanoTime;
 
 import static java.lang.System.Logger.Level.INFO;
 
@@ -117,7 +118,7 @@ public class HTTP3ClientDocs
             .put(HttpHeader.USER_AGENT, "Jetty HTTP3Client {version}");
 
         // The request metadata with method, URI and headers.
-        MetaData.Request request = new MetaData.Request("GET", HttpURI.from("http://localhost:8444/path"), HttpVersion.HTTP_3, requestHeaders);
+        MetaData.Request request = new MetaData.Request("GET", HttpURI.from("http://localhost:8444/path"), HttpVersion.HTTP_3, requestHeaders, NanoTime.now());
 
         // The HTTP/3 HEADERS frame, with endStream=true
         // to signal that this request has no content.
@@ -142,7 +143,7 @@ public class HTTP3ClientDocs
             .put(HttpHeader.CONTENT_TYPE, "application/json");
 
         // The request metadata with method, URI and headers.
-        MetaData.Request request = new MetaData.Request("POST", HttpURI.from("http://localhost:8444/path"), HttpVersion.HTTP_3, requestHeaders);
+        MetaData.Request request = new MetaData.Request("POST", HttpURI.from("http://localhost:8444/path"), HttpVersion.HTTP_3, requestHeaders, NanoTime.now());
 
         // The HTTP/3 HEADERS frame, with endStream=false to
         // signal that there will be more frames in this stream.
@@ -181,7 +182,7 @@ public class HTTP3ClientDocs
 
         HttpFields requestHeaders = HttpFields.build()
             .put(HttpHeader.USER_AGENT, "Jetty HTTP3Client {version}");
-        MetaData.Request request = new MetaData.Request("GET", HttpURI.from("http://localhost:8444/path"), HttpVersion.HTTP_3, requestHeaders);
+        MetaData.Request request = new MetaData.Request("GET", HttpURI.from("http://localhost:8444/path"), HttpVersion.HTTP_3, requestHeaders, NanoTime.now());
         HeadersFrame headersFrame = new HeadersFrame(request, true);
 
         // tag::responseListener[]
@@ -239,7 +240,7 @@ public class HTTP3ClientDocs
 
         HttpFields requestHeaders = HttpFields.build()
             .put(HttpHeader.USER_AGENT, "Jetty HTTP3Client {version}");
-        MetaData.Request request = new MetaData.Request("GET", HttpURI.from("http://localhost:8080/path"), HttpVersion.HTTP_2, requestHeaders);
+        MetaData.Request request = new MetaData.Request("GET", HttpURI.from("http://localhost:8080/path"), HttpVersion.HTTP_2, requestHeaders, NanoTime.now());
         HeadersFrame headersFrame = new HeadersFrame(request, true);
 
         // tag::reset[]

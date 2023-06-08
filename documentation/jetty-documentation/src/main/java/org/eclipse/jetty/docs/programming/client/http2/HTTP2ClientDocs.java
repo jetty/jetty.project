@@ -37,6 +37,7 @@ import org.eclipse.jetty.http2.frames.ResetFrame;
 import org.eclipse.jetty.http2.frames.SettingsFrame;
 import org.eclipse.jetty.io.ClientConnector;
 import org.eclipse.jetty.util.Callback;
+import org.eclipse.jetty.util.NanoTime;
 
 import static java.lang.System.Logger.Level.INFO;
 
@@ -146,7 +147,7 @@ public class HTTP2ClientDocs
             .put(HttpHeader.USER_AGENT, "Jetty HTTP2Client {version}");
 
         // The request metadata with method, URI and headers.
-        MetaData.Request request = new MetaData.Request("GET", HttpURI.from("http://localhost:8080/path"), HttpVersion.HTTP_2, requestHeaders);
+        MetaData.Request request = new MetaData.Request("GET", HttpURI.from("http://localhost:8080/path"), HttpVersion.HTTP_2, requestHeaders, NanoTime.now());
 
         // The HTTP/2 HEADERS frame, with endStream=true
         // to signal that this request has no content.
@@ -171,7 +172,7 @@ public class HTTP2ClientDocs
             .put(HttpHeader.CONTENT_TYPE, "application/json");
 
         // The request metadata with method, URI and headers.
-        MetaData.Request request = new MetaData.Request("POST", HttpURI.from("http://localhost:8080/path"), HttpVersion.HTTP_2, requestHeaders);
+        MetaData.Request request = new MetaData.Request("POST", HttpURI.from("http://localhost:8080/path"), HttpVersion.HTTP_2, requestHeaders, NanoTime.now());
 
         // The HTTP/2 HEADERS frame, with endStream=false to
         // signal that there will be more frames in this stream.
@@ -210,7 +211,7 @@ public class HTTP2ClientDocs
 
         HttpFields requestHeaders = HttpFields.build()
             .put(HttpHeader.USER_AGENT, "Jetty HTTP2Client {version}");
-        MetaData.Request request = new MetaData.Request("GET", HttpURI.from("http://localhost:8080/path"), HttpVersion.HTTP_2, requestHeaders);
+        MetaData.Request request = new MetaData.Request("GET", HttpURI.from("http://localhost:8080/path"), HttpVersion.HTTP_2, requestHeaders, NanoTime.now());
         HeadersFrame headersFrame = new HeadersFrame(request, null, true);
 
         // tag::responseListener[]
@@ -282,7 +283,7 @@ public class HTTP2ClientDocs
 
         HttpFields requestHeaders = HttpFields.build()
             .put(HttpHeader.USER_AGENT, "Jetty HTTP2Client {version}");
-        MetaData.Request request = new MetaData.Request("GET", HttpURI.from("http://localhost:8080/path"), HttpVersion.HTTP_2, requestHeaders);
+        MetaData.Request request = new MetaData.Request("GET", HttpURI.from("http://localhost:8080/path"), HttpVersion.HTTP_2, requestHeaders, NanoTime.now());
         HeadersFrame headersFrame = new HeadersFrame(request, null, true);
 
         // tag::reset[]
@@ -315,7 +316,7 @@ public class HTTP2ClientDocs
 
         HttpFields requestHeaders = HttpFields.build()
             .put(HttpHeader.USER_AGENT, "Jetty HTTP2Client {version}");
-        MetaData.Request request = new MetaData.Request("GET", HttpURI.from("http://localhost:8080/path"), HttpVersion.HTTP_2, requestHeaders);
+        MetaData.Request request = new MetaData.Request("GET", HttpURI.from("http://localhost:8080/path"), HttpVersion.HTTP_2, requestHeaders, NanoTime.now());
         HeadersFrame headersFrame = new HeadersFrame(request, null, true);
 
         // tag::push[]
@@ -394,7 +395,7 @@ public class HTTP2ClientDocs
 
         HttpFields requestHeaders = HttpFields.build()
             .put(HttpHeader.USER_AGENT, "Jetty HTTP2Client {version}");
-        MetaData.Request request = new MetaData.Request("GET", HttpURI.from("http://localhost:8080/path"), HttpVersion.HTTP_2, requestHeaders);
+        MetaData.Request request = new MetaData.Request("GET", HttpURI.from("http://localhost:8080/path"), HttpVersion.HTTP_2, requestHeaders, NanoTime.now());
         HeadersFrame headersFrame = new HeadersFrame(request, null, true);
 
         // tag::pushReset[]

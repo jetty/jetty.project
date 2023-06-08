@@ -79,7 +79,7 @@ public class ExternalServerTest
 
             CountDownLatch requestLatch = new CountDownLatch(1);
             HttpURI uri = HttpURI.from(String.format("https://%s/", hostPort));
-            MetaData.Request request = new MetaData.Request(HttpMethod.GET.asString(), uri, HttpVersion.HTTP_3, HttpFields.EMPTY);
+            MetaData.Request request = new MetaData.Request(HttpMethod.GET.asString(), uri, HttpVersion.HTTP_3, HttpFields.EMPTY, 0);
             session.newRequest(new HeadersFrame(request, true), new Stream.Client.Listener()
             {
                 @Override

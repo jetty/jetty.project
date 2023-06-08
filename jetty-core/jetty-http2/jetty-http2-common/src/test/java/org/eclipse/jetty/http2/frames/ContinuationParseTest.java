@@ -68,7 +68,7 @@ public class ContinuationParseTest
             HttpFields fields = HttpFields.build()
                 .put("Accept", "text/html")
                 .put("User-Agent", "Jetty");
-            MetaData.Request metaData = new MetaData.Request("GET", HttpScheme.HTTP.asString(), new HostPortHttpField("localhost:8080"), "/path", HttpVersion.HTTP_2, fields, -1);
+            MetaData.Request metaData = new MetaData.Request("GET", HttpScheme.HTTP.asString(), new HostPortHttpField("localhost:8080"), "/path", HttpVersion.HTTP_2, fields, -1, 0);
 
             ByteBufferPool.Accumulator accumulator = new ByteBufferPool.Accumulator();
             generator.generateHeaders(accumulator, streamId, metaData, null, true);

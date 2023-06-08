@@ -43,7 +43,6 @@ import org.eclipse.jetty.server.HttpStream;
 import org.eclipse.jetty.server.TunnelSupport;
 import org.eclipse.jetty.util.BufferUtil;
 import org.eclipse.jetty.util.Callback;
-import org.eclipse.jetty.util.NanoTime;
 import org.eclipse.jetty.util.Promise;
 import org.eclipse.jetty.util.thread.AutoLock;
 import org.eclipse.jetty.util.thread.Invocable;
@@ -58,7 +57,6 @@ public class HttpStreamOverHTTP2 implements HttpStream, HTTP2Channel.Server
     private final HTTP2ServerConnection _connection;
     private final HttpChannel _httpChannel;
     private final HTTP2Stream _stream;
-    private final long _nanoTime;
     private MetaData.Request _requestMetaData;
     private MetaData.Response _responseMetaData;
     private TunnelSupport tunnelSupport;
@@ -72,19 +70,12 @@ public class HttpStreamOverHTTP2 implements HttpStream, HTTP2Channel.Server
         _connection = connection;
         _httpChannel = httpChannel;
         _stream = stream;
-        _nanoTime = NanoTime.now();
     }
 
     @Override
     public String getId()
     {
         return String.valueOf(_stream.getId());
-    }
-
-    @Override
-    public long getNanoTime()
-    {
-        return _nanoTime;
     }
 
     public Runnable onRequest(HeadersFrame frame)

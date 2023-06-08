@@ -115,13 +115,13 @@ public class TestableRequest implements Request
     }
 
     @Override
-    public long getTimeStamp()
+    public long getBeginNanoTime()
     {
         return 0;
     }
 
     @Override
-    public long getNanoTime()
+    public long getHeadersNanoTime()
     {
         return 0;
     }

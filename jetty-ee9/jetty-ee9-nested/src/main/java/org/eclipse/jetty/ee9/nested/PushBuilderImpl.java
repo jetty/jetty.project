@@ -179,7 +179,8 @@ public class PushBuilderImpl implements PushBuilder
         }
 
         HttpURI uri = HttpURI.build(_request.getHttpURI(), path, param, query).normalize();
-        MetaData.Request push = new MetaData.Request(_method, uri, _request.getHttpVersion(), _fields);
+        long beginNanoTime = _request.getCoreRequest().getBeginNanoTime();
+        MetaData.Request push = new MetaData.Request(_method, uri, _request.getHttpVersion(), _fields, beginNanoTime);
 
         if (LOG.isDebugEnabled())
             LOG.debug("Push {} {} inm={} ims={}", _method, uri, _fields.get(HttpHeader.IF_NONE_MATCH), _fields.get(HttpHeader.IF_MODIFIED_SINCE));

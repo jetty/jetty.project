@@ -31,6 +31,7 @@ import org.eclipse.jetty.http2.client.HTTP2Client;
 import org.eclipse.jetty.http2.frames.HeadersFrame;
 import org.eclipse.jetty.util.FuturePromise;
 import org.eclipse.jetty.util.Jetty;
+import org.eclipse.jetty.util.NanoTime;
 import org.eclipse.jetty.util.Promise;
 import org.eclipse.jetty.util.ssl.SslContextFactory;
 import org.junit.jupiter.api.Assumptions;
@@ -69,7 +70,7 @@ public class ConscryptHTTP2ClientTest
             Session session = sessionPromise.get(15, TimeUnit.SECONDS);
 
             HttpFields requestFields = HttpFields.build().put("User-Agent", client.getClass().getName() + "/" + Jetty.VERSION);
-            MetaData.Request metaData = new MetaData.Request("GET", HttpURI.from("https://" + host + ":" + port + "/"), HttpVersion.HTTP_2, requestFields);
+            MetaData.Request metaData = new MetaData.Request("GET", HttpURI.from("https://" + host + ":" + port + "/"), HttpVersion.HTTP_2, requestFields, NanoTime.now());
             HeadersFrame headersFrame = new HeadersFrame(metaData, null, true);
             CountDownLatch latch = new CountDownLatch(1);
             session.newStream(headersFrame, new Promise.Adapter<>(), new Stream.Listener()

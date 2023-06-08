@@ -32,9 +32,8 @@ import org.eclipse.jetty.http.MetaData;
 import org.eclipse.jetty.http2.api.Session;
 import org.eclipse.jetty.http2.api.Stream;
 import org.eclipse.jetty.http2.client.HTTP2Client;
-import org.eclipse.jetty.http2.frames.DataFrame;
 import org.eclipse.jetty.http2.frames.HeadersFrame;
-import org.eclipse.jetty.util.Callback;
+import org.eclipse.jetty.util.NanoTime;
 import org.eclipse.jetty.util.Promise;
 import org.eclipse.jetty.util.ssl.SslContextFactory;
 
@@ -80,13 +79,13 @@ public class HTTP1Servlet extends HttpServlet
         String contextPath = request.getContextPath();
         ServletOutputStream output = response.getOutputStream();
         AsyncContext asyncContext = request.startAsync();
-        http2Client.connect(sslContextFactory, new InetSocketAddress(host, port), new Session.Listener(){}, new Promise<Session>()
+        http2Client.connect(sslContextFactory, new InetSocketAddress(host, port), new Session.Listener(){}, new Promise<>()
         {
             @Override
             public void succeeded(Session session)
             {
                 HttpURI uri = HttpURI.from(request.getScheme(), host, port, contextPath + "/h2");
-                MetaData.Request metaData = new MetaData.Request(HttpMethod.GET.asString(), uri, HttpVersion.HTTP_2, HttpFields.EMPTY);
+                MetaData.Request metaData = new MetaData.Request(HttpMethod.GET.asString(), uri, HttpVersion.HTTP_2, HttpFields.EMPTY, NanoTime.now());
                 HeadersFrame frame = new HeadersFrame(metaData, null, true);
                 session.newStream(frame, new Promise.Adapter<Stream>()
                 {

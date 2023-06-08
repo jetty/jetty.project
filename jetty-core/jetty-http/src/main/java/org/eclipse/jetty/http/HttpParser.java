@@ -26,6 +26,7 @@ import org.eclipse.jetty.http.HttpTokens.EndOfContent;
 import org.eclipse.jetty.util.BufferUtil;
 import org.eclipse.jetty.util.HostPort;
 import org.eclipse.jetty.util.Index;
+import org.eclipse.jetty.util.NanoTime;
 import org.eclipse.jetty.util.StringUtil;
 import org.eclipse.jetty.util.Utf8StringBuilder;
 import org.slf4j.Logger;
@@ -235,6 +236,7 @@ public class HttpParser
     private final FieldCache _fieldCache = new FieldCache();
     private HttpField _field;
     private HttpHeader _header;
+    private long _startNanoTime;
     private String _headerString;
     private String _valueString;
     private int _responseStatus;
@@ -308,6 +310,11 @@ public class HttpParser
         _maxHeaderBytes = maxHeaderBytes;
         _complianceMode = compliance;
         _complianceListener = (ComplianceViolation.Listener)(_handler instanceof ComplianceViolation.Listener ? _handler : null);
+    }
+
+    public long getStartNanoTime()
+    {
+        return _startNanoTime;
     }
 
     public HttpHandler getHandler()
@@ -1519,6 +1526,8 @@ public class HttpParser
                 _methodString = null;
                 _endOfContent = EndOfContent.UNKNOWN_CONTENT;
                 _header = null;
+                if (buffer.hasRemaining())
+                    _startNanoTime = NanoTime.now();
                 if (quickStart(buffer))
                     return true;
             }

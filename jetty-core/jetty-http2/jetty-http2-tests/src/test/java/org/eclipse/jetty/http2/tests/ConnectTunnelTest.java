@@ -78,7 +78,7 @@ public class ConnectTunnelTest extends AbstractTest
         String host = "localhost";
         int port = connector.getLocalPort();
         String authority = host + ":" + port;
-        MetaData.Request request = new MetaData.Request(HttpMethod.CONNECT.asString(), null, new HostPortHttpField(authority), null, HttpVersion.HTTP_2, HttpFields.EMPTY, -1);
+        MetaData.Request request = new MetaData.Request(HttpMethod.CONNECT.asString(), null, new HostPortHttpField(authority), null, HttpVersion.HTTP_2, HttpFields.EMPTY, -1, 0);
         FuturePromise<Stream> streamPromise = new FuturePromise<>();
         client.newStream(new HeadersFrame(request, null, false), streamPromise, new Stream.Listener()
         {
@@ -135,7 +135,7 @@ public class ConnectTunnelTest extends AbstractTest
         String host = "localhost";
         int port = connector.getLocalPort();
         String authority = host + ":" + port;
-        MetaData.Request request = new MetaData.ConnectRequest(HttpScheme.HTTP, new HostPortHttpField(authority), "/", HttpFields.EMPTY, "websocket");
+        MetaData.Request request = new MetaData.ConnectRequest(HttpScheme.HTTP, new HostPortHttpField(authority), "/", HttpFields.EMPTY, "websocket", 0);
         FuturePromise<Stream> streamPromise = new FuturePromise<>();
         client.newStream(new HeadersFrame(request, null, false), streamPromise, new Stream.Listener()
         {

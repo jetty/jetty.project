@@ -124,7 +124,8 @@ class PushBuilderImpl implements PushBuilder
         }
 
         HttpURI pushURI = HttpURI.build(_request.getHttpURI(), pushPath, pushParam, pushQuery).normalize();
-        MetaData.Request push = new MetaData.Request(_method, pushURI, _request.getConnectionMetaData().getHttpVersion(), _headers);
+        long beginNanoTime = _request.getBeginNanoTime();
+        MetaData.Request push = new MetaData.Request(_method, pushURI, _request.getConnectionMetaData().getHttpVersion(), _headers, beginNanoTime);
         _request.push(push);
 
         _path = null;
