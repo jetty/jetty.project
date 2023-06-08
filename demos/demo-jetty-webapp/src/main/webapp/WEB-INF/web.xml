@@ -122,18 +122,6 @@
   </servlet-mapping>
   
   <servlet>
-    <servlet-name>CGI</servlet-name>
-    <servlet-class>org.eclipse.jetty.servlets.CGI</servlet-class>
-    <load-on-startup>1</load-on-startup>
-    <async-supported>true</async-supported>
-  </servlet>
-  
-  <servlet-mapping>
-    <servlet-name>CGI</servlet-name>
-    <url-pattern>/cgi-bin/*</url-pattern>
-  </servlet-mapping>
-  
-  <servlet>
     <servlet-name>Chat</servlet-name>
     <servlet-class>com.acme.ChatServlet</servlet-class>
     <load-on-startup>1</load-on-startup>
