@@ -64,63 +64,51 @@ public interface Attributes
     // TODO: change to getAttributeNames() once jetty-core is cleaned of servlet-api usages
     Set<String> getAttributeNameSet();
 
-    // TODO something better than this
     default Map<String, Object> asAttributeMap()
     {
         return new AbstractMap<>()
         {
+            private final Set<String> _attributeNameSet = getAttributeNameSet();
+            private final AbstractSet<Entry<String, Object>> _entrySet  = new AbstractSet<>()
+            {
+                @Override
+                public Iterator<Entry<String, Object>> iterator()
+                {
+                    Iterator<String> names = _attributeNameSet.iterator();
+                    return new Iterator<>()
+                    {
+                        @Override
+                        public boolean hasNext()
+                        {
+                            return names.hasNext();
+                        }
+
+                        @Override
+                        public Entry<String, Object> next()
+                        {
+                            String name = names.next();
+                            return new SimpleEntry<>(name, getAttribute(name));
+                        }
+                    };
+                }
+
+                @Override
+                public int size()
+                {
+                    return _attributeNameSet.size();
+                }
+            };
+
+            @Override
+            public int size()
+            {
+                return _attributeNameSet.size();
+            }
+
             @Override
             public Set<Entry<String, Object>> entrySet()
             {
-                return new AbstractSet<>()
-                {
-                    Iterator<String> names = getAttributeNameSet().iterator();
-
-                    @Override
-                    public Iterator<Entry<String, Object>> iterator()
-                    {
-                        return new Iterator<>()
-                        {
-                            @Override
-                            public boolean hasNext()
-                            {
-                                return names.hasNext();
-                            }
-
-                            @Override
-                            public Entry<String, Object> next()
-                            {
-                                String name = names.next();
-                                return new Map.Entry<>()
-                                {
-                                    @Override
-                                    public String getKey()
-                                    {
-                                        return name;
-                                    }
-
-                                    @Override
-                                    public Object getValue()
-                                    {
-                                        return getAttribute(name);
-                                    }
-
-                                    @Override
-                                    public Object setValue(Object value)
-                                    {
-                                        throw new UnsupportedOperationException();
-                                    }
-                                };
-                            }
-                        };
-                    }
-
-                    @Override
-                    public int size()
-                    {
-                        return 0;
-                    }
-                };
+                return _entrySet;
             }
         };
     }
