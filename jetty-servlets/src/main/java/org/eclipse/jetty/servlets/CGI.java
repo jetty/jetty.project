@@ -67,7 +67,10 @@ import org.eclipse.jetty.util.log.Logger;
  * <dt>ignoreExitState</dt>
  * <dd>If true then do not act on a non-zero exec exit status")</dd>
  * </dl>
+ *
+ * @deprecated do not use, no replacement, will be removed in a future release.
  */
+@Deprecated
 public class CGI extends HttpServlet
 {
     private static final long serialVersionUID = -6182088932884791074L;
