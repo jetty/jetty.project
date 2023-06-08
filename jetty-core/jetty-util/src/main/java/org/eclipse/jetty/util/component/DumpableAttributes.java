@@ -30,12 +30,6 @@ public class DumpableAttributes implements Dumpable
     }
 
     @Override
-    public String dump()
-    {
-        return Dumpable.dump(this);
-    }
-
-    @Override
     public void dump(Appendable out, String indent) throws IOException
     {
         Object[] array = _attributes.asAttributeMap().entrySet().stream()
