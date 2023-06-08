@@ -2196,9 +2196,12 @@ public class Request implements HttpServletRequest
             try
             {
                 Cookie result = new Cookie(cookie.getName(), cookie.getValue());
-                //RFC2965 defines the cookie header as supporting path and domain but RFC6265 permits only name=value
+
                 if (compliance.allows(CookieCompliance.Violation.ATTRIBUTE_VALUES))
                 {
+                    if (cookie.getVersion() > 0)
+                        result.setVersion(cookie.getVersion());
+
                     String path = cookie.getPath();
                     if (StringUtil.isNotBlank(path))
                         result.setPath(path);
@@ -2206,6 +2209,10 @@ public class Request implements HttpServletRequest
                     String domain = cookie.getDomain();
                     if (StringUtil.isNotBlank(domain))
                         result.setDomain(domain);
+
+                    String comment = cookie.getComment();
+                    if (StringUtil.isNotBlank(comment))
+                        result.setComment(comment);
                 }
                 return result;
             }
