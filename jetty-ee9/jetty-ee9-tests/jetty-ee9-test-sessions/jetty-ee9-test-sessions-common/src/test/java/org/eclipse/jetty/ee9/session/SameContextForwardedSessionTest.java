@@ -75,8 +75,9 @@ public class SameContextForwardedSessionTest
                 assertTrue(sessionCookie != null);
 
                 //test that the session was created, and that it contains the attributes from servlet3 and servlet1
-                testServletContextHandler.getSessionHandler().getSessionManager().getSessionCache().contains(SessionTestSupport.extractSessionId(sessionCookie));
-                testServletContextHandler.getSessionHandler().getSessionManager().getSessionCache().getSessionDataStore().exists(SessionTestSupport.extractSessionId(sessionCookie));
+                String id = SessionTestSupport.extractSessionId(sessionCookie);
+                testServletContextHandler.getSessionHandler().getSessionManager().getSessionCache().contains(id);
+                testServletContextHandler.getSessionHandler().getSessionManager().getSessionCache().getSessionDataStore().exists(id);
 
                 //Make a fresh request
                 Request request = client.newRequest("http://localhost:" + serverPort + "/context/four");
