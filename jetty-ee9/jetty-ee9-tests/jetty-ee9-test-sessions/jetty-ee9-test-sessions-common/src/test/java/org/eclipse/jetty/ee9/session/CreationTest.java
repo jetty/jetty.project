@@ -147,8 +147,6 @@ public class CreationTest
             String id = SessionTestSupport.extractSessionId(sessionCookie);
             assertTrue(contextHandler.getSessionHandler().getSessionManager().getSessionCache().getSessionDataStore().exists(id));
             Awaitility.waitAtMost(5, TimeUnit.SECONDS).until(() -> !contextHandler.getSessionHandler().getSessionManager().getSessionCache().contains(id));
-            assertFalse(contextHandler.getSessionHandler().getSessionManager().getSessionCache().contains(id));
-
 
             //make another request for the same session
             Request request = client.newRequest("http://localhost:" + port1 + contextPath + servletMapping + "?action=test");
@@ -157,7 +155,6 @@ public class CreationTest
             
             //session should now be evicted from the cache again
             Awaitility.waitAtMost(5, TimeUnit.SECONDS).until(() -> !contextHandler.getSessionHandler().getSessionManager().getSessionCache().contains(id));
-            assertFalse(contextHandler.getSessionHandler().getSessionManager().getSessionCache().contains(id));
         }
         finally
         {

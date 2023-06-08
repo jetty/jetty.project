@@ -86,8 +86,6 @@ public class AsyncTest
             String id = SessionTestSupport.extractSessionId(sessionCookie);
             assertTrue(contextHandler.getSessionHandler().getSessionManager().getSessionCache().getSessionDataStore().exists(id));
             Awaitility.waitAtMost(5, TimeUnit.SECONDS).until(() -> !contextHandler.getSessionHandler().getSessionManager().getSessionCache().contains(id));
-            assertFalse(contextHandler.getSessionHandler().getSessionManager().getSessionCache().contains(id));
-
         }
         finally
         {
