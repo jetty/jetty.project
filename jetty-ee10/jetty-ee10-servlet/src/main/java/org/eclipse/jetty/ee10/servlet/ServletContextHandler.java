@@ -95,7 +95,6 @@ import org.eclipse.jetty.util.component.ContainerLifeCycle;
 import org.eclipse.jetty.util.component.Dumpable;
 import org.eclipse.jetty.util.component.DumpableCollection;
 import org.eclipse.jetty.util.component.Environment;
-import org.eclipse.jetty.util.component.Graceful;
 import org.eclipse.jetty.util.component.LifeCycle;
 import org.eclipse.jetty.util.resource.Resource;
 import org.eclipse.jetty.util.resource.ResourceFactory;
@@ -120,7 +119,7 @@ import static jakarta.servlet.ServletContext.TEMPDIR;
  * cause confusion with {@link ServletContext}.
  */
 @ManagedObject("Servlet Context Handler")
-public class ServletContextHandler extends ContextHandler implements Graceful
+public class ServletContextHandler extends ContextHandler
 {
     private static final Logger LOG = LoggerFactory.getLogger(ServletContextHandler.class);
     public static final Environment __environment = Environment.ensure("ee10");

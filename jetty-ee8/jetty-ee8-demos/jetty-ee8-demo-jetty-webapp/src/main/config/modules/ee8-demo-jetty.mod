@@ -20,6 +20,7 @@ ext
 ee8-servlets
 ee8-websocket-javax
 ee8-websocket-jetty
+ee8-demo-rewrite
 demo-realm
 
 [files]
