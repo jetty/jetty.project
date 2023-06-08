@@ -14,6 +14,7 @@
 package org.eclipse.jetty.ee10.session;
 
 import java.io.IOException;
+import java.io.Serial;
 
 import jakarta.servlet.ServletException;
 import jakarta.servlet.http.HttpServlet;
@@ -28,11 +29,13 @@ import org.eclipse.jetty.session.AbstractSessionDataStoreFactory;
 import org.eclipse.jetty.session.DefaultSessionCacheFactory;
 import org.eclipse.jetty.session.SessionCache;
 import org.eclipse.jetty.session.SessionDataStoreFactory;
+import org.eclipse.jetty.session.test.AbstractSessionTestBase;
 import org.eclipse.jetty.util.thread.QueuedThreadPool;
 import org.junit.jupiter.api.Test;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
-import static org.junit.jupiter.api.Assertions.assertTrue;
+import static org.junit.jupiter.api.Assertions.assertNotNull;
+import static org.junit.jupiter.api.Assertions.assertNull;
 import static org.junit.jupiter.api.Assertions.fail;
 
 /**
@@ -97,7 +100,7 @@ public abstract class AbstractClusteredInvalidationSessionTest extends AbstractS
 
                     assertEquals(HttpServletResponse.SC_OK, response1.getStatus());
                     String sessionCookie = response1.getHeaders().get("Set-Cookie");
-                    assertTrue(sessionCookie != null);
+                    assertNotNull(sessionCookie);
 
                     // Be sure the session is also present in node2
                     Request request2 = client.newRequest(urls[1] + "?action=increment");
@@ -132,6 +135,7 @@ public abstract class AbstractClusteredInvalidationSessionTest extends AbstractS
 
     public static class TestServlet extends HttpServlet
     {
+        @Serial
         private static final long serialVersionUID = 1L;
 
         @Override
@@ -167,7 +171,7 @@ public abstract class AbstractClusteredInvalidationSessionTest extends AbstractS
             else if ("test".equals(action))
             {
                 HttpSession session = request.getSession(false);
-                assertEquals(null, session);
+                assertNull(session);
             }
         }
     }

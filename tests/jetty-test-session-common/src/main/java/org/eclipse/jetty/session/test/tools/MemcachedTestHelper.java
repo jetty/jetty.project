@@ -11,13 +11,13 @@
 // ========================================================================
 //
 
-package org.eclipse.jetty.ee9.session.memcached;
+package org.eclipse.jetty.session.test.tools;
 
 import java.net.InetSocketAddress;
-import java.util.Arrays;
 import java.util.Collections;
 import java.util.HashMap;
 import java.util.HashSet;
+import java.util.List;
 import java.util.Map;
 import java.util.Set;
 
@@ -154,7 +154,7 @@ public class MemcachedTestHelper
 
     public static void shutdown() throws Exception
     {
-        memcached.stop();
+        //memcached.stop();
     }
 
     public static SessionDataStoreFactory newSessionDataStoreFactory()
@@ -176,14 +176,14 @@ public class MemcachedTestHelper
         }
         MockDataStoreFactory storeFactory = new MockDataStoreFactory();
         MemcachedSessionDataMapFactory mapFactory = new MemcachedSessionDataMapFactory();
-        String host = memcached.getContainerIpAddress();
+        String host = memcached.getHost();
         int port = memcached.getMappedPort(11211);
         InetSocketAddress inetSocketAddress = new InetSocketAddress(host, port);
         mapFactory.setAddresses(inetSocketAddress);
 
         try
         {
-            XMemcachedClientBuilder builder = new XMemcachedClientBuilder(Arrays.asList(inetSocketAddress));
+            XMemcachedClientBuilder builder = new XMemcachedClientBuilder(List.of(inetSocketAddress));
             builder.build().flushAll();
         }
         catch (Exception e)

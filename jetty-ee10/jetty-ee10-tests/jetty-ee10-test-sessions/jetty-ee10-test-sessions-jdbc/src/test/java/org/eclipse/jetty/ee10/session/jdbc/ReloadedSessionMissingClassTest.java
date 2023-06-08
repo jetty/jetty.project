@@ -35,6 +35,7 @@ import org.eclipse.jetty.toolchain.test.MavenTestingUtils;
 import org.eclipse.jetty.toolchain.test.jupiter.WorkDir;
 import org.eclipse.jetty.toolchain.test.jupiter.WorkDirExtension;
 import org.junit.jupiter.api.AfterEach;
+import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.testcontainers.junit.jupiter.Testcontainers;
@@ -52,6 +53,16 @@ import static org.junit.jupiter.api.Assertions.assertTrue;
 @ExtendWith(WorkDirExtension.class)
 public class ReloadedSessionMissingClassTest
 {
+
+    private String sessionTableName;
+
+    @BeforeEach
+    public void setupSessionTableName() throws Exception
+    {
+        this.sessionTableName = getClass().getSimpleName() + "_" + System.nanoTime();
+        JdbcTestHelper.prepareTables(sessionTableName);
+    }
+
     @Test
     public void testSessionReloadWithMissingClass(WorkDir workDir) throws Exception
     {
@@ -88,7 +99,7 @@ public class ReloadedSessionMissingClassTest
 
         DefaultSessionCacheFactory cacheFactory = new DefaultSessionCacheFactory();
         cacheFactory.setEvictionPolicy(SessionCache.NEVER_EVICT);
-        SessionDataStoreFactory storeFactory = JdbcTestHelper.newSessionDataStoreFactory();
+        SessionDataStoreFactory storeFactory = JdbcTestHelper.newSessionDataStoreFactory(sessionTableName);
         ((AbstractSessionDataStoreFactory)storeFactory).setGracePeriodSec(SessionTestSupport.DEFAULT_SCAVENGE_SEC);
 
         SessionTestSupport server1 = new SessionTestSupport(0, SessionTestSupport.DEFAULT_MAX_INACTIVE, SessionTestSupport.DEFAULT_SCAVENGE_SEC, cacheFactory, storeFactory);
@@ -146,6 +157,6 @@ public class ReloadedSessionMissingClassTest
     @AfterEach
     public void tearDown() throws Exception
     {
-        JdbcTestHelper.shutdown(null);
+        JdbcTestHelper.shutdown(sessionTableName);
     }
 }

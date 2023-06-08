@@ -11,7 +11,7 @@
 // ========================================================================
 //
 
-package org.eclipse.jetty.ee10.session.gcloud;
+package org.eclipse.jetty.session.test.tools;
 
 import java.io.ByteArrayOutputStream;
 import java.io.ObjectOutputStream;
@@ -20,7 +20,9 @@ import java.net.URL;
 import java.util.ArrayList;
 import java.util.HashSet;
 import java.util.List;
+import java.util.Locale;
 import java.util.Map;
+import java.util.Objects;
 import java.util.Set;
 
 import com.google.cloud.NoCredentials;
@@ -43,8 +45,10 @@ import org.eclipse.jetty.gcloud.session.GCloudSessionDataStore.EntityDataModel;
 import org.eclipse.jetty.gcloud.session.GCloudSessionDataStoreFactory;
 import org.eclipse.jetty.session.SessionData;
 import org.eclipse.jetty.session.SessionDataStore;
+import org.eclipse.jetty.session.SessionDataStoreFactory;
 import org.eclipse.jetty.session.SessionManager;
 import org.eclipse.jetty.util.ClassLoadingObjectInputStream;
+import org.junit.jupiter.api.Assertions;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.testcontainers.containers.DatastoreEmulatorContainer;
@@ -53,7 +57,6 @@ import org.testcontainers.utility.DockerImageName;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertNotNull;
-import static org.junit.jupiter.api.Assertions.assertTrue;
 
 /**
  * GCloudSessionTestSupport
@@ -66,10 +69,36 @@ public class GCloudSessionTestSupport
     private static final Logger LOGGER = LoggerFactory.getLogger(GCloudSessionTestSupport.class);
     private static final Logger GCLOUD_LOG = LoggerFactory.getLogger("org.eclipse.jetty.gcloud.session.gcloudLogs");
 
-    public DatastoreEmulatorContainer emulator = new DatastoreEmulatorContainer(
+    public static DatastoreEmulatorContainer emulator = new DatastoreEmulatorContainer(
             DockerImageName.parse("gcr.io/google.com/cloudsdktool/cloud-sdk:316.0.0-emulators")
     ).withLogConsumer(new Slf4jLogConsumer(GCLOUD_LOG))
             .withFlags("--consistency=1.0");
+
+    private static final String host;
+
+    static
+    {
+        try
+        {
+            emulator.start();
+            //work out if we're running locally or not: if not local, then the host passed to
+            //DatastoreOptions must be prefixed with a scheme
+            String endPoint = emulator.getEmulatorEndpoint();
+            InetAddress hostAddr = InetAddress.getByName(new URL("http://" + endPoint).getHost());
+            LOGGER.info("endPoint: {} ,hostAddr.isAnyLocalAddress(): {},hostAddr.isLoopbackAddress(): {}",
+                    endPoint,
+                    hostAddr.isAnyLocalAddress(),
+                    hostAddr.isLoopbackAddress());
+            if (hostAddr.isAnyLocalAddress() || hostAddr.isLoopbackAddress())
+                host = endPoint;
+            else
+                host = "http://" + endPoint;
+        }
+        catch (Exception e)
+        {
+            throw new RuntimeException(e);
+        }
+    }
 
     public static class TestGCloudSessionDataStoreFactory extends GCloudSessionDataStoreFactory
     {
@@ -90,42 +119,28 @@ public class GCloudSessionTestSupport
         }
     }
 
-    public static GCloudSessionDataStoreFactory newSessionDataStoreFactory(Datastore d)
+    public SessionDataStoreFactory newSessionDataStoreFactory()
     {
-        return new TestGCloudSessionDataStoreFactory(d);
+        return new TestGCloudSessionDataStoreFactory(getDatastore());
     }
 
-    public GCloudSessionTestSupport()
+    public GCloudSessionTestSupport(String projectId)
     {
-        // no op
+        Objects.requireNonNull(projectId, "projectId cannot be null");
+        DatastoreOptions options = DatastoreOptions.newBuilder()
+                .setHost(host)
+                .setCredentials(NoCredentials.getInstance())
+                .setRetrySettings(ServiceOptions.getNoRetrySettings())
+                .setProjectId(projectId.toLowerCase(Locale.ROOT) + "-project")
+                .build();
+        _ds = options.getService();
+        _keyFactory = _ds.newKeyFactory().setKind(EntityDataModel.KIND);
     }
 
     public void setUp()
         throws Exception
     {
-        emulator.start();
-        String host;
-        //work out if we're running locally or not: if not local, then the host passed to
-        //DatastoreOptions must be prefixed with a scheme
-        String endPoint = emulator.getEmulatorEndpoint();
-        InetAddress hostAddr = InetAddress.getByName(new URL("http://" + endPoint).getHost());
-        LOGGER.info("endPoint: {} ,hostAddr.isAnyLocalAddress(): {},hostAddr.isLoopbackAddress(): {}",
-                    endPoint,
-                    hostAddr.isAnyLocalAddress(),
-                    hostAddr.isLoopbackAddress());
-        if (hostAddr.isAnyLocalAddress() || hostAddr.isLoopbackAddress())
-            host = endPoint;
-        else
-            host = "http://" + endPoint;
-        
-        DatastoreOptions options = DatastoreOptions.newBuilder()
-            .setHost(host)
-            .setCredentials(NoCredentials.getInstance())
-            .setRetrySettings(ServiceOptions.getNoRetrySettings())
-            .setProjectId("test-project")
-            .build();
-        _ds = options.getService();
-        _keyFactory = _ds.newKeyFactory().setKind(EntityDataModel.KIND);
+        // no op
     }
 
     public Datastore getDatastore()
@@ -136,13 +151,7 @@ public class GCloudSessionTestSupport
     public void tearDown()
         throws Exception
     {
-        emulator.stop();
-    }
-
-    public void reset() throws Exception
-    {
-        emulator.stop();
-        this.setUp();
+        // no op
     }
 
     public void createSession(String id, String contextPath, String vhost,
@@ -191,18 +200,18 @@ public class GCloudSessionTestSupport
             return false;
 
         //turn an Entity into a Session
-        assertEquals(data.getId(), entity.getString(EntityDataModel.ID));
-        assertEquals(data.getContextPath(), entity.getString(EntityDataModel.CONTEXTPATH));
-        assertEquals(data.getVhost(), entity.getString(EntityDataModel.VHOST));
-        assertEquals(data.getAccessed(), entity.getLong(EntityDataModel.ACCESSED));
-        assertEquals(data.getLastAccessed(), entity.getLong(EntityDataModel.LASTACCESSED));
-        assertEquals(data.getCreated(), entity.getLong(EntityDataModel.CREATETIME));
-        assertEquals(data.getCookieSet(), entity.getLong(EntityDataModel.COOKIESETTIME));
-        assertEquals(data.getLastNode(), entity.getString(EntityDataModel.LASTNODE));
-        assertEquals(data.getLastSaved(), entity.getLong(EntityDataModel.LASTSAVED));
-        assertEquals(data.getExpiry(), entity.getLong(EntityDataModel.EXPIRY));
-        assertEquals(data.getMaxInactiveMs(), entity.getLong(EntityDataModel.MAXINACTIVE));
-        Blob blob = (Blob)entity.getBlob(EntityDataModel.ATTRIBUTES);
+        Assertions.assertEquals(data.getId(), entity.getString(EntityDataModel.ID));
+        Assertions.assertEquals(data.getContextPath(), entity.getString(EntityDataModel.CONTEXTPATH));
+        Assertions.assertEquals(data.getVhost(), entity.getString(EntityDataModel.VHOST));
+        Assertions.assertEquals(data.getAccessed(), entity.getLong(EntityDataModel.ACCESSED));
+        Assertions.assertEquals(data.getLastAccessed(), entity.getLong(EntityDataModel.LASTACCESSED));
+        Assertions.assertEquals(data.getCreated(), entity.getLong(EntityDataModel.CREATETIME));
+        Assertions.assertEquals(data.getCookieSet(), entity.getLong(EntityDataModel.COOKIESETTIME));
+        Assertions.assertEquals(data.getLastNode(), entity.getString(EntityDataModel.LASTNODE));
+        Assertions.assertEquals(data.getLastSaved(), entity.getLong(EntityDataModel.LASTSAVED));
+        Assertions.assertEquals(data.getExpiry(), entity.getLong(EntityDataModel.EXPIRY));
+        Assertions.assertEquals(data.getMaxInactiveMs(), entity.getLong(EntityDataModel.MAXINACTIVE));
+        Blob blob = entity.getBlob(EntityDataModel.ATTRIBUTES);
 
         SessionData tmp = new SessionData(data.getId(), entity.getString(EntityDataModel.CONTEXTPATH),
             entity.getString(EntityDataModel.VHOST),
@@ -219,11 +228,11 @@ public class GCloudSessionTestSupport
         //same number of attributes
         assertEquals(data.getAllAttributes().size(), tmp.getAllAttributes().size());
         //same keys
-        assertTrue(data.getKeys().equals(tmp.getAllAttributes().keySet()));
+        assertEquals(data.getKeys(), tmp.getAllAttributes().keySet());
         //same values
         for (String name : data.getKeys())
         {
-            assertTrue(data.getAttribute(name).equals(tmp.getAttribute(name)));
+            assertEquals(data.getAttribute(name), tmp.getAttribute(name));
         }
 
         return true;
@@ -249,8 +258,8 @@ public class GCloudSessionTestSupport
 
     public Set<String> getSessionIds() throws Exception
     {
-        HashSet<String> ids = new HashSet<String>();
-        GqlQuery.Builder builder = Query.newGqlQueryBuilder(ResultType.ENTITY, "select * from " + GCloudSessionDataStore.EntityDataModel.KIND);
+        HashSet<String> ids = new HashSet<>();
+        GqlQuery.Builder<Entity> builder = Query.newGqlQueryBuilder(ResultType.ENTITY, "select * from " + GCloudSessionDataStore.EntityDataModel.KIND);
 
         Query<Entity> query = builder.build();
 
@@ -316,7 +325,7 @@ public class GCloudSessionTestSupport
                 keys.add(results.next());
             }
 
-            batch.delete(keys.toArray(new Key[keys.size()]));
+            batch.delete(keys.toArray(new Key[0]));
         }
 
         batch.submit();

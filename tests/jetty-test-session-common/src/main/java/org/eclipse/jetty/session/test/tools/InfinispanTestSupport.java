@@ -11,10 +11,11 @@
 // ========================================================================
 //
 
-package org.eclipse.jetty.ee9.session.infinispan;
+package org.eclipse.jetty.session.test.tools;
 
 import java.lang.annotation.ElementType;
 import java.nio.file.Path;
+import java.util.Objects;
 import java.util.Properties;
 
 import org.eclipse.jetty.session.SessionData;
@@ -33,21 +34,18 @@ import org.infinispan.manager.DefaultCacheManager;
 import org.infinispan.manager.EmbeddedCacheManager;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
-import static org.junit.jupiter.api.Assertions.assertTrue;
 
 /**
  * InfinispanTestSupport
  */
 public class InfinispanTestSupport
 {
-    public static final String DEFAULT_CACHE_NAME = "session_test_cache";
-    public Cache _cache;
+    public Cache<String, InfinispanSessionData> _cache;
 
     public ConfigurationBuilder _builder;
-    private Path _tmpdir;
     private boolean _useFileStore;
     private boolean _serializeSessionData;
-    private String _name;
+    private final String _name;
     public static EmbeddedCacheManager _manager;
 
     static
@@ -55,9 +53,9 @@ public class InfinispanTestSupport
         try
         {
             _manager = new DefaultCacheManager(new GlobalConfigurationBuilder().jmx()
-                    .serialization()
-                    .addContextInitializer(new InfinispanSerializationContextInitializer())
-                    .build());
+                .serialization()
+                .addContextInitializer(new InfinispanSerializationContextInitializer())
+                .build());
         }
         catch (Exception e)
         {
@@ -65,15 +63,9 @@ public class InfinispanTestSupport
         }
     }
 
-    public InfinispanTestSupport()
-    {
-        this(null);
-    }
-
     public InfinispanTestSupport(String cacheName)
     {
-        if (cacheName == null)
-            cacheName = DEFAULT_CACHE_NAME + System.nanoTime();
+        Objects.requireNonNull(cacheName, "cacheName cannot be null");
 
         _name = cacheName;
         _builder = new ConfigurationBuilder();
@@ -88,8 +80,8 @@ public class InfinispanTestSupport
     {
         _serializeSessionData = serializeSessionData;
     }
-
-    public Cache getCache()
+    
+    public Cache<String, InfinispanSessionData> getCache()
     {
         return _cache;
     }
@@ -97,7 +89,7 @@ public class InfinispanTestSupport
     public void setup(Path root) throws Exception
     {
         Path indexesDir = root.resolve("indexes");
-        this._tmpdir = root.resolve("tmp");
+        Path tmpdir = root.resolve("tmp");
         FS.ensureDirExists(indexesDir);
 
         SearchMapping mapping = new SearchMapping();
@@ -115,50 +107,49 @@ public class InfinispanTestSupport
         if (_useFileStore)
         {
             ConfigurationChildBuilder b = _builder
-                    .indexing()
-                    .addIndexedEntity(SessionData.class)
-                    .withProperties(properties)
-                    .memory()
-                    .whenFull(EvictionStrategy.NONE)
-                    .persistence()
-                    .addSingleFileStore()
-                    .segmented(false)
-                    .location(_tmpdir.toFile().getAbsolutePath());
+                .indexing()
+                .addIndexedEntity(SessionData.class)
+                .withProperties(properties)
+                .memory()
+                .whenFull(EvictionStrategy.NONE)
+                .persistence()
+                .addSingleFileStore()
+                .segmented(false)
+                .location(tmpdir.toFile().getAbsolutePath());
             if (_serializeSessionData)
             {
                 b = b.memory().storage(StorageType.HEAP)
-                        .encoding()
-                        .mediaType("application/x-protostream");
+                    .encoding()
+                    .mediaType("application/x-protostream");
             }
             _manager.defineConfiguration(_name, b.build());
         }
         else
         {
             ConfigurationChildBuilder b = _builder.indexing()
-                    .withProperties(properties)
-                    .addIndexedEntity(SessionData.class);
-
+                .withProperties(properties)
+                .addIndexedEntity(SessionData.class);
+        
             if (_serializeSessionData)
             {
                 b = b.memory().storage(StorageType.HEAP)
-                        .encoding()
-                        .mediaType("application/x-protostream");
+                    .encoding()
+                    .mediaType("application/x-protostream");
             }
-
+                
             _manager.defineConfiguration(_name, b.build());
         }
         _cache = _manager.getCache(_name);
     }
 
-    public void teardown() throws Exception
+    public void clearCache() throws Exception
     {
         _cache.clear();
         _manager.administration().removeCache(_name);
     }
 
-    @SuppressWarnings("unchecked")
-    public void createSession(SessionData data)
-            throws Exception
+    public void createSession(InfinispanSessionData data)
+        throws Exception
     {
         ((InfinispanSessionData)data).serializeAttributes();
         _cache.put(data.getContextPath() + "_" + data.getVhost() + "_" + data.getId(), data);
@@ -170,13 +161,13 @@ public class InfinispanTestSupport
     }
 
     public boolean checkSessionExists(SessionData data)
-            throws Exception
+        throws Exception
     {
         return (_cache.get(data.getContextPath() + "_" + data.getVhost() + "_" + data.getId()) != null);
     }
 
     public boolean checkSessionPersisted(SessionData data)
-            throws Exception
+        throws Exception
     {
         //evicts the object from memory. Forces the cache to fetch the data from file
         if (_useFileStore)
@@ -184,41 +175,38 @@ public class InfinispanTestSupport
             _cache.evict(data.getContextPath() + "_" + data.getVhost() + "_" + data.getId());
         }
 
-        Object obj = _cache.get(data.getContextPath() + "_" + data.getVhost() + "_" + data.getId());
+        SessionData obj = _cache.get(data.getContextPath() + "_" + data.getVhost() + "_" + data.getId());
         if (obj == null)
             return false;
-
-        SessionData saved = (SessionData)obj;
-
-        if (saved instanceof InfinispanSessionData)
+        
+        if (obj instanceof InfinispanSessionData isd)
         {
-            InfinispanSessionData isd = (InfinispanSessionData)saved;
             if (isd.getSerializedAttributes() != null)
                 isd.deserializeAttributes();
         }
 
         //turn an Entity into a Session
-        assertEquals(data.getId(), saved.getId());
-        assertEquals(data.getContextPath(), saved.getContextPath());
-        assertEquals(data.getVhost(), saved.getVhost());
-        assertEquals(data.getAccessed(), saved.getAccessed());
-        assertEquals(data.getLastAccessed(), saved.getLastAccessed());
-        assertEquals(data.getCreated(), saved.getCreated());
-        assertEquals(data.getCookieSet(), saved.getCookieSet());
-        assertEquals(data.getLastNode(), saved.getLastNode());
+        assertEquals(data.getId(), obj.getId());
+        assertEquals(data.getContextPath(), obj.getContextPath());
+        assertEquals(data.getVhost(), obj.getVhost());
+        assertEquals(data.getAccessed(), obj.getAccessed());
+        assertEquals(data.getLastAccessed(), obj.getLastAccessed());
+        assertEquals(data.getCreated(), obj.getCreated());
+        assertEquals(data.getCookieSet(), obj.getCookieSet());
+        assertEquals(data.getLastNode(), obj.getLastNode());
         //don't test lastSaved, because that is set only on the SessionData after it returns from SessionDataStore.save()
-        assertEquals(data.getExpiry(), saved.getExpiry());
-        assertEquals(data.getMaxInactiveMs(), saved.getMaxInactiveMs());
+        assertEquals(data.getExpiry(), obj.getExpiry());
+        assertEquals(data.getMaxInactiveMs(), obj.getMaxInactiveMs());
 
-
+        
         //same number of attributes
-        assertEquals(data.getAllAttributes().size(), saved.getAllAttributes().size());
+        assertEquals(data.getAllAttributes().size(), obj.getAllAttributes().size());
         //same keys
-        assertTrue(data.getKeys().equals(saved.getKeys()));
+        assertEquals(data.getKeys(), obj.getKeys());
         //same values
         for (String name : data.getKeys())
         {
-            assertTrue(data.getAttribute(name).equals(saved.getAttribute(name)));
+            assertEquals(data.getAttribute(name), obj.getAttribute(name));
         }
 
         return true;

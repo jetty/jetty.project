@@ -11,7 +11,7 @@
 // ========================================================================
 //
 
-package org.eclipse.jetty.ee9.session;
+package org.eclipse.jetty.session.test;
 
 import java.util.HashSet;
 import java.util.Map;

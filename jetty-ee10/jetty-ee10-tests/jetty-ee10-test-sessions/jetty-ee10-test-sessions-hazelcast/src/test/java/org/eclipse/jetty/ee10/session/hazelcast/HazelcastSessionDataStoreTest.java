@@ -24,8 +24,8 @@ import org.eclipse.jetty.session.SessionData;
 import org.eclipse.jetty.session.SessionDataStore;
 import org.eclipse.jetty.session.SessionDataStoreFactory;
 import org.eclipse.jetty.session.UnreadableSessionDataException;
+import org.eclipse.jetty.session.test.tools.HazelcastTestHelper;
 import org.junit.jupiter.api.AfterEach;
-import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 
 import static org.junit.jupiter.api.Assertions.fail;
@@ -35,23 +35,17 @@ import static org.junit.jupiter.api.Assertions.fail;
  */
 public class HazelcastSessionDataStoreTest extends AbstractSessionDataStoreTest
 {
+    HazelcastTestHelper _testHelper = new HazelcastTestHelper(getClass().getSimpleName() + System.nanoTime());
+
     public HazelcastSessionDataStoreTest() throws Exception
     {
         super();
     }
 
-    HazelcastTestHelper _testHelper;
-
     @Override
     public SessionDataStoreFactory createSessionDataStoreFactory()
     {
         return _testHelper.createSessionDataStoreFactory(false);
-    }
-
-    @BeforeEach
-    public void configure()
-    {
-        _testHelper = new HazelcastTestHelper();
     }
 
     @AfterEach

@@ -28,6 +28,7 @@ import org.eclipse.jetty.session.infinispan.InfinispanSessionData;
 import org.eclipse.jetty.session.infinispan.InfinispanSessionDataStore;
 import org.eclipse.jetty.session.infinispan.InfinispanSessionDataStoreFactory;
 import org.eclipse.jetty.session.infinispan.QueryManager;
+import org.eclipse.jetty.session.test.tools.InfinispanTestSupport;
 import org.eclipse.jetty.toolchain.test.jupiter.WorkDir;
 import org.eclipse.jetty.toolchain.test.jupiter.WorkDirExtension;
 import org.infinispan.query.Search;
@@ -55,20 +56,20 @@ public class SerializedInfinispanSessionDataStoreTest extends AbstractSessionDat
     public SerializedInfinispanSessionDataStoreTest() throws Exception
     {
         super();
+        _testSupport = new InfinispanTestSupport(getClass().getSimpleName() + System.nanoTime());
+        _testSupport.setSerializeSessionData(true);
     }
     
     @BeforeEach
     public void setup() throws Exception
     {
-        _testSupport = new InfinispanTestSupport();
-        _testSupport.setSerializeSessionData(true);
         _testSupport.setup(workDir.getEmptyPathDir());
     }
 
     @AfterEach
     public void teardown() throws Exception
     {
-        _testSupport.teardown();
+        _testSupport.clearCache();
     }
 
     @Override
@@ -89,7 +90,7 @@ public class SerializedInfinispanSessionDataStoreTest extends AbstractSessionDat
         Thread.currentThread().setContextClassLoader(_contextClassLoader);
         try
         {
-            _testSupport.createSession(data);
+            _testSupport.createSession((InfinispanSessionData)data);
         }
         finally
         {
@@ -123,12 +124,14 @@ public class SerializedInfinispanSessionDataStoreTest extends AbstractSessionDat
      * try and provoke an exception in the InfinispanSessionDataStore.load() method.
      */
     @Override
+    @Test
     public void testLoadSessionFails() throws Exception
     {
         DefaultSessionIdManager idMgr = new DefaultSessionIdManager(new Server());
         //create the SessionDataStore
         ServletContextHandler context = new ServletContextHandler(ServletContextHandler.SESSIONS);
         context.setContextPath("/test");
+        idMgr.setWorkerName("");
         context.getSessionHandler().getSessionManager().setSessionIdManager(idMgr);
         context.setClassLoader(_contextClassLoader);
         SessionDataStoreFactory factory = createSessionDataStoreFactory();

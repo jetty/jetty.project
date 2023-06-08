@@ -15,6 +15,7 @@ package org.eclipse.jetty.ee9.session.nosql.mongodb;
 
 import org.eclipse.jetty.ee9.session.AbstractClusteredInvalidationSessionTest;
 import org.eclipse.jetty.session.SessionDataStoreFactory;
+import org.eclipse.jetty.session.test.tools.MongoTestHelper;
 import org.junit.jupiter.api.AfterAll;
 import org.junit.jupiter.api.BeforeAll;
 import org.testcontainers.junit.jupiter.Testcontainers;
@@ -22,22 +23,27 @@ import org.testcontainers.junit.jupiter.Testcontainers;
 @Testcontainers(disabledWithoutDocker = true)
 public class ClusteredInvalidateSessionTest extends AbstractClusteredInvalidationSessionTest
 {
+
+    private static final String DB_NAME = "DB" + ClusteredInvalidateSessionTest.class.getSimpleName() + System.nanoTime();
+
+    private static final String COLLECTION_NAME = "COLLECTION" + ClusteredInvalidateSessionTest.class.getSimpleName() + System.nanoTime();
+
     @BeforeAll
     public static void beforeClass() throws Exception
     {
-        MongoTestHelper.createCollection();
+        MongoTestHelper.createCollection(DB_NAME, COLLECTION_NAME);
     }
 
     @AfterAll
     public static void afterClass() throws Exception
     {
-        MongoTestHelper.dropCollection();
+        MongoTestHelper.dropCollection(DB_NAME, COLLECTION_NAME);
         MongoTestHelper.shutdown();
     }
 
     @Override
     public SessionDataStoreFactory createSessionDataStoreFactory()
     {
-        return MongoTestHelper.newSessionDataStoreFactory();
+        return MongoTestHelper.newSessionDataStoreFactory(DB_NAME, COLLECTION_NAME);
     }
 }

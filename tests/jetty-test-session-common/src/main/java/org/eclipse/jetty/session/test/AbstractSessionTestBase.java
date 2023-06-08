@@ -11,37 +11,14 @@
 // ========================================================================
 //
 
-package org.eclipse.jetty.ee10.session;
+package org.eclipse.jetty.session.test;
 
-import java.io.Serializable;
+import org.eclipse.jetty.session.SessionDataStoreFactory;
 
 /**
- * TestFoo
+ * AbstractTestBase
  */
-public class TestFoo implements Foo, Serializable
+public abstract class AbstractSessionTestBase
 {
-    private static final long serialVersionUID = 953717519120144555L;
-
-    private int i = -99;
-
-    @Override
-    public int getInt()
-    {
-        return this.i;
-    }
-
-    @Override
-    public void setInt(int i)
-    {
-        this.i = i;
-    }
-
-    @Override
-    public boolean equals(Object obj)
-    {
-        if (obj == null)
-            return false;
-
-        return (((Foo)obj).getInt() == getInt());
-    }
+    public abstract SessionDataStoreFactory createSessionDataStoreFactory();
 }

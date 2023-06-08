@@ -11,14 +11,14 @@
 // ========================================================================
 //
 
-package org.eclipse.jetty.ee9.session;
-
-import org.eclipse.jetty.session.SessionDataStoreFactory;
+package org.eclipse.jetty.session.test;
 
 /**
- * AbstractTestBase
+ * Foo
  */
-public abstract class AbstractSessionTestBase
+public interface Foo
 {
-    public abstract SessionDataStoreFactory createSessionDataStoreFactory();
+    public int getInt();
+
+    public void setInt(int i);
 }
