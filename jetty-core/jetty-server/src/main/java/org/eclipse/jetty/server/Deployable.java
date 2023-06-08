@@ -11,7 +11,7 @@
 // ========================================================================
 //
 
-package org.eclipse.jetty.ee;
+package org.eclipse.jetty.server;
 
 import java.util.Comparator;
 import java.util.Map;
@@ -19,6 +19,10 @@ import java.util.function.Predicate;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
+/**
+ * Interface that can be implemented by ContextHandlers within Environments to allow configuration
+ * to be passed from the DeploymentManager without dependencies on the Deployment module itself. 
+ */
 public interface Deployable
 {
     Pattern EE_ENVIRONMENT_NAME_PATTERN = Pattern.compile("ee(\\d*)");
