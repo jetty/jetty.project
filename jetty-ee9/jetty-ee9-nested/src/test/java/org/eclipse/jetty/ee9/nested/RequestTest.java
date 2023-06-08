@@ -1508,11 +1508,11 @@ public class RequestTest
     }
 
     @Test
-    public void testSpecCookiesLegacy() throws Exception
+    public void testSpecCookiesVersion() throws Exception
     {
         _server.stop();
         _connector.getConnectionFactory(HttpConnectionFactory.class)
-            .getHttpConfiguration().setRequestCookieCompliance(CookieCompliance.RFC2965_LEGACY);
+            .getHttpConfiguration().setRequestCookieCompliance(CookieCompliance.RFC2965);
         _server.start();
 
         final ArrayList<Cookie> cookies = new ArrayList<>();
