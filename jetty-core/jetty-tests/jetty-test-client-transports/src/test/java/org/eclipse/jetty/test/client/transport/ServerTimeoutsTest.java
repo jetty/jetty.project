@@ -196,7 +196,13 @@ public class ServerTimeoutsTest extends AbstractTest
             @Override
             public boolean handle(Request request, Response response, Callback callback)
             {
-                request.addErrorListener(t -> error.getAndSet(t) == null);
+                request.addErrorListener(t ->
+                {
+                    if (t instanceof TimeoutException)
+                        return error.getAndSet(t) == null;
+                    t.printStackTrace();
+                    return false;
+                });
                 return true;
             }
         });
@@ -229,11 +235,16 @@ public class ServerTimeoutsTest extends AbstractTest
                 callbackRef.set(callback);
                 request.addErrorListener(t ->
                 {
-                    if (error.isDone())
-                        recalled.countDown();
-                    else
-                        error.complete(t);
-                    return true;
+                    if (t instanceof TimeoutException)
+                    {
+                        if (error.isDone())
+                            recalled.countDown();
+                        else
+                            error.complete(t);
+                        return true;
+                    }
+                    t.printStackTrace();
+                    return false;
                 });
                 request.demand(demanded::countDown);
 
@@ -260,7 +271,15 @@ public class ServerTimeoutsTest extends AbstractTest
         assertThat(cause, instanceOf(TimeoutException.class));
 
         // wait for another timeout
-        assertTrue(recalled.await(2 * IDLE_TIMEOUT, TimeUnit.MILLISECONDS));
+        try
+        {
+            System.err.println("waiting...");
+            assertTrue(recalled.await(2 * IDLE_TIMEOUT, TimeUnit.MILLISECONDS));
+        }
+        finally
+        {
+            System.err.println("wait over");
+        }
 
         callbackRef.get().succeeded();
 
