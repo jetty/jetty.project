@@ -24,6 +24,7 @@ import java.util.concurrent.TimeUnit;
 import org.eclipse.jetty.util.BlockingArrayQueue;
 import org.eclipse.jetty.util.BufferUtil;
 import org.eclipse.jetty.util.Callback;
+import org.eclipse.jetty.util.IO;
 import org.eclipse.jetty.util.thread.AutoLock;
 import org.eclipse.jetty.websocket.core.Frame;
 import org.slf4j.Logger;
@@ -224,14 +225,7 @@ public class MessageInputStream extends InputStream implements MessageSink
                 e.callback.failed(failure);
         }
 
-        try
-        {
-            super.close();
-        }
-        catch (IOException e)
-        {
-            LOG.debug("Failure Closing InputStream", e);
-        }
+        IO.close(super::close);
     }
 
     private static class Entry

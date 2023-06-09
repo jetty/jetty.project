@@ -21,8 +21,10 @@ import org.eclipse.jetty.util.BufferUtil;
 import org.eclipse.jetty.util.Callback;
 
 /**
- * This class can be used to accumulate pairs of {@link ByteBuffer} and {@link Callback}, and eventually copy
- * these into a single {@link ByteBuffer} or byte array and succeed the callbacks.
+ * <p>This class can be used to accumulate pairs of {@link ByteBuffer} and {@link Callback}, and eventually copy
+ * these into a single {@link ByteBuffer} or byte array and succeed the callbacks.</p>
+ *
+ * <p>This class is not thread safe and callers must do mutual exclusion.</p>
  */
 public class ByteBufferCallbackAccumulator
 {
