@@ -32,7 +32,7 @@ import org.eclipse.jetty.util.Callback;
  * cycles. Authentication might not yet be checked or it might be checked
  * and failed, checked and deferred or succeeded.
  */
-public interface AuthenticationState
+public interface AuthenticationState extends Request.AuthenticationState
 {
     /**
      * Get the authentication state of a request
@@ -41,8 +41,8 @@ public interface AuthenticationState
      */
     static AuthenticationState getAuthenticationState(Request request)
     {
-        Object auth = request.getAttribute(AuthenticationState.class.getName());
-        return auth instanceof AuthenticationState authenticationState ? authenticationState : null;
+        Request.AuthenticationState state = Request.getAuthenticationState(request);
+        return state instanceof AuthenticationState authenticationState ? authenticationState : null;
     }
 
     /**
@@ -52,7 +52,7 @@ public interface AuthenticationState
      */
     static void setAuthenticationState(Request request, AuthenticationState authenticationState)
     {
-        request.setAttribute(AuthenticationState.class.getName(), authenticationState);
+        Request.setAuthenticationState(request, authenticationState);
     }
 
     /**
@@ -192,6 +192,15 @@ public interface AuthenticationState
          * @return The {@link UserIdentity} of the authenticated user.
          */
         UserIdentity getUserIdentity();
+
+        @Override
+        default Principal getUserPrincipal()
+        {
+            UserIdentity user = getUserIdentity();
+            if (user != null)
+                return user.getUserPrincipal();
+            return null;
+        }
 
         /**
          * @param role The role to check.
