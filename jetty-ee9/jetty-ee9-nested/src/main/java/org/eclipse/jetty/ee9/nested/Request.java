@@ -1485,6 +1485,7 @@ public class Request implements HttpServletRequest
         _channel.getResponse().getHttpOutput().reopen();
 
         _coreRequest = coreRequest;
+        org.eclipse.jetty.server.Request.setAuthenticationState(_coreRequest, _authentication);
         setTimeStamp(coreRequest.getTimeStamp());
 
         _metaData = new MetaData.Request(
@@ -1725,7 +1726,8 @@ public class Request implements HttpServletRequest
     public void setAuthentication(Authentication authentication)
     {
         _authentication = authentication;
-        org.eclipse.jetty.server.Request.setAuthenticationState(_coreRequest, authentication);
+        if (_coreRequest != null)
+            org.eclipse.jetty.server.Request.setAuthenticationState(_coreRequest, authentication);
     }
 
     @Override
