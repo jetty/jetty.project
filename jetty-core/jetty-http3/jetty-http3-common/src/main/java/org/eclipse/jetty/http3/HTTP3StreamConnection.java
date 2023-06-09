@@ -476,7 +476,8 @@ public abstract class HTTP3StreamConnection extends AbstractConnection
             if (LOG.isDebugEnabled())
                 LOG.debug("received {}#{}", frame, streamId);
             Runnable delegate = () -> super.onData(streamId, frame);
-            if (!HTTP3StreamConnection.this.action.compareAndSet(null, () -> processData(frame, delegate)))
+            Runnable action = () -> processData(frame, delegate);
+            if (!HTTP3StreamConnection.this.action.compareAndSet(null, action))
                 throw new IllegalStateException();
         }
     }
