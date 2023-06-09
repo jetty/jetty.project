@@ -21,6 +21,7 @@ import java.util.concurrent.TimeUnit;
 import jakarta.servlet.http.HttpServlet;
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletResponse;
+import jakarta.servlet.http.PushBuilder;
 import org.eclipse.jetty.client.BufferingResponseListener;
 import org.eclipse.jetty.client.ContentResponse;
 import org.eclipse.jetty.client.Result;
@@ -64,12 +65,57 @@ public class PushedResourcesTest extends AbstractTest
                 }
                 else
                 {
-                    request.newPushBuilder()
-                        .path(path1)
-                        .push();
-                    request.newPushBuilder()
-                        .path(path2)
-                        .push();
+                    try
+                    {
+                            PushBuilder pb = request.newPushBuilder();
+                            pb.push();
+                    }
+                    catch (Exception e)
+                    {
+                        System.err.println("Expected error empty push builder");
+                    }
+
+                    PushBuilder pb1 = request.newPushBuilder();
+                    pb1.path(path1);
+                    pb1.push();
+                    PushBuilder pb2 = request.newPushBuilder();
+                    pb2.path(path2);
+                    pb2.push();
+
+                    try
+                    {
+                        pb2.push();
+                    }
+                    catch (Exception e)
+                    {
+                        System.err.println("Expected error no path reset");
+                    }
+
+                    PushBuilder pb3 = request.newPushBuilder();
+                    try
+                    {
+                        pb3.method(null);
+                    }
+                    catch (Exception e)
+                    {
+                        System.err.println("Expected error null method");
+                    }
+
+                    String[] METHODS = { "", "POST", "PUT", "DELETE",
+      "CONNECT", "OPTIONS", "TRACE" };
+
+                    for (String m : METHODS)
+                    {
+                        try
+                        {
+                            pb3.method(m);
+                            System.err.println("Fail " + m);
+                        }
+                        catch (Exception e)
+                        {
+                            System.err.println("Pass " + m);
+                        }
+                    }
                     response.getOutputStream().write(bytes);
                 }
             }
