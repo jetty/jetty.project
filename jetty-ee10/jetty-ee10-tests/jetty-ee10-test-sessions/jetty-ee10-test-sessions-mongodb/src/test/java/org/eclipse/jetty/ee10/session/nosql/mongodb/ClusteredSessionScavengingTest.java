@@ -15,6 +15,7 @@ package org.eclipse.jetty.ee10.session.nosql.mongodb;
 
 import org.eclipse.jetty.ee10.session.AbstractClusteredSessionScavengingTest;
 import org.eclipse.jetty.session.SessionDataStoreFactory;
+import org.eclipse.jetty.session.test.tools.MongoTestHelper;
 import org.junit.jupiter.api.AfterAll;
 import org.junit.jupiter.api.BeforeAll;
 import org.testcontainers.junit.jupiter.Testcontainers;
@@ -22,22 +23,26 @@ import org.testcontainers.junit.jupiter.Testcontainers;
 @Testcontainers(disabledWithoutDocker = true)
 public class ClusteredSessionScavengingTest extends AbstractClusteredSessionScavengingTest
 {
+    private static String DB_NAME = "DB" + ClusteredSessionScavengingTest.class.getSimpleName() + System.nanoTime();
+
+    private static String COLLECTION_NAME = "COLLECTION" + ClusteredSessionScavengingTest.class.getSimpleName() + System.nanoTime();
+
     @BeforeAll
     public static void beforeClass() throws Exception
     {
-        MongoTestHelper.createCollection();
+        MongoTestHelper.createCollection(DB_NAME, COLLECTION_NAME);
     }
 
     @AfterAll
     public static void afterClass() throws Exception
     {
-        MongoTestHelper.dropCollection();
+        MongoTestHelper.dropCollection(DB_NAME, COLLECTION_NAME);
         MongoTestHelper.shutdown();
     }
 
     @Override
     public SessionDataStoreFactory createSessionDataStoreFactory()
     {
-        return MongoTestHelper.newSessionDataStoreFactory();
+        return MongoTestHelper.newSessionDataStoreFactory(DB_NAME, COLLECTION_NAME);
     }
 }

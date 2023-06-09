@@ -14,11 +14,10 @@
 package org.eclipse.jetty.ee9.session.infinispan.remote;
 
 import org.eclipse.jetty.ee9.session.AbstractClusteredSessionScavengingTest;
-import org.eclipse.jetty.ee9.session.infinispan.LoggingUtil;
 import org.eclipse.jetty.session.SessionDataStoreFactory;
 import org.eclipse.jetty.session.infinispan.InfinispanSessionDataStoreFactory;
-import org.junit.jupiter.api.AfterAll;
-import org.junit.jupiter.api.BeforeAll;
+import org.eclipse.jetty.session.test.tools.LoggingUtil;
+import org.eclipse.jetty.session.test.tools.RemoteInfinispanTestSupport;
 import org.testcontainers.junit.jupiter.Testcontainers;
 
 /**
@@ -32,27 +31,19 @@ public class RemoteClusteredSessionScavengingTest extends AbstractClusteredSessi
         LoggingUtil.init();
     }
 
-    public static RemoteInfinispanTestSupport __testSupport;
+    public RemoteInfinispanTestSupport testSupport;
 
-    @BeforeAll
-    public static void setup() throws Exception
+    public RemoteClusteredSessionScavengingTest() throws Exception
     {
-        __testSupport = new RemoteInfinispanTestSupport("remote-session-test");
-        __testSupport.setup();
-    }
-
-    @AfterAll
-    public static void teardown() throws Exception
-    {
-        __testSupport.teardown();
-        __testSupport.shutdown();
+        testSupport = new RemoteInfinispanTestSupport(getClass().getSimpleName() + System.nanoTime());
+        testSupport.setup();
     }
 
     @Override
     public SessionDataStoreFactory createSessionDataStoreFactory()
     {
         InfinispanSessionDataStoreFactory factory = new InfinispanSessionDataStoreFactory();
-        factory.setCache(__testSupport.getCache());
+        factory.setCache(testSupport.getCache());
         return factory;
     }
 }

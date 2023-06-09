@@ -17,6 +17,7 @@ import org.eclipse.jetty.session.SessionDataStoreFactory;
 import org.eclipse.jetty.session.infinispan.EmbeddedQueryManager;
 import org.eclipse.jetty.session.infinispan.InfinispanSessionDataStoreFactory;
 import org.eclipse.jetty.session.infinispan.QueryManager;
+import org.eclipse.jetty.session.test.tools.InfinispanTestSupport;
 import org.eclipse.jetty.toolchain.test.jupiter.WorkDir;
 import org.eclipse.jetty.toolchain.test.jupiter.WorkDirExtension;
 import org.junit.jupiter.api.BeforeEach;
@@ -33,13 +34,13 @@ public class InfinispanFileSessionDataStoreTest extends InfinispanSessionDataSto
     public InfinispanFileSessionDataStoreTest() throws Exception
     {
         super();
+        _testSupport = new InfinispanTestSupport(getClass().getSimpleName() + System.nanoTime());
+        _testSupport.setUseFileStore(true);
     }
     
     @BeforeEach
     public void configure() throws Exception
     {
-        _testSupport = new InfinispanTestSupport();
-        _testSupport.setUseFileStore(true);
         _testSupport.setup(workDir.getEmptyPathDir());
     }
     

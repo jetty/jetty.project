@@ -45,15 +45,10 @@ public class DumpableCollection implements Dumpable
     }
 
     @Override
-    public String dump()
-    {
-        return Dumpable.dump(this);
-    }
-
-    @Override
     public void dump(Appendable out, String indent) throws IOException
     {
         Object[] array = (_collection == null ? null : _collection.toArray());
         Dumpable.dumpObjects(out, indent, _name + " size=" + (array == null ? 0 : array.length), array);
     }
 }
+

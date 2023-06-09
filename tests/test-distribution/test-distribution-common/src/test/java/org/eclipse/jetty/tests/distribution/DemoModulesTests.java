@@ -52,6 +52,51 @@ public class DemoModulesTests extends AbstractJettyHomeTest
 
     @ParameterizedTest
     @MethodSource("provideEnvironmentsToTest")
+    public void testAuthentication(String env) throws Exception
+    {
+         Path jettyBase = newTestJettyBaseDirectory();
+        String jettyVersion = System.getProperty("jettyVersion");
+        JettyHomeTester distribution = JettyHomeTester.Builder.newInstance()
+                .jettyVersion(jettyVersion)
+                .jettyBase(jettyBase)
+            .mavenLocalRepository(System.getProperty("mavenRepoPath"))
+            .build();
+
+        int httpPort = distribution.freePort();
+
+        String[] argsConfig = {
+            "--add-modules=http," + toEnvironment("demos", env)
+        };
+
+        String baseURI = "http://localhost:%d/%s-test".formatted(httpPort, env);
+        try (JettyHomeTester.Run runConfig = distribution.start(argsConfig))
+        {
+            assertTrue(runConfig.awaitFor(START_TIMEOUT, TimeUnit.SECONDS));
+            assertEquals(0, runConfig.getExitValue());
+
+            String[] argsStart =
+            {
+                    "jetty.http.port=" + httpPort
+            };
+
+            try (JettyHomeTester.Run runStart = distribution.start(argsStart))
+            {
+                assertTrue(runStart.awaitConsoleLogsFor("Started oejs.Server@", START_TIMEOUT, TimeUnit.SECONDS));
+
+                startHttpClient();
+                ContentResponse response = client.GET(baseURI + "/dump/auth/admin/info");
+                Fields fields = new Fields();
+                fields.put("j_username", "admin");
+                fields.put("j_password", "admin");
+                response = client.FORM(baseURI + "/j_security_check", fields);
+                assertEquals(HttpStatus.OK_200, response.getStatus(), new ResponseDetails(response));;
+                assertThat(response.getContentAsString(), containsString("Dump Servlet"));
+            }
+        }
+    }
+
+    @ParameterizedTest
+    @MethodSource("provideEnvironmentsToTest")
     public void testDemoAddServerClasses(String env) throws Exception
     {
         Path jettyBase = newTestJettyBaseDirectory();

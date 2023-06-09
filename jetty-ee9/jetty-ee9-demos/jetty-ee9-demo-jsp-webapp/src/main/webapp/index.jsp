@@ -10,7 +10,7 @@
 
     <div class="topnav">
       <a class="menu" href="http://localhost:8080/">Demo Home</a>
-      <a class="menu" href="https://github.com/eclipse/jetty.project/tree/jetty-11.0.x/demos/demo-jsp-webapp">Source</a>
+      <a class="menu" href="https://github.com/eclipse/jetty.project/tree/jetty-12.0.x/jetty-ee9/jetty-ee9-demos/jetty-ee9-demo-jsp-webapp">Source</a>
       <a class="menu" href="https://www.eclipse.org/jetty/">Jetty Project Home</a>
       <a class="menu" href="https://www.eclipse.org/jetty/documentation/current/">Documentation</a>
       <a class="menu" href="https://webtide.com">Commercial Support</a>

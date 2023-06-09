@@ -14,10 +14,9 @@
 package org.eclipse.jetty.ee10.session.hazelcast;
 
 import org.eclipse.jetty.ee10.session.AbstractClusteredSessionScavengingTest;
-import org.eclipse.jetty.hazelcast.session.HazelcastSessionDataStoreFactory;
 import org.eclipse.jetty.session.SessionDataStoreFactory;
+import org.eclipse.jetty.session.test.tools.HazelcastTestHelper;
 import org.junit.jupiter.api.AfterEach;
-import org.junit.jupiter.api.BeforeEach;
 
 /**
  * ClusteredSessionScavengingTest
@@ -25,15 +24,7 @@ import org.junit.jupiter.api.BeforeEach;
 public class ClusteredSessionScavengingTest
     extends AbstractClusteredSessionScavengingTest
 {
-    HazelcastSessionDataStoreFactory factory;
-
-    HazelcastTestHelper _testHelper;
-
-    @BeforeEach
-    public void setUp()
-    {
-        _testHelper = new HazelcastTestHelper();
-    }
+    HazelcastTestHelper _testHelper = new HazelcastTestHelper(getClass().getSimpleName() + System.nanoTime());
 
     @AfterEach
     public void shutdown()

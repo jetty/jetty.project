@@ -17,6 +17,7 @@ import org.eclipse.jetty.ee10.session.AbstractWebAppObjectInSessionTest;
 import org.eclipse.jetty.session.JdbcTestHelper;
 import org.eclipse.jetty.session.SessionDataStoreFactory;
 import org.junit.jupiter.api.AfterEach;
+import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.testcontainers.junit.jupiter.Testcontainers;
 
@@ -27,10 +28,20 @@ import org.testcontainers.junit.jupiter.Testcontainers;
 @Testcontainers(disabledWithoutDocker = true)
 public class WebAppObjectInSessionTest extends AbstractWebAppObjectInSessionTest
 {
+
+    private String sessionTableName;
+
+    @BeforeEach
+    public void setupSessionTableName() throws Exception
+    {
+        this.sessionTableName = getClass().getSimpleName() + "_" + System.nanoTime();
+        JdbcTestHelper.prepareTables(sessionTableName);
+    }
+
     @Override
     public SessionDataStoreFactory createSessionDataStoreFactory()
     {
-        return JdbcTestHelper.newSessionDataStoreFactory();
+        return JdbcTestHelper.newSessionDataStoreFactory(sessionTableName);
     }
 
     @Test
@@ -42,6 +53,6 @@ public class WebAppObjectInSessionTest extends AbstractWebAppObjectInSessionTest
     @AfterEach
     public void tearDown() throws Exception
     {
-        JdbcTestHelper.shutdown(null);
+        JdbcTestHelper.shutdown(sessionTableName);
     }
 }

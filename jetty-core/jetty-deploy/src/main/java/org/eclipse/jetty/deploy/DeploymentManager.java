@@ -32,7 +32,7 @@ import org.eclipse.jetty.deploy.bindings.StandardUndeployer;
 import org.eclipse.jetty.deploy.graph.Edge;
 import org.eclipse.jetty.deploy.graph.Node;
 import org.eclipse.jetty.deploy.graph.Route;
-import org.eclipse.jetty.ee.Deployable;
+import org.eclipse.jetty.server.Deployable;
 import org.eclipse.jetty.server.Server;
 import org.eclipse.jetty.server.handler.ContextHandlerCollection;
 import org.eclipse.jetty.util.ExceptionUtil;
