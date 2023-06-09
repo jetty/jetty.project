@@ -16,7 +16,6 @@ package org.eclipse.jetty.server;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.concurrent.CompletableFuture;
-import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.TimeoutException;
 import java.util.concurrent.atomic.AtomicReference;
@@ -45,10 +44,8 @@ import org.junit.jupiter.params.provider.MethodSource;
 
 import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.Matchers.containsString;
-import static org.hamcrest.Matchers.instanceOf;
 import static org.hamcrest.Matchers.is;
 import static org.hamcrest.Matchers.not;
-import static org.junit.jupiter.api.Assertions.assertTrue;
 
 public class ServerTest
 {
@@ -223,6 +220,8 @@ public class ServerTest
     @Test
     public void testIdleTimeoutNoListener() throws Exception
     {
+        // See ServerTimeoutsTest for more complete idle timeout testing.
+
         _server.setHandler(new Handler.Abstract()
         {
             @Override
@@ -243,84 +242,12 @@ public class ServerTest
         HttpTester.Response response = HttpTester.parseResponse(rawResponse);
         assertThat(response.getStatus(), is(HttpStatus.INTERNAL_SERVER_ERROR_500));
         assertThat(response.getContent(), containsString("HTTP ERROR 500 java.util.concurrent.TimeoutException: Idle timeout expired:"));
-    }
-
-    @Test
-    public void testIdleTimeoutNoListenerDemand() throws Exception
-    {
-        CountDownLatch demanded = new CountDownLatch(1);
-        AtomicReference<Request> requestRef = new AtomicReference<>();
-        AtomicReference<Callback> callbackRef = new AtomicReference<>();
-        _server.setHandler(new Handler.Abstract()
-        {
-            @Override
-            public boolean handle(Request request, Response response, Callback callback)
-            {
-                // Handler never completes the callback
-                requestRef.set(request);
-                callbackRef.set(callback);
-                request.demand(demanded::countDown);
-                return true;
-            }
-        });
-        _server.start();
-
-        String request = """
-            GET /path HTTP/1.0\r
-            Host: hostname\r
-            Content-Length: 10\r
-            \r
-            """;
-        try (LocalConnector.LocalEndPoint endPoint = _connector.executeRequest(request))
-        {
-            assertTrue(demanded.await(2 * IDLE_TIMEOUT, TimeUnit.MILLISECONDS));
-            Content.Chunk chunk = requestRef.get().read();
-            assertThat(chunk, instanceOf(Content.Chunk.Error.class));
-            Throwable cause = ((Content.Chunk.Error)chunk).getCause();
-            assertThat(cause, instanceOf(TimeoutException.class));
-            callbackRef.get().failed(cause);
-
-            String rawResponse = endPoint.getResponse();
-            HttpTester.Response response = HttpTester.parseResponse(rawResponse);
-            assertThat(response.getStatus(), is(HttpStatus.INTERNAL_SERVER_ERROR_500));
-            assertThat(response.getContent(), containsString("HTTP ERROR 500 java.util.concurrent.TimeoutException: Idle timeout expired:"));
-        }
-    }
-
-    @Test
-    public void testIdleTimeoutFalseListener() throws Exception
-    {
-        AtomicReference<Throwable> error = new AtomicReference<>();
-        _server.setHandler(new Handler.Abstract()
-        {
-            @Override
-            public boolean handle(Request request, Response response, Callback callback)
-            {
-                request.addErrorListener(t ->
-                {
-                    error.set(t);
-                    return false;
-                });
-                return true;
-            }
-        });
-        _server.start();
-
-        String request = """
-                GET /path HTTP/1.0\r
-                Host: hostname\r
-                \r
-                """;
-        String rawResponse = _connector.getResponse(request);
-        HttpTester.Response response = HttpTester.parseResponse(rawResponse);
-        assertThat(response.getStatus(), is(HttpStatus.INTERNAL_SERVER_ERROR_500));
-        assertThat(response.getContent(), containsString("HTTP ERROR 500 java.util.concurrent.TimeoutException: Idle timeout expired:"));
-        assertThat(error.get(), instanceOf(TimeoutException.class));
     }
 
     @Test
     public void testIdleTimeoutTrueListener() throws Exception
     {
+        // See ServerTimeoutsTest for more complete idle timeout testing.
         CompletableFuture<Callback> callbackOnTimeout = new CompletableFuture<>();
         _server.setHandler(new Handler.Abstract()
         {
@@ -351,91 +278,6 @@ public class ServerTest
         {
             callbackOnTimeout.get(3 * IDLE_TIMEOUT, TimeUnit.MILLISECONDS).succeeded();
             String rawResponse = localEndPoint.getResponse();
-            HttpTester.Response response = HttpTester.parseResponse(rawResponse);
-            assertThat(response.getStatus(), is(HttpStatus.OK_200));
-        }
-    }
-
-    @Test
-    public void testIdleTimeoutTrueFalseListener() throws Exception
-    {
-        AtomicReference<Throwable> error = new AtomicReference<>();
-        _server.setHandler(new Handler.Abstract()
-        {
-            @Override
-            public boolean handle(Request request, Response response, Callback callback)
-            {
-                request.addErrorListener(t -> error.getAndSet(t) == null);
-                return true;
-            }
-        });
-        _server.start();
-
-        String request = """
-                GET /path HTTP/1.0\r
-                Host: hostname\r
-                \r
-                """;
-        String rawResponse = _connector.getResponse(request);
-        HttpTester.Response response = HttpTester.parseResponse(rawResponse);
-        assertThat(response.getStatus(), is(HttpStatus.INTERNAL_SERVER_ERROR_500));
-        assertThat(response.getContent(), containsString("HTTP ERROR 500 java.util.concurrent.TimeoutException: Idle timeout expired:"));
-        assertThat(error.get(), instanceOf(TimeoutException.class));
-    }
-
-    @Test
-    public void testIdleTimeoutListenerTrueDemand() throws Exception
-    {
-        CountDownLatch demanded = new CountDownLatch(1);
-        CountDownLatch recalled = new CountDownLatch(1);
-        CompletableFuture<Throwable> error = new CompletableFuture<>();
-        AtomicReference<Request> requestRef = new AtomicReference<>();
-        AtomicReference<Callback> callbackRef = new AtomicReference<>();
-        _server.setHandler(new Handler.Abstract()
-        {
-            @Override
-            public boolean handle(Request request, Response response, Callback callback)
-            {
-                // Handler never completes the callback
-                requestRef.set(request);
-                callbackRef.set(callback);
-                request.addErrorListener(t ->
-                {
-                    if (error.isDone())
-                        recalled.countDown();
-                    else
-                        error.complete(t);
-                    return true;
-                });
-                request.demand(demanded::countDown);
-
-                return true;
-            }
-        });
-        _server.start();
-
-        String request = """
-            GET /path HTTP/1.0\r
-            Host: hostname\r
-            Content-Length: 10\r
-            \r
-            """;
-        try (LocalConnector.LocalEndPoint endPoint = _connector.executeRequest(request))
-        {
-            assertTrue(demanded.await(2 * IDLE_TIMEOUT, TimeUnit.MILLISECONDS));
-            Throwable t = error.get(IDLE_TIMEOUT / 2, TimeUnit.MILLISECONDS);
-            assertThat(t, instanceOf(TimeoutException.class));
-            Content.Chunk chunk = requestRef.get().read();
-            assertThat(chunk, instanceOf(Content.Chunk.Error.class));
-            Throwable cause = ((Content.Chunk.Error)chunk).getCause();
-            assertThat(cause, instanceOf(TimeoutException.class));
-
-            // wait for another timeout
-            assertTrue(recalled.await(2 * IDLE_TIMEOUT, TimeUnit.MILLISECONDS));
-
-            callbackRef.get().succeeded();
-
-            String rawResponse = endPoint.getResponse();
             HttpTester.Response response = HttpTester.parseResponse(rawResponse);
             assertThat(response.getStatus(), is(HttpStatus.OK_200));
         }
