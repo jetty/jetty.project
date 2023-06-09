@@ -43,6 +43,10 @@ public class ContextHandlerClassLoaderTest
 
     public static class MyCustomClassLoader extends ClassLoader
     {
+        protected MyCustomClassLoader(ClassLoader parent)
+        {
+            super(parent);
+        }
     }
 
     @BeforeEach
@@ -53,7 +57,7 @@ public class ContextHandlerClassLoaderTest
         _server.addConnector(_connector);
 
         _context = new ServletContextHandler();
-        _context.setClassLoader(new MyCustomClassLoader());
+        _context.setClassLoader(new MyCustomClassLoader(_context.getClassLoader()));
         _context.addServlet(new ServletHolder(new HttpServlet()
         {
             @Override

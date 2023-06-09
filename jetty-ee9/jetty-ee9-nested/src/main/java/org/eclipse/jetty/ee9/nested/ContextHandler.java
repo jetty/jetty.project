@@ -611,8 +611,9 @@ public class ContextHandler extends ScopedHandler implements Attributes, Gracefu
     @Override
     protected void doStart() throws Exception
     {
-        // If we are being started directly (rather than via a start of the CoreContextHandler), then
-        // we need to run ourselves in the core context.
+        // If we are being started directly (rather than via a start of the CoreContextHandler),
+        // then we need the LifeCycle Listener to ensure both this and the CoreContextHandler are
+        // in STARTING state when doStartInContext is called.
         if (org.eclipse.jetty.server.handler.ContextHandler.getCurrentContext() != _coreContextHandler.getContext())
         {
             // Make the CoreContextHandler lifecycle responsible for calling the doStartContext() and doStopContext().
@@ -2524,7 +2525,8 @@ public class ContextHandler extends ScopedHandler implements Attributes, Gracefu
         protected void doStart() throws Exception
         {
             ClassLoader old = Thread.currentThread().getContextClassLoader();
-            Thread.currentThread().setContextClassLoader(ENVIRONMENT.getClassLoader());
+            if (getClassLoader() != null)
+                Thread.currentThread().setContextClassLoader(getClassLoader());
             try
             {
                 super.doStart();
@@ -2548,7 +2550,8 @@ public class ContextHandler extends ScopedHandler implements Attributes, Gracefu
         protected void doStop() throws Exception
         {
             ClassLoader old = Thread.currentThread().getContextClassLoader();
-            Thread.currentThread().setContextClassLoader(ENVIRONMENT.getClassLoader());
+            if (getClassLoader() != null)
+                Thread.currentThread().setContextClassLoader(getClassLoader());
             try
             {
                 super.doStop();
