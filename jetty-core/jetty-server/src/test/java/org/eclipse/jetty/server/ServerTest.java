@@ -15,6 +15,9 @@ package org.eclipse.jetty.server;
 
 import java.util.ArrayList;
 import java.util.List;
+import java.util.concurrent.CompletableFuture;
+import java.util.concurrent.TimeUnit;
+import java.util.concurrent.TimeoutException;
 import java.util.concurrent.atomic.AtomicReference;
 import java.util.stream.Stream;
 
@@ -214,4 +217,69 @@ public class ServerTest
         }
     }
 
+    @Test
+    public void testIdleTimeoutNoListener() throws Exception
+    {
+        // See ServerTimeoutsTest for more complete idle timeout testing.
+
+        _server.setHandler(new Handler.Abstract()
+        {
+            @Override
+            public boolean handle(Request request, Response response, Callback callback)
+            {
+                // Handler never completes the callback
+                return true;
+            }
+        });
+        _server.start();
+
+        String request = """
+                GET /path HTTP/1.0\r
+                Host: hostname\r
+                \r
+                """;
+        String rawResponse = _connector.getResponse(request);
+        HttpTester.Response response = HttpTester.parseResponse(rawResponse);
+        assertThat(response.getStatus(), is(HttpStatus.INTERNAL_SERVER_ERROR_500));
+        assertThat(response.getContent(), containsString("HTTP ERROR 500 java.util.concurrent.TimeoutException: Idle timeout expired:"));
+    }
+
+    @Test
+    public void testIdleTimeoutTrueListener() throws Exception
+    {
+        // See ServerTimeoutsTest for more complete idle timeout testing.
+        CompletableFuture<Callback> callbackOnTimeout = new CompletableFuture<>();
+        _server.setHandler(new Handler.Abstract()
+        {
+            @Override
+            public boolean handle(Request request, Response response, Callback callback)
+            {
+                request.addErrorListener(t ->
+                {
+                    if (t instanceof TimeoutException)
+                    {
+                        callbackOnTimeout.complete(callback);
+                        return true;
+                    }
+                    return false;
+                });
+                return true;
+            }
+        });
+        _server.start();
+
+        String request = """
+                GET /path HTTP/1.0\r
+                Host: hostname\r
+                \r
+                """;
+
+        try (LocalConnector.LocalEndPoint localEndPoint = _connector.executeRequest(request))
+        {
+            callbackOnTimeout.get(3 * IDLE_TIMEOUT, TimeUnit.MILLISECONDS).succeeded();
+            String rawResponse = localEndPoint.getResponse();
+            HttpTester.Response response = HttpTester.parseResponse(rawResponse);
+            assertThat(response.getStatus(), is(HttpStatus.OK_200));
+        }
+    }
 }
