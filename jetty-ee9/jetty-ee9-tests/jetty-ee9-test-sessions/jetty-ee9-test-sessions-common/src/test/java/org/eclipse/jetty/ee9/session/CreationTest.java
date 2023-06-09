@@ -37,6 +37,7 @@ import org.eclipse.jetty.session.DefaultSessionCacheFactory;
 import org.eclipse.jetty.session.SessionCache;
 import org.eclipse.jetty.session.SessionDataStore;
 import org.eclipse.jetty.session.SessionDataStoreFactory;
+import org.eclipse.jetty.session.test.TestSessionDataStoreFactory;
 import org.eclipse.jetty.util.StringUtil;
 import org.hamcrest.Matchers;
 import org.junit.jupiter.api.Disabled;
@@ -94,7 +95,7 @@ public class CreationTest
             assertEquals(HttpServletResponse.SC_OK, response.getStatus());
 
             String sessionCookie = response.getHeaders().get("Set-Cookie");
-            assertTrue(sessionCookie != null);
+            assertNotNull(sessionCookie);
         }
         finally
         {
@@ -139,7 +140,7 @@ public class CreationTest
             assertEquals(HttpServletResponse.SC_OK, response.getStatus());
 
             String sessionCookie = response.getHeaders().get("Set-Cookie");
-            assertTrue(sessionCookie != null);
+            assertNotNull(sessionCookie);
 
             //session should now be evicted from the cache
             String id = SessionTestSupport.extractSessionId(sessionCookie);
@@ -444,7 +445,7 @@ public class CreationTest
                 }
                 return;
             }
-            else if (action != null && "test".equals(action))
+            else if ("test".equals(action))
             {
                 HttpSession session = request.getSession(false);
                 assertNotNull(session);
@@ -503,12 +504,11 @@ public class CreationTest
         {
             HttpSession session = request.getSession(false);
             assertNull(session);
-            if (session == null)
-                session = request.getSession(true);
+            session = request.getSession(true);
 
             // Be sure nothing from contextA is present
             Object objectA = session.getAttribute("value");
-            assertTrue(objectA == null);
+            assertNull(objectA);
 
             // Add something, so in contextA we can check if it is visible (it must not).
             session.setAttribute("B", "B");

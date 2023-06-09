@@ -18,6 +18,7 @@ import java.util.Collection;
 import java.util.Objects;
 import java.util.Queue;
 import java.util.concurrent.ConcurrentLinkedQueue;
+import java.util.concurrent.atomic.AtomicInteger;
 import java.util.concurrent.atomic.AtomicMarkableReference;
 import java.util.concurrent.locks.ReadWriteLock;
 import java.util.concurrent.locks.ReentrantReadWriteLock;
@@ -38,10 +39,15 @@ import org.eclipse.jetty.util.Pool;
  */
 public class QueuedPool<P> implements Pool<P>
 {
+    // All code that uses these three fields is fully thread-safe.
     private final int maxSize;
     private final Queue<Entry<P>> queue = new ConcurrentLinkedQueue<>();
+    private final AtomicInteger queueSize = new AtomicInteger();
 
-    // This lock protects the 'terminated' field.
+    // Only the 'terminated' field is protected by the RW lock,
+    // the other fields are totally ignored w.r.t the scope of this lock;
+    // so when the read lock or the write lock is needed solely depends
+    // on what is being done to the 'terminated' field.
     private final ReadWriteLock rwLock = new ReentrantReadWriteLock();
     private boolean terminated;
 
@@ -56,7 +62,7 @@ public class QueuedPool<P> implements Pool<P>
         rwLock.readLock().lock();
         try
         {
-            if (terminated || queue.size() == maxSize)
+            if (terminated || queueSize.get() == maxSize)
                 return null;
             return new QueuedEntry<>(this);
         }
@@ -71,10 +77,16 @@ public class QueuedPool<P> implements Pool<P>
         rwLock.readLock().lock();
         try
         {
-            if (terminated || queue.size() == maxSize)
-                return false;
-            queue.add(entry);
-            return true;
+            while (true)
+            {
+                int size = queueSize.get();
+                if (terminated || size == maxSize)
+                    return false;
+                if (!queueSize.compareAndSet(size, size + 1))
+                    continue;
+                queue.add(entry);
+                return true;
+            }
         }
         finally
         {
@@ -92,7 +104,10 @@ public class QueuedPool<P> implements Pool<P>
                 return null;
             QueuedEntry<P> entry = (QueuedEntry<P>)queue.poll();
             if (entry != null)
+            {
+                queueSize.decrementAndGet();
                 entry.acquire();
+            }
             return entry;
         }
         finally
@@ -121,9 +136,15 @@ public class QueuedPool<P> implements Pool<P>
         rwLock.writeLock().lock();
         try
         {
+            // Once 'terminated' has been set to true, no entry can be
+            // added nor removed from the queue; the setting to true
+            // as well as the copy and the clearing of the queue MUST be
+            // atomic otherwise we may not return the exact list of entries
+            // that remained in the pool when terminate() was called.
             terminated = true;
             Collection<Entry<P>> copy = new ArrayList<>(queue);
             queue.clear();
+            queueSize.set(0);
             return copy;
         }
         finally
@@ -135,7 +156,7 @@ public class QueuedPool<P> implements Pool<P>
     @Override
     public int size()
     {
-        return queue.size();
+        return queueSize.get();
     }
 
     @Override

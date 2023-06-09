@@ -14,26 +14,19 @@
 package org.eclipse.jetty.ee9.session.hazelcast.client;
 
 import org.eclipse.jetty.ee9.session.AbstractClusteredOrphanedSessionTest;
-import org.eclipse.jetty.ee9.session.hazelcast.HazelcastTestHelper;
 import org.eclipse.jetty.session.SessionDataStoreFactory;
+import org.eclipse.jetty.session.test.tools.HazelcastTestHelper;
 import org.junit.jupiter.api.AfterEach;
-import org.junit.jupiter.api.BeforeEach;
 
 public class ClientOrphanedSessionClientTest
     extends AbstractClusteredOrphanedSessionTest
 {
-    HazelcastTestHelper _testHelper;
+    HazelcastTestHelper _testHelper = new HazelcastTestHelper(getClass().getSimpleName() + System.nanoTime());
 
     @Override
     public SessionDataStoreFactory createSessionDataStoreFactory()
     {
         return _testHelper.createSessionDataStoreFactory(true);
-    }
-
-    @BeforeEach
-    public void setUp()
-    {
-        _testHelper = new HazelcastTestHelper();
     }
 
     @AfterEach

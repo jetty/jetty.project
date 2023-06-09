@@ -39,12 +39,16 @@ import org.eclipse.jetty.session.SessionCacheFactory;
 import org.eclipse.jetty.session.SessionData;
 import org.eclipse.jetty.session.SessionDataStoreFactory;
 import org.eclipse.jetty.session.SessionManager;
+import org.eclipse.jetty.session.test.TestSessionDataStore;
+import org.eclipse.jetty.session.test.TestSessionDataStoreFactory;
 import org.junit.jupiter.api.Test;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
+import static org.junit.jupiter.api.Assertions.assertNotEquals;
 import static org.junit.jupiter.api.Assertions.assertNotNull;
 import static org.junit.jupiter.api.Assertions.assertNotSame;
+import static org.junit.jupiter.api.Assertions.assertSame;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
 /**
@@ -176,7 +180,7 @@ public class SessionRenewTest
             ContentResponse renewResponse = request.send();
             assertEquals(HttpServletResponse.SC_OK, renewResponse.getStatus());
             String newSessionCookie = renewResponse.getHeaders().get("Set-Cookie");
-            assertTrue(newSessionCookie != null);
+            assertNotNull(newSessionCookie);
             String updatedId = SessionTestSupport.extractSessionId(newSessionCookie);
             
             //session ids should be updated on all contexts
@@ -227,7 +231,7 @@ public class SessionRenewTest
             assertEquals(HttpServletResponse.SC_OK, response.getStatus());
             
             String sessionCookie = response.getHeaders().get("Set-Cookie");
-            assertTrue(sessionCookie != null);
+            assertNotNull(sessionCookie);
             assertFalse(testListener.isCalled());
 
             //make a request to change the sessionid
@@ -308,7 +312,7 @@ public class SessionRenewTest
             else if ("renew".equals(action))
             {
                 HttpSession beforeSession = request.getSession(false);
-                assertTrue(beforeSession != null);
+                assertNotNull(beforeSession);
                 String beforeSessionId = beforeSession.getId();
 
                 //((Session)beforeSession).renewId(request);
@@ -316,11 +320,11 @@ public class SessionRenewTest
 
                 HttpSession afterSession = request.getSession(false);
 
-                assertTrue(afterSession != null);
+                assertNotNull(afterSession);
                 String afterSessionId = afterSession.getId();
 
-                assertTrue(beforeSession == afterSession); //same object
-                assertFalse(beforeSessionId.equals(afterSessionId)); //different id
+                assertSame(beforeSession, afterSession); //same object
+                assertNotEquals(beforeSessionId, afterSessionId); //different id
 
                 ManagedSession coreAfterSession = ((ServletSessionApi)afterSession).getSession();
                 SessionManager sessionManager = coreAfterSession.getSessionManager();

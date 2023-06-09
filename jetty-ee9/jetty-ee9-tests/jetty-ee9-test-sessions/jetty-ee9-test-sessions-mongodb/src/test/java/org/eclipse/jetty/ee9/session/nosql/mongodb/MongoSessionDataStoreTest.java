@@ -27,6 +27,7 @@ import org.eclipse.jetty.session.SessionContext;
 import org.eclipse.jetty.session.SessionData;
 import org.eclipse.jetty.session.SessionDataStore;
 import org.eclipse.jetty.session.SessionDataStoreFactory;
+import org.eclipse.jetty.session.test.tools.MongoTestHelper;
 import org.junit.jupiter.api.AfterAll;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
@@ -42,6 +43,11 @@ import static org.junit.jupiter.api.Assertions.assertNotNull;
 @Testcontainers(disabledWithoutDocker = true)
 public class MongoSessionDataStoreTest extends AbstractSessionDataStoreTest
 {
+
+    private static final String DB_NAME = "DB" + MongoSessionDataStoreTest.class.getSimpleName() + System.nanoTime();
+
+    private static final String COLLECTION_NAME = "COLLECTION" + MongoSessionDataStoreTest.class.getSimpleName() + System.nanoTime();
+
     public MongoSessionDataStoreTest() throws Exception
     {
         super();
@@ -50,13 +56,13 @@ public class MongoSessionDataStoreTest extends AbstractSessionDataStoreTest
     @BeforeEach
     public void beforeEach() throws Exception
     {
-        MongoTestHelper.createCollection();
+        MongoTestHelper.createCollection(DB_NAME, COLLECTION_NAME);
     }
 
     @AfterEach
     public void afterEach() throws Exception
     {
-        MongoTestHelper.dropCollection();
+        MongoTestHelper.dropCollection(DB_NAME, COLLECTION_NAME);
     }
 
     @AfterAll
@@ -68,27 +74,29 @@ public class MongoSessionDataStoreTest extends AbstractSessionDataStoreTest
     @Override
     public SessionDataStoreFactory createSessionDataStoreFactory()
     {
-        return MongoTestHelper.newSessionDataStoreFactory();
+        return MongoTestHelper.newSessionDataStoreFactory(DB_NAME, COLLECTION_NAME);
     }
 
     @Override
     public void persistSession(SessionData data) throws Exception
     {
         MongoTestHelper.createSession(data.getId(), data.getContextPath(), data.getVhost(), data.getLastNode(), data.getCreated(),
-            data.getAccessed(), data.getLastAccessed(), data.getMaxInactiveMs(), data.getExpiry(), data.getAllAttributes());
+            data.getAccessed(), data.getLastAccessed(), data.getMaxInactiveMs(), data.getExpiry(), data.getAllAttributes(),
+                DB_NAME, COLLECTION_NAME);
     }
 
     @Override
     public void persistUnreadableSession(SessionData data) throws Exception
     {
         MongoTestHelper.createUnreadableSession(data.getId(), data.getContextPath(), data.getVhost(), data.getLastNode(), data.getCreated(),
-            data.getAccessed(), data.getLastAccessed(), data.getMaxInactiveMs(), data.getExpiry(), null);
+            data.getAccessed(), data.getLastAccessed(), data.getMaxInactiveMs(), data.getExpiry(), null,
+                DB_NAME, COLLECTION_NAME);
     }
 
     @Override
     public boolean checkSessionExists(SessionData data) throws Exception
     {
-        return MongoTestHelper.checkSessionExists(data.getId());
+        return MongoTestHelper.checkSessionExists(data.getId(), DB_NAME, COLLECTION_NAME);
     }
 
     @Override
@@ -98,7 +106,7 @@ public class MongoSessionDataStoreTest extends AbstractSessionDataStoreTest
         Thread.currentThread().setContextClassLoader(_contextClassLoader);
         try
         {
-            return MongoTestHelper.checkSessionPersisted(data);
+            return MongoTestHelper.checkSessionPersisted(data, DB_NAME, COLLECTION_NAME);
         }
         finally
         {
@@ -129,13 +137,13 @@ public class MongoSessionDataStoreTest extends AbstractSessionDataStoreTest
 
         Map<String, Object> attributes = new HashMap<>();
         attributes.put("attribute1", "attribute1value");
-        attributes.put("attribute2", new ArrayList<String>(Arrays.asList("1", "2", "3")));
+        attributes.put("attribute2", new ArrayList<>(Arrays.asList("1", "2", "3")));
         MongoTestHelper.createLegacySession("1234",
             sessionContext.getCanonicalContextPath(), sessionContext.getVhost(),
             "foo",
             1000L, System.currentTimeMillis() - 1000L, System.currentTimeMillis() - 2000L,
             -1, -1,
-            attributes);
+            attributes, DB_NAME, COLLECTION_NAME);
 
         store.start();
 
@@ -152,6 +160,6 @@ public class MongoSessionDataStoreTest extends AbstractSessionDataStoreTest
         store.store("1234", loaded);
 
         //and that it has now been written out with the new format
-        MongoTestHelper.checkSessionPersisted(loaded);
+        MongoTestHelper.checkSessionPersisted(loaded, DB_NAME, COLLECTION_NAME);
     }
 }

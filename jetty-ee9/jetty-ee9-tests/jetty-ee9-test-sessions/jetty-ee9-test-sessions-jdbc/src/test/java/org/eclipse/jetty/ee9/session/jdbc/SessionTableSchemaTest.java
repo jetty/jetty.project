@@ -45,9 +45,12 @@ public class SessionTableSchemaTest
     DatabaseAdaptor _da;
     JDBCSessionDataStore.SessionTableSchema _tableSchema;
 
+    private String sessionTableName;
+
     @BeforeEach
     public void setUp() throws Exception
     {
+        this.sessionTableName = getClass().getSimpleName() + "_" + System.nanoTime();
         //pretend to be an Oracle-like database that treats "" as NULL
         _da = new DatabaseAdaptor()
         {
@@ -59,14 +62,14 @@ public class SessionTableSchemaTest
             }
         };
         _da.setDriverInfo(JdbcTestHelper.DRIVER_CLASS, JdbcTestHelper.DEFAULT_CONNECTION_URL);
-        _tableSchema = JdbcTestHelper.newSessionTableSchema();
+        _tableSchema = JdbcTestHelper.newSessionTableSchema(sessionTableName);
         JdbcTestHelper.setDatabaseAdaptor(_tableSchema, _da);
     }
 
     @AfterEach
     public void tearDown() throws Exception
     {
-        JdbcTestHelper.shutdown(null);
+        JdbcTestHelper.shutdown(sessionTableName);
     }
 
     /**
@@ -79,12 +82,12 @@ public class SessionTableSchemaTest
      * @param vhost the virtual host of the session 
      * @throws Exception
      */
-    public static void insertSessionWithoutAttributes(String id, String contextPath, String vhost)
+    public void insertSessionWithoutAttributes(String id, String contextPath, String vhost)
         throws Exception
     {
         try (Connection con = JdbcTestHelper.getConnection())
         {
-            PreparedStatement statement = con.prepareStatement("insert into " + JdbcTestHelper.TABLE +
+            PreparedStatement statement = con.prepareStatement("insert into " + sessionTableName +
                 " (" + JdbcTestHelper.ID_COL + ", " + JdbcTestHelper.CONTEXT_COL + ", virtualHost, " + JdbcTestHelper.LAST_NODE_COL +
                 ", " + JdbcTestHelper.ACCESS_COL + ", " + JdbcTestHelper.LAST_ACCESS_COL + ", " + JdbcTestHelper.CREATE_COL + ", " + JdbcTestHelper.COOKIE_COL +
                 ", " + JdbcTestHelper.LAST_SAVE_COL + ", " + JdbcTestHelper.EXPIRY_COL + " " + ") " +
@@ -186,7 +189,7 @@ public class SessionTableSchemaTest
             PreparedStatement s = _tableSchema.getDeleteStatement(con, id, sc);
             assertEquals(1, s.executeUpdate());
 
-            assertFalse(JdbcTestHelper.existsInSessionTable(id, false));
+            assertFalse(JdbcTestHelper.existsInSessionTable(id, false, sessionTableName));
         }
     }
 

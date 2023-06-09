@@ -11,17 +11,20 @@
 // ========================================================================
 //
 
-package org.eclipse.jetty.ee9.session.infinispan.remote;
+package org.eclipse.jetty.session.test.tools;
 
 import java.io.ByteArrayOutputStream;
+import java.io.IOException;
 import java.io.InputStream;
 import java.lang.annotation.ElementType;
 import java.nio.charset.StandardCharsets;
+import java.util.Objects;
 import java.util.Properties;
 
 import org.eclipse.jetty.session.SessionData;
 import org.eclipse.jetty.session.infinispan.InfinispanSerializationContextInitializer;
 import org.eclipse.jetty.session.infinispan.InfinispanSessionData;
+import org.eclipse.jetty.session.infinispan.SessionDataMarshaller;
 import org.eclipse.jetty.util.IO;
 import org.hibernate.search.cfg.Environment;
 import org.hibernate.search.cfg.SearchMapping;
@@ -40,7 +43,6 @@ import org.testcontainers.containers.output.Slf4jLogConsumer;
 import org.testcontainers.containers.wait.strategy.Wait;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
-import static org.junit.jupiter.api.Assertions.assertTrue;
 
 /**
  * RemoteInfinispanTestSupport
@@ -48,62 +50,34 @@ import static org.junit.jupiter.api.Assertions.assertTrue;
 public class RemoteInfinispanTestSupport
 {
     private static final Logger LOG = LoggerFactory.getLogger(RemoteInfinispanTestSupport.class);
-    public static final String DEFAULT_CACHE_NAME = "session_test_cache";
     public RemoteCache<String, InfinispanSessionData> _cache;
     private final String _name;
-    public RemoteCacheManager _manager;
+    public static RemoteCacheManager _manager;
     private static final Logger INFINISPAN_LOG =
             LoggerFactory.getLogger("org.eclipse.jetty.server.session.remote.infinispanLogs");
 
+    private static final String INFINISPAN_VERSION = System.getProperty("infinispan.docker.image.version", "11.0.14.Final");
     private static final String IMAGE_NAME = System.getProperty("infinispan.docker.image.name", "infinispan/server") +
-            ":" + System.getProperty("infinispan.docker.image.version", "11.0.9.Final");
+            ":" + INFINISPAN_VERSION;
 
-    private final GenericContainer infinispan = new GenericContainer(IMAGE_NAME)
-            .withEnv("USER", "theuser")
-            .withEnv("PASS", "foobar")
-            .withEnv("MGMT_USER", "admin")
-            .withEnv("MGMT_PASS", "admin")
-            .withEnv("CONFIG_PATH", "/user-config/config.yaml")
-            .waitingFor(Wait.forLogMessage(".*Infinispan Server.*started in.*\\s", 1))
-            .withExposedPorts(4712, 4713, 8088, 8089, 8443, 9990, 9993, 11211, 11222, 11223, 11224)
-            .withLogConsumer(new Slf4jLogConsumer(INFINISPAN_LOG))
-            .withClasspathResourceMapping("/config.yaml", "/user-config/config.yaml", BindMode.READ_ONLY);
-    private static final String INFINISPAN_VERSION = System.getProperty("infinispan.docker.image.version", "11.0.9.Final");
+    private static final GenericContainer<?> infinispan = new GenericContainer<>(IMAGE_NAME);
 
-    public RemoteInfinispanTestSupport()
+    static
     {
-        this(null);
-    }
+        infinispan.withEnv("USER", "theuser")
+                .withEnv("PASS", "foobar")
+                .withEnv("MGMT_USER", "admin")
+                .withEnv("MGMT_PASS", "admin")
+                .withEnv("CONFIG_PATH", "/user-config/config.yaml")
+                .waitingFor(Wait.forLogMessage(".*Infinispan Server.*started in.*\\s", 1))
+                .withExposedPorts(4712, 4713, 8088, 8089, 8443, 9990, 9993, 11211, 11222, 11223, 11224)
+                .withLogConsumer(new Slf4jLogConsumer(INFINISPAN_LOG))
+                .withClasspathResourceMapping("/config.yaml", "/user-config/config.yaml", BindMode.READ_ONLY)
+                .start();
 
-    public RemoteInfinispanTestSupport(String cacheName)
-    {
-        if (cacheName == null)
-            cacheName = DEFAULT_CACHE_NAME + System.nanoTime();
-
-        _name = cacheName;
-
-        if (!infinispan.isRunning())
+        // setup instance
         {
-            try
-            {
-                long start = System.currentTimeMillis();
 
-                infinispan.start();
-                System.setProperty("hotrod.host", infinispan.getContainerIpAddress());
-
-                LOG.info("Infinispan container started for {}:{} - {}ms",
-                        infinispan.getContainerIpAddress(),
-                        infinispan.getMappedPort(11222),
-                        System.currentTimeMillis() - start);
-            }
-            catch (Exception e)
-            {
-                LOG.error(e.getMessage(), e);
-                throw new RuntimeException(e);
-            }
-        }
-        try
-        {
             SearchMapping mapping = new SearchMapping();
             mapping.entity(InfinispanSessionData.class).indexed().providedId()
                     .property("expiry", ElementType.METHOD).field();
@@ -113,7 +87,7 @@ public class RemoteInfinispanTestSupport
 
             ConfigurationBuilder configurationBuilder = new ConfigurationBuilder().withProperties(properties)
                     .addServer()
-                    .host(infinispan.getContainerIpAddress())
+                    .host(infinispan.getHost())
                     .port(infinispan.getMappedPort(11222))
                     // we just want to limit connectivity to list of host:port we knows at start
                     // as infinispan create new host:port dynamically but due to how docker expose host/port we cannot do that
@@ -134,7 +108,7 @@ public class RemoteInfinispanTestSupport
 
             //upload the session.proto file to the remote cache
             ByteArrayOutputStream baos;
-            try (InputStream is = RemoteInfinispanSessionDataStoreTest.class.getClassLoader().getResourceAsStream("session.proto"))
+            try (InputStream is = SessionDataMarshaller.class.getClassLoader().getResourceAsStream("session.proto"))
             {
                 if (is == null)
                     throw new IllegalStateException("inputstream is null");
@@ -142,25 +116,22 @@ public class RemoteInfinispanTestSupport
                 baos = new ByteArrayOutputStream();
                 IO.copy(is, baos);
             }
+            catch (IOException e)
+            {
+                throw new RuntimeException(e.getMessage(), e);
+            }
 
             String content = baos.toString(StandardCharsets.UTF_8);
             _manager.administration().getOrCreateCache("___protobuf_metadata", (String)null).put("session.proto", content);
-        }
-        catch (Exception e)
-        {
-            LOG.error(e.getMessage(), e);
-            throw new RuntimeException(e);
+
         }
 
     }
 
-    public RemoteCache<String, InfinispanSessionData> getCache()
+    public RemoteInfinispanTestSupport(String cacheName)
     {
-        return _cache;
-    }
-
-    public void setup() throws Exception
-    {
+        Objects.requireNonNull(cacheName, "cacheName cannot be null");
+        _name = cacheName;
         String xml = String.format("<infinispan>"  +
                 "<cache-container>" + "<distributed-cache name=\"%s\" mode=\"SYNC\">" +
                 "<encoding media-type=\"application/x-protostream\"/>" +
@@ -172,18 +143,23 @@ public class RemoteInfinispanTestSupport
         _cache = _manager.administration().getOrCreateCache(_name, xmlConfig);
     }
 
-    public void teardown() throws Exception
+    public RemoteCache<String, InfinispanSessionData> getCache()
+    {
+        return _cache;
+    }
+
+    public void setup() throws Exception
+    {
+        // noop
+    }
+
+    public void clearCache() throws Exception
     {
         _cache.clear();
     }
 
-    public void shutdown() throws Exception
-    {
-        infinispan.stop();
-    }
-
     public void createSession(InfinispanSessionData data)
-            throws Exception
+        throws Exception
     {
         data.serializeAttributes();
         _cache.put(data.getContextPath() + "_" + data.getVhost() + "_" + data.getId(), data);
@@ -195,19 +171,19 @@ public class RemoteInfinispanTestSupport
     }
 
     public boolean checkSessionExists(InfinispanSessionData data)
-            throws Exception
+        throws Exception
     {
         return (_cache.get(data.getContextPath() + "_" + data.getVhost() + "_" + data.getId()) != null);
     }
 
     public boolean checkSessionPersisted(SessionData data)
-            throws Exception
+        throws Exception
     {
-        Object obj = _cache.get(data.getContextPath() + "_" + data.getVhost() + "_" + data.getId());
+        InfinispanSessionData obj = _cache.get(data.getContextPath() + "_" + data.getVhost() + "_" + data.getId());
         if (obj == null)
             return false;
 
-        InfinispanSessionData saved = (InfinispanSessionData)obj;
+        InfinispanSessionData saved = obj;
         if (saved.getSerializedAttributes() != null)
             saved.deserializeAttributes();
 
@@ -226,11 +202,11 @@ public class RemoteInfinispanTestSupport
         //same number of attributes
         assertEquals(data.getAllAttributes().size(), saved.getAllAttributes().size());
         //same keys
-        assertTrue(data.getKeys().equals(saved.getKeys()));
+        assertEquals(data.getKeys(), saved.getKeys());
         //same values
         for (String name : data.getKeys())
         {
-            assertTrue(data.getAttribute(name).equals(saved.getAttribute(name)));
+            assertEquals(data.getAttribute(name), saved.getAttribute(name));
         }
 
         return true;

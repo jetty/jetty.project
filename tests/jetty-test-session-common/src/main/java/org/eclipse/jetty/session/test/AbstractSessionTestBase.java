@@ -11,16 +11,14 @@
 // ========================================================================
 //
 
-package org.eclipse.jetty.server;
+package org.eclipse.jetty.session.test;
+
+import org.eclipse.jetty.session.SessionDataStoreFactory;
 
 /**
- * @deprecated {@link org.eclipse.jetty.util.component.ClassLoaderDump}
+ * AbstractTestBase
  */
-@Deprecated
-public class ClassLoaderDump extends org.eclipse.jetty.util.component.ClassLoaderDump
+public abstract class AbstractSessionTestBase
 {
-    public ClassLoaderDump(ClassLoader loader)
-    {
-        super(loader);
-    }
+    public abstract SessionDataStoreFactory createSessionDataStoreFactory();
 }
