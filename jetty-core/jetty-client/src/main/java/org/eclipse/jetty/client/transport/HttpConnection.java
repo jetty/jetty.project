@@ -315,6 +315,11 @@ public abstract class HttpConnection implements IConnection, Attachable
         return String.format("%s@%h", getClass().getSimpleName(), this);
     }
 
+    /**
+     * <p>Enforces the total timeout for requests that have been sent.</p>
+     * <p>The total timeout for exchanges that are in the destination queue
+     * is enforced in {@link HttpDestination}.</p>
+     */
     private class RequestTimeouts extends CyclicTimeouts<HttpChannel>
     {
         private RequestTimeouts(Scheduler scheduler)
@@ -332,11 +337,14 @@ public abstract class HttpConnection implements IConnection, Attachable
         protected boolean onExpired(HttpChannel channel)
         {
             HttpExchange exchange = channel.getHttpExchange();
-            if (exchange != null)
-            {
-                HttpRequest request = exchange.getRequest();
-                request.abort(new TimeoutException("Total timeout " + request.getConversation().getTimeout() + " ms elapsed"));
-            }
+            // The expiration lost the race, as the
+            // exchange may have just been completed.
+            if (exchange == null)
+                return false;
+            HttpRequest request = exchange.getRequest();
+            request.abort(new TimeoutException("Total timeout " + request.getConversation().getTimeout() + " ms elapsed"));
+            // The implementation of the Iterator returned above may not support
+            // removal, but the HttpChannel will be removed by request.abort().
             return false;
         }
     }
