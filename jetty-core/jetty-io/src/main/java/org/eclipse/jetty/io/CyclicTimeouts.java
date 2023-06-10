@@ -65,6 +65,10 @@ public abstract class CyclicTimeouts<T extends CyclicTimeouts.Expirable> impleme
      * <p>This method may be invoked multiple times, and even concurrently,
      * for the same expirable entity and therefore the expiration of the
      * entity, if any, should be an idempotent action.</p>
+     * <p>When {@code false} is returned, the implementation should adjust
+     * the {@link Expirable} expiration, so that a call to
+     * {@link Expirable#getExpireNanoTime()} after this method has returned
+     * yields a new expiration nanoTime.</p>
      *
      * @param expirable the entity that is expired
      * @return whether the entity should be removed from the iterator via {@link Iterator#remove()}
@@ -78,11 +82,10 @@ public abstract class CyclicTimeouts<T extends CyclicTimeouts.Expirable> impleme
 
         long now = NanoTime.now();
         long earliest = Long.MAX_VALUE;
-        // Reset the earliest timeout so we can expire again.
-        // A concurrent call to schedule(long) may lose an
-        // earliest value, but the corresponding entity will
-        // be seen during the iteration below.
-        earliestTimeout.set(earliest);
+        // Move the earliest timeout far in the future, so we can expire again.
+        // A concurrent call to schedule(long) may lose an earliest value, but
+        // the corresponding entity will be seen during the iteration below.
+        earliestTimeout.set(now + Long.MAX_VALUE);
 
         Iterator<T> iterator = iterator();
         if (iterator == null)
@@ -98,23 +101,26 @@ public abstract class CyclicTimeouts<T extends CyclicTimeouts.Expirable> impleme
             if (LOG.isDebugEnabled())
                 LOG.debug("Entity {} expires in {} ms for {}", expirable, NanoTime.millisElapsed(now, expiresAt), this);
 
-            if (expiresAt == -1)
-                continue;
-
             if (NanoTime.isBeforeOrSame(expiresAt, now))
             {
                 boolean remove = onExpired(expirable);
                 if (LOG.isDebugEnabled())
                     LOG.debug("Entity {} expired, remove={} for {}", expirable, remove, this);
                 if (remove)
+                {
                     iterator.remove();
-                continue;
+                    continue;
+                }
+                long newExpiresAt = expirable.getExpireNanoTime();
+                if (newExpiresAt == expiresAt)
+                    continue;
+                expiresAt = newExpiresAt;
             }
 
             earliest = Math.min(earliest, NanoTime.elapsed(now, expiresAt));
         }
 
-        if (earliest < Long.MAX_VALUE)
+        if (earliest != Long.MAX_VALUE)
             schedule(now + earliest);
     }
 
@@ -126,7 +132,7 @@ public abstract class CyclicTimeouts<T extends CyclicTimeouts.Expirable> impleme
     public void schedule(T expirable)
     {
         long expiresAt = expirable.getExpireNanoTime();
-        if (expiresAt < Long.MAX_VALUE)
+        if (expiresAt != Long.MAX_VALUE)
             schedule(expiresAt);
     }
 

@@ -41,7 +41,7 @@ import static org.junit.jupiter.api.Assertions.assertTrue;
 public class CyclicTimeoutsTest
 {
     private Scheduler scheduler;
-    private CyclicTimeouts<ConstantExpirable> timeouts;
+    private CyclicTimeouts<CyclicTimeouts.Expirable> timeouts;
 
     @BeforeEach
     public void prepare()
@@ -65,14 +65,14 @@ public class CyclicTimeoutsTest
         timeouts = new CyclicTimeouts<>(scheduler)
         {
             @Override
-            protected Iterator<ConstantExpirable> iterator()
+            protected Iterator<CyclicTimeouts.Expirable> iterator()
             {
                 latch.countDown();
                 return null;
             }
 
             @Override
-            protected boolean onExpired(ConstantExpirable expirable)
+            protected boolean onExpired(CyclicTimeouts.Expirable expirable)
             {
                 return false;
             }
@@ -93,14 +93,14 @@ public class CyclicTimeoutsTest
         timeouts = new CyclicTimeouts<>(scheduler)
         {
             @Override
-            protected Iterator<ConstantExpirable> iterator()
+            protected Iterator<CyclicTimeouts.Expirable> iterator()
             {
                 iteratorLatch.countDown();
                 return Collections.emptyIterator();
             }
 
             @Override
-            protected boolean onExpired(ConstantExpirable expirable)
+            protected boolean onExpired(CyclicTimeouts.Expirable expirable)
             {
                 expiredLatch.countDown();
                 return false;
@@ -118,22 +118,22 @@ public class CyclicTimeoutsTest
     public void testIterateAndExpire(boolean remove) throws Exception
     {
         ConstantExpirable zero = ConstantExpirable.ofDelay(0, TimeUnit.SECONDS);
-        ConstantExpirable one = ConstantExpirable.ofDelay(1, TimeUnit.SECONDS);
-        Collection<ConstantExpirable> collection = new ArrayList<>();
+        DynamicExpirable one = new DynamicExpirable(NanoTime.now() + TimeUnit.SECONDS.toNanos(1));
+        Collection<CyclicTimeouts.Expirable> collection = new ArrayList<>();
         collection.add(one);
         AtomicInteger iterations = new AtomicInteger();
         CountDownLatch expiredLatch = new CountDownLatch(1);
         timeouts = new CyclicTimeouts<>(scheduler)
         {
             @Override
-            protected Iterator<ConstantExpirable> iterator()
+            protected Iterator<CyclicTimeouts.Expirable> iterator()
             {
                 iterations.incrementAndGet();
                 return collection.iterator();
             }
 
             @Override
-            protected boolean onExpired(ConstantExpirable expirable)
+            protected boolean onExpired(CyclicTimeouts.Expirable expirable)
             {
                 assertSame(one, expirable);
                 expiredLatch.countDown();
@@ -169,22 +169,22 @@ public class CyclicTimeoutsTest
         long delayMs = 2000;
         ConstantExpirable two = ConstantExpirable.ofDelay(delayMs, TimeUnit.MILLISECONDS);
         ConstantExpirable overtake = ConstantExpirable.ofDelay(delayMs / 2, TimeUnit.MILLISECONDS);
-        Collection<ConstantExpirable> collection = new ArrayList<>();
+        Collection<CyclicTimeouts.Expirable> collection = new ArrayList<>();
         collection.add(two);
         CountDownLatch expiredLatch = new CountDownLatch(2);
-        List<ConstantExpirable> expired = new ArrayList<>();
+        List<CyclicTimeouts.Expirable> expired = new ArrayList<>();
         timeouts = new CyclicTimeouts<>(scheduler)
         {
             private final AtomicBoolean overtakeScheduled = new AtomicBoolean();
 
             @Override
-            protected Iterator<ConstantExpirable> iterator()
+            protected Iterator<CyclicTimeouts.Expirable> iterator()
             {
                 return collection.iterator();
             }
 
             @Override
-            protected boolean onExpired(ConstantExpirable expirable)
+            protected boolean onExpired(CyclicTimeouts.Expirable expirable)
             {
                 expired.add(expirable);
                 expiredLatch.countDown();
@@ -218,6 +218,39 @@ public class CyclicTimeoutsTest
         // Make sure all entities expired properly.
         assertSame(overtake, expired.get(0));
         assertSame(two, expired.get(1));
+    }
+
+    @Test
+    public void testDynamicExpirableEntityIsNotifiedMultipleTimes() throws Exception
+    {
+        long delay = 500;
+        DynamicExpirable entity = new DynamicExpirable(NanoTime.now() + TimeUnit.MILLISECONDS.toNanos(delay));
+        List<CyclicTimeouts.Expirable> entities = List.of(entity);
+
+        CountDownLatch latch = new CountDownLatch(2);
+        timeouts = new CyclicTimeouts<>(scheduler)
+        {
+            @Override
+            protected Iterator<CyclicTimeouts.Expirable> iterator()
+            {
+                return entities.iterator();
+            }
+
+            @Override
+            protected boolean onExpired(CyclicTimeouts.Expirable expirable)
+            {
+                assertSame(entity, expirable);
+                // Postpone expiration.
+                entity.expireNanoTime = NanoTime.now() + TimeUnit.MILLISECONDS.toNanos(delay);
+                latch.countDown();
+                return false;
+            }
+        };
+
+        // Trigger the initial call to iterator().
+        timeouts.schedule(entities.get(0));
+
+        assertTrue(latch.await(3 * delay, TimeUnit.MILLISECONDS), latch.toString());
     }
 
     private static class ConstantExpirable implements CyclicTimeouts.Expirable
@@ -257,6 +290,28 @@ public class CyclicTimeoutsTest
         public String toString()
         {
             return String.format("%s@%x[%sms]", getClass().getSimpleName(), hashCode(), asString);
+        }
+    }
+
+    private static class DynamicExpirable implements CyclicTimeouts.Expirable
+    {
+        private long expireNanoTime;
+
+        public DynamicExpirable(long expireNanoTime)
+        {
+            this.expireNanoTime = expireNanoTime;
+        }
+
+        @Override
+        public long getExpireNanoTime()
+        {
+            return expireNanoTime;
+        }
+
+        @Override
+        public String toString()
+        {
+            return String.format("%s@%x[%dms]", getClass().getSimpleName(), hashCode(), NanoTime.millisUntil(expireNanoTime));
         }
     }
 }

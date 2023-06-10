@@ -311,10 +311,9 @@ public class HTTP2Stream implements Stream, Attachable, Closeable, Callback, Dum
         notifyIdleTimeout(this, timeout, Promise.from(timedOut ->
         {
             if (timedOut)
-            {
-                // Tell the other peer that we timed out.
                 reset(new ResetFrame(getId(), ErrorCode.CANCEL_STREAM_ERROR.code), Callback.NOOP);
-            }
+            else
+                notIdle();
         }, x -> reset(new ResetFrame(getId(), ErrorCode.INTERNAL_ERROR.code), Callback.NOOP)));
     }
 
