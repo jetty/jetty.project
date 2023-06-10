@@ -646,6 +646,7 @@
           <artifactId>maven-invoker-plugin</artifactId>
           <version>${maven.invoker.plugin.version}</version>
           <configuration>
+            <addTestClassPath>true</addTestClassPath>
             <mergeUserSettings>${invoker.mergeUserSettings}</mergeUserSettings>
             <writeJunitReport>true</writeJunitReport>
             <junitPackageName>org.eclipse.jetty.maven.its</junitPackageName>
@@ -659,8 +660,9 @@
             <cloneProjectsTo>${project.build.directory}/it</cloneProjectsTo>
             <localRepositoryPath>${localRepoPath}</localRepositoryPath>
             <settingsFile>${settingsPath}</settingsFile>
-            <ignoreFailures>true</ignoreFailures>
+            <settingsFile>src/it/settings.xml</settingsFile>
             <skipInvocation>${skipTests}</skipInvocation>
+            <streamLogsOnFailures>true</streamLogsOnFailures>
             <pomIncludes>
               <pomInclude>*/pom.xml</pomInclude>
             </pomIncludes>
@@ -2082,7 +2084,8 @@
         <spotbugs.effort>Default</spotbugs.effort>
         <spotbugs.skip>false</spotbugs.skip>
         <spotbugs.onlyAnalyze>org.eclipse.jetty.*</spotbugs.onlyAnalyze>
-        <maven.repo.uri></maven.repo.uri>
+        <!-- need a good default value if running this profile locally with empty repo -->
+        <maven.repo.uri>https://repo.maven.apache.org/maven2/</maven.repo.uri>
         <home.start.timeout>120</home.start.timeout>
       </properties>
       <modules>
