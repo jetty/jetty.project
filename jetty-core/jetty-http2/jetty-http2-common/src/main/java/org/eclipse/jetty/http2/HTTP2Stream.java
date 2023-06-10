@@ -438,15 +438,10 @@ public class HTTP2Stream implements Stream, Attachable, Closeable, Callback, Dum
             }
         }
 
-        if (getListener() != null)
+        if (getListener() != null || data.frame().isEndStream())
         {
             if (offer(data))
                 processData();
-        }
-        else
-        {
-            if (updateClose(data.frame().isEndStream(), CloseState.Event.RECEIVED))
-                session.removeStream(this);
         }
     }
 
