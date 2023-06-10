@@ -209,8 +209,11 @@ public class JettyHttpExchangeDelegate extends HttpExchange
     @Override
     public void setStreams(InputStream i, OutputStream o)
     {
-        _is = i;
-        _os = o;
+        assert _is != null;
+        if (i != null)
+            _is = i;
+        if (o != null)
+            _os = o;
     }
 
     @Override
