@@ -217,14 +217,12 @@ public class ServerTimeoutsTest extends AbstractTest
 
     @ParameterizedTest
     @MethodSource("transports")
-    public void testIdleTimeoutListenerTrueDemand(Transport transport) throws Exception
+    public void testIdleTimeoutDemandListenerReturnsTrue(Transport transport) throws Exception
     {
         CountDownLatch demanded = new CountDownLatch(1);
-        CountDownLatch recalled = new CountDownLatch(1);
         CompletableFuture<Throwable> error = new CompletableFuture<>();
         CompletableFuture<Integer> status = new CompletableFuture<>();
         AtomicReference<Request> requestRef = new AtomicReference<>();
-        AtomicReference<Callback> callbackRef = new AtomicReference<>();
         start(transport, new Handler.Abstract()
         {
             @Override
@@ -232,13 +230,12 @@ public class ServerTimeoutsTest extends AbstractTest
             {
                 // Handler never completes the callback
                 requestRef.set(request);
-                callbackRef.set(callback);
                 request.addErrorListener(t ->
                 {
                     if (t instanceof TimeoutException)
                     {
                         if (error.isDone())
-                            recalled.countDown();
+                            callback.failed(t);
                         else
                             error.complete(t);
                         return true;
@@ -273,45 +270,9 @@ public class ServerTimeoutsTest extends AbstractTest
         Throwable cause = ((Content.Chunk.Error)chunk).getCause();
         assertThat(cause, instanceOf(TimeoutException.class));
 
-        // wait for another timeout
-        assertTrue(recalled.await(2 * IDLE_TIMEOUT, TimeUnit.MILLISECONDS));
-
-        callbackRef.get().succeeded();
-
-        int s = status.get(IDLE_TIMEOUT / 2, TimeUnit.MILLISECONDS);
-        assertThat(s, is(HttpStatus.OK_200));
+        int s = status.get(2 * IDLE_TIMEOUT, TimeUnit.MILLISECONDS);
+        assertThat(s, is(HttpStatus.INTERNAL_SERVER_ERROR_500));
     }
 
-    /*
-    @Test
-    public void testIdleTimeoutNoErrorListenerWriteCallbackFails() throws Exception
-    {
-        Callback.Completable completable = new Callback.Completable();
-        start(new Handler.Abstract()
-        {
-            @Override
-            public boolean handle(Request request, Response response, Callback callback)
-            {
-                callback.completeWith(completable);
-                // Issue a large write to be TCP congested and idle timeout.
-                response.write(true, ByteBuffer.allocate(128 * 1024 *1024), completable);
-                return true;
-            }
-        });
-
-        String request = """
-            GET /path HTTP/1.0\r
-            Host: localhost\r
-            \r
-            """;
-        try (LocalConnector.LocalEndPoint endPoint = _connector.executeRequest(request))
-        {
-            // Do not read the response to cause TCP congestion.
-
-            ExecutionException x = assertThrows(ExecutionException.class, () -> completable.get(2 * IDLE_TIMEOUT, TimeUnit.MILLISECONDS));
-            assertThat(x.getCause(), instanceOf(TimeoutException.class));
-        }
-    }
-
-     */
+    // TODO write side tests
 }

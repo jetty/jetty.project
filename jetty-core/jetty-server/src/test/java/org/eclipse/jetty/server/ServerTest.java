@@ -13,6 +13,7 @@
 
 package org.eclipse.jetty.server;
 
+import java.nio.ByteBuffer;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.concurrent.CompletableFuture;
@@ -44,6 +45,7 @@ import org.junit.jupiter.params.provider.MethodSource;
 
 import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.Matchers.containsString;
+import static org.hamcrest.Matchers.instanceOf;
 import static org.hamcrest.Matchers.is;
 import static org.hamcrest.Matchers.not;
 
@@ -280,6 +282,55 @@ public class ServerTest
             String rawResponse = localEndPoint.getResponse();
             HttpTester.Response response = HttpTester.parseResponse(rawResponse);
             assertThat(response.getStatus(), is(HttpStatus.OK_200));
+        }
+    }
+
+    @Test
+    public void testIdleTimeoutTrueListenerWriteCallback() throws Exception
+    {
+        CompletableFuture<Throwable> onTimeout = new CompletableFuture<>();
+        _server.setHandler(new Handler.Abstract()
+        {
+            @Override
+            public boolean handle(Request request, Response response, Callback callback)
+            {
+                request.addErrorListener(t ->
+                {
+                    if (t instanceof TimeoutException)
+                    {
+                        onTimeout.complete(t);
+                        return true;
+                    }
+                    return false;
+                });
+
+                ByteBuffer bigBuffer = ByteBuffer.allocate(128 * 1024 * 1024);
+
+                Runnable write = new Runnable()
+                {
+                    @Override
+                    public void run()
+                    {
+                        response.write(true, bigBuffer, Callback.from(this, callback::failed));
+                    }
+                };
+
+                // Issue a large writes to be TCP congested and idle timeout.
+                write.run();
+                return true;
+            }
+        });
+        _server.start();
+
+        String request = """
+            GET /path HTTP/1.0\r
+            Host: localhost\r
+            \r
+            """;
+        try (LocalConnector.LocalEndPoint ignored = _connector.executeRequest(request))
+        {
+            Throwable x = onTimeout.get(2 * IDLE_TIMEOUT, TimeUnit.MILLISECONDS);
+            assertThat(x, instanceOf(TimeoutException.class));
         }
     }
 }
