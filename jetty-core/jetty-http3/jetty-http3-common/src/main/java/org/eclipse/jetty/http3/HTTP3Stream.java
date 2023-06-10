@@ -46,7 +46,7 @@ public abstract class HTTP3Stream implements Stream, CyclicTimeouts.Expirable, A
     private CloseState closeState = CloseState.NOT_CLOSED;
     private FrameState frameState = FrameState.INITIAL;
     private long idleTimeout;
-    private long expireNanoTime;
+    private long expireNanoTime = Long.MAX_VALUE;
     private Object attachment;
     private boolean dataDemand;
     private boolean dataStalled;
@@ -129,6 +129,8 @@ public abstract class HTTP3Stream implements Stream, CyclicTimeouts.Expirable, A
         {
             if (timedOut)
                 endPoint.close(HTTP3ErrorCode.REQUEST_CANCELLED_ERROR.code(), timeout);
+            else
+                notIdle();
             promise.succeeded(timedOut);
         }, promise::failed));
     }

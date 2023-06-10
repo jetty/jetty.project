@@ -134,6 +134,8 @@ public class ServerQuicConnection extends QuicConnection
         protected boolean onExpired(ServerQuicSession session)
         {
             session.onIdleTimeout();
+            // The implementation of the Iterator returned above does not support
+            // removal, but the session will be removed by session.onIdleTimeout().
             return false;
         }
     }
