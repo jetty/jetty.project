@@ -120,12 +120,14 @@ def mavenBuild(jdk, cmdline, mvnName) {
           }
           sh "mvn $extraArgs -Dmaven.repo.uri=http://nexus-service.nexus.svc.cluster.local:8081/repository/maven-public/ -ntp -s $GLOBAL_MVN_SETTINGS -Dmaven.repo.local=.repository -Pci -V -B -e -U $cmdline"
           sh "cat jetty-ee10/jetty-ee10-maven-plugin/target/it/jetty-start-distro-mojo-it/jetty-simple-webapp/target/jetty-start.out"
+          sh "cat jetty-ee10/jetty-ee10-maven-plugin/target/it/jetty-start-distro-mojo-it/jetty-simple-webapp/target/jetty-start.out"
         }
       }
     }
     finally
     {
       junit testResults: '**/target/surefire-reports/*.xml,**/target/invoker-reports/TEST*.xml', allowEmptyResults: true
+      sh "cat jetty-ee10/jetty-ee10-maven-plugin/target/it/jetty-start-distro-mojo-it/jetty-simple-webapp/target/jetty-start.out"
     }
   }
 }
