@@ -109,6 +109,7 @@
             <extraArtifact>org.eclipse.jetty.ee10:jetty-ee10-webapp:${project.version}</extraArtifact>
             <extraArtifact>org.eclipse.jetty:jetty-server:${project.version}</extraArtifact>
             <extraArtifact>org.eclipse.jetty:jetty-deploy:${project.version}</extraArtifact>
+            <extraArtifact>org.eclipse.jetty:jetty-home:${project.version}:zip</extraArtifact>
           </extraArtifacts>
           <junitPackageName>org.eclipse.jetty.maven.its.ee10</junitPackageName>
           <setupIncludes>
