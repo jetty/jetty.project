@@ -16,7 +16,6 @@ package org.eclipse.jetty.server.internal;
 import java.io.IOException;
 import java.nio.ByteBuffer;
 import java.util.HashMap;
-import java.util.Iterator;
 import java.util.Objects;
 import java.util.Set;
 import java.util.concurrent.CompletableFuture;
@@ -1090,7 +1089,6 @@ public class HttpChannelState implements HttpChannel, Components
     public static class ChannelResponse implements Response, Callback
     {
         private final ChannelRequest _request;
-        private final boolean _errorMode;
         private final ResponseHttpFields _httpFields;
         private int _status;
         private long _contentBytesWritten;
@@ -1099,30 +1097,18 @@ public class HttpChannelState implements HttpChannel, Components
 
         private ChannelResponse(ChannelRequest request)
         {
-            this(request, false);
+            _request = request;
+            _httpFields = getResponseHttpFields(_request.lockedGetHttpChannelState());
         }
 
-        private ChannelResponse(ChannelRequest request, boolean errorMode)
+        protected ResponseHttpFields getResponseHttpFields(HttpChannelState httpChannelState)
         {
-            _request = request;
-            _errorMode = errorMode;
-            HttpChannelState httpChannelState = _request.lockedGetHttpChannelState();
-            ResponseHttpFields httpFields = httpChannelState._responseHeaders;
-            if (errorMode)
-            {
-                _status = HttpStatus.INTERNAL_SERVER_ERROR_500;
-                httpChannelState._committedContentLength = -1;
-                Iterator<HttpField> i = httpFields.iterator();
-                httpFields = new ResponseHttpFields();
-                while (i.hasNext())
-                {
-                    HttpField field = i.next();
-                    HttpHeader header = field.getHeader();
-                    if (header == HttpHeader.SERVER || header == HttpHeader.DATE)
-                        httpFields.add(field);
-                }
-            }
-            _httpFields = httpFields;
+            return httpChannelState._responseHeaders;
+        }
+
+        protected ResponseHttpFields getResponseHttpFields()
+        {
+            return _httpFields;
         }
 
         private boolean lockedIsWriting()
@@ -1206,19 +1192,21 @@ public class HttpChannelState implements HttpChannel, Components
 
                 if (_writeCallback != null)
                     failure = new IllegalStateException("write pending");
-                else if (!_errorMode && httpChannelState._failure != null)
-                    failure = httpChannelState._failure.getCause();
-                else if (contentLength >= 0)
+                else
                 {
-                    // If the content length were not compatible with what was written, then we need to abort.
-                    String lengthError = (totalWritten > contentLength) ? "written %d > %d content-length"
-                        : (last && totalWritten < contentLength) ? "written %d < %d content-length" : null;
-                    if (lengthError != null)
+                    failure = getFailure(httpChannelState);
+                    if (failure == null && contentLength >= 0)
                     {
-                        String message = lengthError.formatted(totalWritten, contentLength);
-                        if (LOG.isDebugEnabled())
-                            LOG.debug("fail {} {}", callback, message);
-                        failure = new IOException(message);
+                        // If the content length were not compatible with what was written, then we need to abort.
+                        String lengthError = (totalWritten > contentLength) ? "written %d > %d content-length"
+                            : (last && totalWritten < contentLength) ? "written %d < %d content-length" : null;
+                        if (lengthError != null)
+                        {
+                            String message = lengthError.formatted(totalWritten, contentLength);
+                            if (LOG.isDebugEnabled())
+                                LOG.debug("fail {} {}", callback, message);
+                            failure = new IOException(message);
+                        }
                     }
                 }
 
@@ -1253,6 +1241,12 @@ public class HttpChannelState implements HttpChannel, Components
                     LOG.debug("writing last={} {} {}", last, BufferUtil.toDetailString(content), this);
                 stream.send(_request._metaData, responseMetaData, last, content, this);
             }
+        }
+
+        protected Throwable getFailure(HttpChannelState httpChannelState)
+        {
+            Content.Chunk.Error failure = httpChannelState._failure;
+            return failure == null ? null : failure.getCause();
         }
 
         /**
@@ -1573,10 +1567,35 @@ public class HttpChannelState implements HttpChannel, Components
 
         public ErrorResponseAndCallback(ChannelRequest request, HttpStream stream, Throwable failure)
         {
-            super(request, true);
+            super(request);
             _request = request;
             _stream = stream;
             _failure = failure;
+
+            setStatus(500);
+        }
+
+        @Override
+        protected Throwable getFailure(HttpChannelState httpChannelState)
+        {
+            // we ignore channel failures so we can try to generate an error response.
+            return null;
+        }
+
+        @Override
+        protected ResponseHttpFields getResponseHttpFields(HttpChannelState httpChannelState)
+        {
+            httpChannelState._committedContentLength = -1;
+            HttpFields original = super.getResponseHttpFields(httpChannelState);
+            ResponseHttpFields httpFields = new ResponseHttpFields();
+
+            for (HttpField field : original)
+            {
+                HttpHeader header = field.getHeader();
+                if (header == HttpHeader.SERVER || header == HttpHeader.DATE)
+                    httpFields.add(field);
+            }
+            return httpFields;
         }
 
         /**
@@ -1598,7 +1617,7 @@ public class HttpChannelState implements HttpChannel, Components
 
                 // Did the ErrorHandler do the last write?
                 needLastWrite = httpChannelState.lockedLastStreamSend();
-                if (needLastWrite && _httpFields.commit())
+                if (needLastWrite && getResponseHttpFields().commit())
                     responseMetaData = lockedPrepareResponse(httpChannelState, true);
             }
 
