@@ -66,7 +66,6 @@ import static org.hamcrest.Matchers.sameInstance;
 import static org.hamcrest.Matchers.startsWith;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
-import static org.junit.jupiter.api.Assertions.assertInstanceOf;
 import static org.junit.jupiter.api.Assertions.assertNotNull;
 import static org.junit.jupiter.api.Assertions.assertNull;
 import static org.junit.jupiter.api.Assertions.assertTrue;
@@ -1218,8 +1217,8 @@ public class HttpChannelTest
         Request rq = handling.get().getRequest();
         Content.Chunk chunk = rq.read();
         assertTrue(chunk.isLast());
-        assertInstanceOf(Content.Chunk.Error.class, chunk);
-        assertThat(((Content.Chunk.Error)chunk).getCause(), sameInstance(failure));
+        assertTrue(Content.Chunk.isError(chunk));
+        assertThat(chunk.getCause(), sameInstance(failure));
 
         CountDownLatch demand = new CountDownLatch(1);
         // Callback serialized until after onError task

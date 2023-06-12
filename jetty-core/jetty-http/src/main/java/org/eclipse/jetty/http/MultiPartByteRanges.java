@@ -101,9 +101,9 @@ public class MultiPartByteRanges extends CompletableFuture<MultiPartByteRanges.P
                         content.demand(this);
                         return;
                     }
-                    if (chunk instanceof Content.Chunk.Error error)
+                    if (Content.Chunk.isError(chunk))
                     {
-                        listener.onFailure(error.getCause());
+                        listener.onFailure(chunk.getCause());
                         return;
                     }
                     parse(chunk);

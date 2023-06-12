@@ -30,7 +30,6 @@ import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.ArgumentsSource;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
-import static org.junit.jupiter.api.Assertions.assertInstanceOf;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
 public class HttpClientAsyncContentTest extends AbstractHttpClientServerTest
@@ -248,11 +247,11 @@ public class HttpClientAsyncContentTest extends AbstractHttpClientServerTest
             .onResponseContentSource((response, contentSource) -> response.abort(new Throwable()).whenComplete((failed, x) ->
             {
                 Content.Chunk chunk = contentSource.read();
-                assertInstanceOf(Content.Chunk.Error.class, chunk);
+                assertTrue(Content.Chunk.isError(chunk));
                 contentSource.demand(() ->
                 {
                     Content.Chunk c = contentSource.read();
-                    assertInstanceOf(Content.Chunk.Error.class, c);
+                    assertTrue(Content.Chunk.isError(c));
                     errorContentLatch.countDown();
                 });
             }))

@@ -284,8 +284,8 @@ public class ThreadLimitHandlerTest
                                     request.demand(this);
                                     return;
                                 }
-                                if (chunk instanceof Error error)
-                                    throw error.getCause();
+                                if (Content.Chunk.isError(chunk))
+                                    throw chunk.getCause();
 
                                 if (chunk.hasRemaining())
                                     read.addAndGet(chunk.remaining());

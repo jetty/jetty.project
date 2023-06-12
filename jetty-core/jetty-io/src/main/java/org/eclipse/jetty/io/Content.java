@@ -104,9 +104,9 @@ public class Content
      *         }
      *
      *         // The chunk is an error.
-     *         if (chunk instanceof Chunk.Error error) {
+     *         if (Content.Chunk.isError(chunk)) {
      *             // Handle the error.
-     *             Throwable cause = error.getCause();
+     *             Throwable cause = chunk.getCause();
      *             // ...
      *             return;
      *         }
@@ -190,7 +190,7 @@ public class Content
          * @return the String obtained from the content
          * @throws IOException if reading the content fails
          */
-        public static String asString(Source source, Charset charset) throws IOException
+        static String asString(Source source, Charset charset) throws IOException
         {
             try
             {
@@ -274,12 +274,12 @@ public class Content
          * <p>The returned chunk could be:</p>
          * <ul>
          * <li>{@code null}, to signal that there isn't a chunk of content available</li>
-         * <li>an {@link Chunk.Error error} instance, to signal that there was an error
+         * <li>an {@link Chunk} instance with non null {@link Chunk#getCause()}, to signal that there was an error
          * trying to produce a chunk of content, or that the content production has been
          * {@link #fail(Throwable) failed} externally</li>
          * <li>a {@link Chunk} instance, containing the chunk of content.</li>
          * </ul>
-         * <p>Once a read returns an {@link Chunk.Error error} instance, further reads
+         * <p>Once a read returns an {@link Chunk} instance with non null {@link Chunk#getCause()}, further reads
          * will continue to return the same error instance.</p>
          * <p>Once a read returns a {@link Chunk#isLast() last chunk}, further reads will
          * continue to return a last chunk (although the instance may be different).</p>
@@ -330,7 +330,8 @@ public class Content
          * <p>Fails this content source, possibly failing and discarding accumulated
          * content chunks that were not yet read.</p>
          * <p>The failure may be notified to the content reader at a later time, when
-         * the content reader reads a content chunk, via an {@link Chunk.Error} instance.</p>
+         * the content reader reads a content chunk, via a {@link Chunk} instance
+         * with a non null {@link Chunk#getCause()}.</p>
          * <p>If {@link #read()} has returned a last chunk, this is a no operation.</p>
          * <p>Typical failure: the content being aborted by user code, or idle timeouts.</p>
          * <p>If this method has already been called, then it is a no operation.</p>
@@ -560,9 +561,33 @@ public class Content
          * @param failure the cause of the failure
          * @return a new Error.Chunk
          */
-        static Error from(Throwable failure)
+        static Chunk from(Throwable failure)
         {
-            return new Error(failure);
+            return new Chunk()
+            {
+                public Throwable getCause()
+                {
+                    return failure;
+                }
+
+                @Override
+                public ByteBuffer getByteBuffer()
+                {
+                    return BufferUtil.EMPTY_BUFFER;
+                }
+
+                @Override
+                public boolean isLast()
+                {
+                    return true;
+                }
+
+                @Override
+                public String toString()
+                {
+                    return String.format("%s@%x{c=%s}", getClass().getSimpleName(), hashCode(), failure);
+                }
+            };
         }
 
         /**
@@ -597,17 +622,27 @@ public class Content
          */
         static Chunk next(Chunk chunk)
         {
-            if (chunk == null || chunk instanceof Error)
+            if (chunk == null || Content.Chunk.isError(chunk))
                 return chunk;
             if (chunk.isLast())
                 return EOF;
             return null;
         }
 
+        static boolean isError(Chunk chunk)
+        {
+            return chunk != null && chunk.getCause() != null;
+        }
+
         /**
          * @return the ByteBuffer of this Chunk
          */
         ByteBuffer getByteBuffer();
+
+        default Throwable getCause()
+        {
+            return null;
+        }
 
         /**
          * @return whether this is the last Chunk
@@ -662,46 +697,6 @@ public class Content
             length = Math.min(byteBuffer.remaining(), length);
             byteBuffer.position(byteBuffer.position() + length);
             return length;
-        }
-
-        /**
-         * <p>A chunk that wraps a failure.</p>
-         * <p>Error Chunks are always last and have no bytes to read,
-         * as such they are <em>terminal</em> Chunks.</p>
-         *
-         * @see #from(Throwable)
-         */
-        final class Error implements Chunk
-        {
-            private final Throwable cause;
-
-            private Error(Throwable cause)
-            {
-                this.cause = cause;
-            }
-
-            public Throwable getCause()
-            {
-                return cause;
-            }
-
-            @Override
-            public ByteBuffer getByteBuffer()
-            {
-                return BufferUtil.EMPTY_BUFFER;
-            }
-
-            @Override
-            public boolean isLast()
-            {
-                return true;
-            }
-
-            @Override
-            public String toString()
-            {
-                return String.format("%s@%x{c=%s}", getClass().getSimpleName(), hashCode(), cause);
-            }
         }
 
         /**

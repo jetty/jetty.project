@@ -113,7 +113,7 @@ public class HttpChannelState implements HttpChannel, Components
     private HttpStream _stream;
     private long _committedContentLength = -1;
     private Runnable _onContentAvailable;
-    private Content.Chunk.Error _error;
+    private Content.Chunk _error;
     private Throwable _failure;
     private Predicate<Throwable> _onError;
     private Attributes _cache;
@@ -1560,7 +1560,7 @@ public class HttpChannelState implements HttpChannel, Components
         protected void onError(Runnable task, Throwable failure)
         {
             ChannelRequest request;
-            Content.Chunk.Error error;
+            Content.Chunk error;
             boolean callbackCompleted;
             try (AutoLock ignore = _lock.lock())
             {

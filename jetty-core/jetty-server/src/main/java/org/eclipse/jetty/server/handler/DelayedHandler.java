@@ -342,9 +342,9 @@ public class DelayedHandler extends Handler.Wrapper
                     getRequest().demand(this::readAndParse);
                     return;
                 }
-                if (chunk instanceof Content.Chunk.Error error)
+                if (Content.Chunk.isError(chunk))
                 {
-                    _formData.completeExceptionally(error.getCause());
+                    _formData.completeExceptionally(chunk.getCause());
                     return;
                 }
                 _formData.parse(chunk);

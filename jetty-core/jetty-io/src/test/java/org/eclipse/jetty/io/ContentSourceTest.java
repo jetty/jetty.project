@@ -51,7 +51,6 @@ import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.Matchers.equalTo;
 import static org.hamcrest.Matchers.is;
 import static org.junit.jupiter.api.Assertions.assertFalse;
-import static org.junit.jupiter.api.Assertions.assertInstanceOf;
 import static org.junit.jupiter.api.Assertions.assertNotNull;
 import static org.junit.jupiter.api.Assertions.assertNull;
 import static org.junit.jupiter.api.Assertions.assertThrows;
@@ -237,7 +236,7 @@ public class ContentSourceTest
 
         // We must read the error.
         chunk = source.read();
-        assertInstanceOf(Content.Chunk.Error.class, chunk);
+        assertTrue(Content.Chunk.isError(chunk));
     }
 
     @ParameterizedTest
@@ -259,7 +258,7 @@ public class ContentSourceTest
         source.fail(new CancellationException());
 
         Content.Chunk chunk = source.read();
-        assertInstanceOf(Content.Chunk.Error.class, chunk);
+        assertTrue(Content.Chunk.isError(chunk));
 
         CountDownLatch latch = new CountDownLatch(1);
         source.demand(latch::countDown);
@@ -285,7 +284,7 @@ public class ContentSourceTest
         });
 
         chunk = source.read();
-        assertInstanceOf(Content.Chunk.Error.class, chunk);
+        assertTrue(Content.Chunk.isError(chunk));
     }
 
     @Test

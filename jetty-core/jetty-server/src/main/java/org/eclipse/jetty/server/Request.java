@@ -65,7 +65,7 @@ import org.eclipse.jetty.util.thread.Invocable;
  *             return true;
  *         }
  *
- *         if (chunk instanceof Content.Chunk.Error error)
+ *         if (Content.Chunk.isError(chunk))
  *         {
  *             Throwable failure = error.getCause();
  *

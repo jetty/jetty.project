@@ -572,8 +572,8 @@ public class HttpInput extends ServletInputStream implements Runnable
     {
         public static Content asChunk(org.eclipse.jetty.io.Content.Chunk chunk)
         {
-            if (chunk instanceof org.eclipse.jetty.io.Content.Chunk.Error error)
-                return new ErrorContent(error.getCause());
+            if (org.eclipse.jetty.io.Content.Chunk.isError(chunk))
+                return new ErrorContent(chunk.getCause());
             if (chunk.isLast() && !chunk.hasRemaining())
                 return new EofContent();
             Content content = new Content(chunk.getByteBuffer())

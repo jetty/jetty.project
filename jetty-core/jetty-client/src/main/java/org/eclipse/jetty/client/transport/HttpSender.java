@@ -503,8 +503,8 @@ public abstract class HttpSender
                 }
             }
 
-            if (chunk instanceof Content.Chunk.Error error)
-                throw error.getCause();
+            if (Content.Chunk.isError(chunk))
+                throw chunk.getCause();
 
             ByteBuffer buffer = chunk.getByteBuffer();
             contentBuffer = buffer.asReadOnlyBuffer();

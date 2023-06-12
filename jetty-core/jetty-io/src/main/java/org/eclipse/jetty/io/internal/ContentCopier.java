@@ -56,8 +56,8 @@ public class ContentCopier extends IteratingNestedCallback
         if (chunkProcessor != null && chunkProcessor.process(current, this))
             return Action.SCHEDULED;
 
-        if (current instanceof Error error)
-            throw error.getCause();
+        if (Content.Chunk.isError(current))
+            throw current.getCause();
 
         sink.write(current.isLast(), current.getByteBuffer(), this);
         return Action.SCHEDULED;

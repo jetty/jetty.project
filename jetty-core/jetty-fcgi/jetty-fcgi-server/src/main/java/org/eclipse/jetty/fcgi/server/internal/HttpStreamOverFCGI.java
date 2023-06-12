@@ -204,7 +204,7 @@ public class HttpStreamOverFCGI implements HttpStream
     {
         if (_chunk == null)
             _chunk = Content.Chunk.EOF;
-        else if (!_chunk.isLast() && !(_chunk instanceof Content.Chunk.Error))
+        else if (!_chunk.isLast() && !(Content.Chunk.isError(_chunk)))
             throw new IllegalStateException();
     }
 

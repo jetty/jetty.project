@@ -554,7 +554,7 @@ public abstract class HttpReceiver
                     _chunk = inputChunk;
                 if (_chunk == null)
                     return null;
-                if (_chunk instanceof Content.Chunk.Error)
+                if (Content.Chunk.isError(_chunk))
                     return _chunk;
 
                 // Retain the input chunk because its ByteBuffer will be referenced by the Inflater.
@@ -748,7 +748,7 @@ public abstract class HttpReceiver
                 LOG.debug("Erroring {}", this);
             try (AutoLock ignored = lock.lock())
             {
-                if (currentChunk instanceof Content.Chunk.Error)
+                if (Content.Chunk.isError(currentChunk))
                     return false;
                 if (currentChunk != null)
                     currentChunk.release();

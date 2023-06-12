@@ -117,9 +117,9 @@ public class MultiPartFormData extends CompletableFuture<MultiPartFormData.Parts
                         content.demand(this);
                         return;
                     }
-                    if (chunk instanceof Content.Chunk.Error error)
+                    if (Content.Chunk.isError(chunk))
                     {
-                        listener.onFailure(error.getCause());
+                        listener.onFailure(chunk.getCause());
                         return;
                     }
                     parse(chunk);

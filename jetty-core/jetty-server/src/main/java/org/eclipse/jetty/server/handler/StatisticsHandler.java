@@ -303,7 +303,7 @@ public class StatisticsHandler extends Handler.Wrapper
 
         protected class MinimumDataRateRequest extends StatisticsRequest
         {
-            private Content.Chunk.Error _errorContent;
+            private Content.Chunk _errorContent;
 
             private MinimumDataRateRequest(Request request)
             {

@@ -563,7 +563,7 @@ public class MultiPart
         private State state = State.FIRST;
         private boolean closed;
         private Runnable demand;
-        private Content.Chunk.Error errorChunk;
+        private Content.Chunk errorChunk;
         private Part part;
 
         public AbstractContentSource(String boundary)
@@ -759,7 +759,7 @@ public class MultiPart
                 case CONTENT ->
                 {
                     Content.Chunk chunk = part.getContentSource().read();
-                    if (chunk == null || chunk instanceof Content.Chunk.Error)
+                    if (chunk == null || Content.Chunk.isError(chunk))
                         yield chunk;
                     if (!chunk.isLast())
                         yield chunk;

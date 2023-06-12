@@ -255,9 +255,9 @@ public class HttpInput extends ServletInputStream implements Runnable
                 return read;
             }
 
-            if (chunk instanceof Content.Chunk.Error errorChunk)
+            if (Content.Chunk.isError(chunk))
             {
-                Throwable error = errorChunk.getCause();
+                Throwable error = chunk.getCause();
                 if (LOG.isDebugEnabled())
                     LOG.debug("read error={} {}", error, this);
                 if (error instanceof IOException)
@@ -343,9 +343,9 @@ public class HttpInput extends ServletInputStream implements Runnable
             return;
         }
 
-        if (chunk instanceof Content.Chunk.Error errorChunk)
+        if (Content.Chunk.isError(chunk))
         {
-            Throwable error = errorChunk.getCause();
+            Throwable error = chunk.getCause();
             if (LOG.isDebugEnabled())
                 LOG.debug("running error={} {}", error, this);
             // TODO is this necessary to add here?
