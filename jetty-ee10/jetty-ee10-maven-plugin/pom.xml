@@ -104,6 +104,11 @@
         <configuration>
           <extraArtifacts>
             <extraArtifact>org.eclipse.jetty:jetty-slf4j-impl:${project.version}</extraArtifact>
+            <extraArtifact>org.eclipse.jetty.ee10:jetty-ee10-apache-jsp:${project.version}</extraArtifact>
+            <extraArtifact>org.eclipse.jetty.ee10:jetty-ee10-glassfish-jstl:${project.version}</extraArtifact>
+            <extraArtifact>org.eclipse.jetty.ee10:jetty-ee10-webapp:${project.version}</extraArtifact>
+            <extraArtifact>org.eclipse.jetty:jetty-server:${project.version}</extraArtifact>
+            <extraArtifact>org.eclipse.jetty:jetty-deploy:${project.version}</extraArtifact>
           </extraArtifacts>
           <junitPackageName>org.eclipse.jetty.maven.its.ee10</junitPackageName>
           <setupIncludes>
