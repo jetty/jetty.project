@@ -1090,7 +1090,7 @@ public class HttpChannelState implements HttpChannel, Components
     {
         private final ChannelRequest _request;
         private final ResponseHttpFields _httpFields;
-        private int _status;
+        protected int _status;
         private long _contentBytesWritten;
         private Supplier<HttpFields> _trailers;
         private Callback _writeCallback;
@@ -1571,8 +1571,7 @@ public class HttpChannelState implements HttpChannel, Components
             _request = request;
             _stream = stream;
             _failure = failure;
-
-            setStatus(500);
+            _status = 500;
         }
 
         @Override
@@ -1638,6 +1637,17 @@ public class HttpChannelState implements HttpChannel, Components
             }
         }
 
+        @Override
+        MetaData.Response lockedPrepareResponse(HttpChannelState httpChannelState, boolean last)
+        {
+            MetaData.Response httpFields = super.lockedPrepareResponse(httpChannelState, last);
+            httpChannelState._response._status = _status;
+            HttpFields.Mutable originalResponseFields = httpChannelState._responseHeaders.getMutableHttpFields();
+            originalResponseFields.clear();
+            originalResponseFields.add(getResponseHttpFields());
+            return httpFields;
+        }
+
         /**
          * Called when the error write in {@link HttpChannelState.ChannelCallback#failed(Throwable)} fails.
          * @param x The reason for the failure.
@@ -1648,13 +1658,16 @@ public class HttpChannelState implements HttpChannel, Components
             if (LOG.isDebugEnabled())
                 LOG.debug("ErrorWrite failed: {}", this, x);
             Throwable failure;
+            HttpChannelState httpChannelState;
             try (AutoLock ignored = _request._lock.lock())
             {
                 failure = _failure;
+                httpChannelState = _request.lockedGetHttpChannelState();
+                httpChannelState._response._status = _status;
             }
             if (ExceptionUtil.areNotAssociated(failure, x))
                 failure.addSuppressed(x);
-            _request.getHttpChannelState()._handlerInvoker.failed(failure);
+            httpChannelState._handlerInvoker.failed(failure);
         }
 
         @Override
