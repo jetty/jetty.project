@@ -472,6 +472,18 @@ public class HttpStreamOverHTTP3 implements HttpStream
     }
 
     @Override
+    public long getIdleTimeout()
+    {
+        return stream.getIdleTimeout();
+    }
+
+    @Override
+    public void setIdleTimeout(long idleTimeoutMs)
+    {
+        stream.setIdleTimeout(idleTimeoutMs);
+    }
+
+    @Override
     public boolean isCommitted()
     {
         return committed;

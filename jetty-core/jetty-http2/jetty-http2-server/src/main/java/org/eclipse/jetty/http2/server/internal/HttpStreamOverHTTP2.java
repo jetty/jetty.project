@@ -453,6 +453,18 @@ public class HttpStreamOverHTTP2 implements HttpStream, HTTP2Channel.Server
     }
 
     @Override
+    public long getIdleTimeout()
+    {
+        return _stream.getIdleTimeout();
+    }
+
+    @Override
+    public void setIdleTimeout(long idleTimeoutMs)
+    {
+        _stream.setIdleTimeout(idleTimeoutMs);
+    }
+
+    @Override
     public void push(MetaData.Request resource)
     {
         if (!_stream.getSession().isPushEnabled())

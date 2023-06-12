@@ -110,6 +110,7 @@ public class HttpChannelState implements HttpChannel, Components
     private boolean _callbackCompleted = false;
     private ChannelRequest _request;
     private ChannelResponse _response;
+    private long _oldIdleTimeout;
     private HttpStream _stream;
     private long _committedContentLength = -1;
     private Runnable _onContentAvailable;
@@ -262,12 +263,19 @@ public class HttpChannelState implements HttpChannel, Components
             _response = new ChannelResponse(_request);
 
             HttpFields.Mutable responseHeaders = _response.getHeaders();
-            if (getHttpConfiguration().getSendServerVersion())
+            HttpConfiguration httpConfiguration = getHttpConfiguration();
+            if (httpConfiguration.getSendServerVersion())
                 responseHeaders.add(SERVER_VERSION);
-            if (getHttpConfiguration().getSendXPoweredBy())
+            if (httpConfiguration.getSendXPoweredBy())
                 responseHeaders.add(POWERED_BY);
-            if (getHttpConfiguration().getSendDateHeader())
+            if (httpConfiguration.getSendDateHeader())
                 responseHeaders.add(getConnectionMetaData().getConnector().getServer().getDateField());
+
+            long idleTO = httpConfiguration.getIdleTimeout();
+            _oldIdleTimeout = _stream.getIdleTimeout();
+            if (idleTO >= 0 && _oldIdleTimeout != idleTO)
+                _stream.setIdleTimeout(idleTO);
+
 
             // This is deliberately not serialized to allow a handler to block.
             return _handlerInvoker;
@@ -662,6 +670,10 @@ public class HttpChannelState implements HttpChannel, Components
                 Parts parts = (Parts)_request.getAttribute(Parts.class.getName());
                 if (parts != null)
                     parts.close();
+
+                long idleTO = getHttpConfiguration().getIdleTimeout();
+                if (idleTO > 0 && _oldIdleTimeout != idleTO)
+                    stream.setIdleTimeout(_oldIdleTimeout);
             }
             finally
             {

@@ -87,7 +87,6 @@ public class HttpChannel implements Runnable, HttpOutput.Interceptor
     @Deprecated
     private final List<Listener> _transientListeners = new ArrayList<>();
     private MetaData.Response _committedMetaData;
-    private long _oldIdleTimeout;
 
     /**
      * Bytes written after interception (eg after compression)
@@ -521,7 +520,6 @@ public class HttpChannel implements Runnable, HttpOutput.Interceptor
         _response.recycle();
         _committedMetaData = null;
         _written = 0;
-        _oldIdleTimeout = 0;
         _transientListeners.clear();
     }
 
@@ -948,9 +946,6 @@ public class HttpChannel implements Runnable, HttpOutput.Interceptor
         _coreCallback = coreCallback;
 
         long idleTO = _configuration.getIdleTimeout();
-        _oldIdleTimeout = getIdleTimeout();
-        if (idleTO >= 0 && _oldIdleTimeout != idleTO)
-            setIdleTimeout(idleTO);
 
         if (LOG.isDebugEnabled())
         {
@@ -1009,10 +1004,6 @@ public class HttpChannel implements Runnable, HttpOutput.Interceptor
     {
         if (LOG.isDebugEnabled())
             LOG.debug("onCompleted for {} written={}", _request.getRequestURI(), getBytesWritten());
-
-        long idleTO = _configuration.getIdleTimeout();
-        if (idleTO >= 0 && getIdleTimeout() != _oldIdleTimeout)
-            setIdleTimeout(_oldIdleTimeout);
 
         if (getServer().getRequestLog() != null)
         {

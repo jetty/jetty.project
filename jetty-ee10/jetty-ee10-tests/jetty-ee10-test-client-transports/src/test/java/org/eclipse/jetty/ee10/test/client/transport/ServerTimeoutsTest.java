@@ -45,7 +45,6 @@ import org.eclipse.jetty.logging.StacklessLogging;
 import org.eclipse.jetty.server.internal.HttpChannelState;
 import org.eclipse.jetty.util.Callback;
 import org.eclipse.jetty.util.IO;
-import org.junit.jupiter.api.Disabled;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.MethodSource;
 
@@ -60,7 +59,6 @@ import static org.junit.jupiter.api.Assumptions.assumeTrue;
 //  since they may be ignored, so we don't want to remember errors if they are ignored.
 //  However, this behavior is historically so because of Servlets, and we
 //  may decide differently for Handlers.
-@Disabled
 public class ServerTimeoutsTest extends AbstractTest
 {
     @ParameterizedTest

@@ -1461,6 +1461,18 @@ public class HttpConnection extends AbstractConnection implements Runnable, Writ
         }
 
         @Override
+        public long getIdleTimeout()
+        {
+            return getEndPoint().getIdleTimeout();
+        }
+
+        @Override
+        public void setIdleTimeout(long idleTimeoutMs)
+        {
+            getEndPoint().setIdleTimeout(idleTimeoutMs);
+        }
+
+        @Override
         public boolean isCommitted()
         {
             return _stream.get() != this || _generator.isCommitted();

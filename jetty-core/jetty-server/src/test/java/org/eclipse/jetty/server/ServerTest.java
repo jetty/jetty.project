@@ -102,6 +102,7 @@ public class ServerTest
             }
         });
         _connector.setIdleTimeout(IDLE_TIMEOUT);
+        _connector.getConnectionFactory(HttpConnectionFactory.class).getHttpConfiguration().setIdleTimeout(IDLE_TIMEOUT);
         _server.addConnector(_connector);
     }
 
@@ -233,6 +234,37 @@ public class ServerTest
                 return true;
             }
         });
+        _server.start();
+
+        String request = """
+                GET /path HTTP/1.0\r
+                Host: hostname\r
+                \r
+                """;
+        String rawResponse = _connector.getResponse(request);
+        HttpTester.Response response = HttpTester.parseResponse(rawResponse);
+        assertThat(response.getStatus(), is(HttpStatus.INTERNAL_SERVER_ERROR_500));
+        assertThat(response.getContent(), containsString("HTTP ERROR 500 java.util.concurrent.TimeoutException: Idle timeout expired:"));
+    }
+
+    @Test
+    public void testIdleTimeoutNoListenerHttpConfigurationOnly() throws Exception
+    {
+        // See ServerTimeoutsTest for more complete idle timeout testing.
+
+        _server.setHandler(new Handler.Abstract()
+        {
+            @Override
+            public boolean handle(Request request, Response response, Callback callback)
+            {
+                // Handler never completes the callback
+                return true;
+            }
+        });
+
+        _connector.setIdleTimeout(10 * IDLE_TIMEOUT);
+        _connector.getConnectionFactory(HttpConnectionFactory.class).getHttpConfiguration().setIdleTimeout(IDLE_TIMEOUT);
+
         _server.start();
 
         String request = """

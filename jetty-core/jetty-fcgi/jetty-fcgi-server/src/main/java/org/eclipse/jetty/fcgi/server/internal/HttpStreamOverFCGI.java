@@ -302,6 +302,18 @@ public class HttpStreamOverFCGI implements HttpStream
     }
 
     @Override
+    public long getIdleTimeout()
+    {
+        return _connection.getEndPoint().getIdleTimeout();
+    }
+
+    @Override
+    public void setIdleTimeout(long idleTimeoutMs)
+    {
+        _connection.getEndPoint().setIdleTimeout(idleTimeoutMs);
+    }
+
+    @Override
     public boolean isCommitted()
     {
         return _committed;

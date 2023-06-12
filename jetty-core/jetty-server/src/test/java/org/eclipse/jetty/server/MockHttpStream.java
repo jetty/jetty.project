@@ -219,6 +219,17 @@ public class MockHttpStream implements HttpStream
     }
 
     @Override
+    public long getIdleTimeout()
+    {
+        return 0;
+    }
+
+    @Override
+    public void setIdleTimeout(long idleTimeoutMs)
+    {
+    }
+
+    @Override
     public boolean isCommitted()
     {
         MetaData.Response response = _response.get();
