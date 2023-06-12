@@ -208,12 +208,12 @@ public class EventsHandlerTest extends AbstractTest
         assertThat(response.getStatus(), is(200));
         int events = switch (transport)
         {
-            // Two reads, two writes, two writes complete.
-            case HTTP -> 10;
-            case HTTPS -> 10;
-            case FCGI -> 10;
-            case UNIX_DOMAIN -> 10;
-            // One read, one write, one write complete.
+            // Two writes, two writes complete.
+            case HTTP -> 9;
+            case HTTPS -> 9;
+            case FCGI -> 9;
+            case UNIX_DOMAIN -> 9;
+            // One write, one write complete.
             case H2 -> 7;
             case H2C -> 7;
             case H3 -> 7;
@@ -248,14 +248,14 @@ public class EventsHandlerTest extends AbstractTest
         int events = switch (transport)
         {
             // Reads return data, trailers.
-            case HTTP -> 10;
-            case HTTPS -> 10;
-            case FCGI -> 10;
-            case UNIX_DOMAIN -> 10;
+            case HTTP -> 9;
+            case HTTPS -> 9;
+            case FCGI -> 9;
+            case UNIX_DOMAIN -> 9;
             // Reads return data, null, trailers.
-            case H2 -> 11;
-            case H2C -> 11;
-            case H3 -> 11;
+            case H2 -> 10;
+            case H2C -> 10;
+            case H3 -> 10;
         };
         await().atMost(1, TimeUnit.SECONDS).until(eventsHandler.exceptions::size, is(5 * events));
     }
