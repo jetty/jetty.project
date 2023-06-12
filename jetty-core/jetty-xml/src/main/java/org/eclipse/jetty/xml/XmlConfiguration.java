@@ -1957,6 +1957,7 @@ public class XmlConfiguration
                         }
                         else if (arg.toLowerCase(Locale.ENGLISH).endsWith(".xml"))
                         {
+                            if(LOG.isDebugEnabled()) LOG.debug("Parsing xml file {}", arg);
                             // Create an XmlConfiguration
                             XmlConfiguration configuration = new XmlConfiguration(ResourceFactory.of(mountContainer).newResource(arg));
 
