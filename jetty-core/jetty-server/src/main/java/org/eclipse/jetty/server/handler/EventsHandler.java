@@ -135,7 +135,7 @@ public abstract class EventsHandler extends Handler.Wrapper
     {
         try
         {
-            onRequestRead(wrapped, chunk);
+            onRequestRead(wrapped, chunk == null ? null : Content.Chunk.asChunk(chunk.getByteBuffer().asReadOnlyBuffer(), chunk.isLast(), chunk));
         }
         catch (Throwable x)
         {
@@ -171,7 +171,7 @@ public abstract class EventsHandler extends Handler.Wrapper
     {
         try
         {
-            onResponseWrite(request, last, content);
+            onResponseWrite(request, last, content.asReadOnlyBuffer());
         }
         catch (Throwable x)
         {

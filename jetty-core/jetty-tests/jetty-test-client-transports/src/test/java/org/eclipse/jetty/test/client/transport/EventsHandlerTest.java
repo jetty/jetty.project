@@ -15,6 +15,7 @@ package org.eclipse.jetty.test.client.transport;
 
 import java.net.URI;
 import java.nio.ByteBuffer;
+import java.nio.ReadOnlyBufferException;
 import java.nio.charset.StandardCharsets;
 import java.util.List;
 import java.util.concurrent.CopyOnWriteArrayList;
@@ -31,6 +32,7 @@ import org.eclipse.jetty.server.Handler;
 import org.eclipse.jetty.server.Request;
 import org.eclipse.jetty.server.Response;
 import org.eclipse.jetty.server.handler.EventsHandler;
+import org.eclipse.jetty.server.handler.gzip.GzipHandler;
 import org.eclipse.jetty.util.BufferUtil;
 import org.eclipse.jetty.util.Callback;
 import org.eclipse.jetty.util.Fields;
@@ -48,6 +50,104 @@ import static org.hamcrest.Matchers.lessThan;
 
 public class EventsHandlerTest extends AbstractTest
 {
+    @ParameterizedTest
+    @MethodSource("transports")
+    public void testEventsBufferAndChunkAreReadOnly(Transport transport) throws Exception
+    {
+        List<Throwable> onRequestReadExceptions = new CopyOnWriteArrayList<>();
+        List<Throwable> onResponseWriteExceptions = new CopyOnWriteArrayList<>();
+        EventsHandler eventsHandler = new EventsHandler(new EchoHandler()) {
+            @Override
+            protected void onRequestRead(Request request, Content.Chunk chunk)
+            {
+                try
+                {
+                    if (chunk != null)
+                    {
+                        chunk.getByteBuffer().put((byte)0);
+                    }
+                }
+                catch (ReadOnlyBufferException e)
+                {
+                    onRequestReadExceptions.add(e);
+                    throw e;
+                }
+                if (chunk != null)
+                    chunk.skip(chunk.remaining());
+            }
+
+            @Override
+            protected void onResponseWrite(Request request, boolean last, ByteBuffer content)
+            {
+                try
+                {
+                    if (content != null)
+                        content.put((byte)0);
+                }
+                catch (ReadOnlyBufferException e)
+                {
+                    onResponseWriteExceptions.add(e);
+                    throw e;
+                }
+            }
+        };
+        startServer(transport, eventsHandler);
+        startClient(transport);
+
+        ContentResponse response = client.POST(newURI(transport))
+            .body(new StringRequestContent("ABCDEF"))
+            .send();
+
+        assertThat(response.getStatus(), is(200));
+        assertThat(response.getContentAsString(), is("ABCDEF"));
+        assertThat(onRequestReadExceptions.size(), greaterThan(0));
+        assertThat(onResponseWriteExceptions.size(), greaterThan(0));
+    }
+
+    @ParameterizedTest
+    @MethodSource("transports")
+    public void testMultipleEventsHandlerChaining(Transport transport) throws Exception
+    {
+        String longString = "A".repeat(65536);
+
+        StringBuffer innerStringBuffer = new StringBuffer();
+        EventsHandler innerEventsHandler = new EventsHandler(new Handler.Abstract.NonBlocking()
+        {
+            @Override
+            public boolean handle(Request request, Response response, Callback callback)
+            {
+                response.write(true, ByteBuffer.wrap(longString.getBytes(StandardCharsets.US_ASCII)) , callback);
+                return true;
+            }
+        }) {
+            @Override
+            protected void onResponseWrite(Request request, boolean last, ByteBuffer content)
+            {
+                if (content != null)
+                    innerStringBuffer.append(BufferUtil.toString(content));
+            }
+        };
+        GzipHandler gzipHandler = new GzipHandler();
+        gzipHandler.setHandler(innerEventsHandler);
+        AtomicInteger outerBytesCounter = new AtomicInteger();
+        EventsHandler outerEventsHandler = new EventsHandler(gzipHandler) {
+            @Override
+            protected void onResponseWrite(Request request, boolean last, ByteBuffer content)
+            {
+                if (content != null)
+                    outerBytesCounter.addAndGet(content.remaining());
+            }
+        };
+        startServer(transport, outerEventsHandler);
+        startClient(transport);
+
+        ContentResponse response = client.GET(newURI(transport));
+        assertThat(response.getStatus(), is(200));
+        assertThat(response.getContentAsString(), is(longString));
+        assertThat(innerStringBuffer.toString(), is(longString));
+        assertThat(outerBytesCounter.get(), both(greaterThan(0)).and(lessThan(longString.length())));
+    }
+
     @ParameterizedTest
     @MethodSource("transports")
     public void testWriteNullBuffer(Transport transport) throws Exception
