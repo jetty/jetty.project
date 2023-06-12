@@ -53,17 +53,23 @@ import org.eclipse.jetty.server.SecureRequestCustomizer;
 import org.eclipse.jetty.server.Server;
 import org.eclipse.jetty.server.ServerConnector;
 import org.eclipse.jetty.server.SslConnectionFactory;
+import org.eclipse.jetty.toolchain.test.jupiter.WorkDir;
+import org.eclipse.jetty.toolchain.test.jupiter.WorkDirExtension;
 import org.eclipse.jetty.unixdomain.server.UnixDomainServerConnector;
 import org.eclipse.jetty.util.SocketAddressResolver;
 import org.eclipse.jetty.util.component.LifeCycle;
 import org.eclipse.jetty.util.ssl.SslContextFactory;
 import org.eclipse.jetty.util.thread.QueuedThreadPool;
 import org.junit.jupiter.api.AfterEach;
+import org.junit.jupiter.api.extension.ExtendWith;
 
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
+@ExtendWith(WorkDirExtension.class)
 public class AbstractTest
 {
+    public WorkDir workDir;
+
     protected final HttpConfiguration httpConfig = new HttpConfiguration();
     protected SslContextFactory.Server sslContextFactoryServer;
     protected Server server;
@@ -181,9 +187,9 @@ public class AbstractTest
                 new ServerConnector(server, 1, 1, newServerConnectionFactory(transport));
             case H3 ->
             {
-                HTTP3ServerConnector h3Connector = new HTTP3ServerConnector(server, sslContextFactoryServer, newServerConnectionFactory(transport));
-                h3Connector.getQuicConfiguration().setPemWorkDirectory(Path.of(System.getProperty("java.io.tmpdir")));
-                yield h3Connector;
+                HTTP3ServerConnector connector = new HTTP3ServerConnector(server, sslContextFactoryServer, newServerConnectionFactory(transport));
+                connector.getQuicConfiguration().setPemWorkDirectory(workDir.getEmptyPathDir());
+                yield connector;
             }
             case UNIX_DOMAIN ->
             {
