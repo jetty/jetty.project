@@ -2338,7 +2338,7 @@ public class RequestTest
 
         public TestCoreRequest(String uri, HttpFields.Mutable fields)
         {
-            super(null, null, null);
+            super(new MockCoreRequest(), null, null);
             _uri = uri;
             _fields = fields;
             _connectionMetaData = new MockConnectionMetaData();
