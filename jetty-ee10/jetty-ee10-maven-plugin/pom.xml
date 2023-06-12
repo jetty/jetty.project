@@ -126,6 +126,7 @@
             <jettyStopKey>${jetty.stopKey}</jettyStopKey>
             <jettyStopPort>${jetty.stopPort}</jettyStopPort>
             <maven.surefire.plugin.version>${maven.surefire.plugin.version}</maven.surefire.plugin.version>
+            <localRepoPath>${localRepoPath}</localRepoPath>
           </scriptVariables>
           <goals>
             <goal>clean</goal>
