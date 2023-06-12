@@ -1677,6 +1677,89 @@ public class HttpChannelState implements HttpChannel, Components
         }
     }
 
+    /**
+     * Used as the {@link Response} and {@link Callback} when writing the error response
+     * from {@link HttpChannelState.ChannelCallback#failed(Throwable)}.
+     */
+    private static class ErrorCallback implements Callback
+    {
+        private final ChannelRequest _request;
+        private final HttpStream _stream;
+        private final Throwable _failure;
+
+        public ErrorCallback(ChannelRequest request, HttpStream stream, Throwable failure)
+        {
+            _request = request;
+            _stream = stream;
+            _failure = failure;
+        }
+
+        /**
+         * Called when the error write in {@link HttpChannelState.ChannelCallback#failed(Throwable)} succeeds.
+         */
+        @Override
+        public void succeeded()
+        {
+            if (LOG.isDebugEnabled())
+                LOG.debug("ErrorWrite succeeded: {}", this);
+            boolean needLastWrite;
+            MetaData.Response responseMetaData = null;
+            HttpChannelState httpChannelState;
+            Throwable failure;
+            try (AutoLock ignored = _request._lock.lock())
+            {
+                httpChannelState = _request.getHttpChannelState();
+                failure = _failure;
+
+                // Did the ErrorHandler do the last write?
+                needLastWrite = httpChannelState.lockedLastStreamSend();
+                if (needLastWrite && httpChannelState._responseHeaders.commit())
+                    responseMetaData = httpChannelState._response.lockedPrepareResponse(httpChannelState, true);
+            }
+
+            if (needLastWrite)
+            {
+                _stream.send(_request._metaData, responseMetaData, true, null,
+                    Callback.from(() -> httpChannelState._handlerInvoker.failed(failure),
+                        x ->
+                        {
+                            if (ExceptionUtil.areNotAssociated(failure, x))
+                                failure.addSuppressed(x);
+                            httpChannelState._handlerInvoker.failed(failure);
+                        }));
+            }
+            else
+            {
+                httpChannelState._handlerInvoker.failed(failure);
+            }
+        }
+
+        /**
+         * Called when the error write in {@link HttpChannelState.ChannelCallback#failed(Throwable)} fails.
+         * @param x The reason for the failure.
+         */
+        @Override
+        public void failed(Throwable x)
+        {
+            if (LOG.isDebugEnabled())
+                LOG.debug("ErrorWrite failed: {}", this, x);
+            Throwable failure;
+            try (AutoLock ignored = _request._lock.lock())
+            {
+                failure = _failure;
+            }
+            if (ExceptionUtil.areNotAssociated(failure, x))
+                failure.addSuppressed(x);
+            _request.getHttpChannelState()._handlerInvoker.failed(failure);
+        }
+
+        @Override
+        public String toString()
+        {
+            return "%s@%x".formatted(getClass().getSimpleName(), hashCode());
+        }
+    }
+
     private class HttpChannelSerializedInvoker extends SerializedInvoker
     {
         @Override
