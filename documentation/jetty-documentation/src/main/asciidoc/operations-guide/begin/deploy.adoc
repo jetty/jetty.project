@@ -18,8 +18,16 @@ You can deploy two types of web application resources with Jetty:
 
 * *Standard Web Application Archives*, in the form of `+*.war+` files or web application directories, defined by the link:https://www.oracle.com/java/technologies/java-servlet-tec.html[Servlet specification].
 Their deployment is described in xref:og-begin-deploy-war[this section].
-* *Jetty context XML files*, that allow you to customize the deployment of standard web applications, and also allow you use Jetty components -- and possibly custom components written by you -- to assemble your web applications.
+* *Jetty context XML files*, that allow you to customize the deployment of standard web applications, and also allow you to use Jetty components -- and possibly custom components written by you -- to assemble your web applications.
 Their deployment is described in xref:og-deploy[this section].
+
+Jetty supports the deployment of both standard web applications and Jetty context XML files in a specific _environment_.
+
+In the following sections you can find simple examples of deployments of Jakarta {ee-current-caps} web applications.
+
+However, Jetty supports simultaneous deployment of web applications each to a possibly different environment, for example an old Java EE 8 web application alongside a new Jakarta {ee-current-caps} web application.
+
+Refer to the section about xref:og-deploy[deployment] for further information about how to deploy to different environments.
 
 [[og-begin-deploy-war]]
 ===== Deploying +*.war+ Files
@@ -48,7 +56,12 @@ mywebapp.war
 
 To deploy a standard web application, you need to enable the xref:og-module-eeN-deploy[`{ee-current}-deploy` module].
 
-NOTE: The following examples assume you're deploying a Jakarta {ee-current-caps} application; for other versions of Jakarta EE, make sure to activate the corresponding `{ee-all}-deploy` module.
+[NOTE]
+====
+The following examples assume you're deploying a Jakarta {ee-current-caps} application; for other versions of Jakarta EE, make sure to activate the corresponding `{ee-all}-deploy` module.
+
+Refer to the section about xref:og-deploy[deployment] for further information about how to deploy to different environments.
+====
 
 [subs=attributes]
 ----
