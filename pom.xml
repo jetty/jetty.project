@@ -202,6 +202,8 @@
     <!-- if changing this version please update default in RemoteInfinispanTestSupport you will get thanks from Eclipse IDE users -->
     <!-- but hey we have no more strange people?? :P -->
     <infinispan.docker.image.version>11.0.14.Final</infinispan.docker.image.version>
+
+    <project.build.outputTimestamp>2023-06-05T23:12:49Z</project.build.outputTimestamp>
   </properties>
 
   <licenses>
