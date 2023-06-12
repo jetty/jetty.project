@@ -321,34 +321,38 @@ public class ServerTest
     public void testIdleTimeoutTrueListenerWriteCallback() throws Exception
     {
         CompletableFuture<Throwable> onTimeout = new CompletableFuture<>();
+        CompletableFuture<Throwable> writeFail = new CompletableFuture<>();
         _server.setHandler(new Handler.Abstract()
         {
             @Override
             public boolean handle(Request request, Response response, Callback callback)
             {
+                Runnable write = new Runnable()
+                {
+                    final ByteBuffer buffer = ByteBuffer.allocate(128 * 1024 * 1024);
+                    @Override
+                    public void run()
+                    {
+                        response.write(true, buffer, Callback.from(this,
+                            t ->
+                            {
+                                writeFail.complete(t);
+                                callback.failed(t);
+                            }));
+                    }
+                };
+
                 request.addErrorListener(t ->
                 {
                     if (t instanceof TimeoutException)
                     {
                         onTimeout.complete(t);
+                        request.getComponents().getThreadPool().execute(write);
                         return true;
                     }
                     return false;
                 });
 
-                ByteBuffer bigBuffer = ByteBuffer.allocate(128 * 1024 * 1024);
-
-                Runnable write = new Runnable()
-                {
-                    @Override
-                    public void run()
-                    {
-                        response.write(true, bigBuffer, Callback.from(this, callback::failed));
-                    }
-                };
-
-                // Issue a large writes to be TCP congested and idle timeout.
-                write.run();
                 return true;
             }
         });
@@ -362,6 +366,8 @@ public class ServerTest
         try (LocalConnector.LocalEndPoint ignored = _connector.executeRequest(request))
         {
             Throwable x = onTimeout.get(2 * IDLE_TIMEOUT, TimeUnit.MILLISECONDS);
+            assertThat(x, instanceOf(TimeoutException.class));
+            x = writeFail.get(IDLE_TIMEOUT / 2, TimeUnit.MILLISECONDS);
             assertThat(x, instanceOf(TimeoutException.class));
         }
     }
