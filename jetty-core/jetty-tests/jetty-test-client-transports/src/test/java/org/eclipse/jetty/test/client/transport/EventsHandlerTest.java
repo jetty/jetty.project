@@ -56,7 +56,8 @@ public class EventsHandlerTest extends AbstractTest
     {
         List<Throwable> onRequestReadExceptions = new CopyOnWriteArrayList<>();
         List<Throwable> onResponseWriteExceptions = new CopyOnWriteArrayList<>();
-        EventsHandler eventsHandler = new EventsHandler(new EchoHandler()) {
+        EventsHandler eventsHandler = new EventsHandler(new EchoHandler())
+        {
             @Override
             protected void onRequestRead(Request request, Content.Chunk chunk)
             {
@@ -116,10 +117,11 @@ public class EventsHandlerTest extends AbstractTest
             @Override
             public boolean handle(Request request, Response response, Callback callback)
             {
-                response.write(true, ByteBuffer.wrap(longString.getBytes(StandardCharsets.US_ASCII)) , callback);
+                response.write(true, ByteBuffer.wrap(longString.getBytes(StandardCharsets.US_ASCII)), callback);
                 return true;
             }
-        }) {
+        })
+        {
             @Override
             protected void onResponseWrite(Request request, boolean last, ByteBuffer content)
             {
@@ -130,7 +132,8 @@ public class EventsHandlerTest extends AbstractTest
         GzipHandler gzipHandler = new GzipHandler();
         gzipHandler.setHandler(innerEventsHandler);
         AtomicInteger outerBytesCounter = new AtomicInteger();
-        EventsHandler outerEventsHandler = new EventsHandler(gzipHandler) {
+        EventsHandler outerEventsHandler = new EventsHandler(gzipHandler)
+        {
             @Override
             protected void onResponseWrite(Request request, boolean last, ByteBuffer content)
             {
@@ -154,7 +157,8 @@ public class EventsHandlerTest extends AbstractTest
     {
         StringBuffer stringBuffer = new StringBuffer();
         List<Throwable> failures = new CopyOnWriteArrayList<>();
-        EventsHandler eventsHandler = new EventsHandler(new Handler.Abstract() {
+        EventsHandler eventsHandler = new EventsHandler(new Handler.Abstract()
+        {
             @Override
             public boolean handle(Request request, Response response, Callback callback)
             {

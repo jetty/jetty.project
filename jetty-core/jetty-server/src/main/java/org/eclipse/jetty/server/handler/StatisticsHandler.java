@@ -319,7 +319,7 @@ public class StatisticsHandler extends EventsHandler
             @Override
             public MinimumDataRateRequest getRequest()
             {
-                return (MinimumDataRateRequest) super.getRequest();
+                return (MinimumDataRateRequest)super.getRequest();
             }
 
             @Override
