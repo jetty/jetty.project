@@ -288,6 +288,7 @@ public class HttpChannelState implements HttpChannel, Components
             if (idleTO >= 0 && _oldIdleTimeout != idleTO)
                 _stream.setIdleTimeout(idleTO);
 
+
             // This is deliberately not serialized to allow a handler to block.
             return _handlerInvoker;
         }
@@ -1570,7 +1571,7 @@ public class HttpChannelState implements HttpChannel, Components
             _request = request;
             _stream = stream;
             _failure = failure;
-            _status = HttpStatus.INTERNAL_SERVER_ERROR_500;
+            _status = 500;
         }
 
         @Override
@@ -1622,17 +1623,17 @@ public class HttpChannelState implements HttpChannel, Components
             if (needLastWrite)
             {
                 _stream.send(_request._metaData, responseMetaData, true, null,
-                    Callback.from(() -> super.failed(failure),
+                    Callback.from(() -> httpChannelState._handlerInvoker.failed(failure),
                         x ->
                         {
                             if (ExceptionUtil.areNotAssociated(failure, x))
                                 failure.addSuppressed(x);
-                            super.failed(failure);
+                            httpChannelState._handlerInvoker.failed(failure);
                         }));
             }
             else
             {
-                super.failed(failure);
+                httpChannelState._handlerInvoker.failed(failure);
             }
         }
 
@@ -1666,7 +1667,13 @@ public class HttpChannelState implements HttpChannel, Components
             }
             if (ExceptionUtil.areNotAssociated(failure, x))
                 failure.addSuppressed(x);
-            super.failed(failure);
+            httpChannelState._handlerInvoker.failed(failure);
+        }
+
+        @Override
+        public String toString()
+        {
+            return "%s@%x".formatted(getClass().getSimpleName(), hashCode());
         }
     }
 
