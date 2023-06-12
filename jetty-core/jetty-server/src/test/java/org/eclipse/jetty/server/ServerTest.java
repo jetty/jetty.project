@@ -322,8 +322,6 @@ public class ServerTest
                     @Override
                     public void run()
                     {
-                        System.err.println("write");
-                        // TODO This write is in a race with the write of the error page, which re-opens ????
                         response.write(false, buffer, Callback.from(this,
                             t ->
                             {
@@ -335,7 +333,6 @@ public class ServerTest
 
                 request.addIdleTimeoutListener(t ->
                 {
-                    System.err.println("TIMEOUT");
                     request.getComponents().getThreadPool().execute(write);
                     return onTimeout.complete(t);
                 });
@@ -355,7 +352,6 @@ public class ServerTest
             Throwable x = onTimeout.get(2 * IDLE_TIMEOUT, TimeUnit.MILLISECONDS);
             assertThat(x, instanceOf(TimeoutException.class));
             x = writeFail.get(IDLE_TIMEOUT / 2, TimeUnit.MILLISECONDS);
-            x.printStackTrace();
             assertThat(x, instanceOf(TimeoutException.class));
         }
     }
