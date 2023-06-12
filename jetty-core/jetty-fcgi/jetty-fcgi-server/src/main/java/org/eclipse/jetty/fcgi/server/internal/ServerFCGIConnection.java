@@ -292,7 +292,7 @@ public class ServerFCGIConnection extends AbstractConnection implements Connecti
     }
 
     @Override
-    protected boolean onReadTimeout(Throwable timeout)
+    protected boolean onReadTimeout(TimeoutException timeout)
     {
         if (stream != null)
             return stream.onIdleTimeout(timeout);
@@ -327,7 +327,7 @@ public class ServerFCGIConnection extends AbstractConnection implements Connecti
     @Override
     public boolean onIdleExpired(TimeoutException timeoutException)
     {
-        Runnable task = stream.getHttpChannel().onFailure(timeoutException);
+        Runnable task = stream.getHttpChannel().onIdleTimeout(timeoutException);
         if (task != null)
             getExecutor().execute(task);
         return false;

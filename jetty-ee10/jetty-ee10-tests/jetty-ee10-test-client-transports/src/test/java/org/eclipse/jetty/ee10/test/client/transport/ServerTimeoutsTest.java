@@ -442,7 +442,7 @@ public class ServerTimeoutsTest extends AbstractTest
     @MethodSource("transportsNoFCGI")
     public void testAsyncReadHttpIdleTimeoutOverridesIdleTimeout(Transport transport) throws Exception
     {
-        long httpIdleTimeout = 2500;
+        long httpIdleTimeout = 2000;
         long idleTimeout = 3 * httpIdleTimeout;
         httpConfig.setIdleTimeout(httpIdleTimeout);
         CountDownLatch handlerLatch = new CountDownLatch(1);

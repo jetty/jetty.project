@@ -663,7 +663,7 @@ public class HttpConnection extends AbstractConnection implements Runnable, Writ
     {
         if (_httpChannel.getRequest() == null)
             return true;
-        Runnable task = _httpChannel.onFailure(timeout);
+        Runnable task = _httpChannel.onIdleTimeout(timeout);
         if (task != null)
             getExecutor().execute(task);
         return false; // We've handle the exception

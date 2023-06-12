@@ -235,7 +235,7 @@ public class WebSocketConnection extends AbstractConnection implements Connectio
      * @return true to signal that the endpoint must be closed, false to keep the endpoint open
      */
     @Override
-    protected boolean onReadTimeout(Throwable timeout)
+    protected boolean onReadTimeout(TimeoutException timeout)
     {
         if (LOG.isDebugEnabled())
             LOG.debug("onReadTimeout()");

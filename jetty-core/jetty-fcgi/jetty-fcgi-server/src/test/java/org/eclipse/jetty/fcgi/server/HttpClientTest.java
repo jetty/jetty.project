@@ -523,7 +523,7 @@ public class HttpClientTest extends AbstractHttpClientServerTest
             public boolean handle(org.eclipse.jetty.server.Request request, org.eclipse.jetty.server.Response response, Callback callback) throws Exception
             {
                 // Handler says it will handle the idletimeout
-                request.addErrorListener(t -> true);
+                request.addIdleTimeoutListener(t -> false);
                 TimeUnit.MILLISECONDS.sleep(2 * idleTimeout);
                 callback.succeeded();
                 return true;

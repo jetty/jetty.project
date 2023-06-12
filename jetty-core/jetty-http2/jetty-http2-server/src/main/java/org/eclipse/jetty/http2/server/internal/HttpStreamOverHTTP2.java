@@ -573,7 +573,7 @@ public class HttpStreamOverHTTP2 implements HttpStream, HTTP2Channel.Server
     @Override
     public void onTimeout(TimeoutException timeout, BiConsumer<Runnable, Boolean> consumer)
     {
-        Runnable task = _httpChannel.onFailure(timeout);
+        Runnable task = _httpChannel.onIdleTimeout(timeout);
         boolean idle = !_httpChannel.isRequestHandled();
         consumer.accept(task, idle);
     }

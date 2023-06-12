@@ -13,7 +13,7 @@
 
 package org.eclipse.jetty.server.handler;
 
-import java.util.function.Predicate;
+import java.util.function.Consumer;
 
 import org.eclipse.jetty.server.Context;
 import org.eclipse.jetty.server.Request;
@@ -40,9 +40,9 @@ public class ContextRequest extends Request.Wrapper implements Invocable
     }
 
     @Override
-    public boolean addErrorListener(Predicate<Throwable> onError)
+    public void addFailureListener(Consumer<Throwable> onFailure)
     {
-        return super.addErrorListener(t -> _context.test(onError::test, t, ContextRequest.this));
+        super.addFailureListener(t -> _context.accept(onFailure, t, ContextRequest.this));
     }
 
     @Override

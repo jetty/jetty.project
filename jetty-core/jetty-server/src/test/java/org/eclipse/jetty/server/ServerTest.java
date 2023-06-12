@@ -193,8 +193,6 @@ public class ServerTest
                 \r
                 """;
         String rawResponse = _connector.getResponse(request);
-        // System.err.printf("succeeded=%b handling=%b written=%b last=%b%n", succeeded, handling, written, last);
-        // System.err.println(rawResponse);
 
         if (succeeded || written)
             assertThat(rawResponse, containsString("HTTP/1.1 200 OK"));
@@ -224,7 +222,6 @@ public class ServerTest
     public void testIdleTimeoutNoListener() throws Exception
     {
         // See ServerTimeoutsTest for more complete idle timeout testing.
-
         _server.setHandler(new Handler.Abstract()
         {
             @Override
@@ -279,7 +276,7 @@ public class ServerTest
     }
 
     @Test
-    public void testIdleTimeoutTrueListener() throws Exception
+    public void testIdleTimeoutFalseListener() throws Exception
     {
         // See ServerTimeoutsTest for more complete idle timeout testing.
         CompletableFuture<Callback> callbackOnTimeout = new CompletableFuture<>();
@@ -288,15 +285,7 @@ public class ServerTest
             @Override
             public boolean handle(Request request, Response response, Callback callback)
             {
-                request.addErrorListener(t ->
-                {
-                    if (t instanceof TimeoutException)
-                    {
-                        callbackOnTimeout.complete(callback);
-                        return true;
-                    }
-                    return false;
-                });
+                request.addIdleTimeoutListener(t -> !callbackOnTimeout.complete(callback));
                 return true;
             }
         });
@@ -318,7 +307,7 @@ public class ServerTest
     }
 
     @Test
-    public void testIdleTimeoutTrueListenerWriteCallback() throws Exception
+    public void testIdleTimeoutWriteCallback() throws Exception
     {
         CompletableFuture<Throwable> onTimeout = new CompletableFuture<>();
         CompletableFuture<Throwable> writeFail = new CompletableFuture<>();
@@ -333,7 +322,9 @@ public class ServerTest
                     @Override
                     public void run()
                     {
-                        response.write(true, buffer, Callback.from(this,
+                        System.err.println("write");
+                        // TODO This write is in a race with the write of the error page, which re-opens ????
+                        response.write(false, buffer, Callback.from(this,
                             t ->
                             {
                                 writeFail.complete(t);
@@ -342,15 +333,11 @@ public class ServerTest
                     }
                 };
 
-                request.addErrorListener(t ->
+                request.addIdleTimeoutListener(t ->
                 {
-                    if (t instanceof TimeoutException)
-                    {
-                        onTimeout.complete(t);
-                        request.getComponents().getThreadPool().execute(write);
-                        return true;
-                    }
-                    return false;
+                    System.err.println("TIMEOUT");
+                    request.getComponents().getThreadPool().execute(write);
+                    return onTimeout.complete(t);
                 });
 
                 return true;
@@ -368,6 +355,7 @@ public class ServerTest
             Throwable x = onTimeout.get(2 * IDLE_TIMEOUT, TimeUnit.MILLISECONDS);
             assertThat(x, instanceOf(TimeoutException.class));
             x = writeFail.get(IDLE_TIMEOUT / 2, TimeUnit.MILLISECONDS);
+            x.printStackTrace();
             assertThat(x, instanceOf(TimeoutException.class));
         }
     }

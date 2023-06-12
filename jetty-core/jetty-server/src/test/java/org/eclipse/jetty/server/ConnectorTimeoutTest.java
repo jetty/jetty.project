@@ -23,7 +23,6 @@ import java.nio.charset.StandardCharsets;
 import java.util.Arrays;
 import java.util.concurrent.Exchanger;
 import java.util.concurrent.TimeUnit;
-import java.util.concurrent.TimeoutException;
 import javax.net.ssl.SSLHandshakeException;
 
 import org.eclipse.jetty.http.HttpHeader;
@@ -584,7 +583,7 @@ public abstract class ConnectorTimeoutTest extends HttpServerTestFixture
         @Override
         public boolean handle(Request request, Response response, Callback callback) throws Exception
         {
-            request.addErrorListener(t -> t instanceof TimeoutException);
+            request.addIdleTimeoutListener(t -> false);
             response.setStatus(200);
             try
             {
