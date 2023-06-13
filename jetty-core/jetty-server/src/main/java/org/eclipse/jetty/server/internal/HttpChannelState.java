@@ -346,6 +346,7 @@ public class HttpChannelState implements HttpChannel, Components
         return Invocable.getInvocationType(onContent);
     }
 
+    @Override
     public Runnable onIdleTimeout(TimeoutException t)
     {
         Predicate<TimeoutException> onIdleTimeout;
@@ -372,6 +373,7 @@ public class HttpChannelState implements HttpChannel, Components
         return onFailure(t); // TODO can we avoid double lock?
     }
 
+    @Override
     public Runnable onFailure(Throwable x)
     {
         HttpStream stream;
