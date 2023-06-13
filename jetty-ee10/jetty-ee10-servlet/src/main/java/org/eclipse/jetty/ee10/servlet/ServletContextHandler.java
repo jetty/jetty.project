@@ -313,23 +313,6 @@ public class ServletContextHandler extends ContextHandler
             new DumpableCollection("initparams " + this, getInitParams().entrySet()));
     }
 
-    /**
-     * @return the allowNullPathInfo true if /context is not redirected to /context/
-     */
-    @ManagedAttribute("Checks if the /context is not redirected to /context/")
-    public boolean getAllowNullPathInfo()
-    {
-        return _allowNullPathInfo;
-    }
-
-    /**
-     * @param allowNullPathInfo true if /context is not redirected to /context/
-     */
-    public void setAllowNullPathInfo(boolean allowNullPathInfo)
-    {
-        _allowNullPathInfo = allowNullPathInfo;
-    }
-
     public boolean isUsingSecurityManager()
     {
         return _usingSecurityManager;
