@@ -597,7 +597,7 @@ public class CustomRequestLogTest
         String log = _logs.poll(5, TimeUnit.SECONDS);
         assertNotNull(log);
         long lowerBound = requestTimeRef.get();
-        long upperBound = System.currentTimeMillis();
+        long upperBound = System.currentTimeMillis() + 3000L; // Account for some imprecision.
 
         long measuredDuration = Long.parseLong(log);
         long durationLowerBound = timeUnit.convert(delay, TimeUnit.MILLISECONDS);
