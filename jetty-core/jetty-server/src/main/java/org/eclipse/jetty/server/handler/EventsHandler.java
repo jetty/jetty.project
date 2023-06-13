@@ -33,24 +33,22 @@ import org.slf4j.LoggerFactory;
  * <p>A {@link Handler.Wrapper} that fires events during the processing of the requests.</p>
  * <p>EventsHandler will emit events for the various phases the server goes through while
  * processing an HTTP request and response.</p>
- * <p>Subclasses may listen to those events to track
- * timing and/or other values such as request URI, etc.</p>
+ * <p>Subclasses may listen to those events to track timing and/or other values such as
+ * request URI, etc.</p>
  * <p>The events parameters, especially the {@link Request} object, may be
  * in a transient state depending on the event, and not all properties/features
  * of the parameters may be available inside a listener method.</p>
  * <p>It is recommended that the event parameters are <em>not</em> acted upon
- * in the listener methods, or undefined behavior may result. For example, it
- * would be a bad idea to try to read some content from the
- * {@link Request#read()} in listener methods. On the other
+ * in the listener methods, or undefined behavior may result. On the other
  * hand, it is legit to store request attributes in one listener method that
  * may be possibly retrieved in another listener method in a later event.</p>
  * <p>Listener methods are invoked synchronously from the thread that is
  * performing the request processing, and they should not call blocking code
  * (otherwise the request processing will be blocked as well).</p>
- *
- * <p>The kind of chunk passed to {@link #onRequestRead(Request, Content.Chunk)} depends on the parent of this handler. For
- * instance, if the parent is the Server, then raw chunks are always passed. If somewhere in the parent chain is the
- * {@code GzipHandler} then unzipped chunks are passed.</p>
+ * <p>The kind of chunk passed to {@link #onRequestRead(Request, Content.Chunk)} depends on
+ * the parent of this handler. For instance, if the parent is the Server, then raw chunks
+ * are always passed. If somewhere in the parent chain is the {@code GzipHandler} then
+ * unzipped chunks are passed.</p>
  */
 public abstract class EventsHandler extends Handler.Wrapper
 {
@@ -68,12 +66,6 @@ public abstract class EventsHandler extends Handler.Wrapper
     @Override
     public boolean handle(Request request, Response response, Callback callback) throws Exception
     {
-        // (1) Request parsing has begun
-         request.getBeginNanoTime();
-
-        // (2) Request header parsing is done
-         request.getHeadersNanoTime();
-
         // Before handling
         ReadOnlyRequest roRequest = new ReadOnlyRequest(request);
         fireOnBeforeHandling(roRequest);
@@ -229,7 +221,6 @@ public abstract class EventsHandler extends Handler.Wrapper
      */
     protected void onBeforeHandling(Request request)
     {
-        // (3): Request started (being sent to handler tree) - request has now been fully customized
     }
 
     /**
@@ -246,9 +237,6 @@ public abstract class EventsHandler extends Handler.Wrapper
      */
     protected void onRequestRead(Request request, Content.Chunk chunk)
     {
-        // (4) Request body is being read
-        // (5) Request trailers are being read from network (chunk instanceof Trailers)
-        // (6) Request complete - all Request content (body, trailers) have been read from network (chunk.isLast()))
     }
 
     /**
@@ -262,7 +250,6 @@ public abstract class EventsHandler extends Handler.Wrapper
      */
     protected void onAfterHandling(Request request, boolean handled, Throwable failure)
     {
-        // (7) Request exit (has exited handler tree)
     }
 
     /**
@@ -276,7 +263,6 @@ public abstract class EventsHandler extends Handler.Wrapper
      */
     protected void onResponseBegin(Request request, int status, HttpFields headers)
     {
-        // (8) Response has been committed to network
     }
 
     /**
@@ -290,7 +276,6 @@ public abstract class EventsHandler extends Handler.Wrapper
      */
     protected void onResponseWrite(Request request, boolean last, ByteBuffer content)
     {
-        // (9) Response body is being written to network
     }
 
     /**
@@ -305,7 +290,6 @@ public abstract class EventsHandler extends Handler.Wrapper
      */
     protected void onResponseWriteComplete(Request request, Throwable failure)
     {
-        // (N/A) Response body buffer was written to the network
     }
 
     /**
@@ -316,8 +300,6 @@ public abstract class EventsHandler extends Handler.Wrapper
      */
     protected void onResponseTrailersComplete(Request request, HttpFields trailers)
     {
-        // (10) Response trailers are being written to network
-        // (11) Response complete - all response content (headers, body, trailers) have been written to network (if trailers)
     }
 
     /**
@@ -332,8 +314,6 @@ public abstract class EventsHandler extends Handler.Wrapper
      */
     protected void onComplete(Request request, Throwable failure)
     {
-        // (11) Response complete - all response content (headers, body, trailers) have been written to network (if no trailers
-        // (12) Request / Response exchange is complete - request related resources will now be recycled
     }
 
     private class EventsResponse extends Response.Wrapper
