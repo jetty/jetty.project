@@ -87,6 +87,7 @@ public class HttpChannel implements Runnable, HttpOutput.Interceptor
     @Deprecated
     private final List<Listener> _transientListeners = new ArrayList<>();
     private MetaData.Response _committedMetaData;
+    private long _oldIdleTimeout;
 
     /**
      * Bytes written after interception (eg after compression)
@@ -1005,17 +1006,17 @@ public class HttpChannel implements Runnable, HttpOutput.Interceptor
         if (LOG.isDebugEnabled())
             LOG.debug("onCompleted for {} written={}", _request.getRequestURI(), getBytesWritten());
 
-        if (getServer().getRequestLog() != null)
+        long idleTO = _configuration.getIdleTimeout();
+        if (idleTO >= 0 && getIdleTimeout() != _oldIdleTimeout)
+            setIdleTimeout(_oldIdleTimeout);
+
+        if (getServer().getRequestLog() instanceof CustomRequestLog)
         {
-            Authentication authentication = _request.getAuthentication();
-            if (authentication instanceof Authentication.User userAuthentication)
-                _request.setAttribute(CustomRequestLog.USER_NAME, userAuthentication.getUserIdentity().getUserPrincipal().getName());
-
-            String realPath = _request.getServletContext().getRealPath(_request.getPathInContext());
-            _request.setAttribute(CustomRequestLog.REAL_PATH, realPath);
-
-            String servletName = _request.getServletName();
-            _request.setAttribute(CustomRequestLog.HANDLER_NAME, servletName);
+            CustomRequestLog.LogDetail logDetail = new CustomRequestLog.LogDetail(
+                _request.getServletName(),
+                _request.getServletContext().getRealPath(_request.getPathInContext())
+            );
+            _request.setAttribute(CustomRequestLog.LOG_DETAIL, logDetail);
         }
 
         _request.onCompleted();

@@ -20,19 +20,44 @@ _Updating_ a `+*.war+` file or a Jetty context XML file causes the `DeploymentMa
 
 _Removing_ a `+*.war+` file, a `+*.war+` directory, a Jetty context XML file or a normal directory from `$JETTY_BASE/webapps` causes the `DeploymentManager` to undeploy the web application, which means that the Jetty context component representing the web application is stopped and removed from the Jetty server.
 
+[[og-deploy-rules-context-path]]
+===== Context Path Resolution
+
 When a file or directory is added to `$JETTY_BASE/webapps`, the `DeploymentManager` derives the web application `contextPath` from the file or directory name, with the following rules:
 
 * If the directory name is, for example, `mywebapp/`, it is deployed as a standard web application if it contains a `WEB-INF/` subdirectory, otherwise it is deployed as a web application of static content.
 The `contextPath` would be `/mywebapp` (that is, the web application is reachable at `+http://localhost:8080/mywebapp/+`).
-* If the directory name is `ROOT`, case insensitive, the `contextPath` is `/` (that is, the web application is reachable at `+http://localhost:8080/+`).
+* If the directory name is `ROOT`, case-insensitive, the `contextPath` is `/` (that is, the web application is reachable at `+http://localhost:8080/+`).
 * If the directory name ends with `.d`, for example `config.d/`, it is ignored, although it may be referenced to configure other web applications (for example to store common files).
 * If the `+*.war+` file name is, for example, `mywebapp.war`, it is deployed as a standard web application with the context path `/mywebapp` (that is, the web application is reachable at `+http://localhost:8080/mywebapp/+`).
-* If the file name is `ROOT.war`, case insensitive, the `contextPath` is `/` (that is, the web application is reachable at `+http://localhost:8080/+`).
+* If the file name is `ROOT.war`, case-insensitive, the `contextPath` is `/` (that is, the web application is reachable at `+http://localhost:8080/+`).
 * If both the `mywebapp.war` file and the `mywebapp/` directory exist, only the file is deployed.
 This allows the directory with the same name to be the `+*.war+` file unpack location and avoid that the web application is deployed twice.
-* A xref:og-deploy-jetty[Jetty context XML file] named `mywebapp.xml` is deployed as a web application by processing the directives contained in the XML file itself, which must set the `contextPath`.
+* A xref:og-deploy-jetty[Jetty context XML file] named `mywebapp.xml` is deployed as a web application by processing the directives contained in the XML file itself, which must set the `contextPath`, which could be different from the name of the XML file.
 * If both `mywebapp.xml` and `mywebapp.war` exist, only the XML file is deployed.
 This allows the XML file to reference the `+*.war+` file and avoid that the web application is deployed twice.
+
+[[og-deploy-rules-environment]]
+===== Environment Resolution
+
+A web application is always deployed to a specific environment.
+
+If you enabled only one specific deployer module, for example `{ee-current}-deploy`, then the web applications and the Jetty context XML files in `$JETTY_BASE/webapps` will be deployed to the `{ee-current}` environment.
+
+You can enable multiple deployer modules if you need to deploy multiple web applications each to a specific environment.
+
+For example, you have an `old-ee9.war` web application that you want to deploy to the Jakarta EE 9 environment, and a `new-{ee-current}.war` web application that you want to deploy to the Jakarta {ee-current-caps} environment.
+First, you must enable both the `ee9-deploy` and the `{ee-current}-deploy` modules.
+Then, you add a `+*.properties+` file with the same name of the web application, in the example above `$JETTY_BASE/webapps/old-ee9.properties`, with the following content:
+
+[source,properties]
+====
+environment=ee9
+====
+
+You may also add a `+*.properties+` file for `new-{ee-current}.war`, but it is not necessary because the most recent environment is used by default.
+// TODO: verify the statement above. For an ee8 and an ee9 webapp, is it true that ee9 will be used by default (or ee10 will)?
+
 
 // TODO: add section about the work directory from
 //  old_docs/contexts/temporary-directories.adoc
