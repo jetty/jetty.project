@@ -55,7 +55,11 @@ public class ContentSourceInputStream extends InputStream
             if (chunk != null)
             {
                 if (Content.Chunk.isError(chunk))
-                    throw IO.rethrow(chunk.getCause());
+                {
+                    Content.Chunk c = chunk;
+                    chunk = Content.Chunk.next(chunk); // TODO should we null here and rely on Source to remember state?
+                    throw IO.rethrow(c.getCause());
+                }
 
                 ByteBuffer byteBuffer = chunk.getByteBuffer();
                 if (chunk.isLast() && !byteBuffer.hasRemaining())

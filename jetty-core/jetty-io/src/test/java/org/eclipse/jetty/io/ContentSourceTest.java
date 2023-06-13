@@ -15,8 +15,10 @@ package org.eclipse.jetty.io;
 
 import java.io.ByteArrayInputStream;
 import java.io.ByteArrayOutputStream;
+import java.io.IOException;
 import java.io.InputStream;
 import java.nio.ByteBuffer;
+import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.StandardOpenOption;
@@ -57,6 +59,7 @@ import static org.junit.jupiter.api.Assertions.assertNotNull;
 import static org.junit.jupiter.api.Assertions.assertNull;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.api.Assertions.assertTrue;
+import static org.junit.jupiter.api.Assertions.fail;
 
 public class ContentSourceTest
 {
@@ -585,5 +588,39 @@ public class ContentSourceTest
         assertTrue(chunk.isLast());
         assertFalse(Content.Chunk.isError(chunk));
         assertThat(BufferUtil.toString(chunk.getByteBuffer()), is("Two"));
+    }
+
+    @Test
+    public void testAsyncContentWithWarningsAsInputStream() throws Exception
+    {
+        AsyncContent content = new AsyncContent();
+
+        Content.Sink.write(content, false, "One", Callback.NOOP);
+        content.warn(new TimeoutException("test"));
+        Content.Sink.write(content, true, "Two", Callback.NOOP);
+
+        InputStream in = Content.Source.asInputStream(content);
+
+        byte[] buffer = new byte[1024];
+        int len = in.read(buffer);
+        assertThat(len, is(3));
+        assertThat(new String(buffer, 0, 3, StandardCharsets.ISO_8859_1), is("One"));
+
+        try
+        {
+            int ignored = in.read();
+            fail();
+        }
+        catch (IOException ioe)
+        {
+            assertThat(ioe.getCause(), instanceOf(TimeoutException.class));
+        }
+
+        len = in.read(buffer);
+        assertThat(len, is(3));
+        assertThat(new String(buffer, 0, 3, StandardCharsets.ISO_8859_1), is("Two"));
+
+        len = in.read(buffer);
+        assertThat(len, is(-1));
     }
 }
