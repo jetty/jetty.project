@@ -51,7 +51,7 @@ public class AsyncContent implements Content.Sink, Content.Source, Closeable
 
     private final AutoLock.WithCondition lock = new AutoLock.WithCondition();
     private final SerializedInvoker invoker = new SerializedInvoker();
-    private final Queue<AsyncChunk> chunks = new ArrayDeque<>();
+    private final Queue<Content.Chunk> chunks = new ArrayDeque<>();
     private Content.Chunk errorChunk;
     private boolean readClosed;
     private boolean writeClosed;
@@ -79,7 +79,7 @@ public class AsyncContent implements Content.Sink, Content.Source, Closeable
      * or succeeded if and only if the chunk is terminal, as non-terminal
      * chunks have to bind the succeeding of the callback to their release.
      */
-    private void offer(AsyncChunk chunk)
+    private void offer(Content.Chunk chunk)
     {
         Throwable failure = null;
         boolean wasEmpty = false;
@@ -105,14 +105,14 @@ public class AsyncContent implements Content.Sink, Content.Source, Closeable
                     if (length == UNDETERMINED_LENGTH)
                     {
                         length = 0;
-                        for (AsyncChunk c : chunks)
+                        for (Content.Chunk c : chunks)
                             length += c.remaining();
                     }
                 }
             }
         }
-        if (failure != null)
-            chunk.failed(failure);
+        if (failure != null && chunk instanceof AsyncChunk asyncChunk)
+            asyncChunk.failed(failure);
         if (wasEmpty)
             invoker.run(this::invokeDemandCallback);
     }
@@ -132,7 +132,7 @@ public class AsyncContent implements Content.Sink, Content.Source, Closeable
                 // Special case for a last empty chunk that may not be read.
                 if (writeClosed && chunks.size() == 1)
                 {
-                    AsyncChunk chunk = chunks.peek();
+                    Content.Chunk chunk = chunks.peek();
                     if (chunk.isLast() && !chunk.hasRemaining())
                         return;
                 }
@@ -171,7 +171,7 @@ public class AsyncContent implements Content.Sink, Content.Source, Closeable
     @Override
     public Content.Chunk read()
     {
-        AsyncChunk current;
+        Content.Chunk current;
         try (AutoLock.WithCondition condition = lock.lock())
         {
             if (length == UNDETERMINED_LENGTH)
@@ -182,7 +182,11 @@ public class AsyncContent implements Content.Sink, Content.Source, Closeable
                 if (readClosed)
                     return Content.Chunk.EOF;
                 if (errorChunk != null)
-                    return errorChunk;
+                {
+                    Content.Chunk chunk = errorChunk;
+                    errorChunk = Content.Chunk.next(errorChunk);
+                    return chunk;
+                }
                 return null;
             }
             readClosed = current.isLast();
@@ -195,7 +199,12 @@ public class AsyncContent implements Content.Sink, Content.Source, Closeable
             return current;
 
         // If the chunk is not reference counted, we can succeed it now and return a chunk with a noop release.
-        current.succeeded();
+        if (current instanceof AsyncChunk asyncChunk)
+            asyncChunk.succeeded();
+
+        if (Content.Chunk.isError(current))
+            return current;
+
         return current.isLast() ? Content.Chunk.EOF : Content.Chunk.EMPTY;
     }
 
@@ -241,7 +250,7 @@ public class AsyncContent implements Content.Sink, Content.Source, Closeable
     @Override
     public void fail(Throwable failure)
     {
-        List<AsyncChunk> drained;
+        List<Content.Chunk> drained;
         try (AutoLock.WithCondition condition = lock.lock())
         {
             if (readClosed)
@@ -253,8 +262,18 @@ public class AsyncContent implements Content.Sink, Content.Source, Closeable
             chunks.clear();
             condition.signal();
         }
-        drained.forEach(ac -> ac.failed(failure));
+        drained.forEach(c ->
+        {
+            if (c instanceof AsyncChunk ac)
+                ac.failed(failure);
+        });
         invoker.run(this::invokeDemandCallback);
+    }
+
+    @Override
+    public void warn(Throwable transientFailure)
+    {
+        offer(Content.Chunk.from(transientFailure, false));
     }
 
     public int count()

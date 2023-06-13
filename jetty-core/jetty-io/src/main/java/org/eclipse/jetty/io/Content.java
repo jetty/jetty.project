@@ -341,6 +341,19 @@ public class Content
         void fail(Throwable failure);
 
         /**
+         * <p>Warn this content source by providing a transient {@link Throwable}.  If the
+         * source can accept warnings, the throwable will be {@link #read() read}, in order with content chunks,
+         * as a {@link Chunk} with a non-null {@link Chunk#getCause() cause} and false for {@link Chunk#isLast() isLast}.
+         * Subsequent calls to {@link #read() read} may produce other content.</p>
+         * <p>If the source cannot accept warnings, this call will be treated as {@link #fail(Throwable)}.</p>
+         * @param transientFailure A non-last failure that is only read once.
+         */
+        default void warn(Throwable transientFailure)
+        {
+            fail(transientFailure);
+        }
+
+        /**
          * <p>Rewinds this content, if possible, so that subsequent reads return
          * chunks starting from the beginning of this content.</p>
          *
@@ -563,6 +576,18 @@ public class Content
          */
         static Chunk from(Throwable failure)
         {
+            return from(failure, true);
+        }
+
+        /**
+         * <p>Creates an {@link Error error chunk} with the given failure.</p>
+         *
+         * @param failure the cause of the failure
+         * @param last true if the failure is terminal, else false for transient failure
+         * @return a new Error.Chunk
+         */
+        static Chunk from(Throwable failure, boolean last)
+        {
             return new Chunk()
             {
                 public Throwable getCause()
@@ -579,13 +604,13 @@ public class Content
                 @Override
                 public boolean isLast()
                 {
-                    return true;
+                    return last;
                 }
 
                 @Override
                 public String toString()
                 {
-                    return String.format("%s@%x{c=%s}", getClass().getSimpleName(), hashCode(), failure);
+                    return String.format("%s@%x{c=%s,l=%b}", getClass().getSimpleName(), hashCode(), failure, last);
                 }
             };
         }
@@ -622,8 +647,10 @@ public class Content
          */
         static Chunk next(Chunk chunk)
         {
-            if (chunk == null || Content.Chunk.isError(chunk))
-                return chunk;
+            if (chunk == null)
+                return null;
+            if (Content.Chunk.isError(chunk))
+                return chunk.isLast() ? chunk : null;
             if (chunk.isLast())
                 return EOF;
             return null;

@@ -27,6 +27,7 @@ import java.util.concurrent.ConcurrentLinkedDeque;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.ExecutionException;
 import java.util.concurrent.TimeUnit;
+import java.util.concurrent.TimeoutException;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicReference;
 
@@ -49,6 +50,7 @@ import org.junit.jupiter.params.provider.MethodSource;
 import static java.nio.charset.StandardCharsets.UTF_8;
 import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.Matchers.equalTo;
+import static org.hamcrest.Matchers.instanceOf;
 import static org.hamcrest.Matchers.is;
 import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertNotNull;
@@ -558,5 +560,30 @@ public class ContentSourceTest
         public void fail(Throwable failure)
         {
         }
+    }
+
+    @Test
+    public void testAsyncContentWithWarnings()
+    {
+        AsyncContent content = new AsyncContent();
+
+        Content.Sink.write(content, false, "One", Callback.NOOP);
+        content.warn(new TimeoutException("test"));
+        Content.Sink.write(content, true, "Two", Callback.NOOP);
+
+        Content.Chunk chunk = content.read();
+        assertFalse(chunk.isLast());
+        assertFalse(Content.Chunk.isError(chunk));
+        assertThat(BufferUtil.toString(chunk.getByteBuffer()), is("One"));
+
+        chunk = content.read();
+        assertFalse(chunk.isLast());
+        assertTrue(Content.Chunk.isError(chunk));
+        assertThat(chunk.getCause(), instanceOf(TimeoutException.class));
+
+        chunk = content.read();
+        assertTrue(chunk.isLast());
+        assertFalse(Content.Chunk.isError(chunk));
+        assertThat(BufferUtil.toString(chunk.getByteBuffer()), is("Two"));
     }
 }
