@@ -121,6 +121,7 @@
               </jettyProperties>
               <modules>ee10-apache-jsp,ee10-glassfish-jstl,ee10-testmod,resources</modules>
               <jettyOptions>--debug</jettyOptions>
+              <jettyHomeZip>@jettyHomeZip@</jettyHomeZip>
             </configuration>
           </execution>
         </executions>

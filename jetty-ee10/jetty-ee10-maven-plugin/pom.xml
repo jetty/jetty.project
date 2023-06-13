@@ -16,8 +16,6 @@
     <jetty.stopKey>FREEBEER</jetty.stopKey>
     <jetty.jvmArgs></jetty.jvmArgs>
     <jacoco.skip>true</jacoco.skip>
-    <jettyHomeZipFileName>jetty-home.zip</jettyHomeZipFileName>
-    <jettyHomeZip>${project.build.directory}/${jettyHomeZipFileName}</jettyHomeZip>
   </properties>
   <build>
     <plugins>

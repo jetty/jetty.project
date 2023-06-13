@@ -563,9 +563,6 @@ public abstract class AbstractWebAppMojo extends AbstractMojo
         if (jettyHome == null)
             jetty.setJettyHomeZip(jettyHomeZip != null ? jettyHomeZip : mavenProjectHelper.resolveArtifact(JETTY_HOME_GROUPID, JETTY_HOME_ARTIFACTID, plugin.getVersion(), "zip"));
 
-
-
-
         jetty.version = plugin.getVersion();
         jetty.setJettyHome(jettyHome);
         jetty.setJettyBase(jettyBase);
