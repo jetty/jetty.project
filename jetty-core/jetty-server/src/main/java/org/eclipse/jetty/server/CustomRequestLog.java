@@ -34,6 +34,7 @@ import org.eclipse.jetty.http.HttpFields;
 import org.eclipse.jetty.http.QuotedCSV;
 import org.eclipse.jetty.http.pathmap.PathMappings;
 import org.eclipse.jetty.util.DateCache;
+import org.eclipse.jetty.util.NanoTime;
 import org.eclipse.jetty.util.StringUtil;
 import org.eclipse.jetty.util.annotation.ManagedAttribute;
 import org.eclipse.jetty.util.annotation.ManagedObject;
@@ -1086,8 +1087,7 @@ public class CustomRequestLog extends ContainerLifeCycle implements RequestLog
 
     private static void logLatency(StringBuilder b, Request request, TimeUnit unit)
     {
-        long latency = System.currentTimeMillis() - request.getTimeStamp();
-        b.append(unit.convert(latency, TimeUnit.MILLISECONDS));
+        b.append(unit.convert(NanoTime.since(request.getNanoTime()), TimeUnit.NANOSECONDS));
     }
 
     @SuppressWarnings("unused")
