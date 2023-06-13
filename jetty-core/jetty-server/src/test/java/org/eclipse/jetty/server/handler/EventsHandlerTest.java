@@ -13,6 +13,7 @@
 
 package org.eclipse.jetty.server.handler;
 
+import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicReference;
 
 import org.eclipse.jetty.http.HttpFields;
@@ -25,6 +26,7 @@ import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 
+import static org.awaitility.Awaitility.await;
 import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.Matchers.containsString;
 import static org.hamcrest.Matchers.greaterThan;
@@ -99,7 +101,7 @@ public class EventsHandlerTest
 
         String response = connector.getResponse(rawRequest);
         assertThat(response, containsString("HTTP/1.1 200 OK"));
-        assertThat(attribute.get(), is("testModifyRequestAttributes-123"));
+        await().atMost(3, TimeUnit.SECONDS).until(attribute::get, is("testModifyRequestAttributes-123"));
     }
 
     @Test
