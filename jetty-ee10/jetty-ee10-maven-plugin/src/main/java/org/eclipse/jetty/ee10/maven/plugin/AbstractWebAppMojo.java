@@ -306,6 +306,12 @@ public abstract class AbstractWebAppMojo extends AbstractMojo
      */
     @Parameter
     protected File jettyHome;
+
+    /**
+     * Location of Jetty home zipped
+     */
+    @Parameter
+    public File jettyHomeZip;
     
     /**
      * Location of jetty base directory
@@ -555,7 +561,10 @@ public abstract class AbstractWebAppMojo extends AbstractMojo
         jetty.setContextXml(contextXml);
 
         if (jettyHome == null)
-            jetty.setJettyHomeZip(mavenProjectHelper.resolveArtifact(JETTY_HOME_GROUPID, JETTY_HOME_ARTIFACTID, plugin.getVersion(), "zip"));
+            jetty.setJettyHomeZip(jettyHomeZip != null ? jettyHomeZip : mavenProjectHelper.resolveArtifact(JETTY_HOME_GROUPID, JETTY_HOME_ARTIFACTID, plugin.getVersion(), "zip"));
+
+
+
 
         jetty.version = plugin.getVersion();
         jetty.setJettyHome(jettyHome);

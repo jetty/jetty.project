@@ -16,6 +16,8 @@
     <jetty.stopKey>FREEBEER</jetty.stopKey>
     <jetty.jvmArgs></jetty.jvmArgs>
     <jacoco.skip>true</jacoco.skip>
+    <jettyHomeZipFileName>jetty-home.zip</jettyHomeZipFileName>
+    <jettyHomeZip>${project.build.directory}/${jettyHomeZipFileName}</jettyHomeZip>
   </properties>
   <build>
     <plugins>
@@ -89,6 +91,33 @@
       </plugin>
       <plugin>
         <groupId>org.apache.maven.plugins</groupId>
+        <artifactId>maven-dependency-plugin</artifactId>
+        <executions>
+          <execution>
+            <id>copy</id>
+            <phase>package</phase>
+            <goals>
+              <goal>copy</goal>
+            </goals>
+          </execution>
+        </executions>
+        <configuration>
+          <artifactItems>
+            <artifactItem>
+              <groupId>org.eclipse.jetty</groupId>
+              <artifactId>jetty-home</artifactId>
+              <type>zip</type>
+              <overWrite>false</overWrite>
+              <outputDirectory>${project.build.directory}</outputDirectory>
+              <destFileName>${jettyHomeZipFileName}</destFileName>
+            </artifactItem>
+          </artifactItems>
+          <overWriteReleases>false</overWriteReleases>
+          <overWriteSnapshots>true</overWriteSnapshots>
+        </configuration>
+      </plugin>
+      <plugin>
+        <groupId>org.apache.maven.plugins</groupId>
         <artifactId>maven-invoker-plugin</artifactId>
         <executions>
           <execution>
@@ -128,6 +157,7 @@
             <jettyStopPort>${jetty.stopPort}</jettyStopPort>
             <maven.surefire.plugin.version>${maven.surefire.plugin.version}</maven.surefire.plugin.version>
             <localRepoPath>${localRepoPath}</localRepoPath>
+            <jettyHomeZip>${jettyHomeZip}</jettyHomeZip>
           </scriptVariables>
           <goals>
             <goal>clean</goal>
