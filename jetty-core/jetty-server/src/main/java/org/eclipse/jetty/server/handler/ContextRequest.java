@@ -13,7 +13,9 @@
 
 package org.eclipse.jetty.server.handler;
 
+import java.util.concurrent.TimeoutException;
 import java.util.function.Consumer;
+import java.util.function.Predicate;
 
 import org.eclipse.jetty.server.Context;
 import org.eclipse.jetty.server.Request;
@@ -37,6 +39,12 @@ public class ContextRequest extends Request.Wrapper implements Invocable
     {
         // inner class used instead of lambda for clarity in stack traces
         super.demand(new OnContextDemand(demandCallback));
+    }
+
+    @Override
+    public void addIdleTimeoutListener(Predicate<TimeoutException> onIdleTimeout)
+    {
+        super.addIdleTimeoutListener(t -> _context.test(onIdleTimeout, t, ContextRequest.this));
     }
 
     @Override
