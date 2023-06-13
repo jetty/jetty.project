@@ -464,16 +464,18 @@ public class PerMessageDeflateExtension extends AbstractExtension implements Dem
             chunk.setPayload(payload);
             chunk.setFin(frame.isFin() && complete);
 
-            boolean succeedCallback = complete;
+            boolean completeCallback = complete;
             AtomicReference<ByteBuffer> payloadRef = _payloadRef;
             Callback payloadCallback = Callback.from(() ->
             {
                 getBufferPool().release(payloadRef.getAndSet(null));
-                if (succeedCallback)
+                if (completeCallback)
                     callback.succeeded();
             }, t ->
             {
                 getBufferPool().release(payloadRef.getAndSet(null));
+                if (completeCallback)
+                    callback.failed(t);
                 failFlusher(t);
             });
 
