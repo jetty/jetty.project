@@ -1244,8 +1244,8 @@ public class CustomRequestLog extends ContainerLifeCycle implements RequestLog
 
     private static void logLatency(StringBuilder b, Request request, TimeUnit unit)
     {
-        long latency = NanoTime.millisSince(request.getBeginNanoTime());
-        b.append(unit.convert(latency, TimeUnit.MILLISECONDS));
+        long latency = NanoTime.since(request.getBeginNanoTime());
+        b.append(unit.convert(latency, TimeUnit.NANOSECONDS));
     }
 
     @SuppressWarnings("unused")
