@@ -39,6 +39,7 @@ import org.eclipse.jetty.io.QuietException;
 import org.eclipse.jetty.util.BlockingArrayQueue;
 import org.eclipse.jetty.util.Callback;
 import org.eclipse.jetty.util.DateCache;
+import org.eclipse.jetty.util.NanoTime;
 import org.eclipse.jetty.util.component.LifeCycle;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.Test;
@@ -570,14 +571,14 @@ public class CustomRequestLogTest
     @ValueSource(strings = {"us", "ms", "s"})
     public void testLogLatency(String unit) throws Exception
     {
-        long delay = 1000;
+        long delay = 1500;
         AtomicLong requestTimeRef = new AtomicLong();
         start("%{" + unit + "}T", new SimpleHandler()
         {
             @Override
             public boolean handle(Request request, Response response, Callback callback) throws Exception
             {
-                requestTimeRef.set(Request.getTimeStamp(request));
+                requestTimeRef.set(request.getBeginNanoTime());
                 Thread.sleep(delay);
                 callback.succeeded();
                 return true;
@@ -596,12 +597,13 @@ public class CustomRequestLogTest
         assertEquals(HttpStatus.OK_200, response.getStatus());
         String log = _logs.poll(5, TimeUnit.SECONDS);
         assertNotNull(log);
-        long lowerBound = requestTimeRef.get();
-        long upperBound = System.currentTimeMillis() + 3000L; // Account for some imprecision.
+
+        long lowerBound = delay / 2;
+        long upperBound = TimeUnit.MICROSECONDS.convert(NanoTime.since(requestTimeRef.get()), TimeUnit.NANOSECONDS);
 
         long measuredDuration = Long.parseLong(log);
-        long durationLowerBound = timeUnit.convert(delay, TimeUnit.MILLISECONDS);
-        long durationUpperBound = timeUnit.convert(upperBound - lowerBound, TimeUnit.MILLISECONDS);
+        long durationLowerBound = timeUnit.convert(lowerBound, TimeUnit.MILLISECONDS);
+        long durationUpperBound = timeUnit.convert(upperBound, TimeUnit.MILLISECONDS);
 
         assertThat(measuredDuration, greaterThanOrEqualTo(durationLowerBound));
         assertThat(measuredDuration, lessThanOrEqualTo(durationUpperBound));

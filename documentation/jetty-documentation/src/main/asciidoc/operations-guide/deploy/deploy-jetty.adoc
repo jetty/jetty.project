@@ -23,17 +23,17 @@ To deploy a web application using a Jetty context XML file, simply place the fil
 A simple Jetty context XML file, for example named `wiki.xml` is the following:
 
 .wiki.xml
-[source,xml,subs=verbatim]
+[source,xml,subs="verbatim,attributes"]
 ----
 <?xml version="1.0" encoding="UTF-8"?>
 <!DOCTYPE Configure PUBLIC "-//Jetty//Configure//EN" "https://www.eclipse.org/jetty/configure_10_0.dtd">
 
-<Configure class="org.eclipse.jetty.ee9.webapp.WebAppContext"> <1>
+<Configure class="org.eclipse.jetty.{ee-current}.webapp.WebAppContext"> <1>
   <Set name="contextPath">/wiki</Set> <2>
   <Set name="war">/opt/myapps/myapp.war</Set> <3>
 </Configure>
 ----
-<1> Configures a link:{javadoc-url}/org/eclipse/jetty/webapp/WebAppContext.html[`WebAppContext`], which is the Jetty component that represents a standard Servlet web application.
+<1> Configures a link:{javadoc-url}/org/eclipse/jetty/{ee-current}/webapp/WebAppContext.html[`WebAppContext`], which is the Jetty component that represents a standard Servlet web application.
 <2> Specifies the web application `contextPath`, which may be different from the `+*.war+` file name.
 <3> Specifies the file system path of the `+*.war+` file.
 
@@ -57,12 +57,12 @@ IMPORTANT: If you place both the Jetty context XML file _and_ the `+*.war+` file
 You can use the features of xref:og-xml[Jetty XML files] to avoid to hard-code file system paths or other configurations in your Jetty context XML files, for example by using system properties:
 
 .wiki.xml
-[source,xml]
+[source,xml,subs="verbatim,attributes"]
 ----
 <?xml version="1.0" encoding="UTF-8"?>
 <!DOCTYPE Configure PUBLIC "-//Jetty//Configure//EN" "https://www.eclipse.org/jetty/configure_10_0.dtd">
 
-<Configure class="org.eclipse.jetty.ee9.webapp.WebAppContext">
+<Configure class="org.eclipse.jetty.{ee-current}.webapp.WebAppContext">
   <Set name="contextPath">/wiki</Set>
   <Set name="war"><SystemProperty name="myapps.dir"/>/myapp.war</Set>
 </Configure>

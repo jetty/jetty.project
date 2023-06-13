@@ -19,6 +19,7 @@ import java.net.InetSocketAddress;
 import java.net.SocketAddress;
 import java.nio.ByteBuffer;
 import java.nio.charset.Charset;
+import java.security.Principal;
 import java.util.List;
 import java.util.Locale;
 import java.util.function.Function;
@@ -752,5 +753,40 @@ public interface Request extends Attributes, Content.Source
         return HttpURI.build(request.getHttpURI())
             .path(URIUtil.addPaths(getContextPath(request), newEncodedPathInContext))
             .asImmutable();
+    }
+
+    /**
+     * @param request The request to enquire.
+     * @return the minimal {@link AuthenticationState} of the request, or null if no authentication in process.
+     */
+    static AuthenticationState getAuthenticationState(Request request)
+    {
+        if (request.getAttribute(AuthenticationState.class.getName()) instanceof AuthenticationState authenticationState)
+            return authenticationState;
+        return null;
+    }
+
+    /**
+     * @param request The request to enquire.
+     * @param state the {@link AuthenticationState} of the request, or null if no authentication in process.
+     */
+    static void setAuthenticationState(Request request, AuthenticationState state)
+    {
+        request.setAttribute(AuthenticationState.class.getName(), state);
+    }
+
+    /**
+     * A minimal Authentication interface, primarily used for logging.  It is implemented by the
+     * {@code jetty-security} module's {@code AuthenticationState} to provide full authentication services.
+     */
+    interface AuthenticationState
+    {
+        /**
+         * @return The authenticated user {@link Principal}, or null if the Authentication is in a non-authenticated state.
+         */
+        default Principal getUserPrincipal()
+        {
+            return null;
+        }
     }
 }

@@ -28,7 +28,7 @@ import java.util.concurrent.atomic.AtomicReference;
 import org.eclipse.jetty.util.component.Dumpable;
 
 /**
- * @deprecated use {@link Attributes.Lazy}
+ * @deprecated use {@link Attributes.Mapped}
  */
 @Deprecated
 public class AttributesMap implements Attributes, Dumpable
