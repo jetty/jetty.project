@@ -22,6 +22,8 @@ import java.nio.charset.Charset;
 import java.security.Principal;
 import java.util.List;
 import java.util.Locale;
+import java.util.concurrent.TimeoutException;
+import java.util.function.Consumer;
 import java.util.function.Function;
 import java.util.function.Predicate;
 import java.util.stream.Collectors;
@@ -259,18 +261,41 @@ public interface Request extends Attributes, Content.Source
     }
 
     /**
-     * <p>Adds a listener for asynchronous errors.</p>
+     * <p>Adds a listener for idle timeouts.</p>
      * <p>The listener is a predicate function that should return {@code true} to indicate
-     * that the function will complete (either successfully or with a failure) the callback
-     * received from {@link org.eclipse.jetty.server.Handler#handle(Request, Response, Callback)}, or
-     * {@code false} otherwise.</p>
+     * that the idle timeout should be handled by the container as a hard failure
+     * (see {@link #addFailureListener(Consumer)}); or {@code false} to ignore that specific timeout and for another timeout
+     * to occur after another idle period.</p>
+     * <p>Any pending {@link #demand(Runnable)} or {@link Response#write(boolean, ByteBuffer, Callback)} operations
+     * are not affected by this call. Applications need to be mindful of any such pending operations if attempting
+     * to make new operations.</p>
      * <p>Listeners are processed in sequence, and the first that returns {@code true}
      * stops the processing of subsequent listeners, which are therefore not invoked.</p>
      *
-     * @param onError the predicate function
-     * @return true if the listener completes the callback, false otherwise
+     * @param onIdleTimeout the predicate function
+     * @see #addFailureListener(Consumer)
      */
-    boolean addErrorListener(Predicate<Throwable> onError);
+    void addIdleTimeoutListener(Predicate<TimeoutException> onIdleTimeout);
+
+    /**
+     * <p>Adds a listener for asynchronous hard errors.</p>
+     * <p>When a listener is called, the effects of the error will already have taken place:</p>
+     * <ul>
+     *     <li>Pending {@link #demand(Runnable)} will be woken up.</li>
+     *     <li>Calls to {@link #read()} will return the {@code Throwable}.</li>
+     *     <li>Pending and new {@link Response#write(boolean, ByteBuffer, Callback)} calls will be failed by
+     *     calling {@link Callback#failed(Throwable)} on the callback passed to {@code write(...)}.</li>
+     *     <li>Any call to {@link Callback#succeeded()} on the callback passed to
+     *     {@link Handler#handle(Request, Response, Callback)} will effectively be a call to {@link Callback#failed(Throwable)}
+     *     with the notified {@link Throwable}.</li>
+     * </ul>
+     * <p>Listeners are processed in sequence. When all listeners are invoked then {@link Callback#failed(Throwable)}
+     * will be called on the callback passed to {@link Handler#handle(Request, Response, Callback)}.</p>
+     *
+     * @param onFailure the consumer function
+     * @see #addIdleTimeoutListener(Predicate)
+     */
+    void addFailureListener(Consumer<Throwable> onFailure);
 
     TunnelSupport getTunnelSupport();
 
@@ -667,9 +692,15 @@ public interface Request extends Attributes, Content.Source
         }
 
         @Override
-        public boolean addErrorListener(Predicate<Throwable> onError)
+        public void addIdleTimeoutListener(Predicate<TimeoutException> onIdleTimeout)
         {
-            return getWrapped().addErrorListener(onError);
+            getWrapped().addIdleTimeoutListener(onIdleTimeout);
+        }
+
+        @Override
+        public void addFailureListener(Consumer<Throwable> onFailure)
+        {
+            getWrapped().addFailureListener(onFailure);
         }
 
         @Override

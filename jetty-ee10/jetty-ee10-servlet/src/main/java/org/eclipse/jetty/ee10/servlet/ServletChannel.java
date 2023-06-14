@@ -83,7 +83,6 @@ public class ServletChannel
     private final Listener _combinedListener;
     private volatile ServletContextRequest _servletContextRequest;
     private volatile boolean _expects100Continue;
-    private volatile long _oldIdleTimeout;
     private volatile Callback _callback;
     // Bytes written after interception (e.g. after compression).
     private volatile long _written;
@@ -380,7 +379,6 @@ public class ServletChannel
         _servletContextRequest = null;
         _callback = null;
         _written = 0;
-        _oldIdleTimeout = 0;
     }
 
     /**
@@ -837,10 +835,6 @@ public class ServletChannel
         ServletApiRequest apiRequest = _servletContextRequest.getServletApiRequest();
         if (LOG.isDebugEnabled())
             LOG.debug("onCompleted for {} written={}", apiRequest.getRequestURI(), getBytesWritten());
-
-        long idleTO = _configuration.getIdleTimeout();
-        if (idleTO >= 0 && getIdleTimeout() != _oldIdleTimeout)
-            setIdleTimeout(_oldIdleTimeout);
 
         if (getServer().getRequestLog() instanceof CustomRequestLog)
         {

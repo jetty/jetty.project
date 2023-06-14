@@ -19,6 +19,7 @@ import java.util.Base64;
 import java.util.List;
 import java.util.Objects;
 import java.util.Set;
+import java.util.concurrent.TimeoutException;
 
 import org.eclipse.jetty.http.BadMessageException;
 import org.eclipse.jetty.http.HttpField;
@@ -155,14 +156,14 @@ public class HTTP2ServerConnection extends HTTP2Connection implements Connection
         }
     }
 
-    public void onStreamTimeout(Stream stream, Throwable failure, Promise<Boolean> promise)
+    public void onStreamTimeout(Stream stream, TimeoutException timeout, Promise<Boolean> promise)
     {
         if (LOG.isDebugEnabled())
-            LOG.debug("Idle timeout on {}", stream, failure);
+            LOG.debug("Idle timeout on {}", stream, timeout);
         HTTP2Channel.Server channel = (HTTP2Channel.Server)((HTTP2Stream)stream).getAttachment();
         if (channel != null)
         {
-            channel.onTimeout(failure, (task, timedOut) ->
+            channel.onTimeout(timeout, (task, timedOut) ->
             {
                 if (task != null)
                     offerTask(task, true);

@@ -94,6 +94,10 @@ public interface HttpStream extends Callback
         throw new UnsupportedOperationException();
     }
 
+    long getIdleTimeout();
+
+    void setIdleTimeout(long idleTimeoutMs);
+
     boolean isCommitted();
 
     default TunnelSupport getTunnelSupport()
@@ -179,6 +183,18 @@ public interface HttpStream extends Callback
         public void push(MetaData.Request resource)
         {
             getWrapped().push(resource);
+        }
+
+        @Override
+        public long getIdleTimeout()
+        {
+            return getWrapped().getIdleTimeout();
+        }
+
+        @Override
+        public void setIdleTimeout(long idleTimeoutMs)
+        {
+            getWrapped().setIdleTimeout(idleTimeoutMs);
         }
 
         @Override

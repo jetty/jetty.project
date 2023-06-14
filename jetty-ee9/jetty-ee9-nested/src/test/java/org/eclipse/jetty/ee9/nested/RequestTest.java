@@ -37,8 +37,8 @@ import java.util.Set;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.concurrent.atomic.AtomicReference;
+import java.util.function.Consumer;
 import java.util.function.Function;
-import java.util.function.Predicate;
 import java.util.stream.Stream;
 
 import jakarta.servlet.MultipartConfigElement;
@@ -2433,9 +2433,8 @@ public class RequestTest
         }
 
         @Override
-        public boolean addErrorListener(Predicate<Throwable> onError)
+        public void addFailureListener(Consumer<Throwable> onFailure)
         {
-            return false;
         }
 
         @Override

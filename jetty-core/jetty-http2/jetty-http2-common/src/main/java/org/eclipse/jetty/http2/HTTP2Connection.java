@@ -18,6 +18,7 @@ import java.nio.ByteBuffer;
 import java.util.ArrayDeque;
 import java.util.Queue;
 import java.util.concurrent.Executor;
+import java.util.concurrent.TimeoutException;
 import java.util.concurrent.atomic.AtomicLong;
 
 import org.eclipse.jetty.http2.api.Stream;
@@ -174,7 +175,7 @@ public class HTTP2Connection extends AbstractConnection implements Parser.Listen
     }
 
     @Override
-    public boolean onIdleExpired()
+    public boolean onIdleExpired(TimeoutException timeoutException)
     {
         boolean idle = isFillInterested();
         if (idle)

@@ -22,6 +22,7 @@ import java.util.List;
 import java.util.Objects;
 import java.util.Set;
 import java.util.concurrent.RejectedExecutionException;
+import java.util.concurrent.TimeoutException;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicLong;
 import java.util.concurrent.atomic.AtomicReference;
@@ -654,6 +655,17 @@ public class HttpConnection extends AbstractConnection implements Runnable, Writ
     {
         _parser.close();
         super.onFillInterestedFailed(cause);
+    }
+
+    @Override
+    public boolean onIdleExpired(TimeoutException timeout)
+    {
+        if (_httpChannel.getRequest() == null)
+            return true;
+        Runnable task = _httpChannel.onIdleTimeout(timeout);
+        if (task != null)
+            getExecutor().execute(task);
+        return false; // We've handle the exception
     }
 
     @Override
@@ -1438,6 +1450,18 @@ public class HttpConnection extends AbstractConnection implements Runnable, Writ
 
             if (_sendCallback.reset(_request, response, content, last, callback))
                 _sendCallback.iterate();
+        }
+
+        @Override
+        public long getIdleTimeout()
+        {
+            return getEndPoint().getIdleTimeout();
+        }
+
+        @Override
+        public void setIdleTimeout(long idleTimeoutMs)
+        {
+            getEndPoint().setIdleTimeout(idleTimeoutMs);
         }
 
         @Override

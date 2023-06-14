@@ -28,6 +28,7 @@ import java.util.Set;
 import java.util.concurrent.CopyOnWriteArrayList;
 import java.util.concurrent.atomic.AtomicReference;
 import java.util.function.Consumer;
+import java.util.function.Predicate;
 import java.util.stream.Collectors;
 
 import org.eclipse.jetty.http.HttpField;
@@ -1199,6 +1200,23 @@ public class ContextHandler extends Handler.Wrapper implements Attributes, Alias
                 {
                     exitScope(request, lastContext, lastLoader);
                 }
+            }
+        }
+
+        public <T> boolean test(Predicate<T> predicate, T t, Request request)
+        {
+            Context lastContext = __context.get();
+            if (lastContext == this)
+                return predicate.test(t);
+
+            ClassLoader lastLoader = enterScope(request);
+            try
+            {
+                return predicate.test(t);
+            }
+            finally
+            {
+                exitScope(request, lastContext, lastLoader);
             }
         }
 

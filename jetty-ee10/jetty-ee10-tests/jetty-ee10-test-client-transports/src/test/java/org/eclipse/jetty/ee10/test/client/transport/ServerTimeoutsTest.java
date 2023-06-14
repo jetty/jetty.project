@@ -60,13 +60,13 @@ import static org.junit.jupiter.api.Assumptions.assumeTrue;
 //  since they may be ignored, so we don't want to remember errors if they are ignored.
 //  However, this behavior is historically so because of Servlets, and we
 //  may decide differently for Handlers.
-@Disabled
 public class ServerTimeoutsTest extends AbstractTest
 {
     @ParameterizedTest
     @MethodSource("transportsNoFCGI")
     public void testBlockingReadWithDelayedFirstContentWithUndelayedDispatchIdleTimeoutFires(Transport transport) throws Exception
     {
+        assumeTrue(transport != Transport.H3 && transport != Transport.H2C && transport != Transport.H2); // TODO Fix
         testBlockingReadWithDelayedFirstContentIdleTimeoutFires(transport, false);
     }
 
@@ -74,6 +74,7 @@ public class ServerTimeoutsTest extends AbstractTest
     @MethodSource("transportsNoFCGI")
     public void testBlockingReadWithDelayedFirstContentWithDelayedDispatchIdleTimeoutFires(Transport transport) throws Exception
     {
+        assumeTrue(transport != Transport.H3 && transport != Transport.H2C && transport != Transport.H2); // TODO Fix
         testBlockingReadWithDelayedFirstContentIdleTimeoutFires(transport, true);
     }
 
@@ -369,6 +370,8 @@ public class ServerTimeoutsTest extends AbstractTest
     @MethodSource("transportsNoFCGI")
     public void testBlockingReadWithMinimumDataRateAboveLimit(Transport transport) throws Exception
     {
+        assumeTrue(transport != Transport.H3 && transport != Transport.H2C && transport != Transport.H2); // TODO Fix
+
         int bytesPerSecond = 20;
         httpConfig.setMinRequestDataRate(bytesPerSecond);
         CountDownLatch handlerLatch = new CountDownLatch(1);
@@ -413,6 +416,8 @@ public class ServerTimeoutsTest extends AbstractTest
     @MethodSource("transportsNoFCGI")
     public void testBlockingReadHttpIdleTimeoutOverridesIdleTimeout(Transport transport) throws Exception
     {
+        assumeTrue(transport != Transport.H3); // TODO Fix H3
+
         long httpIdleTimeout = 2500;
         long idleTimeout = 3 * httpIdleTimeout;
         httpConfig.setIdleTimeout(httpIdleTimeout);
@@ -444,7 +449,7 @@ public class ServerTimeoutsTest extends AbstractTest
     @MethodSource("transportsNoFCGI")
     public void testAsyncReadHttpIdleTimeoutOverridesIdleTimeout(Transport transport) throws Exception
     {
-        long httpIdleTimeout = 2500;
+        long httpIdleTimeout = 2000;
         long idleTimeout = 3 * httpIdleTimeout;
         httpConfig.setIdleTimeout(httpIdleTimeout);
         CountDownLatch handlerLatch = new CountDownLatch(1);
@@ -503,6 +508,7 @@ public class ServerTimeoutsTest extends AbstractTest
         assertTrue(resultLatch.await(5, TimeUnit.SECONDS));
     }
 
+    @Disabled
     @ParameterizedTest
     @MethodSource("transportsNoFCGI")
     public void testIdleTimeoutBeforeReadIsIgnored(Transport transport) throws Exception
@@ -556,6 +562,7 @@ public class ServerTimeoutsTest extends AbstractTest
         assertTrue(latch.await(5, TimeUnit.SECONDS));
     }
 
+    @Disabled
     @ParameterizedTest
     @MethodSource("transportsNoFCGI")
     public void testBlockingWriteWithMinimumDataRateBelowLimit(Transport transport) throws Exception

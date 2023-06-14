@@ -14,6 +14,7 @@
 package org.eclipse.jetty.http2.server.internal;
 
 import java.nio.ByteBuffer;
+import java.util.concurrent.TimeoutException;
 import java.util.function.BiConsumer;
 import java.util.function.Supplier;
 
@@ -443,6 +444,18 @@ public class HttpStreamOverHTTP2 implements HttpStream, HTTP2Channel.Server
     }
 
     @Override
+    public long getIdleTimeout()
+    {
+        return _stream.getIdleTimeout();
+    }
+
+    @Override
+    public void setIdleTimeout(long idleTimeoutMs)
+    {
+        _stream.setIdleTimeout(idleTimeoutMs);
+    }
+
+    @Override
     public void push(MetaData.Request resource)
     {
         if (!_stream.getSession().isPushEnabled())
@@ -549,9 +562,9 @@ public class HttpStreamOverHTTP2 implements HttpStream, HTTP2Channel.Server
     }
 
     @Override
-    public void onTimeout(Throwable failure, BiConsumer<Runnable, Boolean> consumer)
+    public void onTimeout(TimeoutException timeout, BiConsumer<Runnable, Boolean> consumer)
     {
-        Runnable task = _httpChannel.onFailure(failure);
+        Runnable task = _httpChannel.onIdleTimeout(timeout);
         boolean idle = !_httpChannel.isRequestHandled();
         consumer.accept(task, idle);
     }
