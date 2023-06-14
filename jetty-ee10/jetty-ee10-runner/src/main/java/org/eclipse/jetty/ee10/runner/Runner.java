@@ -28,11 +28,11 @@ import java.util.List;
 import java.util.Locale;
 import java.util.Objects;
 
-import org.eclipse.jetty.ee.security.ConstraintMapping;
 import org.eclipse.jetty.ee10.plus.webapp.EnvConfiguration;
 import org.eclipse.jetty.ee10.plus.webapp.PlusConfiguration;
 import org.eclipse.jetty.ee10.servlet.ServletContextHandler;
 import org.eclipse.jetty.ee10.servlet.SessionHandler;
+import org.eclipse.jetty.ee10.servlet.security.ConstraintMapping;
 import org.eclipse.jetty.ee10.servlet.security.ConstraintSecurityHandler;
 import org.eclipse.jetty.ee10.webapp.MetaInfConfiguration;
 import org.eclipse.jetty.ee10.webapp.WebAppContext;

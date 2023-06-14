@@ -29,6 +29,7 @@ import org.eclipse.jetty.ee9.servlet.ServletHolder;
 import org.eclipse.jetty.session.DefaultSessionCacheFactory;
 import org.eclipse.jetty.session.SessionCache;
 import org.eclipse.jetty.session.SessionDataStoreFactory;
+import org.eclipse.jetty.session.test.TestSessionDataStoreFactory;
 import org.junit.jupiter.api.Test;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
@@ -72,7 +73,7 @@ public class SameContextForwardedSessionTest
                 ContentResponse response = client.GET("http://localhost:" + serverPort + "/context/one");
                 assertEquals(HttpServletResponse.SC_OK, response.getStatus());
                 String sessionCookie = response.getHeaders().get("Set-Cookie");
-                assertTrue(sessionCookie != null);
+                assertNotNull(sessionCookie);
 
                 //test that the session was created, and that it contains the attributes from servlet3 and servlet1
                 String id = SessionTestSupport.extractSessionId(sessionCookie);

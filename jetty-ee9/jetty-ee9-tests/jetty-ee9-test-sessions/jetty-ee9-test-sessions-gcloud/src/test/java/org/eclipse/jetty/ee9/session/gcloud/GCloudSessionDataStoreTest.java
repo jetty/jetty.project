@@ -16,9 +16,8 @@ package org.eclipse.jetty.ee9.session.gcloud;
 import org.eclipse.jetty.session.AbstractSessionDataStoreTest;
 import org.eclipse.jetty.session.SessionData;
 import org.eclipse.jetty.session.SessionDataStoreFactory;
-import org.junit.jupiter.api.AfterAll;
+import org.eclipse.jetty.session.test.tools.GCloudSessionTestSupport;
 import org.junit.jupiter.api.AfterEach;
-import org.junit.jupiter.api.BeforeAll;
 import org.testcontainers.junit.jupiter.Testcontainers;
 
 /**
@@ -33,37 +32,24 @@ public class GCloudSessionDataStoreTest extends AbstractSessionDataStoreTest
         super();
     }
 
-    public static GCloudSessionTestSupport __testSupport;
-
-    @BeforeAll
-    public static void configure() throws Exception
-    {
-        __testSupport = new GCloudSessionTestSupport();
-        __testSupport.setUp();
-    }
-
-    @AfterAll
-    public static void tearDown() throws Exception
-    {
-        __testSupport.tearDown();
-    }
+    public GCloudSessionTestSupport testSupport = new GCloudSessionTestSupport(getClass().getSimpleName());
 
     @AfterEach
     public void teardown() throws Exception
     {
-        __testSupport.deleteSessions();
+        testSupport.deleteSessions();
     }
 
     @Override
     public SessionDataStoreFactory createSessionDataStoreFactory()
     {
-        return GCloudSessionTestSupport.newSessionDataStoreFactory(__testSupport.getDatastore());
+        return testSupport.newSessionDataStoreFactory();
     }
 
     @Override
     public void persistSession(SessionData data) throws Exception
     {
-        __testSupport.createSession(data.getId(), data.getContextPath(), data.getVhost(), data.getLastNode(), data.getCreated(),
+        testSupport.createSession(data.getId(), data.getContextPath(), data.getVhost(), data.getLastNode(), data.getCreated(),
             data.getAccessed(), data.getLastAccessed(), data.getMaxInactiveMs(), data.getExpiry(),
             data.getCookieSet(), data.getLastSaved(), data.getAllAttributes());
     }
@@ -72,7 +58,7 @@ public class GCloudSessionDataStoreTest extends AbstractSessionDataStoreTest
     public void persistUnreadableSession(SessionData data) throws Exception
     {
 
-        __testSupport.createSession(data.getId(), data.getContextPath(), data.getVhost(), data.getLastNode(), data.getCreated(),
+        testSupport.createSession(data.getId(), data.getContextPath(), data.getVhost(), data.getLastNode(), data.getCreated(),
             data.getAccessed(), data.getLastAccessed(), data.getMaxInactiveMs(), data.getExpiry(),
             data.getCookieSet(), data.getLastSaved(), null);
     }
@@ -80,7 +66,7 @@ public class GCloudSessionDataStoreTest extends AbstractSessionDataStoreTest
     @Override
     public boolean checkSessionExists(SessionData data) throws Exception
     {
-        return __testSupport.checkSessionExists(data.getId());
+        return testSupport.checkSessionExists(data.getId());
     }
 
     @Override
@@ -90,7 +76,7 @@ public class GCloudSessionDataStoreTest extends AbstractSessionDataStoreTest
         Thread.currentThread().setContextClassLoader(_contextClassLoader);
         try
         {
-            return __testSupport.checkSessionPersisted(data);
+            return testSupport.checkSessionPersisted(data);
         }
         finally
         {

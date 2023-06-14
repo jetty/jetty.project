@@ -60,6 +60,7 @@ import org.eclipse.jetty.toolchain.test.MavenTestingUtils;
 import org.eclipse.jetty.util.BufferUtil;
 import org.eclipse.jetty.util.Callback;
 import org.eclipse.jetty.util.IO;
+import org.eclipse.jetty.util.component.Dumpable;
 import org.eclipse.jetty.util.component.Graceful;
 import org.junit.jupiter.api.AfterAll;
 import org.junit.jupiter.api.AfterEach;
@@ -1060,5 +1061,55 @@ public class ContextHandlerTest
         shutdown.get(10, TimeUnit.SECONDS);
         assertTrue(shutdown.isDone());
         assertThat(gracefulHandler.getCurrentRequestCount(), is(0L));
+    }
+
+    @Test
+    public void testContextDump() throws Exception
+    {
+        Server server = new Server();
+        ContextHandler contextHandler = new ContextHandler("/ctx");
+        server.setHandler(contextHandler);
+        contextHandler.setHandler(new Handler.Abstract()
+        {
+            @Override
+            public boolean handle(Request request, Response response, Callback callback) throws Exception
+            {
+                callback.succeeded();
+                return true;
+            }
+
+            @Override
+            public String toString()
+            {
+                return "TestHandler";
+            }
+        });
+
+        contextHandler.setAttribute("name", "hidden");
+        contextHandler.setAttribute("persistent1", "value1");
+        contextHandler.setAttribute("persistent2", Dumpable.named("named", "value2"));
+
+        server.start();
+
+        contextHandler.getContext().setAttribute("name", "override");
+        contextHandler.getContext().setAttribute("transient1", "value1");
+        contextHandler.getContext().setAttribute("transient2", Dumpable.named("named", "value2"));
+
+        String dump = contextHandler.dump().replaceAll("\\r?\\n", "\n");
+        assertThat(dump, containsString("oejsh.ContextHandler@"));
+        String expected = """
+            +> No ClassLoader
+            +> handler attributes size=3
+            |  +> name: hidden
+            |  +> persistent1: value1
+            |  +> persistent2: named: value2
+            +> attributes size=5
+               +> name: override
+               +> persistent1: value1
+               +> persistent2: named: value2
+               +> transient1: value1
+               +> transient2: named: value2
+            """;
+        assertThat(dump, containsString(expected));
     }
 }

@@ -28,6 +28,7 @@ import java.util.Set;
 import java.util.concurrent.CopyOnWriteArrayList;
 import java.util.concurrent.atomic.AtomicReference;
 import java.util.function.Consumer;
+import java.util.function.Predicate;
 import java.util.stream.Collectors;
 
 import org.eclipse.jetty.http.HttpField;
@@ -52,7 +53,7 @@ import org.eclipse.jetty.util.TypeUtil;
 import org.eclipse.jetty.util.URIUtil;
 import org.eclipse.jetty.util.annotation.ManagedAttribute;
 import org.eclipse.jetty.util.component.ClassLoaderDump;
-import org.eclipse.jetty.util.component.Dumpable;
+import org.eclipse.jetty.util.component.DumpableAttributes;
 import org.eclipse.jetty.util.component.LifeCycle;
 import org.eclipse.jetty.util.resource.Resource;
 import org.eclipse.jetty.util.resource.ResourceFactory;
@@ -272,8 +273,8 @@ public class ContextHandler extends Handler.Wrapper implements Attributes, Alias
     {
         dumpObjects(out, indent,
             new ClassLoaderDump(getClassLoader()),
-            Dumpable.named("context " + this, _context),
-            Dumpable.named("handler attributes " + this, _persistentAttributes));
+            new DumpableAttributes("handler attributes", _persistentAttributes),
+            new DumpableAttributes("attributes", _context));
     }
 
     @ManagedAttribute(value = "Context")
@@ -1199,6 +1200,23 @@ public class ContextHandler extends Handler.Wrapper implements Attributes, Alias
                 {
                     exitScope(request, lastContext, lastLoader);
                 }
+            }
+        }
+
+        public <T> boolean test(Predicate<T> predicate, T t, Request request)
+        {
+            Context lastContext = __context.get();
+            if (lastContext == this)
+                return predicate.test(t);
+
+            ClassLoader lastLoader = enterScope(request);
+            try
+            {
+                return predicate.test(t);
+            }
+            finally
+            {
+                exitScope(request, lastContext, lastLoader);
             }
         }
 

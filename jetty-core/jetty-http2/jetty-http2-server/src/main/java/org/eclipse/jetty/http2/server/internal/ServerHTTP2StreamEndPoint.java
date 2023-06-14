@@ -13,6 +13,7 @@
 
 package org.eclipse.jetty.http2.server.internal;
 
+import java.util.concurrent.TimeoutException;
 import java.util.function.BiConsumer;
 
 import org.eclipse.jetty.http2.HTTP2Channel;
@@ -48,19 +49,19 @@ public class ServerHTTP2StreamEndPoint extends HTTP2StreamEndPoint implements HT
     }
 
     @Override
-    public void onTimeout(Throwable failure, BiConsumer<Runnable, Boolean> consumer)
+    public void onTimeout(TimeoutException timeout, BiConsumer<Runnable, Boolean> consumer)
     {
         if (LOG.isDebugEnabled())
-            LOG.debug("idle timeout on {}: {}", this, failure);
+            LOG.debug("idle timeout on {}", this, timeout);
         boolean result = true;
         Connection connection = getConnection();
         if (connection != null)
-            result = connection.onIdleExpired();
+            result = connection.onIdleExpired(timeout);
         Runnable r = null;
         if (result)
         {
-            processFailure(failure);
-            r = () -> close(failure);
+            processFailure(timeout);
+            r = () -> close(timeout);
         }
         consumer.accept(r, result);
     }
@@ -69,7 +70,7 @@ public class ServerHTTP2StreamEndPoint extends HTTP2StreamEndPoint implements HT
     public Runnable onFailure(Throwable failure, Callback callback)
     {
         if (LOG.isDebugEnabled())
-            LOG.debug("failure on {}: {}", this, failure);
+            LOG.debug("failure on {}", this, failure);
         processFailure(failure);
         close(failure);
         return callback::succeeded;

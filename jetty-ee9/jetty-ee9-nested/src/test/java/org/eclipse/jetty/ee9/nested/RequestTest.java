@@ -37,8 +37,8 @@ import java.util.Set;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.concurrent.atomic.AtomicReference;
+import java.util.function.Consumer;
 import java.util.function.Function;
-import java.util.function.Predicate;
 import java.util.stream.Stream;
 
 import jakarta.servlet.MultipartConfigElement;
@@ -1476,6 +1476,74 @@ public class RequestTest
     }
 
     @Test
+    public void testSpecCookies() throws Exception
+    {
+        _server.stop();
+        _connector.getConnectionFactory(HttpConnectionFactory.class)
+            .getHttpConfiguration().setRequestCookieCompliance(CookieCompliance.RFC2965);
+        _server.start();
+
+        final ArrayList<Cookie> cookies = new ArrayList<>();
+
+        _handler._checker = (request, response) ->
+        {
+            Cookie[] ca = request.getCookies();
+            if (ca != null)
+                cookies.addAll(Arrays.asList(ca));
+            response.getOutputStream().println("Cookie monster!");
+            return true;
+        };
+
+        String response = _connector.getResponse(
+            """
+                GET / HTTP/1.1
+                Host: whatever
+                Cookie: name1=value1
+                Connection: close
+
+                """
+        );
+        assertTrue(response.startsWith("HTTP/1.1 200 OK"));
+        assertEquals(1, cookies.size());
+    }
+
+    @Test
+    public void testSpecCookiesVersion() throws Exception
+    {
+        _server.stop();
+        _connector.getConnectionFactory(HttpConnectionFactory.class)
+            .getHttpConfiguration().setRequestCookieCompliance(CookieCompliance.RFC2965);
+        _server.start();
+
+        final ArrayList<Cookie> cookies = new ArrayList<>();
+
+        _handler._checker = (request, response) ->
+        {
+            Cookie[] ca = request.getCookies();
+            if (ca != null)
+                cookies.addAll(Arrays.asList(ca));
+            response.getOutputStream().println("Cookie monster!");
+            return true;
+        };
+
+        String response = _connector.getResponse(
+            """
+                GET / HTTP/1.1
+                Host: whatever
+                Cookie: $Version="1"; name1="value1"; $Path="/servlet_jsh_cookie_web"; $Domain="localhost"
+                Connection: close
+                
+                """
+        );
+        assertTrue(response.startsWith("HTTP/1.1 200 OK"));
+        assertEquals(1, cookies.size());
+        Cookie cookie = cookies.get(0);
+        assertThat(cookie.getVersion(), is(1));
+        assertThat(cookie.getPath(), is("/servlet_jsh_cookie_web"));
+        assertThat(cookie.getDomain(), is("localhost"));
+    }
+
+    @Test
     public void testCookies() throws Exception
     {
         final ArrayList<Cookie> cookies = new ArrayList<>();
@@ -2371,9 +2439,8 @@ public class RequestTest
         }
 
         @Override
-        public boolean addErrorListener(Predicate<Throwable> onError)
+        public void addFailureListener(Consumer<Throwable> onFailure)
         {
-            return false;
         }
 
         @Override

@@ -22,7 +22,6 @@ import java.nio.file.Paths;
 
 import org.eclipse.jetty.deploy.DeploymentManager;
 import org.eclipse.jetty.deploy.providers.ContextProvider;
-import org.eclipse.jetty.ee.Deployable;
 import org.eclipse.jetty.ee10.annotations.AnnotationConfiguration;
 import org.eclipse.jetty.ee10.plus.webapp.EnvConfiguration;
 import org.eclipse.jetty.ee10.plus.webapp.PlusConfiguration;
@@ -36,6 +35,7 @@ import org.eclipse.jetty.rewrite.handler.RewriteHandler;
 import org.eclipse.jetty.security.HashLoginService;
 import org.eclipse.jetty.server.AsyncRequestLogWriter;
 import org.eclipse.jetty.server.CustomRequestLog;
+import org.eclipse.jetty.server.Deployable;
 import org.eclipse.jetty.server.HttpConfiguration;
 import org.eclipse.jetty.server.HttpConnectionFactory;
 import org.eclipse.jetty.server.LowResourceMonitor;

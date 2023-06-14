@@ -14,7 +14,6 @@
 package org.eclipse.jetty.ee9.session.infinispan.remote;
 
 import org.eclipse.jetty.ee9.servlet.ServletContextHandler;
-import org.eclipse.jetty.ee9.session.infinispan.LoggingUtil;
 import org.eclipse.jetty.server.Server;
 import org.eclipse.jetty.session.AbstractSessionDataStoreFactory;
 import org.eclipse.jetty.session.AbstractSessionDataStoreTest;
@@ -28,13 +27,13 @@ import org.eclipse.jetty.session.infinispan.InfinispanSessionData;
 import org.eclipse.jetty.session.infinispan.InfinispanSessionDataStore;
 import org.eclipse.jetty.session.infinispan.InfinispanSessionDataStoreFactory;
 import org.eclipse.jetty.session.infinispan.RemoteQueryManager;
+import org.eclipse.jetty.session.test.tools.LoggingUtil;
+import org.eclipse.jetty.session.test.tools.RemoteInfinispanTestSupport;
 import org.infinispan.client.hotrod.Search;
 import org.infinispan.query.dsl.Query;
 import org.infinispan.query.dsl.QueryFactory;
 import org.infinispan.query.dsl.QueryResult;
-import org.junit.jupiter.api.AfterAll;
 import org.junit.jupiter.api.AfterEach;
-import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.testcontainers.junit.jupiter.Testcontainers;
@@ -53,43 +52,32 @@ public class RemoteInfinispanSessionDataStoreTest extends AbstractSessionDataSto
         LoggingUtil.init();
     }
 
-    public static RemoteInfinispanTestSupport __testSupport;
+    public RemoteInfinispanTestSupport testSupport;
 
     public RemoteInfinispanSessionDataStoreTest() throws Exception
     {
         super();
-    }
-
-    @BeforeAll
-    public static void initRemoteSupport() throws Exception
-    {
-        __testSupport = new RemoteInfinispanTestSupport("remote-session-test");
+        testSupport = new RemoteInfinispanTestSupport(getClass().getSimpleName() + System.nanoTime());
     }
 
     @BeforeEach
     public void configure() throws Exception
     {
-        __testSupport.setup();
+        testSupport.setup();
     }
 
     @AfterEach
     public void teardown() throws Exception
     {
-        __testSupport.teardown();
-    }
-
-    @AfterAll
-    public static void shutdown() throws Exception
-    {
-        __testSupport.shutdown();
+        testSupport.clearCache();
     }
 
     @Override
     public SessionDataStoreFactory createSessionDataStoreFactory()
     {
         InfinispanSessionDataStoreFactory factory = new InfinispanSessionDataStoreFactory();
-        factory.setCache(__testSupport.getCache());
-        factory.setQueryManager(new RemoteQueryManager(__testSupport.getCache()));
+        factory.setCache(testSupport.getCache());
+        factory.setQueryManager(new RemoteQueryManager(testSupport.getCache()));
         return factory;
     }
 
@@ -100,7 +88,7 @@ public class RemoteInfinispanSessionDataStoreTest extends AbstractSessionDataSto
         Thread.currentThread().setContextClassLoader(_contextClassLoader);
         try
         {
-            __testSupport.createSession((InfinispanSessionData)data);
+            testSupport.createSession((InfinispanSessionData)data);
         }
         finally
         {
@@ -122,7 +110,7 @@ public class RemoteInfinispanSessionDataStoreTest extends AbstractSessionDataSto
         Thread.currentThread().setContextClassLoader(_contextClassLoader);
         try
         {
-            return __testSupport.checkSessionExists((InfinispanSessionData)data);
+            return testSupport.checkSessionExists((InfinispanSessionData)data);
         }
         finally
         {
@@ -137,7 +125,7 @@ public class RemoteInfinispanSessionDataStoreTest extends AbstractSessionDataSto
         Thread.currentThread().setContextClassLoader(_contextClassLoader);
         try
         {
-            return __testSupport.checkSessionPersisted(data);
+            return testSupport.checkSessionPersisted(data);
         }
         finally
         {
@@ -149,6 +137,7 @@ public class RemoteInfinispanSessionDataStoreTest extends AbstractSessionDataSto
      * This test deliberately sets the infinispan cache to null to
      * try and provoke an exception in the InfinispanSessionDataStore.load() method.
      */
+    @Test
     @Override
     public void testLoadSessionFails() throws Exception
     {
@@ -156,6 +145,7 @@ public class RemoteInfinispanSessionDataStoreTest extends AbstractSessionDataSto
         //create the SessionDataStore
         ServletContextHandler context = new ServletContextHandler(ServletContextHandler.SESSIONS);
         context.setContextPath("/test");
+        idMgr.setWorkerName("");
         context.getSessionHandler().getSessionManager().setSessionIdManager(idMgr);
         SessionDataStoreFactory factory = createSessionDataStoreFactory();
         ((AbstractSessionDataStoreFactory)factory).setGracePeriodSec(GRACE_PERIOD_SEC);
@@ -183,19 +173,19 @@ public class RemoteInfinispanSessionDataStoreTest extends AbstractSessionDataSto
         InfinispanSessionData sd1 = new InfinispanSessionData("sd1", "", "", 0, 0, 0, 1000);
         sd1.setLastNode("fred1");
         sd1.serializeAttributes();
-        __testSupport.getCache().put("session1", sd1);
+        testSupport.getCache().put("session1", sd1);
 
         InfinispanSessionData sd2 = new InfinispanSessionData("sd2", "", "", 0, 0, 0, 2000);
         sd2.setLastNode("fred2");
         sd2.serializeAttributes();
-        __testSupport.getCache().put("session2", sd2);
+        testSupport.getCache().put("session2", sd2);
 
         InfinispanSessionData sd3 = new InfinispanSessionData("sd3", "", "", 0, 0, 0, 3000);
         sd3.setLastNode("fred3");
         sd3.serializeAttributes();
-        __testSupport.getCache().put("session3", sd3);
+        testSupport.getCache().put("session3", sd3);
 
-        QueryFactory qf = Search.getQueryFactory(__testSupport.getCache());
+        QueryFactory qf = Search.getQueryFactory(testSupport.getCache());
         Query<InfinispanSessionData> query = qf.create("from org_eclipse_jetty_session_infinispan.InfinispanSessionData where " +
             " expiry < :time");
 

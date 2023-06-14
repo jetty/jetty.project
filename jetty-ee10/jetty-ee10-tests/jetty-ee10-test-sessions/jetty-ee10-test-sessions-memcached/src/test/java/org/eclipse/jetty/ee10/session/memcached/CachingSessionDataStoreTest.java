@@ -25,13 +25,13 @@ import org.eclipse.jetty.client.HttpClient;
 import org.eclipse.jetty.client.Request;
 import org.eclipse.jetty.ee10.servlet.ServletContextHandler;
 import org.eclipse.jetty.ee10.session.SessionTestSupport;
-import org.eclipse.jetty.ee10.session.memcached.MemcachedTestHelper.MockDataStore;
 import org.eclipse.jetty.session.CachingSessionDataStore;
 import org.eclipse.jetty.session.DefaultSessionCacheFactory;
 import org.eclipse.jetty.session.SessionData;
 import org.eclipse.jetty.session.SessionDataMap;
 import org.eclipse.jetty.session.SessionDataStore;
 import org.eclipse.jetty.session.SessionDataStoreFactory;
+import org.eclipse.jetty.session.test.tools.MemcachedTestHelper;
 import org.junit.jupiter.api.AfterAll;
 import org.junit.jupiter.api.Test;
 import org.testcontainers.junit.jupiter.Testcontainers;
@@ -93,11 +93,11 @@ public class CachingSessionDataStoreTest
                 //
                 //Update a session and check that is is NOT loaded via the persistent store
                 //
-                ((MockDataStore)persistentStore).zeroLoadCount();
+                ((MemcachedTestHelper.MockDataStore)persistentStore).zeroLoadCount();
                 Request request = client.newRequest("http://localhost:" + port + contextPath + servletMapping + "?action=update");
                 response = request.send();
                 assertEquals(HttpServletResponse.SC_OK, response.getStatus());
-                assertEquals(0, ((MockDataStore)persistentStore).getLoadCount());
+                assertEquals(0, ((MemcachedTestHelper.MockDataStore)persistentStore).getLoadCount());
 
                 //check it was updated in the persistent store
                 SessionData sd = persistentStore.load(id);

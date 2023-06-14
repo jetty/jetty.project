@@ -32,6 +32,7 @@ import org.eclipse.jetty.session.DefaultSessionCache;
 import org.eclipse.jetty.session.DefaultSessionCacheFactory;
 import org.eclipse.jetty.session.SessionCache;
 import org.eclipse.jetty.session.SessionDataStoreFactory;
+import org.eclipse.jetty.session.test.TestSessionDataStoreFactory;
 import org.junit.jupiter.api.Test;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
@@ -78,7 +79,7 @@ public class RemoveSessionTest
                 ContentResponse response = client.GET("http://localhost:" + port + contextPath + servletMapping + "?action=create");
                 assertEquals(HttpServletResponse.SC_OK, response.getStatus());
                 String sessionCookie = response.getHeaders().get("Set-Cookie");
-                assertTrue(sessionCookie != null);
+                assertNotNull(sessionCookie);
 
                 //ensure sessionCreated bindingListener is called
                 assertTrue(testListener.isCreated());

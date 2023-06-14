@@ -32,7 +32,7 @@ import java.util.function.Supplier;
 import java.util.stream.Stream;
 
 import org.eclipse.jetty.deploy.App;
-import org.eclipse.jetty.ee.Deployable;
+import org.eclipse.jetty.server.Deployable;
 import org.eclipse.jetty.server.Server;
 import org.eclipse.jetty.server.handler.ContextHandler;
 import org.eclipse.jetty.util.FileID;

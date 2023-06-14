@@ -109,6 +109,7 @@ public abstract class AbstractSessionDataStoreTest
 
         //create the SessionDataStore  
         _sessionIdManager = new DefaultSessionIdManager(_server);
+        _sessionIdManager.setWorkerName("");
         _server.addBean(_sessionIdManager, true);
 
         _sessionManager = new TestableSessionManager();

@@ -91,7 +91,6 @@ import org.eclipse.jetty.session.AbstractSessionManager;
 import org.eclipse.jetty.session.ManagedSession;
 import org.eclipse.jetty.session.SessionManager;
 import org.eclipse.jetty.util.Attributes;
-import org.eclipse.jetty.util.AttributesMap;
 import org.eclipse.jetty.util.HostPort;
 import org.eclipse.jetty.util.IO;
 import org.eclipse.jetty.util.MultiMap;
@@ -593,7 +592,7 @@ public class Request implements HttpServletRequest
         if (_attributes == null)
             return Collections.enumeration(Collections.emptyList());
 
-        return AttributesMap.getAttributeNamesCopy(_attributes);
+        return Collections.enumeration(_attributes.getAttributeNameSet());
     }
 
     public Attributes getAttributes()
@@ -730,9 +729,8 @@ public class Request implements HttpServletRequest
         return context.getContextHandler().getRequestContextPath();
     }
 
-    /** Get the path in the context.
-     *
-     * The path relative to the context path, analogous to {@link #getServletPath()} + {@link #getPathInfo()}.
+    /**
+     * Get the path relative to the context path, analogous to {@link #getServletPath()} + {@link #getPathInfo()}.
      * If no context is set, then the path in context is the full path.
      * @return The decoded part of the {@link #getRequestURI()} path after any {@link #getContextPath()}
      *         up to any {@link #getQueryString()}, excluding path parameters.
@@ -795,7 +793,7 @@ public class Request implements HttpServletRequest
     public Enumeration<String> getHeaderNames()
     {
         HttpFields fields = _httpFields;
-        return fields == null ? Collections.emptyEnumeration() : fields.getFieldNames();
+        return fields == null ? Collections.emptyEnumeration() : Collections.enumeration(fields.getFieldNamesCollection());
     }
 
     @Override
@@ -1177,7 +1175,7 @@ public class Request implements HttpServletRequest
      * path.
      * <p>
      * Because this method returns a <code>StringBuffer</code>, not a string, you can modify the URL easily, for example, to append path and query parameters.
-     *
+     * <p>
      * This method is useful for creating redirect messages and for reporting errors.
      *
      * @return "scheme://host:port"
@@ -1558,7 +1556,7 @@ public class Request implements HttpServletRequest
         _handled = false;
         _contentParamsExtracted = false;
         _attributes = null;
-        setAuthentication(Authentication.NOT_CHECKED);
+        _authentication = Authentication.NOT_CHECKED;
         _contentType = null;
         _characterEncoding = null;
         _dispatcherType = null;
@@ -1727,6 +1725,8 @@ public class Request implements HttpServletRequest
     public void setAuthentication(Authentication authentication)
     {
         _authentication = authentication;
+        if (_coreRequest != null)
+            org.eclipse.jetty.server.Request.setAuthenticationState(_coreRequest, authentication);
     }
 
     @Override
@@ -1791,9 +1791,9 @@ public class Request implements HttpServletRequest
     }
 
     /**
-     * Set the character encoding used for the query string. This call will effect the return of getQueryString and getParamaters. It must be called before any
+     * Set the character encoding used for the query string. This call will effect the return of getQueryString and getParameters. It must be called before any
      * getParameter methods.
-     *
+     * <p>
      * The request attribute "org.eclipse.jetty.server.Request.queryEncoding" may be set as an alternate method of calling setQueryEncoding.
      *
      * @param queryEncoding the URI query character encoding
@@ -2196,18 +2196,30 @@ public class Request implements HttpServletRequest
             try
             {
                 Cookie result = new Cookie(cookie.getName(), cookie.getValue());
-                //RFC2965 defines the cookie header as supporting path and domain but RFC6265 permits only name=value
-                if (CookieCompliance.RFC2965.equals(compliance))
+
+                if (compliance.allows(CookieCompliance.Violation.ATTRIBUTE_VALUES))
                 {
-                    result.setPath(cookie.getPath());
-                    result.setDomain(cookie.getDomain());
+                    if (cookie.getVersion() > 0)
+                        result.setVersion(cookie.getVersion());
+
+                    String path = cookie.getPath();
+                    if (StringUtil.isNotBlank(path))
+                        result.setPath(path);
+
+                    String domain = cookie.getDomain();
+                    if (StringUtil.isNotBlank(domain))
+                        result.setDomain(domain);
+
+                    String comment = cookie.getComment();
+                    if (StringUtil.isNotBlank(comment))
+                        result.setComment(comment);
                 }
                 return result;
             }
-            catch (Exception ignore)
+            catch (Exception x)
             {
                 if (LOG.isDebugEnabled())
-                    LOG.debug("Bad Cookie", ignore);
+                    LOG.debug("Bad Cookie", x);
             }
             return null;
         }

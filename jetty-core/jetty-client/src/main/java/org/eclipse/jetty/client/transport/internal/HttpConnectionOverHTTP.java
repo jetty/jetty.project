@@ -173,12 +173,12 @@ public class HttpConnectionOverHTTP extends AbstractConnection implements IConne
     }
 
     @Override
-    public boolean onIdleExpired()
+    public boolean onIdleExpired(TimeoutException timeout)
     {
         long idleTimeout = getEndPoint().getIdleTimeout();
         boolean close = onIdleTimeout(idleTimeout);
         if (close)
-            close(new TimeoutException("Idle timeout " + idleTimeout + " ms"));
+            close(timeout);
         return false;
     }
 

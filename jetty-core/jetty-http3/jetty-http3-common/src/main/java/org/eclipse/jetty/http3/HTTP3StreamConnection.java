@@ -17,6 +17,7 @@ import java.io.IOException;
 import java.io.UncheckedIOException;
 import java.nio.ByteBuffer;
 import java.util.concurrent.Executor;
+import java.util.concurrent.TimeoutException;
 import java.util.concurrent.atomic.AtomicReference;
 
 import org.eclipse.jetty.http.HttpStatus;
@@ -84,7 +85,7 @@ public abstract class HTTP3StreamConnection extends AbstractConnection
     }
 
     @Override
-    protected boolean onReadTimeout(Throwable timeout)
+    protected boolean onReadTimeout(TimeoutException timeout)
     {
         // Idle timeouts are handled by HTTP3Stream.
         return false;
@@ -476,7 +477,8 @@ public abstract class HTTP3StreamConnection extends AbstractConnection
             if (LOG.isDebugEnabled())
                 LOG.debug("received {}#{}", frame, streamId);
             Runnable delegate = () -> super.onData(streamId, frame);
-            if (!HTTP3StreamConnection.this.action.compareAndSet(null, () -> processData(frame, delegate)))
+            Runnable action = () -> processData(frame, delegate);
+            if (!HTTP3StreamConnection.this.action.compareAndSet(null, action))
                 throw new IllegalStateException();
         }
     }

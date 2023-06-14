@@ -24,6 +24,7 @@ import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ConcurrentMap;
 import java.util.concurrent.CopyOnWriteArrayList;
 import java.util.concurrent.Executor;
+import java.util.concurrent.TimeoutException;
 import java.util.concurrent.atomic.AtomicBoolean;
 
 import org.eclipse.jetty.io.AbstractConnection;
@@ -171,7 +172,7 @@ public abstract class QuicConnection extends AbstractConnection
     }
 
     @Override
-    public abstract boolean onIdleExpired();
+    public abstract boolean onIdleExpired(TimeoutException timeoutException);
 
     @Override
     public void close()

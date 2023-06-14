@@ -34,11 +34,16 @@ import org.eclipse.jetty.logging.StacklessLogging;
 import org.eclipse.jetty.session.DefaultSessionCacheFactory;
 import org.eclipse.jetty.session.SessionCache;
 import org.eclipse.jetty.session.SessionDataStoreFactory;
+import org.eclipse.jetty.session.test.Foo;
+import org.eclipse.jetty.session.test.FooInvocationHandler;
+import org.eclipse.jetty.session.test.TestFoo;
+import org.eclipse.jetty.session.test.TestSessionDataStoreFactory;
 import org.junit.jupiter.api.Disabled;
 import org.junit.jupiter.api.Test;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
+import static org.junit.jupiter.api.Assertions.assertNotNull;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
 /**
@@ -80,7 +85,7 @@ public class AsyncTest
             assertEquals(HttpServletResponse.SC_OK, response.getStatus());
 
             String sessionCookie = response.getHeaders().get("Set-Cookie");
-            assertTrue(sessionCookie != null);
+            assertNotNull(sessionCookie);
             
             //session should now be evicted from the cache after request exited
             String id = SessionTestSupport.extractSessionId(sessionCookie);
@@ -125,7 +130,7 @@ public class AsyncTest
             assertEquals(HttpServletResponse.SC_OK, response.getStatus());
 
             String sessionCookie = response.getHeaders().get("Set-Cookie");
-            assertTrue(sessionCookie != null);
+            assertNotNull(sessionCookie);
             String id = SessionTestSupport.extractSessionId(sessionCookie);
 
             //session should now be evicted from the cache after request exited
@@ -176,7 +181,7 @@ public class AsyncTest
             assertEquals(HttpServletResponse.SC_OK, response.getStatus());
 
             String sessionCookie = response.getHeaders().get("Set-Cookie");
-            assertTrue(sessionCookie != null);
+            assertNotNull(sessionCookie);
 
             //session should now be evicted from the cache after request exited
             String id = SessionTestSupport.extractSessionId(sessionCookie);
@@ -223,7 +228,7 @@ public class AsyncTest
             assertEquals(HttpServletResponse.SC_OK, response.getStatus());
 
             String sessionCookie = response.getHeaders().get("Set-Cookie");
-            assertTrue(sessionCookie != null);
+            assertNotNull(sessionCookie);
             String id = SessionTestSupport.extractSessionId(sessionCookie);
 
             //session should now be evicted from the cache after request exited

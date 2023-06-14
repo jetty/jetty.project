@@ -19,8 +19,8 @@ import java.util.concurrent.TimeUnit;
 
 import org.eclipse.jetty.client.AuthenticationStore;
 import org.eclipse.jetty.client.BasicAuthentication;
-import org.eclipse.jetty.ee.security.ConstraintMapping;
 import org.eclipse.jetty.ee10.servlet.ServletContextHandler;
+import org.eclipse.jetty.ee10.servlet.security.ConstraintMapping;
 import org.eclipse.jetty.ee10.servlet.security.ConstraintSecurityHandler;
 import org.eclipse.jetty.ee10.websocket.server.config.JettyWebSocketServletContainerInitializer;
 import org.eclipse.jetty.security.Constraint;

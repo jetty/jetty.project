@@ -17,6 +17,7 @@
 include::module-alpn.adoc[]
 include::module-bytebufferpool.adoc[]
 include::module-console-capture.adoc[]
+include::module-core-deploy.adoc[]
 include::module-eeN-deploy.adoc[]
 include::module-http.adoc[]
 include::module-http2.adoc[]

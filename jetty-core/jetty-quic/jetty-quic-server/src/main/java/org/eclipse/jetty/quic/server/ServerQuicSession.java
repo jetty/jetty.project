@@ -44,7 +44,7 @@ import org.eclipse.jetty.util.thread.Scheduler;
 public class ServerQuicSession extends QuicSession implements CyclicTimeouts.Expirable
 {
     private final Connector connector;
-    private long expireNanoTime;
+    private long expireNanoTime = Long.MAX_VALUE;
 
     protected ServerQuicSession(Executor executor, Scheduler scheduler, ByteBufferPool bufferPool, QuicheConnection quicheConnection, QuicConnection connection, SocketAddress remoteAddress, Connector connector)
     {
@@ -101,6 +101,15 @@ public class ServerQuicSession extends QuicSession implements CyclicTimeouts.Exp
         super.setIdleTimeout(idleTimeout);
         notIdle();
         getQuicConnection().schedule(this);
+    }
+
+    @Override
+    public boolean onIdleTimeout()
+    {
+        boolean result = super.onIdleTimeout();
+        if (!result)
+            notIdle();
+        return result;
     }
 
     @Override

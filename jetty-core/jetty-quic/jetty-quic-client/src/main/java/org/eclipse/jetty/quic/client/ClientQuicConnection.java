@@ -23,6 +23,7 @@ import java.util.List;
 import java.util.Map;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.TimeUnit;
+import java.util.concurrent.TimeoutException;
 
 import org.eclipse.jetty.io.ClientConnector;
 import org.eclipse.jetty.io.DatagramChannelEndPoint;
@@ -159,7 +160,7 @@ public class ClientQuicConnection extends QuicConnection
     }
 
     @Override
-    public boolean onIdleExpired()
+    public boolean onIdleExpired(TimeoutException timeoutException)
     {
         boolean idle = isFillInterested();
         long idleTimeout = getEndPoint().getIdleTimeout();

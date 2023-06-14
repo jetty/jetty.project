@@ -13,6 +13,8 @@
 
 package org.eclipse.jetty.server.handler;
 
+import java.util.concurrent.TimeoutException;
+import java.util.function.Consumer;
 import java.util.function.Predicate;
 
 import org.eclipse.jetty.server.Context;
@@ -40,15 +42,15 @@ public class ContextRequest extends Request.Wrapper implements Invocable
     }
 
     @Override
-    public boolean addErrorListener(Predicate<Throwable> onError)
+    public void addIdleTimeoutListener(Predicate<TimeoutException> onIdleTimeout)
     {
-        return super.addErrorListener(t ->
-        {
-            // TODO: implement the line below
-            // return _context.apply(onError::test, t, ContextRequest.this);
-            _context.accept(onError::test, t, ContextRequest.this);
-            return true;
-        });
+        super.addIdleTimeoutListener(t -> _context.test(onIdleTimeout, t, ContextRequest.this));
+    }
+
+    @Override
+    public void addFailureListener(Consumer<Throwable> onFailure)
+    {
+        super.addFailureListener(t -> _context.accept(onFailure, t, ContextRequest.this));
     }
 
     @Override

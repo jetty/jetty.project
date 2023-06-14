@@ -583,15 +583,25 @@ public abstract class ConnectorTimeoutTest extends HttpServerTestFixture
         @Override
         public boolean handle(Request request, Response response, Callback callback) throws Exception
         {
+            request.addIdleTimeoutListener(t -> false);
             response.setStatus(200);
             try
             {
-                Thread.sleep(2000);
+                Thread.sleep(MAX_IDLE_TIME * 3 / 2);
             }
             catch (Exception e)
             {
                 e.printStackTrace();
             }
+
+            // TODO what do we do about the failing write?
+            //      should timeout errors be non persistent?
+            Callback ocb = callback;
+            callback = Callback.from(ocb::succeeded, t ->
+            {
+                t.printStackTrace();
+                ocb.failed(t);
+            });
             Content.Sink.write(response, true, "Hello World\r\n", callback);
             return true;
         }

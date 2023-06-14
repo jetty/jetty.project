@@ -2385,6 +2385,8 @@ public abstract class HTTP2Session extends ContainerLifeCycle implements Session
         protected boolean onExpired(HTTP2Stream stream)
         {
             stream.onIdleTimeout(new TimeoutException("Idle timeout " + stream.getIdleTimeout() + " ms elapsed"));
+            // The implementation of the Iterator returned above does not support
+            // removal, but the HTTP2Stream will be removed by stream.onIdleTimeout().
             return false;
         }
     }

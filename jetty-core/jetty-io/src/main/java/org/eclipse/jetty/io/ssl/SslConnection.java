@@ -19,6 +19,7 @@ import java.nio.ByteBuffer;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.concurrent.Executor;
+import java.util.concurrent.TimeoutException;
 import java.util.concurrent.atomic.AtomicLong;
 import java.util.concurrent.atomic.AtomicReference;
 import java.util.function.ToIntFunction;
@@ -348,9 +349,9 @@ public class SslConnection extends AbstractConnection implements Connection.Upgr
     }
 
     @Override
-    public boolean onIdleExpired()
+    public boolean onIdleExpired(TimeoutException timeoutException)
     {
-        return getSslEndPoint().getConnection().onIdleExpired();
+        return getSslEndPoint().getConnection().onIdleExpired(timeoutException);
     }
 
     @Override
