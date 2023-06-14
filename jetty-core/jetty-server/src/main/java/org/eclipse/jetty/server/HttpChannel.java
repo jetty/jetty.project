@@ -13,6 +13,10 @@
 
 package org.eclipse.jetty.server;
 
+import java.util.concurrent.TimeoutException;
+import java.util.function.Consumer;
+import java.util.function.Predicate;
+
 import org.eclipse.jetty.http.MetaData;
 import org.eclipse.jetty.server.internal.HttpChannelState;
 import org.eclipse.jetty.util.thread.Invocable;
@@ -71,13 +75,24 @@ public interface HttpChannel extends Invocable
     Runnable onContentAvailable();
 
     /**
+     * <p>Notifies this {@code HttpChannel} that an idle timeout happened.</p>
+     *
+     * @param idleTimeout the timeout.
+     * @return a {@code Runnable} that performs the timeout action, or {@code null}
+     * if no action need be performed by the calling thread
+     * @see Request#addIdleTimeoutListener(Predicate)
+     */
+    Runnable onIdleTimeout(TimeoutException idleTimeout);
+
+    /**
      * <p>Notifies this {@code HttpChannel} that an asynchronous failure happened.</p>
-     * <p>Typical failure examples could be idle timeouts, I/O read failures or
+     * <p>Typical failure examples could be HTTP/2 resets or
      * protocol failures (for example, invalid request bytes).</p>
      *
      * @param failure the failure cause.
      * @return a {@code Runnable} that performs the failure action, or {@code null}
-     * if no failure action should be performed by the caller thread
+     * if no failure action need be performed by the calling thread
+     * @see Request#addFailureListener(Consumer)
      */
     Runnable onFailure(Throwable failure);
 

@@ -14,6 +14,7 @@
 package org.eclipse.jetty.http3.server;
 
 import java.util.Objects;
+import java.util.concurrent.TimeoutException;
 
 import org.eclipse.jetty.http.HttpField;
 import org.eclipse.jetty.http.HttpVersion;
@@ -142,10 +143,10 @@ public class HTTP3ServerConnectionFactory extends AbstractHTTP3ServerConnectionF
         }
 
         @Override
-        public void onIdleTimeout(Stream.Server stream, Throwable failure, Promise<Boolean> promise)
+        public void onIdleTimeout(Stream.Server stream, TimeoutException timeout, Promise<Boolean> promise)
         {
             HTTP3Stream http3Stream = (HTTP3Stream)stream;
-            getConnection().onIdleTimeout((HTTP3Stream)stream, failure, (task, timedOut) ->
+            getConnection().onIdleTimeout((HTTP3Stream)stream, timeout, (task, timedOut) ->
             {
                 if (task != null)
                 {

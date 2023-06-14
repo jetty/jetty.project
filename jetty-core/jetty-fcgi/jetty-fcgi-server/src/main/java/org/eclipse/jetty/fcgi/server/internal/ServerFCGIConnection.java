@@ -16,6 +16,7 @@ package org.eclipse.jetty.fcgi.server.internal;
 import java.net.SocketAddress;
 import java.nio.ByteBuffer;
 import java.util.Set;
+import java.util.concurrent.TimeoutException;
 
 import org.eclipse.jetty.fcgi.FCGI;
 import org.eclipse.jetty.fcgi.generator.Flusher;
@@ -291,7 +292,7 @@ public class ServerFCGIConnection extends AbstractConnection implements Connecti
     }
 
     @Override
-    protected boolean onReadTimeout(Throwable timeout)
+    protected boolean onReadTimeout(TimeoutException timeout)
     {
         if (stream != null)
             return stream.onIdleTimeout(timeout);
@@ -321,6 +322,15 @@ public class ServerFCGIConnection extends AbstractConnection implements Connecti
             fillInterested();
         else
             getFlusher().shutdown();
+    }
+
+    @Override
+    public boolean onIdleExpired(TimeoutException timeoutException)
+    {
+        Runnable task = stream.getHttpChannel().onIdleTimeout(timeoutException);
+        if (task != null)
+            getExecutor().execute(task);
+        return false;
     }
 
     private class ServerListener implements ServerParser.Listener

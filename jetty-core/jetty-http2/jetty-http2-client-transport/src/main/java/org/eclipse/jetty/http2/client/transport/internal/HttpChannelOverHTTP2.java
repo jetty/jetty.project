@@ -13,6 +13,8 @@
 
 package org.eclipse.jetty.http2.client.transport.internal;
 
+import java.util.concurrent.TimeoutException;
+
 import org.eclipse.jetty.client.Result;
 import org.eclipse.jetty.client.transport.HttpChannel;
 import org.eclipse.jetty.client.transport.HttpExchange;
@@ -200,7 +202,7 @@ public class HttpChannelOverHTTP2 extends HttpChannel
         }
 
         @Override
-        public void onIdleTimeout(Stream stream, Throwable x, Promise<Boolean> promise)
+        public void onIdleTimeout(Stream stream, TimeoutException x, Promise<Boolean> promise)
         {
             HTTP2Channel.Client channel = (HTTP2Channel.Client)((HTTP2Stream)stream).getAttachment();
             channel.onTimeout(x, promise);

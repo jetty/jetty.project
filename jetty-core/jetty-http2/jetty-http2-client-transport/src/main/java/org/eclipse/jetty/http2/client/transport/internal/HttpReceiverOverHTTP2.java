@@ -14,6 +14,7 @@
 package org.eclipse.jetty.http2.client.transport.internal;
 
 import java.io.IOException;
+import java.util.concurrent.TimeoutException;
 import java.util.function.BiFunction;
 
 import org.eclipse.jetty.client.HttpUpgrader;
@@ -220,7 +221,7 @@ public class HttpReceiverOverHTTP2 extends HttpReceiver implements HTTP2Channel.
     }
 
     @Override
-    public void onTimeout(Throwable failure, Promise<Boolean> promise)
+    public void onTimeout(TimeoutException failure, Promise<Boolean> promise)
     {
         HttpExchange exchange = getHttpExchange();
         if (exchange != null)

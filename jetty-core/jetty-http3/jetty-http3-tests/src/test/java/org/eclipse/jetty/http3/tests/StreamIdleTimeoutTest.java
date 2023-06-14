@@ -16,6 +16,7 @@ package org.eclipse.jetty.http3.tests;
 import java.net.InetSocketAddress;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.TimeUnit;
+import java.util.concurrent.TimeoutException;
 import java.util.concurrent.atomic.AtomicReference;
 
 import org.eclipse.jetty.http.HttpFields;
@@ -157,7 +158,7 @@ public class StreamIdleTimeoutTest extends AbstractClientServerTest
                     return new Stream.Server.Listener()
                     {
                         @Override
-                        public void onIdleTimeout(Stream.Server stream, Throwable failure, Promise<Boolean> promise)
+                        public void onIdleTimeout(Stream.Server stream, TimeoutException failure, Promise<Boolean> promise)
                         {
                             serverIdleLatch.countDown();
                             promise.succeeded(true);

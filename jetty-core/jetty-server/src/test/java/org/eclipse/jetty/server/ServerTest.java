@@ -13,8 +13,13 @@
 
 package org.eclipse.jetty.server;
 
+import java.nio.ByteBuffer;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.concurrent.CompletableFuture;
+import java.util.concurrent.CountDownLatch;
+import java.util.concurrent.TimeUnit;
+import java.util.concurrent.TimeoutException;
 import java.util.concurrent.atomic.AtomicReference;
 import java.util.stream.Stream;
 
@@ -26,6 +31,7 @@ import org.eclipse.jetty.io.Connection;
 import org.eclipse.jetty.io.Content;
 import org.eclipse.jetty.io.EndPoint;
 import org.eclipse.jetty.io.QuietException;
+import org.eclipse.jetty.server.handler.ContextHandler;
 import org.eclipse.jetty.server.internal.HttpChannelState;
 import org.eclipse.jetty.server.internal.HttpConnection;
 import org.eclipse.jetty.util.Blocker;
@@ -41,12 +47,17 @@ import org.junit.jupiter.params.provider.MethodSource;
 
 import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.Matchers.containsString;
+import static org.hamcrest.Matchers.instanceOf;
 import static org.hamcrest.Matchers.is;
 import static org.hamcrest.Matchers.not;
+import static org.hamcrest.Matchers.sameInstance;
+import static org.junit.jupiter.api.Assertions.assertTrue;
 
 public class ServerTest
 {
+    private static final long IDLE_TIMEOUT = 1000L;
     private Server _server;
+    private ContextHandler _context;
     private LocalConnector _connector;
     private final AtomicReference<Runnable> _afterHandle = new AtomicReference<>();
 
@@ -54,6 +65,8 @@ public class ServerTest
     public void prepare() throws Exception
     {
         _server = new Server();
+        _context = new ContextHandler("/");
+        _server.setHandler(_context);
         _connector = new LocalConnector(_server, new HttpConnectionFactory()
         {
             @Override
@@ -95,7 +108,8 @@ public class ServerTest
                 return configure(connection, connector, endPoint);
             }
         });
-        _connector.setIdleTimeout(60000);
+        _connector.setIdleTimeout(IDLE_TIMEOUT);
+        _connector.getConnectionFactory(HttpConnectionFactory.class).getHttpConfiguration().setIdleTimeout(IDLE_TIMEOUT);
         _server.addConnector(_connector);
     }
 
@@ -109,10 +123,10 @@ public class ServerTest
     @Test
     public void testSimpleGET() throws Exception
     {
-        _server.setHandler(new Handler.Abstract()
+        _context.setHandler(new Handler.Abstract()
         {
             @Override
-            public boolean handle(Request request, Response response, Callback callback) throws Exception
+            public boolean handle(Request request, Response response, Callback callback)
             {
                 response.getHeaders().put(HttpHeader.CONTENT_TYPE, "text/plain");
                 Content.Sink.write(response, true, "Hello", callback);
@@ -154,7 +168,7 @@ public class ServerTest
     @MethodSource("completionScenarios")
     public void testCompletion(boolean succeeded, boolean handling, boolean written, boolean last) throws Exception
     {
-        _server.setHandler(new Handler.Abstract(Invocable.InvocationType.BLOCKING)
+        _context.setHandler(new Handler.Abstract(Invocable.InvocationType.BLOCKING)
         {
             @Override
             public boolean handle(Request request, Response response, Callback callback) throws Exception
@@ -186,8 +200,6 @@ public class ServerTest
                 \r
                 """;
         String rawResponse = _connector.getResponse(request);
-        // System.err.printf("succeeded=%b handling=%b written=%b last=%b%n", succeeded, handling, written, last);
-        // System.err.println(rawResponse);
 
         if (succeeded || written)
             assertThat(rawResponse, containsString("HTTP/1.1 200 OK"));
@@ -212,4 +224,187 @@ public class ServerTest
             assertThat(rawResponse, containsString("Content-Length:"));
         }
     }
+
+    @Test
+    public void testIdleTimeoutNoListener() throws Exception
+    {
+        // See ServerTimeoutsTest for more complete idle timeout testing.
+        _context.setHandler(new Handler.Abstract()
+        {
+            @Override
+            public boolean handle(Request request, Response response, Callback callback)
+            {
+                // Handler never completes the callback
+                return true;
+            }
+        });
+        _server.start();
+
+        String request = """
+                GET /path HTTP/1.0\r
+                Host: hostname\r
+                \r
+                """;
+        String rawResponse = _connector.getResponse(request);
+        HttpTester.Response response = HttpTester.parseResponse(rawResponse);
+        assertThat(response.getStatus(), is(HttpStatus.INTERNAL_SERVER_ERROR_500));
+        assertThat(response.getContent(), containsString("HTTP ERROR 500 java.util.concurrent.TimeoutException: Idle timeout expired:"));
+    }
+
+    @Test
+    public void testIdleTimeoutNoListenerHttpConfigurationOnly() throws Exception
+    {
+        // See ServerTimeoutsTest for more complete idle timeout testing.
+
+        _context.setHandler(new Handler.Abstract()
+        {
+            @Override
+            public boolean handle(Request request, Response response, Callback callback)
+            {
+                // Handler never completes the callback
+                return true;
+            }
+        });
+
+        _connector.setIdleTimeout(10 * IDLE_TIMEOUT);
+        _connector.getConnectionFactory(HttpConnectionFactory.class).getHttpConfiguration().setIdleTimeout(IDLE_TIMEOUT);
+
+        _server.start();
+
+        String request = """
+                GET /path HTTP/1.0\r
+                Host: hostname\r
+                \r
+                """;
+        String rawResponse = _connector.getResponse(request);
+        HttpTester.Response response = HttpTester.parseResponse(rawResponse);
+        assertThat(response.getStatus(), is(HttpStatus.INTERNAL_SERVER_ERROR_500));
+        assertThat(response.getContent(), containsString("HTTP ERROR 500 java.util.concurrent.TimeoutException: Idle timeout expired:"));
+    }
+
+    @Test
+    public void testIdleTimeoutFalseListener() throws Exception
+    {
+        // See ServerTimeoutsTest for more complete idle timeout testing.
+        CompletableFuture<Callback> callbackOnTimeout = new CompletableFuture<>();
+        _context.setHandler(new Handler.Abstract()
+        {
+            @Override
+            public boolean handle(Request request, Response response, Callback callback)
+            {
+                request.addIdleTimeoutListener(t -> !callbackOnTimeout.complete(callback));
+                return true;
+            }
+        });
+        _server.start();
+
+        String request = """
+                GET /path HTTP/1.0\r
+                Host: hostname\r
+                \r
+                """;
+
+        try (LocalConnector.LocalEndPoint localEndPoint = _connector.executeRequest(request))
+        {
+            callbackOnTimeout.get(3 * IDLE_TIMEOUT, TimeUnit.MILLISECONDS).succeeded();
+            String rawResponse = localEndPoint.getResponse();
+            HttpTester.Response response = HttpTester.parseResponse(rawResponse);
+            assertThat(response.getStatus(), is(HttpStatus.OK_200));
+        }
+    }
+
+    @Test
+    public void testIdleTimeoutWriteCallback() throws Exception
+    {
+        CompletableFuture<Throwable> onTimeout = new CompletableFuture<>();
+        CompletableFuture<Throwable> writeFail = new CompletableFuture<>();
+        _context.setHandler(new Handler.Abstract()
+        {
+            @Override
+            public boolean handle(Request request, Response response, Callback callback)
+            {
+                Runnable write = new Runnable()
+                {
+                    final ByteBuffer buffer = ByteBuffer.allocate(128 * 1024 * 1024);
+                    @Override
+                    public void run()
+                    {
+                        response.write(false, buffer, Callback.from(this,
+                            t ->
+                            {
+                                writeFail.complete(t);
+                                callback.failed(t);
+                            }));
+                    }
+                };
+
+                request.addIdleTimeoutListener(t ->
+                {
+                    request.getComponents().getThreadPool().execute(write);
+                    return onTimeout.complete(t);
+                });
+
+                return true;
+            }
+        });
+        _server.start();
+
+        String request = """
+            GET /path HTTP/1.0\r
+            Host: localhost\r
+            \r
+            """;
+        try (LocalConnector.LocalEndPoint ignored = _connector.executeRequest(request))
+        {
+            Throwable x = onTimeout.get(2 * IDLE_TIMEOUT, TimeUnit.MILLISECONDS);
+            assertThat(x, instanceOf(TimeoutException.class));
+            x = writeFail.get(IDLE_TIMEOUT / 2, TimeUnit.MILLISECONDS);
+            assertThat(x, instanceOf(TimeoutException.class));
+        }
+    }
+
+    @Test
+    public void testListenersInContext() throws Exception
+    {
+        CountDownLatch latch = new CountDownLatch(3);
+        _context.setHandler(new Handler.Abstract()
+        {
+            @Override
+            public boolean handle(Request request, Response response, Callback callback)
+            {
+                assertThat(ContextHandler.getCurrentContext(), sameInstance(_context.getContext()));
+                latch.countDown();
+
+                request.addIdleTimeoutListener(t ->
+                {
+                    assertThat(ContextHandler.getCurrentContext(), sameInstance(_context.getContext()));
+                    latch.countDown();
+                    return true;
+                });
+
+                request.addFailureListener(t ->
+                {
+                    assertThat(ContextHandler.getCurrentContext(), sameInstance(_context.getContext()));
+                    latch.countDown();
+                });
+                return true;
+            }
+        });
+        _server.start();
+
+        String request = """
+                GET /path HTTP/1.0\r
+                Host: hostname\r
+                \r
+                """;
+
+        try (LocalConnector.LocalEndPoint localEndPoint = _connector.executeRequest(request))
+        {
+            assertTrue(latch.await(3 * IDLE_TIMEOUT, TimeUnit.MILLISECONDS));
+            String rawResponse = localEndPoint.getResponse();
+            HttpTester.Response response = HttpTester.parseResponse(rawResponse);
+            assertThat(response.getStatus(), is(HttpStatus.INTERNAL_SERVER_ERROR_500));
+        }
+    }
+
 }

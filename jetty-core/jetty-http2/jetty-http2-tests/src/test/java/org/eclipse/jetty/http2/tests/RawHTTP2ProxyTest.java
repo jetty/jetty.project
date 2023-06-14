@@ -25,6 +25,7 @@ import java.util.Random;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.TimeUnit;
+import java.util.concurrent.TimeoutException;
 
 import org.eclipse.jetty.http.HttpFields;
 import org.eclipse.jetty.http.HttpStatus;
@@ -521,7 +522,7 @@ public class RawHTTP2ProxyTest
         }
 
         @Override
-        public void onIdleTimeout(Stream stream, Throwable x, Promise<Boolean> promise)
+        public void onIdleTimeout(Stream stream, TimeoutException x, Promise<Boolean> promise)
         {
             if (LOGGER.isDebugEnabled())
                 LOGGER.debug("CPS idle timeout for {}", stream);
@@ -684,7 +685,7 @@ public class RawHTTP2ProxyTest
         }
 
         @Override
-        public void onIdleTimeout(Stream stream, Throwable x, Promise<Boolean> promise)
+        public void onIdleTimeout(Stream stream, TimeoutException x, Promise<Boolean> promise)
         {
             if (LOGGER.isDebugEnabled())
                 LOGGER.debug("SPC idle timeout for {}", stream);
