@@ -84,16 +84,20 @@ public class WebSocketUpgradeHandler extends Handler.Wrapper
      */
     public static WebSocketUpgradeHandler from(Server server, ContextHandler context)
     {
-        WebSocketUpgradeHandler wsHandler = new WebSocketUpgradeHandler(WebSocketServerComponents.ensureWebSocketComponents(server, context));
-        context.getContext().setAttribute(WebSocketContainer.class.getName(), wsHandler.container);
+        WebSocketComponents components = WebSocketServerComponents.ensureWebSocketComponents(server, context);
+        WebSocketMappings mappings = new WebSocketMappings(components);
+        ServerWebSocketContainer container = new ServerWebSocketContainer(mappings);
+
+        WebSocketUpgradeHandler wsHandler = new WebSocketUpgradeHandler(container);
+        context.getContext().setAttribute(WebSocketContainer.class.getName(), wsHandler._container);
         return wsHandler;
     }
 
-    private final ServerWebSocketContainer container;
+    private final ServerWebSocketContainer _container;
 
-    private WebSocketUpgradeHandler(WebSocketComponents components)
+    private WebSocketUpgradeHandler(ServerWebSocketContainer container)
     {
-        this.container = new ServerWebSocketContainer(new WebSocketMappings(components));
+        _container = container;
         addBean(container);
     }
 
@@ -106,14 +110,14 @@ public class WebSocketUpgradeHandler extends Handler.Wrapper
      */
     public WebSocketUpgradeHandler configure(Consumer<ServerWebSocketContainer> configurator)
     {
-        configurator.accept(container);
+        configurator.accept(_container);
         return this;
     }
 
     @Override
     public boolean handle(Request request, Response response, Callback callback) throws Exception
     {
-        if (container.handle(request, response, callback))
+        if (_container.handle(request, response, callback))
             return true;
         return super.handle(request, response, callback);
     }
@@ -125,6 +129,6 @@ public class WebSocketUpgradeHandler extends Handler.Wrapper
             return InvocationType.BLOCKING;
         Handler handler = getHandler();
         InvocationType handlerInvocationType = handler == null ? InvocationType.NON_BLOCKING : handler.getInvocationType();
-        return Invocable.combine(handlerInvocationType, container.getInvocationType());
+        return Invocable.combine(handlerInvocationType, _container.getInvocationType());
     }
 }

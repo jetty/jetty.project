@@ -31,7 +31,6 @@ import org.eclipse.jetty.websocket.api.Session;
 import org.eclipse.jetty.websocket.api.WebSocketContainer;
 import org.eclipse.jetty.websocket.api.WebSocketSessionListener;
 import org.eclipse.jetty.websocket.common.SessionTracker;
-import org.eclipse.jetty.websocket.core.WebSocketComponents;
 import org.eclipse.jetty.websocket.core.exception.WebSocketException;
 import org.eclipse.jetty.websocket.core.server.FrameHandlerFactory;
 import org.eclipse.jetty.websocket.core.server.WebSocketMappings;
@@ -58,7 +57,7 @@ public class ServerWebSocketContainer extends ContainerLifeCycle implements WebS
     private final FrameHandlerFactory factory;
     private InvocationType invocationType = InvocationType.BLOCKING;
 
-    public ServerWebSocketContainer(WebSocketMappings mappings)
+    ServerWebSocketContainer(WebSocketMappings mappings)
     {
         this.mappings = mappings;
         this.factory = new ServerFrameHandlerFactory(this, mappings.getWebSocketComponents());
@@ -66,15 +65,10 @@ public class ServerWebSocketContainer extends ContainerLifeCycle implements WebS
         addBean(sessionTracker);
     }
 
-    public WebSocketComponents getWebSocketComponents()
-    {
-        return mappings.getWebSocketComponents();
-    }
-
     @Override
     public Executor getExecutor()
     {
-        return getWebSocketComponents().getExecutor();
+        return mappings.getWebSocketComponents().getExecutor();
     }
 
     @Override

@@ -13,11 +13,11 @@
 
 module org.eclipse.jetty.websocket.server
 {
-    requires org.eclipse.jetty.server;
     requires org.eclipse.jetty.websocket.core.server;
     requires org.eclipse.jetty.websocket.common;
     requires org.slf4j;
 
+    requires transitive org.eclipse.jetty.server;
     requires transitive org.eclipse.jetty.websocket.api;
 
     exports org.eclipse.jetty.websocket.server;
