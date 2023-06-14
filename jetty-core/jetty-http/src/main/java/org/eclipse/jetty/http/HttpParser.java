@@ -236,7 +236,7 @@ public class HttpParser
     private final FieldCache _fieldCache = new FieldCache();
     private HttpField _field;
     private HttpHeader _header;
-    private long _startNanoTime;
+    private long _beginNanoTime;
     private String _headerString;
     private String _valueString;
     private int _responseStatus;
@@ -312,9 +312,9 @@ public class HttpParser
         _complianceListener = (ComplianceViolation.Listener)(_handler instanceof ComplianceViolation.Listener ? _handler : null);
     }
 
-    public long getStartNanoTime()
+    public long getBeginNanoTime()
     {
-        return _startNanoTime;
+        return _beginNanoTime;
     }
 
     public HttpHandler getHandler()
@@ -1527,7 +1527,7 @@ public class HttpParser
                 _endOfContent = EndOfContent.UNKNOWN_CONTENT;
                 _header = null;
                 if (buffer.hasRemaining())
-                    _startNanoTime = NanoTime.now();
+                    _beginNanoTime = NanoTime.now(); // TODO #9900 check beginNanoTime's accuracy
                 if (quickStart(buffer))
                     return true;
             }

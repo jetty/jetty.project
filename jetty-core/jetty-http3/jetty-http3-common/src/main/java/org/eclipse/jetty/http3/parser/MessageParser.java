@@ -123,7 +123,7 @@ public class MessageParser
                     {
                         BodyParser bodyParser = null;
                         long frameType = headerParser.getFrameType();
-                        beginNanoTime = NanoTime.now();
+                        beginNanoTime = NanoTime.now(); // TODO #9900 check beginNanoTime's accuracy
                         if (frameType >= 0 && frameType < bodyParsers.length)
                             bodyParser = bodyParsers[(int)frameType];
 
