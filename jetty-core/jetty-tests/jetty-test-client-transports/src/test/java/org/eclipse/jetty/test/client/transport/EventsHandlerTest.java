@@ -218,7 +218,7 @@ public class EventsHandlerTest extends AbstractTest
             case H2C -> 7;
             case H3 -> 7;
         };
-        await().atMost(1, TimeUnit.SECONDS).until(eventsHandler.exceptions::size, is(6 * events));
+        await().atMost(1, TimeUnit.SECONDS).until(eventsHandler.exceptions::size, is(4 * events));
     }
 
     @ParameterizedTest
@@ -257,7 +257,7 @@ public class EventsHandlerTest extends AbstractTest
             case H2C -> 11;
             case H3 -> 11;
         };
-        await().atMost(1, TimeUnit.SECONDS).until(eventsHandler.exceptions::size, is(6 * events));
+        await().atMost(1, TimeUnit.SECONDS).until(eventsHandler.exceptions::size, is(4 * events));
     }
 
     @ParameterizedTest
@@ -476,22 +476,6 @@ public class EventsHandlerTest extends AbstractTest
             try
             {
                 request.addHttpStreamWrapper(httpStream -> null);
-            }
-            catch (Throwable x)
-            {
-                exceptions.add(x);
-            }
-            try
-            {
-                request.addIdleTimeoutListener(timeout -> false);
-            }
-            catch (Throwable x)
-            {
-                exceptions.add(x);
-            }
-            try
-            {
-                request.addFailureListener(throwable -> {});
             }
             catch (Throwable x)
             {

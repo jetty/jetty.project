@@ -14,10 +14,6 @@
 package org.eclipse.jetty.server.handler;
 
 import java.nio.ByteBuffer;
-import java.util.concurrent.TimeoutException;
-import java.util.function.Consumer;
-import java.util.function.Function;
-import java.util.function.Predicate;
 import java.util.function.Supplier;
 
 import org.eclipse.jetty.http.HttpFields;
@@ -27,6 +23,7 @@ import org.eclipse.jetty.server.Handler;
 import org.eclipse.jetty.server.HttpStream;
 import org.eclipse.jetty.server.Request;
 import org.eclipse.jetty.server.Response;
+import org.eclipse.jetty.util.BufferUtil;
 import org.eclipse.jetty.util.Callback;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -68,52 +65,46 @@ public abstract class EventsHandler extends Handler.Wrapper
     @Override
     public boolean handle(Request request, Response response, Callback callback) throws Exception
     {
-        // Before handling
-        ReadOnlyRequest roRequest = new ReadOnlyRequest(request);
-        fireOnBeforeHandling(roRequest);
+        Request roRequest = request.asReadOnly();
+        notifyOnBeforeHandling(roRequest);
         try
         {
             EventsRequest wrappedRequest = new EventsRequest(request, roRequest);
             EventsResponse wrappedResponse = new EventsResponse(roRequest, response);
             request.addHttpStreamWrapper(stream -> new HttpStream.Wrapper(stream)
             {
-                private void fireNotifications(Throwable failure)
-                {
-                    if (!wrappedResponse.notifiedOnResponseBegin)
-                        fireOnResponseBegin(roRequest, wrappedResponse.getHeaders().asImmutable(), wrappedResponse.getStatus());
-                    if (wrappedResponse.suppliedTrailers != null)
-                        fireOnResponseTrailersComplete(roRequest, wrappedResponse.suppliedTrailers);
-                    fireOnComplete(roRequest, failure);
-                }
-
                 @Override
                 public void succeeded()
                 {
-                    fireNotifications(null);
+                    notifyOnResponseBegin(roRequest, wrappedResponse);
+                    notifyOnResponseTrailersComplete(roRequest, wrappedResponse);
+                    notifyOnComplete(roRequest, null);
                     super.succeeded();
                 }
 
                 @Override
                 public void failed(Throwable x)
                 {
-                    fireNotifications(x);
+                    notifyOnResponseBegin(roRequest, wrappedResponse);
+                    notifyOnResponseTrailersComplete(roRequest, wrappedResponse);
+                    notifyOnComplete(roRequest, x);
                     super.failed(x);
                 }
             });
 
             boolean handled = super.handle(wrappedRequest, wrappedResponse, callback);
 
-            fireOnAfterHandling(roRequest, handled, null);
+            notifyOnAfterHandling(roRequest, handled, null);
             return handled;
         }
         catch (Throwable x)
         {
-            fireOnAfterHandling(roRequest, false, x);
+            notifyOnAfterHandling(roRequest, false, x);
             throw x;
         }
     }
 
-    private void fireOnBeforeHandling(Request request)
+    private void notifyOnBeforeHandling(Request request)
     {
         try
         {
@@ -125,14 +116,11 @@ public abstract class EventsHandler extends Handler.Wrapper
         }
     }
 
-    private void fireOnRequestRead(Request wrapped, Content.Chunk chunk)
+    private void notifyOnRequestRead(Request wrapped, Content.Chunk chunk)
     {
         try
         {
-            Content.Chunk readOnlyChunk = chunk;
-            if (chunk != null && chunk.hasRemaining())
-                readOnlyChunk = Content.Chunk.asChunk(chunk.getByteBuffer().asReadOnlyBuffer(), chunk.isLast(), chunk);
-            onRequestRead(wrapped, readOnlyChunk);
+            onRequestRead(wrapped, chunk == null ? null : chunk.asReadOnly());
         }
         catch (Throwable x)
         {
@@ -140,7 +128,7 @@ public abstract class EventsHandler extends Handler.Wrapper
         }
     }
 
-    private void fireOnAfterHandling(Request request, boolean handled, Throwable failure)
+    private void notifyOnAfterHandling(Request request, boolean handled, Throwable failure)
     {
         try
         {
@@ -152,11 +140,15 @@ public abstract class EventsHandler extends Handler.Wrapper
         }
     }
 
-    private void fireOnResponseBegin(Request request, HttpFields response, int status)
+    private void notifyOnResponseBegin(Request request, EventsResponse response)
     {
         try
         {
-            onResponseBegin(request, status, response);
+            if (!response.notifiedOnResponseBegin)
+            {
+                onResponseBegin(request, response.getStatus(), response.getHeaders().asImmutable());
+                response.notifiedOnResponseBegin = true;
+            }
         }
         catch (Throwable x)
         {
@@ -164,7 +156,7 @@ public abstract class EventsHandler extends Handler.Wrapper
         }
     }
 
-    private void fireOnResponseWrite(Request request, boolean last, ByteBuffer content)
+    private void notifyOnResponseWrite(Request request, boolean last, ByteBuffer content)
     {
         try
         {
@@ -176,7 +168,7 @@ public abstract class EventsHandler extends Handler.Wrapper
         }
     }
 
-    private void fireOnResponseWriteComplete(Request request, Throwable failure)
+    private void notifyOnResponseWriteComplete(Request request, Throwable failure)
     {
         try
         {
@@ -188,11 +180,12 @@ public abstract class EventsHandler extends Handler.Wrapper
         }
     }
 
-    private void fireOnResponseTrailersComplete(Request request, HttpFields trailers)
+    private void notifyOnResponseTrailersComplete(Request request, EventsResponse response)
     {
         try
         {
-            onResponseTrailersComplete(request, trailers);
+            if (response.suppliedTrailers != null)
+                onResponseTrailersComplete(request, response.suppliedTrailers);
         }
         catch (Throwable x)
         {
@@ -200,7 +193,7 @@ public abstract class EventsHandler extends Handler.Wrapper
         }
     }
 
-    private void fireOnComplete(Request request, Throwable failure)
+    private void notifyOnComplete(Request request, Throwable failure)
     {
         try
         {
@@ -226,6 +219,8 @@ public abstract class EventsHandler extends Handler.Wrapper
      */
     protected void onBeforeHandling(Request request)
     {
+        if (LOG.isDebugEnabled())
+            LOG.debug("onBeforeHandling of {}", request);
     }
 
     /**
@@ -242,6 +237,8 @@ public abstract class EventsHandler extends Handler.Wrapper
      */
     protected void onRequestRead(Request request, Content.Chunk chunk)
     {
+        if (LOG.isDebugEnabled())
+            LOG.debug("onRequestRead of {} and {}", request, chunk);
     }
 
     /**
@@ -255,6 +252,8 @@ public abstract class EventsHandler extends Handler.Wrapper
      */
     protected void onAfterHandling(Request request, boolean handled, Throwable failure)
     {
+        if (LOG.isDebugEnabled())
+            LOG.debug("onAfterHandling of {} handled={}", request, handled, failure);
     }
 
     /**
@@ -268,6 +267,8 @@ public abstract class EventsHandler extends Handler.Wrapper
      */
     protected void onResponseBegin(Request request, int status, HttpFields headers)
     {
+        if (LOG.isDebugEnabled())
+            LOG.debug("onResponseBegin of {} status={} headers={}", request, status, headers);
     }
 
     /**
@@ -281,6 +282,8 @@ public abstract class EventsHandler extends Handler.Wrapper
      */
     protected void onResponseWrite(Request request, boolean last, ByteBuffer content)
     {
+        if (LOG.isDebugEnabled())
+            LOG.debug("onResponseWrite of {} last={} content={}", request, last, BufferUtil.toDetailString(content));
     }
 
     /**
@@ -295,6 +298,8 @@ public abstract class EventsHandler extends Handler.Wrapper
      */
     protected void onResponseWriteComplete(Request request, Throwable failure)
     {
+        if (LOG.isDebugEnabled())
+            LOG.debug("onResponseWriteComplete of {}", request, failure);
     }
 
     /**
@@ -305,6 +310,8 @@ public abstract class EventsHandler extends Handler.Wrapper
      */
     protected void onResponseTrailersComplete(Request request, HttpFields trailers)
     {
+        if (LOG.isDebugEnabled())
+            LOG.debug("onResponseTrailersComplete of {}, trailers={}", request, trailers);
     }
 
     /**
@@ -319,6 +326,8 @@ public abstract class EventsHandler extends Handler.Wrapper
      */
     protected void onComplete(Request request, Throwable failure)
     {
+        if (LOG.isDebugEnabled())
+            LOG.debug("onComplete of {}", request, failure);
     }
 
     private class EventsResponse extends Response.Wrapper
@@ -326,21 +335,17 @@ public abstract class EventsHandler extends Handler.Wrapper
         private boolean notifiedOnResponseBegin;
         private HttpFields suppliedTrailers;
 
-        public EventsResponse(ReadOnlyRequest request, Response response)
+        public EventsResponse(Request roRequest, Response response)
         {
-            super(request, response);
+            super(roRequest, response);
         }
 
         @Override
         public void write(boolean last, ByteBuffer byteBuffer, Callback callback)
         {
-            if (!notifiedOnResponseBegin)
-            {
-                fireOnResponseBegin(getRequest(), getWrapped().getHeaders().asImmutable(), getWrapped().getStatus());
-                notifiedOnResponseBegin = true;
-            }
-            fireOnResponseWrite(getRequest(), last, byteBuffer);
-            super.write(last, byteBuffer, Callback.from(callback, (x) -> fireOnResponseWriteComplete(getRequest(), x)));
+            notifyOnResponseBegin(getRequest(), this);
+            notifyOnResponseWrite(getRequest(), last, byteBuffer);
+            super.write(last, byteBuffer, Callback.from(callback, (x) -> notifyOnResponseWriteComplete(getRequest(), x)));
         }
 
         @Override
@@ -352,9 +357,9 @@ public abstract class EventsHandler extends Handler.Wrapper
 
     private class EventsRequest extends Request.Wrapper
     {
-        private final ReadOnlyRequest roRequest;
+        private final Request roRequest;
 
-        public EventsRequest(Request request, ReadOnlyRequest roRequest)
+        public EventsRequest(Request request, Request roRequest)
         {
             super(request);
             this.roRequest = roRequest;
@@ -364,52 +369,8 @@ public abstract class EventsHandler extends Handler.Wrapper
         public Content.Chunk read()
         {
             Content.Chunk chunk = super.read();
-            fireOnRequestRead(roRequest, chunk);
+            notifyOnRequestRead(roRequest, chunk);
             return chunk;
-        }
-    }
-
-    private static class ReadOnlyRequest extends Request.Wrapper
-    {
-        private ReadOnlyRequest(Request request)
-        {
-            super(request);
-        }
-
-        @Override
-        public void addIdleTimeoutListener(Predicate<TimeoutException> onIdleTimeout)
-        {
-            throw new UnsupportedOperationException();
-        }
-
-        @Override
-        public void addFailureListener(Consumer<Throwable> onFailure)
-        {
-            throw new UnsupportedOperationException();
-        }
-
-        @Override
-        public void addHttpStreamWrapper(Function<HttpStream, HttpStream> wrapper)
-        {
-            throw new UnsupportedOperationException();
-        }
-
-        @Override
-        public Content.Chunk read()
-        {
-            throw new UnsupportedOperationException();
-        }
-
-        @Override
-        public void demand(Runnable demandCallback)
-        {
-            throw new UnsupportedOperationException();
-        }
-
-        @Override
-        public void fail(Throwable failure)
-        {
-            throw new UnsupportedOperationException();
         }
     }
 }

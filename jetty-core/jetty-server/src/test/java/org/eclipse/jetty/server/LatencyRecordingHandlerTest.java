@@ -63,7 +63,7 @@ public class LatencyRecordingHandlerTest
         LatencyRecordingHandler latencyRecordingHandler = new LatencyRecordingHandler()
         {
             @Override
-            protected void onRequestComplete(long durationInNs)
+            protected void onRequestComplete(String requestId, long durationInNs)
             {
                 _latencies.add(durationInNs);
             }

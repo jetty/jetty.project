@@ -310,6 +310,41 @@ public interface Request extends Attributes, Content.Source
      */
     Session getSession(boolean create);
 
+    /**
+     * Returns a copy of the request that throws {@link UnsupportedOperationException}
+     * from all mutative methods.
+     * @return a copy of the request
+     */
+    default Request asReadOnly()
+    {
+        return new Request.Wrapper(this)
+        {
+            @Override
+            public void addHttpStreamWrapper(Function<HttpStream, HttpStream> wrapper)
+            {
+                throw new UnsupportedOperationException();
+            }
+
+            @Override
+            public Content.Chunk read()
+            {
+                throw new UnsupportedOperationException();
+            }
+
+            @Override
+            public void demand(Runnable demandCallback)
+            {
+                throw new UnsupportedOperationException();
+            }
+
+            @Override
+            public void fail(Throwable failure)
+            {
+                throw new UnsupportedOperationException();
+            }
+        };
+    }
+
     static String getLocalAddr(Request request)
     {
         if (request == null)
