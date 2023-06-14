@@ -140,6 +140,23 @@ public abstract class SelectorManager extends ContainerLifeCycle implements Dump
     }
 
     /**
+     * Get total number of keys from each selector.
+     *
+     * @return total number of selector keys
+     */
+    @ManagedAttribute(value = "Total number of keys in all selectors", readonly = true)
+    public int getTotalKeys()
+    {
+        int keys = 0;
+        for (final ManagedSelector selector : _selectors)
+        {
+            keys += selector.getTotalKeys();
+        }
+        return keys;
+    }
+
+
+    /**
      * @return the number of selectors in use
      */
     @ManagedAttribute("The number of NIO Selectors")
@@ -505,5 +522,11 @@ public abstract class SelectorManager extends ContainerLifeCycle implements Dump
         default void onAccepted(SelectableChannel channel)
         {
         }
+    }
+
+    @Override
+    public String toString()
+    {
+        return String.format("%s@%x[keys=%d]", getClass().getSimpleName(), hashCode(), getTotalKeys());
     }
 }
