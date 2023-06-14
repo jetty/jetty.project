@@ -503,6 +503,7 @@ public class WebAppContext extends ServletContextHandler implements WebAppClassL
     @Override
     protected void doStart() throws Exception
     {
+        ClassLoader old = Thread.currentThread().getContextClassLoader();
         try
         {
             _metadata.setAllowDuplicateFragmentNames(isAllowDuplicateFragmentNames());
@@ -525,6 +526,10 @@ public class WebAppContext extends ServletContextHandler implements WebAppClassL
             setAvailable(false); // webapp cannot be accessed (results in status code 503)
             if (isThrowUnavailableOnStartupException())
                 throw t;
+        }
+        finally
+        {
+            Thread.currentThread().setContextClassLoader(old);
         }
     }
 

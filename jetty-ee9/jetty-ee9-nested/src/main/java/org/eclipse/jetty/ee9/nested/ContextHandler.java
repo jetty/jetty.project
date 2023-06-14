@@ -610,16 +610,13 @@ public class ContextHandler extends ScopedHandler implements Attributes, Supplie
                     {
                         throw new RuntimeException(e);
                     }
-                    finally
-                    {
-                        _coreContextHandler.removeEventListener(this);
-                    }
                 }
 
                 @Override
                 public void lifeCycleStarted(LifeCycle event)
                 {
                     _coreContextHandler.manage(this);
+                    _coreContextHandler.removeEventListener(this);
                 }
             });
 
@@ -669,16 +666,13 @@ public class ContextHandler extends ScopedHandler implements Attributes, Supplie
                     {
                         throw new RuntimeException(e);
                     }
-                    finally
-                    {
-                        _coreContextHandler.removeEventListener(this);
-                    }
                 }
 
                 @Override
                 public void lifeCycleStopped(LifeCycle event)
                 {
                     _coreContextHandler.manage(this);
+                    _coreContextHandler.removeEventListener(this);
                 }
             });
 
@@ -879,7 +873,7 @@ public class ContextHandler extends ScopedHandler implements Attributes, Supplie
             else
                 context.call(() -> nextScope(target, baseRequest, request, response), baseRequest.getCoreRequest());
         }
-        catch (IOException | ServletException e)
+        catch (IOException | ServletException | RuntimeException e)
         {
             throw e;
         }
