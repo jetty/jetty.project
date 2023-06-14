@@ -521,7 +521,6 @@ public class HttpChannel implements Runnable, HttpOutput.Interceptor
         _response.recycle();
         _committedMetaData = null;
         _written = 0;
-        _oldIdleTimeout = 0;
         _transientListeners.clear();
     }
 
@@ -948,9 +947,6 @@ public class HttpChannel implements Runnable, HttpOutput.Interceptor
         _coreCallback = coreCallback;
 
         long idleTO = _configuration.getIdleTimeout();
-        _oldIdleTimeout = getIdleTimeout();
-        if (idleTO >= 0 && _oldIdleTimeout != idleTO)
-            setIdleTimeout(idleTO);
 
         if (LOG.isDebugEnabled())
         {
@@ -1014,17 +1010,13 @@ public class HttpChannel implements Runnable, HttpOutput.Interceptor
         if (idleTO >= 0 && getIdleTimeout() != _oldIdleTimeout)
             setIdleTimeout(_oldIdleTimeout);
 
-        if (getServer().getRequestLog() != null)
+        if (getServer().getRequestLog() instanceof CustomRequestLog)
         {
-            Authentication authentication = _request.getAuthentication();
-            if (authentication instanceof Authentication.User userAuthentication)
-                _request.setAttribute(CustomRequestLog.USER_NAME, userAuthentication.getUserIdentity().getUserPrincipal().getName());
-
-            String realPath = _request.getServletContext().getRealPath(_request.getPathInContext());
-            _request.setAttribute(CustomRequestLog.REAL_PATH, realPath);
-
-            String servletName = _request.getServletName();
-            _request.setAttribute(CustomRequestLog.HANDLER_NAME, servletName);
+            CustomRequestLog.LogDetail logDetail = new CustomRequestLog.LogDetail(
+                _request.getServletName(),
+                _request.getServletContext().getRealPath(_request.getPathInContext())
+            );
+            _request.setAttribute(CustomRequestLog.LOG_DETAIL, logDetail);
         }
 
         _request.onCompleted();

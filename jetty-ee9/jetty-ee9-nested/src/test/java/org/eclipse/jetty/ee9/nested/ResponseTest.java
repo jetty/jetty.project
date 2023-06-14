@@ -31,6 +31,8 @@ import java.util.List;
 import java.util.Locale;
 import java.util.Map;
 import java.util.concurrent.CompletableFuture;
+import java.util.concurrent.TimeoutException;
+import java.util.function.Consumer;
 import java.util.function.Function;
 import java.util.function.Predicate;
 import java.util.function.Supplier;
@@ -2387,9 +2389,13 @@ public class ResponseTest
         }
 
         @Override
-        public boolean addErrorListener(Predicate<Throwable> onError)
+        public void addIdleTimeoutListener(Predicate<TimeoutException> onIdleTimeout)
         {
-            return false;
+        }
+
+        @Override
+        public void addFailureListener(Consumer<Throwable> onFailure)
+        {
         }
 
         @Override

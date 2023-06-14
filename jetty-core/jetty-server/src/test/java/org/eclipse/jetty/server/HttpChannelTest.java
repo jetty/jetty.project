@@ -1174,13 +1174,9 @@ public class HttpChannelTest
             public boolean handle(Request request, Response response, Callback callback)
             {
                 handling.set(response);
-                request.addErrorListener(t -> false);
-                request.addErrorListener(t -> !error.compareAndSet(null, t));
-                request.addErrorListener(t ->
-                {
-                    callback.failed(t);
-                    return true;
-                });
+                request.addFailureListener(t -> error.set(null));
+                request.addFailureListener(t -> error.compareAndSet(null, t));
+                request.addFailureListener(t -> error.compareAndSet(null, new Throwable("WRONG")));
                 return true;
             }
         };

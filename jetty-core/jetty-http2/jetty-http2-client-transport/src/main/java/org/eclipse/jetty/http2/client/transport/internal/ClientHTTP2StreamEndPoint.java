@@ -13,6 +13,8 @@
 
 package org.eclipse.jetty.http2.client.transport.internal;
 
+import java.util.concurrent.TimeoutException;
+
 import org.eclipse.jetty.http2.HTTP2Channel;
 import org.eclipse.jetty.http2.HTTP2Stream;
 import org.eclipse.jetty.http2.HTTP2StreamEndPoint;
@@ -38,13 +40,13 @@ public class ClientHTTP2StreamEndPoint extends HTTP2StreamEndPoint implements HT
     }
 
     @Override
-    public void onTimeout(Throwable failure, Promise<Boolean> promise)
+    public void onTimeout(TimeoutException timeout, Promise<Boolean> promise)
     {
         if (LOG.isDebugEnabled())
-            LOG.debug("idle timeout on {}: {}", this, failure);
+            LOG.debug("idle timeout on {}", this, timeout);
         Connection connection = getConnection();
         if (connection != null)
-            promise.succeeded(connection.onIdleExpired());
+            promise.succeeded(connection.onIdleExpired(timeout));
         else
             promise.succeeded(true);
     }

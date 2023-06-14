@@ -16,6 +16,7 @@ package org.eclipse.jetty.io;
 import java.io.Closeable;
 import java.nio.ByteBuffer;
 import java.util.EventListener;
+import java.util.concurrent.TimeoutException;
 
 import org.eclipse.jetty.util.component.Container;
 
@@ -82,7 +83,7 @@ public interface Connection extends Closeable
      * @return true to let the EndPoint handle the idle timeout,
      * false to tell the EndPoint to halt the handling of the idle timeout.
      */
-    boolean onIdleExpired();
+    boolean onIdleExpired(TimeoutException timeoutException);
 
     long getMessagesIn();
 

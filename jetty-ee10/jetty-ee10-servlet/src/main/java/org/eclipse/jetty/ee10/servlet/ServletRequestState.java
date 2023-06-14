@@ -16,6 +16,7 @@ package org.eclipse.jetty.ee10.servlet;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.concurrent.TimeUnit;
+import java.util.concurrent.TimeoutException;
 
 import jakarta.servlet.AsyncListener;
 import jakarta.servlet.ServletContext;
@@ -725,6 +726,18 @@ public class ServletRequestState
         {
             cancelTimeout(event);
             runInContext(event, _servletChannel::handle);
+        }
+    }
+
+    public boolean onIdleTimeout(TimeoutException timeout)
+    {
+        try (AutoLock ignored = lock())
+        {
+            if (LOG.isDebugEnabled())
+                LOG.debug("onIdleTimeout {}", getStatusStringLocked(), timeout);
+            // TODO this is almost always returning false?!? what about read/write timeouts???
+            //      return _state == State.IDLE;
+            return true;
         }
     }
 

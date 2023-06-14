@@ -32,8 +32,6 @@ import java.util.Optional;
 import java.util.Set;
 import java.util.StringTokenizer;
 import java.util.concurrent.CompletableFuture;
-import java.util.function.Function;
-import java.util.function.Predicate;
 import java.util.function.Supplier;
 import java.util.stream.Collectors;
 
@@ -64,7 +62,6 @@ import org.eclipse.jetty.http.content.VirtualHttpContentFactory;
 import org.eclipse.jetty.io.ByteBufferInputStream;
 import org.eclipse.jetty.io.ByteBufferPool;
 import org.eclipse.jetty.server.Context;
-import org.eclipse.jetty.server.HttpStream;
 import org.eclipse.jetty.server.Request;
 import org.eclipse.jetty.server.ResourceService;
 import org.eclipse.jetty.server.Response;
@@ -631,17 +628,6 @@ public class DefaultServlet extends HttpServlet
         public boolean isSecure()
         {
             return _servletRequest.isSecure();
-        }
-
-        @Override
-        public boolean addErrorListener(Predicate<Throwable> onError)
-        {
-            return false;
-        }
-
-        @Override
-        public void addHttpStreamWrapper(Function<HttpStream, HttpStream> wrapper)
-        {
         }
 
         @Override

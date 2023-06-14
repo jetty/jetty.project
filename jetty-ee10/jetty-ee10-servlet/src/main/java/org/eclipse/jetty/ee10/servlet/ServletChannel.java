@@ -38,7 +38,6 @@ import org.eclipse.jetty.http.HttpURI;
 import org.eclipse.jetty.io.Connection;
 import org.eclipse.jetty.io.EndPoint;
 import org.eclipse.jetty.io.QuietException;
-import org.eclipse.jetty.security.AuthenticationState;
 import org.eclipse.jetty.server.Connector;
 import org.eclipse.jetty.server.CustomRequestLog;
 import org.eclipse.jetty.server.HttpConfiguration;
@@ -84,7 +83,6 @@ public class ServletChannel
     private final Listener _combinedListener;
     private volatile ServletContextRequest _servletContextRequest;
     private volatile boolean _expects100Continue;
-    private volatile long _oldIdleTimeout;
     private volatile Callback _callback;
     // Bytes written after interception (e.g. after compression).
     private volatile long _written;
@@ -381,7 +379,6 @@ public class ServletChannel
         _servletContextRequest = null;
         _callback = null;
         _written = 0;
-        _oldIdleTimeout = 0;
     }
 
     /**
@@ -839,21 +836,12 @@ public class ServletChannel
         if (LOG.isDebugEnabled())
             LOG.debug("onCompleted for {} written={}", apiRequest.getRequestURI(), getBytesWritten());
 
-        long idleTO = _configuration.getIdleTimeout();
-        if (idleTO >= 0 && getIdleTimeout() != _oldIdleTimeout)
-            setIdleTimeout(_oldIdleTimeout);
-
-        if (getServer().getRequestLog() != null)
+        if (getServer().getRequestLog() instanceof CustomRequestLog)
         {
-            AuthenticationState authenticationState = apiRequest.getAuthentication();
-            if (authenticationState instanceof AuthenticationState.Succeeded succeededAuthentication)
-                _servletContextRequest.setAttribute(CustomRequestLog.USER_NAME, succeededAuthentication.getUserIdentity().getUserPrincipal().getName());
-
-            String realPath = apiRequest.getServletContext().getRealPath(Request.getPathInContext(_servletContextRequest));
-            _servletContextRequest.setAttribute(CustomRequestLog.REAL_PATH, realPath);
-
-            String servletName = _servletContextRequest.getServletName();
-            _servletContextRequest.setAttribute(CustomRequestLog.HANDLER_NAME, servletName);
+            CustomRequestLog.LogDetail logDetail = new CustomRequestLog.LogDetail(
+                _servletContextRequest.getServletName(),
+                apiRequest.getServletContext().getRealPath(Request.getPathInContext(_servletContextRequest)));
+            _servletContextRequest.setAttribute(CustomRequestLog.LOG_DETAIL, logDetail);
         }
 
         // Callback will either be succeeded here or failed in abort().
