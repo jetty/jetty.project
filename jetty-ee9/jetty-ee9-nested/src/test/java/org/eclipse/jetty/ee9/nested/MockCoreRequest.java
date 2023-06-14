@@ -15,6 +15,8 @@ package org.eclipse.jetty.ee9.nested;
 
 import java.util.List;
 import java.util.Set;
+import java.util.concurrent.TimeoutException;
+import java.util.function.Consumer;
 import java.util.function.Function;
 import java.util.function.Predicate;
 
@@ -160,9 +162,13 @@ public class MockCoreRequest implements org.eclipse.jetty.server.Request
     }
 
     @Override
-    public boolean addErrorListener(Predicate<Throwable> onError)
+    public void addIdleTimeoutListener(Predicate<TimeoutException> onIdleTimeout)
     {
-        return false;
+    }
+
+    @Override
+    public void addFailureListener(Consumer<Throwable> onFailure)
+    {
     }
 
     @Override

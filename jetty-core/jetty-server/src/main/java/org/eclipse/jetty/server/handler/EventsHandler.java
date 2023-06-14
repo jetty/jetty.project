@@ -14,6 +14,8 @@
 package org.eclipse.jetty.server.handler;
 
 import java.nio.ByteBuffer;
+import java.util.concurrent.TimeoutException;
+import java.util.function.Consumer;
 import java.util.function.Function;
 import java.util.function.Predicate;
 import java.util.function.Supplier;
@@ -127,7 +129,14 @@ public abstract class EventsHandler extends Handler.Wrapper
     {
         try
         {
-            onRequestRead(wrapped, chunk == null ? null : Content.Chunk.asChunk(chunk.getByteBuffer().asReadOnlyBuffer(), chunk.isLast(), chunk));
+            Content.Chunk c;
+            if (chunk == null)
+                c = null;
+            else if (chunk.hasRemaining())
+                c = Content.Chunk.asChunk(chunk.getByteBuffer().asReadOnlyBuffer(), chunk.isLast(), chunk);
+            else
+                c = chunk.isLast() ? Content.Chunk.EOF : Content.Chunk.EMPTY;
+            onRequestRead(wrapped, c);
         }
         catch (Throwable x)
         {
@@ -372,7 +381,13 @@ public abstract class EventsHandler extends Handler.Wrapper
         }
 
         @Override
-        public boolean addErrorListener(Predicate<Throwable> onError)
+        public void addIdleTimeoutListener(Predicate<TimeoutException> onIdleTimeout)
+        {
+            throw new UnsupportedOperationException();
+        }
+
+        @Override
+        public void addFailureListener(Consumer<Throwable> onFailure)
         {
             throw new UnsupportedOperationException();
         }
