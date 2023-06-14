@@ -550,7 +550,7 @@ public class HttpDestination extends ContainerLifeCycle implements Destination, 
     }
 
     /**
-     * <p>Enforces the total timeout for for exchanges that are still in the queue.</p>
+     * <p>Enforces the total timeout for exchanges that are still in the queue.</p>
      * <p>The total timeout for exchanges that are not in the destination queue
      * is enforced in {@link HttpConnection}.</p>
      */
@@ -572,6 +572,8 @@ public class HttpDestination extends ContainerLifeCycle implements Destination, 
         {
             HttpRequest request = exchange.getRequest();
             request.abort(new TimeoutException("Total timeout " + request.getConversation().getTimeout() + " ms elapsed"));
+            // The implementation of the Iterator returned above does not support
+            // removal, but the HttpExchange will be removed by request.abort().
             return false;
         }
     }

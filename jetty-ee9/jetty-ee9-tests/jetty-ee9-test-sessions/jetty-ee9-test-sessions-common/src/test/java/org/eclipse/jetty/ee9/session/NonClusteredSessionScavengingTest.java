@@ -31,6 +31,8 @@ import org.eclipse.jetty.session.SessionCache;
 import org.eclipse.jetty.session.SessionDataStore;
 import org.eclipse.jetty.session.SessionDataStoreFactory;
 import org.eclipse.jetty.session.SessionManager;
+import org.eclipse.jetty.session.test.AbstractSessionTestBase;
+import org.eclipse.jetty.session.test.TestSessionDataStoreFactory;
 import org.hamcrest.Matchers;
 import org.junit.jupiter.api.Test;
 
@@ -92,7 +94,7 @@ public class NonClusteredSessionScavengingTest extends AbstractSessionTestBase
                 ContentResponse response1 = client.GET(url + "?action=create");
                 assertEquals(HttpServletResponse.SC_OK, response1.getStatus());
                 String sessionCookie = response1.getHeaders().get("Set-Cookie");
-                assertTrue(sessionCookie != null);
+                assertNotNull(sessionCookie);
 
                 //test session was created
                 SessionManager m1 = context1.getSessionHandler().getSessionManager();
@@ -148,7 +150,7 @@ public class NonClusteredSessionScavengingTest extends AbstractSessionTestBase
                 ContentResponse response = client.GET("http://localhost:" + port + contextPath + servletMapping.substring(1) + "?action=create");
                 assertEquals(HttpServletResponse.SC_OK, response.getStatus());
                 String sessionCookie = response.getHeaders().get("Set-Cookie");
-                assertTrue(sessionCookie != null);
+                assertNotNull(sessionCookie);
 
                 // Let's wait for the scavenger to run
                 pause(maxInactivePeriod + scavengePeriod);
@@ -205,7 +207,7 @@ public class NonClusteredSessionScavengingTest extends AbstractSessionTestBase
                 ContentResponse response = client.GET("http://localhost:" + port + contextPath + servletMapping.substring(1) + "?action=create");
                 assertEquals(HttpServletResponse.SC_OK, response.getStatus());
                 String sessionCookie = response.getHeaders().get("Set-Cookie");
-                assertTrue(sessionCookie != null);
+                assertNotNull(sessionCookie);
 
                 // Let's wait for the scavenger to run
                 pause(2 * scavengePeriod);
@@ -248,13 +250,13 @@ public class NonClusteredSessionScavengingTest extends AbstractSessionTestBase
                 assertNull(s);
                 s = request.getSession(true);
                 assertNotNull(s);
-                assertFalse(s.getId().equals(id));
+                assertNotEquals(s.getId(), id);
             }
             else if ("old-test".equals(action))
             {
                 HttpSession s = request.getSession(false);
                 assertNotNull(s);
-                assertTrue(s.getId().equals(id));
+                assertEquals(s.getId(), id);
             }
             else
             {

@@ -54,7 +54,6 @@ public class JdbcTestHelper
     public static final String LAST_SAVE_COL = "lstime";
     public static final String MAP_COL = "mo";
     public static final String MAX_IDLE_COL = "mi";
-    public static final String TABLE = "mysessions";
     public static final String ID_COL = "mysessionid";
     public static final String ACCESS_COL = "atime";
     public static final String CONTEXT_COL = "cpath";
@@ -94,12 +93,12 @@ public class JdbcTestHelper
         }
     }
 
-    public static void shutdown(String connectionUrl)
+    public static void shutdown(String sessionTableName)
         throws Exception
     {
         try (Connection connection = getConnection())
         {
-            connection.prepareStatement("truncate table " + TABLE).executeUpdate();
+            connection.prepareStatement("truncate table " + sessionTableName).executeUpdate();
         }
     }
 
@@ -130,24 +129,24 @@ public class JdbcTestHelper
     /**
      * @return a fresh JDBCSessionDataStoreFactory
      */
-    public static SessionDataStoreFactory newSessionDataStoreFactory()
+    public static SessionDataStoreFactory newSessionDataStoreFactory(String sessionTableName)
     {
-        return newSessionDataStoreFactory(buildDatabaseAdaptor());
+        return newSessionDataStoreFactory(buildDatabaseAdaptor(), sessionTableName);
     }
 
-    public static SessionDataStoreFactory newSessionDataStoreFactory(DatabaseAdaptor da)
+    public static SessionDataStoreFactory newSessionDataStoreFactory(DatabaseAdaptor da, String sessionTableName)
     {
         JDBCSessionDataStoreFactory factory = new JDBCSessionDataStoreFactory();
         factory.setDatabaseAdaptor(da);
-        JDBCSessionDataStore.SessionTableSchema sessionTableSchema = newSessionTableSchema();
+        JDBCSessionDataStore.SessionTableSchema sessionTableSchema = newSessionTableSchema(sessionTableName);
         factory.setSessionTableSchema(sessionTableSchema);
         return factory;
     }
 
-    public static JDBCSessionDataStore.SessionTableSchema newSessionTableSchema()
+    public static JDBCSessionDataStore.SessionTableSchema newSessionTableSchema(String sessionTableName)
     {
         JDBCSessionDataStore.SessionTableSchema sessionTableSchema = new JDBCSessionDataStore.SessionTableSchema();
-        sessionTableSchema.setTableName(TABLE);
+        sessionTableSchema.setTableName(sessionTableName);
         sessionTableSchema.setIdColumn(ID_COL);
         sessionTableSchema.setAccessTimeColumn(ACCESS_COL);
         sessionTableSchema.setContextPathColumn(CONTEXT_COL);
@@ -162,10 +161,10 @@ public class JdbcTestHelper
         return sessionTableSchema;
     }
 
-    public static void prepareTables() throws SQLException
+    public static void prepareTables(String sessionTableName) throws SQLException
     {
         DatabaseAdaptor da = buildDatabaseAdaptor();
-        JDBCSessionDataStore.SessionTableSchema sessionTableSchema = newSessionTableSchema();
+        JDBCSessionDataStore.SessionTableSchema sessionTableSchema = newSessionTableSchema(sessionTableName);
         sessionTableSchema.setDatabaseAdaptor(da);
         sessionTableSchema.prepareTables();
     }
@@ -199,13 +198,13 @@ public class JdbcTestHelper
         }
     }
 
-    public static boolean existsInSessionTable(String id, boolean verbose)
+    public static boolean existsInSessionTable(String id, boolean verbose, String sessionTableName)
         throws Exception
     {
         try (Connection con = getConnection())
         {
             PreparedStatement statement = con.prepareStatement("select * from " +
-                TABLE +
+                sessionTableName +
                 " where " + ID_COL + " = ?");
             statement.setString(1, id);
             ResultSet result = statement.executeQuery();
@@ -225,7 +224,7 @@ public class JdbcTestHelper
     }
 
     @SuppressWarnings("unchecked")
-    public static boolean checkSessionPersisted(SessionData data)
+    public static boolean checkSessionPersisted(SessionData data, String sessionTableName)
         throws Exception
     {
         PreparedStatement statement = null;
@@ -233,7 +232,7 @@ public class JdbcTestHelper
         try (Connection con = getConnection())
         {
             statement = con.prepareStatement(
-                "select * from " + TABLE +
+                "select * from " + sessionTableName +
                     " where " + ID_COL + " = ? and " + CONTEXT_COL +
                     " = ? and virtualHost = ?");
             statement.setString(1, data.getId());
@@ -293,11 +292,11 @@ public class JdbcTestHelper
         return true;
     }
     
-    public static void insertSession(SessionData data) throws Exception
+    public static void insertSession(SessionData data, String sessionTableName) throws Exception
     {
         try (Connection con = getConnection())
         {
-            PreparedStatement statement = con.prepareStatement("insert into " + TABLE +
+            PreparedStatement statement = con.prepareStatement("insert into " + sessionTableName +
                 " (" + ID_COL + ", " + CONTEXT_COL + ", virtualHost, " + LAST_NODE_COL +
                 ", " + ACCESS_COL + ", " + LAST_ACCESS_COL + ", " + CREATE_COL + ", " + COOKIE_COL +
                 ", " + LAST_SAVE_COL + ", " + EXPIRY_COL + ", " + MAX_IDLE_COL + "," + MAP_COL + " ) " +
@@ -336,12 +335,12 @@ public class JdbcTestHelper
     public static void insertUnreadableSession(String id, String contextPath, String vhost,
                                      String lastNode, long created, long accessed,
                                      long lastAccessed, long maxIdle, long expiry,
-                                     long cookieSet, long lastSaved)
+                                     long cookieSet, long lastSaved, String sessionTableName)
         throws Exception
     {
         try (Connection con = getConnection())
         {
-            PreparedStatement statement = con.prepareStatement("insert into " + TABLE +
+            PreparedStatement statement = con.prepareStatement("insert into " + sessionTableName +
                 " (" + ID_COL + ", " + CONTEXT_COL + ", virtualHost, " + LAST_NODE_COL +
                 ", " + ACCESS_COL + ", " + LAST_ACCESS_COL + ", " + CREATE_COL + ", " + COOKIE_COL +
                 ", " + LAST_SAVE_COL + ", " + EXPIRY_COL + ", " + MAX_IDLE_COL + "," + MAP_COL + " ) " +
@@ -368,13 +367,13 @@ public class JdbcTestHelper
         }
     }
 
-    public static Set<String> getSessionIds()
+    public static Set<String> getSessionIds(String sessionTableName)
         throws Exception
     {
         HashSet<String> ids = new HashSet<>();
         try (Connection con = getConnection())
         {
-            PreparedStatement statement = con.prepareStatement("select " + ID_COL + " from " + TABLE);
+            PreparedStatement statement = con.prepareStatement("select " + ID_COL + " from " + sessionTableName);
             ResultSet result = statement.executeQuery();
             while (result.next())
             {

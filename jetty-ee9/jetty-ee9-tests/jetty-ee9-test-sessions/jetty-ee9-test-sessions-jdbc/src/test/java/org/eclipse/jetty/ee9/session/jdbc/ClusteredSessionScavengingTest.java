@@ -17,6 +17,7 @@ import org.eclipse.jetty.ee9.session.AbstractClusteredSessionScavengingTest;
 import org.eclipse.jetty.session.JdbcTestHelper;
 import org.eclipse.jetty.session.SessionDataStoreFactory;
 import org.junit.jupiter.api.AfterEach;
+import org.junit.jupiter.api.BeforeEach;
 import org.testcontainers.junit.jupiter.Testcontainers;
 
 /**
@@ -25,15 +26,23 @@ import org.testcontainers.junit.jupiter.Testcontainers;
 @Testcontainers(disabledWithoutDocker = true)
 public class ClusteredSessionScavengingTest extends AbstractClusteredSessionScavengingTest
 {
+    private String sessionTableName;
+
+    @BeforeEach
+    public void setupSessionTableName()
+    {
+        this.sessionTableName = getClass().getSimpleName() + "_" + System.nanoTime();
+    }
+
     @Override
     public SessionDataStoreFactory createSessionDataStoreFactory()
     {
-        return JdbcTestHelper.newSessionDataStoreFactory();
+        return JdbcTestHelper.newSessionDataStoreFactory(sessionTableName);
     }
 
     @AfterEach
     public void tearDown() throws Exception
     {
-        JdbcTestHelper.shutdown(null);
+        JdbcTestHelper.shutdown(sessionTableName);
     }
 }

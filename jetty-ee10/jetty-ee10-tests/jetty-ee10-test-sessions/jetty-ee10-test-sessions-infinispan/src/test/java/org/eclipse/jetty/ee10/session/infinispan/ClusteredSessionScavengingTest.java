@@ -16,6 +16,7 @@ package org.eclipse.jetty.ee10.session.infinispan;
 import org.eclipse.jetty.ee10.session.AbstractClusteredSessionScavengingTest;
 import org.eclipse.jetty.session.SessionDataStoreFactory;
 import org.eclipse.jetty.session.infinispan.InfinispanSessionDataStoreFactory;
+import org.eclipse.jetty.session.test.tools.InfinispanTestSupport;
 import org.eclipse.jetty.toolchain.test.jupiter.WorkDir;
 import org.eclipse.jetty.toolchain.test.jupiter.WorkDirExtension;
 import org.junit.jupiter.api.AfterEach;
@@ -35,7 +36,7 @@ public class ClusteredSessionScavengingTest extends AbstractClusteredSessionScav
     @BeforeEach
     public void setup() throws Exception
     {
-        testSupport = new InfinispanTestSupport();
+        testSupport = new InfinispanTestSupport(getClass().getSimpleName() + System.nanoTime());
         testSupport.setUseFileStore(true);
         testSupport.setup(workDir.getEmptyPathDir());
     }
@@ -44,7 +45,7 @@ public class ClusteredSessionScavengingTest extends AbstractClusteredSessionScav
     public void teardown() throws Exception
     {
         if (testSupport != null)
-            testSupport.teardown();
+            testSupport.clearCache();
     }
 
     @Override

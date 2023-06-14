@@ -13,9 +13,15 @@
 
 package org.eclipse.jetty.server;
 
+import java.util.ListIterator;
+
+import org.eclipse.jetty.http.HttpCookie;
+import org.eclipse.jetty.http.HttpField;
+import org.eclipse.jetty.http.HttpFields;
 import org.eclipse.jetty.http.HttpHeader;
 import org.eclipse.jetty.http.HttpStatus;
 import org.eclipse.jetty.http.HttpTester;
+import org.eclipse.jetty.io.Content;
 import org.eclipse.jetty.util.Callback;
 import org.eclipse.jetty.util.component.LifeCycle;
 import org.junit.jupiter.api.AfterEach;
@@ -23,6 +29,7 @@ import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 
 import static org.hamcrest.MatcherAssert.assertThat;
+import static org.hamcrest.Matchers.containsInAnyOrder;
 import static org.hamcrest.Matchers.is;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 
@@ -53,7 +60,7 @@ public class ResponseTest
         server.setHandler(new Handler.Abstract()
         {
             @Override
-            public boolean handle(Request request, Response response, Callback callback) throws Exception
+            public boolean handle(Request request, Response response, Callback callback)
             {
                 Response.sendRedirect(request, response, callback, "/somewhere/else");
                 return true;
@@ -89,7 +96,7 @@ public class ResponseTest
         server.setHandler(new Handler.Abstract()
         {
             @Override
-            public boolean handle(Request request, Response response, Callback callback) throws Exception
+            public boolean handle(Request request, Response response, Callback callback)
             {
                 Response.sendRedirect(request, response, callback, "/somewhere/else");
                 return true;
@@ -123,7 +130,7 @@ public class ResponseTest
         server.setHandler(new Handler.Abstract()
         {
             @Override
-            public boolean handle(Request request, Response response, Callback callback) throws Exception
+            public boolean handle(Request request, Response response, Callback callback)
             {
                 Response.sendRedirect(request, response, callback, "/somewhere/else");
                 return true;
@@ -159,7 +166,7 @@ public class ResponseTest
         server.setHandler(new Handler.Abstract()
         {
             @Override
-            public boolean handle(Request request, Response response, Callback callback) throws Exception
+            public boolean handle(Request request, Response response, Callback callback)
             {
                 Response.sendRedirect(request, response, callback, "/somewhere/else");
                 return true;
@@ -185,5 +192,59 @@ public class ResponseTest
         response = HttpTester.parseResponse(connector.getResponse(request));
         assertEquals(HttpStatus.SEE_OTHER_303, response.getStatus());
         assertThat(response.get(HttpHeader.LOCATION), is("/somewhere/else"));
+    }
+
+    @Test
+    public void testHttpCookieProcessing() throws Exception
+    {
+        server.setHandler(new Handler.Abstract()
+        {
+            @Override
+            public boolean handle(Request request, Response response, Callback callback)
+            {
+                request.addHttpStreamWrapper(httpStream -> new HttpStream.Wrapper(httpStream)
+                {
+                    @Override
+                    public void prepareResponse(HttpFields.Mutable headers)
+                    {
+                        super.prepareResponse(headers);
+                        for (ListIterator<HttpField> i = headers.listIterator(); i.hasNext();)
+                        {
+                            HttpField field = i.next();
+                            if (field.getHeader() != HttpHeader.SET_COOKIE)
+                                continue;
+
+                            HttpCookie cookie = HttpCookieUtils.getSetCookie(field);
+                            if (cookie == null)
+                                continue;
+
+                            i.set(new HttpCookieUtils.SetCookieHttpField(
+                                HttpCookie.build(cookie)
+                                    .domain("customized")
+                                    .sameSite(HttpCookie.SameSite.LAX)
+                                    .build(),
+                                request.getConnectionMetaData().getHttpConfiguration().getResponseCookieCompliance()));
+                        }
+                    }
+                });
+                response.setStatus(200);
+                Response.addCookie(response, HttpCookie.from("name", "test1"));
+                response.getHeaders().add(HttpHeader.SET_COOKIE, "other=test2; Domain=wrong; SameSite=wrong; Attr=x");
+                Content.Sink.write(response, true, "OK", callback);
+                return true;
+            }
+        });
+        server.start();
+
+        String request = """
+                POST /path HTTP/1.0\r
+                Host: hostname\r
+                \r
+                """;
+        HttpTester.Response response = HttpTester.parseResponse(connector.getResponse(request));
+        assertEquals(HttpStatus.OK_200, response.getStatus());
+        assertThat(response.getValuesList(HttpHeader.SET_COOKIE), containsInAnyOrder(
+            "name=test1; Domain=customized; SameSite=Lax",
+            "other=test2; Domain=customized; SameSite=Lax; Attr=x"));
     }
 }

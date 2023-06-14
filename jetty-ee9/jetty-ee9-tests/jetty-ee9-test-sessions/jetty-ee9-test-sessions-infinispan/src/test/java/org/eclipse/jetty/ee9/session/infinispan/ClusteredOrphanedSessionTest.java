@@ -16,6 +16,7 @@ package org.eclipse.jetty.ee9.session.infinispan;
 import org.eclipse.jetty.ee9.session.AbstractClusteredOrphanedSessionTest;
 import org.eclipse.jetty.session.SessionDataStoreFactory;
 import org.eclipse.jetty.session.infinispan.InfinispanSessionDataStoreFactory;
+import org.eclipse.jetty.session.test.tools.InfinispanTestSupport;
 import org.eclipse.jetty.toolchain.test.jupiter.WorkDir;
 import org.eclipse.jetty.toolchain.test.jupiter.WorkDirExtension;
 import org.junit.jupiter.api.AfterEach;
@@ -29,19 +30,23 @@ import org.junit.jupiter.api.extension.ExtendWith;
 public class ClusteredOrphanedSessionTest extends AbstractClusteredOrphanedSessionTest
 {
 
-    public InfinispanTestSupport testSupport;
+    private final InfinispanTestSupport testSupport;
+
+    public ClusteredOrphanedSessionTest()
+    {
+        testSupport = new InfinispanTestSupport(getClass().getSimpleName() + System.nanoTime());
+    }
 
     @BeforeEach
     public void setup(WorkDir workDir) throws Exception
     {
-        testSupport = new InfinispanTestSupport();
         testSupport.setup(workDir.getEmptyPathDir());
     }
 
     @AfterEach
     public void teardown() throws Exception
     {
-        testSupport.teardown();
+        testSupport.clearCache();
     }
 
     @Override

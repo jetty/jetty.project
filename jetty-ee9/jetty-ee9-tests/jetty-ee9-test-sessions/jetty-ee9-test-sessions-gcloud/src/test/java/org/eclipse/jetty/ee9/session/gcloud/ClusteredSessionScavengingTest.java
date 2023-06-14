@@ -15,8 +15,7 @@ package org.eclipse.jetty.ee9.session.gcloud;
 
 import org.eclipse.jetty.ee9.session.AbstractClusteredSessionScavengingTest;
 import org.eclipse.jetty.session.SessionDataStoreFactory;
-import org.junit.jupiter.api.AfterAll;
-import org.junit.jupiter.api.BeforeAll;
+import org.eclipse.jetty.session.test.tools.GCloudSessionTestSupport;
 import org.testcontainers.junit.jupiter.Testcontainers;
 
 /**
@@ -26,25 +25,11 @@ import org.testcontainers.junit.jupiter.Testcontainers;
 public class ClusteredSessionScavengingTest extends AbstractClusteredSessionScavengingTest
 {
 
-    public static GCloudSessionTestSupport __testSupport;
-
-    @BeforeAll
-    public static void setUp() throws Exception
-    {
-        __testSupport = new GCloudSessionTestSupport();
-        __testSupport.setUp();
-    }
-
-    @AfterAll
-    public static void tearDown() throws Exception
-    {
-        __testSupport.deleteSessions();
-        __testSupport.tearDown();
-    }
+    public GCloudSessionTestSupport testSupport = new GCloudSessionTestSupport(getClass().getSimpleName());
 
     @Override
     public SessionDataStoreFactory createSessionDataStoreFactory()
     {
-        return GCloudSessionTestSupport.newSessionDataStoreFactory(__testSupport.getDatastore());
+        return testSupport.newSessionDataStoreFactory();
     }
 }

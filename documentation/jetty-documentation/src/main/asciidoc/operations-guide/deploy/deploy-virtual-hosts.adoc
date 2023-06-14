@@ -53,12 +53,12 @@ For example if the non-ASCII domain name `www.√integral.com` is given to a bro
 
 If you have a web application `mywebapp.war` you can configure its virtual hosts in this way:
 
-[source,xml]
+[source,xml,subs="verbatim,attributes"]
 ----
 <?xml version="1.0" encoding="UTF-8"?>
 <!DOCTYPE Configure PUBLIC "-//Jetty//Configure//EN" "https://www.eclipse.org/jetty/configure_10_0.dtd">
 
-<Configure class="org.eclipse.jetty.ee9.webapp.WebAppContext">
+<Configure class="org.eclipse.jetty.{ee-current}.webapp.WebAppContext">
   <Set name="contextPath">/mywebapp</Set>
   <Set name="war">/opt/webapps/mywebapp.war</Set>
   <Set name="virtualHosts">
@@ -98,12 +98,12 @@ You have `domain.war` that you want to deploy at `+http://domain.biz/+` and `hob
 To achieve this, you simply use the same context path of `/` for each of your webapps, while specifying different virtual hosts for each of your webapps:
 
 .domain.xml
-[source,xml]
+[source,xml,subs="verbatim,attributes"]
 ----
 <?xml version="1.0" encoding="UTF-8"?>
 <!DOCTYPE Configure PUBLIC "-//Jetty//Configure//EN" "https://www.eclipse.org/jetty/configure_10_0.dtd">
 
-<Configure class="org.eclipse.jetty.ee9.webapp.WebAppContext">
+<Configure class="org.eclipse.jetty.{ee-current}.webapp.WebAppContext">
   <Set name="contextPath">/</Set>
   <Set name="war">/opt/webapps/domain.war</Set>
   <Set name="virtualHosts">
@@ -115,12 +115,12 @@ To achieve this, you simply use the same context path of `/` for each of your we
 ----
 
 .hobby.xml
-[source,xml]
+[source,xml,subs="verbatim,attributes"]
 ----
 <?xml version="1.0" encoding="UTF-8"?>
 <!DOCTYPE Configure PUBLIC "-//Jetty//Configure//EN" "https://www.eclipse.org/jetty/configure_10_0.dtd">
 
-<Configure class="org.eclipse.jetty.ee9.webapp.WebAppContext">
+<Configure class="org.eclipse.jetty.{ee-current}.webapp.WebAppContext">
   <Set name="contextPath">/</Set>
   <Set name="war">/opt/webapps/hobby.war</Set>
   <Set name="virtualHosts">
@@ -143,12 +143,12 @@ This configuration may be useful when Jetty sits behind a load balancer.
 In this case, you want to xref:og-protocols[configure multiple connectors], each with a different name, and then reference the connector name in the web application virtual host configuration:
 
 .domain.xml
-[source,xml,highlight=10]
+[source,xml,highlight=10,subs="verbatim,attributes"]
 ----
 <?xml version="1.0" encoding="UTF-8"?>
 <!DOCTYPE Configure PUBLIC "-//Jetty//Configure//EN" "https://www.eclipse.org/jetty/configure_10_0.dtd">
 
-<Configure class="org.eclipse.jetty.ee9.webapp.WebAppContext">
+<Configure class="org.eclipse.jetty.{ee-current}.webapp.WebAppContext">
   <Set name="contextPath">/</Set>
   <Set name="war">/opt/webapps/domain.war</Set>
   <Set name="virtualHosts">
@@ -160,12 +160,12 @@ In this case, you want to xref:og-protocols[configure multiple connectors], each
 ----
 
 .hobby.xml
-[source,xml,highlight=10]
+[source,xml,highlight=10,subs="verbatim,attributes"]
 ----
 <?xml version="1.0" encoding="UTF-8"?>
 <!DOCTYPE Configure PUBLIC "-//Jetty//Configure//EN" "https://www.eclipse.org/jetty/configure_10_0.dtd">
 
-<Configure class="org.eclipse.jetty.ee9.webapp.WebAppContext">
+<Configure class="org.eclipse.jetty.{ee-current}.webapp.WebAppContext">
   <Set name="contextPath">/</Set>
   <Set name="war">/opt/webapps/hobby.war</Set>
   <Set name="virtualHosts">

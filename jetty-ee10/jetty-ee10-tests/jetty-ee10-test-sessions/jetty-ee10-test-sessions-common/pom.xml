@@ -63,5 +63,9 @@
       <artifactId>awaitility</artifactId>
       <scope>test</scope>
     </dependency>
+    <dependency>
+      <groupId>org.eclipse.jetty.tests</groupId>
+      <artifactId>jetty-test-session-common</artifactId>
+    </dependency>
   </dependencies>
 </project>

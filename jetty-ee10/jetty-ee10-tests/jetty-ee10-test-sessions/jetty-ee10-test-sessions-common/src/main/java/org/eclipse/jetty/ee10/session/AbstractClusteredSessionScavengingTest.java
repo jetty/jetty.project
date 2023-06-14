@@ -15,6 +15,7 @@ package org.eclipse.jetty.ee10.session;
 
 import java.io.IOException;
 import java.io.PrintWriter;
+import java.io.Serial;
 import java.util.HashSet;
 import java.util.Set;
 import java.util.concurrent.TimeUnit;
@@ -39,6 +40,7 @@ import org.eclipse.jetty.session.ManagedSession;
 import org.eclipse.jetty.session.SessionCache;
 import org.eclipse.jetty.session.SessionDataStoreFactory;
 import org.eclipse.jetty.session.SessionManager;
+import org.eclipse.jetty.session.test.AbstractSessionTestBase;
 import org.junit.jupiter.api.Test;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
@@ -80,12 +82,6 @@ public abstract class AbstractClusteredSessionScavengingTest extends AbstractSes
         {
             return new TestSessionCache(manager);
         }
-    }
-    
-    public void pause(int secs)
-        throws InterruptedException
-    {
-        Thread.sleep(TimeUnit.SECONDS.toMillis(secs));
     }
 
     @Test
@@ -141,7 +137,7 @@ public abstract class AbstractClusteredSessionScavengingTest extends AbstractSes
                     assertEquals(HttpServletResponse.SC_OK, response1.getStatus());
                     assertTrue(response1.getContentAsString().startsWith("init"));
                     String sessionCookie = response1.getHeaders().get("Set-Cookie");
-                    assertTrue(sessionCookie != null);
+                    assertNotNull(sessionCookie);
                     String id = SessionTestSupport.extractSessionId(sessionCookie);
                     assertEquals(1, ((DefaultSessionCache)m1.getSessionCache()).getSessionsCurrent());
                     assertEquals(1, ((DefaultSessionCache)m1.getSessionCache()).getSessionsMax());
@@ -156,10 +152,8 @@ public abstract class AbstractClusteredSessionScavengingTest extends AbstractSes
                     //Now do requests for the session to node2. This will update the expiry time on the session.
                     //Send requests for the next maxInactiveInterval, pausing a little between each request. 
                     int requestInterval = 500; //ms pause between requests
-                    long start = System.currentTimeMillis();
-                    long end = expiry;
-                    long time = start;
-                    while (time < end)
+                    long time = System.currentTimeMillis();
+                    while (time < expiry)
                     {
                         Request request = client.newRequest("http://localhost:" + port2 + contextPath + servletMapping.substring(1));
                         ContentResponse response2 = request.send();
@@ -231,6 +225,7 @@ public abstract class AbstractClusteredSessionScavengingTest extends AbstractSes
 
     public static class TestServlet extends HttpServlet
     {
+        @Serial
         private static final long serialVersionUID = 1L;
 
         @Override

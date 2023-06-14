@@ -27,11 +27,11 @@ import org.eclipse.jetty.client.HttpClient;
 import org.eclipse.jetty.client.Request;
 import org.eclipse.jetty.ee9.nested.SessionHandler;
 import org.eclipse.jetty.ee9.servlet.ServletContextHandler;
-import org.eclipse.jetty.session.AbstractSessionCache;
 import org.eclipse.jetty.session.DefaultSessionCache;
 import org.eclipse.jetty.session.DefaultSessionCacheFactory;
 import org.eclipse.jetty.session.SessionCache;
 import org.eclipse.jetty.session.SessionDataStoreFactory;
+import org.eclipse.jetty.session.test.TestSessionDataStoreFactory;
 import org.junit.jupiter.api.Test;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
@@ -78,7 +78,7 @@ public class RemoveSessionTest
                 ContentResponse response = client.GET("http://localhost:" + port + contextPath + servletMapping + "?action=create");
                 assertEquals(HttpServletResponse.SC_OK, response.getStatus());
                 String sessionCookie = response.getHeaders().get("Set-Cookie");
-                assertTrue(sessionCookie != null);
+                assertNotNull(sessionCookie);
 
                 //ensure sessionCreated bindingListener is called
                 assertTrue(testListener.isCreated());
@@ -97,7 +97,7 @@ public class RemoveSessionTest
                 assertEquals(1, ((DefaultSessionCache)m.getSessionManager().getSessionCache()).getSessionsTotal());
                 
                 //check the session is no longer in the cache
-                assertFalse(((AbstractSessionCache)m.getSessionManager().getSessionCache()).contains(SessionTestSupport.extractSessionId(sessionCookie)));
+                assertFalse(m.getSessionManager().getSessionCache().contains(SessionTestSupport.extractSessionId(sessionCookie)));
 
                 //check the session is not persisted any more
                 assertFalse(m.getSessionManager().getSessionCache().getSessionDataStore().exists(SessionTestSupport.extractSessionId(sessionCookie)));

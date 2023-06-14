@@ -31,6 +31,7 @@ import org.eclipse.jetty.session.SessionDataStoreFactory;
 import org.junit.jupiter.api.Test;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertNotNull;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
 /**
@@ -70,7 +71,7 @@ public class ReentrantRequestSessionTest
                 assertEquals(HttpServletResponse.SC_OK, response.getStatus());
 
                 String sessionCookie = response.getHeaders().get("Set-Cookie");
-                assertTrue(sessionCookie != null);
+                assertNotNull(sessionCookie);
 
                 //make a request that will make a simultaneous request for the same session
                 Request request = client.newRequest("http://localhost:" + port + contextPath + servletMapping + "?action=reenter&port=" + port + "&path=" + contextPath + servletMapping);
@@ -141,7 +142,7 @@ public class ReentrantRequestSessionTest
             }
             else
             {
-                assertTrue(session != null);
+                assertNotNull(session);
                 session.setAttribute("reentrant", "true");
             }
         }

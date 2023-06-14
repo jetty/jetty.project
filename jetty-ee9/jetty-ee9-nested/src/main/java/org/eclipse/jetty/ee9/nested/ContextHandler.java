@@ -31,7 +31,6 @@ import java.util.Locale;
 import java.util.Map;
 import java.util.Objects;
 import java.util.Set;
-import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.CopyOnWriteArrayList;
 import java.util.function.Supplier;
 
@@ -90,7 +89,6 @@ import org.eclipse.jetty.util.annotation.ManagedAttribute;
 import org.eclipse.jetty.util.annotation.ManagedObject;
 import org.eclipse.jetty.util.component.DumpableCollection;
 import org.eclipse.jetty.util.component.Environment;
-import org.eclipse.jetty.util.component.Graceful;
 import org.eclipse.jetty.util.component.LifeCycle;
 import org.eclipse.jetty.util.resource.Resource;
 import org.eclipse.jetty.util.resource.ResourceFactory;
@@ -122,7 +120,7 @@ import org.slf4j.LoggerFactory;
  * </p>
  */
 @ManagedObject("EE9 Context")
-public class ContextHandler extends ScopedHandler implements Attributes, Graceful, Supplier<Handler>
+public class ContextHandler extends ScopedHandler implements Attributes, Supplier<Handler>
 {
     public static final Environment ENVIRONMENT = Environment.ensure("ee9");
     public static final int SERVLET_MAJOR_VERSION = 5;
@@ -559,25 +557,6 @@ public class ContextHandler extends ScopedHandler implements Attributes, Gracefu
             return _durableListeners.contains(listener);
         // If we are not yet started then all set listeners are durable
         return getEventListeners().contains(listener);
-    }
-
-    /**
-     * @return true if this context is shutting down
-     */
-    @ManagedAttribute("true for graceful shutdown, which allows existing requests to complete")
-    public boolean isShutdown()
-    {
-        return _coreContextHandler.isShutdown();
-    }
-
-    /**
-     * Set shutdown status. This field allows for graceful shutdown of a context. A started context may be put into non accepting state so that existing
-     * requests can complete, but no new requests are accepted.
-     */
-    @Override
-    public CompletableFuture<Void> shutdown()
-    {
-        return _coreContextHandler.shutdown();
     }
 
     /**

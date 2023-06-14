@@ -433,7 +433,7 @@ CYGWIN*) JETTY_START="`cygpath -w $JETTY_START`";;
 esac
 
 # Collect the dry-run (of opts,path,main,args) from the jetty.base configuration
-JETTY_DRY_RUN=$("$JAVA" -jar "$JETTY_START" --dry-run=opts,path,main,args ${JETTY_ARGS[*]} ${JAVA_OPTIONS[*]})
+JETTY_DRY_RUN=$("$JAVA" -jar "$JETTY_START" --dry-run=opts,path,main,args,envs ${JETTY_ARGS[*]} ${JAVA_OPTIONS[*]})
 RUN_ARGS=($JETTY_SYS_PROPS ${JETTY_DRY_RUN[@]})
 
 #####################################################
@@ -492,7 +492,7 @@ case "$ACTION" in
 
         touch "$JETTY_PID"
         chown "$JETTY_USER" "$JETTY_PID"
-        # FIXME: Broken solution: wordsplitting, pathname expansion, arbitrary command execution, etc.
+
         su - "$JETTY_USER" $SU_SHELL -c "
           cd \"$JETTY_BASE\"
           echo ${RUN_ARGS[*]} start-log-file=\"$JETTY_START_LOG\" | xargs ${JAVA} > /dev/null &

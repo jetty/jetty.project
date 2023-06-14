@@ -33,29 +33,32 @@ public class JDBCSessionDataStoreTest extends AbstractSessionDataStoreTest
         super();
     }
 
+    private String sessionTableName;
+
     @BeforeEach
-    public void configure() throws Exception
+    public void setupSessionTableName() throws Exception
     {
-        JdbcTestHelper.prepareTables();
+        this.sessionTableName = getClass().getSimpleName() + "_" + System.nanoTime();
+        JdbcTestHelper.prepareTables(sessionTableName);
     }
 
     @AfterEach
     public void tearDown() throws Exception
     {
-        JdbcTestHelper.shutdown(null);
+        JdbcTestHelper.shutdown(sessionTableName);
     }
 
     @Override
     public SessionDataStoreFactory createSessionDataStoreFactory()
     {
-        return JdbcTestHelper.newSessionDataStoreFactory();
+        return JdbcTestHelper.newSessionDataStoreFactory(sessionTableName);
     }
 
     @Override
     public void persistSession(SessionData data)
         throws Exception
     {
-        JdbcTestHelper.insertSession(data);
+        JdbcTestHelper.insertSession(data, sessionTableName);
     }
 
     @Override
@@ -64,7 +67,7 @@ public class JDBCSessionDataStoreTest extends AbstractSessionDataStoreTest
         JdbcTestHelper.insertUnreadableSession(data.getId(), data.getContextPath(), data.getVhost(), data.getLastNode(),
             data.getCreated(), data.getAccessed(), data.getLastAccessed(),
             data.getMaxInactiveMs(), data.getExpiry(), data.getCookieSet(),
-            data.getLastSaved());
+            data.getLastSaved(), sessionTableName);
     }
     
     @Test
@@ -76,7 +79,7 @@ public class JDBCSessionDataStoreTest extends AbstractSessionDataStoreTest
     @Override
     public boolean checkSessionExists(SessionData data) throws Exception
     {
-        return JdbcTestHelper.existsInSessionTable(data.getId(), false);
+        return JdbcTestHelper.existsInSessionTable(data.getId(), false, sessionTableName);
     }
 
     @Override
@@ -86,7 +89,7 @@ public class JDBCSessionDataStoreTest extends AbstractSessionDataStoreTest
         Thread.currentThread().setContextClassLoader(_contextClassLoader);
         try
         {
-            return JdbcTestHelper.checkSessionPersisted(data);
+            return JdbcTestHelper.checkSessionPersisted(data, sessionTableName);
         }
         finally
         {

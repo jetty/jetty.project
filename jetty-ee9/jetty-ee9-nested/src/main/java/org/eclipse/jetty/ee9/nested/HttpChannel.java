@@ -1014,17 +1014,13 @@ public class HttpChannel implements Runnable, HttpOutput.Interceptor
         if (idleTO >= 0 && getIdleTimeout() != _oldIdleTimeout)
             setIdleTimeout(_oldIdleTimeout);
 
-        if (getServer().getRequestLog() != null)
+        if (getServer().getRequestLog() instanceof CustomRequestLog)
         {
-            Authentication authentication = _request.getAuthentication();
-            if (authentication instanceof Authentication.User userAuthentication)
-                _request.setAttribute(CustomRequestLog.USER_NAME, userAuthentication.getUserIdentity().getUserPrincipal().getName());
-
-            String realPath = _request.getServletContext().getRealPath(_request.getPathInContext());
-            _request.setAttribute(CustomRequestLog.REAL_PATH, realPath);
-
-            String servletName = _request.getServletName();
-            _request.setAttribute(CustomRequestLog.HANDLER_NAME, servletName);
+            CustomRequestLog.LogDetail logDetail = new CustomRequestLog.LogDetail(
+                _request.getServletName(),
+                _request.getServletContext().getRealPath(_request.getPathInContext())
+            );
+            _request.setAttribute(CustomRequestLog.LOG_DETAIL, logDetail);
         }
 
         _request.onCompleted();
@@ -1530,7 +1526,7 @@ public class HttpChannel implements Runnable, HttpOutput.Interceptor
             if (x instanceof HttpException httpException)
             {
                 MetaData.Response responseMeta = new MetaData.Response(httpException.getCode(), httpException.getReason(), HttpVersion.HTTP_1_1, HttpFields.build().add(HttpFields.CONNECTION_CLOSE), 0);
-                send(_request.getMetaData(), responseMeta, null, true, new Nested(this)
+                send(_request.getMetaData(), responseMeta, null, true, new Nested(getCallback())
                 {
                     @Override
                     public void succeeded()
