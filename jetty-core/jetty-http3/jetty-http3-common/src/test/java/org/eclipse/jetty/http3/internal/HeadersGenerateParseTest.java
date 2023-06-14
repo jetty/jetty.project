@@ -44,7 +44,7 @@ public class HeadersGenerateParseTest
         HttpFields fields = HttpFields.build()
             .put("User-Agent", "Jetty")
             .put("Cookie", "c=d");
-        HeadersFrame input = new HeadersFrame(new MetaData.Request(HttpMethod.GET.asString(), uri, HttpVersion.HTTP_3, fields, 0), true);
+        HeadersFrame input = new HeadersFrame(new MetaData.Request(HttpMethod.GET.asString(), uri, HttpVersion.HTTP_3, fields), true);
 
         QpackEncoder encoder = new QpackEncoder(instructions -> {});
         encoder.setMaxHeadersSize(4 * 1024);

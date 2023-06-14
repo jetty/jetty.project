@@ -17,6 +17,8 @@ import java.util.Iterator;
 import java.util.Objects;
 import java.util.function.Supplier;
 
+import org.eclipse.jetty.util.NanoTime;
+
 /**
  * <p>Immutable common HTTP information for requests and responses.</p>
  * <p>Specific HTTP request information is captured by {@link Request}.</p>
@@ -130,24 +132,46 @@ public class MetaData implements Iterable<HttpField>
         private final HttpURI _uri;
         private final long _beginNanoTime;
 
-        public Request(String method, HttpURI uri, HttpVersion version, HttpFields headers, long beginNanoTime)
+        public Request(String method, HttpURI uri, HttpVersion version, HttpFields headers)
         {
-            this(method, uri, version, headers, -1, beginNanoTime);
+            this(NanoTime.now(), method, uri, version, headers, -1);
         }
 
-        public Request(String method, HttpURI uri, HttpVersion version, HttpFields headers, long contentLength, long beginNanoTime)
+        public Request(long beginNanoTime, String method, HttpURI uri, HttpVersion version, HttpFields headers)
         {
-            this(method, uri, version, headers, contentLength, null, beginNanoTime);
+            this(beginNanoTime, method, uri, version, headers, -1);
         }
 
-        public Request(String method, String scheme, HostPortHttpField authority, String uri, HttpVersion version, HttpFields headers, long contentLength, long beginNanoTime)
+        public Request(String method, String scheme, HostPortHttpField authority, String uri, HttpVersion version, HttpFields headers, long contentLength)
         {
-            this(method,
+            this(NanoTime.now(), method,
                 HttpURI.build().scheme(scheme).host(authority == null ? null : authority.getHost()).port(authority == null ? -1 : authority.getPort()).pathQuery(uri),
-                version, headers, contentLength, beginNanoTime);
+                version, headers, contentLength);
         }
 
-        public Request(String method, HttpURI uri, HttpVersion version, HttpFields headers, long contentLength, Supplier<HttpFields> trailers, long beginNanoTime)
+        public Request(long beginNanoTime, String method, String scheme, HostPortHttpField authority, String uri, HttpVersion version, HttpFields headers, long contentLength)
+        {
+            this(beginNanoTime, method,
+                HttpURI.build().scheme(scheme).host(authority == null ? null : authority.getHost()).port(authority == null ? -1 : authority.getPort()).pathQuery(uri),
+                version, headers, contentLength);
+        }
+
+        public Request(String method, HttpURI uri, HttpVersion version, HttpFields headers, long contentLength)
+        {
+            this(NanoTime.now(), method, uri, version, headers, contentLength, null);
+        }
+
+        public Request(long beginNanoTime, String method, HttpURI uri, HttpVersion version, HttpFields headers, long contentLength)
+        {
+            this(beginNanoTime, method, uri, version, headers, contentLength, null);
+        }
+
+        public Request(String method, HttpURI uri, HttpVersion version, HttpFields headers, long contentLength, Supplier<HttpFields> trailers)
+        {
+            this(NanoTime.now(), method, uri, version, headers, contentLength, trailers);
+        }
+
+        public Request(long beginNanoTime, String method, HttpURI uri, HttpVersion version, HttpFields headers, long contentLength, Supplier<HttpFields> trailers)
         {
             super(version, headers, contentLength, trailers);
             _method = Objects.requireNonNull(method);
@@ -206,16 +230,26 @@ public class MetaData implements Iterable<HttpField>
     {
         private final String _protocol;
 
-        public ConnectRequest(HttpScheme scheme, HostPortHttpField authority, String path, HttpFields headers, String protocol, long beginNanoTime)
+        public ConnectRequest(HttpScheme scheme, HostPortHttpField authority, String path, HttpFields headers, String protocol)
         {
-            this(scheme == null ? null : scheme.asString(), authority, path, headers, protocol, beginNanoTime);
+            this(NanoTime.now(), scheme == null ? null : scheme.asString(), authority, path, headers, protocol);
         }
 
-        public ConnectRequest(String scheme, HostPortHttpField authority, String path, HttpFields headers, String protocol, long beginNanoTime)
+        public ConnectRequest(long beginNanoTime, HttpScheme scheme, HostPortHttpField authority, String path, HttpFields headers, String protocol)
         {
-            super(HttpMethod.CONNECT.asString(),
+            this(beginNanoTime, scheme == null ? null : scheme.asString(), authority, path, headers, protocol);
+        }
+
+        public ConnectRequest(String scheme, HostPortHttpField authority, String path, HttpFields headers, String protocol)
+        {
+            this(NanoTime.now(), scheme, authority, path, headers, protocol);
+        }
+
+        public ConnectRequest(long beginNanoTime, String scheme, HostPortHttpField authority, String path, HttpFields headers, String protocol)
+        {
+            super(beginNanoTime, HttpMethod.CONNECT.asString(),
                 HttpURI.build().scheme(scheme).host(authority == null ? null : authority.getHost()).port(authority == null ? -1 : authority.getPort()).pathQuery(path),
-                HttpVersion.HTTP_2, headers, -1, null, beginNanoTime);
+                HttpVersion.HTTP_2, headers, -1, null);
             _protocol = protocol;
         }
 

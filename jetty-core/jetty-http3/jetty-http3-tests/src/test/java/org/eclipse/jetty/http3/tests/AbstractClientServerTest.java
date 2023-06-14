@@ -136,7 +136,7 @@ public class AbstractClientServerTest
     protected MetaData.Request newRequest(HttpMethod method, String path, HttpFields fields)
     {
         HttpURI uri = HttpURI.from("https://localhost:" + connector.getLocalPort() + (path == null ? "/" : path));
-        return new MetaData.Request(method.asString(), uri, HttpVersion.HTTP_3, fields, 0);
+        return new MetaData.Request(method.asString(), uri, HttpVersion.HTTP_3, fields);
     }
 
     @AfterEach

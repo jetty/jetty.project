@@ -250,17 +250,17 @@ public class MetaDataBuilder
                         throw new HpackException.StreamException("No Path");
                 }
                 if (isConnect)
-                    return new MetaData.ConnectRequest(_scheme, _authority, _path, fields, _protocol, NanoTime.now()); // TODO #9900 make beginNanoTime accurate
+                    return new MetaData.ConnectRequest(NanoTime.now(), _scheme, _authority, _path, fields, _protocol); // TODO #9900 make beginNanoTime accurate
                 else
                     return new MetaData.Request(
-                        _method,
+                        NanoTime.now(), // TODO #9900 make beginNanoTime accurate
+                         _method,
                         _scheme == null ? HttpScheme.HTTP.asString() : _scheme.asString(),
                         _authority,
                         _path,
                         HttpVersion.HTTP_2,
                         fields,
-                        _contentLength,
-                        NanoTime.now()); // TODO #9900 make beginNanoTime accurate
+                        _contentLength);
             }
             if (_response)
             {

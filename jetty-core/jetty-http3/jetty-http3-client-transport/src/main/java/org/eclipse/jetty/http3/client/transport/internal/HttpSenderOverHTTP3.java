@@ -34,7 +34,6 @@ import org.eclipse.jetty.http3.frames.DataFrame;
 import org.eclipse.jetty.http3.frames.HeadersFrame;
 import org.eclipse.jetty.util.BufferUtil;
 import org.eclipse.jetty.util.Callback;
-import org.eclipse.jetty.util.NanoTime;
 
 public class HttpSenderOverHTTP3 extends HttpSender
 {
@@ -60,12 +59,12 @@ public class HttpSenderOverHTTP3 extends HttpSender
             String upgradeProtocol = (String)request.getAttributes().get(HttpUpgrader.PROTOCOL_ATTRIBUTE);
             if (upgradeProtocol == null)
             {
-                metaData = new MetaData.ConnectRequest((String)null, new HostPortHttpField(request.getPath()), null, request.getHeaders(), null, NanoTime.now());
+                metaData = new MetaData.ConnectRequest((String)null, new HostPortHttpField(request.getPath()), null, request.getHeaders(), null);
             }
             else
             {
                 HostPortHttpField authority = new HostPortHttpField(request.getHost(), request.getPort());
-                metaData = new MetaData.ConnectRequest(request.getScheme(), authority, request.getPath(), request.getHeaders(), upgradeProtocol, NanoTime.now());
+                metaData = new MetaData.ConnectRequest(request.getScheme(), authority, request.getPath(), request.getHeaders(), upgradeProtocol);
             }
         }
         else
@@ -77,7 +76,7 @@ public class HttpSenderOverHTTP3 extends HttpSender
                 .port(request.getPort())
                 .path(path)
                 .query(request.getQuery());
-            metaData = new MetaData.Request(request.getMethod(), uri, HttpVersion.HTTP_3, request.getHeaders(), -1, request.getTrailersSupplier(), NanoTime.now());
+            metaData = new MetaData.Request(request.getMethod(), uri, HttpVersion.HTTP_3, request.getHeaders(), -1, request.getTrailersSupplier());
         }
 
         HeadersFrame headersFrame;

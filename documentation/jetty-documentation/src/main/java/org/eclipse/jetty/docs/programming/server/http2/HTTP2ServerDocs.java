@@ -38,7 +38,6 @@ import org.eclipse.jetty.server.Server;
 import org.eclipse.jetty.server.ServerConnector;
 import org.eclipse.jetty.util.BufferUtil;
 import org.eclipse.jetty.util.Callback;
-import org.eclipse.jetty.util.NanoTime;
 import org.eclipse.jetty.util.resource.ResourceFactory;
 
 import static java.lang.System.Logger.Level.INFO;
@@ -327,7 +326,7 @@ public class HTTP2ServerDocs
                 {
                     // Push the favicon.
                     HttpURI pushedURI = HttpURI.build(request.getHttpURI()).path("/favicon.ico");
-                    MetaData.Request pushedRequest = new MetaData.Request("GET", pushedURI, HttpVersion.HTTP_2, HttpFields.EMPTY, NanoTime.now());
+                    MetaData.Request pushedRequest = new MetaData.Request("GET", pushedURI, HttpVersion.HTTP_2, HttpFields.EMPTY);
                     PushPromiseFrame promiseFrame = new PushPromiseFrame(stream.getId(), 0, pushedRequest);
                     stream.push(promiseFrame, null)
                         .thenCompose(pushedStream ->

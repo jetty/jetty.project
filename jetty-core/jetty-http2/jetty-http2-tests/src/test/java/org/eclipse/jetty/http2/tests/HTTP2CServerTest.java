@@ -195,7 +195,7 @@ public class HTTP2CServerTest extends AbstractServerTest
             ByteBufferPool.Accumulator accumulator = new ByteBufferPool.Accumulator();
             generator.control(accumulator, new PrefaceFrame());
             generator.control(accumulator, new SettingsFrame(new HashMap<>(), false));
-            MetaData.Request metaData = new MetaData.Request("GET", HttpScheme.HTTP.asString(), new HostPortHttpField("localhost:" + connector.getLocalPort()), "/two", HttpVersion.HTTP_2, HttpFields.EMPTY, -1, 0);
+            MetaData.Request metaData = new MetaData.Request("GET", HttpScheme.HTTP.asString(), new HostPortHttpField("localhost:" + connector.getLocalPort()), "/two", HttpVersion.HTTP_2, HttpFields.EMPTY, -1);
             generator.control(accumulator, new HeadersFrame(3, metaData, null, true));
             for (ByteBuffer buffer : accumulator.getByteBuffers())
             {
@@ -233,7 +233,7 @@ public class HTTP2CServerTest extends AbstractServerTest
         ByteBufferPool.Accumulator accumulator = new ByteBufferPool.Accumulator();
         generator.control(accumulator, new PrefaceFrame());
         generator.control(accumulator, new SettingsFrame(new HashMap<>(), false));
-        MetaData.Request metaData = new MetaData.Request("GET", HttpScheme.HTTP.asString(), new HostPortHttpField("localhost:" + connector.getLocalPort()), "/test", HttpVersion.HTTP_2, HttpFields.EMPTY, -1, 0);
+        MetaData.Request metaData = new MetaData.Request("GET", HttpScheme.HTTP.asString(), new HostPortHttpField("localhost:" + connector.getLocalPort()), "/test", HttpVersion.HTTP_2, HttpFields.EMPTY, -1);
         generator.control(accumulator, new HeadersFrame(1, metaData, null, true));
 
         try (Socket client = new Socket("localhost", connector.getLocalPort()))

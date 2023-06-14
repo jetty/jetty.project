@@ -1488,11 +1488,11 @@ public class Request implements HttpServletRequest
         setTimeStamp(org.eclipse.jetty.server.Request.getTimeStamp(coreRequest));
 
         _metaData = new MetaData.Request(
+            coreRequest.getBeginNanoTime(),
             coreRequest.getMethod(),
             coreRequest.getHttpURI(),
             coreRequest.getConnectionMetaData().getHttpVersion(),
-            coreRequest.getHeaders(),
-            coreRequest.getBeginNanoTime());
+            coreRequest.getHeaders());
 
         _attributes = new ServletAttributes(coreRequest);
 

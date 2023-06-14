@@ -1067,7 +1067,7 @@ public class HttpConnection extends AbstractConnection implements Runnable, Writ
                 HttpURI uri = stream._uri;
                 if (uri.hasViolations())
                     uri = HttpURI.from("/badURI");
-                _httpChannel.onRequest(new MetaData.Request(stream._method, uri, stream._version, HttpFields.EMPTY, _parser.getStartNanoTime()));
+                _httpChannel.onRequest(new MetaData.Request(_parser.getStartNanoTime(), stream._method, uri, stream._version, HttpFields.EMPTY));
             }
 
             Runnable task = _httpChannel.onFailure(_failure);
@@ -1255,7 +1255,7 @@ public class HttpConnection extends AbstractConnection implements Runnable, Writ
                 _uri.path("/");
             }
 
-            _request = new MetaData.Request(_method, _uri.asImmutable(), _version, _headerBuilder, _contentLength, _parser.getStartNanoTime());
+            _request = new MetaData.Request(_parser.getStartNanoTime(), _method, _uri.asImmutable(), _version, _headerBuilder, _contentLength);
 
             Runnable handle = _httpChannel.onRequest(_request);
             ++_requests;

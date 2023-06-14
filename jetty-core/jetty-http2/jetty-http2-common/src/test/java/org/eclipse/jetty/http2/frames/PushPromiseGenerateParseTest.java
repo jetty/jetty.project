@@ -59,7 +59,7 @@ public class PushPromiseGenerateParseTest
         HttpFields.Mutable fields = HttpFields.build()
             .put("Accept", "text/html")
             .put("User-Agent", "Jetty");
-        MetaData.Request metaData = new MetaData.Request("GET", HttpScheme.HTTP.asString(), new HostPortHttpField("localhost:8080"), "/path", HttpVersion.HTTP_2, fields, -1, 0);
+        MetaData.Request metaData = new MetaData.Request("GET", HttpScheme.HTTP.asString(), new HostPortHttpField("localhost:8080"), "/path", HttpVersion.HTTP_2, fields, -1);
 
         // Iterate a few times to be sure generator and parser are properly reset.
         for (int i = 0; i < 2; ++i)
@@ -112,7 +112,7 @@ public class PushPromiseGenerateParseTest
         HttpFields.Mutable fields = HttpFields.build()
             .put("Accept", "text/html")
             .put("User-Agent", "Jetty");
-        MetaData.Request metaData = new MetaData.Request("GET", HttpScheme.HTTP.asString(), new HostPortHttpField("localhost:8080"), "/path", HttpVersion.HTTP_2, fields, -1, 0);
+        MetaData.Request metaData = new MetaData.Request("GET", HttpScheme.HTTP.asString(), new HostPortHttpField("localhost:8080"), "/path", HttpVersion.HTTP_2, fields, -1);
 
         // Iterate a few times to be sure generator and parser are properly reset.
         for (int i = 0; i < 2; ++i)

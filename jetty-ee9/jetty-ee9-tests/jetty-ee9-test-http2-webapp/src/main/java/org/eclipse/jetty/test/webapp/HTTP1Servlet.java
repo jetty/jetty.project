@@ -33,7 +33,6 @@ import org.eclipse.jetty.http2.api.Session;
 import org.eclipse.jetty.http2.api.Stream;
 import org.eclipse.jetty.http2.client.HTTP2Client;
 import org.eclipse.jetty.http2.frames.HeadersFrame;
-import org.eclipse.jetty.util.NanoTime;
 import org.eclipse.jetty.util.Promise;
 import org.eclipse.jetty.util.ssl.SslContextFactory;
 
@@ -85,7 +84,7 @@ public class HTTP1Servlet extends HttpServlet
             public void succeeded(Session session)
             {
                 HttpURI uri = HttpURI.from(request.getScheme(), host, port, contextPath + "/h2");
-                MetaData.Request metaData = new MetaData.Request(HttpMethod.GET.asString(), uri, HttpVersion.HTTP_2, HttpFields.EMPTY, NanoTime.now());
+                MetaData.Request metaData = new MetaData.Request(HttpMethod.GET.asString(), uri, HttpVersion.HTTP_2, HttpFields.EMPTY);
                 HeadersFrame frame = new HeadersFrame(metaData, null, true);
                 session.newStream(frame, new Promise.Adapter<Stream>()
                 {

@@ -203,7 +203,7 @@ public class RawHTTP2ProxyTest
         // Send a request with trailers for server1.
         HttpFields.Mutable fields1 = HttpFields.build();
         fields1.put("X-Target", String.valueOf(connector1.getLocalPort()));
-        MetaData.Request request1 = new MetaData.Request("GET", HttpURI.from("http://localhost/server1"), HttpVersion.HTTP_2, fields1, 0);
+        MetaData.Request request1 = new MetaData.Request("GET", HttpURI.from("http://localhost/server1"), HttpVersion.HTTP_2, fields1);
         FuturePromise<Stream> streamPromise1 = new FuturePromise<>();
         CountDownLatch latch1 = new CountDownLatch(1);
         clientSession.newStream(new HeadersFrame(request1, null, false), streamPromise1, new Stream.Listener()
@@ -236,7 +236,7 @@ public class RawHTTP2ProxyTest
         // Send a request for server2.
         HttpFields.Mutable fields2 = HttpFields.build();
         fields2.put("X-Target", String.valueOf(connector2.getLocalPort()));
-        MetaData.Request request2 = new MetaData.Request("GET", HttpURI.from("http://localhost/server1"), HttpVersion.HTTP_2, fields2, 0);
+        MetaData.Request request2 = new MetaData.Request("GET", HttpURI.from("http://localhost/server1"), HttpVersion.HTTP_2, fields2);
         FuturePromise<Stream> streamPromise2 = new FuturePromise<>();
         CountDownLatch latch2 = new CountDownLatch(1);
         clientSession.newStream(new HeadersFrame(request2, null, false), streamPromise2, new Stream.Listener()

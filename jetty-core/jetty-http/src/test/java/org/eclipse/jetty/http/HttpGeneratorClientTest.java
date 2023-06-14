@@ -16,7 +16,6 @@ package org.eclipse.jetty.http;
 import java.nio.ByteBuffer;
 
 import org.eclipse.jetty.util.BufferUtil;
-import org.eclipse.jetty.util.NanoTime;
 import org.hamcrest.Matchers;
 import org.junit.jupiter.api.Test;
 
@@ -33,17 +32,17 @@ public class HttpGeneratorClientTest
     {
         RequestInfo(String method, String uri, HttpFields fields)
         {
-            super(method, HttpURI.from(method, uri), HttpVersion.HTTP_1_1, fields, NanoTime.now());
+            super(method, HttpURI.from(method, uri), HttpVersion.HTTP_1_1, fields);
         }
 
         RequestInfo(String method, String uri, HttpVersion version, HttpFields fields)
         {
-            super(method, HttpURI.from(method, uri), version, fields, NanoTime.now());
+            super(method, HttpURI.from(method, uri), version, fields);
         }
 
         RequestInfo(String method, String uri, int contentLength, HttpFields fields)
         {
-            super(method, HttpURI.from(method, uri), HttpVersion.HTTP_1_1, fields, contentLength, NanoTime.now());
+            super(method, HttpURI.from(method, uri), HttpVersion.HTTP_1_1, fields, contentLength);
         }
     }
 

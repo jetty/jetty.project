@@ -132,7 +132,7 @@ public class BlockedWritesWithSmallThreadPoolTest
         CountDownLatch clientDataLatch = new CountDownLatch(1);
         // Send a request to TCP congest the server.
         HttpURI uri = HttpURI.build("http://localhost:" + connector.getLocalPort() + "/congest");
-        MetaData.Request request = new MetaData.Request("GET", uri, HttpVersion.HTTP_2, HttpFields.EMPTY, 0);
+        MetaData.Request request = new MetaData.Request("GET", uri, HttpVersion.HTTP_2, HttpFields.EMPTY);
         session.newStream(new HeadersFrame(request, null, true), new Promise.Adapter<>(), new Stream.Listener()
         {
             @Override
@@ -243,7 +243,7 @@ public class BlockedWritesWithSmallThreadPoolTest
 
         // Send a request to TCP congest the client.
         HttpURI uri = HttpURI.build("http://localhost:" + connector.getLocalPort() + "/congest");
-        MetaData.Request request = new MetaData.Request("GET", uri, HttpVersion.HTTP_2, HttpFields.EMPTY, 0);
+        MetaData.Request request = new MetaData.Request("GET", uri, HttpVersion.HTTP_2, HttpFields.EMPTY);
         FuturePromise<Stream> streamPromise = new FuturePromise<>();
         CountDownLatch latch = new CountDownLatch(1);
         session.newStream(new HeadersFrame(request, null, false), streamPromise, new Stream.Listener()

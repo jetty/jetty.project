@@ -30,7 +30,6 @@ import org.eclipse.jetty.io.RetainableByteBuffer;
 import org.eclipse.jetty.util.BufferUtil;
 import org.eclipse.jetty.util.Callback;
 import org.eclipse.jetty.util.IteratingCallback;
-import org.eclipse.jetty.util.NanoTime;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -75,7 +74,7 @@ public class HttpSenderOverHTTP extends HttpSender
             String query = request.getQuery();
             if (query != null)
                 path += "?" + query;
-            metaData = new MetaData.Request(request.getMethod(), HttpURI.from(path), request.getVersion(), request.getHeaders(), contentLength, request.getTrailersSupplier(), NanoTime.now());
+            metaData = new MetaData.Request(request.getMethod(), HttpURI.from(path), request.getVersion(), request.getHeaders(), contentLength, request.getTrailersSupplier());
             if (LOG.isDebugEnabled())
                 LOG.debug("Sending headers with content {} last={} for {}", BufferUtil.toDetailString(contentBuffer), lastContent, exchange.getRequest());
             headersCallback.iterate();

@@ -145,7 +145,7 @@ public class PriorKnowledgeHTTP2OverTLSTest
             {
                 CompletableFuture<MetaData.Response> responsePromise = new CompletableFuture<>();
                 HttpURI.Mutable uri = HttpURI.build("https://localhost:" + port + "/path");
-                MetaData.Request request = new MetaData.Request("GET", uri, HttpVersion.HTTP_2, HttpFields.EMPTY, 0);
+                MetaData.Request request = new MetaData.Request("GET", uri, HttpVersion.HTTP_2, HttpFields.EMPTY);
                 return session.newStream(new HeadersFrame(request, null, true), new Stream.Listener()
                 {
                     @Override

@@ -348,7 +348,7 @@ public class HTTP2Test extends AbstractTest
 
         Session session = newClientSession(new Session.Listener() {});
         HostPortHttpField hostHeader = new HostPortHttpField(authority);
-        MetaData.Request metaData = new MetaData.Request("GET", HttpScheme.HTTP.asString(), hostHeader, "/", HttpVersion.HTTP_2, HttpFields.EMPTY, -1, 0);
+        MetaData.Request metaData = new MetaData.Request("GET", HttpScheme.HTTP.asString(), hostHeader, "/", HttpVersion.HTTP_2, HttpFields.EMPTY, -1);
         HeadersFrame frame = new HeadersFrame(metaData, null, true);
         CountDownLatch latch = new CountDownLatch(1);
         session.newStream(frame, new Promise.Adapter<>(), new Stream.Listener()
@@ -964,7 +964,7 @@ public class HTTP2Test extends AbstractTest
 
         // Client cannot create new requests after receiving a GOAWAY.
         HostPortHttpField authority3 = new HostPortHttpField("localhost" + ":" + port);
-        MetaData.Request metaData3 = new MetaData.Request("GET", HttpScheme.HTTP.asString(), authority3, "/", HttpVersion.HTTP_2, HttpFields.EMPTY, -1, 0);
+        MetaData.Request metaData3 = new MetaData.Request("GET", HttpScheme.HTTP.asString(), authority3, "/", HttpVersion.HTTP_2, HttpFields.EMPTY, -1);
         HeadersFrame request3 = new HeadersFrame(metaData3, null, true);
         FuturePromise<Stream> promise3 = new FuturePromise<>();
         clientSession.newStream(request3, promise3, null);

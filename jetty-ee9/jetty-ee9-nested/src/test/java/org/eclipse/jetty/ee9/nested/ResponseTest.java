@@ -2258,7 +2258,7 @@ public class ResponseTest
     {
         _channel.recycle();
 
-        MetaData.Request reqMeta = new MetaData.Request("GET", HttpURI.from("http://myhost:8888/path/info"), version, HttpFields.EMPTY, 0);
+        MetaData.Request reqMeta = new MetaData.Request("GET", HttpURI.from("http://myhost:8888/path/info"), version, HttpFields.EMPTY);
 
         org.eclipse.jetty.server.Request coreRequest = new MockRequest(reqMeta, _context.getServletContext().getCoreContext());
         org.eclipse.jetty.server.Response coreResponse = new MockResponse(coreRequest);

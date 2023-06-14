@@ -23,7 +23,6 @@ import java.nio.charset.Charset;
 import java.nio.charset.StandardCharsets;
 
 import org.eclipse.jetty.util.BufferUtil;
-import org.eclipse.jetty.util.NanoTime;
 import org.eclipse.jetty.util.StringUtil;
 
 /**
@@ -568,7 +567,7 @@ public class HttpTester
         @Override
         public MetaData.Request getMetaData()
         {
-            return new MetaData.Request(_method, HttpURI.from(_uri), _version, this, _content == null ? 0 : _content.size(), NanoTime.now());
+            return new MetaData.Request(_method, HttpURI.from(_uri), _version, this, _content == null ? 0 : _content.size());
         }
 
         @Override
