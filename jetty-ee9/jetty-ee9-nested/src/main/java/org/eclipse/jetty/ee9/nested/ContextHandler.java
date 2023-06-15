@@ -865,8 +865,10 @@ public class ContextHandler extends ScopedHandler implements Attributes, Supplie
         if (LOG.isDebugEnabled())
             LOG.debug("scope {}|{}|{} @ {}", baseRequest.getContextPath(), baseRequest.getServletPath(), baseRequest.getPathInfo(), this);
 
+        APIContext oldApiContext = baseRequest.getContext();
         try
         {
+            baseRequest.setContext(_apiContext);
             org.eclipse.jetty.server.handler.ContextHandler.ScopedContext context = getCoreContextHandler().getContext();
             if (context == org.eclipse.jetty.server.handler.ContextHandler.getCurrentContext())
                 nextScope(target, baseRequest, request, response);
@@ -880,6 +882,10 @@ public class ContextHandler extends ScopedHandler implements Attributes, Supplie
         catch (Throwable t)
         {
             throw new ServletException("Unexpected Exception", t);
+        }
+        finally
+        {
+            baseRequest.setContext(oldApiContext);
         }
     }
 

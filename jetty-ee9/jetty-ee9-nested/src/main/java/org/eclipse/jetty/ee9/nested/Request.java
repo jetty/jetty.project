@@ -157,7 +157,7 @@ public class Request implements HttpServletRequest
     }
 
     private final HttpChannel _channel;
-    private final ContextHandler.APIContext _context;
+    private ContextHandler.APIContext _context;
     private final List<ServletRequestAttributeListener> _requestAttributeListeners = new ArrayList<>();
     private final HttpInput _input;
     private ContextHandler.CoreContextRequest _coreRequest;
@@ -193,7 +193,6 @@ public class Request implements HttpServletRequest
     {
         _channel = channel;
         _input = input;
-        _context = channel.getContextHandler().getServletContext();
     }
 
     public HttpFields getHttpFields()
@@ -690,11 +689,16 @@ public class Request implements HttpServletRequest
     }
 
     /**
-     * @return The {@link ContextHandler.APIContext context} used for this request. Never null.
+     * @return The {@link ContextHandler.APIContext context} used for this request.
      */
     public ContextHandler.APIContext getContext()
     {
         return _context;
+    }
+
+    public void setContext(ContextHandler.APIContext context)
+    {
+        _context = context;
     }
 
     /**

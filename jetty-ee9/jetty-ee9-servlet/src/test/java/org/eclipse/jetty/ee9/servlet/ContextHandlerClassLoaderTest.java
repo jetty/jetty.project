@@ -14,8 +14,12 @@
 package org.eclipse.jetty.ee9.servlet;
 
 import java.io.IOException;
+import java.util.ArrayDeque;
+import java.util.Queue;
 
 import jakarta.servlet.AsyncContext;
+import jakarta.servlet.AsyncEvent;
+import jakarta.servlet.AsyncListener;
 import jakarta.servlet.DispatcherType;
 import jakarta.servlet.ServletException;
 import jakarta.servlet.http.HttpServlet;
@@ -40,12 +44,46 @@ public class ContextHandlerClassLoaderTest
     private ServerConnector _connector;
     private Server _server;
     private HttpClient _client;
+    private final Queue<String> _asyncListenerLog = new ArrayDeque<>();
 
     public static class MyCustomClassLoader extends ClassLoader
     {
         protected MyCustomClassLoader(ClassLoader parent)
         {
             super(parent);
+        }
+
+        @Override
+        public String toString()
+        {
+            return MyCustomClassLoader.class.getSimpleName();
+        }
+    }
+
+    public class MyAsyncListener implements AsyncListener
+    {
+        @Override
+        public void onComplete(AsyncEvent event) throws IOException
+        {
+            _asyncListenerLog.add("onComplete(): " + Thread.currentThread().getContextClassLoader());
+        }
+
+        @Override
+        public void onTimeout(AsyncEvent event) throws IOException
+        {
+            _asyncListenerLog.add("onTimeout(): " + Thread.currentThread().getContextClassLoader());
+        }
+
+        @Override
+        public void onError(AsyncEvent event) throws IOException
+        {
+            _asyncListenerLog.add("onError(): " + Thread.currentThread().getContextClassLoader());
+        }
+
+        @Override
+        public void onStartAsync(AsyncEvent event) throws IOException
+        {
+            _asyncListenerLog.add("onStartAsync(): " + Thread.currentThread().getContextClassLoader());
         }
     }
 
@@ -66,6 +104,7 @@ public class ContextHandlerClassLoaderTest
                 if (req.getDispatcherType() == DispatcherType.REQUEST)
                 {
                     AsyncContext asyncContext = req.startAsync();
+                    asyncContext.addListener(new MyAsyncListener());
                     asyncContext.start(asyncContext::dispatch);
                     return;
                 }
@@ -98,6 +137,10 @@ public class ContextHandlerClassLoaderTest
         String responseContent = response.getContentAsString();
         assertThat(responseContent, containsString("ASYNC"));
         assertThat(responseContent, containsString("MyCustomClassLoader"));
+
+        // AsyncListener should also have the correct ClassLoader set.
+        assertThat(_asyncListenerLog.poll(), equalTo("onComplete(): MyCustomClassLoader"));
+        assertThat(_asyncListenerLog.size(), equalTo(0));
     }
 
     @Test
@@ -114,5 +157,9 @@ public class ContextHandlerClassLoaderTest
         String responseContent = response.getContentAsString();
         assertThat(responseContent, containsString("ASYNC"));
         assertThat(responseContent, containsString("MyCustomClassLoader"));
+
+        // AsyncListener should also have the correct ClassLoader set.
+        assertThat(_asyncListenerLog.poll(), equalTo("onComplete(): MyCustomClassLoader"));
+        assertThat(_asyncListenerLog.size(), equalTo(0));
     }
 }
