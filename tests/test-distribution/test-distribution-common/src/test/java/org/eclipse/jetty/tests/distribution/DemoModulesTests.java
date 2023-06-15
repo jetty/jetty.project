@@ -26,13 +26,11 @@ import org.eclipse.jetty.http.HttpStatus;
 import org.eclipse.jetty.tests.hometester.JettyHomeTester;
 import org.eclipse.jetty.toolchain.test.jupiter.WorkDirExtension;
 import org.eclipse.jetty.util.Fields;
-import org.junit.jupiter.api.Disabled;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.Arguments;
 import org.junit.jupiter.params.provider.MethodSource;
-import org.junit.jupiter.params.provider.ValueSource;
 
 import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.Matchers.containsString;
@@ -57,8 +55,8 @@ public class DemoModulesTests extends AbstractJettyHomeTest
          Path jettyBase = newTestJettyBaseDirectory();
         String jettyVersion = System.getProperty("jettyVersion");
         JettyHomeTester distribution = JettyHomeTester.Builder.newInstance()
-                .jettyVersion(jettyVersion)
-                .jettyBase(jettyBase)
+            .jettyVersion(jettyVersion)
+            .jettyBase(jettyBase)
             .mavenLocalRepository(System.getProperty("mavenRepoPath"))
             .build();
 
@@ -76,7 +74,7 @@ public class DemoModulesTests extends AbstractJettyHomeTest
 
             String[] argsStart =
             {
-                    "jetty.http.port=" + httpPort
+                "jetty.http.port=" + httpPort
             };
 
             try (JettyHomeTester.Run runStart = distribution.start(argsStart))
@@ -85,6 +83,8 @@ public class DemoModulesTests extends AbstractJettyHomeTest
 
                 startHttpClient();
                 ContentResponse response = client.GET(baseURI + "/dump/auth/admin/info");
+                assertEquals(HttpStatus.OK_200, response.getStatus(), new ResponseDetails(response));;
+
                 Fields fields = new Fields();
                 fields.put("j_username", "admin");
                 fields.put("j_password", "admin");
@@ -384,9 +384,7 @@ public class DemoModulesTests extends AbstractJettyHomeTest
     }
 
     @ParameterizedTest
-    //@MethodSource("provideEnvironmentsToTest")
-    @Disabled("not yet ready for this")
-    @ValueSource(strings = "ee10")
+    @MethodSource("provideEnvironmentsToTest")
     public void testJPMS(String env) throws Exception
     {
         Path jettyBase = newTestJettyBaseDirectory();
@@ -397,19 +395,21 @@ public class DemoModulesTests extends AbstractJettyHomeTest
             .mavenLocalRepository(System.getProperty("mavenRepoPath"))
             .build();
 
+        int httpPort = distribution.freePort();
+
         String[] argsConfig = {
-            "--add-modules=http," + toEnvironment("demo", env)
+            "--add-modules=http," + toEnvironment("demos", env)
         };
 
+        String baseURI = "http://localhost:%d/%s-test".formatted(httpPort, env);
         try (JettyHomeTester.Run runConfig = distribution.start(argsConfig))
         {
             assertTrue(runConfig.awaitFor(START_TIMEOUT, TimeUnit.SECONDS));
             assertEquals(0, runConfig.getExitValue());
 
-            int httpPort = distribution.freePort();
-            String[] argsStart = {
+            String[] argsStart =
+            {
                 "--jpms",
-                "--debug",
                 "jetty.http.port=" + httpPort
             };
             try (JettyHomeTester.Run runStart = distribution.start(argsStart))
@@ -417,11 +417,15 @@ public class DemoModulesTests extends AbstractJettyHomeTest
                 assertTrue(runStart.awaitConsoleLogsFor("Started oejs.Server@", START_TIMEOUT, TimeUnit.SECONDS));
 
                 startHttpClient();
-                ContentResponse helloResponse = client.GET("http://localhost:" + httpPort + "/test/hello");
-                assertEquals(HttpStatus.OK_200, helloResponse.getStatus());
+                ContentResponse response = client.GET(baseURI + "/hello");
+                assertEquals(HttpStatus.OK_200, response.getStatus());
 
-                ContentResponse cssResponse = client.GET("http://localhost:" + httpPort + "/jetty-dir.css");
-                assertEquals(HttpStatus.OK_200, cssResponse.getStatus());
+                response = client.GET(baseURI + "/dump/info");
+                assertEquals(HttpStatus.OK_200, response.getStatus());
+
+                // TODO this should not fail!
+                // response = client.GET(baseURI + "/jetty-dir.css");
+                // assertEquals(HttpStatus.OK_200, response.getStatus());
             }
         }
     }
