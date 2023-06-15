@@ -315,9 +315,9 @@ public interface Request extends Attributes, Content.Source
      * from all mutative methods.
      * @return a copy of the request
      */
-    default Request asReadOnly()
+    static Request asReadOnly(Request request)
     {
-        return new Request.Wrapper(this)
+        return new Request.Wrapper(request)
         {
             @Override
             public void addHttpStreamWrapper(Function<HttpStream, HttpStream> wrapper)

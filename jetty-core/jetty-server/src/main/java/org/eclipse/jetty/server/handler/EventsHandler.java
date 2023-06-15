@@ -65,7 +65,7 @@ public abstract class EventsHandler extends Handler.Wrapper
     @Override
     public boolean handle(Request request, Response response, Callback callback) throws Exception
     {
-        Request roRequest = request.asReadOnly();
+        Request roRequest = Request.asReadOnly(request);
         notifyOnBeforeHandling(roRequest);
         try
         {
