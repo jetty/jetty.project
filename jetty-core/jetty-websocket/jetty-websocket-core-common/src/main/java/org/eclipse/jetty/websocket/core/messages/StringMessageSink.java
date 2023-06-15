@@ -88,4 +88,11 @@ public class StringMessageSink extends AbstractMessageSink
             }
         }
     }
+
+    @Override
+    public void fail(Throwable failure)
+    {
+        if (out != null)
+            out.reset();
+    }
 }
