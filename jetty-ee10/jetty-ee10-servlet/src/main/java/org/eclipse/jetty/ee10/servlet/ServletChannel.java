@@ -794,7 +794,7 @@ public class ServletChannel
                 hashCode());
         }
 
-        long timeStamp = _servletContextRequest.getTimeStamp();
+        long timeStamp = Request.getTimeStamp(_servletContextRequest);
         return String.format("%s@%x{s=%s,r=%s,c=%b/%b,a=%s,uri=%s,age=%d}",
             getClass().getSimpleName(),
             hashCode(),

@@ -2260,11 +2260,9 @@ public class ResponseTest
     {
         _channel.recycle();
 
-        long now = System.currentTimeMillis();
-
         MetaData.Request reqMeta = new MetaData.Request("GET", HttpURI.from("http://myhost:8888/path/info"), version, HttpFields.EMPTY);
 
-        org.eclipse.jetty.server.Request coreRequest = new MockRequest(reqMeta, now, _context.getServletContext().getCoreContext());
+        org.eclipse.jetty.server.Request coreRequest = new MockRequest(reqMeta, _context.getServletContext().getCoreContext());
         org.eclipse.jetty.server.Response coreResponse = new MockResponse(coreRequest);
 
         _channel.onRequest(new ContextHandler.CoreContextRequest(coreRequest, _context.getCoreContextHandler().getContext(), _channel));
@@ -2277,19 +2275,17 @@ public class ResponseTest
     private class MockRequest extends Attributes.Mapped implements org.eclipse.jetty.server.Request
     {
         private final MetaData.Request _reqMeta;
-        private final long _now;
         private final long _nanoTime = NanoTime.now();
         private final Context _context;
 
-        public MockRequest(MetaData.Request reqMeta, long now)
+        public MockRequest(MetaData.Request reqMeta)
         {
-            this(reqMeta, now, null);
+            this(reqMeta, null);
         }
 
-        public MockRequest(MetaData.Request reqMeta, long now, Context context)
+        public MockRequest(MetaData.Request reqMeta, Context context)
         {
             _reqMeta = reqMeta;
-            _now = now;
             _context = context == null ? _server.getContext() : context;
         }
 
@@ -2342,13 +2338,13 @@ public class ResponseTest
         }
 
         @Override
-        public long getTimeStamp()
+        public long getBeginNanoTime()
         {
-            return _now;
+            return _nanoTime;
         }
 
         @Override
-        public long getNanoTime()
+        public long getHeadersNanoTime()
         {
             return _nanoTime;
         }
