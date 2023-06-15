@@ -33,6 +33,7 @@ import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 
 import static org.hamcrest.MatcherAssert.assertThat;
+import static org.hamcrest.Matchers.containsString;
 import static org.hamcrest.Matchers.is;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
@@ -90,6 +91,27 @@ public class LargeDeflateTest
 
         ByteBuffer message = _serverSocket.binaryMessages.poll(1, TimeUnit.SECONDS);
         assertThat(message, is(sentMessage));
+    }
+
+    @Test
+    void testDeflateLargerThanMaxMessage() throws Exception
+    {
+        ClientUpgradeRequest upgradeRequest = new ClientUpgradeRequest();
+        upgradeRequest.addExtensions("permessage-deflate");
+
+        EventSocket clientSocket = new EventSocket();
+        ByteBuffer message = largePayloads();
+        Session session = _client.connect(clientSocket, URI.create("ws://localhost:" + _connector.getLocalPort() + "/ws"), upgradeRequest).get();
+
+        // Set the maxBinaryMessageSize on the server to be lower than the size of the message.
+        assertTrue(_serverSocket.openLatch.await(5, TimeUnit.SECONDS));
+        _serverSocket.session.setMaxBinaryMessageSize(message.remaining() - 1024);
+
+        session.getRemote().sendBytes(message);
+        assertTrue(clientSocket.closeLatch.await(5, TimeUnit.SECONDS));
+        assertTrue(_serverSocket.closeLatch.await(5, TimeUnit.SECONDS));
+        assertThat(_serverSocket.closeCode, is(StatusCode.MESSAGE_TOO_LARGE));
+        assertThat(_serverSocket.closeReason, containsString("Binary message too large"));
     }
 
     private static ByteBuffer largePayloads()
