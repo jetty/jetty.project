@@ -567,7 +567,9 @@ public class StartArgs
             {
                 Map<Boolean, List<Path>> dirsAndFiles = StreamSupport.stream(jettyEnvironment.getClasspath().spliterator(), false)
                     .collect(Collectors.groupingBy(Files::isDirectory));
-                Set<Path> files = new HashSet<>(dirsAndFiles.get(false));
+
+                List<Path> paths = dirsAndFiles.get(false);
+                Set<Path> files = new HashSet<>((paths == null) ? Collections.emptyList() : paths);
 
                 // FIXME I'm not sure it's a good idea especially with multiple environment..
                 //       ee9 may use jakarta.annotation 2.0.0
