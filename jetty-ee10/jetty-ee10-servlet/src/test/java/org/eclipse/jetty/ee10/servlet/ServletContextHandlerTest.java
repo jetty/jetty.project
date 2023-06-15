@@ -15,6 +15,7 @@ package org.eclipse.jetty.ee10.servlet;
 
 import java.io.IOException;
 import java.io.PrintWriter;
+import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.util.ArrayList;
 import java.util.Collection;
@@ -79,6 +80,7 @@ import org.eclipse.jetty.server.Server;
 import org.eclipse.jetty.server.handler.ContextHandler;
 import org.eclipse.jetty.server.handler.ContextHandlerCollection;
 import org.eclipse.jetty.server.handler.ResourceHandler;
+import org.eclipse.jetty.toolchain.test.MavenTestingUtils;
 import org.eclipse.jetty.util.Callback;
 import org.eclipse.jetty.util.DecoratedObjectFactory;
 import org.eclipse.jetty.util.Decorator;
@@ -2462,5 +2464,61 @@ public class ServletContextHandlerTest
         String rawResponse = _connector.getResponse(rawRequest);
         HttpTester.Response response = HttpTester.parseResponse(rawResponse);
         assertThat(response.getContent(), containsString("OK2"));
+    }
+
+    @Test
+    public void testPathInfoOnly() throws Exception
+    {
+        ServletContextHandler context = new ServletContextHandler(null, "/c1", ServletContextHandler.NO_SESSIONS);
+        context.setWelcomeFiles(new String[]{"index.y", "index.x"});
+        ServletHolder indexServlet = new ServletHolder("index-servlet", new HttpServlet()
+        {
+            @Override
+            protected void service(HttpServletRequest req, HttpServletResponse resp) throws ServletException, IOException
+            {
+                resp.setContentType("text/plain");
+                resp.setCharacterEncoding("UTF-8");
+                resp.getWriter().println(req.getRequestURI());
+                resp.getWriter().println("OK");
+                resp.getWriter().close();
+            }
+        });
+
+        ServletMapping indexMapping = new ServletMapping();
+        indexMapping.setServletName("index-servlet");
+        indexMapping.setPathSpecs(new String[]{"*.x", "*.y"});
+        context.getServletHandler().addServlet(indexServlet);
+        context.getServletHandler().addServletMapping(indexMapping);
+
+        Path pathTest = MavenTestingUtils.getTestResourcePath("pathTest");
+
+        Path defaultDir = pathTest.resolve("default");
+        ServletHolder slashHolder = new ServletHolder("default", new DefaultServlet());
+        slashHolder.setInitParameter("redirectWelcome", "false");
+        slashHolder.setInitParameter("welcomeServlets", "true");
+        slashHolder.setInitParameter("pathInfoOnly", "false");
+        slashHolder.setInitParameter("baseResource", defaultDir.toFile().getAbsolutePath());
+        context.addServlet(slashHolder, "/");
+
+        Path rDir = pathTest.resolve("rdir");
+        ServletHolder rHolder = new ServletHolder("rdefault", new DefaultServlet());
+        rHolder.setInitParameter("redirectWelcome", "false");
+        rHolder.setInitParameter("welcomeServlets", "true");
+        rHolder.setInitParameter("pathInfoOnly", "true");
+        rHolder.setInitParameter("baseResource", rDir.toFile().getAbsolutePath());
+        context.addServlet(rHolder, "/r/*");
+
+        _server.setHandler(context);
+        _server.start();
+        String rawRequest = """
+            GET /c1/r/ HTTP/1.1\r
+            Host: localhost\r
+            Connection: close\r
+            \r
+            """;
+
+        String rawResponse = _connector.getResponse(rawRequest);
+        HttpTester.Response response = HttpTester.parseResponse(rawResponse);
+        assertThat(response.getContent(), containsString("OK"));
     }
 }
