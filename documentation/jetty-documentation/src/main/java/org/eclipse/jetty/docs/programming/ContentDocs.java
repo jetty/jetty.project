@@ -18,10 +18,14 @@ import org.eclipse.jetty.io.content.AsyncContent;
 import org.eclipse.jetty.util.BufferUtil;
 import org.eclipse.jetty.util.Callback;
 import org.eclipse.jetty.util.FutureCallback;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 @SuppressWarnings("unused")
 public class ContentDocs
 {
+    private static final Logger LOG = LoggerFactory.getLogger(ContentDocs.class);
+
     // tag::echo[]
     void echo(Content.Source source, Content.Sink sink, Callback callback)
     {
@@ -53,7 +57,15 @@ public class ContentDocs
                     else if (chunk.hasRemaining()) // if chunk has content, write it to the sink
                         sink.write(chunk.isLast(), chunk.getByteBuffer(), this);
                     else if (Content.Chunk.isError(chunk)) // if it is an error fail the callback
-                        callback.failed(chunk.getFailure());
+                    {
+                        if (chunk.isLast())
+                            callback.failed(chunk.getError());
+                        else
+                        {
+                            LOG.warn("transient error", chunk.getError());
+                            continue;
+                        }
+                    }
                     else // otherwise continue with another chunk
                         continue;
                     return;

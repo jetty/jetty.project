@@ -285,7 +285,7 @@ public class ThreadLimitHandlerTest
                                     return;
                                 }
                                 if (Content.Chunk.isError(chunk))
-                                    throw chunk.getFailure();
+                                    throw chunk.getError();
 
                                 if (chunk.hasRemaining())
                                     read.addAndGet(chunk.remaining());

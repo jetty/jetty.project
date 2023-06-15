@@ -545,7 +545,7 @@ public abstract class HttpServerTestBase extends HttpServerTestFixture
                     if (Content.Chunk.isError(chunk))
                     {
                         earlyEOFException.countDown();
-                        throw IO.rethrow(chunk.getFailure());
+                        throw IO.rethrow(chunk.getError());
                     }
 
                     if (chunk.hasRemaining())

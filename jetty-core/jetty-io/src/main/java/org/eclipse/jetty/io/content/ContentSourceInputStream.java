@@ -58,7 +58,7 @@ public class ContentSourceInputStream extends InputStream
                 {
                     Content.Chunk c = chunk;
                     chunk = Content.Chunk.next(chunk); // TODO should we null here and rely on Source to remember state?
-                    throw IO.rethrow(c.getFailure());
+                    throw IO.rethrow(c.getError());
                 }
 
                 ByteBuffer byteBuffer = chunk.getByteBuffer();

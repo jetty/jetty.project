@@ -401,9 +401,9 @@ public class HttpChannelState implements HttpChannel, Components
             {
                 _failure = Content.Chunk.from(x);
             }
-            else if (ExceptionUtil.areNotAssociated(_failure.getFailure(), x) && _failure.getFailure().getClass() != x.getClass())
+            else if (ExceptionUtil.areNotAssociated(_failure.getError(), x) && _failure.getError().getClass() != x.getClass())
             {
-                _failure.getFailure().addSuppressed(x);
+                _failure.getError().addSuppressed(x);
             }
 
             // If not handled, then we just fail the request callback
@@ -1248,7 +1248,7 @@ public class HttpChannelState implements HttpChannel, Components
         protected Throwable getFailure(HttpChannelState httpChannelState)
         {
             Content.Chunk failure = httpChannelState._failure;
-            return failure == null ? null : failure.getFailure();
+            return failure == null ? null : failure.getError();
         }
 
         /**
@@ -1730,9 +1730,9 @@ public class HttpChannelState implements HttpChannel, Components
             {
                 // We are already in error, so we will not handle this one,
                 // but we will add as suppressed if we have not seen it already.
-                Throwable cause = error.getFailure();
+                Throwable cause = error.getError();
                 if (ExceptionUtil.areNotAssociated(cause, failure))
-                    error.getFailure().addSuppressed(failure);
+                    error.getError().addSuppressed(failure);
             }
         }
     }
