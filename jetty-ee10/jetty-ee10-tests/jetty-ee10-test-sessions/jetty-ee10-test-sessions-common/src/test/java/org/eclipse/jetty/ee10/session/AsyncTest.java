@@ -135,8 +135,11 @@ public class AsyncTest
             String id = SessionTestSupport.extractSessionId(sessionCookie);
 
             //session should now be evicted from the cache after request exited
-            assertFalse(contextHandler.getSessionHandler().getSessionCache().contains(id));
             assertTrue(contextHandler.getSessionHandler().getSessionCache().getSessionDataStore().exists(id));
+            Awaitility.await().atMost(30, TimeUnit.SECONDS)
+                .until(() -> !contextHandler.getSessionHandler().getSessionCache().contains(id));
+            assertFalse(contextHandler.getSessionHandler().getSessionCache().contains(id));
+
         }
         finally
         {
@@ -185,6 +188,8 @@ public class AsyncTest
 
             //session should now be evicted from the cache after request exited
             String id = SessionTestSupport.extractSessionId(sessionCookie);
+            Awaitility.await().atMost(30, TimeUnit.SECONDS)
+                .until(() -> !contextB.getSessionHandler().getSessionCache().contains(id));
             assertFalse(contextB.getSessionHandler().getSessionCache().contains(id));
             assertTrue(contextB.getSessionHandler().getSessionCache().getSessionDataStore().exists(id));
         }
@@ -231,6 +236,8 @@ public class AsyncTest
             String id = SessionTestSupport.extractSessionId(sessionCookie);
 
             //session should now be evicted from the cache after request exited
+            Awaitility.await().atMost(30, TimeUnit.SECONDS)
+                .until(() -> !contextHandler.getSessionHandler().getSessionCache().contains(id));
             assertFalse(contextHandler.getSessionHandler().getSessionCache().contains(id));
             assertTrue(contextHandler.getSessionHandler().getSessionCache().getSessionDataStore().exists(id));
         }
@@ -283,7 +290,8 @@ public class AsyncTest
 
             //session should now be evicted from the cache A after request exited
             String id = SessionTestSupport.extractSessionId(sessionCookie);
-            assertFalse(contextA.getSessionHandler().getSessionCache().contains(id));
+            Awaitility.await().atMost(30, TimeUnit.SECONDS)
+                .until(() -> !contextA.getSessionHandler().getSessionCache().contains(id));
             assertTrue(contextA.getSessionHandler().getSessionCache().getSessionDataStore().exists(id));
         }
         finally

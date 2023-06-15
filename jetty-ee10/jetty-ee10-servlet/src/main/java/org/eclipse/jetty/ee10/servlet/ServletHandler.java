@@ -468,7 +468,7 @@ public class ServletHandler extends Handler.Wrapper
      */
     public MatchedResource<MappedServlet> getMatchedServlet(String target)
     {
-        if (target.startsWith("/"))
+        if (target.startsWith("/") || target.length() == 0)
         {
             if (_servletPathMap == null)
                 return null;
