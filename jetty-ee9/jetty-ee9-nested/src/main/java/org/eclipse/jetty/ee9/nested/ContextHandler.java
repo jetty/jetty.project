@@ -865,15 +865,52 @@ public class ContextHandler extends ScopedHandler implements Attributes, Supplie
         if (LOG.isDebugEnabled())
             LOG.debug("scope {}|{}|{} @ {}", baseRequest.getContextPath(), baseRequest.getServletPath(), baseRequest.getPathInfo(), this);
 
-        APIContext oldApiContext = baseRequest.getContext();
+        APIContext oldContext = baseRequest.getContext();
+        String oldPathInContext = baseRequest.getPathInContext();
+        String pathInContext = target;
+        DispatcherType dispatch = baseRequest.getDispatcherType();
+
+        // Are we already in this context?
+        if (oldContext != _apiContext)
+        {
+            // check the target.
+            String contextPath = getContextPath();
+            if (DispatcherType.REQUEST.equals(dispatch) || DispatcherType.ASYNC.equals(dispatch))
+            {
+                if (target.length() > contextPath.length())
+                {
+                    if (contextPath.length() > 1)
+                        target = target.substring(contextPath.length());
+                    pathInContext = target;
+                }
+                else if (contextPath.length() == 1)
+                {
+                    target = "/";
+                    pathInContext = "/";
+                }
+                else
+                {
+                    target = "/";
+                    pathInContext = null;
+                }
+            }
+        }
+
         try
         {
-            baseRequest.setContext(_apiContext);
+            baseRequest.setContext(_apiContext,
+                (DispatcherType.INCLUDE.equals(dispatch) || !target.startsWith("/")) ? oldPathInContext : pathInContext);
+
             org.eclipse.jetty.server.handler.ContextHandler.ScopedContext context = getCoreContextHandler().getContext();
             if (context == org.eclipse.jetty.server.handler.ContextHandler.getCurrentContext())
+            {
                 nextScope(target, baseRequest, request, response);
+            }
             else
-                context.call(() -> nextScope(target, baseRequest, request, response), baseRequest.getCoreRequest());
+            {
+                String t = target;
+                context.call(() -> nextScope(t, baseRequest, request, response), baseRequest.getCoreRequest());
+            }
         }
         catch (IOException | ServletException | RuntimeException e)
         {
@@ -885,7 +922,7 @@ public class ContextHandler extends ScopedHandler implements Attributes, Supplie
         }
         finally
         {
-            baseRequest.setContext(oldApiContext);
+            baseRequest.setContext(oldContext, oldPathInContext);
         }
     }
 
@@ -1660,14 +1697,12 @@ public class ContextHandler extends ScopedHandler implements Attributes, Supplie
         // this is a dispatch with either a provided URI and/or a dispatched path
         // We will have to modify the request and then revert
         final HttpURI oldUri = baseRequest.getHttpURI();
-        final String oldPathInContext = baseRequest.getPathInContext();
-        final ServletPathMapping oldServletPathMapping = baseRequest.getServletPathMapping();
         final MultiMap<String> oldQueryParams = baseRequest.getQueryParameters();
         try
         {
             if (encodedPathQuery == null)
             {
-                baseRequest.onDispatch(baseUri, oldPathInContext);
+                baseRequest.setHttpURI(baseUri);
             }
             else
             {
@@ -1692,23 +1727,18 @@ public class ContextHandler extends ScopedHandler implements Attributes, Supplie
                     builder.param(baseUri.getParam());
                 if (StringUtil.isEmpty(builder.getQuery()))
                     builder.query(baseUri.getQuery());
+                baseRequest.setHttpURI(builder);
 
-                HttpURI uri = builder.asImmutable();
-                String pathInContext = uri.getDecodedPath();
-                if (baseRequest.getContextPath().length() > 1)
-                    pathInContext = pathInContext.substring(baseRequest.getContextPath().length());
-
-                baseRequest.onDispatch(uri, pathInContext);
                 if (baseUri.getQuery() != null && baseRequest.getQueryString() != null)
                     baseRequest.mergeQueryParameters(oldUri.getQuery(), baseRequest.getQueryString());
             }
 
+            baseRequest.setContext(null, baseRequest.getHttpURI().getDecodedPath());
             handleAsync(channel, event, baseRequest);
         }
         finally
         {
-            baseRequest.onDispatch(oldUri, oldPathInContext);
-            baseRequest.setServletPathMapping(oldServletPathMapping);
+            baseRequest.setHttpURI(oldUri);
             baseRequest.setQueryParameters(oldQueryParams);
             baseRequest.resetParameters();
         }

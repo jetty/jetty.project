@@ -696,9 +696,10 @@ public class Request implements HttpServletRequest
         return _context;
     }
 
-    public void setContext(ContextHandler.APIContext context)
+    public void setContext(ContextHandler.APIContext context, String pathInContext)
     {
         _context = context;
+        _pathInContext = pathInContext;
     }
 
     /**
@@ -1344,13 +1345,11 @@ public class Request implements HttpServletRequest
         return _uri;
     }
 
-    public void onDispatch(HttpURI uri, String decodedPathInContext)
+    public void setHttpURI(HttpURI uri)
     {
         if (_uri != null && !Objects.equals(_uri.getQuery(), uri.getQuery()) && _queryParameters != BAD_PARAMS)
             _parameters = _queryParameters = null;
         _uri = uri.asImmutable();
-        _pathInContext = decodedPathInContext;
-        _servletPathMapping = null;
     }
 
     /**

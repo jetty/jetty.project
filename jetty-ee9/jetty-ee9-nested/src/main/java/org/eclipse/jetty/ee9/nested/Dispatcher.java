@@ -188,7 +188,8 @@ public class Dispatcher implements RequestDispatcher
                     query = old_uri.getQuery();
 
                 String decodedPathInContext = URIUtil.decodePath(_pathInContext);
-                baseRequest.onDispatch(HttpURI.build(old_uri, _uri.getPath(), _uri.getParam(), query), decodedPathInContext);
+                baseRequest.setHttpURI(HttpURI.build(old_uri, _uri.getPath(), _uri.getParam(), query));
+                baseRequest.setContext(_contextHandler.getServletContext(), decodedPathInContext);
 
                 if (_uri.getQuery() != null || old_uri.getQuery() != null)
                 {
@@ -229,7 +230,8 @@ public class Dispatcher implements RequestDispatcher
         }
         finally
         {
-            baseRequest.onDispatch(old_uri, old_path_in_context);
+            baseRequest.setHttpURI(old_uri);
+            baseRequest.setContext(old_context, old_path_in_context);
             baseRequest.setServletPathMapping(old_mapping);
             baseRequest.setQueryParameters(old_query_params);
             baseRequest.resetParameters();
