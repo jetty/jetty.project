@@ -609,7 +609,7 @@ public class IdleTimeoutTest extends AbstractTest
                     }
                     if (Content.Chunk.isError(chunk))
                     {
-                        _callback.failed(chunk.getCause());
+                        _callback.failed(chunk.getFailure());
                         return;
                     }
                     chunk.release();

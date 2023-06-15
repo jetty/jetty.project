@@ -256,7 +256,7 @@ public class HttpClientTest extends AbstractTest
                         }
                     }
                     if (Content.Chunk.isError(chunk))
-                        throw IO.rethrow(chunk.getCause());
+                        throw IO.rethrow(chunk.getFailure());
 
                     total += chunk.remaining();
                     if (total >= sleep)

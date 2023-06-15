@@ -103,7 +103,7 @@ public class StatisticsHandlerTest
 
                     if (Content.Chunk.isError(chunk))
                     {
-                        callback.failed(chunk.getCause());
+                        callback.failed(chunk.getFailure());
                         return true;
                     }
 

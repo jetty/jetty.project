@@ -274,12 +274,12 @@ public class Content
          * <p>The returned chunk could be:</p>
          * <ul>
          * <li>{@code null}, to signal that there isn't a chunk of content available</li>
-         * <li>an {@link Chunk} instance with non null {@link Chunk#getCause()}, to signal that there was an error
+         * <li>an {@link Chunk} instance with non null {@link Chunk#getFailure()}, to signal that there was an error
          * trying to produce a chunk of content, or that the content production has been
          * {@link #fail(Throwable) failed} externally</li>
          * <li>a {@link Chunk} instance, containing the chunk of content.</li>
          * </ul>
-         * <p>Once a read returns an {@link Chunk} instance with non null {@link Chunk#getCause()}, further reads
+         * <p>Once a read returns an {@link Chunk} instance with non null {@link Chunk#getFailure()}, further reads
          * will continue to return the same error instance.</p>
          * <p>Once a read returns a {@link Chunk#isLast() last chunk}, further reads will
          * continue to return a last chunk (although the instance may be different).</p>
@@ -331,7 +331,7 @@ public class Content
          * content chunks that were not yet read.</p>
          * <p>The failure may be notified to the content reader at a later time, when
          * the content reader reads a content chunk, via a {@link Chunk} instance
-         * with a non null {@link Chunk#getCause()}.</p>
+         * with a non null {@link Chunk#getFailure()}.</p>
          * <p>If {@link #read()} has returned a last chunk, this is a no operation.</p>
          * <p>Typical failure: the content being aborted by user code, or idle timeouts.</p>
          * <p>If this method has already been called, then it is a no operation.</p>
@@ -343,7 +343,7 @@ public class Content
         /**
          * <p>Warn this content source by providing a transient {@link Throwable}.  If the
          * source can accept warnings, the throwable will be {@link #read() read}, in order with content chunks,
-         * as a {@link Chunk} with a non-null {@link Chunk#getCause() cause} and false for {@link Chunk#isLast() isLast}.
+         * as a {@link Chunk} with a non-null {@link Chunk#getFailure() cause} and false for {@link Chunk#isLast() isLast}.
          * Subsequent calls to {@link #read() read} may produce other content.</p>
          * <p>If the source cannot accept warnings, this call will be treated as {@link #fail(Throwable)}.</p>
          * @param transientFailure A non-last failure that is only read once.
@@ -590,7 +590,7 @@ public class Content
         {
             return new Chunk()
             {
-                public Throwable getCause()
+                public Throwable getFailure()
                 {
                     return failure;
                 }
@@ -658,7 +658,7 @@ public class Content
 
         static boolean isError(Chunk chunk)
         {
-            return chunk != null && chunk.getCause() != null;
+            return chunk != null && chunk.getFailure() != null;
         }
 
         /**
@@ -666,7 +666,16 @@ public class Content
          */
         ByteBuffer getByteBuffer();
 
-        default Throwable getCause()
+        /**
+         * Get a failure, if any, associated with the chunk.
+         * <ul>
+         * <li>A {@code chunk} must not have a failure and a {@link #getByteBuffer()} with content.</li>
+         * <li>A {@code chunk} with a failure may or may not be {@link #isLast() last}.</li>
+         * <li>A {@code chunk} with a failure may not be {@link #canRetain() retainable}.</li>
+         * </ul>
+         * @return A {@link Throwable} indicating the failure or null if there is no failure.
+         */
+        default Throwable getFailure()
         {
             return null;
         }

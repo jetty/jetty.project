@@ -344,7 +344,7 @@ public class DelayedHandler extends Handler.Wrapper
                 }
                 if (Content.Chunk.isError(chunk))
                 {
-                    _formData.completeExceptionally(chunk.getCause());
+                    _formData.completeExceptionally(chunk.getFailure());
                     return;
                 }
                 _formData.parse(chunk);

@@ -91,7 +91,7 @@ public class AsyncContent implements Content.Sink, Content.Source, Closeable
             }
             else if (errorChunk != null)
             {
-                failure = errorChunk.getCause();
+                failure = errorChunk.getFailure();
             }
             else
             {
@@ -126,7 +126,7 @@ public class AsyncContent implements Content.Sink, Content.Source, Closeable
                 // Always wrap the exception to make sure
                 // the stack trace comes from flush().
                 if (errorChunk != null)
-                    throw new IOException(errorChunk.getCause());
+                    throw new IOException(errorChunk.getFailure());
                 if (chunks.isEmpty())
                     return;
                 // Special case for a last empty chunk that may not be read.

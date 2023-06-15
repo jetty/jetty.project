@@ -162,7 +162,7 @@ public class FormFields extends CompletableFuture<Fields> implements Runnable
 
                 if (Content.Chunk.isError(chunk))
                 {
-                    completeExceptionally(chunk.getCause());
+                    completeExceptionally(chunk.getFailure());
                     return;
                 }
 

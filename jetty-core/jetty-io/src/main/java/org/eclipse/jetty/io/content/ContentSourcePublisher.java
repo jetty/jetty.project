@@ -128,7 +128,7 @@ public class ContentSourcePublisher implements Flow.Publisher<Content.Chunk>
                 if (Content.Chunk.isError(chunk))
                 {
                     terminate();
-                    subscriber.onError(chunk.getCause());
+                    subscriber.onError(chunk.getFailure());
                     return;
                 }
 

@@ -177,7 +177,7 @@ public interface Response
             }
             if (Content.Chunk.isError(chunk))
             {
-                response.abort(chunk.getCause());
+                response.abort(chunk.getFailure());
                 return;
             }
             if (chunk.isLast() && !chunk.hasRemaining())

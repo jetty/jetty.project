@@ -107,7 +107,7 @@ public class DumpHandler extends Handler.Abstract
 
                 if (Content.Chunk.isError(chunk))
                 {
-                    callback.failed(chunk.getCause());
+                    callback.failed(chunk.getFailure());
                     return true;
                 }
 

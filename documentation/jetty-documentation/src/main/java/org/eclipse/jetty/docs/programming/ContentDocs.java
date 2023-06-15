@@ -53,7 +53,7 @@ public class ContentDocs
                     else if (chunk.hasRemaining()) // if chunk has content, write it to the sink
                         sink.write(chunk.isLast(), chunk.getByteBuffer(), this);
                     else if (Content.Chunk.isError(chunk)) // if it is an error fail the callback
-                        callback.failed(chunk.getCause());
+                        callback.failed(chunk.getFailure());
                     else // otherwise continue with another chunk
                         continue;
                     return;

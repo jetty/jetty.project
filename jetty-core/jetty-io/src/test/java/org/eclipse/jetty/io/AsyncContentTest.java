@@ -212,7 +212,7 @@ public class AsyncContentTest
             async.fail(error1);
 
             chunk = async.read();
-            assertSame(error1, chunk.getCause());
+            assertSame(error1, chunk.getFailure());
 
             callback2.assertSingleFailureSameInstanceNoSuccess(error1);
             callback3.assertSingleFailureSameInstanceNoSuccess(error1);

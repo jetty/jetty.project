@@ -44,7 +44,7 @@ public class ContentSourceString
             }
             if (Content.Chunk.isError(chunk))
             {
-                promise.failed(chunk.getCause());
+                promise.failed(chunk.getFailure());
                 return;
             }
             text.append(chunk.getByteBuffer());

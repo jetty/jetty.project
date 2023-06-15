@@ -55,7 +55,7 @@ public interface HttpStream extends Callback
      * <p>Reads a chunk of content, with the same semantic as {@link Content.Source#read()}.</p>
      * <p>This method is called from the implementation of {@link Request#read()}.</p>
      *
-     * @return a chunk of content, possibly with non-null {@link Chunk#getCause()} or {@code null}.
+     * @return a chunk of content, possibly with non-null {@link Chunk#getFailure()} or {@code null}.
      */
     Content.Chunk read();
 
@@ -131,7 +131,7 @@ public interface HttpStream extends Callback
 
             // if the input failed, then fail the stream for same reason
             if (Content.Chunk.isError(content))
-                return content.getCause();
+                return content.getFailure();
 
             if (content.isLast())
                 return null;

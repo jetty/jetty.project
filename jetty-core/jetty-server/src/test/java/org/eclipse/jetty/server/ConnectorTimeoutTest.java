@@ -659,7 +659,7 @@ public abstract class ConnectorTimeoutTest extends HttpServerTestFixture
                     }
                     if (Content.Chunk.isError(chunk))
                     {
-                        callback.failed(chunk.getCause());
+                        callback.failed(chunk.getFailure());
                         return;
                     }
                     // copy buffer

@@ -504,7 +504,7 @@ public abstract class HttpSender
             }
 
             if (Content.Chunk.isError(chunk))
-                throw chunk.getCause();
+                throw chunk.getFailure();
 
             ByteBuffer buffer = chunk.getByteBuffer();
             contentBuffer = buffer.asReadOnlyBuffer();

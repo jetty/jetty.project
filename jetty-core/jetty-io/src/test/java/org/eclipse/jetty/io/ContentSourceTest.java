@@ -582,7 +582,7 @@ public class ContentSourceTest
         chunk = content.read();
         assertFalse(chunk.isLast());
         assertTrue(Content.Chunk.isError(chunk));
-        assertThat(chunk.getCause(), instanceOf(TimeoutException.class));
+        assertThat(chunk.getFailure(), instanceOf(TimeoutException.class));
 
         chunk = content.read();
         assertTrue(chunk.isLast());
