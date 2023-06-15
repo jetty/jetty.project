@@ -294,8 +294,14 @@ public class JettyWebSocketFrameHandler implements FrameHandler
             this.delayedCallback = null;
         }
 
+        CloseException closeException = new CloseException(closeStatus.getCode(), closeStatus.getCause());
         if (delayedCallback != null)
-            delayedCallback.failed(new CloseException(closeStatus.getCode(), closeStatus.getCause()));
+            delayedCallback.failed(closeException);
+
+        if (textSink != null)
+            textSink.fail(closeException);
+        if (binarySink != null)
+            binarySink.fail(closeException);
 
         notifyOnClose(closeStatus, callback);
         container.notifySessionListeners((listener) -> listener.onWebSocketSessionClosed(session));

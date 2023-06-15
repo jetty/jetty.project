@@ -38,6 +38,7 @@ import org.eclipse.jetty.websocket.core.CoreSession;
 import org.eclipse.jetty.websocket.core.Frame;
 import org.eclipse.jetty.websocket.core.FrameHandler;
 import org.eclipse.jetty.websocket.core.OpCode;
+import org.eclipse.jetty.websocket.core.exception.CloseException;
 import org.eclipse.jetty.websocket.core.exception.ProtocolException;
 import org.eclipse.jetty.websocket.core.exception.WebSocketException;
 import org.eclipse.jetty.websocket.core.internal.messages.MessageSink;
@@ -270,6 +271,12 @@ public class JavaxWebSocketFrameHandler implements FrameHandler
     @Override
     public void onClosed(CloseStatus closeStatus, Callback callback)
     {
+        if (activeMessageSink != null)
+        {
+            activeMessageSink.fail(new CloseException(closeStatus.getCode(), closeStatus.getCause()));
+            activeMessageSink = null;
+        }
+
         notifyOnClose(closeStatus, callback);
         container.notifySessionListeners((listener) -> listener.onJavaxWebSocketSessionClosed(session));
 
