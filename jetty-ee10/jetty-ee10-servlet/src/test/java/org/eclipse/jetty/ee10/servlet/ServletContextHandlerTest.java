@@ -2461,6 +2461,6 @@ public class ServletContextHandlerTest
 
         String rawResponse = _connector.getResponse(rawRequest);
         HttpTester.Response response = HttpTester.parseResponse(rawResponse);
-        assertThat(response.getContent(), containsString("OK"));
+        assertThat(response.getContent(), containsString("OK2"));
     }
 }
