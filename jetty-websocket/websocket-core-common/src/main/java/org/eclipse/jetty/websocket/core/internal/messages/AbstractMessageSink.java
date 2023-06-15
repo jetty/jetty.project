@@ -28,4 +28,9 @@ public abstract class AbstractMessageSink implements MessageSink
         this.session = Objects.requireNonNull(session, "CoreSession");
         this.methodHandle = Objects.requireNonNull(methodHandle, "MethodHandle");
     }
+
+    @Override
+    public void fail(Throwable failure)
+    {
+    }
 }

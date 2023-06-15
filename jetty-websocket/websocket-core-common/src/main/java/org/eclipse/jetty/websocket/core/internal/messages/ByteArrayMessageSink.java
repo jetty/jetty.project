@@ -106,4 +106,11 @@ public class ByteArrayMessageSink extends AbstractMessageSink
             }
         }
     }
+
+    @Override
+    public void fail(Throwable failure)
+    {
+        if (out != null)
+            out.fail(failure);
+    }
 }

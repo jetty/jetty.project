@@ -22,7 +22,7 @@ import org.eclipse.jetty.websocket.core.Frame;
 
 public class PartialByteArrayMessageSink extends AbstractMessageSink
 {
-    private static byte[] EMPTY_BUFFER = new byte[0];
+    private static final byte[] EMPTY_BUFFER = new byte[0];
 
     public PartialByteArrayMessageSink(CoreSession session, MethodHandle methodHandle)
     {

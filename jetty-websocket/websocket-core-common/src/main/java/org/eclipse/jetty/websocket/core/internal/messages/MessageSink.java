@@ -29,4 +29,12 @@ public interface MessageSink
      * @param callback the callback for how the frame was consumed
      */
     void accept(Frame frame, Callback callback);
+
+    /**
+     * <p>Fail the message sink.</p>
+     * <p>Release any resources and fail all stored callbacks as {@link #accept(Frame, Callback)} will never be called again.</p>
+     *
+     * @param failure the failure that occurred.
+     */
+    void fail(Throwable failure);
 }
