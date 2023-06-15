@@ -15,6 +15,7 @@ package org.eclipse.jetty.ee9.session;
 
 import java.io.IOException;
 import java.lang.reflect.Proxy;
+import java.util.concurrent.TimeUnit;
 
 import jakarta.servlet.AsyncContext;
 import jakarta.servlet.ServletException;
@@ -24,6 +25,7 @@ import jakarta.servlet.http.HttpServlet;
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletResponse;
 import jakarta.servlet.http.HttpSession;
+import org.awaitility.Awaitility;
 import org.eclipse.jetty.client.ContentResponse;
 import org.eclipse.jetty.client.HttpClient;
 import org.eclipse.jetty.ee9.servlet.ServletContextHandler;
@@ -87,8 +89,8 @@ public class AsyncTest
             
             //session should now be evicted from the cache after request exited
             String id = SessionTestSupport.extractSessionId(sessionCookie);
-            assertFalse(contextHandler.getSessionHandler().getSessionManager().getSessionCache().contains(id));
             assertTrue(contextHandler.getSessionHandler().getSessionManager().getSessionCache().getSessionDataStore().exists(id));
+            Awaitility.waitAtMost(5, TimeUnit.SECONDS).until(() -> !contextHandler.getSessionHandler().getSessionManager().getSessionCache().contains(id));
         }
         finally
         {
@@ -132,8 +134,9 @@ public class AsyncTest
             String id = SessionTestSupport.extractSessionId(sessionCookie);
 
             //session should now be evicted from the cache after request exited
-            assertFalse(contextHandler.getSessionHandler().getSessionManager().getSessionCache().contains(id));
             assertTrue(contextHandler.getSessionHandler().getSessionManager().getSessionCache().getSessionDataStore().exists(id));
+            Awaitility.waitAtMost(5, TimeUnit.SECONDS).until(() -> !contextHandler.getSessionHandler().getSessionManager().getSessionCache().contains(id));
+            assertFalse(contextHandler.getSessionHandler().getSessionManager().getSessionCache().contains(id));
         }
         finally
         {
@@ -182,6 +185,7 @@ public class AsyncTest
 
             //session should now be evicted from the cache after request exited
             String id = SessionTestSupport.extractSessionId(sessionCookie);
+            Awaitility.waitAtMost(5, TimeUnit.SECONDS).until(() -> !contextB.getSessionHandler().getSessionManager().getSessionCache().contains(id));
             assertFalse(contextB.getSessionHandler().getSessionManager().getSessionCache().contains(id));
             assertTrue(contextB.getSessionHandler().getSessionManager().getSessionCache().getSessionDataStore().exists(id));
         }
@@ -228,6 +232,7 @@ public class AsyncTest
             String id = SessionTestSupport.extractSessionId(sessionCookie);
 
             //session should now be evicted from the cache after request exited
+            Awaitility.waitAtMost(5, TimeUnit.SECONDS).until(() -> !contextHandler.getSessionHandler().getSessionManager().getSessionCache().contains(id));
             assertFalse(contextHandler.getSessionHandler().getSessionManager().getSessionCache().contains(id));
             assertTrue(contextHandler.getSessionHandler().getSessionManager().getSessionCache().getSessionDataStore().exists(id));
         }
@@ -280,6 +285,7 @@ public class AsyncTest
 
             //session should now be evicted from the cache A after request exited
             String id = SessionTestSupport.extractSessionId(sessionCookie);
+            Awaitility.waitAtMost(5, TimeUnit.SECONDS).until(() -> !contextA.getSessionHandler().getSessionManager().getSessionCache().contains(id));
             assertFalse(contextA.getSessionHandler().getSessionManager().getSessionCache().contains(id));
             assertTrue(contextA.getSessionHandler().getSessionManager().getSessionCache().getSessionDataStore().exists(id));
         }

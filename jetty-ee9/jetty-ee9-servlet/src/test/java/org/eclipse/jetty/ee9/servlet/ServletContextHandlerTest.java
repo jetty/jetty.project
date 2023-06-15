@@ -2272,4 +2272,35 @@ public class ServletContextHandlerTest
         assertThat(response, containsString("200 OK"));
         assertThat(response, containsString("/three"));
     }
+
+    @Test
+    public void testEmptyPathInfo() throws Exception
+    {
+        ServletContextHandler context = new ServletContextHandler(null, "/c1", ServletContextHandler.NO_SESSIONS);
+        context.setAllowNullPathInfo(true);
+        context.addServlet(new ServletHolder("default-servlet", new HttpServlet()
+        {
+            @Override
+            protected void service(HttpServletRequest req, HttpServletResponse resp) throws ServletException, IOException
+            {
+                resp.setContentType("text/plain");
+                resp.setCharacterEncoding("UTF-8");
+                resp.getWriter().write("OK2\n");
+                resp.getWriter().close();
+            }
+        }), "/");
+
+        _server.setHandler(context);
+        _server.start();
+        String rawRequest = """
+            GET /c1 HTTP/1.1\r
+            Host: localhost\r
+            Connection: close\r
+            \r
+            """;
+
+        String rawResponse = _connector.getResponse(rawRequest);
+        HttpTester.Response response = HttpTester.parseResponse(rawResponse);
+        assertThat(response.getContent(), containsString("OK2"));
+    }
 }
