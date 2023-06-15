@@ -246,7 +246,7 @@ public class HttpClientTimeoutTest extends AbstractTest
                         return new SslConnection(bufferPool, executor, endPoint, engine)
                         {
                             @Override
-                            protected boolean onReadTimeout(Throwable timeout)
+                            protected boolean onReadTimeout(TimeoutException timeout)
                             {
                                 sslIdle.set(true);
                                 return super.onReadTimeout(timeout);

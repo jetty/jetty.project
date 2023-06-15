@@ -19,6 +19,7 @@ import java.nio.file.Path;
 import java.util.Collection;
 import java.util.EnumSet;
 import java.util.List;
+import java.util.Objects;
 
 import jakarta.servlet.http.HttpServlet;
 import org.eclipse.jetty.alpn.server.ALPNServerConnectionFactory;
@@ -113,6 +114,11 @@ public class AbstractTest
 
     protected void prepareServer(Transport transport, HttpServlet servlet) throws Exception
     {
+        prepareServer(transport, servlet, "/");
+    }
+
+    protected void prepareServer(Transport transport, HttpServlet servlet, String path) throws Exception
+    {
         if (transport == Transport.UNIX_DOMAIN)
         {
             String unixDomainDir = System.getProperty("jetty.unixdomain.dir", System.getProperty("java.io.tmpdir"));
@@ -126,11 +132,16 @@ public class AbstractTest
         connector = newConnector(transport, server);
         server.addConnector(connector);
         servletContextHandler = new ServletContextHandler();
-        servletContextHandler.setContextPath("/");
+        addServlet(servlet, path);
+        server.setHandler(servletContextHandler);
+    }
+
+    protected void addServlet(HttpServlet servlet, String path) throws Exception
+    {
+        Objects.requireNonNull(servletContextHandler);
         ServletHolder holder = new ServletHolder(servlet);
         holder.setAsyncSupported(true);
-        servletContextHandler.addServlet(holder, "/*");
-        server.setHandler(servletContextHandler);
+        servletContextHandler.getServletHandler().addServletWithMapping(holder, path);
     }
 
     protected Server newServer()

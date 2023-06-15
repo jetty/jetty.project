@@ -16,6 +16,7 @@ package org.eclipse.jetty.http3.api;
 import java.nio.ByteBuffer;
 import java.util.Objects;
 import java.util.concurrent.CompletableFuture;
+import java.util.concurrent.TimeoutException;
 
 import org.eclipse.jetty.http.MetaData;
 import org.eclipse.jetty.http3.frames.DataFrame;
@@ -354,7 +355,7 @@ public interface Stream
              * @param promise the promise to complete with true to reset the stream,
              *                false to ignore the idle timeout
              */
-            public default void onIdleTimeout(Server stream, Throwable failure, Promise<Boolean> promise)
+            public default void onIdleTimeout(Server stream, TimeoutException failure, Promise<Boolean> promise)
             {
                 promise.succeeded(true);
             }

@@ -44,7 +44,6 @@ import org.eclipse.jetty.http.UriCompliance;
 import org.eclipse.jetty.io.Content;
 import org.eclipse.jetty.logging.StacklessLogging;
 import org.eclipse.jetty.server.handler.DumpHandler;
-import org.eclipse.jetty.server.internal.HttpChannelState;
 import org.eclipse.jetty.server.internal.HttpConnection;
 import org.eclipse.jetty.util.BufferUtil;
 import org.eclipse.jetty.util.Callback;
@@ -1158,24 +1157,13 @@ public class HttpConnectionTest
         });
         _server.start();
 
-        String response = null;
-        try (StacklessLogging stackless = new StacklessLogging(HttpChannelState.class))
-        {
-            LOG.info("Expect IOException: Response header too large...");
-            response = _connector.getResponse("GET / HTTP/1.1\r\n" +
-                "Host: localhost\r\n" +
-                "\r\n"
-            );
+        String response = _connector.getResponse("GET / HTTP/1.1\r\n" +
+            "Host: localhost\r\n" +
+            "\r\n"
+        );
 
-            checkContains(response, 0, "HTTP/1.1 500");
-            assertTrue(checkError.await(1, TimeUnit.SECONDS));
-        }
-        catch (Exception e)
-        {
-            if (response != null)
-                System.err.println(response);
-            throw e;
-        }
+        checkContains(response, 0, "HTTP/1.1 500");
+        assertTrue(checkError.await(1, TimeUnit.SECONDS));
     }
 
     @Test

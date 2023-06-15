@@ -168,7 +168,7 @@ public class HTTP2ServerConnectionFactory extends AbstractHTTP2ServerConnectionF
         }
 
         @Override
-        public void onIdleTimeout(Stream stream, Throwable x, Promise<Boolean> promise)
+        public void onIdleTimeout(Stream stream, TimeoutException x, Promise<Boolean> promise)
         {
             getConnection().onStreamTimeout(stream, x, promise);
         }

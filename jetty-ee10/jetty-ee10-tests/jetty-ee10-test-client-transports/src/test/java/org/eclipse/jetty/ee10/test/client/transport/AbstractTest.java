@@ -13,9 +13,11 @@
 
 package org.eclipse.jetty.ee10.test.client.transport;
 
+import java.io.InputStream;
 import java.net.URI;
 import java.nio.file.Files;
 import java.nio.file.Path;
+import java.security.KeyStore;
 import java.util.Collection;
 import java.util.EnumSet;
 import java.util.List;
@@ -51,17 +53,23 @@ import org.eclipse.jetty.server.SecureRequestCustomizer;
 import org.eclipse.jetty.server.Server;
 import org.eclipse.jetty.server.ServerConnector;
 import org.eclipse.jetty.server.SslConnectionFactory;
+import org.eclipse.jetty.toolchain.test.jupiter.WorkDir;
+import org.eclipse.jetty.toolchain.test.jupiter.WorkDirExtension;
 import org.eclipse.jetty.unixdomain.server.UnixDomainServerConnector;
 import org.eclipse.jetty.util.SocketAddressResolver;
 import org.eclipse.jetty.util.component.LifeCycle;
 import org.eclipse.jetty.util.ssl.SslContextFactory;
 import org.eclipse.jetty.util.thread.QueuedThreadPool;
 import org.junit.jupiter.api.AfterEach;
+import org.junit.jupiter.api.extension.ExtendWith;
 
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
+@ExtendWith(WorkDirExtension.class)
 public class AbstractTest
 {
+    public WorkDir workDir;
+
     protected final HttpConfiguration httpConfig = new HttpConfiguration();
     protected SslContextFactory.Server sslContextFactoryServer;
     protected Server server;
@@ -140,14 +148,25 @@ public class AbstractTest
         return new Server(serverThreads);
     }
 
-    protected SslContextFactory.Server newSslContextFactoryServer()
+    protected SslContextFactory.Server newSslContextFactoryServer() throws Exception
     {
         SslContextFactory.Server ssl = new SslContextFactory.Server();
-        ssl.setKeyStorePath("src/test/resources/keystore.p12");
-        ssl.setKeyStorePassword("storepwd");
-        ssl.setUseCipherSuitesOrder(true);
-        ssl.setCipherComparator(HTTP2Cipher.COMPARATOR);
+        configureSslContextFactory(ssl);
         return ssl;
+    }
+
+    private void configureSslContextFactory(SslContextFactory sslContextFactory) throws Exception
+    {
+        KeyStore keystore = KeyStore.getInstance("PKCS12");
+        try (InputStream is = Files.newInputStream(Path.of("src/test/resources/keystore.p12")))
+        {
+            keystore.load(is, "storepwd".toCharArray());
+        }
+        sslContextFactory.setTrustStore(keystore);
+        sslContextFactory.setKeyStore(keystore);
+        sslContextFactory.setKeyStorePassword("storepwd");
+        sslContextFactory.setUseCipherSuitesOrder(true);
+        sslContextFactory.setCipherComparator(HTTP2Cipher.COMPARATOR);
     }
 
     protected void startClient(Transport transport) throws Exception
@@ -167,7 +186,11 @@ public class AbstractTest
             case HTTP, HTTPS, H2C, H2, FCGI ->
                 new ServerConnector(server, 1, 1, newServerConnectionFactory(transport));
             case H3 ->
-                new HTTP3ServerConnector(server, sslContextFactoryServer, newServerConnectionFactory(transport));
+            {
+                HTTP3ServerConnector connector = new HTTP3ServerConnector(server, sslContextFactoryServer, newServerConnectionFactory(transport));
+                connector.getQuicConfiguration().setPemWorkDirectory(workDir.getEmptyPathDir());
+                yield connector;
+            }
             case UNIX_DOMAIN ->
             {
                 UnixDomainServerConnector connector = new UnixDomainServerConnector(server, 1, 1, newServerConnectionFactory(transport));
@@ -215,16 +238,15 @@ public class AbstractTest
         return list.toArray(ConnectionFactory[]::new);
     }
 
-    protected SslContextFactory.Client newSslContextFactoryClient()
+    protected SslContextFactory.Client newSslContextFactoryClient() throws Exception
     {
         SslContextFactory.Client ssl = new SslContextFactory.Client();
-        ssl.setKeyStorePath("src/test/resources/keystore.p12");
-        ssl.setKeyStorePassword("storepwd");
+        configureSslContextFactory(ssl);
         ssl.setEndpointIdentificationAlgorithm(null);
         return ssl;
     }
 
-    protected HttpClientTransport newHttpClientTransport(Transport transport)
+    protected HttpClientTransport newHttpClientTransport(Transport transport) throws Exception
     {
         return switch (transport)
         {

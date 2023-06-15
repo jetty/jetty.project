@@ -15,6 +15,7 @@ package org.eclipse.jetty.fcgi.server.internal;
 
 import java.nio.ByteBuffer;
 import java.util.Locale;
+import java.util.concurrent.TimeoutException;
 
 import org.eclipse.jetty.fcgi.FCGI;
 import org.eclipse.jetty.fcgi.generator.Flusher;
@@ -302,6 +303,18 @@ public class HttpStreamOverFCGI implements HttpStream
     }
 
     @Override
+    public long getIdleTimeout()
+    {
+        return _connection.getEndPoint().getIdleTimeout();
+    }
+
+    @Override
+    public void setIdleTimeout(long idleTimeoutMs)
+    {
+        _connection.getEndPoint().setIdleTimeout(idleTimeoutMs);
+    }
+
+    @Override
     public boolean isCommitted()
     {
         return _committed;
@@ -328,9 +341,9 @@ public class HttpStreamOverFCGI implements HttpStream
         _connection.onCompleted(x);
     }
 
-    public boolean onIdleTimeout(Throwable timeout)
+    public boolean onIdleTimeout(TimeoutException timeout)
     {
-        Runnable task = _httpChannel.onFailure(timeout);
+        Runnable task = _httpChannel.onIdleTimeout(timeout);
         if (task != null)
             execute(task);
         return false;

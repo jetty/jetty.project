@@ -13,6 +13,7 @@
 
 package org.eclipse.jetty.http2;
 
+import java.util.concurrent.TimeoutException;
 import java.util.function.BiConsumer;
 
 import org.eclipse.jetty.http2.frames.HeadersFrame;
@@ -34,7 +35,7 @@ public interface HTTP2Channel
     {
         public void onDataAvailable();
 
-        public void onTimeout(Throwable failure, Promise<Boolean> promise);
+        public void onTimeout(TimeoutException failure, Promise<Boolean> promise);
 
         public void onFailure(Throwable failure, Callback callback);
     }
@@ -54,7 +55,7 @@ public interface HTTP2Channel
         // TODO: review the signature because the serialization done by HttpChannel.onError()
         //  is now failing the callback which fails the HttpStream, which should decide whether
         //  to reset the HTTP/2 stream, so we may not need the boolean return type.
-        public void onTimeout(Throwable failure, BiConsumer<Runnable, Boolean> consumer);
+        public void onTimeout(TimeoutException timeout, BiConsumer<Runnable, Boolean> consumer);
 
         // TODO: can it be simplified? The callback seems to only be succeeded, which
         //  means it can be converted into a Runnable which may just be the return type
