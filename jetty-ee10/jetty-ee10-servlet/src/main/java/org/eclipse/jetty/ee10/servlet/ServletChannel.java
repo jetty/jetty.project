@@ -21,7 +21,6 @@ import java.util.ArrayList;
 import java.util.Collection;
 import java.util.EventListener;
 import java.util.List;
-import java.util.concurrent.Executor;
 import java.util.concurrent.TimeoutException;
 import java.util.concurrent.atomic.AtomicLong;
 import java.util.function.BiConsumer;
@@ -38,10 +37,12 @@ import org.eclipse.jetty.http.HttpURI;
 import org.eclipse.jetty.io.Connection;
 import org.eclipse.jetty.io.EndPoint;
 import org.eclipse.jetty.io.QuietException;
+import org.eclipse.jetty.server.ConnectionMetaData;
 import org.eclipse.jetty.server.Connector;
 import org.eclipse.jetty.server.CustomRequestLog;
 import org.eclipse.jetty.server.HttpConfiguration;
 import org.eclipse.jetty.server.Request;
+import org.eclipse.jetty.server.Response;
 import org.eclipse.jetty.server.ResponseUtils;
 import org.eclipse.jetty.server.Server;
 import org.eclipse.jetty.server.handler.ContextHandler;
@@ -74,12 +75,10 @@ public class ServletChannel
     private final ServletRequestState _state;
     private final ServletContextHandler.ServletScopedContext _context;
     private final ServletContextHandler.ServletContextApi _servletContextApi;
+    private final ConnectionMetaData _connectionMetaData;
     private final AtomicLong _requests = new AtomicLong();
-    private final Connector _connector;
-    private final Executor _executor;
-    private final HttpConfiguration _configuration;
-    private final EndPoint _endPoint;
     private final HttpInput _httpInput;
+    private final HttpOutput _httpOutput;
     private final Listener _combinedListener;
     private volatile ServletContextRequest _servletContextRequest;
     private volatile boolean _expects100Continue;
@@ -89,15 +88,23 @@ public class ServletChannel
 
     public ServletChannel(ServletContextHandler servletContextHandler, Request request)
     {
-        _state = new ServletRequestState(this);
+        this(servletContextHandler, request.getConnectionMetaData());
+    }
+
+    public ServletChannel(ServletContextHandler servletContextHandler, ConnectionMetaData connectionMetaData)
+    {
         _context = servletContextHandler.getContext();
         _servletContextApi = _context.getServletContext();
-        _connector = request.getConnectionMetaData().getConnector();
-        _executor = request.getContext();
-        _configuration = request.getConnectionMetaData().getHttpConfiguration();
-        _endPoint = request.getConnectionMetaData().getConnection().getEndPoint();
+        _connectionMetaData = connectionMetaData;
+        _state = new ServletRequestState(this);
         _httpInput = new HttpInput(this);
-        _combinedListener = new Listeners(_connector, servletContextHandler);
+        _httpOutput = new HttpOutput(this);
+        _combinedListener = new Listeners(_connectionMetaData.getConnector(), servletContextHandler);
+    }
+
+    public ConnectionMetaData getConnectionMetaData()
+    {
+        return _connectionMetaData;
     }
 
     public void setCallback(Callback callback)
@@ -148,7 +155,7 @@ public class ServletChannel
 
     public HttpOutput getHttpOutput()
     {
-        return _servletContextRequest.getHttpOutput();
+        return _httpOutput;
     }
 
     public HttpInput getHttpInput()
@@ -194,7 +201,7 @@ public class ServletChannel
      */
     public long getIdleTimeout()
     {
-        return _endPoint.getIdleTimeout();
+        return _connectionMetaData.getConnection().getEndPoint().getIdleTimeout();
     }
 
     /**
@@ -206,17 +213,22 @@ public class ServletChannel
      */
     public void setIdleTimeout(long timeoutMs)
     {
-        _endPoint.setIdleTimeout(timeoutMs);
+        _connectionMetaData.getConnection().getEndPoint().setIdleTimeout(timeoutMs);
     }
 
     public HttpConfiguration getHttpConfiguration()
     {
-        return _configuration;
+        return _connectionMetaData.getHttpConfiguration();
     }
 
     public Server getServer()
     {
-        return _connector.getServer();
+        return _context.getContextHandler().getServer();
+    }
+
+    public Request getRequest()
+    {
+        return _servletContextRequest;
     }
 
     public ServletContextRequest getServletContextRequest()
@@ -224,7 +236,13 @@ public class ServletChannel
         return _servletContextRequest;
     }
 
-    public ServletContextResponse getResponse()
+    public Response getResponse()
+    {
+        ServletContextRequest request = _servletContextRequest;
+        return request == null ? null : request.getResponse();
+    }
+
+    public ServletContextResponse getServletContextResponse()
     {
         ServletContextRequest request = _servletContextRequest;
         return request == null ? null : request.getResponse();
@@ -232,12 +250,12 @@ public class ServletChannel
 
     public Connection getConnection()
     {
-        return _endPoint.getConnection();
+        return _connectionMetaData.getConnection();
     }
 
     public EndPoint getEndPoint()
     {
-        return _endPoint;
+        return getConnection().getEndPoint();
     }
 
     /**
@@ -315,7 +333,7 @@ public class ServletChannel
                 return ((InetSocketAddress)localAddress);
         }
 
-        SocketAddress local = _endPoint.getLocalSocketAddress();
+        SocketAddress local = getEndPoint().getLocalSocketAddress();
         if (local instanceof InetSocketAddress)
             return (InetSocketAddress)local;
         return null;
@@ -323,7 +341,7 @@ public class ServletChannel
 
     public InetSocketAddress getRemoteAddress()
     {
-        SocketAddress remote = _endPoint.getRemoteSocketAddress();
+        SocketAddress remote = getEndPoint().getRemoteSocketAddress();
         if (remote instanceof InetSocketAddress)
             return (InetSocketAddress)remote;
         return null;
@@ -360,7 +378,7 @@ public class ServletChannel
                     throw new IOException("Committed before 100 Continue");
                 try
                 {
-                    getResponse().writeInterim(HttpStatus.CONTINUE_100, HttpFields.EMPTY).get();
+                    getServletContextResponse().writeInterim(HttpStatus.CONTINUE_100, HttpFields.EMPTY).get();
                 }
                 catch (Throwable x)
                 {
@@ -496,14 +514,14 @@ public class ServletChannel
                         try
                         {
                             // Get ready to send an error response
-                            getResponse().resetContent();
+                            getServletContextResponse().resetContent();
 
                             // the following is needed as you cannot trust the response code and reason
                             // as those could have been modified after calling sendError
                             Integer code = (Integer)_servletContextRequest.getAttribute(RequestDispatcher.ERROR_STATUS_CODE);
                             if (code == null)
                                 code = HttpStatus.INTERNAL_SERVER_ERROR_500;
-                            getResponse().setStatus(code);
+                            getServletContextResponse().setStatus(code);
 
                             // The handling of the original dispatch failed, and we are now going to either generate
                             // and error response ourselves or dispatch for an error page.  If there is content left over
@@ -517,7 +535,7 @@ public class ServletChannel
                             Request.Handler errorHandler = ErrorHandler.getErrorHandler(getServer(), context == null ? null : context.getContextHandler());
 
                             // If we can't have a body or have no ErrorHandler, then create a minimal error response.
-                            if (HttpStatus.hasNoBody(getResponse().getStatus()) || errorHandler == null)
+                            if (HttpStatus.hasNoBody(getServletContextResponse().getStatus()) || errorHandler == null)
                             {
                                 sendResponseAndComplete();
                             }
@@ -530,7 +548,7 @@ public class ServletChannel
                                 {
                                     // We do not notify ServletRequestListener on this dispatch because it might not
                                     // be dispatched to an error page, so we delegate this responsibility to the ErrorHandler.
-                                    dispatch(() -> errorHandler.handle(_servletContextRequest, getResponse(), blocker));
+                                    dispatch(() -> errorHandler.handle(_servletContextRequest, getServletContextResponse(), blocker));
                                     blocker.block();
                                 }
                             }
@@ -551,7 +569,7 @@ public class ServletChannel
                             {
                                 try
                                 {
-                                    getResponse().resetContent();
+                                    getServletContextResponse().resetContent();
                                     sendResponseAndComplete();
                                 }
                                 catch (Throwable t)
@@ -589,7 +607,7 @@ public class ServletChannel
 
                     case COMPLETE:
                     {
-                        if (!getResponse().isCommitted())
+                        if (!getServletContextResponse().isCommitted())
                         {
                             /*
                             TODO: isHandled does not exist and HttpOutput might not be explicitly closed.
@@ -602,15 +620,15 @@ public class ServletChannel
                              */
 
                             // Indicate Connection:close if we can't consume all.
-                            if (getResponse().getStatus() >= 200)
+                            if (getServletContextResponse().getStatus() >= 200)
                                 ResponseUtils.ensureConsumeAvailableOrNotPersistent(_servletContextRequest, _servletContextRequest.getResponse());
                         }
 
 
                         // RFC 7230, section 3.3.
                         if (!_servletContextRequest.isHead() &&
-                            getResponse().getStatus() != HttpStatus.NOT_MODIFIED_304 &&
-                            !getResponse().isContentComplete(_servletContextRequest.getHttpOutput().getWritten()))
+                            getServletContextResponse().getStatus() != HttpStatus.NOT_MODIFIED_304 &&
+                            !getServletContextResponse().isContentComplete(_servletContextRequest.getHttpOutput().getWritten()))
                         {
                             if (sendErrorOrAbort("Insufficient content written"))
                                 break;
@@ -622,7 +640,7 @@ public class ServletChannel
                             break;
 
                         // Set a close callback on the HttpOutput to make it an async callback
-                        getResponse().completeOutput(Callback.from(NON_BLOCKING, () -> _state.completed(null), _state::completed));
+                        getServletContextResponse().completeOutput(Callback.from(NON_BLOCKING, () -> _state.completed(null), _state::completed));
 
                         break;
                     }
@@ -663,7 +681,7 @@ public class ServletChannel
                 return false;
             }
 
-            getResponse().getServletApiResponse().sendError(HttpStatus.INTERNAL_SERVER_ERROR_500, message);
+            getServletContextResponse().getServletApiResponse().sendError(HttpStatus.INTERNAL_SERVER_ERROR_500, message);
             return true;
         }
         catch (Throwable x)
@@ -771,7 +789,7 @@ public class ServletChannel
         try
         {
             _state.completing();
-            getResponse().write(true, getResponse().getHttpOutput().getByteBuffer(), Callback.from(() -> _state.completed(null), _state::completed));
+            getServletContextResponse().write(true, getServletContextResponse().getHttpOutput().getByteBuffer(), Callback.from(() -> _state.completed(null), _state::completed));
         }
         catch (Throwable x)
         {
@@ -880,7 +898,7 @@ public class ServletChannel
 
     protected void execute(Runnable task)
     {
-        _executor.execute(task);
+        _context.execute(task);
     }
 
     /**

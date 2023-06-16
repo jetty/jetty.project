@@ -258,6 +258,8 @@ public class ServletContextRequest extends ContextRequest
 
     public ServletApiRequest getServletApiRequest()
     {
+        if (_servletChannel.getCallback() == null)
+            new RuntimeException("getServletApiRequest called before ServletHandler").printStackTrace();
         return _servletApiRequest;
     }
 

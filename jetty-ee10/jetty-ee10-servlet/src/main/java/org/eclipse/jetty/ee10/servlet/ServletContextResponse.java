@@ -46,7 +46,6 @@ public class ServletContextResponse extends ContextResponse
         NONE, STREAM, WRITER
     }
 
-    private final HttpOutput _httpOutput;
     private final ServletChannel _servletChannel;
     private final ServletApiResponse _servletApiResponse;
     private String _characterEncoding;
@@ -78,7 +77,6 @@ public class ServletContextResponse extends ContextResponse
     public ServletContextResponse(ServletChannel servletChannel, ServletContextRequest request, Response response)
     {
         super(servletChannel.getContext(), request, response);
-        _httpOutput = new HttpOutput(response, servletChannel);
         _servletChannel = servletChannel;
         _servletApiResponse = newServletApiResponse();
     }
@@ -170,7 +168,9 @@ public class ServletContextResponse extends ContextResponse
 
     public HttpOutput getHttpOutput()
     {
-        return _httpOutput;
+        if (_servletChannel.getCallback() == null)
+            new RuntimeException("getHttpOutput called before ServletHandler").printStackTrace();
+        return _servletChannel.getHttpOutput();
     }
 
     public ServletRequestState getState()
@@ -180,6 +180,8 @@ public class ServletContextResponse extends ContextResponse
 
     public ServletApiResponse getServletApiResponse()
     {
+        if (_servletChannel.getCallback() == null)
+            new RuntimeException("getServletApiResponse called before ServletHandler").printStackTrace();
         return _servletApiResponse;
     }
 
@@ -193,7 +195,7 @@ public class ServletContextResponse extends ContextResponse
     {
         if (_outputType == OutputType.WRITER)
             _writer.reopen();
-        _httpOutput.reopen();
+        getHttpOutput().reopen();
     }
 
     public void completeOutput(Callback callback)
@@ -201,7 +203,7 @@ public class ServletContextResponse extends ContextResponse
         if (_outputType == OutputType.WRITER)
             _writer.complete(callback);
         else
-            _httpOutput.complete(callback);
+            getHttpOutput().complete(callback);
     }
 
     public boolean isAllContentWritten(long written)
@@ -229,7 +231,7 @@ public class ServletContextResponse extends ContextResponse
 
         if (len > 0)
         {
-            long written = _httpOutput.getWritten();
+            long written = getHttpOutput().getWritten();
             if (written > len)
                 throw new IllegalArgumentException("setContentLength(" + len + ") when already written " + written);
 
@@ -249,7 +251,7 @@ public class ServletContextResponse extends ContextResponse
         }
         else if (len == 0)
         {
-            long written = _httpOutput.getWritten();
+            long written = getHttpOutput().getWritten();
             if (written > 0)
                 throw new IllegalArgumentException("setContentLength(0) when already written " + written);
             _contentLength = len;
@@ -272,7 +274,7 @@ public class ServletContextResponse extends ContextResponse
         if (_outputType == OutputType.WRITER)
             _writer.close();
         else
-            _httpOutput.close();
+            getHttpOutput().close();
     }
 
     @Override
@@ -341,7 +343,7 @@ public class ServletContextResponse extends ContextResponse
     {
         if (isCommitted())
             throw new IllegalStateException("Committed");
-        _httpOutput.resetBuffer();
+        getHttpOutput().resetBuffer();
         _outputType = OutputType.NONE;
         _contentLength = -1;
         _contentType = null;

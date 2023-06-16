@@ -162,18 +162,22 @@ public class DebugListener extends AbstractLifeCycle implements ServletContextLi
         return n;
     }
 
-    protected String findRequestName(ServletRequest request)
+    protected String findRequestName(ServletContextRequest request)
     {
         if (request == null)
             return null;
-        HttpServletRequest r = (HttpServletRequest)request;
         String n = (String)request.getAttribute(_attr);
         if (n == null)
         {
-            n = String.format("%s@%x", r.getRequestURI(), request.hashCode());
+            n = String.format("%s@%x", request.getHttpURI(), request.hashCode());
             request.setAttribute(_attr, n);
         }
         return n;
+    }
+
+    protected String findRequestName(ServletRequest request)
+    {
+        return findRequestName(ServletContextRequest.getServletContextRequest(request));
     }
 
     protected void log(String format, Object... arg)
@@ -296,7 +300,7 @@ public class DebugListener extends AbstractLifeCycle implements ServletContextLi
                 log(">  ctx=%s", cname);
             else
             {
-                String rname = findRequestName(request.getServletApiRequest());
+                String rname = findRequestName(request);
 
                 if (_renameThread)
                 {
@@ -316,7 +320,7 @@ public class DebugListener extends AbstractLifeCycle implements ServletContextLi
                 log("<  ctx=%s", cname);
             else
             {
-                String rname = findRequestName(request.getServletApiRequest());
+                String rname = findRequestName(request);
 
                 log("<  ctx=%s r=%s", cname, rname);
                 if (_renameThread)

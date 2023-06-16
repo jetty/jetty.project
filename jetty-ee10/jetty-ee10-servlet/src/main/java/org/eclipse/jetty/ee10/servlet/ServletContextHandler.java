@@ -1135,8 +1135,14 @@ public class ServletContextHandler extends ContextHandler
 
         // Get a servlet request, possibly from a cached version in the channel attributes.
         Attributes cache = request.getComponents().getCache();
-        ServletChannel servletChannel = (ServletChannel)cache.getAttribute(ServletChannel.class.getName());
-        if (servletChannel == null || servletChannel.getContext() != getContext())
+
+        Object cachedChannel = cache.getAttribute(ServletChannel.class.getName());
+        ServletChannel servletChannel;
+        if (cachedChannel instanceof ServletChannel sc && sc.getContext() == getContext())
+        {
+            servletChannel = sc;
+        }
+        else
         {
             servletChannel = new ServletChannel(this, request);
             cache.setAttribute(ServletChannel.class.getName(), servletChannel);
@@ -1158,9 +1164,8 @@ public class ServletContextHandler extends ContextHandler
     @Override
     protected boolean handleByContextHandler(String pathInContext, ContextRequest request, Response response, Callback callback)
     {
-        ServletContextRequest scopedRequest = Request.as(request, ServletContextRequest.class);
-        DispatcherType dispatch = scopedRequest.getServletApiRequest().getDispatcherType();
-        if (dispatch == DispatcherType.REQUEST && isProtectedTarget(scopedRequest.getDecodedPathInContext()))
+        boolean initialDispatch = request instanceof ServletContextRequest;
+        if (initialDispatch && isProtectedTarget(pathInContext))
         {
             Response.writeError(request, response, callback, HttpServletResponse.SC_NOT_FOUND, null);
             return true;
