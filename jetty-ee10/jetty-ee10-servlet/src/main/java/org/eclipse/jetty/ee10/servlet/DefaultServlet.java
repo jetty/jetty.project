@@ -489,7 +489,7 @@ public class DefaultServlet extends HttpServlet
             }
             else
             {
-                ServletCoreRequest coreRequest = new ServletCoreRequest(req);
+                ServletCoreRequest coreRequest = new ServletCoreRequest(req, encodedPathInContext);
                 ServletCoreResponse coreResponse = new ServletCoreResponse(coreRequest, resp);
 
                 if (coreResponse.isCommitted())
@@ -570,7 +570,7 @@ public class DefaultServlet extends HttpServlet
         private final HttpFields _httpFields;
         private final HttpURI _uri;
 
-        ServletCoreRequest(HttpServletRequest request)
+        ServletCoreRequest(HttpServletRequest request, String encodedPathInContext)
         {
             super(ServletContextRequest.getServletContextRequest(request));
             _servletRequest = request;
@@ -593,7 +593,7 @@ public class DefaultServlet extends HttpServlet
             String includedServletPath = (String)request.getAttribute(RequestDispatcher.INCLUDE_SERVLET_PATH);
             boolean included = includedServletPath != null;
             if (request.getDispatcherType() == DispatcherType.REQUEST)
-                _uri = getWrapped().getHttpURI();
+                _uri = Request.newHttpURIFrom(getWrapped(), encodedPathInContext);
             else if (included)
                 _uri = Request.newHttpURIFrom(getWrapped(), URIUtil.encodePath(getIncludedPathInContext(request, includedServletPath, false)));
             else
