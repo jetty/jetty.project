@@ -23,6 +23,8 @@ basehome:modules/demo.d/ee9-demo-jndi.xml|webapps/ee9-demo-jndi.xml
 basehome:modules/demo.d/ee9-demo-jndi.properties|webapps/ee9-demo-jndi.properties
 maven://org.eclipse.jetty.ee9.demos/jetty-ee9-demo-jndi-webapp/${jetty.version}/war|webapps/ee9-demo-jndi.war
 maven://jakarta.mail/jakarta.mail-api/@jakarta.mail.api.version@/jar|lib/ee9/jakarta.mail-api-@jakarta.mail.api.version@.jar
+        maven://jakarta.activation/jakarta.activation-api/@jakarta.activation.api.version@/jar|lib/ee9/jakarta.activation-api-@jakarta.activation.api.version@.jar
 
 [lib]
 lib/ee9/jakarta.mail-api-@jakarta.mail.api.version@.jar
+lib/ee9/jakarta.activation-api-@jakarta.activation.api.version@.jar
