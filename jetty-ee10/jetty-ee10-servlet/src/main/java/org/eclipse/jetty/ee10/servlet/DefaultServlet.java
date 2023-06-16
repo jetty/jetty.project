@@ -1003,6 +1003,12 @@ public class DefaultServlet extends HttpServlet
         {
             return null;
         }
+
+        @Override
+        public String toString()
+        {
+            return "%s@%x{%s,%s}".formatted(this.getClass().getSimpleName(), hashCode(), this._coreRequest, _response);
+        }
     }
 
     private class ServletResourceService extends ResourceService implements ResourceService.WelcomeFactory

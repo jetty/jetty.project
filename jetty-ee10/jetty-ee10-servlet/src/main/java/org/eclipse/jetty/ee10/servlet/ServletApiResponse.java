@@ -556,6 +556,12 @@ public class ServletApiResponse implements HttpServletResponse
         });
     }
 
+    @Override
+    public String toString()
+    {
+        return "%s@%x{%s}".formatted(this.getClass().getSimpleName(), hashCode(), _response);
+    }
+
     static class HttpCookieFacade implements HttpCookie
     {
         private final Cookie _cookie;

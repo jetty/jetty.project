@@ -588,11 +588,8 @@ public class ResourceService
             return null;
 
         String contextPath = request.getContext().getContextPath();
-
-        if (LOG.isDebugEnabled())
-            LOG.debug("welcome={}", welcomeTarget);
-
         WelcomeMode welcomeMode = getWelcomeMode();
+
         welcomeTarget = switch (welcomeMode)
         {
             case REDIRECT, REHANDLE -> HttpURI.build(request.getHttpURI())
@@ -600,6 +597,9 @@ public class ResourceService
                 .getPathQuery();
             case SERVE -> welcomeTarget;
         };
+
+        if (LOG.isDebugEnabled())
+            LOG.debug("welcome {} {}", welcomeMode, welcomeTarget);
 
         return new WelcomeAction(welcomeTarget, welcomeMode);
     }
