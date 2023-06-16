@@ -128,6 +128,7 @@ public class ServletChannel
     {
         _state.recycle();
         _httpInput.reopen();
+        _httpOutput.recycle();
         _servletContextRequest = servletContextRequest;
         _expects100Continue = servletContextRequest.getHeaders().contains(HttpHeader.EXPECT, HttpHeaderValue.CONTINUE.asString());
 

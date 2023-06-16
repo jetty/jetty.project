@@ -166,13 +166,7 @@ public class DebugListener extends AbstractLifeCycle implements ServletContextLi
     {
         if (request == null)
             return null;
-        String n = (String)request.getAttribute(_attr);
-        if (n == null)
-        {
-            n = String.format("%s@%x", request.getHttpURI(), request.hashCode());
-            request.setAttribute(_attr, n);
-        }
-        return n;
+        return request.getId();
     }
 
     protected String findRequestName(ServletRequest request)
