@@ -279,7 +279,7 @@ public class ServletApiRequest implements HttpServletRequest
     @Override
     public Enumeration<String> getHeaderNames()
     {
-        return getFields().getFieldNames();
+        return Collections.enumeration(getFields().getFieldNamesCollection());
     }
 
     @Override
@@ -292,7 +292,7 @@ public class ServletApiRequest implements HttpServletRequest
     @Override
     public String getPathInfo()
     {
-        return _request._matchedPath.getPathInfo();
+        return _request.getMatchedResource().getMatchedPath().getPathInfo();
     }
 
     @Override
@@ -329,7 +329,7 @@ public class ServletApiRequest implements HttpServletRequest
     public boolean isUserInRole(String role)
     {
         //obtain any substituted role name from the destination servlet
-        String linkedRole = _request._mappedServlet.getServletHolder().getUserRoleLink(role);
+        String linkedRole = _request.getMatchedResource().getResource().getServletHolder().getUserRoleLink(role);
         AuthenticationState authenticationState = getUndeferredAuthentication();
 
         if (authenticationState instanceof AuthenticationState.Succeeded succeededAuthentication)
@@ -374,7 +374,7 @@ public class ServletApiRequest implements HttpServletRequest
     @Override
     public String getServletPath()
     {
-        return _request._matchedPath.getPathMatch();
+        return _request.getMatchedResource().getMatchedPath().getPathMatch();
     }
 
     @Override
@@ -985,7 +985,7 @@ public class ServletApiRequest implements HttpServletRequest
     @Override
     public int getServerPort()
     {
-        int port = -1;
+        int port;
 
         HttpURI uri = _request.getHttpURI();
         if ((uri != null) && StringUtil.isNotBlank(uri.getAuthority()))
@@ -1187,7 +1187,7 @@ public class ServletApiRequest implements HttpServletRequest
         ServletRequestState state = _request.getState();
         if (_async == null)
             _async = new AsyncContextState(state);
-        AsyncContextEvent event = new AsyncContextEvent(_request.getContext(), _async, state, this, _request.getResponse().getHttpServletResponse());
+        AsyncContextEvent event = new AsyncContextEvent(_request.getContext(), _async, state, this, _request.getResponse().getServletApiResponse());
         state.startAsync(event);
         return _async;
     }
@@ -1208,7 +1208,7 @@ public class ServletApiRequest implements HttpServletRequest
     @Override
     public HttpServletMapping getHttpServletMapping()
     {
-        return _request._mappedServlet.getServletPathMapping(_request.getDecodedPathInContext());
+        return _request.getMatchedResource().getResource().getServletPathMapping(_request.getDecodedPathInContext());
     }
 
     @Override

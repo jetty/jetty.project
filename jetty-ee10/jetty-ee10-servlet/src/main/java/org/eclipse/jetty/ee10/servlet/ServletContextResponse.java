@@ -48,7 +48,7 @@ public class ServletContextResponse extends ContextResponse
 
     private final HttpOutput _httpOutput;
     private final ServletChannel _servletChannel;
-    private final ServletApiResponse _httpServletResponse;
+    private final ServletApiResponse _servletApiResponse;
     private String _characterEncoding;
     private String _contentType;
     private MimeTypes.Type _mimeType;
@@ -80,7 +80,7 @@ public class ServletContextResponse extends ContextResponse
         super(servletChannel.getContext(), request, response);
         _httpOutput = new HttpOutput(response, servletChannel);
         _servletChannel = servletChannel;
-        _httpServletResponse = newServletApiResponse();
+        _servletApiResponse = newServletApiResponse();
     }
 
     protected ResponseWriter getWriter()
@@ -178,19 +178,14 @@ public class ServletContextResponse extends ContextResponse
         return _servletChannel.getState();
     }
 
-    public HttpServletResponse getHttpServletResponse()
-    {
-        return _httpServletResponse;
-    }
-    
     public ServletApiResponse getServletApiResponse()
     {
-        return _httpServletResponse;
+        return _servletApiResponse;
     }
 
     public void resetForForward()
     {
-        _httpServletResponse.resetBuffer();
+        _servletApiResponse.resetBuffer();
         _outputType = OutputType.NONE;
     }
 
@@ -285,7 +280,7 @@ public class ServletContextResponse extends ContextResponse
     {
         super.reset();
 
-        _httpServletResponse.resetBuffer();
+        _servletApiResponse.resetBuffer();
         _outputType = OutputType.NONE;
         _contentLength = -1;
         _contentType = null;

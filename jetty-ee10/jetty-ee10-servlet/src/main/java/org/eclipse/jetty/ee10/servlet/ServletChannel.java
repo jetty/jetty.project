@@ -422,7 +422,7 @@ public class ServletChannel
                                 _context.getServletContextHandler().requestInitialized(_servletContextRequest, _servletContextRequest.getServletApiRequest());
 
                                 ServletHandler servletHandler = _context.getServletContextHandler().getServletHandler();
-                                ServletHandler.MappedServlet mappedServlet = _servletContextRequest._mappedServlet;
+                                ServletHandler.MappedServlet mappedServlet = _servletContextRequest.getMatchedResource().getResource();
 
                                 mappedServlet.handle(servletHandler, Request.getPathInContext(_servletContextRequest), _servletContextRequest.getServletApiRequest(), _servletContextRequest.getHttpServletResponse());
                             }

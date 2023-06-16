@@ -31,9 +31,7 @@ import org.eclipse.jetty.http.HttpCookie;
 import org.eclipse.jetty.http.HttpFields;
 import org.eclipse.jetty.http.HttpMethod;
 import org.eclipse.jetty.http.UriCompliance;
-import org.eclipse.jetty.http.pathmap.MatchedPath;
 import org.eclipse.jetty.http.pathmap.MatchedResource;
-import org.eclipse.jetty.http.pathmap.PathSpec;
 import org.eclipse.jetty.server.Request;
 import org.eclipse.jetty.server.Response;
 import org.eclipse.jetty.server.SecureRequestCustomizer;
@@ -78,13 +76,11 @@ public class ServletContextRequest extends ContextRequest
     private final List<ServletRequestAttributeListener> _requestAttributeListeners = new ArrayList<>();
     private final ServletApiRequest _servletApiRequest;
     private final ServletContextResponse _response;
-    final ServletHandler.MappedServlet _mappedServlet;
+    private final MatchedResource<ServletHandler.MappedServlet> _matchedResource;
     private final HttpInput _httpInput;
     private final String _decodedPathInContext;
     private final ServletChannel _servletChannel;
-    private final PathSpec _pathSpec;
     private final SessionManager _sessionManager;
-    final MatchedPath _matchedPath;
     private Charset _queryEncoding;
     private HttpFields _trailers;
     private ManagedSession _managedSession;
@@ -102,11 +98,9 @@ public class ServletContextRequest extends ContextRequest
         super(servletContextApi.getContext(), request);
         _servletChannel = servletChannel;
         _servletApiRequest = newServletApiRequest();
-        _mappedServlet = matchedResource.getResource();
+        _matchedResource = matchedResource;
         _httpInput = _servletChannel.getHttpInput();
         _decodedPathInContext = decodedPathInContext;
-        _pathSpec = matchedResource.getPathSpec();
-        _matchedPath = matchedResource.getMatchedPath();
         _response =  newServletContextResponse(response);
         _sessionManager = sessionManager;
         addIdleTimeoutListener(this::onIdleTimeout);
@@ -143,14 +137,9 @@ public class ServletContextRequest extends ContextRequest
         return _decodedPathInContext;
     }
 
-    public PathSpec getPathSpec()
+    public MatchedResource<ServletHandler.MappedServlet> getMatchedResource()
     {
-        return _pathSpec;
-    }
-
-    public MatchedPath getMatchedPath()
-    {
-        return _matchedPath;
+        return _matchedResource;
     }
 
     @Override
@@ -204,7 +193,7 @@ public class ServletContextRequest extends ContextRequest
     /**
      * Set the character encoding used for the query string. This call will effect the return of getQueryString and getParamaters. It must be called before any
      * getParameter methods.
-     *
+     * <p>
      * The request attribute "org.eclipse.jetty.server.Request.queryEncoding" may be set as an alternate method of calling setQueryEncoding.
      *
      * @param queryEncoding the URI query character encoding
@@ -274,17 +263,12 @@ public class ServletContextRequest extends ContextRequest
 
     public HttpServletResponse getHttpServletResponse()
     {
-        return _response.getHttpServletResponse();
-    }
-
-    public ServletHandler.MappedServlet getMappedServlet()
-    {
-        return _mappedServlet;
+        return _response.getServletApiResponse();
     }
 
     public String getServletName()
     {
-        return _mappedServlet.getServletHolder().getName();
+        return getMatchedResource().getResource().getServletHolder().getName();
     }
 
     public List<ServletRequestAttributeListener> getRequestAttributeListeners()
