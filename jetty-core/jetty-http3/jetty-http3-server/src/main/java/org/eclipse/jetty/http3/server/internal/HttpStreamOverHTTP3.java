@@ -39,7 +39,6 @@ import org.eclipse.jetty.server.HttpChannel;
 import org.eclipse.jetty.server.HttpStream;
 import org.eclipse.jetty.util.BufferUtil;
 import org.eclipse.jetty.util.Callback;
-import org.eclipse.jetty.util.NanoTime;
 import org.eclipse.jetty.util.thread.AutoLock;
 import org.eclipse.jetty.util.thread.Invocable;
 import org.slf4j.Logger;
@@ -50,7 +49,6 @@ public class HttpStreamOverHTTP3 implements HttpStream
     private static final Logger LOG = LoggerFactory.getLogger(HttpStreamOverHTTP3.class);
 
     private final AutoLock lock = new AutoLock();
-    private final long nanoTime = NanoTime.now();
     private final ServerHTTP3StreamConnection connection;
     private final HttpChannel httpChannel;
     private final HTTP3StreamServer stream;
@@ -71,12 +69,6 @@ public class HttpStreamOverHTTP3 implements HttpStream
     public String getId()
     {
         return String.valueOf(stream.getId());
-    }
-
-    @Override
-    public long getNanoTime()
-    {
-        return nanoTime;
     }
 
     public Runnable onRequest(HeadersFrame frame)

@@ -165,7 +165,7 @@ public interface Attributes
 
         public Wrapper(Attributes wrapped)
         {
-            _wrapped = wrapped;
+            _wrapped = Objects.requireNonNull(wrapped);
         }
 
         public Attributes getWrapped()
