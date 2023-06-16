@@ -160,7 +160,7 @@ public abstract class EventsHandler extends Handler.Wrapper
     {
         try
         {
-            onResponseWrite(request, last, content.asReadOnlyBuffer());
+            onResponseWrite(request, last, content == null ? null : content.asReadOnlyBuffer());
         }
         catch (Throwable x)
         {
