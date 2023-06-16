@@ -83,13 +83,13 @@ public class DemoModulesTests extends AbstractJettyHomeTest
 
                 startHttpClient();
                 ContentResponse response = client.GET(baseURI + "/dump/auth/admin/info");
-                assertEquals(HttpStatus.OK_200, response.getStatus(), new ResponseDetails(response));;
+                assertEquals(HttpStatus.OK_200, response.getStatus(), new ResponseDetails(response));
 
                 Fields fields = new Fields();
                 fields.put("j_username", "admin");
                 fields.put("j_password", "admin");
                 response = client.FORM(baseURI + "/j_security_check", fields);
-                assertEquals(HttpStatus.OK_200, response.getStatus(), new ResponseDetails(response));;
+                assertEquals(HttpStatus.OK_200, response.getStatus(), new ResponseDetails(response));
                 assertThat(response.getContentAsString(), containsString("Dump Servlet"));
             }
         }
@@ -220,7 +220,7 @@ public class DemoModulesTests extends AbstractJettyHomeTest
                 fields.put("j_username", "me");
                 fields.put("j_password", "me");
                 response = client.FORM(baseURI + "/j_security_check", fields);
-                assertEquals(HttpStatus.OK_200, response.getStatus(), new ResponseDetails(response));;
+                assertEquals(HttpStatus.OK_200, response.getStatus(), new ResponseDetails(response));
                 assertThat(response.getContentAsString(), containsString("SUCCESS!"));
             }
         }
