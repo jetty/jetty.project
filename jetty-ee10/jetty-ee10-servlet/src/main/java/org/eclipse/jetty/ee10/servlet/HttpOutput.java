@@ -36,14 +36,13 @@ import org.eclipse.jetty.io.Content;
 import org.eclipse.jetty.io.EofException;
 import org.eclipse.jetty.io.RetainableByteBuffer;
 import org.eclipse.jetty.server.HttpConfiguration;
+import org.eclipse.jetty.util.Blocker;
 import org.eclipse.jetty.util.BufferUtil;
 import org.eclipse.jetty.util.Callback;
 import org.eclipse.jetty.util.ExceptionUtil;
 import org.eclipse.jetty.util.IO;
 import org.eclipse.jetty.util.IteratingCallback;
 import org.eclipse.jetty.util.NanoTime;
-import org.eclipse.jetty.util.SharedBlockingCallback;
-import org.eclipse.jetty.util.SharedBlockingCallback.Blocker;
 import org.eclipse.jetty.util.thread.AutoLock;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -127,7 +126,7 @@ public class HttpOutput extends ServletOutputStream implements Runnable
 
     private final ServletChannel _servletChannel;
     private final ServletRequestState _channelState;
-    private final SharedBlockingCallback _writeBlocker;
+    private final Blocker.Shared _writeBlocker;
     private ApiState _apiState = ApiState.BLOCKING;
     private State _state = State.OPEN;
     private boolean _softClose = false;
@@ -145,7 +144,7 @@ public class HttpOutput extends ServletOutputStream implements Runnable
     {
         _servletChannel = channel;
         _channelState = _servletChannel.getState();
-        _writeBlocker = new WriteBlocker();
+        _writeBlocker = new Blocker.Shared();
         HttpConfiguration config = _servletChannel.getHttpConfiguration();
         _bufferSize = config.getOutputBufferSize();
         _commitSize = config.getOutputAggregationSize();
@@ -174,14 +173,9 @@ public class HttpOutput extends ServletOutputStream implements Runnable
         }
     }
 
-    protected Blocker acquireWriteBlockingCallback() throws IOException
-    {
-        return _writeBlocker.acquire();
-    }
-
     private void channelWrite(ByteBuffer content, boolean complete) throws IOException
     {
-        try (Blocker blocker = _writeBlocker.acquire())
+        try (Blocker.Callback blocker = _writeBlocker.callback())
         {
             channelWrite(content, complete, blocker);
             blocker.block();
@@ -355,7 +349,6 @@ public class HttpOutput extends ServletOutputStream implements Runnable
             if (error != null)
             {
                 _servletChannel.abort(error);
-                _writeBlocker.fail(error);
                 _state = State.CLOSED;
             }
             else
@@ -449,7 +442,7 @@ public class HttpOutput extends ServletOutputStream implements Runnable
     public void close() throws IOException
     {
         ByteBuffer content = null;
-        Blocker blocker = null;
+        Blocker.Callback blocker = null;
         try (AutoLock l = _channelState.lock())
         {
             if (_onError != null)
@@ -475,7 +468,7 @@ public class HttpOutput extends ServletOutputStream implements Runnable
                         case BLOCKING:
                         case BLOCKED:
                             // block until CLOSED state reached.
-                            blocker = _writeBlocker.acquire();
+                            blocker = _writeBlocker.callback();
                             _closedCallback = Callback.combine(_closedCallback, blocker);
                             break;
 
@@ -492,7 +485,7 @@ public class HttpOutput extends ServletOutputStream implements Runnable
                             // Output is idle blocking state, but we still do an async close
                             _apiState = ApiState.BLOCKED;
                             _state = State.CLOSING;
-                            blocker = _writeBlocker.acquire();
+                            blocker = _writeBlocker.callback();
                             content = _aggregate != null && _aggregate.hasRemaining() ? _aggregate.getByteBuffer() : BufferUtil.EMPTY_BUFFER;
                             break;
 
@@ -502,7 +495,7 @@ public class HttpOutput extends ServletOutputStream implements Runnable
                             // then trigger a close from onWriteComplete
                             _state = State.CLOSE;
                             // and block until it is complete
-                            blocker = _writeBlocker.acquire();
+                            blocker = _writeBlocker.callback();
                             _closedCallback = Callback.combine(_closedCallback, blocker);
                             break;
 
@@ -536,9 +529,9 @@ public class HttpOutput extends ServletOutputStream implements Runnable
                 return;
 
             // Just wait for some other close to finish.
-            try (Blocker b = blocker)
+            try (Blocker.Callback cb = blocker)
             {
-                b.block();
+                cb.block();
             }
         }
         else
@@ -551,7 +544,7 @@ public class HttpOutput extends ServletOutputStream implements Runnable
             else
             {
                 // Do a blocking close
-                try (Blocker b = blocker)
+                try (Blocker.Callback b = blocker)
                 {
                     channelWrite(content, true, blocker);
                     b.block();
@@ -1094,7 +1087,7 @@ public class HttpOutput extends ServletOutputStream implements Runnable
      */
     public void sendContent(InputStream in) throws IOException
     {
-        try (Blocker blocker = _writeBlocker.acquire())
+        try (Blocker.Callback blocker = _writeBlocker.callback())
         {
             new InputStreamWritingCB(in, blocker).iterate();
             blocker.block();
@@ -1109,7 +1102,7 @@ public class HttpOutput extends ServletOutputStream implements Runnable
      */
     public void sendContent(ReadableByteChannel in) throws IOException
     {
-        try (Blocker blocker = _writeBlocker.acquire())
+        try (Blocker.Callback blocker = _writeBlocker.callback())
         {
             new ReadableByteChannelWritingCB(in, blocker).iterate();
             blocker.block();
@@ -1739,13 +1732,6 @@ public class HttpOutput extends ServletOutputStream implements Runnable
             _buffer.release();
             IO.close(_in);
             super.onCompleteFailure(x);
-        }
-    }
-
-    private static class WriteBlocker extends SharedBlockingCallback
-    {
-        private WriteBlocker()
-        {
         }
     }
 

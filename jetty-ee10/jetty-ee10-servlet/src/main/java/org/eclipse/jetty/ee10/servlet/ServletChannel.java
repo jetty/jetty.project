@@ -107,13 +107,6 @@ public class ServletChannel
         return _connectionMetaData;
     }
 
-    public void setCallback(Callback callback)
-    {
-        if (_callback != null)
-            throw new IllegalStateException();
-        _callback = callback;
-    }
-
     public Callback getCallback()
     {
         return _callback;
@@ -398,6 +391,18 @@ public class ServletChannel
         _servletContextRequest = null;
         _callback = null;
         _written = 0;
+    }
+
+    /**
+     * @return True if the channel is ready to continue handling (ie it is not suspended)
+     */
+    public boolean handle(Request request, Response response, Callback callback)
+    {
+        if (_callback != null)
+            throw new IllegalStateException();
+        _callback = callback;
+
+        return handle();
     }
 
     /**
