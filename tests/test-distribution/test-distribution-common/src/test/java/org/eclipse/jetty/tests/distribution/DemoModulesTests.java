@@ -612,7 +612,6 @@ public class DemoModulesTests extends AbstractJettyHomeTest
 
                 String rootURI = "http://localhost:%d".formatted(httpPort);
                 String demoJettyURI = "%s/%s-test".formatted(rootURI, env);
-                System.err.println(rootURI);
 
                 ContentResponse response;
 
