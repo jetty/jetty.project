@@ -61,7 +61,7 @@ public class ServletContextResponse extends ContextResponse
     public static ServletContextResponse getServletContextResponse(ServletResponse response)
     {
         if (response instanceof ServletApiResponse)
-            return ((ServletApiResponse)response).getResponse();
+            return ((ServletApiResponse)response).getServletContextResponse();
 
         while (response instanceof ServletResponseWrapper)
         {
@@ -69,7 +69,7 @@ public class ServletContextResponse extends ContextResponse
         }
 
         if (response instanceof ServletApiResponse)
-            return ((ServletApiResponse)response).getResponse();
+            return ((ServletApiResponse)response).getServletContextResponse();
 
         throw new IllegalStateException("could not find %s for %s".formatted(ServletContextResponse.class.getSimpleName(), response));
     }
@@ -219,6 +219,12 @@ public class ServletContextResponse extends ContextResponse
     public void setContentLength(int len)
     {
         setContentLength((long)len);
+    }
+
+    @Override
+    public HttpFields.Mutable getHeaders()
+    {
+        return super.getHeaders();
     }
 
     public void setContentLength(long len)

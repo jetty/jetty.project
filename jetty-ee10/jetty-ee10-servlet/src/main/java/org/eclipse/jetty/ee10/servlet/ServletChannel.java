@@ -80,9 +80,10 @@ public class ServletChannel
     private final HttpInput _httpInput;
     private final HttpOutput _httpOutput;
     private final Listener _combinedListener;
+    private volatile Request _request;
     private volatile ServletContextRequest _servletContextRequest;
-    private volatile boolean _expects100Continue;
     private volatile Callback _callback;
+    private volatile boolean _expects100Continue;
     // Bytes written after interception (e.g. after compression).
     private volatile long _written;
 
@@ -122,7 +123,7 @@ public class ServletChannel
         _state.recycle();
         _httpInput.reopen();
         _httpOutput.recycle();
-        _servletContextRequest = servletContextRequest;
+        _request = _servletContextRequest = servletContextRequest;
         _expects100Continue = servletContextRequest.getHeaders().contains(HttpHeader.EXPECT, HttpHeaderValue.CONTINUE.asString());
 
         if (LOG.isDebugEnabled())
@@ -222,7 +223,7 @@ public class ServletChannel
 
     public Request getRequest()
     {
-        return _servletContextRequest;
+        return _request;
     }
 
     public ServletContextRequest getServletContextRequest()
@@ -400,6 +401,10 @@ public class ServletChannel
     {
         if (_callback != null)
             throw new IllegalStateException();
+
+        if (request != _request && Request.as(request, ServletContextRequest.class) != _servletContextRequest)
+            throw new IllegalStateException();
+        _request = request;
         _callback = callback;
 
         return handle();

@@ -15,11 +15,12 @@ package org.eclipse.jetty.websocket.core.server.internal;
 
 import java.util.Collections;
 
+import org.eclipse.jetty.http.HttpFields;
 import org.eclipse.jetty.http.HttpHeader;
 import org.eclipse.jetty.websocket.core.ExtensionConfig;
 import org.eclipse.jetty.websocket.core.server.ServerUpgradeResponse;
 
-public class WebSocketHttpFieldsWrapper extends HttpFieldsWrapper
+public class WebSocketHttpFieldsWrapper extends HttpFields.Mutable.Wrapper
 {
     private final WebSocketNegotiation _negotiation;
     private final ServerUpgradeResponse _response;

@@ -130,6 +130,7 @@ public class AsyncServletLongPollTest
 
                 HttpTester.Input input2 = HttpTester.from(socket2.getInputStream());
                 HttpTester.Response response2 = HttpTester.parseResponse(input2);
+                System.err.println(response2);
                 assertEquals(200, response2.getStatus());
             }
 

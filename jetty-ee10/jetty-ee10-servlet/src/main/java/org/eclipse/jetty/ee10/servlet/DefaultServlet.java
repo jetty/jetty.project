@@ -881,7 +881,7 @@ public class DefaultServlet extends HttpServlet
             if (_response instanceof ServletApiResponse)
             {
                 ServletApiResponse apiResponse = (ServletApiResponse)_response;
-                return apiResponse.getResponse();
+                return apiResponse.getServletContextResponse();
             }
             return null;
         }

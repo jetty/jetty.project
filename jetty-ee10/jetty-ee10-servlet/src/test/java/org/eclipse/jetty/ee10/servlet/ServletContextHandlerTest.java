@@ -2360,7 +2360,7 @@ public class ServletContextHandlerTest
     {
         CookieTweakResponseApi(ServletApiResponse response)
         {
-            super(response.getResponse());
+            super(response.getServletContextResponse());
         }
 
         @Override
