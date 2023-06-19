@@ -15,7 +15,6 @@ package org.eclipse.jetty.ee10.servlet;
 
 import java.io.IOException;
 import java.io.PrintWriter;
-import java.nio.channels.IllegalSelectorException;
 import java.util.Collection;
 import java.util.Collections;
 import java.util.EnumSet;
@@ -33,11 +32,9 @@ import org.eclipse.jetty.ee10.servlet.writer.ResponseWriter;
 import org.eclipse.jetty.ee10.servlet.writer.Utf8HttpWriter;
 import org.eclipse.jetty.http.HttpCookie;
 import org.eclipse.jetty.http.HttpFields;
-import org.eclipse.jetty.http.HttpGenerator;
 import org.eclipse.jetty.http.HttpHeader;
 import org.eclipse.jetty.http.HttpStatus;
 import org.eclipse.jetty.http.HttpVersion;
-import org.eclipse.jetty.http.MimeTypes;
 import org.eclipse.jetty.io.RuntimeIOException;
 import org.eclipse.jetty.server.Response;
 import org.eclipse.jetty.session.ManagedSession;
@@ -368,63 +365,13 @@ public class ServletApiResponse implements HttpServletResponse
         if (contentType == null)
         {
             if (_servletContextResponse.isWriting() && getServletContextResponse().getCharacterEncoding() != null)
-                throw new IllegalSelectorException();
+                throw new IllegalStateException();
 
-            if (getServletContextResponse().getLocale() == null)
-                getServletContextResponse().setCharacterEncoding(null);
-            getServletContextResponse().setMimeType(null);
-            getServletContextResponse().setContentType(null);
             getResponse().getHeaders().remove(HttpHeader.CONTENT_TYPE);
         }
         else
         {
-            getServletContextResponse().setContentType(contentType);
-            getServletContextResponse().setMimeType(MimeTypes.CACHE.get(contentType));
-
-            String charset = MimeTypes.getCharsetFromContentType(contentType);
-            if (charset == null && getServletContextResponse().getMimeType() != null && getServletContextResponse().getMimeType().isCharsetAssumed())
-                charset = getServletContextResponse().getMimeType().getCharsetString();
-
-            if (charset == null)
-            {
-                switch (getServletContextResponse().getEncodingFrom())
-                {
-                    case NOT_SET:
-                        break;
-                    case DEFAULT:
-                    case INFERRED:
-                    case SET_CONTENT_TYPE:
-                    case SET_LOCALE:
-                    case SET_CHARACTER_ENCODING:
-                    {
-                        getServletContextResponse().setContentType(contentType + ";charset=" + getServletContextResponse().getCharacterEncoding());
-                        getServletContextResponse().setMimeType(MimeTypes.CACHE.get(getServletContextResponse().getContentType()));
-                        break;
-                    }
-                    default:
-                        throw new IllegalStateException(getServletContextResponse().getEncodingFrom().toString());
-                }
-            }
-            else if (_servletContextResponse.isWriting() && !charset.equalsIgnoreCase(getServletContextResponse().getCharacterEncoding()))
-            {
-                // too late to change the character encoding;
-                getServletContextResponse().setContentType(MimeTypes.getContentTypeWithoutCharset(getServletContextResponse().getContentType()));
-                if (getServletContextResponse().getCharacterEncoding() != null && (getServletContextResponse().getMimeType() == null || !getServletContextResponse().getMimeType().isCharsetAssumed()))
-                    getServletContextResponse().setContentType(getServletContextResponse().getContentType() + ";charset=" + getServletContextResponse().getCharacterEncoding());
-                getServletContextResponse().setMimeType(MimeTypes.CACHE.get(getServletContextResponse().getContentType()));
-            }
-            else
-            {
-                getServletContextResponse().setRawCharacterEncoding(charset, ServletContextResponse.EncodingFrom.SET_CONTENT_TYPE);
-            }
-
-            if (HttpGenerator.__STRICT || getServletContextResponse().getMimeType() == null)
-                getResponse().getHeaders().put(HttpHeader.CONTENT_TYPE, getServletContextResponse().getContentType());
-            else
-            {
-                getServletContextResponse().setContentType(getServletContextResponse().getMimeType().asString());
-                getResponse().getHeaders().put(getServletContextResponse().getMimeType().getContentTypeField());
-            }
+            getResponse().getHeaders().put(HttpHeader.CONTENT_TYPE, contentType);
         }
     }
 
@@ -659,7 +606,7 @@ public class ServletApiResponse implements HttpServletResponse
         @Override
         public boolean equals(Object obj)
         {
-            return HttpCookie.equals(this, obj);
+            return obj instanceof HttpCookie && HttpCookie.equals(this, obj);
         }
 
         @Override

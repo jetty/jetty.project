@@ -1214,137 +1214,142 @@ public interface HttpFields extends Iterable<HttpField>, Supplier<HttpFields>
                 _fields = fields;
             }
 
-            public boolean onPutField(String name, String value)
+            public HttpField onAddField(HttpField field)
             {
-                return true;
+                return field;
             }
 
-            public boolean onAddField(String name, String value)
-            {
-                return true;
-            }
-
-            public boolean onRemoveField(String name)
+            public boolean onRemoveField(HttpField field)
             {
                 return true;
             }
 
             @Override
-            public Mutable add(String name, String value)
+            public HttpFields takeAsImmutable()
             {
-                if (onAddField(name, value))
-                    return _fields.add(name, value);
-                return this;
+                return Mutable.super.takeAsImmutable();
             }
 
             @Override
-            public Mutable add(HttpHeader header, HttpHeaderValue value)
+            public int size()
             {
-                if (onAddField(header.asString(), value.asString()))
-                    return _fields.add(header, value);
-                return this;
+                // This impl needed only as an optimization
+                return _fields.size();
             }
 
             @Override
-            public Mutable add(HttpHeader header, String value)
+            public Stream<HttpField> stream()
             {
-                if (onAddField(header.asString(), value))
-                    return _fields.add(header, value);
-                return this;
+                // This impl needed only as an optimization
+                return _fields.stream();
             }
 
             @Override
             public Mutable add(HttpField field)
             {
-                if (onAddField(field.getName(), field.getValue()))
-                    return _fields.add(field);
-                return this;
-            }
-
-            @Override
-            public Mutable add(HttpFields fields)
-            {
-                for (HttpField field : fields)
+                // This impl needed only as an optimization
+                if (field != null)
                 {
-                    add(field);
+                    field = onAddField(field);
+                    if (field != null)
+                       return Mutable.super.add(field);
                 }
                 return this;
-            }
-
-            @Override
-            public Mutable clear()
-            {
-                return _fields.clear();
-            }
-
-            @Override
-            public Iterator<HttpField> iterator()
-            {
-                return _fields.iterator();
             }
 
             @Override
             public ListIterator<HttpField> listIterator()
             {
-                return _fields.listIterator();
-            }
-
-            @Override
-            public Mutable put(HttpField field)
-            {
-                if (onPutField(field.getName(), field.getValue()))
-                    return _fields.put(field);
-                return this;
-            }
-
-            @Override
-            public Mutable put(String name, String value)
-            {
-                if (onPutField(name, value))
-                    return _fields.put(name, value);
-                return this;
-            }
-
-            @Override
-            public Mutable put(HttpHeader header, HttpHeaderValue value)
-            {
-                if (onPutField(header.asString(), value.asString()))
-                    return _fields.put(header, value);
-                return this;
-            }
-
-            @Override
-            public Mutable put(HttpHeader header, String value)
-            {
-                if (onPutField(header.asString(), value))
-                    return _fields.put(header, value);
-                return this;
-            }
-
-            @Override
-            public Mutable remove(HttpHeader header)
-            {
-                if (onRemoveField(header.asString()))
-                    return _fields.remove(header);
-                return this;
-            }
-
-            @Override
-            public Mutable remove(EnumSet<HttpHeader> fields)
-            {
-                for (HttpHeader header : fields)
+                ListIterator<HttpField> i = _fields.listIterator();
+                return new ListIterator<>()
                 {
-                    remove(header);
-                }
-                return this;
-            }
+                    HttpField last;
 
-            @Override
-            public Mutable remove(String name)
-            {
-                if (onRemoveField(name))
-                    return _fields.remove(name);
-                return this;
+                    @Override
+                    public boolean hasNext()
+                    {
+                        return i.hasNext();
+                    }
+
+                    @Override
+                    public HttpField next()
+                    {
+                        return last = i.next();
+                    }
+
+                    @Override
+                    public boolean hasPrevious()
+                    {
+                        return i.hasPrevious();
+                    }
+
+                    @Override
+                    public HttpField previous()
+                    {
+                        return last = i.previous();
+                    }
+
+                    @Override
+                    public int nextIndex()
+                    {
+                        return i.nextIndex();
+                    }
+
+                    @Override
+                    public int previousIndex()
+                    {
+                        return i.previousIndex();
+                    }
+
+                    @Override
+                    public void remove()
+                    {
+                        if (last != null && onRemoveField(last))
+                        {
+                            last = null;
+                            i.remove();
+                        }
+                    }
+
+                    @Override
+                    public void set(HttpField field)
+                    {
+                        if (field == null)
+                        {
+                            if (last != null && onRemoveField(last))
+                            {
+                                last = null;
+                                i.remove();
+                            }
+                        }
+                        else
+                        {
+                            if (last != null && onRemoveField(last))
+                            {
+                                field = onAddField(field);
+                                if (field != null)
+                                {
+                                    last = null;
+                                    i.set(field);
+                                }
+                            }
+                        }
+                    }
+
+                    @Override
+                    public void add(HttpField field)
+                    {
+                        if (field != null)
+                        {
+                            field = onAddField(field);
+                            if (field != null)
+                            {
+                                last = null;
+                                i.add(field);
+                            }
+                        }
+                    }
+                };
             }
         }
     }

@@ -15,75 +15,69 @@ package org.eclipse.jetty.websocket.core.server.internal;
 
 import java.util.Collections;
 
+import org.eclipse.jetty.http.HttpField;
 import org.eclipse.jetty.http.HttpFields;
-import org.eclipse.jetty.http.HttpHeader;
 import org.eclipse.jetty.websocket.core.ExtensionConfig;
 import org.eclipse.jetty.websocket.core.server.ServerUpgradeResponse;
 
 public class WebSocketHttpFieldsWrapper extends HttpFields.Mutable.Wrapper
 {
-    private final WebSocketNegotiation _negotiation;
     private final ServerUpgradeResponse _response;
 
     public WebSocketHttpFieldsWrapper(Mutable fields, ServerUpgradeResponse response, WebSocketNegotiation negotiation)
     {
         super(fields);
-        _negotiation = negotiation;
         _response = response;
     }
 
     @Override
-    public boolean onPutField(String name, String value)
+    public HttpField onAddField(HttpField field)
     {
-        if (HttpHeader.SEC_WEBSOCKET_SUBPROTOCOL.is(name))
+        if (field.getHeader() != null)
         {
-            _response.setAcceptedSubProtocol(value);
-            return false;
-        }
+            return switch (field.getHeader())
+            {
+                case SEC_WEBSOCKET_SUBPROTOCOL ->
+                {
+                    _response.setAcceptedSubProtocol(field.getValue());
+                    yield field;
+                }
 
-        if (HttpHeader.SEC_WEBSOCKET_EXTENSIONS.is(name))
-        {
-            _response.setExtensions(ExtensionConfig.parseList(value));
-            return false;
-        }
+                case SEC_WEBSOCKET_EXTENSIONS ->
+                {
+                    _response.addExtensions(ExtensionConfig.parseList(field.getValue()));
+                    yield field;
+                }
 
-        return super.onPutField(name, value);
+                default -> super.onAddField(field);
+            };
+        }
+        return super.onAddField(field);
     }
 
     @Override
-    public boolean onAddField(String name, String value)
+    public boolean onRemoveField(HttpField field)
     {
-        if (HttpHeader.SEC_WEBSOCKET_SUBPROTOCOL.is(name))
+        if (field.getHeader() != null)
         {
-            _response.setAcceptedSubProtocol(value);
-            return false;
+            return switch (field.getHeader())
+            {
+                case SEC_WEBSOCKET_SUBPROTOCOL ->
+                {
+                    _response.setAcceptedSubProtocol(null);
+                    yield false;
+                }
+
+                case SEC_WEBSOCKET_EXTENSIONS ->
+                {
+                    // TODO: why add extensions??
+                    _response.addExtensions(Collections.emptyList());
+                    yield false;
+                }
+
+                default -> super.onRemoveField(field);
+            };
         }
-
-        if (HttpHeader.SEC_WEBSOCKET_EXTENSIONS.is(name))
-        {
-            _response.addExtensions(ExtensionConfig.parseList(value));
-            return false;
-        }
-
-        return super.onAddField(name, value);
-    }
-
-    @Override
-    public boolean onRemoveField(String name)
-    {
-        if (HttpHeader.SEC_WEBSOCKET_SUBPROTOCOL.is(name))
-        {
-            _response.setAcceptedSubProtocol(null);
-            return false;
-        }
-
-        if (HttpHeader.SEC_WEBSOCKET_EXTENSIONS.is(name))
-        {
-            // TODO: why add extensions??
-            _response.addExtensions(Collections.emptyList());
-            return false;
-        }
-
-        return super.onRemoveField(name);
+        return super.onRemoveField(field);
     }
 }

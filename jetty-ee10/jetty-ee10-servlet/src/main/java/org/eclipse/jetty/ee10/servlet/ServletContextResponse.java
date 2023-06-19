@@ -25,6 +25,7 @@ import jakarta.servlet.http.HttpServletResponse;
 import jakarta.servlet.http.HttpSession;
 import org.eclipse.jetty.ee10.servlet.writer.ResponseWriter;
 import org.eclipse.jetty.http.HttpCookie;
+import org.eclipse.jetty.http.HttpField;
 import org.eclipse.jetty.http.HttpFields;
 import org.eclipse.jetty.http.HttpGenerator;
 import org.eclipse.jetty.http.HttpHeader;
@@ -48,6 +49,7 @@ public class ServletContextResponse extends ContextResponse
 
     private final ServletChannel _servletChannel;
     private final ServletApiResponse _servletApiResponse;
+    private final HttpFields.Mutable.Wrapper _headers;
     private String _characterEncoding;
     private String _contentType;
     private MimeTypes.Type _mimeType;
@@ -79,6 +81,7 @@ public class ServletContextResponse extends ContextResponse
         super(servletChannel.getContext(), request, response);
         _servletChannel = servletChannel;
         _servletApiResponse = newServletApiResponse();
+        _headers = new HttpFieldsWrapper(response.getHeaders());
     }
 
     protected ResponseWriter getWriter()
@@ -111,11 +114,6 @@ public class ServletContextResponse extends ContextResponse
         return _mimeType;
     }
 
-    protected void setMimeType(MimeTypes.Type mimeType)
-    {
-        this._mimeType = mimeType;
-    }
-
     protected Supplier<Map<String, String>> getTrailers()
     {
         return _trailers;
@@ -126,19 +124,9 @@ public class ServletContextResponse extends ContextResponse
         this._trailers = trailers;
     }
 
-    protected void setContentType(String contentType)
-    {
-        this._contentType = contentType;
-    }
-
     protected String getCharacterEncoding()
     {
         return _characterEncoding;
-    }
-
-    protected void setCharacterEncoding(String value)
-    {
-        _characterEncoding = value;
     }
 
     protected void setOutputType(OutputType outputType)
@@ -224,7 +212,7 @@ public class ServletContextResponse extends ContextResponse
     @Override
     public HttpFields.Mutable getHeaders()
     {
-        return super.getHeaders();
+        return _headers;
     }
 
     public void setContentLength(long len)
@@ -532,5 +520,120 @@ public class ServletContextResponse extends ContextResponse
          * The character encoding has been explicitly set using {@link HttpServletResponse#setCharacterEncoding(String)}.
          */
         SET_CHARACTER_ENCODING
+    }
+
+    private class HttpFieldsWrapper extends HttpFields.Mutable.Wrapper
+    {
+        public HttpFieldsWrapper(Mutable fields)
+        {
+            super(fields);
+        }
+
+        @Override
+        public HttpField onAddField(HttpField field)
+        {
+            if (field.getHeader() != null)
+            {
+                switch (field.getHeader())
+                {
+                    case CONTENT_LENGTH ->
+                    {
+                        if (!isCommitted())
+                        {
+                            _contentLength = field.getLongValue();
+                            return field;
+                        }
+                    }
+                    case CONTENT_TYPE ->
+                    {
+                        if (!isCommitted())
+                        {
+                            return setContentType(field);
+                        }
+                    }
+                }
+            }
+
+            return super.onAddField(field);
+        }
+
+        @Override
+        public boolean onRemoveField(HttpField field)
+        {
+            if (field.getHeader() != null)
+            {
+                switch (field.getHeader())
+                {
+                    case CONTENT_LENGTH ->
+                    {
+                        if (!isCommitted())
+                            _contentLength = -1;
+                    }
+                    case CONTENT_TYPE ->
+                    {
+                        if (!isCommitted())
+                        {
+                            if (_locale == null)
+                                _characterEncoding = null;
+                            _contentType = null;
+                            _mimeType = null;
+                        }
+                    }
+                }
+            }
+            return true;
+        }
+
+        private HttpField setContentType(HttpField field)
+        {
+            _contentType = field.getValue();
+            _mimeType = MimeTypes.CACHE.get(_contentType);
+
+            String charset = MimeTypes.getCharsetFromContentType(_contentType);
+            if (charset == null && _mimeType != null && _mimeType.isCharsetAssumed())
+                charset = _mimeType.getCharsetString();
+
+            if (charset == null)
+            {
+                switch (_encodingFrom)
+                {
+                    case NOT_SET:
+                        break;
+                    case DEFAULT:
+                    case INFERRED:
+                    case SET_CONTENT_TYPE:
+                    case SET_LOCALE:
+                    case SET_CHARACTER_ENCODING:
+                    {
+                        _contentType = _contentType + ";charset=" + _characterEncoding;
+                        _mimeType = MimeTypes.CACHE.get(_contentType);
+                        field = new HttpField(HttpHeader.CONTENT_TYPE, _contentType);
+                        break;
+                    }
+                    default:
+                        throw new IllegalStateException(_encodingFrom.toString());
+                }
+            }
+            else if (isWriting() && !charset.equalsIgnoreCase(_characterEncoding))
+            {
+                // too late to change the character encoding;
+                _contentType = MimeTypes.getContentTypeWithoutCharset(_contentType);
+                if (_characterEncoding != null && (_mimeType == null || !_mimeType.isCharsetAssumed()))
+                    _contentType = _contentType + ";charset=" + _characterEncoding;
+                _mimeType = MimeTypes.CACHE.get(_contentType);
+                field = new HttpField(HttpHeader.CONTENT_TYPE, _contentType);
+            }
+            else
+            {
+                _characterEncoding = charset;
+                _encodingFrom = ServletContextResponse.EncodingFrom.SET_CONTENT_TYPE;
+            }
+
+            if (HttpGenerator.__STRICT || _mimeType == null)
+                return field;
+
+            _contentType = _mimeType.asString();
+            return _mimeType.getContentTypeField();
+        }
     }
 }
