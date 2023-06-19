@@ -14,7 +14,7 @@
   <properties>
     <ee9.module>jetty-ee9-servlet</ee9.module>
     <bundle-symbolic-name>${project.groupId}.servlet</bundle-symbolic-name>
-    <spotbugs.onlyAnalyze>org.eclipse.jetty.*</spotbugs.onlyAnalyze>
+    <spotbugs.onlyAnalyze>org.eclipse.jetty.ee8.servlet.*</spotbugs.onlyAnalyze>
   </properties>
 
   <build>

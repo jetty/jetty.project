@@ -12,7 +12,7 @@
 
   <properties>
     <bundle-symbolic-name>${project.groupId}.deploy</bundle-symbolic-name>
-    <spotbugs.onlyAnalyze>org.eclipse.deploy.*</spotbugs.onlyAnalyze>
+    <spotbugs.onlyAnalyze>org.eclipse.jetty.deploy.*</spotbugs.onlyAnalyze>
   </properties>
 
   <build>
