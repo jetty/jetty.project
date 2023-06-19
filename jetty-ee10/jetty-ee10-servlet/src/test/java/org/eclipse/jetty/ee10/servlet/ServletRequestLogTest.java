@@ -303,7 +303,8 @@ public class ServletRequestLogTest
         CaptureLog captureLog = new CaptureLog();
         server.setRequestLog(captureLog);
 
-        server.setHandler(new EventsHandler(contexts) {
+        server.setHandler(new EventsHandler(contexts)
+        {
             @Override
             protected void onComplete(Request request, Throwable failure)
             {
@@ -376,7 +377,8 @@ public class ServletRequestLogTest
         server.setRequestLog(captureLog);
 
         ContextHandlerCollection contexts = new ContextHandlerCollection();
-        server.setHandler(new EventsHandler(contexts) {
+        server.setHandler(new EventsHandler(contexts)
+        {
             @Override
             protected void onComplete(Request request, Throwable failure)
             {
@@ -446,7 +448,8 @@ public class ServletRequestLogTest
         server.setRequestLog(captureLog);
 
         ContextHandlerCollection contexts = new ContextHandlerCollection();
-        server.setHandler(new EventsHandler(contexts) {
+        server.setHandler(new EventsHandler(contexts)
+        {
             @Override
             protected void onComplete(Request request, Throwable failure)
             {
@@ -523,7 +526,8 @@ public class ServletRequestLogTest
         // The behavior as defined in etc/jetty.xml (as is)
         // id="Contexts"
         ContextHandlerCollection contexts = new ContextHandlerCollection();
-        server.setHandler(new EventsHandler(contexts) {
+        server.setHandler(new EventsHandler(contexts)
+        {
             @Override
             protected void onComplete(Request request, Throwable failure)
             {

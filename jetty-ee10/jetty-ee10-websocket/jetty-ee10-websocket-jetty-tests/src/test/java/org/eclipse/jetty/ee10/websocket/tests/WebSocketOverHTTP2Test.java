@@ -125,7 +125,8 @@ public class WebSocketOverHTTP2Test
         context.addServlet(new ServletHolder(servlet), "/ws/*");
         JettyWebSocketServletContainerInitializer.configure(context, null);
 
-        server.setHandler(new EventsHandler(server.getHandler()) {
+        server.setHandler(new EventsHandler(server.getHandler())
+        {
             @Override
             protected void onComplete(Request request, Throwable failure)
             {
