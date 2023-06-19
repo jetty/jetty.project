@@ -28,7 +28,7 @@ import org.eclipse.jetty.client.Response;
 import org.eclipse.jetty.ee9.webapp.Configuration;
 import org.eclipse.jetty.ee9.webapp.Configurations;
 import org.eclipse.jetty.ee9.websocket.jakarta.client.JakartaWebSocketClientContainerProvider;
-import org.eclipse.jetty.ee9.websocket.jakarta.client.internal.JakartaWebSocketShutdownContainer;
+import org.eclipse.jetty.ee9.websocket.jakarta.client.JakartaWebSocketShutdownContainer;
 import org.eclipse.jetty.ee9.websocket.jakarta.common.JakartaWebSocketContainer;
 import org.eclipse.jetty.ee9.websocket.jakarta.server.config.JakartaWebSocketConfiguration;
 import org.eclipse.jetty.http.BadMessageException;
