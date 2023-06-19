@@ -674,7 +674,7 @@ public class ServletChannel
                         // RFC 7230, section 3.3.
                         if (!_servletContextRequest.isHead() &&
                             getServletContextResponse().getStatus() != HttpStatus.NOT_MODIFIED_304 &&
-                            getServletContextResponse().isContentInComplete(_servletContextRequest.getHttpOutput().getWritten()))
+                            getServletContextResponse().isContentIncomplete(_servletContextRequest.getHttpOutput().getWritten()))
                         {
                             if (sendErrorOrAbort("Insufficient content written"))
                                 break;

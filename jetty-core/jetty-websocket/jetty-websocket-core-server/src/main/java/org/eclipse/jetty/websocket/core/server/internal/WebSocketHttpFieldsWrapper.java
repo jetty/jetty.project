@@ -36,7 +36,6 @@ public class WebSocketHttpFieldsWrapper extends HttpFields.Mutable.Wrapper
     @Override
     public HttpField onAddField(HttpField field)
     {
-        System.err.println("add " + field);
         if (field.getHeader() != null)
         {
             return switch (field.getHeader())
@@ -62,7 +61,6 @@ public class WebSocketHttpFieldsWrapper extends HttpFields.Mutable.Wrapper
     @Override
     public boolean onRemoveField(HttpField field)
     {
-        System.err.println("remove " + field);
         if (field.getHeader() != null)
         {
             return switch (field.getHeader())

@@ -162,8 +162,6 @@ public class ServletContextResponse extends ContextResponse
 
     public HttpOutput getHttpOutput()
     {
-        if (_servletChannel.getCallback() == null)
-            new RuntimeException("getHttpOutput called before ServletHandler").printStackTrace();
         return _servletChannel.getHttpOutput();
     }
 
@@ -174,8 +172,6 @@ public class ServletContextResponse extends ContextResponse
 
     public ServletApiResponse getServletApiResponse()
     {
-        if (_servletChannel.getCallback() == null)
-            new RuntimeException("getServletApiResponse called before ServletHandler").printStackTrace();
         return _servletApiResponse;
     }
 
@@ -205,7 +201,7 @@ public class ServletContextResponse extends ContextResponse
         return (_contentLength >= 0 && written >= _contentLength);
     }
 
-    public boolean isContentInComplete(long written)
+    public boolean isContentIncomplete(long written)
     {
         return (_contentLength >= 0 && written < _contentLength);
     }

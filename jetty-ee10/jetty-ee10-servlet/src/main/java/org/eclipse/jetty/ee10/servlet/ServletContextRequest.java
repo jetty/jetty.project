@@ -243,8 +243,9 @@ public class ServletContextRequest extends ContextRequest
     }
 
     /**
-     * @return The current {@link ContextHandler.ScopedContext context} used for this error handling for this request.  If the request is asynchronous,
-     * then it is the context that called async. Otherwise it is the last non-null context passed to #setContext
+     * @return The current {@link ContextHandler.ScopedContext context} used for this error handling for this request.
+     * If the request is asynchronous, then it is the context that called async. Otherwise, it is the last non-null
+     * context passed to #setContext
      */
     public ServletContextHandler.ServletScopedContext getErrorContext()
     {
@@ -264,8 +265,6 @@ public class ServletContextRequest extends ContextRequest
 
     public ServletApiRequest getServletApiRequest()
     {
-        if (_servletChannel.getCallback() == null)
-            new RuntimeException("getServletApiRequest called before ServletHandler").printStackTrace();
         return _servletApiRequest;
     }
 
