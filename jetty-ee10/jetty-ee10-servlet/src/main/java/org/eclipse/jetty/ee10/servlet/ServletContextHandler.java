@@ -1654,9 +1654,6 @@ public class ServletContextHandler extends ContextHandler
             setServletHandler((ServletHandler)handler);
         else
         {
-            // TODO Fully support handler insertion.
-            //      Need to delay wrapping request/response until request arrives at ServletHandler.
-            LOG.warn("Insertion of Handler.Wrapper in EE10 context is not well supported");
             Singleton tail = handler.getTail();
             if (tail.getHandler() != null)
                 throw new IllegalArgumentException("bad tail of inserted wrapper chain");
