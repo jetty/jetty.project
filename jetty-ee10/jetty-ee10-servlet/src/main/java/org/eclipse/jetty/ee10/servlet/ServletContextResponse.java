@@ -199,9 +199,9 @@ public class ServletContextResponse extends ContextResponse
         return (_contentLength >= 0 && written >= _contentLength);
     }
 
-    public boolean isContentComplete(long written)
+    public boolean isContentInComplete(long written)
     {
-        return (_contentLength < 0 || written >= _contentLength);
+        return (_contentLength >= 0 && written < _contentLength);
     }
 
     public void setContentLength(int len)
@@ -411,19 +411,6 @@ public class ServletContextResponse extends ContextResponse
     }
 
     /**
-     * Set the Character Encoding and EncodingFrom in the raw, with no manipulation
-     * of the ContentType value, MimeType value, or headers.
-     *
-     * @param encoding the character encoding
-     * @param from where encoding came from
-     */
-    protected void setRawCharacterEncoding(String encoding, EncodingFrom from)
-    {
-        _characterEncoding = encoding;
-        _encodingFrom = from;
-    }
-
-    /**
      * Update the Content-Type, MimeType, and headers from the provided Character Encoding and
      * EncodingFrom.
      * @param encoding the character encoding
@@ -540,8 +527,7 @@ public class ServletContextResponse extends ContextResponse
                     {
                         if (!isCommitted())
                         {
-                            _contentLength = field.getLongValue();
-                            return field;
+                            return setContentLength(field);
                         }
                     }
                     case CONTENT_TYPE ->
@@ -582,6 +568,33 @@ public class ServletContextResponse extends ContextResponse
                 }
             }
             return true;
+        }
+
+        private HttpField setContentLength(HttpField field)
+        {
+            long len = field.getLongValue();
+            long written = _servletChannel.getHttpOutput().getWritten();
+
+            if (len > 0 && written > len)
+                throw new IllegalArgumentException("setContentLength(" + len + ") when already written " + written);
+            if (len == 0 && written > 0)
+                throw new IllegalArgumentException("setContentLength(0) when already written " + written);
+
+            _contentLength = len;
+
+            if (len > 0 && isAllContentWritten(written))
+            {
+                try
+                {
+                    closeOutput();
+                }
+                catch (IOException e)
+                {
+                    throw new RuntimeIOException(e);
+                }
+            }
+
+            return field;
         }
 
         private HttpField setContentType(HttpField field)

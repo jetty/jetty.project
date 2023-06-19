@@ -35,11 +35,12 @@ import org.eclipse.jetty.http.HttpFields;
 import org.eclipse.jetty.http.HttpHeader;
 import org.eclipse.jetty.http.HttpStatus;
 import org.eclipse.jetty.http.HttpVersion;
-import org.eclipse.jetty.io.RuntimeIOException;
+import org.eclipse.jetty.server.Request;
 import org.eclipse.jetty.server.Response;
 import org.eclipse.jetty.session.ManagedSession;
 import org.eclipse.jetty.session.SessionManager;
 import org.eclipse.jetty.util.Blocker;
+import org.eclipse.jetty.util.Callback;
 import org.eclipse.jetty.util.StringUtil;
 
 /**
@@ -72,12 +73,23 @@ public class ServletApiResponse implements HttpServletResponse
     {
         return getServletContextResponse().getServletContextRequest();
     }
-    
+
+    /**
+     * @return The ServetContextResponse as wrapped by the {@link ServletContextHandler}.
+     * @see #getResponse().
+     */
     public ServletContextResponse getServletContextResponse()
     {
         return _servletContextResponse;
     }
-    
+
+    /**
+     * @return The core {@link Response} associated with the API response.
+     *         This may differ from {@link #getServletContextResponse()} if the response was wrapped by another handler
+     *         after the {@link ServletContextHandler} and passed to {@link ServletChannel#handle(Request, Response, Callback)}.
+     * @see #getServletContextResponse()
+     * @see ServletChannel#handle(Request, Response, Callback)
+     */
     public Response getResponse()
     {
         return _servletChannel.getResponse();
@@ -303,45 +315,7 @@ public class ServletApiResponse implements HttpServletResponse
     @Override
     public void setContentLength(int len)
     {
-        // Protect from setting after committed as default handling
-        // of a servlet HEAD request ALWAYS sets _content length, even
-        // if the getHandling committed the response!
-        if (isCommitted())
-            return;
-
-        if (len > 0)
-        {
-            long written = _servletChannel.getHttpOutput().getWritten();
-            if (written > len)
-                throw new IllegalArgumentException("setContentLength(" + len + ") when already written " + written);
-
-            getServletContextResponse().setContentLength(len);
-            getServletContextResponse().getHeaders().put(HttpHeader.CONTENT_LENGTH, len);
-            if (getServletContextResponse().isAllContentWritten(written))
-            {
-                try
-                {
-                    getServletContextResponse().closeOutput();
-                }
-                catch (IOException e)
-                {
-                    throw new RuntimeIOException(e);
-                }
-            }
-        }
-        else if (len == 0)
-        {
-            long written = _servletChannel.getHttpOutput().getWritten();
-            if (written > 0)
-                throw new IllegalArgumentException("setContentLength(0) when already written " + written);
-            getServletContextResponse().setContentLength(len);
-            getServletContextResponse().getHeaders().put(HttpFields.CONTENT_LENGTH_0);
-        }
-        else
-        {
-            getServletContextResponse().setContentLength(len);
-            getServletContextResponse().getHeaders().remove(HttpHeader.CONTENT_LENGTH);
-        }
+        setContentLengthLong(len);
     }
 
     @Override
@@ -352,8 +326,13 @@ public class ServletApiResponse implements HttpServletResponse
         // if the getHandling committed the response!
         if (isCommitted())
             return;
-        getServletContextResponse().setContentLength(len);
-        getServletContextResponse().getHeaders().put(HttpHeader.CONTENT_LENGTH, len);
+
+        if (len > 0)
+            getResponse().getHeaders().put(HttpHeader.CONTENT_LENGTH, len);
+        else if (len == 0)
+            getResponse().getHeaders().put(HttpFields.CONTENT_LENGTH_0);
+        else
+            getResponse().getHeaders().remove(HttpHeader.CONTENT_LENGTH);
     }
 
     @Override

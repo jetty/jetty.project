@@ -77,9 +77,11 @@ import org.eclipse.jetty.server.ConnectionMetaData;
 import org.eclipse.jetty.server.FormFields;
 import org.eclipse.jetty.server.HttpCookieUtils;
 import org.eclipse.jetty.server.Request;
+import org.eclipse.jetty.server.Response;
 import org.eclipse.jetty.server.Session;
 import org.eclipse.jetty.session.AbstractSessionManager;
 import org.eclipse.jetty.session.ManagedSession;
+import org.eclipse.jetty.util.Callback;
 import org.eclipse.jetty.util.Fields;
 import org.eclipse.jetty.util.HostPort;
 import org.eclipse.jetty.util.IO;
@@ -111,7 +113,6 @@ public class ServletApiRequest implements HttpServletRequest
     private Fields _contentParameters;
     private Fields _parameters;
     private Fields _queryParameters;
-    private String _method;
     private ServletMultiPartFormData.Parts _parts;
     private boolean _asyncSupported = true;
 
@@ -144,27 +145,29 @@ public class ServletApiRequest implements HttpServletRequest
     @Override
     public String getMethod()
     {
-        if (_method == null)
-            return getRequest().getMethod();
-        else
-            return _method;
+        return getRequest().getMethod();
     }
 
-    //TODO shouldn't really be public?
-    public void setMethod(String method)
+    /**
+     * @return The {@link ServletContextRequest} as wrapped by the {@link ServletContextHandler}.
+     * @see #getRequest()
+     */
+    public ServletContextRequest getServletContextRequest()
     {
-        _method = method;
+        return _servletContextRequest;
     }
 
+    /**
+     * @return The core {@link Request} associated with the request. This may differ from {@link #getServletContextRequest()}
+     *         if the request was wrapped by another handler after the {@link ServletContextHandler} and passed
+     *         to {@link ServletChannel#handle(Request, Response, Callback)}.
+     * @see #getServletContextRequest()
+     * @see ServletChannel#handle(Request, Response, Callback)
+     */
     public Request getRequest()
     {
         ServletChannel servletChannel = _servletChannel;
         return servletChannel == null ? _servletContextRequest : servletChannel.getRequest();
-    }
-
-    public ServletContextRequest getServletContextRequest()
-    {
-        return _servletContextRequest;
     }
 
     public HttpFields getFields()
@@ -793,20 +796,6 @@ public class ServletApiRequest implements HttpServletRequest
     public Map<String, String[]> getParameterMap()
     {
         return Collections.unmodifiableMap(getParameters().toStringArrayMap());
-    }
-
-    public Fields getContentParameters()
-    {
-        getParameters(); // ensure extracted
-        return _contentParameters;
-    }
-
-    public void setContentParameters(Fields params)
-    {
-        if (params == null || params.getSize() == 0)
-            _contentParameters = ServletContextRequest.NO_PARAMS;
-        else
-            _contentParameters = params;
     }
 
     private Fields getParameters()

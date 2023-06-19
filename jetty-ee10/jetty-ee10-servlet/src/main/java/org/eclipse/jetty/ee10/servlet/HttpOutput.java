@@ -333,7 +333,7 @@ public class HttpOutput extends ServletOutputStream implements Runnable
 
                 case PENDING: // an async write is pending and may complete at any time
                     // If this is not the last write, then we must abort
-                    if (!_servletChannel.getServletContextResponse().isContentComplete(_written))
+                    if (_servletChannel.getServletContextResponse().isContentInComplete(_written))
                         error = new CancellationException("Completed whilst write pending");
                     break;
 

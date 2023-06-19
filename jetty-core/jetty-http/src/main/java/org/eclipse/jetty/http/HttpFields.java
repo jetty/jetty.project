@@ -1205,6 +1205,9 @@ public interface HttpFields extends Iterable<HttpField>, Supplier<HttpFields>
             return new HttpField(ensure.getHeader(), ensure.getName(), v.toString());
         }
 
+        /**
+         * A wrapper of {@link HttpFields}.
+         */
         class Wrapper implements Mutable
         {
             private final Mutable _fields;
@@ -1214,11 +1217,21 @@ public interface HttpFields extends Iterable<HttpField>, Supplier<HttpFields>
                 _fields = fields;
             }
 
+            /**
+             * Called when a field is added (including as part of a put).
+             * @param field The field being added.
+             * @return The field to add, or null if the add is to be ignored.
+             */
             public HttpField onAddField(HttpField field)
             {
                 return field;
             }
 
+            /**
+             * Called when a field is removed (including as part of a put).
+             * @param field The field being removed.
+             * @return True if the field should be removed, false otherwise.
+             */
             public boolean onRemoveField(HttpField field)
             {
                 return true;
