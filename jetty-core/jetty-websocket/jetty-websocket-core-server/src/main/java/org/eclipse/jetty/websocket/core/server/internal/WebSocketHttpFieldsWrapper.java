@@ -14,9 +14,12 @@
 package org.eclipse.jetty.websocket.core.server.internal;
 
 import java.util.Collections;
+import java.util.List;
 
 import org.eclipse.jetty.http.HttpField;
 import org.eclipse.jetty.http.HttpFields;
+import org.eclipse.jetty.http.HttpHeader;
+import org.eclipse.jetty.http.HttpHeaderValue;
 import org.eclipse.jetty.websocket.core.ExtensionConfig;
 import org.eclipse.jetty.websocket.core.server.ServerUpgradeResponse;
 
@@ -33,6 +36,7 @@ public class WebSocketHttpFieldsWrapper extends HttpFields.Mutable.Wrapper
     @Override
     public HttpField onAddField(HttpField field)
     {
+        System.err.println("add " + field);
         if (field.getHeader() != null)
         {
             return switch (field.getHeader())
@@ -40,13 +44,13 @@ public class WebSocketHttpFieldsWrapper extends HttpFields.Mutable.Wrapper
                 case SEC_WEBSOCKET_SUBPROTOCOL ->
                 {
                     _response.setAcceptedSubProtocol(field.getValue());
-                    yield field;
+                    yield null;
                 }
 
                 case SEC_WEBSOCKET_EXTENSIONS ->
                 {
                     _response.addExtensions(ExtensionConfig.parseList(field.getValue()));
-                    yield field;
+                    yield null;
                 }
 
                 default -> super.onAddField(field);
@@ -58,6 +62,7 @@ public class WebSocketHttpFieldsWrapper extends HttpFields.Mutable.Wrapper
     @Override
     public boolean onRemoveField(HttpField field)
     {
+        System.err.println("remove " + field);
         if (field.getHeader() != null)
         {
             return switch (field.getHeader())
@@ -71,7 +76,7 @@ public class WebSocketHttpFieldsWrapper extends HttpFields.Mutable.Wrapper
                 case SEC_WEBSOCKET_EXTENSIONS ->
                 {
                     // TODO: why add extensions??
-                    _response.addExtensions(Collections.emptyList());
+                    _response.setExtensions(Collections.emptyList());
                     yield false;
                 }
 
@@ -79,5 +84,50 @@ public class WebSocketHttpFieldsWrapper extends HttpFields.Mutable.Wrapper
             };
         }
         return super.onRemoveField(field);
+    }
+
+    @Override
+    public Mutable put(HttpField field)
+    {
+        // Need to override put methods as putting extensions clears them, even if field does not exist.
+        if (field.getHeader() == HttpHeader.SEC_WEBSOCKET_EXTENSIONS)
+            _response.setExtensions(Collections.emptyList());
+        return super.put(field);
+    }
+
+    @Override
+    public Mutable put(String name, String value)
+    {
+        // Need to override put methods as putting extensions clears them, even if field does not exist.
+        if (HttpHeader.SEC_WEBSOCKET_EXTENSIONS.is(name))
+            _response.setExtensions(Collections.emptyList());
+        return super.put(name, value);
+    }
+
+    @Override
+    public Mutable put(HttpHeader header, HttpHeaderValue value)
+    {
+        // Need to override put methods as putting extensions clears them, even if field does not exist.
+        if (header == HttpHeader.SEC_WEBSOCKET_EXTENSIONS)
+            _response.setExtensions(Collections.emptyList());
+        return super.put(header, value);
+    }
+
+    @Override
+    public Mutable put(HttpHeader header, String value)
+    {
+        // Need to override put methods as putting extensions clears them, even if field does not exist.
+        if (header == HttpHeader.SEC_WEBSOCKET_EXTENSIONS)
+            _response.setExtensions(Collections.emptyList());
+        return super.put(header, value);
+    }
+
+    @Override
+    public Mutable put(String name, List<String> list)
+    {
+        // Need to override put methods as putting extensions clears them, even if field does not exist.
+        if (HttpHeader.SEC_WEBSOCKET_EXTENSIONS.is(name))
+            _response.setExtensions(Collections.emptyList());
+        return super.put(name, list);
     }
 }
