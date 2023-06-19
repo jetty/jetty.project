@@ -206,7 +206,7 @@ public class DigestAuthenticator extends LoginAuthenticator
             byte[] nounce = new byte[24];
             _random.nextBytes(nounce);
 
-            nonce = new Nonce(Base64.getEncoder().encodeToString(nounce), request.getTimeStamp(), getMaxNonceCount());
+            nonce = new Nonce(Base64.getEncoder().encodeToString(nounce), Request.getTimeStamp(request), getMaxNonceCount());
         }
         while (_nonceMap.putIfAbsent(nonce._nonce, nonce) != null);
         _nonceQueue.add(nonce);
@@ -222,7 +222,7 @@ public class DigestAuthenticator extends LoginAuthenticator
     private int checkNonce(Digest digest, Request request)
     {
         // firstly let's expire old nonces
-        long expired = request.getTimeStamp() - getMaxNonceAge();
+        long expired = Request.getTimeStamp(request) - getMaxNonceAge();
         Nonce nonce = _nonceQueue.peek();
         while (nonce != null && nonce._ts < expired)
         {

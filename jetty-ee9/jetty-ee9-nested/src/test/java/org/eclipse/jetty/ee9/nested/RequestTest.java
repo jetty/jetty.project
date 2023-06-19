@@ -37,8 +37,8 @@ import java.util.Set;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.concurrent.atomic.AtomicReference;
+import java.util.function.Consumer;
 import java.util.function.Function;
-import java.util.function.Predicate;
 import java.util.stream.Stream;
 
 import jakarta.servlet.MultipartConfigElement;
@@ -2338,7 +2338,7 @@ public class RequestTest
 
         public TestCoreRequest(String uri, HttpFields.Mutable fields)
         {
-            super(null, null, null);
+            super(new MockCoreRequest(), null, null);
             _uri = uri;
             _fields = fields;
             _connectionMetaData = new MockConnectionMetaData();
@@ -2393,13 +2393,7 @@ public class RequestTest
         }
 
         @Override
-        public long getTimeStamp()
-        {
-            return 0;
-        }
-
-        @Override
-        public long getNanoTime()
+        public long getHeadersNanoTime()
         {
             return 0;
         }
@@ -2439,9 +2433,8 @@ public class RequestTest
         }
 
         @Override
-        public boolean addErrorListener(Predicate<Throwable> onError)
+        public void addFailureListener(Consumer<Throwable> onFailure)
         {
-            return false;
         }
 
         @Override

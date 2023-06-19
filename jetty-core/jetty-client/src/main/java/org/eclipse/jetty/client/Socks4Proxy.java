@@ -150,9 +150,9 @@ public class Socks4Proxy extends ProxyConfiguration.Proxy
         }
 
         @Override
-        public boolean onIdleExpired()
+        public boolean onIdleExpired(TimeoutException timeout)
         {
-            failed(new TimeoutException("Idle timeout expired"));
+            failed(timeout);
             return false;
         }
 

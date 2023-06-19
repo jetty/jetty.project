@@ -520,7 +520,7 @@ public class CustomRequestLogTest
             @Override
             public boolean handle(Request request, Response response, Callback callback)
             {
-                requestTimeRef.set(request.getTimeStamp());
+                requestTimeRef.set(Request.getTimeStamp(request));
                 callback.succeeded();
                 return true;
             }
@@ -545,7 +545,7 @@ public class CustomRequestLogTest
             @Override
             public boolean handle(Request request, Response response, Callback callback)
             {
-                requestTimeRef.set(request.getTimeStamp());
+                requestTimeRef.set(Request.getTimeStamp(request));
                 callback.succeeded();
                 return true;
             }
@@ -578,7 +578,7 @@ public class CustomRequestLogTest
             @Override
             public boolean handle(Request request, Response response, Callback callback) throws Exception
             {
-                requestTimeRef.set(request.getNanoTime());
+                requestTimeRef.set(request.getBeginNanoTime());
                 Thread.sleep(delay);
                 callback.succeeded();
                 return true;

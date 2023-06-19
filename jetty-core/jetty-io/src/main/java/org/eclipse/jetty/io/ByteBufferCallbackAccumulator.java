@@ -21,8 +21,10 @@ import org.eclipse.jetty.util.BufferUtil;
 import org.eclipse.jetty.util.Callback;
 
 /**
- * This class can be used to accumulate pairs of {@link ByteBuffer} and {@link Callback}, and eventually copy
- * these into a single {@link ByteBuffer} or byte array and succeed the callbacks.
+ * <p>This class can be used to accumulate pairs of {@link ByteBuffer} and {@link Callback}, and eventually copy
+ * these into a single {@link ByteBuffer} or byte array and succeed the callbacks.</p>
+ *
+ * <p>This class is not thread safe and callers must do mutual exclusion.</p>
  */
 public class ByteBufferCallbackAccumulator
 {
@@ -89,11 +91,14 @@ public class ByteBufferCallbackAccumulator
 
     public void fail(Throwable t)
     {
-        for (Entry entry : _entries)
+        // In some usages the callback recursively fails the accumulator.
+        // So we copy and clear to avoid double completing the callback.
+        ArrayList<Entry> entries = new ArrayList<>(_entries);
+        _entries.clear();
+        _length = 0;
+        for (Entry entry : entries)
         {
             entry.callback.failed(t);
         }
-        _entries.clear();
-        _length = 0;
     }
 }

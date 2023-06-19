@@ -20,6 +20,7 @@ import java.util.EventListener;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Set;
+import java.util.concurrent.TimeoutException;
 
 import jakarta.servlet.AsyncListener;
 import jakarta.servlet.ServletRequest;
@@ -108,6 +109,7 @@ public class ServletContextRequest extends ContextRequest
         _matchedPath = matchedResource.getMatchedPath();
         _response =  newServletContextResponse(response);
         _sessionManager = sessionManager;
+        addIdleTimeoutListener(this::onIdleTimeout);
     }
 
     protected ServletApiRequest newServletApiRequest()
@@ -129,6 +131,11 @@ public class ServletContextRequest extends ContextRequest
     protected ServletContextResponse newServletContextResponse(Response response)
     {
         return new ServletContextResponse(_servletChannel, this, response);
+    }
+
+    private boolean onIdleTimeout(TimeoutException timeout)
+    {
+        return _servletChannel.getState().onIdleTimeout(timeout);
     }
 
     public String getDecodedPathInContext()

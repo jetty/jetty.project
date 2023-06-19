@@ -47,11 +47,6 @@ public interface HttpStream extends Callback
     String getId();
 
     /**
-     * @return the nanoTime when this HttpStream was created
-     */
-    long getNanoTime();
-
-    /**
      * <p>Reads a chunk of content, with the same semantic as {@link Content.Source#read()}.</p>
      * <p>This method is called from the implementation of {@link Request#read()}.</p>
      *
@@ -98,6 +93,10 @@ public interface HttpStream extends Callback
     {
         throw new UnsupportedOperationException();
     }
+
+    long getIdleTimeout();
+
+    void setIdleTimeout(long idleTimeoutMs);
 
     boolean isCommitted();
 
@@ -157,12 +156,6 @@ public interface HttpStream extends Callback
         }
 
         @Override
-        public final long getNanoTime()
-        {
-            return getWrapped().getNanoTime();
-        }
-
-        @Override
         public Content.Chunk read()
         {
             return getWrapped().read();
@@ -190,6 +183,18 @@ public interface HttpStream extends Callback
         public void push(MetaData.Request resource)
         {
             getWrapped().push(resource);
+        }
+
+        @Override
+        public long getIdleTimeout()
+        {
+            return getWrapped().getIdleTimeout();
+        }
+
+        @Override
+        public void setIdleTimeout(long idleTimeoutMs)
+        {
+            getWrapped().setIdleTimeout(idleTimeoutMs);
         }
 
         @Override

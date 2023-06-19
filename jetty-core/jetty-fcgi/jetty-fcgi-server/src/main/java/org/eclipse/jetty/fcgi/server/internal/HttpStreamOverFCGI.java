@@ -15,6 +15,7 @@ package org.eclipse.jetty.fcgi.server.internal;
 
 import java.nio.ByteBuffer;
 import java.util.Locale;
+import java.util.concurrent.TimeoutException;
 
 import org.eclipse.jetty.fcgi.FCGI;
 import org.eclipse.jetty.fcgi.generator.Flusher;
@@ -52,7 +53,6 @@ public class HttpStreamOverFCGI implements HttpStream
     private final ServerGenerator _generator;
     private final HttpChannel _httpChannel;
     private final int _id;
-    private final long _nanoTime;
     private String _method;
     private HostPortHttpField hostPort;
     private String _path;
@@ -70,7 +70,6 @@ public class HttpStreamOverFCGI implements HttpStream
         _generator = generator;
         _httpChannel = httpChannel;
         _id = id;
-        _nanoTime = NanoTime.now();
     }
 
     public HttpChannel getHttpChannel()
@@ -82,12 +81,6 @@ public class HttpStreamOverFCGI implements HttpStream
     public String getId()
     {
         return String.valueOf(_id);
-    }
-
-    @Override
-    public long getNanoTime()
-    {
-        return _nanoTime;
     }
 
     public void onHeader(HttpField field)
@@ -113,7 +106,7 @@ public class HttpStreamOverFCGI implements HttpStream
     {
         String pathQuery = URIUtil.addPathQuery(_path, _query);
         HttpScheme scheme = StringUtil.isEmpty(_secure) ? HttpScheme.HTTP : HttpScheme.HTTPS;
-        MetaData.Request request = new MetaData.Request(_method, scheme.asString(), hostPort, pathQuery, HttpVersion.fromString(_version), _headers, -1);
+        MetaData.Request request = new MetaData.Request(NanoTime.now(), _method, scheme.asString(), hostPort, pathQuery, HttpVersion.fromString(_version), _headers, -1); // TODO #9900 make beginNanoTime accurate
         Runnable task = _httpChannel.onRequest(request);
         _allHeaders.forEach(field -> _httpChannel.getRequest().setAttribute(field.getName(), field.getValue()));
         // TODO: here we just execute the task.
@@ -302,6 +295,18 @@ public class HttpStreamOverFCGI implements HttpStream
     }
 
     @Override
+    public long getIdleTimeout()
+    {
+        return _connection.getEndPoint().getIdleTimeout();
+    }
+
+    @Override
+    public void setIdleTimeout(long idleTimeoutMs)
+    {
+        _connection.getEndPoint().setIdleTimeout(idleTimeoutMs);
+    }
+
+    @Override
     public boolean isCommitted()
     {
         return _committed;
@@ -328,9 +333,9 @@ public class HttpStreamOverFCGI implements HttpStream
         _connection.onCompleted(x);
     }
 
-    public boolean onIdleTimeout(Throwable timeout)
+    public boolean onIdleTimeout(TimeoutException timeout)
     {
-        Runnable task = _httpChannel.onFailure(timeout);
+        Runnable task = _httpChannel.onIdleTimeout(timeout);
         if (task != null)
             execute(task);
         return false;

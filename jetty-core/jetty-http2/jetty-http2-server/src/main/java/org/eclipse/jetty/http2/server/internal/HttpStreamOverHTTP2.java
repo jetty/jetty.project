@@ -14,6 +14,7 @@
 package org.eclipse.jetty.http2.server.internal;
 
 import java.nio.ByteBuffer;
+import java.util.concurrent.TimeoutException;
 import java.util.function.BiConsumer;
 import java.util.function.Supplier;
 
@@ -43,7 +44,6 @@ import org.eclipse.jetty.server.HttpStream;
 import org.eclipse.jetty.server.TunnelSupport;
 import org.eclipse.jetty.util.BufferUtil;
 import org.eclipse.jetty.util.Callback;
-import org.eclipse.jetty.util.NanoTime;
 import org.eclipse.jetty.util.Promise;
 import org.eclipse.jetty.util.thread.AutoLock;
 import org.eclipse.jetty.util.thread.Invocable;
@@ -58,7 +58,6 @@ public class HttpStreamOverHTTP2 implements HttpStream, HTTP2Channel.Server
     private final HTTP2ServerConnection _connection;
     private final HttpChannel _httpChannel;
     private final HTTP2Stream _stream;
-    private final long _nanoTime;
     private MetaData.Request _requestMetaData;
     private MetaData.Response _responseMetaData;
     private TunnelSupport tunnelSupport;
@@ -72,19 +71,12 @@ public class HttpStreamOverHTTP2 implements HttpStream, HTTP2Channel.Server
         _connection = connection;
         _httpChannel = httpChannel;
         _stream = stream;
-        _nanoTime = NanoTime.now();
     }
 
     @Override
     public String getId()
     {
         return String.valueOf(_stream.getId());
-    }
-
-    @Override
-    public long getNanoTime()
-    {
-        return _nanoTime;
     }
 
     public Runnable onRequest(HeadersFrame frame)
@@ -452,6 +444,18 @@ public class HttpStreamOverHTTP2 implements HttpStream, HTTP2Channel.Server
     }
 
     @Override
+    public long getIdleTimeout()
+    {
+        return _stream.getIdleTimeout();
+    }
+
+    @Override
+    public void setIdleTimeout(long idleTimeoutMs)
+    {
+        _stream.setIdleTimeout(idleTimeoutMs);
+    }
+
+    @Override
     public void push(MetaData.Request resource)
     {
         if (!_stream.getSession().isPushEnabled())
@@ -558,9 +562,9 @@ public class HttpStreamOverHTTP2 implements HttpStream, HTTP2Channel.Server
     }
 
     @Override
-    public void onTimeout(Throwable failure, BiConsumer<Runnable, Boolean> consumer)
+    public void onTimeout(TimeoutException timeout, BiConsumer<Runnable, Boolean> consumer)
     {
-        Runnable task = _httpChannel.onFailure(failure);
+        Runnable task = _httpChannel.onIdleTimeout(timeout);
         boolean idle = !_httpChannel.isRequestHandled();
         consumer.accept(task, idle);
     }

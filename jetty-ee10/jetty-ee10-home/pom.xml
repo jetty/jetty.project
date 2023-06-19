@@ -187,6 +187,7 @@
               <outputDirectory>${assembly-directory}/lib</outputDirectory>
             </configuration>
           </execution>
+
           <execution>
             <id>copy-lib-transaction-api-src-deps</id>
             <phase>generate-resources</phase>

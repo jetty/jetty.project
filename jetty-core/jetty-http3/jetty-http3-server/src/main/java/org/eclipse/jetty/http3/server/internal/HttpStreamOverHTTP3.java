@@ -16,6 +16,7 @@ package org.eclipse.jetty.http3.server.internal;
 import java.io.IOException;
 import java.nio.ByteBuffer;
 import java.util.concurrent.CompletableFuture;
+import java.util.concurrent.TimeoutException;
 import java.util.function.BiConsumer;
 import java.util.function.Supplier;
 
@@ -38,7 +39,6 @@ import org.eclipse.jetty.server.HttpChannel;
 import org.eclipse.jetty.server.HttpStream;
 import org.eclipse.jetty.util.BufferUtil;
 import org.eclipse.jetty.util.Callback;
-import org.eclipse.jetty.util.NanoTime;
 import org.eclipse.jetty.util.thread.AutoLock;
 import org.eclipse.jetty.util.thread.Invocable;
 import org.slf4j.Logger;
@@ -49,7 +49,6 @@ public class HttpStreamOverHTTP3 implements HttpStream
     private static final Logger LOG = LoggerFactory.getLogger(HttpStreamOverHTTP3.class);
 
     private final AutoLock lock = new AutoLock();
-    private final long nanoTime = NanoTime.now();
     private final ServerHTTP3StreamConnection connection;
     private final HttpChannel httpChannel;
     private final HTTP3StreamServer stream;
@@ -70,12 +69,6 @@ public class HttpStreamOverHTTP3 implements HttpStream
     public String getId()
     {
         return String.valueOf(stream.getId());
-    }
-
-    @Override
-    public long getNanoTime()
-    {
-        return nanoTime;
     }
 
     public Runnable onRequest(HeadersFrame frame)
@@ -472,6 +465,18 @@ public class HttpStreamOverHTTP3 implements HttpStream
     }
 
     @Override
+    public long getIdleTimeout()
+    {
+        return stream.getIdleTimeout();
+    }
+
+    @Override
+    public void setIdleTimeout(long idleTimeoutMs)
+    {
+        stream.setIdleTimeout(idleTimeoutMs);
+    }
+
+    @Override
     public boolean isCommitted()
     {
         return committed;
@@ -514,9 +519,9 @@ public class HttpStreamOverHTTP3 implements HttpStream
         stream.reset(HTTP3ErrorCode.REQUEST_CANCELLED_ERROR.code(), x);
     }
 
-    public void onIdleTimeout(Throwable failure, BiConsumer<Runnable, Boolean> consumer)
+    public void onIdleTimeout(TimeoutException failure, BiConsumer<Runnable, Boolean> consumer)
     {
-        Runnable runnable = httpChannel.onFailure(failure);
+        Runnable runnable = httpChannel.onIdleTimeout(failure);
         boolean idle = !httpChannel.isRequestHandled();
         consumer.accept(runnable, idle);
     }

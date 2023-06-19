@@ -107,6 +107,13 @@ public abstract class DispatchedMessageSink extends AbstractMessageSink
         typeSink.accept(frame, frameCallback);
     }
 
+    @Override
+    public void fail(Throwable failure)
+    {
+        if (typeSink != null)
+            typeSink.fail(failure);
+    }
+
     public boolean isDispatched()
     {
         return dispatchComplete != null;

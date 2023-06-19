@@ -185,9 +185,9 @@ public class Socks5Proxy extends Proxy
         }
 
         @Override
-        public boolean onIdleExpired()
+        public boolean onIdleExpired(TimeoutException timeout)
         {
-            fail(new TimeoutException("Idle timeout expired"));
+            fail(timeout);
             return false;
         }
 

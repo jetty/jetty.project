@@ -437,16 +437,12 @@ public class HTTP2Stream implements Stream, Attachable, Closeable, Callback, Dum
             }
         }
 
-        if (getListener() != null)
-        {
-            if (offer(data))
-                processData();
-        }
-        else
-        {
-            if (updateClose(data.frame().isEndStream(), CloseState.Event.RECEIVED))
-                session.removeStream(this);
-        }
+        boolean listenerPresent = getListener() != null;
+        boolean endStream = data.frame().isEndStream();
+        if ((listenerPresent || endStream) && offer(data))
+            processData();
+        if (!listenerPresent && updateClose(endStream, CloseState.Event.RECEIVED))
+            session.removeStream(this);
     }
 
     private boolean offer(Data data)
@@ -839,7 +835,7 @@ public class HTTP2Stream implements Stream, Attachable, Closeable, Callback, Dum
         }
     }
 
-    private void notifyIdleTimeout(Stream stream, Throwable failure, Promise<Boolean> promise)
+    private void notifyIdleTimeout(Stream stream, TimeoutException failure, Promise<Boolean> promise)
     {
         Listener listener = this.listener;
         if (listener != null)

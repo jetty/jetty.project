@@ -22,6 +22,8 @@ ee10-demo-mock-resources
 basehome:modules/demo.d/ee10-demo-jndi.xml|webapps/ee10-demo-jndi.xml
 maven://org.eclipse.jetty.ee10.demos/jetty-ee10-demo-jndi-webapp/${jetty.version}/war|webapps/ee10-demo-jndi.war
 maven://jakarta.mail/jakarta.mail-api/@jakarta.mail.api.version@/jar|lib/ee10/jakarta.mail-api-@jakarta.mail.api.version@.jar
+maven://jakarta.activation/jakarta.activation-api/@jakarta.activation.api.version@/jar|lib/ee10/jakarta.activation-api-@jakarta.activation.api.version@.jar
 
 [lib]
 lib/ee10/jakarta.mail-api-@jakarta.mail.api.version@.jar
+lib/ee10/jakarta.activation-api-@jakarta.activation.api.version@.jar

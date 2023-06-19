@@ -22,6 +22,8 @@ import java.nio.charset.Charset;
 import java.security.Principal;
 import java.util.List;
 import java.util.Locale;
+import java.util.concurrent.TimeoutException;
+import java.util.function.Consumer;
 import java.util.function.Function;
 import java.util.function.Predicate;
 import java.util.stream.Collectors;
@@ -41,6 +43,7 @@ import org.eclipse.jetty.util.Attributes;
 import org.eclipse.jetty.util.Callback;
 import org.eclipse.jetty.util.Fields;
 import org.eclipse.jetty.util.HostPort;
+import org.eclipse.jetty.util.NanoTime;
 import org.eclipse.jetty.util.StringUtil;
 import org.eclipse.jetty.util.URIUtil;
 import org.eclipse.jetty.util.UrlEncoded;
@@ -200,20 +203,29 @@ public interface Request extends Attributes, Content.Source
     HttpFields getTrailers();
 
     /**
-     * <p>Get the millisecond timestamp at which the request was created, obtained via {@link System#currentTimeMillis()}.
-     * This method should be used for wall clock time, rather than {@link #getNanoTime()},
+     * <p>Get the millisecond timestamp at which the request was created, obtained with {@link System#currentTimeMillis()}.
+     * This method should be used for wall clock time, rather than {@link #getHeadersNanoTime()},
      * which is appropriate for measuring latencies.</p>
      * @return The timestamp that the request was received/created in milliseconds
      */
-    long getTimeStamp();
+    static long getTimeStamp(Request request)
+    {
+        return System.currentTimeMillis() - NanoTime.millisSince(request.getHeadersNanoTime());
+    }
 
     /**
-     * <p>Get the nanoTime at which the request was created, obtained via {@link System#nanoTime()}.
-     * This method should be used when measuring latencies, rather than {@link #getTimeStamp()},
-     * which is appropriate for wall clock time.</p>
+     * <p>Get the nanoTime at which the request arrived to a connector, obtained via {@link System#nanoTime()}.
+     * This method can be used when measuring latencies.</p>
      * @return The nanoTime at which the request was received/created in nanoseconds
      */
-    long getNanoTime();
+    long getBeginNanoTime();
+
+    /**
+     * <p>Get the nanoTime at which the request headers were parsed, obtained via {@link System#nanoTime()}.
+     * This method can be used when measuring latencies.</p>
+     * @return The nanoTime at which the request was ready in nanoseconds
+     */
+    long getHeadersNanoTime();
 
     // TODO: see above.
     boolean isSecure();
@@ -249,18 +261,41 @@ public interface Request extends Attributes, Content.Source
     }
 
     /**
-     * <p>Adds a listener for asynchronous errors.</p>
+     * <p>Adds a listener for idle timeouts.</p>
      * <p>The listener is a predicate function that should return {@code true} to indicate
-     * that the function will complete (either successfully or with a failure) the callback
-     * received from {@link org.eclipse.jetty.server.Handler#handle(Request, Response, Callback)}, or
-     * {@code false} otherwise.</p>
+     * that the idle timeout should be handled by the container as a hard failure
+     * (see {@link #addFailureListener(Consumer)}); or {@code false} to ignore that specific timeout and for another timeout
+     * to occur after another idle period.</p>
+     * <p>Any pending {@link #demand(Runnable)} or {@link Response#write(boolean, ByteBuffer, Callback)} operations
+     * are not affected by this call. Applications need to be mindful of any such pending operations if attempting
+     * to make new operations.</p>
      * <p>Listeners are processed in sequence, and the first that returns {@code true}
      * stops the processing of subsequent listeners, which are therefore not invoked.</p>
      *
-     * @param onError the predicate function
-     * @return true if the listener completes the callback, false otherwise
+     * @param onIdleTimeout the predicate function
+     * @see #addFailureListener(Consumer)
      */
-    boolean addErrorListener(Predicate<Throwable> onError);
+    void addIdleTimeoutListener(Predicate<TimeoutException> onIdleTimeout);
+
+    /**
+     * <p>Adds a listener for asynchronous hard errors.</p>
+     * <p>When a listener is called, the effects of the error will already have taken place:</p>
+     * <ul>
+     *     <li>Pending {@link #demand(Runnable)} will be woken up.</li>
+     *     <li>Calls to {@link #read()} will return the {@code Throwable}.</li>
+     *     <li>Pending and new {@link Response#write(boolean, ByteBuffer, Callback)} calls will be failed by
+     *     calling {@link Callback#failed(Throwable)} on the callback passed to {@code write(...)}.</li>
+     *     <li>Any call to {@link Callback#succeeded()} on the callback passed to
+     *     {@link Handler#handle(Request, Response, Callback)} will effectively be a call to {@link Callback#failed(Throwable)}
+     *     with the notified {@link Throwable}.</li>
+     * </ul>
+     * <p>Listeners are processed in sequence. When all listeners are invoked then {@link Callback#failed(Throwable)}
+     * will be called on the callback passed to {@link Handler#handle(Request, Response, Callback)}.</p>
+     *
+     * @param onFailure the consumer function
+     * @see #addIdleTimeoutListener(Predicate)
+     */
+    void addFailureListener(Consumer<Throwable> onFailure);
 
     TunnelSupport getTunnelSupport();
 
@@ -274,6 +309,41 @@ public interface Request extends Attributes, Content.Source
      * @return The session associated with the request or {@code null}.
      */
     Session getSession(boolean create);
+
+    /**
+     * Returns a copy of the request that throws {@link UnsupportedOperationException}
+     * from all mutative methods.
+     * @return a copy of the request
+     */
+    static Request asReadOnly(Request request)
+    {
+        return new Request.Wrapper(request)
+        {
+            @Override
+            public void addHttpStreamWrapper(Function<HttpStream, HttpStream> wrapper)
+            {
+                throw new UnsupportedOperationException();
+            }
+
+            @Override
+            public Content.Chunk read()
+            {
+                throw new UnsupportedOperationException();
+            }
+
+            @Override
+            public void demand(Runnable demandCallback)
+            {
+                throw new UnsupportedOperationException();
+            }
+
+            @Override
+            public void fail(Throwable failure)
+            {
+                throw new UnsupportedOperationException();
+            }
+        };
+    }
 
     static String getLocalAddr(Request request)
     {
@@ -603,15 +673,15 @@ public interface Request extends Attributes, Content.Source
         }
 
         @Override
-        public long getTimeStamp()
+        public long getBeginNanoTime()
         {
-            return getWrapped().getTimeStamp();
+            return getWrapped().getBeginNanoTime();
         }
 
         @Override
-        public long getNanoTime()
+        public long getHeadersNanoTime()
         {
-            return getWrapped().getNanoTime();
+            return getWrapped().getHeadersNanoTime();
         }
 
         @Override
@@ -657,9 +727,15 @@ public interface Request extends Attributes, Content.Source
         }
 
         @Override
-        public boolean addErrorListener(Predicate<Throwable> onError)
+        public void addIdleTimeoutListener(Predicate<TimeoutException> onIdleTimeout)
         {
-            return getWrapped().addErrorListener(onError);
+            getWrapped().addIdleTimeoutListener(onIdleTimeout);
+        }
+
+        @Override
+        public void addFailureListener(Consumer<Throwable> onFailure)
+        {
+            getWrapped().addFailureListener(onFailure);
         }
 
         @Override

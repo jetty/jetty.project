@@ -28,7 +28,6 @@ import org.eclipse.jetty.io.ByteBufferAccumulator;
 import org.eclipse.jetty.io.Content;
 import org.eclipse.jetty.util.BufferUtil;
 import org.eclipse.jetty.util.Callback;
-import org.eclipse.jetty.util.NanoTime;
 
 public class MockHttpStream implements HttpStream
 {
@@ -47,7 +46,6 @@ public class MockHttpStream implements HttpStream
             return false;
         }
     };
-    private final long _nanoTime = NanoTime.now();
     private final AtomicReference<Content.Chunk> _content = new AtomicReference<>();
     private final AtomicReference<Throwable> _complete = new AtomicReference<>();
     private final CountDownLatch _completed = new CountDownLatch(1);
@@ -140,12 +138,6 @@ public class MockHttpStream implements HttpStream
     }
 
     @Override
-    public long getNanoTime()
-    {
-        return _nanoTime;
-    }
-
-    @Override
     public Content.Chunk read()
     {
         Content.Chunk chunk = _content.get();
@@ -216,6 +208,17 @@ public class MockHttpStream implements HttpStream
             }
         }
         callback.succeeded();
+    }
+
+    @Override
+    public long getIdleTimeout()
+    {
+        return 0;
+    }
+
+    @Override
+    public void setIdleTimeout(long idleTimeoutMs)
+    {
     }
 
     @Override

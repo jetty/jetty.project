@@ -14,6 +14,7 @@
 package org.eclipse.jetty.http2.api;
 
 import java.util.concurrent.CompletableFuture;
+import java.util.concurrent.TimeoutException;
 
 import org.eclipse.jetty.http2.frames.DataFrame;
 import org.eclipse.jetty.http2.frames.HeadersFrame;
@@ -218,7 +219,7 @@ public interface Stream
     /**
      * @param idleTimeout the stream idle timeout
      * @see #getIdleTimeout()
-     * @see Stream.Listener#onIdleTimeout(Stream, Throwable, Promise)
+     * @see Stream.Listener#onIdleTimeout(Stream, TimeoutException, Promise)
      */
     public void setIdleTimeout(long idleTimeout);
 
@@ -369,7 +370,7 @@ public interface Stream
          * @param promise the promise to complete
          * @see #getIdleTimeout()
          */
-        public default void onIdleTimeout(Stream stream, Throwable x, Promise<Boolean> promise)
+        public default void onIdleTimeout(Stream stream, TimeoutException x, Promise<Boolean> promise)
         {
             promise.succeeded(true);
         }

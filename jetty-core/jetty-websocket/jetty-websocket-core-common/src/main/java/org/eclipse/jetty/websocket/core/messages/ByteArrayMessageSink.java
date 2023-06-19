@@ -112,4 +112,11 @@ public class ByteArrayMessageSink extends AbstractMessageSink
                 accumulator = null;
         }
     }
+
+    @Override
+    public void fail(Throwable failure)
+    {
+        if (accumulator != null)
+            accumulator.fail(failure);
+    }
 }

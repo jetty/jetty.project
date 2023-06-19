@@ -521,7 +521,6 @@ public class HttpChannel implements Runnable, HttpOutput.Interceptor
         _response.recycle();
         _committedMetaData = null;
         _written = 0;
-        _oldIdleTimeout = 0;
         _transientListeners.clear();
     }
 
@@ -948,9 +947,6 @@ public class HttpChannel implements Runnable, HttpOutput.Interceptor
         _coreCallback = coreCallback;
 
         long idleTO = _configuration.getIdleTimeout();
-        _oldIdleTimeout = getIdleTimeout();
-        if (idleTO >= 0 && _oldIdleTimeout != idleTO)
-            setIdleTimeout(idleTO);
 
         if (LOG.isDebugEnabled())
         {
