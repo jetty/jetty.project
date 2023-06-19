@@ -454,7 +454,8 @@ public class ServletHandler extends Handler.Wrapper
     {
         // We will always have a ServletScopedRequest and MappedServlet otherwise we will not reach ServletHandler.
         ServletChannel servletChannel = Request.get(request, ServletContextRequest.class, ServletContextRequest::getServletChannel);
-        servletChannel.handle(request, response, callback);
+        servletChannel.associate(request, response, callback);
+        servletChannel.handle();
         return true;
     }
 

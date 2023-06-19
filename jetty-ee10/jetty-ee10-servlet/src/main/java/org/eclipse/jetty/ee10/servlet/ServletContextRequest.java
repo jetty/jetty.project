@@ -43,6 +43,12 @@ import org.eclipse.jetty.session.ManagedSession;
 import org.eclipse.jetty.session.SessionManager;
 import org.eclipse.jetty.util.Fields;
 
+/**
+ * A core request wrapper that carries the servlet related request state,
+ * which may be used directly by the associated {@link ServletApiRequest}.
+ * Non-servlet related state, is used indirectly via {@link ServletChannel#getRequest()}
+ * which may be a wrapper of this request.
+ */
 public class ServletContextRequest extends ContextRequest
 {
     public static final String MULTIPART_CONFIG_ELEMENT = "org.eclipse.jetty.multipartConfig";

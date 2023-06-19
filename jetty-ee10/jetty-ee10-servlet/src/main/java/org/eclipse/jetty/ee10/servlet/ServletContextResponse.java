@@ -40,6 +40,12 @@ import org.eclipse.jetty.session.ManagedSession;
 import org.eclipse.jetty.util.Callback;
 import org.eclipse.jetty.util.StringUtil;
 
+/**
+ * A core response wrapper that carries the servlet related response state,
+ * which may be used directly by the associated {@link ServletApiResponse}.
+ * Non servlet related state, is used indirectly via {@link ServletChannel#getResponse()}
+ * which may be a wrapper of this response.
+ */
 public class ServletContextResponse extends ContextResponse
 {
     protected enum OutputType
@@ -509,6 +515,9 @@ public class ServletContextResponse extends ContextResponse
         SET_CHARACTER_ENCODING
     }
 
+    /**
+     * Wrapper of the response HttpFields to allow specific values to be intercepted.
+     */
     private class HttpFieldsWrapper extends HttpFields.Mutable.Wrapper
     {
         public HttpFieldsWrapper(Mutable fields)

@@ -180,7 +180,7 @@ class AsyncContentProducer implements ContentProducer
 
     private boolean consumeAvailableChunks()
     {
-        return _servletChannel.getServletContextRequest().consumeAvailable();
+        return _servletChannel.getRequest().consumeAvailable();
     }
 
     @Override
@@ -228,7 +228,7 @@ class AsyncContentProducer implements ContentProducer
         }
 
         _servletChannel.getState().onReadUnready();
-        _servletChannel.getServletContextRequest().demand(() ->
+        _servletChannel.getRequest().demand(() ->
         {
             if (_servletChannel.getHttpInput().onContentProducible())
                 _servletChannel.handle();
@@ -297,7 +297,7 @@ class AsyncContentProducer implements ContentProducer
 
     private Content.Chunk readChunk()
     {
-        Content.Chunk chunk = _servletChannel.getServletContextRequest().read();
+        Content.Chunk chunk = _servletChannel.getRequest().read();
         if (chunk != null)
         {
             _bytesArrived += chunk.remaining();

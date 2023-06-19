@@ -46,6 +46,7 @@ import org.eclipse.jetty.server.Response;
 import org.eclipse.jetty.server.ResponseUtils;
 import org.eclipse.jetty.server.Server;
 import org.eclipse.jetty.server.handler.ContextHandler;
+import org.eclipse.jetty.server.handler.ContextRequest;
 import org.eclipse.jetty.util.Blocker;
 import org.eclipse.jetty.util.Callback;
 import org.eclipse.jetty.util.ExceptionUtil;
@@ -115,7 +116,9 @@ public class ServletChannel
 
     /**
      * Associate this channel with a specific request.
-     * @param servletContextRequest The request to associate
+     * This is called by the ServletContextHandler when a core {@link Request} is accepted and associated with
+     * a servlet mapping.
+     * @param servletContextRequest The servlet context request to associate
      * @see #recycle()
      */
     public void associate(ServletContextRequest servletContextRequest)
@@ -132,6 +135,31 @@ public class ServletChannel
                 this,
                 _servletContextRequest,
                 _state);
+    }
+
+    /**
+     * Associate this channel with possibly wrapped values for
+     * {@link #getRequest()}, {@link #getResponse()} and {@link #getCallback()}.
+     * This is called by the {@link ServletHandler} immediately before calling {@link #handle()} on the
+     * initial dispatch.  This allows for handlers between the {@link ServletContextHandler} and the
+     * {@link ServletHandler} to wrap the instances.
+     * @param request The request, which may have been wrapped
+     *                after #{@link ServletContextHandler#wrapRequest(Request, Response)}
+     * @param response The response, which may have been wrapped
+     *                 after #{@link ServletContextHandler#wrapResponse(ContextRequest, Response)}
+     * @param callback The context, which may have been wrapped
+     *                 after {@link ServletContextHandler#handle(Request, Response, Callback)}
+     */
+    public void associate(Request request, Response response, Callback callback)
+    {
+        if (_callback != null)
+            throw new IllegalStateException();
+
+        if (request != _request && Request.as(request, ServletContextRequest.class) != _servletContextRequest)
+            throw new IllegalStateException();
+        _request = request;
+        _response = response;
+        _callback = callback;
     }
 
     public ServletContextHandler.ServletScopedContext getContext()
@@ -222,25 +250,47 @@ public class ServletChannel
         return _context.getContextHandler().getServer();
     }
 
-    public Request getRequest()
-    {
-        return _request;
-    }
-
+    /**
+     * @return The {@link ServletContextRequest} as wrapped by the {@link ServletContextHandler}.
+     * @see #getRequest()
+     */
     public ServletContextRequest getServletContextRequest()
     {
         return _servletContextRequest;
     }
 
-    public Response getResponse()
+    /**
+     * @return The core {@link Request} associated with the request. This may differ from {@link #getServletContextRequest()}
+     *         if the request was wrapped by another handler after the {@link ServletContextHandler} and passed
+     *         to {@link ServletChannel#associate(Request, Response, Callback)}.
+     * @see #getServletContextRequest()
+     * @see #associate(Request, Response, Callback)
+     */
+    public Request getRequest()
     {
-        return _response;
+        return _request;
     }
 
+    /**
+     * @return The ServetContextResponse as wrapped by the {@link ServletContextHandler}.
+     * @see #getResponse().
+     */
     public ServletContextResponse getServletContextResponse()
     {
         ServletContextRequest request = _servletContextRequest;
         return request == null ? null : request.getResponse();
+    }
+
+    /**
+     * @return The core {@link Response} associated with the API response.
+     *         This may differ from {@link #getServletContextResponse()} if the response was wrapped by another handler
+     *         after the {@link ServletContextHandler} and passed to {@link ServletChannel#associate(Request, Response, Callback)}.
+     * @see #getServletContextResponse()
+     * @see #associate(Request, Response, Callback)
+     */
+    public Response getResponse()
+    {
+        return _response;
     }
 
     public Connection getConnection()
@@ -395,23 +445,7 @@ public class ServletChannel
     }
 
     /**
-     * @return True if the channel is ready to continue handling (ie it is not suspended)
-     */
-    public boolean handle(Request request, Response response, Callback callback)
-    {
-        if (_callback != null)
-            throw new IllegalStateException();
-
-        if (request != _request && Request.as(request, ServletContextRequest.class) != _servletContextRequest)
-            throw new IllegalStateException();
-        _request = request;
-        _response = response;
-        _callback = callback;
-
-        return handle();
-    }
-
-    /**
+     * Handle the servlet request. This is called on the initial dispatch and then again on any asynchronous events.
      * @return True if the channel is ready to continue handling (ie it is not suspended)
      */
     public boolean handle()

@@ -44,11 +44,9 @@ import org.eclipse.jetty.util.Callback;
 import org.eclipse.jetty.util.StringUtil;
 
 /**
- * The Jetty low level implementation of the ee10 {@link HttpServletResponse} object.
- *
- * <p>
- *     This provides the bridges from Servlet {@link HttpServletResponse} to the Jetty Core {@link Response} concepts (provided by the {@link ServletContextResponse})
- * </p>
+ * The Jetty implementation of the ee10 {@link HttpServletResponse} object.
+ * This provides the bridge from the Servlet {@link HttpServletResponse} to the Jetty Core {@link Response}
+ * via the {@link ServletContextResponse}.
  */
 public class ServletApiResponse implements HttpServletResponse
 {
@@ -86,9 +84,9 @@ public class ServletApiResponse implements HttpServletResponse
     /**
      * @return The core {@link Response} associated with the API response.
      *         This may differ from {@link #getServletContextResponse()} if the response was wrapped by another handler
-     *         after the {@link ServletContextHandler} and passed to {@link ServletChannel#handle(Request, Response, Callback)}.
+     *         after the {@link ServletContextHandler} and passed to {@link ServletChannel#associate(Request, Response, Callback)}.
      * @see #getServletContextResponse()
-     * @see ServletChannel#handle(Request, Response, Callback)
+     * @see ServletChannel#associate(Request, Response, Callback)
      */
     public Response getResponse()
     {

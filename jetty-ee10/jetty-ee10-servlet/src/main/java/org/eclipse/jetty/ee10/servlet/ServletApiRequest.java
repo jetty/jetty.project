@@ -91,11 +91,9 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 /**
- * The Jetty low level implementation of the ee10 {@link HttpServletRequest} object.
- *
- * <p>
- *     This provides the bridges from Servlet {@link HttpServletRequest} to the Jetty Core {@link Request} concepts (provided by the {@link ServletContextRequest})
- * </p>
+ * The Jetty implementation of the ee10 {@link HttpServletRequest} object.
+ * This provides the bridge from Servlet {@link HttpServletRequest} to the Jetty Core {@link Request}
+ * via the {@link ServletContextRequest}.
  */
 public class ServletApiRequest implements HttpServletRequest
 {
@@ -160,9 +158,9 @@ public class ServletApiRequest implements HttpServletRequest
     /**
      * @return The core {@link Request} associated with the request. This may differ from {@link #getServletContextRequest()}
      *         if the request was wrapped by another handler after the {@link ServletContextHandler} and passed
-     *         to {@link ServletChannel#handle(Request, Response, Callback)}.
+     *         to {@link ServletChannel#associate(Request, Response, Callback)}.
      * @see #getServletContextRequest()
-     * @see ServletChannel#handle(Request, Response, Callback)
+     * @see ServletChannel#associate(Request, Response, Callback)
      */
     public Request getRequest()
     {
@@ -848,7 +846,7 @@ public class ServletApiRequest implements HttpServletRequest
                                 ServletContextHandler contextHandler = getServletContextRequest().getServletRequestState().getContextHandler();
                                 int maxKeys = contextHandler.getMaxFormKeys();
                                 int maxContentSize = contextHandler.getMaxFormContentSize();
-                                _contentParameters = FormFields.from(getServletContextRequest(), maxKeys, maxContentSize).get();
+                                _contentParameters = FormFields.from(getRequest(), maxKeys, maxContentSize).get();
                             }
                             catch (IllegalStateException | IllegalArgumentException | ExecutionException |
                                    InterruptedException e)
@@ -876,7 +874,7 @@ public class ServletApiRequest implements HttpServletRequest
                         {
                             try
                             {
-                                _contentParameters = FormFields.get(getServletContextRequest()).get();
+                                _contentParameters = FormFields.get(getRequest()).get();
                             }
                             catch (IllegalStateException | IllegalArgumentException | ExecutionException |
                                    InterruptedException e)
