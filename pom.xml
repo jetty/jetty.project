@@ -2100,17 +2100,6 @@
       </build>
     </profile>
     <profile>
-      <id>jdk17</id>
-      <activation>
-        <jdk>[17,)</jdk>
-      </activation>
-      <properties>
-        <!-- disable plugins known not to work with JDK 17 (yet) -->
-        <spotbugs.skip>true</spotbugs.skip>
-        <jacoco.skip>true</jacoco.skip>
-      </properties>
-    </profile>
-    <profile>
       <id>update-version</id>
       <build>
         <plugins>
