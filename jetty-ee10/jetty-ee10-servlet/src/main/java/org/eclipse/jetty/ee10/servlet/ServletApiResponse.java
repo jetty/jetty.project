@@ -74,7 +74,7 @@ public class ServletApiResponse implements HttpServletResponse
 
     /**
      * @return The ServetContextResponse as wrapped by the {@link ServletContextHandler}.
-     * @see #getResponse().
+     * @see #getResponse()
      */
     public ServletContextResponse getServletContextResponse()
     {
