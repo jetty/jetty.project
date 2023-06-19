@@ -600,6 +600,11 @@ public class DefaultServlet extends HttpServlet
                 _uri = Request.newHttpURIFrom(getWrapped(), URIUtil.encodePath(URIUtil.addPaths(_servletRequest.getServletPath(), _servletRequest.getPathInfo())));
         }
 
+        public HttpServletRequest getServletRequest()
+        {
+            return _servletRequest;
+        }
+
         @Override
         public HttpFields getHeaders()
         {
@@ -1042,7 +1047,14 @@ public class DefaultServlet extends HttpServlet
                     // precedence over resources served by Servlets.
                     Resource welcomePath = base.resolve(welcome);
                     if (Resources.isReadableFile(welcomePath))
+                    {
+                        if (isPathInfoOnly() && !isIncluded(request))
+                        {
+                            String servletPath = getServletRequest(coreRequest).getServletPath();
+                            welcomeInContext = URIUtil.addPaths(servletPath, welcomeInContext);
+                        }
                         return welcomeInContext;
+                    }
 
                     // Check whether a Servlet may serve the welcome resource.
                     if (_welcomeServletMode != WelcomeServletMode.NONE && welcomeTarget == null)
@@ -1170,6 +1182,23 @@ public class DefaultServlet extends HttpServlet
             {
                 callback.succeeded();
             }
+        }
+
+        @Override
+        protected void sendRedirect(Request coreRequest, Response coreResponse, Callback callback, String target)
+        {
+            if (isPathInfoOnly())
+            {
+                ServletCoreRequest servletCoreRequest = (ServletCoreRequest)coreRequest;
+                String servletPath = servletCoreRequest.getServletRequest().getServletPath();
+                if (!servletPath.equals("") && !servletPath.equals("/"))
+                {
+                    Context context = servletCoreRequest.getContext();
+                    String intermediate = URIUtil.addPaths(context.getContextPath(), servletPath);
+                    target = URIUtil.addPaths(intermediate, context.getPathInContext(target));
+                }
+            }
+            super.sendRedirect(coreRequest, coreResponse, callback, target);
         }
 
         @Override

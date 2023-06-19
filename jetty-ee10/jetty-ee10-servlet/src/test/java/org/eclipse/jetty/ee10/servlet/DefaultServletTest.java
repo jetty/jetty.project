@@ -433,7 +433,7 @@ public class DefaultServletTest
         extraResourceBaseString = extraResourceBaseString.substring(0, extraResourceBaseString.length() - "/one".length());
 
         ServletHolder defholder = context.addServlet(DefaultServlet.class, "/extra/*");
-        defholder.setInitParameter("resourceBase", extraResourceBaseString);
+        defholder.setInitParameter("baseResource", extraResourceBaseString);
         defholder.setInitParameter("pathInfoOnly", "true");
         defholder.setInitParameter("dirAllowed", "true");
         defholder.setInitParameter("redirectWelcome", "false");
@@ -958,7 +958,7 @@ public class DefaultServletTest
         Path altIndex = altDir.resolve("index.html");
 
         ServletHolder altholder = context.addServlet(DefaultServlet.class, "/alt/*");
-        altholder.setInitParameter("resourceBase", altRoot.toUri().toASCIIString());
+        altholder.setInitParameter("baseResource", altRoot.toUri().toASCIIString());
         altholder.setInitParameter("pathInfoOnly", "true");
         altholder.setInitParameter("dirAllowed", "false");
         altholder.setInitParameter("redirectWelcome", "false");
@@ -966,7 +966,7 @@ public class DefaultServletTest
         altholder.setInitParameter("gzip", "false");
 
         ServletHolder otherholder = context.addServlet(DefaultServlet.class, "/other/*");
-        otherholder.setInitParameter("resourceBase", altRoot.toUri().toASCIIString());
+        otherholder.setInitParameter("baseResource", altRoot.toUri().toASCIIString());
         otherholder.setInitParameter("pathInfoOnly", "true");
         otherholder.setInitParameter("dirAllowed", "true");
         otherholder.setInitParameter("redirectWelcome", "false");
@@ -1141,7 +1141,7 @@ public class DefaultServletTest
         FS.ensureDirExists(altRoot);
 
         ServletHolder defholder = context.addServlet(DefaultServlet.class, "/alt/*");
-        defholder.setInitParameter("resourceBase", altRoot.toUri().toASCIIString());
+        defholder.setInitParameter("baseResource", altRoot.toUri().toASCIIString());
         defholder.setInitParameter("dirAllowed", "false");
         defholder.setInitParameter("redirectWelcome", "false");
         defholder.setInitParameter("welcomeServlets", "true");
@@ -2685,7 +2685,7 @@ public class DefaultServletTest
 
         ServletHolder defholder = context.addServlet(DefaultServlet.class, "/");
         defholder.setInitParameter("precompressed", "true");
-        defholder.setInitParameter("resourceBase", docRoot.toString());
+        defholder.setInitParameter("baseResource", docRoot.toString());
 
         String rawResponse;
         HttpTester.Response response;
@@ -2734,7 +2734,7 @@ public class DefaultServletTest
 
         ServletHolder defholder = context.addServlet(DefaultServlet.class, "/");
         defholder.setInitParameter("precompressed", "bzip2=.bz2,gzip=.gz,br=.br");
-        defholder.setInitParameter("resourceBase", docRoot.toString());
+        defholder.setInitParameter("baseResource", docRoot.toString());
 
         String rawResponse;
         HttpTester.Response response;
@@ -2799,7 +2799,7 @@ public class DefaultServletTest
         };
 
         context.addServlet(defholder, "/");
-        defholder.setInitParameter("resourceBase", docRoot.toString());
+        defholder.setInitParameter("baseResource", docRoot.toString());
 
         String rawResponse;
         HttpTester.Response response;
@@ -2844,7 +2844,7 @@ public class DefaultServletTest
     {
         FS.ensureDirExists(docRoot);
         ServletHolder defholder = context.addServlet(DefaultServlet.class, "/");
-        defholder.setInitParameter("resourceBase", docRoot.toFile().getAbsolutePath());
+        defholder.setInitParameter("baseResource", docRoot.toFile().getAbsolutePath());
 
         try (StacklessLogging ignore = new StacklessLogging(ResourceService.class))
         {
