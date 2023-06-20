@@ -1020,14 +1020,14 @@ public class DefaultServlet extends HttpServlet
             String[] welcomes = _servletContextHandler.getWelcomeFiles();
             if (welcomes == null)
                 return null;
-
+            String pathInContext = Request.getPathInContext(coreRequest);
             String welcomeTarget = null;
             Resource base = content.getResource();
             if (Resources.isReadableDirectory(base))
             {
                 for (String welcome : welcomes)
                 {
-                    String welcomeInContext = URIUtil.addPaths("/", welcome);
+                    String welcomeInContext = URIUtil.addPaths(pathInContext, welcome);
 
                     // If the welcome resource is a file, it has
                     // precedence over resources served by Servlets.
@@ -1038,6 +1038,9 @@ public class DefaultServlet extends HttpServlet
                     // Check whether a Servlet may serve the welcome resource.
                     if (_welcomeServletMode != WelcomeServletMode.NONE && welcomeTarget == null)
                     {
+                        if (isPathInfoOnly())
+                            welcomeTarget = URIUtil.addPaths(getServletRequest(coreRequest).getPathInfo(), welcome);
+
                         ServletHandler.MappedServlet entry = _servletContextHandler.getServletHandler().getMappedServlet(welcomeInContext);
                         // Is there a different Servlet that may serve the welcome resource?
                         if (entry != null && entry.getServletHolder().getServletInstance() != DefaultServlet.this)
