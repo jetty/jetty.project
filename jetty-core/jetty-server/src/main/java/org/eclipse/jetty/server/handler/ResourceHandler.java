@@ -122,7 +122,7 @@ public class ResourceHandler extends Handler.Wrapper
 
     protected ResourceService.WelcomeFactory setupWelcomeFactory()
     {
-        return request ->
+        return (content, request) ->
         {
             if (_welcomes == null)
                 return null;

@@ -1015,32 +1015,23 @@ public class DefaultServlet extends HttpServlet
         }
 
         @Override
-        public String getWelcomeTarget(Request coreRequest)
+        public String getWelcomeTarget(HttpContent content, Request coreRequest)
         {
             String[] welcomes = _servletContextHandler.getWelcomeFiles();
             if (welcomes == null)
                 return null;
 
-            HttpServletRequest request = getServletRequest(coreRequest);
-            String pathInContext = Request.getPathInContext(coreRequest);
-            String includedServletPath = (String)request.getAttribute(RequestDispatcher.INCLUDE_SERVLET_PATH);
-            String requestTarget;
-            if (includedServletPath != null)
-                requestTarget = getIncludedPathInContext(request, includedServletPath, isPathInfoOnly());
-            else
-                requestTarget = isPathInfoOnly() ? request.getPathInfo() : pathInContext;
-
             String welcomeTarget = null;
-            Resource base = _baseResource.resolve(requestTarget);
+            Resource base = content.getResource();
             if (Resources.isReadableDirectory(base))
             {
                 for (String welcome : welcomes)
                 {
-                    String welcomeInContext = URIUtil.addPaths(pathInContext, welcome);
+                    String welcomeInContext = URIUtil.addPaths("/", welcome);
 
                     // If the welcome resource is a file, it has
                     // precedence over resources served by Servlets.
-                    Resource welcomePath = base.resolve(welcome);
+                    Resource welcomePath = content.getResource().resolve(welcome);
                     if (Resources.isReadableFile(welcomePath))
                         return welcomeInContext;
 
