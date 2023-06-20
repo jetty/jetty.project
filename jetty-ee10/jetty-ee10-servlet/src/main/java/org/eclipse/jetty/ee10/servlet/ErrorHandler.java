@@ -100,7 +100,7 @@ public class ErrorHandler implements Request.Handler
         // This logic really should be in ErrorPageErrorHandler, but some implementations extend ErrorHandler
         // and implement ErrorPageMapper directly, so we do this here in the base class.
         String errorPage = (this instanceof ErrorPageMapper) ? ((ErrorPageMapper)this).getErrorPage(httpServletRequest) : null;
-        ServletContextHandler.ServletContext context = servletContextRequest.getErrorContext();
+        ServletContextHandler.ServletScopedContext context = servletContextRequest.getErrorContext();
         Dispatcher errorDispatcher = (errorPage != null && context != null)
             ? (Dispatcher)context.getServletContext().getRequestDispatcher(errorPage) : null;
 

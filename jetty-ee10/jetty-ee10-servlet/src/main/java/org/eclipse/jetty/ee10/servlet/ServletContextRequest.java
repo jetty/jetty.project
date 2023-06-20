@@ -189,9 +189,9 @@ public class ServletContextRequest extends ContextRequest implements ServletCont
     }
 
     @Override
-    public ServletContextHandler.ServletContext getServletContext()
+    public ServletContextHandler.ServletScopedContext getServletContext()
     {
-        return (ServletContextHandler.ServletContext)super.getContext();
+        return (ServletContextHandler.ServletScopedContext)super.getContext();
     }
 
     @Override
@@ -269,7 +269,7 @@ public class ServletContextRequest extends ContextRequest implements ServletCont
      * If the request is asynchronous, then it is the context that called async. Otherwise, it is the last non-null
      * context passed to #setContext
      */
-    public ServletContextHandler.ServletContext getErrorContext()
+    public ServletContextHandler.ServletScopedContext getErrorContext()
     {
         // TODO: review.
         return _servletChannel.getContext();

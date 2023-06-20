@@ -1111,7 +1111,7 @@ public class ServletApiRequest implements HttpServletRequest
     @Override
     public RequestDispatcher getRequestDispatcher(String path)
     {
-        ServletContextHandler.ServletContext context = getServletRequestInfo().getServletContext();
+        ServletContextHandler.ServletScopedContext context = getServletRequestInfo().getServletContext();
         if (path == null || context == null)
             return null;
 

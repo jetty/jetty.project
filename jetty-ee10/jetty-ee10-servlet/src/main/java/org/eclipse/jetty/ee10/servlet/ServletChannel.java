@@ -81,7 +81,7 @@ public class ServletChannel
     private static final Logger LOG = LoggerFactory.getLogger(ServletChannel.class);
 
     private final ServletRequestState _state;
-    private final ServletContextHandler.ServletContext _context;
+    private final ServletContextHandler.ServletScopedContext _context;
     private final ServletContextHandler.ServletContextApi _servletContextApi;
     private final ConnectionMetaData _connectionMetaData;
     private final AtomicLong _requests = new AtomicLong();
@@ -169,7 +169,7 @@ public class ServletChannel
         _callback = callback;
     }
 
-    public ServletContextHandler.ServletContext getContext()
+    public ServletContextHandler.ServletScopedContext getContext()
     {
         return _context;
     }

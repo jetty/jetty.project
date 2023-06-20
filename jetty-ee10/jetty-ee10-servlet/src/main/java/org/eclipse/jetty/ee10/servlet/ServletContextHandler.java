@@ -181,16 +181,16 @@ public class ServletContextHandler extends ContextHandler
 
     public static jakarta.servlet.ServletContext getServletContext(Context context)
     {
-        if (context instanceof ServletContext)
-            return ((ServletContext)context).getServletContext();
+        if (context instanceof ServletScopedContext)
+            return ((ServletScopedContext)context).getServletContext();
         return null;
     }
 
     public static ServletContextHandler getCurrentServletContextHandler()
     {
         Context context = ContextHandler.getCurrentContext();
-        if (context instanceof ServletContext)
-            return ((ServletContext)context).getServletContextHandler();
+        if (context instanceof ServletScopedContext)
+            return ((ServletScopedContext)context).getServletContextHandler();
         return null;
     }
 
@@ -837,13 +837,13 @@ public class ServletContextHandler extends ContextHandler
          * @param context The context being entered
          * @param request A request that is applicable to the scope, or null
          */
-        void enterScope(ServletContext context, ServletContextRequest request);
+        void enterScope(ServletScopedContext context, ServletContextRequest request);
 
         /**
          * @param context The context being exited
          * @param request A request that is applicable to the scope, or null
          */
-        void exitScope(ServletContext context, ServletContextRequest request);
+        void exitScope(ServletScopedContext context, ServletContextRequest request);
     }
 
     public jakarta.servlet.ServletContext getServletContext()
@@ -854,13 +854,13 @@ public class ServletContextHandler extends ContextHandler
     @Override
     protected ScopedContext newContext()
     {
-        return new ServletContext();
+        return new ServletScopedContext();
     }
 
     @Override
-    public ServletContext getContext()
+    public ServletScopedContext getContext()
     {
-        return (ServletContext)super.getContext();
+        return (ServletScopedContext)super.getContext();
     }
 
     /**
@@ -1056,7 +1056,7 @@ public class ServletContextHandler extends ContextHandler
         Context lastContext = ContextHandler.getCurrentContext();
         ClassLoader lastLoader = enterScope(null);
 
-        ServletContext context = getContext();
+        ServletScopedContext context = getContext();
         try
         {
             // Set the classloader
@@ -1982,7 +1982,7 @@ public class ServletContextHandler extends ContextHandler
         }
     }
 
-    public class ServletContext extends ScopedContext
+    public class ServletScopedContext extends ScopedContext
     {
         public ServletContextApi getServletContext()
         {
@@ -2093,7 +2093,7 @@ public class ServletContextHandler extends ContextHandler
             _effectiveMinorVersion = v;
         }
 
-        public ServletContext getContext()
+        public ServletScopedContext getContext()
         {
             return ServletContextHandler.this.getContext();
         }
@@ -3059,7 +3059,7 @@ public class ServletContextHandler extends ContextHandler
 
         List<ServletRequestAttributeListener> getRequestAttributeListeners();
 
-        ServletContext getServletContext();
+        ServletScopedContext getServletContext();
 
         HttpInput getHttpInput();
         

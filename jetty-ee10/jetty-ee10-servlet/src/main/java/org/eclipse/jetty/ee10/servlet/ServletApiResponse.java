@@ -451,7 +451,7 @@ public class ServletApiResponse implements HttpServletResponse
             if (getServletResponseInfo().getOutputType() != ServletContextResponse.OutputType.NONE)
                 return;
 
-            ServletContextHandler.ServletContext context = getServletChannel().getContext();
+            ServletContextHandler.ServletScopedContext context = getServletChannel().getContext();
             if (context == null)
                 return;
 
