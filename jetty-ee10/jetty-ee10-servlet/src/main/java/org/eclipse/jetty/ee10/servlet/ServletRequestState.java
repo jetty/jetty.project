@@ -311,7 +311,7 @@ public class ServletRequestState
                     return false;
 
                 case OPEN:
-                    _servletChannel.getServletContextResponse().setStatus(500);
+                    _servletChannel.getServletContextResponse().setStatus(HttpStatus.INTERNAL_SERVER_ERROR_500);
                     _outputState = OutputState.ABORTED;
                     return true;
 

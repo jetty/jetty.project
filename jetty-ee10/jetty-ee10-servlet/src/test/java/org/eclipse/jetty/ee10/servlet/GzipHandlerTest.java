@@ -23,7 +23,6 @@ import java.nio.charset.StandardCharsets;
 import java.util.Arrays;
 import java.util.EnumSet;
 import java.util.Enumeration;
-import java.util.stream.Stream;
 import java.util.zip.GZIPInputStream;
 import java.util.zip.GZIPOutputStream;
 
@@ -52,8 +51,7 @@ import org.hamcrest.Matchers;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.params.ParameterizedTest;
-import org.junit.jupiter.params.provider.Arguments;
-import org.junit.jupiter.params.provider.MethodSource;
+import org.junit.jupiter.params.provider.ValueSource;
 
 import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.Matchers.contains;
@@ -331,16 +329,8 @@ public class GzipHandlerTest
         }
     }
 
-    public static Stream<Arguments> tests()
-    {
-        return Stream.of(
-            Arguments.of(Boolean.FALSE),
-            Arguments.of(Boolean.TRUE)
-        );
-    }
-
     @ParameterizedTest
-    @MethodSource("tests")
+    @ValueSource(booleans = {true, false})
     public void testNotGzipHandler(boolean gzipInContext) throws Exception
     {
         init(gzipInContext);
@@ -368,7 +358,7 @@ public class GzipHandlerTest
     }
 
     @ParameterizedTest
-    @MethodSource("tests")
+    @ValueSource(booleans = {true, false})
     public void testBlockingResponse(boolean gzipInContext) throws Exception
     {
         init(gzipInContext);
@@ -397,7 +387,7 @@ public class GzipHandlerTest
     }
 
     @ParameterizedTest
-    @MethodSource("tests")
+    @ValueSource(booleans = {true, false})
     public void testGzipNotModifiedVaryHeader(boolean gzipInContext) throws Exception
     {
         init(gzipInContext);
@@ -437,7 +427,7 @@ public class GzipHandlerTest
     }
 
     @ParameterizedTest
-    @MethodSource("tests")
+    @ValueSource(booleans = {true, false})
     public void testAsyncResponse(boolean gzipInContext) throws Exception
     {
         init(gzipInContext);
@@ -465,7 +455,7 @@ public class GzipHandlerTest
     }
 
     @ParameterizedTest
-    @MethodSource("tests")
+    @ValueSource(booleans = {true, false})
     public void testBufferResponse(boolean gzipInContext) throws Exception
     {
         init(gzipInContext);
@@ -493,7 +483,7 @@ public class GzipHandlerTest
     }
 
     @ParameterizedTest
-    @MethodSource("tests")
+    @ValueSource(booleans = {true, false})
     public void testAsyncLargeResponse(boolean gzipInContext) throws Exception
     {
         init(gzipInContext);
@@ -527,7 +517,7 @@ public class GzipHandlerTest
     }
 
     @ParameterizedTest
-    @MethodSource("tests")
+    @ValueSource(booleans = {true, false})
     public void testAsyncEmptyResponse(boolean gzipInContext) throws Exception
     {
         init(gzipInContext);
@@ -552,7 +542,7 @@ public class GzipHandlerTest
     }
 
     @ParameterizedTest
-    @MethodSource("tests")
+    @ValueSource(booleans = {true, false})
     public void testGzipHandlerWithMultipleAcceptEncodingHeaders(boolean gzipInContext) throws Exception
     {
         init(gzipInContext);
@@ -582,7 +572,7 @@ public class GzipHandlerTest
     }
 
     @ParameterizedTest
-    @MethodSource("tests")
+    @ValueSource(booleans = {true, false})
     public void testGzipNotMicro(boolean gzipInContext) throws Exception
     {
         init(gzipInContext);
@@ -611,7 +601,7 @@ public class GzipHandlerTest
     }
 
     @ParameterizedTest
-    @MethodSource("tests")
+    @ValueSource(booleans = {true, false})
     public void testGzipNotMicroChunked(boolean gzipInContext) throws Exception
     {
         init(gzipInContext);
@@ -642,7 +632,7 @@ public class GzipHandlerTest
     }
 
     @ParameterizedTest
-    @MethodSource("tests")
+    @ValueSource(booleans = {true, false})
     public void testETagNotGzipHandler(boolean gzipInContext) throws Exception
     {
         init(gzipInContext);
@@ -665,7 +655,7 @@ public class GzipHandlerTest
     }
 
     @ParameterizedTest
-    @MethodSource("tests")
+    @ValueSource(booleans = {true, false})
     public void testETagGzipHandler(boolean gzipInContext) throws Exception
     {
         init(gzipInContext);
@@ -688,7 +678,7 @@ public class GzipHandlerTest
     }
 
     @ParameterizedTest
-    @MethodSource("tests")
+    @ValueSource(booleans = {true, false})
     public void testDeleteETagGzipHandler(boolean gzipInContext) throws Exception
     {
         init(gzipInContext);
@@ -722,7 +712,7 @@ public class GzipHandlerTest
     }
 
     @ParameterizedTest
-    @MethodSource("tests")
+    @ValueSource(booleans = {true, false})
     public void testForwardGzipHandler(boolean gzipInContext) throws Exception
     {
         init(gzipInContext);
@@ -751,7 +741,7 @@ public class GzipHandlerTest
     }
 
     @ParameterizedTest
-    @MethodSource("tests")
+    @ValueSource(booleans = {true, false})
     public void testIncludeGzipHandler(boolean gzipInContext) throws Exception
     {
         init(gzipInContext);
@@ -780,7 +770,7 @@ public class GzipHandlerTest
     }
 
     @ParameterizedTest
-    @MethodSource("tests")
+    @ValueSource(booleans = {true, false})
     public void testIncludeExcludeGzipHandlerInflate(boolean gzipInContext) throws Exception
     {
         init(gzipInContext);
@@ -838,7 +828,7 @@ public class GzipHandlerTest
     }
 
     @ParameterizedTest
-    @MethodSource("tests")
+    @ValueSource(booleans = {true, false})
     public void testGzipRequest(boolean gzipInContext) throws Exception
     {
         init(gzipInContext);
@@ -872,7 +862,7 @@ public class GzipHandlerTest
     }
 
     @ParameterizedTest
-    @MethodSource("tests")
+    @ValueSource(booleans = {true, false})
     public void testGzipRequestChunked(boolean gzipInContext) throws Exception
     {
         init(gzipInContext);
@@ -906,7 +896,7 @@ public class GzipHandlerTest
     }
 
     @ParameterizedTest
-    @MethodSource("tests")
+    @ValueSource(booleans = {true, false})
     public void testGzipFormRequest(boolean gzipInContext) throws Exception
     {
         init(gzipInContext);
@@ -936,7 +926,7 @@ public class GzipHandlerTest
     }
 
     @ParameterizedTest
-    @MethodSource("tests")
+    @ValueSource(booleans = {true, false})
     public void testGzipBomb(boolean gzipInContext) throws Exception
     {
         init(gzipInContext);
@@ -969,7 +959,7 @@ public class GzipHandlerTest
     }
 
     @ParameterizedTest
-    @MethodSource("tests")
+    @ValueSource(booleans = {true, false})
     public void testGzipExcludeNewMimeType(boolean gzipInContext) throws Exception
     {
         init(gzipInContext);
