@@ -85,14 +85,6 @@ public abstract class AbstractConnection implements Connection
 
     protected void failedCallback(final Callback callback, final Throwable x)
     {
-        if (callback == null)
-        {
-            if (LOG.isDebugEnabled())
-            {
-                LOG.warn("Callback null", x);
-            }
-            return;
-        }
         Runnable failCallback = () ->
         {
             try
