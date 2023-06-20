@@ -17,6 +17,16 @@
   <build>
     <plugins>
       <plugin>
+        <artifactId>maven-surefire-plugin</artifactId>
+        <configuration>
+          <argLine>
+            @{argLine} ${jetty.surefire.argLine}
+            --add-modules org.eclipse.jetty.ee9.webapp
+            --add-reads org.eclipse.jetty.ee9.websocket.jetty.client=org.eclipse.jetty.ee9.webapp
+          </argLine>
+        </configuration>
+      </plugin>
+      <plugin>
         <groupId>org.apache.felix</groupId>
         <artifactId>maven-bundle-plugin</artifactId>
         <extensions>true</extensions>
