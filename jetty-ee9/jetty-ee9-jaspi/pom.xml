@@ -12,7 +12,7 @@
 
   <properties>
     <bundle-symbolic-name>${project.groupId}.security.jaspi</bundle-symbolic-name>
-    <spotbugs.onlyAnalyze>org.eclipse.jetty.jaspi.*</spotbugs.onlyAnalyze>
+    <spotbugs.onlyAnalyze>org.eclipse.jetty.ee9.security.jaspi.*</spotbugs.onlyAnalyze>
   </properties>
 
   <build>

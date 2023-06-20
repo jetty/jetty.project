@@ -12,7 +12,7 @@
 
   <properties>
     <bundle-symbolic-name>${project.groupId}.server</bundle-symbolic-name>
-    <spotbugs.onlyAnalyze>org.eclipse.jetty.server.*</spotbugs.onlyAnalyze>
+    <spotbugs.onlyAnalyze>org.eclipse.jetty.ee9.nested.*</spotbugs.onlyAnalyze>
   </properties>
 
   <build>
