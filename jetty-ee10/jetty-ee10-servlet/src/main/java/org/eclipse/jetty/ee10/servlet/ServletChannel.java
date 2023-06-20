@@ -65,6 +65,13 @@ import static org.eclipse.jetty.util.thread.Invocable.InvocationType.NON_BLOCKIN
  * output according to the servlet specification.  The combined state so obtained
  * is reflected in the behaviour of the contained {@link HttpInput} implementation of
  * {@link jakarta.servlet.ServletInputStream}.
+ * <p>
+ * This class is reusable over multiple requests for the same {@link ServletContextHandler}
+ * and is {@link #recycle() recycled} after each use before being
+ * {@link #associate(ServletContextRequest) associated} with a new {@link ServletContextRequest}
+ * and then {@link #associate(Request, Response, Callback) associated} with possibly wrapped
+ * request, response and callback.
+ * </p>
  *
  * @see ServletRequestState
  * @see HttpInput

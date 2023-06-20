@@ -48,6 +48,9 @@ import org.eclipse.jetty.util.Fields;
  * which may be used directly by the associated {@link ServletApiRequest}.
  * Non-servlet related state, is used indirectly via {@link ServletChannel#getRequest()}
  * which may be a wrapper of this request.
+ * <p>
+ * This class is single use only.
+ * </p>
  */
 public class ServletContextRequest extends ContextRequest
 {
