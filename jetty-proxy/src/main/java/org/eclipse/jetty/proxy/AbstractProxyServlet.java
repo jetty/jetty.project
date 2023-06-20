@@ -145,11 +145,14 @@ public abstract class AbstractProxyServlet extends HttpServlet
     {
         try
         {
-            _client.stop();
+            if (_client != null)
+                _client.stop();
         }
         catch (Exception x)
         {
-            if (_log.isDebugEnabled())
+            if (_log == null)
+                x.printStackTrace();
+            else if (_log.isDebugEnabled())
                 _log.debug("Failed to stop client", x);
         }
     }

@@ -159,9 +159,18 @@ public class AsyncMiddleManServletTest
     @AfterEach
     public void dispose() throws Exception
     {
-        client.stop();
-        proxy.stop();
-        server.stop();
+        if (client != null)
+            client.stop();
+        if (proxy != null)
+            proxy.stop();
+        if (server != null)
+            server.stop();
+    }
+
+    @Test
+    public void testNewDestroy() throws Exception
+    {
+        new AsyncMiddleManServlet().destroy();
     }
 
     @Test
