@@ -259,9 +259,9 @@ public class ServletContextHandlerTest
     public static class MySCIStarter extends AbstractLifeCycle implements ServletContextHandler.ServletContainerInitializerCaller
     {
         ServletContainerInitializer _sci;
-        ServletContextHandler.ServletScopedContext _ctx;
+        ServletContextHandler.ServletContext _ctx;
 
-        MySCIStarter(ServletContextHandler.ServletScopedContext ctx, ServletContainerInitializer sci)
+        MySCIStarter(ServletContextHandler.ServletContext ctx, ServletContainerInitializer sci)
         {
             _ctx = ctx;
             _sci = sci;
@@ -2358,9 +2358,9 @@ public class ServletContextHandlerTest
 
     static class CookieTweakResponseApi extends ServletApiResponse
     {
-        CookieTweakResponseApi(ServletApiResponse response)
+        CookieTweakResponseApi(ServletContextResponse response)
         {
-            super(response.getServletContextResponse());
+            super(response);
         }
 
         @Override
@@ -2397,8 +2397,7 @@ public class ServletContextHandlerTest
                             @Override
                             protected ServletApiResponse newServletApiResponse()
                             {
-                                ServletApiResponse servletApiResponse = super.newServletApiResponse();
-                                return new CookieTweakResponseApi(super.newServletApiResponse());
+                                return new CookieTweakResponseApi(this);
                             }
                         };
                     }

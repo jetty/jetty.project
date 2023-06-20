@@ -26,6 +26,8 @@ import java.util.function.Supplier;
 import jakarta.servlet.ServletOutputStream;
 import jakarta.servlet.http.Cookie;
 import jakarta.servlet.http.HttpServletResponse;
+import org.eclipse.jetty.ee10.servlet.ServletContextHandler.ServletRequestInfo;
+import org.eclipse.jetty.ee10.servlet.ServletContextHandler.ServletResponseInfo;
 import org.eclipse.jetty.ee10.servlet.writer.EncodingHttpWriter;
 import org.eclipse.jetty.ee10.servlet.writer.Iso88591HttpWriter;
 import org.eclipse.jetty.ee10.servlet.writer.ResponseWriter;
@@ -58,39 +60,45 @@ public class ServletApiResponse implements HttpServletResponse
         ServletContextResponse.EncodingFrom.SET_LOCALE
     );
 
-    private final ServletContextResponse _servletContextResponse;
     private final ServletChannel _servletChannel;
+    private final ServletContextHandler.ServletRequestInfo _servletRequestInfo;
+    private final ServletResponseInfo _servletResponseInfo;
 
     protected ServletApiResponse(ServletContextResponse servletContextResponse)
     {
-        _servletContextResponse = servletContextResponse;
-        _servletChannel = getServletContextResponse().getState().getServletChannel();
+        _servletChannel = servletContextResponse.getServletContextRequest().getServletChannel();
+        _servletRequestInfo = servletContextResponse.getServletContextRequest();
+        _servletResponseInfo = servletContextResponse;
     }
-    
-    private ServletContextRequest getServletContextRequest()
+
+    public ServletChannel getServletChannel()
     {
-        return getServletContextResponse().getServletContextRequest();
+        return _servletChannel;
+    }
+
+    public ServletRequestInfo getServletRequestInfo()
+    {
+        return _servletRequestInfo;
     }
 
     /**
-     * @return The ServetContextResponse as wrapped by the {@link ServletContextHandler}.
-     * @see #getResponse()
+     * @return The {@link ServletResponseInfo} for the request as provided by
+     * {@link ServletContextResponse} when wrapped by the {@link ServletContextHandler}.
      */
-    public ServletContextResponse getServletContextResponse()
+    public ServletResponseInfo getServletResponseInfo()
     {
-        return _servletContextResponse;
+        return _servletResponseInfo;
     }
 
     /**
      * @return The core {@link Response} associated with the API response.
-     *         This may differ from {@link #getServletContextResponse()} if the response was wrapped by another handler
-     *         after the {@link ServletContextHandler} and passed to {@link ServletChannel#associate(Request, Response, Callback)}.
-     * @see #getServletContextResponse()
-     * @see ServletChannel#associate(Request, Response, Callback)
+     *         This may differ from the {@link ServletContextResponse} as wrapped by the
+     *         {@link ServletContextHandler} as it may have subsequently been wrapped before
+     *         being passed to {@link ServletChannel#associate(Request, Response, Callback)}.
      */
     public Response getResponse()
     {
-        return _servletChannel.getResponse();
+        return getServletChannel().getResponse();
     }
 
     @Override
@@ -104,7 +112,7 @@ public class ServletApiResponse implements HttpServletResponse
 
     public void addCookie(HttpCookie cookie)
     {
-        Response.addCookie(_servletContextResponse, cookie);
+        Response.addCookie(getResponse(), cookie);
     }
 
     @Override
@@ -116,10 +124,10 @@ public class ServletApiResponse implements HttpServletResponse
     @Override
     public String encodeURL(String url)
     {
-        SessionManager sessionManager = getServletContextRequest().getServletChannel().getContextHandler().getSessionHandler();
+        SessionManager sessionManager = getServletChannel().getServletContextHandler().getSessionHandler();
         if (sessionManager == null)
             return url;
-        return sessionManager.encodeURI(getServletContextRequest(), url, getServletContextResponse().getServletContextRequest().getServletApiRequest().isRequestedSessionIdFromCookie());
+        return sessionManager.encodeURI(getServletChannel().getRequest(), url, getServletRequestInfo().getServletContextRequest().getServletApiRequest().isRequestedSessionIdFromCookie());
     }
 
     @Override
@@ -133,14 +141,14 @@ public class ServletApiResponse implements HttpServletResponse
     {
         switch (sc)
         {
-            case -1 -> getServletContextRequest().getServletChannel().abort(new IOException(msg));
+            case -1 -> getServletChannel().abort(new IOException(msg));
             case HttpStatus.PROCESSING_102, HttpStatus.EARLY_HINT_103 ->
             {
                 if (!isCommitted())
                 {
                     try (Blocker.Callback blocker = Blocker.callback())
                     {
-                        CompletableFuture<Void> completable = getServletContextResponse().writeInterim(sc, getResponse().getHeaders().asImmutable());
+                        CompletableFuture<Void> completable = getServletResponseInfo().getServletContextResponse().writeInterim(sc, getResponse().getHeaders().asImmutable());
                         blocker.completeWith(completable);
                         blocker.block();
                     }
@@ -150,7 +158,7 @@ public class ServletApiResponse implements HttpServletResponse
             {
                 if (isCommitted())
                     throw new IllegalStateException("Committed");
-                getServletContextResponse().getState().sendError(sc, msg);
+                getServletRequestInfo().getServletRequestState().sendError(sc, msg);
             }
         }
     }
@@ -179,7 +187,7 @@ public class ServletApiResponse implements HttpServletResponse
         resetBuffer();
         try (Blocker.Callback callback = Blocker.callback())
         {
-            Response.sendRedirect(getServletContextRequest(), _servletContextResponse, callback, code, location, false);
+            Response.sendRedirect(getServletRequestInfo().getRequest(), getResponse(), callback, code, location, false);
             callback.block();
         }
     }
@@ -257,49 +265,49 @@ public class ServletApiResponse implements HttpServletResponse
     @Override
     public String getCharacterEncoding()
     {
-        return getServletContextResponse().getCharacterEncoding(false);
+        return getServletResponseInfo().getCharacterEncoding(false);
     }
 
     @Override
     public String getContentType()
     {
-        return getServletContextResponse().getContentType();
+        return getServletResponseInfo().getContentType();
     }
 
     @Override
     public ServletOutputStream getOutputStream() throws IOException
     {
-        if (getServletContextResponse().getOutputType() == ServletContextResponse.OutputType.WRITER)
+        if (getServletResponseInfo().getOutputType() == ServletContextResponse.OutputType.WRITER)
             throw new IllegalStateException("WRITER");
-        getServletContextResponse().setOutputType(ServletContextResponse.OutputType.STREAM);
-        return _servletChannel.getHttpOutput();
+        getServletResponseInfo().setOutputType(ServletContextResponse.OutputType.STREAM);
+        return getServletChannel().getHttpOutput();
     }
 
     @Override
     public PrintWriter getWriter() throws IOException
     {
-        if (getServletContextResponse().getOutputType() == ServletContextResponse.OutputType.STREAM)
+        if (getServletResponseInfo().getOutputType() == ServletContextResponse.OutputType.STREAM)
             throw new IllegalStateException("STREAM");
 
-        ResponseWriter writer = getServletContextResponse().getWriter();
-        if (getServletContextResponse().getOutputType() == ServletContextResponse.OutputType.NONE)
+        ResponseWriter writer = getServletResponseInfo().getWriter();
+        if (getServletResponseInfo().getOutputType() == ServletContextResponse.OutputType.NONE)
         {
-            String encoding = getServletContextResponse().getCharacterEncoding(true);
+            String encoding = getServletResponseInfo().getCharacterEncoding(true);
             Locale locale = getLocale();
             if (writer != null && writer.isFor(locale, encoding))
                 writer.reopen();
             else
             {
                 if (StringUtil.__ISO_8859_1.equalsIgnoreCase(encoding))
-                    getServletContextResponse().setWriter(writer = new ResponseWriter(new Iso88591HttpWriter(_servletChannel.getHttpOutput()), locale, encoding));
+                    getServletResponseInfo().setWriter(writer = new ResponseWriter(new Iso88591HttpWriter(getServletChannel().getHttpOutput()), locale, encoding));
                 else if (StringUtil.__UTF8.equalsIgnoreCase(encoding))
-                    getServletContextResponse().setWriter(writer = new ResponseWriter(new Utf8HttpWriter(_servletChannel.getHttpOutput()), locale, encoding));
+                    getServletResponseInfo().setWriter(writer = new ResponseWriter(new Utf8HttpWriter(getServletChannel().getHttpOutput()), locale, encoding));
                 else
-                    getServletContextResponse().setWriter(writer = new ResponseWriter(new EncodingHttpWriter(_servletChannel.getHttpOutput(), encoding), locale, encoding));
+                    getServletResponseInfo().setWriter(writer = new ResponseWriter(new EncodingHttpWriter(getServletChannel().getHttpOutput(), encoding), locale, encoding));
             }
 
             // Set the output type at the end, because setCharacterEncoding() checks for it.
-            getServletContextResponse().setOutputType(ServletContextResponse.OutputType.WRITER);
+            getServletResponseInfo().setOutputType(ServletContextResponse.OutputType.WRITER);
         }
         return writer;
     }
@@ -307,7 +315,7 @@ public class ServletApiResponse implements HttpServletResponse
     @Override
     public void setCharacterEncoding(String encoding)
     {
-        getServletContextResponse().setCharacterEncoding(encoding, ServletContextResponse.EncodingFrom.SET_CHARACTER_ENCODING);
+        getServletResponseInfo().setCharacterEncoding(encoding, ServletContextResponse.EncodingFrom.SET_CHARACTER_ENCODING);
     }
 
     @Override
@@ -341,7 +349,7 @@ public class ServletApiResponse implements HttpServletResponse
 
         if (contentType == null)
         {
-            if (_servletContextResponse.isWriting() && getServletContextResponse().getCharacterEncoding() != null)
+            if (getServletResponseInfo().isWriting() && getServletResponseInfo().getCharacterEncoding() != null)
                 throw new IllegalStateException();
 
             getResponse().getHeaders().remove(HttpHeader.CONTENT_TYPE);
@@ -354,7 +362,7 @@ public class ServletApiResponse implements HttpServletResponse
 
     public long getContentCount()
     {
-        return _servletChannel.getHttpOutput().getWritten();
+        return getServletChannel().getHttpOutput().getWritten();
     }
 
     @Override
@@ -366,20 +374,20 @@ public class ServletApiResponse implements HttpServletResponse
             throw new IllegalStateException("cannot set buffer size after response has " + getContentCount() + " bytes already written");
         if (size < MIN_BUFFER_SIZE)
             size = MIN_BUFFER_SIZE;
-        _servletChannel.getHttpOutput().setBufferSize(size);
+        getServletChannel().getHttpOutput().setBufferSize(size);
     }
 
     @Override
     public int getBufferSize()
     {
-        return _servletChannel.getHttpOutput().getBufferSize();
+        return getServletChannel().getHttpOutput().getBufferSize();
     }
 
     @Override
     public void flushBuffer() throws IOException
     {
-        if (!_servletChannel.getHttpOutput().isClosed())
-            _servletChannel.getHttpOutput().flush();
+        if (!getServletChannel().getHttpOutput().isClosed())
+            getServletChannel().getHttpOutput().flush();
     }
 
     @Override
@@ -387,17 +395,17 @@ public class ServletApiResponse implements HttpServletResponse
     {
         if (isCommitted())
             throw new IllegalStateException("Committed");
-        _servletChannel.getHttpOutput().resetBuffer();
-        _servletChannel.getHttpOutput().reopen();
+        getServletChannel().getHttpOutput().resetBuffer();
+        getServletChannel().getHttpOutput().reopen();
     }
 
     @Override
     public boolean isCommitted()
     {
         // If we are in sendError state, we pretend to be committed
-        if (getServletContextRequest().getServletChannel().isSendError())
+        if (getServletChannel().isSendError())
             return true;
-        return getServletContextRequest().getServletChannel().isCommitted();
+        return getServletChannel().isCommitted();
     }
 
     @Override
@@ -408,12 +416,11 @@ public class ServletApiResponse implements HttpServletResponse
 
         getResponse().reset();
 
-
-        ServletApiRequest servletApiRequest = getServletContextRequest().getServletApiRequest();
-        ManagedSession session = servletApiRequest.getServletContextRequest().getManagedSession();
+        ServletApiRequest servletApiRequest = getServletRequestInfo().getServletContextRequest().getServletApiRequest();
+        ManagedSession session = servletApiRequest.getServletRequestInfo().getManagedSession();
         if (session != null && session.isNew())
         {
-            SessionManager sessionManager = servletApiRequest.getServletContextRequest().getSessionManager();
+            SessionManager sessionManager = servletApiRequest.getServletRequestInfo().getSessionManager();
             if (sessionManager != null)
             {
                 HttpCookie cookie = sessionManager.getSessionCookie(session, servletApiRequest.getServletConnection().isSecure());
@@ -431,41 +438,41 @@ public class ServletApiResponse implements HttpServletResponse
 
         if (locale == null)
         {
-            getServletContextResponse().setLocale(null);
+            getServletResponseInfo().setLocale(null);
             getResponse().getHeaders().remove(HttpHeader.CONTENT_LANGUAGE);
-            if (getServletContextResponse().getEncodingFrom() == ServletContextResponse.EncodingFrom.SET_LOCALE)
-                getServletContextResponse().setCharacterEncoding(null, ServletContextResponse.EncodingFrom.NOT_SET);
+            if (getServletResponseInfo().getEncodingFrom() == ServletContextResponse.EncodingFrom.SET_LOCALE)
+                getServletResponseInfo().setCharacterEncoding(null, ServletContextResponse.EncodingFrom.NOT_SET);
         }
         else
         {
-            getServletContextResponse().setLocale(locale);
+            getServletResponseInfo().setLocale(locale);
             getResponse().getHeaders().put(HttpHeader.CONTENT_LANGUAGE, StringUtil.replace(locale.toString(), '_', '-'));
 
-            if (getServletContextResponse().getOutputType() != ServletContextResponse.OutputType.NONE)
+            if (getServletResponseInfo().getOutputType() != ServletContextResponse.OutputType.NONE)
                 return;
 
-            ServletContextHandler.ServletScopedContext context = getServletContextRequest().getServletChannel().getContext();
+            ServletContextHandler.ServletContext context = getServletChannel().getContext();
             if (context == null)
                 return;
 
             String charset = context.getServletContextHandler().getLocaleEncoding(locale);
-            if (!StringUtil.isEmpty(charset) && LOCALE_OVERRIDE.contains(getServletContextResponse().getEncodingFrom()))
-                getServletContextResponse().setCharacterEncoding(charset, ServletContextResponse.EncodingFrom.SET_LOCALE);
+            if (!StringUtil.isEmpty(charset) && LOCALE_OVERRIDE.contains(getServletResponseInfo().getEncodingFrom()))
+                getServletResponseInfo().setCharacterEncoding(charset, ServletContextResponse.EncodingFrom.SET_LOCALE);
         }
     }
 
     @Override
     public Locale getLocale()
     {
-        if (getServletContextResponse().getLocale() == null)
+        if (getServletResponseInfo().getLocale() == null)
             return Locale.getDefault();
-        return getServletContextResponse().getLocale();
+        return getServletResponseInfo().getLocale();
     }
 
     @Override
     public Supplier<Map<String, String>> getTrailerFields()
     {
-        return getServletContextResponse().getTrailers();
+        return getServletResponseInfo().getTrailers();
     }
 
     @Override
@@ -473,13 +480,12 @@ public class ServletApiResponse implements HttpServletResponse
     {
         if (isCommitted())
             throw new IllegalStateException("Committed");
-        HttpVersion version = HttpVersion.fromString(getServletContextRequest().getConnectionMetaData().getProtocol());
+        HttpVersion version = HttpVersion.fromString(getServletRequestInfo().getRequest().getConnectionMetaData().getProtocol());
         if (version == null || version.compareTo(HttpVersion.HTTP_1_1) < 0)
             throw new IllegalStateException("Trailers not supported in " + version);
 
-        getServletContextResponse().setTrailers(trailers);
-
-        getServletContextResponse().setTrailersSupplier(() ->
+        getServletResponseInfo().setTrailers(trailers);
+        getResponse().setTrailersSupplier(() ->
         {
             Map<String, String> map = trailers.get();
             if (map == null)
@@ -496,7 +502,7 @@ public class ServletApiResponse implements HttpServletResponse
     @Override
     public String toString()
     {
-        return "%s@%x{%s,%s}".formatted(this.getClass().getSimpleName(), hashCode(), getResponse(), getServletContextResponse());
+        return "%s@%x{%s,%s}".formatted(this.getClass().getSimpleName(), hashCode(), getResponse(), getServletResponseInfo());
     }
 
     static class HttpCookieFacade implements HttpCookie

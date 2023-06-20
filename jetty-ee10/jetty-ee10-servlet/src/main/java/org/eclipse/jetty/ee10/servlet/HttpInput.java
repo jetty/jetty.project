@@ -52,7 +52,7 @@ public class HttpInput extends ServletInputStream implements Runnable
     public HttpInput(ServletChannel channel)
     {
         _servletChannel = channel;
-        _channelState = _servletChannel.getState();
+        _channelState = _servletChannel.getServletRequestState();
         _asyncContentProducer = new AsyncContentProducer(_servletChannel, _lock);
         _blockingContentProducer = new BlockingContentProducer(_asyncContentProducer);
         _contentProducer = _blockingContentProducer;

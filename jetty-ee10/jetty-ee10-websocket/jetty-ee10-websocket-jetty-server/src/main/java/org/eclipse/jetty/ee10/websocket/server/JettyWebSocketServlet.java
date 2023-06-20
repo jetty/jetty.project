@@ -183,7 +183,7 @@ public abstract class JettyWebSocketServlet extends HttpServlet
         throws ServletException, IOException
     {
         ServletContextRequest request = ServletContextRequest.getServletContextRequest(req);
-        ServletContextResponse response = request.getResponse();
+        ServletContextResponse response = request.getServletContextResponse();
 
         // Do preliminary check before proceeding to attempt an upgrade.
         if (mapping.getHandshaker().isWebSocketUpgradeRequest(request))

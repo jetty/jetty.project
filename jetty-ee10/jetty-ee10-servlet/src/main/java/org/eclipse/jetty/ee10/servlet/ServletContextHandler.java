@@ -19,6 +19,7 @@ import java.io.InputStream;
 import java.net.MalformedURLException;
 import java.net.URI;
 import java.net.URL;
+import java.nio.charset.Charset;
 import java.nio.file.Path;
 import java.util.ArrayList;
 import java.util.Arrays;
@@ -35,6 +36,7 @@ import java.util.Objects;
 import java.util.Set;
 import java.util.concurrent.CopyOnWriteArrayList;
 import java.util.concurrent.TimeUnit;
+import java.util.function.Supplier;
 
 import jakarta.servlet.DispatcherType;
 import jakarta.servlet.Filter;
@@ -42,7 +44,6 @@ import jakarta.servlet.FilterRegistration;
 import jakarta.servlet.RequestDispatcher;
 import jakarta.servlet.Servlet;
 import jakarta.servlet.ServletContainerInitializer;
-import jakarta.servlet.ServletContext;
 import jakarta.servlet.ServletContextAttributeEvent;
 import jakarta.servlet.ServletContextAttributeListener;
 import jakarta.servlet.ServletContextEvent;
@@ -66,9 +67,12 @@ import jakarta.servlet.http.HttpSessionAttributeListener;
 import jakarta.servlet.http.HttpSessionBindingListener;
 import jakarta.servlet.http.HttpSessionIdListener;
 import jakarta.servlet.http.HttpSessionListener;
+import org.eclipse.jetty.ee10.servlet.ServletContextResponse.EncodingFrom;
+import org.eclipse.jetty.ee10.servlet.ServletContextResponse.OutputType;
 import org.eclipse.jetty.ee10.servlet.security.ConstraintAware;
 import org.eclipse.jetty.ee10.servlet.security.ConstraintMapping;
 import org.eclipse.jetty.ee10.servlet.security.ConstraintSecurityHandler;
+import org.eclipse.jetty.ee10.servlet.writer.ResponseWriter;
 import org.eclipse.jetty.http.HttpURI;
 import org.eclipse.jetty.http.pathmap.MatchedResource;
 import org.eclipse.jetty.security.SecurityHandler;
@@ -80,6 +84,9 @@ import org.eclipse.jetty.server.handler.ContextHandler;
 import org.eclipse.jetty.server.handler.ContextHandlerCollection;
 import org.eclipse.jetty.server.handler.ContextRequest;
 import org.eclipse.jetty.server.handler.ContextResponse;
+import org.eclipse.jetty.session.AbstractSessionManager;
+import org.eclipse.jetty.session.ManagedSession;
+import org.eclipse.jetty.session.SessionManager;
 import org.eclipse.jetty.util.Attributes;
 import org.eclipse.jetty.util.Callback;
 import org.eclipse.jetty.util.DecoratedObjectFactory;
@@ -116,7 +123,7 @@ import static jakarta.servlet.ServletContext.TEMPDIR;
  * </pre>
  * <p>
  * This class should have been called ServletContext, but this would have
- * cause confusion with {@link ServletContext}.
+ * cause confusion with {@link jakarta.servlet.ServletContext}.
  */
 @ManagedObject("Servlet Context Handler")
 public class ServletContextHandler extends ContextHandler
@@ -153,37 +160,37 @@ public class ServletContextHandler extends ContextHandler
         DESTROYED
     }
 
-    public static ServletContextHandler getServletContextHandler(ServletContext servletContext, String purpose)
+    public static ServletContextHandler getServletContextHandler(jakarta.servlet.ServletContext servletContext, String purpose)
     {
         if (servletContext instanceof ServletContextApi servletContextApi)
             return servletContextApi.getContext().getServletContextHandler();
         throw new IllegalStateException("No Jetty ServletContextHandler, " + purpose + " unavailable");
     }
 
-    public static ServletContextHandler getServletContextHandler(ServletContext servletContext)
+    public static ServletContextHandler getServletContextHandler(jakarta.servlet.ServletContext servletContext)
     {
         if (servletContext instanceof ServletContextApi)
             return ((ServletContextApi)servletContext).getContext().getServletContextHandler();
         return null;
     }
 
-    public static ServletContext getCurrentServletContext()
+    public static jakarta.servlet.ServletContext getCurrentServletContext()
     {
         return getServletContext(ContextHandler.getCurrentContext());
     }
 
-    public static ServletContext getServletContext(Context context)
+    public static jakarta.servlet.ServletContext getServletContext(Context context)
     {
-        if (context instanceof ServletScopedContext)
-            return ((ServletScopedContext)context).getServletContext();
+        if (context instanceof ServletContext)
+            return ((ServletContext)context).getServletContext();
         return null;
     }
 
     public static ServletContextHandler getCurrentServletContextHandler()
     {
         Context context = ContextHandler.getCurrentContext();
-        if (context instanceof ServletScopedContext)
-            return ((ServletScopedContext)context).getServletContextHandler();
+        if (context instanceof ServletContext)
+            return ((ServletContext)context).getServletContextHandler();
         return null;
     }
 
@@ -199,7 +206,6 @@ public class ServletContextHandler extends ContextHandler
     private Map<String, String> _localeEncodingMap;
     private String[] _welcomeFiles;
     private Logger _logger;
-    protected boolean _allowNullPathInfo;
     private int _maxFormKeys = Integer.getInteger(MAX_FORM_KEYS_KEY, DEFAULT_MAX_FORM_KEYS);
     private int _maxFormContentSize = Integer.getInteger(MAX_FORM_CONTENT_SIZE_KEY, DEFAULT_MAX_FORM_CONTENT_SIZE);
     private boolean _usingSecurityManager = getSecurityManager() != null;
@@ -335,7 +341,7 @@ public class ServletContextHandler extends ContextHandler
 
     /**
      * Get the context path in a form suitable to be returned from {@link HttpServletRequest#getContextPath()}
-     * or {@link ServletContext#getContextPath()}.
+     * or {@link jakarta.servlet.ServletContext#getContextPath()}.
      *
      * @return Returns the encoded contextPath, or empty string for root context
      */
@@ -831,16 +837,16 @@ public class ServletContextHandler extends ContextHandler
          * @param context The context being entered
          * @param request A request that is applicable to the scope, or null
          */
-        void enterScope(ServletScopedContext context, ServletContextRequest request);
+        void enterScope(ServletContext context, ServletContextRequest request);
 
         /**
          * @param context The context being exited
          * @param request A request that is applicable to the scope, or null
          */
-        void exitScope(ServletScopedContext context, ServletContextRequest request);
+        void exitScope(ServletContext context, ServletContextRequest request);
     }
 
-    public ServletContext getServletContext()
+    public jakarta.servlet.ServletContext getServletContext()
     {
         return getContext().getServletContext();
     }
@@ -848,13 +854,13 @@ public class ServletContextHandler extends ContextHandler
     @Override
     protected ScopedContext newContext()
     {
-        return new ServletScopedContext();
+        return new ServletContext();
     }
 
     @Override
-    public ServletScopedContext getContext()
+    public ServletContext getContext()
     {
-        return (ServletScopedContext)super.getContext();
+        return (ServletContext)super.getContext();
     }
 
     /**
@@ -1050,7 +1056,7 @@ public class ServletContextHandler extends ContextHandler
         Context lastContext = ContextHandler.getCurrentContext();
         ClassLoader lastLoader = enterScope(null);
 
-        ServletScopedContext context = getContext();
+        ServletContext context = getContext();
         try
         {
             // Set the classloader
@@ -1135,7 +1141,6 @@ public class ServletContextHandler extends ContextHandler
 
         // Get a servlet request, possibly from a cached version in the channel attributes.
         Attributes cache = request.getComponents().getCache();
-
         Object cachedChannel = cache.getAttribute(ServletChannel.class.getName());
         ServletChannel servletChannel;
         if (cachedChannel instanceof ServletChannel sc && sc.getContext() == getContext())
@@ -1157,7 +1162,7 @@ public class ServletContextHandler extends ContextHandler
     protected ContextResponse wrapResponse(ContextRequest request, Response response)
     {
         if (request instanceof ServletContextRequest servletContextRequest)
-            return servletContextRequest.getResponse();
+            return servletContextRequest.getServletContextResponse();
         throw new IllegalArgumentException();
     }
 
@@ -1977,7 +1982,7 @@ public class ServletContextHandler extends ContextHandler
         }
     }
 
-    public class ServletScopedContext extends ScopedContext
+    public class ServletContext extends ScopedContext
     {
         public ServletContextApi getServletContext()
         {
@@ -2034,7 +2039,7 @@ public class ServletContextHandler extends ContextHandler
         }
     }
 
-    public class ServletContextApi implements ServletContext
+    public class ServletContextApi implements jakarta.servlet.ServletContext
     {
         public static final int SERVLET_MAJOR_VERSION = 6;
         public static final int SERVLET_MINOR_VERSION = 0;
@@ -2088,7 +2093,7 @@ public class ServletContextHandler extends ContextHandler
             _effectiveMinorVersion = v;
         }
 
-        public ServletScopedContext getContext()
+        public ServletContext getContext()
         {
             return ServletContextHandler.this.getContext();
         }
@@ -2696,7 +2701,7 @@ public class ServletContextHandler extends ContextHandler
         }
 
         @Override
-        public ServletContext getContext(String uripath)
+        public jakarta.servlet.ServletContext getContext(String uripath)
         {
             //TODO jetty-12 does not currently support cross context dispatch
             return null;
@@ -3033,5 +3038,88 @@ public class ServletContextHandler extends ContextHandler
             }
             super.doStop();
         }
+    }
+
+    /**
+     * The interface used by {@link ServletApiRequest} to access the {@link ServletContextRequest} without
+     * access to the unwrapped {@link Request} methods.
+     */
+    public interface ServletRequestInfo
+    {
+        String getDecodedPathInContext();
+
+        ManagedSession getManagedSession();
+
+        Charset getQueryEncoding();
+
+        default Request getRequest()
+        {
+            return getServletChannel().getRequest();
+        }
+
+        List<ServletRequestAttributeListener> getRequestAttributeListeners();
+
+        ServletContext getServletContext();
+
+        HttpInput getHttpInput();
+        
+        MatchedResource<ServletHandler.MappedServlet> getMatchedResource();
+
+        AbstractSessionManager.RequestedSession getRequestedSession();
+
+        ServletChannel getServletChannel();
+
+        ServletContextHandler getServletContextHandler();
+
+        ServletContextRequest getServletContextRequest();
+        
+        ServletContextResponse getServletContextResponse();
+
+        ServletRequestState getServletRequestState();
+
+        SessionManager getSessionManager();
+
+        ServletRequestState getState();
+
+        void setQueryEncoding(String s);
+    }
+
+    /**
+     * The interface used by {@link ServletApiResponse} to access the {@link ServletContextResponse} without
+     * access to the unwrapped {@link Response} methods.
+     */
+    public interface ServletResponseInfo
+    {
+        String getCharacterEncoding(boolean setContentType);
+
+        String getCharacterEncoding();
+
+        String getContentType();
+
+        EncodingFrom getEncodingFrom();
+
+        Locale getLocale();
+
+        OutputType getOutputType();
+
+        Response getResponse();
+
+        ServletContextResponse getServletContextResponse();
+
+        Supplier<Map<String, String>> getTrailers();
+
+        ResponseWriter getWriter();
+
+        boolean isWriting();
+
+        void setCharacterEncoding(String encoding, EncodingFrom encodingFrom);
+
+        void setLocale(Locale locale);
+
+        void setOutputType(OutputType outputType);
+
+        void setTrailers(Supplier<Map<String, String>> trailers);
+
+        void setWriter(ResponseWriter responseWriter);
     }
 }

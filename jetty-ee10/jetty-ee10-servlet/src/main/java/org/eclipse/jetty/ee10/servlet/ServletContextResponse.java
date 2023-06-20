@@ -46,7 +46,7 @@ import org.eclipse.jetty.util.StringUtil;
  * Non servlet related state, is used indirectly via {@link ServletChannel#getResponse()}
  * which may be a wrapper of this response.
  */
-public class ServletContextResponse extends ContextResponse
+public class ServletContextResponse extends ContextResponse implements ServletContextHandler.ServletResponseInfo
 {
     protected enum OutputType
     {
@@ -68,16 +68,15 @@ public class ServletContextResponse extends ContextResponse
 
     public static ServletContextResponse getServletContextResponse(ServletResponse response)
     {
-        if (response instanceof ServletApiResponse)
-            return ((ServletApiResponse)response).getServletContextResponse();
+        if (response instanceof ServletApiResponse servletApiResponse)
+            return servletApiResponse.getServletRequestInfo().getServletContextResponse();
 
         while (response instanceof ServletResponseWrapper)
         {
             response = ((ServletResponseWrapper)response).getResponse();
+            if (response instanceof ServletApiResponse servletApiResponse)
+                return servletApiResponse.getServletRequestInfo().getServletContextResponse();
         }
-
-        if (response instanceof ServletApiResponse)
-            return ((ServletApiResponse)response).getServletContextResponse();
 
         throw new IllegalStateException("could not find %s for %s".formatted(ServletContextResponse.class.getSimpleName(), response));
     }
@@ -90,27 +89,44 @@ public class ServletContextResponse extends ContextResponse
         _headers = new HttpFieldsWrapper(response.getHeaders());
     }
 
-    protected ResponseWriter getWriter()
+    @Override
+    public ServletContextResponse getServletContextResponse()
+    {
+        return this;
+    }
+
+    @Override
+    public Response getResponse()
+    {
+        return _servletChannel.getResponse();
+    }
+
+    @Override
+    public ResponseWriter getWriter()
     {
         return _writer;
     }
 
-    protected void setWriter(ResponseWriter writer)
+    @Override
+    public void setWriter(ResponseWriter writer)
     {
         _writer = writer;
     }
 
-    protected Locale getLocale()
+    @Override
+    public Locale getLocale()
     {
         return _locale;
     }
 
-    protected void setLocale(Locale locale)
+    @Override
+    public void setLocale(Locale locale)
     {
         _locale = locale;
     }
 
-    protected EncodingFrom getEncodingFrom()
+    @Override
+    public EncodingFrom getEncodingFrom()
     {
         return _encodingFrom;
     }
@@ -120,32 +136,38 @@ public class ServletContextResponse extends ContextResponse
         return _mimeType;
     }
 
-    protected Supplier<Map<String, String>> getTrailers()
+    @Override
+    public Supplier<Map<String, String>> getTrailers()
     {
         return _trailers;
     }
 
+    @Override
     public void setTrailers(Supplier<Map<String, String>> trailers)
     {
         this._trailers = trailers;
     }
 
-    protected String getCharacterEncoding()
+    @Override
+    public String getCharacterEncoding()
     {
         return _characterEncoding;
     }
 
-    protected void setOutputType(OutputType outputType)
+    @Override
+    public void setOutputType(OutputType outputType)
     {
         _outputType = outputType;
     }
 
-    protected String getContentType()
+    @Override
+    public String getContentType()
     {
         return _contentType;
     }
 
-    protected OutputType getOutputType()
+    @Override
+    public OutputType getOutputType()
     {
         return _outputType;
     }
@@ -165,9 +187,9 @@ public class ServletContextResponse extends ContextResponse
         return _servletChannel.getHttpOutput();
     }
 
-    public ServletRequestState getState()
+    public ServletRequestState getServletRequestState()
     {
-        return _servletChannel.getState();
+        return _servletChannel.getServletRequestState();
     }
 
     public ServletApiResponse getServletApiResponse()
@@ -317,7 +339,7 @@ public class ServletContextResponse extends ContextResponse
         HttpSession session = getServletContextRequest().getServletApiRequest().getSession(false);
         if (session != null && session.isNew())
         {
-            SessionHandler sh = _servletChannel.getContextHandler().getSessionHandler();
+            SessionHandler sh = _servletChannel.getServletContextHandler().getSessionHandler();
             if (sh != null)
             {
                 ManagedSession managedSession = SessionHandler.ServletSessionApi.getSession(session);
@@ -365,6 +387,7 @@ public class ServletContextResponse extends ContextResponse
         return _characterEncoding;
     }
 
+    @Override
     public String getCharacterEncoding(boolean setContentType)
     {
         // First try explicit char encoding.
@@ -393,7 +416,7 @@ public class ServletContextResponse extends ContextResponse
         }
 
         // Try any default char encoding for the context.
-        ServletContext context = _servletChannel.getServletContextRequest().getContext().getServletContext();
+        ServletContext context = _servletChannel.getServletContextRequest().getServletContext().getServletContext();
         if (context != null)
         {
             encoding = context.getResponseCharacterEncoding();
@@ -418,7 +441,8 @@ public class ServletContextResponse extends ContextResponse
      * @param encoding the character encoding
      * @param from where encoding came from
      */
-    protected void setCharacterEncoding(String encoding, EncodingFrom from)
+    @Override
+    public void setCharacterEncoding(String encoding, EncodingFrom from)
     {
         if (isWriting() || isCommitted())
             return;
@@ -463,6 +487,7 @@ public class ServletContextResponse extends ContextResponse
         }
     }
 
+    @Override
     public boolean isWriting()
     {
         return _outputType == OutputType.WRITER;

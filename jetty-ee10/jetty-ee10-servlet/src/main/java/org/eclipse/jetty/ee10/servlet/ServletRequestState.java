@@ -915,7 +915,7 @@ public class ServletRequestState
             request.setAttribute(ERROR_MESSAGE, message);
 
             // Set Jetty Specific Attributes.
-            request.setAttribute(ErrorHandler.ERROR_CONTEXT, servletContextRequest.getContext());
+            request.setAttribute(ErrorHandler.ERROR_CONTEXT, servletContextRequest.getServletContext());
             request.setAttribute(ErrorHandler.ERROR_MESSAGE, message);
             request.setAttribute(ErrorHandler.ERROR_STATUS, code);
 
@@ -1153,7 +1153,7 @@ public class ServletRequestState
 
     public ServletContextHandler getContextHandler()
     {
-        return _servletChannel.getContextHandler();
+        return _servletChannel.getServletContextHandler();
     }
 
     void runInContext(AsyncContextEvent event, Runnable runnable)

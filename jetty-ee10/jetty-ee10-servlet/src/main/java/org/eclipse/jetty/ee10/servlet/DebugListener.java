@@ -223,7 +223,7 @@ public class DebugListener extends AbstractLifeCycle implements ServletContextLi
             String rname = findRequestName(ace.getAsyncContext().getRequest());
 
             ServletContextRequest request = ServletContextRequest.getServletContextRequest(ace.getAsyncContext().getRequest());
-            Response response = request.getResponse();
+            Response response = request.getServletContextResponse();
             String headers = _showHeaders ? ("\n" + response.getHeaders().toString()) : "";
 
             log("!  ctx=%s r=%s onComplete %s %d%s", cname, rname, ace.getServletRequestState(), response.getStatus(), headers);
@@ -278,8 +278,8 @@ public class DebugListener extends AbstractLifeCycle implements ServletContextLi
             else
             {
                 ServletContextRequest request = ServletContextRequest.getServletContextRequest(r);
-                String headers = _showHeaders ? ("\n" + request.getResponse().getHeaders().toString()) : "";
-                log("<< %s ctx=%s r=%s async=false %d%s", d, cname, rname, request.getResponse().getStatus(), headers);
+                String headers = _showHeaders ? ("\n" + request.getServletContextResponse().getHeaders().toString()) : "";
+                log("<< %s ctx=%s r=%s async=false %d%s", d, cname, rname, request.getServletContextResponse().getStatus(), headers);
             }
         }
     };
@@ -287,7 +287,7 @@ public class DebugListener extends AbstractLifeCycle implements ServletContextLi
     final ServletContextScopeListener _contextScopeListener = new ServletContextScopeListener()
     {
         @Override
-        public void enterScope(ServletContextHandler.ServletScopedContext context, ServletContextRequest request)
+        public void enterScope(ServletContextHandler.ServletContext context, ServletContextRequest request)
         {
             String cname = findContextName(context.getServletContext());
             if (request == null)
@@ -307,7 +307,7 @@ public class DebugListener extends AbstractLifeCycle implements ServletContextLi
         }
 
         @Override
-        public void exitScope(ServletContextHandler.ServletScopedContext context, ServletContextRequest request)
+        public void exitScope(ServletContextHandler.ServletContext context, ServletContextRequest request)
         {
             String cname = findContextName(context.getServletContext());
             if (request == null)

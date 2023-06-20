@@ -52,7 +52,7 @@ import org.eclipse.jetty.util.Fields;
  * This class is single use only.
  * </p>
  */
-public class ServletContextRequest extends ContextRequest
+public class ServletContextRequest extends ContextRequest implements ServletContextHandler.ServletRequestInfo
 {
     public static final String MULTIPART_CONFIG_ELEMENT = "org.eclipse.jetty.multipartConfig";
     static final int INPUT_NONE = 0;
@@ -65,7 +65,7 @@ public class ServletContextRequest extends ContextRequest
     public static ServletContextRequest getServletContextRequest(ServletRequest request)
     {
         if (request instanceof ServletApiRequest)
-            return ((ServletApiRequest)request).getServletContextRequest();
+            return ((ServletApiRequest)request).getServletRequestInfo().getServletContextRequest();
 
         Object channel = request.getAttribute(ServletChannel.class.getName());
         if (channel instanceof ServletChannel)
@@ -74,10 +74,10 @@ public class ServletContextRequest extends ContextRequest
         while (request instanceof ServletRequestWrapper)
         {
             request = ((ServletRequestWrapper)request).getRequest();
-        }
 
-        if (request instanceof ServletApiRequest)
-            return ((ServletApiRequest)request).getServletContextRequest();
+            if (request instanceof ServletApiRequest)
+                return ((ServletApiRequest)request).getServletRequestInfo().getServletContextRequest();
+        }
 
         throw new IllegalStateException("could not find %s for %s".formatted(ServletContextRequest.class.getSimpleName(), request));
     }
@@ -117,7 +117,7 @@ public class ServletContextRequest extends ContextRequest
 
     protected ServletApiRequest newServletApiRequest()
     {
-        if (getHttpURI().hasViolations() && !getServletChannel().getContextHandler().getServletHandler().isDecodeAmbiguousURIs())
+        if (getHttpURI().hasViolations() && !getServletChannel().getServletContextHandler().getServletHandler().isDecodeAmbiguousURIs())
         {
             // TODO we should check if current compliance mode allows all the violations?
 
@@ -138,14 +138,28 @@ public class ServletContextRequest extends ContextRequest
 
     private boolean onIdleTimeout(TimeoutException timeout)
     {
-        return _servletChannel.getState().onIdleTimeout(timeout);
+        return _servletChannel.getServletRequestState().onIdleTimeout(timeout);
     }
 
+    @Override
+    public ServletContextHandler getServletContextHandler()
+    {
+        return _servletChannel.getServletContextHandler();
+    }
+
+    @Override
+    public ServletContextRequest getServletContextRequest()
+    {
+        return this;
+    }
+
+    @Override
     public String getDecodedPathInContext()
     {
         return _decodedPathInContext;
     }
 
+    @Override
     public MatchedResource<ServletHandler.MappedServlet> getMatchedResource()
     {
         return _matchedResource;
@@ -162,22 +176,25 @@ public class ServletContextRequest extends ContextRequest
         _trailers = trailers;
     }
 
+    @Override
     public ServletRequestState getState()
     {
-        return _servletChannel.getState();
+        return _servletChannel.getServletRequestState();
     }
 
-    public ServletContextResponse getResponse()
+    @Override
+    public ServletContextResponse getServletContextResponse()
     {
         return _response;
     }
 
     @Override
-    public ServletContextHandler.ServletScopedContext getContext()
+    public ServletContextHandler.ServletContext getServletContext()
     {
-        return (ServletContextHandler.ServletScopedContext)super.getContext();
+        return (ServletContextHandler.ServletContext)super.getContext();
     }
 
+    @Override
     public HttpInput getHttpInput()
     {
         return _httpInput;
@@ -207,11 +224,13 @@ public class ServletContextRequest extends ContextRequest
      *
      * @param queryEncoding the URI query character encoding
      */
+    @Override
     public void setQueryEncoding(String queryEncoding)
     {
         _queryEncoding = Charset.forName(queryEncoding);
     }
 
+    @Override
     public Charset getQueryEncoding()
     {
         return _queryEncoding;
@@ -250,18 +269,20 @@ public class ServletContextRequest extends ContextRequest
      * If the request is asynchronous, then it is the context that called async. Otherwise, it is the last non-null
      * context passed to #setContext
      */
-    public ServletContextHandler.ServletScopedContext getErrorContext()
+    public ServletContextHandler.ServletContext getErrorContext()
     {
         // TODO: review.
         return _servletChannel.getContext();
     }
 
-    ServletRequestState getServletRequestState()
+    @Override
+    public ServletRequestState getServletRequestState()
     {
-        return _servletChannel.getState();
+        return _servletChannel.getServletRequestState();
     }
 
-    ServletChannel getServletChannel()
+    @Override
+    public ServletChannel getServletChannel()
     {
         return _servletChannel;
     }
@@ -281,6 +302,7 @@ public class ServletContextRequest extends ContextRequest
         return getMatchedResource().getResource().getServletHolder().getName();
     }
 
+    @Override
     public List<ServletRequestAttributeListener> getRequestAttributeListeners()
     {
         return _requestAttributeListeners;
@@ -312,6 +334,7 @@ public class ServletContextRequest extends ContextRequest
         return isNoParams;
     }
 
+    @Override
     public ManagedSession getManagedSession()
     {
         return _managedSession;
@@ -322,6 +345,7 @@ public class ServletContextRequest extends ContextRequest
         _managedSession = managedSession;
     }
 
+    @Override
     public SessionManager getSessionManager()
     {
         return _sessionManager;
@@ -335,6 +359,7 @@ public class ServletContextRequest extends ContextRequest
         _managedSession = requestedSession.session();
     }
 
+    @Override
     public AbstractSessionManager.RequestedSession getRequestedSession()
     {
         return _requestedSession;

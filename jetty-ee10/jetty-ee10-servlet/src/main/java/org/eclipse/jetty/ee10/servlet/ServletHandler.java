@@ -176,10 +176,10 @@ public class ServletHandler extends Handler.Wrapper
         try (AutoLock ignored = lock())
         {
             Context context = ContextHandler.getCurrentContext();
-            if (!(context instanceof ServletContextHandler.ServletScopedContext))
+            if (!(context instanceof ServletContextHandler.ServletContext))
                 throw new IllegalStateException("Cannot use ServletHandler without ServletContextHandler");
-            _servletContext = ((ServletContextHandler.ServletScopedContext)context).getServletContext();
-            _servletContextHandler = ((ServletContextHandler.ServletScopedContext)context).getServletContextHandler();
+            _servletContext = ((ServletContextHandler.ServletContext)context).getServletContext();
+            _servletContextHandler = ((ServletContextHandler.ServletContext)context).getServletContextHandler();
 
             if (_servletContextHandler != null)
             {
@@ -454,6 +454,9 @@ public class ServletHandler extends Handler.Wrapper
     {
         // We will always have a ServletContextRequest as we must be within a ServletContextHandler
         ServletChannel servletChannel = Request.get(request, ServletContextRequest.class, ServletContextRequest::getServletChannel);
+
+        if (LOG.isDebugEnabled())
+            LOG.debug("handle {} {} {} {}", this, request, response, callback);
 
         // But request, response and/or callback may have been wrapped after the ServletContextHandler, so update the channel.
         servletChannel.associate(request, response, callback);

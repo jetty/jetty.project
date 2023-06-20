@@ -215,7 +215,7 @@ public class JettyWebSocketServerContainer extends ContainerLifeCycle implements
         };
 
         ServletContextRequest servletContextRequest = ServletContextRequest.getServletContextRequest(request);
-        ServletContextResponse servletContextResponse = servletContextRequest.getResponse();
+        ServletContextResponse servletContextResponse = servletContextRequest.getServletContextResponse();
 
         WebSocketNegotiator negotiator = WebSocketNegotiator.from(coreCreator, frameHandlerFactory);
         Handshaker handshaker = webSocketMappings.getHandshaker();

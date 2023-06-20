@@ -143,7 +143,7 @@ public class HttpOutput extends ServletOutputStream implements Runnable
     public HttpOutput(ServletChannel channel)
     {
         _servletChannel = channel;
-        _channelState = _servletChannel.getState();
+        _channelState = _servletChannel.getServletRequestState();
         _writeBlocker = new Blocker.Shared();
         HttpConfiguration config = _servletChannel.getHttpConfiguration();
         _bufferSize = config.getOutputBufferSize();
@@ -1284,7 +1284,7 @@ public class HttpOutput extends ServletOutputStream implements Runnable
     @Override
     public void setWriteListener(WriteListener writeListener)
     {
-        if (!_servletChannel.getState().isAsync())
+        if (!_servletChannel.getServletRequestState().isAsync())
             throw new IllegalStateException("!ASYNC: " + stateString());
         boolean wake;
         try (AutoLock l = _channelState.lock())
@@ -1293,7 +1293,7 @@ public class HttpOutput extends ServletOutputStream implements Runnable
                 throw new IllegalStateException("!OPEN" + stateString());
             _apiState = ApiState.READY;
             _writeListener = writeListener;
-            wake = _servletChannel.getState().onWritePossible();
+            wake = _servletChannel.getServletRequestState().onWritePossible();
         }
         if (wake)
             _servletChannel.execute(_servletChannel::handle);

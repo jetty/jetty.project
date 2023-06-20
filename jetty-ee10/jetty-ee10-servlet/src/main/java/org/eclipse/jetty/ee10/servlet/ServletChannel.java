@@ -81,7 +81,7 @@ public class ServletChannel
     private static final Logger LOG = LoggerFactory.getLogger(ServletChannel.class);
 
     private final ServletRequestState _state;
-    private final ServletContextHandler.ServletScopedContext _context;
+    private final ServletContextHandler.ServletContext _context;
     private final ServletContextHandler.ServletContextApi _servletContextApi;
     private final ConnectionMetaData _connectionMetaData;
     private final AtomicLong _requests = new AtomicLong();
@@ -134,7 +134,7 @@ public class ServletChannel
         _httpInput.reopen();
         _httpOutput.recycle();
         _request = _servletContextRequest = servletContextRequest;
-        _response = _servletContextRequest.getResponse();
+        _response = _servletContextRequest.getServletContextResponse();
         _expects100Continue = servletContextRequest.getHeaders().contains(HttpHeader.EXPECT, HttpHeaderValue.CONTINUE.asString());
 
         if (LOG.isDebugEnabled())
@@ -169,17 +169,17 @@ public class ServletChannel
         _callback = callback;
     }
 
-    public ServletContextHandler.ServletScopedContext getContext()
+    public ServletContextHandler.ServletContext getContext()
     {
         return _context;
     }
 
-    public ServletContextHandler getContextHandler()
+    public ServletContextHandler getServletContextHandler()
     {
         return _context.getContextHandler();
     }
 
-    public ServletContextHandler.ServletContextApi getServletContext()
+    public ServletContextHandler.ServletContextApi getServletContextApi()
     {
         return _servletContextApi;
     }
@@ -213,7 +213,7 @@ public class ServletChannel
         return HostPort.normalizeHost(addr);
     }
 
-    public ServletRequestState getState()
+    public ServletRequestState getServletRequestState()
     {
         return _state;
     }
@@ -285,7 +285,7 @@ public class ServletChannel
     public ServletContextResponse getServletContextResponse()
     {
         ServletContextRequest request = _servletContextRequest;
-        return request == null ? null : request.getResponse();
+        return request == null ? null : request.getServletContextResponse();
     }
 
     /**
@@ -545,7 +545,7 @@ public class ServletChannel
                                 // We first worked with the core pathInContext above, but now need to convert to servlet style
                                 String decodedPathInContext = URIUtil.decodePath(pathInContext);
 
-                                Dispatcher dispatcher = new Dispatcher(getContextHandler(), uri, decodedPathInContext);
+                                Dispatcher dispatcher = new Dispatcher(getServletContextHandler(), uri, decodedPathInContext);
                                 dispatcher.async(asyncContextEvent.getSuppliedRequest(), asyncContextEvent.getSuppliedResponse());
                             }
                             finally
@@ -582,7 +582,7 @@ public class ServletChannel
                             // Connection:close.  This can't be deferred to COMPLETE as the response will be committed
                             // by then.
                             if (!_httpInput.consumeAvailable())
-                                ResponseUtils.ensureNotPersistent(_servletContextRequest, _servletContextRequest.getResponse());
+                                ResponseUtils.ensureNotPersistent(_servletContextRequest, _servletContextRequest.getServletContextResponse());
 
                             ContextHandler.ScopedContext context = (ContextHandler.ScopedContext)_servletContextRequest.getAttribute(ErrorHandler.ERROR_CONTEXT);
                             Request.Handler errorHandler = ErrorHandler.getErrorHandler(getServer(), context == null ? null : context.getContextHandler());
@@ -674,7 +674,7 @@ public class ServletChannel
 
                             // Indicate Connection:close if we can't consume all.
                             if (getServletContextResponse().getStatus() >= 200)
-                                ResponseUtils.ensureConsumeAvailableOrNotPersistent(_servletContextRequest, _servletContextRequest.getResponse());
+                                ResponseUtils.ensureConsumeAvailableOrNotPersistent(_servletContextRequest, _servletContextRequest.getServletContextResponse());
                         }
 
 
@@ -749,7 +749,7 @@ public class ServletChannel
     {
         try
         {
-            _servletContextRequest.getResponse().getHttpOutput().reopen();
+            _servletContextRequest.getServletContextResponse().getHttpOutput().reopen();
             getHttpOutput().reopen();
             _combinedListener.onBeforeDispatch(_servletContextRequest);
             dispatchable.dispatch();
