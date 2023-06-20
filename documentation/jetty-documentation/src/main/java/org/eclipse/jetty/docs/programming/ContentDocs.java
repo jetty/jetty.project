@@ -35,40 +35,49 @@ public class ContentDocs
 
             public void succeeded()
             {
+                // release any previous chunk
+                if (chunk != null)
+                {
+                    chunk.release();
+                    // complete if it was the last
+                    if (chunk.isLast())
+                    {
+                        callback.succeeded();
+                        return;
+                    }
+                }
+
                 while (true)
                 {
-                    // release previous chunk
-                    if (chunk != null)
-                    {
-                        chunk.release();
-                        // complete if it was the last
-                        if (chunk.isLast())
-                        {
-                            callback.succeeded();
-                            return;
-                        }
-                    }
-
                     // read the next chunk
                     chunk = source.read();
 
-                    if (chunk == null) // if no chunk, demand more
-                        source.demand(this::succeeded);
-                    else if (chunk.hasRemaining()) // if chunk has content, write it to the sink
-                        sink.write(chunk.isLast(), chunk.getByteBuffer(), this);
-                    else if (Content.Chunk.isError(chunk)) // if it is an error fail the callback
+                    if (chunk == null)
                     {
-                        if (chunk.isLast())
-                            callback.failed(chunk.getError());
-                        else
-                        {
-                            LOG.warn("transient error", chunk.getError());
-                            continue;
-                        }
+                        // if no chunk, demand more
+                        source.demand(this::succeeded);
+                        return;
                     }
-                    else // otherwise continue with another chunk
-                        continue;
-                    return;
+
+                    if (Content.Chunk.isError(chunk))
+                    {
+                        // if it is a persistent error, then fail the callback, else log only
+                        if (chunk.isLast())
+                        {
+                            callback.failed(chunk.getError());
+                            return;
+                        }
+                        LOG.warn("transient error", chunk.getError());
+                    }
+
+                    if (chunk.hasRemaining() || chunk.isLast())
+                    {
+                        // if chunk has content or is last, write it to the sink and resume this loop in callback
+                        sink.write(chunk.isLast(), chunk.getByteBuffer(), this);
+                        return;
+                    }
+
+                    chunk.release();
                 }
             }
 
