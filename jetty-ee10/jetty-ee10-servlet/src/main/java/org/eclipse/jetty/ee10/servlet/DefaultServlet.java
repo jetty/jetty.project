@@ -1038,7 +1038,7 @@ public class DefaultServlet extends HttpServlet
                     // Check whether a Servlet may serve the welcome resource.
                     if (_welcomeServletMode != WelcomeServletMode.NONE && welcomeTarget == null)
                     {
-                        if (isPathInfoOnly())
+                        if (isPathInfoOnly() && !isIncluded(getServletRequest(coreRequest)))
                             welcomeTarget = URIUtil.addPaths(getServletRequest(coreRequest).getPathInfo(), welcome);
 
                         ServletHandler.MappedServlet entry = _servletContextHandler.getServletHandler().getMappedServlet(welcomeInContext);
