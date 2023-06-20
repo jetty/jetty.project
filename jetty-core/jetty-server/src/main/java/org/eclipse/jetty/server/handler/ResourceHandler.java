@@ -131,7 +131,7 @@ public class ResourceHandler extends Handler.Wrapper
             {
                 String pathInContext = Request.getPathInContext(request);
                 String welcomeInContext = URIUtil.addPaths(pathInContext, welcome);
-                Resource welcomePath = _baseResource.resolve(pathInContext).resolve(welcome);
+                Resource welcomePath = content.getResource().resolve(welcome);
                 if (Resources.isReadableFile(welcomePath))
                     return welcomeInContext;
             }
