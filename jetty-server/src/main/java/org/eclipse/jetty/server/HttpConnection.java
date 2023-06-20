@@ -897,17 +897,27 @@ public class HttpConnection extends AbstractConnection implements Runnable, Http
         @Override
         protected void onCompleteSuccess()
         {
-            release().succeeded();
-            if (_shutdownOut)
-                getEndPoint().shutdownOutput();
+            Callback callback = release();
+            try {
+                if (callback != null)
+                    callback.succeeded();
+            } finally {
+                if (_shutdownOut)
+                    getEndPoint().shutdownOutput();
+            }
         }
 
         @Override
         public void onCompleteFailure(final Throwable x)
         {
-            failedCallback(release(), x);
-            if (_shutdownOut)
-                getEndPoint().shutdownOutput();
+            Callback callback = release();
+            try {
+                if (callback != null)
+                    failedCallback(callback, x);
+            } finally {
+                if (_shutdownOut)
+                    getEndPoint().shutdownOutput();
+            }
         }
 
         @Override
