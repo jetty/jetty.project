@@ -54,7 +54,7 @@ public class ContentDocs
 
                     if (chunk == null)
                     {
-                        // if no chunk, demand more
+                        // if no chunk, demand more and call succeeded when demand is met.
                         source.demand(this::succeeded);
                         return;
                     }
