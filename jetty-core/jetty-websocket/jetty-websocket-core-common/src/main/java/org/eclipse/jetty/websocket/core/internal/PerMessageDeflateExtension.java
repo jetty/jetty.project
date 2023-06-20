@@ -470,14 +470,25 @@ public class PerMessageDeflateExtension extends AbstractExtension implements Dem
             chunk.setPayload(byteBuffer);
             chunk.setFin(frame.isFin() && complete);
 
-            // Capture the current AtomicReference.
+            // If we are complete we return true, then DemandingFlusher.process() will null out the Frame and Callback.
+            // The application may decide to hold onto the buffer and delay completing the callback, so we need to capture
+            // references to these in the payloadCallback and not rely on state of the flusher which may have moved on.
+            // This flusher could be failed while the application already has the payloadCallback, so we need protection against
+            // the flusher failing and the application completing the callback, that's why we use the payload AtomicReference.
+            boolean completeCallback = complete;
             AtomicReference<RetainableByteBuffer> payloadRef = _payloadRef;
-            boolean succeedCallback = complete;
-            Callback payloadCallback = Callback.from(() -> releasePayload(payloadRef), Callback.from(() ->
+            Callback payloadCallback = Callback.from(() ->
             {
-                if (succeedCallback)
+                releasePayload(payloadRef);
+                if (completeCallback)
                     callback.succeeded();
-            }, this::failFlusher));
+            }, t ->
+            {
+                releasePayload(payloadRef);
+                if (completeCallback)
+                    callback.failed(t);
+                failFlusher(t);
+            });
 
             emitFrame(chunk, payloadCallback);
             if (LOG.isDebugEnabled())

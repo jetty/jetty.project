@@ -12,6 +12,7 @@
 
   <properties>
     <maven.deploy.skip>true</maven.deploy.skip>
+    <h2spec.skip>${skipTests}</h2spec.skip>
   </properties>
 
   <build>
@@ -31,7 +32,7 @@
         <version>1.0.10</version>
         <configuration>
           <mainClass>org.eclipse.jetty.http2.tests.H2SpecServer</mainClass>
-          <skip>${skipTests}</skip>
+          <skip>${h2spec.skip}</skip>
           <junitPackage>org.eclipse.jetty.h2spec</junitPackage>
           <skipNoDockerAvailable>true</skipNoDockerAvailable>
           <reportsDirectory>${project.build.directory}/h2spec-reports</reportsDirectory>

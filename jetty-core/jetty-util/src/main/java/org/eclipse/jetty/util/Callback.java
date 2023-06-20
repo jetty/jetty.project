@@ -245,6 +245,46 @@ public interface Callback extends Invocable
     }
 
     /**
+     * Creates a nested callback that runs completed after
+     * completing the nested callback.
+     *
+     * @param callback The nested callback
+     * @param completed The completion to run after the nested callback is completed
+     * @return a new callback.
+     */
+    static Callback from(Callback callback, Consumer<Throwable> completed)
+    {
+        return new Callback()
+        {
+            @Override
+            public void succeeded()
+            {
+                try
+                {
+                    callback.succeeded();
+                }
+                finally
+                {
+                    completed.accept(null);
+                }
+            }
+
+            @Override
+            public void failed(Throwable x)
+            {
+                try
+                {
+                    callback.failed(x);
+                }
+                finally
+                {
+                    completed.accept(x);
+                }
+            }
+        };
+    }
+
+    /**
      * Creates a nested callback that runs completed before
      * completing the nested callback.
      *

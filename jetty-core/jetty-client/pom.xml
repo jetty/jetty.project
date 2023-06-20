@@ -11,7 +11,7 @@
   <properties>
     <bundle-symbolic-name>${project.groupId}.client</bundle-symbolic-name>
     <jetty.test.policy.loc>target/test-policy</jetty.test.policy.loc>
-    <spotbugs.onlyAnalyze>org.eclipse.client.*</spotbugs.onlyAnalyze>
+    <spotbugs.onlyAnalyze>org.eclipse.jetty.client.*</spotbugs.onlyAnalyze>
   </properties>
 
   <build>

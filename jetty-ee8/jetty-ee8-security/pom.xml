@@ -13,7 +13,7 @@
   <properties>
     <ee9.module>jetty-ee9-security</ee9.module>
     <bundle-symbolic-name>${project.groupId}.security</bundle-symbolic-name>
-    <spotbugs.onlyAnalyze>org.eclipse.jetty.security.*</spotbugs.onlyAnalyze>
+    <spotbugs.onlyAnalyze>org.eclipse.jetty.ee8.security.*</spotbugs.onlyAnalyze>
   </properties>
 
   <build>

@@ -665,6 +665,16 @@ public class Content
         }
 
         /**
+         * @return an immutable version of this Chunk
+         */
+        default Chunk asReadOnly()
+        {
+            if (!canRetain())
+                return this;
+            return asChunk(getByteBuffer().asReadOnlyBuffer(), isLast(), this);
+        }
+
+        /**
          * <p>A chunk that wraps a failure.</p>
          * <p>Error Chunks are always last and have no bytes to read,
          * as such they are <em>terminal</em> Chunks.</p>

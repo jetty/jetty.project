@@ -23,7 +23,6 @@ import java.util.concurrent.TimeoutException;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.concurrent.atomic.AtomicReference;
 
-import org.awaitility.Awaitility;
 import org.eclipse.jetty.io.ConnectionStatistics;
 import org.eclipse.jetty.io.Content;
 import org.eclipse.jetty.logging.StacklessLogging;
@@ -158,9 +157,8 @@ public class StatisticsHandlerTest
     {
         AtomicReference<Throwable> exceptionRef = new AtomicReference<>();
         CountDownLatch latch = new CountDownLatch(1);
-        StatisticsHandler.MinimumDataRateHandler mdrh = new StatisticsHandler.MinimumDataRateHandler(0, 1100);
         int expectedContentLength = 1000;
-        mdrh.setHandler(new Handler.Abstract.NonBlocking()
+        StatisticsHandler.MinimumDataRateHandler mdrh = new StatisticsHandler.MinimumDataRateHandler(0, 1000, new Handler.Abstract.NonBlocking()
         {
             @Override
             public boolean handle(Request request, Response response, Callback callback)
@@ -235,10 +233,9 @@ public class StatisticsHandlerTest
         assertTrue(latch.await(5, TimeUnit.SECONDS));
         AtomicInteger statusHolder = new AtomicInteger();
         ByteBuffer byteBuffer = endPoint.waitForResponse(false, 5, TimeUnit.SECONDS, statusHolder::set);
-        assertThat(statusHolder.get(), is(200));
+        assertThat(statusHolder.get(), is(500));
         assertThat(exceptionRef.get(), instanceOf(TimeoutException.class));
         assertThat(exceptionRef.get().getMessage(), startsWith("write rate is too low"));
-        assertThat(byteBuffer.remaining(), lessThan(expectedContentLength));
     }
 
     @Test
@@ -408,8 +405,8 @@ public class StatisticsHandlerTest
             assertThat(response, containsString("HTTP/1.1 500 Server Error"));
         }
 
+        await().atMost(5, TimeUnit.SECONDS).until(_statsHandler::getRequestsActive, is(0));
         assertEquals(1, _statsHandler.getRequests(), "stats.requests");
-        assertEquals(0, _statsHandler.getRequestsActive(), "stats.requestActive");
         assertEquals(1, _statsHandler.getRequestsActiveMax(), "stats.requestsActiveMax");
 
         // We get no recorded status, but we get a recorded thrown response.
@@ -446,7 +443,7 @@ public class StatisticsHandlerTest
             assertThat(response, containsString("HTTP/1.1 200 OK"));
         }
 
-        Awaitility.waitAtMost(Duration.ofSeconds(10)).until(() -> _statsHandler.getRequestsActive() == 0);
+        await().atMost(Duration.ofSeconds(5)).until(_statsHandler::getRequestsActive, is(0));
         assertEquals(1, _statsHandler.getRequests());
         assertEquals(0, _statsHandler.getRequestsActive());
         assertEquals(1, _statsHandler.getRequestsActiveMax());
