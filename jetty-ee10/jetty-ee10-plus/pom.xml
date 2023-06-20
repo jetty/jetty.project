@@ -12,7 +12,7 @@
 
   <properties>
     <bundle-symbolic-name>${project.groupId}.plus</bundle-symbolic-name>
-    <spotbugs.onlyAnalyze>org.eclipse.jetty.plus.*</spotbugs.onlyAnalyze>
+    <spotbugs.onlyAnalyze>org.eclipse.jetty.ee10.plus.*</spotbugs.onlyAnalyze>
   </properties>
 
   <build>

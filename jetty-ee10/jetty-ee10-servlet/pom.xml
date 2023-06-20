@@ -13,7 +13,7 @@
 
   <properties>
     <bundle-symbolic-name>${project.groupId}.servlet</bundle-symbolic-name>
-    <spotbugs.onlyAnalyze>org.eclipse.jetty.*</spotbugs.onlyAnalyze>
+    <spotbugs.onlyAnalyze>org.eclipse.jetty.ee10.servlet.*</spotbugs.onlyAnalyze>
   </properties>
 
   <build>

@@ -77,4 +77,11 @@ public class PartialStringMessageSink extends AbstractMessageSink
                 accumulator = null;
         }
     }
+
+    @Override
+    public void fail(Throwable failure)
+    {
+        if (accumulator != null)
+            accumulator.reset();
+    }
 }

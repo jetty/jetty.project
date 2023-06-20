@@ -1063,7 +1063,7 @@ public class CustomRequestLog extends ContainerLifeCycle implements RequestLog
     private static void logRequestTime(DateCache dateCache, StringBuilder b, Request request, Response response)
     {
         b.append('[');
-        append(b, dateCache.format(request.getTimeStamp()));
+        append(b, dateCache.format(Request.getTimeStamp(request)));
         b.append(']');
     }
 
@@ -1087,7 +1087,7 @@ public class CustomRequestLog extends ContainerLifeCycle implements RequestLog
 
     private static void logLatency(StringBuilder b, Request request, TimeUnit unit)
     {
-        b.append(unit.convert(NanoTime.since(request.getNanoTime()), TimeUnit.NANOSECONDS));
+        b.append(unit.convert(NanoTime.since(request.getBeginNanoTime()), TimeUnit.NANOSECONDS));
     }
 
     @SuppressWarnings("unused")

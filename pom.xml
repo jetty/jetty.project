@@ -41,7 +41,7 @@
     <mina.core.version>2.2.1</mina.core.version>
     <asm.version>9.5</asm.version>
     <awaitility.version>4.2.0</awaitility.version>
-    <bndlib.version>6.4.0</bndlib.version>
+    <bndlib.version>6.4.1</bndlib.version>
     <build-support.version>1.5</build-support.version>
     <checkstyle.version>10.6.0</checkstyle.version>
     <commons-codec.version>1.15</commons-codec.version>
@@ -55,13 +55,13 @@
     <google.errorprone.version>2.18.0</google.errorprone.version>
     <grpc.version>1.53.0</grpc.version>
     <gson.version>2.10.1</gson.version>
-    <guava.version>31.1-jre</guava.version>
+    <guava.version>32.0.1-jre</guava.version>
     <guice.version>5.1.0</guice.version>
     <hamcrest.version>2.2</hamcrest.version>
-    <hazelcast.version>5.2.2</hazelcast.version>
+    <hazelcast.version>5.3.1</hazelcast.version>
     <infinispan.protostream.version>4.6.2.Final</infinispan.protostream.version>
     <infinispan.version>11.0.17.Final</infinispan.version>
-    <jackson.version>2.14.2</jackson.version>
+    <jackson.version>2.14.3</jackson.version>
     <jakarta.activation.api.version>2.0.1</jakarta.activation.api.version>
     <jakarta.annotation.api.version>2.1.1</jakarta.annotation.api.version>
     <jakarta.el.api.version>4.0.0</jakarta.el.api.version>
@@ -73,7 +73,7 @@
     <jakarta.servlet.jsp.api.version>3.1.1</jakarta.servlet.jsp.api.version>
     <jakarta.servlet.jsp.jstl.api.version>2.0.0</jakarta.servlet.jsp.jstl.api.version>
     <jakarta.servlet.jsp.jstl.impl.version>2.0.0</jakarta.servlet.jsp.jstl.impl.version> <!-- TODO: remove? -->
-    <jakarta.transaction-api.version>2.0.0</jakarta.transaction-api.version>
+    <jakarta.transaction-api.version>2.0.1</jakarta.transaction-api.version>
     <jakarta.websocket.api.version>2.0.0</jakarta.websocket.api.version>
     <jakarta.ws.rs.api.version>3.1.0</jakarta.ws.rs.api.version>
     <jakarta.xml.bind.api.version>3.0.1</jakarta.xml.bind.api.version>
@@ -85,7 +85,7 @@
     <javax.mail.glassfish.version>1.4.1.v201005082020</javax.mail.glassfish.version> <!-- TODO: remove? -->
     <jboss.logging.annotations.version>2.2.1.Final</jboss.logging.annotations.version>
     <jboss.logging.processor.version>2.2.1.Final</jboss.logging.processor.version>
-    <jboss.logging.version>3.5.0.Final</jboss.logging.version>
+    <jboss.logging.version>3.5.1.Final</jboss.logging.version>
     <jboss-logmanager.version>2.3.0.Alpha1</jboss-logmanager.version>
     <jboss-threads.version>3.5.0.Final</jboss-threads.version>
     <jetty-assembly-descriptors.version>1.1</jetty-assembly-descriptors.version>
@@ -103,7 +103,7 @@
     <kerb-simplekdc.version>2.0.3</kerb-simplekdc.version>
     <log4j2.version>2.20.0</log4j2.version>
     <logback.version>1.4.7</logback.version>
-    <mariadb.version>3.1.2</mariadb.version>
+    <mariadb.version>3.1.4</mariadb.version>
     <mariadb.docker.version>10.3.6</mariadb.docker.version>
     <maven.deps.version>3.8.7</maven.deps.version>
     <maven-artifact-transfer.version>0.13.1</maven-artifact-transfer.version>
@@ -116,13 +116,13 @@
     <org.osgi.util.function.version>1.2.0</org.osgi.util.function.version>
     <org.osgi.util.promise.version>1.3.0</org.osgi.util.promise.version>
 
-    <osgi-version>3.18.200</osgi-version>
+    <osgi-version>3.18.400</osgi-version>
     <!-- really used -->
     <osgi-services-version>3.11.100</osgi-services-version>
     <osgi-service-cm-version>1.6.1</osgi-service-cm-version>
     <osgi-service-component-version>1.5.1</osgi-service-component-version>
     <osgi-service-event-version>1.4.1</osgi-service-event-version>
-    <osgi-util-version>3.7.100</osgi-util-version>
+    <osgi-util-version>3.7.200</osgi-util-version>
     <osgi-util-function-version>1.2.0</osgi-util-function-version>
     <osgi-util-measurement-version>1.0.2</osgi-util-measurement-version>
     <osgi-util-position-version>1.0.1</osgi-util-position-version>
@@ -137,7 +137,7 @@
 
     <plexus-component-annotations.version>2.1.1</plexus-component-annotations.version>
     <plexus-utils.version>3.5.1</plexus-utils.version>
-    <slf4j.version>2.0.6</slf4j.version>
+    <slf4j.version>2.0.7</slf4j.version>
     <spifly.version>1.3.6</spifly.version>
     <springboot.version>2.1.1.RELEASE</springboot.version>
     <taglibs-standard-impl.version>1.2.5</taglibs-standard-impl.version>
@@ -2098,17 +2098,6 @@
           </plugin>
         </plugins>
       </build>
-    </profile>
-    <profile>
-      <id>jdk17</id>
-      <activation>
-        <jdk>[17,)</jdk>
-      </activation>
-      <properties>
-        <!-- disable plugins known not to work with JDK 17 (yet) -->
-        <spotbugs.skip>true</spotbugs.skip>
-        <jacoco.skip>true</jacoco.skip>
-      </properties>
     </profile>
     <profile>
       <id>update-version</id>

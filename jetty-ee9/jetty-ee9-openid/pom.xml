@@ -12,7 +12,7 @@
 
   <properties>
     <bundle-symbolic-name>${project.groupId}.openid</bundle-symbolic-name>
-    <spotbugs.onlyAnalyze>org.eclipse.jetty.security.openid.*</spotbugs.onlyAnalyze>
+    <spotbugs.onlyAnalyze>org.eclipse.jetty.ee9.security.openid.*</spotbugs.onlyAnalyze>
   </properties>
 
   <build>

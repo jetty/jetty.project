@@ -9,7 +9,7 @@
   <name>Core :: ALPN :: Client</name>
   <properties>
     <bundle-symbolic-name>${project.groupId}.alpn.client</bundle-symbolic-name>
-    <spotbugs.onlyAnalyze>org.eclipse.alpn.*</spotbugs.onlyAnalyze>
+    <spotbugs.onlyAnalyze>org.eclipse.jetty.alpn.*</spotbugs.onlyAnalyze>
   </properties>
   <build>
     <plugins>

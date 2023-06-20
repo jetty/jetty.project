@@ -11,7 +11,7 @@
   <description>Annotation support for deploying servlets in jetty.</description>
   <properties>
     <bundle-symbolic-name>${project.groupId}.annotations</bundle-symbolic-name>
-    <spotbugs.onlyAnalyze>org.eclipse.annotations.*</spotbugs.onlyAnalyze>
+    <spotbugs.onlyAnalyze>org.eclipse.jetty.ee10.annotations.*</spotbugs.onlyAnalyze>
   </properties>
 
   <build>

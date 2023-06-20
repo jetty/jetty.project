@@ -80,6 +80,12 @@ public abstract class AbstractDecodedMessageSink implements MessageSink
         _messageSink.accept(frame, callback);
     }
 
+    @Override
+    public void fail(Throwable failure)
+    {
+        _messageSink.fail(failure);
+    }
+
     public abstract static class Basic<T extends Decoder> extends AbstractDecodedMessageSink
     {
         protected final List<T> _decoders;

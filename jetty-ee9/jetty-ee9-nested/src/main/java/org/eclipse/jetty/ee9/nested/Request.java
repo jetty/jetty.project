@@ -1488,9 +1488,10 @@ public class Request implements HttpServletRequest
         _channel.getResponse().getHttpOutput().reopen();
 
         _coreRequest = coreRequest;
-        setTimeStamp(coreRequest.getTimeStamp());
+        setTimeStamp(org.eclipse.jetty.server.Request.getTimeStamp(coreRequest));
 
         _metaData = new MetaData.Request(
+            coreRequest.getBeginNanoTime(),
             coreRequest.getMethod(),
             coreRequest.getHttpURI(),
             coreRequest.getConnectionMetaData().getHttpVersion(),
