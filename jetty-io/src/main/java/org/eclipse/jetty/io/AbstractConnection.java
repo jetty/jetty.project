@@ -85,6 +85,12 @@ public abstract class AbstractConnection implements Connection
 
     protected void failedCallback(final Callback callback, final Throwable x)
     {
+        if (callback == null) {
+            if (LOG.isDebugEnabled()) {
+                LOG.warn("Callback null", x);
+            }
+            return;
+        }
         Runnable failCallback = () ->
         {
             try
@@ -93,7 +99,7 @@ public abstract class AbstractConnection implements Connection
             }
             catch (Exception e)
             {
-                LOG.warn(e);
+                LOG.warn("Failed callback", e);
             }
         };
 
@@ -107,7 +113,7 @@ public abstract class AbstractConnection implements Connection
                 catch (RejectedExecutionException e)
                 {
                     LOG.debug(e);
-                    callback.failed(x);
+                    failCallback.run();
                 }
                 break;
 
