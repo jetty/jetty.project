@@ -100,20 +100,14 @@ public class AsyncServletTest
 
         ServletContextHandler context = new ServletContextHandler(ServletContextHandler.NO_SESSIONS);
         context.setContextPath("/ctx");
-
-        _latch = new CountDownLatch(1);
-        EventsHandler events = new EventsHandler()
+        _server.setHandler(new EventsHandler(context)
         {
             @Override
             protected void onComplete(Request request, Throwable failure)
             {
-                super.onComplete(request, failure);
                 _latch.countDown();
             }
-        };
-
-        _server.setHandler(events);
-        events.setHandler(context);
+        });
         context.addEventListener(new DebugListener());
 
         _errorHandler = new ErrorPageErrorHandler();
@@ -135,6 +129,7 @@ public class AsyncServletTest
         _server.start();
         _port = _connector.getLocalPort();
         _history.clear();
+        _latch = new CountDownLatch(1);
     }
 
     @AfterEach
