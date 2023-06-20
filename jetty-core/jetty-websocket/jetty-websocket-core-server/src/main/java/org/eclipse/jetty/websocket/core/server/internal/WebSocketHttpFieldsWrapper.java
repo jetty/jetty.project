@@ -68,14 +68,13 @@ public class WebSocketHttpFieldsWrapper extends HttpFields.Mutable.Wrapper
                 case SEC_WEBSOCKET_SUBPROTOCOL ->
                 {
                     _response.setAcceptedSubProtocol(null);
-                    yield false;
+                    yield true;
                 }
 
                 case SEC_WEBSOCKET_EXTENSIONS ->
                 {
-                    // TODO This is removing all extensions, when we should just remove field.getValue()
-                    _response.setExtensions(Collections.emptyList());
-                    yield false;
+                    _response.removeExtensions(ExtensionConfig.parseList(field.getValue()));
+                    yield true;
                 }
 
                 default -> super.onRemoveField(field);
