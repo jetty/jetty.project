@@ -38,4 +38,13 @@ public class CloseableDoSFilterTest extends AbstractDoSFilterTest
     {
         super.testUnavailableIP();
     }
+
+    @Override
+    @Test
+    @Tag("flaky")
+    public void testEvenLowRateIP() throws Exception
+    {
+        super.testEvenLowRateIP();
+    }
+
 }
