@@ -898,10 +898,13 @@ public class HttpConnection extends AbstractConnection implements Runnable, Http
         protected void onCompleteSuccess()
         {
             Callback callback = release();
-            try {
+            try
+            {
                 if (callback != null)
                     callback.succeeded();
-            } finally {
+            }
+            finally
+            {
                 if (_shutdownOut)
                     getEndPoint().shutdownOutput();
             }
@@ -911,10 +914,13 @@ public class HttpConnection extends AbstractConnection implements Runnable, Http
         public void onCompleteFailure(final Throwable x)
         {
             Callback callback = release();
-            try {
+            try
+            {
                 if (callback != null)
                     failedCallback(callback, x);
-            } finally {
+            }
+            finally
+            {
                 if (_shutdownOut)
                     getEndPoint().shutdownOutput();
             }
