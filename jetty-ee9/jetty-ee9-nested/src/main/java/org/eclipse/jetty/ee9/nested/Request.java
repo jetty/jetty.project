@@ -1501,10 +1501,10 @@ public class Request implements HttpServletRequest
 
         _method = coreRequest.getMethod();
         _uri = coreRequest.getHttpURI();
-
-        String pathInContext = org.eclipse.jetty.server.Request.getPathInContext(coreRequest);
-        _pathInContext = URIUtil.decodePath(pathInContext);
         _httpFields = coreRequest.getHeaders();
+
+        // This is further modified inside ContextHandler.doScope().
+        _pathInContext = coreRequest.getHttpURI().getCanonicalPath();
 
         setSecure(coreRequest.isSecure());
     }
