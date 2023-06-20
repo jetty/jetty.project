@@ -405,6 +405,7 @@ public abstract class IteratingCallback implements Callback
                     break;
                 case PENDING:
                 {
+                    _state = State.FAILED;
                     failure = true;
                     break;
                 }
