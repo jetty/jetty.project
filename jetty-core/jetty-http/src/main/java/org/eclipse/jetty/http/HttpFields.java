@@ -1265,7 +1265,7 @@ public interface HttpFields extends Iterable<HttpField>, Supplier<HttpFields>
                 {
                     field = onAddField(field);
                     if (field != null)
-                       return Mutable.super.add(field);
+                       return _fields.add(field);
                 }
                 return this;
             }
@@ -1552,8 +1552,12 @@ public interface HttpFields extends Iterable<HttpField>, Supplier<HttpFields>
         public int hashCode()
         {
             int hash = 0;
-            for (int i = _fields.length; i-- > 0; )
-                hash ^= _fields[i].hashCode();
+            for (int i = _size; i-- > 0; )
+            {
+                HttpField field = _fields[i];
+                if (field != null)
+                    hash ^= field.hashCode();
+            }
             return hash;
         }
 
