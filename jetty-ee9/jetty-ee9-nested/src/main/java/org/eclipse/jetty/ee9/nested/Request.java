@@ -702,15 +702,6 @@ public class Request implements HttpServletRequest
         _pathInContext = pathInContext;
     }
 
-    /**
-     * @return The current {@link ContextHandler.APIContext context} used for this error handling for this request.  If the request is asynchronous,
-     * then it is the context that called async. Otherwise it is the last non-null context passed to #setContext
-     */
-    public ContextHandler.APIContext getErrorContext()
-    {
-        return _context;
-    }
-
     @Override
     public String getContextPath()
     {

@@ -35,6 +35,7 @@ import static jakarta.servlet.RequestDispatcher.ERROR_MESSAGE;
 import static jakarta.servlet.RequestDispatcher.ERROR_REQUEST_URI;
 import static jakarta.servlet.RequestDispatcher.ERROR_SERVLET_NAME;
 import static jakarta.servlet.RequestDispatcher.ERROR_STATUS_CODE;
+import static org.eclipse.jetty.ee9.nested.HttpChannel.SERVLET_CONTEXT_ATTRIBUTE;
 
 /**
  * Implementation of AsyncContext interface that holds the state of request-response cycle.
@@ -922,7 +923,8 @@ public class HttpChannelState
             response.setStatus(code);
             response.errorClose();
 
-            request.setAttribute(ErrorHandler.ERROR_CONTEXT, request.getErrorContext());
+            ServletContext errorContext = (ServletContext)request.getAttribute(SERVLET_CONTEXT_ATTRIBUTE);
+            request.setAttribute(ErrorHandler.ERROR_CONTEXT, errorContext);
             request.setAttribute(ERROR_REQUEST_URI, request.getRequestURI());
             request.setAttribute(ERROR_SERVLET_NAME, request.getServletName());
             request.setAttribute(ERROR_STATUS_CODE, code);

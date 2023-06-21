@@ -32,6 +32,7 @@ import java.util.stream.Stream;
 
 import jakarta.servlet.DispatcherType;
 import jakarta.servlet.RequestDispatcher;
+import jakarta.servlet.ServletContext;
 import jakarta.servlet.ServletException;
 import org.eclipse.jetty.http.BadMessageException;
 import org.eclipse.jetty.http.HttpException;
@@ -72,6 +73,9 @@ import static org.eclipse.jetty.util.thread.Invocable.InvocationType.NON_BLOCKIN
 public class HttpChannel implements Runnable, HttpOutput.Interceptor
 {
     private static final Logger LOG = LoggerFactory.getLogger(HttpChannel.class);
+    public static final String SERVLET_CONTEXT_ATTRIBUTE = "jetty.servletContext.attribute";
+    public static final String SERVLET_NAME_ATTRIBUTE = "jetty.servletName.attribute";
+    public static final String SERVLET_PATH_IN_CONTEXT_ATTRIBUTE = "jetty.servletPathInContext.attribute";
 
     private final ContextHandler _contextHandler;
     private final ConnectionMetaData _connectionMetaData;
@@ -1010,11 +1014,15 @@ public class HttpChannel implements Runnable, HttpOutput.Interceptor
         if (idleTO >= 0 && getIdleTimeout() != _oldIdleTimeout)
             setIdleTimeout(_oldIdleTimeout);
 
+        // TODO: We're not in scope for the servlet context so this won't always work.
         if (getServer().getRequestLog() instanceof CustomRequestLog)
         {
+            String servletName = (String)_request.getAttribute(SERVLET_NAME_ATTRIBUTE);
+            String pathInContext = (String)_request.getAttribute(SERVLET_PATH_IN_CONTEXT_ATTRIBUTE);
+            ServletContext servletContext = (ServletContext)_request.getAttribute(SERVLET_CONTEXT_ATTRIBUTE);
             CustomRequestLog.LogDetail logDetail = new CustomRequestLog.LogDetail(
-                _request.getServletName(),
-                _request.getServletContext().getRealPath(_request.getPathInContext())
+                servletName,
+                servletContext.getRealPath(pathInContext)
             );
             _request.setAttribute(CustomRequestLog.LOG_DETAIL, logDetail);
         }

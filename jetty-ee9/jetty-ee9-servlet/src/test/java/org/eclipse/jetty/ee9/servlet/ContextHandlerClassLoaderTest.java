@@ -14,8 +14,7 @@
 package org.eclipse.jetty.ee9.servlet;
 
 import java.io.IOException;
-import java.util.ArrayDeque;
-import java.util.Queue;
+import java.util.concurrent.TimeUnit;
 
 import jakarta.servlet.AsyncContext;
 import jakarta.servlet.AsyncEvent;
@@ -30,6 +29,7 @@ import org.eclipse.jetty.client.HttpClient;
 import org.eclipse.jetty.ee9.nested.ContextHandler;
 import org.eclipse.jetty.server.Server;
 import org.eclipse.jetty.server.ServerConnector;
+import org.eclipse.jetty.util.BlockingArrayQueue;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
@@ -44,7 +44,7 @@ public class ContextHandlerClassLoaderTest
     private ServerConnector _connector;
     private Server _server;
     private HttpClient _client;
-    private final Queue<String> _asyncListenerLog = new ArrayDeque<>();
+    private final BlockingArrayQueue<String> _asyncListenerLog = new BlockingArrayQueue<>();
 
     public static class MyCustomClassLoader extends ClassLoader
     {
@@ -139,7 +139,7 @@ public class ContextHandlerClassLoaderTest
         assertThat(responseContent, containsString("MyCustomClassLoader"));
 
         // AsyncListener should also have the correct ClassLoader set.
-        assertThat(_asyncListenerLog.poll(), equalTo("onComplete(): MyCustomClassLoader"));
+        assertThat(_asyncListenerLog.poll(5, TimeUnit.SECONDS), equalTo("onComplete(): MyCustomClassLoader"));
         assertThat(_asyncListenerLog.size(), equalTo(0));
     }
 
@@ -159,7 +159,7 @@ public class ContextHandlerClassLoaderTest
         assertThat(responseContent, containsString("MyCustomClassLoader"));
 
         // AsyncListener should also have the correct ClassLoader set.
-        assertThat(_asyncListenerLog.poll(), equalTo("onComplete(): MyCustomClassLoader"));
+        assertThat(_asyncListenerLog.poll(5, TimeUnit.SECONDS), equalTo("onComplete(): MyCustomClassLoader"));
         assertThat(_asyncListenerLog.size(), equalTo(0));
     }
 }
