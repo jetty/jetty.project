@@ -20,6 +20,7 @@ package org.eclipse.jetty.util;
 
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.TimeUnit;
+import java.util.concurrent.atomic.AtomicInteger;
 
 import org.eclipse.jetty.util.thread.ScheduledExecutorScheduler;
 import org.eclipse.jetty.util.thread.Scheduler;
@@ -326,5 +327,45 @@ public class IteratingCallbackTest
             completed.await(10, TimeUnit.SECONDS);
             return isSucceeded();
         }
+    }
+
+    @Test
+    public void testMultipleFailures() throws Exception
+    {
+        AtomicInteger process = new AtomicInteger();
+        AtomicInteger failure = new AtomicInteger();
+        IteratingCallback icb = new IteratingCallback()
+        {
+            @Override
+            protected Action process() throws Throwable
+            {
+                process.incrementAndGet();
+                return Action.SCHEDULED;
+            }
+
+            @Override
+            protected void onCompleteFailure(Throwable cause)
+            {
+                super.onCompleteFailure(cause);
+                failure.incrementAndGet();
+            }
+        };
+
+        icb.iterate();
+        assertEquals(1, process.get());
+        assertEquals(0, failure.get());
+
+        icb.failed(new Throwable("test1"));
+
+        assertEquals(1, process.get());
+        assertEquals(1, failure.get());
+
+        icb.succeeded();
+        assertEquals(1, process.get());
+        assertEquals(1, failure.get());
+
+        icb.failed(new Throwable("test2"));
+        assertEquals(1, process.get());
+        assertEquals(1, failure.get());
     }
 }
