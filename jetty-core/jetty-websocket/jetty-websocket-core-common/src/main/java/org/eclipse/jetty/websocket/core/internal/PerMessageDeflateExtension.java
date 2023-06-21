@@ -17,7 +17,6 @@ import java.nio.ByteBuffer;
 import java.util.HashMap;
 import java.util.Map;
 import java.util.concurrent.atomic.AtomicReference;
-import java.util.function.LongConsumer;
 import java.util.zip.DataFormatException;
 import java.util.zip.Deflater;
 import java.util.zip.Inflater;
@@ -252,15 +251,15 @@ public class PerMessageDeflateExtension extends AbstractExtension implements Dem
     }
 
     @Override
-    public void setNextDemand(LongConsumer nextDemand)
+    public void setNextDemand(DemandChain nextDemand)
     {
         incomingFlusher.setNextDemand(nextDemand);
     }
 
     @Override
-    public void demand(long n)
+    public void demand()
     {
-        incomingFlusher.demand(n);
+        incomingFlusher.demand();
     }
 
     private class OutgoingFlusher extends TransformingFlusher

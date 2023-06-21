@@ -13,8 +13,6 @@
 
 package org.eclipse.jetty.websocket.core.util;
 
-import java.util.function.LongConsumer;
-
 import org.eclipse.jetty.websocket.core.Extension;
 import org.eclipse.jetty.websocket.core.ExtensionStack;
 
@@ -25,9 +23,9 @@ import org.eclipse.jetty.websocket.core.ExtensionStack;
  */
 public interface DemandChain
 {
-    void demand(long n);
+    void demand();
 
-    default void setNextDemand(LongConsumer nextDemand)
+    default void setNextDemand(DemandChain nextDemand)
     {
     }
 }

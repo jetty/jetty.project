@@ -152,14 +152,13 @@ public interface CoreSession extends OutgoingFrames, IncomingFrames, Configurati
     void abort();
 
     /**
-     * <p>Manages flow control by indicating demand for WebSocket frames.</p>
+     * <p>Manages flow control by indicating demand for a WebSocket frame.</p>
      * <p>A call to {@link FrameHandler#onFrame(Frame, Callback)} will only
      * be made if there is demand.</p>
      *
-     * @param n the number of frames that can be handled in sequential calls to
-     * {@link FrameHandler#onFrame(Frame, Callback)}, must be positive.
+     * {@link FrameHandler#onFrame(Frame, Callback)}.
      */
-    void demand(long n);
+    void demand();
 
     /**
      * @return true if an extension has been negotiated which uses the RSV1 bit.
@@ -287,7 +286,7 @@ public interface CoreSession extends OutgoingFrames, IncomingFrames, Configurati
         }
 
         @Override
-        public void demand(long n)
+        public void demand()
         {
         }
 

@@ -178,7 +178,7 @@ public class JakartaWebSocketFrameHandler implements FrameHandler
                 container.notifySessionListeners((listener) -> listener.onJakartaWebSocketSessionOpened(session));
 
             callback.succeeded();
-            coreSession.demand(1);
+            coreSession.demand();
         }
         catch (Throwable cause)
         {
@@ -578,7 +578,7 @@ public class JakartaWebSocketFrameHandler implements FrameHandler
         if (activeMessageSink == null)
         {
             callback.succeeded();
-            coreSession.demand(1);
+            coreSession.demand();
             return;
         }
 
@@ -593,12 +593,12 @@ public class JakartaWebSocketFrameHandler implements FrameHandler
         coreSession.sendFrame(new Frame(OpCode.PONG).setPayload(frame.getPayload()), Callback.from(() ->
         {
             callback.succeeded();
-            coreSession.demand(1);
+            coreSession.demand();
         }, x ->
         {
             // Ignore failures, as we might be OSHUT but receive a PING.
             callback.succeeded();
-            coreSession.demand(1);
+            coreSession.demand();
         }), false);
     }
 
@@ -616,7 +616,7 @@ public class JakartaWebSocketFrameHandler implements FrameHandler
                 JakartaWebSocketPongMessage pongMessage = new JakartaWebSocketPongMessage(payload);
                 pongHandle.invoke(pongMessage);
                 callback.succeeded();
-                coreSession.demand(1);
+                coreSession.demand();
             }
             catch (Throwable cause)
             {
@@ -626,7 +626,7 @@ public class JakartaWebSocketFrameHandler implements FrameHandler
         else
         {
             callback.succeeded();
-            coreSession.demand(1);
+            coreSession.demand();
         }
     }
 

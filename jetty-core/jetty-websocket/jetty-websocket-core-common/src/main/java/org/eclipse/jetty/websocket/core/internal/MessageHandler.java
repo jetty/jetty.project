@@ -117,7 +117,7 @@ public class MessageHandler implements FrameHandler
 
         this.coreSession = coreSession;
         callback.succeeded();
-        coreSession.demand(1);
+        coreSession.demand();
     }
 
     @Override
@@ -210,7 +210,7 @@ public class MessageHandler implements FrameHandler
                     callback.succeeded();
             }
 
-            coreSession.demand(1);
+            coreSession.demand();
         }
         catch (Throwable t)
         {
@@ -244,7 +244,7 @@ public class MessageHandler implements FrameHandler
                 callback.succeeded();
             }
 
-            coreSession.demand(1);
+            coreSession.demand();
         }
         catch (Throwable t)
         {
@@ -264,13 +264,13 @@ public class MessageHandler implements FrameHandler
 
     protected void onPingFrame(Frame frame, Callback callback)
     {
-        coreSession.sendFrame(new Frame(OpCode.PONG, true, frame.getPayload()), Callback.from(() -> coreSession.demand(1), callback), false);
+        coreSession.sendFrame(new Frame(OpCode.PONG, true, frame.getPayload()), Callback.from(() -> coreSession.demand(), callback), false);
     }
 
     protected void onPongFrame(Frame frame, Callback callback)
     {
         callback.succeeded();
-        coreSession.demand(1);
+        coreSession.demand();
     }
 
     protected void onCloseFrame(Frame frame, Callback callback)

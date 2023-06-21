@@ -14,7 +14,6 @@
 package org.eclipse.jetty.websocket.core.internal;
 
 import java.nio.ByteBuffer;
-import java.util.function.LongConsumer;
 
 import org.eclipse.jetty.util.Callback;
 import org.eclipse.jetty.websocket.core.AbstractExtension;
@@ -55,13 +54,13 @@ public class FragmentExtension extends AbstractExtension implements DemandChain
     }
 
     @Override
-    public void demand(long n)
+    public void demand()
     {
-        incomingFlusher.demand(n);
+        incomingFlusher.demand();
     }
 
     @Override
-    public void setNextDemand(LongConsumer nextDemand)
+    public void setNextDemand(DemandChain nextDemand)
     {
         incomingFlusher.setNextDemand(nextDemand);
     }

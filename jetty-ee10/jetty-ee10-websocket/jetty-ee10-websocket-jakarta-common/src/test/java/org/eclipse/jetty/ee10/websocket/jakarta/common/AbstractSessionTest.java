@@ -81,7 +81,7 @@ public abstract class AbstractSessionTest
         }
 
         @Override
-        public void demand(long n)
+        public void demand()
         {
             demand.release();
         }

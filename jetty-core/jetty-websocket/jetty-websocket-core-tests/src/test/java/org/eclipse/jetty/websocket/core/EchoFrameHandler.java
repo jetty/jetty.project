@@ -56,6 +56,6 @@ public class EchoFrameHandler extends TestAsyncFrameHandler
             callback.succeeded();
         }
 
-        coreSession.demand(1);
+        coreSession.demand();
     }
 }

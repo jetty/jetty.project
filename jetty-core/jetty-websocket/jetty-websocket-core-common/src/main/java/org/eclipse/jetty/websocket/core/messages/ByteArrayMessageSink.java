@@ -78,7 +78,7 @@ public class ByteArrayMessageSink extends AbstractMessageSink
             if (!frame.isFin() && !frame.hasPayload())
             {
                 callback.succeeded();
-                getCoreSession().demand(1);
+                getCoreSession().demand();
                 return;
             }
 
@@ -96,7 +96,7 @@ public class ByteArrayMessageSink extends AbstractMessageSink
             }
             else
             {
-                getCoreSession().demand(1);
+                getCoreSession().demand();
             }
 
         }

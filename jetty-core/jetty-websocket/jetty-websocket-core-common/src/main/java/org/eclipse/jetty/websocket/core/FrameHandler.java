@@ -54,7 +54,7 @@ import org.eclipse.jetty.util.Callback;
  * or not. The error code will indicate the nature of the close.</li>
  * </ul>
  * <p>FrameHandler is responsible to manage the demand for more
- * WebSocket frames, either directly by calling {@link CoreSession#demand(long)}
+ * WebSocket frames, either directly by calling {@link CoreSession#demand()}
  * or by delegating the demand management to other components.</p>
  */
 public interface FrameHandler extends IncomingFrames
@@ -64,7 +64,7 @@ public interface FrameHandler extends IncomingFrames
      * <p>It is allowed to send WebSocket frames via
      * {@link CoreSession#sendFrame(Frame, Callback, boolean)}.
      * <p>WebSocket frames cannot be received  until a call to
-     * {@link CoreSession#demand(long)} is made.</p>
+     * {@link CoreSession#demand()} is made.</p>
      * <p>If the callback argument is failed, the implementation
      * sends a CLOSE frame with {@link CloseStatus#SERVER_ERROR},
      * and the connection will be closed.</p>
@@ -80,7 +80,7 @@ public interface FrameHandler extends IncomingFrames
      * <p>This method will never be called concurrently for the
      * same session; will be called sequentially to satisfy the
      * outstanding demand signaled by calls to
-     * {@link CoreSession#demand(long)}.</p>
+     * {@link CoreSession#demand()}.</p>
      * <p>Both control and data frames are passed to this method.</p>
      * <p>CLOSE frames may be responded from this method, but if
      * they are not responded, then the implementation will respond
@@ -89,7 +89,7 @@ public interface FrameHandler extends IncomingFrames
      * that the buffers associated with the frame can be recycled.</p>
      * <p>Additional WebSocket frames (of any type, including CLOSE
      * frames) cannot be received  until a call to
-     * {@link CoreSession#demand(long)} is made.</p>
+     * {@link CoreSession#demand()} is made.</p>
      *
      * @param frame the WebSocket frame.
      * @param callback the callback to indicate success or failure of

@@ -59,7 +59,7 @@ public class FragmentExtensionTest extends AbstractExtensionTest
         ext.setNextIncomingFrames(capture);
 
         // Simulate initial demand from onOpen().
-        coreSession.demand(1);
+        coreSession.demand();
 
         // Quote
         List<String> quote = new ArrayList<>();
@@ -131,7 +131,7 @@ public class FragmentExtensionTest extends AbstractExtensionTest
         ext.setNextIncomingFrames(capture);
 
         // Simulate initial demand from onOpen().
-        coreSession.demand(1);
+        coreSession.demand();
 
         String payload = "Are you there?";
         Frame ping = new Frame(OpCode.PING).setPayload(payload);
@@ -333,7 +333,7 @@ public class FragmentExtensionTest extends AbstractExtensionTest
     {
         ExtensionStack exStack = new ExtensionStack(components, Behavior.SERVER);
         exStack.negotiate(configs, configs);
-        exStack.setLastDemand(l -> {}); // Never delegate to WebSocketConnection as it is null for this test.
+        exStack.setLastDemand(() -> {}); // Never delegate to WebSocketConnection as it is null for this test.
         WebSocketCoreSession coreSession = new WebSocketCoreSession(new TestMessageHandler(), Behavior.SERVER, Negotiated.from(exStack), components);
         configuration.customize(configuration);
         return coreSession;
