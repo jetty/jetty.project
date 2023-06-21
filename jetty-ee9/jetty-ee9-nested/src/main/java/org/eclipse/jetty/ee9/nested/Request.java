@@ -1504,7 +1504,7 @@ public class Request implements HttpServletRequest
         _httpFields = coreRequest.getHeaders();
 
         // This is further modified inside ContextHandler.doScope().
-        _pathInContext = coreRequest.getHttpURI().getCanonicalPath();
+        _pathInContext = URIUtil.decodePath(coreRequest.getHttpURI().getCanonicalPath());
 
         setSecure(coreRequest.isSecure());
     }
