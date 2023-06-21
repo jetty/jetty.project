@@ -43,6 +43,7 @@ import org.eclipse.jetty.util.Attributes;
 import org.eclipse.jetty.util.Callback;
 import org.eclipse.jetty.util.Fields;
 import org.eclipse.jetty.util.HostPort;
+import org.eclipse.jetty.util.NanoTime;
 import org.eclipse.jetty.util.StringUtil;
 import org.eclipse.jetty.util.URIUtil;
 import org.eclipse.jetty.util.UrlEncoded;
@@ -202,20 +203,29 @@ public interface Request extends Attributes, Content.Source
     HttpFields getTrailers();
 
     /**
-     * <p>Get the millisecond timestamp at which the request was created, obtained via {@link System#currentTimeMillis()}.
-     * This method should be used for wall clock time, rather than {@link #getNanoTime()},
+     * <p>Get the millisecond timestamp at which the request was created, obtained with {@link System#currentTimeMillis()}.
+     * This method should be used for wall clock time, rather than {@link #getHeadersNanoTime()},
      * which is appropriate for measuring latencies.</p>
      * @return The timestamp that the request was received/created in milliseconds
      */
-    long getTimeStamp();
+    static long getTimeStamp(Request request)
+    {
+        return System.currentTimeMillis() - NanoTime.millisSince(request.getHeadersNanoTime());
+    }
 
     /**
-     * <p>Get the nanoTime at which the request was created, obtained via {@link System#nanoTime()}.
-     * This method should be used when measuring latencies, rather than {@link #getTimeStamp()},
-     * which is appropriate for wall clock time.</p>
+     * <p>Get the nanoTime at which the request arrived to a connector, obtained via {@link System#nanoTime()}.
+     * This method can be used when measuring latencies.</p>
      * @return The nanoTime at which the request was received/created in nanoseconds
      */
-    long getNanoTime();
+    long getBeginNanoTime();
+
+    /**
+     * <p>Get the nanoTime at which the request headers were parsed, obtained via {@link System#nanoTime()}.
+     * This method can be used when measuring latencies.</p>
+     * @return The nanoTime at which the request was ready in nanoseconds
+     */
+    long getHeadersNanoTime();
 
     // TODO: see above.
     boolean isSecure();
@@ -299,6 +309,41 @@ public interface Request extends Attributes, Content.Source
      * @return The session associated with the request or {@code null}.
      */
     Session getSession(boolean create);
+
+    /**
+     * Returns a copy of the request that throws {@link UnsupportedOperationException}
+     * from all mutative methods.
+     * @return a copy of the request
+     */
+    static Request asReadOnly(Request request)
+    {
+        return new Request.Wrapper(request)
+        {
+            @Override
+            public void addHttpStreamWrapper(Function<HttpStream, HttpStream> wrapper)
+            {
+                throw new UnsupportedOperationException();
+            }
+
+            @Override
+            public Content.Chunk read()
+            {
+                throw new UnsupportedOperationException();
+            }
+
+            @Override
+            public void demand(Runnable demandCallback)
+            {
+                throw new UnsupportedOperationException();
+            }
+
+            @Override
+            public void fail(Throwable failure)
+            {
+                throw new UnsupportedOperationException();
+            }
+        };
+    }
 
     static String getLocalAddr(Request request)
     {
@@ -628,15 +673,15 @@ public interface Request extends Attributes, Content.Source
         }
 
         @Override
-        public long getTimeStamp()
+        public long getBeginNanoTime()
         {
-            return getWrapped().getTimeStamp();
+            return getWrapped().getBeginNanoTime();
         }
 
         @Override
-        public long getNanoTime()
+        public long getHeadersNanoTime()
         {
-            return getWrapped().getNanoTime();
+            return getWrapped().getHeadersNanoTime();
         }
 
         @Override

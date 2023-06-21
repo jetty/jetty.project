@@ -119,6 +119,13 @@ public class ByteBufferMessageSink extends AbstractMessageSink
         }
     }
 
+    @Override
+    public void fail(Throwable failure)
+    {
+        if (accumulator != null)
+            accumulator.fail(failure);
+    }
+
     protected void invoke(MethodHandle methodHandle, ByteBuffer byteBuffer, Callback callback) throws Throwable
     {
         methodHandle.invoke(byteBuffer);

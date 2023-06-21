@@ -749,6 +749,16 @@ public class Content
         }
 
         /**
+         * @return an immutable version of this Chunk
+         */
+        default Chunk asReadOnly()
+        {
+            if (!canRetain())
+                return this;
+            return asChunk(getByteBuffer().asReadOnlyBuffer(), isLast(), this);
+        }
+
+        /**
          * <p>Implementations of this interface may process {@link Chunk}s being copied by the
          * {@link Content#copy(Source, Sink, Processor, Callback)} method, so that
          * {@link Chunk}s of unknown types can be copied.

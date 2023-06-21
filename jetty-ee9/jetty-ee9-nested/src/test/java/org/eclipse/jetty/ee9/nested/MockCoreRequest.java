@@ -11,7 +11,7 @@
 // ========================================================================
 //
 
-package org.eclipse.jetty.session;
+package org.eclipse.jetty.ee9.nested;
 
 import java.util.List;
 import java.util.Set;
@@ -28,11 +28,10 @@ import org.eclipse.jetty.server.Components;
 import org.eclipse.jetty.server.ConnectionMetaData;
 import org.eclipse.jetty.server.Context;
 import org.eclipse.jetty.server.HttpStream;
-import org.eclipse.jetty.server.Request;
 import org.eclipse.jetty.server.Session;
 import org.eclipse.jetty.server.TunnelSupport;
 
-public class TestableRequest implements Request
+public class MockCoreRequest implements org.eclipse.jetty.server.Request
 {
     @Override
     public Object removeAttribute(String name)

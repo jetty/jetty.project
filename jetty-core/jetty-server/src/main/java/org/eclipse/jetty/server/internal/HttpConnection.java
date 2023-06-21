@@ -70,7 +70,6 @@ import org.eclipse.jetty.util.BufferUtil;
 import org.eclipse.jetty.util.Callback;
 import org.eclipse.jetty.util.HostPort;
 import org.eclipse.jetty.util.IteratingCallback;
-import org.eclipse.jetty.util.NanoTime;
 import org.eclipse.jetty.util.StringUtil;
 import org.eclipse.jetty.util.TypeUtil;
 import org.eclipse.jetty.util.thread.Invocable;
@@ -1080,7 +1079,7 @@ public class HttpConnection extends AbstractConnection implements Runnable, Writ
                 HttpURI uri = stream._uri;
                 if (uri.hasViolations())
                     uri = HttpURI.from("/badURI");
-                _httpChannel.onRequest(new MetaData.Request(stream._method, uri, stream._version, HttpFields.EMPTY));
+                _httpChannel.onRequest(new MetaData.Request(_parser.getBeginNanoTime(), stream._method, uri, stream._version, HttpFields.EMPTY));
             }
 
             Runnable task = _httpChannel.onFailure(_failure);
@@ -1123,7 +1122,6 @@ public class HttpConnection extends AbstractConnection implements Runnable, Writ
 
     protected class HttpStreamOverHTTP1 implements HttpStream
     {
-        private final long _nanoTime = NanoTime.now();
         private final String _id;
         private final String _method;
         private final HttpURI.Mutable _uri;
@@ -1269,7 +1267,7 @@ public class HttpConnection extends AbstractConnection implements Runnable, Writ
                 _uri.path("/");
             }
 
-            _request = new MetaData.Request(_method, _uri.asImmutable(), _version, _headerBuilder, _contentLength);
+            _request = new MetaData.Request(_parser.getBeginNanoTime(), _method, _uri.asImmutable(), _version, _headerBuilder, _contentLength);
 
             Runnable handle = _httpChannel.onRequest(_request);
             ++_requests;
@@ -1361,12 +1359,6 @@ public class HttpConnection extends AbstractConnection implements Runnable, Writ
         public String getId()
         {
             return _id;
-        }
-
-        @Override
-        public long getNanoTime()
-        {
-            return _nanoTime;
         }
 
         @Override

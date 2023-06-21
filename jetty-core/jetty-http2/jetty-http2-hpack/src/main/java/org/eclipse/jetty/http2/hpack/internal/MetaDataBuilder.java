@@ -23,6 +23,7 @@ import org.eclipse.jetty.http.HttpVersion;
 import org.eclipse.jetty.http.MetaData;
 import org.eclipse.jetty.http2.hpack.HpackException;
 import org.eclipse.jetty.http2.hpack.HpackException.SessionException;
+import org.eclipse.jetty.util.NanoTime;
 
 public class MetaDataBuilder
 {
@@ -249,10 +250,11 @@ public class MetaDataBuilder
                         throw new HpackException.StreamException("No Path");
                 }
                 if (isConnect)
-                    return new MetaData.ConnectRequest(_scheme, _authority, _path, fields, _protocol);
+                    return new MetaData.ConnectRequest(NanoTime.now(), _scheme, _authority, _path, fields, _protocol); // TODO #9900 make beginNanoTime accurate
                 else
                     return new MetaData.Request(
-                        _method,
+                        NanoTime.now(), // TODO #9900 make beginNanoTime accurate
+                         _method,
                         _scheme == null ? HttpScheme.HTTP.asString() : _scheme.asString(),
                         _authority,
                         _path,
