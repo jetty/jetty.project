@@ -440,11 +440,12 @@ public class ResourceService
 
     protected void sendWelcome(HttpContent content, String pathInContext, boolean endsWithSlash, Request request, Response response, Callback callback) throws Exception
     {
+        if (!Objects.requireNonNull(content).getResource().isDirectory())
+            throw new IllegalArgumentException("content must be a directory");
+
         if (LOG.isDebugEnabled())
-        {
             LOG.debug("sendWelcome(content={}, pathInContext={}, endsWithSlash={}, req={}, resp={}, callback={})",
                 content, pathInContext, endsWithSlash, request, response, callback);
-        }
 
         // Redirect to directory
         if (!endsWithSlash)
