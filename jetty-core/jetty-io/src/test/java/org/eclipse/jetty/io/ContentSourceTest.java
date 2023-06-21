@@ -242,6 +242,7 @@ public class ContentSourceTest
         // We must read the error.
         chunk = source.read();
         assertTrue(Content.Chunk.isError(chunk));
+        assertTrue(chunk.isLast());
     }
 
     @ParameterizedTest
@@ -264,6 +265,7 @@ public class ContentSourceTest
 
         Content.Chunk chunk = source.read();
         assertTrue(Content.Chunk.isError(chunk));
+        assertTrue(chunk.isLast());
 
         CountDownLatch latch = new CountDownLatch(1);
         source.demand(latch::countDown);
@@ -290,6 +292,7 @@ public class ContentSourceTest
 
         chunk = source.read();
         assertTrue(Content.Chunk.isError(chunk));
+        assertTrue(chunk.isLast());
     }
 
     @Test

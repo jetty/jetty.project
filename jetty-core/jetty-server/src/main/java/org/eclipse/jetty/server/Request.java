@@ -74,7 +74,9 @@ import org.eclipse.jetty.util.thread.Invocable;
  *             Throwable failure = error.getCause();
  *
  *             // Handle errors.
- *             // Mark the handling as complete, either generating a custom
+ *             // If the chunk is not last, then the error can be ignored and reading can be tried again.
+ *             // Otherwise, if the chunk is last, or we do not wish to ignore a non-last error, then
+ *             // mark the handling as complete, either generating a custom
  *             // response and succeeding the callback, or failing the callback.
  *             callback.failed(failure);
  *             return true;

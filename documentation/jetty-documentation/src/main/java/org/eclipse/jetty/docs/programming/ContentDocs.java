@@ -27,7 +27,7 @@ public class ContentDocs
     private static final Logger LOG = LoggerFactory.getLogger(ContentDocs.class);
 
     // tag::echo[]
-    void echo(Content.Source source, Content.Sink sink, Callback callback)
+    public void echo(Content.Source source, Content.Sink sink, Callback callback)
     {
         Callback echo = new Callback()
         {

@@ -259,10 +259,12 @@ public class ContentSourceTransformerTest
 
         chunk = transformer.read();
         assertTrue(Content.Chunk.isError(chunk));
+        assertTrue(chunk.isLast());
 
         // Trying to read again returns the error again.
         chunk = transformer.read();
         assertTrue(Content.Chunk.isError(chunk));
+        assertTrue(chunk.isLast());
 
         // Make sure that the source is failed.
         assertEquals(0, source.count());
@@ -284,10 +286,12 @@ public class ContentSourceTransformerTest
 
         chunk = transformer.read();
         assertTrue(Content.Chunk.isError(chunk));
+        assertTrue(chunk.isLast());
 
         // Trying to read again returns the error again.
         chunk = transformer.read();
         assertTrue(Content.Chunk.isError(chunk));
+        assertTrue(chunk.isLast());
     }
 
     @Test
@@ -306,10 +310,12 @@ public class ContentSourceTransformerTest
 
         chunk = transformer.read();
         assertTrue(Content.Chunk.isError(chunk));
+        assertTrue(chunk.isLast());
 
         // Trying to read again returns the error again.
         chunk = transformer.read();
         assertTrue(Content.Chunk.isError(chunk));
+        assertTrue(chunk.isLast());
     }
 
     private static class WordSplitLowCaseTransformer extends ContentSourceTransformer

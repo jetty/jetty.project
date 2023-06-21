@@ -101,6 +101,7 @@ public class AsyncContentTest
             // We must read the error.
             chunk = async.read();
             assertTrue(Content.Chunk.isError(chunk));
+            assertTrue(chunk.isLast());
 
             // Offering more should fail.
             CountDownLatch failLatch = new CountDownLatch(1);

@@ -1214,6 +1214,7 @@ public class HttpChannelTest
         Content.Chunk chunk = rq.read();
         assertTrue(chunk.isLast());
         assertTrue(Content.Chunk.isError(chunk));
+        assertTrue(chunk.isLast());
         assertThat(chunk.getError(), sameInstance(failure));
 
         CountDownLatch demand = new CountDownLatch(1);

@@ -131,6 +131,7 @@ public class ServerTimeoutsTest extends AbstractTest
         // Reads should yield the idle timeout.
         Content.Chunk chunk = requestRef.get().read();
         assertTrue(Content.Chunk.isError(chunk));
+        assertTrue(chunk.isLast());
         Throwable cause = chunk.getError();
         assertThat(cause, instanceOf(TimeoutException.class));
 

@@ -57,7 +57,7 @@ public class ContentSourceInputStream extends InputStream
                 if (Content.Chunk.isError(chunk))
                 {
                     Content.Chunk c = chunk;
-                    chunk = Content.Chunk.next(chunk); // TODO should we null here and rely on Source to remember state?
+                    chunk = null;
                     throw IO.rethrow(c.getError());
                 }
 

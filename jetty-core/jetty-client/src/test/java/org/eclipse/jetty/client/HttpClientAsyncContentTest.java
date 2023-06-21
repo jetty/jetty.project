@@ -248,10 +248,12 @@ public class HttpClientAsyncContentTest extends AbstractHttpClientServerTest
             {
                 Content.Chunk chunk = contentSource.read();
                 assertTrue(Content.Chunk.isError(chunk));
+                assertTrue(chunk.isLast());
                 contentSource.demand(() ->
                 {
                     Content.Chunk c = contentSource.read();
                     assertTrue(Content.Chunk.isError(c));
+                    assertTrue(c.isLast());
                     errorContentLatch.countDown();
                 });
             }))

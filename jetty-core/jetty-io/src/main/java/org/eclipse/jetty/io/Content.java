@@ -331,8 +331,8 @@ public class Content
         void demand(Runnable demandCallback);
 
         /**
-         * <p>Fails this content source with a terminal {@link Chunk#getError() error},
-         * possibly failing and discarding accumulated content chunks that were not yet read.</p>
+         * <p>Fails this content source with a {@link Chunk#isLast() last} {@link Chunk#getError() error chunk},
+         * failing and discarding accumulated content chunks that were not yet read.</p>
          * <p>The failure may be notified to the content reader at a later time, when
          * the content reader reads a content chunk, via a {@link Chunk} instance
          * with a non null {@link Chunk#getError()}.</p>
@@ -637,8 +637,12 @@ public class Content
          *     <td>{@code null}</td>
          *   </tr>
          *   <tr>
+         *     <td>{@link Chunk#isError(Chunk) Error} and {@link Chunk#isLast() last}</td>
          *     <td>{@link Error Error}</td>
-         *     <td>{@link Error Error}</td>
+         *   </tr>
+         *   <tr>
+         *     <td>{@link Chunk#isError(Chunk) Error} and {@link Chunk#isLast() not last}</td>
+         *     <td>{@code null}</td>
          *   </tr>
          *   <tr>
          *     <td>{@link #isLast()}</td>
