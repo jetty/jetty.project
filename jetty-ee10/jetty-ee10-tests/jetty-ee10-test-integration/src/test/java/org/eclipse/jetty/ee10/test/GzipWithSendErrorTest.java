@@ -102,7 +102,7 @@ public class GzipWithSendErrorTest
             {
                 if (onComplete != null)
                 {
-                    ServletContextRequest servletContextRequest = ((ServletApiRequest)sre.getServletRequest()).getServletContextRequest();
+                    ServletContextRequest servletContextRequest = ((ServletApiRequest)sre.getServletRequest()).getServletRequestInfo().getServletContextRequest();
                     onComplete.accept(servletContextRequest);
                 }
             }
