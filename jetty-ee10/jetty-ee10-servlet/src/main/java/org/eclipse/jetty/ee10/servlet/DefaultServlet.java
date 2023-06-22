@@ -458,7 +458,7 @@ public class DefaultServlet extends HttpServlet
         else if (isPathInfoOnly())
             encodedPathInContext = URIUtil.encodePath(req.getPathInfo());
         else if (req instanceof ServletApiRequest apiRequest)
-            encodedPathInContext = Context.getPathInContext(req.getContextPath(), apiRequest.getServletContextRequest().getHttpURI().getCanonicalPath());
+            encodedPathInContext = Context.getPathInContext(req.getContextPath(), apiRequest.getRequest().getHttpURI().getCanonicalPath());
         else
             encodedPathInContext = Context.getPathInContext(req.getContextPath(), URIUtil.canonicalPath(req.getRequestURI()));
 
@@ -878,12 +878,7 @@ public class DefaultServlet extends HttpServlet
 
         public ServletContextResponse getServletContextResponse()
         {
-            if (_response instanceof ServletApiResponse)
-            {
-                ServletApiResponse apiResponse = (ServletApiResponse)_response;
-                return apiResponse.getResponse();
-            }
-            return null;
+            return ServletContextResponse.getServletContextResponse(_response);
         }
 
         @Override
@@ -1002,6 +997,12 @@ public class DefaultServlet extends HttpServlet
         public CompletableFuture<Void> writeInterim(int status, HttpFields headers)
         {
             return null;
+        }
+
+        @Override
+        public String toString()
+        {
+            return "%s@%x{%s,%s}".formatted(this.getClass().getSimpleName(), hashCode(), this._coreRequest, _response);
         }
     }
 

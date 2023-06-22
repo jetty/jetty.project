@@ -52,7 +52,7 @@ public class HttpInput extends ServletInputStream implements Runnable
     public HttpInput(ServletChannel channel)
     {
         _servletChannel = channel;
-        _channelState = _servletChannel.getState();
+        _channelState = _servletChannel.getServletRequestState();
         _asyncContentProducer = new AsyncContentProducer(_servletChannel, _lock);
         _blockingContentProducer = new BlockingContentProducer(_asyncContentProducer);
         _contentProducer = _blockingContentProducer;
@@ -349,7 +349,7 @@ public class HttpInput extends ServletInputStream implements Runnable
             if (LOG.isDebugEnabled())
                 LOG.debug("running error={} {}", error, this);
             // TODO is this necessary to add here?
-            _servletChannel.getResponse().getHeaders().add(HttpFields.CONNECTION_CLOSE);
+            _servletChannel.getServletContextResponse().getHeaders().add(HttpFields.CONNECTION_CLOSE);
             _readListener.onError(error);
         }
         else if (chunk.isLast() && !chunk.hasRemaining())

@@ -289,7 +289,7 @@ public class ServletRequestState
 
     public boolean isResponseCommitted()
     {
-        return _servletChannel.getResponse().isCommitted();
+        return _servletChannel.getServletContextResponse().isCommitted();
     }
 
     public boolean isResponseCompleted()
@@ -311,7 +311,7 @@ public class ServletRequestState
                     return false;
 
                 case OPEN:
-                    _servletChannel.getResponse().setStatus(500);
+                    _servletChannel.getServletContextResponse().setStatus(HttpStatus.INTERNAL_SERVER_ERROR_500);
                     _outputState = OutputState.ABORTED;
                     return true;
 
@@ -883,7 +883,7 @@ public class ServletRequestState
         HttpServletRequest httpServletRequest = servletContextRequest.getServletApiRequest();
 
         final Request request = _servletChannel.getServletContextRequest();
-        final Response response = _servletChannel.getResponse();
+        final Response response = _servletChannel.getServletContextResponse();
         if (message == null)
             message = HttpStatus.getMessage(code);
 
@@ -915,7 +915,7 @@ public class ServletRequestState
             request.setAttribute(ERROR_MESSAGE, message);
 
             // Set Jetty Specific Attributes.
-            request.setAttribute(ErrorHandler.ERROR_CONTEXT, servletContextRequest.getContext());
+            request.setAttribute(ErrorHandler.ERROR_CONTEXT, servletContextRequest.getServletContext());
             request.setAttribute(ErrorHandler.ERROR_MESSAGE, message);
             request.setAttribute(ErrorHandler.ERROR_STATUS, code);
 
@@ -1153,7 +1153,7 @@ public class ServletRequestState
 
     public ServletContextHandler getContextHandler()
     {
-        return _servletChannel.getContextHandler();
+        return _servletChannel.getServletContextHandler();
     }
 
     void runInContext(AsyncContextEvent event, Runnable runnable)

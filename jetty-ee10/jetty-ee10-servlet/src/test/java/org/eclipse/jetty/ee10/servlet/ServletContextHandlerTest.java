@@ -2358,9 +2358,9 @@ public class ServletContextHandlerTest
 
     static class CookieTweakResponseApi extends ServletApiResponse
     {
-        CookieTweakResponseApi(ServletApiResponse response)
+        CookieTweakResponseApi(ServletContextResponse response)
         {
-            super(response.getResponse());
+            super(response);
         }
 
         @Override
@@ -2397,8 +2397,7 @@ public class ServletContextHandlerTest
                             @Override
                             protected ServletApiResponse newServletApiResponse()
                             {
-                                ServletApiResponse servletApiResponse = super.newServletApiResponse();
-                                return new CookieTweakResponseApi(super.newServletApiResponse());
+                                return new CookieTweakResponseApi(this);
                             }
                         };
                     }
