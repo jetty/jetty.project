@@ -30,7 +30,6 @@ import jakarta.servlet.AsyncContext;
 import jakarta.servlet.DispatcherType;
 import jakarta.servlet.Filter;
 import jakarta.servlet.FilterChain;
-import jakarta.servlet.FilterConfig;
 import jakarta.servlet.ServletException;
 import jakarta.servlet.ServletOutputStream;
 import jakarta.servlet.ServletRequest;
@@ -50,8 +49,9 @@ import org.eclipse.jetty.util.BufferUtil;
 import org.eclipse.jetty.util.IO;
 import org.hamcrest.Matchers;
 import org.junit.jupiter.api.AfterEach;
-import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
+import org.junit.jupiter.params.ParameterizedTest;
+import org.junit.jupiter.params.provider.ValueSource;
 
 import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.Matchers.contains;
@@ -91,10 +91,8 @@ public class GzipHandlerTest
     private Server _server;
     private LocalConnector _connector;
     private GzipHandler gzipHandler;
-    private ServletContextHandler context;
 
-    @BeforeEach
-    public void init() throws Exception
+    public void init(boolean gzipInContext) throws Exception
     {
         _server = new Server();
         _connector = new LocalConnector(_server);
@@ -104,10 +102,7 @@ public class GzipHandlerTest
         gzipHandler.setMinGzipSize(16);
         gzipHandler.setInflateBufferSize(4096);
 
-        context = new ServletContextHandler(gzipHandler, "/ctx");
-
-        _server.setHandler(gzipHandler);
-        gzipHandler.setHandler(context);
+        ServletContextHandler context = new ServletContextHandler("/ctx");
         context.addServlet(MicroServlet.class, "/micro");
         context.addServlet(MicroChunkedServlet.class, "/microchunked");
         context.addServlet(TestServlet.class, "/content");
@@ -120,6 +115,17 @@ public class GzipHandlerTest
         context.addServlet(BufferServlet.class, "/buffer/*");
         context.addFilter(CheckFilter.class, "/*", EnumSet.of(DispatcherType.REQUEST));
 
+        if (gzipInContext)
+        {
+            _server.setHandler(context);
+            context.insertHandler(gzipHandler);
+        }
+        else
+        {
+            _server.setHandler(gzipHandler);
+            gzipHandler.setHandler(context);
+        }
+        
         _server.start();
     }
 
@@ -219,7 +225,7 @@ public class GzipHandlerTest
 
             out.setWriteListener(new WriteListener()
             {
-                int count = writes == null ? 1 : Integer.valueOf(writes);
+                int count = writes == null ? 1 : Integer.parseInt(writes);
 
                 {
                     response.setContentLength(count * __bytes.length);
@@ -233,6 +239,7 @@ public class GzipHandlerTest
                         if (count-- == 0)
                         {
                             out.close();
+                            context.complete();
                             break;
                         }
 
@@ -315,13 +322,18 @@ public class GzipHandlerTest
     @AfterEach
     public void destroy() throws Exception
     {
-        _server.stop();
-        _server.join();
+        if (_server != null)
+        {
+            _server.stop();
+            _server.join();
+        }
     }
 
-    @Test
-    public void testNotGzipHandler() throws Exception
+    @ParameterizedTest
+    @ValueSource(booleans = {true, false})
+    public void testNotGzipHandler(boolean gzipInContext) throws Exception
     {
+        init(gzipInContext);
         // generated and parsed test
         HttpTester.Request request = HttpTester.newRequest();
         HttpTester.Response response;
@@ -345,9 +357,11 @@ public class GzipHandlerTest
         assertEquals(__content, testOut.toString(StandardCharsets.UTF_8));
     }
 
-    @Test
-    public void testBlockingResponse() throws Exception
+    @ParameterizedTest
+    @ValueSource(booleans = {true, false})
+    public void testBlockingResponse(boolean gzipInContext) throws Exception
     {
+        init(gzipInContext);
         // generated and parsed test
         HttpTester.Request request = HttpTester.newRequest();
         HttpTester.Response response;
@@ -372,9 +386,11 @@ public class GzipHandlerTest
         assertEquals(__content, testOut.toString(StandardCharsets.UTF_8));
     }
 
-    @Test
-    public void testGzipNotModifiedVaryHeader() throws Exception
+    @ParameterizedTest
+    @ValueSource(booleans = {true, false})
+    public void testGzipNotModifiedVaryHeader(boolean gzipInContext) throws Exception
     {
+        init(gzipInContext);
         HttpTester.Request request;
         HttpTester.Response response;
 
@@ -410,9 +426,11 @@ public class GzipHandlerTest
         assertThat(response.getCSV("Vary", false), contains("Accept-Encoding"));
     }
 
-    @Test
-    public void testAsyncResponse() throws Exception
+    @ParameterizedTest
+    @ValueSource(booleans = {true, false})
+    public void testAsyncResponse(boolean gzipInContext) throws Exception
     {
+        init(gzipInContext);
         // generated and parsed test
         HttpTester.Request request = HttpTester.newRequest();
         HttpTester.Response response;
@@ -436,9 +454,11 @@ public class GzipHandlerTest
         assertEquals(__content, testOut.toString(StandardCharsets.UTF_8));
     }
 
-    @Test
-    public void testBufferResponse() throws Exception
+    @ParameterizedTest
+    @ValueSource(booleans = {true, false})
+    public void testBufferResponse(boolean gzipInContext) throws Exception
     {
+        init(gzipInContext);
         // generated and parsed test
         HttpTester.Request request = HttpTester.newRequest();
         HttpTester.Response response;
@@ -462,9 +482,11 @@ public class GzipHandlerTest
         assertEquals(__content, testOut.toString(StandardCharsets.UTF_8));
     }
 
-    @Test
-    public void testAsyncLargeResponse() throws Exception
+    @ParameterizedTest
+    @ValueSource(booleans = {true, false})
+    public void testAsyncLargeResponse(boolean gzipInContext) throws Exception
     {
+        init(gzipInContext);
         int writes = 100;
         // generated and parsed test
         HttpTester.Request request = HttpTester.newRequest();
@@ -494,9 +516,11 @@ public class GzipHandlerTest
         }
     }
 
-    @Test
-    public void testAsyncEmptyResponse() throws Exception
+    @ParameterizedTest
+    @ValueSource(booleans = {true, false})
+    public void testAsyncEmptyResponse(boolean gzipInContext) throws Exception
     {
+        init(gzipInContext);
         int writes = 0;
         _server.getDescendant(GzipHandler.class).setMinGzipSize(0);
 
@@ -517,9 +541,11 @@ public class GzipHandlerTest
         assertThat(response.getCSV("Vary", false), contains("Accept-Encoding"));
     }
 
-    @Test
-    public void testGzipHandlerWithMultipleAcceptEncodingHeaders() throws Exception
+    @ParameterizedTest
+    @ValueSource(booleans = {true, false})
+    public void testGzipHandlerWithMultipleAcceptEncodingHeaders(boolean gzipInContext) throws Exception
     {
+        init(gzipInContext);
         // generated and parsed test
         HttpTester.Request request = HttpTester.newRequest();
         HttpTester.Response response;
@@ -545,9 +571,11 @@ public class GzipHandlerTest
         assertEquals(__content, testOut.toString(StandardCharsets.UTF_8));
     }
 
-    @Test
-    public void testGzipNotMicro() throws Exception
+    @ParameterizedTest
+    @ValueSource(booleans = {true, false})
+    public void testGzipNotMicro(boolean gzipInContext) throws Exception
     {
+        init(gzipInContext);
         // generated and parsed test
         HttpTester.Request request = HttpTester.newRequest();
         HttpTester.Response response;
@@ -572,9 +600,11 @@ public class GzipHandlerTest
         assertEquals(__micro, testOut.toString(StandardCharsets.UTF_8));
     }
 
-    @Test
-    public void testGzipNotMicroChunked() throws Exception
+    @ParameterizedTest
+    @ValueSource(booleans = {true, false})
+    public void testGzipNotMicroChunked(boolean gzipInContext) throws Exception
     {
+        init(gzipInContext);
         // generated and parsed test
         HttpTester.Request request = HttpTester.newRequest();
         HttpTester.Response response;
@@ -601,9 +631,11 @@ public class GzipHandlerTest
         assertEquals(__micro, testOut.toString(StandardCharsets.UTF_8));
     }
 
-    @Test
-    public void testETagNotGzipHandler() throws Exception
+    @ParameterizedTest
+    @ValueSource(booleans = {true, false})
+    public void testETagNotGzipHandler(boolean gzipInContext) throws Exception
     {
+        init(gzipInContext);
         // generated and parsed test
         HttpTester.Request request = HttpTester.newRequest();
         HttpTester.Response response;
@@ -622,9 +654,11 @@ public class GzipHandlerTest
         assertThat(response.get("ETag"), is(__contentETag));
     }
 
-    @Test
-    public void testETagGzipHandler() throws Exception
+    @ParameterizedTest
+    @ValueSource(booleans = {true, false})
+    public void testETagGzipHandler(boolean gzipInContext) throws Exception
     {
+        init(gzipInContext);
         // generated and parsed test
         HttpTester.Request request = HttpTester.newRequest();
         HttpTester.Response response;
@@ -643,9 +677,11 @@ public class GzipHandlerTest
         assertThat(response.get("ETag"), is(__contentETagGzip));
     }
 
-    @Test
-    public void testDeleteETagGzipHandler() throws Exception
+    @ParameterizedTest
+    @ValueSource(booleans = {true, false})
+    public void testDeleteETagGzipHandler(boolean gzipInContext) throws Exception
     {
+        init(gzipInContext);
         HttpTester.Request request = HttpTester.newRequest();
         HttpTester.Response response;
 
@@ -675,9 +711,11 @@ public class GzipHandlerTest
         assertThat(response.get("Content-Encoding"), not(equalToIgnoringCase("gzip")));
     }
 
-    @Test
-    public void testForwardGzipHandler() throws Exception
+    @ParameterizedTest
+    @ValueSource(booleans = {true, false})
+    public void testForwardGzipHandler(boolean gzipInContext) throws Exception
     {
+        init(gzipInContext);
         // generated and parsed test
         HttpTester.Request request = HttpTester.newRequest();
         HttpTester.Response response;
@@ -702,9 +740,11 @@ public class GzipHandlerTest
         assertEquals(__content, testOut.toString(StandardCharsets.UTF_8));
     }
 
-    @Test
-    public void testIncludeGzipHandler() throws Exception
+    @ParameterizedTest
+    @ValueSource(booleans = {true, false})
+    public void testIncludeGzipHandler(boolean gzipInContext) throws Exception
     {
+        init(gzipInContext);
         // generated and parsed test
         HttpTester.Request request = HttpTester.newRequest();
         HttpTester.Response response;
@@ -729,11 +769,14 @@ public class GzipHandlerTest
         assertEquals(__icontent, testOut.toString(StandardCharsets.UTF_8));
     }
 
-    @Test
-    public void testIncludeExcludeGzipHandlerInflate() throws Exception
+    @ParameterizedTest
+    @ValueSource(booleans = {true, false})
+    public void testIncludeExcludeGzipHandlerInflate(boolean gzipInContext) throws Exception
     {
-        gzipHandler.addExcludedInflationPaths("/ctx/echo/exclude");
-        gzipHandler.addIncludedInflationPaths("/ctx/echo/include");
+        init(gzipInContext);
+        String path = gzipInContext ? "/echo" : "/ctx/echo";
+        gzipHandler.addExcludedInflationPaths(path + "/exclude");
+        gzipHandler.addIncludedInflationPaths(path + "/include");
 
         String message = "hello world";
         byte[] gzippedMessage = gzipContent(message);
@@ -784,9 +827,11 @@ public class GzipHandlerTest
         assertThat("Included Paths", Arrays.asList(includedPaths), contains("/foo", "^/bar.*$"));
     }
 
-    @Test
-    public void testGzipRequest() throws Exception
+    @ParameterizedTest
+    @ValueSource(booleans = {true, false})
+    public void testGzipRequest(boolean gzipInContext) throws Exception
     {
+        init(gzipInContext);
         String data = "Hello Nice World! ";
         for (int i = 0; i < 10; ++i)
         {
@@ -816,9 +861,11 @@ public class GzipHandlerTest
         assertThat(response.getContent(), is(data));
     }
 
-    @Test
-    public void testGzipRequestChunked() throws Exception
+    @ParameterizedTest
+    @ValueSource(booleans = {true, false})
+    public void testGzipRequestChunked(boolean gzipInContext) throws Exception
     {
+        init(gzipInContext);
         String data = "Hello Nice World! ";
         for (int i = 0; i < 10; ++i)
         {
@@ -848,9 +895,11 @@ public class GzipHandlerTest
         assertThat(response.getContent(), is(data));
     }
 
-    @Test
-    public void testGzipFormRequest() throws Exception
+    @ParameterizedTest
+    @ValueSource(booleans = {true, false})
+    public void testGzipFormRequest(boolean gzipInContext) throws Exception
     {
+        init(gzipInContext);
         String data = "name=value";
         ByteArrayOutputStream baos = new ByteArrayOutputStream();
         GZIPOutputStream output = new GZIPOutputStream(baos);
@@ -876,9 +925,11 @@ public class GzipHandlerTest
         assertThat(response.getContent(), is("name: value\n"));
     }
 
-    @Test
-    public void testGzipBomb() throws Exception
+    @ParameterizedTest
+    @ValueSource(booleans = {true, false})
+    public void testGzipBomb(boolean gzipInContext) throws Exception
     {
+        init(gzipInContext);
         byte[] data = new byte[512 * 1024];
         Arrays.fill(data, (byte)'X');
 
@@ -907,9 +958,11 @@ public class GzipHandlerTest
         assertThat(response.getContentBytes().length, is(512 * 1024));
     }
 
-    @Test
-    public void testGzipExcludeNewMimeType() throws Exception
+    @ParameterizedTest
+    @ValueSource(booleans = {true, false})
+    public void testGzipExcludeNewMimeType(boolean gzipInContext) throws Exception
     {
+        init(gzipInContext);
         // setting all excluded mime-types to a mimetype new mime-type
         // Note: this mime-type does not exist in MimeTypes object.
         gzipHandler.setExcludedMimeTypes("image/webfoo");
@@ -956,11 +1009,6 @@ public class GzipHandlerTest
     public static class CheckFilter implements Filter
     {
         @Override
-        public void init(FilterConfig filterConfig) throws ServletException
-        {
-        }
-
-        @Override
         public void doFilter(ServletRequest request, ServletResponse response, FilterChain chain) throws IOException, ServletException
         {
             if (request.getParameter("X-Content-Encoding") != null)
@@ -968,11 +1016,6 @@ public class GzipHandlerTest
             else if (request.getContentLength() >= 0)
                 assertThat(request.getParameter("X-Content-Encoding"), Matchers.nullValue());
             chain.doFilter(request, response);
-        }
-
-        @Override
-        public void destroy()
-        {
         }
     }
 }

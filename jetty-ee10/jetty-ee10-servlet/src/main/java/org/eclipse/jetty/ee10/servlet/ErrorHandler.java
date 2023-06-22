@@ -91,7 +91,7 @@ public class ErrorHandler implements Request.Handler
         ServletContextRequest servletContextRequest = Request.as(request, ServletContextRequest.class);
         HttpServletRequest httpServletRequest = servletContextRequest.getServletApiRequest();
         HttpServletResponse httpServletResponse = servletContextRequest.getHttpServletResponse();
-        ServletContextHandler contextHandler = servletContextRequest.getContext().getServletContextHandler();
+        ServletContextHandler contextHandler = servletContextRequest.getServletContext().getServletContextHandler();
         String cacheControl = getCacheControl();
         if (cacheControl != null)
             response.getHeaders().put(HttpHeader.CACHE_CONTROL.asString(), cacheControl);
@@ -164,7 +164,7 @@ public class ErrorHandler implements Request.Handler
             for (String mimeType : acceptable)
             {
                 generateAcceptableResponse(baseRequest, request, response, code, message, mimeType);
-                if (response.isCommitted() || baseRequest.getResponse().isWritingOrStreaming())
+                if (response.isCommitted() || baseRequest.getServletContextResponse().isWritingOrStreaming())
                     break;
             }
         }
@@ -300,7 +300,7 @@ public class ErrorHandler implements Request.Handler
                 // TODO error page may cause a BufferOverflow.  In which case we try
                 // TODO again with stacks disabled. If it still overflows, it is
                 // TODO written without a body.
-                ByteBuffer buffer = baseRequest.getResponse().getHttpOutput().getByteBuffer();
+                ByteBuffer buffer = baseRequest.getServletContextResponse().getHttpOutput().getByteBuffer();
                 ByteBufferOutputStream out = new ByteBufferOutputStream(buffer);
                 PrintWriter writer = new PrintWriter(new OutputStreamWriter(out, charset));
 
@@ -334,7 +334,7 @@ public class ErrorHandler implements Request.Handler
                     LOG.warn("Error page too large: {} {} {}", code, message, request, e);
                 else
                     LOG.warn("Error page too large: {} {} {}", code, message, request);
-                baseRequest.getResponse().resetContent();
+                baseRequest.getServletContextResponse().resetContent();
                 if (!_disableStacks)
                 {
                     LOG.info("Disabling showsStacks for {}", this);
@@ -395,7 +395,7 @@ public class ErrorHandler implements Request.Handler
         if (showStacks && !_disableStacks)
             writeErrorPageStacks(request, writer);
 
-        ((ServletApiRequest)request).getServletContextRequest().getServletChannel().getHttpConfiguration()
+        ((ServletApiRequest)request).getServletRequestInfo().getServletChannel().getHttpConfiguration()
             .writePoweredBy(writer, "<hr/>", "<hr/>\n");
     }
 

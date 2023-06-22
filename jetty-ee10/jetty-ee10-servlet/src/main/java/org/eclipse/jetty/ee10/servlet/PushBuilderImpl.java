@@ -114,7 +114,7 @@ class PushBuilderImpl implements PushBuilder
         }
 
         if (!pushPath.startsWith("/"))
-            pushPath = URIUtil.addPaths(_request.getContext().getContextPath(), pushPath);
+            pushPath = URIUtil.addPaths(_request.getServletContext().getContextPath(), pushPath);
 
         String pushParam = null;
         if (_sessionId != null)

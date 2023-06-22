@@ -526,9 +526,9 @@ public class GzipHandler extends Handler.Wrapper implements GzipFactory
         if (Request.as(request, GzipRequest.class) != null)
             return next.handle(request, response, callback);
 
-        String path = Request.getPathInContext(request);
-        boolean tryInflate = getInflateBufferSize() >= 0 && isPathInflatable(path);
-        boolean tryDeflate = _methods.test(request.getMethod()) && isPathDeflatable(path) && isMimeTypeDeflatable(request.getContext().getMimeTypes(), path);
+        String pathInContext = Request.getPathInContext(request);
+        boolean tryInflate = getInflateBufferSize() >= 0 && isPathInflatable(pathInContext);
+        boolean tryDeflate = _methods.test(request.getMethod()) && isPathDeflatable(pathInContext) && isMimeTypeDeflatable(request.getContext().getMimeTypes(), pathInContext);
 
         // Can we skip looking at the request and wrapping request or response?
         if (!tryInflate && !tryDeflate)
@@ -624,15 +624,15 @@ public class GzipHandler extends Handler.Wrapper implements GzipFactory
     /**
      * Test if the provided Request URI is allowed to be inflated based on the Path Specs filters.
      *
-     * @param requestURI the request uri
+     * @param pathInContext the request path in context
      * @return whether decompressing is allowed for the given the path.
      */
-    protected boolean isPathInflatable(String requestURI)
+    protected boolean isPathInflatable(String pathInContext)
     {
-        if (requestURI == null)
+        if (pathInContext == null)
             return true;
 
-        return _inflatePaths.test(requestURI);
+        return _inflatePaths.test(pathInContext);
     }
 
     /**

@@ -18,5 +18,6 @@ webapps/root/
 webapps/root/images/
 basehome:modules/demo.d/root/index.html|webapps/root/index.html
 basehome:modules/demo.d/root/jetty.css|webapps/root/jetty.css
+basehome:modules/demo.d/root/favicon.ico|webapps/root/favicon.ico
 basehome:modules/demo.d/root/images/jetty-pic.png|webapps/root/images/jetty-pic.png
 basehome:modules/demo.d/root/images/webtide_logo.jpg|webapps/root/images/webtide_logo.jpg

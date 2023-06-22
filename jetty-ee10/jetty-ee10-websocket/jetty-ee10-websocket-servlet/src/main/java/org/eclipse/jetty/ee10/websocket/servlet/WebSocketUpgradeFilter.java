@@ -158,7 +158,7 @@ public class WebSocketUpgradeFilter implements Filter, Dumpable
     public void doFilter(ServletRequest request, ServletResponse response, FilterChain chain) throws IOException, ServletException
     {
         ServletContextRequest servletContextRequest = ServletContextRequest.getServletContextRequest(request);
-        ServletContextResponse servletContextResponse = servletContextRequest.getResponse();
+        ServletContextResponse servletContextResponse = servletContextRequest.getServletContextResponse();
 
         // Do preliminary check before proceeding to attempt an upgrade.
         if (mappings.getHandshaker().isWebSocketUpgradeRequest(servletContextRequest))

@@ -1204,6 +1204,167 @@ public interface HttpFields extends Iterable<HttpField>, Supplier<HttpFields>
             // return a merged header with missing ensured values added
             return new HttpField(ensure.getHeader(), ensure.getName(), v.toString());
         }
+
+        /**
+         * A wrapper of {@link HttpFields}.
+         */
+        class Wrapper implements Mutable
+        {
+            private final Mutable _fields;
+
+            public Wrapper(Mutable fields)
+            {
+                _fields = fields;
+            }
+
+            /**
+             * Called when a field is added (including as part of a put).
+             * @param field The field being added.
+             * @return The field to add, or null if the add is to be ignored.
+             */
+            public HttpField onAddField(HttpField field)
+            {
+                return field;
+            }
+
+            /**
+             * Called when a field is removed (including as part of a put).
+             * @param field The field being removed.
+             * @return True if the field should be removed, false otherwise.
+             */
+            public boolean onRemoveField(HttpField field)
+            {
+                return true;
+            }
+
+            @Override
+            public HttpFields takeAsImmutable()
+            {
+                return Mutable.super.takeAsImmutable();
+            }
+
+            @Override
+            public int size()
+            {
+                // This impl needed only as an optimization
+                return _fields.size();
+            }
+
+            @Override
+            public Stream<HttpField> stream()
+            {
+                // This impl needed only as an optimization
+                return _fields.stream();
+            }
+
+            @Override
+            public Mutable add(HttpField field)
+            {
+                // This impl needed only as an optimization
+                if (field != null)
+                {
+                    field = onAddField(field);
+                    if (field != null)
+                       return _fields.add(field);
+                }
+                return this;
+            }
+
+            @Override
+            public ListIterator<HttpField> listIterator()
+            {
+                ListIterator<HttpField> i = _fields.listIterator();
+                return new ListIterator<>()
+                {
+                    HttpField last;
+
+                    @Override
+                    public boolean hasNext()
+                    {
+                        return i.hasNext();
+                    }
+
+                    @Override
+                    public HttpField next()
+                    {
+                        return last = i.next();
+                    }
+
+                    @Override
+                    public boolean hasPrevious()
+                    {
+                        return i.hasPrevious();
+                    }
+
+                    @Override
+                    public HttpField previous()
+                    {
+                        return last = i.previous();
+                    }
+
+                    @Override
+                    public int nextIndex()
+                    {
+                        return i.nextIndex();
+                    }
+
+                    @Override
+                    public int previousIndex()
+                    {
+                        return i.previousIndex();
+                    }
+
+                    @Override
+                    public void remove()
+                    {
+                        if (last != null && onRemoveField(last))
+                        {
+                            last = null;
+                            i.remove();
+                        }
+                    }
+
+                    @Override
+                    public void set(HttpField field)
+                    {
+                        if (field == null)
+                        {
+                            if (last != null && onRemoveField(last))
+                            {
+                                last = null;
+                                i.remove();
+                            }
+                        }
+                        else
+                        {
+                            if (last != null && onRemoveField(last))
+                            {
+                                field = onAddField(field);
+                                if (field != null)
+                                {
+                                    last = null;
+                                    i.set(field);
+                                }
+                            }
+                        }
+                    }
+
+                    @Override
+                    public void add(HttpField field)
+                    {
+                        if (field != null)
+                        {
+                            field = onAddField(field);
+                            if (field != null)
+                            {
+                                last = null;
+                                i.add(field);
+                            }
+                        }
+                    }
+                };
+            }
+        }
     }
 
     /**
@@ -1391,8 +1552,12 @@ public interface HttpFields extends Iterable<HttpField>, Supplier<HttpFields>
         public int hashCode()
         {
             int hash = 0;
-            for (int i = _fields.length; i-- > 0; )
-                hash ^= _fields[i].hashCode();
+            for (int i = _size; i-- > 0; )
+            {
+                HttpField field = _fields[i];
+                if (field != null)
+                    hash ^= field.hashCode();
+            }
             return hash;
         }
 

@@ -35,6 +35,7 @@ import org.junit.jupiter.params.provider.MethodSource;
 import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.Matchers.containsString;
 import static org.hamcrest.Matchers.greaterThan;
+import static org.hamcrest.Matchers.is;
 import static org.hamcrest.Matchers.not;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertTrue;
@@ -576,6 +577,67 @@ public class DemoModulesTests extends AbstractJettyHomeTest
 
                 assertEquals(HttpStatus.OK_200, response.getStatus(), new ResponseDetails(response));
                 assertThat(response.getContentAsString(), containsString("Hello World"));
+            }
+        }
+    }
+
+    @ParameterizedTest
+    @MethodSource("provideEnvironmentsToTest")
+    public void testStaticContent(String env) throws Exception
+    {
+        Path jettyBase = newTestJettyBaseDirectory();
+        String jettyVersion = System.getProperty("jettyVersion");
+        JettyHomeTester distribution = JettyHomeTester.Builder.newInstance()
+            .jettyVersion(jettyVersion)
+            .jettyBase(jettyBase)
+            .mavenLocalRepository(System.getProperty("mavenRepoPath"))
+            .build();
+
+        int httpPort = distribution.freePort();
+
+        String[] argsConfig =
+        {
+            "--add-modules=http," + toEnvironment("demos", env)
+        };
+
+        try (JettyHomeTester.Run runConfig = distribution.start(argsConfig))
+        {
+            assertTrue(runConfig.awaitFor(START_TIMEOUT, TimeUnit.SECONDS));
+            assertEquals(0, runConfig.getExitValue());
+
+            String[] argsStart =
+            {
+                 "jetty.http.port=" + httpPort
+            };
+            try (JettyHomeTester.Run runStart = distribution.start(argsStart))
+            {
+                assertTrue(runStart.awaitConsoleLogsFor("Started oejs.Server@", START_TIMEOUT, TimeUnit.SECONDS));
+                startHttpClient();
+
+                String rootURI = "http://localhost:%d".formatted(httpPort);
+                String demoJettyURI = "%s/%s-test".formatted(rootURI, env);
+
+                ContentResponse response;
+
+                for (String welcome : new String[] {"", "/", "/index.html"})
+                {
+                    response = client.GET(rootURI + welcome);
+                    assertThat(response.getStatus(), is(HttpStatus.OK_200));
+                    assertThat(response.getContentAsString(), containsString("Welcome to Jetty 12"));
+
+                    response = client.GET(demoJettyURI + welcome);
+                    assertThat(response.getStatus(), is(HttpStatus.OK_200));
+                    assertThat(response.getContentAsString(), containsString("Eclipse Jetty Demo Webapp"));
+                }
+
+                for (String directory : new String[] {rootURI + "/", demoJettyURI + "/", demoJettyURI + "/rewrite/"})
+                {
+                    response = client.GET(directory + "jetty-dir.css");
+                    assertThat(response.getStatus(), is(HttpStatus.OK_200));
+                }
+
+                response = client.GET(rootURI + "/favicon.ico");
+                assertEquals(HttpStatus.OK_200, response.getStatus());
             }
         }
     }

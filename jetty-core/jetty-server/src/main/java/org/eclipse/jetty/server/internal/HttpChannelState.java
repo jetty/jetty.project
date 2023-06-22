@@ -104,7 +104,6 @@ public class HttpChannelState implements HttpChannel, Components
     private final HandlerInvoker _handlerInvoker = new HandlerInvoker();
     private final ConnectionMetaData _connectionMetaData;
     private final SerializedInvoker _serializedInvoker;
-    private final Attributes _requestAttributes = new Attributes.Lazy();
     private final ResponseHttpFields _responseHeaders = new ResponseHttpFields();
     private Thread _handling;
     private boolean _handled;
@@ -157,7 +156,6 @@ public class HttpChannelState implements HttpChannel, Components
             _streamSendState = StreamSendState.SENDING;
 
             // Recycle.
-            _requestAttributes.clearAttributes();
             _responseHeaders.reset();
             _handling = null;
             _handled = false;
@@ -741,6 +739,7 @@ public class HttpChannelState implements HttpChannel, Components
         private final MetaData.Request _metaData;
         private final AutoLock _lock;
         private final LongAdder _contentBytesRead = new LongAdder();
+        private final Attributes _attributes = new Attributes.Lazy();
         private HttpChannelState _httpChannelState;
         private Request _loggedRequest;
         private HttpFields _trailers;
@@ -777,26 +776,25 @@ public class HttpChannelState implements HttpChannel, Components
         @Override
         public Object getAttribute(String name)
         {
-            HttpChannelState httpChannel = getHttpChannelState();
             if (name.startsWith("org.eclipse.jetty"))
             {
                 if (Server.class.getName().equals(name))
-                    return httpChannel.getConnectionMetaData().getConnector().getServer();
+                    return getConnectionMetaData().getConnector().getServer();
                 if (HttpChannelState.class.getName().equals(name))
-                    return httpChannel;
+                    return getHttpChannelState();
                 // TODO: is the instanceof needed?
                 // TODO: possibly remove this if statement or move to Servlet.
                 if (HttpConnection.class.getName().equals(name) &&
                     getConnectionMetaData().getConnection() instanceof HttpConnection)
                     return getConnectionMetaData().getConnection();
             }
-            return httpChannel._requestAttributes.getAttribute(name);
+            return _attributes.getAttribute(name);
         }
 
         @Override
         public Object removeAttribute(String name)
         {
-            return getHttpChannelState()._requestAttributes.removeAttribute(name);
+            return _attributes.removeAttribute(name);
         }
 
         @Override
@@ -804,19 +802,19 @@ public class HttpChannelState implements HttpChannel, Components
         {
             if (Server.class.getName().equals(name) || HttpChannelState.class.getName().equals(name) || HttpConnection.class.getName().equals(name))
                 return null;
-            return getHttpChannelState()._requestAttributes.setAttribute(name, attribute);
+            return _attributes.setAttribute(name, attribute);
         }
 
         @Override
         public Set<String> getAttributeNameSet()
         {
-            return getHttpChannelState()._requestAttributes.getAttributeNameSet();
+            return _attributes.getAttributeNameSet();
         }
 
         @Override
         public void clearAttributes()
         {
-            getHttpChannelState()._requestAttributes.clearAttributes();
+            _attributes.clearAttributes();
         }
 
         @Override
@@ -837,7 +835,7 @@ public class HttpChannelState implements HttpChannel, Components
             return _connectionMetaData;
         }
 
-        HttpChannelState getHttpChannelState()
+        private HttpChannelState getHttpChannelState()
         {
             try (AutoLock ignore = _lock.lock())
             {
