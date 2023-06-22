@@ -188,6 +188,8 @@ public class Request implements HttpServletRequest
     private long _timeStamp;
     private MultiPartFormInputStream _multiParts; //if the request is a multi-part mime
     private AsyncContextState _async;
+    private String _lastPathInContext;
+    private ContextHandler.APIContext _lastContext;
 
     public Request(HttpChannel channel, HttpInput input)
     {
@@ -700,8 +702,22 @@ public class Request implements HttpServletRequest
     {
         _context = context;
         _pathInContext = pathInContext;
+        if (context != null)
+        {
+            _lastContext = context;
+            _lastPathInContext = pathInContext;
+        }
     }
 
+    public ContextHandler.APIContext getLastContext()
+    {
+        return _lastContext;
+    }
+
+    public String getLastPathInContext()
+    {
+        return _lastPathInContext;
+    }
     @Override
     public String getContextPath()
     {

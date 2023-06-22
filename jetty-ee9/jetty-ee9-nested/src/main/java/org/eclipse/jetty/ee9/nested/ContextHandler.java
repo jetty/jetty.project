@@ -97,9 +97,6 @@ import org.eclipse.jetty.util.security.SecurityUtils;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import static org.eclipse.jetty.ee9.nested.HttpChannel.SERVLET_CONTEXT_ATTRIBUTE;
-import static org.eclipse.jetty.ee9.nested.HttpChannel.SERVLET_PATH_IN_CONTEXT_ATTRIBUTE;
-
 /**
  * ContextHandler.
  *
@@ -905,10 +902,6 @@ public class ContextHandler extends ScopedHandler implements Attributes, Supplie
                 (DispatcherType.INCLUDE.equals(dispatch) || !target.startsWith("/")) ? oldPathInContext : pathInContext);
 
             org.eclipse.jetty.server.handler.ContextHandler.ScopedContext context = getCoreContextHandler().getContext();
-
-            baseRequest.setAttribute(SERVLET_CONTEXT_ATTRIBUTE, _apiContext);
-            baseRequest.setAttribute(SERVLET_PATH_IN_CONTEXT_ATTRIBUTE, baseRequest.getPathInContext());
-
             if (context == org.eclipse.jetty.server.handler.ContextHandler.getCurrentContext())
             {
                 nextScope(target, baseRequest, request, response);

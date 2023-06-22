@@ -45,8 +45,6 @@ import org.eclipse.jetty.util.StringUtil;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import static org.eclipse.jetty.ee9.nested.HttpChannel.SERVLET_CONTEXT_ATTRIBUTE;
-
 /**
  * Handler for Error pages
  */
@@ -91,7 +89,7 @@ public class ErrorHandler extends AbstractHandler
         // This logic really should be in ErrorPageErrorHandler, but some implementations extend ErrorHandler
         // and implement ErrorPageMapper directly, so we do this here in the base class.
         String errorPage = (this instanceof ErrorPageMapper) ? ((ErrorPageMapper)this).getErrorPage(request) : null;
-        ServletContext context = (ServletContext)request.getAttribute(SERVLET_CONTEXT_ATTRIBUTE);
+        ServletContext context = baseRequest.getLastContext();
         Dispatcher errorDispatcher = (errorPage != null && context != null)
             ? (Dispatcher)context.getRequestDispatcher(errorPage) : null;
 

@@ -70,8 +70,6 @@ import org.eclipse.jetty.util.thread.AutoLock;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import static org.eclipse.jetty.ee9.nested.HttpChannel.SERVLET_NAME_ATTRIBUTE;
-
 /**
  * Servlet HttpHandler.
  * <p>
@@ -470,10 +468,7 @@ public class ServletHandler extends ScopedHandler
             ServletPathMapping servletPathMapping = mappedServlet.getServletPathMapping(target, matched.getMatchedPath());
 
             if (servletPathMapping != null)
-            {
                 baseRequest.setServletPathMapping(servletPathMapping);
-                baseRequest.setAttribute(SERVLET_NAME_ATTRIBUTE, servletPathMapping.getServletName());
-            }
         }
 
         if (LOG.isDebugEnabled())
