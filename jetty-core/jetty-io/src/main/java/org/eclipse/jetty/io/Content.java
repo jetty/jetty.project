@@ -355,7 +355,7 @@ public class Content
          * as {@link #fail(Throwable)}. Otherwise the failure is transient and a
          * {@link Chunk#getFailure() failure chunk} will be {@link #read() read} in order with content chunks,
          * and subsequent calls to {@link #read() read} may produce other content.</p>
-         * <p>A reader may treat a transient failure as persistent.</p>
+         * <p>A {@code Content.Source} or its {@link #read() reader} may treat a transient failure as persistent.</p>
          *
          * @param failure A failure.
          * @param last true if the failure is persistent, false if the failure is transient.
@@ -623,7 +623,7 @@ public class Content
                 @Override
                 public String toString()
                 {
-                    return String.format("%s@%x{c=%s,l=%b}", getClass().getSimpleName(), hashCode(), failure, last);
+                    return String.format("Chunk@%x{c=%s,l=%b}", hashCode(), failure, last);
                 }
             };
         }

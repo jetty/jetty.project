@@ -940,7 +940,7 @@ public class HttpClientTest extends AbstractTest
         assertThat(chunks2.stream().mapToInt(c -> c.getByteBuffer().remaining()).sum(), is(totalBytes));
         assertThat(chunks3.stream().mapToInt(c -> c.getByteBuffer().remaining()).sum(), is(0));
         assertThat(chunks3.size(), is(1));
-        assertTrue(Content.Chunk.isFailure(chunks3.get(0)));
+        assertTrue(Content.Chunk.isFailure(chunks3.get(0), true));
 
         chunks1.forEach(Content.Chunk::release);
         chunks2.forEach(Content.Chunk::release);
@@ -982,7 +982,7 @@ public class HttpClientTest extends AbstractTest
         assertThat(chunks3Latch.await(5, TimeUnit.SECONDS), is(true));
         assertThat(chunks3.stream().mapToInt(c -> c.getByteBuffer().remaining()).sum(), is(0));
         assertThat(chunks3.size(), is(1));
-        assertTrue(Content.Chunk.isFailure(chunks3.get(0)));
+        assertTrue(Content.Chunk.isFailure(chunks3.get(0), true));
 
         chunks1.forEach(Content.Chunk::release);
         chunks2.forEach(Content.Chunk::release);
