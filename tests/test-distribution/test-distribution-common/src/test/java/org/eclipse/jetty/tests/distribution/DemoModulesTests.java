@@ -585,8 +585,6 @@ public class DemoModulesTests extends AbstractJettyHomeTest
     @MethodSource("provideEnvironmentsToTest")
     public void testStaticContent(String env) throws Exception
     {
-        // System.setProperty("distribution.debug.port", "5555");
-
         Path jettyBase = newTestJettyBaseDirectory();
         String jettyVersion = System.getProperty("jettyVersion");
         JettyHomeTester distribution = JettyHomeTester.Builder.newInstance()
@@ -609,7 +607,6 @@ public class DemoModulesTests extends AbstractJettyHomeTest
 
             String[] argsStart =
             {
-                // "-Dorg.eclipse.jetty.LEVEL=debug",
                  "jetty.http.port=" + httpPort
             };
             try (JettyHomeTester.Run runStart = distribution.start(argsStart))

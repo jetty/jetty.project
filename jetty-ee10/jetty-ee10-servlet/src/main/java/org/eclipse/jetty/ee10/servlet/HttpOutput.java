@@ -35,17 +35,14 @@ import org.eclipse.jetty.io.ByteBufferPool;
 import org.eclipse.jetty.io.Content;
 import org.eclipse.jetty.io.EofException;
 import org.eclipse.jetty.io.RetainableByteBuffer;
-import org.eclipse.jetty.server.ConnectionMetaData;
 import org.eclipse.jetty.server.HttpConfiguration;
-import org.eclipse.jetty.server.Response;
+import org.eclipse.jetty.util.Blocker;
 import org.eclipse.jetty.util.BufferUtil;
 import org.eclipse.jetty.util.Callback;
 import org.eclipse.jetty.util.ExceptionUtil;
 import org.eclipse.jetty.util.IO;
 import org.eclipse.jetty.util.IteratingCallback;
 import org.eclipse.jetty.util.NanoTime;
-import org.eclipse.jetty.util.SharedBlockingCallback;
-import org.eclipse.jetty.util.SharedBlockingCallback.Blocker;
 import org.eclipse.jetty.util.thread.AutoLock;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -127,12 +124,9 @@ public class HttpOutput extends ServletOutputStream implements Runnable
     private static final Logger LOG = LoggerFactory.getLogger(HttpOutput.class);
     private static final ThreadLocal<CharsetEncoder> _encoder = new ThreadLocal<>();
 
-    private final ConnectionMetaData _connectionMetaData;
     private final ServletChannel _servletChannel;
-    private final Response _response;
-    private final ByteBufferPool _bufferPool;
     private final ServletRequestState _channelState;
-    private final SharedBlockingCallback _writeBlocker;
+    private final Blocker.Shared _writeBlocker;
     private ApiState _apiState = ApiState.BLOCKING;
     private State _state = State.OPEN;
     private boolean _softClose = false;
@@ -146,15 +140,11 @@ public class HttpOutput extends ServletOutputStream implements Runnable
     private volatile Throwable _onError;
     private Callback _closedCallback;
 
-    public HttpOutput(Response response, ServletChannel channel)
+    public HttpOutput(ServletChannel channel)
     {
-        _response = response;
         _servletChannel = channel;
-        _connectionMetaData = _response.getRequest().getConnectionMetaData();
-        _bufferPool = _response.getRequest().getComponents().getByteBufferPool();
-
-        _channelState = _servletChannel.getState();
-        _writeBlocker = new WriteBlocker(_servletChannel);
+        _channelState = _servletChannel.getServletRequestState();
+        _writeBlocker = new Blocker.Shared();
         HttpConfiguration config = _servletChannel.getHttpConfiguration();
         _bufferSize = config.getOutputBufferSize();
         _commitSize = config.getOutputAggregationSize();
@@ -163,11 +153,6 @@ public class HttpOutput extends ServletOutputStream implements Runnable
             LOG.warn("OutputAggregationSize {} exceeds bufferSize {}", _commitSize, _bufferSize);
             _commitSize = _bufferSize;
         }
-    }
-
-    public Response getResponse()
-    {
-        return _response;
     }
     
     public boolean isWritten()
@@ -188,14 +173,9 @@ public class HttpOutput extends ServletOutputStream implements Runnable
         }
     }
 
-    protected Blocker acquireWriteBlockingCallback() throws IOException
-    {
-        return _writeBlocker.acquire();
-    }
-
     private void channelWrite(ByteBuffer content, boolean complete) throws IOException
     {
-        try (Blocker blocker = _writeBlocker.acquire())
+        try (Blocker.Callback blocker = _writeBlocker.callback())
         {
             channelWrite(content, complete, blocker);
             blocker.block();
@@ -206,13 +186,13 @@ public class HttpOutput extends ServletOutputStream implements Runnable
     {
         if (_firstByteNanoTime == -1)
         {
-            long minDataRate = _connectionMetaData.getHttpConfiguration().getMinResponseDataRate();
+            long minDataRate = _servletChannel.getConnectionMetaData().getHttpConfiguration().getMinResponseDataRate();
             if (minDataRate > 0)
                 _firstByteNanoTime = NanoTime.now();
             else
                 _firstByteNanoTime = Long.MAX_VALUE;
         }
-        _response.write(last, content, callback);
+        _servletChannel.getResponse().write(last, content, callback);
     }
 
     private void onWriteComplete(boolean last, Throwable failure)
@@ -353,7 +333,7 @@ public class HttpOutput extends ServletOutputStream implements Runnable
 
                 case PENDING: // an async write is pending and may complete at any time
                     // If this is not the last write, then we must abort
-                    if (!_servletChannel.getResponse().isContentComplete(_written))
+                    if (_servletChannel.getServletContextResponse().isContentIncomplete(_written))
                         error = new CancellationException("Completed whilst write pending");
                     break;
 
@@ -369,7 +349,6 @@ public class HttpOutput extends ServletOutputStream implements Runnable
             if (error != null)
             {
                 _servletChannel.abort(error);
-                _writeBlocker.fail(error);
                 _state = State.CLOSED;
             }
             else
@@ -463,7 +442,7 @@ public class HttpOutput extends ServletOutputStream implements Runnable
     public void close() throws IOException
     {
         ByteBuffer content = null;
-        Blocker blocker = null;
+        Blocker.Callback blocker = null;
         try (AutoLock l = _channelState.lock())
         {
             if (_onError != null)
@@ -489,7 +468,7 @@ public class HttpOutput extends ServletOutputStream implements Runnable
                         case BLOCKING:
                         case BLOCKED:
                             // block until CLOSED state reached.
-                            blocker = _writeBlocker.acquire();
+                            blocker = _writeBlocker.callback();
                             _closedCallback = Callback.combine(_closedCallback, blocker);
                             break;
 
@@ -506,7 +485,7 @@ public class HttpOutput extends ServletOutputStream implements Runnable
                             // Output is idle blocking state, but we still do an async close
                             _apiState = ApiState.BLOCKED;
                             _state = State.CLOSING;
-                            blocker = _writeBlocker.acquire();
+                            blocker = _writeBlocker.callback();
                             content = _aggregate != null && _aggregate.hasRemaining() ? _aggregate.getByteBuffer() : BufferUtil.EMPTY_BUFFER;
                             break;
 
@@ -516,7 +495,7 @@ public class HttpOutput extends ServletOutputStream implements Runnable
                             // then trigger a close from onWriteComplete
                             _state = State.CLOSE;
                             // and block until it is complete
-                            blocker = _writeBlocker.acquire();
+                            blocker = _writeBlocker.callback();
                             _closedCallback = Callback.combine(_closedCallback, blocker);
                             break;
 
@@ -550,9 +529,9 @@ public class HttpOutput extends ServletOutputStream implements Runnable
                 return;
 
             // Just wait for some other close to finish.
-            try (Blocker b = blocker)
+            try (Blocker.Callback cb = blocker)
             {
-                b.block();
+                cb.block();
             }
         }
         else
@@ -565,7 +544,7 @@ public class HttpOutput extends ServletOutputStream implements Runnable
             else
             {
                 // Do a blocking close
-                try (Blocker b = blocker)
+                try (Blocker.Callback b = blocker)
                 {
                     channelWrite(content, true, blocker);
                     b.block();
@@ -590,9 +569,10 @@ public class HttpOutput extends ServletOutputStream implements Runnable
 
     private RetainableByteBuffer acquireBuffer()
     {
-        boolean useOutputDirectByteBuffers = _connectionMetaData.getHttpConfiguration().isUseOutputDirectByteBuffers();
+        boolean useOutputDirectByteBuffers = _servletChannel.getConnectionMetaData().getHttpConfiguration().isUseOutputDirectByteBuffers();
+        ByteBufferPool pool = _servletChannel.getRequest().getComponents().getByteBufferPool();
         if (_aggregate == null)
-            _aggregate = _bufferPool.acquire(getBufferSize(), useOutputDirectByteBuffers);
+            _aggregate = pool.acquire(getBufferSize(), useOutputDirectByteBuffers);
         return _aggregate;
     }
 
@@ -724,7 +704,7 @@ public class HttpOutput extends ServletOutputStream implements Runnable
             checkWritable();
             long written = _written + len;
             int space = maximizeAggregateSpace();
-            last = _servletChannel.getResponse().isAllContentWritten(written);
+            last = _servletChannel.getServletContextResponse().isAllContentWritten(written);
             // Write will be aggregated if:
             //  + it is smaller than the commitSize
             //  + is not the last one, or is last but will fit in an already allocated aggregate buffer.
@@ -858,7 +838,7 @@ public class HttpOutput extends ServletOutputStream implements Runnable
         {
             checkWritable();
             long written = _written + len;
-            last = _servletChannel.getResponse().isAllContentWritten(written);
+            last = _servletChannel.getServletContextResponse().isAllContentWritten(written);
             flush = last || len > 0 || (_aggregate != null && _aggregate.hasRemaining());
 
             if (last && _state == State.OPEN)
@@ -938,7 +918,7 @@ public class HttpOutput extends ServletOutputStream implements Runnable
             checkWritable();
             long written = _written + 1;
             int space = maximizeAggregateSpace();
-            last = _servletChannel.getResponse().isAllContentWritten(written);
+            last = _servletChannel.getServletContextResponse().isAllContentWritten(written);
             flush = last || space == 1;
 
             if (last && _state == State.OPEN)
@@ -1012,7 +992,7 @@ public class HttpOutput extends ServletOutputStream implements Runnable
 
         s = String.valueOf(s);
 
-        String charset = _servletChannel.getResponse().getCharacterEncoding(false);
+        String charset = _servletChannel.getServletContextResponse().getCharacterEncoding(false);
         CharsetEncoder encoder = _encoder.get();
         if (encoder == null || !encoder.charset().name().equalsIgnoreCase(charset))
         {
@@ -1025,8 +1005,8 @@ public class HttpOutput extends ServletOutputStream implements Runnable
         {
             encoder.reset();
         }
-
-        RetainableByteBuffer out = _bufferPool.acquire((int)(1 + (s.length() + 2) * encoder.averageBytesPerChar()), false);
+        ByteBufferPool pool = _servletChannel.getRequest().getComponents().getByteBufferPool();
+        RetainableByteBuffer out = pool.acquire((int)(1 + (s.length() + 2) * encoder.averageBytesPerChar()), false);
         try
         {
             CharBuffer in = CharBuffer.wrap(s);
@@ -1062,7 +1042,7 @@ public class HttpOutput extends ServletOutputStream implements Runnable
                 if (result.isOverflow())
                 {
                     BufferUtil.flipToFlush(byteBuffer, 0);
-                    RetainableByteBuffer bigger = _bufferPool.acquire(out.capacity() + s.length() + 2, out.isDirect());
+                    RetainableByteBuffer bigger = pool.acquire(out.capacity() + s.length() + 2, out.isDirect());
                     BufferUtil.flipToFill(bigger.getByteBuffer());
                     bigger.getByteBuffer().put(byteBuffer);
                     out.release();
@@ -1107,7 +1087,7 @@ public class HttpOutput extends ServletOutputStream implements Runnable
      */
     public void sendContent(InputStream in) throws IOException
     {
-        try (Blocker blocker = _writeBlocker.acquire())
+        try (Blocker.Callback blocker = _writeBlocker.callback())
         {
             new InputStreamWritingCB(in, blocker).iterate();
             blocker.block();
@@ -1122,7 +1102,7 @@ public class HttpOutput extends ServletOutputStream implements Runnable
      */
     public void sendContent(ReadableByteChannel in) throws IOException
     {
-        try (Blocker blocker = _writeBlocker.acquire())
+        try (Blocker.Callback blocker = _writeBlocker.callback())
         {
             new ReadableByteChannelWritingCB(in, blocker).iterate();
             blocker.block();
@@ -1256,7 +1236,7 @@ public class HttpOutput extends ServletOutputStream implements Runnable
     {
         if (_firstByteNanoTime == -1 || _firstByteNanoTime == Long.MAX_VALUE)
             return;
-        long minDataRate = _connectionMetaData.getHttpConfiguration().getMinResponseDataRate();
+        long minDataRate = _servletChannel.getConnectionMetaData().getHttpConfiguration().getMinResponseDataRate();
         _flushed += bytes;
         long minFlushed = minDataRate * NanoTime.millisSince(_firstByteNanoTime) / TimeUnit.SECONDS.toMillis(1);
         if (LOG.isDebugEnabled())
@@ -1276,7 +1256,7 @@ public class HttpOutput extends ServletOutputStream implements Runnable
             _state = State.OPEN;
             _apiState = ApiState.BLOCKING;
             _softClose = true; // Stay closed until next request
-            HttpConfiguration config = _connectionMetaData.getHttpConfiguration();
+            HttpConfiguration config = _servletChannel.getConnectionMetaData().getHttpConfiguration();
             _bufferSize = config.getOutputBufferSize();
             _commitSize = config.getOutputAggregationSize();
             if (_commitSize > _bufferSize)
@@ -1304,7 +1284,7 @@ public class HttpOutput extends ServletOutputStream implements Runnable
     @Override
     public void setWriteListener(WriteListener writeListener)
     {
-        if (!_servletChannel.getState().isAsync())
+        if (!_servletChannel.getServletRequestState().isAsync())
             throw new IllegalStateException("!ASYNC: " + stateString());
         boolean wake;
         try (AutoLock l = _channelState.lock())
@@ -1313,7 +1293,7 @@ public class HttpOutput extends ServletOutputStream implements Runnable
                 throw new IllegalStateException("!OPEN" + stateString());
             _apiState = ApiState.READY;
             _writeListener = writeListener;
-            wake = _servletChannel.getState().onWritePossible();
+            wake = _servletChannel.getServletRequestState().onWritePossible();
         }
         if (wake)
             _servletChannel.execute(_servletChannel::handle);
@@ -1626,7 +1606,8 @@ public class HttpOutput extends ServletOutputStream implements Runnable
             super(callback, true);
             _in = in;
             // Reading from InputStream requires byte[], don't use direct buffers.
-            _buffer = _bufferPool.acquire(getBufferSize(), false);
+            ByteBufferPool pool = _servletChannel.getRequest().getComponents().getByteBufferPool();
+            _buffer = pool.acquire(getBufferSize(), false);
         }
 
         @Override
@@ -1701,8 +1682,9 @@ public class HttpOutput extends ServletOutputStream implements Runnable
         {
             super(callback, true);
             _in = in;
-            boolean useOutputDirectByteBuffers = _connectionMetaData.getHttpConfiguration().isUseOutputDirectByteBuffers();
-            _buffer = _bufferPool.acquire(getBufferSize(), useOutputDirectByteBuffers);
+            boolean useOutputDirectByteBuffers = _servletChannel.getConnectionMetaData().getHttpConfiguration().isUseOutputDirectByteBuffers();
+            ByteBufferPool pool = _servletChannel.getRequest().getComponents().getByteBufferPool();
+            _buffer = pool.acquire(getBufferSize(), useOutputDirectByteBuffers);
         }
 
         @Override
@@ -1750,16 +1732,6 @@ public class HttpOutput extends ServletOutputStream implements Runnable
             _buffer.release();
             IO.close(_in);
             super.onCompleteFailure(x);
-        }
-    }
-
-    private static class WriteBlocker extends SharedBlockingCallback
-    {
-        private final ServletChannel _channel;
-
-        private WriteBlocker(ServletChannel channel)
-        {
-            _channel = channel;
         }
     }
 

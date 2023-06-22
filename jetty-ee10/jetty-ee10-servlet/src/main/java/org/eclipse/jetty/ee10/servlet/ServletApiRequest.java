@@ -56,6 +56,7 @@ import jakarta.servlet.http.HttpSession;
 import jakarta.servlet.http.HttpUpgradeHandler;
 import jakarta.servlet.http.Part;
 import jakarta.servlet.http.PushBuilder;
+import org.eclipse.jetty.ee10.servlet.ServletContextHandler.ServletRequestInfo;
 import org.eclipse.jetty.http.BadMessageException;
 import org.eclipse.jetty.http.CookieCache;
 import org.eclipse.jetty.http.CookieCompliance;
@@ -77,9 +78,11 @@ import org.eclipse.jetty.server.ConnectionMetaData;
 import org.eclipse.jetty.server.FormFields;
 import org.eclipse.jetty.server.HttpCookieUtils;
 import org.eclipse.jetty.server.Request;
+import org.eclipse.jetty.server.Response;
 import org.eclipse.jetty.server.Session;
 import org.eclipse.jetty.session.AbstractSessionManager;
 import org.eclipse.jetty.session.ManagedSession;
+import org.eclipse.jetty.util.Callback;
 import org.eclipse.jetty.util.Fields;
 import org.eclipse.jetty.util.HostPort;
 import org.eclipse.jetty.util.IO;
@@ -89,16 +92,15 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 /**
- * The Jetty low level implementation of the ee10 {@link HttpServletRequest} object.
- *
- * <p>
- *     This provides the bridges from Servlet {@link HttpServletRequest} to the Jetty Core {@link Request} concepts (provided by the {@link ServletContextRequest})
- * </p>
+ * The Jetty implementation of the ee10 {@link HttpServletRequest} object.
+ * This provides the bridge from Servlet {@link HttpServletRequest} to the Jetty Core {@link Request}
+ * via the {@link ServletContextRequest}.
  */
 public class ServletApiRequest implements HttpServletRequest
 {
     private static final Logger LOG = LoggerFactory.getLogger(ServletApiRequest.class);
-    private final ServletContextRequest _request;
+    private final ServletContextRequest _servletContextRequest;
+    private final ServletChannel _servletChannel;
     //TODO review which fields should be in ServletContextRequest
     private AsyncContextState _async;
     private String _characterEncoding;
@@ -110,30 +112,18 @@ public class ServletApiRequest implements HttpServletRequest
     private Fields _contentParameters;
     private Fields _parameters;
     private Fields _queryParameters;
-    private String _method;
     private ServletMultiPartFormData.Parts _parts;
     private boolean _asyncSupported = true;
 
     protected ServletApiRequest(ServletContextRequest servletContextRequest)
     {
-        _request = servletContextRequest;
-    }
-
-    public Fields getQueryParams()
-    {
-        extractQueryParameters();
-        return _queryParameters;
-    }
-
-    public Fields getContentParams()
-    {
-        extractContentParameters();
-        return _contentParameters;
+        _servletContextRequest = servletContextRequest;
+        _servletChannel = _servletContextRequest.getServletChannel();
     }
 
     public AuthenticationState getAuthentication()
     {
-        return AuthenticationState.getAuthenticationState(getServletContextRequest());
+        return AuthenticationState.getAuthenticationState(getRequest());
     }
 
     private AuthenticationState getUndeferredAuthentication()
@@ -141,11 +131,11 @@ public class ServletApiRequest implements HttpServletRequest
         AuthenticationState authenticationState = getAuthentication();
         if (authenticationState instanceof AuthenticationState.Deferred deferred)
         {
-            AuthenticationState undeferred = deferred.authenticate(getServletContextRequest());
+            AuthenticationState undeferred = deferred.authenticate(getRequest());
             if (undeferred != null && undeferred != authenticationState)
             {
                 authenticationState = undeferred;
-                AuthenticationState.setAuthenticationState(getServletContextRequest(), authenticationState);
+                AuthenticationState.setAuthenticationState(getRequest(), authenticationState);
             }
         }
         return authenticationState;
@@ -154,45 +144,55 @@ public class ServletApiRequest implements HttpServletRequest
     @Override
     public String getMethod()
     {
-        if (_method == null)
-            return getServletContextRequest().getMethod();
-        else
-            return _method;
+        return getRequest().getMethod();
     }
 
-    //TODO shouldn't really be public?
-    public void setMethod(String method)
+    /**
+     * @return The {@link ServletRequestInfo} view of the {@link ServletContextRequest} as wrapped
+     * by the {@link ServletContextHandler}.
+     * @see #getRequest()
+     */
+    public ServletRequestInfo getServletRequestInfo()
     {
-        _method = method;
+        return _servletContextRequest;
     }
 
-    public ServletContextRequest getServletContextRequest()
+    /**
+     * @return The core {@link Request} associated with the servlet API request. This may differ
+     *         from {@link ServletContextRequest} as wrapped by the {@link ServletContextHandler} as it
+     *         may have been further wrapped before being passed
+     *         to {@link ServletChannel#associate(Request, Response, Callback)}.
+     * @see #getServletRequestInfo()
+     * @see ServletChannel#associate(Request, Response, Callback)
+     */
+    public Request getRequest()
     {
-        return _request;
+        ServletChannel servletChannel = _servletChannel;
+        return servletChannel == null ? _servletContextRequest : servletChannel.getRequest();
     }
 
     public HttpFields getFields()
     {
-        return _request.getHeaders();
+        return getRequest().getHeaders();
     }
 
     @Override
     public String getRequestId()
     {
-        return _request.getConnectionMetaData().getId() + "#" + _request.getId();
+        return getRequest().getConnectionMetaData().getId() + "#" + getRequest().getId();
     }
 
     @Override
     public String getProtocolRequestId()
     {
-        return _request.getId();
+        return getRequest().getId();
     }
 
     @Override
     public ServletConnection getServletConnection()
     {
         // TODO cache the results
-        final ConnectionMetaData connectionMetaData = _request.getConnectionMetaData();
+        final ConnectionMetaData connectionMetaData = getRequest().getConnectionMetaData();
         return new ServletConnection()
         {
             @Override
@@ -236,15 +236,15 @@ public class ServletApiRequest implements HttpServletRequest
     @Override
     public Cookie[] getCookies()
     {
-        List<HttpCookie> httpCookies = Request.getCookies(getServletContextRequest());
+        List<HttpCookie> httpCookies = Request.getCookies(getRequest());
         if (httpCookies.isEmpty())
             return null;
         if (httpCookies instanceof ServletCookieList servletCookieList)
             return servletCookieList.getServletCookies();
 
-        ServletCookieList servletCookieList = new ServletCookieList(httpCookies, getServletContextRequest().getConnectionMetaData().getHttpConfiguration().getRequestCookieCompliance());
-        _request.setAttribute(Request.COOKIE_ATTRIBUTE, servletCookieList);
-        if (_request.getComponents().getCache().getAttribute(Request.CACHE_ATTRIBUTE) instanceof CookieCache cookieCache)
+        ServletCookieList servletCookieList = new ServletCookieList(httpCookies, getRequest().getConnectionMetaData().getHttpConfiguration().getRequestCookieCompliance());
+        getRequest().setAttribute(Request.COOKIE_ATTRIBUTE, servletCookieList);
+        if (getRequest().getComponents().getCache().getAttribute(Request.CACHE_ATTRIBUTE) instanceof CookieCache cookieCache)
             cookieCache.replaceCookieList(servletCookieList);
         return servletCookieList.getServletCookies();
     }
@@ -292,28 +292,28 @@ public class ServletApiRequest implements HttpServletRequest
     @Override
     public String getPathInfo()
     {
-        return _request.getMatchedResource().getMatchedPath().getPathInfo();
+        return getServletRequestInfo().getMatchedResource().getMatchedPath().getPathInfo();
     }
 
     @Override
     public String getPathTranslated()
     {
         String pathInfo = getPathInfo();
-        if (pathInfo == null || _request.getContext() == null)
+        if (pathInfo == null || getServletRequestInfo().getServletContext() == null)
             return null;
-        return _request.getContext().getServletContext().getRealPath(pathInfo);
+        return getServletRequestInfo().getServletContext().getServletContext().getRealPath(pathInfo);
     }
 
     @Override
     public String getContextPath()
     {
-        return _request.getContext().getServletContextHandler().getRequestContextPath();
+        return getServletRequestInfo().getServletContext().getServletContextHandler().getRequestContextPath();
     }
 
     @Override
     public String getQueryString()
     {
-        return _request.getHttpURI().getQuery();
+        return getRequest().getHttpURI().getQuery();
     }
 
     @Override
@@ -329,7 +329,7 @@ public class ServletApiRequest implements HttpServletRequest
     public boolean isUserInRole(String role)
     {
         //obtain any substituted role name from the destination servlet
-        String linkedRole = _request.getMatchedResource().getResource().getServletHolder().getUserRoleLink(role);
+        String linkedRole = getServletRequestInfo().getMatchedResource().getResource().getServletHolder().getUserRoleLink(role);
         AuthenticationState authenticationState = getUndeferredAuthentication();
 
         if (authenticationState instanceof AuthenticationState.Succeeded succeededAuthentication)
@@ -354,33 +354,34 @@ public class ServletApiRequest implements HttpServletRequest
     @Override
     public String getRequestedSessionId()
     {
-        AbstractSessionManager.RequestedSession requestedSession = _request.getRequestedSession();
+        AbstractSessionManager.RequestedSession requestedSession = getServletRequestInfo().getRequestedSession();
         return requestedSession == null ? null : requestedSession.sessionId();
     }
 
     @Override
     public String getRequestURI()
     {
-        HttpURI uri = _request.getHttpURI();
+        HttpURI uri = getRequest().getHttpURI();
         return uri == null ? null : uri.getPath();
     }
 
     @Override
     public StringBuffer getRequestURL()
     {
-        return new StringBuffer(HttpURI.build(_request.getHttpURI()).query(null).asString());
+        // Use the ServletContextRequest here as even if changed in the Request, it must match the servletPath and pathInfo
+        return new StringBuffer(HttpURI.build(getRequest().getHttpURI()).query(null).asString());
     }
 
     @Override
     public String getServletPath()
     {
-        return _request.getMatchedResource().getMatchedPath().getPathMatch();
+        return getServletRequestInfo().getMatchedResource().getMatchedPath().getPathMatch();
     }
 
     @Override
     public HttpSession getSession(boolean create)
     {
-        Session session = _request.getSession(create);
+        Session session = getRequest().getSession(create);
         if (session == null)
             return null;
         if (session.isNew() && getAuthentication() instanceof AuthenticationState.Succeeded)
@@ -397,11 +398,11 @@ public class ServletApiRequest implements HttpServletRequest
     @Override
     public String changeSessionId()
     {
-        Session session = _request.getSession(false);
+        Session session = getRequest().getSession(false);
         if (session == null)
             throw new IllegalStateException("No session");
 
-        session.renewId(_request, _request.getResponse());
+        session.renewId(getRequest(), _servletChannel.getResponse());
 
         if (getRemoteUser() != null)
             session.setAttribute(ManagedSession.SESSION_CREATED_SECURE, Boolean.TRUE);
@@ -412,21 +413,21 @@ public class ServletApiRequest implements HttpServletRequest
     @Override
     public boolean isRequestedSessionIdValid()
     {
-        AbstractSessionManager.RequestedSession requestedSession = _request.getRequestedSession();
+        AbstractSessionManager.RequestedSession requestedSession = getServletRequestInfo().getRequestedSession();
         return requestedSession != null && requestedSession.sessionId() != null && !requestedSession.sessionIdFromCookie();
     }
 
     @Override
     public boolean isRequestedSessionIdFromCookie()
     {
-        AbstractSessionManager.RequestedSession requestedSession = _request.getRequestedSession();
+        AbstractSessionManager.RequestedSession requestedSession = getServletRequestInfo().getRequestedSession();
         return requestedSession != null && requestedSession.sessionId() != null && requestedSession.sessionIdFromCookie();
     }
 
     @Override
     public boolean isRequestedSessionIdFromURL()
     {
-        AbstractSessionManager.RequestedSession requestedSession = _request.getRequestedSession();
+        AbstractSessionManager.RequestedSession requestedSession = getServletRequestInfo().getRequestedSession();
         return requestedSession != null && requestedSession.sessionId() != null && !requestedSession.sessionIdFromCookie();
     }
 
@@ -462,8 +463,9 @@ public class ServletApiRequest implements HttpServletRequest
     {
         try
         {
+            ServletRequestInfo servletRequestInfo = getServletRequestInfo();
             AuthenticationState.Succeeded succeededAuthentication = AuthenticationState.login(
-                username, password, getServletContextRequest(), getServletContextRequest().getResponse());
+                username, password, getRequest(), servletRequestInfo.getServletChannel().getServletContextResponse());
 
             if (succeededAuthentication == null)
                 throw new QuietException.Exception("Authentication failed for username '" + username + "'");
@@ -477,7 +479,8 @@ public class ServletApiRequest implements HttpServletRequest
     @Override
     public void logout() throws ServletException
     {
-        if (!AuthenticationState.logout(getServletContextRequest(), getServletContextRequest().getResponse()))
+        ServletRequestInfo servletRequestInfo = getServletRequestInfo();
+        if (!AuthenticationState.logout(getRequest(), servletRequestInfo.getServletChannel().getServletContextResponse()))
             throw new ServletException("logout failed");
     }
 
@@ -494,7 +497,7 @@ public class ServletApiRequest implements HttpServletRequest
             if (config == null)
                 throw new IllegalStateException("No multipart config for servlet");
 
-            ServletContextHandler contextHandler = _request.getContext().getServletContextHandler();
+            ServletContextHandler contextHandler = getServletRequestInfo().getServletContext().getServletContextHandler();
             int maxFormContentSize = contextHandler.getMaxFormContentSize();
             int maxFormKeys = contextHandler.getMaxFormKeys();
 
@@ -574,10 +577,10 @@ public class ServletApiRequest implements HttpServletRequest
     @Override
     public PushBuilder newPushBuilder()
     {
-        if (!_request.getConnectionMetaData().isPushSupported())
+        if (!getRequest().getConnectionMetaData().isPushSupported())
             return null;
 
-        HttpFields.Mutable pushHeaders = HttpFields.build(_request.getHeaders(), EnumSet.of(
+        HttpFields.Mutable pushHeaders = HttpFields.build(getRequest().getHeaders(), EnumSet.of(
             HttpHeader.IF_MATCH,
             HttpHeader.IF_RANGE,
             HttpHeader.IF_UNMODIFIED_SINCE,
@@ -594,7 +597,7 @@ public class ServletApiRequest implements HttpServletRequest
         pushHeaders.put(HttpHeader.REFERER, referrer);
 
         // Any Set-Cookie in the response should be present in the push.
-        HttpFields.Mutable responseHeaders = _request.getResponse().getHeaders();
+        HttpFields.Mutable responseHeaders = _servletChannel.getResponse().getHeaders();
         List<String> setCookies = new ArrayList<>(responseHeaders.getValuesList(HttpHeader.SET_COOKIE));
         setCookies.addAll(responseHeaders.getValuesList(HttpHeader.SET_COOKIE2));
         String cookies = pushHeaders.get(HttpHeader.COOKIE);
@@ -642,7 +645,7 @@ public class ServletApiRequest implements HttpServletRequest
             sessionId = getRequestedSessionId();
         }
 
-        return new PushBuilderImpl(_request, pushHeaders, sessionId);
+        return new PushBuilderImpl(ServletContextRequest.getServletContextRequest(this), pushHeaders, sessionId);
     }
 
     @Override
@@ -659,17 +662,17 @@ public class ServletApiRequest implements HttpServletRequest
                 case AsyncContext.ASYNC_PATH_INFO -> getPathInfo();
                 case AsyncContext.ASYNC_QUERY_STRING -> getQueryString();
                 case AsyncContext.ASYNC_MAPPING -> getHttpServletMapping();
-                default -> _request.getAttribute(name);
+                default -> getRequest().getAttribute(name);
             };
         }
 
-        return _request.getAttribute(name);
+        return getRequest().getAttribute(name);
     }
 
     @Override
     public Enumeration<String> getAttributeNames()
     {
-        Set<String> set = _request.getAttributeNameSet();
+        Set<String> set = getRequest().getAttributeNameSet();
         if (_async != null)
         {
             set = new HashSet<>(set);
@@ -689,8 +692,8 @@ public class ServletApiRequest implements HttpServletRequest
     {
         if (_characterEncoding == null)
         {
-            if (_request.getContext() != null)
-                _characterEncoding = _request.getContext().getServletContext().getRequestCharacterEncoding();
+            if (getRequest().getContext() != null)
+                _characterEncoding = getServletRequestInfo().getServletContext().getServletContext().getRequestCharacterEncoding();
 
             if (_characterEncoding == null)
             {
@@ -765,10 +768,10 @@ public class ServletApiRequest implements HttpServletRequest
             throw new IllegalStateException("READER");
         _inputState = ServletContextRequest.INPUT_STREAM;
 
-        if (_request.getServletChannel().isExpecting100Continue())
-            _request.getServletChannel().continue100(_request.getHttpInput().available());
+        if (getServletRequestInfo().getServletChannel().isExpecting100Continue())
+            getServletRequestInfo().getServletChannel().continue100(getServletRequestInfo().getHttpInput().available());
 
-        return _request.getHttpInput();
+        return getServletRequestInfo().getHttpInput();
     }
 
     @Override
@@ -796,20 +799,6 @@ public class ServletApiRequest implements HttpServletRequest
     public Map<String, String[]> getParameterMap()
     {
         return Collections.unmodifiableMap(getParameters().toStringArrayMap());
-    }
-
-    public Fields getContentParameters()
-    {
-        getParameters(); // ensure extracted
-        return _contentParameters;
-    }
-
-    public void setContentParameters(Fields params)
-    {
-        if (params == null || params.getSize() == 0)
-            _contentParameters = ServletContextRequest.NO_PARAMS;
-        else
-            _contentParameters = params;
     }
 
     private Fields getParameters()
@@ -855,13 +844,14 @@ public class ServletApiRequest implements HttpServletRequest
                     {
                         String baseType = HttpField.valueParameters(getContentType(), null);
                         if (MimeTypes.Type.FORM_ENCODED.is(baseType) &&
-                            _request.getConnectionMetaData().getHttpConfiguration().isFormEncodedMethod(getMethod()))
+                            getRequest().getConnectionMetaData().getHttpConfiguration().isFormEncodedMethod(getMethod()))
                         {
                             try
                             {
-                                int maxKeys = _request.getServletRequestState().getContextHandler().getMaxFormKeys();
-                                int maxContentSize = _request.getServletRequestState().getContextHandler().getMaxFormContentSize();
-                                _contentParameters = FormFields.from(getServletContextRequest(), maxKeys, maxContentSize).get();
+                                ServletContextHandler contextHandler = getServletRequestInfo().getServletContextHandler();
+                                int maxKeys = contextHandler.getMaxFormKeys();
+                                int maxContentSize = contextHandler.getMaxFormContentSize();
+                                _contentParameters = FormFields.from(getRequest(), maxKeys, maxContentSize).get();
                             }
                             catch (IllegalStateException | IllegalArgumentException | ExecutionException |
                                    InterruptedException e)
@@ -889,7 +879,7 @@ public class ServletApiRequest implements HttpServletRequest
                         {
                             try
                             {
-                                _contentParameters = FormFields.get(getServletContextRequest()).get();
+                                _contentParameters = FormFields.get(getRequest()).get();
                             }
                             catch (IllegalStateException | IllegalArgumentException | ExecutionException |
                                    InterruptedException e)
@@ -918,14 +908,14 @@ public class ServletApiRequest implements HttpServletRequest
         // and may have already been extracted by mergeQueryParameters().
         if (_queryParameters == null)
         {
-            HttpURI httpURI = _request.getHttpURI();
+            HttpURI httpURI = getRequest().getHttpURI();
             if (httpURI == null || StringUtil.isEmpty(httpURI.getQuery()))
                 _queryParameters = ServletContextRequest.NO_PARAMS;
             else
             {
                 try
                 {
-                    _queryParameters = Request.extractQueryParameters(_request, _request.getQueryEncoding());
+                    _queryParameters = Request.extractQueryParameters(getRequest(), getServletRequestInfo().getQueryEncoding());
                 }
                 catch (IllegalStateException | IllegalArgumentException e)
                 {
@@ -939,19 +929,19 @@ public class ServletApiRequest implements HttpServletRequest
     @Override
     public String getProtocol()
     {
-        return _request.getConnectionMetaData().getProtocol();
+        return getRequest().getConnectionMetaData().getProtocol();
     }
 
     @Override
     public String getScheme()
     {
-        return _request.getHttpURI().getScheme();
+        return getRequest().getHttpURI().getScheme();
     }
 
     @Override
     public String getServerName()
     {
-        HttpURI uri = _request.getHttpURI();
+        HttpURI uri = getRequest().getHttpURI();
         if ((uri != null) && StringUtil.isNotBlank(uri.getAuthority()))
             return formatAddrOrHost(uri.getHost());
         else
@@ -960,13 +950,13 @@ public class ServletApiRequest implements HttpServletRequest
 
     private String formatAddrOrHost(String name)
     {
-        ServletChannel servletChannel = _request.getServletChannel();
+        ServletChannel servletChannel = _servletChannel;
         return servletChannel == null ? HostPort.normalizeHost(name) : servletChannel.formatAddrOrHost(name);
     }
 
     private String findServerName()
     {
-        ServletChannel servletChannel = _request.getServletChannel();
+        ServletChannel servletChannel = _servletChannel;
         if (servletChannel != null)
         {
             HostPort serverAuthority = servletChannel.getServerAuthority();
@@ -987,7 +977,7 @@ public class ServletApiRequest implements HttpServletRequest
     {
         int port;
 
-        HttpURI uri = _request.getHttpURI();
+        HttpURI uri = getRequest().getHttpURI();
         if ((uri != null) && StringUtil.isNotBlank(uri.getAuthority()))
             port = uri.getPort();
         else
@@ -1003,7 +993,7 @@ public class ServletApiRequest implements HttpServletRequest
 
     private int findServerPort()
     {
-        ServletChannel servletChannel = _request.getServletChannel();
+        ServletChannel servletChannel = getServletRequestInfo().getServletChannel();
         if (servletChannel != null)
         {
             HostPort serverAuthority = servletChannel.getServerAuthority();
@@ -1043,9 +1033,9 @@ public class ServletApiRequest implements HttpServletRequest
                 }
             };
         }
-        else if (_request.getServletChannel().isExpecting100Continue())
+        else if (getServletRequestInfo().getServletChannel().isExpecting100Continue())
         {
-            _request.getServletChannel().continue100(_request.getHttpInput().available());
+            getServletRequestInfo().getServletChannel().continue100(getServletRequestInfo().getHttpInput().available());
         }
         _inputState = ServletContextRequest.INPUT_READER;
         return _reader;
@@ -1054,28 +1044,28 @@ public class ServletApiRequest implements HttpServletRequest
     @Override
     public String getRemoteAddr()
     {
-        return Request.getRemoteAddr(_request);
+        return Request.getRemoteAddr(getRequest());
     }
 
     @Override
     public String getRemoteHost()
     {
         // TODO: review.
-        return Request.getRemoteAddr(_request);
+        return Request.getRemoteAddr(getRequest());
     }
 
     @Override
     public void setAttribute(String name, Object attribute)
     {
-        Object oldValue = _request.setAttribute(name, attribute);
+        Object oldValue = getRequest().setAttribute(name, attribute);
 
         if ("org.eclipse.jetty.server.Request.queryEncoding".equals(name))
-            _request.setQueryEncoding(attribute == null ? null : attribute.toString());
+            getServletRequestInfo().setQueryEncoding(attribute == null ? null : attribute.toString());
 
-        if (!_request.getRequestAttributeListeners().isEmpty())
+        if (!getServletRequestInfo().getRequestAttributeListeners().isEmpty())
         {
-            final ServletRequestAttributeEvent event = new ServletRequestAttributeEvent(_request.getContext().getServletContext(), this, name, oldValue == null ? attribute : oldValue);
-            for (ServletRequestAttributeListener l : _request.getRequestAttributeListeners())
+            final ServletRequestAttributeEvent event = new ServletRequestAttributeEvent(getServletRequestInfo().getServletContext().getServletContext(), this, name, oldValue == null ? attribute : oldValue);
+            for (ServletRequestAttributeListener l : getServletRequestInfo().getRequestAttributeListeners())
             {
                 if (oldValue == null)
                     l.attributeAdded(event);
@@ -1090,12 +1080,12 @@ public class ServletApiRequest implements HttpServletRequest
     @Override
     public void removeAttribute(String name)
     {
-        Object oldValue = _request.removeAttribute(name);
+        Object oldValue = getRequest().removeAttribute(name);
 
-        if (oldValue != null && !_request.getRequestAttributeListeners().isEmpty())
+        if (oldValue != null && !getServletRequestInfo().getRequestAttributeListeners().isEmpty())
         {
-            final ServletRequestAttributeEvent event = new ServletRequestAttributeEvent(_request.getContext().getServletContext(), this, name, oldValue);
-            for (ServletRequestAttributeListener listener : _request.getRequestAttributeListeners())
+            final ServletRequestAttributeEvent event = new ServletRequestAttributeEvent(getServletRequestInfo().getServletContext().getServletContext(), this, name, oldValue);
+            for (ServletRequestAttributeListener listener : getServletRequestInfo().getRequestAttributeListeners())
             {
                 listener.attributeRemoved(event);
             }
@@ -1105,32 +1095,32 @@ public class ServletApiRequest implements HttpServletRequest
     @Override
     public Locale getLocale()
     {
-        return Request.getLocales(_request).get(0);
+        return Request.getLocales(getRequest()).get(0);
     }
 
     @Override
     public Enumeration<Locale> getLocales()
     {
-        return Collections.enumeration(Request.getLocales(_request));
+        return Collections.enumeration(Request.getLocales(getRequest()));
     }
 
     @Override
     public boolean isSecure()
     {
-        return _request.getConnectionMetaData().isSecure();
+        return getRequest().getConnectionMetaData().isSecure();
     }
 
     @Override
     public RequestDispatcher getRequestDispatcher(String path)
     {
-        ServletContextHandler.ServletScopedContext context = _request.getContext();
+        ServletContextHandler.ServletScopedContext context = getServletRequestInfo().getServletContext();
         if (path == null || context == null)
             return null;
 
         // handle relative path
         if (!path.startsWith("/"))
         {
-            String relTo = _request.getDecodedPathInContext();
+            String relTo = getServletRequestInfo().getDecodedPathInContext();
             int slash = relTo.lastIndexOf("/");
             if (slash > 1)
                 relTo = relTo.substring(0, slash + 1);
@@ -1145,13 +1135,13 @@ public class ServletApiRequest implements HttpServletRequest
     @Override
     public int getRemotePort()
     {
-        return Request.getRemotePort(_request);
+        return Request.getRemotePort(getRequest());
     }
 
     @Override
     public String getLocalName()
     {
-        ServletChannel servletChannel = _request.getServletChannel();
+        ServletChannel servletChannel = getServletRequestInfo().getServletChannel();
         if (servletChannel != null)
         {
             String localName = servletChannel.getLocalName();
@@ -1164,19 +1154,19 @@ public class ServletApiRequest implements HttpServletRequest
     @Override
     public String getLocalAddr()
     {
-        return Request.getLocalAddr(_request);
+        return Request.getLocalAddr(getRequest());
     }
 
     @Override
     public int getLocalPort()
     {
-        return Request.getLocalPort(_request);
+        return Request.getLocalPort(getRequest());
     }
 
     @Override
     public ServletContext getServletContext()
     {
-        return _request.getServletChannel().getServletContext();
+        return getServletRequestInfo().getServletChannel().getServletContextApi();
     }
 
     @Override
@@ -1184,10 +1174,11 @@ public class ServletApiRequest implements HttpServletRequest
     {
         if (!isAsyncSupported())
             throw new IllegalStateException("Async Not Supported");
-        ServletRequestState state = _request.getState();
+        ServletRequestState state = getServletRequestInfo().getState();
         if (_async == null)
             _async = new AsyncContextState(state);
-        AsyncContextEvent event = new AsyncContextEvent(_request.getContext(), _async, state, this, _request.getResponse().getServletApiResponse());
+        ServletRequestInfo servletRequestInfo = getServletRequestInfo();
+        AsyncContextEvent event = new AsyncContextEvent(getServletRequestInfo().getServletContext(), _async, state, this, servletRequestInfo.getServletChannel().getServletContextResponse().getServletApiResponse());
         state.startAsync(event);
         return _async;
     }
@@ -1197,10 +1188,10 @@ public class ServletApiRequest implements HttpServletRequest
     {
         if (!isAsyncSupported())
             throw new IllegalStateException("Async Not Supported");
-        ServletRequestState state = _request.getState();
+        ServletRequestState state = getServletRequestInfo().getState();
         if (_async == null)
             _async = new AsyncContextState(state);
-        AsyncContextEvent event = new AsyncContextEvent(_request.getContext(), _async, state, servletRequest, servletResponse);
+        AsyncContextEvent event = new AsyncContextEvent(getServletRequestInfo().getServletContext(), _async, state, servletRequest, servletResponse);
         state.startAsync(event);
         return _async;
     }
@@ -1208,13 +1199,13 @@ public class ServletApiRequest implements HttpServletRequest
     @Override
     public HttpServletMapping getHttpServletMapping()
     {
-        return _request.getMatchedResource().getResource().getServletPathMapping(_request.getDecodedPathInContext());
+        return getServletRequestInfo().getMatchedResource().getResource().getServletPathMapping(getServletRequestInfo().getDecodedPathInContext());
     }
 
     @Override
     public boolean isAsyncStarted()
     {
-        return _request.getState().isAsyncStarted();
+        return getServletRequestInfo().getState().isAsyncStarted();
     }
 
     @Override
@@ -1231,7 +1222,7 @@ public class ServletApiRequest implements HttpServletRequest
     @Override
     public AsyncContext getAsyncContext()
     {
-        ServletRequestState state = _request.getServletChannel().getState();
+        ServletRequestState state = getServletRequestInfo().getServletChannel().getServletRequestState();
         if (_async == null || !state.isAsyncStarted())
             throw new IllegalStateException(state.getStatusString());
 
@@ -1247,7 +1238,7 @@ public class ServletApiRequest implements HttpServletRequest
     @Override
     public Map<String, String> getTrailerFields()
     {
-        HttpFields trailers = _request.getTrailers();
+        HttpFields trailers = getRequest().getTrailers();
         if (trailers == null)
             return Map.of();
         Map<String, String> trailersMap = new HashMap<>();

@@ -656,7 +656,7 @@ public class SessionHandler extends AbstractSessionManager implements Handler.Si
         HttpCookie cookie = access(requestedSession.session(), request.getConnectionMetaData().isSecure());
         if (cookie != null)
         {
-            ServletContextResponse servletContextResponse = servletContextRequest.getResponse();
+            ServletContextResponse servletContextResponse = servletContextRequest.getServletContextResponse();
             Response.replaceCookie(servletContextResponse, cookie);
         }
 
