@@ -164,7 +164,8 @@ public class ServletContextHandler extends ContextHandler
     {
         if (servletContext instanceof ServletContextApi)
             return ((ServletContextApi)servletContext).getContext().getServletContextHandler();
-        return null;
+
+        return getCurrentServletContextHandler();
     }
 
     public static ServletContext getCurrentServletContext()

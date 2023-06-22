@@ -16,16 +16,9 @@ package org.eclipse.jetty.ee10.servlet;
 import java.io.IOException;
 import java.net.InetSocketAddress;
 import java.net.SocketAddress;
-import java.nio.ByteBuffer;
-import java.util.ArrayList;
-import java.util.Collection;
-import java.util.EventListener;
-import java.util.List;
 import java.util.concurrent.Executor;
 import java.util.concurrent.TimeoutException;
 import java.util.concurrent.atomic.AtomicLong;
-import java.util.function.BiConsumer;
-import java.util.function.Consumer;
 
 import jakarta.servlet.RequestDispatcher;
 import org.eclipse.jetty.ee10.servlet.ServletRequestState.Action;
@@ -80,7 +73,6 @@ public class ServletChannel
     private final HttpConfiguration _configuration;
     private final EndPoint _endPoint;
     private final HttpInput _httpInput;
-    private final Listener _combinedListener;
     private volatile ServletContextRequest _servletContextRequest;
     private volatile boolean _expects100Continue;
     private volatile Callback _callback;
@@ -97,7 +89,6 @@ public class ServletChannel
         _configuration = request.getConnectionMetaData().getHttpConfiguration();
         _endPoint = request.getConnectionMetaData().getConnection().getEndPoint();
         _httpInput = new HttpInput(this);
-        _combinedListener = new Listeners(_connector, servletContextHandler);
     }
 
     public void setCallback(Callback callback)
@@ -676,22 +667,9 @@ public class ServletChannel
 
     private void dispatch(Dispatchable dispatchable) throws Exception
     {
-        try
-        {
-            _servletContextRequest.getResponse().getHttpOutput().reopen();
-            getHttpOutput().reopen();
-            _combinedListener.onBeforeDispatch(_servletContextRequest);
-            dispatchable.dispatch();
-        }
-        catch (Throwable x)
-        {
-            _combinedListener.onDispatchFailure(_servletContextRequest, x);
-            throw x;
-        }
-        finally
-        {
-            _combinedListener.onAfterDispatch(_servletContextRequest);
-        }
+        _servletContextRequest.getResponse().getHttpOutput().reopen();
+        getHttpOutput().reopen();
+        dispatchable.dispatch();
     }
 
     /**
@@ -824,7 +802,6 @@ public class ServletChannel
     void onTrailers(HttpFields trailers)
     {
         _servletContextRequest.setTrailers(trailers);
-        _combinedListener.onRequestTrailers(_servletContextRequest);
     }
 
     /**
@@ -851,10 +828,7 @@ public class ServletChannel
         // Recycle always done here even if an abort is called.
         recycle();
         if (_state.completeResponse())
-        {
-            _combinedListener.onComplete(servletContextRequest);
             callback.succeeded();
-        }
     }
 
     public boolean isCommitted()
@@ -897,330 +871,12 @@ public class ServletChannel
         {
             if (LOG.isDebugEnabled())
                 LOG.debug("abort {}", this, failure);
-            Callback callback = _callback;
-            _combinedListener.onResponseFailure(_servletContextRequest, failure);
-            callback.failed(failure);
+            _callback.failed(failure);
         }
     }
 
     interface Dispatchable
     {
         void dispatch() throws Exception;
-    }
-
-    /**
-     * <p>Listener for Channel events.</p>
-     * <p>HttpChannel will emit events for the various phases it goes through while
-     * processing an HTTP request and response.</p>
-     * <p>Implementations of this interface may listen to those events to track
-     * timing and/or other values such as request URI, etc.</p>
-     * <p>The events parameters, especially the {@link Request} object, may be
-     * in a transient state depending on the event, and not all properties/features
-     * of the parameters may be available inside a listener method.</p>
-     * <p>It is recommended that the event parameters are <em>not</em> acted upon
-     * in the listener methods, or undefined behavior may result. For example, it
-     * would be a bad idea to try to read some content from the
-     * {@link jakarta.servlet.ServletInputStream} in listener methods. On the other
-     * hand, it is legit to store request attributes in one listener method that
-     * may be possibly retrieved in another listener method in a later event.</p>
-     * <p>Listener methods are invoked synchronously from the thread that is
-     * performing the request processing, and they should not call blocking code
-     * (otherwise the request processing will be blocked as well).</p>
-     * <p>Listener instances that are set as a bean on the {@link Connector} are
-     * also added.  If additional listeners are added
-     * using the deprecated {@code HttpChannel#addListener(Listener)}</p> method,
-     * then an instance of {@code TransientListeners} must be added to the connector
-     * in order for them to be invoked.
-     */
-    // TODO: looks like a lot of these methods are never called.
-    public interface Listener extends EventListener
-    {
-        /**
-         * Invoked just after the HTTP request line and headers have been parsed.
-         *
-         * @param request the request object
-         */
-        default void onRequestBegin(Request request)
-        {
-        }
-
-        /**
-         * Invoked just before calling the application.
-         *
-         * @param request the request object
-         */
-        default void onBeforeDispatch(Request request)
-        {
-        }
-
-        /**
-         * Invoked when the application threw an exception.
-         *
-         * @param request the request object
-         * @param failure the exception thrown by the application
-         */
-        default void onDispatchFailure(Request request, Throwable failure)
-        {
-        }
-
-        /**
-         * Invoked just after the application returns from the first invocation.
-         *
-         * @param request the request object
-         */
-        default void onAfterDispatch(Request request)
-        {
-        }
-
-        /**
-         * Invoked every time a request content chunk has been parsed, just before
-         * making it available to the application.
-         *
-         * @param request the request object
-         * @param content a {@link ByteBuffer#slice() slice} of the request content chunk
-         */
-        default void onRequestContent(Request request, ByteBuffer content)
-        {
-        }
-
-        /**
-         * Invoked when the end of the request content is detected.
-         *
-         * @param request the request object
-         */
-        default void onRequestContentEnd(Request request)
-        {
-        }
-
-        /**
-         * Invoked when the request trailers have been parsed.
-         *
-         * @param request the request object
-         */
-        default void onRequestTrailers(Request request)
-        {
-        }
-
-        /**
-         * Invoked when the request has been fully parsed.
-         *
-         * @param request the request object
-         */
-        default void onRequestEnd(Request request)
-        {
-        }
-
-        /**
-         * Invoked when the request processing failed.
-         *
-         * @param request the request object
-         * @param failure the request failure
-         */
-        default void onRequestFailure(Request request, Throwable failure)
-        {
-        }
-
-        /**
-         * Invoked just before the response line is written to the network.
-         *
-         * @param request the request object
-         */
-        default void onResponseBegin(Request request)
-        {
-        }
-
-        /**
-         * Invoked just after the response is committed (that is, the response
-         * line, headers and possibly some content have been written to the
-         * network).
-         *
-         * @param request the request object
-         */
-        default void onResponseCommit(Request request)
-        {
-        }
-
-        /**
-         * Invoked after a response content chunk has been written to the network.
-         *
-         * @param request the request object
-         * @param content a {@link ByteBuffer#slice() slice} of the response content chunk
-         */
-        default void onResponseContent(Request request, ByteBuffer content)
-        {
-        }
-
-        /**
-         * Invoked when the response has been fully written.
-         *
-         * @param request the request object
-         */
-        default void onResponseEnd(Request request)
-        {
-        }
-
-        /**
-         * Invoked when the response processing failed.
-         *
-         * @param request the request object
-         * @param failure the response failure
-         */
-        default void onResponseFailure(Request request, Throwable failure)
-        {
-        }
-
-        /**
-         * Invoked when the request <em>and</em> response processing are complete.
-         *
-         * @param request the request object
-         */
-        default void onComplete(Request request)
-        {
-        }
-    }
-
-    private static class Listeners implements Listener
-    {
-        private final List<Listener> _listeners;
-
-        private Listeners(Connector connector, ServletContextHandler servletContextHandler)
-        {
-            Collection<Listener> connectorListeners = connector.getBeans(Listener.class);
-            List<Listener> handlerListeners = servletContextHandler.getEventListeners().stream()
-                .filter(l -> l instanceof Listener)
-                .map(Listener.class::cast)
-                .toList();
-            _listeners = new ArrayList<>(connectorListeners);
-            _listeners.addAll(handlerListeners);
-        }
-
-        @Override
-        public void onRequestBegin(Request request)
-        {
-            _listeners.forEach(l -> notify(l::onRequestBegin, request));
-        }
-
-        @Override
-        public void onBeforeDispatch(Request request)
-        {
-            _listeners.forEach(l -> notify(l::onBeforeDispatch, request));
-        }
-
-        @Override
-        public void onDispatchFailure(Request request, Throwable failure)
-        {
-            _listeners.forEach(l -> notify(l::onDispatchFailure, request, failure));
-        }
-
-        @Override
-        public void onAfterDispatch(Request request)
-        {
-            _listeners.forEach(l -> notify(l::onAfterDispatch, request));
-        }
-
-        @Override
-        public void onRequestContent(Request request, ByteBuffer content)
-        {
-            _listeners.forEach(l -> notify(l::onRequestContent, request, content));
-        }
-
-        @Override
-        public void onRequestContentEnd(Request request)
-        {
-            _listeners.forEach(l -> notify(l::onRequestContentEnd, request));
-        }
-
-        @Override
-        public void onRequestTrailers(Request request)
-        {
-            _listeners.forEach(l -> notify(l::onRequestTrailers, request));
-        }
-
-        @Override
-        public void onRequestEnd(Request request)
-        {
-            _listeners.forEach(l -> notify(l::onRequestEnd, request));
-        }
-
-        @Override
-        public void onRequestFailure(Request request, Throwable failure)
-        {
-            _listeners.forEach(l -> notify(l::onRequestFailure, request, failure));
-        }
-
-        @Override
-        public void onResponseBegin(Request request)
-        {
-            _listeners.forEach(l -> notify(l::onResponseBegin, request));
-        }
-
-        @Override
-        public void onResponseCommit(Request request)
-        {
-            _listeners.forEach(l -> notify(l::onResponseCommit, request));
-        }
-
-        @Override
-        public void onResponseContent(Request request, ByteBuffer content)
-        {
-            _listeners.forEach(l -> notify(l::onResponseContent, request, content));
-        }
-
-        @Override
-        public void onResponseEnd(Request request)
-        {
-            _listeners.forEach(l -> notify(l::onResponseEnd, request));
-        }
-
-        @Override
-        public void onResponseFailure(Request request, Throwable failure)
-        {
-            _listeners.forEach(l -> notify(l::onResponseFailure, request, failure));
-        }
-
-        @Override
-        public void onComplete(Request request)
-        {
-            _listeners.forEach(l -> notify(l::onComplete, request));
-        }
-
-        private void notify(Consumer<Request> consumer, Request request)
-        {
-            try
-            {
-                consumer.accept(request);
-            }
-            catch (Throwable x)
-            {
-                if (LOG.isDebugEnabled())
-                    LOG.debug("failure while notifying %s event for %s".formatted(ServletChannel.Listener.class.getSimpleName(), request));
-            }
-        }
-
-        private void notify(BiConsumer<Request, Throwable> consumer, Request request, Throwable failure)
-        {
-            try
-            {
-                consumer.accept(request, failure);
-            }
-            catch (Throwable x)
-            {
-                if (LOG.isDebugEnabled())
-                    LOG.debug("failure while notifying %s event for %s".formatted(ServletChannel.Listener.class.getSimpleName(), request));
-            }
-        }
-
-        private void notify(BiConsumer<Request, ByteBuffer> consumer, Request request, ByteBuffer byteBuffer)
-        {
-            try
-            {
-                consumer.accept(request, byteBuffer.slice());
-            }
-            catch (Throwable x)
-            {
-                if (LOG.isDebugEnabled())
-                    LOG.debug("failure while notifying %s event for %s".formatted(ServletChannel.Listener.class.getSimpleName(), request));
-            }
-        }
     }
 }
