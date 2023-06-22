@@ -234,46 +234,40 @@ public class ServletContextHandler extends ContextHandler
 
     public ServletContextHandler(String contextPath)
     {
-        this(null, contextPath);
+        this(contextPath, null, null, null, null);
     }
 
     public ServletContextHandler(int options)
     {
-        this(null, null, options);
+        this(null, options);
     }
 
-    public ServletContextHandler(Container parent, String contextPath)
+    public ServletContextHandler(String contextPath, int options)
     {
-        this(parent, contextPath, null, null, null, null);
+        this(contextPath, null, null, null, null, options);
     }
 
-    public ServletContextHandler(Container parent, String contextPath, int options)
+    public ServletContextHandler(String contextPath, boolean sessions, boolean security)
     {
-        this(parent, contextPath, null, null, null, null, options);
+        this(contextPath, (sessions ? SESSIONS : 0) | (security ? SECURITY : 0));
     }
 
-    public ServletContextHandler(Container parent, String contextPath, boolean sessions, boolean security)
+    public ServletContextHandler(SessionHandler sessionHandler, SecurityHandler securityHandler, ServletHandler servletHandler, ErrorHandler errorHandler)
     {
-        this(parent, contextPath, (sessions ? SESSIONS : 0) | (security ? SECURITY : 0));
+        this(null, sessionHandler, securityHandler, servletHandler, errorHandler);
     }
 
-    public ServletContextHandler(Container parent, SessionHandler sessionHandler, SecurityHandler securityHandler, ServletHandler servletHandler, ErrorHandler errorHandler)
+    public ServletContextHandler(String contextPath, SessionHandler sessionHandler, SecurityHandler securityHandler, ServletHandler servletHandler, ErrorHandler errorHandler)
     {
-        this(parent, null, sessionHandler, securityHandler, servletHandler, errorHandler);
+        this(contextPath, sessionHandler, securityHandler, servletHandler, errorHandler, 0);
     }
 
-    public ServletContextHandler(Container parent, String contextPath, SessionHandler sessionHandler, SecurityHandler securityHandler, ServletHandler servletHandler, ErrorHandler errorHandler)
-    {
-        this(parent, contextPath, sessionHandler, securityHandler, servletHandler, errorHandler, 0);
-    }
-
-    public ServletContextHandler(Container parent, String contextPath, SessionHandler sessionHandler, SecurityHandler securityHandler, ServletHandler servletHandler, ErrorHandler errorHandler, int options)
+    public ServletContextHandler(String contextPath, SessionHandler sessionHandler, SecurityHandler securityHandler, ServletHandler servletHandler, ErrorHandler errorHandler, int options)
     {
         _servletContext = newServletContextApi();
 
         if (contextPath != null)
             setContextPath(contextPath);
-        Container.setAsParent(parent, this);
 
         _options = options;
         _sessionHandler = sessionHandler;

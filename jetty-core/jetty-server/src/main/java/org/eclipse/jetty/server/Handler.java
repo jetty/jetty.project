@@ -216,21 +216,6 @@ public interface Handler extends LifeCycle, Destroyable, Request.Handler
             }
             return null;
         }
-
-        /**
-         * <p>Make a {@link Container} the parent of a {@link Handler}</p>
-         * @param parent The {@link Container} that will be the parent
-         * @param handler The {@link Handler} that will be the child
-         */
-        static void setAsParent(Container parent, Handler handler)
-        {
-            if (parent instanceof Collection collection)
-                collection.addHandler(handler);
-            else if (parent instanceof Singleton wrapper)
-                wrapper.setHandler(handler);
-            else if (parent != null)
-                throw new IllegalArgumentException("Unknown parent type: " + parent);
-        }
     }
 
     /**

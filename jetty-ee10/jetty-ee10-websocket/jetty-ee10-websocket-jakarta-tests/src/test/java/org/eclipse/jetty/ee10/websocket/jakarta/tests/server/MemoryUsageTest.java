@@ -72,7 +72,8 @@ public class MemoryUsageTest
         connector = new ServerConnector(server);
         server.addConnector(connector);
 
-        ServletContextHandler contextHandler = new ServletContextHandler(server, "/", true, false);
+        ServletContextHandler contextHandler = new ServletContextHandler("/", true, false);
+        server.setHandler(contextHandler);
         JakartaWebSocketServletContainerInitializer.configure(contextHandler, (context, container) ->
         {
             ServerEndpointConfig config = ServerEndpointConfig.Builder.create(BasicEndpoint.class, "/").build();

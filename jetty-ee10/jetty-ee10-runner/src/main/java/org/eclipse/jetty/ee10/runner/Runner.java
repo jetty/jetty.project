@@ -358,8 +358,9 @@ public class Runner
                                 statsHandler.setHandler(oldHandler);
                                 _server.setHandler(statsHandler);
 
-                                ServletContextHandler statsContext = new ServletContextHandler(_contexts, "/stats");
+                                ServletContextHandler statsContext = new ServletContextHandler("/stats");
                                 statsContext.setSessionHandler(new SessionHandler());
+                                _contexts.addHandler(statsContext);
                                 if (_statsPropFile != null)
                                 {
                                     ResourceFactory resourceFactory = ResourceFactory.of(statsContext);
@@ -457,10 +458,11 @@ public class Runner
                     else
                     {
                         // assume it is a WAR file
-                        WebAppContext webapp = new WebAppContext(_contexts, ctx.toString(), contextPath);
+                        WebAppContext webapp = new WebAppContext(ctx.toString(), contextPath);
                         webapp.setConfigurationClasses(PLUS_CONFIGURATION_CLASSES);
                         webapp.setAttribute(MetaInfConfiguration.CONTAINER_JAR_PATTERN,
                             CONTAINER_INCLUDE_JAR_PATTERN);
+                        _contexts.addHandler(webapp);
                     }
 
                     //reset

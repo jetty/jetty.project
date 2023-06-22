@@ -64,7 +64,8 @@ public class QoSFilterTest
     public void setUp() throws Exception
     {
         server = new Server();
-        context = new ServletContextHandler(server, "/context");
+        context = new ServletContextHandler("/context");
+        server.setHandler(context);
         context.addServlet(TestServlet.class, "/test");
         TestServlet.__maxSleepers = 0;
         TestServlet.__sleepers = 0;

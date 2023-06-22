@@ -36,7 +36,8 @@ public class ChatServletTest
         server = new Server();
         connector = new LocalConnector(server);
         server.addConnector(connector);
-        ServletContextHandler context = new ServletContextHandler(server, "/");
+        ServletContextHandler context = new ServletContextHandler("/");
+        server.setHandler(context);
         ServletHolder dispatch = context.addServlet(ChatServlet.class, "/chat/*");
         dispatch.setInitParameter("asyncTimeout", "500");
         server.start();

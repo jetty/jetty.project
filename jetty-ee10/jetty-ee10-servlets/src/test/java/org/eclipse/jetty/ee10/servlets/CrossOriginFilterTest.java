@@ -58,7 +58,8 @@ public class CrossOriginFilterTest
         server = new Server();
         connector = new LocalConnector(server);
         server.addConnector(connector);
-        context = new ServletContextHandler(server, "/");
+        context = new ServletContextHandler("/");
+        server.setHandler(context);
         server.start();
     }
 

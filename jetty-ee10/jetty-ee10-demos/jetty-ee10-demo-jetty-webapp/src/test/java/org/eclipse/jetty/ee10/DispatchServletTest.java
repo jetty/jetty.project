@@ -44,7 +44,8 @@ public class DispatchServletTest
         server = new Server();
         connector = new LocalConnector(server);
         server.addConnector(connector);
-        context = new ServletContextHandler(server, "/tests");
+        context = new ServletContextHandler("/tests");
+        server.setHandler(context);
         server.start();
     }
 

@@ -248,7 +248,7 @@ public class ContextHandler extends ScopedHandler implements Attributes, Supplie
         _initParams = new HashMap<>();
         if (contextPath != null)
             setContextPath(contextPath);
-        Handler.Container.setAsParent(parent, _coreContextHandler);
+        HandlerWrapper.setAsParent(parent, _coreContextHandler);
     }
 
     @Override

@@ -121,7 +121,8 @@ public class WebSocketOverHTTP2Test
         tlsConnector = new ServerConnector(server, 1, 1, ssl, alpn, h1s, h2s);
         server.addConnector(tlsConnector);
 
-        context = new ServletContextHandler(server, "/");
+        context = new ServletContextHandler("/");
+        server.setHandler(context);
         context.addServlet(new ServletHolder(servlet), "/ws/*");
         JettyWebSocketServletContainerInitializer.configure(context, null);
 

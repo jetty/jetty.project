@@ -38,16 +38,17 @@ public class ManyServletContexts
         server.setHandler(contexts);
 
         // Configure context "/" (root) for servlets
-        ServletContextHandler root = new ServletContextHandler(contexts, "/",
+        ServletContextHandler root = new ServletContextHandler("/",
             ServletContextHandler.SESSIONS);
+        contexts.addHandler(root);
         // Add servlets to root context
         root.addServlet(new ServletHolder(new HelloServlet("Hello")), "/");
         root.addServlet(new ServletHolder(new HelloServlet("Ciao")), "/it/*");
         root.addServlet(new ServletHolder(new HelloServlet("Bonjour")), "/fr/*");
 
         // Configure context "/other" for servlets
-        ServletContextHandler other = new ServletContextHandler(contexts,
-            "/other", ServletContextHandler.SESSIONS);
+        ServletContextHandler other = new ServletContextHandler("/other", ServletContextHandler.SESSIONS);
+        contexts.addHandler(other);
         // Add servlets to /other context
         other.addServlet(DefaultServlet.class.getCanonicalName(), "/");
         other.addServlet(new ServletHolder(new HelloServlet("YO!")), "*.yo");

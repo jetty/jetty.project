@@ -99,7 +99,8 @@ public class ProxyServletFailureTest
         proxy.addConnector(proxyConnector);
         proxyConnector.getConnectionFactory(HttpConnectionFactory.class).getHttpConfiguration().setDelayDispatchUntilContent(false);
 
-        ServletContextHandler proxyCtx = new ServletContextHandler(proxy, "/", true, false);
+        ServletContextHandler proxyCtx = new ServletContextHandler("/", true, false);
+        proxy.setHandler(proxyCtx);
 
         ServletHolder proxyServletHolder = new ServletHolder(proxyServlet);
         proxyServletHolder.setInitParameters(initParams);
@@ -129,7 +130,8 @@ public class ProxyServletFailureTest
         serverConnector = new ServerConnector(server);
         server.addConnector(serverConnector);
 
-        ServletContextHandler appCtx = new ServletContextHandler(server, "/", true, false);
+        ServletContextHandler appCtx = new ServletContextHandler("/", true, false);
+        server.setHandler(appCtx);
         ServletHolder appServletHolder = new ServletHolder(servlet);
         appCtx.addServlet(appServletHolder, "/*");
 

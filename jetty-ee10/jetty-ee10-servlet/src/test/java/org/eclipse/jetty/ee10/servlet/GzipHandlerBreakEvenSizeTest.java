@@ -55,7 +55,7 @@ public class GzipHandlerBreakEvenSizeTest
 
         GzipHandler gzipHandler = new GzipHandler();
 
-        ServletContextHandler context = new ServletContextHandler(gzipHandler, "/");
+        ServletContextHandler context = new ServletContextHandler("/");
         context.addServlet(VeryCompressibleContentServlet.class, "/content");
         gzipHandler.setHandler(context);
         server.setHandler(gzipHandler);

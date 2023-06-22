@@ -104,7 +104,7 @@ public class GzipHandlerTest
         gzipHandler.setMinGzipSize(16);
         gzipHandler.setInflateBufferSize(4096);
 
-        context = new ServletContextHandler(gzipHandler, "/ctx");
+        context = new ServletContextHandler("/ctx");
 
         _server.setHandler(gzipHandler);
         gzipHandler.setHandler(context);

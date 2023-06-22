@@ -440,7 +440,7 @@ public class WebAppContextTest
         Server server = newServer();
 
         ContextHandlerCollection contexts = new ContextHandlerCollection();
-        WebAppContext context = new WebAppContext(null, null, null, null, null, new ErrorPageErrorHandler(),
+        WebAppContext context = new WebAppContext(null, null, null, null, new ErrorPageErrorHandler(),
             ServletContextHandler.NO_SESSIONS | ServletContextHandler.NO_SECURITY);
         context.setContextPath("/");
 
