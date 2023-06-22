@@ -582,7 +582,8 @@ public class Content
         }
 
         /**
-         * <p>Creates an {@link Chunk#isFailure(Chunk) failure chunk} with the given failure.</p>
+         * <p>Creates an {@link Chunk#isFailure(Chunk) failure chunk} with the given failure
+         * and {@link Chunk#isLast()} returning true.</p>
          *
          * @param failure the cause of the failure
          * @return a new {@link Chunk#isFailure(Chunk) failure chunk}
@@ -593,7 +594,8 @@ public class Content
         }
 
         /**
-         * <p>Creates an {@link Chunk#isFailure(Chunk) failure chunk} with the given failure.</p>
+         * <p>Creates an {@link Chunk#isFailure(Chunk) failure chunk} with the given failure
+         * and given {@link Chunk#isLast() last} state.</p>
          *
          * @param failure the cause of the failure
          * @param last true if the failure is terminal, else false for transient failure
