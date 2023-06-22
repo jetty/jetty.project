@@ -164,6 +164,9 @@ public class ServletContextHandler extends ContextHandler
     {
         if (servletContext instanceof ServletContextApi servletContextApi)
             return servletContextApi.getContext().getServletContextHandler();
+        ServletContextHandler sch = getCurrentServletContextHandler();
+        if (sch != null)
+            return sch;
         throw new IllegalStateException("No Jetty ServletContextHandler, " + purpose + " unavailable");
     }
 
