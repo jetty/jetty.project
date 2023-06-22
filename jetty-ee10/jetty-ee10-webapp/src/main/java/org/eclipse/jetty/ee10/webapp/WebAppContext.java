@@ -31,7 +31,6 @@ import java.util.Map;
 import java.util.Set;
 import java.util.stream.Collectors;
 
-import jakarta.servlet.ServletContext;
 import jakarta.servlet.ServletRegistration.Dynamic;
 import jakarta.servlet.ServletSecurityElement;
 import jakarta.servlet.http.HttpSessionActivationListener;
@@ -1318,11 +1317,10 @@ public class WebAppContext extends ServletContextHandler implements WebAppClassL
     
     public class ServletApiContext extends ServletContextHandler.ServletContextApi
     {
-        
         @Override
-        public ServletContext getContext(String uripath)
+        public jakarta.servlet.ServletContext getContext(String uripath)
         {
-            ServletContext servletContext = super.getContext(uripath);
+            jakarta.servlet.ServletContext servletContext = super.getContext(uripath);
 
             if (servletContext != null && _contextWhiteList != null)
             {

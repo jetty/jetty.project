@@ -23,7 +23,6 @@ import java.nio.charset.Charset;
 import java.nio.charset.CharsetEncoder;
 import java.nio.charset.CoderResult;
 import java.nio.charset.CodingErrorAction;
-import java.nio.file.Files;
 import java.util.concurrent.CancellationException;
 import java.util.concurrent.TimeUnit;
 
@@ -1325,7 +1324,7 @@ public class HttpOutput extends ServletOutputStream implements Runnable
 
         try
         {
-            ReadableByteChannel rbc = Files.newByteChannel(httpContent.getResource().getPath());
+            ReadableByteChannel rbc = httpContent.getResource().newReadableByteChannel();
             sendContent(rbc, callback);
         }
         catch (Throwable x)

@@ -714,7 +714,7 @@ public class AsyncServletTest
         String response = process("forwarder", "name=orig&one=1", null);
         assertThat(response, Matchers.startsWith("HTTP/1.1 200 OK"));
 
-        _history.forEach(System.err::println);
+        // _history.forEach(System.err::println);
 
         assertThat(_history, contains(
             "REQUEST /ctx/forwarder/info?name=orig&one=1",

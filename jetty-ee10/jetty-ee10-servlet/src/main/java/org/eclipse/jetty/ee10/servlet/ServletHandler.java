@@ -452,10 +452,15 @@ public class ServletHandler extends Handler.Wrapper
     @Override
     public boolean handle(Request request, Response response, Callback callback) throws Exception
     {
-        // We will always have a ServletScopedRequest and MappedServlet otherwise we will not reach ServletHandler.
-        ServletContextRequest servletContextRequest = Request.as(request, ServletContextRequest.class);
-        servletContextRequest.getServletChannel().setCallback(callback);
-        servletContextRequest.getServletChannel().handle();
+        // We will always have a ServletContextRequest as we must be within a ServletContextHandler
+        ServletChannel servletChannel = Request.get(request, ServletContextRequest.class, ServletContextRequest::getServletChannel);
+
+        if (LOG.isDebugEnabled())
+            LOG.debug("handle {} {} {} {}", this, request, response, callback);
+
+        // But request, response and/or callback may have been wrapped after the ServletContextHandler, so update the channel.
+        servletChannel.associate(request, response, callback);
+        servletChannel.handle();
         return true;
     }
 

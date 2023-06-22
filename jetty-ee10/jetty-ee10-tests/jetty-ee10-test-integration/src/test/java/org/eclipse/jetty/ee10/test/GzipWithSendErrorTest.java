@@ -40,7 +40,6 @@ import org.eclipse.jetty.client.HttpClient;
 import org.eclipse.jetty.client.Response;
 import org.eclipse.jetty.ee10.servlet.HttpInput;
 import org.eclipse.jetty.ee10.servlet.ListenerHolder;
-import org.eclipse.jetty.ee10.servlet.ServletApiRequest;
 import org.eclipse.jetty.ee10.servlet.ServletContextHandler;
 import org.eclipse.jetty.ee10.servlet.ServletContextRequest;
 import org.eclipse.jetty.http.HttpHeader;
@@ -102,7 +101,7 @@ public class GzipWithSendErrorTest
             {
                 if (onComplete != null)
                 {
-                    ServletContextRequest servletContextRequest = ((ServletApiRequest)sre.getServletRequest()).getServletContextRequest();
+                    ServletContextRequest servletContextRequest = ServletContextRequest.getServletContextRequest(sre.getServletRequest());
                     onComplete.accept(servletContextRequest);
                 }
             }

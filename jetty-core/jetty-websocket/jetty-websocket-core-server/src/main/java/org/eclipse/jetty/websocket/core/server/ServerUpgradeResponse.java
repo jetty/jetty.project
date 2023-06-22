@@ -28,5 +28,7 @@ public interface ServerUpgradeResponse extends Response
 
     void addExtensions(List<ExtensionConfig> configs);
 
+    void removeExtensions(List<ExtensionConfig> configs);
+
     void setExtensions(List<ExtensionConfig> configs);
 }
