@@ -463,8 +463,9 @@ public class ServletApiRequest implements HttpServletRequest
     {
         try
         {
+            ServletRequestInfo servletRequestInfo = getServletRequestInfo();
             AuthenticationState.Succeeded succeededAuthentication = AuthenticationState.login(
-                username, password, getRequest(), getServletRequestInfo().getServletContextResponse());
+                username, password, getRequest(), servletRequestInfo.getServletChannel().getServletContextResponse());
 
             if (succeededAuthentication == null)
                 throw new QuietException.Exception("Authentication failed for username '" + username + "'");
@@ -478,7 +479,8 @@ public class ServletApiRequest implements HttpServletRequest
     @Override
     public void logout() throws ServletException
     {
-        if (!AuthenticationState.logout(getRequest(), getServletRequestInfo().getServletContextResponse()))
+        ServletRequestInfo servletRequestInfo = getServletRequestInfo();
+        if (!AuthenticationState.logout(getRequest(), servletRequestInfo.getServletChannel().getServletContextResponse()))
             throw new ServletException("logout failed");
     }
 
@@ -643,7 +645,7 @@ public class ServletApiRequest implements HttpServletRequest
             sessionId = getRequestedSessionId();
         }
 
-        return new PushBuilderImpl(getServletRequestInfo().getServletContextRequest(), pushHeaders, sessionId);
+        return new PushBuilderImpl(ServletContextRequest.getServletContextRequest(this), pushHeaders, sessionId);
     }
 
     @Override
@@ -1175,7 +1177,8 @@ public class ServletApiRequest implements HttpServletRequest
         ServletRequestState state = getServletRequestInfo().getState();
         if (_async == null)
             _async = new AsyncContextState(state);
-        AsyncContextEvent event = new AsyncContextEvent(getServletRequestInfo().getServletContext(), _async, state, this, getServletRequestInfo().getServletContextResponse().getServletApiResponse());
+        ServletRequestInfo servletRequestInfo = getServletRequestInfo();
+        AsyncContextEvent event = new AsyncContextEvent(getServletRequestInfo().getServletContext(), _async, state, this, servletRequestInfo.getServletChannel().getServletContextResponse().getServletApiResponse());
         state.startAsync(event);
         return _async;
     }

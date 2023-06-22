@@ -127,7 +127,8 @@ public class ServletApiResponse implements HttpServletResponse
         SessionManager sessionManager = getServletChannel().getServletContextHandler().getSessionHandler();
         if (sessionManager == null)
             return url;
-        return sessionManager.encodeURI(getServletChannel().getRequest(), url, getServletRequestInfo().getServletContextRequest().getServletApiRequest().isRequestedSessionIdFromCookie());
+        return sessionManager.encodeURI(getServletChannel().getRequest(), url,
+            getServletChannel().getServletContextRequest().getServletApiRequest().isRequestedSessionIdFromCookie());
     }
 
     @Override
@@ -148,7 +149,7 @@ public class ServletApiResponse implements HttpServletResponse
                 {
                     try (Blocker.Callback blocker = Blocker.callback())
                     {
-                        CompletableFuture<Void> completable = getServletResponseInfo().getServletContextResponse().writeInterim(sc, getResponse().getHeaders().asImmutable());
+                        CompletableFuture<Void> completable = getServletChannel().getServletContextResponse().writeInterim(sc, getResponse().getHeaders().asImmutable());
                         blocker.completeWith(completable);
                         blocker.block();
                     }
@@ -416,7 +417,7 @@ public class ServletApiResponse implements HttpServletResponse
 
         getResponse().reset();
 
-        ServletApiRequest servletApiRequest = getServletRequestInfo().getServletContextRequest().getServletApiRequest();
+        ServletApiRequest servletApiRequest = getServletChannel().getServletContextRequest().getServletApiRequest();
         ManagedSession session = servletApiRequest.getServletRequestInfo().getManagedSession();
         if (session != null && session.isNew())
         {

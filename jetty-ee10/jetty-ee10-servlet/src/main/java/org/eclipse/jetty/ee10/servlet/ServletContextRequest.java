@@ -64,19 +64,20 @@ public class ServletContextRequest extends ContextRequest implements ServletCont
 
     public static ServletContextRequest getServletContextRequest(ServletRequest request)
     {
-        if (request instanceof ServletApiRequest)
-            return ((ServletApiRequest)request).getServletRequestInfo().getServletContextRequest();
+        if (request instanceof ServletApiRequest servletApiRequest &&
+            servletApiRequest.getServletRequestInfo() instanceof ServletContextRequest servletContextRequest)
+            return servletContextRequest;
 
-        Object channel = request.getAttribute(ServletChannel.class.getName());
-        if (channel instanceof ServletChannel)
-            return ((ServletChannel)channel).getServletContextRequest();
+        if (request.getAttribute(ServletChannel.class.getName()) instanceof ServletChannel servletChannel)
+            return servletChannel.getServletContextRequest();
 
-        while (request instanceof ServletRequestWrapper)
+        while (request instanceof ServletRequestWrapper wrapper)
         {
-            request = ((ServletRequestWrapper)request).getRequest();
+            request = wrapper.getRequest();
 
-            if (request instanceof ServletApiRequest)
-                return ((ServletApiRequest)request).getServletRequestInfo().getServletContextRequest();
+            if (request instanceof ServletApiRequest servletApiRequest &&
+                servletApiRequest.getServletRequestInfo() instanceof  ServletContextRequest servletContextRequest)
+                return servletContextRequest;
         }
 
         throw new IllegalStateException("could not find %s for %s".formatted(ServletContextRequest.class.getSimpleName(), request));
@@ -148,12 +149,6 @@ public class ServletContextRequest extends ContextRequest implements ServletCont
     }
 
     @Override
-    public ServletContextRequest getServletContextRequest()
-    {
-        return this;
-    }
-
-    @Override
     public String getDecodedPathInContext()
     {
         return _decodedPathInContext;
@@ -182,7 +177,6 @@ public class ServletContextRequest extends ContextRequest implements ServletCont
         return _servletChannel.getServletRequestState();
     }
 
-    @Override
     public ServletContextResponse getServletContextResponse()
     {
         return _response;

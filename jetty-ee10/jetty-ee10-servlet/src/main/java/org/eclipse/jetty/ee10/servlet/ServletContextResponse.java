@@ -69,13 +69,13 @@ public class ServletContextResponse extends ContextResponse implements ServletCo
     public static ServletContextResponse getServletContextResponse(ServletResponse response)
     {
         if (response instanceof ServletApiResponse servletApiResponse)
-            return servletApiResponse.getServletRequestInfo().getServletContextResponse();
+            return servletApiResponse.getServletRequestInfo().getServletChannel().getServletContextResponse();
 
         while (response instanceof ServletResponseWrapper)
         {
             response = ((ServletResponseWrapper)response).getResponse();
             if (response instanceof ServletApiResponse servletApiResponse)
-                return servletApiResponse.getServletRequestInfo().getServletContextResponse();
+                return servletApiResponse.getServletRequestInfo().getServletChannel().getServletContextResponse();
         }
 
         throw new IllegalStateException("could not find %s for %s".formatted(ServletContextResponse.class.getSimpleName(), response));
@@ -87,12 +87,6 @@ public class ServletContextResponse extends ContextResponse implements ServletCo
         _servletChannel = servletChannel;
         _servletApiResponse = newServletApiResponse();
         _headers = new HttpFieldsWrapper(response.getHeaders());
-    }
-
-    @Override
-    public ServletContextResponse getServletContextResponse()
-    {
-        return this;
     }
 
     @Override

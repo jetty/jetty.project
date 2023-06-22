@@ -3075,10 +3075,6 @@ public class ServletContextHandler extends ContextHandler
 
         ServletContextHandler getServletContextHandler();
 
-        ServletContextRequest getServletContextRequest();
-        
-        ServletContextResponse getServletContextResponse();
-
         ServletRequestState getServletRequestState();
 
         SessionManager getSessionManager();
@@ -3107,8 +3103,6 @@ public class ServletContextHandler extends ContextHandler
         OutputType getOutputType();
 
         Response getResponse();
-
-        ServletContextResponse getServletContextResponse();
 
         Supplier<Map<String, String>> getTrailers();
 
