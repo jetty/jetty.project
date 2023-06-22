@@ -718,6 +718,7 @@ public class Request implements HttpServletRequest
     {
         return _lastPathInContext;
     }
+
     @Override
     public String getContextPath()
     {
