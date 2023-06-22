@@ -32,6 +32,16 @@
           </instructions>
         </configuration>
       </plugin>
+      <plugin>
+        <artifactId>maven-surefire-plugin</artifactId>
+        <configuration>
+          <argLine>
+            @{argLine} ${jetty.surefire.argLine}
+            --add-modules org.eclipse.jetty.ee8.webapp
+            --add-reads org.eclipse.jetty.ee8.websocket.jetty.client=org.eclipse.jetty.ee8.webapp
+          </argLine>
+        </configuration>
+      </plugin>
     </plugins>
   </build>
 
