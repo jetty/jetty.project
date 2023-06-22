@@ -241,8 +241,7 @@ public class ContentSourceTest
 
         // We must read the error.
         chunk = source.read();
-        assertTrue(Content.Chunk.isError(chunk));
-        assertTrue(chunk.isLast());
+        assertTrue(Content.Chunk.isFailure(chunk, true));
     }
 
     @ParameterizedTest
@@ -264,8 +263,7 @@ public class ContentSourceTest
         source.fail(new CancellationException());
 
         Content.Chunk chunk = source.read();
-        assertTrue(Content.Chunk.isError(chunk));
-        assertTrue(chunk.isLast());
+        assertTrue(Content.Chunk.isFailure(chunk, true));
 
         CountDownLatch latch = new CountDownLatch(1);
         source.demand(latch::countDown);
@@ -291,8 +289,7 @@ public class ContentSourceTest
         });
 
         chunk = source.read();
-        assertTrue(Content.Chunk.isError(chunk));
-        assertTrue(chunk.isLast());
+        assertTrue(Content.Chunk.isFailure(chunk, true));
     }
 
     @Test
@@ -574,22 +571,22 @@ public class ContentSourceTest
         AsyncContent content = new AsyncContent();
 
         Content.Sink.write(content, false, "One", Callback.NOOP);
-        content.warn(new TimeoutException("test"));
+        content.fail(new TimeoutException("test"), false);
         Content.Sink.write(content, true, "Two", Callback.NOOP);
 
         Content.Chunk chunk = content.read();
         assertFalse(chunk.isLast());
-        assertFalse(Content.Chunk.isError(chunk));
+        assertFalse(Content.Chunk.isFailure(chunk));
         assertThat(BufferUtil.toString(chunk.getByteBuffer()), is("One"));
 
         chunk = content.read();
         assertFalse(chunk.isLast());
-        assertTrue(Content.Chunk.isError(chunk));
-        assertThat(chunk.getError(), instanceOf(TimeoutException.class));
+        assertTrue(Content.Chunk.isFailure(chunk));
+        assertThat(chunk.getFailure(), instanceOf(TimeoutException.class));
 
         chunk = content.read();
         assertTrue(chunk.isLast());
-        assertFalse(Content.Chunk.isError(chunk));
+        assertFalse(Content.Chunk.isFailure(chunk));
         assertThat(BufferUtil.toString(chunk.getByteBuffer()), is("Two"));
     }
 
@@ -599,7 +596,7 @@ public class ContentSourceTest
         AsyncContent content = new AsyncContent();
 
         Content.Sink.write(content, false, "One", Callback.NOOP);
-        content.warn(new TimeoutException("test"));
+        content.fail(new TimeoutException("test"), false);
         Content.Sink.write(content, true, "Two", Callback.NOOP);
 
         InputStream in = Content.Source.asInputStream(content);

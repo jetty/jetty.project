@@ -759,7 +759,7 @@ public class MultiPart
                 case CONTENT ->
                 {
                     Content.Chunk chunk = part.getContentSource().read();
-                    if (chunk == null || Content.Chunk.isError(chunk))
+                    if (chunk == null || Content.Chunk.isFailure(chunk))
                         yield chunk;
                     if (!chunk.isLast())
                         yield chunk;

@@ -710,9 +710,9 @@ public class GracefulHandlerTest
                         }
                     }
                     LOG.debug("chunk = {}", chunk);
-                    if (Content.Chunk.isError(chunk))
+                    if (Content.Chunk.isFailure(chunk))
                     {
-                        Response.writeError(request, response, callback, chunk.getError());
+                        Response.writeError(request, response, callback, chunk.getFailure());
                         return true;
                     }
                     bytesRead += chunk.remaining();

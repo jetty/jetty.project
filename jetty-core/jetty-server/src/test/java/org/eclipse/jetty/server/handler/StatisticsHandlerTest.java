@@ -100,9 +100,9 @@ public class StatisticsHandlerTest
                         return true;
                     }
 
-                    if (Content.Chunk.isError(chunk))
+                    if (Content.Chunk.isFailure(chunk))
                     {
-                        callback.failed(chunk.getError());
+                        callback.failed(chunk.getFailure());
                         return true;
                     }
 

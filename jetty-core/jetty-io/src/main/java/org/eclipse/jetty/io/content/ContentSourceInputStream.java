@@ -54,11 +54,11 @@ public class ContentSourceInputStream extends InputStream
         {
             if (chunk != null)
             {
-                if (Content.Chunk.isError(chunk))
+                if (Content.Chunk.isFailure(chunk))
                 {
                     Content.Chunk c = chunk;
                     chunk = null;
-                    throw IO.rethrow(c.getError());
+                    throw IO.rethrow(c.getFailure());
                 }
 
                 ByteBuffer byteBuffer = chunk.getByteBuffer();
@@ -100,8 +100,8 @@ public class ContentSourceInputStream extends InputStream
     @Override
     public void close()
     {
-        // If we have already reached a real EOF or an error, close is a noop.
-        if (chunk == Content.Chunk.EOF || Content.Chunk.isError(chunk))
+        // If we have already reached a real EOF or a persistent failure, close is a noop.
+        if (chunk == Content.Chunk.EOF || Content.Chunk.isFailure(chunk, true))
             return;
 
         // If we have a chunk here, then it needs to be released

@@ -100,8 +100,7 @@ public class AsyncContentTest
 
             // We must read the error.
             chunk = async.read();
-            assertTrue(Content.Chunk.isError(chunk));
-            assertTrue(chunk.isLast());
+            assertTrue(Content.Chunk.isFailure(chunk, true));
 
             // Offering more should fail.
             CountDownLatch failLatch = new CountDownLatch(1);
@@ -209,14 +208,14 @@ public class AsyncContentTest
             assertThat(chunk.release(), is(true));
             callback1.assertNoFailureWithSuccesses(1);
 
-            Exception error1 = new Exception("test1");
-            async.fail(error1);
+            Exception failure1 = new Exception("test1");
+            async.fail(failure1);
 
             chunk = async.read();
-            assertSame(error1, chunk.getError());
+            assertSame(failure1, chunk.getFailure());
 
-            callback2.assertSingleFailureSameInstanceNoSuccess(error1);
-            callback3.assertSingleFailureSameInstanceNoSuccess(error1);
+            callback2.assertSingleFailureSameInstanceNoSuccess(failure1);
+            callback3.assertSingleFailureSameInstanceNoSuccess(failure1);
         }
     }
 

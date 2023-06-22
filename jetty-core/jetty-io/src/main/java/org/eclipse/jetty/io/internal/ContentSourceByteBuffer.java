@@ -44,9 +44,9 @@ public class ContentSourceByteBuffer implements Runnable
                 return;
             }
 
-            if (Content.Chunk.isError(chunk))
+            if (Content.Chunk.isFailure(chunk))
             {
-                promise.failed(chunk.getError());
+                promise.failed(chunk.getFailure());
                 return;
             }
 

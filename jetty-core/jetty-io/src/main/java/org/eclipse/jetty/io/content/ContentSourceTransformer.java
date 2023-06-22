@@ -60,10 +60,10 @@ public abstract class ContentSourceTransformer implements Content.Source
                     return null;
             }
 
-            if (Content.Chunk.isError(rawChunk))
+            if (Content.Chunk.isFailure(rawChunk))
                 return rawChunk;
 
-            if (Content.Chunk.isError(transformedChunk))
+            if (Content.Chunk.isFailure(transformedChunk))
                 return transformedChunk;
 
             transformedChunk = process(rawChunk);
@@ -143,13 +143,13 @@ public abstract class ContentSourceTransformer implements Content.Source
      * implementations that must hold onto the input chunk must arrange to call
      * {@link Content.Chunk#retain()} and its correspondent {@link Content.Chunk#release()}.</p>
      * <p>Implementations should return an {@link Content.Chunk} with non-null
-     * {@link Content.Chunk#getError()} in case
+     * {@link Content.Chunk#getFailure()} in case
      * of transformation errors.</p>
      * <p>Exceptions thrown by this method are equivalent to returning an error chunk.</p>
      * <p>Implementations of this method may return:</p>
      * <ul>
      * <li>{@code null}, if more input chunks are necessary to produce an output chunk</li>
-     * <li>the {@code inputChunk} itself, typically in case of non-null {@link Content.Chunk#getError()},
+     * <li>the {@code inputChunk} itself, typically in case of non-null {@link Content.Chunk#getFailure()},
      * or when no transformation is required</li>
      * <li>a new {@link Content.Chunk} derived from {@code inputChunk}.</li>
      * </ul>

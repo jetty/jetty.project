@@ -60,12 +60,12 @@ public class ContentCopier extends IteratingNestedCallback
         if (chunkProcessor != null && chunkProcessor.process(current, this))
             return Action.SCHEDULED;
 
-        if (Content.Chunk.isError(current))
+        if (Content.Chunk.isFailure(current))
         {
             if (current.isLast())
-                throw current.getError();
+                throw current.getFailure();
             if (LOG.isDebugEnabled())
-                LOG.debug("ignored warning", current.getError());
+                LOG.debug("ignored transient failure", current.getFailure());
             succeeded();
             return Action.SCHEDULED;
         }

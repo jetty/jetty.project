@@ -607,9 +607,9 @@ public class IdleTimeoutTest extends AbstractTest
                         _request.demand(this::onContentAvailable);
                         return;
                     }
-                    if (Content.Chunk.isError(chunk))
+                    if (Content.Chunk.isFailure(chunk))
                     {
-                        _callback.failed(chunk.getError());
+                        _callback.failed(chunk.getFailure());
                         return;
                     }
                     chunk.release();

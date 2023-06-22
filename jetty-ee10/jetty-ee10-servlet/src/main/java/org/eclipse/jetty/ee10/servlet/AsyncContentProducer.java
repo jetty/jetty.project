@@ -101,10 +101,10 @@ class AsyncContentProducer implements ContentProducer
     public boolean isError()
     {
         assertLocked();
-        boolean error = Content.Chunk.isError(_chunk);
+        boolean failure = Content.Chunk.isFailure(_chunk);
         if (LOG.isDebugEnabled())
-            LOG.debug("isError = {} {}", error, this);
-        return error;
+            LOG.debug("isFailure = {} {}", failure, this);
+        return failure;
     }
 
     @Override

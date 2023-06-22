@@ -1213,9 +1213,8 @@ public class HttpChannelTest
         Request rq = handling.get().getRequest();
         Content.Chunk chunk = rq.read();
         assertTrue(chunk.isLast());
-        assertTrue(Content.Chunk.isError(chunk));
-        assertTrue(chunk.isLast());
-        assertThat(chunk.getError(), sameInstance(failure));
+        assertTrue(Content.Chunk.isFailure(chunk, true));
+        assertThat(chunk.getFailure(), sameInstance(failure));
 
         CountDownLatch demand = new CountDownLatch(1);
         // Callback serialized until after onError task

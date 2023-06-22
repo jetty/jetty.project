@@ -59,15 +59,11 @@ public class ContentDocs
                         return;
                     }
 
-                    if (Content.Chunk.isError(chunk))
+                    if (Content.Chunk.isFailure(chunk, true))
                     {
-                        // if it is a persistent error, then fail the callback, else log only
-                        if (chunk.isLast())
-                        {
-                            callback.failed(chunk.getError());
-                            return;
-                        }
-                        LOG.warn("transient error", chunk.getError());
+                        // if it is a persistent failure, then fail the callback
+                        callback.failed(chunk.getFailure());
+                        return;
                     }
 
                     if (chunk.hasRemaining() || chunk.isLast())

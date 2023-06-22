@@ -175,9 +175,9 @@ public interface Response
                 contentSource.demand(demandCallback);
                 return;
             }
-            if (Content.Chunk.isError(chunk))
+            if (Content.Chunk.isFailure(chunk))
             {
-                response.abort(chunk.getError());
+                response.abort(chunk.getFailure());
                 return;
             }
             if (chunk.isLast() && !chunk.hasRemaining())

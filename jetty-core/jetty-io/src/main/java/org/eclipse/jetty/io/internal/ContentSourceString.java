@@ -42,9 +42,9 @@ public class ContentSourceString
                 content.demand(this::convert);
                 return;
             }
-            if (Content.Chunk.isError(chunk))
+            if (Content.Chunk.isFailure(chunk))
             {
-                promise.failed(chunk.getError());
+                promise.failed(chunk.getFailure());
                 return;
             }
             text.append(chunk.getByteBuffer());
