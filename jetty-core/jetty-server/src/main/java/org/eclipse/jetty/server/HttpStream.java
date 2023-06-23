@@ -26,7 +26,7 @@ import org.eclipse.jetty.util.StaticException;
 /**
  * A HttpStream is an abstraction that together with {@link MetaData.Request}, represents the
  * flow of data from and to a single request and response cycle.  It is roughly analogous to the
- * Stream within a HTTP/2 connection, in that a connection can have many streams, each used once
+ * Stream within an HTTP/2 connection, in that a connection can have many streams, each used once
  * and each representing a single request and response exchange.
  */
 public interface HttpStream extends Callback
@@ -42,7 +42,7 @@ public interface HttpStream extends Callback
 
     /**
      * @return an ID unique within the lifetime scope of the associated protocol connection.
-     * This may be a protocol ID (eg HTTP/2 stream ID) or it may be unrelated to the protocol.
+     * This may be a protocol ID (e.g. HTTP/2 stream ID) or it may be unrelated to the protocol.
      */
     String getId();
 
@@ -50,7 +50,7 @@ public interface HttpStream extends Callback
      * <p>Reads a chunk of content, with the same semantic as {@link Content.Source#read()}.</p>
      * <p>This method is called from the implementation of {@link Request#read()}.</p>
      *
-     * @return a chunk of content, possibly an {@link Chunk.Error error} or {@code null}.
+     * @return a chunk of content, possibly with non-null {@link Chunk#getFailure()} or {@code null}.
      */
     Content.Chunk read();
 
@@ -125,8 +125,8 @@ public interface HttpStream extends Callback
             content.release();
 
             // if the input failed, then fail the stream for same reason
-            if (content instanceof Chunk.Error error)
-                return error.getCause();
+            if (Content.Chunk.isFailure(content))
+                return content.getFailure();
 
             if (content.isLast())
                 return null;

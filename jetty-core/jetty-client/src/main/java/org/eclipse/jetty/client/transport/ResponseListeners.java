@@ -676,7 +676,7 @@ public class ResponseListeners
                 Content.Chunk currentChunk = chunk;
                 if (LOG.isDebugEnabled())
                     LOG.debug("Content source #{} fail while current chunk is {}", index, currentChunk);
-                if (currentChunk instanceof Content.Chunk.Error)
+                if (Content.Chunk.isFailure(currentChunk))
                     return;
                 if (currentChunk != null)
                     currentChunk.release();

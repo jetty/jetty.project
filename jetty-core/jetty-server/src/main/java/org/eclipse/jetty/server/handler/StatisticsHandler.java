@@ -268,7 +268,7 @@ public class StatisticsHandler extends EventsHandler
 
         protected class MinimumDataRateRequest extends Request.Wrapper
         {
-            private Content.Chunk.Error _errorContent;
+            private Content.Chunk _errorContent;
 
             private MinimumDataRateRequest(Request request)
             {
