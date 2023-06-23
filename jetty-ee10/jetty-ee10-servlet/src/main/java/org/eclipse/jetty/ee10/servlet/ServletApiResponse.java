@@ -242,7 +242,8 @@ public class ServletApiResponse implements HttpServletResponse
     @Override
     public int getStatus()
     {
-        return getResponse().getStatus();
+        int status = getResponse().getStatus();
+        return status == 0 ? 200 : status;
     }
 
     @Override
