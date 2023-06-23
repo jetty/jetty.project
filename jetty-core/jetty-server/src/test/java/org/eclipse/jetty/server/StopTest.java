@@ -283,7 +283,8 @@ public class StopTest
         StatisticsHandler stats = new StatisticsHandler();
         server.setHandler(stats);
 
-        ContextHandler context = new ContextHandler(stats, "/");
+        ContextHandler context = new ContextHandler("/");
+        stats.setHandler(context);
 
         Exchanger<Void> exchanger0 = new Exchanger<>();
         Exchanger<Void> exchanger1 = new Exchanger<>();
@@ -370,7 +371,8 @@ public class StopTest
         LocalConnector connector = new LocalConnector(server);
         server.addConnector(connector);
 
-        ContextHandler context = new ContextHandler(server, "/");
+        ContextHandler context = new ContextHandler("/");
+        server.setHandler(context);
 
         StatisticsHandler stats = new StatisticsHandler();
         context.setHandler(stats);
