@@ -18,7 +18,6 @@ import org.eclipse.jetty.http.HttpHeader;
 import org.eclipse.jetty.http.HttpStatus;
 import org.eclipse.jetty.http.HttpURI;
 import org.eclipse.jetty.http.PreEncodedHttpField;
-import org.eclipse.jetty.server.Handler;
 import org.eclipse.jetty.server.Request;
 import org.eclipse.jetty.server.Response;
 import org.eclipse.jetty.util.Callback;
@@ -40,13 +39,6 @@ public class MovedContextHandler extends ContextHandler
     {
         setHandler(new Redirector());
         setAllowNullPathInContext(true);
-    }
-
-    public MovedContextHandler(Handler.Container parent, String contextPath, String redirectURI)
-    {
-        Handler.Container.setAsParent(parent, this);
-        setContextPath(contextPath);
-        setRedirectURI(redirectURI);
     }
 
     /**

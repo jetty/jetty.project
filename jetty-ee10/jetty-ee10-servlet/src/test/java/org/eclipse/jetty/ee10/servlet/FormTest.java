@@ -63,9 +63,10 @@ public class FormTest
         connector = new ServerConnector(server, 1, 1);
         server.addConnector(connector);
 
-        ServletContextHandler handler = new ServletContextHandler(server, contextPath);
+        ServletContextHandler handler = new ServletContextHandler(contextPath);
         HttpServlet servlet = config.apply(handler);
         handler.addServlet(new ServletHolder(servlet), servletPath + "/*");
+        server.setHandler(handler);
 
         server.start();
     }

@@ -161,7 +161,8 @@ public class LocalServer extends ContainerLifeCycle implements LocalFuzzer.Provi
 
     protected Handler createRootHandler(Server server) throws Exception
     {
-        servletContextHandler = new ServletContextHandler(server, "/", true, false);
+        servletContextHandler = new ServletContextHandler("/", true, false);
+        server.setHandler(servletContextHandler);
         servletContextHandler.setContextPath("/");
         JakartaWebSocketServletContainerInitializer.configure(servletContextHandler, (context, container) ->
             ((JakartaWebSocketServerContainer)container).addSessionListener(trackingListener));

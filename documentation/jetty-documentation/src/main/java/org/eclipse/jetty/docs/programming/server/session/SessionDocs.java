@@ -78,7 +78,7 @@ public class SessionDocs
         //tag:schsession[]
         Server server = new Server();
         
-        ServletContextHandler context = new ServletContextHandler(server, "/foo", ServletContextHandler.SESSIONS);
+        ServletContextHandler context = new ServletContextHandler("/foo", ServletContextHandler.SESSIONS);
         SessionHandler sessions = context.getSessionHandler();
         //make idle sessions valid for only 5mins
         sessions.setMaxInactiveInterval(300);

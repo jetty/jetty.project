@@ -125,7 +125,7 @@ public class GzipHandlerTest
             _server.setHandler(gzipHandler);
             gzipHandler.setHandler(context);
         }
-        
+
         _server.start();
     }
 

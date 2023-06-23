@@ -138,4 +138,19 @@ public class HandlerWrapper extends AbstractHandlerContainer
         }
         super.destroy();
     }
+
+    /**
+     * <p>Make a {@link org.eclipse.jetty.server.Handler.Container} the parent of a {@link org.eclipse.jetty.server.Handler}</p>
+     * @param parent The {@link org.eclipse.jetty.server.Handler.Container} that will be the parent
+     * @param handler The {@link org.eclipse.jetty.server.Handler} that will be the child
+     */
+    public static void setAsParent(org.eclipse.jetty.server.Handler.Container parent, org.eclipse.jetty.server.Handler handler)
+    {
+        if (parent instanceof org.eclipse.jetty.server.Handler.Collection collection)
+            collection.addHandler(handler);
+        else if (parent instanceof org.eclipse.jetty.server.Handler.Singleton wrapper)
+            wrapper.setHandler(handler);
+        else if (parent != null)
+            throw new IllegalArgumentException("Unknown parent type: " + parent);
+    }
 }

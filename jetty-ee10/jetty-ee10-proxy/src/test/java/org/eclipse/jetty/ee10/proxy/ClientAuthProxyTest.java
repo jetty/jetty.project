@@ -177,7 +177,7 @@ public class ClientAuthProxyTest
         proxyConnector = new ServerConnector(proxy, 1, 1, ssl, http);
         proxy.addConnector(proxyConnector);
 
-        ServletContextHandler context = new ServletContextHandler(proxy, "/");
+        ServletContextHandler context = new ServletContextHandler("/");
         context.addServlet(new ServletHolder(servlet), "/*");
         proxy.setHandler(context);
 

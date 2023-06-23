@@ -44,6 +44,7 @@ import org.junit.jupiter.api.Test;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+import static org.awaitility.Awaitility.await;
 import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.Matchers.containsString;
 import static org.hamcrest.Matchers.endsWith;
@@ -92,7 +93,7 @@ public class StopTest
             }
             catch (Exception e)
             {
-                e.printStackTrace();
+                throw new RuntimeException(e);
             }
         });
         stopper.start();
@@ -107,10 +108,7 @@ public class StopTest
             ).getBytes());
             client.getOutputStream().flush();
 
-            while (!connector.isShutdown())
-            {
-                Thread.sleep(10);
-            }
+            await().atMost(10, TimeUnit.SECONDS).until(connector::isShutdown);
 
             handler.latchB.countDown();
 
@@ -280,11 +278,9 @@ public class StopTest
         LocalConnector connector = new LocalConnector(server);
         server.addConnector(connector);
 
-        StatisticsHandler stats = new StatisticsHandler();
-        server.setHandler(stats);
-
         ContextHandler context = new ContextHandler("/");
-        stats.setHandler(context);
+        StatisticsHandler stats = new StatisticsHandler(context);
+        server.setHandler(stats);
 
         Exchanger<Void> exchanger0 = new Exchanger<>();
         Exchanger<Void> exchanger1 = new Exchanger<>();
@@ -314,53 +310,51 @@ public class StopTest
         server.setStopTimeout(1000);
         server.start();
 
-        LocalEndPoint endp = connector.executeRequest(
-            "GET / HTTP/1.1\r\n" +
-                "Host: localhost\r\n" +
-                "\r\n"
-        );
-
-        exchanger0.exchange(null);
-        exchanger1.exchange(null);
-
-        String response = endp.getResponse();
-        assertThat(response, containsString("200 OK"));
-        assertThat(response, Matchers.not(containsString("Connection: close")));
-
-        endp.addInputAndExecute(BufferUtil.toBuffer("GET / HTTP/1.1\r\nHost:localhost\r\n\r\n"));
-
-        exchanger0.exchange(null);
-
-        FutureCallback stopped = new FutureCallback();
-        new Thread(() ->
+        try (LocalEndPoint endp = connector.executeRequest(
+            """
+                GET / HTTP/1.1\r
+                Host: localhost\r
+                \r
+                """
+        ))
         {
-            try
-            {
-                server.stop();
-                stopped.succeeded();
-            }
-            catch (Throwable e)
-            {
-                stopped.failed(e);
-            }
-        }).start();
+            exchanger0.exchange(null);
+            exchanger1.exchange(null);
 
-        long start = NanoTime.now();
-        while (!connector.isShutdown())
-        {
-            assertThat(NanoTime.secondsSince(start), lessThan(10L));
-            Thread.sleep(10);
+            String response = endp.getResponse();
+            assertThat(response, containsString("200 OK"));
+            assertThat(response, Matchers.not(containsString("Connection: close")));
+
+            endp.addInputAndExecute(BufferUtil.toBuffer("GET / HTTP/1.1\r\nHost:localhost\r\n\r\n"));
+
+            exchanger0.exchange(null);
+
+            FutureCallback stopped = new FutureCallback();
+            new Thread(() ->
+            {
+                try
+                {
+                    server.stop();
+                    stopped.succeeded();
+                }
+                catch (Throwable e)
+                {
+                    stopped.failed(e);
+                }
+            }).start();
+
+            await().atMost(10, TimeUnit.SECONDS).until(connector::isShutdown);
+
+            // Check new connections rejected!
+            assertThrows(IllegalStateException.class, () -> connector.getResponse("GET / HTTP/1.1\r\nHost:localhost\r\n\r\n"));
+
+            // Check completed 200 has close
+            exchanger1.exchange(null);
+            response = endp.getResponse();
+            assertThat(response, containsString("200 OK"));
+            assertThat(response, Matchers.containsString("Connection: close"));
+            stopped.get(10, TimeUnit.SECONDS);
         }
-
-        // Check new connections rejected!
-        assertThrows(IllegalStateException.class, () -> connector.getResponse("GET / HTTP/1.1\r\nHost:localhost\r\n\r\n"));
-
-        // Check completed 200 has close
-        exchanger1.exchange(null);
-        response = endp.getResponse();
-        assertThat(response, containsString("200 OK"));
-        assertThat(response, Matchers.containsString("Connection: close"));
-        stopped.get(10, TimeUnit.SECONDS);
     }
 
     @Test
@@ -373,7 +367,6 @@ public class StopTest
 
         ContextHandler context = new ContextHandler("/");
         server.setHandler(context);
-
         StatisticsHandler stats = new StatisticsHandler();
         context.setHandler(stats);
 
@@ -402,50 +395,51 @@ public class StopTest
 
         server.start();
 
-        LocalEndPoint endp = connector.executeRequest(
-            "GET / HTTP/1.1\r\n" +
-                "Host: localhost\r\n" +
-                "\r\n"
-        );
-
-        exchanger0.exchange(null);
-        exchanger1.exchange(null);
-
-        String response = endp.getResponse();
-        assertThat(response, containsString("200 OK"));
-        assertThat(response, Matchers.not(containsString("Connection: close")));
-
-        endp.addInputAndExecute(BufferUtil.toBuffer("GET / HTTP/1.1\r\nHost:localhost\r\n\r\n"));
-        exchanger0.exchange(null);
-
-        CountDownLatch latch = new CountDownLatch(1);
-        new Thread(() ->
+        try (LocalEndPoint endp = connector.executeRequest(
+            """
+                GET / HTTP/1.1\r
+                Host: localhost\r
+                \r
+                """
+        ))
         {
-            try
+            exchanger0.exchange(null);
+            exchanger1.exchange(null);
+
+            String response = endp.getResponse();
+            assertThat(response, containsString("200 OK"));
+            assertThat(response, Matchers.not(containsString("Connection: close")));
+
+            endp.addInputAndExecute(BufferUtil.toBuffer("GET / HTTP/1.1\r\nHost:localhost\r\n\r\n"));
+            exchanger0.exchange(null);
+
+            CountDownLatch latch = new CountDownLatch(1);
+            new Thread(() ->
             {
-                context.stop();
-                latch.countDown();
-            }
-            catch (Exception e)
-            {
-                e.printStackTrace();
-            }
-        }).start();
-        while (context.isStarted())
-        {
-            Thread.sleep(10);
+                try
+                {
+                    context.stop();
+                    latch.countDown();
+                }
+                catch (Exception e)
+                {
+                    e.printStackTrace();
+                }
+            }).start();
+
+            await().atMost(10, TimeUnit.SECONDS).until(context::isStopped);
+
+            // Check new connections accepted, but don't find context!
+            String unavailable = connector.getResponse("GET / HTTP/1.1\r\nHost:localhost\r\n\r\n");
+            assertThat(unavailable, containsString(" 404 Not Found"));
+
+            // Check completed 200 does not have close
+            exchanger1.exchange(null);
+            response = endp.getResponse();
+            assertThat(response, containsString("200 OK"));
+            assertThat(response, Matchers.not(Matchers.containsString("Connection: close")));
+            assertTrue(latch.await(10, TimeUnit.SECONDS));
         }
-
-        // Check new connections accepted, but don't find context!
-        String unavailable = connector.getResponse("GET / HTTP/1.1\r\nHost:localhost\r\n\r\n");
-        assertThat(unavailable, containsString(" 404 Not Found"));
-
-        // Check completed 200 does not have close
-        exchanger1.exchange(null);
-        response = endp.getResponse();
-        assertThat(response, containsString("200 OK"));
-        assertThat(response, Matchers.not(Matchers.containsString("Connection: close")));
-        assertTrue(latch.await(10, TimeUnit.SECONDS));
     }
 
     @Test
@@ -479,12 +473,12 @@ public class StopTest
         ContextHandler context2 = new ContextHandler("/two")
         {
             @Override
-            protected void doStart() throws Exception
+            protected void doStart()
             {
                 context2Started.set(true);
             }
         };
-        contexts.setHandlers(new Handler[]{context0, context1, context2});
+        contexts.setHandlers(context0, context1, context2);
 
         try
         {

@@ -109,7 +109,7 @@ public class MultiPartServletTest
         connector = new ServerConnector(server);
         server.addConnector(connector);
 
-        ServletContextHandler contextHandler = new ServletContextHandler(server, "/");
+        ServletContextHandler contextHandler = new ServletContextHandler("/");
         ServletHolder servletHolder = new ServletHolder(servlet);
         servletHolder.getRegistration().setMultipartConfig(config);
         contextHandler.addServlet(servletHolder, "/");

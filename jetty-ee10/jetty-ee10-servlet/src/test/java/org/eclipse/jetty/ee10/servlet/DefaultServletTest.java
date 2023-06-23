@@ -3188,7 +3188,7 @@ public class DefaultServletTest
     @Test
     public void testPathInfoOnly() throws Exception
     {
-        ServletContextHandler context = new ServletContextHandler(null, "/c1", ServletContextHandler.NO_SESSIONS);
+        ServletContextHandler context = new ServletContextHandler("/c1", ServletContextHandler.NO_SESSIONS);
         context.setWelcomeFiles(new String[]{"index.y", "index.x"});
         ServletHolder indexServlet = new ServletHolder("index-servlet", new HttpServlet()
         {

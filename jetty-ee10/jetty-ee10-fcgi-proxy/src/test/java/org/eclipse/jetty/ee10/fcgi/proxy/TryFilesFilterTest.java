@@ -55,7 +55,8 @@ public class TryFilesFilterTest
         sslConnector = new ServerConnector(server, serverSslContextFactory);
         server.addConnector(sslConnector);
 
-        ServletContextHandler context = new ServletContextHandler(server, "/");
+        ServletContextHandler context = new ServletContextHandler("/");
+        server.setHandler(context);
 
         FilterHolder filterHolder = context.addFilter(TryFilesFilter.class, "/*", EnumSet.of(DispatcherType.REQUEST));
         forwardPath = "/index.php";

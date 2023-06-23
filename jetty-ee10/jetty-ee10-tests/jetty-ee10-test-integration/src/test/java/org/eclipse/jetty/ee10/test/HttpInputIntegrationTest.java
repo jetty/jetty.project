@@ -118,7 +118,8 @@ public class HttpInputIntegrationTest
         http2.setIdleTimeout(5000);
         __server.addConnector(http2);
 
-        ServletContextHandler context = new ServletContextHandler(__server, "/ctx");
+        ServletContextHandler context = new ServletContextHandler("/ctx");
+        __server.setHandler(context);
         ServletHolder holder = new ServletHolder(new TestServlet());
         holder.setAsyncSupported(true);
         context.addServlet(holder, "/*");
