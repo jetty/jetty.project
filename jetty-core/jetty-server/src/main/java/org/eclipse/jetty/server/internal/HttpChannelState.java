@@ -1176,16 +1176,15 @@ public class HttpChannelState implements HttpChannel, Components
         {
             long length = BufferUtil.length(content);
 
-            long totalWritten;
             HttpChannelState httpChannelState;
             HttpStream stream = null;
-            Throwable failure = null;
+            Throwable failure;
             MetaData.Response responseMetaData = null;
             try (AutoLock ignored = _request._lock.lock())
             {
                 httpChannelState = _request.lockedGetHttpChannelState();
                 long committedContentLength = httpChannelState._committedContentLength;
-                totalWritten = _contentBytesWritten + length;
+                long totalWritten = _contentBytesWritten + length;
                 long contentLength = committedContentLength >= 0 ? committedContentLength : getHeaders().getLongField(HttpHeader.CONTENT_LENGTH);
 
                 if (_writeCallback != null)
