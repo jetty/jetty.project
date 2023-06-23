@@ -1193,11 +1193,14 @@ public class HttpChannelState implements HttpChannel, Components
                 else
                 {
                     failure = getFailure(httpChannelState);
-                    if (failure == null && contentLength >= 0)
+                    if (failure == null && contentLength >= 0 && totalWritten != contentLength)
                     {
                         // If the content length were not compatible with what was written, then we need to abort.
-                        String lengthError = (totalWritten > contentLength) ? "written %d > %d content-length"
-                            : (last && totalWritten < contentLength) ? "written %d < %d content-length" : null;
+                        String lengthError = null;
+                        if (totalWritten > contentLength)
+                            lengthError = "written %d > %d content-length";
+                        else if (last && !(totalWritten == 0 && HttpMethod.HEAD.is(_request.getMethod())))
+                            lengthError = "written %d < %d content-length";
                         if (lengthError != null)
                         {
                             String message = lengthError.formatted(totalWritten, contentLength);
@@ -1439,7 +1442,7 @@ public class HttpChannelState implements HttpChannel, Components
                 long totalWritten = response._contentBytesWritten;
                 long committedContentLength = httpChannelState._committedContentLength;
 
-                if (committedContentLength >= 0 && committedContentLength != totalWritten)
+                if (committedContentLength >= 0 && committedContentLength != totalWritten && !(totalWritten == 0 && HttpMethod.HEAD.is(_request.getMethod())))
                     failure = new IOException("content-length %d != %d written".formatted(committedContentLength, totalWritten));
 
                 // is the request fully consumed?
