@@ -968,10 +968,10 @@ public class DistributionTests extends AbstractJettyHomeTest
             "\n" +
             "[ini]\n" +
             "" + pathProperty + "=modbased\n";
-        String moduleName = "ssl-ini";
-        Files.writeString(jettyBaseModules.resolve(moduleName + ".mod"), module, StandardOpenOption.CREATE);
+        Files.writeString(jettyBaseModules.resolve("ssl-ini.mod"), module, StandardOpenOption.CREATE);
 
-        try (JettyHomeTester.Run run1 = distribution.start("--add-module=https,test-keystore,ssl-ini"))
+        int port = distribution.freePort();
+        try (JettyHomeTester.Run run1 = distribution.start("--add-module=https,test-keystore,ssl-ini", "jetty.ssl.port=" + port))
         {
             assertTrue(run1.awaitFor(START_TIMEOUT, TimeUnit.SECONDS));
             assertEquals(0, run1.getExitValue());
