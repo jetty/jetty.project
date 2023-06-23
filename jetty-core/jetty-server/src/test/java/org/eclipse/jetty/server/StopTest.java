@@ -25,6 +25,7 @@ import java.util.concurrent.atomic.AtomicBoolean;
 
 import org.eclipse.jetty.http.HttpHeader;
 import org.eclipse.jetty.io.Connection;
+import org.eclipse.jetty.io.Content;
 import org.eclipse.jetty.io.EndPoint;
 import org.eclipse.jetty.server.LocalConnector.LocalEndPoint;
 import org.eclipse.jetty.server.handler.ContextHandler;
@@ -39,7 +40,6 @@ import org.eclipse.jetty.util.NanoTime;
 import org.eclipse.jetty.util.component.LifeCycle;
 import org.hamcrest.Matcher;
 import org.hamcrest.Matchers;
-import org.junit.jupiter.api.Disabled;
 import org.junit.jupiter.api.Test;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -57,7 +57,6 @@ import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.junit.jupiter.api.Assertions.fail;
 
-@Disabled // TODO
 public class StopTest
 {
     private static final Logger LOG = LoggerFactory.getLogger(StopTest.class);
@@ -288,31 +287,28 @@ public class StopTest
 
         Exchanger<Void> exchanger0 = new Exchanger<>();
         Exchanger<Void> exchanger1 = new Exchanger<>();
-        /* TODO
-        context.setHandler(new AbstractHandler()
+        context.setHandler(new Handler.Abstract()
         {
             @Override
-            public void handle(String target, Request baseRequest, HttpServletRequest request, HttpServletResponse response)
-                throws IOException, ServletException
+            public boolean handle(Request request, Response response, Callback callback) throws Exception
             {
                 try
                 {
                     exchanger0.exchange(null);
                     exchanger1.exchange(null);
+
+                    response.setStatus(200);
+                    Content.Sink.write(response, true, "The Response", callback);
                 }
                 catch (Throwable x)
                 {
-                    throw new ServletException(x);
+                    callback.failed(x);
                 }
 
-                baseRequest.setHandled(true);
-                response.setStatus(200);
-                response.getWriter().println("The Response");
-                response.getWriter().close();
+                return true;
             }
         });
 
-         */
 
         server.setStopTimeout(1000);
         server.start();
@@ -381,31 +377,26 @@ public class StopTest
 
         Exchanger<Void> exchanger0 = new Exchanger<>();
         Exchanger<Void> exchanger1 = new Exchanger<>();
-        /* TODO
-        stats.setHandler(new AbstractHandler()
+        stats.setHandler(new Handler.Abstract()
         {
             @Override
-            public void handle(String target, Request baseRequest, HttpServletRequest request, HttpServletResponse response)
-                throws IOException, ServletException
+            public boolean handle(Request request, Response response, Callback callback) throws Exception
             {
                 try
                 {
                     exchanger0.exchange(null);
                     exchanger1.exchange(null);
+
+                    response.setStatus(200);
+                    Content.Sink.write(response, true, "The Response", callback);
                 }
                 catch (Throwable x)
                 {
-                    throw new ServletException(x);
+                    callback.failed(x);
                 }
-
-                baseRequest.setHandled(true);
-                response.setStatus(200);
-                response.getWriter().println("The Response");
-                response.getWriter().close();
+                return true;
             }
         });
-
-         */
 
         server.start();
 
@@ -535,30 +526,19 @@ public class StopTest
         public boolean handle(Request request, Response response, Callback callback) throws Exception
         {
             response.getHeaders().put(HttpHeader.CONTENT_LENGTH, 2);
-            response.write(true, ByteBuffer.wrap("a".getBytes()), new Callback()
+            request.getContext().run(() ->
             {
-                @Override
-                public void succeeded()
+                try
                 {
-                    try
-                    {
-                        latchA.countDown();
-                        latchB.await();
-                    }
-                    catch (InterruptedException e)
-                    {
-                        throw new RuntimeException(e);
-                    }
-                    response.write(true, ByteBuffer.wrap("b".getBytes()), callback);
+                    latchA.countDown();
+                    latchB.await();
                 }
-
-                @Override
-                public void failed(Throwable x)
+                catch (InterruptedException e)
                 {
-                    callback.failed(x);
+                    throw new RuntimeException(e);
                 }
+                response.write(true, ByteBuffer.wrap("ab".getBytes()), callback);
             });
-
             return true;
         }
     }
