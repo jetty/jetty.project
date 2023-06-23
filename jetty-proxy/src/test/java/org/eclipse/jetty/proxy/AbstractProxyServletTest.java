@@ -13,17 +13,15 @@
 
 package org.eclipse.jetty.proxy;
 
-import javax.servlet.http.HttpServletRequest;
-import javax.servlet.http.HttpServletResponse;
-
+import jakarta.servlet.http.HttpServletRequest;
+import jakarta.servlet.http.HttpServletResponse;
 import org.eclipse.jetty.client.api.Response.CompleteListener;
 import org.junit.jupiter.api.Test;
 
 public class AbstractProxyServletTest
 {
-
     @Test
-    public void testNewDestroy() throws Exception
+    public void testNewDestroy()
     {
         new AbstractProxyServlet()
         {
