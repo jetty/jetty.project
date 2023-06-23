@@ -25,6 +25,7 @@ import java.util.concurrent.atomic.AtomicBoolean;
 
 import org.eclipse.jetty.http.HttpHeader;
 import org.eclipse.jetty.io.Connection;
+import org.eclipse.jetty.io.Content;
 import org.eclipse.jetty.io.EndPoint;
 import org.eclipse.jetty.server.LocalConnector.LocalEndPoint;
 import org.eclipse.jetty.server.handler.ContextHandler;
@@ -39,7 +40,6 @@ import org.eclipse.jetty.util.NanoTime;
 import org.eclipse.jetty.util.component.LifeCycle;
 import org.hamcrest.Matcher;
 import org.hamcrest.Matchers;
-import org.junit.jupiter.api.Disabled;
 import org.junit.jupiter.api.Test;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -285,7 +285,7 @@ public class StopTest
 
         Exchanger<Void> exchanger0 = new Exchanger<>();
         Exchanger<Void> exchanger1 = new Exchanger<>();
-        context.setHandler(new Handler.Wrapper()
+        context.setHandler(new Handler.Abstract()
         {
             @Override
             public boolean handle(Request request, Response response, Callback callback) throws Exception
@@ -294,16 +294,19 @@ public class StopTest
                 {
                     exchanger0.exchange(null);
                     exchanger1.exchange(null);
+
+                    response.setStatus(200);
+                    Content.Sink.write(response, true, "The Response", callback);
                 }
                 catch (Throwable x)
                 {
-                    throw new Exception(x);
+                    callback.failed(x);
                 }
-                response.setStatus(200);
-                response.write(true, ByteBuffer.wrap("The Response".getBytes(StandardCharsets.US_ASCII)), callback);
+
                 return true;
             }
         });
+
 
         server.setStopTimeout(1000);
         server.start();
@@ -370,7 +373,7 @@ public class StopTest
 
         Exchanger<Void> exchanger0 = new Exchanger<>();
         Exchanger<Void> exchanger1 = new Exchanger<>();
-        stats.setHandler(new Handler.Wrapper()
+        stats.setHandler(new Handler.Abstract()
         {
             @Override
             public boolean handle(Request request, Response response, Callback callback) throws Exception
@@ -379,14 +382,14 @@ public class StopTest
                 {
                     exchanger0.exchange(null);
                     exchanger1.exchange(null);
+
+                    response.setStatus(200);
+                    Content.Sink.write(response, true, "The Response", callback);
                 }
                 catch (Throwable x)
                 {
-                    throw new Exception(x);
+                    callback.failed(x);
                 }
-
-                response.setStatus(200);
-                response.write(true, ByteBuffer.wrap("The Response".getBytes(StandardCharsets.US_ASCII)), callback);
                 return true;
             }
         });
@@ -520,30 +523,19 @@ public class StopTest
         public boolean handle(Request request, Response response, Callback callback) throws Exception
         {
             response.getHeaders().put(HttpHeader.CONTENT_LENGTH, 2);
-            response.write(false, ByteBuffer.wrap("a".getBytes()), new Callback()
+            request.getContext().run(() ->
             {
-                @Override
-                public void succeeded()
+                try
                 {
-                    try
-                    {
-                        latchA.countDown();
-                        latchB.await();
-                    }
-                    catch (InterruptedException e)
-                    {
-                        throw new RuntimeException(e);
-                    }
-                    response.write(true, ByteBuffer.wrap("b".getBytes()), callback);
+                    latchA.countDown();
+                    latchB.await();
                 }
-
-                @Override
-                public void failed(Throwable x)
+                catch (InterruptedException e)
                 {
-                    callback.failed(x);
+                    throw new RuntimeException(e);
                 }
+                response.write(true, ByteBuffer.wrap("ab".getBytes()), callback);
             });
-
             return true;
         }
     }
