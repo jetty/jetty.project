@@ -15,8 +15,10 @@ package org.eclipse.jetty.io;
 
 import java.io.ByteArrayInputStream;
 import java.io.ByteArrayOutputStream;
+import java.io.IOException;
 import java.io.InputStream;
 import java.nio.ByteBuffer;
+import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.StandardOpenOption;
@@ -27,6 +29,7 @@ import java.util.concurrent.ConcurrentLinkedDeque;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.ExecutionException;
 import java.util.concurrent.TimeUnit;
+import java.util.concurrent.TimeoutException;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicReference;
 
@@ -49,13 +52,14 @@ import org.junit.jupiter.params.provider.MethodSource;
 import static java.nio.charset.StandardCharsets.UTF_8;
 import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.Matchers.equalTo;
+import static org.hamcrest.Matchers.instanceOf;
 import static org.hamcrest.Matchers.is;
 import static org.junit.jupiter.api.Assertions.assertFalse;
-import static org.junit.jupiter.api.Assertions.assertInstanceOf;
 import static org.junit.jupiter.api.Assertions.assertNotNull;
 import static org.junit.jupiter.api.Assertions.assertNull;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.api.Assertions.assertTrue;
+import static org.junit.jupiter.api.Assertions.fail;
 
 public class ContentSourceTest
 {
@@ -237,7 +241,7 @@ public class ContentSourceTest
 
         // We must read the error.
         chunk = source.read();
-        assertInstanceOf(Content.Chunk.Error.class, chunk);
+        assertTrue(Content.Chunk.isFailure(chunk, true));
     }
 
     @ParameterizedTest
@@ -259,7 +263,7 @@ public class ContentSourceTest
         source.fail(new CancellationException());
 
         Content.Chunk chunk = source.read();
-        assertInstanceOf(Content.Chunk.Error.class, chunk);
+        assertTrue(Content.Chunk.isFailure(chunk, true));
 
         CountDownLatch latch = new CountDownLatch(1);
         source.demand(latch::countDown);
@@ -285,7 +289,7 @@ public class ContentSourceTest
         });
 
         chunk = source.read();
-        assertInstanceOf(Content.Chunk.Error.class, chunk);
+        assertTrue(Content.Chunk.isFailure(chunk, true));
     }
 
     @Test
@@ -559,5 +563,64 @@ public class ContentSourceTest
         public void fail(Throwable failure)
         {
         }
+    }
+
+    @Test
+    public void testAsyncContentWithWarnings()
+    {
+        AsyncContent content = new AsyncContent();
+
+        Content.Sink.write(content, false, "One", Callback.NOOP);
+        content.fail(new TimeoutException("test"), false);
+        Content.Sink.write(content, true, "Two", Callback.NOOP);
+
+        Content.Chunk chunk = content.read();
+        assertFalse(chunk.isLast());
+        assertFalse(Content.Chunk.isFailure(chunk));
+        assertThat(BufferUtil.toString(chunk.getByteBuffer()), is("One"));
+
+        chunk = content.read();
+        assertFalse(chunk.isLast());
+        assertTrue(Content.Chunk.isFailure(chunk));
+        assertThat(chunk.getFailure(), instanceOf(TimeoutException.class));
+
+        chunk = content.read();
+        assertTrue(chunk.isLast());
+        assertFalse(Content.Chunk.isFailure(chunk));
+        assertThat(BufferUtil.toString(chunk.getByteBuffer()), is("Two"));
+    }
+
+    @Test
+    public void testAsyncContentWithWarningsAsInputStream() throws Exception
+    {
+        AsyncContent content = new AsyncContent();
+
+        Content.Sink.write(content, false, "One", Callback.NOOP);
+        content.fail(new TimeoutException("test"), false);
+        Content.Sink.write(content, true, "Two", Callback.NOOP);
+
+        InputStream in = Content.Source.asInputStream(content);
+
+        byte[] buffer = new byte[1024];
+        int len = in.read(buffer);
+        assertThat(len, is(3));
+        assertThat(new String(buffer, 0, 3, StandardCharsets.ISO_8859_1), is("One"));
+
+        try
+        {
+            int ignored = in.read();
+            fail();
+        }
+        catch (IOException ioe)
+        {
+            assertThat(ioe.getCause(), instanceOf(TimeoutException.class));
+        }
+
+        len = in.read(buffer);
+        assertThat(len, is(3));
+        assertThat(new String(buffer, 0, 3, StandardCharsets.ISO_8859_1), is("Two"));
+
+        len = in.read(buffer);
+        assertThat(len, is(-1));
     }
 }

@@ -40,7 +40,7 @@ public class InputStreamContentSource implements Content.Source
     private final ByteBufferPool bufferPool;
     private int bufferSize = 4096;
     private Runnable demandCallback;
-    private Content.Chunk.Error errorChunk;
+    private Content.Chunk errorChunk;
     private boolean closed;
 
     public InputStreamContentSource(InputStream inputStream)

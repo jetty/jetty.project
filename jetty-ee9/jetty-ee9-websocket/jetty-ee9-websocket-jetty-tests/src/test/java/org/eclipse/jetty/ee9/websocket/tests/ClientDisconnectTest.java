@@ -26,7 +26,6 @@ import org.eclipse.jetty.ee9.websocket.api.annotations.WebSocket;
 import org.eclipse.jetty.ee9.websocket.client.WebSocketClient;
 import org.eclipse.jetty.ee9.websocket.server.config.JettyWebSocketServletContainerInitializer;
 import org.eclipse.jetty.io.ArrayByteBufferPool;
-import org.eclipse.jetty.io.ByteBufferPool;
 import org.eclipse.jetty.server.Server;
 import org.eclipse.jetty.server.ServerConnector;
 import org.eclipse.jetty.util.BufferUtil;
