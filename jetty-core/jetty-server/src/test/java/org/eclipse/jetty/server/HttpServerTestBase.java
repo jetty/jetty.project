@@ -36,6 +36,7 @@ import java.util.concurrent.atomic.AtomicReference;
 
 import org.awaitility.Awaitility;
 import org.eclipse.jetty.http.HttpHeader;
+import org.eclipse.jetty.http.HttpMethod;
 import org.eclipse.jetty.http.HttpStatus;
 import org.eclipse.jetty.http.HttpTester;
 import org.eclipse.jetty.io.AbstractConnection;
@@ -1331,6 +1332,75 @@ public abstract class HttpServerTestBase extends HttpServerTestFixture
             assertThat(in, containsString("123456789"));
             assertThat(in, not(containsString("ABCDEFGHI")));
             assertThat(in, containsString("abcdefghi"));
+        }
+    }
+
+    @Test
+    public void testHeadHandled() throws Exception
+    {
+        startServer(new Handler.Abstract()
+        {
+            @Override
+            public boolean handle(Request request, Response response, Callback callback) throws Exception
+            {
+                response.getHeaders().put(HttpHeader.CONTENT_LENGTH, 10);
+                if (HttpMethod.HEAD.is(request.getMethod()))
+                {
+                    if (request.getHttpURI().getCanonicalPath().equals("/writeNull"))
+                        response.write(true, null, callback);
+                    else
+                        callback.succeeded();
+                }
+                else
+                {
+                    Content.Sink.write(response, true, "123456789\n", callback);
+                }
+                return true;
+            }
+        });
+        _httpConfiguration.setSendDateHeader(false);
+        _httpConfiguration.setSendServerVersion(false);
+        _httpConfiguration.setSendXPoweredBy(false);
+
+        try (Socket client = newSocket(_serverURI.getHost(), _serverURI.getPort()))
+        {
+            OutputStream os = client.getOutputStream();
+            InputStream is = client.getInputStream();
+
+            os.write("""
+                GET / HTTP/1.1
+                Host: localhost
+                
+                HEAD / HTTP/1.1
+                Host: localhost
+                
+                HEAD /writeNull HTTP/1.1
+                Host: localhost
+                
+                GET / HTTP/1.1
+                Host: localhost
+                Connection: close
+                
+                """.getBytes(StandardCharsets.ISO_8859_1));
+
+            String in = IO.toString(is);
+            assertThat(in.replace("\r", ""), is("""
+                HTTP/1.1 200 OK
+                Content-Length: 10
+                
+                123456789
+                HTTP/1.1 200 OK
+                Content-Length: 10
+                
+                HTTP/1.1 200 OK
+                Content-Length: 10
+                
+                HTTP/1.1 200 OK
+                Content-Length: 10
+                Connection: close
+                
+                123456789
+                """));
         }
     }
 
