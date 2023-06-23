@@ -257,9 +257,9 @@ public class ProxyServlet extends AbstractProxyServlet
         public Content.Chunk read()
         {
             Content.Chunk chunk = super.read();
-            if (chunk instanceof Content.Chunk.Error error)
+            if (Content.Chunk.isFailure(chunk))
             {
-                onClientRequestFailure(request, proxyRequest, response, error.getCause());
+                onClientRequestFailure(request, proxyRequest, response, chunk.getFailure());
             }
             else
             {

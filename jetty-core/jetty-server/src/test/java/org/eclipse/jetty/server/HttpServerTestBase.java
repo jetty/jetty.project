@@ -542,10 +542,10 @@ public abstract class HttpServerTestBase extends HttpServerTestFixture
                         continue;
                     }
 
-                    if (chunk instanceof Content.Chunk.Error error)
+                    if (Content.Chunk.isFailure(chunk))
                     {
                         earlyEOFException.countDown();
-                        throw IO.rethrow(error.getCause());
+                        throw IO.rethrow(chunk.getFailure());
                     }
 
                     if (chunk.hasRemaining())

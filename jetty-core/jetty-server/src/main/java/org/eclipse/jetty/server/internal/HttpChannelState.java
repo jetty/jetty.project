@@ -119,7 +119,7 @@ public class HttpChannelState implements HttpChannel, Components
     /**
      * Failure passed to {@link #onFailure(Throwable)}
      */
-    private Content.Chunk.Error _failure;
+    private Content.Chunk _failure;
     /**
      * Listener for {@link #onFailure(Throwable)} events
      */
@@ -400,9 +400,9 @@ public class HttpChannelState implements HttpChannel, Components
             {
                 _failure = Content.Chunk.from(x);
             }
-            else if (ExceptionUtil.areNotAssociated(_failure.getCause(), x) && _failure.getCause().getClass() != x.getClass())
+            else if (ExceptionUtil.areNotAssociated(_failure.getFailure(), x) && _failure.getFailure().getClass() != x.getClass())
             {
-                _failure.getCause().addSuppressed(x);
+                _failure.getFailure().addSuppressed(x);
             }
 
             // If not handled, then we just fail the request callback
@@ -1243,8 +1243,8 @@ public class HttpChannelState implements HttpChannel, Components
 
         protected Throwable getFailure(HttpChannelState httpChannelState)
         {
-            Content.Chunk.Error failure = httpChannelState._failure;
-            return failure == null ? null : failure.getCause();
+            Content.Chunk failure = httpChannelState._failure;
+            return failure == null ? null : failure.getFailure();
         }
 
         /**
@@ -1694,7 +1694,7 @@ public class HttpChannelState implements HttpChannel, Components
         protected void onError(Runnable task, Throwable failure)
         {
             ChannelRequest request;
-            Content.Chunk.Error error;
+            Content.Chunk error;
             boolean callbackCompleted;
             try (AutoLock ignore = _lock.lock())
             {
@@ -1726,9 +1726,9 @@ public class HttpChannelState implements HttpChannel, Components
             {
                 // We are already in error, so we will not handle this one,
                 // but we will add as suppressed if we have not seen it already.
-                Throwable cause = error.getCause();
+                Throwable cause = error.getFailure();
                 if (ExceptionUtil.areNotAssociated(cause, failure))
-                    error.getCause().addSuppressed(failure);
+                    error.getFailure().addSuppressed(failure);
             }
         }
     }
