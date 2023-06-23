@@ -68,7 +68,6 @@ public class StopTest
      * @throws Exception on test failure
      */
     @Test
-    @Disabled("the response does not contain the Connection: close header")
     public void testWriteDuringShutdown() throws Exception
     {
         Server server = new Server();
