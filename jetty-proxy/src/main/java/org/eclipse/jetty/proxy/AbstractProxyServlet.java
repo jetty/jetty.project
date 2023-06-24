@@ -49,6 +49,7 @@ import org.eclipse.jetty.http.HttpStatus;
 import org.eclipse.jetty.io.ClientConnector;
 import org.eclipse.jetty.util.HttpCookieStore;
 import org.eclipse.jetty.util.StringUtil;
+import org.eclipse.jetty.util.component.LifeCycle;
 import org.eclipse.jetty.util.ssl.SslContextFactory;
 import org.eclipse.jetty.util.thread.QueuedThreadPool;
 import org.slf4j.Logger;
@@ -145,11 +146,13 @@ public abstract class AbstractProxyServlet extends HttpServlet
     {
         try
         {
-            _client.stop();
+            LifeCycle.stop(_client);
         }
         catch (Exception x)
         {
-            if (_log.isDebugEnabled())
+            if (_log == null)
+                x.printStackTrace();
+            else if (_log.isDebugEnabled())
                 _log.debug("Failed to stop client", x);
         }
     }
