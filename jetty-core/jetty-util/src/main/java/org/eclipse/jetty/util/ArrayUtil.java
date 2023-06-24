@@ -34,7 +34,7 @@ public class ArrayUtil
         {
             if (item.equals(array[i]))
             {
-                Class<?> c = array == null ? item.getClass() : array.getClass().getComponentType();
+                Class<?> c = array.getClass().getComponentType();
                 @SuppressWarnings("unchecked")
                 T[] na = (T[])Array.newInstance(c, Array.getLength(array) - 1);
                 if (i > 0)
