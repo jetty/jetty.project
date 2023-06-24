@@ -73,6 +73,7 @@ import org.eclipse.jetty.util.BufferUtil;
 import org.eclipse.jetty.util.IO;
 import org.eclipse.jetty.util.Utf8StringBuilder;
 import org.eclipse.jetty.util.ajax.JSON;
+import org.eclipse.jetty.util.component.LifeCycle;
 import org.eclipse.jetty.util.thread.QueuedThreadPool;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.Test;
@@ -159,9 +160,15 @@ public class AsyncMiddleManServletTest
     @AfterEach
     public void dispose() throws Exception
     {
-        client.stop();
-        proxy.stop();
-        server.stop();
+        LifeCycle.stop(client);
+        LifeCycle.stop(proxy);
+        LifeCycle.stop(proxy);
+    }
+
+    @Test
+    public void testNewDestroy() throws Exception
+    {
+        new AsyncMiddleManServlet().destroy();
     }
 
     @Test
