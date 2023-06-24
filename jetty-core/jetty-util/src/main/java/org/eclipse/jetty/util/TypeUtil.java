@@ -25,6 +25,7 @@ import java.lang.reflect.InvocationTargetException;
 import java.net.URI;
 import java.net.URISyntaxException;
 import java.net.URL;
+import java.nio.charset.StandardCharsets;
 import java.security.CodeSource;
 import java.security.ProtectionDomain;
 import java.util.ArrayList;
@@ -406,7 +407,7 @@ public class TypeUtil
                     digit = 10 + c - 'a';
             }
             if (digit < 0 || digit >= base)
-                throw new NumberFormatException(new String(b, offset, length));
+                throw new NumberFormatException(new String(b, offset, length, StandardCharsets.US_ASCII));
             value = value * base + digit;
         }
         return value;
