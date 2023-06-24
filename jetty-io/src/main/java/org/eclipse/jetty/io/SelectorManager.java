@@ -147,14 +147,13 @@ public abstract class SelectorManager extends ContainerLifeCycle implements Dump
     @ManagedAttribute(value = "Total number of keys in all selectors", readonly = true)
     public int getTotalKeys()
     {
-        if (_selectors == null || _selectors.length == 0)
-        {
-            return 0;
-        }
         int keys = 0;
-        for (final ManagedSelector selector : _selectors)
+        for (ManagedSelector selector : _selectors)
         {
-            keys += selector.getTotalKeys();
+            if (selector != null)
+            {
+                keys += selector.getTotalKeys();
+            }
         }
         return keys;
     }
