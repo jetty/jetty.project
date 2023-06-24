@@ -151,13 +151,10 @@ public abstract class SelectorManager extends ContainerLifeCycle implements Dump
         for (ManagedSelector selector : _selectors)
         {
             if (selector != null)
-            {
                 keys += selector.getTotalKeys();
-            }
         }
         return keys;
     }
-
 
     /**
      * @return the number of selectors in use
