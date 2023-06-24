@@ -671,14 +671,11 @@ public class TypeUtil
         try
         {
             String resourceName = TypeUtil.toClassReference(clazz);
-            if (loader != null)
+            URL url = loader.getResource(resourceName);
+            if (url != null)
             {
-                URL url = loader.getResource(resourceName);
-                if (url != null)
-                {
-                    URI uri = url.toURI();
-                    return URIUtil.unwrapContainer(uri);
-                }
+                URI uri = url.toURI();
+                return URIUtil.unwrapContainer(uri);
             }
         }
         catch (URISyntaxException ignored)
