@@ -819,4 +819,9 @@ public class TypeUtil
     {
         return StreamSupport.stream(new ServiceLoaderSpliterator<>(serviceLoader), false);
     }
+
+    private TypeUtil()
+    {
+        // prevents instantiation
+    }
 }
