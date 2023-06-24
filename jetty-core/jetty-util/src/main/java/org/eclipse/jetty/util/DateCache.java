@@ -132,16 +132,19 @@ public class DateCache
         else
             _tzFormatString = _formatString;
 
+        _zoneId = tz.toZoneId();
         if (_locale != null)
         {
-            _tzFormat = DateTimeFormatter.ofPattern(_tzFormatString, _locale);
+            _tzFormat = DateTimeFormatter
+                    .ofPattern(_tzFormatString, _locale)
+                    .withZone(_zoneId);
         }
         else
         {
-            _tzFormat = DateTimeFormatter.ofPattern(_tzFormatString);
+            _tzFormat = DateTimeFormatter
+                    .ofPattern(_tzFormatString)
+                    .withZone(_zoneId);
         }
-        _zoneId = tz.toZoneId();
-        _tzFormat.withZone(_zoneId);
         _tick = null;
     }
 
