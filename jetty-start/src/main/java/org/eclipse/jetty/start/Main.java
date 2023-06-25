@@ -158,13 +158,32 @@ public class Main
         int i = 0;
         for (File element : classpath.getElements())
         {
-            out.printf("%2d: %24s | %s\n", i++, getVersion(element), baseHome.toShortForm(element));
+            out.printf("%2d: %24s | %s |%s\n", i++, getVersion(element), baseHome.toShortForm(element), getLicense(element));
         }
     }
 
     public BaseHome getBaseHome()
     {
         return baseHome;
+    }
+
+    private String getLicense(File element)
+    {
+        if (element.isDirectory())
+        {
+            return "(dir)";
+        }
+
+        if (element.isFile())
+        {
+            String name = element.getName().toLowerCase(Locale.ENGLISH);
+            if (name.endsWith(".jar"))
+            {
+                return JarLicense.getLicense(element);
+            }
+        }
+
+        return "";
     }
 
     private String getVersion(File element)
