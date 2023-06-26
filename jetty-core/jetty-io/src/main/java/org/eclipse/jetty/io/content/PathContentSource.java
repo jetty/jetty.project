@@ -46,7 +46,7 @@ public class PathContentSource implements Content.Source
     private SeekableByteChannel channel;
     private long totalRead;
     private Runnable demandCallback;
-    private Content.Chunk.Error errorChunk;
+    private Content.Chunk errorChunk;
 
     public PathContentSource(Path path)
     {

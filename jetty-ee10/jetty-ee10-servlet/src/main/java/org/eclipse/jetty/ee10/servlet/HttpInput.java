@@ -52,7 +52,7 @@ public class HttpInput extends ServletInputStream implements Runnable
     public HttpInput(ServletChannel channel)
     {
         _servletChannel = channel;
-        _channelState = _servletChannel.getState();
+        _channelState = _servletChannel.getServletRequestState();
         _asyncContentProducer = new AsyncContentProducer(_servletChannel, _lock);
         _blockingContentProducer = new BlockingContentProducer(_asyncContentProducer);
         _contentProducer = _blockingContentProducer;
@@ -255,14 +255,14 @@ public class HttpInput extends ServletInputStream implements Runnable
                 return read;
             }
 
-            if (chunk instanceof Content.Chunk.Error errorChunk)
+            if (Content.Chunk.isFailure(chunk))
             {
-                Throwable error = errorChunk.getCause();
+                Throwable failure = chunk.getFailure();
                 if (LOG.isDebugEnabled())
-                    LOG.debug("read error={} {}", error, this);
-                if (error instanceof IOException)
-                    throw (IOException)error;
-                throw new IOException(error);
+                    LOG.debug("read failure={} {}", failure, this);
+                if (failure instanceof IOException)
+                    throw (IOException)failure;
+                throw new IOException(failure);
             }
 
             if (LOG.isDebugEnabled())
@@ -343,14 +343,14 @@ public class HttpInput extends ServletInputStream implements Runnable
             return;
         }
 
-        if (chunk instanceof Content.Chunk.Error errorChunk)
+        if (Content.Chunk.isFailure(chunk))
         {
-            Throwable error = errorChunk.getCause();
+            Throwable failure = chunk.getFailure();
             if (LOG.isDebugEnabled())
-                LOG.debug("running error={} {}", error, this);
+                LOG.debug("running failure={} {}", failure, this);
             // TODO is this necessary to add here?
-            _servletChannel.getResponse().getHeaders().add(HttpFields.CONNECTION_CLOSE);
-            _readListener.onError(error);
+            _servletChannel.getServletContextResponse().getHeaders().add(HttpFields.CONNECTION_CLOSE);
+            _readListener.onError(failure);
         }
         else if (chunk.isLast() && !chunk.hasRemaining())
         {

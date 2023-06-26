@@ -93,7 +93,8 @@ public class BalancerServletTest
         ServerConnector connector = new ServerConnector(server);
         server.addConnector(connector);
 
-        ServletContextHandler context = new ServletContextHandler(server, CONTEXT_PATH, ServletContextHandler.SESSIONS);
+        ServletContextHandler context = new ServletContextHandler(CONTEXT_PATH, ServletContextHandler.SESSIONS);
+        server.setHandler(context);
         context.addServlet(servletHolder, SERVLET_PATH + "/*");
 
         if (nodeName != null)

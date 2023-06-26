@@ -70,7 +70,7 @@ public class Http2Server
 
         server.addBean(LoggerFactory.getILoggerFactory());
 
-        ServletContextHandler context = new ServletContextHandler(server, "/", ServletContextHandler.SESSIONS);
+        ServletContextHandler context = new ServletContextHandler("/", ServletContextHandler.SESSIONS);
         Path docroot = Paths.get("src/main/resources/docroot");
         if (!Files.exists(docroot))
             throw new FileNotFoundException(docroot.toString());

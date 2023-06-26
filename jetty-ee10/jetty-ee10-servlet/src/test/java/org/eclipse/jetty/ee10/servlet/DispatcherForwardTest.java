@@ -50,9 +50,10 @@ public class DispatcherForwardTest
         connector = new LocalConnector(server);
         server.addConnector(connector);
 
-        ServletContextHandler context = new ServletContextHandler(server, "/");
+        ServletContextHandler context = new ServletContextHandler("/");
         context.addServlet(new ServletHolder(servlet1), "/one");
         context.addServlet(new ServletHolder(servlet2), "/two");
+        server.setHandler(context);
 
         server.start();
     }

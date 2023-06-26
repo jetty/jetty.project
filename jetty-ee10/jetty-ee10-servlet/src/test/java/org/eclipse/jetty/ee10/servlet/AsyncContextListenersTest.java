@@ -47,8 +47,9 @@ public class AsyncContextListenersTest
         _connector = new ServerConnector(_server);
         _server.addConnector(_connector);
 
-        ServletContextHandler context = new ServletContextHandler(_server, "/", false, false);
+        ServletContextHandler context = new ServletContextHandler("/", false, false);
         context.addServlet(new ServletHolder(servlet), path);
+        _server.setHandler(context);
 
         _server.start();
     }

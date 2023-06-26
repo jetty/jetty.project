@@ -31,7 +31,6 @@ import org.eclipse.jetty.alpn.server.ALPNServerConnectionFactory;
 import org.eclipse.jetty.client.HttpClient;
 import org.eclipse.jetty.client.transport.HttpClientConnectionFactory;
 import org.eclipse.jetty.client.transport.HttpClientTransportDynamic;
-import org.eclipse.jetty.ee10.servlet.ServletChannel;
 import org.eclipse.jetty.ee10.servlet.ServletContextHandler;
 import org.eclipse.jetty.ee10.servlet.ServletHolder;
 import org.eclipse.jetty.ee10.websocket.server.JettyWebSocketServerContainer;
@@ -57,6 +56,7 @@ import org.eclipse.jetty.server.SecureRequestCustomizer;
 import org.eclipse.jetty.server.Server;
 import org.eclipse.jetty.server.ServerConnector;
 import org.eclipse.jetty.server.SslConnectionFactory;
+import org.eclipse.jetty.server.handler.EventsHandler;
 import org.eclipse.jetty.server.internal.HttpChannelState;
 import org.eclipse.jetty.toolchain.test.MavenTestingUtils;
 import org.eclipse.jetty.util.ssl.SslContextFactory;
@@ -88,6 +88,7 @@ public class WebSocketOverHTTP2Test
     private ServerConnector tlsConnector;
     private WebSocketClient wsClient;
     private ServletContextHandler context;
+    private Runnable onComplete;
 
     private void startServer() throws Exception
     {
@@ -120,9 +121,20 @@ public class WebSocketOverHTTP2Test
         tlsConnector = new ServerConnector(server, 1, 1, ssl, alpn, h1s, h2s);
         server.addConnector(tlsConnector);
 
-        context = new ServletContextHandler(server, "/");
+        context = new ServletContextHandler("/");
+        server.setHandler(context);
         context.addServlet(new ServletHolder(servlet), "/ws/*");
         JettyWebSocketServletContainerInitializer.configure(context, null);
+
+        server.setHandler(new EventsHandler(server.getHandler())
+        {
+            @Override
+            protected void onComplete(Request request, Throwable failure)
+            {
+                if (onComplete != null)
+                    onComplete.run();
+            }
+        });
 
         server.start();
     }
@@ -142,6 +154,7 @@ public class WebSocketOverHTTP2Test
     @AfterEach
     public void stopServer() throws Exception
     {
+        onComplete = null;
         if (server != null)
             server.stop();
         if (wsClient != null)
@@ -302,15 +315,7 @@ public class WebSocketOverHTTP2Test
         startClient(clientConnector -> new ClientConnectionFactoryOverHTTP2.HTTP2(new HTTP2Client(clientConnector)));
 
         CountDownLatch latch = new CountDownLatch(1);
-        connector.addBean(new ServletChannel.Listener()
-        {
-            @Override
-            public void onComplete(Request request)
-            {
-                latch.countDown();
-            }
-        });
-
+        onComplete = latch::countDown;
         EventSocket wsEndPoint = new EventSocket();
         URI uri = URI.create("ws://localhost:" + connector.getLocalPort() + "/ws/throw");
 

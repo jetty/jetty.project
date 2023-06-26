@@ -41,7 +41,7 @@ public class RegexServletTest
         _server = new Server();
         _connector = new LocalConnector(_server);
 
-        _servletContextHandler = new ServletContextHandler(_server, "/ctx");
+        _servletContextHandler = new ServletContextHandler("/ctx");
         _servletContextHandler.setServletHandler(new ServletHandler()
         {
             @Override

@@ -208,7 +208,6 @@ public class Blocker
 
     /**
      * A shared reusable Blocking source.
-     * TODO Review need for this, as it is currently unused.
      */
     public static class Shared
     {

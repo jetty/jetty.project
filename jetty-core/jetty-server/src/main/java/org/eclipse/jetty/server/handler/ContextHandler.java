@@ -180,14 +180,6 @@ public class ContextHandler extends Handler.Wrapper implements Attributes, Alias
             _classLoader = classLoader;
     }
 
-    @Deprecated
-    public ContextHandler(Handler.Container parent, String contextPath)
-    {
-        this(contextPath);
-        Container.setAsParent(parent, this);
-
-    }
-
     @Override
     public void setServer(Server server)
     {

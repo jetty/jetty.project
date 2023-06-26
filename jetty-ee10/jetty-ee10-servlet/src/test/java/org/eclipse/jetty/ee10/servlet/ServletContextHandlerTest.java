@@ -689,7 +689,7 @@ public class ServletContextHandlerTest
     public void testInitParams() throws Exception
     {
         //Test get/setInitParam with null throws NPE
-        ServletContextHandler root = new ServletContextHandler(_server, "/", ServletContextHandler.SESSIONS);
+        ServletContextHandler root = new ServletContextHandler("/", ServletContextHandler.SESSIONS);
         _server.setHandler(root);
         ListenerHolder initialListener = new ListenerHolder();
         initialListener.setListener(new ServletContextListener()
@@ -782,7 +782,8 @@ public class ServletContextHandlerTest
 
         int startMin = 7;
         Integer timeout = Integer.valueOf(100);
-        ServletContextHandler root = new ServletContextHandler(contexts, "/", ServletContextHandler.SESSIONS);
+        ServletContextHandler root = new ServletContextHandler("/", ServletContextHandler.SESSIONS);
+        contexts.addHandler(root);
         root.getSessionHandler().setMaxInactiveInterval((int)TimeUnit.MINUTES.toSeconds(startMin));
         root.addBean(new MySCIStarter(root.getContext(), new MySCI(true, timeout.intValue())), true);
         _server.start();
@@ -806,7 +807,8 @@ public class ServletContextHandlerTest
         ContextHandlerCollection contexts = new ContextHandlerCollection();
         _server.setHandler(contexts);
 
-        ServletContextHandler root = new ServletContextHandler(contexts, "/", ServletContextHandler.SESSIONS);
+        ServletContextHandler root = new ServletContextHandler("/", ServletContextHandler.SESSIONS);
+        contexts.addHandler(root);
         ListenerHolder listenerHolder = new ListenerHolder();
         StopTestListener stopTestListener = new StopTestListener();
         listenerHolder.setListener(stopTestListener);
@@ -837,7 +839,8 @@ public class ServletContextHandlerTest
         ContextHandlerCollection contexts = new ContextHandlerCollection();
         _server.setHandler(contexts);
 
-        ServletContextHandler root = new ServletContextHandler(contexts, "/", ServletContextHandler.SESSIONS);
+        ServletContextHandler root = new ServletContextHandler("/", ServletContextHandler.SESSIONS);
+        contexts.addHandler(root);
 
         MySessionHandler sessions = new MySessionHandler();
         root.setSessionHandler(sessions);
@@ -855,7 +858,8 @@ public class ServletContextHandlerTest
         ContextHandlerCollection contexts = new ContextHandlerCollection();
         _server.setHandler(contexts);
 
-        ServletContextHandler root = new ServletContextHandler(contexts, "/");
+        ServletContextHandler root = new ServletContextHandler("/");
+        contexts.addHandler(root);
         root.addBean(new MySCIStarter(root.getContext(), new MySCI()), true);
         _server.start();
         assertTrue((Boolean)root.getServletContext().getAttribute("MySCI.startup"));
@@ -876,7 +880,8 @@ public class ServletContextHandlerTest
         ContextHandlerCollection contexts = new ContextHandlerCollection();
         server.setHandler(contexts);
 
-        ServletContextHandler root = new ServletContextHandler(contexts, "/");
+        ServletContextHandler root = new ServletContextHandler("/");
+        contexts.addHandler(root);
         class TestServletContextListener implements ServletContextListener
         {
             public int initialized = 0;
@@ -910,7 +915,8 @@ public class ServletContextHandlerTest
         ContextHandlerCollection contexts = new ContextHandlerCollection();
         _server.setHandler(contexts);
 
-        ServletContextHandler root = new ServletContextHandler(contexts, "/", ServletContextHandler.SESSIONS);
+        ServletContextHandler root = new ServletContextHandler("/", ServletContextHandler.SESSIONS);
+        contexts.addHandler(root);
         root.getSessionHandler().setSessionDomain("testing");
         ListenerHolder initialListener = new ListenerHolder();
         initialListener.setListener(new InitialListener());
@@ -1022,7 +1028,8 @@ public class ServletContextHandlerTest
         ContextHandlerCollection contexts = new ContextHandlerCollection();
         _server.setHandler(contexts);
 
-        ServletContextHandler root = new ServletContextHandler(contexts, "/", ServletContextHandler.SESSIONS);
+        ServletContextHandler root = new ServletContextHandler("/", ServletContextHandler.SESSIONS);
+        contexts.addHandler(root);
 
         SessionHandler session = root.getSessionHandler();
         ServletHandler servlet = root.getServletHandler();
@@ -1107,7 +1114,8 @@ public class ServletContextHandlerTest
         ContextHandlerCollection contexts = new ContextHandlerCollection();
         _server.setHandler(contexts);
 
-        ServletContextHandler root = new ServletContextHandler(contexts, "/");
+        ServletContextHandler root = new ServletContextHandler("/");
+        contexts.addHandler(root);
         class FilterCreatingSCI implements ServletContainerInitializer
         {
             @Override
@@ -1153,7 +1161,8 @@ public class ServletContextHandlerTest
         ContextHandlerCollection contexts = new ContextHandlerCollection();
         _server.setHandler(contexts);
 
-        ServletContextHandler root = new ServletContextHandler(contexts, "/");
+        ServletContextHandler root = new ServletContextHandler("/");
+        contexts.addHandler(root);
         class ListenerCreatingSCI implements ServletContainerInitializer
         {
             @Override
@@ -1345,7 +1354,8 @@ public class ServletContextHandlerTest
         ContextHandlerCollection contexts = new ContextHandlerCollection();
         _server.setHandler(contexts);
 
-        ServletContextHandler root = new ServletContextHandler(contexts, "/");
+        ServletContextHandler root = new ServletContextHandler("/");
+        contexts.addHandler(root);
         class ServletAddingSCI implements ServletContainerInitializer
         {
             @Override
@@ -1378,7 +1388,8 @@ public class ServletContextHandlerTest
         ContextHandlerCollection contexts = new ContextHandlerCollection();
         _server.setHandler(contexts);
 
-        ServletContextHandler root = new ServletContextHandler(contexts, "/");
+        ServletContextHandler root = new ServletContextHandler("/");
+        contexts.addHandler(root);
         ServletHolder jspServlet = new ServletHolder();
         jspServlet.setName("jsp");
         jspServlet.setHeldClass(FakeJspServlet.class);
@@ -1416,7 +1427,8 @@ public class ServletContextHandlerTest
         ContextHandlerCollection contexts = new ContextHandlerCollection();
         _server.setHandler(contexts);
 
-        ServletContextHandler root = new ServletContextHandler(contexts, "/");
+        ServletContextHandler root = new ServletContextHandler("/");
+        contexts.addHandler(root);
         ServletHolder jspServlet = new ServletHolder();
         jspServlet.setName("jsp");
         jspServlet.setHeldClass(FakeJspServlet.class);
@@ -1453,7 +1465,8 @@ public class ServletContextHandlerTest
         ContextHandlerCollection contexts = new ContextHandlerCollection();
         _server.setHandler(contexts);
 
-        ServletContextHandler root = new ServletContextHandler(contexts, "/");
+        ServletContextHandler root = new ServletContextHandler("/");
+        contexts.addHandler(root);
         ServletHolder jspServlet = new ServletHolder();
         jspServlet.setName("jsp");
         jspServlet.setHeldClass(FakeJspServlet.class);
@@ -1897,7 +1910,8 @@ public class ServletContextHandlerTest
         Handler.Sequence list = new Handler.Sequence();
         _server.setHandler(list);
 
-        ServletContextHandler root = new ServletContextHandler(list, "/", ServletContextHandler.SESSIONS);
+        ServletContextHandler root = new ServletContextHandler("/", ServletContextHandler.SESSIONS);
+        list.addHandler(root);
 
         ServletHandler servlet = root.getServletHandler();
         servlet.setEnsureDefaultServlet(false);
@@ -2358,9 +2372,9 @@ public class ServletContextHandlerTest
 
     static class CookieTweakResponseApi extends ServletApiResponse
     {
-        CookieTweakResponseApi(ServletApiResponse response)
+        CookieTweakResponseApi(ServletContextResponse response)
         {
-            super(response.getResponse());
+            super(response);
         }
 
         @Override
@@ -2397,8 +2411,7 @@ public class ServletContextHandlerTest
                             @Override
                             protected ServletApiResponse newServletApiResponse()
                             {
-                                ServletApiResponse servletApiResponse = super.newServletApiResponse();
-                                return new CookieTweakResponseApi(super.newServletApiResponse());
+                                return new CookieTweakResponseApi(this);
                             }
                         };
                     }
@@ -2436,7 +2449,7 @@ public class ServletContextHandlerTest
     @Test
     public void testEmptyPathInfo() throws Exception
     {
-        ServletContextHandler context = new ServletContextHandler(null, "/c1", ServletContextHandler.NO_SESSIONS);
+        ServletContextHandler context = new ServletContextHandler("/c1", ServletContextHandler.NO_SESSIONS);
         context.setAllowNullPathInContext(true);
         context.addServlet(new ServletHolder("default-servlet", new HttpServlet()
         {

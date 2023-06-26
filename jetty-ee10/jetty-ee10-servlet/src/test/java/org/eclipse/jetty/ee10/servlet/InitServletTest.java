@@ -90,7 +90,7 @@ public class InitServletTest
     public void testServletInitialization() throws Exception
     {
         Server server = new Server(0);
-        ServletContextHandler context = new ServletContextHandler(server, "/");
+        ServletContextHandler context = new ServletContextHandler("/");
         server.setHandler(context);
         // Add a lazily instantiated servlet.
         context.addServlet(new ServletHolder(DemoServlet.class), "/*");
