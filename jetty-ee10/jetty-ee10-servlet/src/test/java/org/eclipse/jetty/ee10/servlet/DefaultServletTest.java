@@ -1264,7 +1264,11 @@ public class DefaultServletTest
          */
         assertThat(response.toString(), response.getStatus(), is(HttpStatus.INTERNAL_SERVER_ERROR_500));
 
-        // This resource does exist but directory listings are not allowed and there are no welcome files.
+        /* This resource does exist but directory listings are not allowed and there are no welcome files;
+         * and since RequestDispatcher#include(ServletRequest, ServletResponse) says:
+         *  "The included servlet cannot change the response status code or set headers; any attempt to make a change is ignored."
+         * the response status should be 200 and there should be no content.
+         */
         rawResponse = connector.getResponse("""
             GET /context/gateway?includeTarget=/alt/ HTTP/1.1\r
             Host: local\r
@@ -1272,7 +1276,8 @@ public class DefaultServletTest
             \r
             """);
         response = HttpTester.parseResponse(rawResponse);
-        assertThat(response.toString(), response.getStatus(), is(HttpStatus.FORBIDDEN_403));
+        assertThat(response.toString(), response.getStatus(), is(HttpStatus.OK_200));
+        assertThat(response.toString(), containsString("Content-Length: 0"));
 
         // Once index.html has been created we can include this same target and see it as a welcome file.
         Files.writeString(altRoot.resolve("index.html"), "<h1>Alt Index</h1>", UTF_8);
