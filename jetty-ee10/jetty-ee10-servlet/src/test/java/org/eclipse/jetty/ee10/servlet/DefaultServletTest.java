@@ -404,7 +404,8 @@ public class DefaultServletTest
         defHolder.setInitParameter("dirAllowed", "true");
 
         ServletHolder incHolder = new ServletHolder();
-        incHolder.setInstance(new HttpServlet() {
+        incHolder.setInstance(new HttpServlet()
+        {
             @Override
             protected void doGet(HttpServletRequest req, HttpServletResponse resp) throws ServletException, IOException
             {
@@ -437,7 +438,8 @@ public class DefaultServletTest
         defHolder.setInitParameter("dirAllowed", "false");
 
         ServletHolder incHolder = new ServletHolder();
-        incHolder.setInstance(new HttpServlet() {
+        incHolder.setInstance(new HttpServlet()
+        {
             @Override
             protected void doGet(HttpServletRequest req, HttpServletResponse resp) throws ServletException, IOException
             {
