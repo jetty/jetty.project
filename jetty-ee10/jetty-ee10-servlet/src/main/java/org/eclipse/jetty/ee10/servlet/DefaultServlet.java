@@ -863,13 +863,13 @@ public class DefaultServlet extends HttpServlet
         private final HttpFields.Mutable _httpFields;
         private final boolean _included;
 
-        public ServletCoreResponse(ServletCoreRequest coreRequest, HttpServletResponse response, boolean include)
+        public ServletCoreResponse(ServletCoreRequest coreRequest, HttpServletResponse response, boolean included)
         {
             _coreRequest = coreRequest;
             _response = response;
             _coreResponse = ServletContextResponse.getServletContextResponse(response);
             _httpFields = new HttpServletResponseHttpFields(response);
-            _included = include;
+            _included = included;
         }
 
         @Override
