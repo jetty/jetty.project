@@ -219,6 +219,8 @@ public class ReservedThreadExecutorTest
         assertThat(_reservedExecutor.tryExecute(NOOP), is(false));
         Thread thread = _executor.startThread();
         assertNotNull(thread);
+        // watching the available thread count decrease relies on the waitAtMost sampling rate being
+        // faster than the idleTimeout, so it always sees the 1 before the 0
         waitAtMost(5, SECONDS).until(_reservedExecutor::getAvailable, is(1));
         waitAtMost(5, SECONDS).until(_reservedExecutor::getAvailable, is(0));
         thread.join(2 * idleTimeout);
