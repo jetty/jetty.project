@@ -463,6 +463,7 @@ public class DefaultServletTest
         HttpTester.Response response = HttpTester.parseResponse(rawResponse);
 
         assertThat(response.getStatus(), is(200));
+        assertThat(response.get(HttpHeader.CONTENT_LENGTH), is("14"));
         String body = BufferUtil.toString(response.getContentByteBuffer(), StandardCharsets.ISO_8859_1);
         assertThat(body, is(">>>\néèàîû\n<<<\n"));
     }
