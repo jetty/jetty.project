@@ -849,16 +849,7 @@ public class Request implements HttpServletRequest
         if (acceptable.isEmpty())
             return Locale.getDefault();
 
-        String language = acceptable.get(0);
-        language = HttpField.stripParameters(language);
-        String country = "";
-        int dash = language.indexOf('-');
-        if (dash > -1)
-        {
-            country = language.substring(dash + 1).trim();
-            language = language.substring(0, dash).trim();
-        }
-        return Locale.of(language, country);
+        return MimeTypes.getLocale(acceptable.get(0));
     }
 
     @Override

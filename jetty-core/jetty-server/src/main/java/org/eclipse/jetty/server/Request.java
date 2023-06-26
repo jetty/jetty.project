@@ -22,6 +22,7 @@ import java.nio.charset.Charset;
 import java.security.Principal;
 import java.util.List;
 import java.util.Locale;
+import java.util.Objects;
 import java.util.concurrent.TimeoutException;
 import java.util.function.Consumer;
 import java.util.function.Function;
@@ -30,12 +31,12 @@ import java.util.stream.Collectors;
 
 import org.eclipse.jetty.http.CookieCache;
 import org.eclipse.jetty.http.HttpCookie;
-import org.eclipse.jetty.http.HttpField;
 import org.eclipse.jetty.http.HttpFields;
 import org.eclipse.jetty.http.HttpHeader;
 import org.eclipse.jetty.http.HttpScheme;
 import org.eclipse.jetty.http.HttpURI;
 import org.eclipse.jetty.http.MetaData;
+import org.eclipse.jetty.http.MimeTypes;
 import org.eclipse.jetty.http.Trailers;
 import org.eclipse.jetty.io.Content;
 import org.eclipse.jetty.server.internal.HttpChannelState;
@@ -119,6 +120,7 @@ public interface Request extends Attributes, Content.Source
 {
     String CACHE_ATTRIBUTE = Request.class.getCanonicalName() + ".CookieCache";
     String COOKIE_ATTRIBUTE = Request.class.getCanonicalName() + ".Cookies";
+    List<Locale> DEFAULT_LOCALES = List.of(Locale.getDefault());
 
     /**
      * an ID unique within the lifetime scope of the {@link ConnectionMetaData#getId()}).
@@ -452,28 +454,20 @@ public interface Request extends Attributes, Content.Source
     {
         HttpFields fields = request.getHeaders();
         if (fields == null)
-            return List.of(Locale.getDefault());
+            return DEFAULT_LOCALES;
 
         List<String> acceptable = fields.getQualityCSV(HttpHeader.ACCEPT_LANGUAGE);
 
-        // handle no locale
-        if (acceptable.isEmpty())
-            return List.of(Locale.getDefault());
-
-        return acceptable.stream().map(Request::getLocale).collect(Collectors.toList());
-    }
-
-    private static Locale getLocale(String languageDashCountry)
-    {
-        String language = HttpField.stripParameters(languageDashCountry);
-        String country = "";
-        int dash = languageDashCountry.indexOf('-');
-        if (dash > -1)
+        switch (acceptable.size())
         {
-            language = languageDashCountry.substring(0, dash).trim();
-            country = languageDashCountry.substring(dash + 1).trim();
+            case 0 : return DEFAULT_LOCALES;
+            case 1 :
+                Locale locale = MimeTypes.getLocale(acceptable.get(0));
+                return locale == null ? DEFAULT_LOCALES : List.of(locale);
+            default:
+                List<Locale> known = acceptable.stream().map(MimeTypes::getLocale).filter(Objects::nonNull).collect(Collectors.toList());
+                return known.isEmpty() ? DEFAULT_LOCALES : known;
         }
-        return new Locale(language, country);
     }
 
     // TODO: consider inline and remove.

@@ -37,6 +37,43 @@ import org.slf4j.LoggerFactory;
 public class MimeTypes
 {
     static final  Logger LOG = LoggerFactory.getLogger(MimeTypes.class);
+    private static final Index<Locale> KNOWN_LOCALES;
+
+    static
+    {
+        Index.Builder<Locale> builder = new Index.Builder<>();
+        builder = builder.caseSensitive(false);
+        for (Locale locale : Locale.getAvailableLocales())
+            builder.with(locale);
+        KNOWN_LOCALES = builder.build();
+    }
+
+    /**
+     * @param languageDashCountry The language and optional country of the local. For example "en" or "un-uk".
+     * @return The {@link Locale} matching the string or null if a matching Locale is not known;
+     */
+    public static Locale getLocale(String languageDashCountry)
+    {
+        // First try for a direct hit in the known Locale cache
+        Locale locale = KNOWN_LOCALES.get(languageDashCountry);
+        if (locale != null)
+            return locale;
+
+        // failing that, create a new Locale instance to normalize the name
+        String language = HttpField.stripParameters(languageDashCountry);
+        int dash = languageDashCountry.indexOf('-');
+        if (dash < 0)
+            locale = new Locale(language);
+        else
+        {
+            language = languageDashCountry.substring(0, dash).trim();
+            String country = languageDashCountry.substring(dash + 1).trim();
+            locale = new Locale(language, country);
+        }
+
+        // look up normalized name in the known Locale cache.
+        return KNOWN_LOCALES.get(locale.toString());
+    }
 
     /** Enumeration of predefined MimeTypes. This is not exhaustive */
     public enum Type

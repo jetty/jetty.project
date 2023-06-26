@@ -17,7 +17,9 @@ import java.io.ByteArrayOutputStream;
 import java.nio.ByteBuffer;
 import java.util.Arrays;
 import java.util.List;
+import java.util.Locale;
 import java.util.concurrent.TimeUnit;
+import java.util.stream.Stream;
 
 import org.eclipse.jetty.http.HttpCookie;
 import org.eclipse.jetty.http.HttpHeader;
@@ -30,6 +32,9 @@ import org.eclipse.jetty.util.component.LifeCycle;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
+import org.junit.jupiter.params.ParameterizedTest;
+import org.junit.jupiter.params.provider.Arguments;
+import org.junit.jupiter.params.provider.MethodSource;
 
 import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.Matchers.containsString;
@@ -370,6 +375,37 @@ public class RequestTest
         HttpTester.Response response = HttpTester.parseHeadResponse(connector.getResponse(rawRequest));
         assertNotNull(response);
         assertThat(response.getStatus(), is(HttpStatus.OK_200));
+    }
+
+    public static Stream<Arguments> localeTests()
+    {
+        return Stream.of(
+            Arguments.of(null, List.of(Locale.getDefault()).toString()),
+            Arguments.of("zz", List.of(Locale.US.toString()).toString()),
+            Arguments.of("en", "[en]"),
+            Arguments.of("en-us", List.of(Locale.US.toString()).toString()),
+            Arguments.of("EN-US", List.of(Locale.US.toString()).toString()),
+            Arguments.of("en-us,en-gb", List.of(Locale.US.toString(), Locale.UK).toString()),
+            Arguments.of("en-us;q=0.5,fr;q=0.0,en-gb;q=1.0", List.of(Locale.UK.toString(), Locale.US).toString())
+        );
+    }
+
+    @ParameterizedTest
+    @MethodSource("localeTests")
+    public void testAcceptableLocales(String acceptLanguage, String expectedLocales) throws Exception
+    {
+        acceptLanguage = acceptLanguage == null ? "" : (HttpHeader.ACCEPT_LANGUAGE.asString() + ": " + acceptLanguage + "\n");
+        String rawRequest = """
+                GET / HTTP/1.1
+                Host: tester
+                Connection: close
+                %s
+                """.formatted(acceptLanguage);
+
+        HttpTester.Response response = HttpTester.parseResponse(connector.getResponse(rawRequest));
+        assertNotNull(response);
+        assertThat(response.getStatus(), is(HttpStatus.OK_200));
+        assertThat(response.getContent(), containsString("locales=" + expectedLocales));
     }
 
     private static void checkCookieResult(String containedCookie, String[] notContainedCookies, String response)
