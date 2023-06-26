@@ -20,6 +20,7 @@ import java.io.InputStream;
 import java.io.OutputStream;
 import java.net.URL;
 import java.net.URLClassLoader;
+import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
 import java.nio.file.InvalidPathException;
 import java.nio.file.Path;
@@ -62,6 +63,7 @@ import org.eclipse.jetty.toolchain.test.MavenPaths;
 import org.eclipse.jetty.toolchain.test.MavenTestingUtils;
 import org.eclipse.jetty.toolchain.test.jupiter.WorkDir;
 import org.eclipse.jetty.toolchain.test.jupiter.WorkDirExtension;
+import org.eclipse.jetty.util.BufferUtil;
 import org.eclipse.jetty.util.IO;
 import org.eclipse.jetty.util.StringUtil;
 import org.junit.jupiter.api.AfterEach;
@@ -410,6 +412,7 @@ public class DefaultServletTest
             protected void doGet(HttpServletRequest req, HttpServletResponse resp) throws ServletException, IOException
             {
                 resp.getWriter().println(">>>");
+                resp.getWriter().println("éèàîû");
                 req.getRequestDispatcher("/").include(req, resp);
                 resp.getWriter().println("<<<");
             }
@@ -425,8 +428,8 @@ public class DefaultServletTest
         HttpTester.Response response = HttpTester.parseResponse(rawResponse);
 
         assertThat(response.getStatus(), is(200));
-        String body = response.getContent();
-        assertThat(body, startsWith(">>>"));
+        String body = BufferUtil.toString(response.getContentByteBuffer(), StandardCharsets.ISO_8859_1);
+        assertThat(body, startsWith(">>>\néèàîû\n"));
         assertThat(body, containsString("<?xml version=\"1.0\" encoding=\"utf-8\"?>"));
         assertThat(body, endsWith("<<<\n"));
     }
@@ -445,6 +448,7 @@ public class DefaultServletTest
             {
                 resp.getWriter().println(">>>");
                 req.getRequestDispatcher("/").include(req, resp);
+                resp.getWriter().println("éèàîû");
                 resp.getWriter().println("<<<");
             }
         });
@@ -459,8 +463,8 @@ public class DefaultServletTest
         HttpTester.Response response = HttpTester.parseResponse(rawResponse);
 
         assertThat(response.getStatus(), is(200));
-        String body = response.getContent();
-        assertThat(body, is(">>>\n<<<\n"));
+        String body = BufferUtil.toString(response.getContentByteBuffer(), StandardCharsets.ISO_8859_1);
+        assertThat(body, is(">>>\néèàîû\n<<<\n"));
     }
 
     /**
