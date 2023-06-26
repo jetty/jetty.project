@@ -458,8 +458,7 @@ public class DefaultServletTest
 
         assertThat(response.getStatus(), is(200));
         String body = response.getContent();
-        assertThat(body, startsWith(">>>"));
-        assertThat(body, endsWith("<<<\n"));
+        assertThat(body, is(">>>\n<<<\n"));
     }
 
     /**
