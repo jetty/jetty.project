@@ -68,7 +68,7 @@ public class ResourceListingTest
         try (ResourceFactory.Closeable resourceFactory = ResourceFactory.closeable())
         {
             Resource resource = resourceFactory.newResource(root);
-            String content = ResourceListing.getAsXHTML(resource, StandardCharsets.UTF_8, "/", false, null);
+            String content = ResourceListing.getAsXHTML(resource, "/", false, null);
             assertTrue(isValidXHtml(content));
 
             assertThat(content, containsString("entry1.txt"));
@@ -97,7 +97,7 @@ public class ResourceListingTest
         try (ResourceFactory.Closeable resourceFactory = ResourceFactory.closeable())
         {
             Resource resource = resourceFactory.newResource(root);
-            String content = ResourceListing.getAsXHTML(resource, StandardCharsets.UTF_8, "/deep/", false, null);
+            String content = ResourceListing.getAsXHTML(resource, "/deep/", false, null);
             assertTrue(isValidXHtml(content));
 
             assertThat(content, containsString("entry1.txt"));
@@ -139,7 +139,7 @@ public class ResourceListingTest
         {
             List<URI> uriRootList = List.of(docrootA.toUri(), docrootB.toUri());
             Resource resource = resourceFactory.newResource(uriRootList);
-            String content = ResourceListing.getAsXHTML(resource, StandardCharsets.UTF_8, "/context/", false, null);
+            String content = ResourceListing.getAsXHTML(resource, "/context/", false, null);
             assertTrue(isValidXHtml(content));
 
             assertThat(content, containsString("entry1.txt"));
@@ -195,7 +195,7 @@ public class ResourceListingTest
             Resource resourceBase = resourceFactory.newResource(docRoot);
             Resource resource = resourceBase.resolve("one/deep/");
 
-            String content = ResourceListing.getAsXHTML(resource, StandardCharsets.UTF_8, "/context/", false, null);
+            String content = ResourceListing.getAsXHTML(resource, "/context/", false, null);
             assertTrue(isValidXHtml(content));
 
             assertThat(content, containsString("/foo"));
@@ -234,7 +234,7 @@ public class ResourceListingTest
             Resource resource = resourceBase.resolve("dir%3B");
 
             // Context
-            String content = ResourceListing.getAsXHTML(resource, StandardCharsets.UTF_8, "/context/dir%3B/", false, null);
+            String content = ResourceListing.getAsXHTML(resource, "/context/dir%3B/", false, null);
             assertTrue(isValidXHtml(content));
 
             // Should not see double-encoded ";"
@@ -265,7 +265,7 @@ public class ResourceListingTest
         {
             Resource resource = resourceFactory.newResource(docRoot);
 
-            String content = ResourceListing.getAsXHTML(resource, StandardCharsets.UTF_8, "/context/", false, null);
+            String content = ResourceListing.getAsXHTML(resource, "/context/", false, null);
             assertTrue(isValidXHtml(content));
 
             assertThat(content, containsString("f??r"));
@@ -289,7 +289,7 @@ public class ResourceListingTest
             Resource resourceBase = resourceFactory.newResource(docRoot);
             Resource resource = resourceBase.resolve("one");
 
-            String content = ResourceListing.getAsXHTML(resource, StandardCharsets.UTF_8, "/context/one", false, null);
+            String content = ResourceListing.getAsXHTML(resource, "/context/one", false, null);
             assertTrue(isValidXHtml(content));
 
             // Entry should be properly encoded

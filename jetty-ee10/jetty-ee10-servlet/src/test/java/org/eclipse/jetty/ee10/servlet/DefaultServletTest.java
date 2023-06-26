@@ -394,7 +394,7 @@ public class DefaultServletTest
         assertThat(response.getStatus(), is(200));
         assertThat(response.getField("content-type").getValue(), is("text/html;charset=UTF-8"));
         String body = response.getContent();
-        assertThat(body, containsString("<?xml version=\"1.0\" encoding=\"UTF-8\"?>"));
+        assertThat(body, containsString("<?xml version=\"1.0\" encoding=\"utf-8\"?>"));
     }
 
     @Test
@@ -427,7 +427,7 @@ public class DefaultServletTest
         assertThat(response.getStatus(), is(200));
         String body = response.getContent();
         assertThat(body, startsWith(">>>"));
-        assertThat(body, containsString("<?xml version=\"1.0\" encoding=\"ISO-8859-1\"?>"));
+        assertThat(body, containsString("<?xml version=\"1.0\" encoding=\"utf-8\"?>"));
         assertThat(body, endsWith("<<<\n"));
     }
 

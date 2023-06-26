@@ -13,7 +13,6 @@
 
 package org.eclipse.jetty.server;
 
-import java.nio.charset.Charset;
 import java.time.Instant;
 import java.time.ZoneId;
 import java.time.format.DateTimeFormatter;
@@ -49,13 +48,12 @@ public class ResourceListing
      * Convert the Resource directory into an XHTML directory listing.
      *
      * @param resource the resource to build the listing from
-     * @param encoding the encoding to specify in the &lt;?xml ... ?&gt; header
      * @param base The base URL
      * @param parent True if the parent directory should be included
      * @param query query params
      * @return the XHTML as String
      */
-    public static String getAsXHTML(Resource resource, Charset encoding, String base, boolean parent, String query)
+    public static String getAsXHTML(Resource resource, String base, boolean parent, String query)
     {
         // This method doesn't check aliases, so it is OK to canonicalize here.
         base = URIUtil.normalizePath(base);
@@ -110,9 +108,10 @@ public class ResourceListing
 
         StringBuilder buf = new StringBuilder(4096);
 
-        // Doctype Declaration + XHTML
-        buf.append("<?xml version=\"1.0\" encoding=\"").append(encoding.name()).append("\"?>\n");
+        // Doctype Declaration + XHTML. The spec says the encoding MUST be "utf-8" in all cases at it is ignored;
+        // see: https://html.spec.whatwg.org/multipage/semantics.html#attr-meta-charset
         buf.append("""
+            <?xml version="1.0" encoding="utf-8"?>
             <!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.1//EN" "http://www.w3.org/TR/xhtml11/DTD/xhtml11.dtd">
             <html xmlns="http://www.w3.org/1999/xhtml" lang="en" xml:lang="en">
             """);

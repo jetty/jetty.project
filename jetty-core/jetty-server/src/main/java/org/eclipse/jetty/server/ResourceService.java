@@ -619,16 +619,16 @@ public class ResourceService
             return;
         }
 
-        String characterEncoding = httpContent.getCharacterEncoding();
-        Charset charset = characterEncoding == null ? StandardCharsets.UTF_8 : Charset.forName(characterEncoding);
         String base = URIUtil.addEncodedPaths(request.getHttpURI().getPath(), "/");
-        String listing = ResourceListing.getAsXHTML(httpContent.getResource(), charset, base, pathInContext.length() > 1, request.getHttpURI().getQuery());
+        String listing = ResourceListing.getAsXHTML(httpContent.getResource(), base, pathInContext.length() > 1, request.getHttpURI().getQuery());
         if (listing == null)
         {
             writeHttpError(request, response, callback, HttpStatus.FORBIDDEN_403);
             return;
         }
 
+        String characterEncoding = httpContent.getCharacterEncoding();
+        Charset charset = characterEncoding == null ? StandardCharsets.UTF_8 : Charset.forName(characterEncoding);
         byte[] data = listing.getBytes(charset);
         response.getHeaders().put(HttpHeader.CONTENT_TYPE, "text/html;charset=" + charset.name());
         response.getHeaders().put(HttpHeader.CONTENT_LENGTH, data.length);
