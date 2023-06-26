@@ -16,7 +16,7 @@ package org.eclipse.jetty.server;
 import java.io.IOException;
 import java.nio.ByteBuffer;
 import java.nio.channels.ReadableByteChannel;
-import java.nio.charset.StandardCharsets;
+import java.nio.charset.Charset;
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.Collections;
@@ -618,16 +618,18 @@ public class ResourceService
             return;
         }
 
+        String characterEncoding = httpContent.getCharacterEncoding() != null ? httpContent.getCharacterEncoding() : "utf-8";
         String base = URIUtil.addEncodedPaths(request.getHttpURI().getPath(), "/");
-        String listing = ResourceListing.getAsXHTML(httpContent.getResource(), base, pathInContext.length() > 1, request.getHttpURI().getQuery());
+        String listing = ResourceListing.getAsXHTML(httpContent.getResource(), characterEncoding, base, pathInContext.length() > 1, request.getHttpURI().getQuery());
         if (listing == null)
         {
             writeHttpError(request, response, callback, HttpStatus.FORBIDDEN_403);
             return;
         }
 
-        byte[] data = listing.getBytes(StandardCharsets.UTF_8);
-        response.getHeaders().put(HttpHeader.CONTENT_TYPE, "text/html;charset=utf-8");
+        Charset charset = Charset.forName(characterEncoding);
+        byte[] data = listing.getBytes(charset);
+        response.getHeaders().put(HttpHeader.CONTENT_TYPE, "text/html;charset=" + characterEncoding);
         response.getHeaders().put(HttpHeader.CONTENT_LENGTH, data.length);
         response.write(true, ByteBuffer.wrap(data), callback);
     }

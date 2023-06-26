@@ -1233,11 +1233,22 @@ public class DefaultServlet extends HttpServlet
         {
             super(content);
             this.characterEncoding = characterEncoding;
-            String mimeType = content.getContentTypeValue();
-            int idx = mimeType.indexOf(";charset");
-            if (idx >= 0)
-                mimeType = mimeType.substring(0, idx);
-            this.contentType = mimeType + ";charset=" + this.characterEncoding;
+            if (content.getResource().isDirectory())
+            {
+                this.contentType = "text/html;charset=" + characterEncoding;
+            }
+            else if (content.getContentTypeValue() == null)
+            {
+                this.contentType = "text/plain;charset=" + characterEncoding;
+            }
+            else
+            {
+                String mimeType = content.getContentTypeValue();
+                int idx = mimeType.indexOf(";charset");
+                if (idx >= 0)
+                    mimeType = mimeType.substring(0, idx);
+                this.contentType = mimeType + ";charset=" + characterEncoding;
+            }
         }
 
         @Override
