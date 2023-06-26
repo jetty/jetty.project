@@ -473,7 +473,7 @@ public interface Request extends Attributes, Content.Source
             language = languageDashCountry.substring(0, dash).trim();
             country = languageDashCountry.substring(dash + 1).trim();
         }
-        return Locale.of(language, country);
+        return new Locale(language, country);
     }
 
     // TODO: consider inline and remove.
