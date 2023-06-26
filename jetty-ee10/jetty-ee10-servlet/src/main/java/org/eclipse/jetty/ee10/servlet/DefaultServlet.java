@@ -868,15 +868,32 @@ public class DefaultServlet extends HttpServlet
             _coreRequest = coreRequest;
             _response = response;
             _coreResponse = ServletContextResponse.getServletContextResponse(response);
-            _httpFields = new HttpServletResponseHttpFields(response);
+            HttpFields.Mutable fields = new HttpServletResponseHttpFields(response);
+            if (included)
+            {
+                // If included, accept but ignore mutations.
+                fields = new HttpFields.Mutable.Wrapper(fields)
+                {
+                    @Override
+                    public HttpField onAddField(HttpField field)
+                    {
+                        return null;
+                    }
+
+                    @Override
+                    public boolean onRemoveField(HttpField field)
+                    {
+                        return false;
+                    }
+                };
+            }
+            _httpFields = fields;
             _included = included;
         }
 
         @Override
         public HttpFields.Mutable getHeaders()
         {
-            if (_included)
-                return HttpFields.build(_httpFields);
             return _httpFields;
         }
 
