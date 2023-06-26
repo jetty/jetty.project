@@ -1176,10 +1176,8 @@ public class DefaultServlet extends HttpServlet
             HttpServletResponse response = getServletResponse(coreResponse);
             try
             {
-                boolean included = request.getAttribute(RequestDispatcher.INCLUDE_SERVLET_PATH) != null;
-                if (included)
+                if (isIncluded(request))
                     return;
-
                 if (cause != null)
                     request.setAttribute(RequestDispatcher.ERROR_EXCEPTION, cause);
                 response.sendError(statusCode, reason);
