@@ -51,7 +51,8 @@ public class IncludeExcludeBasedFilterTest
         _server = new Server();
         _connector = new LocalConnector(_server);
         _server.addConnector(_connector);
-        _context = new ServletContextHandler(_server, "/context");
+        _context = new ServletContextHandler("/context");
+        _server.setHandler(_context);
         _context.addServlet(NullServlet.class, "/test/*");
         _server.start();
     }

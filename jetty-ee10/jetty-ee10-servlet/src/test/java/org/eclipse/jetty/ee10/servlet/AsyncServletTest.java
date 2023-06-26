@@ -47,6 +47,7 @@ import org.eclipse.jetty.server.RequestLog;
 import org.eclipse.jetty.server.Response;
 import org.eclipse.jetty.server.Server;
 import org.eclipse.jetty.server.ServerConnector;
+import org.eclipse.jetty.server.handler.EventsHandler;
 import org.eclipse.jetty.util.IO;
 import org.eclipse.jetty.util.URIUtil;
 import org.eclipse.jetty.util.component.AbstractLifeCycle;
@@ -99,7 +100,14 @@ public class AsyncServletTest
 
         ServletContextHandler context = new ServletContextHandler(ServletContextHandler.NO_SESSIONS);
         context.setContextPath("/ctx");
-        _server.setHandler(context);
+        _server.setHandler(new EventsHandler(context)
+        {
+            @Override
+            protected void onComplete(Request request, Throwable failure)
+            {
+                _latch.countDown();
+            }
+        });
         context.addEventListener(new DebugListener());
 
         _errorHandler = new ErrorPageErrorHandler();
@@ -122,15 +130,6 @@ public class AsyncServletTest
         _port = _connector.getLocalPort();
         _history.clear();
         _latch = new CountDownLatch(1);
-
-        context.addEventListener(new ServletChannel.Listener()
-        {
-            @Override
-            public void onComplete(Request request)
-            {
-                _latch.countDown();
-            }
-        });
     }
 
     @AfterEach
@@ -715,7 +714,7 @@ public class AsyncServletTest
         String response = process("forwarder", "name=orig&one=1", null);
         assertThat(response, Matchers.startsWith("HTTP/1.1 200 OK"));
 
-        _history.forEach(System.err::println);
+        // _history.forEach(System.err::println);
 
         assertThat(_history, contains(
             "REQUEST /ctx/forwarder/info?name=orig&one=1",

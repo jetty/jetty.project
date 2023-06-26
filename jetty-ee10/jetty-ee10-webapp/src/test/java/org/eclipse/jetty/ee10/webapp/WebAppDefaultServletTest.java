@@ -86,7 +86,7 @@ public class WebAppDefaultServletTest
             output.write("standard hash dir welcome".getBytes(StandardCharsets.UTF_8));
         }
 
-        WebAppContext context = new WebAppContext(server, directoryPath.toString(), "/");
+        WebAppContext context = new WebAppContext(directoryPath.toString(), "/");
         server.setHandler(context);
         server.start();
 

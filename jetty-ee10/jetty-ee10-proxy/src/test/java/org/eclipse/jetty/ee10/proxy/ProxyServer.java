@@ -35,7 +35,8 @@ public class ProxyServer
         server.setHandler(proxy);
 
         // Setup proxy servlet
-        ServletContextHandler context = new ServletContextHandler(proxy, "/", ServletContextHandler.SESSIONS);
+        ServletContextHandler context = new ServletContextHandler("/", ServletContextHandler.SESSIONS);
+        proxy.setHandler(context);
         ServletHolder proxyServlet = new ServletHolder(ProxyServlet.class);
 //        proxyServlet.setInitParameter("whiteList", "google.com, www.eclipse.org, localhost");
 //        proxyServlet.setInitParameter("blackList", "google.com/calendar/*, www.eclipse.org/committers/");

@@ -33,7 +33,7 @@ import org.slf4j.LoggerFactory;
 class AsyncContentProducer implements ContentProducer
 {
     private static final Logger LOG = LoggerFactory.getLogger(AsyncContentProducer.class);
-    private static final Content.Chunk.Error RECYCLED_ERROR_CHUNK = Content.Chunk.from(new StaticException("ContentProducer has been recycled"));
+    private static final Content.Chunk RECYCLED_ERROR_CHUNK = Content.Chunk.from(new StaticException("ContentProducer has been recycled"), true);
 
     final AutoLock _lock;
     private final ServletChannel _servletChannel;
@@ -101,10 +101,10 @@ class AsyncContentProducer implements ContentProducer
     public boolean isError()
     {
         assertLocked();
-        boolean error = _chunk instanceof Content.Chunk.Error;
+        boolean failure = Content.Chunk.isFailure(_chunk);
         if (LOG.isDebugEnabled())
-            LOG.debug("isError = {} {}", error, this);
-        return error;
+            LOG.debug("isFailure = {} {}", failure, this);
+        return failure;
     }
 
     @Override
@@ -126,7 +126,7 @@ class AsyncContentProducer implements ContentProducer
                         LOG.debug("checkMinDataRate check failed {}", this);
                     BadMessageException bad = new BadMessageException(HttpStatus.REQUEST_TIMEOUT_408,
                         String.format("Request content data rate < %d B/s", minRequestDataRate));
-                    if (_servletChannel.getState().isResponseCommitted())
+                    if (_servletChannel.getServletRequestState().isResponseCommitted())
                     {
                         if (LOG.isDebugEnabled())
                             LOG.debug("checkMinDataRate aborting channel {}", this);
@@ -180,7 +180,7 @@ class AsyncContentProducer implements ContentProducer
 
     private boolean consumeAvailableChunks()
     {
-        return _servletChannel.getServletContextRequest().consumeAvailable();
+        return _servletChannel.getRequest().consumeAvailable();
     }
 
     @Override
@@ -189,7 +189,7 @@ class AsyncContentProducer implements ContentProducer
         assertLocked();
         if (LOG.isDebugEnabled())
             LOG.debug("onContentProducible {}", this);
-        return _servletChannel.getState().onReadReady();
+        return _servletChannel.getServletRequestState().onReadReady();
     }
 
     @Override
@@ -200,7 +200,7 @@ class AsyncContentProducer implements ContentProducer
         if (LOG.isDebugEnabled())
             LOG.debug("nextChunk = {} {}", chunk, this);
         if (chunk != null)
-            _servletChannel.getState().onReadIdle();
+            _servletChannel.getServletRequestState().onReadIdle();
         return chunk;
     }
 
@@ -227,8 +227,8 @@ class AsyncContentProducer implements ContentProducer
             return true;
         }
 
-        _servletChannel.getState().onReadUnready();
-        _servletChannel.getServletContextRequest().demand(() ->
+        _servletChannel.getServletRequestState().onReadUnready();
+        _servletChannel.getRequest().demand(() ->
         {
             if (_servletChannel.getHttpInput().onContentProducible())
                 _servletChannel.handle();
@@ -241,7 +241,7 @@ class AsyncContentProducer implements ContentProducer
 
     boolean isUnready()
     {
-        return _servletChannel.getState().isInputUnready();
+        return _servletChannel.getServletRequestState().isInputUnready();
     }
 
     private Content.Chunk produceChunk()
@@ -280,7 +280,7 @@ class AsyncContentProducer implements ContentProducer
                 }
                 else
                 {
-                    _servletChannel.getState().onContentAdded();
+                    _servletChannel.getServletRequestState().onContentAdded();
                 }
             }
 
@@ -297,7 +297,7 @@ class AsyncContentProducer implements ContentProducer
 
     private Content.Chunk readChunk()
     {
-        Content.Chunk chunk = _servletChannel.getServletContextRequest().read();
+        Content.Chunk chunk = _servletChannel.getRequest().read();
         if (chunk != null)
         {
             _bytesArrived += chunk.remaining();
@@ -305,7 +305,6 @@ class AsyncContentProducer implements ContentProducer
                 _firstByteNanoTime = NanoTime.now();
             if (LOG.isDebugEnabled())
                 LOG.debug("readChunk() updated _bytesArrived to {} and _firstByteTimeStamp to {} {}", _bytesArrived, _firstByteNanoTime, this);
-            // TODO: notify channel listeners (see ee9)?
             if (chunk instanceof Trailers trailers)
                 _servletChannel.onTrailers(trailers.getTrailers());
         }

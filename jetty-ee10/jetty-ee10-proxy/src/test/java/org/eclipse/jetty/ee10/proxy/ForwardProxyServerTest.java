@@ -109,7 +109,8 @@ public class ForwardProxyServerTest
         connectHandler.setConnectTimeout(1000);
         proxy.setHandler(connectHandler);
 
-        ServletContextHandler proxyHandler = new ServletContextHandler(connectHandler, "/");
+        ServletContextHandler proxyHandler = new ServletContextHandler("/");
+        connectHandler.setHandler(proxyHandler);
         proxyHandler.addServlet(new ServletHolder(proxyServlet), "/*");
 
         proxy.start();

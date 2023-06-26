@@ -63,7 +63,7 @@ public class WebSocketServerDocs
         Server server = new Server(8080);
 
         // Create a ServletContextHandler with the given context path.
-        ServletContextHandler handler = new ServletContextHandler(server, "/ctx");
+        ServletContextHandler handler = new ServletContextHandler("/ctx");
         server.setHandler(handler);
 
         // Ensure that JavaxWebSocketServletContainerInitializer is initialized,
@@ -82,7 +82,7 @@ public class WebSocketServerDocs
         Server server = new Server(8080);
 
         // Create a ServletContextHandler with the given context path.
-        ServletContextHandler handler = new ServletContextHandler(server, "/ctx");
+        ServletContextHandler handler = new ServletContextHandler("/ctx");
         server.setHandler(handler);
 
         // Ensure that JavaxWebSocketServletContainerInitializer is initialized,
@@ -137,7 +137,7 @@ public class WebSocketServerDocs
         Server server = new Server(8080);
 
         // Create a ServletContextHandler with the given context path.
-        ServletContextHandler handler = new ServletContextHandler(server, "/ctx");
+        ServletContextHandler handler = new ServletContextHandler("/ctx");
         server.setHandler(handler);
 
         // Setup the ServerContainer and the WebSocket endpoints for this web application context.
@@ -169,7 +169,7 @@ public class WebSocketServerDocs
         Server server = new Server(8080);
 
         // Create a ServletContextHandler with the given context path.
-        ServletContextHandler handler = new ServletContextHandler(server, "/ctx");
+        ServletContextHandler handler = new ServletContextHandler("/ctx");
         server.setHandler(handler);
 
         // Ensure that JettyWebSocketServletContainerInitializer is initialized,
@@ -188,7 +188,7 @@ public class WebSocketServerDocs
         Server server = new Server(8080);
 
         // Create a ServletContextHandler with the given context path.
-        ServletContextHandler handler = new ServletContextHandler(server, "/ctx");
+        ServletContextHandler handler = new ServletContextHandler("/ctx");
         server.setHandler(handler);
 
         // Ensure that JettyWebSocketServletContainerInitializer is initialized,
@@ -234,7 +234,7 @@ public class WebSocketServerDocs
         Server server = new Server(8080);
 
         // Create a ServletContextHandler with the given context path.
-        ServletContextHandler handler = new ServletContextHandler(server, "/ctx");
+        ServletContextHandler handler = new ServletContextHandler("/ctx");
         server.setHandler(handler);
 
         // Setup the JettyWebSocketServerContainer and the WebSocket endpoints for this web application context.
@@ -301,7 +301,7 @@ public class WebSocketServerDocs
         Server server = new Server(8080);
 
         // Create a ServletContextHandler with the given context path.
-        ServletContextHandler handler = new ServletContextHandler(server, "/ctx");
+        ServletContextHandler handler = new ServletContextHandler("/ctx");
         server.setHandler(handler);
 
         // Setup the JettyWebSocketServerContainer to initialize WebSocket components.
@@ -357,7 +357,8 @@ public class WebSocketServerDocs
         Server server = new Server(8080);
 
         // tag::uriTemplatePathSpec[]
-        ServletContextHandler handler = new ServletContextHandler(server, "/ctx");
+        ServletContextHandler handler = new ServletContextHandler("/ctx");
+        server.setHandler(handler);
 
         // Configure the JettyWebSocketServerContainer.
         JettyWebSocketServletContainerInitializer.configure(handler, (servletContext, container) ->

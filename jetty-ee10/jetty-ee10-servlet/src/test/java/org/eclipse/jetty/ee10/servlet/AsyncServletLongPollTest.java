@@ -47,7 +47,8 @@ public class AsyncServletLongPollTest
         connector = new ServerConnector(server);
         server.addConnector(connector);
         String contextPath = "/context";
-        context = new ServletContextHandler(server, contextPath, ServletContextHandler.NO_SESSIONS);
+        context = new ServletContextHandler(contextPath, ServletContextHandler.NO_SESSIONS);
+        server.setHandler(context);
         ServletHolder servletHolder = new ServletHolder(servlet);
         String servletPath = "/path";
         context.addServlet(servletHolder, servletPath);

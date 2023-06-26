@@ -69,7 +69,7 @@ public class TestJettyJspServlet
         _server = new Server();
         _connector = new LocalConnector(_server);
         _server.addConnector(_connector);
-        ServletContextHandler context = new ServletContextHandler(_server, "/context", true, false);
+        ServletContextHandler context = new ServletContextHandler("/context", true, false);
         _server.setHandler(context);
         context.setClassLoader(new URLClassLoader(new URL[0], Thread.currentThread().getContextClassLoader()));
         ServletHolder jspHolder = context.addServlet(JettyJspServlet.class, "/*");

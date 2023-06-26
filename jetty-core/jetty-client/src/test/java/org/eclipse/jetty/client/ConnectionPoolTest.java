@@ -176,8 +176,8 @@ public class ConnectionPoolTest
                                     continue;
                                 }
                             }
-                            if (chunk instanceof Content.Chunk.Error error)
-                                throw error.getCause();
+                            if (Content.Chunk.isFailure(chunk))
+                                throw chunk.getFailure();
 
                             if (chunk.hasRemaining())
                             {

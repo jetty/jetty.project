@@ -103,7 +103,7 @@ public class ServerDecoderTest
         server = new Server();
         ServerConnector serverConnector = new ServerConnector(server);
         server.addConnector(serverConnector);
-        ServletContextHandler servletContextHandler = new ServletContextHandler(null, "/");
+        ServletContextHandler servletContextHandler = new ServletContextHandler("/");
         server.setHandler(servletContextHandler);
 
         JakartaWebSocketServletContainerInitializer.configure(servletContextHandler, ((servletContext, serverContainer) ->

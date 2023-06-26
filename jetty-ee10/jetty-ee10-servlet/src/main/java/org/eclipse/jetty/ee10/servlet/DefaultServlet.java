@@ -458,7 +458,7 @@ public class DefaultServlet extends HttpServlet
         else if (isPathInfoOnly())
             encodedPathInContext = URIUtil.encodePath(req.getPathInfo());
         else if (req instanceof ServletApiRequest apiRequest)
-            encodedPathInContext = Context.getPathInContext(req.getContextPath(), apiRequest.getServletContextRequest().getHttpURI().getCanonicalPath());
+            encodedPathInContext = Context.getPathInContext(req.getContextPath(), apiRequest.getRequest().getHttpURI().getCanonicalPath());
         else
             encodedPathInContext = Context.getPathInContext(req.getContextPath(), URIUtil.canonicalPath(req.getRequestURI()));
 
@@ -878,12 +878,7 @@ public class DefaultServlet extends HttpServlet
 
         public ServletContextResponse getServletContextResponse()
         {
-            if (_response instanceof ServletApiResponse)
-            {
-                ServletApiResponse apiResponse = (ServletApiResponse)_response;
-                return apiResponse.getResponse();
-            }
-            return null;
+            return ServletContextResponse.getServletContextResponse(_response);
         }
 
         @Override
@@ -1003,6 +998,12 @@ public class DefaultServlet extends HttpServlet
         {
             return null;
         }
+
+        @Override
+        public String toString()
+        {
+            return "%s@%x{%s,%s}".formatted(this.getClass().getSimpleName(), hashCode(), this._coreRequest, _response);
+        }
     }
 
     private class ServletResourceService extends ResourceService implements ResourceService.WelcomeFactory
@@ -1015,23 +1016,14 @@ public class DefaultServlet extends HttpServlet
         }
 
         @Override
-        public String getWelcomeTarget(Request coreRequest)
+        public String getWelcomeTarget(HttpContent content, Request coreRequest)
         {
             String[] welcomes = _servletContextHandler.getWelcomeFiles();
             if (welcomes == null)
                 return null;
-
-            HttpServletRequest request = getServletRequest(coreRequest);
             String pathInContext = Request.getPathInContext(coreRequest);
-            String includedServletPath = (String)request.getAttribute(RequestDispatcher.INCLUDE_SERVLET_PATH);
-            String requestTarget;
-            if (includedServletPath != null)
-                requestTarget = getIncludedPathInContext(request, includedServletPath, isPathInfoOnly());
-            else
-                requestTarget = isPathInfoOnly() ? request.getPathInfo() : pathInContext;
-
             String welcomeTarget = null;
-            Resource base = _baseResource.resolve(requestTarget);
+            Resource base = content.getResource();
             if (Resources.isReadableDirectory(base))
             {
                 for (String welcome : welcomes)
@@ -1040,13 +1032,16 @@ public class DefaultServlet extends HttpServlet
 
                     // If the welcome resource is a file, it has
                     // precedence over resources served by Servlets.
-                    Resource welcomePath = base.resolve(welcome);
+                    Resource welcomePath = content.getResource().resolve(welcome);
                     if (Resources.isReadableFile(welcomePath))
                         return welcomeInContext;
 
                     // Check whether a Servlet may serve the welcome resource.
                     if (_welcomeServletMode != WelcomeServletMode.NONE && welcomeTarget == null)
                     {
+                        if (isPathInfoOnly() && !isIncluded(getServletRequest(coreRequest)))
+                            welcomeTarget = URIUtil.addPaths(getServletRequest(coreRequest).getPathInfo(), welcome);
+
                         ServletHandler.MappedServlet entry = _servletContextHandler.getServletHandler().getMappedServlet(welcomeInContext);
                         // Is there a different Servlet that may serve the welcome resource?
                         if (entry != null && entry.getServletHolder().getServletInstance() != DefaultServlet.this)

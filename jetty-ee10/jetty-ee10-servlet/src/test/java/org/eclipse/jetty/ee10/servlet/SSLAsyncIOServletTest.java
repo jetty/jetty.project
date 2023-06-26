@@ -177,7 +177,8 @@ public class SSLAsyncIOServletTest
             server.addConnector(connector);
 
             contextPath = "/context";
-            ServletContextHandler context = new ServletContextHandler(server, contextPath, true, false);
+            ServletContextHandler context = new ServletContextHandler(contextPath, true, false);
+            server.setHandler(context);
             servletPath = "/servlet";
             context.addServlet(new ServletHolder(servlet), servletPath);
 
@@ -225,7 +226,8 @@ public class SSLAsyncIOServletTest
             server.addConnector(connector);
 
             contextPath = "/context";
-            ServletContextHandler context = new ServletContextHandler(server, contextPath, true, false);
+            ServletContextHandler context = new ServletContextHandler(contextPath, true, false);
+            server.setHandler(context);
             servletPath = "/servlet";
             context.addServlet(new ServletHolder(servlet), servletPath);
 

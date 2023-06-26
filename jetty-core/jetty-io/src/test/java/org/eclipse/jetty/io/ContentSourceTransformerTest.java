@@ -34,7 +34,6 @@ import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.Matchers.empty;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
-import static org.junit.jupiter.api.Assertions.assertInstanceOf;
 import static org.junit.jupiter.api.Assertions.assertNotNull;
 import static org.junit.jupiter.api.Assertions.assertNull;
 import static org.junit.jupiter.api.Assertions.assertTrue;
@@ -259,11 +258,11 @@ public class ContentSourceTransformerTest
         chunk.release();
 
         chunk = transformer.read();
-        assertInstanceOf(Content.Chunk.Error.class, chunk);
+        assertTrue(Content.Chunk.isFailure(chunk, true));
 
         // Trying to read again returns the error again.
         chunk = transformer.read();
-        assertInstanceOf(Content.Chunk.Error.class, chunk);
+        assertTrue(Content.Chunk.isFailure(chunk, true));
 
         // Make sure that the source is failed.
         assertEquals(0, source.count());
@@ -284,11 +283,11 @@ public class ContentSourceTransformerTest
         chunk.release();
 
         chunk = transformer.read();
-        assertInstanceOf(Content.Chunk.Error.class, chunk);
+        assertTrue(Content.Chunk.isFailure(chunk, true));
 
         // Trying to read again returns the error again.
         chunk = transformer.read();
-        assertInstanceOf(Content.Chunk.Error.class, chunk);
+        assertTrue(Content.Chunk.isFailure(chunk, true));
     }
 
     @Test
@@ -306,11 +305,11 @@ public class ContentSourceTransformerTest
         source.fail(new IOException());
 
         chunk = transformer.read();
-        assertInstanceOf(Content.Chunk.Error.class, chunk);
+        assertTrue(Content.Chunk.isFailure(chunk, true));
 
         // Trying to read again returns the error again.
         chunk = transformer.read();
-        assertInstanceOf(Content.Chunk.Error.class, chunk);
+        assertTrue(Content.Chunk.isFailure(chunk, true));
     }
 
     private static class WordSplitLowCaseTransformer extends ContentSourceTransformer

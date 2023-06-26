@@ -77,7 +77,8 @@ public class ProxyServletLoadTest
         serverConnector = new ServerConnector(server);
         server.addConnector(serverConnector);
 
-        ServletContextHandler appCtx = new ServletContextHandler(server, "/", true, false);
+        ServletContextHandler appCtx = new ServletContextHandler("/", true, false);
+        server.setHandler(appCtx);
         ServletHolder appServletHolder = new ServletHolder(servlet);
         appCtx.addServlet(appServletHolder, "/*");
 
@@ -96,7 +97,8 @@ public class ProxyServletLoadTest
         proxyConnector = new ServerConnector(proxy, new HttpConnectionFactory(configuration));
         proxy.addConnector(proxyConnector);
 
-        ServletContextHandler proxyContext = new ServletContextHandler(proxy, "/", true, false);
+        ServletContextHandler proxyContext = new ServletContextHandler("/", true, false);
+        proxy.setHandler(proxyContext);
         ServletHolder proxyServletHolder = new ServletHolder(proxyServlet);
         proxyContext.addServlet(proxyServletHolder, "/*");
 

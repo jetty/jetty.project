@@ -104,7 +104,7 @@ public class ThreadStarvationTest
         connector.setIdleTimeout(Long.MAX_VALUE);
         _server.addConnector(connector);
 
-        ServletContextHandler context = new ServletContextHandler(_server, "/");
+        ServletContextHandler context = new ServletContextHandler("/");
         context.setBaseResourceAsPath(directory.toPath());
         
         //TODO: Uses DefaultServlet, currently all commented out

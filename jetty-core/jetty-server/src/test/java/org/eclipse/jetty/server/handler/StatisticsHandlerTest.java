@@ -100,9 +100,9 @@ public class StatisticsHandlerTest
                         return true;
                     }
 
-                    if (chunk instanceof Content.Chunk.Error errorContent)
+                    if (Content.Chunk.isFailure(chunk))
                     {
-                        callback.failed(errorContent.getCause());
+                        callback.failed(chunk.getFailure());
                         return true;
                     }
 
