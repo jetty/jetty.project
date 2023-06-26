@@ -13,6 +13,7 @@
 
 package org.eclipse.jetty.http;
 
+import java.io.EOFException;
 import java.io.IOException;
 import java.nio.ByteBuffer;
 import java.nio.channels.SeekableByteChannel;
@@ -54,6 +55,7 @@ import org.eclipse.jetty.util.thread.AutoLock;
  */
 public class MultiPartByteRanges extends CompletableFuture<MultiPartByteRanges.Parts>
 {
+    // TODO base the implementation on a ContentSourceCompletableFuture
     private final PartsListener listener = new PartsListener();
     private final MultiPart.Parser parser;
 
@@ -108,8 +110,13 @@ public class MultiPartByteRanges extends CompletableFuture<MultiPartByteRanges.P
                     }
                     parse(chunk);
                     chunk.release();
-                    if (chunk.isLast() || isDone())
+                    if (isDone())
                         return;
+                    if (chunk.isLast())
+                    {
+                        listener.onFailure(new EOFException());
+                        return;
+                    }
                 }
             }
         }.run();

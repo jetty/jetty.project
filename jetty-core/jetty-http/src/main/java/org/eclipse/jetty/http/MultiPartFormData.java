@@ -14,6 +14,7 @@
 package org.eclipse.jetty.http;
 
 import java.io.Closeable;
+import java.io.EOFException;
 import java.nio.ByteBuffer;
 import java.nio.channels.NonWritableChannelException;
 import java.nio.channels.SeekableByteChannel;
@@ -69,6 +70,8 @@ import static java.nio.charset.StandardCharsets.US_ASCII;
  */
 public class MultiPartFormData extends CompletableFuture<MultiPartFormData.Parts>
 {
+    // TODO base the implementation on a ContentSourceCompletableFuture
+
     private static final Logger LOG = LoggerFactory.getLogger(MultiPartFormData.class);
 
     private final PartsListener listener = new PartsListener();
@@ -124,8 +127,13 @@ public class MultiPartFormData extends CompletableFuture<MultiPartFormData.Parts
                     }
                     parse(chunk);
                     chunk.release();
-                    if (chunk.isLast() || isDone())
+                    if (isDone())
                         return;
+                    if (chunk.isLast())
+                    {
+                        listener.onFailure(new EOFException());
+                        return;
+                    }
                 }
             }
         }.run();

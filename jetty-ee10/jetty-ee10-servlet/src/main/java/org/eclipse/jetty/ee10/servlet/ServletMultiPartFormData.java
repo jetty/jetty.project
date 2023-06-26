@@ -102,6 +102,9 @@ public class ServletMultiPartFormData
             throw new IllegalStateException("No multipart boundary parameter in Content-Type");
 
         // Store MultiPartFormData as attribute on request so it is released by the HttpChannel.
+        // TODO we should look for an already done MultiPartFormData as an attribute, so it can be
+        //      read asynchronously without blocking by something like the DelayedHandler (although
+        //      probably need an in ServletContext variant to get the configuration below.
         MultiPartFormData formData = new MultiPartFormData(boundary);
         formData.setMaxParts(maxParts);
 
