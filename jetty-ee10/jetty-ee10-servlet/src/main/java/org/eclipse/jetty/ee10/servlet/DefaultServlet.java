@@ -1242,15 +1242,11 @@ public class DefaultServlet extends HttpServlet
 
         public ForcedCharacterEncodingHttpContent(HttpContent content, String characterEncoding)
         {
-            super(content);
+            super(Objects.requireNonNull(content));
             this.characterEncoding = characterEncoding;
-            if (content.getResource().isDirectory())
+            if (content.getContentTypeValue() == null || content.getResource().isDirectory())
             {
-                this.contentType = "text/html;charset=" + characterEncoding;
-            }
-            else if (content.getContentTypeValue() == null)
-            {
-                this.contentType = "text/plain;charset=" + characterEncoding;
+                this.contentType = null;
             }
             else
             {

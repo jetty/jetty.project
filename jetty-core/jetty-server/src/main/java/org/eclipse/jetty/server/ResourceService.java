@@ -618,7 +618,9 @@ public class ResourceService
             return;
         }
 
-        String characterEncoding = httpContent.getCharacterEncoding() != null ? httpContent.getCharacterEncoding() : "utf-8";
+        String characterEncoding = httpContent.getCharacterEncoding();
+        if (characterEncoding == null)
+             characterEncoding = "utf-8";
         String base = URIUtil.addEncodedPaths(request.getHttpURI().getPath(), "/");
         String listing = ResourceListing.getAsXHTML(httpContent.getResource(), characterEncoding, base, pathInContext.length() > 1, request.getHttpURI().getQuery());
         if (listing == null)
