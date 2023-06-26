@@ -570,7 +570,6 @@ public class WebAppContextTest
         assertThat(response, containsString("/nested-reserved-!#\\\\$%&()*+,:=?@[]-meta-inf-resource.txt"));
     }
 
-
     public static Stream<Arguments> extraClasspathGlob()
     {
         List<Arguments> references = new ArrayList<>();
