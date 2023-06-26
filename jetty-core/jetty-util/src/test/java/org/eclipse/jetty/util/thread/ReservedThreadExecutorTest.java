@@ -17,22 +17,22 @@ import java.util.ArrayDeque;
 import java.util.Deque;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.Executor;
-import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicInteger;
 
-import org.eclipse.jetty.util.NanoTime;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Tag;
 import org.junit.jupiter.api.Test;
 
+import static java.util.concurrent.TimeUnit.MILLISECONDS;
+import static java.util.concurrent.TimeUnit.SECONDS;
+import static org.awaitility.Awaitility.waitAtMost;
 import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.Matchers.greaterThan;
 import static org.hamcrest.Matchers.is;
 import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertNotNull;
 import static org.junit.jupiter.api.Assertions.assertTrue;
-import static org.junit.jupiter.api.Assertions.fail;
 
 public class ReservedThreadExecutorTest
 {
@@ -93,7 +93,7 @@ public class ReservedThreadExecutorTest
         }
         assertThat(_executor._queue.size(), is(0));
 
-        waitForAllAvailable();
+        waitAtMost(10, SECONDS).until(_reservedExecutor::getAvailable, is(SIZE));
 
         for (int i = 0; i < SIZE; i++)
         {
@@ -127,7 +127,7 @@ public class ReservedThreadExecutorTest
         }
         assertThat(_executor._queue.size(), is(0));
 
-        waitForAllAvailable();
+        waitAtMost(10, SECONDS).until(_reservedExecutor::getAvailable, is(SIZE));
 
         Task[] tasks = new Task[SIZE];
         for (int i = 0; i < SIZE; i++)
@@ -138,7 +138,7 @@ public class ReservedThreadExecutorTest
 
         for (int i = 0; i < SIZE; i++)
         {
-            tasks[i]._ran.await(10, TimeUnit.SECONDS);
+            tasks[i]._ran.await(10, SECONDS);
         }
 
         assertThat(_executor._queue.size(), is(1));
@@ -147,15 +147,12 @@ public class ReservedThreadExecutorTest
         assertThat(_reservedExecutor.tryExecute(extra), is(false));
         assertThat(_executor._queue.size(), is(2));
 
-        Thread.sleep(500);
-        assertThat(extra._ran.getCount(), is(1L));
+        waitAtMost(5, SECONDS).until(extra._ran::getCount, is(1L));
 
         for (int i = 0; i < SIZE; i++)
-        {
             tasks[i]._complete.countDown();
-        }
 
-        waitForAllAvailable();
+        waitAtMost(10, SECONDS).until(_reservedExecutor::getAvailable, is(SIZE));
     }
 
     @Test
@@ -164,7 +161,7 @@ public class ReservedThreadExecutorTest
         final long IDLE = 1000;
 
         _reservedExecutor.stop();
-        _reservedExecutor.setIdleTimeout(IDLE, TimeUnit.MILLISECONDS);
+        _reservedExecutor.setIdleTimeout(IDLE, MILLISECONDS);
         _reservedExecutor.start();
         assertThat(_reservedExecutor.getAvailable(), is(0));
 
@@ -174,12 +171,12 @@ public class ReservedThreadExecutorTest
         _executor.startThread();
         _executor.startThread();
 
-        waitForAvailable(2);
+        waitAtMost(10, SECONDS).until(_reservedExecutor::getAvailable, is(2));
 
         int available = _reservedExecutor.getAvailable();
         assertThat(available, is(2));
-        Thread.sleep((5 * IDLE) / 2);
-        assertThat(_reservedExecutor.getAvailable(), is(0));
+
+        waitAtMost(5 * IDLE, MILLISECONDS).until(_reservedExecutor::getAvailable, is(0));
     }
 
     @Test
@@ -188,7 +185,7 @@ public class ReservedThreadExecutorTest
         final long IDLE = 1000;
 
         _reservedExecutor.stop();
-        _reservedExecutor.setIdleTimeout(IDLE, TimeUnit.MILLISECONDS);
+        _reservedExecutor.setIdleTimeout(IDLE, MILLISECONDS);
         _reservedExecutor.start();
         assertThat(_reservedExecutor.getAvailable(), is(0));
 
@@ -198,7 +195,7 @@ public class ReservedThreadExecutorTest
         _executor.startThread();
         _executor.startThread();
 
-        waitForAvailable(2);
+        waitAtMost(10, SECONDS).until(_reservedExecutor::getAvailable, is(2));
 
         int available = _reservedExecutor.getAvailable();
         assertThat(available, is(2));
@@ -206,7 +203,7 @@ public class ReservedThreadExecutorTest
         for (int i = 10; i-- > 0;)
         {
             assertThat(_reservedExecutor.tryExecute(NOOP), is(true));
-            Thread.sleep(200);
+            waitAtMost(10, SECONDS).until(_reservedExecutor::getAvailable, greaterThan(0));
         }
         assertThat(_reservedExecutor.getAvailable(), is(1));
     }
@@ -216,36 +213,16 @@ public class ReservedThreadExecutorTest
     {
         long idleTimeout = 500;
         _reservedExecutor.stop();
-        _reservedExecutor.setIdleTimeout(idleTimeout, TimeUnit.MILLISECONDS);
+        _reservedExecutor.setIdleTimeout(idleTimeout, MILLISECONDS);
         _reservedExecutor.start();
 
         assertThat(_reservedExecutor.tryExecute(NOOP), is(false));
         Thread thread = _executor.startThread();
         assertNotNull(thread);
-        waitForAvailable(1);
-
-        Thread.sleep(2 * idleTimeout);
-
-        waitForAvailable(0);
+        waitAtMost(5, SECONDS).until(_reservedExecutor::getAvailable, is(1));
+        waitAtMost(5, SECONDS).until(_reservedExecutor::getAvailable, is(0));
         thread.join(2 * idleTimeout);
         assertFalse(thread.isAlive());
-    }
-
-    protected void waitForAvailable(int size) throws InterruptedException
-    {
-        long started = NanoTime.now();
-        while (_reservedExecutor.getAvailable() < size)
-        {
-            if (NanoTime.secondsSince(started) > 10)
-                fail("Took too long");
-            Thread.sleep(10);
-        }
-        assertThat(_reservedExecutor.getAvailable(), is(size));
-    }
-
-    protected void waitForAllAvailable() throws InterruptedException
-    {
-        waitForAvailable(SIZE);
     }
 
     private static class TestExecutor implements Executor
@@ -350,7 +327,7 @@ public class ReservedThreadExecutorTest
         task.run();
         task.run();
 
-        assertTrue(executed.await(60, TimeUnit.SECONDS));
+        assertTrue(executed.await(60, SECONDS));
 
         // ensure tryExecute is still working
         while (!reserved.tryExecute(() -> {}))
