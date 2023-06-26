@@ -67,6 +67,7 @@ import org.slf4j.LoggerFactory;
 import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.Matchers.contains;
 import static org.hamcrest.Matchers.containsInAnyOrder;
+import static org.hamcrest.Matchers.containsString;
 import static org.hamcrest.Matchers.either;
 import static org.hamcrest.Matchers.empty;
 import static org.hamcrest.Matchers.instanceOf;
@@ -563,6 +564,10 @@ public class WebAppContextTest
             """);
 
         assertThat(response, startsWith("HTTP/1.1 200 OK"));
+        assertThat(response, containsString("/WEB-INF"));
+        assertThat(response, containsString("/WEB-INF/lib"));
+        assertThat(response, containsString("/WEB-INF/lib/odd-resource.jar"));
+        assertThat(response, containsString("/nested-reserved-!#\\\\$%&()*+,:=?@[]-meta-inf-resource.txt"));
     }
 
 

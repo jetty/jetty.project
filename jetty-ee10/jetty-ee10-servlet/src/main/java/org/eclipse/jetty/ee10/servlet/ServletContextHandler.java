@@ -2829,10 +2829,6 @@ public class ServletContextHandler extends ContextHandler
         @Override
         public Set<String> getResourcePaths(String path)
         {
-            // This is an API call from the application which may pass non-canonical paths.
-            // Thus, we canonicalize here, to avoid the enforcement of canonical paths in
-            // ContextHandler.this.getResource(path).
-            path = URIUtil.canonicalPath(path);
             if (path == null)
                 return null;
             return ServletContextHandler.this.getResourcePaths(path);
