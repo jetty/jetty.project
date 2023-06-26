@@ -405,6 +405,9 @@ public class DefaultServletTest
         ServletHolder defHolder = context.addServlet(DefaultServlet.class, "/*");
         defHolder.setInitParameter("dirAllowed", "true");
 
+        /* create a file with a non-fully ASCII name in the docroot */
+        Files.writeString(docRoot.resolve("numéros-en-français.txt"), "un deux trois", StandardCharsets.ISO_8859_1);
+
         ServletHolder incHolder = new ServletHolder();
         incHolder.setInstance(new HttpServlet()
         {
@@ -432,6 +435,7 @@ public class DefaultServletTest
         String body = BufferUtil.toString(response.getContentByteBuffer(), StandardCharsets.ISO_8859_1);
         assertThat(body, startsWith(">>>\néèàîû\n"));
         assertThat(body, containsString("<?xml version=\"1.0\" encoding=\"utf-8\"?>"));
+        assertThat(body, containsString("numéros-en-français.txt"));
         assertThat(body, endsWith("<<<\n"));
     }
 
