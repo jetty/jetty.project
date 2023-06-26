@@ -536,6 +536,11 @@ public class IO
 
         return null;
     }
+
+    private IO()
+    {
+        // prevent instantiation
+    }
 }
 
 

@@ -60,7 +60,6 @@ public class UrlEncoded
             charset = System.getProperty("org.eclipse.jetty.util.UrlEncoding.charset");
             if (charset == null)
             {
-                charset = StandardCharsets.UTF_8.toString();
                 encoding = StandardCharsets.UTF_8;
             }
             else
