@@ -73,6 +73,7 @@ import static org.hamcrest.Matchers.instanceOf;
 import static org.hamcrest.Matchers.is;
 import static org.hamcrest.Matchers.notNullValue;
 import static org.hamcrest.Matchers.sameInstance;
+import static org.hamcrest.Matchers.startsWith;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertNotNull;
@@ -535,6 +536,35 @@ public class WebAppContextTest
         ServletContext servletContext = context.getServletContext();
         assertThat(servletContext.getResourcePaths("/WEB-INF"), containsInAnyOrder("/WEB-INF/zero.xml", "/WEB-INF/one.xml"));
     }
+
+    @Test
+    public void testGetResourcePaths() throws Exception
+    {
+        Server server = newServer();
+        LocalConnector connector = new LocalConnector(server);
+        server.addConnector(connector);
+
+        WebAppContext context = new WebAppContext("src/test/webapp-with-resources", "/");
+        server.setHandler(context);
+        server.start();
+
+        ServletContext servletContext = context.getServletContext();
+
+        List<String> resourcePaths = List.copyOf(servletContext.getResourcePaths("/"));
+        assertThat(resourcePaths.size(), is(2));
+        assertThat(resourcePaths.get(0), is("/WEB-INF"));
+        assertThat(resourcePaths.get(1), is("/nested-reserved-!#\\\\$%&()*+,:=?@[]-meta-inf-resource.txt"));
+
+        String response = connector.getResponse("""
+            GET /resource HTTP/1.1\r
+            Host: local\r
+            Connection: close\r
+            \r
+            """);
+
+        assertThat(response, startsWith("HTTP/1.1 200 OK"));
+    }
+
 
     public static Stream<Arguments> extraClasspathGlob()
     {
