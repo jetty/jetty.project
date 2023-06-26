@@ -377,6 +377,96 @@ public class DefaultServletTest
         assertThat(body, containsString("f??r"));
     }
 
+    @Test
+    public void testSimpleListing() throws Exception
+    {
+        ServletHolder defHolder = context.addServlet(DefaultServlet.class, "/*");
+        defHolder.setInitParameter("dirAllowed", "true");
+
+        String rawResponse = connector.getResponse("""
+            GET /context/ HTTP/1.1\r
+            Host: local\r
+            Connection: close\r
+            \r
+            """);
+        HttpTester.Response response = HttpTester.parseResponse(rawResponse);
+
+        assertThat(response.getStatus(), is(200));
+        assertThat(response.getField("content-type").getValue(), is("text/html;charset=UTF-8"));
+        String body = response.getContent();
+        assertThat(body, containsString("<?xml version=\"1.0\" encoding=\"utf-8\"?>"));
+    }
+
+    @Test
+    @Disabled("including the default servlet aborts the servlet's execution")
+    public void testIncludeListingAllowed() throws Exception
+    {
+        ServletHolder defHolder = context.addServlet(DefaultServlet.class, "/*");
+        defHolder.setInitParameter("dirAllowed", "true");
+
+        ServletHolder incHolder = new ServletHolder();
+        incHolder.setInstance(new HttpServlet() {
+            @Override
+            protected void doGet(HttpServletRequest req, HttpServletResponse resp) throws ServletException, IOException
+            {
+                resp.getWriter().println(">>>");
+                req.getRequestDispatcher("/").include(req, resp);
+                resp.getWriter().println("<<<");
+            }
+        });
+        context.addServlet(incHolder, "/inclusion");
+
+        String rawResponse = connector.getResponse("""
+            GET /context/inclusion HTTP/1.1\r
+            Host: local\r
+            Connection: close\r
+            \r
+            """);
+        HttpTester.Response response = HttpTester.parseResponse(rawResponse);
+
+        assertThat(response.getStatus(), is(200));
+        assertThat(response.getField("content-type").getValue(), is("text/plain;charset=iso-8859-1"));
+        String body = response.getContent();
+        assertThat(body, startsWith(">>>"));
+        assertThat(body, containsString("<?xml version=\"1.0\" encoding=\"iso-8859-1\"?>"));
+        assertThat(body, endsWith("<<<"));
+    }
+
+    @Test
+    @Disabled("including the default servlet changes the status code")
+    public void testIncludeListingForbidden() throws Exception
+    {
+        ServletHolder defHolder = context.addServlet(DefaultServlet.class, "/*");
+        defHolder.setInitParameter("dirAllowed", "false");
+
+        ServletHolder incHolder = new ServletHolder();
+        incHolder.setInstance(new HttpServlet() {
+            @Override
+            protected void doGet(HttpServletRequest req, HttpServletResponse resp) throws ServletException, IOException
+            {
+                resp.getWriter().println(">>>");
+                req.getRequestDispatcher("/").include(req, resp);
+                resp.getWriter().println("<<<");
+            }
+        });
+        context.addServlet(incHolder, "/inclusion");
+
+        String rawResponse = connector.getResponse("""
+            GET /context/inclusion HTTP/1.1\r
+            Host: local\r
+            Connection: close\r
+            \r
+            """);
+        HttpTester.Response response = HttpTester.parseResponse(rawResponse);
+
+        assertThat(response.getStatus(), is(200));
+        assertThat(response.getField("content-type").getValue(), is("text/plain;charset=iso-8859-1"));
+        String body = response.getContent();
+        assertThat(body, startsWith(">>>"));
+        assertThat(body, containsString("Forbidden"));
+        assertThat(body, endsWith("<<<"));
+    }
+
     /**
      * A regression on windows allowed the directory listing show
      * the fully qualified paths within the directory listing.
