@@ -51,7 +51,7 @@ public class ResourceListing
      * @param base The base URL
      * @param parent True if the parent directory should be included
      * @param query query params
-     * @return the HTML as String
+     * @return the XHTML as String
      */
     public static String getAsXHTML(Resource resource, String base, boolean parent, String query)
     {
@@ -108,7 +108,8 @@ public class ResourceListing
 
         StringBuilder buf = new StringBuilder(4096);
 
-        // Doctype Declaration + XHTML
+        // Doctype Declaration + XHTML. The spec says the encoding MUST be "utf-8" in all cases at it is ignored;
+        // see: https://html.spec.whatwg.org/multipage/semantics.html#attr-meta-charset
         buf.append("""
             <?xml version="1.0" encoding="utf-8"?>
             <!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.1//EN" "http://www.w3.org/TR/xhtml11/DTD/xhtml11.dtd">
