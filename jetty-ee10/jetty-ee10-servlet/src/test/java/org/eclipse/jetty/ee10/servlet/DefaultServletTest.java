@@ -411,6 +411,7 @@ public class DefaultServletTest
             @Override
             protected void doGet(HttpServletRequest req, HttpServletResponse resp) throws ServletException, IOException
             {
+                // Getting the writer implicitly sets the charset to iso-8859-1.
                 resp.getWriter().println(">>>");
                 resp.getWriter().println("éèàîû");
                 req.getRequestDispatcher("/").include(req, resp);
@@ -446,6 +447,7 @@ public class DefaultServletTest
             @Override
             protected void doGet(HttpServletRequest req, HttpServletResponse resp) throws ServletException, IOException
             {
+                // Getting the writer implicitly sets the charset to iso-8859-1.
                 resp.getWriter().println(">>>");
                 req.getRequestDispatcher("/").include(req, resp);
                 resp.getWriter().println("éèàîû");
