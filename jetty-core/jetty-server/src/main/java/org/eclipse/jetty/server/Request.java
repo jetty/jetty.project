@@ -122,7 +122,7 @@ public interface Request extends Attributes, Content.Source
 
     /**
      * an ID unique within the lifetime scope of the {@link ConnectionMetaData#getId()}).
-     * This may be a protocol ID (eg HTTP/2 stream ID) or it may be unrelated to the protocol.
+     * This may be a protocol ID (e.g. HTTP/2 stream ID) or it may be unrelated to the protocol.
      *
      * @see HttpStream#getId()
      */
@@ -243,7 +243,7 @@ public interface Request extends Attributes, Content.Source
     /**
      * Consume any available content. This bypasses any request wrappers to process the content in
      * {@link Request#read()} and reads directly from the {@link HttpStream}. This reads until
-     * there is no content currently available or it reaches EOF.
+     * there is no content currently available, or it reaches EOF.
      * The {@link HttpConfiguration#setMaxUnconsumedRequestContentReads(int)} configuration can be used
      * to configure how many reads will be attempted by this method.
      * @return true if the content was fully consumed.
@@ -360,7 +360,7 @@ public interface Request extends Attributes, Content.Source
                 : address.getHostAddress();
             return HostPort.normalizeHost(result);
         }
-        return local.toString();
+        return local == null ? null : local.toString();
     }
 
     static int getLocalPort(Request request)
@@ -389,7 +389,7 @@ public interface Request extends Attributes, Content.Source
                 : address.getHostAddress();
             return HostPort.normalizeHost(result);
         }
-        return remote.toString();
+        return remote == null ? null : remote.toString();
     }
 
     static int getRemotePort(Request request)
@@ -419,7 +419,7 @@ public interface Request extends Attributes, Content.Source
         if (local instanceof InetSocketAddress)
             return HostPort.normalizeHost(((InetSocketAddress)local).getHostString());
 
-        return local.toString();
+        return local == null ? null : local.toString();
     }
 
     static int getServerPort(Request request)
@@ -460,18 +460,20 @@ public interface Request extends Attributes, Content.Source
         if (acceptable.isEmpty())
             return List.of(Locale.getDefault());
 
-        return acceptable.stream().map(language ->
+        return acceptable.stream().map(Request::getLocale).collect(Collectors.toList());
+    }
+
+    private static Locale getLocale(String languageDashCountry)
+    {
+        String language = HttpField.stripParameters(languageDashCountry);
+        String country = "";
+        int dash = languageDashCountry.indexOf('-');
+        if (dash > -1)
         {
-            language = HttpField.stripParameters(language);
-            String country = "";
-            int dash = language.indexOf('-');
-            if (dash > -1)
-            {
-                country = language.substring(dash + 1).trim();
-                language = language.substring(0, dash).trim();
-            }
-            return new Locale(language, country);
-        }).collect(Collectors.toList());
+            language = languageDashCountry.substring(0, dash).trim();
+            country = languageDashCountry.substring(dash + 1).trim();
+        }
+        return Locale.of(language, country);
     }
 
     // TODO: consider inline and remove.
@@ -607,7 +609,7 @@ public interface Request extends Attributes, Content.Source
          * @param request the HTTP request to handle
          * @param response the HTTP response to handle
          * @param callback the callback to complete when the handling is complete
-         * @return True if an only if the request will be handled, a response generated and the callback eventually called.
+         * @return True if and only if the request will be handled, a response generated and the callback eventually called.
          *         This may occur within the scope of the call to this method, or asynchronously some time later. If false
          *         is returned, then this method must not generate a response, nor complete the callback.
          * @throws Exception if there is a failure during the handling. Catchers cannot assume that the callback will be

@@ -858,7 +858,7 @@ public class Request implements HttpServletRequest
             country = language.substring(dash + 1).trim();
             language = language.substring(0, dash).trim();
         }
-        return new Locale(language, country);
+        return Locale.of(language, country);
     }
 
     @Override
