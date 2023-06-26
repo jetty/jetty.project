@@ -490,7 +490,7 @@ public class DefaultServlet extends HttpServlet
             else
             {
                 ServletCoreRequest coreRequest = new ServletCoreRequest(req);
-                ServletCoreResponse coreResponse = new ServletCoreResponse(coreRequest, resp);
+                ServletCoreResponse coreResponse = new ServletCoreResponse(coreRequest, resp, included);
 
                 if (coreResponse.isCommitted())
                 {
@@ -861,18 +861,22 @@ public class DefaultServlet extends HttpServlet
         private final ServletCoreRequest _coreRequest;
         private final Response _coreResponse;
         private final HttpFields.Mutable _httpFields;
+        private final boolean _included;
 
-        public ServletCoreResponse(ServletCoreRequest coreRequest, HttpServletResponse response)
+        public ServletCoreResponse(ServletCoreRequest coreRequest, HttpServletResponse response, boolean include)
         {
             _coreRequest = coreRequest;
             _response = response;
             _coreResponse = ServletContextResponse.getServletContextResponse(response);
             _httpFields = new HttpServletResponseHttpFields(response);
+            _included = include;
         }
 
         @Override
         public HttpFields.Mutable getHeaders()
         {
+            if (_included)
+                return HttpFields.build(_httpFields);
             return _httpFields;
         }
 
@@ -918,6 +922,8 @@ public class DefaultServlet extends HttpServlet
         @Override
         public void write(boolean last, ByteBuffer byteBuffer, Callback callback)
         {
+            if (_included)
+                last = false;
             try
             {
                 if (BufferUtil.hasContent(byteBuffer))
@@ -967,6 +973,8 @@ public class DefaultServlet extends HttpServlet
         {
             if (LOG.isDebugEnabled())
                 LOG.debug("{}.setStatus({})", this.getClass().getSimpleName(), code);
+            if (_included)
+                return;
             _response.setStatus(code);
         }
 
@@ -1151,7 +1159,10 @@ public class DefaultServlet extends HttpServlet
             HttpServletResponse response = getServletResponse(coreResponse);
             try
             {
-                // TODO: not sure if this is allowed here.
+                boolean included = request.getAttribute(RequestDispatcher.INCLUDE_SERVLET_PATH) != null;
+                if (included)
+                    return;
+
                 if (cause != null)
                     request.setAttribute(RequestDispatcher.ERROR_EXCEPTION, cause);
                 response.sendError(statusCode, reason);
