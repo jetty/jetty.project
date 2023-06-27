@@ -18,12 +18,15 @@ import java.io.InputStream;
 import java.io.InputStreamReader;
 import java.nio.charset.Charset;
 import java.nio.charset.StandardCharsets;
+import java.util.Arrays;
 import java.util.Collections;
 import java.util.HashMap;
 import java.util.Locale;
 import java.util.Map;
 import java.util.Objects;
 import java.util.Properties;
+import java.util.function.UnaryOperator;
+import java.util.stream.Collectors;
 
 import org.eclipse.jetty.util.FileID;
 import org.eclipse.jetty.util.Index;
@@ -37,19 +40,14 @@ import org.slf4j.LoggerFactory;
 public class MimeTypes
 {
     static final  Logger LOG = LoggerFactory.getLogger(MimeTypes.class);
-    private static final Index<Locale> KNOWN_LOCALES;
-
-    static
-    {
-        Index.Builder<Locale> builder = new Index.Builder<>();
-        builder = builder.caseSensitive(false);
-        for (Locale locale : Locale.getAvailableLocales())
-            builder.with(locale);
-        KNOWN_LOCALES = builder.build();
-    }
+    private static final Index<Locale> KNOWN_LOCALES = new Index.Builder<Locale>()
+        .caseSensitive(false)
+        .withAll(() -> Arrays.stream(Locale.getAvailableLocales())
+            .collect(Collectors.toMap(Locale::toString, UnaryOperator.identity())))
+        .build();
 
     /**
-     * @param languageDashCountry The language and optional country of the local. For example "en" or "un-uk".
+     * @param languageDashCountry The language and optional country of the local. For example "en" or "en-GB".
      * @return The {@link Locale} matching the string or null if a matching Locale is not known;
      */
     public static Locale getLocale(String languageDashCountry)
@@ -63,7 +61,9 @@ public class MimeTypes
         String language = HttpField.stripParameters(languageDashCountry);
         int dash = languageDashCountry.indexOf('-');
         if (dash < 0)
+        {
             locale = new Locale(language);
+        }
         else
         {
             language = languageDashCountry.substring(0, dash).trim();

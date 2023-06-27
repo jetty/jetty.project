@@ -381,12 +381,12 @@ public class RequestTest
     {
         return Stream.of(
             Arguments.of(null, List.of(Locale.getDefault()).toString()),
-            Arguments.of("zz", List.of(Locale.US.toString()).toString()),
+            Arguments.of("zz", List.of(Locale.US).toString()),
             Arguments.of("en", "[en]"),
-            Arguments.of("en-us", List.of(Locale.US.toString()).toString()),
-            Arguments.of("EN-US", List.of(Locale.US.toString()).toString()),
-            Arguments.of("en-us,en-gb", List.of(Locale.US.toString(), Locale.UK).toString()),
-            Arguments.of("en-us;q=0.5,fr;q=0.0,en-gb;q=1.0", List.of(Locale.UK.toString(), Locale.US).toString())
+            Arguments.of("en-us", List.of(Locale.US).toString()),
+            Arguments.of("EN-US", List.of(Locale.US).toString()),
+            Arguments.of("en-us,en-gb", List.of(Locale.US, Locale.UK).toString()),
+            Arguments.of("en-us;q=0.5,fr;q=0.0,en-gb;q=1.0", List.of(Locale.UK, Locale.US).toString())
         );
     }
 
