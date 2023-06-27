@@ -51,9 +51,10 @@ class Timestamp
 
     public Timestamp(TimeZone timeZone)
     {
-        tzFormatter = DateTimeFormatter.ofPattern("yyyy-MM-dd HH:mm:ss");
         zoneId = timeZone.toZoneId();
-        tzFormatter.withZone(zoneId);
+        tzFormatter = DateTimeFormatter
+                .ofPattern("yyyy-MM-dd HH:mm:ss")
+                .withZone(zoneId);
         tick = null;
     }
 

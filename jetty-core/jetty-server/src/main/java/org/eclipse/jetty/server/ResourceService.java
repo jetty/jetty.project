@@ -16,6 +16,7 @@ package org.eclipse.jetty.server;
 import java.io.IOException;
 import java.nio.ByteBuffer;
 import java.nio.channels.ReadableByteChannel;
+import java.nio.charset.Charset;
 import java.nio.charset.StandardCharsets;
 import java.util.ArrayList;
 import java.util.Collection;
@@ -626,8 +627,10 @@ public class ResourceService
             return;
         }
 
-        byte[] data = listing.getBytes(StandardCharsets.UTF_8);
-        response.getHeaders().put(HttpHeader.CONTENT_TYPE, "text/html;charset=utf-8");
+        String characterEncoding = httpContent.getCharacterEncoding();
+        Charset charset = characterEncoding == null ? StandardCharsets.UTF_8 : Charset.forName(characterEncoding);
+        byte[] data = listing.getBytes(charset);
+        response.getHeaders().put(HttpHeader.CONTENT_TYPE, "text/html;charset=" + charset.name());
         response.getHeaders().put(HttpHeader.CONTENT_LENGTH, data.length);
         response.write(true, ByteBuffer.wrap(data), callback);
     }

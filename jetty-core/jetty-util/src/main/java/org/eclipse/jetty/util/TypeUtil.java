@@ -25,6 +25,7 @@ import java.lang.reflect.InvocationTargetException;
 import java.net.URI;
 import java.net.URISyntaxException;
 import java.net.URL;
+import java.nio.charset.StandardCharsets;
 import java.security.CodeSource;
 import java.security.ProtectionDomain;
 import java.util.ArrayList;
@@ -406,7 +407,7 @@ public class TypeUtil
                     digit = 10 + c - 'a';
             }
             if (digit < 0 || digit >= base)
-                throw new NumberFormatException(new String(b, offset, length));
+                throw new NumberFormatException(new String(b, offset, length, StandardCharsets.US_ASCII));
             value = value * base + digit;
         }
         return value;
@@ -671,14 +672,11 @@ public class TypeUtil
         try
         {
             String resourceName = TypeUtil.toClassReference(clazz);
-            if (loader != null)
+            URL url = loader.getResource(resourceName);
+            if (url != null)
             {
-                URL url = loader.getResource(resourceName);
-                if (url != null)
-                {
-                    URI uri = url.toURI();
-                    return URIUtil.unwrapContainer(uri);
-                }
+                URI uri = url.toURI();
+                return URIUtil.unwrapContainer(uri);
             }
         }
         catch (URISyntaxException ignored)
@@ -818,5 +816,10 @@ public class TypeUtil
     public static <T> Stream<ServiceLoader.Provider<T>> serviceProviderStream(ServiceLoader<T> serviceLoader)
     {
         return StreamSupport.stream(new ServiceLoaderSpliterator<>(serviceLoader), false);
+    }
+
+    private TypeUtil()
+    {
+        // prevents instantiation
     }
 }
