@@ -380,13 +380,14 @@ public class RequestTest
     public static Stream<Arguments> localeTests()
     {
         return Stream.of(
-            Arguments.of(null, List.of(Locale.getDefault()).toString()),
-            Arguments.of("zz", List.of(Locale.US).toString()),
+            Arguments.of(null, List.of(Locale.getDefault().toLanguageTag()).toString()),
+            Arguments.of("zz", List.of(Locale.US.toLanguageTag()).toString()),
             Arguments.of("en", "[en]"),
-            Arguments.of("en-us", List.of(Locale.US).toString()),
-            Arguments.of("EN-US", List.of(Locale.US).toString()),
-            Arguments.of("en-us,en-gb", List.of(Locale.US, Locale.UK).toString()),
-            Arguments.of("en-us;q=0.5,fr;q=0.0,en-gb;q=1.0", List.of(Locale.UK, Locale.US).toString())
+            Arguments.of("en-gb", List.of(Locale.UK.toLanguageTag()).toString()),
+            Arguments.of("en-us", List.of(Locale.US.toLanguageTag()).toString()),
+            Arguments.of("EN-US", List.of(Locale.US.toLanguageTag()).toString()),
+            Arguments.of("en-us,en-gb", List.of(Locale.US.toLanguageTag(), Locale.UK.toLanguageTag()).toString()),
+            Arguments.of("en-us;q=0.5,fr;q=0.0,en-gb;q=1.0", List.of(Locale.UK.toLanguageTag(), Locale.US.toLanguageTag()).toString())
         );
     }
 

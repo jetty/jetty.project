@@ -25,8 +25,7 @@ import java.util.Locale;
 import java.util.Map;
 import java.util.Objects;
 import java.util.Properties;
-import java.util.function.UnaryOperator;
-import java.util.stream.Collectors;
+import java.util.Set;
 
 import org.eclipse.jetty.util.FileID;
 import org.eclipse.jetty.util.Index;
@@ -40,39 +39,17 @@ import org.slf4j.LoggerFactory;
 public class MimeTypes
 {
     static final  Logger LOG = LoggerFactory.getLogger(MimeTypes.class);
-    private static final Index<Locale> KNOWN_LOCALES = new Index.Builder<Locale>()
-        .caseSensitive(false)
-        .withAll(() -> Arrays.stream(Locale.getAvailableLocales())
-            .collect(Collectors.toMap(Locale::toString, UnaryOperator.identity())))
-        .build();
+    private static final Set<Locale> KNOWN_LOCALES = Set.copyOf(Arrays.asList(Locale.getAvailableLocales()));
 
     /**
-     * @param languageDashCountry The language and optional country of the local. For example "en" or "en-GB".
-     * @return The {@link Locale} matching the string or null if a matching Locale is not known;
+     * @param languageTag The language and optional country of the local. For example "en" or "en-GB".
+     * @return A {@link Locale} known to the JVM matching the languageTage or null if the Locale is not known;
+     * @see Locale#forLanguageTag(String)
      */
-    public static Locale getLocale(String languageDashCountry)
+    public static Locale getLocale(String languageTag)
     {
-        // First try for a direct hit in the known Locale cache
-        Locale locale = KNOWN_LOCALES.get(languageDashCountry);
-        if (locale != null)
-            return locale;
-
-        // failing that, create a new Locale instance to normalize the name
-        String language = HttpField.stripParameters(languageDashCountry);
-        int dash = languageDashCountry.indexOf('-');
-        if (dash < 0)
-        {
-            locale = new Locale(language);
-        }
-        else
-        {
-            language = languageDashCountry.substring(0, dash).trim();
-            String country = languageDashCountry.substring(dash + 1).trim();
-            locale = new Locale(language, country);
-        }
-
-        // look up normalized name in the known Locale cache.
-        return KNOWN_LOCALES.get(locale.toString());
+        Locale locale =  Locale.forLanguageTag(languageTag);
+        return KNOWN_LOCALES.contains(locale) ? locale : null;
     }
 
     /** Enumeration of predefined MimeTypes. This is not exhaustive */
