@@ -16,7 +16,6 @@ package org.eclipse.jetty.http;
 import java.io.IOException;
 import java.nio.ByteBuffer;
 import java.nio.charset.Charset;
-import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.util.ArrayList;
@@ -26,9 +25,10 @@ import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicInteger;
 
 import org.eclipse.jetty.io.Content;
+import org.eclipse.jetty.io.content.AsyncContent;
 import org.eclipse.jetty.toolchain.test.FS;
 import org.eclipse.jetty.toolchain.test.MavenTestingUtils;
-import org.eclipse.jetty.util.BufferUtil;
+import org.eclipse.jetty.util.Callback;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Disabled;
@@ -71,30 +71,17 @@ public class MultiPartFormDataTest
         int leaks = 0;
         for (Content.Chunk chunk : _allocatedChunks)
         {
-            // Any release that does not return true is a leak.
-            if (!chunk.release())
-                leaks++;
+            // Any release that does not throw or return true is a leak.
+            try
+            {
+                if (!chunk.release())
+                    leaks++;
+            }
+            catch (IllegalStateException ignored)
+            {
+            }
         }
         assertThat("Leaked " + leaks + "/" + _allocatedChunks.size() + " chunk(s)", leaks, is(0));
-    }
-
-    Content.Chunk asChunk(String data, boolean last)
-    {
-        byte[] b = data.getBytes(StandardCharsets.UTF_8);
-        ByteBuffer buffer = BufferUtil.allocate(b.length);
-        BufferUtil.append(buffer, b);
-        Content.Chunk chunk = Content.Chunk.from(buffer, last);
-        _allocatedChunks.add(chunk);
-        return chunk;
-    }
-
-    Content.Chunk asChunk(ByteBuffer data, boolean last)
-    {
-        ByteBuffer buffer = BufferUtil.allocate(data.remaining());
-        BufferUtil.append(buffer, data);
-        Content.Chunk chunk = Content.Chunk.from(buffer, last);
-        _allocatedChunks.add(chunk);
-        return chunk;
     }
 
     @Test
@@ -109,12 +96,14 @@ public class MultiPartFormDataTest
             "Content-Disposition: form-data; name=\"fileup\"; filename=\"test.upload\"\r\n" +
             "\r\n";
 
-        MultiPartFormData formData = new MultiPartFormData(boundary);
+        AsyncContent source = new TestContent();
+        MultiPartFormData formData = new MultiPartFormData(source, boundary);
         formData.setFilesDirectory(_tmpDir);
         formData.setMaxFileSize(1024);
         formData.setMaxLength(3072);
         formData.setMaxMemoryFileSize(50);
-        formData.parse(asChunk(str, true));
+        Content.Sink.write(source, true, str, Callback.NOOP);
+        formData.parse();
 
         formData.handle((parts, failure) ->
         {
@@ -139,12 +128,14 @@ public class MultiPartFormDataTest
             eol +
             "--" + boundary + "--" + eol;
 
-        MultiPartFormData formData = new MultiPartFormData(boundary);
+        AsyncContent source = new TestContent();
+        MultiPartFormData formData = new MultiPartFormData(source, boundary);
         formData.setFilesDirectory(_tmpDir);
         formData.setMaxFileSize(1024);
         formData.setMaxLength(3072);
         formData.setMaxMemoryFileSize(50);
-        formData.parse(asChunk(str, true));
+        Content.Sink.write(source, true, str, Callback.NOOP);
+        formData.parse();
 
         formData.whenComplete((parts, failure) ->
         {
@@ -165,12 +156,14 @@ public class MultiPartFormDataTest
         String str = eol +
             "--" + boundary + "--" + eol;
 
-        MultiPartFormData formData = new MultiPartFormData(boundary);
+        AsyncContent source = new TestContent();
+        MultiPartFormData formData = new MultiPartFormData(source, boundary);
         formData.setFilesDirectory(_tmpDir);
         formData.setMaxFileSize(1024);
         formData.setMaxLength(3072);
         formData.setMaxMemoryFileSize(50);
-        formData.parse(asChunk(str, true));
+        Content.Sink.write(source, true, str, Callback.NOOP);
+        formData.parse();
 
         formData.whenComplete((parts, failure) ->
         {
@@ -213,12 +206,14 @@ public class MultiPartFormDataTest
             ----\r
             """;
 
-        MultiPartFormData formData = new MultiPartFormData("");
+        AsyncContent source = new TestContent();
+        MultiPartFormData formData = new MultiPartFormData(source, "");
         formData.setFilesDirectory(_tmpDir);
         formData.setMaxFileSize(1024);
         formData.setMaxLength(3072);
         formData.setMaxMemoryFileSize(50);
-        formData.parse(asChunk(str, true));
+        Content.Sink.write(source, true, str, Callback.NOOP);
+        formData.parse();
 
         try (MultiPartFormData.Parts parts = formData.get(5, TimeUnit.SECONDS))
         {
@@ -253,8 +248,10 @@ public class MultiPartFormDataTest
     @Test
     public void testNoBody() throws Exception
     {
-        MultiPartFormData formData = new MultiPartFormData("boundary");
-        formData.parse(Content.Chunk.EOF);
+        AsyncContent source = new TestContent();
+        MultiPartFormData formData = new MultiPartFormData(source, "boundary");
+        source.close();
+        formData.parse();
 
         formData.handle((parts, failure) ->
         {
@@ -268,9 +265,11 @@ public class MultiPartFormDataTest
     @Test
     public void testBodyWithOnlyCRLF() throws Exception
     {
-        MultiPartFormData formData = new MultiPartFormData("boundary");
+        AsyncContent source = new TestContent();
+        MultiPartFormData formData = new MultiPartFormData(source, "boundary");
         String body = "              \n\n\n\r\n\r\n\r\n\r\n";
-        formData.parse(asChunk(body, true));
+        Content.Sink.write(source, true, body, Callback.NOOP);
+        formData.parse();
 
         formData.handle((parts, failure) ->
         {
@@ -285,7 +284,7 @@ public class MultiPartFormDataTest
     public void testLeadingWhitespaceBodyWithCRLF() throws Exception
     {
         String body = """
-            
+                        
 
             \r
             \r
@@ -303,12 +302,14 @@ public class MultiPartFormDataTest
             --AaB03x--\r
             """;
 
-        MultiPartFormData formData = new MultiPartFormData("AaB03x");
+        AsyncContent source = new TestContent();
+        MultiPartFormData formData = new MultiPartFormData(source, "AaB03x");
         formData.setFilesDirectory(_tmpDir);
         formData.setMaxFileSize(1024);
         formData.setMaxLength(3072);
         formData.setMaxMemoryFileSize(50);
-        formData.parse(asChunk(body, true));
+        Content.Sink.write(source, true, body, Callback.NOOP);
+        formData.parse();
 
         try (MultiPartFormData.Parts parts = formData.get(5, TimeUnit.SECONDS))
         {
@@ -340,12 +341,14 @@ public class MultiPartFormDataTest
             --AaB03x--\r
             """;
 
-        MultiPartFormData formData = new MultiPartFormData("AaB03x");
+        AsyncContent source = new TestContent();
+        MultiPartFormData formData = new MultiPartFormData(source, "AaB03x");
         formData.setFilesDirectory(_tmpDir);
         formData.setMaxFileSize(1024);
         formData.setMaxLength(3072);
         formData.setMaxMemoryFileSize(50);
-        formData.parse(asChunk(body, true));
+        Content.Sink.write(source, true, body, Callback.NOOP);
+        formData.parse();
 
         try (MultiPartFormData.Parts parts = formData.get(5, TimeUnit.SECONDS))
         {
@@ -361,7 +364,8 @@ public class MultiPartFormDataTest
     @Test
     public void testDefaultLimits() throws Exception
     {
-        MultiPartFormData formData = new MultiPartFormData("AaB03x");
+        AsyncContent source = new TestContent();
+        MultiPartFormData formData = new MultiPartFormData(source, "AaB03x");
         formData.setFilesDirectory(_tmpDir);
         String body = """
             --AaB03x\r
@@ -371,7 +375,8 @@ public class MultiPartFormDataTest
             ABCDEFGHIJKLMNOPQRSTUVWXYZ\r
             --AaB03x--\r
             """;
-        formData.parse(asChunk(body, true));
+        Content.Sink.write(source, true, body, Callback.NOOP);
+        formData.parse();
 
         try (MultiPartFormData.Parts parts = formData.get(5, TimeUnit.SECONDS))
         {
@@ -390,7 +395,8 @@ public class MultiPartFormDataTest
     @Test
     public void testRequestContentTooBig() throws Exception
     {
-        MultiPartFormData formData = new MultiPartFormData("AaB03x");
+        AsyncContent source = new TestContent();
+        MultiPartFormData formData = new MultiPartFormData(source, "AaB03x");
         formData.setFilesDirectory(_tmpDir);
         formData.setMaxLength(16);
 
@@ -402,7 +408,8 @@ public class MultiPartFormDataTest
             ABCDEFGHIJKLMNOPQRSTUVWXYZ\r
             --AaB03x--\r
             """;
-        formData.parse(asChunk(body, true));
+        Content.Sink.write(source, true, body, Callback.NOOP);
+        formData.parse();
 
         formData.handle((parts, failure) ->
         {
@@ -416,7 +423,8 @@ public class MultiPartFormDataTest
     @Test
     public void testFileTooBig() throws Exception
     {
-        MultiPartFormData formData = new MultiPartFormData("AaB03x");
+        AsyncContent source = new TestContent();
+        MultiPartFormData formData = new MultiPartFormData(source, "AaB03x");
         formData.setFilesDirectory(_tmpDir);
         formData.setMaxFileSize(16);
 
@@ -428,7 +436,8 @@ public class MultiPartFormDataTest
             ABCDEFGHIJKLMNOPQRSTUVWXYZ\r
             --AaB03x--\r
             """;
-        formData.parse(asChunk(body, true));
+        Content.Sink.write(source, true, body, Callback.NOOP);
+        formData.parse();
 
         formData.handle((parts, failure) ->
         {
@@ -442,7 +451,8 @@ public class MultiPartFormDataTest
     @Test
     public void testTwoFilesOneInMemoryOneOnDisk() throws Exception
     {
-        MultiPartFormData formData = new MultiPartFormData("AaB03x");
+        AsyncContent source = new TestContent();
+        MultiPartFormData formData = new MultiPartFormData(source, "AaB03x");
         formData.setFilesDirectory(_tmpDir);
         String chunk = "ABCDEFGHIJKLMNOPQRSTUVWXYZ";
         formData.setMaxMemoryFileSize(chunk.length() + 1);
@@ -460,7 +470,8 @@ public class MultiPartFormDataTest
             $C$C$C$C\r
             --AaB03x--\r
             """.replace("$C", chunk);
-        formData.parse(asChunk(body, true));
+        Content.Sink.write(source, true, body, Callback.NOOP);
+        formData.parse();
 
         try (MultiPartFormData.Parts parts = formData.get(5, TimeUnit.SECONDS))
         {
@@ -482,7 +493,8 @@ public class MultiPartFormDataTest
     @Test
     public void testPartWrite() throws Exception
     {
-        MultiPartFormData formData = new MultiPartFormData("AaB03x");
+        AsyncContent source = new TestContent();
+        MultiPartFormData formData = new MultiPartFormData(source, "AaB03x");
         formData.setFilesDirectory(_tmpDir);
         String chunk = "ABCDEFGHIJKLMNOPQRSTUVWXYZ";
         formData.setMaxMemoryFileSize(chunk.length() + 1);
@@ -500,7 +512,8 @@ public class MultiPartFormDataTest
             $C$C$C$C\r
             --AaB03x--\r
             """.replace("$C", chunk);
-        formData.parse(asChunk(body, true));
+        Content.Sink.write(source, true, body, Callback.NOOP);
+        formData.parse();
 
         try (MultiPartFormData.Parts parts = formData.get(5, TimeUnit.SECONDS))
         {
@@ -528,7 +541,8 @@ public class MultiPartFormDataTest
     @Test
     public void testPathPartDelete() throws Exception
     {
-        MultiPartFormData formData = new MultiPartFormData("AaB03x");
+        AsyncContent source = new TestContent();
+        MultiPartFormData formData = new MultiPartFormData(source, "AaB03x");
         formData.setFilesDirectory(_tmpDir);
 
         String body = """
@@ -539,7 +553,8 @@ public class MultiPartFormDataTest
             ABCDEFGHIJKLMNOPQRSTUVWXYZ\r
             --AaB03x--\r
             """;
-        formData.parse(asChunk(body, true));
+        Content.Sink.write(source, true, body, Callback.NOOP);
+        formData.parse();
 
         try (MultiPartFormData.Parts parts = formData.get(5, TimeUnit.SECONDS))
         {
@@ -559,7 +574,8 @@ public class MultiPartFormDataTest
     @Test
     public void testAbort()
     {
-        MultiPartFormData formData = new MultiPartFormData("AaB03x");
+        AsyncContent source = new TestContent();
+        MultiPartFormData formData = new MultiPartFormData(source, "AaB03x");
         formData.setFilesDirectory(_tmpDir);
         formData.setMaxMemoryFileSize(32);
 
@@ -575,14 +591,15 @@ public class MultiPartFormDataTest
             --AaB03x--\r
             """;
         // Parse only part of the content.
-        formData.parse(asChunk(body, false));
+        Content.Sink.write(source, false, body, Callback.NOOP);
+        formData.parse();
         assertEquals(1, formData.getPartsSize());
 
         // Abort MultiPartFormData.
         formData.completeExceptionally(new IOException());
 
         // Parse the rest of the content.
-        formData.parse(asChunk(terminator, true));
+        Content.Sink.write(source, true, terminator, Callback.NOOP);
 
         // Try to get the parts, it should fail.
         assertThrows(ExecutionException.class, () -> formData.get(5, TimeUnit.SECONDS));
@@ -592,7 +609,8 @@ public class MultiPartFormDataTest
     @Test
     public void testMaxHeaderLength() throws Exception
     {
-        MultiPartFormData formData = new MultiPartFormData("AaB03x");
+        AsyncContent source = new TestContent();
+        MultiPartFormData formData = new MultiPartFormData(source, "AaB03x");
         formData.setFilesDirectory(_tmpDir);
         formData.setPartHeadersMaxLength(32);
 
@@ -604,7 +622,8 @@ public class MultiPartFormDataTest
             ABCDEFGHIJKLMNOPQRSTUVWXYZ\r
             --AaB03x--\r
             """;
-        formData.parse(asChunk(body, true));
+        formData.parse();
+        Content.Sink.write(source, true, body, Callback.NOOP);
 
         formData.handle((parts, failure) ->
         {
@@ -618,7 +637,8 @@ public class MultiPartFormDataTest
     @Test
     public void testDefaultCharset() throws Exception
     {
-        MultiPartFormData formData = new MultiPartFormData("AaB03x");
+        AsyncContent source = new TestContent();
+        MultiPartFormData formData = new MultiPartFormData(source, "AaB03x");
         formData.setFilesDirectory(_tmpDir);
         formData.setMaxMemoryFileSize(-1);
 
@@ -645,11 +665,12 @@ public class MultiPartFormDataTest
             \r
             --AaB03x--\r
             """;
-        formData.parse(asChunk(body1, false));
-        formData.parse(asChunk(isoCedilla, false));
-        formData.parse(asChunk(body2, false));
-        formData.parse(asChunk(utfCedilla, false));
-        formData.parse(asChunk(terminator, true));
+        formData.parse();
+        Content.Sink.write(source, false, body1, Callback.NOOP);
+        source.write(false, isoCedilla, Callback.NOOP);
+        Content.Sink.write(source, false, body2, Callback.NOOP);
+        source.write(false, utfCedilla, Callback.NOOP);
+        Content.Sink.write(source, true, terminator, Callback.NOOP);
 
         try (MultiPartFormData.Parts parts = formData.get(5, TimeUnit.SECONDS))
         {
@@ -669,7 +690,8 @@ public class MultiPartFormDataTest
     @Test
     public void testPartWithBackSlashInFileName() throws Exception
     {
-        MultiPartFormData formData = new MultiPartFormData("AaB03x");
+        AsyncContent source = new TestContent();
+        MultiPartFormData formData = new MultiPartFormData(source, "AaB03x");
         formData.setFilesDirectory(_tmpDir);
         formData.setMaxMemoryFileSize(-1);
 
@@ -681,7 +703,8 @@ public class MultiPartFormDataTest
             stuffaaa\r
             --AaB03x--\r
             """;
-        formData.parse(asChunk(contents, true));
+        formData.parse();
+        Content.Sink.write(source, true, contents, Callback.NOOP);
 
         try (MultiPartFormData.Parts parts = formData.get(5, TimeUnit.SECONDS))
         {
@@ -694,7 +717,8 @@ public class MultiPartFormDataTest
     @Test
     public void testPartWithWindowsFileName() throws Exception
     {
-        MultiPartFormData formData = new MultiPartFormData("AaB03x");
+        AsyncContent source = new TestContent();
+        MultiPartFormData formData = new MultiPartFormData(source, "AaB03x");
         formData.setFilesDirectory(_tmpDir);
         formData.setMaxMemoryFileSize(-1);
 
@@ -706,7 +730,8 @@ public class MultiPartFormDataTest
             stuffaaa\r
             --AaB03x--\r
             """;
-        formData.parse(asChunk(contents, true));
+        Content.Sink.write(source, true, contents, Callback.NOOP);
+        formData.parse();
 
         try (MultiPartFormData.Parts parts = formData.get(5, TimeUnit.SECONDS))
         {
@@ -722,7 +747,8 @@ public class MultiPartFormDataTest
     @Disabled
     public void testCorrectlyEncodedMSFilename() throws Exception
     {
-        MultiPartFormData formData = new MultiPartFormData("AaB03x");
+        AsyncContent source = new TestContent();
+        MultiPartFormData formData = new MultiPartFormData(source, "AaB03x");
         formData.setFilesDirectory(_tmpDir);
         formData.setMaxMemoryFileSize(-1);
 
@@ -734,7 +760,8 @@ public class MultiPartFormDataTest
             stuffaaa\r
             --AaB03x--\r
             """;
-        formData.parse(asChunk(contents, true));
+        Content.Sink.write(source, true, contents, Callback.NOOP);
+        formData.parse();
 
         try (MultiPartFormData.Parts parts = formData.get(5, TimeUnit.SECONDS))
         {
@@ -747,7 +774,8 @@ public class MultiPartFormDataTest
     @Test
     public void testWriteFilesForPartWithoutFileName() throws Exception
     {
-        MultiPartFormData formData = new MultiPartFormData("AaB03x");
+        AsyncContent source = new TestContent();
+        MultiPartFormData formData = new MultiPartFormData(source, "AaB03x");
         formData.setFilesDirectory(_tmpDir);
         formData.setUseFilesForPartsWithoutFileName(true);
 
@@ -759,7 +787,8 @@ public class MultiPartFormDataTest
             sssaaa\r
             --AaB03x--\r
             """;
-        formData.parse(asChunk(body, true));
+        Content.Sink.write(source, true, body, Callback.NOOP);
+        formData.parse();
 
         try (MultiPartFormData.Parts parts = formData.get(5, TimeUnit.SECONDS))
         {
@@ -775,7 +804,8 @@ public class MultiPartFormDataTest
     @Test
     public void testPartsWithSameName() throws Exception
     {
-        MultiPartFormData formData = new MultiPartFormData("AaB03x");
+        AsyncContent source = new TestContent();
+        MultiPartFormData formData = new MultiPartFormData(source, "AaB03x");
         formData.setFilesDirectory(_tmpDir);
 
         String sameNames = """
@@ -791,7 +821,8 @@ public class MultiPartFormDataTest
             AAAAA\r
             --AaB03x--\r
             """;
-        formData.parse(asChunk(sameNames, true));
+        Content.Sink.write(source, true, sameNames, Callback.NOOP);
+        formData.parse();
 
         try (MultiPartFormData.Parts parts = formData.get(5, TimeUnit.SECONDS))
         {
@@ -808,6 +839,16 @@ public class MultiPartFormDataTest
             MultiPart.Part part2 = partsList.get(1);
             assertEquals("stuff2.txt", part2.getFileName());
             assertEquals("AAAAA", part2.getContentAsString(formData.getDefaultCharset()));
+        }
+    }
+
+    private class TestContent extends AsyncContent
+    {
+        @Override
+        protected void offer(Content.Chunk chunk)
+        {
+            _allocatedChunks.add(chunk);
+            super.offer(chunk);
         }
     }
 }

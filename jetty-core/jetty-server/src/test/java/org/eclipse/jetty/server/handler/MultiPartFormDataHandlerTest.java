@@ -79,7 +79,7 @@ public class MultiPartFormDataHandlerTest
             public boolean handle(Request request, Response response, Callback callback)
             {
                 String boundary = MultiPart.extractBoundary(request.getHeaders().get(HttpHeader.CONTENT_TYPE));
-                new MultiPartFormData(boundary).parse(request)
+                new MultiPartFormData(request, boundary).parse()
                     .whenComplete((parts, failure) ->
                     {
                         if (parts != null)
@@ -193,7 +193,7 @@ public class MultiPartFormDataHandlerTest
             public boolean handle(Request request, Response response, Callback callback)
             {
                 String boundary = MultiPart.extractBoundary(request.getHeaders().get(HttpHeader.CONTENT_TYPE));
-                new MultiPartFormData(boundary).parse(request)
+                new MultiPartFormData(request, boundary).parse()
                     .whenComplete((parts, failure) ->
                     {
                         if (parts != null)
@@ -310,9 +310,10 @@ public class MultiPartFormDataHandlerTest
             String boundary = MultiPart.extractBoundary(value);
             assertNotNull(boundary);
 
-            MultiPartFormData formData = new MultiPartFormData(boundary);
+            ByteBufferContentSource byteBufferContentSource = new ByteBufferContentSource(ByteBuffer.wrap(response.getContentBytes()));
+            MultiPartFormData formData = new MultiPartFormData(byteBufferContentSource, boundary);
             formData.setFilesDirectory(tempDir);
-            formData.parse(new ByteBufferContentSource(ByteBuffer.wrap(response.getContentBytes())));
+            formData.parse();
             MultiPartFormData.Parts parts = formData.join();
 
             assertEquals(2, parts.size());

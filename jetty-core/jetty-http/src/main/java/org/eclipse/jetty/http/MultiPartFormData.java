@@ -14,7 +14,6 @@
 package org.eclipse.jetty.http;
 
 import java.io.Closeable;
-import java.io.EOFException;
 import java.nio.ByteBuffer;
 import java.nio.channels.NonWritableChannelException;
 import java.nio.channels.SeekableByteChannel;
@@ -29,6 +28,7 @@ import java.util.Objects;
 import java.util.concurrent.CompletableFuture;
 
 import org.eclipse.jetty.io.Content;
+import org.eclipse.jetty.io.content.ContentSourceCompletableFuture;
 import org.eclipse.jetty.util.IO;
 import org.eclipse.jetty.util.thread.AutoLock;
 import org.slf4j.Logger;
@@ -38,8 +38,7 @@ import static java.nio.charset.StandardCharsets.US_ASCII;
 
 /**
  * <p>A {@link CompletableFuture} that is completed when a multipart/form-data content
- * has been parsed asynchronously from a {@link Content.Source} via {@link #parse(Content.Source)}
- * or from one or more {@link Content.Chunk}s via {@link #parse(Content.Chunk)}.</p>
+ * has been parsed asynchronously from a {@link Content.Source}.</p>
  * <p>Once the parsing of the multipart/form-data content completes successfully,
  * objects of this class are completed with a {@link Parts} object.</p>
  * <p>Objects of this class may be configured to save multipart files in a configurable
@@ -68,7 +67,7 @@ import static java.nio.charset.StandardCharsets.US_ASCII;
  *
  * @see Parts
  */
-public class MultiPartFormData extends CompletableFuture<MultiPartFormData.Parts>
+public class MultiPartFormData extends ContentSourceCompletableFuture<MultiPartFormData.Parts>
 {
     // TODO base the implementation on a ContentSourceCompletableFuture
 
@@ -82,9 +81,11 @@ public class MultiPartFormData extends CompletableFuture<MultiPartFormData.Parts
     private long maxMemoryFileSize;
     private long maxLength = -1;
     private long length;
+    private Parts parts;
 
-    public MultiPartFormData(String boundary)
+    public MultiPartFormData(Content.Source source, String boundary)
     {
+        super(source);
         parser = new MultiPart.Parser(Objects.requireNonNull(boundary), listener);
     }
 
@@ -97,66 +98,23 @@ public class MultiPartFormData extends CompletableFuture<MultiPartFormData.Parts
     }
 
     /**
-     * <p>Parses the given multipart/form-data content.</p>
-     * <p>Returns this {@code MultiPartFormData} object,
-     * so that it can be used in the typical "fluent"
-     * style of {@link CompletableFuture}.</p>
-     *
-     * @param content the multipart/form-data content to parse
-     * @return this {@code MultiPartFormData} object
-     */
-    public MultiPartFormData parse(Content.Source content)
-    {
-        new Runnable()
-        {
-            @Override
-            public void run()
-            {
-                while (true)
-                {
-                    Content.Chunk chunk = content.read();
-                    if (chunk == null)
-                    {
-                        content.demand(this);
-                        return;
-                    }
-                    if (Content.Chunk.isFailure(chunk))
-                    {
-                        listener.onFailure(chunk.getFailure());
-                        return;
-                    }
-                    parse(chunk);
-                    chunk.release();
-                    if (isDone())
-                        return;
-                    if (chunk.isLast())
-                    {
-                        listener.onFailure(new EOFException());
-                        return;
-                    }
-                }
-            }
-        }.run();
-        return this;
-    }
-
-    /**
      * <p>Parses the given chunk containing multipart/form-data bytes.</p>
      * <p>One or more chunks may be passed to this method, until the parsing
      * of the multipart/form-data content completes.</p>
      *
      * @param chunk the {@link Content.Chunk} to parse.
      */
-    public void parse(Content.Chunk chunk)
+    @Override
+    protected MultiPartFormData.Parts parse(Content.Chunk chunk)
     {
         if (listener.isFailed())
-            return;
+            return null;
         length += chunk.getByteBuffer().remaining();
         long max = getMaxLength();
         if (max > 0 && length > max)
-            listener.onFailure(new IllegalStateException("max length exceeded: %d".formatted(max)));
-        else
-            parser.parse(chunk);
+            throw new IllegalStateException("max length exceeded: %d".formatted(max));
+        parser.parse(chunk);
+        return parts;
     }
 
     /**
@@ -550,8 +508,8 @@ public class MultiPartFormData extends CompletableFuture<MultiPartFormData.Parts
             try (AutoLock ignored = lock.lock())
             {
                 result = List.copyOf(parts);
+                MultiPartFormData.this.parts = new Parts(result);
             }
-            complete(new Parts(result));
         }
 
         Charset getDefaultCharset()
@@ -579,7 +537,7 @@ public class MultiPartFormData extends CompletableFuture<MultiPartFormData.Parts
         public void onFailure(Throwable failure)
         {
             super.onFailure(failure);
-            completeExceptionally(failure);
+            completeExceptionally(failure); // TODO not here
         }
 
         private void fail(Throwable cause)

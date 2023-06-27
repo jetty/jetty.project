@@ -30,10 +30,10 @@ public abstract class ContentSourceCompletableFuture<X> extends CompletableFutur
         _content = content;
     }
 
-    public boolean parse()
+    public CompletableFuture<X> parse()
     {
         onContentAvailable();
-        return isDone();
+        return this;
     }
 
     private void onContentAvailable()
@@ -54,14 +54,25 @@ public abstract class ContentSourceCompletableFuture<X> extends CompletableFutur
                 return;
             }
 
-            X x = parse(chunk);
-            chunk.release();
-
-            if (x != null)
+            try
             {
-                complete(x);
+                X x = parse(chunk);
+                if (x != null)
+                {
+                    complete(x);
+                    return;
+                }
+            }
+            catch (Throwable failure)
+            {
+                completeExceptionally(failure);
                 return;
             }
+            finally
+            {
+                chunk.release();
+            }
+
             if (chunk.isLast())
             {
                 completeExceptionally(new EOFException());

@@ -79,7 +79,7 @@ public class AsyncContent implements Content.Sink, Content.Source, Closeable
      * or succeeded if and only if the chunk is terminal, as non-terminal
      * chunks have to bind the succeeding of the callback to their release.
      */
-    private void offer(Content.Chunk chunk)
+    protected void offer(Content.Chunk chunk)
     {
         Throwable failure = null;
         boolean wasEmpty = false;

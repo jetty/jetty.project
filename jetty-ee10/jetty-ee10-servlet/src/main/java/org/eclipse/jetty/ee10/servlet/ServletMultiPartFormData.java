@@ -16,7 +16,6 @@ package org.eclipse.jetty.ee10.servlet;
 import java.io.File;
 import java.io.IOException;
 import java.io.InputStream;
-import java.nio.ByteBuffer;
 import java.nio.file.Path;
 import java.util.ArrayList;
 import java.util.Collection;
@@ -32,9 +31,8 @@ import org.eclipse.jetty.io.AbstractConnection;
 import org.eclipse.jetty.io.ByteBufferPool;
 import org.eclipse.jetty.io.Connection;
 import org.eclipse.jetty.io.Content;
-import org.eclipse.jetty.io.RetainableByteBuffer;
+import org.eclipse.jetty.io.content.InputStreamContentSource;
 import org.eclipse.jetty.server.ConnectionMetaData;
-import org.eclipse.jetty.util.BufferUtil;
 import org.eclipse.jetty.util.IO;
 import org.eclipse.jetty.util.StringUtil;
 
@@ -105,7 +103,14 @@ public class ServletMultiPartFormData
         // TODO we should look for an already done MultiPartFormData as an attribute, so it can be
         //      read asynchronously without blocking by something like the DelayedHandler (although
         //      probably need an in ServletContext variant to get the configuration below.
-        MultiPartFormData formData = new MultiPartFormData(boundary);
+
+        ByteBufferPool byteBufferPool = request.getRequest().getComponents().getByteBufferPool();
+        ConnectionMetaData connectionMetaData = request.getRequest().getConnectionMetaData();
+        Connection connection = connectionMetaData.getConnection();
+        int bufferSize = connection instanceof AbstractConnection c ? c.getInputBufferSize() : 2048;
+        InputStreamContentSource input = new InputStreamContentSource(request.getInputStream(), byteBufferPool);
+        input.setBufferSize(bufferSize);
+        MultiPartFormData formData = new MultiPartFormData(input, boundary);
         formData.setMaxParts(maxParts);
 
         File tmpDirFile = (File)request.getServletContext().getAttribute(ServletContext.TEMPDIR);
@@ -119,35 +124,9 @@ public class ServletMultiPartFormData
         formData.setMaxMemoryFileSize(config.getFileSizeThreshold());
         formData.setMaxFileSize(config.getMaxFileSize());
         formData.setMaxLength(config.getMaxRequestSize());
-        ConnectionMetaData connectionMetaData = request.getRequest().getConnectionMetaData();
         formData.setPartHeadersMaxLength(connectionMetaData.getHttpConfiguration().getRequestHeaderSize());
 
-        ByteBufferPool byteBufferPool = request.getRequest().getComponents().getByteBufferPool();
-        Connection connection = connectionMetaData.getConnection();
-        int bufferSize = connection instanceof AbstractConnection c ? c.getInputBufferSize() : 2048;
-        InputStream input = request.getInputStream();
-        while (!formData.isDone())
-        {
-            RetainableByteBuffer retainable = byteBufferPool.acquire(bufferSize, false);
-            boolean readEof = false;
-            ByteBuffer buffer = retainable.getByteBuffer();
-            while (BufferUtil.space(buffer) > bufferSize / 2)
-            {
-                int read = BufferUtil.readFrom(input, buffer);
-                if (read < 0)
-                {
-                    readEof = true;
-                    break;
-                }
-            }
-
-            formData.parse(Content.Chunk.from(buffer, false, retainable::release));
-            if (readEof)
-            {
-                formData.parse(Content.Chunk.EOF);
-                break;
-            }
-        }
+        formData.parse();
 
         Parts parts = new Parts(formData.join());
         request.setAttribute(Parts.class.getName(), parts);
