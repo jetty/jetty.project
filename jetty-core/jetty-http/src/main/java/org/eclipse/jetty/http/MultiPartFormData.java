@@ -69,8 +69,6 @@ import static java.nio.charset.StandardCharsets.US_ASCII;
  */
 public class MultiPartFormData extends ContentSourceCompletableFuture<MultiPartFormData.Parts>
 {
-    // TODO base the implementation on a ContentSourceCompletableFuture
-
     private static final Logger LOG = LoggerFactory.getLogger(MultiPartFormData.class);
 
     private final PartsListener listener = new PartsListener();

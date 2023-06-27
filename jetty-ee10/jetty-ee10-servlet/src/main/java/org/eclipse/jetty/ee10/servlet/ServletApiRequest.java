@@ -501,6 +501,12 @@ public class ServletApiRequest implements HttpServletRequest
             int maxFormContentSize = contextHandler.getMaxFormContentSize();
             int maxFormKeys = contextHandler.getMaxFormKeys();
 
+            // TODO use the following
+            config.getFileSizeThreshold();
+            config.getLocation();
+            config.getMaxFileSize();
+            config.getMaxRequestSize();
+
             _parts = ServletMultiPartFormData.from(this, maxFormKeys);
             Collection<Part> parts = _parts.getParts();
 
