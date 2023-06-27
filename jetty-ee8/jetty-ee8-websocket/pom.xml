@@ -22,6 +22,7 @@
     <module>jetty-ee8-websocket-jetty-api</module>
     <module>jetty-ee8-websocket-jetty-common</module>
     <module>jetty-ee8-websocket-javax-client</module>
+    <module>jetty-ee8-websocket-javax-client-webapp</module>
     <module>jetty-ee8-websocket-servlet</module>
     <module>jetty-ee8-websocket-javax-server</module>
     <module>jetty-ee8-websocket-jetty-client</module>

@@ -20,6 +20,7 @@
   <modules>
     <module>jetty-ee9-websocket-jakarta-common</module>
     <module>jetty-ee9-websocket-jakarta-client</module>
+    <module>jetty-ee9-websocket-jakarta-client-webapp</module>
     <module>jetty-ee9-websocket-jakarta-server</module>
     <module>jetty-ee9-websocket-jakarta-tests</module>
     <module>jetty-ee9-websocket-jetty-api</module>

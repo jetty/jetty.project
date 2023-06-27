@@ -25,7 +25,7 @@
     </dependency>
     <dependency>
       <groupId>org.eclipse.jetty.ee8.websocket</groupId>
-      <artifactId>jetty-ee8-websocket-javax-client</artifactId>
+      <artifactId>jetty-ee8-websocket-javax-client-webapp</artifactId>
     </dependency>
     <dependency>
       <groupId>org.eclipse.jetty.ee8.websocket</groupId>

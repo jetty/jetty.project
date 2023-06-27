@@ -8,50 +8,22 @@
   </parent>
 
   <modelVersion>4.0.0</modelVersion>
-  <artifactId>jetty-ee8-websocket-javax-client</artifactId>
-  <name>EE8 :: Websocket :: Javax Client</name>
+  <artifactId>jetty-ee8-websocket-javax-client-webapp</artifactId>
+  <name>EE8 :: Websocket :: Javax Client Webapp</name>
 
   <properties>
-    <ee9.module>jetty-ee9-websocket/jetty-ee9-websocket-jakarta-client</ee9.module>
-    <bundle-symbolic-name>${project.groupId}.javax.client</bundle-symbolic-name>
+    <ee9.module>jetty-ee9-websocket/jetty-ee9-websocket-jakarta-client-webapp</ee9.module>
+    <bundle-symbolic-name>${project.groupId}.javax.client.webapp</bundle-symbolic-name>
   </properties>
 
   <dependencies>
     <dependency>
-      <groupId>org.eclipse.jetty.toolchain</groupId>
-      <artifactId>jetty-javax-websocket-api</artifactId>
-    </dependency>
-    <dependency>
       <groupId>org.eclipse.jetty.ee8.websocket</groupId>
-      <artifactId>jetty-ee8-websocket-javax-common</artifactId>
-    </dependency>
-    <dependency>
-      <groupId>org.eclipse.jetty.websocket</groupId>
-      <artifactId>jetty-websocket-core-client</artifactId>
-    </dependency>
-    <dependency>
-      <groupId>org.eclipse.jetty</groupId>
-      <artifactId>jetty-client</artifactId>
+      <artifactId>jetty-ee8-websocket-javax-client</artifactId>
     </dependency>
     <dependency>
       <groupId>org.eclipse.jetty.toolchain</groupId>
       <artifactId>jetty-servlet-api</artifactId>
-      <scope>test</scope>
-    </dependency>
-    <dependency>
-      <groupId>org.eclipse.jetty</groupId>
-      <artifactId>jetty-xml</artifactId>
-      <scope>test</scope>
-    </dependency>
-    <dependency>
-      <groupId>org.eclipse.jetty</groupId>
-      <artifactId>jetty-jmx</artifactId>
-      <scope>test</scope>
-    </dependency>
-    <dependency>
-      <groupId>org.eclipse.jetty</groupId>
-      <artifactId>jetty-slf4j-impl</artifactId>
-      <scope>test</scope>
     </dependency>
   </dependencies>
 
@@ -63,7 +35,7 @@
         <extensions>true</extensions>
         <configuration>
           <instructions>
-            <Bundle-Description>jakarta.websocket.client Implementation</Bundle-Description>
+            <Bundle-Description>jakarta.websocket.client WebApp Implementation</Bundle-Description>
             <Export-Package>
               org.eclipse.jetty.ee8.websocket.jakarta.client.*;version="${parsedVersion.majorVersion}.${parsedVersion.minorVersion}.${parsedVersion.incrementalVersion}"
             </Export-Package>

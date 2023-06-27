@@ -175,6 +175,11 @@
       </dependency>
       <dependency>
         <groupId>org.eclipse.jetty.ee9.websocket</groupId>
+        <artifactId>jetty-ee9-websocket-jakarta-client-webapp</artifactId>
+        <version>${project.version}</version>
+      </dependency>
+      <dependency>
+        <groupId>org.eclipse.jetty.ee9.websocket</groupId>
         <artifactId>jetty-ee9-websocket-jakarta-common</artifactId>
         <version>${project.version}</version>
       </dependency>
