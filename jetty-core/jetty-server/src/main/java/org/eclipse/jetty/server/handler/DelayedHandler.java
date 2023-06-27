@@ -13,7 +13,6 @@
 
 package org.eclipse.jetty.server.handler;
 
-import java.io.IOException;
 import java.nio.charset.Charset;
 import java.nio.charset.StandardCharsets;
 import java.util.Objects;
@@ -269,7 +268,7 @@ public class DelayedHandler extends Handler.Wrapper
         {
             super(handler, wrapped, response, callback);
             String boundary = MultiPart.extractBoundary(contentType);
-            _formData = boundary == null ? null : new MultiPartFormData(boundary);
+            _formData = boundary == null ? null : new MultiPartFormData(wrapped, boundary);
         }
 
         private void process(MultiPartFormData.Parts parts, Throwable x)
@@ -309,7 +308,7 @@ public class DelayedHandler extends Handler.Wrapper
             else
             {
                 _formData.setFilesDirectory(getRequest().getContext().getTempDirectory().toPath());
-                readAndParse();
+                _formData.parse();
                 // if we are done already, then we are still in the scope of the original process call and can
                 // process directly, otherwise we must execute a call to process as we are within a serialized
                 // demand callback.
@@ -328,32 +327,6 @@ public class DelayedHandler extends Handler.Wrapper
                 else
                 {
                     _formData.whenComplete(this::executeProcess);
-                }
-            }
-        }
-
-        private void readAndParse()
-        {
-            while (!_formData.isDone())
-            {
-                Content.Chunk chunk = getRequest().read();
-                if (chunk == null)
-                {
-                    getRequest().demand(this::readAndParse);
-                    return;
-                }
-                if (Content.Chunk.isFailure(chunk))
-                {
-                    _formData.completeExceptionally(chunk.getFailure());
-                    return;
-                }
-                _formData.parse(chunk);
-                chunk.release();
-                if (chunk.isLast())
-                {
-                    if (!_formData.isDone())
-                        process(null, new IOException("Incomplete multipart"));
-                    return;
                 }
             }
         }

@@ -17,7 +17,6 @@ import java.io.IOException;
 import java.io.InputStream;
 import java.io.OutputStream;
 import java.net.Socket;
-import java.nio.ByteBuffer;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.util.Arrays;
@@ -52,8 +51,8 @@ import org.eclipse.jetty.http.HttpTester;
 import org.eclipse.jetty.http.MultiPart;
 import org.eclipse.jetty.http.MultiPartFormData;
 import org.eclipse.jetty.io.ByteBufferPool;
-import org.eclipse.jetty.io.Content;
 import org.eclipse.jetty.io.EofException;
+import org.eclipse.jetty.io.content.InputStreamContentSource;
 import org.eclipse.jetty.logging.StacklessLogging;
 import org.eclipse.jetty.server.Server;
 import org.eclipse.jetty.server.ServerConnector;
@@ -409,11 +408,10 @@ public class MultiPartServletTest
 
         String contentType = headers.get(HttpHeader.CONTENT_TYPE);
         String boundary = MultiPart.extractBoundary(contentType);
-        MultiPartFormData formData = new MultiPartFormData(boundary);
-        formData.setMaxParts(1);
-
         InputStream inputStream = new GZIPInputStream(responseStream.getInputStream());
-        formData.parse(Content.Chunk.from(ByteBuffer.wrap(IO.readBytes(inputStream)), true));
+        MultiPartFormData formData = new MultiPartFormData(new InputStreamContentSource(inputStream), boundary);
+        formData.setMaxParts(1);
+        formData.parse();
         MultiPartFormData.Parts parts = formData.join();
 
         assertThat(parts.size(), is(1));
