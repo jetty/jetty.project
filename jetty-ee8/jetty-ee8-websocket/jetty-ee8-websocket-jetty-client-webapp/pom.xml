@@ -7,12 +7,12 @@
   </parent>
 
   <modelVersion>4.0.0</modelVersion>
-  <artifactId>jetty-ee8-websocket-jetty-client</artifactId>
-  <name>EE8 :: Websocket :: Jetty Client</name>
+  <artifactId>jetty-ee8-websocket-jetty-client-webapp</artifactId>
+  <name>EE8 :: Websocket :: Jetty Client WebApp</name>
 
   <properties>
-    <ee9.module>jetty-ee9-websocket/jetty-ee9-websocket-jetty-client</ee9.module>
-    <bundle-symbolic-name>${project.groupId}.client</bundle-symbolic-name>
+    <ee9.module>jetty-ee9-websocket/jetty-ee9-websocket-jetty-client-webapp</ee9.module>
+    <bundle-symbolic-name>${project.groupId}.client.webapp</bundle-symbolic-name>
   </properties>
 
   <build>
@@ -38,33 +38,11 @@
   <dependencies>
     <dependency>
       <groupId>org.eclipse.jetty.ee8.websocket</groupId>
-      <artifactId>jetty-ee8-websocket-jetty-api</artifactId>
-    </dependency>
-    <dependency>
-      <groupId>org.eclipse.jetty.ee8.websocket</groupId>
-      <artifactId>jetty-ee8-websocket-jetty-common</artifactId>
-    </dependency>
-    <dependency>
-      <groupId>org.eclipse.jetty.websocket</groupId>
-      <artifactId>jetty-websocket-core-client</artifactId>
-    </dependency>
-    <dependency>
-      <groupId>org.eclipse.jetty</groupId>
-      <artifactId>jetty-client</artifactId>
-    </dependency>
-    <dependency>
-      <groupId>org.slf4j</groupId>
-      <artifactId>slf4j-api</artifactId>
+      <artifactId>jetty-ee8-websocket-jetty-client</artifactId>
     </dependency>
     <dependency>
       <groupId>org.eclipse.jetty.ee8</groupId>
       <artifactId>jetty-ee8-webapp</artifactId>
-      <scope>test</scope>
-    </dependency>
-    <dependency>
-      <groupId>org.eclipse.jetty</groupId>
-      <artifactId>jetty-slf4j-impl</artifactId>
-      <scope>test</scope>
     </dependency>
   </dependencies>
 

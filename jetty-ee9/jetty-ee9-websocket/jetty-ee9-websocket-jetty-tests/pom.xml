@@ -29,7 +29,7 @@
     </dependency>
     <dependency>
       <groupId>org.eclipse.jetty.ee9.websocket</groupId>
-      <artifactId>jetty-ee9-websocket-jetty-client</artifactId>
+      <artifactId>jetty-ee9-websocket-jetty-client-webapp</artifactId>
       <scope>test</scope>
     </dependency>
     <dependency>

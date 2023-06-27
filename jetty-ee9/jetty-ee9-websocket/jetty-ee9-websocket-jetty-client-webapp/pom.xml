@@ -1,17 +1,17 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <project xmlns="http://maven.apache.org/POM/4.0.0" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/maven-v4_0_0.xsd">
   <parent>
-    <groupId>org.eclipse.jetty.ee10.websocket</groupId>
-    <artifactId>jetty-ee10-websocket</artifactId>
+    <groupId>org.eclipse.jetty.ee9.websocket</groupId>
+    <artifactId>jetty-ee9-websocket</artifactId>
     <version>12.0.0-SNAPSHOT</version>
   </parent>
 
   <modelVersion>4.0.0</modelVersion>
-  <artifactId>jetty-ee10-websocket-jetty-client</artifactId>
-  <name>EE10 :: Websocket :: Jetty Client</name>
+  <artifactId>jetty-ee9-websocket-jetty-client-webapp</artifactId>
+  <name>EE9 :: Websocket :: Jetty Client WebApp</name>
 
   <properties>
-    <bundle-symbolic-name>${project.groupId}.client</bundle-symbolic-name>
+    <bundle-symbolic-name>${project.groupId}.client.webapp</bundle-symbolic-name>
   </properties>
 
   <build>
@@ -26,7 +26,7 @@
               osgi.extender; filter:="(osgi.extender=osgi.serviceloader.registrar)"
             </Require-Capability>
             <Provide-Capability>
-              osgi.serviceloader; osgi.serviceloader=org.eclipse.jetty.ee10.webapp.Configuration
+              osgi.serviceloader; osgi.serviceloader=org.eclipse.jetty.ee9.webapp.Configuration
             </Provide-Capability>
           </instructions>
         </configuration>
@@ -36,12 +36,12 @@
 
   <dependencies>
     <dependency>
-      <groupId>org.eclipse.jetty.websocket</groupId>
-      <artifactId>jetty-websocket-jetty-client</artifactId>
+      <groupId>org.eclipse.jetty.ee9.websocket</groupId>
+      <artifactId>jetty-ee9-websocket-jetty-client</artifactId>
     </dependency>
     <dependency>
-      <groupId>org.eclipse.jetty.ee10</groupId>
-      <artifactId>jetty-ee10-webapp</artifactId>
+      <groupId>org.eclipse.jetty.ee9</groupId>
+      <artifactId>jetty-ee9-webapp</artifactId>
     </dependency>
   </dependencies>
 

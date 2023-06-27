@@ -26,6 +26,7 @@
     <module>jetty-ee9-websocket-jetty-api</module>
     <module>jetty-ee9-websocket-jetty-common</module>
     <module>jetty-ee9-websocket-jetty-client</module>
+    <module>jetty-ee9-websocket-jetty-client-webapp</module>
     <module>jetty-ee9-websocket-jetty-server</module>
     <module>jetty-ee9-websocket-jetty-tests</module>
     <module>jetty-ee9-websocket-servlet</module>
