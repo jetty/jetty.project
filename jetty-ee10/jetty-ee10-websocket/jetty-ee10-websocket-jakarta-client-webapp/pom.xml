@@ -7,53 +7,22 @@
   </parent>
 
   <modelVersion>4.0.0</modelVersion>
-  <artifactId>jetty-ee10-websocket-jakarta-client</artifactId>
-  <name>EE10 :: Websocket :: Jakarta Client</name>
+  <artifactId>jetty-ee10-websocket-jakarta-client-webapp</artifactId>
+  <name>EE10 :: Websocket :: Jakarta Client WebApp</name>
 
   <properties>
-    <bundle-symbolic-name>${project.groupId}.jakarta.client</bundle-symbolic-name>
+    <bundle-symbolic-name>${project.groupId}.jakarta.client.webapp</bundle-symbolic-name>
   </properties>
 
   <dependencies>
     <dependency>
-      <groupId>jakarta.websocket</groupId>
-      <artifactId>jakarta.websocket-client-api</artifactId>
-    </dependency>
-    <dependency>
-      <groupId>jakarta.websocket</groupId>
-      <artifactId>jakarta.websocket-api</artifactId>
-    </dependency>
-    <dependency>
       <groupId>org.eclipse.jetty.ee10.websocket</groupId>
-      <artifactId>jetty-ee10-websocket-jakarta-common</artifactId>
-    </dependency>
-    <dependency>
-      <groupId>org.eclipse.jetty.websocket</groupId>
-      <artifactId>jetty-websocket-core-client</artifactId>
-    </dependency>
-    <dependency>
-      <groupId>org.eclipse.jetty</groupId>
-      <artifactId>jetty-client</artifactId>
+      <artifactId>jetty-ee10-websocket-jakarta-client</artifactId>
     </dependency>
     <dependency>
       <groupId>jakarta.servlet</groupId>
       <artifactId>jakarta.servlet-api</artifactId>
-      <scope>test</scope>
-    </dependency>
-    <dependency>
-      <groupId>org.eclipse.jetty</groupId>
-      <artifactId>jetty-xml</artifactId>
-      <scope>test</scope>
-    </dependency>
-    <dependency>
-      <groupId>org.eclipse.jetty</groupId>
-      <artifactId>jetty-jmx</artifactId>
-      <scope>test</scope>
-    </dependency>
-    <dependency>
-      <groupId>org.eclipse.jetty</groupId>
-      <artifactId>jetty-slf4j-impl</artifactId>
-      <scope>test</scope>
+      <optional>true</optional>
     </dependency>
   </dependencies>
 
@@ -70,7 +39,7 @@
             </goals>
             <configuration>
               <instructions>
-                <Bundle-Description>jakarta.websocket.client Implementation</Bundle-Description>
+                <Bundle-Description>jakarta.websocket.client WebApp Implementation</Bundle-Description>
                 <Export-Package>
                   org.eclipse.jetty.ee10.websocket.jakarta.client.*;version="${parsedVersion.majorVersion}.${parsedVersion.minorVersion}.${parsedVersion.incrementalVersion}"
                 </Export-Package>
@@ -78,7 +47,7 @@
                   osgi.extender; filter:="(osgi.extender=osgi.serviceloader.registrar)";resolution:=optional
                 </Require-Capability>
                 <Provide-Capability>
-                    osgi.serviceloader;osgi.serviceloader=jakarta.websocket.ContainerProvider
+                    osgi.serviceloader;osgi.serviceloader=jakarta.servlet.ServletContainerInitializer
                 </Provide-Capability>
               </instructions>
             </configuration>

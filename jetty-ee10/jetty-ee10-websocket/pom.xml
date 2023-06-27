@@ -18,6 +18,7 @@
 
   <modules>
     <module>jetty-ee10-websocket-jakarta-client</module>
+    <module>jetty-ee10-websocket-jakarta-client-webapp</module>
     <module>jetty-ee10-websocket-jakarta-common</module>
     <module>jetty-ee10-websocket-jakarta-server</module>
     <module>jetty-ee10-websocket-jakarta-tests</module>
