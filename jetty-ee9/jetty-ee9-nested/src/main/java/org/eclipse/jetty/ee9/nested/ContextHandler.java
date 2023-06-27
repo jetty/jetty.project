@@ -72,6 +72,7 @@ import org.eclipse.jetty.server.Handler;
 import org.eclipse.jetty.server.Response;
 import org.eclipse.jetty.server.Server;
 import org.eclipse.jetty.server.Session;
+import org.eclipse.jetty.server.handler.ContextHandler.ScopedContext;
 import org.eclipse.jetty.server.handler.ContextHandlerCollection;
 import org.eclipse.jetty.server.handler.ContextRequest;
 import org.eclipse.jetty.session.AbstractSessionManager;
@@ -118,6 +119,20 @@ import org.slf4j.LoggerFactory;
  * By default, the context is created with the {@link AllowedResourceAliasChecker} which is configured to allow symlinks. If
  * this alias checker is not required, then {@link #clearAliasChecks()} or {@link #setAliasChecks(List)} should be called.
  * </p>
+ * This handler can be invoked in 2 different ways:
+ * <ul>
+ *  <li>
+ *      If this is added directly as a {@link Handler} on the {@link Server} this will supply the {@link CoreContextHandler}
+ *      associated with this {@link ContextHandler}. This will wrap the request to a {@link CoreContextRequest} and fall
+ *      through to the {@code CoreToNestedHandler} which invokes the {@link HttpChannel} and this will eventually reach
+ *      {@link ContextHandler#handle(String, Request, HttpServletRequest, HttpServletResponse)}.
+ *  </li>
+ *  <li>
+ *      If this is nested inside another {@link ContextHandler} and not added directly to the server then its
+ *      {@link CoreContextHandler} will never be added to the server. However it will still be created and its
+ *      {@link ScopedContext} will be used to enter scope.
+ *   </li>
+ * </ul>
  */
 @ManagedObject("EE9 Context")
 public class ContextHandler extends ScopedHandler implements Attributes, Supplier<Handler>
@@ -901,7 +916,7 @@ public class ContextHandler extends ScopedHandler implements Attributes, Supplie
             baseRequest.setContext(_apiContext,
                 (DispatcherType.INCLUDE.equals(dispatch) || !target.startsWith("/")) ? oldPathInContext : pathInContext);
 
-            org.eclipse.jetty.server.handler.ContextHandler.ScopedContext context = getCoreContextHandler().getContext();
+            ScopedContext context = getCoreContextHandler().getContext();
             if (context == org.eclipse.jetty.server.handler.ContextHandler.getCurrentContext())
             {
                 nextScope(target, baseRequest, request, response);
@@ -1766,7 +1781,7 @@ public class ContextHandler extends ScopedHandler implements Attributes, Supplie
      */
     public class APIContext implements ServletContext
     {
-        private final org.eclipse.jetty.server.handler.ContextHandler.ScopedContext _coreContext;
+        private final ScopedContext _coreContext;
         protected boolean _enabled = true; // whether or not the dynamic API is enabled for callers
         protected boolean _extendedListenerTypes = false;
         private int _effectiveMajorVersion = SERVLET_MAJOR_VERSION;
@@ -2417,7 +2432,7 @@ public class ContextHandler extends ScopedHandler implements Attributes, Supplie
         AbstractSessionManager.RequestedSession _requestedSession;
 
         protected CoreContextRequest(org.eclipse.jetty.server.Request wrapped,
-                                     org.eclipse.jetty.server.handler.ContextHandler.ScopedContext context,
+                                     ScopedContext context,
                                      HttpChannel httpChannel)
         {
             super(context, wrapped);
