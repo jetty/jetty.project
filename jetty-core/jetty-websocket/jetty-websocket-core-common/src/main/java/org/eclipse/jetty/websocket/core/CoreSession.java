@@ -16,6 +16,7 @@ package org.eclipse.jetty.websocket.core;
 import java.net.InetSocketAddress;
 import java.net.SocketAddress;
 import java.net.URI;
+import java.nio.channels.ReadPendingException;
 import java.util.List;
 import java.util.Map;
 
@@ -155,6 +156,7 @@ public interface CoreSession extends OutgoingFrames, IncomingFrames, Configurati
      * <p>Manages flow control by indicating demand for a WebSocket frame.</p>
      * <p>A call to {@link FrameHandler#onFrame(Frame, Callback)} will only
      * be made if there is demand.</p>
+     * <p>If a previous demand has not been fulfilled this will throw {@link ReadPendingException}</p>
      *
      * {@link FrameHandler#onFrame(Frame, Callback)}.
      */
