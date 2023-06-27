@@ -17,6 +17,7 @@ import java.io.IOException;
 import java.net.InetSocketAddress;
 import java.net.SocketAddress;
 import java.nio.ByteBuffer;
+import java.nio.channels.ReadPendingException;
 import java.security.SecureRandom;
 import java.util.Objects;
 import java.util.Random;
@@ -31,7 +32,6 @@ import org.eclipse.jetty.io.EndPoint;
 import org.eclipse.jetty.io.RetainableByteBuffer;
 import org.eclipse.jetty.util.BufferUtil;
 import org.eclipse.jetty.util.Callback;
-import org.eclipse.jetty.util.MathUtils;
 import org.eclipse.jetty.util.component.Dumpable;
 import org.eclipse.jetty.util.thread.AutoLock;
 import org.eclipse.jetty.util.thread.Scheduler;
@@ -61,7 +61,7 @@ public class WebSocketConnection extends AbstractConnection implements Connectio
     private final WebSocketCoreSession coreSession;
     private final Flusher flusher;
     private final Random random;
-    private long demand;
+    private Boolean demand;
     private boolean fillingAndParsing;
     private final LongAdder messagesIn = new LongAdder();
     private final LongAdder bytesIn = new LongAdder();
@@ -351,10 +351,12 @@ public class WebSocketConnection extends AbstractConnection implements Connectio
             if (LOG.isDebugEnabled())
                 LOG.debug("demand {} d={} fp={} {}", demand, fillingAndParsing, networkBuffer, this);
 
-            if (demand < 0)
-                return;
-
-            demand = MathUtils.cappedAdd(demand, 1);
+            if (demand != null)
+            {
+                if (demand)
+                    throw new ReadPendingException();
+                demand = true;
+            }
 
             if (!fillingAndParsing)
             {
@@ -379,13 +381,12 @@ public class WebSocketConnection extends AbstractConnection implements Connectio
 
             if (!fillingAndParsing)
                 throw new IllegalStateException();
-            if (demand != 0) //if demand was canceled, this creates synthetic demand in order to read until EOF
+            if (demand == null) // If demand was canceled, this creates synthetic demand in order to read until EOF.
                 return true;
 
             fillingAndParsing = false;
             if (!networkBuffer.hasRemaining())
                 releaseNetworkBuffer();
-
             return false;
         }
     }
@@ -397,14 +398,13 @@ public class WebSocketConnection extends AbstractConnection implements Connectio
             if (LOG.isDebugEnabled())
                 LOG.debug("meetDemand d={} fp={} {} {}", demand, fillingAndParsing, networkBuffer, this);
 
-            if (demand == 0)
+            if (demand == Boolean.FALSE)
                 throw new IllegalStateException();
             if (!fillingAndParsing)
                 throw new IllegalStateException();
 
-            if (demand > 0)
-                demand--;
-
+            if (demand != null)
+                demand = false;
             return true;
         }
     }
@@ -415,7 +415,7 @@ public class WebSocketConnection extends AbstractConnection implements Connectio
         {
             if (LOG.isDebugEnabled())
                 LOG.debug("cancelDemand d={} fp={} {} {}", demand, fillingAndParsing, networkBuffer, this);
-            demand = -1;
+            demand = null;
         }
     }
 
