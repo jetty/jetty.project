@@ -439,12 +439,12 @@ public class MultiPartRequestContentTest extends AbstractHttpClientServerTest
             String contentType = request.getHeaders().get(HttpHeader.CONTENT_TYPE);
             assertEquals("multipart/form-data", HttpField.valueParameters(contentType, null));
             String boundary = MultiPart.extractBoundary(contentType);
-            MultiPartFormData formData = new MultiPartFormData(request, boundary);
+            MultiPartFormData.Parser formData = new MultiPartFormData.Parser(boundary);
             formData.setFilesDirectory(tmpDir);
-            formData.parse();
+
             try
             {
-                process(formData.join()); // May block waiting for multipart form data.
+                process(formData.parse(request).join()); // May block waiting for multipart form data.
                 response.write(true, BufferUtil.EMPTY_BUFFER, callback);
             }
             catch (Exception x)

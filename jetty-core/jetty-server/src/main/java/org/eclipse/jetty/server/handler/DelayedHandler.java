@@ -262,13 +262,13 @@ public class DelayedHandler extends Handler.Wrapper
 
     protected static class UntilMultiPartDelayedProcess extends DelayedProcess
     {
-        private final MultiPartFormData _formData;
+        private final MultiPartFormData.Parser _formData;
 
         public UntilMultiPartDelayedProcess(Handler handler, Request wrapped, Response response, Callback callback, String contentType)
         {
             super(handler, wrapped, response, callback);
             String boundary = MultiPart.extractBoundary(contentType);
-            _formData = boundary == null ? null : new MultiPartFormData(wrapped, boundary);
+            _formData = boundary == null ? null : new MultiPartFormData.Parser(boundary);
         }
 
         private void process(MultiPartFormData.Parts parts, Throwable x)
@@ -308,15 +308,15 @@ public class DelayedHandler extends Handler.Wrapper
             else
             {
                 _formData.setFilesDirectory(getRequest().getContext().getTempDirectory().toPath());
-                _formData.parse();
+                CompletableFuture<MultiPartFormData.Parts> futureParts = _formData.parse(getRequest());
                 // if we are done already, then we are still in the scope of the original process call and can
                 // process directly, otherwise we must execute a call to process as we are within a serialized
                 // demand callback.
-                if (_formData.isDone())
+                if (futureParts.isDone())
                 {
                     try
                     {
-                        MultiPartFormData.Parts parts = _formData.join();
+                        MultiPartFormData.Parts parts = futureParts.join();
                         process(parts, null);
                     }
                     catch (Throwable t)
@@ -326,7 +326,7 @@ public class DelayedHandler extends Handler.Wrapper
                 }
                 else
                 {
-                    _formData.whenComplete(this::executeProcess);
+                    futureParts.whenComplete(this::executeProcess);
                 }
             }
         }

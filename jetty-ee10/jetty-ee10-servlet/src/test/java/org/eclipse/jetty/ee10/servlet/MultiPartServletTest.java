@@ -409,10 +409,9 @@ public class MultiPartServletTest
         String contentType = headers.get(HttpHeader.CONTENT_TYPE);
         String boundary = MultiPart.extractBoundary(contentType);
         InputStream inputStream = new GZIPInputStream(responseStream.getInputStream());
-        MultiPartFormData formData = new MultiPartFormData(new InputStreamContentSource(inputStream), boundary);
+        MultiPartFormData.Parser formData = new MultiPartFormData.Parser(boundary);
         formData.setMaxParts(1);
-        formData.parse();
-        MultiPartFormData.Parts parts = formData.join();
+        MultiPartFormData.Parts parts = formData.parse(new InputStreamContentSource(inputStream)).join();
 
         assertThat(parts.size(), is(1));
         assertThat(parts.get(0).getContentAsString(UTF_8), is(contentString));

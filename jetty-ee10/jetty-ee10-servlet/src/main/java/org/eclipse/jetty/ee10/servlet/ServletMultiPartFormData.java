@@ -16,6 +16,7 @@ package org.eclipse.jetty.ee10.servlet;
 import java.io.File;
 import java.io.IOException;
 import java.io.InputStream;
+import java.nio.file.Files;
 import java.nio.file.Path;
 import java.util.ArrayList;
 import java.util.Collection;
@@ -78,9 +79,9 @@ public class ServletMultiPartFormData
             // Look for a previously read and parsed MultiPartFormData from the DelayedHandler.
             MultiPartFormData.Parts parts = (MultiPartFormData.Parts)request.getAttribute(MultiPartFormData.Parts.class.getName());
             if (parts != null)
-                return new Parts(parts);
+                // TODO set the files directory
+                return new Parts(null, parts);
 
-            // TODO set the files directory
             return new ServletMultiPartFormData().parse(request, maxParts);
         }
         catch (Throwable x)
@@ -110,7 +111,7 @@ public class ServletMultiPartFormData
         int bufferSize = connection instanceof AbstractConnection c ? c.getInputBufferSize() : 2048;
         InputStreamContentSource input = new InputStreamContentSource(request.getInputStream(), byteBufferPool);
         input.setBufferSize(bufferSize);
-        MultiPartFormData formData = new MultiPartFormData(input, boundary);
+        MultiPartFormData.Parser formData = new MultiPartFormData.Parser(boundary);
         formData.setMaxParts(maxParts);
 
         File tmpDirFile = (File)request.getServletContext().getAttribute(ServletContext.TEMPDIR);
@@ -126,9 +127,7 @@ public class ServletMultiPartFormData
         formData.setMaxLength(config.getMaxRequestSize());
         formData.setPartHeadersMaxLength(connectionMetaData.getHttpConfiguration().getRequestHeaderSize());
 
-        formData.parse();
-
-        Parts parts = new Parts(formData.join());
+        Parts parts = new Parts(formData.getFilesDirectory(), formData.parse(input).join());
         request.setAttribute(Parts.class.getName(), parts);
         return parts;
     }
@@ -140,9 +139,9 @@ public class ServletMultiPartFormData
     {
         private final List<Part> parts = new ArrayList<>();
 
-        public Parts(MultiPartFormData.Parts parts)
+        public Parts(Path directory, MultiPartFormData.Parts parts)
         {
-            parts.forEach(part -> this.parts.add(new ServletPart(parts.getMultiPartFormData(), part)));
+            parts.forEach(part -> this.parts.add(new ServletPart(directory, part)));
         }
 
         public Part getPart(String name)
@@ -161,12 +160,12 @@ public class ServletMultiPartFormData
 
     private static class ServletPart implements Part
     {
-        private final MultiPartFormData _formData;
+        private final Path _directory;
         private final MultiPart.Part _part;
 
-        private ServletPart(MultiPartFormData formData, MultiPart.Part part)
+        private ServletPart(Path directory, MultiPart.Part part)
         {
-            _formData = formData;
+            _directory = directory;
             _part = part;
         }
 
@@ -204,8 +203,8 @@ public class ServletMultiPartFormData
         public void write(String fileName) throws IOException
         {
             Path filePath = Path.of(fileName);
-            if (!filePath.isAbsolute())
-                filePath = _formData.getFilesDirectory().resolve(filePath).normalize();
+            if (!filePath.isAbsolute() && Files.isDirectory(_directory))
+                filePath = _directory.resolve(filePath).normalize();
             _part.writeTo(filePath);
         }
 

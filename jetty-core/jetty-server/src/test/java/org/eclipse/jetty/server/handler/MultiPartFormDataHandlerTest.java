@@ -79,7 +79,8 @@ public class MultiPartFormDataHandlerTest
             public boolean handle(Request request, Response response, Callback callback)
             {
                 String boundary = MultiPart.extractBoundary(request.getHeaders().get(HttpHeader.CONTENT_TYPE));
-                new MultiPartFormData(request, boundary).parse()
+                new MultiPartFormData.Parser(boundary)
+                    .parse(request)
                     .whenComplete((parts, failure) ->
                     {
                         if (parts != null)
@@ -193,13 +194,15 @@ public class MultiPartFormDataHandlerTest
             public boolean handle(Request request, Response response, Callback callback)
             {
                 String boundary = MultiPart.extractBoundary(request.getHeaders().get(HttpHeader.CONTENT_TYPE));
-                new MultiPartFormData(request, boundary).parse()
+
+                new MultiPartFormData.Parser(boundary)
+                    .parse(request)
                     .whenComplete((parts, failure) ->
                     {
                         if (parts != null)
                         {
-                            response.getHeaders().put(HttpHeader.CONTENT_TYPE, "multipart/form-data; boundary=\"%s\"".formatted(parts.getMultiPartFormData().getBoundary()));
-                            MultiPartFormData.ContentSource source = new MultiPartFormData.ContentSource(parts.getMultiPartFormData().getBoundary());
+                            response.getHeaders().put(HttpHeader.CONTENT_TYPE, "multipart/form-data; boundary=\"%s\"".formatted(boundary));
+                            MultiPartFormData.ContentSource source = new MultiPartFormData.ContentSource(boundary);
                             source.setPartHeadersMaxLength(1024);
                             parts.forEach(source::addPart);
                             source.close();
@@ -311,22 +314,21 @@ public class MultiPartFormDataHandlerTest
             assertNotNull(boundary);
 
             ByteBufferContentSource byteBufferContentSource = new ByteBufferContentSource(ByteBuffer.wrap(response.getContentBytes()));
-            MultiPartFormData formData = new MultiPartFormData(byteBufferContentSource, boundary);
+            MultiPartFormData.Parser formData = new MultiPartFormData.Parser(boundary);
             formData.setFilesDirectory(tempDir);
-            formData.parse();
-            MultiPartFormData.Parts parts = formData.join();
-
-            assertEquals(2, parts.size());
-            MultiPart.Part part1 = parts.get(0);
-            assertEquals("part1", part1.getName());
-            assertEquals("hello", part1.getContentAsString(UTF_8));
-            MultiPart.Part part2 = parts.get(1);
-            assertEquals("part2", part2.getName());
-            assertEquals("file2.bin", part2.getFileName());
-            HttpFields headers2 = part2.getHeaders();
-            assertEquals(2, headers2.size());
-            assertEquals("application/octet-stream", headers2.get(HttpHeader.CONTENT_TYPE));
-            assertEquals(32, part2.getContentSource().getLength());
+            try (MultiPartFormData.Parts parts = formData.parse(byteBufferContentSource).join())
+            {
+                assertEquals(2, parts.size());
+                MultiPart.Part part1 = parts.get(0);
+                assertEquals("part1", part1.getName());
+                assertEquals("hello", part1.getContentAsString(UTF_8));
+                MultiPart.Part part2 = parts.get(1);
+                assertEquals("part2", part2.getName());
+                assertEquals("file2.bin", part2.getFileName());
+                HttpFields headers2 = part2.getHeaders();
+                assertEquals(2, headers2.size());
+                assertEquals("application/octet-stream", headers2.get(HttpHeader.CONTENT_TYPE));
+            }
         }
     }
 }

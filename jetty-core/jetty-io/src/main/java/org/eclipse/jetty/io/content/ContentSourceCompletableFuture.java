@@ -81,7 +81,7 @@ public abstract class ContentSourceCompletableFuture<X> extends CompletableFutur
         }
     }
 
-    protected abstract X parse(Content.Chunk chunk);
+    protected abstract X parse(Content.Chunk chunk) throws Throwable;
 
     protected boolean ignoreTransientFailure(Throwable cause)
     {
