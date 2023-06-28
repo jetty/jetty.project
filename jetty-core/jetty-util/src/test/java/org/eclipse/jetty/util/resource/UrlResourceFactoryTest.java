@@ -87,6 +87,7 @@ public class UrlResourceFactoryTest
     public void testFileUrl() throws Exception
     {
         Path path = MavenTestingUtils.getTestResourcePath("example.jar");
+        int fileSize = (int)Files.size(path);
         URL fileUrl = new URL("file:" + path.toAbsolutePath());
         URLResourceFactory urlResourceFactory = new URLResourceFactory();
         Resource resource = urlResourceFactory.newResource(fileUrl);
@@ -95,9 +96,9 @@ public class UrlResourceFactoryTest
 
         try (ReadableByteChannel channel = resource.newReadableByteChannel())
         {
-            ByteBuffer buffer = ByteBuffer.allocate((int)Files.size(path));
+            ByteBuffer buffer = ByteBuffer.allocate(fileSize);
             int read = channel.read(buffer);
-            assertThat((long)read, is(Files.size(path)));
+            assertThat(read, is(fileSize));
         }
     }
 
@@ -105,9 +106,35 @@ public class UrlResourceFactoryTest
     public void testJarFileUrl() throws Exception
     {
         Path path = MavenTestingUtils.getTestResourcePath("example.jar");
-        URL jarFileUrl = new URL("jar:file:" + path.toAbsolutePath() + "!/");
+        URL jarFileUrl = new URL("jar:file:" + path.toAbsolutePath() + "!/WEB-INF/web.xml");
+        int fileSize = (int)fileSize(jarFileUrl);
         URLResourceFactory urlResourceFactory = new URLResourceFactory();
+        Resource resource = urlResourceFactory.newResource(jarFileUrl);
 
-        assertThat(urlResourceFactory.newResource(jarFileUrl).isDirectory(), is(true));
+        assertThat(resource.isDirectory(), is(false));
+
+        try (ReadableByteChannel channel = resource.newReadableByteChannel())
+        {
+            ByteBuffer buffer = ByteBuffer.allocate(fileSize);
+            int read = channel.read(buffer);
+            assertThat(read, is(fileSize));
+        }
+    }
+
+    private static long fileSize(URL url) throws IOException
+    {
+        try (InputStream is = url.openStream())
+        {
+            long totalRead = 0;
+            byte[] buffer = new byte[512];
+            while (true)
+            {
+                int read = is.read(buffer);
+                if (read == -1)
+                    break;
+                totalRead += read;
+            }
+            return totalRead;
+        }
     }
 }
