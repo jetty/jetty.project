@@ -18,6 +18,7 @@ lib/jetty-websocket-core-common-${jetty.version}.jar
 lib/jetty-websocket-core-client-${jetty.version}.jar
 lib/ee9-websocket/jetty-ee9-websocket-jetty-api-${jetty.version}.jar
 lib/ee9-websocket/jetty-ee9-websocket-jetty-common-${jetty.version}.jar
+lib/ee9-websocket/jetty-ee9-websocket-jetty-client-${jetty.version}.jar
 lib/ee9-websocket/jetty-ee9-websocket-jetty-client-webapp-${jetty.version}.jar
 
 [jpms]
