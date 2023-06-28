@@ -37,6 +37,7 @@
         <configuration>
           <argLine>
             @{argLine} ${jetty.surefire.argLine}
+            --add-exports org.eclipse.jetty.ee10.webapp/org.acme.webapp=org.eclipse.jetty.ee10.servlet
           </argLine>
           <useManifestOnlyJar>false</useManifestOnlyJar>
           <additionalClasspathElements>

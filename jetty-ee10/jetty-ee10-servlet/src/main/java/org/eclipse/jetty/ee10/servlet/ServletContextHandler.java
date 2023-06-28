@@ -2747,10 +2747,10 @@ public class ServletContextHandler extends ContextHandler
         @Override
         public String getRealPath(String path)
         {
-            // This is an API call from the application which may pass non-canonical paths.
-            // Thus, we canonicalize here, to avoid the enforcement of canonical paths in
-            // ContextHandler.this.getResource(path).
-            path = URIUtil.canonicalPath(path);
+            // This is an API call from the application which may pass non-normalized paths.
+            // Thus, we normalize here, to avoid the enforcement of normalized paths in
+            // ServletContextHandler.this.getResource(path).
+            path = URIUtil.normalizePath(path);
             if (path == null)
                 return null;
             if (path.length() == 0)
@@ -2761,12 +2761,22 @@ public class ServletContextHandler extends ContextHandler
             try
             {
                 Resource resource = ServletContextHandler.this.getResource(path);
-                if (resource != null)
+                if (resource == null)
+                    return null;
+
+                for (Resource r : resource)
                 {
-                    Path resourcePath = resource.getPath();
-                    if (resourcePath != null)
-                        return resourcePath.normalize().toString();
+                    // return first
+                    if (Resources.exists(r))
+                    {
+                        Path resourcePath = r.getPath();
+                        if (resourcePath != null)
+                            return resourcePath.normalize().toString();
+                    }
                 }
+
+                // A Resource was returned, but did not exist
+                return null;
             }
             catch (Exception e)
             {
@@ -2779,10 +2789,10 @@ public class ServletContextHandler extends ContextHandler
         @Override
         public URL getResource(String path) throws MalformedURLException
         {
-            // This is an API call from the application which may pass non-canonical paths.
-            // Thus, we canonicalize here, to avoid the enforcement of canonical paths in
-            // ContextHandler.this.getResource(path).
-            path = URIUtil.canonicalPath(path);
+            // This is an API call from the application which may pass non-normalized paths.
+            // Thus, we normalize here, to avoid the enforcement of normalized paths in
+            // ServletContextHandler.this.getResource(path).
+            path = URIUtil.normalizePath(path);
             if (path == null)
                 return null;
 
@@ -2829,10 +2839,10 @@ public class ServletContextHandler extends ContextHandler
         @Override
         public Set<String> getResourcePaths(String path)
         {
-            // This is an API call from the application which may pass non-canonical paths.
-            // Thus, we canonicalize here, to avoid the enforcement of canonical paths in
-            // ContextHandler.this.getResource(path).
-            path = URIUtil.canonicalPath(path);
+            // This is an API call from the application which may pass non-normalized paths.
+            // Thus, we normalize here, to avoid the enforcement of normalized paths in
+            // ServletContextHandler.this.getResource(path).
+            path = URIUtil.normalizePath(path);
             if (path == null)
                 return null;
             return ServletContextHandler.this.getResourcePaths(path);
