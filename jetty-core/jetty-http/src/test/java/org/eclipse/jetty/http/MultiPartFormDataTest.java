@@ -808,10 +808,12 @@ public class MultiPartFormDataTest
     private class TestContent extends AsyncContent
     {
         @Override
-        protected void offer(Content.Chunk chunk)
+        public Content.Chunk read()
         {
-            _allocatedChunks.add(chunk);
-            super.offer(chunk);
+            Content.Chunk chunk = super.read();
+            if (chunk != null && chunk.canRetain())
+                _allocatedChunks.add(chunk);
+            return chunk;
         }
     }
 }

@@ -221,8 +221,10 @@ public class MultiPartFormData
                 @Override
                 public boolean completeExceptionally(Throwable failure)
                 {
-                    listener.fail(failure);
-                    return super.completeExceptionally(failure);
+                    boolean failed = super.completeExceptionally(failure);
+                    if (failed)
+                        listener.fail(failure);
+                    return failed;
                 }
             };
             futureParts.parse();
