@@ -16,9 +16,15 @@ package org.eclipse.jetty.util.resource;
 import java.io.IOException;
 import java.io.InputStream;
 import java.net.URI;
+import java.net.URL;
+import java.nio.ByteBuffer;
+import java.nio.channels.ReadableByteChannel;
 import java.nio.charset.StandardCharsets;
+import java.nio.file.Files;
+import java.nio.file.Path;
 import java.time.Instant;
 
+import org.eclipse.jetty.toolchain.test.MavenTestingUtils;
 import org.eclipse.jetty.util.IO;
 import org.junit.jupiter.api.Tag;
 import org.junit.jupiter.api.Test;
@@ -38,35 +44,70 @@ public class UrlResourceFactoryTest
     public void testHttps() throws IOException
     {
         ResourceFactory.registerResourceFactory("https", new URLResourceFactory());
-        Resource resource = ResourceFactory.root().newResource(URI.create("https://webtide.com/"));
-        assertThat(resource, notNullValue());
-        assertTrue(resource.exists());
-
-        try (InputStream in = resource.newInputStream())
+        try
         {
-            String result = IO.toString(in, StandardCharsets.UTF_8);
-            assertThat(result, containsString("webtide.com"));
+            Resource resource = ResourceFactory.root().newResource(URI.create("https://webtide.com/"));
+            assertThat(resource, notNullValue());
+            assertTrue(resource.exists());
+
+            try (InputStream in = resource.newInputStream())
+            {
+                String result = IO.toString(in, StandardCharsets.UTF_8);
+                assertThat(result, containsString("webtide.com"));
+            }
+
+            assertThat(resource.lastModified().toEpochMilli(), not(Instant.EPOCH));
+            assertThat(resource.length(), not(-1));
+            assertTrue(resource.isDirectory());
+            assertThat(resource.getFileName(), is(""));
+
+            Resource blogs = resource.resolve("blogs/");
+            assertThat(blogs, notNullValue());
+            assertTrue(blogs.exists());
+            assertThat(blogs.lastModified().toEpochMilli(), not(Instant.EPOCH));
+            assertThat(blogs.length(), not(-1));
+            assertTrue(blogs.isDirectory());
+            assertThat(blogs.getFileName(), is(""));
+
+            Resource favicon = resource.resolve("favicon.ico");
+            assertThat(favicon, notNullValue());
+            assertTrue(favicon.exists());
+            assertThat(favicon.lastModified().toEpochMilli(), not(Instant.EPOCH));
+            assertThat(favicon.length(), not(-1));
+            assertFalse(favicon.isDirectory());
+            assertThat(favicon.getFileName(), is("favicon.ico"));
         }
+        finally
+        {
+            ResourceFactory.unregisterResourceFactory("https");
+        }
+    }
 
-        assertThat(resource.lastModified().toEpochMilli(), not(Instant.EPOCH));
-        assertThat(resource.length(), not(-1));
-        assertTrue(resource.isDirectory());
-        assertThat(resource.getFileName(), is(""));
+    @Test
+    public void testFileUrl() throws Exception
+    {
+        Path path = MavenTestingUtils.getTestResourcePath("example.jar");
+        URL fileUrl = new URL("file:" + path.toAbsolutePath());
+        URLResourceFactory urlResourceFactory = new URLResourceFactory();
+        Resource resource = urlResourceFactory.newResource(fileUrl);
 
-        Resource blogs = resource.resolve("blogs/");
-        assertThat(blogs, notNullValue());
-        assertTrue(blogs.exists());
-        assertThat(blogs.lastModified().toEpochMilli(), not(Instant.EPOCH));
-        assertThat(blogs.length(), not(-1));
-        assertTrue(blogs.isDirectory());
-        assertThat(blogs.getFileName(), is(""));
+        assertThat(resource.isDirectory(), is(false));
 
-        Resource favicon = resource.resolve("favicon.ico");
-        assertThat(favicon, notNullValue());
-        assertTrue(favicon.exists());
-        assertThat(favicon.lastModified().toEpochMilli(), not(Instant.EPOCH));
-        assertThat(favicon.length(), not(-1));
-        assertFalse(favicon.isDirectory());
-        assertThat(favicon.getFileName(), is("favicon.ico"));
+        try (ReadableByteChannel channel = resource.newReadableByteChannel())
+        {
+            ByteBuffer buffer = ByteBuffer.allocate((int)Files.size(path));
+            int read = channel.read(buffer);
+            assertThat((long)read, is(Files.size(path)));
+        }
+    }
+
+    @Test
+    public void testJarFileUrl() throws Exception
+    {
+        Path path = MavenTestingUtils.getTestResourcePath("example.jar");
+        URL jarFileUrl = new URL("jar:file:" + path.toAbsolutePath() + "!/");
+        URLResourceFactory urlResourceFactory = new URLResourceFactory();
+
+        assertThat(urlResourceFactory.newResource(jarFileUrl).isDirectory(), is(true));
     }
 }

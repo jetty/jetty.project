@@ -19,6 +19,7 @@ import java.net.MalformedURLException;
 import java.net.URI;
 import java.net.URL;
 import java.net.URLConnection;
+import java.nio.channels.Channels;
 import java.nio.channels.ReadableByteChannel;
 import java.nio.file.Path;
 import java.time.Instant;
@@ -109,7 +110,7 @@ public class URLResourceFactory implements ResourceFactory
         @Override
         public boolean isDirectory()
         {
-            return uri.getPath().endsWith("/");
+            return uri.getSchemeSpecificPart().endsWith("/");
         }
 
         @Override
@@ -200,10 +201,9 @@ public class URLResourceFactory implements ResourceFactory
         }
 
         @Override
-        public ReadableByteChannel newReadableByteChannel()
+        public ReadableByteChannel newReadableByteChannel() throws IOException
         {
-            // not really possible with the URL interface
-            return null;
+            return Channels.newChannel(newInputStream());
         }
 
         @Override
