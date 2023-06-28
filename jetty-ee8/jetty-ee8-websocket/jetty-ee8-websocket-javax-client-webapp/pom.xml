@@ -37,7 +37,7 @@
           <instructions>
             <Bundle-Description>jakarta.websocket.client WebApp Implementation</Bundle-Description>
             <Export-Package>
-              org.eclipse.jetty.ee8.websocket.jakarta.client.*;version="${parsedVersion.majorVersion}.${parsedVersion.minorVersion}.${parsedVersion.incrementalVersion}"
+              org.eclipse.jetty.ee8.websocket.jakarta.client.webapp.*;version="${parsedVersion.majorVersion}.${parsedVersion.minorVersion}.${parsedVersion.incrementalVersion}"
             </Export-Package>
             <Require-Capability>
               osgi.extender; filter:="(osgi.extender=osgi.serviceloader.registrar)";resolution:=optional
