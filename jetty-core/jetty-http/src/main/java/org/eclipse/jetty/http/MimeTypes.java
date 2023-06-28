@@ -18,12 +18,14 @@ import java.io.InputStream;
 import java.io.InputStreamReader;
 import java.nio.charset.Charset;
 import java.nio.charset.StandardCharsets;
+import java.util.Arrays;
 import java.util.Collections;
 import java.util.HashMap;
 import java.util.Locale;
 import java.util.Map;
 import java.util.Objects;
 import java.util.Properties;
+import java.util.Set;
 
 import org.eclipse.jetty.util.FileID;
 import org.eclipse.jetty.util.Index;
@@ -37,6 +39,12 @@ import org.slf4j.LoggerFactory;
 public class MimeTypes
 {
     static final  Logger LOG = LoggerFactory.getLogger(MimeTypes.class);
+    private static final Set<Locale> KNOWN_LOCALES = Set.copyOf(Arrays.asList(Locale.getAvailableLocales()));
+
+    public static boolean isKnownLocale(Locale locale)
+    {
+        return KNOWN_LOCALES.contains(locale);
+    }
 
     /** Enumeration of predefined MimeTypes. This is not exhaustive */
     public enum Type
