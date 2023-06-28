@@ -20,22 +20,22 @@ import java.net.SocketAddress;
 import java.nio.ByteBuffer;
 import java.nio.charset.Charset;
 import java.security.Principal;
+import java.util.ArrayList;
 import java.util.List;
 import java.util.Locale;
 import java.util.concurrent.TimeoutException;
 import java.util.function.Consumer;
 import java.util.function.Function;
 import java.util.function.Predicate;
-import java.util.stream.Collectors;
 
 import org.eclipse.jetty.http.CookieCache;
 import org.eclipse.jetty.http.HttpCookie;
-import org.eclipse.jetty.http.HttpField;
 import org.eclipse.jetty.http.HttpFields;
 import org.eclipse.jetty.http.HttpHeader;
 import org.eclipse.jetty.http.HttpScheme;
 import org.eclipse.jetty.http.HttpURI;
 import org.eclipse.jetty.http.MetaData;
+import org.eclipse.jetty.http.MimeTypes;
 import org.eclipse.jetty.http.Trailers;
 import org.eclipse.jetty.io.Content;
 import org.eclipse.jetty.server.internal.HttpChannelState;
@@ -119,6 +119,7 @@ public interface Request extends Attributes, Content.Source
 {
     String CACHE_ATTRIBUTE = Request.class.getCanonicalName() + ".CookieCache";
     String COOKIE_ATTRIBUTE = Request.class.getCanonicalName() + ".Cookies";
+    List<Locale> DEFAULT_LOCALES = List.of(Locale.getDefault());
 
     /**
      * an ID unique within the lifetime scope of the {@link ConnectionMetaData#getId()}).
@@ -452,26 +453,27 @@ public interface Request extends Attributes, Content.Source
     {
         HttpFields fields = request.getHeaders();
         if (fields == null)
-            return List.of(Locale.getDefault());
+            return DEFAULT_LOCALES;
 
         List<String> acceptable = fields.getQualityCSV(HttpHeader.ACCEPT_LANGUAGE);
 
-        // handle no locale
-        if (acceptable.isEmpty())
-            return List.of(Locale.getDefault());
-
-        return acceptable.stream().map(language ->
+        // return sorted list of locals, with known locales in quality order before unknown locales in quality order
+        return switch (acceptable.size())
         {
-            language = HttpField.stripParameters(language);
-            String country = "";
-            int dash = language.indexOf('-');
-            if (dash > -1)
+            case 0 -> DEFAULT_LOCALES;
+            case 1 -> List.of(Locale.forLanguageTag(acceptable.get(0)));
+            default ->
             {
-                country = language.substring(dash + 1).trim();
-                language = language.substring(0, dash).trim();
+                List<Locale> locales = acceptable.stream().map(Locale::forLanguageTag).toList();
+                List<Locale> known = locales.stream().filter(MimeTypes::isKnownLocale).toList();
+                if (known.size() == locales.size())
+                    yield locales; // All locales are known
+                List<Locale> unknown = locales.stream().filter(l -> !MimeTypes.isKnownLocale(l)).toList();
+                locales = new ArrayList<>(known);
+                locales.addAll(unknown);
+                yield locales; // List of known locales before unknown locales
             }
-            return new Locale(language, country);
-        }).collect(Collectors.toList());
+        };
     }
 
     // TODO: consider inline and remove.
