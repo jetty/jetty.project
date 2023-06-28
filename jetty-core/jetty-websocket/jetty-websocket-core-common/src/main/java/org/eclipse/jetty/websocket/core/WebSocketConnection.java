@@ -54,6 +54,13 @@ public class WebSocketConnection extends AbstractConnection implements Connectio
      */
     private static final int MIN_BUFFER_SIZE = Generator.MAX_HEADER_LENGTH;
 
+    private enum DemandState
+    {
+        DEMANDING,
+        NOT_DEMANDING,
+        CANCELLED
+    }
+
     private final AutoLock lock = new AutoLock();
     private final ByteBufferPool byteBufferPool;
     private final Generator generator;
@@ -61,7 +68,7 @@ public class WebSocketConnection extends AbstractConnection implements Connectio
     private final WebSocketCoreSession coreSession;
     private final Flusher flusher;
     private final Random random;
-    private Boolean demand = false;
+    private DemandState demand = DemandState.NOT_DEMANDING;
     private boolean fillingAndParsing;
     private final LongAdder messagesIn = new LongAdder();
     private final LongAdder bytesIn = new LongAdder();
@@ -353,9 +360,9 @@ public class WebSocketConnection extends AbstractConnection implements Connectio
 
             if (demand != null)
             {
-                if (demand)
+                if (demand == DemandState.DEMANDING)
                     throw new ReadPendingException();
-                demand = true;
+                demand = DemandState.DEMANDING;
             }
 
             if (!fillingAndParsing)
@@ -381,13 +388,23 @@ public class WebSocketConnection extends AbstractConnection implements Connectio
 
             if (!fillingAndParsing)
                 throw new IllegalStateException();
-            if (demand != Boolean.FALSE) // If demand was canceled, this creates synthetic demand in order to read until EOF.
-                return true;
 
-            fillingAndParsing = false;
-            if (!networkBuffer.hasRemaining())
-                releaseNetworkBuffer();
-            return false;
+            switch (demand)
+            {
+                case NOT_DEMANDING ->
+                {
+                    fillingAndParsing = false;
+                    if (!networkBuffer.hasRemaining())
+                        releaseNetworkBuffer();
+                    return false;
+                }
+                case DEMANDING, CANCELLED ->
+                {
+                    // If demand was canceled, this creates synthetic demand in order to read until EOF.
+                    return true;
+                }
+                default -> throw new IllegalStateException(demand.name());
+            }
         }
     }
 
@@ -398,13 +415,13 @@ public class WebSocketConnection extends AbstractConnection implements Connectio
             if (LOG.isDebugEnabled())
                 LOG.debug("meetDemand d={} fp={} {} {}", demand, fillingAndParsing, networkBuffer, this);
 
-            if (demand == Boolean.FALSE)
+            if (demand == DemandState.NOT_DEMANDING)
                 throw new IllegalStateException();
             if (!fillingAndParsing)
                 throw new IllegalStateException();
 
             if (demand != null)
-                demand = false;
+                demand = DemandState.NOT_DEMANDING;
             return true;
         }
     }
