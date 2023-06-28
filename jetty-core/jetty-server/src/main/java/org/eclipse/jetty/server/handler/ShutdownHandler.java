@@ -91,7 +91,7 @@ public class ShutdownHandler extends Handler.Wrapper
      */
     public ShutdownHandler(String shutdownToken)
     {
-        this(null, shutdownToken, false);
+        this(null, shutdownToken, false, null);
     }
 
     /**
@@ -102,7 +102,7 @@ public class ShutdownHandler extends Handler.Wrapper
      */
     public ShutdownHandler(String shutdownToken, boolean exitJVM)
     {
-        this(null, shutdownToken, exitJVM);
+        this(null, shutdownToken, exitJVM, null);
     }
 
     /**
@@ -111,9 +111,11 @@ public class ShutdownHandler extends Handler.Wrapper
      * @param shutdownPath the path to respond to shutdown requests against (default is "{@code /shutdown}")
      * @param shutdownToken a secret password to avoid unauthorized shutdown attempts
      * @param exitJVM If true, when the shutdown is executed, the handler class System.exit()
+     * @param handler the handler to wrap
      */
-    public ShutdownHandler(String shutdownPath, String shutdownToken, boolean exitJVM)
+    public ShutdownHandler(String shutdownPath, String shutdownToken, boolean exitJVM, Handler handler)
     {
+        super(handler);
         this._shutdownPath = StringUtil.isBlank(shutdownPath) ? "/shutdown" : shutdownPath;
         this._shutdownToken = shutdownToken;
         this._exitJvm = exitJVM;

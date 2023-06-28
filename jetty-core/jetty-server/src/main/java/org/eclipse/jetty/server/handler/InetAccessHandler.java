@@ -47,6 +47,15 @@ public class InetAccessHandler extends Handler.Wrapper
 
     private final IncludeExcludeSet<PatternTuple, AccessTuple> _set = new IncludeExcludeSet<>(InetAccessSet.class);
 
+    public InetAccessHandler()
+    {
+    }
+
+    public InetAccessHandler(Handler handler)
+    {
+        super(handler);
+    }
+
     /**
      * Clears all the includes, excludes, included connector names and excluded
      * connector names.

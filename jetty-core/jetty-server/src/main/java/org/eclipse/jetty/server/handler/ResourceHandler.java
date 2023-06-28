@@ -63,6 +63,15 @@ public class ResourceHandler extends Handler.Wrapper
     private MimeTypes _mimeTypes;
     private List<String> _welcomes = List.of("index.html");
 
+    public ResourceHandler()
+    {
+    }
+
+    public ResourceHandler(Handler handler)
+    {
+        super(handler);
+    }
+
     protected ResourceService newResourceService()
     {
         return new HandlerResourceService();
