@@ -88,7 +88,7 @@ public class UrlResourceFactoryTest
     {
         Path path = MavenTestingUtils.getTestResourcePath("example.jar");
         int fileSize = (int)Files.size(path);
-        URL fileUrl = new URL("file:" + path.toAbsolutePath());
+        URL fileUrl = path.toUri().toURL();
         URLResourceFactory urlResourceFactory = new URLResourceFactory();
         Resource resource = urlResourceFactory.newResource(fileUrl);
 
@@ -106,7 +106,7 @@ public class UrlResourceFactoryTest
     public void testJarFileUrl() throws Exception
     {
         Path path = MavenTestingUtils.getTestResourcePath("example.jar");
-        URL jarFileUrl = new URL("jar:file:" + path.toAbsolutePath() + "!/WEB-INF/web.xml");
+        URL jarFileUrl = new URL("jar:" + path.toUri().toASCIIString() + "!/WEB-INF/web.xml");
         int fileSize = (int)fileSize(jarFileUrl);
         URLResourceFactory urlResourceFactory = new URLResourceFactory();
         Resource resource = urlResourceFactory.newResource(jarFileUrl);
