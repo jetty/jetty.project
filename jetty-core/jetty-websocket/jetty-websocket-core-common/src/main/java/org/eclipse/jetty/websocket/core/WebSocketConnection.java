@@ -61,7 +61,7 @@ public class WebSocketConnection extends AbstractConnection implements Connectio
     private final WebSocketCoreSession coreSession;
     private final Flusher flusher;
     private final Random random;
-    private Boolean demand;
+    private Boolean demand = false;
     private boolean fillingAndParsing;
     private final LongAdder messagesIn = new LongAdder();
     private final LongAdder bytesIn = new LongAdder();
@@ -381,7 +381,7 @@ public class WebSocketConnection extends AbstractConnection implements Connectio
 
             if (!fillingAndParsing)
                 throw new IllegalStateException();
-            if (demand == null) // If demand was canceled, this creates synthetic demand in order to read until EOF.
+            if (demand != Boolean.FALSE) // If demand was canceled, this creates synthetic demand in order to read until EOF.
                 return true;
 
             fillingAndParsing = false;

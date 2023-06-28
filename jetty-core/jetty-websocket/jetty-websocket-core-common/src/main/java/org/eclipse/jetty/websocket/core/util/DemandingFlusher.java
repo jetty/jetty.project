@@ -141,7 +141,7 @@ public abstract class DemandingFlusher extends IteratingCallback implements Dema
      */
     public void emitFrame(Frame frame, Callback callback)
     {
-        if (_demand.compareAndSet(true, false))
+        if (!_demand.compareAndSet(true, false))
             throw new IllegalStateException("Demand Already Fulfilled");
         _emitFrame.onFrame(frame, callback);
     }
