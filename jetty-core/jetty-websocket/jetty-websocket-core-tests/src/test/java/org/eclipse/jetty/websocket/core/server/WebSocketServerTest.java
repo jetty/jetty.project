@@ -110,7 +110,8 @@ public class WebSocketServerTest extends WebSocketTester
             Frame frame = serverHandler.receivedFrames.poll(250, TimeUnit.MILLISECONDS);
             assertNull(frame);
 
-            serverHandler.getCoreSession().demand(2);
+            serverHandler.getCoreSession().demand();
+            serverHandler.getCoreSession().demand();
 
             frame = serverHandler.receivedFrames.poll(10, TimeUnit.SECONDS);
             assertNotNull(frame);
@@ -124,7 +125,7 @@ public class WebSocketServerTest extends WebSocketTester
             client.getOutputStream().write(RawFrameBuilder.buildClose(CloseStatus.NORMAL_STATUS, true));
             assertFalse(serverHandler.closed.await(250, TimeUnit.MILLISECONDS));
 
-            serverHandler.getCoreSession().demand(1);
+            serverHandler.getCoreSession().demand();
             assertTrue(serverHandler.closed.await(10, TimeUnit.SECONDS));
             frame = serverHandler.receivedFrames.poll(10, TimeUnit.SECONDS);
             assertNotNull(frame);
@@ -148,7 +149,7 @@ public class WebSocketServerTest extends WebSocketTester
             public void onOpen(CoreSession coreSession, Callback callback)
             {
                 super.onOpen(coreSession, callback);
-                coreSession.demand(1);
+                coreSession.demand();
             }
 
             @Override
@@ -157,7 +158,7 @@ public class WebSocketServerTest extends WebSocketTester
                 LOG.info("onFrame: " + BufferUtil.toDetailString(frame.getPayload()));
                 receivedFrames.offer(frame);
                 receivedCallbacks.offer(callback);
-                getCoreSession().demand(1);
+                getCoreSession().demand();
             }
         };
 
@@ -248,7 +249,9 @@ public class WebSocketServerTest extends WebSocketTester
             public void onOpen(CoreSession coreSession, Callback callback)
             {
                 super.onOpen(coreSession, callback);
-                coreSession.demand(3);
+                coreSession.demand();
+                coreSession.demand();
+                coreSession.demand();
             }
 
             @Override
@@ -289,7 +292,7 @@ public class WebSocketServerTest extends WebSocketTester
             client.close();
 
             assertFalse(serverHandler.closed.await(250, TimeUnit.MILLISECONDS));
-            serverHandler.getCoreSession().demand(1);
+            serverHandler.getCoreSession().demand();
             assertTrue(serverHandler.closed.await(10, TimeUnit.SECONDS));
         }
     }
@@ -307,7 +310,8 @@ public class WebSocketServerTest extends WebSocketTester
             {
                 super.onOpen(coreSession);
                 callback.succeeded();
-                coreSession.demand(2);
+                coreSession.demand();
+                coreSession.demand();
             }
 
             @Override
@@ -375,7 +379,8 @@ public class WebSocketServerTest extends WebSocketTester
             {
                 super.onOpen(coreSession);
                 callback.succeeded();
-                coreSession.demand(2);
+                coreSession.demand();
+                coreSession.demand();
             }
 
             @Override

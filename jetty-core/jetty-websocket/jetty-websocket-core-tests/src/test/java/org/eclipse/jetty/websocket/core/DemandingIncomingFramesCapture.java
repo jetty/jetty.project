@@ -33,7 +33,7 @@ public class DemandingIncomingFramesCapture extends IncomingFramesCapture
         }
         finally
         {
-            _coreSession.demand(1);
+            _coreSession.demand();
         }
     }
 }

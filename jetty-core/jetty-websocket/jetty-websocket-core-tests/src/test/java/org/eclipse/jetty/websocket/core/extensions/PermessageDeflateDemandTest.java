@@ -120,7 +120,7 @@ public class PermessageDeflateDemandTest
         {
             _coreSession = coreSession;
             callback.succeeded();
-            coreSession.demand(1);
+            coreSession.demand();
         }
 
         @Override
@@ -170,7 +170,7 @@ public class PermessageDeflateDemandTest
                 callback.succeeded();
             }
 
-            _coreSession.demand(1);
+            _coreSession.demand();
         }
 
         @Override

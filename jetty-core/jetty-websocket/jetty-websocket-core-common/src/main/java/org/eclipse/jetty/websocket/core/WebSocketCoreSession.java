@@ -402,9 +402,9 @@ public class WebSocketCoreSession implements CoreSession, Dumpable
     }
 
     @Override
-    public void demand(long n)
+    public void demand()
     {
-        getExtensionStack().demand(n);
+        getExtensionStack().demand();
     }
 
     @Override

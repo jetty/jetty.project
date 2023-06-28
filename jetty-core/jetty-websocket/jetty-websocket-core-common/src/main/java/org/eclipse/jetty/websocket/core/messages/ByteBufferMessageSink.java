@@ -82,7 +82,7 @@ public class ByteBufferMessageSink extends AbstractMessageSink
             if (!frame.isFin() && !frame.hasPayload())
             {
                 callback.succeeded();
-                getCoreSession().demand(1);
+                getCoreSession().demand();
                 return;
             }
 
@@ -103,7 +103,7 @@ public class ByteBufferMessageSink extends AbstractMessageSink
             else
             {
                 // Did not call the application so must explicitly demand here.
-                getCoreSession().demand(1);
+                getCoreSession().demand();
             }
         }
         catch (Throwable t)

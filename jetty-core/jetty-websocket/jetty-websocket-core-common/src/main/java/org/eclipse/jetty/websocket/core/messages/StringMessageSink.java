@@ -72,7 +72,7 @@ public class StringMessageSink extends AbstractMessageSink
             else
             {
                 callback.succeeded();
-                getCoreSession().demand(1);
+                getCoreSession().demand();
             }
         }
         catch (Throwable t)

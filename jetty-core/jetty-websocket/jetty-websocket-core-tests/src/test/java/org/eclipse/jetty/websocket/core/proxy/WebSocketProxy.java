@@ -137,7 +137,7 @@ class WebSocketProxy
             else
             {
                 callback.succeeded();
-                client2ProxySession.demand(1);
+                client2ProxySession.demand();
             }
         }
 
@@ -226,7 +226,7 @@ class WebSocketProxy
                     proxy2Server.send(frame, Callback.from(() ->
                     {
                         c.succeeded();
-                        client2ProxySession.demand(1);
+                        client2ProxySession.demand();
                     }, c::failed));
                 }
                 else
@@ -471,7 +471,7 @@ class WebSocketProxy
             else
             {
                 callback.succeeded();
-                coreSession.demand(1);
+                coreSession.demand();
             }
         }
 
@@ -591,7 +591,7 @@ class WebSocketProxy
                     client2Proxy.send(frame, Callback.from(() ->
                     {
                         c.succeeded();
-                        proxy2ServerSession.demand(1);
+                        proxy2ServerSession.demand();
                     }, c::failed));
                 }
                 else

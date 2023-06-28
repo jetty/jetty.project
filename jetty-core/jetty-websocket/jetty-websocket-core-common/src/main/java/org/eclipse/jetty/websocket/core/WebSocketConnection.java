@@ -343,21 +343,18 @@ public class WebSocketConnection extends AbstractConnection implements Connectio
         fillAndParse();
     }
 
-    public void demand(long n)
+    public void demand()
     {
-        if (n <= 0)
-            throw new IllegalArgumentException("Demand must be positive");
-
         boolean fillAndParse = false;
         try (AutoLock l = lock.lock())
         {
             if (LOG.isDebugEnabled())
-                LOG.debug("demand {} d={} fp={} {} {}", n, demand, fillingAndParsing, networkBuffer, this);
+                LOG.debug("demand {} d={} fp={} {}", demand, fillingAndParsing, networkBuffer, this);
 
             if (demand < 0)
                 return;
 
-            demand = MathUtils.cappedAdd(demand, n);
+            demand = MathUtils.cappedAdd(demand, 1);
 
             if (!fillingAndParsing)
             {

@@ -65,7 +65,7 @@ public class MessageInputStream extends InputStream implements MessageSink
         if (!frame.isFin() && !frame.hasPayload())
         {
             callback.succeeded();
-            session.demand(1);
+            session.demand();
             return;
         }
 
@@ -228,7 +228,7 @@ public class MessageInputStream extends InputStream implements MessageSink
         {
             current.callback.succeeded();
             if (!current.frame.isFin())
-                session.demand(1);
+                session.demand();
         }
     }
 

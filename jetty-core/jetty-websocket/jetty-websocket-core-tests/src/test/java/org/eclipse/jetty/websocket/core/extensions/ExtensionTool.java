@@ -82,7 +82,7 @@ public class ExtensionTool
             byte[] net;
 
             // Simulate initial demand from onOpen().
-            coreSession.demand(1);
+            coreSession.demand();
 
             for (int i = 0; i < parts; i++)
             {
@@ -102,7 +102,7 @@ public class ExtensionTool
                         public void succeeded()
                         {
                             super.succeeded();
-                            coreSession.demand(1);
+                            coreSession.demand();
                         }
                     };
                     ext.onFrame(frame, callback);
@@ -172,7 +172,7 @@ public class ExtensionTool
     private WebSocketCoreSession newWebSocketCoreSession(List<ExtensionConfig> configs)
     {
         ExtensionStack exStack = new ExtensionStack(components, Behavior.SERVER);
-        exStack.setLastDemand(l -> {}); // Never delegate to WebSocketConnection as it is null for this test.
+        exStack.setLastDemand(() -> {}); // Never delegate to WebSocketConnection as it is null for this test.
         exStack.negotiate(configs, configs);
         return new WebSocketCoreSession(new TestMessageHandler(), Behavior.SERVER, Negotiated.from(exStack), components);
     }
