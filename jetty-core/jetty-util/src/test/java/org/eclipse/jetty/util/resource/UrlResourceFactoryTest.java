@@ -88,7 +88,7 @@ public class UrlResourceFactoryTest
     {
         Path path = MavenTestingUtils.getTestResourcePath("example.jar");
         int fileSize = (int)Files.size(path);
-        URL fileUrl = new URL("file:" + path.toUri().toASCIIString());
+        URL fileUrl = path.toUri().toURL();
         URLResourceFactory urlResourceFactory = new URLResourceFactory();
         Resource resource = urlResourceFactory.newResource(fileUrl);
 
