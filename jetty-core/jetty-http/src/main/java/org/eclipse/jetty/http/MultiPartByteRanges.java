@@ -13,7 +13,6 @@
 
 package org.eclipse.jetty.http;
 
-import java.io.EOFException;
 import java.io.IOException;
 import java.nio.ByteBuffer;
 import java.nio.channels.SeekableByteChannel;
@@ -24,12 +23,12 @@ import java.util.List;
 import java.util.concurrent.CompletableFuture;
 
 import org.eclipse.jetty.io.Content;
+import org.eclipse.jetty.io.content.ContentSourceCompletableFuture;
 import org.eclipse.jetty.util.thread.AutoLock;
 
 /**
  * <p>A {@link CompletableFuture} that is completed when a multipart/byteranges
- * content has been parsed asynchronously from a {@link Content.Source} via
- * {@link #parse(Content.Source)}.</p>
+ * has been parsed asynchronously from a {@link Content.Source}.</p>
  * <p>Once the parsing of the multipart/byteranges content completes successfully,
  * objects of this class are completed with a {@link MultiPartByteRanges.Parts}
  * object.</p>
@@ -55,79 +54,8 @@ import org.eclipse.jetty.util.thread.AutoLock;
  */
 public class MultiPartByteRanges extends CompletableFuture<MultiPartByteRanges.Parts>
 {
-    // TODO base the implementation on a ContentSourceCompletableFuture
-    private final PartsListener listener = new PartsListener();
-    private final MultiPart.Parser parser;
-
-    public MultiPartByteRanges(String boundary)
+    private MultiPartByteRanges()
     {
-        this.parser = new MultiPart.Parser(boundary, listener);
-    }
-
-    /**
-     * @return the boundary string
-     */
-    public String getBoundary()
-    {
-        return parser.getBoundary();
-    }
-
-    @Override
-    public boolean completeExceptionally(Throwable failure)
-    {
-        listener.fail(failure);
-        return super.completeExceptionally(failure);
-    }
-
-    /**
-     * <p>Parses the given multipart/byteranges content.</p>
-     * <p>Returns this {@code MultiPartByteRanges} object,
-     * so that it can be used in the typical "fluent" style
-     * of {@link CompletableFuture}.</p>
-     *
-     * @param content the multipart/byteranges content to parse
-     * @return this {@code MultiPartByteRanges} object
-     */
-    public MultiPartByteRanges parse(Content.Source content)
-    {
-        new Runnable()
-        {
-            @Override
-            public void run()
-            {
-                while (true)
-                {
-                    Content.Chunk chunk = content.read();
-                    if (chunk == null)
-                    {
-                        content.demand(this);
-                        return;
-                    }
-                    if (Content.Chunk.isFailure(chunk))
-                    {
-                        listener.onFailure(chunk.getFailure());
-                        return;
-                    }
-                    parse(chunk);
-                    chunk.release();
-                    if (isDone())
-                        return;
-                    if (chunk.isLast())
-                    {
-                        listener.onFailure(new EOFException());
-                        return;
-                    }
-                }
-            }
-        }.run();
-        return this;
-    }
-
-    private void parse(Content.Chunk chunk)
-    {
-        if (listener.isFailed())
-            return;
-        parser.parse(chunk);
     }
 
     /**
@@ -274,76 +202,123 @@ public class MultiPartByteRanges extends CompletableFuture<MultiPartByteRanges.P
         }
     }
 
-    private class PartsListener extends MultiPart.AbstractPartsListener
+    public static class Parser
     {
-        private final AutoLock lock = new AutoLock();
-        private final List<Content.Chunk> partChunks = new ArrayList<>();
-        private final List<MultiPart.Part> parts = new ArrayList<>();
-        private Throwable failure;
+        private final PartsListener listener = new PartsListener();
+        private final MultiPart.Parser parser;
+        private Parts parts;
 
-        private boolean isFailed()
+        public Parser(String boundary)
         {
-            try (AutoLock ignored = lock.lock())
-            {
-                return failure != null;
-            }
+            parser = new MultiPart.Parser(boundary, listener);
         }
 
-        @Override
-        public void onPartContent(Content.Chunk chunk)
+        public CompletableFuture<MultiPartByteRanges.Parts> parse(Content.Source content)
         {
-            try (AutoLock ignored = lock.lock())
+            ContentSourceCompletableFuture<MultiPartByteRanges.Parts> futureParts = new ContentSourceCompletableFuture<>(content)
             {
-                // Retain the chunk because it is stored for later use.
-                chunk.retain();
-                partChunks.add(chunk);
-            }
+                @Override
+                protected MultiPartByteRanges.Parts parse(Content.Chunk chunk) throws Throwable
+                {
+                    if (listener.isFailed())
+                        throw listener.failure;
+                    parser.parse(chunk);
+                    if (listener.isFailed())
+                        throw listener.failure;
+                    return parts;
+                }
+
+                @Override
+                public boolean completeExceptionally(Throwable failure)
+                {
+                    boolean failed = super.completeExceptionally(failure);
+                    if (failed)
+                        listener.fail(failure);
+                    return failed;
+                }
+            };
+            futureParts.parse();
+            return futureParts;
         }
 
-        @Override
-        public void onPart(String name, String fileName, HttpFields headers)
+        /**
+         * @return the boundary string
+         */
+        public String getBoundary()
         {
-            try (AutoLock ignored = lock.lock())
-            {
-                parts.add(new MultiPart.ChunksPart(name, fileName, headers, List.copyOf(partChunks)));
-                partChunks.forEach(Content.Chunk::release);
-                partChunks.clear();
-            }
+            return parser.getBoundary();
         }
 
-        @Override
-        public void onComplete()
+        private class PartsListener extends MultiPart.AbstractPartsListener
         {
-            super.onComplete();
-            List<MultiPart.Part> copy;
-            try (AutoLock ignored = lock.lock())
-            {
-                copy = List.copyOf(parts);
-            }
-            complete(new Parts(getBoundary(), copy));
-        }
+            private final AutoLock lock = new AutoLock();
+            private final List<Content.Chunk> partChunks = new ArrayList<>();
+            private final List<MultiPart.Part> parts = new ArrayList<>();
+            private Throwable failure;
 
-        @Override
-        public void onFailure(Throwable failure)
-        {
-            super.onFailure(failure);
-            completeExceptionally(failure);
-        }
-
-        private void fail(Throwable cause)
-        {
-            List<MultiPart.Part> partsToFail;
-            try (AutoLock ignored = lock.lock())
+            private boolean isFailed()
             {
-                if (failure != null)
-                    return;
-                failure = cause;
-                partsToFail = List.copyOf(parts);
-                parts.clear();
-                partChunks.forEach(Content.Chunk::release);
-                partChunks.clear();
+                try (AutoLock ignored = lock.lock())
+                {
+                    return failure != null;
+                }
             }
-            partsToFail.forEach(p -> p.fail(cause));
+
+            @Override
+            public void onPartContent(Content.Chunk chunk)
+            {
+                try (AutoLock ignored = lock.lock())
+                {
+                    // Retain the chunk because it is stored for later use.
+                    chunk.retain();
+                    partChunks.add(chunk);
+                }
+            }
+
+            @Override
+            public void onPart(String name, String fileName, HttpFields headers)
+            {
+                try (AutoLock ignored = lock.lock())
+                {
+                    parts.add(new MultiPart.ChunksPart(name, fileName, headers, List.copyOf(partChunks)));
+                    partChunks.forEach(Content.Chunk::release);
+                    partChunks.clear();
+                }
+            }
+
+            @Override
+            public void onComplete()
+            {
+                super.onComplete();
+                List<MultiPart.Part> copy;
+                try (AutoLock ignored = lock.lock())
+                {
+                    copy = List.copyOf(parts);
+                    Parser.this.parts = new Parts(getBoundary(), copy);
+                }
+            }
+
+            @Override
+            public void onFailure(Throwable failure)
+            {
+                fail(failure);
+            }
+
+            private void fail(Throwable cause)
+            {
+                List<MultiPart.Part> partsToFail;
+                try (AutoLock ignored = lock.lock())
+                {
+                    if (failure != null)
+                        return;
+                    failure = cause;
+                    partsToFail = List.copyOf(parts);
+                    parts.clear();
+                    partChunks.forEach(Content.Chunk::release);
+                    partChunks.clear();
+                }
+                partsToFail.forEach(p -> p.fail(cause));
+            }
         }
     }
 }

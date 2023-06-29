@@ -19,10 +19,12 @@ import java.util.concurrent.CompletableFuture;
 
 import org.eclipse.jetty.io.Content;
 import org.eclipse.jetty.io.content.AsyncContent;
+import org.eclipse.jetty.io.content.ContentSourceCompletableFuture;
 import org.eclipse.jetty.util.BufferUtil;
 import org.eclipse.jetty.util.Callback;
 import org.eclipse.jetty.util.CharsetStringBuilder;
 import org.eclipse.jetty.util.FutureCallback;
+import org.eclipse.jetty.util.Utf8StringBuilder;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -216,7 +218,24 @@ public class ContentDocs
             throw new IllegalStateException("Should be consumed");
 
         System.err.println(future.get());
+    }
 
+    public static class FutureUtf8String extends ContentSourceCompletableFuture<String>
+    {
+        Utf8StringBuilder builder = new Utf8StringBuilder();
+
+        public FutureUtf8String(Content.Source content)
+        {
+            super(content);
+        }
+
+        @Override
+        protected String parse(Content.Chunk chunk) throws Throwable
+        {
+            if (chunk.hasRemaining())
+                builder.append(chunk.getByteBuffer());
+            return chunk.isLast() ? builder.takeCompleteString(IllegalStateException::new) : null;
+        }
     }
 
     public static void main(String... args) throws Exception

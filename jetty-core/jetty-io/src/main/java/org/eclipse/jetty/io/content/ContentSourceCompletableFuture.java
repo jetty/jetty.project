@@ -19,7 +19,33 @@ import java.util.concurrent.CompletableFuture;
 import org.eclipse.jetty.io.Content;
 
 /**
+ * A utility class to convert content from a {@link Content.Source} to an instance
+ * available via a {@link CompletableFuture}.
+ * <p>
+ * An example usage to asynchronously read UTF-8 content is:
+ * </p>
+ * <pre>
+ *     public static class FutureUtf8String extends ContentSourceCompletableFuture<String>
+ *     {
+ *         Utf8StringBuilder builder = new Utf8StringBuilder();
  *
+ *         public FutureUtf8String(Content.Source content)
+ *         {
+ *             super(content);
+ *         }
+ *
+ *         protected String parse(Content.Chunk chunk) throws Throwable
+ *         {
+ *             if (chunk.hasRemaining())
+ *                 builder.append(chunk.getByteBuffer());
+ *             return chunk.isLast() ? builder.takeCompleteString(IllegalStateException::new) : null;
+ *         }
+ *     }
+ *     ...
+ *     {
+ *         new FutureUtf8String(source).thenAccept(System.err::println);
+ *     }
+ * </pre>
  */
 public abstract class ContentSourceCompletableFuture<X> extends CompletableFuture<X>
 {
@@ -81,8 +107,21 @@ public abstract class ContentSourceCompletableFuture<X> extends CompletableFutur
         }
     }
 
+    /**
+     * Called to parse a {@link org.eclipse.jetty.io.Content.Chunk}
+     * @param chunk The chunk containing content to parse. The chunk will
+     * never be a
+     * {@link org.eclipse.jetty.io.Content.Chunk#isFailure(Content.Chunk) failure chunk}.
+     * @return The parsed {@code X} instance or null if parsing is not yet complete
+     * @throws Throwable Thrown if there is an error parsing
+     */
     protected abstract X parse(Content.Chunk chunk) throws Throwable;
 
+    /**
+     * @param cause A {@link Content.Chunk#isLast() non-last}
+     *             {@link org.eclipse.jetty.io.Content.Chunk#isFailure(Content.Chunk) failure chunk}
+     * @return True if the chunk can be ignored.
+     */
     protected boolean ignoreTransientFailure(Throwable cause)
     {
         return false;
