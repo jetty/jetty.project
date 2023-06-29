@@ -15,6 +15,7 @@ package org.eclipse.jetty.util.resource;
 
 import java.io.IOException;
 import java.io.InputStream;
+import java.net.MalformedURLException;
 import java.net.URI;
 import java.net.URL;
 import java.nio.ByteBuffer;
@@ -26,6 +27,7 @@ import java.time.Instant;
 
 import org.eclipse.jetty.toolchain.test.MavenTestingUtils;
 import org.eclipse.jetty.util.IO;
+import org.eclipse.jetty.util.URIUtil;
 import org.junit.jupiter.api.Tag;
 import org.junit.jupiter.api.Test;
 
@@ -119,6 +121,37 @@ public class UrlResourceFactoryTest
             int read = channel.read(buffer);
             assertThat(read, is(fileSize));
         }
+    }
+
+    @Test
+    public void testResolveUri() throws MalformedURLException
+    {
+        Path path = MavenTestingUtils.getTestResourcePath("example.jar");
+        URI jarFileUri = URI.create("jar:" + path.toUri().toASCIIString() + "!/WEB-INF/");
+
+        URLResourceFactory urlResourceFactory = new URLResourceFactory();
+        Resource resource = urlResourceFactory.newResource(jarFileUri.toURL());
+
+        Resource webResource = resource.resolve("web.xml");
+        assertThat(webResource.isDirectory(), is(false));
+        URI expectedURI = URI.create(jarFileUri.toASCIIString() + "web.xml");
+        assertThat(webResource.getURI(), is(expectedURI));
+    }
+
+    @Test
+    public void testResolveUriNoPath() throws MalformedURLException
+    {
+        Path path = MavenTestingUtils.getTestResourcePath("example.jar");
+        URI jarFileUri = URI.create("file:" + path.toUri().toASCIIString());
+
+        URLResourceFactory urlResourceFactory = new URLResourceFactory();
+        Resource resource = urlResourceFactory.newResource(jarFileUri.toURL());
+
+        Resource webResource = resource.resolve("web.xml");
+        assertThat(webResource.isDirectory(), is(false));
+
+        URI expectedURI = URIUtil.correctFileURI(URI.create("file:" + path.toUri().resolve("web.xml").toASCIIString()));
+        assertThat(webResource.getURI(), is(expectedURI));
     }
 
     private static long fileSize(URL url) throws IOException
