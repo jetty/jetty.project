@@ -51,6 +51,11 @@ public class RewriteHandler extends Handler.Wrapper
         this(null, rules);
     }
 
+    public RewriteHandler(Handler handler)
+    {
+        this(handler, new RuleContainer());
+    }
+
     public RewriteHandler(Handler handler, RuleContainer rules)
     {
         super(handler);

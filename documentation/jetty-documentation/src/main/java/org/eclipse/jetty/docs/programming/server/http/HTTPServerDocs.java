@@ -110,53 +110,6 @@ public class HTTPServerDocs
         // end::simple[]
     }
 
-    public void httpChannelListener() throws Exception
-    {
-        // tag::httpChannelListener[]
-        // TODO: HttpChannelState.Listener does not exist anymore.
-/*
-        class TimingHttpChannelListener implements HttpChannelState.Listener
-        {
-            private final ConcurrentMap<Request, Long> times = new ConcurrentHashMap<>();
-
-            @Override
-            public void onRequestBegin(Request request)
-            {
-                times.put(request, NanoTime.now());
-            }
-
-            @Override
-            public void onComplete(Request request)
-            {
-                long begin = times.remove(request);
-                long elapsed = NanoTime.since(begin);
-                System.getLogger("timing").log(INFO, "Request {0} took {1} ns", request, elapsed);
-            }
-        }
-
-        Server server = new Server();
-
-        Connector connector = new ServerConnector(server);
-        server.addConnector(connector);
-
-        // Add the HttpChannel.Listener as bean to the connector.
-        connector.addBean(new TimingHttpChannelListener());
-
-        // Set a simple Handler to handle requests/responses.
-        server.setHandler(new AbstractHandler()
-        {
-            @Override
-            public void handle(String target, Request jettyRequest, HttpServletRequest request, HttpServletResponse response)
-            {
-                jettyRequest.setHandled(true);
-            }
-        });
-
-        server.start();
-*/
-        // end::httpChannelListener[]
-    }
-
     public void serverRequestLogSLF4J()
     {
         // tag::serverRequestLogSLF4J[]
@@ -508,14 +461,14 @@ public class HTTPServerDocs
         // tag::handlerTree[]
         Server server = new Server();
 
-        GzipHandler gzipHandler = new GzipHandler();
-        server.setHandler(gzipHandler);
-
         Handler.Sequence sequence = new Handler.Sequence();
-        gzipHandler.setHandler(sequence);
-
         sequence.addHandler(new App1Handler());
         sequence.addHandler(new App2Handler());
+
+        GzipHandler gzipHandler = new GzipHandler(sequence);
+
+        server.setHandler(gzipHandler);
+
         // end::handlerTree[]
     }
 
@@ -585,6 +538,11 @@ public class HTTPServerDocs
         // tag::handlerFilter[]
         class FilterHandler extends Handler.Wrapper
         {
+            public FilterHandler(Handler handler)
+            {
+                super(handler);
+            }
+
             @Override
             public boolean handle(Request request, Response response, Callback callback) throws Exception
             {
@@ -617,9 +575,7 @@ public class HTTPServerDocs
         server.addConnector(connector);
 
         // Link the Handlers.
-        FilterHandler filter = new FilterHandler();
-        filter.setHandler(new HelloWorldHandler());
-        server.setHandler(filter);
+        server.setHandler(new FilterHandler(new HelloWorldHandler()));
 
         server.start();
         // end::handlerFilter[]
@@ -643,9 +599,7 @@ public class HTTPServerDocs
         server.addConnector(connector);
 
         // Create a ContextHandler with contextPath.
-        ContextHandler context = new ContextHandler();
-        context.setContextPath("/shop");
-        context.setHandler(new ShopHandler());
+        ContextHandler context = new ContextHandler(new ShopHandler(), "/shop");
 
         // Link the context to the server.
         server.setHandler(context);
@@ -683,20 +637,17 @@ public class HTTPServerDocs
 
         // Create a ContextHandlerCollection to hold contexts.
         ContextHandlerCollection contextCollection = new ContextHandlerCollection();
+
+        // Create the context for the shop web application and add it to ContextHandlerCollection.
+        contextCollection.addHandler(new ContextHandler(new ShopHandler(), "/shop"));
+
         // Link the ContextHandlerCollection to the Server.
         server.setHandler(contextCollection);
-
-        // Create the context for the shop web application.
-        ContextHandler shopContext = new ContextHandler("/shop");
-        shopContext.setHandler(new ShopHandler());
-        // Add it to ContextHandlerCollection.
-        contextCollection.addHandler(shopContext);
 
         server.start();
 
         // Create the context for the API web application.
-        ContextHandler apiContext = new ContextHandler("/api");
-        apiContext.setHandler(new RESTHandler());
+        ContextHandler apiContext = new ContextHandler(new RESTHandler(), "/api");
         // Web applications can be deployed after the Server is started.
         contextCollection.deployHandler(apiContext, Callback.NOOP);
         // end::contextHandlerCollection[]
@@ -791,7 +742,7 @@ public class HTTPServerDocs
         // tag::multipleResourcesHandler[]
         ResourceHandler handler = new ResourceHandler();
 
-        // For multiple directories, use ResourceCollection.
+        // For multiple directories, use ResourceFactory.combine().
         Resource resource = ResourceFactory.combine(
             ResourceFactory.of(handler).newResource("/path/to/static/resources/"),
             ResourceFactory.of(handler).newResource("/another/path/to/static/resources/")
@@ -822,8 +773,10 @@ public class HTTPServerDocs
         Connector connector = new ServerConnector(server);
         server.addConnector(connector);
 
-        // Create and configure GzipHandler.
-        GzipHandler gzipHandler = new GzipHandler();
+        // Create a ContextHandlerCollection to manage contexts.
+        ContextHandlerCollection contexts = new ContextHandlerCollection();
+        // Create and configure GzipHandler linked to the ContextHandlerCollection.
+        GzipHandler gzipHandler = new GzipHandler(contexts);
         // Only compress response content larger than this.
         gzipHandler.setMinGzipSize(1024);
         // Do not compress these URI paths.
@@ -832,10 +785,6 @@ public class HTTPServerDocs
         gzipHandler.addIncludedMethods("POST");
         // Do not compress these mime types.
         gzipHandler.addExcludedMimeTypes("font/ttf");
-
-        // Link a ContextHandlerCollection to manage contexts.
-        ContextHandlerCollection contexts = new ContextHandlerCollection();
-        gzipHandler.setHandler(contexts);
 
         // Link the GzipHandler to the Server.
         server.setHandler(gzipHandler);
@@ -873,26 +822,21 @@ public class HTTPServerDocs
         // tag::contextGzipHandler[]
         // Create a ContextHandlerCollection to hold contexts.
         ContextHandlerCollection contextCollection = new ContextHandlerCollection();
-        // Link the ContextHandlerCollection to the Server.
-        server.setHandler(contextCollection);
 
-        // Create the context for the shop web application.
-        ContextHandler shopContext = new ContextHandler("/shop");
-        shopContext.setHandler(new ShopHandler());
-
-        // You want to gzip the shop web application only.
-        GzipHandler shopGzipHandler = new GzipHandler();
-        shopGzipHandler.setHandler(shopContext);
+        // Create the context for the shop web application wrapped with GzipHandler so only the shop will do gzip.
+        GzipHandler shopGzipHandler = new GzipHandler(new ContextHandler(new ShopHandler(), "/shop"));
 
         // Add it to ContextHandlerCollection.
         contextCollection.addHandler(shopGzipHandler);
 
         // Create the context for the API web application.
-        ContextHandler apiContext = new ContextHandler("/api");
-        apiContext.setHandler(new RESTHandler());
+        ContextHandler apiContext = new ContextHandler(new RESTHandler(), "/api");
 
         // Add it to ContextHandlerCollection.
         contextCollection.addHandler(apiContext);
+
+        // Link the ContextHandlerCollection to the Server.
+        server.setHandler(contextCollection);
         // end::contextGzipHandler[]
 
         server.start();
@@ -905,7 +849,10 @@ public class HTTPServerDocs
         ServerConnector connector = new ServerConnector(server);
         server.addConnector(connector);
 
-        RewriteHandler rewriteHandler = new RewriteHandler();
+        // Create a ContextHandlerCollection to hold contexts.
+        ContextHandlerCollection contextCollection = new ContextHandlerCollection();
+        // Link the ContextHandlerCollection to the RewriteHandler.
+        RewriteHandler rewriteHandler = new RewriteHandler(contextCollection);
         // Compacts URI paths with double slashes, e.g. /ctx//path/to//resource.
         rewriteHandler.addRule(new CompactPathRule());
         // Rewrites */products/* to */p/*.
@@ -918,11 +865,6 @@ public class HTTPServerDocs
         // Link the RewriteHandler to the Server.
         server.setHandler(rewriteHandler);
 
-        // Create a ContextHandlerCollection to hold contexts.
-        ContextHandlerCollection contextCollection = new ContextHandlerCollection();
-        // Link the ContextHandlerCollection to the RewriteHandler.
-        rewriteHandler.setHandler(contextCollection);
-
         server.start();
         // end::rewriteHandler[]
     }
@@ -934,15 +876,14 @@ public class HTTPServerDocs
         ServerConnector connector = new ServerConnector(server);
         server.addConnector(connector);
 
-        StatisticsHandler statsHandler = new StatisticsHandler();
+        // Create a ContextHandlerCollection to hold contexts.
+        ContextHandlerCollection contextCollection = new ContextHandlerCollection();
+
+        // Link the ContextHandlerCollection to the StatisticsHandler.
+        StatisticsHandler statsHandler = new StatisticsHandler(contextCollection);
 
         // Link the StatisticsHandler to the Server.
         server.setHandler(statsHandler);
-
-        // Create a ContextHandlerCollection to hold contexts.
-        ContextHandlerCollection contextCollection = new ContextHandlerCollection();
-        // Link the ContextHandlerCollection to the StatisticsHandler.
-        statsHandler.setHandler(contextCollection);
 
         server.start();
         // end::statisticsHandler[]
@@ -955,16 +896,14 @@ public class HTTPServerDocs
         ServerConnector connector = new ServerConnector(server);
         server.addConnector(connector);
 
-        // Create the MinimumDataRateHandler with a minimum read rate of 1KB per second and no minimum write rate.
-        StatisticsHandler.MinimumDataRateHandler dataRateHandler = new StatisticsHandler.MinimumDataRateHandler(1024L, 0L);
+        // Create a ContextHandlerCollection to hold contexts.
+        ContextHandlerCollection contextCollection = new ContextHandlerCollection();
+
+        // Create the MinimumDataRateHandler linked the ContextHandlerCollection with a minimum read rate of 1KB per second and no minimum write rate.
+        StatisticsHandler.MinimumDataRateHandler dataRateHandler = new StatisticsHandler.MinimumDataRateHandler(contextCollection, 1024L, 0L);
 
         // Link the MinimumDataRateHandler to the Server.
         server.setHandler(dataRateHandler);
-
-        // Create a ContextHandlerCollection to hold contexts.
-        ContextHandlerCollection contextCollection = new ContextHandlerCollection();
-        // Link the ContextHandlerCollection to the MinimumDataRateHandler.
-        dataRateHandler.setHandler(contextCollection);
 
         server.start();
         // end::dataRateHandler[]
@@ -1006,15 +945,14 @@ public class HTTPServerDocs
         secureConnector.setPort(8443);
         server.addConnector(secureConnector);
 
-        SecuredRedirectHandler securedHandler = new SecuredRedirectHandler();
+        // Create a ContextHandlerCollection to hold contexts.
+        ContextHandlerCollection contextCollection = new ContextHandlerCollection();
+
+        // Link the ContextHandlerCollection to the SecuredRedirectHandler.
+        SecuredRedirectHandler securedHandler = new SecuredRedirectHandler(contextCollection);
 
         // Link the SecuredRedirectHandler to the Server.
         server.setHandler(securedHandler);
-
-        // Create a ContextHandlerCollection to hold contexts.
-        ContextHandlerCollection contextCollection = new ContextHandlerCollection();
-        // Link the ContextHandlerCollection to the StatisticsHandler.
-        securedHandler.setHandler(contextCollection);
 
         server.start();
         // end::securedHandler[]
