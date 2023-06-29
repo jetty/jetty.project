@@ -70,8 +70,6 @@
           <configuration>
             <!-- jetty-runner is not an OSGi component -->
             <skip>true</skip>
-            <!-- there is no way to skip MANIFEST creation by the plugin so just configure dummy location -->
-            <manifestLocation>${project.build.directory}/NON_USED_MANIFEST</manifestLocation>
           </configuration>
         </plugin>
         <plugin>
