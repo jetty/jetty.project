@@ -25,7 +25,7 @@ import org.eclipse.jetty.io.Content;
  * An example usage to asynchronously read UTF-8 content is:
  * </p>
  * <pre>
- *     public static class FutureUtf8String extends ContentSourceCompletableFuture<String>
+ *     public static class FutureUtf8String extends ContentSourceCompletableFuture&lt;String&gt;
  *     {
  *         Utf8StringBuilder builder = new Utf8StringBuilder();
  *
@@ -34,6 +34,7 @@ import org.eclipse.jetty.io.Content;
  *             super(content);
  *         }
  *
+ *         &#064;Override
  *         protected String parse(Content.Chunk chunk) throws Throwable
  *         {
  *             if (chunk.hasRemaining())

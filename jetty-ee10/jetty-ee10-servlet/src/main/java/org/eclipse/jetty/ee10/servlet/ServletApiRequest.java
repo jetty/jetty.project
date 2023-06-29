@@ -675,6 +675,7 @@ public class ServletApiRequest implements HttpServletRequest
         if (_async != null)
         {
             // This switch works by allowing the attribute to get underneath any dispatch wrapper.
+            // Note that there are further servlet specific attributes in ServletContextRequest
             return switch (name)
             {
                 case AsyncContext.ASYNC_REQUEST_URI -> getRequestURI();

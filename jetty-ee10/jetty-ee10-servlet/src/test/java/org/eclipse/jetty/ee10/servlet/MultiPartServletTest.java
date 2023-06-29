@@ -108,16 +108,17 @@ public class MultiPartServletTest
         connector = new ServerConnector(server);
         server.addConnector(connector);
 
-        ServletContextHandler contextHandler = new ServletContextHandler("/");
+        ServletContextHandler servletContextHandler = new ServletContextHandler("/");
         ServletHolder servletHolder = new ServletHolder(servlet);
         servletHolder.getRegistration().setMultipartConfig(config);
-        contextHandler.addServlet(servletHolder, "/");
+        servletContextHandler.addServlet(servletHolder, "/");
+        server.setHandler(servletContextHandler);
+
 
         GzipHandler gzipHandler = new GzipHandler();
         gzipHandler.addIncludedMimeTypes("multipart/form-data");
         gzipHandler.setMinGzipSize(32);
-        gzipHandler.setHandler(contextHandler);
-        server.setHandler(gzipHandler);
+        servletContextHandler.insertHandler(gzipHandler);
 
         server.start();
 
