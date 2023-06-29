@@ -73,6 +73,20 @@
       <plugins>
         <plugin>
           <groupId>org.apache.maven.plugins</groupId>
+          <artifactId>maven-jar-plugin</artifactId>
+          <configuration>
+            <archive>
+              <manifest>
+                <addDefaultEntries/>
+              </manifest>
+              <manifestEntries>
+                <Comment>Jetty Websocket Test Support Classes</Comment>
+              </manifestEntries>
+            </archive>
+          </configuration>
+        </plugin>
+        <plugin>
+          <groupId>org.apache.maven.plugins</groupId>
           <artifactId>maven-surefire-plugin</artifactId>
           <configuration>
             <excludes>
@@ -92,7 +106,6 @@
               <goal>manifest</goal>
             </goals>
             <configuration>
-              <!-- No point deploying testing projects -->
               <skip>true</skip>
             </configuration>
           </execution>
