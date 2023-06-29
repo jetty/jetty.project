@@ -358,7 +358,7 @@ public class WebSocketConnection extends AbstractConnection implements Connectio
             if (LOG.isDebugEnabled())
                 LOG.debug("demand {} d={} fp={} {}", demand, fillingAndParsing, networkBuffer, this);
 
-            if (demand != null)
+            if (demand != DemandState.CANCELLED)
             {
                 if (demand == DemandState.DEMANDING)
                     throw new ReadPendingException();
@@ -420,7 +420,7 @@ public class WebSocketConnection extends AbstractConnection implements Connectio
             if (!fillingAndParsing)
                 throw new IllegalStateException();
 
-            if (demand != null)
+            if (demand != DemandState.CANCELLED)
                 demand = DemandState.NOT_DEMANDING;
             return true;
         }
@@ -432,7 +432,7 @@ public class WebSocketConnection extends AbstractConnection implements Connectio
         {
             if (LOG.isDebugEnabled())
                 LOG.debug("cancelDemand d={} fp={} {} {}", demand, fillingAndParsing, networkBuffer, this);
-            demand = null;
+            demand = DemandState.CANCELLED;
         }
     }
 
