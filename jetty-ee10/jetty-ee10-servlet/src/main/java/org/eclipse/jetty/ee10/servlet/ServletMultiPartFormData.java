@@ -49,7 +49,6 @@ import org.eclipse.jetty.util.StringUtil;
  */
 public class ServletMultiPartFormData
 {
-
     /**
      * Get future {@link ServletMultiPartFormData.Parts} from a servlet request.
      * @param servletRequest A servlet request
