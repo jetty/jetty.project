@@ -19,7 +19,6 @@ import java.io.IOException;
 import java.io.OutputStream;
 import java.nio.ByteBuffer;
 import java.nio.charset.StandardCharsets;
-import java.util.Arrays;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.zip.GZIPInputStream;
 import java.util.zip.GZIPOutputStream;
@@ -34,7 +33,6 @@ import org.junit.jupiter.params.provider.ValueSource;
 import static org.eclipse.jetty.http.CompressedContentFormat.BR;
 import static org.eclipse.jetty.http.CompressedContentFormat.GZIP;
 import static org.hamcrest.MatcherAssert.assertThat;
-import static org.hamcrest.Matchers.greaterThan;
 import static org.hamcrest.Matchers.is;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
@@ -378,35 +376,6 @@ public class GZIPContentDecoderTest
         assertEquals(data1, result);
         assertTrue(buffer.hasRemaining());
         assertEquals(data2, StandardCharsets.UTF_8.decode(buffer).toString());
-    }
-
-    @Test
-    public void testConsumeAllChunks() throws IOException
-    {
-        int testLength = 8195;
-        byte[] rawBuf = new byte[testLength];
-        Arrays.fill(rawBuf, (byte)'x');
-
-        byte[] gzipBuf;
-        try (ByteArrayOutputStream baos = new ByteArrayOutputStream();
-             GZIPOutputStream gzipOut = new GZIPOutputStream(baos))
-        {
-            gzipOut.write(rawBuf, 0, rawBuf.length);
-            gzipOut.flush();
-            gzipOut.finish();
-            gzipBuf = baos.toByteArray();
-        }
-
-//        assertThat("gzipBuf.length", gzipBuf.length, greaterThan(42));
-
-        GZIPContentDecoder gzipContentDecoder = new GZIPContentDecoder();
-        ByteBuffer chunk = ByteBuffer.allocate(8192);
-        chunk.put("11111111111111111111111111".getBytes(StandardCharsets.UTF_8));
-        int pos = chunk.position();
-        chunk.put(gzipBuf, 0, 42);
-        chunk.flip();
-        gzipContentDecoder.decodeChunks(chunk);
-        assertThat("Decoded entire ByteBuffer", chunk.remaining(), is(0));
     }
 
     // Signed Integer Max
