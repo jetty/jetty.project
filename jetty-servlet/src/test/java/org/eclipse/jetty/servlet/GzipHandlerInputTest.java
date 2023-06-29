@@ -1,6 +1,6 @@
 //
 // ========================================================================
-// Copyright (c) 1995-2023 Mort Bay Consulting Pty Ltd and others.
+// Copyright (c) 1995 Mort Bay Consulting Pty Ltd and others.
 //
 // This program and the accompanying materials are made available under the
 // terms of the Eclipse Public License v. 2.0 which is available at
@@ -49,6 +49,9 @@ import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.Matchers.containsString;
 import static org.hamcrest.Matchers.is;
 
+/**
+ * Tests of GzipHandler behavior with gzip compressed Request content.
+ */
 public class GzipHandlerInputTest
 {
     private Server server;
