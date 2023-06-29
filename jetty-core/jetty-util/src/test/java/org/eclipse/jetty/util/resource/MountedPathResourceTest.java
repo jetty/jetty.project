@@ -323,7 +323,7 @@ public class MountedPathResourceTest
      * Test resolving a resource that has a backslash
      */
     @Test
-    @Disabled("Test disabled due to a JDK bug")
+    @Disabled("Test disabled due to JDK bug JDK-8311079")
     public void testJarFileResourceAccessBackSlash() throws Exception
     {
         Path testJar = MavenTestingUtils.getTestResourcePathFile("jar-file-resource.jar");
