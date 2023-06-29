@@ -155,14 +155,19 @@ public class URLResourceFactory implements ResourceFactory
         // This could probably live in URIUtil, but it's awefully specific to URLResourceFactory.
         private static URI resolve(URI parent, String path)
         {
-            if (parent.getPath() == null)
+            if (parent.isOpaque() && parent.getPath() == null)
             {
                 URI resolved = resolve(URI.create(parent.getRawSchemeSpecificPart()), path);
                 return URI.create(parent.getScheme() + ":" + resolved.toASCIIString());
             }
-            else
+            else if (parent.getPath() != null)
             {
                 return parent.resolve(path);
+            }
+            else
+            {
+                // Not possible to use URLs that without a path in Jetty.
+                throw new RuntimeException("URL without path not supported by Jetty: " + parent);
             }
         }
 
