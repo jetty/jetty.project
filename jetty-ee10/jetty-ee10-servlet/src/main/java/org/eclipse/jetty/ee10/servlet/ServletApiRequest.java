@@ -525,14 +525,20 @@ public class ServletApiRequest implements HttpServletRequest
                 else
                     defaultCharset = StandardCharsets.UTF_8;
 
-                long maxFormContentSize = getServletRequestInfo().getServletContext().getServletContextHandler().getMaxFormContentSize();
+                // Recheck some constraints here, just in case the preloaded parts were not properly configured.
+                ServletContextHandler servletContextHandler = getServletRequestInfo().getServletContext().getServletContextHandler();
+                long maxFormContentSize = servletContextHandler.getMaxFormContentSize();
+                int maxFormKeys = servletContextHandler.getMaxFormKeys();
 
                 long formContentSize = 0;
+                int count = 0;
                 for (Part p : parts)
                 {
+                    if (maxFormKeys > 0 && ++count > maxFormKeys)
+                        throw new IllegalStateException("Too many form keys > " + maxFormKeys);
+
                     if (p.getSubmittedFileName() == null)
                     {
-                        // TODO does this need to be checked again?
                         formContentSize = Math.addExact(formContentSize, p.getSize());
                         if (maxFormContentSize >= 0 && formContentSize > maxFormContentSize)
                             throw new IllegalStateException("Form is larger than max length " + maxFormContentSize);

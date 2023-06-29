@@ -52,7 +52,7 @@ public class ServletMultiPartFormData
     /**
      * Get future {@link ServletMultiPartFormData.Parts} from a servlet request.
      * @param servletRequest A servlet request
-     * @return A future {@link ServletMultiPartFormData.Parts}, which may have already been completed.
+     * @return A future {@link ServletMultiPartFormData.Parts}, which may have already been created and/or completed.
      */
     public static CompletableFuture<Parts> from(ServletRequest servletRequest)
     {
