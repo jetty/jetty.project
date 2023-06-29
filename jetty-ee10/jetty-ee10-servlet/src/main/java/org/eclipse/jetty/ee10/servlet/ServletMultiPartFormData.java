@@ -53,8 +53,20 @@ public class ServletMultiPartFormData
      * Get future {@link ServletMultiPartFormData.Parts} from a servlet request.
      * @param servletRequest A servlet request
      * @return A future {@link ServletMultiPartFormData.Parts}, which may have already been created and/or completed.
+     * @see #from(ServletRequest, String)
      */
     public static CompletableFuture<Parts> from(ServletRequest servletRequest)
+    {
+        return from(servletRequest, servletRequest.getContentType());
+    }
+
+    /**
+     * Get future {@link ServletMultiPartFormData.Parts} from a servlet request.
+     * @param servletRequest A servlet request
+     * @param contentType The contentType, passed as an optimization as it has likely already been retrieved.
+     * @return A future {@link ServletMultiPartFormData.Parts}, which may have already been created and/or completed.
+     */
+    public static CompletableFuture<Parts> from(ServletRequest servletRequest, String contentType)
     {
         // Look for an existing future (we use the future here rather than the parts as it can remember any failure).
         @SuppressWarnings("unchecked")
@@ -69,7 +81,6 @@ public class ServletMultiPartFormData
                 return CompletableFuture.failedFuture(new IllegalStateException("No multipart configuration element"));
 
             // Are we the right content type to produce our own parts?
-            String contentType = servletRequest.getContentType();
             if (contentType == null || !MimeTypes.Type.MULTIPART_FORM_DATA.is(HttpField.valueParameters(contentType, null)))
                 return CompletableFuture.failedFuture(new IllegalStateException("Not multipart Content-Type"));
 

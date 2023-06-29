@@ -35,6 +35,8 @@ import static org.eclipse.jetty.util.UrlEncoded.decodeHexByte;
  */
 public class FormFields extends CompletableFuture<Fields> implements Runnable
 {
+    // TODO convert to a ContentSourceCompletableFuture
+
     public static final String MAX_FIELDS_ATTRIBUTE = "org.eclipse.jetty.server.Request.maxFormKeys";
     public static final String MAX_LENGTH_ATTRIBUTE = "org.eclipse.jetty.server.Request.maxFormContentSize";
     private static final CompletableFuture<Fields> EMPTY = CompletableFuture.completedFuture(Fields.EMPTY);
@@ -59,19 +61,15 @@ public class FormFields extends CompletableFuture<Fields> implements Runnable
 
     public static CompletableFuture<Fields> from(Request request)
     {
-        // TODO make this attributes provided by the ContextRequest wrapper
         int maxFields = getRequestAttribute(request, FormFields.MAX_FIELDS_ATTRIBUTE);
         int maxLength = getRequestAttribute(request, FormFields.MAX_LENGTH_ATTRIBUTE);
-
         return from(request, maxFields, maxLength);
     }
 
     public static CompletableFuture<Fields> from(Request request, Charset charset)
     {
-        // TODO make this attributes provided by the ContextRequest wrapper
         int maxFields = getRequestAttribute(request, FormFields.MAX_FIELDS_ATTRIBUTE);
         int maxLength = getRequestAttribute(request, FormFields.MAX_LENGTH_ATTRIBUTE);
-
         return from(request, charset, maxFields, maxLength);
     }
 

@@ -22,7 +22,6 @@ import java.nio.file.Path;
 import java.util.Arrays;
 import java.util.Collection;
 import java.util.Map;
-import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.ExecutionException;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.TimeoutException;
@@ -43,26 +42,21 @@ import org.eclipse.jetty.client.MultiPartRequestContent;
 import org.eclipse.jetty.client.OutputStreamRequestContent;
 import org.eclipse.jetty.client.Response;
 import org.eclipse.jetty.client.StringRequestContent;
-import org.eclipse.jetty.http.HttpField;
 import org.eclipse.jetty.http.HttpFields;
 import org.eclipse.jetty.http.HttpHeader;
 import org.eclipse.jetty.http.HttpMethod;
 import org.eclipse.jetty.http.HttpScheme;
 import org.eclipse.jetty.http.HttpStatus;
 import org.eclipse.jetty.http.HttpTester;
-import org.eclipse.jetty.http.MimeTypes;
 import org.eclipse.jetty.http.MultiPart;
 import org.eclipse.jetty.http.MultiPartFormData;
 import org.eclipse.jetty.io.Content;
 import org.eclipse.jetty.io.EofException;
 import org.eclipse.jetty.io.content.InputStreamContentSource;
 import org.eclipse.jetty.logging.StacklessLogging;
-import org.eclipse.jetty.server.Handler;
-import org.eclipse.jetty.server.Request;
 import org.eclipse.jetty.server.Server;
 import org.eclipse.jetty.server.ServerConnector;
 import org.eclipse.jetty.server.handler.gzip.GzipHandler;
-import org.eclipse.jetty.util.Callback;
 import org.eclipse.jetty.util.IO;
 import org.eclipse.jetty.util.component.LifeCycle;
 import org.junit.jupiter.api.AfterEach;
@@ -116,38 +110,8 @@ public class MultiPartServletTest
         gzipHandler.addIncludedMimeTypes("multipart/form-data");
         gzipHandler.setMinGzipSize(32);
 
-        // User a very simple preload handler
         if (preload)
-        {
-            gzipHandler.setHandler(new Handler.Wrapper()
-            {
-                @Override
-                public boolean handle(Request request, org.eclipse.jetty.server.Response response, Callback callback) throws Exception
-                {
-                    String contentType = request.getHeaders().get(HttpHeader.CONTENT_TYPE);
-                    if (contentType == null || !MimeTypes.Type.MULTIPART_FORM_DATA.is(HttpField.valueParameters(contentType, null)))
-                        return super.handle(request, response, callback);
-
-                    CompletableFuture<ServletMultiPartFormData.Parts> futureParts = ServletMultiPartFormData.from(Request.as(request, ServletContextRequest.class).getServletApiRequest());
-                    if (futureParts.isDone())
-                        return super.handle(request, response, callback);
-
-                    futureParts.whenComplete((parts, failure) ->
-                    {
-                        try
-                        {
-                            if (!super.handle(request, response, callback))
-                                callback.failed(new IllegalStateException("Not Handled"));
-                        }
-                        catch (Throwable x)
-                        {
-                            callback.failed(x);
-                        }
-                    });
-                    return true;
-                }
-            });
-        }
+            gzipHandler.setHandler(new ServletFormHandler());
 
         servletContextHandler.insertHandler(gzipHandler);
 
@@ -214,7 +178,7 @@ public class MultiPartServletTest
         start(new HttpServlet()
         {
             @Override
-            protected void service(HttpServletRequest req, HttpServletResponse resp) throws ServletException, IOException
+            protected void service(HttpServletRequest req, HttpServletResponse resp)
             {
                 req.getParameterMap();
             }
