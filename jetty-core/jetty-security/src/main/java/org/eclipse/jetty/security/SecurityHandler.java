@@ -651,6 +651,7 @@ public abstract class SecurityHandler extends Handler.Wrapper implements Configu
 
         public PathMapped()
         {
+            this(null);
         }
 
         public PathMapped(Handler handler)

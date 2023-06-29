@@ -164,15 +164,15 @@ public class ContextHandler extends Handler.Wrapper implements Attributes, Alias
 
     public ContextHandler(Handler handler)
     {
-        this(null, handler);
+        this(handler, null);
     }
 
     public ContextHandler(String contextPath)
     {
-        this(contextPath, null);
+        this(null, contextPath);
     }
 
-    public ContextHandler(String contextPath, Handler handler)
+    public ContextHandler(Handler handler, String contextPath)
     {
         super(handler);
         _context = newContext();
