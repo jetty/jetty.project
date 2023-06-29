@@ -136,7 +136,8 @@
     <injection.bundle.version>1.2</injection.bundle.version>
 
     <plexus-component-annotations.version>2.1.1</plexus-component-annotations.version>
-    <plexus-utils.version>3.5.1</plexus-utils.version>
+    <plexus-utils.version>4.0.0</plexus-utils.version>
+    <plexus-xml.version>4.0.0</plexus-xml.version>
     <slf4j.version>2.0.7</slf4j.version>
     <spifly.version>1.3.6</spifly.version>
     <springboot.version>2.1.1.RELEASE</springboot.version>
@@ -1140,6 +1141,11 @@
         <groupId>org.codehaus.plexus</groupId>
         <artifactId>plexus-utils</artifactId>
         <version>${plexus-utils.version}</version>
+      </dependency>
+      <dependency>
+        <groupId>org.codehaus.plexus</groupId>
+        <artifactId>plexus-xml</artifactId>
+        <version>${plexus-xml.version}</version>
       </dependency>
       <dependency>
         <groupId>org.eclipse.jetty</groupId>
