@@ -55,6 +55,7 @@ public abstract class EventsHandler extends Handler.Wrapper
     
     public EventsHandler()
     {
+        this(null);
     }
 
     public EventsHandler(Handler handler)

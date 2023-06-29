@@ -65,6 +65,7 @@ public class ResourceHandler extends Handler.Wrapper
 
     public ResourceHandler()
     {
+        this(null);
     }
 
     public ResourceHandler(Handler handler)

@@ -43,6 +43,7 @@ public class DebugHandler extends Handler.Wrapper implements Connection.Listener
 
     public DebugHandler()
     {
+        this(null);
     }
 
     public DebugHandler(Handler handler)

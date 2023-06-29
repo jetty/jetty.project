@@ -80,20 +80,20 @@ public class ThreadLimitHandler extends Handler.Wrapper
 
     public ThreadLimitHandler()
     {
-        this(null, true, null);
+        this(null, null, true);
     }
 
     public ThreadLimitHandler(@Name("forwardedHeader") String forwardedHeader)
     {
-        this(forwardedHeader, HttpHeader.FORWARDED.is(forwardedHeader), null);
+        this(null, forwardedHeader, HttpHeader.FORWARDED.is(forwardedHeader));
     }
 
     public ThreadLimitHandler(@Name("forwardedHeader") String forwardedHeader, @Name("rfc7239") boolean rfc7239)
     {
-        this(forwardedHeader, rfc7239, null);
+        this(null, forwardedHeader, rfc7239);
     }
 
-    public ThreadLimitHandler(@Name("forwardedHeader") String forwardedHeader, @Name("rfc7239") boolean rfc7239, @Name("handler") Handler handler)
+    public ThreadLimitHandler(@Name("handler") Handler handler, @Name("forwardedHeader") String forwardedHeader, @Name("rfc7239") boolean rfc7239)
     {
         super(handler);
         _rfc7239 = rfc7239;

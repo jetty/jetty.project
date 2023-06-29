@@ -40,6 +40,7 @@ public class DelayedHandler extends Handler.Wrapper
 {
     public DelayedHandler()
     {
+        this(null);
     }
 
     public DelayedHandler(Handler handler)

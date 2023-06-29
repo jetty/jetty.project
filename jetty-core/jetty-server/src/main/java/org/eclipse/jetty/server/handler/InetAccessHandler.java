@@ -49,6 +49,7 @@ public class InetAccessHandler extends Handler.Wrapper
 
     public InetAccessHandler()
     {
+        this(null);
     }
 
     public InetAccessHandler(Handler handler)

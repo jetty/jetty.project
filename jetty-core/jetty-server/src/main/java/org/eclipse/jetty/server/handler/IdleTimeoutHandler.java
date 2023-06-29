@@ -38,6 +38,7 @@ public class IdleTimeoutHandler extends Handler.Wrapper
 
     public IdleTimeoutHandler()
     {
+        this(null);
     }
 
     public IdleTimeoutHandler(Handler handler)

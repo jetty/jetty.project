@@ -73,6 +73,7 @@ public class TryPathsHandler extends Handler.Wrapper
 
     public TryPathsHandler()
     {
+        this(null);
     }
 
     public TryPathsHandler(Handler handler)
