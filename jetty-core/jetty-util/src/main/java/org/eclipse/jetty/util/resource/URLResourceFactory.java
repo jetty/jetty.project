@@ -25,6 +25,7 @@ import java.nio.file.Path;
 import java.time.Instant;
 
 import org.eclipse.jetty.util.FileID;
+import org.eclipse.jetty.util.URIUtil;
 
 /**
  * {@link ResourceFactory} for {@link java.net.URL} based resources.
@@ -122,7 +123,7 @@ public class URLResourceFactory implements ResourceFactory
         @Override
         public URI getURI()
         {
-            return uri;
+            return URIUtil.correctFileURI(uri);
         }
 
         @Override
@@ -140,7 +141,7 @@ public class URLResourceFactory implements ResourceFactory
         @Override
         public Resource resolve(String subUriPath)
         {
-            URI newURI = uri.resolve(subUriPath);
+            URI newURI = resolve(uri, subUriPath);
             try
             {
                 return new URLResource(newURI, this.connectTimeout, this.useCaches);
@@ -148,6 +149,25 @@ public class URLResourceFactory implements ResourceFactory
             catch (MalformedURLException e)
             {
                 return null;
+            }
+        }
+
+        // This could probably live in URIUtil, but it's awefully specific to URLResourceFactory.
+        private static URI resolve(URI parent, String path)
+        {
+            if (parent.isOpaque() && parent.getPath() == null)
+            {
+                URI resolved = resolve(URI.create(parent.getRawSchemeSpecificPart()), path);
+                return URI.create(parent.getScheme() + ":" + resolved.toASCIIString());
+            }
+            else if (parent.getPath() != null)
+            {
+                return parent.resolve(path);
+            }
+            else
+            {
+                // Not possible to use URLs that without a path in Jetty.
+                throw new RuntimeException("URL without path not supported by Jetty: " + parent);
             }
         }
 
