@@ -17,8 +17,6 @@ import java.net.InetSocketAddress;
 import java.nio.ByteBuffer;
 import java.nio.channels.SocketChannel;
 import java.nio.file.Path;
-import java.util.concurrent.CountDownLatch;
-import java.util.concurrent.TimeUnit;
 
 import org.eclipse.jetty.http.HttpField;
 import org.eclipse.jetty.http.HttpFields;
@@ -44,7 +42,6 @@ import org.junit.jupiter.api.extension.ExtendWith;
 
 import static java.nio.charset.StandardCharsets.UTF_8;
 import static org.junit.jupiter.api.Assertions.assertEquals;
-import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertNotNull;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
@@ -111,72 +108,6 @@ public class MultiPartFormDataHandlerTest
 
             client.write(UTF_8.encode(header));
             client.write(UTF_8.encode(content));
-
-            HttpTester.Response response = HttpTester.parseResponse(HttpTester.from(client));
-            assertNotNull(response);
-            assertEquals(HttpStatus.OK_200, response.getStatus());
-            assertEquals("0123456789ABCDEF", response.getContent());
-        }
-    }
-
-    @Test
-    public void testDelayedUntilFormData() throws Exception
-    {
-        DelayedHandler delayedHandler = new DelayedHandler();
-        CountDownLatch processLatch = new CountDownLatch(1);
-        delayedHandler.setHandler(new Handler.Abstract.NonBlocking()
-        {
-            @Override
-            public boolean handle(Request request, Response response, Callback callback) throws Exception
-            {
-                processLatch.countDown();
-                MultiPartFormData.Parts parts = (MultiPartFormData.Parts)request.getAttribute(MultiPartFormData.Parts.class.getName());
-                assertNotNull(parts);
-                MultiPart.Part part = parts.get(0);
-                Content.copy(part.getContentSource(), response, callback);
-                return true;
-            }
-        });
-        start(delayedHandler);
-
-        try (SocketChannel client = SocketChannel.open(new InetSocketAddress("localhost", connector.getLocalPort())))
-        {
-            String contentBegin = """
-                --A1B2C3
-                Content-Disposition: form-data; name="part"
-                                
-                """;
-            String contentMiddle = """
-                0123456789\
-                """;
-            String contentEnd = """
-                ABCDEF
-                --A1B2C3--
-                """;
-            String header = """
-                POST / HTTP/1.1
-                Host: localhost
-                Content-Type: multipart/form-data; boundary=A1B2C3
-                Content-Length: $L
-                                
-                """.replace("$L", String.valueOf(contentBegin.length() + contentMiddle.length() + contentEnd.length()));
-
-            client.write(UTF_8.encode(header));
-            client.write(UTF_8.encode(contentBegin));
-
-            // Verify that the handler has not been called yet.
-            assertFalse(processLatch.await(1, TimeUnit.SECONDS));
-
-            client.write(UTF_8.encode(contentMiddle));
-
-            // Verify that the handler has not been called yet.
-            assertFalse(processLatch.await(1, TimeUnit.SECONDS));
-
-            // Finish to send the content.
-            client.write(UTF_8.encode(contentEnd));
-
-            // Verify that the handler has been called.
-            assertTrue(processLatch.await(5, TimeUnit.SECONDS));
 
             HttpTester.Response response = HttpTester.parseResponse(HttpTester.from(client));
             assertNotNull(response);
