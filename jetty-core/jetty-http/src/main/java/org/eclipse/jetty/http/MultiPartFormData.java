@@ -26,9 +26,11 @@ import java.util.Iterator;
 import java.util.List;
 import java.util.Objects;
 import java.util.concurrent.CompletableFuture;
+import java.util.function.Function;
 
 import org.eclipse.jetty.io.Content;
 import org.eclipse.jetty.io.content.ContentSourceCompletableFuture;
+import org.eclipse.jetty.util.Attributes;
 import org.eclipse.jetty.util.IO;
 import org.eclipse.jetty.util.thread.AutoLock;
 import org.slf4j.Logger;
@@ -73,6 +75,18 @@ public class MultiPartFormData
 
     private MultiPartFormData()
     {
+    }
+
+    public static CompletableFuture<Parts> from(Attributes attributes, String boundary, Function<Parser, CompletableFuture<Parts>> parse)
+    {
+        @SuppressWarnings("unchecked")
+        CompletableFuture<Parts> futureParts = (CompletableFuture<Parts>)attributes.getAttribute(MultiPartFormData.class.getName());
+        if (futureParts == null)
+        {
+            futureParts = parse.apply(new Parser(boundary));
+            attributes.setAttribute(MultiPartFormData.class.getName(), futureParts);
+        }
+        return futureParts;
     }
 
     /**

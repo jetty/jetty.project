@@ -21,11 +21,14 @@ import java.nio.file.Path;
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.List;
+import java.util.concurrent.CompletableFuture;
 
 import jakarta.servlet.MultipartConfigElement;
-import jakarta.servlet.ServletContext;
+import jakarta.servlet.ServletRequest;
 import jakarta.servlet.http.Part;
+import org.eclipse.jetty.http.HttpField;
 import org.eclipse.jetty.http.HttpHeader;
+import org.eclipse.jetty.http.MimeTypes;
 import org.eclipse.jetty.http.MultiPart;
 import org.eclipse.jetty.http.MultiPartFormData;
 import org.eclipse.jetty.io.AbstractConnection;
@@ -34,12 +37,11 @@ import org.eclipse.jetty.io.Connection;
 import org.eclipse.jetty.io.Content;
 import org.eclipse.jetty.io.content.InputStreamContentSource;
 import org.eclipse.jetty.server.ConnectionMetaData;
-import org.eclipse.jetty.util.IO;
 import org.eclipse.jetty.util.StringUtil;
 
 /**
  * <p>Servlet specific class for multipart content support.</p>
- * <p>Use {@link #from(ServletApiRequest)} to
+ * <p>Use {@link #from(ServletRequest)} to
  * parse multipart request content into a {@link Parts} object that can
  * be used to access Servlet {@link Part} objects.</p>
  *
@@ -48,88 +50,92 @@ import org.eclipse.jetty.util.StringUtil;
 public class ServletMultiPartFormData
 {
     /**
-     * <p>Parses the request content assuming it is a multipart content,
-     * and returns a {@link Parts} objects that can be used to access
-     * individual {@link Part}s.</p>
-     *
-     * @param request the HTTP request with multipart content
-     * @return a {@link Parts} object to access the individual {@link Part}s
-     * @throws IOException if reading the request content fails
-     * @see org.eclipse.jetty.server.handler.DelayedHandler
+     * Get future {@link ServletMultiPartFormData.Parts} from a servlet request.
+     * @param servletRequest A servlet request
+     * @return A future {@link ServletMultiPartFormData.Parts}, which may have already been completed.
      */
-    public static Parts from(ServletApiRequest request) throws IOException
+    public static CompletableFuture<Parts> from(ServletRequest servletRequest)
     {
-        return from(request, ServletContextHandler.DEFAULT_MAX_FORM_KEYS);
-    }
-
-    /**
-     * <p>Parses the request content assuming it is a multipart content,
-     * and returns a {@link Parts} objects that can be used to access
-     * individual {@link Part}s.</p>
-     *
-     * @param request the HTTP request with multipart content
-     * @return a {@link Parts} object to access the individual {@link Part}s
-     * @throws IOException if reading the request content fails
-     * @see org.eclipse.jetty.server.handler.DelayedHandler
-     */
-    public static Parts from(ServletApiRequest request, int maxParts) throws IOException
-    {
-        try
+        // Look for an existing future (we use the future here rather than the parts as it can remember any failure).
+        @SuppressWarnings("unchecked")
+        CompletableFuture<Parts> futureServletParts = (CompletableFuture<Parts>)servletRequest.getAttribute(ServletMultiPartFormData.class.getName());
+        if (futureServletParts == null)
         {
-            // Look for a previously read and parsed MultiPartFormData from the DelayedHandler.
-            MultiPartFormData.Parts parts = (MultiPartFormData.Parts)request.getAttribute(MultiPartFormData.Parts.class.getName());
-            if (parts != null)
-                // TODO set the files directory
-                return new Parts(null, parts);
+            // No existing parts, so we need to try to read them ourselves
 
-            return new ServletMultiPartFormData().parse(request, maxParts);
+            // Is this servlet a valid target for Multipart?
+            MultipartConfigElement config = (MultipartConfigElement)servletRequest.getAttribute(ServletContextRequest.MULTIPART_CONFIG_ELEMENT);
+            if (config == null)
+                return CompletableFuture.failedFuture(new IllegalStateException("No multipart configuration element"));
+
+            // Are we the right content type to produce our own parts?
+            String contentType = servletRequest.getContentType();
+            if (contentType == null || !MimeTypes.Type.MULTIPART_FORM_DATA.is(HttpField.valueParameters(contentType, null)))
+                return CompletableFuture.failedFuture(new IllegalStateException("Not multipart Content-Type"));
+
+            // Do we have a boundary?
+            String boundary = MultiPart.extractBoundary(servletRequest.getContentType());
+            if (boundary == null)
+                return CompletableFuture.failedFuture(new IllegalStateException("No multipart boundary parameter in Content-Type"));
+
+            // Can we access the core request, needed for components (eg buffer pools, temp directory, etc.) as well
+            // as IO optimization
+            ServletContextRequest servletContextRequest = ServletContextRequest.getServletContextRequest(servletRequest);
+            if (servletContextRequest == null)
+                return CompletableFuture.failedFuture(new IllegalStateException("No core request"));
+
+            // Get a temporary directory for larger parts.
+            File filesDirectory = StringUtil.isBlank(config.getLocation())
+                ? servletContextRequest.getContext().getTempDirectory()
+                : new File(config.getLocation());
+
+            // Look for an existing future MultiPartFormData.Parts
+            CompletableFuture<MultiPartFormData.Parts> futureFormData = MultiPartFormData.from(servletContextRequest, boundary, parser ->
+            {
+                try
+                {
+                    // No existing core parts, so we need to configure the parser.
+                    ServletContextHandler contextHandler = servletContextRequest.getServletContext().getServletContextHandler();
+                    ByteBufferPool byteBufferPool = servletContextRequest.getComponents().getByteBufferPool();
+                    ConnectionMetaData connectionMetaData = servletContextRequest.getConnectionMetaData();
+                    Connection connection = connectionMetaData.getConnection();
+
+                    Content.Source source;
+                    if (servletRequest instanceof ServletApiRequest servletApiRequest)
+                    {
+                        source = servletApiRequest.getRequest();
+                    }
+                    else
+                    {
+                        int bufferSize = connection instanceof AbstractConnection c ? c.getInputBufferSize() : 2048;
+                        InputStreamContentSource iscs = new InputStreamContentSource(servletRequest.getInputStream(), byteBufferPool);
+                        iscs.setBufferSize(bufferSize);
+                        source = iscs;
+                    }
+
+                    parser.setMaxParts(contextHandler.getMaxFormKeys());
+                    parser.setFilesDirectory(filesDirectory.toPath());
+                    parser.setMaxMemoryFileSize(config.getFileSizeThreshold());
+                    parser.setMaxFileSize(config.getMaxFileSize());
+                    parser.setMaxLength(config.getMaxRequestSize());
+                    parser.setPartHeadersMaxLength(connectionMetaData.getHttpConfiguration().getRequestHeaderSize());
+
+                    // parse the core parts.
+                    return parser.parse(source);
+                }
+                catch (Throwable failure)
+                {
+                    return CompletableFuture.failedFuture(failure);
+                }
+            });
+
+            // When available, convert the core parts to servlet parts
+            futureServletParts = futureFormData.thenApply(formDataParts -> new Parts(filesDirectory.toPath(), formDataParts));
+
+            // cache the result in attributes.
+            servletRequest.setAttribute(ServletMultiPartFormData.class.getName(), futureServletParts);
         }
-        catch (Throwable x)
-        {
-            throw IO.rethrow(x);
-        }
-    }
-
-    private Parts parse(ServletApiRequest request, int maxParts) throws IOException
-    {
-        MultipartConfigElement config = (MultipartConfigElement)request.getAttribute(ServletContextRequest.MULTIPART_CONFIG_ELEMENT);
-        if (config == null)
-            throw new IllegalStateException("No multipart configuration element");
-
-        String boundary = MultiPart.extractBoundary(request.getContentType());
-        if (boundary == null)
-            throw new IllegalStateException("No multipart boundary parameter in Content-Type");
-
-        // Store MultiPartFormData as attribute on request so it is released by the HttpChannel.
-        // TODO we should look for an already done MultiPartFormData as an attribute, so it can be
-        //      read asynchronously without blocking by something like the DelayedHandler (although
-        //      probably need an in ServletContext variant to get the configuration below.
-
-        ByteBufferPool byteBufferPool = request.getRequest().getComponents().getByteBufferPool();
-        ConnectionMetaData connectionMetaData = request.getRequest().getConnectionMetaData();
-        Connection connection = connectionMetaData.getConnection();
-        int bufferSize = connection instanceof AbstractConnection c ? c.getInputBufferSize() : 2048;
-        InputStreamContentSource input = new InputStreamContentSource(request.getInputStream(), byteBufferPool);
-        input.setBufferSize(bufferSize);
-        MultiPartFormData.Parser formData = new MultiPartFormData.Parser(boundary);
-        formData.setMaxParts(maxParts);
-
-        File tmpDirFile = (File)request.getServletContext().getAttribute(ServletContext.TEMPDIR);
-        if (tmpDirFile == null)
-            tmpDirFile = new File(System.getProperty("java.io.tmpdir"));
-        String fileLocation = config.getLocation();
-        if (!StringUtil.isBlank(fileLocation))
-            tmpDirFile = new File(fileLocation);
-
-        formData.setFilesDirectory(tmpDirFile.toPath());
-        formData.setMaxMemoryFileSize(config.getFileSizeThreshold());
-        formData.setMaxFileSize(config.getMaxFileSize());
-        formData.setMaxLength(config.getMaxRequestSize());
-        formData.setPartHeadersMaxLength(connectionMetaData.getHttpConfiguration().getRequestHeaderSize());
-
-        Parts parts = new Parts(formData.getFilesDirectory(), formData.parse(input).join());
-        request.setAttribute(Parts.class.getName(), parts);
-        return parts;
+        return futureServletParts;
     }
 
     /**

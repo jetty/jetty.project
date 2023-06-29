@@ -34,11 +34,11 @@ import java.util.List;
 import java.util.Locale;
 import java.util.Map;
 import java.util.Set;
+import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.ExecutionException;
 
 import jakarta.servlet.AsyncContext;
 import jakarta.servlet.DispatcherType;
-import jakarta.servlet.MultipartConfigElement;
 import jakarta.servlet.RequestDispatcher;
 import jakarta.servlet.ServletConnection;
 import jakarta.servlet.ServletContext;
@@ -489,39 +489,26 @@ public class ServletApiRequest implements HttpServletRequest
     {
         if (_parts == null)
         {
-            String contentType = getContentType();
-            if (contentType == null || !MimeTypes.Type.MULTIPART_FORM_DATA.is(HttpField.valueParameters(contentType, null)))
-                throw new ServletException("Unsupported Content-Type [%s], expected [%s]".formatted(contentType, MimeTypes.Type.MULTIPART_FORM_DATA.asString()));
-
-            MultipartConfigElement config = (MultipartConfigElement)getAttribute(ServletContextRequest.MULTIPART_CONFIG_ELEMENT);
-            if (config == null)
-                throw new IllegalStateException("No multipart config for servlet");
-
-            ServletContextHandler contextHandler = getServletRequestInfo().getServletContext().getServletContextHandler();
-            int maxFormContentSize = contextHandler.getMaxFormContentSize();
-            int maxFormKeys = contextHandler.getMaxFormKeys();
-
-            // TODO use the following
-            config.getFileSizeThreshold();
-            config.getLocation();
-            config.getMaxFileSize();
-            config.getMaxRequestSize();
-
-            _parts = ServletMultiPartFormData.from(this, maxFormKeys);
-            Collection<Part> parts = _parts.getParts();
-
-            String formCharset = null;
-            Part charsetPart = _parts.getPart("_charset_");
-            if (charsetPart != null)
+            try
             {
-                try (InputStream is = charsetPart.getInputStream())
-                {
-                    formCharset = IO.toString(is, StandardCharsets.UTF_8);
-                }
-            }
+                CompletableFuture<ServletMultiPartFormData.Parts> futureServletMultiPartFormData = ServletMultiPartFormData.from(this);
 
-            /*
-            Select Charset to use for this part. (NOTE: charset behavior is for the part value only and not the part header/field names)
+                _parts = futureServletMultiPartFormData.get();
+
+                Collection<Part> parts = _parts.getParts();
+
+                String formCharset = null;
+                Part charsetPart = _parts.getPart("_charset_");
+                if (charsetPart != null)
+                {
+                    try (InputStream is = charsetPart.getInputStream())
+                    {
+                        formCharset = IO.toString(is, StandardCharsets.UTF_8);
+                    }
+                }
+
+                /*
+                Select Charset to use for this part. (NOTE: charset behavior is for the part value only and not the part header/field names)
                 1. Use the part specific charset as provided in that part's Content-Type header; else
                 2. Use the overall default charset. Determined by:
                     a. if part name _charset_ exists, use that part's value.
@@ -529,37 +516,59 @@ public class ServletApiRequest implements HttpServletRequest
                         (note, this can be either from the charset field on the request Content-Type
                         header, or from a manual call to request.setCharacterEncoding())
                     c. use utf-8.
-             */
-            Charset defaultCharset;
-            if (formCharset != null)
-                defaultCharset = Charset.forName(formCharset);
-            else if (getCharacterEncoding() != null)
-                defaultCharset = Charset.forName(getCharacterEncoding());
-            else
-                defaultCharset = StandardCharsets.UTF_8;
+                */
+                Charset defaultCharset;
+                if (formCharset != null)
+                    defaultCharset = Charset.forName(formCharset);
+                else if (getCharacterEncoding() != null)
+                    defaultCharset = Charset.forName(getCharacterEncoding());
+                else
+                    defaultCharset = StandardCharsets.UTF_8;
 
-            long formContentSize = 0;
-            for (Part p : parts)
-            {
-                if (p.getSubmittedFileName() == null)
+                long maxFormContentSize = getServletRequestInfo().getServletContext().getServletContextHandler().getMaxFormContentSize();
+
+                long formContentSize = 0;
+                for (Part p : parts)
                 {
-                    formContentSize = Math.addExact(formContentSize, p.getSize());
-                    if (maxFormContentSize >= 0 && formContentSize > maxFormContentSize)
-                        throw new IllegalStateException("Form is larger than max length " + maxFormContentSize);
-
-                    // Servlet Spec 3.0 pg 23, parts without filename must be put into params.
-                    String charset = null;
-                    if (p.getContentType() != null)
-                        charset = MimeTypes.getCharsetFromContentType(p.getContentType());
-
-                    try (InputStream is = p.getInputStream())
+                    if (p.getSubmittedFileName() == null)
                     {
-                        String content = IO.toString(is, charset == null ? defaultCharset : Charset.forName(charset));
-                        if (_contentParameters == null)
-                            _contentParameters = new Fields();
-                        _contentParameters.add(p.getName(), content);
+                        // TODO does this need to be checked again?
+                        formContentSize = Math.addExact(formContentSize, p.getSize());
+                        if (maxFormContentSize >= 0 && formContentSize > maxFormContentSize)
+                            throw new IllegalStateException("Form is larger than max length " + maxFormContentSize);
+
+                        // Servlet Spec 3.0 pg 23, parts without filename must be put into params.
+                        String charset = null;
+                        if (p.getContentType() != null)
+                            charset = MimeTypes.getCharsetFromContentType(p.getContentType());
+
+                        try (InputStream is = p.getInputStream())
+                        {
+                            String content = IO.toString(is, charset == null ? defaultCharset : Charset.forName(charset));
+                            if (_contentParameters == null)
+                                _contentParameters = new Fields();
+                            _contentParameters.add(p.getName(), content);
+                        }
                     }
                 }
+            }
+            catch (Throwable t)
+            {
+                if (LOG.isDebugEnabled())
+                    LOG.debug("getParts", t);
+
+                Throwable cause;
+                if (t instanceof ExecutionException ee)
+                    cause = ee.getCause();
+                else if (t instanceof ServletException se)
+                    cause = se.getCause();
+                else
+                    cause = t;
+
+                if (cause instanceof IOException ioException)
+                    throw ioException;
+
+                throw new ServletException(new BadMessageException("bad multipart", cause));
             }
         }
 
@@ -873,8 +882,19 @@ public class ServletApiRequest implements HttpServletRequest
                             {
                                 getParts();
                             }
-                            catch (IOException | ServletException e)
+                            catch (IOException e)
                             {
+                                String msg = "Unable to extract content parameters";
+                                if (LOG.isDebugEnabled())
+                                    LOG.debug(msg, e);
+                                throw new RuntimeIOException(msg, e);
+                            }
+                            catch (ServletException e)
+                            {
+                                Throwable cause = e.getCause();
+                                if (cause instanceof BadMessageException badMessageException)
+                                    throw badMessageException;
+
                                 String msg = "Unable to extract content parameters";
                                 if (LOG.isDebugEnabled())
                                     LOG.debug(msg, e);

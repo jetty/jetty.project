@@ -169,8 +169,8 @@ public class MultiPartServletTest
 
         assert400orEof(listener, responseContent ->
         {
-        assertThat(responseContent, containsString("Unable to parse form content"));
-        assertThat(responseContent, containsString("Form is larger than max length"));
+            assertThat(responseContent, containsString("400: bad"));
+            assertThat(responseContent, containsString("Form is larger than max length"));
         });
     }
 
@@ -207,7 +207,7 @@ public class MultiPartServletTest
 
         assert400orEof(listener, responseContent ->
         {
-        assertThat(responseContent, containsString("Unable to parse form content"));
+        assertThat(responseContent, containsString("400: bad"));
         assertThat(responseContent, containsString("Form with too many keys"));
         });
     }
@@ -360,7 +360,7 @@ public class MultiPartServletTest
                 .body(multiPart)
                 .send();
 
-            assertEquals(500, response.getStatus());
+            assertEquals(400, response.getStatus());
             assertThat(response.getContentAsString(), containsString("max file size exceeded"));
         }
 
