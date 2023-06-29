@@ -560,11 +560,11 @@ public class WebAppContextTest
         String realPath = servletContext.getRealPath("/");
         assertThat(realPath, notNullValue());
         assertThat(servletContext.getRealPath(resourcePaths.get(0)), endsWith("/WEB-INF"));
-        // TODO the following assertion fails because of a bug in the JDK (see #9978)
+        // TODO the following assertion fails because of a bug in the JDK (see JDK-8311079 and MountedPathResourceTest.testJarFileResourceAccessBackSlash())
         //assertThat(servletContext.getRealPath(resourcePaths.get(1)), endsWith("/nested-reserved-!#\\\\$%&()*+,:=?@[]-meta-inf-resource.txt"));
 
         assertThat(servletContext.getResource("/WEB-INF"), notNullValue());
-        // TODO the following assertion fails because of a bug in the JDK (see #9978)
+        // TODO the following assertion fails because of a bug in the JDK (see JDK-8311079 and MountedPathResourceTest.testJarFileResourceAccessBackSlash())
         //assertThat(servletContext.getResource("/nested-reserved-!#\\\\$%&()*+,:=?@[]-meta-inf-resource.txt"), notNullValue());
 
         HttpTester.Response response1 = HttpTester.parseResponse(connector.getResponse("""
@@ -591,7 +591,7 @@ public class WebAppContextTest
         assertThat(response2.getContent(), containsString("/WEB-INF"));
         assertThat(response2.getContent(), containsString("/WEB-INF/lib"));
         assertThat(response2.getContent(), containsString("/WEB-INF/lib/odd-resource.jar"));
-        // TODO the following assertion fails because of a bug in the JDK (see #9978)
+        // TODO the following assertion fails because of a bug in the JDK (see JDK-8311079 and MountedPathResourceTest.testJarFileResourceAccessBackSlash())
         //assertThat(response2.getContent(), containsString("/nested-reserved-!#\\\\$%&()*+,:=?@[]-meta-inf-resource.txt"));
     }
 
