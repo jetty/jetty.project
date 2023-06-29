@@ -51,6 +51,17 @@ public class SecuredRedirectHandler extends Handler.Wrapper
     }
 
     /**
+     * Use supplied code as the redirect code.
+     *
+     * @param code the redirect code to use in the response
+     * @throws IllegalArgumentException if parameter is an invalid redirect code
+     */
+    public SecuredRedirectHandler(int code)
+    {
+        this(null, code);
+    }
+
+    /**
      * Uses moved temporarily code (302) as the redirect code.
      */
     public SecuredRedirectHandler(Handler handler)
@@ -65,7 +76,7 @@ public class SecuredRedirectHandler extends Handler.Wrapper
      * @param code the redirect code to use in the response
      * @throws IllegalArgumentException if parameter is an invalid redirect code
      */
-    public SecuredRedirectHandler(Handler handler, final int code)
+    public SecuredRedirectHandler(Handler handler, int code)
     {
         super(handler);
         if (!HttpStatus.isRedirection(code))
