@@ -436,6 +436,10 @@
     </dependency>
     <dependency>
       <groupId>org.eclipse.jetty.ee9.websocket</groupId>
+      <artifactId>jetty-ee9-websocket-jetty-client-webapp</artifactId>
+    </dependency>
+    <dependency>
+      <groupId>org.eclipse.jetty.ee9.websocket</groupId>
       <artifactId>jetty-ee9-websocket-jakarta-server</artifactId>
     </dependency>
     <dependency>

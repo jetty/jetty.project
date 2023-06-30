@@ -38,7 +38,7 @@
     <dependency>
       <groupId>jakarta.servlet</groupId>
       <artifactId>jakarta.servlet-api</artifactId>
-      <optional>true</optional>
+      <scope>test</scope>
     </dependency>
     <dependency>
       <groupId>org.eclipse.jetty</groupId>
@@ -78,8 +78,7 @@
                   osgi.extender; filter:="(osgi.extender=osgi.serviceloader.registrar)";resolution:=optional
                 </Require-Capability>
                 <Provide-Capability>
-                    osgi.serviceloader;osgi.serviceloader=jakarta.websocket.ContainerProvider,
-                    osgi.serviceloader;osgi.serviceloader=jakarta.servlet.ServletContainerInitializer
+                    osgi.serviceloader;osgi.serviceloader=jakarta.websocket.ContainerProvider
                 </Provide-Capability>
               </instructions>
             </configuration>

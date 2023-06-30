@@ -14,36 +14,6 @@
     <bundle-symbolic-name>${project.groupId}.client</bundle-symbolic-name>
   </properties>
 
-  <build>
-    <plugins>
-      <plugin>
-        <artifactId>maven-surefire-plugin</artifactId>
-        <configuration>
-          <argLine>
-            @{argLine} ${jetty.surefire.argLine}
-            --add-modules org.eclipse.jetty.ee9.webapp
-            --add-reads org.eclipse.jetty.ee9.websocket.jetty.client=org.eclipse.jetty.ee9.webapp
-          </argLine>
-        </configuration>
-      </plugin>
-      <plugin>
-        <groupId>org.apache.felix</groupId>
-        <artifactId>maven-bundle-plugin</artifactId>
-        <extensions>true</extensions>
-        <configuration>
-          <instructions>
-            <Require-Capability>
-              osgi.extender; filter:="(osgi.extender=osgi.serviceloader.registrar)"
-            </Require-Capability>
-            <Provide-Capability>
-              osgi.serviceloader; osgi.serviceloader=org.eclipse.jetty.ee9.webapp.Configuration
-            </Provide-Capability>
-          </instructions>
-        </configuration>
-      </plugin>
-    </plugins>
-  </build>
-
   <dependencies>
     <dependency>
       <groupId>org.eclipse.jetty.ee9.websocket</groupId>
@@ -62,13 +32,13 @@
       <artifactId>jetty-client</artifactId>
     </dependency>
     <dependency>
-      <groupId>org.eclipse.jetty.ee9</groupId>
-      <artifactId>jetty-ee9-webapp</artifactId>
-      <optional>true</optional>
-    </dependency>
-    <dependency>
       <groupId>org.slf4j</groupId>
       <artifactId>slf4j-api</artifactId>
+    </dependency>
+    <dependency>
+      <groupId>org.eclipse.jetty.ee9</groupId>
+      <artifactId>jetty-ee9-webapp</artifactId>
+      <scope>test</scope>
     </dependency>
     <dependency>
       <groupId>org.eclipse.jetty</groupId>

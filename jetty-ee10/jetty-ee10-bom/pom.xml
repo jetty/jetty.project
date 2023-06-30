@@ -127,6 +127,11 @@
       </dependency>
       <dependency>
         <groupId>org.eclipse.jetty.ee10.websocket</groupId>
+        <artifactId>jetty-ee10-websocket-jakarta-client-webapp</artifactId>
+        <version>12.0.0-SNAPSHOT</version>
+      </dependency>
+      <dependency>
+        <groupId>org.eclipse.jetty.ee10.websocket</groupId>
         <artifactId>jetty-ee10-websocket-jakarta-common</artifactId>
         <version>12.0.0-SNAPSHOT</version>
       </dependency>
@@ -137,7 +142,7 @@
       </dependency>
       <dependency>
         <groupId>org.eclipse.jetty.ee10.websocket</groupId>
-        <artifactId>jetty-ee10-websocket-jetty-client</artifactId>
+        <artifactId>jetty-ee10-websocket-jetty-client-webapp</artifactId>
         <version>12.0.0-SNAPSHOT</version>
       </dependency>
       <dependency>
