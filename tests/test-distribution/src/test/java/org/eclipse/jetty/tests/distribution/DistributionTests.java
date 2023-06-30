@@ -1308,13 +1308,17 @@ public class DistributionTests extends AbstractJettyHomeTest
             assertTrue(run1.awaitFor(10, TimeUnit.SECONDS));
             assertEquals(0, run1.getExitValue());
 
-            String[] args2 = {"--dry-run"};
+            String systemProp = "-Dtest=\"foo bar\"";
+            String[] args2 = {systemProp, "--dry-run"};
             try (JettyHomeTester.Run run2 = distribution.start(args2))
             {
                 run2.awaitFor(5, TimeUnit.SECONDS);
                 Queue<String> logs = run2.getLogs();
                 assertThat(logs.size(), equalTo(1));
-                assertThat(logs.poll(), not(containsString("${jetty.home.uri}")));
+                String log = logs.poll();
+                assertThat(log, not(containsString("${jetty.home.uri}")));
+                assertThat(log, not(containsString("'" + systemProp)));
+                assertThat(log, containsString(systemProp));
             }
         }
     }

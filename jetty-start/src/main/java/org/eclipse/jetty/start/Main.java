@@ -441,7 +441,7 @@ public class Main
         {
             CommandLineBuilder cmd = args.getMainArgs(args.getDryRunParts());
             cmd.debug();
-            System.out.println(cmd.toQuotedString());
+            System.out.println(cmd);
         }
 
         if (args.isStopCommand())
