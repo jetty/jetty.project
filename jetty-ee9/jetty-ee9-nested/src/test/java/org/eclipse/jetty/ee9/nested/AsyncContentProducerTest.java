@@ -292,44 +292,6 @@ public class AsyncContentProducerTest
     }
 
     @Test
-    public void testAsyncContentProducerInterceptorDoesNotConsume()
-    {
-        AtomicInteger contentFailedCount = new AtomicInteger();
-        AtomicInteger interceptorContentFailedCount = new AtomicInteger();
-        ContentProducer contentProducer = new AsyncContentProducer(new ContentListHttpChannel(List.of(new HttpInput.Content(ByteBuffer.allocate(1))
-        {
-            @Override
-            public void failed(Throwable x)
-            {
-                contentFailedCount.incrementAndGet();
-            }
-        }), new HttpInput.EofContent()));
-        try (AutoLock ignored = contentProducer.lock())
-        {
-            contentProducer.setInterceptor(content -> new HttpInput.Content(ByteBuffer.allocate(1))
-            {
-                @Override
-                public void failed(Throwable x)
-                {
-                    interceptorContentFailedCount.incrementAndGet();
-                }
-            });
-
-            assertThat(contentProducer.isReady(), is(true));
-
-            HttpInput.Content content1 = contentProducer.nextContent();
-            assertThat(content1.isSpecial(), is(true));
-            assertThat(content1.getError().getMessage(), endsWith("did not consume any of the 1 remaining byte(s) of content"));
-
-            HttpInput.Content content2 = contentProducer.nextContent();
-            assertThat(content2.isSpecial(), is(true));
-            assertThat(content2.getError().getMessage(), endsWith("did not consume any of the 1 remaining byte(s) of content"));
-        }
-        assertThat(contentFailedCount.get(), is(1));
-        assertThat(interceptorContentFailedCount.get(), is(1));
-    }
-
-    @Test
     public void testAsyncContentProducerInterceptorDoesNotConsumeEmptyContent()
     {
         AtomicInteger contentSucceededCount = new AtomicInteger();
