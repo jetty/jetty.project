@@ -145,6 +145,11 @@ public class HeaderParser
         return (flags & bit) == bit;
     }
 
+    public int getFlags()
+    {
+        return flags;
+    }
+
     public int getStreamId()
     {
         return streamId;
