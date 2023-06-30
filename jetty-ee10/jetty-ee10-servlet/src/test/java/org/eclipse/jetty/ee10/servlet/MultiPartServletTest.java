@@ -93,7 +93,7 @@ public class MultiPartServletTest
         tmpDirString = tmpDir.toAbsolutePath().toString();
     }
 
-    private void start(HttpServlet servlet, MultipartConfigElement config, boolean preload) throws Exception
+    private void start(HttpServlet servlet, MultipartConfigElement config, boolean eager) throws Exception
     {
         config = config == null ? new MultipartConfigElement(tmpDirString, MAX_FILE_SIZE, -1, 0) : config;
         server = new Server(null, null, null);
@@ -110,8 +110,8 @@ public class MultiPartServletTest
         gzipHandler.addIncludedMimeTypes("multipart/form-data");
         gzipHandler.setMinGzipSize(32);
 
-        if (preload)
-            gzipHandler.setHandler(new PreloadFormHandler());
+        if (eager)
+            gzipHandler.setHandler(new EagerFormHandler());
 
         servletContextHandler.insertHandler(gzipHandler);
 
@@ -131,7 +131,7 @@ public class MultiPartServletTest
 
     @ParameterizedTest
     @ValueSource(booleans = {true, false})
-    public void testLargePart(boolean preload) throws Exception
+    public void testLargePart(boolean eager) throws Exception
     {
         start(new HttpServlet()
         {
@@ -140,7 +140,7 @@ public class MultiPartServletTest
             {
                 req.getParameterMap();
             }
-        }, new MultipartConfigElement(tmpDirString), preload);
+        }, new MultipartConfigElement(tmpDirString), eager);
 
         OutputStreamRequestContent content = new OutputStreamRequestContent();
         MultiPartRequestContent multiPart = new MultiPartRequestContent();
@@ -173,7 +173,7 @@ public class MultiPartServletTest
 
     @ParameterizedTest
     @ValueSource(booleans = {true, false})
-    public void testManyParts(boolean preload) throws Exception
+    public void testManyParts(boolean eager) throws Exception
     {
         start(new HttpServlet()
         {
@@ -182,7 +182,7 @@ public class MultiPartServletTest
             {
                 req.getParameterMap();
             }
-        }, new MultipartConfigElement(tmpDirString), preload);
+        }, new MultipartConfigElement(tmpDirString), eager);
 
         byte[] byteArray = new byte[1024];
         Arrays.fill(byteArray, (byte)1);
@@ -212,7 +212,7 @@ public class MultiPartServletTest
 
     @ParameterizedTest
     @ValueSource(booleans = {true, false})
-    public void testMaxRequestSize(boolean preload) throws Exception
+    public void testMaxRequestSize(boolean eager) throws Exception
     {
         start(new HttpServlet()
         {
@@ -221,7 +221,7 @@ public class MultiPartServletTest
             {
                 req.getParameterMap();
             }
-        }, new MultipartConfigElement(tmpDirString, -1, 1024, 1024 * 1024 * 8), preload);
+        }, new MultipartConfigElement(tmpDirString, -1, 1024, 1024 * 1024 * 8), eager);
 
         OutputStreamRequestContent content = new OutputStreamRequestContent();
         MultiPartRequestContent multiPart = new MultiPartRequestContent();
@@ -282,7 +282,7 @@ public class MultiPartServletTest
 
     @ParameterizedTest
     @ValueSource(booleans = {true, false})
-    public void testSimpleMultiPart(boolean preload) throws Exception
+    public void testSimpleMultiPart(boolean eager) throws Exception
     {
         start(new HttpServlet()
         {
@@ -300,7 +300,7 @@ public class MultiPartServletTest
                 String content1 = IO.toString(part.getInputStream(), UTF_8);
                 assertEquals("content1", content1);
             }
-        }, null, preload);
+        }, null, eager);
 
         try (Socket socket = new Socket("localhost", connector.getLocalPort()))
         {
@@ -334,7 +334,7 @@ public class MultiPartServletTest
 
     @ParameterizedTest
     @ValueSource(booleans = {true, false})
-    public void testTempFilesDeletedOnError(boolean preload) throws Exception
+    public void testTempFilesDeletedOnError(boolean eager) throws Exception
     {
         byte[] bytes = new byte[2 * MAX_FILE_SIZE];
         Arrays.fill(bytes, (byte)1);
@@ -348,7 +348,7 @@ public class MultiPartServletTest
                 // Should throw as the max file size is exceeded.
                 request.getParts();
             }
-        }, null, preload);
+        }, null, eager);
 
         MultiPartRequestContent multiPart = new MultiPartRequestContent();
         multiPart.addPart(new MultiPart.ContentSourcePart("largePart", "largeFile.bin", HttpFields.EMPTY, new BytesRequestContent(bytes)));
@@ -373,7 +373,7 @@ public class MultiPartServletTest
 
     @ParameterizedTest
     @ValueSource(booleans = {true, false})
-    public void testMultiPartGzip(boolean preload) throws Exception
+    public void testMultiPartGzip(boolean eager) throws Exception
     {
         start(new HttpServlet()
         {
@@ -397,7 +397,7 @@ public class MultiPartServletTest
                 echoParts.close();
                 IO.copy(Content.Source.asInputStream(echoParts), response1.getOutputStream());
             }
-        }, null, preload);
+        }, null, eager);
 
         // Do not automatically handle gzip.
         client.getContentDecoderFactories().clear();
@@ -437,7 +437,7 @@ public class MultiPartServletTest
 
     @ParameterizedTest
     @ValueSource(booleans = {true, false})
-    public void testDoubleReadFromPart(boolean preload) throws Exception
+    public void testDoubleReadFromPart(boolean eager) throws Exception
     {
         start(new HttpServlet()
         {
@@ -451,7 +451,7 @@ public class MultiPartServletTest
                     resp.getWriter().println("Part: name=" + part.getName() + ", size=" + part.getSize() + ", content=" + IO.toString(part.getInputStream()));
                 }
             }
-        }, null, preload);
+        }, null, eager);
 
         String contentString = "the quick brown fox jumps over the lazy dog, " +
             "the quick brown fox jumps over the lazy dog";
@@ -473,7 +473,7 @@ public class MultiPartServletTest
 
     @ParameterizedTest
     @ValueSource(booleans = {true, false})
-    public void testPartAsParameter(boolean preload) throws Exception
+    public void testPartAsParameter(boolean eager) throws Exception
     {
         start(new HttpServlet()
         {
@@ -488,7 +488,7 @@ public class MultiPartServletTest
                     resp.getWriter().println("Parameter: " + entry.getKey() + "=" + entry.getValue()[0]);
                 }
             }
-        }, null, preload);
+        }, null, eager);
 
         String contentString = "the quick brown fox jumps over the lazy dog, " +
             "the quick brown fox jumps over the lazy dog";

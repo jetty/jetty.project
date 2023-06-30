@@ -24,8 +24,8 @@ import org.eclipse.jetty.io.Content;
  * <p>
  * An example usage to asynchronously read UTF-8 content is:
  * </p>
- * <pre>
- *     public static class FutureUtf8String extends ContentSourceCompletableFuture&lt;String&gt;
+ * <pre>{@code
+ *     public static class FutureUtf8String extends ContentSourceCompletableFuture<String>;
  *     {
  *         Utf8StringBuilder builder = new Utf8StringBuilder();
  *
@@ -34,7 +34,7 @@ import org.eclipse.jetty.io.Content;
  *             super(content);
  *         }
  *
- *         &#064;Override
+ *         @Override
  *         protected String parse(Content.Chunk chunk) throws Throwable
  *         {
  *             if (chunk.hasRemaining())
@@ -43,10 +43,8 @@ import org.eclipse.jetty.io.Content;
  *         }
  *     }
  *     ...
- *     {
- *         new FutureUtf8String(source).thenAccept(System.err::println);
- *     }
- * </pre>
+ *     new FutureUtf8String(source).thenAccept(System.err::println);
+ * }</pre>
  */
 public abstract class ContentSourceCompletableFuture<X> extends CompletableFuture<X>
 {
@@ -57,25 +55,27 @@ public abstract class ContentSourceCompletableFuture<X> extends CompletableFutur
         _content = content;
     }
 
-    public CompletableFuture<X> parse()
-    {
-        onContentAvailable();
-        return this;
-    }
-
-    private void onContentAvailable()
+    /**
+     * Progress the parsing, {@link Content.Source#read() reading} and/or {@link Content.Source#demand(Runnable) demanding}
+     * as necessary.
+     * <p>
+     * This method must be called once to initiate the reading and parsing,
+     * and is then called to progress parsing in response to any {@link Content.Source#demand(Runnable) demand} calls.
+     * </p>
+     */
+    public void parse()
     {
         while (true)
         {
             Content.Chunk chunk = _content.read();
             if (chunk == null)
             {
-                _content.demand(this::onContentAvailable);
+                _content.demand(this::parse);
                 return;
             }
             if (Content.Chunk.isFailure(chunk))
             {
-                if (!chunk.isLast() && ignoreTransientFailure(chunk.getFailure()))
+                if (!chunk.isLast() && onTransientFailure(chunk.getFailure()))
                     continue;
                 completeExceptionally(chunk.getFailure());
                 return;
@@ -110,9 +110,11 @@ public abstract class ContentSourceCompletableFuture<X> extends CompletableFutur
 
     /**
      * Called to parse a {@link org.eclipse.jetty.io.Content.Chunk}
-     * @param chunk The chunk containing content to parse. The chunk will
-     * never be a
-     * {@link org.eclipse.jetty.io.Content.Chunk#isFailure(Content.Chunk) failure chunk}.
+     * @param chunk The chunk containing content to parse. The chunk will never be null nor a
+     *              {@link org.eclipse.jetty.io.Content.Chunk#isFailure(Content.Chunk) failure chunk}.
+     *              If references to the content of the chunk are to be held beyond the scope of this call,
+     *              then implementations must call {@link Content.Chunk#retain()} and {@link Content.Chunk#release()}
+     *              as appropriate.
      * @return The parsed {@code X} instance or null if parsing is not yet complete
      * @throws Throwable Thrown if there is an error parsing
      */
@@ -123,7 +125,7 @@ public abstract class ContentSourceCompletableFuture<X> extends CompletableFutur
      *             {@link org.eclipse.jetty.io.Content.Chunk#isFailure(Content.Chunk) failure chunk}
      * @return True if the chunk can be ignored.
      */
-    protected boolean ignoreTransientFailure(Throwable cause)
+    protected boolean onTransientFailure(Throwable cause)
     {
         return false;
     }

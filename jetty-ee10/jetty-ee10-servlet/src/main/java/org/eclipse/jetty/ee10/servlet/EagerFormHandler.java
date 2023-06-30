@@ -24,20 +24,20 @@ import org.eclipse.jetty.server.Request;
 import org.eclipse.jetty.util.Callback;
 
 /**
- * Handler to asynchronously preload & parse {@link MimeTypes.Type#FORM_ENCODED} and
+ * Handler to eagerly and asynchronously read & parse {@link MimeTypes.Type#FORM_ENCODED} and
  * {@link MimeTypes.Type#MULTIPART_FORM_DATA} content prior to invoking the {@link ServletHandler},
  * which can then consume them with blocking APIs but without blocking.
  * @see FormFields#from(Request)
  * @see ServletMultiPartFormData#from(ServletRequest)
  */
-public class PreloadFormHandler extends Handler.Wrapper
+public class EagerFormHandler extends Handler.Wrapper
 {
-    public PreloadFormHandler()
+    public EagerFormHandler()
     {
         this(null);
     }
 
-    public PreloadFormHandler(Handler handler)
+    public EagerFormHandler(Handler handler)
     {
         super(handler);
     }
@@ -63,15 +63,11 @@ public class PreloadFormHandler extends Handler.Wrapper
         if (future == null)
             return super.handle(request, response, callback);
 
-        if (future.isDone())
-        {
-            if (!super.handle(request, response, callback))
-                callback.failed(new IllegalStateException("Not Handled"));
-            return true;
-        }
-
         future.whenComplete((result, failure) ->
         {
+            // The result and failure are not handled here. Rather we call the next handler
+            // to allow the normal processing to handle the result or failure, which will be
+            // provided via the attribute to ServletApiRequest#getParts()
             try
             {
                 if (!super.handle(request, response, callback))

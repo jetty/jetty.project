@@ -309,6 +309,15 @@ public class Dispatcher implements RequestDispatcher
                 {
                     return null;
                 }
+                case ServletContextRequest.MULTIPART_CONFIG_ELEMENT ->
+                {
+                    // If we already have future parts, return the configuration of the wrapped request.
+                    if (super.getAttribute(ServletMultiPartFormData.class.getName()) != null)
+                        return super.getAttribute(name);
+                    // otherwise, return the configuration of this mapping
+                    return _mappedServlet.getServletHolder().getMultipartConfigElement();
+                }
+
                 default ->
                 {
                     return super.getAttribute(name);

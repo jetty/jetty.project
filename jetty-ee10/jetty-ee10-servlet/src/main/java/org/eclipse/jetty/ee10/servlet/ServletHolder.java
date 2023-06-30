@@ -155,9 +155,9 @@ public class ServletHolder extends Holder<Servlet> implements Comparable<Servlet
         setHeldClass(servlet);
     }
 
-    public Object getMultipartConfig()
+    public MultipartConfigElement getMultipartConfigElement()
     {
-        return _registration == null ? null : _registration.getMultipartConfig();
+        return _registration == null ? null : _registration.getMultipartConfigElement();
     }
 
     /**
@@ -916,7 +916,7 @@ public class ServletHolder extends Holder<Servlet> implements Comparable<Servlet
 
     public class Registration extends HolderRegistration implements ServletRegistration.Dynamic
     {
-        protected MultipartConfigElement _multipartConfig;
+        protected MultipartConfigElement _multipartConfigElement;
 
         @Override
         public Set<String> addMapping(String... urlPatterns)
@@ -991,12 +991,12 @@ public class ServletHolder extends Holder<Servlet> implements Comparable<Servlet
         @Override
         public void setMultipartConfig(MultipartConfigElement element)
         {
-            _multipartConfig = element;
+            _multipartConfigElement = element;
         }
 
-        public MultipartConfigElement getMultipartConfig()
+        public MultipartConfigElement getMultipartConfigElement()
         {
-            return _multipartConfig;
+            return _multipartConfigElement;
         }
 
         @Override

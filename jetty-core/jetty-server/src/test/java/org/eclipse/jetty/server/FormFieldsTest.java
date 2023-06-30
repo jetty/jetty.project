@@ -25,6 +25,7 @@ import org.eclipse.jetty.util.Attributes;
 import org.eclipse.jetty.util.BufferUtil;
 import org.eclipse.jetty.util.Callback;
 import org.eclipse.jetty.util.Fields;
+import org.eclipse.jetty.util.FutureCallback;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.Arguments;
 import org.junit.jupiter.params.provider.MethodSource;
@@ -61,9 +62,11 @@ public class FormFieldsTest
         assertFalse(futureFields.isDone());
 
         int last = chunks.size() - 1;
+        FutureCallback eof = new FutureCallback();
         for (int i = 0; i <= last; i++)
-            source.write(i == last, BufferUtil.toBuffer(chunks.get(i), charset), Callback.NOOP);
+            source.write(i == last, BufferUtil.toBuffer(chunks.get(i), charset), i == last ? eof : Callback.NOOP);
 
+        assertTrue(eof.isDone());
         assertTrue(futureFields.isDone());
 
         try

@@ -216,13 +216,11 @@ public class ContentDocs
         Content.Sink.write(source, true, "Three", writeCallback);
         if (!writeCallback.isDone() || !future.isDone())
             throw new IllegalStateException("Should be consumed");
-
-        System.err.println(future.get());
     }
 
     public static class FutureUtf8String extends ContentSourceCompletableFuture<String>
     {
-        Utf8StringBuilder builder = new Utf8StringBuilder();
+        private final Utf8StringBuilder builder = new Utf8StringBuilder();
 
         public FutureUtf8String(Content.Source content)
         {

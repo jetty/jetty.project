@@ -224,7 +224,7 @@ public class MultiPartFormData
                         throw listener.failure;
                     length += chunk.getByteBuffer().remaining();
                     long max = getMaxLength();
-                    if (max > 0 && length > max)
+                    if (max >= 0 && length > max)
                         throw new IllegalStateException("max length exceeded: %d".formatted(max));
                     parser.parse(chunk);
                     if (listener.isFailed())
@@ -394,7 +394,7 @@ public class MultiPartFormData
 
         private class PartsListener extends MultiPart.AbstractPartsListener
         {
-            private final AutoLock lock = new AutoLock(); // TODO why do we need this lock?
+            private final AutoLock lock = new AutoLock();
             private final List<MultiPart.Part> parts = new ArrayList<>();
             private final List<Content.Chunk> partChunks = new ArrayList<>();
             private long fileSize;

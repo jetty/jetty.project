@@ -59,25 +59,22 @@ public class FormFields extends ContentSourceCompletableFuture<Fields>
         return StringUtil.isEmpty(cs) ? StandardCharsets.UTF_8 : Charset.forName(cs);
     }
 
-    public static CompletableFuture<Fields> from(Request request)
-    {
-        int maxFields = getRequestAttribute(request, FormFields.MAX_FIELDS_ATTRIBUTE);
-        int maxLength = getRequestAttribute(request, FormFields.MAX_LENGTH_ATTRIBUTE);
-        return from(request, maxFields, maxLength);
-    }
-
-    public static CompletableFuture<Fields> from(Request request, Charset charset)
-    {
-        int maxFields = getRequestAttribute(request, FormFields.MAX_FIELDS_ATTRIBUTE);
-        int maxLength = getRequestAttribute(request, FormFields.MAX_LENGTH_ATTRIBUTE);
-        return from(request, charset, maxFields, maxLength);
-    }
-
+    /**
+     * Set a {@link Fields} or related failure for the request
+     * @param request The request to which to associate the fields with
+     * @param fields A {@link CompletableFuture} that will provide either the fields or a failure.
+     */
     public static void set(Request request, CompletableFuture<Fields> fields)
     {
         request.setAttribute(FormFields.class.getName(), fields);
     }
 
+    /**
+     * @param request The request to enquire from
+     * @return A {@link CompletableFuture} that will provide either the fields or a failure, or null if none set.
+     * @see #from(Request)
+     *
+     */
     public static CompletableFuture<Fields> get(Request request)
     {
         Object attr = request.getAttribute(FormFields.class.getName());
@@ -86,16 +83,78 @@ public class FormFields extends ContentSourceCompletableFuture<Fields>
         return EMPTY;
     }
 
+    /**
+     * Find or create a {@link FormFields} from a {@link Content.Source}.
+     * @param request The {@link Request} in which to look for an existing {@link FormFields} attribute,
+     *                using the classname as the attribute name, else the request is used
+     *                as a {@link Content.Source} from which to read the fields and set the attribute.
+     * @return A {@link CompletableFuture} that will provide the {@link Fields} or a failure.
+     * @see #from(Content.Source, Attributes, Charset, int, int)
+     */
+    public static CompletableFuture<Fields> from(Request request)
+    {
+        int maxFields = getRequestAttribute(request, FormFields.MAX_FIELDS_ATTRIBUTE);
+        int maxLength = getRequestAttribute(request, FormFields.MAX_LENGTH_ATTRIBUTE);
+        return from(request, maxFields, maxLength);
+    }
+
+    /**
+     * Find or create a {@link FormFields} from a {@link Content.Source}.
+     * @param request The {@link Request} in which to look for an existing {@link FormFields} attribute,
+     *                using the classname as the attribute name, else the request is used
+     *                as a {@link Content.Source} from which to read the fields and set the attribute.
+     * @param charset the {@link Charset} to use for byte to string conversion.
+     * @return A {@link CompletableFuture} that will provide the {@link Fields} or a failure.
+     * @see #from(Content.Source, Attributes, Charset, int, int)
+     */
+    public static CompletableFuture<Fields> from(Request request, Charset charset)
+    {
+        int maxFields = getRequestAttribute(request, FormFields.MAX_FIELDS_ATTRIBUTE);
+        int maxLength = getRequestAttribute(request, FormFields.MAX_LENGTH_ATTRIBUTE);
+        return from(request, charset, maxFields, maxLength);
+    }
+
+    /**
+     * Find or create a {@link FormFields} from a {@link Content.Source}.
+     * @param request The {@link Request} in which to look for an existing {@link FormFields} attribute,
+     *                using the classname as the attribute name, else the request is used
+     *                as a {@link Content.Source} from which to read the fields and set the attribute.
+     * @param maxFields The maximum number of fields to be parsed
+     * @param maxLength The maximum total size of the fields
+     * @return A {@link CompletableFuture} that will provide the {@link Fields} or a failure.
+     * @see #from(Content.Source, Attributes, Charset, int, int)
+     */
     public static CompletableFuture<Fields> from(Request request, int maxFields, int maxLength)
     {
         return from(request, getFormEncodedCharset(request), maxFields, maxLength);
     }
 
+    /**
+     * Find or create a {@link FormFields} from a {@link Content.Source}.
+     * @param request The {@link Request} in which to look for an existing {@link FormFields} attribute,
+     *                using the classname as the attribute name, else the request is used
+     *                as a {@link Content.Source} from which to read the fields and set the attribute.
+     * @param charset the {@link Charset} to use for byte to string conversion.
+     * @param maxFields The maximum number of fields to be parsed
+     * @param maxLength The maximum total size of the fields
+     * @return A {@link CompletableFuture} that will provide the {@link Fields} or a failure.
+     * @see #from(Content.Source, Attributes, Charset, int, int)
+     */
     public static CompletableFuture<Fields> from(Request request, Charset charset, int maxFields, int maxLength)
     {
         return from(request, request, charset, maxFields, maxLength);
     }
 
+    /**
+     * Find or create a {@link FormFields} from a {@link Content.Source}.
+     * @param source The {@link Content.Source} from which to read the fields.
+     * @param attributes The {@link Attributes} in which to look for an existing {@link FormFields}, else in which to
+     *                   add the fields, using the classname as the attribute name.
+     * @param charset the {@link Charset} to use for byte to string conversion.
+     * @param maxFields The maximum number of fields to be parsed
+     * @param maxLength The maximum total size of the fields
+     * @return A {@link CompletableFuture} that will provide the {@link Fields} or a failure.
+     */
     static CompletableFuture<Fields> from(Content.Source source, Attributes attributes, Charset charset, int maxFields, int maxLength)
     {
         Object attr = attributes.getAttribute(FormFields.class.getName());
@@ -128,7 +187,6 @@ public class FormFields extends ContentSourceCompletableFuture<Fields>
         }
     }
 
-    private final Content.Source _source;
     private final Fields _fields;
     private final CharsetStringBuilder _builder;
     private final int _maxFields;
@@ -138,10 +196,9 @@ public class FormFields extends ContentSourceCompletableFuture<Fields>
     private int _percent = 0;
     private byte _percentCode;
 
-    public FormFields(Content.Source source, Charset charset, int maxFields, int maxSize)
+    private FormFields(Content.Source source, Charset charset, int maxFields, int maxSize)
     {
         super(source);
-        _source = source;
         _maxFields = maxFields;
         _maxLength = maxSize;
         _builder = CharsetStringBuilder.forCharset(charset);
@@ -225,7 +282,7 @@ public class FormFields extends ContentSourceCompletableFuture<Fields>
                     Fields.Field field = new Fields.Field(_name, value);
                     _name = null;
                     value = null;
-                    if (_maxFields > 0 && _fields.getSize() >= _maxFields)
+                    if (_maxFields >= 0 && _fields.getSize() >= _maxFields)
                         throw new IllegalStateException("form with too many fields > " + _maxFields);
                     _fields.add(field);
                 }

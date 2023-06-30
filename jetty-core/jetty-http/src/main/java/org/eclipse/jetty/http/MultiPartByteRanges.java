@@ -52,7 +52,7 @@ import org.eclipse.jetty.util.thread.AutoLock;
  *
  * @see Parts
  */
-public class MultiPartByteRanges extends CompletableFuture<MultiPartByteRanges.Parts>
+public class MultiPartByteRanges
 {
     private MultiPartByteRanges()
     {
