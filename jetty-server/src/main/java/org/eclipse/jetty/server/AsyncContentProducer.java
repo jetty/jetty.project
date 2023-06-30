@@ -427,7 +427,6 @@ class AsyncContentProducer implements ContentProducer
     {
         try
         {
-            int remainingBeforeInterception = _rawContent.remaining();
             HttpInput.Content content = _interceptor.readFrom(_rawContent);
             if (content != null && content.isSpecial() && !_rawContent.isSpecial())
             {
@@ -443,24 +442,6 @@ class AsyncContentProducer implements ContentProducer
                 }
                 if (LOG.isDebugEnabled())
                     LOG.debug("interceptor generated special content {}", this);
-            }
-            else if (content != _rawContent && !_rawContent.isSpecial() && !_rawContent.isEmpty() && _rawContent.remaining() == remainingBeforeInterception)
-            {
-                IOException failure = new IOException("Interceptor " + _interceptor + " did not consume any of the " + _rawContent.remaining() + " remaining byte(s) of content");
-                if (content != null)
-                    content.failed(failure);
-                failCurrentContent(failure);
-                // Set the _error flag to mark the content as definitive, i.e.:
-                // do not try to produce new raw content to get a fresher error
-                // when the special content was caused by the interceptor not
-                // consuming the raw content.
-                _error = true;
-                Response response = _httpChannel.getResponse();
-                if (response.isCommitted())
-                    _httpChannel.abort(failure);
-                if (LOG.isDebugEnabled())
-                    LOG.debug("interceptor did not consume content {}", this);
-                content = _transformedContent;
             }
 
             if (LOG.isDebugEnabled())
