@@ -24,7 +24,7 @@ import org.eclipse.jetty.server.Request;
 import org.eclipse.jetty.util.Callback;
 
 /**
- * Handler to eagerly and asynchronously read & parse {@link MimeTypes.Type#FORM_ENCODED} and
+ * Handler to eagerly and asynchronously read and parse {@link MimeTypes.Type#FORM_ENCODED} and
  * {@link MimeTypes.Type#MULTIPART_FORM_DATA} content prior to invoking the {@link ServletHandler},
  * which can then consume them with blocking APIs but without blocking.
  * @see FormFields#from(Request)
