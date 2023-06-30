@@ -72,6 +72,7 @@ import org.eclipse.jetty.server.Handler;
 import org.eclipse.jetty.server.Response;
 import org.eclipse.jetty.server.Server;
 import org.eclipse.jetty.server.Session;
+import org.eclipse.jetty.server.handler.ContextHandler.ScopedContext;
 import org.eclipse.jetty.server.handler.ContextHandlerCollection;
 import org.eclipse.jetty.server.handler.ContextRequest;
 import org.eclipse.jetty.session.AbstractSessionManager;
@@ -89,6 +90,7 @@ import org.eclipse.jetty.util.annotation.ManagedAttribute;
 import org.eclipse.jetty.util.annotation.ManagedObject;
 import org.eclipse.jetty.util.component.DumpableCollection;
 import org.eclipse.jetty.util.component.Environment;
+import org.eclipse.jetty.util.component.LifeCycle;
 import org.eclipse.jetty.util.resource.Resource;
 import org.eclipse.jetty.util.resource.ResourceFactory;
 import org.eclipse.jetty.util.resource.Resources;
@@ -117,6 +119,20 @@ import org.slf4j.LoggerFactory;
  * By default, the context is created with the {@link AllowedResourceAliasChecker} which is configured to allow symlinks. If
  * this alias checker is not required, then {@link #clearAliasChecks()} or {@link #setAliasChecks(List)} should be called.
  * </p>
+ * This handler can be invoked in 2 different ways:
+ * <ul>
+ *  <li>
+ *      If this is added directly as a {@link Handler} on the {@link Server} this will supply the {@link CoreContextHandler}
+ *      associated with this {@link ContextHandler}. This will wrap the request to a {@link CoreContextRequest} and fall
+ *      through to the {@code CoreToNestedHandler} which invokes the {@link HttpChannel} and this will eventually reach
+ *      {@link ContextHandler#handle(String, Request, HttpServletRequest, HttpServletResponse)}.
+ *  </li>
+ *  <li>
+ *      If this is nested inside another {@link ContextHandler} and not added directly to the server then its
+ *      {@link CoreContextHandler} will never be added to the server. However it will still be created and its
+ *      {@link ScopedContext} will be used to enter scope.
+ *   </li>
+ * </ul>
  */
 @ManagedObject("EE9 Context")
 public class ContextHandler extends ScopedHandler implements Attributes, Supplier<Handler>
@@ -228,6 +244,12 @@ public class ContextHandler extends ScopedHandler implements Attributes, Supplie
         this(null, null, contextPath);
     }
 
+    public ContextHandler(String contextPath, org.eclipse.jetty.ee9.nested.Handler handler)
+    {
+        this(contextPath);
+        setHandler(handler);
+    }
+
     public ContextHandler(org.eclipse.jetty.server.Handler.Container parent)
     {
         this(null, parent, "/");
@@ -294,6 +316,8 @@ public class ContextHandler extends ScopedHandler implements Attributes, Supplie
     public void setServer(Server server)
     {
         super.setServer(server);
+        if (!Objects.equals(server, _coreContextHandler.getServer()))
+            _coreContextHandler.setServer(server);
         if (_errorHandler != null)
             _errorHandler.setServer(server);
     }
@@ -581,13 +605,38 @@ public class ContextHandler extends ScopedHandler implements Attributes, Supplie
     @Override
     protected void doStart() throws Exception
     {
-        // If we are being started directly (rather than via a start of the CoreContextHandler), then
-        // we need to run ourselves in the core context
+        // If we are being started directly (rather than via a start of the CoreContextHandler),
+        // then we need the LifeCycle Listener to ensure both this and the CoreContextHandler are
+        // in STARTING state when doStartInContext is called.
         if (org.eclipse.jetty.server.handler.ContextHandler.getCurrentContext() != _coreContextHandler.getContext())
         {
+            // Make the CoreContextHandler lifecycle responsible for calling the doStartContext() and doStopContext().
             _coreContextHandler.unmanage(this);
+            _coreContextHandler.addEventListener(new LifeCycle.Listener()
+            {
+                @Override
+                public void lifeCycleStarting(LifeCycle event)
+                {
+                    try
+                    {
+                        _coreContextHandler.getContext().call(() -> doStartInContext(), null);
+                    }
+                    catch (Exception e)
+                    {
+                        throw new RuntimeException(e);
+                    }
+                }
+
+                @Override
+                public void lifeCycleStarted(LifeCycle event)
+                {
+                    _coreContextHandler.manage(this);
+                    _coreContextHandler.removeEventListener(this);
+                }
+            });
+
             _coreContextHandler.start();
-            _coreContextHandler.manage(this);
+            return;
         }
 
         _coreContextHandler.getContext().call(this::doStartInContext, null);
@@ -613,14 +662,39 @@ public class ContextHandler extends ScopedHandler implements Attributes, Supplie
     @Override
     protected void doStop() throws Exception
     {
-        // If we are being stopped directly (rather than via a start of the CoreContextHandler), then
-        // we need to stop ourselves in the core context
+        // If we are being stopped directly (rather than via a start of the CoreContextHandler),
+        // then doStopInContext() will be called by the listener on the lifecycle of CoreContextHandler.
         if (org.eclipse.jetty.server.handler.ContextHandler.getCurrentContext() != _coreContextHandler.getContext())
         {
+            // Make the CoreContextHandler lifecycle responsible for calling the doStartContext() and doStopContext().
             _coreContextHandler.unmanage(this);
+            _coreContextHandler.addEventListener(new LifeCycle.Listener()
+            {
+                @Override
+                public void lifeCycleStopping(LifeCycle event)
+                {
+                    try
+                    {
+                        _coreContextHandler.getContext().call(() -> doStopInContext(), null);
+                    }
+                    catch (Exception e)
+                    {
+                        throw new RuntimeException(e);
+                    }
+                }
+
+                @Override
+                public void lifeCycleStopped(LifeCycle event)
+                {
+                    _coreContextHandler.manage(this);
+                    _coreContextHandler.removeEventListener(this);
+                }
+            });
+
             _coreContextHandler.stop();
-            _coreContextHandler.manage(this);
+            return;
         }
+
         _coreContextHandler.getContext().call(this::doStopInContext, null);
     }
 
@@ -806,7 +880,65 @@ public class ContextHandler extends ScopedHandler implements Attributes, Supplie
         if (LOG.isDebugEnabled())
             LOG.debug("scope {}|{}|{} @ {}", baseRequest.getContextPath(), baseRequest.getServletPath(), baseRequest.getPathInfo(), this);
 
-        nextScope(target, baseRequest, request, response);
+        APIContext oldContext = baseRequest.getContext();
+        String oldPathInContext = baseRequest.getPathInContext();
+        String pathInContext = target;
+        DispatcherType dispatch = baseRequest.getDispatcherType();
+
+        // Are we already in this context?
+        if (oldContext != _apiContext)
+        {
+            // check the target.
+            String contextPath = getContextPath();
+            if (DispatcherType.REQUEST.equals(dispatch) || DispatcherType.ASYNC.equals(dispatch))
+            {
+                if (target.length() > contextPath.length())
+                {
+                    if (contextPath.length() > 1)
+                        target = target.substring(contextPath.length());
+                    pathInContext = target;
+                }
+                else if (contextPath.length() == 1)
+                {
+                    target = "/";
+                    pathInContext = "/";
+                }
+                else
+                {
+                    target = "/";
+                    pathInContext = null;
+                }
+            }
+        }
+
+        try
+        {
+            baseRequest.setContext(_apiContext,
+                (DispatcherType.INCLUDE.equals(dispatch) || !target.startsWith("/")) ? oldPathInContext : pathInContext);
+
+            ScopedContext context = getCoreContextHandler().getContext();
+            if (context == org.eclipse.jetty.server.handler.ContextHandler.getCurrentContext())
+            {
+                nextScope(target, baseRequest, request, response);
+            }
+            else
+            {
+                String t = target;
+                context.call(() -> nextScope(t, baseRequest, request, response), baseRequest.getCoreRequest());
+            }
+        }
+        catch (IOException | ServletException | RuntimeException e)
+        {
+            throw e;
+        }
+        catch (Throwable t)
+        {
+            throw new ServletException("Unexpected Exception", t);
+        }
+        finally
+        {
+            baseRequest.setContext(oldContext, oldPathInContext);
+        }
     }
 
     protected void requestInitialized(Request baseRequest, HttpServletRequest request)
@@ -926,8 +1058,6 @@ public class ContextHandler extends ScopedHandler implements Attributes, Supplie
      */
     public void handle(Request request, Runnable runnable)
     {
-        ClassLoader oldClassloader = null;
-        Thread currentThread = null;
         APIContext oldContext = __context.get();
 
         // Are we already in the scope?
@@ -1582,14 +1712,12 @@ public class ContextHandler extends ScopedHandler implements Attributes, Supplie
         // this is a dispatch with either a provided URI and/or a dispatched path
         // We will have to modify the request and then revert
         final HttpURI oldUri = baseRequest.getHttpURI();
-        final String oldPathInContext = baseRequest.getPathInContext();
-        final ServletPathMapping oldServletPathMapping = baseRequest.getServletPathMapping();
         final MultiMap<String> oldQueryParams = baseRequest.getQueryParameters();
         try
         {
             if (encodedPathQuery == null)
             {
-                baseRequest.onDispatch(baseUri, oldPathInContext);
+                baseRequest.setHttpURI(baseUri);
             }
             else
             {
@@ -1614,23 +1742,18 @@ public class ContextHandler extends ScopedHandler implements Attributes, Supplie
                     builder.param(baseUri.getParam());
                 if (StringUtil.isEmpty(builder.getQuery()))
                     builder.query(baseUri.getQuery());
+                baseRequest.setHttpURI(builder);
 
-                HttpURI uri = builder.asImmutable();
-                String pathInContext = uri.getDecodedPath();
-                if (baseRequest.getContextPath().length() > 1)
-                    pathInContext = pathInContext.substring(baseRequest.getContextPath().length());
-
-                baseRequest.onDispatch(uri, pathInContext);
                 if (baseUri.getQuery() != null && baseRequest.getQueryString() != null)
                     baseRequest.mergeQueryParameters(oldUri.getQuery(), baseRequest.getQueryString());
             }
 
+            baseRequest.setContext(null, baseRequest.getHttpURI().getDecodedPath());
             handleAsync(channel, event, baseRequest);
         }
         finally
         {
-            baseRequest.onDispatch(oldUri, oldPathInContext);
-            baseRequest.setServletPathMapping(oldServletPathMapping);
+            baseRequest.setHttpURI(oldUri);
             baseRequest.setQueryParameters(oldQueryParams);
             baseRequest.resetParameters();
         }
@@ -1658,7 +1781,7 @@ public class ContextHandler extends ScopedHandler implements Attributes, Supplie
      */
     public class APIContext implements ServletContext
     {
-        private final org.eclipse.jetty.server.handler.ContextHandler.ScopedContext _coreContext;
+        private final ScopedContext _coreContext;
         protected boolean _enabled = true; // whether or not the dynamic API is enabled for callers
         protected boolean _extendedListenerTypes = false;
         private int _effectiveMajorVersion = SERVLET_MAJOR_VERSION;
@@ -2309,7 +2432,7 @@ public class ContextHandler extends ScopedHandler implements Attributes, Supplie
         AbstractSessionManager.RequestedSession _requestedSession;
 
         protected CoreContextRequest(org.eclipse.jetty.server.Request wrapped,
-                                     org.eclipse.jetty.server.handler.ContextHandler.ScopedContext context,
+                                     ScopedContext context,
                                      HttpChannel httpChannel)
         {
             super(context, wrapped);
@@ -2426,7 +2549,8 @@ public class ContextHandler extends ScopedHandler implements Attributes, Supplie
         protected void doStart() throws Exception
         {
             ClassLoader old = Thread.currentThread().getContextClassLoader();
-            Thread.currentThread().setContextClassLoader(ENVIRONMENT.getClassLoader());
+            if (getClassLoader() != null)
+                Thread.currentThread().setContextClassLoader(getClassLoader());
             try
             {
                 super.doStart();
@@ -2450,7 +2574,8 @@ public class ContextHandler extends ScopedHandler implements Attributes, Supplie
         protected void doStop() throws Exception
         {
             ClassLoader old = Thread.currentThread().getContextClassLoader();
-            Thread.currentThread().setContextClassLoader(ENVIRONMENT.getClassLoader());
+            if (getClassLoader() != null)
+                Thread.currentThread().setContextClassLoader(getClassLoader());
             try
             {
                 super.doStop();
@@ -2486,7 +2611,7 @@ public class ContextHandler extends ScopedHandler implements Attributes, Supplie
         }
 
         @Override
-        protected CoreContext newContext()
+        protected ScopedContext newContext()
         {
             return new CoreContext();
         }
@@ -2545,7 +2670,6 @@ public class ContextHandler extends ScopedHandler implements Attributes, Supplie
 
         public ContextHandler getContextHandler()
         {
-
             return ContextHandler.this;
         }
 

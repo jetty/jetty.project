@@ -504,7 +504,7 @@ public class WebAppContext extends ServletContextHandler implements WebAppClassL
     @Override
     protected void doStart() throws Exception
     {
-        ClassLoader oldLoader = Thread.currentThread().getContextClassLoader();
+        ClassLoader old = Thread.currentThread().getContextClassLoader();
         try
         {
             _metadata.setAllowDuplicateFragmentNames(isAllowDuplicateFragmentNames());
@@ -530,7 +530,7 @@ public class WebAppContext extends ServletContextHandler implements WebAppClassL
         }
         finally
         {
-            Thread.currentThread().setContextClassLoader(oldLoader);
+            Thread.currentThread().setContextClassLoader(old);
         }
     }
 

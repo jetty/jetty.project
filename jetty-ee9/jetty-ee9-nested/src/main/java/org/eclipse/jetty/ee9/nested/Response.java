@@ -51,6 +51,7 @@ import org.eclipse.jetty.http.MimeTypes;
 import org.eclipse.jetty.http.PreEncodedHttpField;
 import org.eclipse.jetty.http.content.HttpContent;
 import org.eclipse.jetty.io.RuntimeIOException;
+import org.eclipse.jetty.server.Context;
 import org.eclipse.jetty.server.HttpCookieUtils;
 import org.eclipse.jetty.server.HttpCookieUtils.SetCookieHttpField;
 import org.eclipse.jetty.server.Session;
@@ -253,7 +254,9 @@ public class Response implements HttpServletResponse
             return cookie;
 
         //sameSite is not set, use the default configured for the context, if one exists
-        SameSite contextDefault = HttpCookieUtils.getSameSiteDefault(_channel.getRequest().getContext().getCoreContext());
+        ContextHandler.APIContext apiContext = _channel.getRequest().getContext();
+        Context context = (apiContext == null) ? null : apiContext.getCoreContext();
+        SameSite contextDefault = HttpCookieUtils.getSameSiteDefault(context);
         if (contextDefault == null)
             return cookie; //no default set
 

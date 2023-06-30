@@ -157,7 +157,7 @@ public class Request implements HttpServletRequest
     }
 
     private final HttpChannel _channel;
-    private final ContextHandler.APIContext _context;
+    private ContextHandler.APIContext _context;
     private final List<ServletRequestAttributeListener> _requestAttributeListeners = new ArrayList<>();
     private final HttpInput _input;
     private ContextHandler.CoreContextRequest _coreRequest;
@@ -188,12 +188,13 @@ public class Request implements HttpServletRequest
     private long _timeStamp;
     private MultiPartFormInputStream _multiParts; //if the request is a multi-part mime
     private AsyncContextState _async;
+    private String _lastPathInContext;
+    private ContextHandler.APIContext _lastContext;
 
     public Request(HttpChannel channel, HttpInput input)
     {
         _channel = channel;
         _input = input;
-        _context = channel.getContextHandler().getServletContext();
     }
 
     public HttpFields getHttpFields()
@@ -690,20 +691,32 @@ public class Request implements HttpServletRequest
     }
 
     /**
-     * @return The {@link ContextHandler.APIContext context} used for this request. Never null.
+     * @return The {@link ContextHandler.APIContext context} used for this request.
      */
     public ContextHandler.APIContext getContext()
     {
         return _context;
     }
 
-    /**
-     * @return The current {@link ContextHandler.APIContext context} used for this error handling for this request.  If the request is asynchronous,
-     * then it is the context that called async. Otherwise it is the last non-null context passed to #setContext
-     */
-    public ContextHandler.APIContext getErrorContext()
+    public void setContext(ContextHandler.APIContext context, String pathInContext)
     {
-        return _context;
+        _context = context;
+        _pathInContext = pathInContext;
+        if (context != null)
+        {
+            _lastContext = context;
+            _lastPathInContext = pathInContext;
+        }
+    }
+
+    public ContextHandler.APIContext getLastContext()
+    {
+        return _lastContext;
+    }
+
+    public String getLastPathInContext()
+    {
+        return _lastPathInContext;
     }
 
     @Override
@@ -1340,13 +1353,11 @@ public class Request implements HttpServletRequest
         return _uri;
     }
 
-    public void onDispatch(HttpURI uri, String decodedPathInContext)
+    public void setHttpURI(HttpURI uri)
     {
         if (_uri != null && !Objects.equals(_uri.getQuery(), uri.getQuery()) && _queryParameters != BAD_PARAMS)
             _parameters = _queryParameters = null;
         _uri = uri.asImmutable();
-        _pathInContext = decodedPathInContext;
-        _servletPathMapping = null;
     }
 
     /**
@@ -1498,10 +1509,10 @@ public class Request implements HttpServletRequest
 
         _method = coreRequest.getMethod();
         _uri = coreRequest.getHttpURI();
-
-        String pathInContext = org.eclipse.jetty.server.Request.getPathInContext(coreRequest);
-        _pathInContext = URIUtil.decodePath(pathInContext);
         _httpFields = coreRequest.getHeaders();
+
+        // This is further modified inside ContextHandler.doScope().
+        _pathInContext = URIUtil.decodePath(coreRequest.getHttpURI().getCanonicalPath());
 
         setSecure(coreRequest.isSecure());
     }

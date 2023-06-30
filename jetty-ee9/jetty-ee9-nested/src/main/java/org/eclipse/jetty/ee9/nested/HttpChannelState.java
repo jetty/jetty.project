@@ -922,7 +922,8 @@ public class HttpChannelState
             response.setStatus(code);
             response.errorClose();
 
-            request.setAttribute(ErrorHandler.ERROR_CONTEXT, request.getErrorContext());
+            ServletContext errorContext = request.getLastContext();
+            request.setAttribute(ErrorHandler.ERROR_CONTEXT, errorContext);
             request.setAttribute(ERROR_REQUEST_URI, request.getRequestURI());
             request.setAttribute(ERROR_SERVLET_NAME, request.getServletName());
             request.setAttribute(ERROR_STATUS_CODE, code);

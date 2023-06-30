@@ -76,6 +76,7 @@ import org.eclipse.jetty.util.Attributes;
 import org.eclipse.jetty.util.BufferUtil;
 import org.eclipse.jetty.util.Callback;
 import org.eclipse.jetty.util.NanoTime;
+import org.eclipse.jetty.util.URIUtil;
 import org.eclipse.jetty.util.thread.Scheduler;
 import org.eclipse.jetty.util.thread.TimerScheduler;
 import org.hamcrest.Matchers;
@@ -1605,7 +1606,8 @@ public class ResponseTest
 
         Response response = getResponse();
         Request request = response.getHttpChannel().getRequest();
-        request.onDispatch(HttpURI.build(request.getHttpURI()).host("myhost").port(8888), "/path/info");
+        request.setHttpURI(HttpURI.build(request.getHttpURI()).host("myhost").port(8888));
+        request.setContext(_context._apiContext, "/path/info");
 
         assertEquals("http://myhost:8888/path/info;param?query=0&more=1#target", response.encodeURL("http://myhost:8888/path/info;param?query=0&more=1#target"));
 
@@ -1716,7 +1718,8 @@ public class ResponseTest
                 uri.scheme("http");
                 if (host != null)
                     uri.host(host).port(port);
-                request.onDispatch(uri, "/path/info");
+                request.setHttpURI(uri);
+                request.setContext(_context._apiContext, "/path/info");
 
                 ContextHandler.CoreContextRequest coreRequest = response.getHttpChannel().getCoreRequest();
                 coreRequest.setSessionManager(sessionHandler.getSessionManager());
@@ -1786,7 +1789,8 @@ public class ResponseTest
                     if (host != null)
                         uri.authority(host, port);
                     uri.pathQuery("/path/info;param;jsessionid=12345?query=0&more=1#target");
-                    request.onDispatch(uri, "/info");
+                    request.setHttpURI(uri);
+                    request.setContext(_context._apiContext, "/info");
 
                     ContextHandler.CoreContextRequest coreRequest = response.getHttpChannel().getCoreRequest();
                     coreRequest.setRequestedSession(new AbstractSessionManager.RequestedSession(null, "12345", i > 2));
@@ -2266,6 +2270,7 @@ public class ResponseTest
         org.eclipse.jetty.server.Response coreResponse = new MockResponse(coreRequest);
 
         _channel.onRequest(new ContextHandler.CoreContextRequest(coreRequest, _context.getCoreContextHandler().getContext(), _channel));
+        _channel.getRequest().setContext(_context._apiContext, URIUtil.decodePath(org.eclipse.jetty.server.Request.getPathInContext(coreRequest)));
         _channel.onProcess(coreResponse, Callback.NOOP);
 
         BufferUtil.clear(_content);
