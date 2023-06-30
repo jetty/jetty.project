@@ -111,13 +111,12 @@ public class WebSocketServerTest extends WebSocketTester
             assertNull(frame);
 
             serverHandler.getCoreSession().demand();
-            serverHandler.getCoreSession().demand();
-
             frame = serverHandler.receivedFrames.poll(10, TimeUnit.SECONDS);
             assertNotNull(frame);
             assertThat(frame.getPayloadAsUTF8(), is("Hello"));
 
             client.getOutputStream().write(RawFrameBuilder.buildText("World", true));
+            serverHandler.getCoreSession().demand();
             frame = serverHandler.receivedFrames.poll(10, TimeUnit.SECONDS);
             assertNotNull(frame);
             assertThat(frame.getPayloadAsUTF8(), is("World"));
@@ -146,19 +145,12 @@ public class WebSocketServerTest extends WebSocketTester
         TestFrameHandler serverHandler = new TestFrameHandler()
         {
             @Override
-            public void onOpen(CoreSession coreSession, Callback callback)
-            {
-                super.onOpen(coreSession, callback);
-                coreSession.demand();
-            }
-
-            @Override
             public void onFrame(Frame frame, Callback callback)
             {
                 LOG.info("onFrame: " + BufferUtil.toDetailString(frame.getPayload()));
                 receivedFrames.offer(frame);
                 receivedCallbacks.offer(callback);
-                getCoreSession().demand();
+                demand();
             }
         };
 
@@ -246,12 +238,9 @@ public class WebSocketServerTest extends WebSocketTester
         TestFrameHandler serverHandler = new TestFrameHandler()
         {
             @Override
-            public void onOpen(CoreSession coreSession, Callback callback)
+            public void onOpen(CoreSession coreSession)
             {
-                super.onOpen(coreSession, callback);
-                coreSession.demand();
-                coreSession.demand();
-                coreSession.demand();
+                super.onOpen(coreSession);
             }
 
             @Override
@@ -281,12 +270,13 @@ public class WebSocketServerTest extends WebSocketTester
             client.getOutputStream().write(BufferUtil.toArray(buffer));
 
             long start = NanoTime.now();
-            while (serverHandler.receivedFrames.size() < 3)
+            for (int i = 0; i < 3; i++)
             {
-                assertThat(NanoTime.secondsSince(start), Matchers.lessThan(10L));
-                Thread.sleep(10);
+                serverHandler.getCoreSession().demand();
+                Frame frame = serverHandler.receivedFrames.poll(5, TimeUnit.SECONDS);
+                assertNotNull(frame);
             }
-            assertThat(serverHandler.receivedFrames.size(), is(3));
+            assertThat(NanoTime.secondsSince(start), Matchers.lessThan(10L));
             assertThat(receivedCallbacks.size(), is(3));
 
             client.close();
@@ -310,8 +300,6 @@ public class WebSocketServerTest extends WebSocketTester
             {
                 super.onOpen(coreSession);
                 callback.succeeded();
-                coreSession.demand();
-                coreSession.demand();
             }
 
             @Override
@@ -327,6 +315,7 @@ public class WebSocketServerTest extends WebSocketTester
                 LOG.info("onFrame: " + BufferUtil.toDetailString(frame.getPayload()));
                 receivedFrames.offer(frame);
                 receivedCallbacks.offer(callback);
+                demand();
             }
         };
 
@@ -379,8 +368,6 @@ public class WebSocketServerTest extends WebSocketTester
             {
                 super.onOpen(coreSession);
                 callback.succeeded();
-                coreSession.demand();
-                coreSession.demand();
             }
 
             @Override
@@ -389,6 +376,7 @@ public class WebSocketServerTest extends WebSocketTester
                 LOG.info("onFrame: " + BufferUtil.toDetailString(frame.getPayload()));
                 receivedFrames.offer(frame);
                 receivedCallbacks.offer(callback);
+                demand();
             }
         };
 

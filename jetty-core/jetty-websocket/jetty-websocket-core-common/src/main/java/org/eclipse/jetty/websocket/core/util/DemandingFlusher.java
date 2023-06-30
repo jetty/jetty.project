@@ -13,7 +13,8 @@
 
 package org.eclipse.jetty.websocket.core.util;
 
-import java.util.concurrent.atomic.AtomicLong;
+import java.nio.channels.ReadPendingException;
+import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicReference;
 
 import org.eclipse.jetty.util.Callback;
@@ -41,7 +42,7 @@ public abstract class DemandingFlusher extends IteratingCallback implements Dema
     private static final Throwable SENTINEL_CLOSE_EXCEPTION = new StaticException("Closed");
 
     private final IncomingFrames _emitFrame;
-    private final AtomicLong _demand = new AtomicLong();
+    private final AtomicBoolean _demand = new AtomicBoolean();
     private final AtomicReference<Throwable> _failure = new AtomicReference<>();
     private DemandChain _nextDemand;
 
@@ -77,7 +78,8 @@ public abstract class DemandingFlusher extends IteratingCallback implements Dema
     @Override
     public void demand()
     {
-        _demand.incrementAndGet();
+        if (!_demand.compareAndSet(false, true))
+            throw new ReadPendingException();
         iterate();
     }
 
@@ -139,8 +141,8 @@ public abstract class DemandingFlusher extends IteratingCallback implements Dema
      */
     public void emitFrame(Frame frame, Callback callback)
     {
-        if (_demand.decrementAndGet() < 0)
-            throw new IllegalStateException("Negative Demand");
+        if (!_demand.compareAndSet(true, false))
+            throw new IllegalStateException("Demand already fulfilled");
         _emitFrame.onFrame(frame, callback);
     }
 
@@ -153,7 +155,7 @@ public abstract class DemandingFlusher extends IteratingCallback implements Dema
             if (failure != null)
                 throw failure;
 
-            if (_demand.get() <= 0)
+            if (!_demand.get())
                 break;
 
             if (_needContent)

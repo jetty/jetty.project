@@ -17,6 +17,7 @@ import java.io.IOException;
 import java.net.InetSocketAddress;
 import java.net.SocketAddress;
 import java.nio.ByteBuffer;
+import java.nio.channels.ReadPendingException;
 import java.security.SecureRandom;
 import java.util.Objects;
 import java.util.Random;
@@ -31,7 +32,6 @@ import org.eclipse.jetty.io.EndPoint;
 import org.eclipse.jetty.io.RetainableByteBuffer;
 import org.eclipse.jetty.util.BufferUtil;
 import org.eclipse.jetty.util.Callback;
-import org.eclipse.jetty.util.MathUtils;
 import org.eclipse.jetty.util.component.Dumpable;
 import org.eclipse.jetty.util.thread.AutoLock;
 import org.eclipse.jetty.util.thread.Scheduler;
@@ -54,6 +54,13 @@ public class WebSocketConnection extends AbstractConnection implements Connectio
      */
     private static final int MIN_BUFFER_SIZE = Generator.MAX_HEADER_LENGTH;
 
+    private enum DemandState
+    {
+        DEMANDING,
+        NOT_DEMANDING,
+        CANCELLED
+    }
+
     private final AutoLock lock = new AutoLock();
     private final ByteBufferPool byteBufferPool;
     private final Generator generator;
@@ -61,7 +68,7 @@ public class WebSocketConnection extends AbstractConnection implements Connectio
     private final WebSocketCoreSession coreSession;
     private final Flusher flusher;
     private final Random random;
-    private long demand;
+    private DemandState demand = DemandState.NOT_DEMANDING;
     private boolean fillingAndParsing;
     private final LongAdder messagesIn = new LongAdder();
     private final LongAdder bytesIn = new LongAdder();
@@ -351,10 +358,12 @@ public class WebSocketConnection extends AbstractConnection implements Connectio
             if (LOG.isDebugEnabled())
                 LOG.debug("demand {} d={} fp={} {}", demand, fillingAndParsing, networkBuffer, this);
 
-            if (demand < 0)
-                return;
-
-            demand = MathUtils.cappedAdd(demand, 1);
+            if (demand != DemandState.CANCELLED)
+            {
+                if (demand == DemandState.DEMANDING)
+                    throw new ReadPendingException();
+                demand = DemandState.DEMANDING;
+            }
 
             if (!fillingAndParsing)
             {
@@ -379,14 +388,23 @@ public class WebSocketConnection extends AbstractConnection implements Connectio
 
             if (!fillingAndParsing)
                 throw new IllegalStateException();
-            if (demand != 0) //if demand was canceled, this creates synthetic demand in order to read until EOF
-                return true;
 
-            fillingAndParsing = false;
-            if (!networkBuffer.hasRemaining())
-                releaseNetworkBuffer();
-
-            return false;
+            switch (demand)
+            {
+                case NOT_DEMANDING ->
+                {
+                    fillingAndParsing = false;
+                    if (!networkBuffer.hasRemaining())
+                        releaseNetworkBuffer();
+                    return false;
+                }
+                case DEMANDING, CANCELLED ->
+                {
+                    // If demand was canceled, this creates synthetic demand in order to read until EOF.
+                    return true;
+                }
+                default -> throw new IllegalStateException(demand.name());
+            }
         }
     }
 
@@ -397,14 +415,13 @@ public class WebSocketConnection extends AbstractConnection implements Connectio
             if (LOG.isDebugEnabled())
                 LOG.debug("meetDemand d={} fp={} {} {}", demand, fillingAndParsing, networkBuffer, this);
 
-            if (demand == 0)
+            if (demand == DemandState.NOT_DEMANDING)
                 throw new IllegalStateException();
             if (!fillingAndParsing)
                 throw new IllegalStateException();
 
-            if (demand > 0)
-                demand--;
-
+            if (demand != DemandState.CANCELLED)
+                demand = DemandState.NOT_DEMANDING;
             return true;
         }
     }
@@ -415,7 +432,7 @@ public class WebSocketConnection extends AbstractConnection implements Connectio
         {
             if (LOG.isDebugEnabled())
                 LOG.debug("cancelDemand d={} fp={} {} {}", demand, fillingAndParsing, networkBuffer, this);
-            demand = -1;
+            demand = DemandState.CANCELLED;
         }
     }
 
