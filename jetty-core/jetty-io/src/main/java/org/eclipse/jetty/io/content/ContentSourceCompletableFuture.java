@@ -19,31 +19,36 @@ import java.util.concurrent.CompletableFuture;
 import org.eclipse.jetty.io.Content;
 
 /**
- * A utility class to convert content from a {@link Content.Source} to an instance
- * available via a {@link CompletableFuture}.
- * <p>
- * An example usage to asynchronously read UTF-8 content is:
- * </p>
+ * <p>A utility class to convert content from a {@link Content.Source} to an instance
+ * available via a {@link CompletableFuture}.</p>
+ * <p>An example usage to asynchronously read UTF-8 content is:</p>
  * <pre>{@code
- *     public static class FutureUtf8String extends ContentSourceCompletableFuture<String>;
+ * public static class CompletableUTF8String extends ContentSourceCompletableFuture<String>;
+ * {
+ *     private final Utf8StringBuilder builder = new Utf8StringBuilder();
+ *
+ *     public CompletableUTF8String(Content.Source content)
  *     {
- *         Utf8StringBuilder builder = new Utf8StringBuilder();
- *
- *         public FutureUtf8String(Content.Source content)
- *         {
- *             super(content);
- *         }
- *
- *         @Override
- *         protected String parse(Content.Chunk chunk) throws Throwable
- *         {
- *             if (chunk.hasRemaining())
- *                 builder.append(chunk.getByteBuffer());
- *             return chunk.isLast() ? builder.takeCompleteString(IllegalStateException::new) : null;
- *         }
+ *         super(content);
  *     }
- *     ...
- *     new FutureUtf8String(source).thenAccept(System.err::println);
+ *
+ *     @Override
+ *     protected String parse(Content.Chunk chunk) throws Throwable
+ *     {
+ *         // Accumulate the chunk bytes.
+ *         if (chunk.hasRemaining())
+ *             builder.append(chunk.getByteBuffer());
+ *
+ *         // Not the last chunk, the result is not ready yet.
+ *         if (!chunk.isLast())
+ *             return null;
+ *
+ *         // The result is ready.
+ *         return builder.takeCompleteString(IllegalStateException::new);
+ *     }
+ * }
+ * 
+ * new CompletableUTF8String(source).thenAccept(System.err::println);
  * }</pre>
  */
 public abstract class ContentSourceCompletableFuture<X> extends CompletableFuture<X>
@@ -56,12 +61,15 @@ public abstract class ContentSourceCompletableFuture<X> extends CompletableFutur
     }
 
     /**
-     * Progress the parsing, {@link Content.Source#read() reading} and/or {@link Content.Source#demand(Runnable) demanding}
-     * as necessary.
-     * <p>
-     * This method must be called once to initiate the reading and parsing,
-     * and is then called to progress parsing in response to any {@link Content.Source#demand(Runnable) demand} calls.
-     * </p>
+     * <p>Initiates the parsing of the {@link Content.Source}.</p>
+     * <p>For every valid chunk that is read, {@link #parse(Content.Chunk)}
+     * is called, until a result is produced that is used to
+     * complete this {@link CompletableFuture}.</p>
+     * <p>Internally, this method is called multiple times to progress
+     * the parsing in response to {@link Content.Source#demand(Runnable)}
+     * calls.</p>
+     * <p>Exceptions thrown during parsing result in this
+     * {@link CompletableFuture} to be completed exceptionally.</p>
      */
     public void parse()
     {
@@ -109,21 +117,24 @@ public abstract class ContentSourceCompletableFuture<X> extends CompletableFutur
     }
 
     /**
-     * Called to parse a {@link org.eclipse.jetty.io.Content.Chunk}
-     * @param chunk The chunk containing content to parse. The chunk will never be null nor a
+     * <p>Called by {@link #parse()} to parse a {@link org.eclipse.jetty.io.Content.Chunk}.</p>
+     *
+     * @param chunk The chunk containing content to parse. The chunk will never be {@code null} nor a
      *              {@link org.eclipse.jetty.io.Content.Chunk#isFailure(Content.Chunk) failure chunk}.
-     *              If references to the content of the chunk are to be held beyond the scope of this call,
-     *              then implementations must call {@link Content.Chunk#retain()} and {@link Content.Chunk#release()}
-     *              as appropriate.
-     * @return The parsed {@code X} instance or null if parsing is not yet complete
-     * @throws Throwable Thrown if there is an error parsing
+     *              If the chunk is stored away to be used later beyond the scope of this call,
+     *              then implementations must call {@link Content.Chunk#retain()} and
+     *              {@link Content.Chunk#release()} as appropriate.
+     * @return The parsed {@code X} result instance or {@code null} if parsing is not yet complete
+     * @throws Throwable If there is an error parsing
      */
     protected abstract X parse(Content.Chunk chunk) throws Throwable;
 
     /**
-     * @param cause A {@link Content.Chunk#isLast() non-last}
+     * <p>Callback method that informs the parsing about how to handle transient failures.</p>
+     *
+     * @param cause A transient failure obtained by reading a {@link Content.Chunk#isLast() non-last}
      *             {@link org.eclipse.jetty.io.Content.Chunk#isFailure(Content.Chunk) failure chunk}
-     * @return True if the chunk can be ignored.
+     * @return {@code true} if the transient failure can be ignored, {@code false} otherwise
      */
     protected boolean onTransientFailure(Throwable cause)
     {
