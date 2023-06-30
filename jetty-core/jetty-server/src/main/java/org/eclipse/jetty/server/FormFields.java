@@ -148,8 +148,9 @@ public class FormFields extends ContentSourceCompletableFuture<Fields>
     /**
      * Find or create a {@link FormFields} from a {@link Content.Source}.
      * @param source The {@link Content.Source} from which to read the fields.
-     * @param attributes The {@link Attributes} in which to look for an existing {@link FormFields}, else in which to
-     *                   add the fields, using the classname as the attribute name.
+     * @param attributes The {@link Attributes} in which to look for an existing {@link CompletableFuture} of
+     *                   {@link FormFields}, using the classname as the attribute name.  If not found the attribute
+     *                   is set with the created {@link CompletableFuture} of {@link FormFields}.
      * @param charset the {@link Charset} to use for byte to string conversion.
      * @param maxFields The maximum number of fields to be parsed
      * @param maxLength The maximum total size of the fields

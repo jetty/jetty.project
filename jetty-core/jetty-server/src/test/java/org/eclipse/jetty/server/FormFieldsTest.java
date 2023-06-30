@@ -18,6 +18,7 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.concurrent.CompletableFuture;
+import java.util.concurrent.TimeUnit;
 import java.util.stream.Stream;
 
 import org.eclipse.jetty.io.content.AsyncContent;
@@ -55,6 +56,7 @@ public class FormFieldsTest
     @ParameterizedTest
     @MethodSource("tests")
     public void testFormFields(List<String> chunks, Charset charset, int maxFields, int maxLength, Map<String, String> expected)
+        throws Exception
     {
         AsyncContent source = new AsyncContent();
         Attributes attributes = new Attributes.Mapped();
@@ -66,11 +68,12 @@ public class FormFieldsTest
         for (int i = 0; i <= last; i++)
             source.write(i == last, BufferUtil.toBuffer(chunks.get(i), charset), i == last ? eof : Callback.NOOP);
 
-        assertTrue(eof.isDone());
-        assertTrue(futureFields.isDone());
 
         try
         {
+            eof.get(10, TimeUnit.SECONDS);
+            assertTrue(futureFields.isDone());
+
             Map<String, String> result = new HashMap<>();
             for (Fields.Field f : futureFields.get())
                 result.put(f.getName(), f.getValue());
