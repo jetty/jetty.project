@@ -91,7 +91,7 @@ public class ShutdownHandler extends Handler.Wrapper
      */
     public ShutdownHandler(String shutdownToken)
     {
-        this(null, shutdownToken, false);
+        this(null, null, shutdownToken, false);
     }
 
     /**
@@ -102,18 +102,20 @@ public class ShutdownHandler extends Handler.Wrapper
      */
     public ShutdownHandler(String shutdownToken, boolean exitJVM)
     {
-        this(null, shutdownToken, exitJVM);
+        this(null, null, shutdownToken, exitJVM);
     }
 
     /**
      * Creates a Handler that lets the server be shut down remotely (but only from localhost).
      *
+     * @param handler the handler to wrap
      * @param shutdownPath the path to respond to shutdown requests against (default is "{@code /shutdown}")
      * @param shutdownToken a secret password to avoid unauthorized shutdown attempts
      * @param exitJVM If true, when the shutdown is executed, the handler class System.exit()
      */
-    public ShutdownHandler(String shutdownPath, String shutdownToken, boolean exitJVM)
+    public ShutdownHandler(Handler handler, String shutdownPath, String shutdownToken, boolean exitJVM)
     {
+        super(handler);
         this._shutdownPath = StringUtil.isBlank(shutdownPath) ? "/shutdown" : shutdownPath;
         this._shutdownToken = shutdownToken;
         this._exitJvm = exitJVM;

@@ -71,6 +71,16 @@ public class TryPathsHandler extends Handler.Wrapper
     private String originalQueryAttribute;
     private List<String> paths;
 
+    public TryPathsHandler()
+    {
+        this(null);
+    }
+
+    public TryPathsHandler(Handler handler)
+    {
+        super(handler);
+    }
+
     /**
      * @return the attribute name of the original request path
      */

@@ -39,6 +39,12 @@ public class GracefulHandler extends Handler.Wrapper implements Graceful
 
     public GracefulHandler()
     {
+        this(null);
+    }
+
+    public GracefulHandler(Handler handler)
+    {
+        super(handler);
         _shutdown = new Shutdown(this)
         {
             @Override

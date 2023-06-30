@@ -31,17 +31,17 @@ There is also an link:#error-handler[Error Handler] that services errors related
 
 _____
 [NOTE]
-The `DefaultHandler` will also handle serving out the `flav.ico` file should a request make it through all of the other handlers without being resolved.
+The `DefaultHandler` will also handle serving out the `favicon.ico` file should a request make it through all of the other handlers without being resolved.
 _____
 
 [source, java, subs="{sub-order}"]
 ----
     Server server = new Server(8080);
-    HandlerList handlers = new HandlerList();
     ResourceHandler resourceHandler = new ResourceHandler();
-    resourceHandler.setBaseResource(Resource.newResource("."));
-    handlers.setHandlers(new Handler[]
-    { resourceHandler, new DefaultHandler() });
+    resourceHandler.setBaseResource(ResourceFactory.of(resourceHandler).newResource("."));
+    Handler.Sequence handlers = new Handler.Sequence(
+        resourceHandler, new DefaultHandler()
+    );
     server.setHandler(handlers);
     server.start();
 ----

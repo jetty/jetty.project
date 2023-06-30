@@ -158,7 +158,7 @@ public class StatisticsHandlerTest
         AtomicReference<Throwable> exceptionRef = new AtomicReference<>();
         CountDownLatch latch = new CountDownLatch(1);
         int expectedContentLength = 1000;
-        StatisticsHandler.MinimumDataRateHandler mdrh = new StatisticsHandler.MinimumDataRateHandler(0, 1000, new Handler.Abstract.NonBlocking()
+        StatisticsHandler.MinimumDataRateHandler mdrh = new StatisticsHandler.MinimumDataRateHandler(new Handler.Abstract.NonBlocking()
         {
             @Override
             public boolean handle(Request request, Response response, Callback callback)
@@ -217,7 +217,7 @@ public class StatisticsHandlerTest
                     response.write(true, ByteBuffer.allocate(1), finalCallback);
                 }
             }
-        });
+        }, 0, 1000);
 
         _latchHandler.setHandler(mdrh);
         _server.start();

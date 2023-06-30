@@ -63,6 +63,16 @@ public class GzipHandler extends Handler.Wrapper implements GzipFactory
      */
     public GzipHandler()
     {
+        this(null);
+    }
+
+    /**
+     * Instantiates a new GzipHandler.
+     * @param handler the handler to wrap
+     */
+    public GzipHandler(Handler handler)
+    {
+        super(handler);
         _methods.include(HttpMethod.GET.asString());
         _methods.include(HttpMethod.POST.asString());
         for (String type : MimeTypes.DEFAULTS.getMimeMap().values())

@@ -46,7 +46,7 @@ The Jetty Server Libraries provides a number of out-of-the-box __Handler__s that
 ====== ContextHandler
 
 `ContextHandler` is a `Handler` that represents a _context_ for a web application.
-It is a `HandlerWrapper` that performs some action before and after delegating to the nested `Handler`.
+It is a `Handler.Wrapper` that performs some action before and after delegating to the nested `Handler`.
 // TODO: expand on what the ContextHandler does, e.g. ServletContext.
 
 The simplest use of `ContextHandler` is the following:
@@ -140,7 +140,7 @@ See also xref:pg-server-http-handler-use-util-default-handler[how to use] `Defau
 
 `GzipHandler` provides supports for automatic decompression of compressed request content and automatic compression of response content.
 
-`GzipHandler` is a `HandlerWrapper` that inspects the request and, if the request matches the `GzipHandler` configuration, just installs the required components to eventually perform decompression of the request content or compression of the response content.
+`GzipHandler` is a `Handler.Wrapper` that inspects the request and, if the request matches the `GzipHandler` configuration, just installs the required components to eventually perform decompression of the request content or compression of the response content.
 The decompression/compression is not performed until the web application reads request content or writes response content.
 
 `GzipHandler` can be configured at the server level in this way:
@@ -291,7 +291,7 @@ include::../../{doc_code}/org/eclipse/jetty/docs/programming/server/http/HTTPSer
 * Sends a HTTP `404` response for any other request
 * The HTTP `404` response content nicely shows a HTML table with all the contexts deployed on the `Server` instance
 
-`DefaultHandler` is best used as the last `Handler` of a `HandlerList`, for example:
+`DefaultHandler` is best used directly set on the server, for example:
 
 [source,java,indent=0]
 ----
@@ -310,7 +310,7 @@ Server
   └── DefaultHandler
 ----
 
-In the example above, `ContextHandlerCollection` will try to match a request to one of the contexts; if the match fails, `HandlerList` will call the next `Handler` which is `DefaultHandler` that will return a HTTP `404` with an HTML page showing the existing contexts deployed on the `Server`.
+In the example above, `ContextHandlerCollection` will try to match a request to one of the contexts; if the match fails, `Server` will call the `DefaultHandler` that will return a HTTP `404` with an HTML page showing the existing contexts deployed on the `Server`.
 
 NOTE: `DefaultHandler` just sends a nicer HTTP `404` response in case of wrong requests from clients.
 Jetty will send an HTTP `404` response anyway if `DefaultHandler` is not used.

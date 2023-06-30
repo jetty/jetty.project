@@ -38,6 +38,16 @@ import org.eclipse.jetty.util.StringUtil;
 
 public class DelayedHandler extends Handler.Wrapper
 {
+    public DelayedHandler()
+    {
+        this(null);
+    }
+
+    public DelayedHandler(Handler handler)
+    {
+        super(handler);
+    }
+
     @Override
     public boolean handle(Request request, Response response, Callback callback) throws Exception
     {

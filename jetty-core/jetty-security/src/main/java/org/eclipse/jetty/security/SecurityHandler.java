@@ -87,6 +87,12 @@ public abstract class SecurityHandler extends Handler.Wrapper implements Configu
 
     protected SecurityHandler()
     {
+        this(null);
+    }
+
+    protected SecurityHandler(Handler handler)
+    {
+        super(handler);
         addBean(new DumpableCollection("knownAuthenticatorFactories", __knownAuthenticatorFactories));
     }
 
@@ -645,6 +651,12 @@ public abstract class SecurityHandler extends Handler.Wrapper implements Configu
 
         public PathMapped()
         {
+            this(null);
+        }
+
+        public PathMapped(Handler handler)
+        {
+            super(handler);
         }
 
         public Constraint put(String pathSpec, Constraint constraint)
