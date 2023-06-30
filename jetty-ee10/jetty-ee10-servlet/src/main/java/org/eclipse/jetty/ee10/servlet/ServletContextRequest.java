@@ -32,6 +32,7 @@ import org.eclipse.jetty.http.HttpFields;
 import org.eclipse.jetty.http.HttpMethod;
 import org.eclipse.jetty.http.UriCompliance;
 import org.eclipse.jetty.http.pathmap.MatchedResource;
+import org.eclipse.jetty.server.FormFields;
 import org.eclipse.jetty.server.Request;
 import org.eclipse.jetty.server.Response;
 import org.eclipse.jetty.server.SecureRequestCustomizer;
@@ -239,6 +240,9 @@ public class ServletContextRequest extends ContextRequest implements ServletCont
             case "jakarta.servlet.request.key_size" -> super.getAttribute(SecureRequestCustomizer.KEY_SIZE_ATTRIBUTE);
             case "jakarta.servlet.request.ssl_session_id" -> super.getAttribute(SecureRequestCustomizer.SSL_SESSION_ID_ATTRIBUTE);
             case "jakarta.servlet.request.X509Certificate" -> super.getAttribute(SecureRequestCustomizer.PEER_CERTIFICATES_ATTRIBUTE);
+            case ServletContextRequest.MULTIPART_CONFIG_ELEMENT -> _matchedResource.getResource().getServletHolder().getMultipartConfigElement();
+            case FormFields.MAX_FIELDS_ATTRIBUTE -> getServletContext().getServletContextHandler().getMaxFormKeys();
+            case FormFields.MAX_LENGTH_ATTRIBUTE -> getServletContext().getServletContextHandler().getMaxFormContentSize();
             default -> super.getAttribute(name);
         };
     }
@@ -255,6 +259,12 @@ public class ServletContextRequest extends ContextRequest implements ServletCont
             names.add("jakarta.servlet.request.ssl_session_id");
         if (names.contains(SecureRequestCustomizer.PEER_CERTIFICATES_ATTRIBUTE))
             names.add("jakarta.servlet.request.X509Certificate");
+        if (_matchedResource.getResource().getServletHolder().getMultipartConfigElement() != null)
+            names.add(ServletContextRequest.MULTIPART_CONFIG_ELEMENT);
+        if (getServletContext().getServletContextHandler().getMaxFormKeys() >= 0)
+            names.add(FormFields.MAX_FIELDS_ATTRIBUTE);
+        if (getServletContext().getServletContextHandler().getMaxFormContentSize() >= 0L)
+            names.add(FormFields.MAX_FIELDS_ATTRIBUTE);
         return names;
     }
 

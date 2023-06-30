@@ -588,7 +588,7 @@ public class StandardDescriptorProcessor extends IterativeDescriptorProcessor
                 case WebFragment:
                 {
                     //another fragment set the value, this fragment's values must match exactly or it is an error
-                    MultipartConfigElement cfg = ((ServletHolder.Registration)holder.getRegistration()).getMultipartConfig();
+                    MultipartConfigElement cfg = holder.getRegistration().getMultipartConfigElement();
 
                     if (cfg.getMaxFileSize() != element.getMaxFileSize())
                         throw new IllegalStateException("Conflicting multipart-config max-file-size for servlet " + name + " in " + descriptor.getURI());

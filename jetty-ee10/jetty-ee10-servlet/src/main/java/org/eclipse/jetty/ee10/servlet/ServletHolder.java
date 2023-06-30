@@ -74,7 +74,7 @@ public class ServletHolder extends Holder<Servlet> implements Comparable<Servlet
     private Map<String, String> _roleMap;
     private String _forcedPath;
     private String _runAsRole;
-    private ServletRegistration.Dynamic _registration;
+    private ServletHolder.Registration _registration;
     private JspContainer _jspContainer;
 
     private volatile Servlet _servlet;
@@ -153,6 +153,11 @@ public class ServletHolder extends Holder<Servlet> implements Comparable<Servlet
     {
         this(Source.EMBEDDED);
         setHeldClass(servlet);
+    }
+
+    public MultipartConfigElement getMultipartConfigElement()
+    {
+        return _registration == null ? null : _registration.getMultipartConfigElement();
     }
 
     /**
@@ -710,14 +715,6 @@ public class ServletHolder extends Holder<Servlet> implements Comparable<Servlet
     {
         // Ensure the servlet is initialized prior to any filters being invoked
         getServlet();
-
-        // Check for multipart config
-        if (_registration != null)
-        {
-            MultipartConfigElement mpce = ((Registration)_registration).getMultipartConfig();
-            if (mpce != null)
-                request.setAttribute(ServletContextRequest.MULTIPART_CONFIG_ELEMENT, mpce);
-        }
     }
 
     /**
@@ -919,7 +916,7 @@ public class ServletHolder extends Holder<Servlet> implements Comparable<Servlet
 
     public class Registration extends HolderRegistration implements ServletRegistration.Dynamic
     {
-        protected MultipartConfigElement _multipartConfig;
+        protected MultipartConfigElement _multipartConfigElement;
 
         @Override
         public Set<String> addMapping(String... urlPatterns)
@@ -994,12 +991,12 @@ public class ServletHolder extends Holder<Servlet> implements Comparable<Servlet
         @Override
         public void setMultipartConfig(MultipartConfigElement element)
         {
-            _multipartConfig = element;
+            _multipartConfigElement = element;
         }
 
-        public MultipartConfigElement getMultipartConfig()
+        public MultipartConfigElement getMultipartConfigElement()
         {
-            return _multipartConfig;
+            return _multipartConfigElement;
         }
 
         @Override
@@ -1015,7 +1012,7 @@ public class ServletHolder extends Holder<Servlet> implements Comparable<Servlet
         }
     }
 
-    public ServletRegistration.Dynamic getRegistration()
+    public ServletHolder.Registration getRegistration()
     {
         if (_registration == null)
             _registration = new Registration();

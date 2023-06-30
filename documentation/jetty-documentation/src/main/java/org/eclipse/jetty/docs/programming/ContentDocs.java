@@ -13,11 +13,18 @@
 
 package org.eclipse.jetty.docs.programming;
 
+import java.nio.charset.Charset;
+import java.nio.charset.StandardCharsets;
+import java.util.concurrent.CompletableFuture;
+
 import org.eclipse.jetty.io.Content;
 import org.eclipse.jetty.io.content.AsyncContent;
+import org.eclipse.jetty.io.content.ContentSourceCompletableFuture;
 import org.eclipse.jetty.util.BufferUtil;
 import org.eclipse.jetty.util.Callback;
+import org.eclipse.jetty.util.CharsetStringBuilder;
 import org.eclipse.jetty.util.FutureCallback;
+import org.eclipse.jetty.util.Utf8StringBuilder;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -146,8 +153,92 @@ public class ContentDocs
             throw new IllegalStateException("EOF expected");
     }
 
+    public static class FutureString extends CompletableFuture<String>
+    {
+        private final CharsetStringBuilder text;
+        private final Content.Source source;
+
+        public FutureString(Content.Source source, Charset charset)
+        {
+            this.source = source;
+            this.text = CharsetStringBuilder.forCharset(charset);
+            source.demand(this::onContentAvailable);
+        }
+
+        private void onContentAvailable()
+        {
+            while (true)
+            {
+                Content.Chunk chunk = source.read();
+                if (chunk == null)
+                {
+                    source.demand(this::onContentAvailable);
+                    return;
+                }
+
+                try
+                {
+                    if (Content.Chunk.isFailure(chunk))
+                        throw chunk.getFailure();
+
+                    if (chunk.hasRemaining())
+                        text.append(chunk.getByteBuffer());
+
+                    if (chunk.isLast() && complete(text.build()))
+                        return;
+                }
+                catch (Throwable e)
+                {
+                    completeExceptionally(e);
+                }
+                finally
+                {
+                    chunk.release();
+                }
+            }
+        }
+    }
+
+    public static void testFutureString() throws Exception
+    {
+        AsyncContent source = new AsyncContent();
+        FutureString future = new FutureString(source, StandardCharsets.UTF_8);
+        if (future.isDone())
+            throw new IllegalStateException();
+
+        Callback.Completable writeCallback = new Callback.Completable();
+        Content.Sink.write(source, false, "One", writeCallback);
+        if (!writeCallback.isDone() || future.isDone())
+            throw new IllegalStateException("Should be consumed");
+        Content.Sink.write(source, false, "Two", writeCallback);
+        if (!writeCallback.isDone() || future.isDone())
+            throw new IllegalStateException("Should be consumed");
+        Content.Sink.write(source, true, "Three", writeCallback);
+        if (!writeCallback.isDone() || !future.isDone())
+            throw new IllegalStateException("Should be consumed");
+    }
+
+    public static class FutureUtf8String extends ContentSourceCompletableFuture<String>
+    {
+        private final Utf8StringBuilder builder = new Utf8StringBuilder();
+
+        public FutureUtf8String(Content.Source content)
+        {
+            super(content);
+        }
+
+        @Override
+        protected String parse(Content.Chunk chunk) throws Throwable
+        {
+            if (chunk.hasRemaining())
+                builder.append(chunk.getByteBuffer());
+            return chunk.isLast() ? builder.takeCompleteString(IllegalStateException::new) : null;
+        }
+    }
+
     public static void main(String... args) throws Exception
     {
         testEcho();
+        testFutureString();
     }
 }

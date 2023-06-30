@@ -13,7 +13,6 @@
 
 package org.eclipse.jetty.server.handler;
 
-import java.io.IOException;
 import java.nio.charset.Charset;
 import java.nio.charset.StandardCharsets;
 import java.util.Objects;
@@ -25,8 +24,6 @@ import org.eclipse.jetty.http.HttpHeader;
 import org.eclipse.jetty.http.HttpHeaderValue;
 import org.eclipse.jetty.http.HttpStatus;
 import org.eclipse.jetty.http.MimeTypes;
-import org.eclipse.jetty.http.MultiPart;
-import org.eclipse.jetty.http.MultiPartFormData;
 import org.eclipse.jetty.io.Content;
 import org.eclipse.jetty.server.FormFields;
 import org.eclipse.jetty.server.Handler;
@@ -115,7 +112,6 @@ public class DelayedHandler extends Handler.Wrapper
         return switch (mimeType)
         {
             case FORM_ENCODED -> new UntilFormDelayedProcess(handler, request, response, callback, contentType);
-            case MULTIPART_FORM_DATA -> new UntilMultiPartDelayedProcess(handler, request, response, callback, contentType);
             default -> new UntilContentDelayedProcess(handler, request, response, callback);
         };
     }
@@ -268,104 +264,6 @@ public class DelayedHandler extends Handler.Wrapper
                 getRequest().getContext().execute(super::process);
             else
                 Response.writeError(getRequest(), getResponse(), getCallback(), x);
-        }
-    }
-
-    protected static class UntilMultiPartDelayedProcess extends DelayedProcess
-    {
-        private final MultiPartFormData _formData;
-
-        public UntilMultiPartDelayedProcess(Handler handler, Request wrapped, Response response, Callback callback, String contentType)
-        {
-            super(handler, wrapped, response, callback);
-            String boundary = MultiPart.extractBoundary(contentType);
-            _formData = boundary == null ? null : new MultiPartFormData(boundary);
-        }
-
-        private void process(MultiPartFormData.Parts parts, Throwable x)
-        {
-            if (x == null)
-            {
-                getRequest().setAttribute(MultiPartFormData.Parts.class.getName(), parts);
-                super.process();
-            }
-            else
-            {
-                Response.writeError(getRequest(), getResponse(), getCallback(), x);
-            }
-        }
-
-        private void executeProcess(MultiPartFormData.Parts parts, Throwable x)
-        {
-            if (x == null)
-            {
-                // We must execute here as even though we have consumed all the input, we are probably
-                // invoked in a demand runnable that is serialized with any write callbacks that might be done in process
-                getRequest().getContext().execute(() -> process(parts, x));
-            }
-            else
-            {
-                Response.writeError(getRequest(), getResponse(), getCallback(), x);
-            }
-        }
-
-        @Override
-        public void delay()
-        {
-            if (_formData == null)
-            {
-                this.process();
-            }
-            else
-            {
-                _formData.setFilesDirectory(getRequest().getContext().getTempDirectory().toPath());
-                readAndParse();
-                // if we are done already, then we are still in the scope of the original process call and can
-                // process directly, otherwise we must execute a call to process as we are within a serialized
-                // demand callback.
-                if (_formData.isDone())
-                {
-                    try
-                    {
-                        MultiPartFormData.Parts parts = _formData.join();
-                        process(parts, null);
-                    }
-                    catch (Throwable t)
-                    {
-                        process(null, t);
-                    }
-                }
-                else
-                {
-                    _formData.whenComplete(this::executeProcess);
-                }
-            }
-        }
-
-        private void readAndParse()
-        {
-            while (!_formData.isDone())
-            {
-                Content.Chunk chunk = getRequest().read();
-                if (chunk == null)
-                {
-                    getRequest().demand(this::readAndParse);
-                    return;
-                }
-                if (Content.Chunk.isFailure(chunk))
-                {
-                    _formData.completeExceptionally(chunk.getFailure());
-                    return;
-                }
-                _formData.parse(chunk);
-                chunk.release();
-                if (chunk.isLast())
-                {
-                    if (!_formData.isDone())
-                        process(null, new IOException("Incomplete multipart"));
-                    return;
-                }
-            }
         }
     }
 }
