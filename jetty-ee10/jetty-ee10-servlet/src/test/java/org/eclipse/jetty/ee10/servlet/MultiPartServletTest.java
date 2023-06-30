@@ -111,7 +111,7 @@ public class MultiPartServletTest
         gzipHandler.setMinGzipSize(32);
 
         if (preload)
-            gzipHandler.setHandler(new ServletFormHandler());
+            gzipHandler.setHandler(new PreloadFormHandler());
 
         servletContextHandler.insertHandler(gzipHandler);
 

@@ -22,6 +22,8 @@ import java.util.concurrent.CompletableFuture;
 import org.eclipse.jetty.http.HttpHeader;
 import org.eclipse.jetty.http.MimeTypes;
 import org.eclipse.jetty.io.Content;
+import org.eclipse.jetty.io.content.ContentSourceCompletableFuture;
+import org.eclipse.jetty.util.Attributes;
 import org.eclipse.jetty.util.BufferUtil;
 import org.eclipse.jetty.util.CharsetStringBuilder;
 import org.eclipse.jetty.util.Fields;
@@ -33,10 +35,8 @@ import static org.eclipse.jetty.util.UrlEncoded.decodeHexByte;
  * A {@link CompletableFuture} that is completed once a {@code application/x-www-form-urlencoded}
  * content has been parsed asynchronously from the {@link Content.Source}.
  */
-public class FormFields extends CompletableFuture<Fields> implements Runnable
+public class FormFields extends ContentSourceCompletableFuture<Fields>
 {
-    // TODO convert to a ContentSourceCompletableFuture
-
     public static final String MAX_FIELDS_ATTRIBUTE = "org.eclipse.jetty.server.Request.maxFormKeys";
     public static final String MAX_LENGTH_ATTRIBUTE = "org.eclipse.jetty.server.Request.maxFormContentSize";
     private static final CompletableFuture<Fields> EMPTY = CompletableFuture.completedFuture(Fields.EMPTY);
@@ -88,24 +88,28 @@ public class FormFields extends CompletableFuture<Fields> implements Runnable
 
     public static CompletableFuture<Fields> from(Request request, int maxFields, int maxLength)
     {
-        Object attr = request.getAttribute(FormFields.class.getName());
+        return from(request, getFormEncodedCharset(request), maxFields, maxLength);
+    }
+
+    public static CompletableFuture<Fields> from(Request request, Charset charset, int maxFields, int maxLength)
+    {
+        return from(request, request, charset, maxFields, maxLength);
+    }
+
+    static CompletableFuture<Fields> from(Content.Source source, Attributes attributes, Charset charset, int maxFields, int maxLength)
+    {
+        Object attr = attributes.getAttribute(FormFields.class.getName());
         if (attr instanceof FormFields futureFormFields)
             return futureFormFields;
         else if (attr instanceof Fields fields)
             return CompletableFuture.completedFuture(fields);
 
-        Charset charset = getFormEncodedCharset(request);
         if (charset == null)
             return EMPTY;
 
-        return from(request, charset, maxFields, maxLength);
-    }
-
-    public static CompletableFuture<Fields> from(Request request, Charset charset, int maxFields, int maxLength)
-    {
-        FormFields futureFormFields = new FormFields(request, charset, maxFields, maxLength);
-        request.setAttribute(FormFields.class.getName(), futureFormFields);
-        futureFormFields.run();
+        FormFields futureFormFields = new FormFields(source, charset, maxFields, maxLength);
+        attributes.setAttribute(FormFields.class.getName(), futureFormFields);
+        futureFormFields.parse();
         return futureFormFields;
     }
 
@@ -136,6 +140,7 @@ public class FormFields extends CompletableFuture<Fields> implements Runnable
 
     public FormFields(Content.Source source, Charset charset, int maxFields, int maxSize)
     {
+        super(source);
         _source = source;
         _maxFields = maxFields;
         _maxLength = maxSize;
@@ -144,137 +149,91 @@ public class FormFields extends CompletableFuture<Fields> implements Runnable
     }
 
     @Override
-    public void run()
-    {
-        Content.Chunk chunk = null;
-        try
-        {
-            while (true)
-            {
-                chunk = _source.read();
-                if (chunk == null)
-                {
-                    _source.demand(this);
-                    return;
-                }
-
-                if (Content.Chunk.isFailure(chunk))
-                {
-                    completeExceptionally(chunk.getFailure());
-                    return;
-                }
-
-                while (true)
-                {
-                    Fields.Field field = parse(chunk);
-                    if (field == null)
-                        break;
-                    if (_maxFields >= 0 && _fields.getSize() >= _maxFields)
-                    {
-                        chunk.release();
-                        // Do not double release if completeExceptionally() throws.
-                        chunk = null;
-                        completeExceptionally(new IllegalStateException("form with too many fields"));
-                        return;
-                    }
-                    _fields.add(field);
-                }
-
-                chunk.release();
-                if (chunk.isLast())
-                {
-                    // Do not double release if complete() throws.
-                    chunk = null;
-                    complete(_fields);
-                    return;
-                }
-            }
-        }
-        catch (Throwable x)
-        {
-            if (chunk != null)
-                chunk.release();
-            completeExceptionally(x);
-        }
-    }
-
-    protected Fields.Field parse(Content.Chunk chunk) throws CharacterCodingException
+    protected Fields parse(Content.Chunk chunk) throws CharacterCodingException
     {
         String value = null;
         ByteBuffer buffer = chunk.getByteBuffer();
-        loop:
-        while (BufferUtil.hasContent(buffer))
+
+        do
         {
-            byte b = buffer.get();
-            switch (_percent)
+            loop:
+            while (BufferUtil.hasContent(buffer))
             {
-                case 1 ->
+                byte b = buffer.get();
+                switch (_percent)
                 {
-                    _percentCode = b;
-                    _percent++;
-                    continue;
+                    case 1 ->
+                    {
+                        _percentCode = b;
+                        _percent++;
+                        continue;
+                    }
+                    case 2 ->
+                    {
+                        _builder.append(decodeHexByte((char)_percentCode, (char)b));
+                        _percent = 0;
+                        continue;
+                    }
                 }
-                case 2 ->
+
+                if (_name == null)
                 {
-                    _builder.append(decodeHexByte((char)_percentCode, (char)b));
-                    _percent = 0;
-                    continue;
+                    switch (b)
+                    {
+                        case '=' ->
+                        {
+                            _name = _builder.build();
+                            checkLength(_name);
+                        }
+                        case '+' -> _builder.append((byte)' ');
+                        case '%' -> _percent++;
+                        default -> _builder.append(b);
+                    }
+                }
+                else
+                {
+                    switch (b)
+                    {
+                        case '&' ->
+                        {
+                            value = _builder.build();
+                            checkLength(value);
+                            break loop;
+                        }
+                        case '+' -> _builder.append((byte)' ');
+                        case '%' -> _percent++;
+                        default -> _builder.append(b);
+                    }
                 }
             }
 
-            if (_name == null)
+            if (_name != null)
             {
-                switch (b)
+                if (value == null && chunk.isLast())
                 {
-                    case '=' ->
+                    if (_percent > 0)
                     {
-                        _name = _builder.build();
-                        checkLength(_name);
+                        _builder.append((byte)'%');
+                        _builder.append(_percentCode);
                     }
-                    case '+' -> _builder.append((byte)' ');
-                    case '%' -> _percent++;
-                    default -> _builder.append(b);
+                    value = _builder.build();
+                    checkLength(value);
                 }
-            }
-            else
-            {
-                switch (b)
+
+                if (value != null)
                 {
-                    case '&' ->
-                    {
-                        value = _builder.build();
-                        checkLength(value);
-                        break loop;
-                    }
-                    case '+' -> _builder.append((byte)' ');
-                    case '%' -> _percent++;
-                    default -> _builder.append(b);
+                    Fields.Field field = new Fields.Field(_name, value);
+                    _name = null;
+                    value = null;
+                    if (_maxFields > 0 && _fields.getSize() >= _maxFields)
+                        throw new IllegalStateException("form with too many fields > " + _maxFields);
+                    _fields.add(field);
                 }
             }
         }
+        while (BufferUtil.hasContent(buffer));
 
-        if (_name != null)
-        {
-            if (value == null && chunk.isLast())
-            {
-                if (_percent > 0)
-                {
-                    _builder.append((byte)'%');
-                    _builder.append(_percentCode);
-                }
-                value = _builder.build();
-                checkLength(value);
-            }
-
-            if (value != null)
-            {
-                Fields.Field field = new Fields.Field(_name, value);
-                _name = null;
-                return field;
-            }
-        }
-
-        return null;
+        return chunk.isLast() ? _fields : null;
     }
 
     private void checkLength(String nameOrValue)
