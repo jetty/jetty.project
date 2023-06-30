@@ -63,15 +63,15 @@
         <extensions>true</extensions>
         <configuration>
           <instructions>
-            <Bundle-Description>jakarta.websocket.client Implementation</Bundle-Description>
+            <Bundle-Description>javax.websocket.client Implementation</Bundle-Description>
             <Export-Package>
-              org.eclipse.jetty.ee8.websocket.jakarta.client.*;version="${parsedVersion.majorVersion}.${parsedVersion.minorVersion}.${parsedVersion.incrementalVersion}"
+              org.eclipse.jetty.ee8.websocket.javax.client.*;version="${parsedVersion.majorVersion}.${parsedVersion.minorVersion}.${parsedVersion.incrementalVersion}"
             </Export-Package>
             <Require-Capability>
               osgi.extender; filter:="(osgi.extender=osgi.serviceloader.registrar)";resolution:=optional
             </Require-Capability>
             <Provide-Capability>
-              osgi.serviceloader;osgi.serviceloader=jakarta.websocket.ContainerProvider
+              osgi.serviceloader;osgi.serviceloader=javax.websocket.ContainerProvider
             </Provide-Capability>
           </instructions>
         </configuration>

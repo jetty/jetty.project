@@ -16,7 +16,6 @@ import org.eclipse.jetty.ee9.websocket.client.config.JettyWebSocketClientConfigu
 module org.eclipse.jetty.ee9.websocket.jetty.client.webapp
 {
     requires org.slf4j;
-
     requires transitive org.eclipse.jetty.ee9.webapp;
 
     exports org.eclipse.jetty.ee9.websocket.client.config;

@@ -15,7 +15,7 @@ ee10-annotations
 websocket-jetty-client
 
 [lib]
-lib/ee10-websocket/jetty-ee10-websocket-jetty-client-${jetty.version}.jar
+lib/ee10-websocket/jetty-ee10-websocket-jetty-client-webapp-${jetty.version}.jar
 
 [jpms]
 # The implementation needs to access method handles in

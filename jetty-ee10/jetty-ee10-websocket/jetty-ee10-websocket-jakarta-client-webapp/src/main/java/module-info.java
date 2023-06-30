@@ -16,9 +16,8 @@ import org.eclipse.jetty.ee10.websocket.jakarta.client.webapp.JakartaWebSocketSh
 module org.eclipse.jetty.ee10.websocket.jakarta.client.webapp
 {
     requires org.slf4j;
-
-    requires transitive org.eclipse.jetty.ee10.websocket.jakarta.client;
     requires transitive jakarta.servlet;
+    requires transitive org.eclipse.jetty.ee10.websocket.jakarta.client;
 
     exports org.eclipse.jetty.ee10.websocket.jakarta.client.webapp;
 

@@ -49,7 +49,7 @@
         <artifactId>maven-surefire-plugin</artifactId>
         <configuration>
           <argLine>
-            @{argLine} ${jetty.surefire.argLine} --add-reads org.eclipse.jetty.websocket.jakarta.server=org.eclipse.jetty.security --add-reads org.eclipse.jetty.websocket.jakarta.common=org.eclipse.jetty.websocket.jakarta.server
+            @{argLine} ${jetty.surefire.argLine} --add-reads org.eclipse.jetty.websocket.javax.server=org.eclipse.jetty.security --add-reads org.eclipse.jetty.websocket.javax.common=org.eclipse.jetty.websocket.javax.server
           </argLine>
         </configuration>
       </plugin>
@@ -59,13 +59,13 @@
         <extensions>true</extensions>
         <configuration>
           <instructions>
-            <Bundle-Description>jakarta.websocket.server Implementation</Bundle-Description>
+            <Bundle-Description>javax.websocket.server Implementation</Bundle-Description>
             <Export-Package>
-              org.eclipse.jetty.websocket.jakarta.server.*;version="${parsedVersion.majorVersion}.${parsedVersion.minorVersion}.${parsedVersion.incrementalVersion}"
+              org.eclipse.jetty.websocket.javax.server.*;version="${parsedVersion.majorVersion}.${parsedVersion.minorVersion}.${parsedVersion.incrementalVersion}"
             </Export-Package>
             <Require-Capability>osgi.extender; filter:="(osgi.extender=osgi.serviceloader.registrar)";resolution:=optional</Require-Capability>
             <Provide-Capability>
-                  osgi.serviceloader;osgi.serviceloader=org.eclipse.jetty.ee8.webapp.Configuration,osgi.serviceloader;osgi.serviceloader=jakarta.servlet.ServletContainerInitializer,osgi.serviceloader;osgi.serviceloader=jakarta.websocket.server.ServerEndpointConfig$Configurator
+                  osgi.serviceloader;osgi.serviceloader=org.eclipse.jetty.ee8.webapp.Configuration,osgi.serviceloader;osgi.serviceloader=javax.servlet.ServletContainerInitializer,osgi.serviceloader;osgi.serviceloader=javax.websocket.server.ServerEndpointConfig$Configurator
             </Provide-Capability>
           </instructions>
         </configuration>
