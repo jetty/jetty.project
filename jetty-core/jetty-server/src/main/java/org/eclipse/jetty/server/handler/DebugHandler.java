@@ -41,6 +41,16 @@ public class DebugHandler extends Handler.Wrapper implements Connection.Listener
     private OutputStream _out;
     private PrintStream _print;
 
+    public DebugHandler()
+    {
+        this(null);
+    }
+
+    public DebugHandler(Handler handler)
+    {
+        super(handler);
+    }
+
     @Override
     public boolean handle(Request request, Response response, Callback callback) throws Exception
     {

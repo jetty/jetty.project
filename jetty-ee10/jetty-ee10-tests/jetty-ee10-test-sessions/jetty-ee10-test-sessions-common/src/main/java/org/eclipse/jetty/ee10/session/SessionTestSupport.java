@@ -120,7 +120,8 @@ public class SessionTestSupport
 
     public ServletContextHandler addContext(String contextPath) throws Exception
     {
-        ServletContextHandler context = new ServletContextHandler(_contexts, contextPath);
+        ServletContextHandler context = new ServletContextHandler(contextPath);
+        _contexts.addHandler(context);
         SessionHandler sessionHandler = newSessionHandler();
         sessionHandler.setSessionIdManager(_sessionIdManager);
         sessionHandler.setMaxInactiveInterval(_maxInactivePeriod);

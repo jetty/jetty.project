@@ -17,8 +17,6 @@ import java.net.InetSocketAddress;
 import java.nio.ByteBuffer;
 import java.nio.channels.SocketChannel;
 import java.nio.file.Path;
-import java.util.concurrent.CountDownLatch;
-import java.util.concurrent.TimeUnit;
 
 import org.eclipse.jetty.http.HttpField;
 import org.eclipse.jetty.http.HttpFields;
@@ -44,7 +42,6 @@ import org.junit.jupiter.api.extension.ExtendWith;
 
 import static java.nio.charset.StandardCharsets.UTF_8;
 import static org.junit.jupiter.api.Assertions.assertEquals;
-import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertNotNull;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
@@ -79,7 +76,8 @@ public class MultiPartFormDataHandlerTest
             public boolean handle(Request request, Response response, Callback callback)
             {
                 String boundary = MultiPart.extractBoundary(request.getHeaders().get(HttpHeader.CONTENT_TYPE));
-                new MultiPartFormData(boundary).parse(request)
+                new MultiPartFormData.Parser(boundary)
+                    .parse(request)
                     .whenComplete((parts, failure) ->
                     {
                         if (parts != null)
@@ -119,72 +117,6 @@ public class MultiPartFormDataHandlerTest
     }
 
     @Test
-    public void testDelayedUntilFormData() throws Exception
-    {
-        DelayedHandler delayedHandler = new DelayedHandler();
-        CountDownLatch processLatch = new CountDownLatch(1);
-        delayedHandler.setHandler(new Handler.Abstract.NonBlocking()
-        {
-            @Override
-            public boolean handle(Request request, Response response, Callback callback) throws Exception
-            {
-                processLatch.countDown();
-                MultiPartFormData.Parts parts = (MultiPartFormData.Parts)request.getAttribute(MultiPartFormData.Parts.class.getName());
-                assertNotNull(parts);
-                MultiPart.Part part = parts.get(0);
-                Content.copy(part.getContentSource(), response, callback);
-                return true;
-            }
-        });
-        start(delayedHandler);
-
-        try (SocketChannel client = SocketChannel.open(new InetSocketAddress("localhost", connector.getLocalPort())))
-        {
-            String contentBegin = """
-                --A1B2C3
-                Content-Disposition: form-data; name="part"
-                                
-                """;
-            String contentMiddle = """
-                0123456789\
-                """;
-            String contentEnd = """
-                ABCDEF
-                --A1B2C3--
-                """;
-            String header = """
-                POST / HTTP/1.1
-                Host: localhost
-                Content-Type: multipart/form-data; boundary=A1B2C3
-                Content-Length: $L
-                                
-                """.replace("$L", String.valueOf(contentBegin.length() + contentMiddle.length() + contentEnd.length()));
-
-            client.write(UTF_8.encode(header));
-            client.write(UTF_8.encode(contentBegin));
-
-            // Verify that the handler has not been called yet.
-            assertFalse(processLatch.await(1, TimeUnit.SECONDS));
-
-            client.write(UTF_8.encode(contentMiddle));
-
-            // Verify that the handler has not been called yet.
-            assertFalse(processLatch.await(1, TimeUnit.SECONDS));
-
-            // Finish to send the content.
-            client.write(UTF_8.encode(contentEnd));
-
-            // Verify that the handler has been called.
-            assertTrue(processLatch.await(5, TimeUnit.SECONDS));
-
-            HttpTester.Response response = HttpTester.parseResponse(HttpTester.from(client));
-            assertNotNull(response);
-            assertEquals(HttpStatus.OK_200, response.getStatus());
-            assertEquals("0123456789ABCDEF", response.getContent());
-        }
-    }
-
-    @Test
     public void testEchoMultiPart() throws Exception
     {
         start(new Handler.Abstract.NonBlocking()
@@ -193,13 +125,15 @@ public class MultiPartFormDataHandlerTest
             public boolean handle(Request request, Response response, Callback callback)
             {
                 String boundary = MultiPart.extractBoundary(request.getHeaders().get(HttpHeader.CONTENT_TYPE));
-                new MultiPartFormData(boundary).parse(request)
+
+                new MultiPartFormData.Parser(boundary)
+                    .parse(request)
                     .whenComplete((parts, failure) ->
                     {
                         if (parts != null)
                         {
-                            response.getHeaders().put(HttpHeader.CONTENT_TYPE, "multipart/form-data; boundary=\"%s\"".formatted(parts.getMultiPartFormData().getBoundary()));
-                            MultiPartFormData.ContentSource source = new MultiPartFormData.ContentSource(parts.getMultiPartFormData().getBoundary());
+                            response.getHeaders().put(HttpHeader.CONTENT_TYPE, "multipart/form-data; boundary=\"%s\"".formatted(boundary));
+                            MultiPartFormData.ContentSource source = new MultiPartFormData.ContentSource(boundary);
                             source.setPartHeadersMaxLength(1024);
                             parts.forEach(source::addPart);
                             source.close();
@@ -310,22 +244,22 @@ public class MultiPartFormDataHandlerTest
             String boundary = MultiPart.extractBoundary(value);
             assertNotNull(boundary);
 
-            MultiPartFormData formData = new MultiPartFormData(boundary);
+            ByteBufferContentSource byteBufferContentSource = new ByteBufferContentSource(ByteBuffer.wrap(response.getContentBytes()));
+            MultiPartFormData.Parser formData = new MultiPartFormData.Parser(boundary);
             formData.setFilesDirectory(tempDir);
-            formData.parse(new ByteBufferContentSource(ByteBuffer.wrap(response.getContentBytes())));
-            MultiPartFormData.Parts parts = formData.join();
-
-            assertEquals(2, parts.size());
-            MultiPart.Part part1 = parts.get(0);
-            assertEquals("part1", part1.getName());
-            assertEquals("hello", part1.getContentAsString(UTF_8));
-            MultiPart.Part part2 = parts.get(1);
-            assertEquals("part2", part2.getName());
-            assertEquals("file2.bin", part2.getFileName());
-            HttpFields headers2 = part2.getHeaders();
-            assertEquals(2, headers2.size());
-            assertEquals("application/octet-stream", headers2.get(HttpHeader.CONTENT_TYPE));
-            assertEquals(32, part2.getContentSource().getLength());
+            try (MultiPartFormData.Parts parts = formData.parse(byteBufferContentSource).join())
+            {
+                assertEquals(2, parts.size());
+                MultiPart.Part part1 = parts.get(0);
+                assertEquals("part1", part1.getName());
+                assertEquals("hello", part1.getContentAsString(UTF_8));
+                MultiPart.Part part2 = parts.get(1);
+                assertEquals("part2", part2.getName());
+                assertEquals("file2.bin", part2.getFileName());
+                HttpFields headers2 = part2.getHeaders();
+                assertEquals(2, headers2.size());
+                assertEquals("application/octet-stream", headers2.get(HttpHeader.CONTENT_TYPE));
+            }
         }
     }
 }

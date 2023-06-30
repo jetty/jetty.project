@@ -1984,11 +1984,8 @@ public class GzipHandlerTest
         public boolean handle(Request request, Response response, Callback callback) throws Exception
         {
             response.getHeaders().put(HttpHeader.CONTENT_TYPE, "text/plain");
-
             Fields queryParameters = Request.extractQueryParameters(request);
-            FormFields futureFormFields = new FormFields(request, StandardCharsets.UTF_8, -1, -1);
-            futureFormFields.run();
-            Fields formParameters = futureFormFields.get();
+            Fields formParameters = FormFields.from(request, UTF_8, -1, -1).get();
             Fields parameters = Fields.combine(queryParameters, formParameters);
 
             String dump = parameters.stream().map(f -> "%s: %s\n".formatted(f.getName(), f.getValue())).collect(Collectors.joining());

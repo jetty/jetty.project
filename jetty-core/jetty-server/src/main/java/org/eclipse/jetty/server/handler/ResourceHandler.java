@@ -63,6 +63,16 @@ public class ResourceHandler extends Handler.Wrapper
     private MimeTypes _mimeTypes;
     private List<String> _welcomes = List.of("index.html");
 
+    public ResourceHandler()
+    {
+        this(null);
+    }
+
+    public ResourceHandler(Handler handler)
+    {
+        super(handler);
+    }
+
     protected ResourceService newResourceService()
     {
         return new HandlerResourceService();
@@ -122,7 +132,7 @@ public class ResourceHandler extends Handler.Wrapper
 
     protected ResourceService.WelcomeFactory setupWelcomeFactory()
     {
-        return request ->
+        return (content, request) ->
         {
             if (_welcomes == null)
                 return null;
@@ -131,7 +141,7 @@ public class ResourceHandler extends Handler.Wrapper
             {
                 String pathInContext = Request.getPathInContext(request);
                 String welcomeInContext = URIUtil.addPaths(pathInContext, welcome);
-                Resource welcomePath = _baseResource.resolve(pathInContext).resolve(welcome);
+                Resource welcomePath = content.getResource().resolve(welcome);
                 if (Resources.isReadableFile(welcomePath))
                     return welcomeInContext;
             }

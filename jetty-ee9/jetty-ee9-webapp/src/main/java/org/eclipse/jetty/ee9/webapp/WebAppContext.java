@@ -42,6 +42,7 @@ import jakarta.servlet.http.HttpSessionIdListener;
 import jakarta.servlet.http.HttpSessionListener;
 import org.eclipse.jetty.ee9.nested.ContextHandler;
 import org.eclipse.jetty.ee9.nested.ErrorHandler;
+import org.eclipse.jetty.ee9.nested.HandlerWrapper;
 import org.eclipse.jetty.ee9.nested.SessionHandler;
 import org.eclipse.jetty.ee9.security.ConstraintAware;
 import org.eclipse.jetty.ee9.security.ConstraintMapping;
@@ -234,7 +235,7 @@ public class WebAppContext extends ServletContextHandler implements WebAppClassL
         _apiContext = new Context();
         setErrorHandler(errorHandler != null ? errorHandler : new ErrorPageErrorHandler());
         setProtectedTargets(__dftProtectedTargets);
-        Handler.Container.setAsParent(parent, this.get());
+        HandlerWrapper.setAsParent(parent, this.get());
     }
 
     @Override
@@ -503,7 +504,7 @@ public class WebAppContext extends ServletContextHandler implements WebAppClassL
     @Override
     protected void doStart() throws Exception
     {
-        ClassLoader oldLoader = Thread.currentThread().getContextClassLoader();
+        ClassLoader old = Thread.currentThread().getContextClassLoader();
         try
         {
             _metadata.setAllowDuplicateFragmentNames(isAllowDuplicateFragmentNames());
@@ -529,7 +530,7 @@ public class WebAppContext extends ServletContextHandler implements WebAppClassL
         }
         finally
         {
-            Thread.currentThread().setContextClassLoader(oldLoader);
+            Thread.currentThread().setContextClassLoader(old);
         }
     }
 

@@ -67,8 +67,10 @@ import org.slf4j.LoggerFactory;
 import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.Matchers.contains;
 import static org.hamcrest.Matchers.containsInAnyOrder;
+import static org.hamcrest.Matchers.containsString;
 import static org.hamcrest.Matchers.either;
 import static org.hamcrest.Matchers.empty;
+import static org.hamcrest.Matchers.endsWith;
 import static org.hamcrest.Matchers.instanceOf;
 import static org.hamcrest.Matchers.is;
 import static org.hamcrest.Matchers.notNullValue;
@@ -230,7 +232,7 @@ public class WebAppContextTest
     }
 
     @Test
-    public void testRealPathDoesNotExist() throws Exception
+    public void testRealPath() throws Exception
     {
         Server server = newServer();
         WebAppContext context = new WebAppContext(".", "/");
@@ -238,6 +240,7 @@ public class WebAppContextTest
         server.start();
 
         ServletContext ctx = context.getServletContext();
+        assertNotNull(ctx.getRealPath("/"));
         assertNull(ctx.getRealPath("/doesnotexist"));
         assertNull(ctx.getRealPath("/doesnotexist/"));
     }
@@ -440,7 +443,7 @@ public class WebAppContextTest
         Server server = newServer();
 
         ContextHandlerCollection contexts = new ContextHandlerCollection();
-        WebAppContext context = new WebAppContext(null, null, null, null, null, new ErrorPageErrorHandler(),
+        WebAppContext context = new WebAppContext(null, null, null, null, new ErrorPageErrorHandler(),
             ServletContextHandler.NO_SESSIONS | ServletContextHandler.NO_SECURITY);
         context.setContextPath("/");
 
@@ -534,6 +537,62 @@ public class WebAppContextTest
 
         ServletContext servletContext = context.getServletContext();
         assertThat(servletContext.getResourcePaths("/WEB-INF"), containsInAnyOrder("/WEB-INF/zero.xml", "/WEB-INF/one.xml"));
+    }
+
+    @Test
+    public void testGetResourcePaths() throws Exception
+    {
+        Server server = newServer();
+        LocalConnector connector = new LocalConnector(server);
+        server.addConnector(connector);
+
+        WebAppContext context = new WebAppContext(MavenTestingUtils.getBasePath().resolve("src/test/webapp-with-resources").toString(), "/");
+        server.setHandler(context);
+        server.start();
+
+        ServletContext servletContext = context.getServletContext();
+
+        List<String> resourcePaths = List.copyOf(servletContext.getResourcePaths("/"));
+        assertThat(resourcePaths.size(), is(2));
+        assertThat(resourcePaths.get(0), is("/WEB-INF"));
+        assertThat(resourcePaths.get(1), is("/nested-reserved-!#\\\\$%&()*+,:=?@[]-meta-inf-resource.txt"));
+
+        String realPath = servletContext.getRealPath("/");
+        assertThat(realPath, notNullValue());
+        assertThat(servletContext.getRealPath(resourcePaths.get(0)), endsWith("/WEB-INF"));
+        // TODO the following assertion fails because of a bug in the JDK (see JDK-8311079 and MountedPathResourceTest.testJarFileResourceAccessBackSlash())
+        //assertThat(servletContext.getRealPath(resourcePaths.get(1)), endsWith("/nested-reserved-!#\\\\$%&()*+,:=?@[]-meta-inf-resource.txt"));
+
+        assertThat(servletContext.getResource("/WEB-INF"), notNullValue());
+        // TODO the following assertion fails because of a bug in the JDK (see JDK-8311079 and MountedPathResourceTest.testJarFileResourceAccessBackSlash())
+        //assertThat(servletContext.getResource("/nested-reserved-!#\\\\$%&()*+,:=?@[]-meta-inf-resource.txt"), notNullValue());
+
+        HttpTester.Response response1 = HttpTester.parseResponse(connector.getResponse("""
+            GET /resource HTTP/1.1\r
+            Host: local\r
+            Connection: close\r
+            \r
+            """));
+
+        assertThat(response1.getStatus(), is(HttpStatus.OK_200));
+        assertThat(response1.getContent(), containsString("/WEB-INF"));
+        assertThat(response1.getContent(), containsString("/WEB-INF/lib"));
+        assertThat(response1.getContent(), containsString("/WEB-INF/lib/odd-resource.jar"));
+        assertThat(response1.getContent(), containsString("/nested-reserved-!#\\\\$%&()*+,:=?@[]-meta-inf-resource.txt"));
+
+        HttpTester.Response response2 = HttpTester.parseResponse(connector.getResponse("""
+            GET /real HTTP/1.1\r
+            Host: local\r
+            Connection: close\r
+            \r
+            """));
+
+        assertThat(response2.getStatus(), is(HttpStatus.OK_200));
+        assertThat(response2.getContent(), containsString("/WEB-INF"));
+        assertThat(response2.getContent(), containsString("/WEB-INF/lib"));
+        assertThat(response2.getContent(), containsString("/WEB-INF/lib/odd-resource.jar"));
+        // TODO the following assertion fails because of a bug in the JDK (see JDK-8311079 and MountedPathResourceTest.testJarFileResourceAccessBackSlash())
+        //assertThat(response2.getContent(), containsString("/nested-reserved-!#\\\\$%&()*+,:=?@[]-meta-inf-resource.txt"));
     }
 
     public static Stream<Arguments> extraClasspathGlob()

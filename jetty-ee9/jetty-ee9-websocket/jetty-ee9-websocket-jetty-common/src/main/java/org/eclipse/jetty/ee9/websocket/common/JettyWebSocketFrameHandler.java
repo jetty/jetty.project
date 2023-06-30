@@ -473,7 +473,7 @@ public class JettyWebSocketFrameHandler implements FrameHandler
             if (frame != null)
                 onFrame(frame, callback);
             else
-                session.getCoreSession().demand(1);
+                session.getCoreSession().demand();
         }
     }
 
@@ -498,7 +498,7 @@ public class JettyWebSocketFrameHandler implements FrameHandler
         }
 
         if (demand)
-            session.getCoreSession().demand(1);
+            session.getCoreSession().demand();
     }
 
     public static Throwable convertCause(Throwable cause)

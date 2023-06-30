@@ -29,6 +29,7 @@ import org.eclipse.jetty.toolchain.test.jupiter.WorkDir;
 import org.eclipse.jetty.toolchain.test.jupiter.WorkDirExtension;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.Disabled;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 
@@ -315,6 +316,28 @@ public class MountedPathResourceTest
                 "some\\slash\\you\\got\\there" // not encoded, stored as backslash native
             };
             assertThat("Dir contents", actual, containsInAnyOrder(expected));
+        }
+    }
+
+    /**
+     * Test resolving a resource that has a backslash
+     */
+    @Test
+    @Disabled("Test disabled due to JDK bug JDK-8311079")
+    public void testJarFileResourceAccessBackSlash() throws Exception
+    {
+        Path testJar = MavenTestingUtils.getTestResourcePathFile("jar-file-resource.jar");
+        URI uri = URI.create("jar:" + testJar.toUri().toASCIIString() + "!/");
+        try (ResourceFactory.Closeable resourceFactory = ResourceFactory.closeable())
+        {
+            Resource resource = resourceFactory.newResource(uri);
+            Resource oddities = resource.resolve("rez/oddities/");
+
+            assertThat("path /rez/oddities/ is a dir", oddities.isDirectory(), is(true));
+
+            // attempt to access a resource with a backslash
+            Resource someSlash = oddities.resolve("some\\slash\\you\\got\\there");
+            assertTrue(Resources.isReadableFile(someSlash), "someSlash is accessible as a file");
         }
     }
 

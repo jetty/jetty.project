@@ -69,10 +69,17 @@ public class ServerUpgradeResponseImpl extends Response.Wrapper implements Serve
     @Override
     public void addExtensions(List<ExtensionConfig> configs)
     {
-        ArrayList<ExtensionConfig> combinedConfig = new ArrayList<>();
-        combinedConfig.addAll(getExtensions());
+        ArrayList<ExtensionConfig> combinedConfig = new ArrayList<>(getExtensions());
         combinedConfig.addAll(configs);
         setExtensions(combinedConfig);
+    }
+
+    @Override
+    public void removeExtensions(List<ExtensionConfig> configs)
+    {
+        ArrayList<ExtensionConfig> trimmedExtensions = new ArrayList<>(getExtensions());
+        trimmedExtensions.removeAll(configs);
+        setExtensions(trimmedExtensions);
     }
 
     @Override

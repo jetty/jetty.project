@@ -48,7 +48,8 @@ public class DoSFilterJMXTest
         Connector connector = new ServerConnector(server);
         server.addConnector(connector);
 
-        ServletContextHandler context = new ServletContextHandler(server, "/", ServletContextHandler.SESSIONS);
+        ServletContextHandler context = new ServletContextHandler("/", ServletContextHandler.SESSIONS);
+        server.setHandler(context);
         DoSFilter filter = new DoSFilter();
         FilterHolder holder = new FilterHolder(filter);
         String name = "dos";

@@ -24,9 +24,12 @@ import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicLong;
 import java.util.concurrent.atomic.AtomicReference;
+import java.util.function.Consumer;
 import java.util.zip.GZIPInputStream;
 import java.util.zip.GZIPOutputStream;
 
+import jakarta.servlet.ServletRequestEvent;
+import jakarta.servlet.ServletRequestListener;
 import jakarta.servlet.http.HttpServlet;
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletResponse;
@@ -36,12 +39,11 @@ import org.eclipse.jetty.client.ContentResponse;
 import org.eclipse.jetty.client.HttpClient;
 import org.eclipse.jetty.client.Response;
 import org.eclipse.jetty.ee10.servlet.HttpInput;
-import org.eclipse.jetty.ee10.servlet.ServletChannel;
+import org.eclipse.jetty.ee10.servlet.ListenerHolder;
 import org.eclipse.jetty.ee10.servlet.ServletContextHandler;
 import org.eclipse.jetty.ee10.servlet.ServletContextRequest;
 import org.eclipse.jetty.http.HttpHeader;
 import org.eclipse.jetty.http.HttpMethod;
-import org.eclipse.jetty.server.Request;
 import org.eclipse.jetty.server.Server;
 import org.eclipse.jetty.server.ServerConnector;
 import org.eclipse.jetty.server.handler.gzip.GzipHandler;
@@ -72,6 +74,7 @@ public class GzipWithSendErrorTest
     private Server server;
     private HttpClient client;
     private ServerConnector connector;
+    private Consumer<ServletContextRequest> onComplete;
 
     @BeforeEach
     public void setup() throws Exception
@@ -90,6 +93,25 @@ public class GzipWithSendErrorTest
 
         contextHandler.addServlet(PostServlet.class, "/submit");
         contextHandler.addServlet(FailServlet.class, "/fail");
+        ListenerHolder listenerHolder = new ListenerHolder();
+        listenerHolder.setListener(new ServletRequestListener()
+        {
+            @Override
+            public void requestDestroyed(ServletRequestEvent sre)
+            {
+                if (onComplete != null)
+                {
+                    ServletContextRequest servletContextRequest = ServletContextRequest.getServletContextRequest(sre.getServletRequest());
+                    onComplete.accept(servletContextRequest);
+                }
+            }
+
+            @Override
+            public void requestInitialized(ServletRequestEvent sre)
+            {
+            }
+        });
+        contextHandler.getServletHandler().addListener(listenerHolder);
 
         gzipHandler.setHandler(contextHandler);
         server.setHandler(gzipHandler);
@@ -102,6 +124,7 @@ public class GzipWithSendErrorTest
     @AfterEach
     public void teardown()
     {
+        onComplete = null;
         LifeCycle.stop(client);
         LifeCycle.stop(server);
     }
@@ -181,20 +204,15 @@ public class GzipWithSendErrorTest
         // count of bytes against API read
         AtomicLong inputContentConsumed = new AtomicLong(0L);
 
-        connector.addBean(new ServletChannel.Listener()
+        onComplete = servletContextRequest ->
         {
-            @Override
-            public void onComplete(Request baseRequest)
-            {
-                ServletContextRequest request = Request.as(baseRequest, ServletContextRequest.class);
-                HttpConnection connection = (HttpConnection)request.getConnectionMetaData().getConnection();
-                HttpInput httpInput = request.getHttpInput();
-                inputContentConsumed.set(httpInput.getContentConsumed());
-                inputContentReceived.set(httpInput.getContentReceived());
-                inputBytesIn.set(connection.getBytesIn());
-                serverRequestCompleteLatch.countDown();
-            }
-        });
+            HttpInput httpInput = servletContextRequest.getHttpInput();
+            HttpConnection connection = (HttpConnection)servletContextRequest.getConnectionMetaData().getConnection();
+            inputContentConsumed.set(httpInput.getContentConsumed());
+            inputContentReceived.set(httpInput.getContentReceived());
+            inputBytesIn.set(connection.getBytesIn());
+            serverRequestCompleteLatch.countDown();
+        };
 
         // This is a doubly-compressed (with gzip) test resource.
         // There's no point putting into SCM the full 1MB file, when the
@@ -288,20 +306,15 @@ public class GzipWithSendErrorTest
         // count of bytes against API read
         AtomicLong inputContentConsumed = new AtomicLong(0L);
 
-        connector.addBean(new ServletChannel.Listener()
+        onComplete = servletContextRequest ->
         {
-            @Override
-            public void onComplete(Request baseRequest)
-            {
-                ServletContextRequest request = Request.as(baseRequest, ServletContextRequest.class);
-                HttpConnection connection = (HttpConnection)request.getConnectionMetaData().getConnection();
-                HttpInput httpInput = request.getHttpInput();
-                inputContentConsumed.set(httpInput.getContentConsumed());
-                inputContentReceived.set(httpInput.getContentReceived());
-                inputBytesIn.set(connection.getBytesIn());
-                serverRequestCompleteLatch.countDown();
-            }
-        });
+            HttpInput httpInput = servletContextRequest.getHttpInput();
+            HttpConnection connection = (HttpConnection)servletContextRequest.getConnectionMetaData().getConnection();
+            inputContentConsumed.set(httpInput.getContentConsumed());
+            inputContentReceived.set(httpInput.getContentReceived());
+            inputBytesIn.set(connection.getBytesIn());
+            serverRequestCompleteLatch.countDown();
+        };
 
         // This is a doubly-compressed (with gzip) test resource.
         // There's no point putting into SCM the full 1MB file, when the

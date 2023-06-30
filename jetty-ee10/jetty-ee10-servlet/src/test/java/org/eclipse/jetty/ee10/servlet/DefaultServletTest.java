@@ -20,6 +20,7 @@ import java.io.InputStream;
 import java.io.OutputStream;
 import java.net.URL;
 import java.net.URLClassLoader;
+import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
 import java.nio.file.InvalidPathException;
 import java.nio.file.Path;
@@ -62,6 +63,7 @@ import org.eclipse.jetty.toolchain.test.MavenPaths;
 import org.eclipse.jetty.toolchain.test.MavenTestingUtils;
 import org.eclipse.jetty.toolchain.test.jupiter.WorkDir;
 import org.eclipse.jetty.toolchain.test.jupiter.WorkDirExtension;
+import org.eclipse.jetty.util.BufferUtil;
 import org.eclipse.jetty.util.IO;
 import org.eclipse.jetty.util.StringUtil;
 import org.junit.jupiter.api.AfterEach;
@@ -375,6 +377,101 @@ public class DefaultServletTest
 
         String body = response.getContent();
         assertThat(body, containsString("f??r"));
+    }
+
+    @Test
+    public void testSimpleListing() throws Exception
+    {
+        ServletHolder defHolder = context.addServlet(DefaultServlet.class, "/*");
+        defHolder.setInitParameter("dirAllowed", "true");
+
+        String rawResponse = connector.getResponse("""
+            GET /context/ HTTP/1.1\r
+            Host: local\r
+            Connection: close\r
+            \r
+            """);
+        HttpTester.Response response = HttpTester.parseResponse(rawResponse);
+
+        assertThat(response.getStatus(), is(200));
+        assertThat(response.getField("content-type").getValue(), is("text/html;charset=UTF-8"));
+        String body = response.getContent();
+        assertThat(body, containsString("<?xml version=\"1.0\" encoding=\"utf-8\"?>"));
+    }
+
+    @Test
+    public void testIncludeListingAllowed() throws Exception
+    {
+        ServletHolder defHolder = context.addServlet(DefaultServlet.class, "/*");
+        defHolder.setInitParameter("dirAllowed", "true");
+
+        /* create a file with a non-fully ASCII name in the docroot */
+        Files.writeString(docRoot.resolve("numéros-en-français.txt"), "un deux trois", StandardCharsets.ISO_8859_1);
+
+        ServletHolder incHolder = new ServletHolder();
+        incHolder.setInstance(new HttpServlet()
+        {
+            @Override
+            protected void doGet(HttpServletRequest req, HttpServletResponse resp) throws ServletException, IOException
+            {
+                // Getting the writer implicitly sets the charset to iso-8859-1.
+                resp.getWriter().println(">>>");
+                resp.getWriter().println("éèàîû");
+                req.getRequestDispatcher("/").include(req, resp);
+                resp.getWriter().println("<<<");
+            }
+        });
+        context.addServlet(incHolder, "/inclusion");
+
+        String rawResponse = connector.getResponse("""
+            GET /context/inclusion HTTP/1.1\r
+            Host: local\r
+            Connection: close\r
+            \r
+            """);
+        HttpTester.Response response = HttpTester.parseResponse(rawResponse);
+
+        assertThat(response.getStatus(), is(200));
+        String body = BufferUtil.toString(response.getContentByteBuffer(), StandardCharsets.ISO_8859_1);
+        assertThat(body, startsWith(">>>\néèàîû\n"));
+        assertThat(body, containsString("<?xml version=\"1.0\" encoding=\"utf-8\"?>"));
+        assertThat(body, containsString("numéros-en-français.txt"));
+        assertThat(body, endsWith("<<<\n"));
+    }
+
+    @Test
+    public void testIncludeListingForbidden() throws Exception
+    {
+        ServletHolder defHolder = context.addServlet(DefaultServlet.class, "/*");
+        defHolder.setInitParameter("dirAllowed", "false");
+
+        ServletHolder incHolder = new ServletHolder();
+        incHolder.setInstance(new HttpServlet()
+        {
+            @Override
+            protected void doGet(HttpServletRequest req, HttpServletResponse resp) throws ServletException, IOException
+            {
+                // Getting the writer implicitly sets the charset to iso-8859-1.
+                resp.getWriter().println(">>>");
+                req.getRequestDispatcher("/").include(req, resp);
+                resp.getWriter().println("éèàîû");
+                resp.getWriter().println("<<<");
+            }
+        });
+        context.addServlet(incHolder, "/inclusion");
+
+        String rawResponse = connector.getResponse("""
+            GET /context/inclusion HTTP/1.1\r
+            Host: local\r
+            Connection: close\r
+            \r
+            """);
+        HttpTester.Response response = HttpTester.parseResponse(rawResponse);
+
+        assertThat(response.getStatus(), is(200));
+        assertThat(response.get(HttpHeader.CONTENT_LENGTH), is("14"));
+        String body = BufferUtil.toString(response.getContentByteBuffer(), StandardCharsets.ISO_8859_1);
+        assertThat(body, is(">>>\néèàîû\n<<<\n"));
     }
 
     /**
@@ -1178,7 +1275,11 @@ public class DefaultServletTest
          */
         assertThat(response.toString(), response.getStatus(), is(HttpStatus.INTERNAL_SERVER_ERROR_500));
 
-        // This resource does exist but directory listings are not allowed and there are no welcome files.
+        /* This resource does exist but directory listings are not allowed and there are no welcome files;
+         * and since RequestDispatcher#include(ServletRequest, ServletResponse) says:
+         *  "The included servlet cannot change the response status code or set headers; any attempt to make a change is ignored."
+         * the response status should be 200 and there should be no content.
+         */
         rawResponse = connector.getResponse("""
             GET /context/gateway?includeTarget=/alt/ HTTP/1.1\r
             Host: local\r
@@ -1186,7 +1287,8 @@ public class DefaultServletTest
             \r
             """);
         response = HttpTester.parseResponse(rawResponse);
-        assertThat(response.toString(), response.getStatus(), is(HttpStatus.FORBIDDEN_403));
+        assertThat(response.toString(), response.getStatus(), is(HttpStatus.OK_200));
+        assertThat(response.toString(), containsString("Content-Length: 0"));
 
         // Once index.html has been created we can include this same target and see it as a welcome file.
         Files.writeString(altRoot.resolve("index.html"), "<h1>Alt Index</h1>", UTF_8);
@@ -3183,6 +3285,63 @@ public class DefaultServletTest
         public void destroy()
         {
         }
+    }
+
+    @Test
+    public void testPathInfoOnly() throws Exception
+    {
+        ServletContextHandler context = new ServletContextHandler("/c1", ServletContextHandler.NO_SESSIONS);
+        context.setWelcomeFiles(new String[]{"index.y", "index.x"});
+        ServletHolder indexServlet = new ServletHolder("index-servlet", new HttpServlet()
+        {
+            @Override
+            protected void service(HttpServletRequest req, HttpServletResponse resp) throws ServletException, IOException
+            {
+                resp.setContentType("text/plain");
+                resp.setCharacterEncoding("UTF-8");
+                resp.getWriter().println(req.getRequestURI());
+                resp.getWriter().println("testPathInfoOnly-OK");
+                resp.getWriter().close();
+            }
+        });
+
+        ServletMapping indexMapping = new ServletMapping();
+        indexMapping.setServletName("index-servlet");
+        indexMapping.setPathSpecs(new String[]{"*.x", "*.y"});
+        context.getServletHandler().addServlet(indexServlet);
+        context.getServletHandler().addServletMapping(indexMapping);
+
+        Path pathTest = MavenTestingUtils.getTestResourcePath("pathTest");
+
+        Path defaultDir = pathTest.resolve("default");
+        ServletHolder slashHolder = new ServletHolder("default", new DefaultServlet());
+        slashHolder.setInitParameter("redirectWelcome", "false");
+        slashHolder.setInitParameter("welcomeServlets", "true");
+        slashHolder.setInitParameter("pathInfoOnly", "false");
+        slashHolder.setInitParameter("baseResource", defaultDir.toAbsolutePath().toString());
+        context.addServlet(slashHolder, "/");
+
+        Path rDir = pathTest.resolve("rdir");
+        ServletHolder rHolder = new ServletHolder("rdefault", new DefaultServlet());
+        rHolder.setInitParameter("redirectWelcome", "false");
+        rHolder.setInitParameter("welcomeServlets", "true");
+        rHolder.setInitParameter("pathInfoOnly", "true");
+        rHolder.setInitParameter("baseResource", rDir.toAbsolutePath().toString());
+        context.addServlet(rHolder, "/r/*");
+
+        server.stop();
+        server.setHandler(context);
+        server.start();
+        String rawRequest = """
+            GET /c1/r/ HTTP/1.1\r
+            Host: localhost\r
+            Connection: close\r
+            \r
+            """;
+
+        String rawResponse = connector.getResponse(rawRequest);
+        HttpTester.Response response = HttpTester.parseResponse(rawResponse);
+        assertThat(response.getContent(), containsString("testPathInfoOnly-OK"));
     }
 
     public static class WriterFilter implements Filter

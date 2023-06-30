@@ -13,9 +13,9 @@
 
 package org.eclipse.jetty.websocket.core.util;
 
-import java.util.concurrent.atomic.AtomicLong;
+import java.nio.channels.ReadPendingException;
+import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicReference;
-import java.util.function.LongConsumer;
 
 import org.eclipse.jetty.util.Callback;
 import org.eclipse.jetty.util.CountingCallback;
@@ -42,9 +42,9 @@ public abstract class DemandingFlusher extends IteratingCallback implements Dema
     private static final Throwable SENTINEL_CLOSE_EXCEPTION = new StaticException("Closed");
 
     private final IncomingFrames _emitFrame;
-    private final AtomicLong _demand = new AtomicLong();
+    private final AtomicBoolean _demand = new AtomicBoolean();
     private final AtomicReference<Throwable> _failure = new AtomicReference<>();
-    private LongConsumer _nextDemand;
+    private DemandChain _nextDemand;
 
     private Frame _frame;
     private Callback _callback;
@@ -76,21 +76,22 @@ public abstract class DemandingFlusher extends IteratingCallback implements Dema
     protected abstract boolean handle(Frame frame, Callback callback, boolean first);
 
     @Override
-    public void demand(long n)
+    public void demand()
     {
-        _demand.getAndUpdate(d -> Math.addExact(d, n));
+        if (!_demand.compareAndSet(false, true))
+            throw new ReadPendingException();
         iterate();
     }
 
     @Override
-    public void setNextDemand(LongConsumer nextDemand)
+    public void setNextDemand(DemandChain nextDemand)
     {
         _nextDemand = nextDemand;
     }
 
     /**
      * Used to supply the flusher with a new frame. This frame should only arrive if demanded
-     * through the {@link LongConsumer} provided by {@link #setNextDemand(LongConsumer)}.
+     * through the {@link DemandChain} provided by {@link #setNextDemand(DemandChain)}.
      * @param frame the WebSocket frame.
      * @param callback to release frame payload.
      */
@@ -140,8 +141,8 @@ public abstract class DemandingFlusher extends IteratingCallback implements Dema
      */
     public void emitFrame(Frame frame, Callback callback)
     {
-        if (_demand.decrementAndGet() < 0)
-            throw new IllegalStateException("Negative Demand");
+        if (!_demand.compareAndSet(true, false))
+            throw new IllegalStateException("Demand already fulfilled");
         _emitFrame.onFrame(frame, callback);
     }
 
@@ -154,13 +155,13 @@ public abstract class DemandingFlusher extends IteratingCallback implements Dema
             if (failure != null)
                 throw failure;
 
-            if (_demand.get() <= 0)
+            if (!_demand.get())
                 break;
 
             if (_needContent)
             {
                 _needContent = false;
-                _nextDemand.accept(1);
+                _nextDemand.demand();
                 return Action.SCHEDULED;
             }
 

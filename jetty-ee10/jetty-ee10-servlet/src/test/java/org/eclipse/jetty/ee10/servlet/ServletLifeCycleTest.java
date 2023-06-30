@@ -51,7 +51,8 @@ public class ServletLifeCycleTest
         LocalConnector connector = new LocalConnector(server);
         server.addConnector(connector);
 
-        ServletContextHandler context = new ServletContextHandler(server, "/");
+        ServletContextHandler context = new ServletContextHandler("/");
+        server.setHandler(context);
 
         context.getObjectFactory().addDecorator(new TestDecorator());
 

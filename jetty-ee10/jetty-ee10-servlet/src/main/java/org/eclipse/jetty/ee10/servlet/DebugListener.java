@@ -162,18 +162,16 @@ public class DebugListener extends AbstractLifeCycle implements ServletContextLi
         return n;
     }
 
-    protected String findRequestName(ServletRequest request)
+    protected String findRequestName(ServletContextRequest request)
     {
         if (request == null)
             return null;
-        HttpServletRequest r = (HttpServletRequest)request;
-        String n = (String)request.getAttribute(_attr);
-        if (n == null)
-        {
-            n = String.format("%s@%x", r.getRequestURI(), request.hashCode());
-            request.setAttribute(_attr, n);
-        }
-        return n;
+        return request.getId();
+    }
+
+    protected String findRequestName(ServletRequest request)
+    {
+        return findRequestName(ServletContextRequest.getServletContextRequest(request));
     }
 
     protected void log(String format, Object... arg)
@@ -225,7 +223,7 @@ public class DebugListener extends AbstractLifeCycle implements ServletContextLi
             String rname = findRequestName(ace.getAsyncContext().getRequest());
 
             ServletContextRequest request = ServletContextRequest.getServletContextRequest(ace.getAsyncContext().getRequest());
-            Response response = request.getResponse();
+            Response response = request.getServletContextResponse();
             String headers = _showHeaders ? ("\n" + response.getHeaders().toString()) : "";
 
             log("!  ctx=%s r=%s onComplete %s %d%s", cname, rname, ace.getServletRequestState(), response.getStatus(), headers);
@@ -280,8 +278,8 @@ public class DebugListener extends AbstractLifeCycle implements ServletContextLi
             else
             {
                 ServletContextRequest request = ServletContextRequest.getServletContextRequest(r);
-                String headers = _showHeaders ? ("\n" + request.getResponse().getHeaders().toString()) : "";
-                log("<< %s ctx=%s r=%s async=false %d%s", d, cname, rname, request.getResponse().getStatus(), headers);
+                String headers = _showHeaders ? ("\n" + request.getServletContextResponse().getHeaders().toString()) : "";
+                log("<< %s ctx=%s r=%s async=false %d%s", d, cname, rname, request.getServletContextResponse().getStatus(), headers);
             }
         }
     };
@@ -296,7 +294,7 @@ public class DebugListener extends AbstractLifeCycle implements ServletContextLi
                 log(">  ctx=%s", cname);
             else
             {
-                String rname = findRequestName(request.getServletApiRequest());
+                String rname = findRequestName(request);
 
                 if (_renameThread)
                 {
@@ -316,7 +314,7 @@ public class DebugListener extends AbstractLifeCycle implements ServletContextLi
                 log("<  ctx=%s", cname);
             else
             {
-                String rname = findRequestName(request.getServletApiRequest());
+                String rname = findRequestName(request);
 
                 log("<  ctx=%s r=%s", cname, rname);
                 if (_renameThread)

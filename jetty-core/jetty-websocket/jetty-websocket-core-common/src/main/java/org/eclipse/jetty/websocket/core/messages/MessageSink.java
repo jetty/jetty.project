@@ -33,7 +33,7 @@ public interface MessageSink
      * payload is consumed.</p>
      * <p>The demand for more frames must be explicitly invoked,
      * or arranged to be invoked asynchronously, by the implementation
-     * of this method, by calling {@link CoreSession#demand(long)}.</p>
+     * of this method, by calling {@link CoreSession#demand()}.</p>
      *
      * @param frame the frame to consume
      * @param callback the callback to complete when the frame is consumed

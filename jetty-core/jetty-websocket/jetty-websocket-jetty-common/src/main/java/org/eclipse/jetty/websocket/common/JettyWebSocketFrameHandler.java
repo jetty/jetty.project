@@ -402,7 +402,7 @@ public class JettyWebSocketFrameHandler implements FrameHandler
     private void autoDemand()
     {
         if (isAutoDemand())
-            session.getCoreSession().demand(1);
+            session.getCoreSession().demand();
     }
 
     public String toString()

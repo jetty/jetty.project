@@ -13,7 +13,7 @@
   <properties>
     <ee9.module>jetty-ee9-openid</ee9.module>
     <bundle-symbolic-name>${project.groupId}.openid</bundle-symbolic-name>
-    <spotbugs.onlyAnalyze>org.eclipse.jetty.security.openid.*</spotbugs.onlyAnalyze>
+    <spotbugs.onlyAnalyze>org.eclipse.jetty.ee8.security.openid.*</spotbugs.onlyAnalyze>
   </properties>
 
   <build>

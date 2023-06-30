@@ -25,6 +25,7 @@ import jakarta.servlet.http.HttpServletResponse;
 import jakarta.servlet.http.HttpSession;
 import org.eclipse.jetty.ee10.servlet.writer.ResponseWriter;
 import org.eclipse.jetty.http.HttpCookie;
+import org.eclipse.jetty.http.HttpField;
 import org.eclipse.jetty.http.HttpFields;
 import org.eclipse.jetty.http.HttpGenerator;
 import org.eclipse.jetty.http.HttpHeader;
@@ -39,16 +40,22 @@ import org.eclipse.jetty.session.ManagedSession;
 import org.eclipse.jetty.util.Callback;
 import org.eclipse.jetty.util.StringUtil;
 
-public class ServletContextResponse extends ContextResponse
+/**
+ * A core response wrapper that carries the servlet related response state,
+ * which may be used directly by the associated {@link ServletApiResponse}.
+ * Non servlet related state, is used indirectly via {@link ServletChannel#getResponse()}
+ * which may be a wrapper of this response.
+ */
+public class ServletContextResponse extends ContextResponse implements ServletContextHandler.ServletResponseInfo
 {
     protected enum OutputType
     {
         NONE, STREAM, WRITER
     }
 
-    private final HttpOutput _httpOutput;
     private final ServletChannel _servletChannel;
-    private final ServletApiResponse _httpServletResponse;
+    private final ServletApiResponse _servletApiResponse;
+    private final HttpFields.Mutable.Wrapper _headers;
     private String _characterEncoding;
     private String _contentType;
     private MimeTypes.Type _mimeType;
@@ -61,16 +68,15 @@ public class ServletContextResponse extends ContextResponse
 
     public static ServletContextResponse getServletContextResponse(ServletResponse response)
     {
-        if (response instanceof ServletApiResponse)
-            return ((ServletApiResponse)response).getResponse();
+        if (response instanceof ServletApiResponse servletApiResponse)
+            return servletApiResponse.getServletRequestInfo().getServletChannel().getServletContextResponse();
 
         while (response instanceof ServletResponseWrapper)
         {
             response = ((ServletResponseWrapper)response).getResponse();
+            if (response instanceof ServletApiResponse servletApiResponse)
+                return servletApiResponse.getServletRequestInfo().getServletChannel().getServletContextResponse();
         }
-
-        if (response instanceof ServletApiResponse)
-            return ((ServletApiResponse)response).getResponse();
 
         throw new IllegalStateException("could not find %s for %s".formatted(ServletContextResponse.class.getSimpleName(), response));
     }
@@ -78,32 +84,43 @@ public class ServletContextResponse extends ContextResponse
     public ServletContextResponse(ServletChannel servletChannel, ServletContextRequest request, Response response)
     {
         super(servletChannel.getContext(), request, response);
-        _httpOutput = new HttpOutput(response, servletChannel);
         _servletChannel = servletChannel;
-        _httpServletResponse = newServletApiResponse();
+        _servletApiResponse = newServletApiResponse();
+        _headers = new HttpFieldsWrapper(response.getHeaders());
     }
 
-    protected ResponseWriter getWriter()
+    @Override
+    public Response getResponse()
+    {
+        return _servletChannel.getResponse();
+    }
+
+    @Override
+    public ResponseWriter getWriter()
     {
         return _writer;
     }
 
-    protected void setWriter(ResponseWriter writer)
+    @Override
+    public void setWriter(ResponseWriter writer)
     {
         _writer = writer;
     }
 
-    protected Locale getLocale()
+    @Override
+    public Locale getLocale()
     {
         return _locale;
     }
 
-    protected void setLocale(Locale locale)
+    @Override
+    public void setLocale(Locale locale)
     {
         _locale = locale;
     }
 
-    protected EncodingFrom getEncodingFrom()
+    @Override
+    public EncodingFrom getEncodingFrom()
     {
         return _encodingFrom;
     }
@@ -113,47 +130,38 @@ public class ServletContextResponse extends ContextResponse
         return _mimeType;
     }
 
-    protected void setMimeType(MimeTypes.Type mimeType)
-    {
-        this._mimeType = mimeType;
-    }
-
-    protected Supplier<Map<String, String>> getTrailers()
+    @Override
+    public Supplier<Map<String, String>> getTrailers()
     {
         return _trailers;
     }
 
+    @Override
     public void setTrailers(Supplier<Map<String, String>> trailers)
     {
         this._trailers = trailers;
     }
 
-    protected void setContentType(String contentType)
-    {
-        this._contentType = contentType;
-    }
-
-    protected String getCharacterEncoding()
+    @Override
+    public String getCharacterEncoding()
     {
         return _characterEncoding;
     }
 
-    protected void setCharacterEncoding(String value)
-    {
-        _characterEncoding = value;
-    }
-
-    protected void setOutputType(OutputType outputType)
+    @Override
+    public void setOutputType(OutputType outputType)
     {
         _outputType = outputType;
     }
 
-    protected String getContentType()
+    @Override
+    public String getContentType()
     {
         return _contentType;
     }
 
-    protected OutputType getOutputType()
+    @Override
+    public OutputType getOutputType()
     {
         return _outputType;
     }
@@ -170,27 +178,22 @@ public class ServletContextResponse extends ContextResponse
 
     public HttpOutput getHttpOutput()
     {
-        return _httpOutput;
+        return _servletChannel.getHttpOutput();
     }
 
-    public ServletRequestState getState()
+    public ServletRequestState getServletRequestState()
     {
-        return _servletChannel.getState();
+        return _servletChannel.getServletRequestState();
     }
 
-    public HttpServletResponse getHttpServletResponse()
-    {
-        return _httpServletResponse;
-    }
-    
     public ServletApiResponse getServletApiResponse()
     {
-        return _httpServletResponse;
+        return _servletApiResponse;
     }
 
     public void resetForForward()
     {
-        _httpServletResponse.resetBuffer();
+        _servletApiResponse.resetBuffer();
         _outputType = OutputType.NONE;
     }
 
@@ -198,7 +201,7 @@ public class ServletContextResponse extends ContextResponse
     {
         if (_outputType == OutputType.WRITER)
             _writer.reopen();
-        _httpOutput.reopen();
+        getHttpOutput().reopen();
     }
 
     public void completeOutput(Callback callback)
@@ -206,7 +209,7 @@ public class ServletContextResponse extends ContextResponse
         if (_outputType == OutputType.WRITER)
             _writer.complete(callback);
         else
-            _httpOutput.complete(callback);
+            getHttpOutput().complete(callback);
     }
 
     public boolean isAllContentWritten(long written)
@@ -214,14 +217,20 @@ public class ServletContextResponse extends ContextResponse
         return (_contentLength >= 0 && written >= _contentLength);
     }
 
-    public boolean isContentComplete(long written)
+    public boolean isContentIncomplete(long written)
     {
-        return (_contentLength < 0 || written >= _contentLength);
+        return (_contentLength >= 0 && written < _contentLength);
     }
 
     public void setContentLength(int len)
     {
         setContentLength((long)len);
+    }
+
+    @Override
+    public HttpFields.Mutable getHeaders()
+    {
+        return _headers;
     }
 
     public void setContentLength(long len)
@@ -234,7 +243,7 @@ public class ServletContextResponse extends ContextResponse
 
         if (len > 0)
         {
-            long written = _httpOutput.getWritten();
+            long written = getHttpOutput().getWritten();
             if (written > len)
                 throw new IllegalArgumentException("setContentLength(" + len + ") when already written " + written);
 
@@ -254,7 +263,7 @@ public class ServletContextResponse extends ContextResponse
         }
         else if (len == 0)
         {
-            long written = _httpOutput.getWritten();
+            long written = getHttpOutput().getWritten();
             if (written > 0)
                 throw new IllegalArgumentException("setContentLength(0) when already written " + written);
             _contentLength = len;
@@ -277,7 +286,7 @@ public class ServletContextResponse extends ContextResponse
         if (_outputType == OutputType.WRITER)
             _writer.close();
         else
-            _httpOutput.close();
+            getHttpOutput().close();
     }
 
     @Override
@@ -285,7 +294,7 @@ public class ServletContextResponse extends ContextResponse
     {
         super.reset();
 
-        _httpServletResponse.resetBuffer();
+        _servletApiResponse.resetBuffer();
         _outputType = OutputType.NONE;
         _contentLength = -1;
         _contentType = null;
@@ -324,7 +333,7 @@ public class ServletContextResponse extends ContextResponse
         HttpSession session = getServletContextRequest().getServletApiRequest().getSession(false);
         if (session != null && session.isNew())
         {
-            SessionHandler sh = _servletChannel.getContextHandler().getSessionHandler();
+            SessionHandler sh = _servletChannel.getServletContextHandler().getSessionHandler();
             if (sh != null)
             {
                 ManagedSession managedSession = SessionHandler.ServletSessionApi.getSession(session);
@@ -346,7 +355,7 @@ public class ServletContextResponse extends ContextResponse
     {
         if (isCommitted())
             throw new IllegalStateException("Committed");
-        _httpOutput.resetBuffer();
+        getHttpOutput().resetBuffer();
         _outputType = OutputType.NONE;
         _contentLength = -1;
         _contentType = null;
@@ -372,6 +381,7 @@ public class ServletContextResponse extends ContextResponse
         return _characterEncoding;
     }
 
+    @Override
     public String getCharacterEncoding(boolean setContentType)
     {
         // First try explicit char encoding.
@@ -400,7 +410,7 @@ public class ServletContextResponse extends ContextResponse
         }
 
         // Try any default char encoding for the context.
-        ServletContext context = _servletChannel.getServletContextRequest().getContext().getServletContext();
+        ServletContext context = _servletChannel.getServletContextRequest().getServletContext().getServletContext();
         if (context != null)
         {
             encoding = context.getResponseCharacterEncoding();
@@ -420,25 +430,13 @@ public class ServletContextResponse extends ContextResponse
     }
 
     /**
-     * Set the Character Encoding and EncodingFrom in the raw, with no manipulation
-     * of the ContentType value, MimeType value, or headers.
-     *
-     * @param encoding the character encoding
-     * @param from where encoding came from
-     */
-    protected void setRawCharacterEncoding(String encoding, EncodingFrom from)
-    {
-        _characterEncoding = encoding;
-        _encodingFrom = from;
-    }
-
-    /**
      * Update the Content-Type, MimeType, and headers from the provided Character Encoding and
      * EncodingFrom.
      * @param encoding the character encoding
      * @param from where encoding came from
      */
-    protected void setCharacterEncoding(String encoding, EncodingFrom from)
+    @Override
+    public void setCharacterEncoding(String encoding, EncodingFrom from)
     {
         if (isWriting() || isCommitted())
             return;
@@ -483,6 +481,7 @@ public class ServletContextResponse extends ContextResponse
         }
     }
 
+    @Override
     public boolean isWriting()
     {
         return _outputType == OutputType.WRITER;
@@ -529,5 +528,149 @@ public class ServletContextResponse extends ContextResponse
          * The character encoding has been explicitly set using {@link HttpServletResponse#setCharacterEncoding(String)}.
          */
         SET_CHARACTER_ENCODING
+    }
+
+    /**
+     * Wrapper of the response HttpFields to allow specific values to be intercepted.
+     */
+    private class HttpFieldsWrapper extends HttpFields.Mutable.Wrapper
+    {
+        public HttpFieldsWrapper(Mutable fields)
+        {
+            super(fields);
+        }
+
+        @Override
+        public HttpField onAddField(HttpField field)
+        {
+            if (field.getHeader() != null)
+            {
+                switch (field.getHeader())
+                {
+                    case CONTENT_LENGTH ->
+                    {
+                        if (!isCommitted())
+                        {
+                            return setContentLength(field);
+                        }
+                    }
+                    case CONTENT_TYPE ->
+                    {
+                        if (!isCommitted())
+                        {
+                            return setContentType(field);
+                        }
+                    }
+                }
+            }
+
+            return super.onAddField(field);
+        }
+
+        @Override
+        public boolean onRemoveField(HttpField field)
+        {
+            if (field.getHeader() != null)
+            {
+                switch (field.getHeader())
+                {
+                    case CONTENT_LENGTH ->
+                    {
+                        if (!isCommitted())
+                            _contentLength = -1;
+                    }
+                    case CONTENT_TYPE ->
+                    {
+                        if (!isCommitted())
+                        {
+                            if (_locale == null)
+                                _characterEncoding = null;
+                            _contentType = null;
+                            _mimeType = null;
+                        }
+                    }
+                }
+            }
+            return true;
+        }
+
+        private HttpField setContentLength(HttpField field)
+        {
+            long len = field.getLongValue();
+            long written = _servletChannel.getHttpOutput().getWritten();
+
+            if (len > 0 && written > len)
+                throw new IllegalArgumentException("setContentLength(" + len + ") when already written " + written);
+            if (len == 0 && written > 0)
+                throw new IllegalArgumentException("setContentLength(0) when already written " + written);
+
+            _contentLength = len;
+
+            if (len > 0 && isAllContentWritten(written))
+            {
+                try
+                {
+                    closeOutput();
+                }
+                catch (IOException e)
+                {
+                    throw new RuntimeIOException(e);
+                }
+            }
+
+            return field;
+        }
+
+        private HttpField setContentType(HttpField field)
+        {
+            _contentType = field.getValue();
+            _mimeType = MimeTypes.CACHE.get(_contentType);
+
+            String charset = MimeTypes.getCharsetFromContentType(_contentType);
+            if (charset == null && _mimeType != null && _mimeType.isCharsetAssumed())
+                charset = _mimeType.getCharsetString();
+
+            if (charset == null)
+            {
+                switch (_encodingFrom)
+                {
+                    case NOT_SET:
+                        break;
+                    case DEFAULT:
+                    case INFERRED:
+                    case SET_CONTENT_TYPE:
+                    case SET_LOCALE:
+                    case SET_CHARACTER_ENCODING:
+                    {
+                        _contentType = _contentType + ";charset=" + _characterEncoding;
+                        _mimeType = MimeTypes.CACHE.get(_contentType);
+                        field = new HttpField(HttpHeader.CONTENT_TYPE, _contentType);
+                        break;
+                    }
+                    default:
+                        throw new IllegalStateException(_encodingFrom.toString());
+                }
+            }
+            else if (isWriting() && !charset.equalsIgnoreCase(_characterEncoding))
+            {
+                // too late to change the character encoding;
+                _contentType = MimeTypes.getContentTypeWithoutCharset(_contentType);
+                if (_characterEncoding != null && (_mimeType == null || !_mimeType.isCharsetAssumed()))
+                    _contentType = _contentType + ";charset=" + _characterEncoding;
+                _mimeType = MimeTypes.CACHE.get(_contentType);
+                field = new HttpField(HttpHeader.CONTENT_TYPE, _contentType);
+            }
+            else
+            {
+                _characterEncoding = charset;
+                _encodingFrom = ServletContextResponse.EncodingFrom.SET_CONTENT_TYPE;
+            }
+
+            if (HttpGenerator.__STRICT || _mimeType == null)
+                return field;
+
+            _contentType = _mimeType.asString();
+            return _mimeType.getContentTypeField();
+        }
     }
 }

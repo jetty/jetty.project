@@ -50,8 +50,9 @@ public class HeaderFilterTest
         _server = new Server();
         _connector = new LocalConnector(_server);
         _server.addConnector(_connector);
-        _context = new ServletContextHandler(_server, "/context");
+        _context = new ServletContextHandler("/context");
         _context.addServlet(NullServlet.class, "/test/*");
+        _server.setHandler(_context);
         _server.start();
     }
 

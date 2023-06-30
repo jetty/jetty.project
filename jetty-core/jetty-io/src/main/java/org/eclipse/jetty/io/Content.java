@@ -53,8 +53,9 @@ public class Content
     /**
      * <p>Copies the given content source to the given content sink, notifying
      * the given callback when the copy is complete (either succeeded or failed).</p>
-     * <p>In case of failures, the content source is {@link Source#fail(Throwable) failed}
-     * too.</p>
+     * <p>In case of {@link Chunk#getFailure() failure chunks},
+     * the content source is {@link Source#fail(Throwable) failed} if the failure
+     * chunk is {@link Chunk#isLast() last}, else the failing is transient and is ignored.</p>
      *
      * @param source the source to copy from
      * @param sink the sink to copy to
@@ -76,6 +77,9 @@ public class Content
      * <p>If the predicate returns {@code false}, it means that the chunk is not
      * handled, its callback will not be completed, and the implementation will
      * handle the chunk and its callback.</p>
+     * <p>In case of {@link Chunk#getFailure() failure chunks} not handled by any {@code chunkHandler},
+     * the content source is {@link Source#fail(Throwable) failed} if the failure
+     * chunk is {@link Chunk#isLast() last}, else the failure is transient and is ignored.</p>
      *
      * @param source the source to copy from
      * @param sink the sink to copy to
@@ -103,10 +107,11 @@ public class Content
      *             return;
      *         }
      *
-     *         // The chunk is an error.
-     *         if (chunk instanceof Chunk.Error error) {
-     *             // Handle the error.
-     *             Throwable cause = error.getCause();
+     *         // The chunk is a failure.
+     *         if (Content.Chunk.isFailure(chunk)) {
+     *             // Handle the failure.
+     *             Throwable cause = chunk.getFailure();
+     *             boolean transient = !chunk.isLast();
      *             // ...
      *             return;
      *         }
@@ -190,7 +195,7 @@ public class Content
          * @return the String obtained from the content
          * @throws IOException if reading the content fails
          */
-        public static String asString(Source source, Charset charset) throws IOException
+        static String asString(Source source, Charset charset) throws IOException
         {
             try
             {
@@ -227,12 +232,12 @@ public class Content
         }
 
         /**
-         * <p>Reads, non-blocking, the given content source, until either an error or EOF,
+         * <p>Reads, non-blocking, the given content source, until a {@link Chunk#isFailure(Chunk) failure} or EOF
          * and discards the content.</p>
          *
          * @param source the source to read from
          * @param callback the callback to notify when the whole content has been read
-         * or an error occurred while reading the content
+         * or a failure occurred while reading the content
          */
         static void consumeAll(Source source, Callback callback)
         {
@@ -240,7 +245,7 @@ public class Content
         }
 
         /**
-         * <p>Reads, blocking if necessary, the given content source, until either an error
+         * <p>Reads, blocking if necessary, the given content source, until a {@link Chunk#isFailure(Chunk) failure}
          * or EOF, and discards the content.</p>
          *
          * @param source the source to read from
@@ -274,13 +279,15 @@ public class Content
          * <p>The returned chunk could be:</p>
          * <ul>
          * <li>{@code null}, to signal that there isn't a chunk of content available</li>
-         * <li>an {@link Chunk.Error error} instance, to signal that there was an error
+         * <li>an {@link Chunk} instance with non null {@link Chunk#getFailure()}, to signal that there was a failure
          * trying to produce a chunk of content, or that the content production has been
          * {@link #fail(Throwable) failed} externally</li>
          * <li>a {@link Chunk} instance, containing the chunk of content.</li>
          * </ul>
-         * <p>Once a read returns an {@link Chunk.Error error} instance, further reads
-         * will continue to return the same error instance.</p>
+         * <p>Once a read returns an {@link Chunk} instance with non-null {@link Chunk#getFailure()}
+         * then if the failure is {@link Chunk#isLast() last} further reads
+         * will continue to return the same failure chunk instance, otherwise further
+         * {@code read()} operations may return different non-failure chunks.</p>
          * <p>Once a read returns a {@link Chunk#isLast() last chunk}, further reads will
          * continue to return a last chunk (although the instance may be different).</p>
          * <p>The content reader code must ultimately arrange for a call to
@@ -296,7 +303,7 @@ public class Content
          * race condition (the thread that reads with the thread that invokes the
          * demand callback).</p>
          *
-         * @return a chunk of content, possibly an error instance, or {@code null}
+         * @return a chunk of content, possibly a failure instance, or {@code null}
          * @see #demand(Runnable)
          * @see Retainable
          */
@@ -327,17 +334,37 @@ public class Content
         void demand(Runnable demandCallback);
 
         /**
-         * <p>Fails this content source, possibly failing and discarding accumulated
-         * content chunks that were not yet read.</p>
+         * <p>Fails this content source with a {@link Chunk#isLast() last} {@link Chunk#getFailure() failure chunk},
+         * failing and discarding accumulated content chunks that were not yet read.</p>
          * <p>The failure may be notified to the content reader at a later time, when
-         * the content reader reads a content chunk, via an {@link Chunk.Error} instance.</p>
+         * the content reader reads a content chunk, via a {@link Chunk} instance
+         * with a non null {@link Chunk#getFailure()}.</p>
          * <p>If {@link #read()} has returned a last chunk, this is a no operation.</p>
          * <p>Typical failure: the content being aborted by user code, or idle timeouts.</p>
          * <p>If this method has already been called, then it is a no operation.</p>
          *
          * @param failure the cause of the failure
+         * @see Chunk#getFailure()
          */
         void fail(Throwable failure);
+
+        /**
+         * <p>Fails this content source with a {@link Chunk#getFailure() failure chunk}
+         * that may or not may be {@link Chunk#isLast() last}.
+         * If {@code last} is {@code true}, then the failure is persistent and a call to this method acts
+         * as {@link #fail(Throwable)}. Otherwise the failure is transient and a
+         * {@link Chunk#getFailure() failure chunk} will be {@link #read() read} in order with content chunks,
+         * and subsequent calls to {@link #read() read} may produce other content.</p>
+         * <p>A {@code Content.Source} or its {@link #read() reader} may treat a transient failure as persistent.</p>
+         *
+         * @param failure A failure.
+         * @param last true if the failure is persistent, false if the failure is transient.
+         * @see Chunk#getFailure()
+         */
+        default void fail(Throwable failure, boolean last)
+        {
+            fail(failure);
+        }
 
         /**
          * <p>Rewinds this content, if possible, so that subsequent reads return
@@ -555,14 +582,52 @@ public class Content
         }
 
         /**
-         * <p>Creates an {@link Error error chunk} with the given failure.</p>
+         * <p>Creates an {@link Chunk#isFailure(Chunk) failure chunk} with the given failure
+         * and {@link Chunk#isLast()} returning true.</p>
          *
          * @param failure the cause of the failure
-         * @return a new Error.Chunk
+         * @return a new {@link Chunk#isFailure(Chunk) failure chunk}
          */
-        static Error from(Throwable failure)
+        static Chunk from(Throwable failure)
         {
-            return new Error(failure);
+            return from(failure, true);
+        }
+
+        /**
+         * <p>Creates an {@link Chunk#isFailure(Chunk) failure chunk} with the given failure
+         * and given {@link Chunk#isLast() last} state.</p>
+         *
+         * @param failure the cause of the failure
+         * @param last true if the failure is terminal, else false for transient failure
+         * @return a new {@link Chunk#isFailure(Chunk) failure chunk}
+         */
+        static Chunk from(Throwable failure, boolean last)
+        {
+            return new Chunk()
+            {
+                public Throwable getFailure()
+                {
+                    return failure;
+                }
+
+                @Override
+                public ByteBuffer getByteBuffer()
+                {
+                    return BufferUtil.EMPTY_BUFFER;
+                }
+
+                @Override
+                public boolean isLast()
+                {
+                    return last;
+                }
+
+                @Override
+                public String toString()
+                {
+                    return String.format("Chunk@%x{c=%s,l=%b}", hashCode(), failure, last);
+                }
+            };
         }
 
         /**
@@ -581,8 +646,12 @@ public class Content
          *     <td>{@code null}</td>
          *   </tr>
          *   <tr>
+         *     <td>{@link Chunk#isFailure(Chunk) Failure} and {@link Chunk#isLast() last}</td>
          *     <td>{@link Error Error}</td>
-         *     <td>{@link Error Error}</td>
+         *   </tr>
+         *   <tr>
+         *     <td>{@link Chunk#isFailure(Chunk) Failure} and {@link Chunk#isLast() not last}</td>
+         *     <td>{@code null}</td>
          *   </tr>
          *   <tr>
          *     <td>{@link #isLast()}</td>
@@ -597,17 +666,56 @@ public class Content
          */
         static Chunk next(Chunk chunk)
         {
-            if (chunk == null || chunk instanceof Error)
-                return chunk;
+            if (chunk == null)
+                return null;
+            if (Content.Chunk.isFailure(chunk))
+                return chunk.isLast() ? chunk : null;
             if (chunk.isLast())
                 return EOF;
             return null;
         }
 
         /**
+         * @param chunk The chunk to test for an {@link Chunk#getFailure() failure}.
+         * @return True if the chunk is non-null and {@link Chunk#getFailure() chunk.getError()} returns non-null.
+         */
+        static boolean isFailure(Chunk chunk)
+        {
+            return chunk != null && chunk.getFailure() != null;
+        }
+
+        /**
+         * @param chunk The chunk to test for an {@link Chunk#getFailure() failure}
+         * @param last The {@link Chunk#isLast() last} status to test for.
+         * @return True if the chunk is non-null and {@link Chunk#getFailure()} returns non-null
+         *         and {@link Chunk#isLast()} matches the passed status.
+         */
+        static boolean isFailure(Chunk chunk, boolean last)
+        {
+            return chunk != null && chunk.getFailure() != null && chunk.isLast() == last;
+        }
+
+        /**
          * @return the ByteBuffer of this Chunk
          */
         ByteBuffer getByteBuffer();
+
+        /**
+         * Get a failure (which may be from a {@link Source#fail(Throwable) failure} or
+         * a {@link Source#fail(Throwable, boolean) warning}), if any, associated with the chunk.
+         * <ul>
+         * <li>A {@code chunk} must not have a failure and a {@link #getByteBuffer()} with content.</li>
+         * <li>A {@code chunk} with a failure may or may not be {@link #isLast() last}.</li>
+         * <li>A {@code chunk} with a failure must not be {@link #canRetain() retainable}.</li>
+         * </ul>
+         * @return A {@link Throwable} indicating the failure or null if there is no failure or warning.
+         * @see Source#fail(Throwable)
+         * @see Source#fail(Throwable, boolean)
+         */
+        default Throwable getFailure()
+        {
+            return null;
+        }
 
         /**
          * @return whether this is the last Chunk
@@ -672,46 +780,6 @@ public class Content
             if (!canRetain())
                 return this;
             return asChunk(getByteBuffer().asReadOnlyBuffer(), isLast(), this);
-        }
-
-        /**
-         * <p>A chunk that wraps a failure.</p>
-         * <p>Error Chunks are always last and have no bytes to read,
-         * as such they are <em>terminal</em> Chunks.</p>
-         *
-         * @see #from(Throwable)
-         */
-        final class Error implements Chunk
-        {
-            private final Throwable cause;
-
-            private Error(Throwable cause)
-            {
-                this.cause = cause;
-            }
-
-            public Throwable getCause()
-            {
-                return cause;
-            }
-
-            @Override
-            public ByteBuffer getByteBuffer()
-            {
-                return BufferUtil.EMPTY_BUFFER;
-            }
-
-            @Override
-            public boolean isLast()
-            {
-                return true;
-            }
-
-            @Override
-            public String toString()
-            {
-                return String.format("%s@%x{c=%s}", getClass().getSimpleName(), hashCode(), cause);
-            }
         }
 
         /**

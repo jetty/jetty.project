@@ -764,7 +764,7 @@ public class QuickStartGeneratorConfiguration extends AbstractConfiguration
         }
 
         //multipart-config
-        MultipartConfigElement multipartConfig = ((ServletHolder.Registration)holder.getRegistration()).getMultipartConfig();
+        MultipartConfigElement multipartConfig = holder.getRegistration().getMultipartConfigElement();
         if (multipartConfig != null)
         {
             out.openTag("multipart-config", origin(md, holder.getName() + ".servlet.multipart-config"));

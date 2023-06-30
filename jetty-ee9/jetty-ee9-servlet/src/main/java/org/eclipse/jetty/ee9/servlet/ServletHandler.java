@@ -468,9 +468,7 @@ public class ServletHandler extends ScopedHandler
             ServletPathMapping servletPathMapping = mappedServlet.getServletPathMapping(target, matched.getMatchedPath());
 
             if (servletPathMapping != null)
-            {
                 baseRequest.setServletPathMapping(servletPathMapping);
-            }
         }
 
         if (LOG.isDebugEnabled())

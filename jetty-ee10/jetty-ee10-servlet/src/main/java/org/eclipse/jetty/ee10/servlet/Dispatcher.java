@@ -104,7 +104,7 @@ public class Dispatcher implements RequestDispatcher
         HttpServletResponse httpResponse = (response instanceof HttpServletResponse) ? (HttpServletResponse)response : new ServletResponseHttpWrapper(response);
 
         ServletContextRequest servletContextRequest = ServletContextRequest.getServletContextRequest(request);
-        servletContextRequest.getResponse().resetForForward();
+        servletContextRequest.getServletContextResponse().resetForForward();
         _mappedServlet.handle(_servletHandler, _decodedPathInContext, new ForwardRequest(httpRequest), httpResponse);
 
         // If we are not async and not closed already, then close via the possibly wrapped response.
@@ -309,6 +309,15 @@ public class Dispatcher implements RequestDispatcher
                 {
                     return null;
                 }
+                case ServletContextRequest.MULTIPART_CONFIG_ELEMENT ->
+                {
+                    // If we already have future parts, return the configuration of the wrapped request.
+                    if (super.getAttribute(ServletMultiPartFormData.class.getName()) != null)
+                        return super.getAttribute(name);
+                    // otherwise, return the configuration of this mapping
+                    return _mappedServlet.getServletHolder().getMultipartConfigElement();
+                }
+
                 default ->
                 {
                     return super.getAttribute(name);

@@ -13,7 +13,6 @@
 
 package org.eclipse.jetty.util;
 
-import java.io.Serializable;
 import java.lang.reflect.Array;
 import java.util.ArrayList;
 import java.util.Arrays;
@@ -23,7 +22,6 @@ import java.util.List;
  * Utility methods for Array manipulation
  */
 public class ArrayUtil
-    implements Cloneable, Serializable
 {
 
     public static <T> T[] removeFromArray(T[] array, Object item)
@@ -34,7 +32,7 @@ public class ArrayUtil
         {
             if (item.equals(array[i]))
             {
-                Class<?> c = array == null ? item.getClass() : array.getClass().getComponentType();
+                Class<?> c = array.getClass().getComponentType();
                 @SuppressWarnings("unchecked")
                 T[] na = (T[])Array.newInstance(c, Array.getLength(array) - 1);
                 if (i > 0)
@@ -154,6 +152,11 @@ public class ArrayUtil
             }
         }
         return array;
+    }
+
+    private ArrayUtil()
+    {
+        // prevents instantiation
     }
 }
 

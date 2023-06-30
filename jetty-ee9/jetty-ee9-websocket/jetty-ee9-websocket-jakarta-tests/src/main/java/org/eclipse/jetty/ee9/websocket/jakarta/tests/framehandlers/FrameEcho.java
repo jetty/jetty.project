@@ -32,7 +32,7 @@ public class FrameEcho implements FrameHandler
     {
         this.coreSession = coreSession;
         callback.succeeded();
-        coreSession.demand(1);
+        coreSession.demand();
     }
 
     @Override
@@ -41,7 +41,7 @@ public class FrameEcho implements FrameHandler
         Runnable succeedAndDemand = () ->
         {
             callback.succeeded();
-            coreSession.demand(1);
+            coreSession.demand();
         };
 
         if (frame.isControlFrame())

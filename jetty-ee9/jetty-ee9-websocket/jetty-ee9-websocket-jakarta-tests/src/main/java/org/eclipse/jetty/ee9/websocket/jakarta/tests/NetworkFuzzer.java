@@ -229,7 +229,7 @@ public class NetworkFuzzer extends Fuzzer.Adapter implements Fuzzer, AutoCloseab
             this.coreSession = coreSession;
             this.openLatch.countDown();
             callback.succeeded();
-            coreSession.demand(1);
+            coreSession.demand();
         }
 
         @Override
@@ -237,7 +237,7 @@ public class NetworkFuzzer extends Fuzzer.Adapter implements Fuzzer, AutoCloseab
         {
             receivedFrames.offer(Frame.copy(frame));
             callback.succeeded();
-            coreSession.demand(1);
+            coreSession.demand();
         }
 
         @Override

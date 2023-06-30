@@ -175,7 +175,7 @@ public class ResourceHandlerByteRangesTest
             String contentType = response.get(HttpHeader.CONTENT_TYPE);
             assertThat(contentType, startsWith(responseContentType));
             String boundary = MultiPart.extractBoundary(contentType);
-            MultiPartByteRanges.Parts parts = new MultiPartByteRanges(boundary)
+            MultiPartByteRanges.Parts parts = new MultiPartByteRanges.Parser(boundary)
                 .parse(new ByteBufferContentSource(response.getContentByteBuffer()))
                 .join();
             assertEquals(2, parts.size());

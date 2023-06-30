@@ -36,6 +36,16 @@ public class IdleTimeoutHandler extends Handler.Wrapper
     private long _idleTimeoutMs = 1000;
     private boolean _applyToAsync = false;
 
+    public IdleTimeoutHandler()
+    {
+        this(null);
+    }
+
+    public IdleTimeoutHandler(Handler handler)
+    {
+        super(handler);
+    }
+
     public boolean isApplyToAsync()
     {
         return _applyToAsync;

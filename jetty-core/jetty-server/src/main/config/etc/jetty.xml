@@ -24,24 +24,15 @@
 <!-- configuration that may be set here.                             -->
 <!-- =============================================================== -->
 <Configure id="Server" class="org.eclipse.jetty.server.Server">
-    <Arg name="threadPool"><Ref refid="threadPool"/></Arg>
-
-    <Call name="addBean">
-      <Arg><Ref refid="byteBufferPool"/></Arg>
-    </Call>
-
-    <!-- =========================================================== -->
-    <!-- Add shared Scheduler instance                               -->
-    <!-- =========================================================== -->
-    <Call name="addBean">
-      <Arg>
-        <New class="org.eclipse.jetty.util.thread.ScheduledExecutorScheduler">
-          <Arg name="name"><Property name="jetty.scheduler.name"/></Arg>
-          <Arg name="daemon" type="boolean"><Property name="jetty.scheduler.daemon" default="false" /></Arg>
-          <Arg name="threads" type="int"><Property name="jetty.scheduler.threads" default="-1" /></Arg>
-        </New>
-      </Arg>
-    </Call>
+  <Arg name="threadPool"><Ref refid="threadPool"/></Arg>
+  <Arg>
+    <New class="org.eclipse.jetty.util.thread.ScheduledExecutorScheduler">
+      <Arg name="name"><Property name="jetty.scheduler.name"/></Arg>
+      <Arg name="daemon" type="boolean"><Property name="jetty.scheduler.daemon" default="false" /></Arg>
+      <Arg name="threads" type="int"><Property name="jetty.scheduler.threads" default="-1" /></Arg>
+    </New>
+  </Arg>
+  <Arg><Ref refid="byteBufferPool"/></Arg>
 
     <!-- =========================================================== -->
     <!-- Http Configuration.                                         -->

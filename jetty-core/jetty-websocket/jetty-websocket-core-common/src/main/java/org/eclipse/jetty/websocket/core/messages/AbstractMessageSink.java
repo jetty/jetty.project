@@ -87,12 +87,12 @@ public abstract class AbstractMessageSink implements MessageSink
 
     /**
      * <p>If {@link #isAutoDemand()} then demands for one more WebSocket frame
-     * via {@link CoreSession#demand(long)}; otherwise it is a no-operation,
+     * via {@link CoreSession#demand()}; otherwise it is a no-operation,
      * because the demand is explicitly managed by the application function.</p>
      */
     protected void autoDemand()
     {
         if (isAutoDemand())
-            getCoreSession().demand(1);
+            getCoreSession().demand();
     }
 }

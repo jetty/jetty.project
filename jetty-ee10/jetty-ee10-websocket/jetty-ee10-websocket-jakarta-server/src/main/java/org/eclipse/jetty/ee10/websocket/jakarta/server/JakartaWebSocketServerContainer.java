@@ -303,7 +303,7 @@ public class JakartaWebSocketServerContainer extends JakartaWebSocketClientConta
         Handshaker handshaker = webSocketMappings.getHandshaker();
 
         ServletContextRequest servletContextRequest = ServletContextRequest.getServletContextRequest(request);
-        ServletContextResponse servletContextResponse = servletContextRequest.getResponse();
+        ServletContextResponse servletContextResponse = servletContextRequest.getServletContextResponse();
 
         FutureCallback callback = new FutureCallback();
         try

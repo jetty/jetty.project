@@ -1254,6 +1254,11 @@ public class StringUtil
             .collect(StringBuilder::new, (b, c) -> b.append((char)c), StringBuilder::append)
             .toString();
     }
+
+    private StringUtil()
+    {
+        // prevent instantiation
+    }
 }
 
 

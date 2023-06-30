@@ -159,11 +159,22 @@ public class ContextHandler extends Handler.Wrapper implements Attributes, Alias
 
     public ContextHandler()
     {
-        this(null);
+        this(null, null);
+    }
+
+    public ContextHandler(Handler handler)
+    {
+        this(handler, null);
     }
 
     public ContextHandler(String contextPath)
     {
+        this(null, contextPath);
+    }
+
+    public ContextHandler(Handler handler, String contextPath)
+    {
+        super(handler);
         _context = newContext();
         if (contextPath != null)
             setContextPath(contextPath);
@@ -178,14 +189,6 @@ public class ContextHandler extends Handler.Wrapper implements Attributes, Alias
             classLoader = this.getClass().getClassLoader();
         if (classLoader != Server.class.getClassLoader())
             _classLoader = classLoader;
-    }
-
-    @Deprecated
-    public ContextHandler(Handler.Container parent, String contextPath)
-    {
-        this(contextPath);
-        Container.setAsParent(parent, this);
-
     }
 
     @Override

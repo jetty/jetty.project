@@ -29,6 +29,7 @@ import jakarta.servlet.GenericServlet;
 import jakarta.servlet.ServletContext;
 import jakarta.servlet.ServletRequest;
 import jakarta.servlet.ServletResponse;
+import org.eclipse.jetty.ee9.nested.ContextHandler;
 import org.eclipse.jetty.ee9.servlet.ErrorPageErrorHandler;
 import org.eclipse.jetty.ee9.servlet.ServletContextHandler;
 import org.eclipse.jetty.http.HttpStatus;
@@ -122,6 +123,67 @@ public class WebAppContextTest
         WebAppContext wac = new WebAppContext();
         wac.setResourceBase(MavenTestingUtils.getTargetTestingDir().getAbsolutePath());
         server.setHandler(wac);
+
+        //test that an empty default-context-path defaults to root
+        wac.setDescriptor(webXmlEmptyPath.getAbsolutePath());
+        server.start();
+        assertEquals("/", wac.getContextPath());
+
+        server.stop();
+
+        //test web-default.xml value is used
+        wac.setDescriptor(null);
+        wac.setDefaultsDescriptor(webDefaultXml.getAbsolutePath());
+        server.start();
+        assertEquals("/one", wac.getContextPath());
+
+        server.stop();
+
+        //test web.xml value is used
+        wac.setDescriptor(webXml.getAbsolutePath());
+        server.start();
+        assertEquals("/two", wac.getContextPath());
+
+        server.stop();
+
+        //test override-web.xml value is used
+        wac.setOverrideDescriptor(overrideWebXml.getAbsolutePath());
+        server.start();
+        assertEquals("/three", wac.getContextPath());
+
+        server.stop();
+
+        //test that explicitly set context path is used instead
+        wac.setContextPath("/foo");
+        server.start();
+        assertEquals("/foo", wac.getContextPath());
+    }
+
+    @Test
+    public void nestedContextHandlerTest() throws Exception
+    {
+        Server server = newServer();
+        File webXml = MavenTestingUtils.getTargetFile("test-classes/web-with-default-context-path.xml");
+        File webXmlEmptyPath = MavenTestingUtils.getTargetFile("test-classes/web-with-empty-default-context-path.xml");
+        File webDefaultXml = MavenTestingUtils.getTargetFile("test-classes/web-default-with-default-context-path.xml");
+        File overrideWebXml = MavenTestingUtils.getTargetFile("test-classes/override-web-with-default-context-path.xml");
+        assertNotNull(webXml);
+        assertNotNull(webDefaultXml);
+        assertNotNull(overrideWebXml);
+        assertNotNull(webXmlEmptyPath);
+
+        WebAppContext wac = new WebAppContext();
+        wac.setResourceBase(MavenTestingUtils.getTargetTestingDir().getAbsolutePath());
+
+        // Put WebAppContext inside another nested ContextHandler.
+        ContextHandler contextHandler = new ContextHandler("/", wac);
+        server.setHandler(contextHandler);
+
+        // All components should be started even the webapp context CoreContextHandler.
+        assertNotNull(contextHandler.getServer());
+        assertNotNull(contextHandler.getCoreContextHandler().getServer());
+        assertNotNull(wac.getServer());
+        assertNotNull(wac.getCoreContextHandler().getServer());
 
         //test that an empty default-context-path defaults to root
         wac.setDescriptor(webXmlEmptyPath.getAbsolutePath());

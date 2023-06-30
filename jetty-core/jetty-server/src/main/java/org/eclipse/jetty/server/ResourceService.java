@@ -16,6 +16,7 @@ package org.eclipse.jetty.server;
 import java.io.IOException;
 import java.nio.ByteBuffer;
 import java.nio.channels.ReadableByteChannel;
+import java.nio.charset.Charset;
 import java.nio.charset.StandardCharsets;
 import java.util.ArrayList;
 import java.util.Collection;
@@ -440,11 +441,12 @@ public class ResourceService
 
     protected void sendWelcome(HttpContent content, String pathInContext, boolean endsWithSlash, Request request, Response response, Callback callback) throws Exception
     {
+        if (!Objects.requireNonNull(content).getResource().isDirectory())
+            throw new IllegalArgumentException("content must be a directory");
+
         if (LOG.isDebugEnabled())
-        {
             LOG.debug("sendWelcome(content={}, pathInContext={}, endsWithSlash={}, req={}, resp={}, callback={})",
                 content, pathInContext, endsWithSlash, request, response, callback);
-        }
 
         // Redirect to directory
         if (!endsWithSlash)
@@ -460,7 +462,7 @@ public class ResourceService
         }
 
         // process optional Welcome behaviors
-        if (welcome(request, response, callback))
+        if (welcome(content, request, response, callback))
             return;
 
         if (!passConditionalHeaders(request, response, content, callback))
@@ -499,9 +501,9 @@ public class ResourceService
     {
     }
 
-    private boolean welcome(Request request, Response response, Callback callback) throws Exception
+    private boolean welcome(HttpContent content, Request request, Response response, Callback callback) throws Exception
     {
-        WelcomeAction welcomeAction = processWelcome(request);
+        WelcomeAction welcomeAction = processWelcome(content, request);
         if (LOG.isDebugEnabled())
             LOG.debug("welcome(req={}, rsp={}, cbk={}) welcomeAction={}", request, response, callback, welcomeAction);
 
@@ -581,18 +583,15 @@ public class ResourceService
         Response.writeError(request, response, callback, HttpStatus.INTERNAL_SERVER_ERROR_500);
     }
 
-    private WelcomeAction processWelcome(Request request) throws IOException
+    private WelcomeAction processWelcome(HttpContent content, Request request) throws IOException
     {
-        String welcomeTarget = getWelcomeFactory().getWelcomeTarget(request);
+        String welcomeTarget = getWelcomeFactory().getWelcomeTarget(content, request);
         if (welcomeTarget == null)
             return null;
 
         String contextPath = request.getContext().getContextPath();
-
-        if (LOG.isDebugEnabled())
-            LOG.debug("welcome={}", welcomeTarget);
-
         WelcomeMode welcomeMode = getWelcomeMode();
+
         welcomeTarget = switch (welcomeMode)
         {
             case REDIRECT, REHANDLE -> HttpURI.build(request.getHttpURI())
@@ -600,6 +599,9 @@ public class ResourceService
                 .getPathQuery();
             case SERVE -> welcomeTarget;
         };
+
+        if (LOG.isDebugEnabled())
+            LOG.debug("welcome {} {}", welcomeMode, welcomeTarget);
 
         return new WelcomeAction(welcomeTarget, welcomeMode);
     }
@@ -625,8 +627,10 @@ public class ResourceService
             return;
         }
 
-        byte[] data = listing.getBytes(StandardCharsets.UTF_8);
-        response.getHeaders().put(HttpHeader.CONTENT_TYPE, "text/html;charset=utf-8");
+        String characterEncoding = httpContent.getCharacterEncoding();
+        Charset charset = characterEncoding == null ? StandardCharsets.UTF_8 : Charset.forName(characterEncoding);
+        byte[] data = listing.getBytes(charset);
+        response.getHeaders().put(HttpHeader.CONTENT_TYPE, "text/html;charset=" + charset.name());
         response.getHeaders().put(HttpHeader.CONTENT_LENGTH, data.length);
         response.write(true, ByteBuffer.wrap(data), callback);
     }
@@ -892,7 +896,7 @@ public class ResourceService
          * @return The URI path of the matching welcome target in context or null
          * if no welcome target was found
          */
-        String getWelcomeTarget(Request request) throws IOException;
+        String getWelcomeTarget(HttpContent content, Request request) throws IOException;
     }
 
     private static class ContentWriterIteratingCallback extends IteratingCallback

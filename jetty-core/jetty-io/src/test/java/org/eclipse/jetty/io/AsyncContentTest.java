@@ -33,7 +33,6 @@ import static org.hamcrest.Matchers.is;
 import static org.hamcrest.Matchers.nullValue;
 import static org.hamcrest.Matchers.sameInstance;
 import static org.junit.jupiter.api.Assertions.assertFalse;
-import static org.junit.jupiter.api.Assertions.assertInstanceOf;
 import static org.junit.jupiter.api.Assertions.assertNotNull;
 import static org.junit.jupiter.api.Assertions.assertSame;
 import static org.junit.jupiter.api.Assertions.assertTrue;
@@ -101,7 +100,7 @@ public class AsyncContentTest
 
             // We must read the error.
             chunk = async.read();
-            assertInstanceOf(Content.Chunk.Error.class, chunk);
+            assertTrue(Content.Chunk.isFailure(chunk, true));
 
             // Offering more should fail.
             CountDownLatch failLatch = new CountDownLatch(1);
@@ -209,14 +208,14 @@ public class AsyncContentTest
             assertThat(chunk.release(), is(true));
             callback1.assertNoFailureWithSuccesses(1);
 
-            Exception error1 = new Exception("test1");
-            async.fail(error1);
+            Exception failure1 = new Exception("test1");
+            async.fail(failure1);
 
             chunk = async.read();
-            assertSame(error1, ((Content.Chunk.Error)chunk).getCause());
+            assertSame(failure1, chunk.getFailure());
 
-            callback2.assertSingleFailureSameInstanceNoSuccess(error1);
-            callback3.assertSingleFailureSameInstanceNoSuccess(error1);
+            callback2.assertSingleFailureSameInstanceNoSuccess(failure1);
+            callback3.assertSingleFailureSameInstanceNoSuccess(failure1);
         }
     }
 

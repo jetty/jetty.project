@@ -119,9 +119,8 @@ public class MultiPartByteRangesTest
             assertNotNull(contentType);
 
             String boundary = MultiPart.extractBoundary(contentType);
-            MultiPartByteRanges byteRanges = new MultiPartByteRanges(boundary);
-            byteRanges.parse(new ByteBufferContentSource(ByteBuffer.wrap(response.getContentBytes())));
-            MultiPartByteRanges.Parts parts = byteRanges.join();
+            MultiPartByteRanges.Parser byteRanges = new MultiPartByteRanges.Parser(boundary);
+            MultiPartByteRanges.Parts parts = byteRanges.parse(new ByteBufferContentSource(ByteBuffer.wrap(response.getContentBytes()))).join();
 
             assertEquals(3, parts.size());
             MultiPart.Part part1 = parts.get(0);

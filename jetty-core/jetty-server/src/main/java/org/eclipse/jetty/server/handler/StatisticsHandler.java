@@ -241,17 +241,17 @@ public class StatisticsHandler extends EventsHandler
          */
         public MinimumDataRateHandler(long minimumReadRate, long minimumWriteRate)
         {
-            _minimumReadRate = minimumReadRate;
-            _minimumWriteRate = minimumWriteRate;
+            this(null, minimumReadRate, minimumWriteRate);
         }
 
         /**
          * Creates a {@code MinimumDataRateHandler} with the specified read and write rates.
+         *
+         * @param handler the handler to wrap.
          * @param minimumReadRate the minimum number of bytes to be read per second, or 0 for not checking the read rate.
          * @param minimumWriteRate the minimum number of bytes to be written per second, or 0 for not checking the write rate.
-         * @param handler the handler to wrap.
          */
-        public MinimumDataRateHandler(long minimumReadRate, long minimumWriteRate, Handler handler)
+        public MinimumDataRateHandler(Handler handler, long minimumReadRate, long minimumWriteRate)
         {
             super(handler);
             _minimumReadRate = minimumReadRate;
@@ -268,7 +268,7 @@ public class StatisticsHandler extends EventsHandler
 
         protected class MinimumDataRateRequest extends Request.Wrapper
         {
-            private Content.Chunk.Error _errorContent;
+            private Content.Chunk _errorContent;
 
             private MinimumDataRateRequest(Request request)
             {

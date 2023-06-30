@@ -51,7 +51,8 @@ public class EventSourceServletTest
         connector = (NetworkConnector)server.getConnectors()[0];
 
         String contextPath = "/test";
-        context = new ServletContextHandler(server, contextPath, ServletContextHandler.SESSIONS);
+        context = new ServletContextHandler(contextPath, ServletContextHandler.SESSIONS);
+        server.setHandler(context);
         server.start();
     }
 

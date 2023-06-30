@@ -43,11 +43,22 @@ public class RewriteHandler extends Handler.Wrapper
 
     public RewriteHandler()
     {
-        this(new RuleContainer());
+        this(null, new RuleContainer());
     }
 
     public RewriteHandler(RuleContainer rules)
     {
+        this(null, rules);
+    }
+
+    public RewriteHandler(Handler handler)
+    {
+        this(handler, new RuleContainer());
+    }
+
+    public RewriteHandler(Handler handler, RuleContainer rules)
+    {
+        super(handler);
         _rules = rules;
         addBean(_rules);
     }

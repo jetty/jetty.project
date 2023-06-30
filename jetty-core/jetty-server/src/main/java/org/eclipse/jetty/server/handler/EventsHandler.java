@@ -55,6 +55,7 @@ public abstract class EventsHandler extends Handler.Wrapper
     
     public EventsHandler()
     {
+        this(null);
     }
 
     public EventsHandler(Handler handler)
@@ -160,7 +161,7 @@ public abstract class EventsHandler extends Handler.Wrapper
     {
         try
         {
-            onResponseWrite(request, last, content.asReadOnlyBuffer());
+            onResponseWrite(request, last, content == null ? null : content.asReadOnlyBuffer());
         }
         catch (Throwable x)
         {
@@ -229,7 +230,7 @@ public abstract class EventsHandler extends Handler.Wrapper
      * {@link Request#read()}).
      *
      * @param request the request object. The {@code read()}, {@code demand(Runnable)} and {@code fail(Throwable)} methods must not be called by the listener.
-     * @param chunk a potentially null request content chunk, including {@link org.eclipse.jetty.io.Content.Chunk.Error}
+     * @param chunk a potentially null request content chunk, including {@link org.eclipse.jetty.io.Content.Chunk#isFailure(Content.Chunk) error}
      *              and {@link org.eclipse.jetty.http.Trailers} chunks.
      *              If a reference to the chunk (or its {@link ByteBuffer}) is kept,
      *              then {@link Content.Chunk#retain()} must be called.

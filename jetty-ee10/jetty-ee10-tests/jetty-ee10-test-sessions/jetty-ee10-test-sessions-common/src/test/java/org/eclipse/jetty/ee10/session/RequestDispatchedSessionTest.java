@@ -56,7 +56,8 @@ public class RequestDispatchedSessionTest
         ContextHandlerCollection handlers = new ContextHandlerCollection();
 
         // Default session behavior
-        ServletContextHandler contextHandler = new ServletContextHandler(handlers, "/", ServletContextHandler.SESSIONS);
+        ServletContextHandler contextHandler = new ServletContextHandler("/", ServletContextHandler.SESSIONS);
+        handlers.addHandler(contextHandler);
         contextHandler.addServlet(LoginServlet.class, "/login");
         contextHandler.addServlet(ShowUserServlet.class, "/user");
         contextHandler.addServlet(DefaultServlet.class, "/");

@@ -31,7 +31,6 @@ import java.util.Map;
 import java.util.Set;
 import java.util.stream.Collectors;
 
-import jakarta.servlet.ServletContext;
 import jakarta.servlet.ServletRegistration.Dynamic;
 import jakarta.servlet.ServletSecurityElement;
 import jakarta.servlet.http.HttpSessionActivationListener;
@@ -50,7 +49,6 @@ import org.eclipse.jetty.ee10.servlet.security.ConstraintSecurityHandler;
 import org.eclipse.jetty.security.SecurityHandler;
 import org.eclipse.jetty.server.Connector;
 import org.eclipse.jetty.server.Deployable;
-import org.eclipse.jetty.server.Handler;
 import org.eclipse.jetty.server.Server;
 import org.eclipse.jetty.util.ExceptionUtil;
 import org.eclipse.jetty.util.IO;
@@ -151,7 +149,7 @@ public class WebAppContext extends ServletContextHandler implements WebAppClassL
 
     public WebAppContext()
     {
-        this(null, null, null, null, null, new ErrorPageErrorHandler(), SESSIONS | SECURITY);
+        this(null, null, null, null, new ErrorPageErrorHandler(), SESSIONS | SECURITY);
     }
 
     /**
@@ -160,7 +158,7 @@ public class WebAppContext extends ServletContextHandler implements WebAppClassL
      */
     public WebAppContext(String webApp, String contextPath)
     {
-        this(null, contextPath, null, null, null, new ErrorPageErrorHandler(), SESSIONS | SECURITY);
+        this(contextPath, null, null, null, new ErrorPageErrorHandler(), SESSIONS | SECURITY);
         setWar(webApp);
     }
 
@@ -170,29 +168,7 @@ public class WebAppContext extends ServletContextHandler implements WebAppClassL
      */
     public WebAppContext(Resource webApp, String contextPath)
     {
-        this(null, contextPath, null, null, null, new ErrorPageErrorHandler(), SESSIONS | SECURITY);
-        setWarResource(webApp);
-    }
-
-    /**
-     * @param parent The parent container.
-     * @param contextPath The context path
-     * @param webApp The URL or filename of the webapp directory or war file.
-     */
-    public WebAppContext(Container parent, String webApp, String contextPath)
-    {
-        this(parent, contextPath, null, null, null, new ErrorPageErrorHandler(), SESSIONS | SECURITY);
-        setWar(webApp);
-    }
-
-    /**
-     * @param parent The parent container.
-     * @param contextPath The context path
-     * @param webApp The webapp directory or war file.
-     */
-    public WebAppContext(Container parent, Resource webApp, String contextPath)
-    {
-        this(parent, contextPath, null, null, null, new ErrorPageErrorHandler(), SESSIONS | SECURITY);
+        this(contextPath, null, null, null, new ErrorPageErrorHandler(), SESSIONS | SECURITY);
         setWarResource(webApp);
     }
 
@@ -204,11 +180,10 @@ public class WebAppContext extends ServletContextHandler implements WebAppClassL
      */
     public WebAppContext(SessionHandler sessionHandler, SecurityHandler securityHandler, ServletHandler servletHandler, ErrorHandler errorHandler)
     {
-        this(null, null, sessionHandler, securityHandler, servletHandler, errorHandler, 0);
+        this(null, sessionHandler, securityHandler, servletHandler, errorHandler, 0);
     }
 
     /**
-     * @param parent the parent container
      * @param contextPath the context path
      * @param sessionHandler SessionHandler for this web app
      * @param securityHandler SecurityHandler for this web app
@@ -216,14 +191,13 @@ public class WebAppContext extends ServletContextHandler implements WebAppClassL
      * @param errorHandler ErrorHandler for this web app
      * @param options the options ({@link ServletContextHandler#SESSIONS} and/or {@link ServletContextHandler#SECURITY})
      */
-    public WebAppContext(Container parent, String contextPath, SessionHandler sessionHandler, SecurityHandler securityHandler, ServletHandler servletHandler, ErrorHandler errorHandler, int options)
+    public WebAppContext(String contextPath, SessionHandler sessionHandler, SecurityHandler securityHandler, ServletHandler servletHandler, ErrorHandler errorHandler, int options)
     {
         // always pass parent as null and then set below, so that any resulting setServer call
         // is done after this instance is constructed.
-        super(null, contextPath, sessionHandler, securityHandler, servletHandler, errorHandler, options);
+        super(contextPath, sessionHandler, securityHandler, servletHandler, errorHandler, options);
         setErrorHandler(errorHandler != null ? errorHandler : new ErrorPageErrorHandler());
         setProtectedTargets(__dftProtectedTargets);
-        Handler.Container.setAsParent(parent, this);
     }
 
     @Override
@@ -1343,11 +1317,10 @@ public class WebAppContext extends ServletContextHandler implements WebAppClassL
     
     public class ServletApiContext extends ServletContextHandler.ServletContextApi
     {
-        
         @Override
-        public ServletContext getContext(String uripath)
+        public jakarta.servlet.ServletContext getContext(String uripath)
         {
-            ServletContext servletContext = super.getContext(uripath);
+            jakarta.servlet.ServletContext servletContext = super.getContext(uripath);
 
             if (servletContext != null && _contextWhiteList != null)
             {

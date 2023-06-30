@@ -976,8 +976,7 @@ public class DistributionTests extends AbstractJettyHomeTest
             "\n" +
             "[ini]\n" +
             "" + pathProperty + "=modbased\n";
-        String moduleName = "ssl-ini";
-        Files.writeString(jettyBaseModules.resolve(moduleName + ".mod"), module, StandardOpenOption.CREATE);
+        Files.writeString(jettyBaseModules.resolve("ssl-ini.mod"), module, StandardOpenOption.CREATE);
 
         try (JettyHomeTester.Run run1 = distribution.start("--add-module=https,test-keystore,ssl-ini"))
         {
@@ -985,7 +984,8 @@ public class DistributionTests extends AbstractJettyHomeTest
             assertEquals(0, run1.getExitValue());
 
             // Override the property on the command line with the correct password.
-            try (JettyHomeTester.Run run2 = distribution.start(pathProperty + "=cmdline"))
+            int port = distribution.freePort();
+            try (JettyHomeTester.Run run2 = distribution.start(pathProperty + "=cmdline", "jetty.ssl.port=" + port))
             {
                 assertTrue(run2.awaitConsoleLogsFor("Started oejs.Server@", START_TIMEOUT, TimeUnit.SECONDS));
                 assertThat("${jetty.base}/cmdline", jettyBase.resolve("cmdline"), PathMatchers.isRegularFile());

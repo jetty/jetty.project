@@ -54,6 +54,7 @@ public class HttpFieldsTest
         return Stream.of(
             HttpFields.build(),
             HttpFields.build(0),
+            new HttpFields.Mutable.Wrapper(HttpFields.build()),
             new HttpFields.Mutable()
             {
                 private final HttpFields.Mutable fields = HttpFields.build();

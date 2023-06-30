@@ -19,6 +19,7 @@ import java.io.InputStream;
 import java.net.MalformedURLException;
 import java.net.URI;
 import java.net.URL;
+import java.nio.charset.Charset;
 import java.nio.file.Path;
 import java.util.ArrayList;
 import java.util.Arrays;
@@ -35,6 +36,7 @@ import java.util.Objects;
 import java.util.Set;
 import java.util.concurrent.CopyOnWriteArrayList;
 import java.util.concurrent.TimeUnit;
+import java.util.function.Supplier;
 
 import jakarta.servlet.DispatcherType;
 import jakarta.servlet.Filter;
@@ -42,7 +44,6 @@ import jakarta.servlet.FilterRegistration;
 import jakarta.servlet.RequestDispatcher;
 import jakarta.servlet.Servlet;
 import jakarta.servlet.ServletContainerInitializer;
-import jakarta.servlet.ServletContext;
 import jakarta.servlet.ServletContextAttributeEvent;
 import jakarta.servlet.ServletContextAttributeListener;
 import jakarta.servlet.ServletContextEvent;
@@ -66,9 +67,12 @@ import jakarta.servlet.http.HttpSessionAttributeListener;
 import jakarta.servlet.http.HttpSessionBindingListener;
 import jakarta.servlet.http.HttpSessionIdListener;
 import jakarta.servlet.http.HttpSessionListener;
+import org.eclipse.jetty.ee10.servlet.ServletContextResponse.EncodingFrom;
+import org.eclipse.jetty.ee10.servlet.ServletContextResponse.OutputType;
 import org.eclipse.jetty.ee10.servlet.security.ConstraintAware;
 import org.eclipse.jetty.ee10.servlet.security.ConstraintMapping;
 import org.eclipse.jetty.ee10.servlet.security.ConstraintSecurityHandler;
+import org.eclipse.jetty.ee10.servlet.writer.ResponseWriter;
 import org.eclipse.jetty.http.HttpURI;
 import org.eclipse.jetty.http.pathmap.MatchedResource;
 import org.eclipse.jetty.security.SecurityHandler;
@@ -80,6 +84,9 @@ import org.eclipse.jetty.server.handler.ContextHandler;
 import org.eclipse.jetty.server.handler.ContextHandlerCollection;
 import org.eclipse.jetty.server.handler.ContextRequest;
 import org.eclipse.jetty.server.handler.ContextResponse;
+import org.eclipse.jetty.session.AbstractSessionManager;
+import org.eclipse.jetty.session.ManagedSession;
+import org.eclipse.jetty.session.SessionManager;
 import org.eclipse.jetty.util.Attributes;
 import org.eclipse.jetty.util.Callback;
 import org.eclipse.jetty.util.DecoratedObjectFactory;
@@ -116,7 +123,7 @@ import static jakarta.servlet.ServletContext.TEMPDIR;
  * </pre>
  * <p>
  * This class should have been called ServletContext, but this would have
- * cause confusion with {@link ServletContext}.
+ * cause confusion with {@link jakarta.servlet.ServletContext}.
  */
 @ManagedObject("Servlet Context Handler")
 public class ServletContextHandler extends ContextHandler
@@ -153,26 +160,30 @@ public class ServletContextHandler extends ContextHandler
         DESTROYED
     }
 
-    public static ServletContextHandler getServletContextHandler(ServletContext servletContext, String purpose)
+    public static ServletContextHandler getServletContextHandler(jakarta.servlet.ServletContext servletContext, String purpose)
     {
         if (servletContext instanceof ServletContextApi servletContextApi)
             return servletContextApi.getContext().getServletContextHandler();
+        ServletContextHandler sch = getCurrentServletContextHandler();
+        if (sch != null)
+            return sch;
         throw new IllegalStateException("No Jetty ServletContextHandler, " + purpose + " unavailable");
     }
 
-    public static ServletContextHandler getServletContextHandler(ServletContext servletContext)
+    public static ServletContextHandler getServletContextHandler(jakarta.servlet.ServletContext servletContext)
     {
         if (servletContext instanceof ServletContextApi)
             return ((ServletContextApi)servletContext).getContext().getServletContextHandler();
-        return null;
+
+        return getCurrentServletContextHandler();
     }
 
-    public static ServletContext getCurrentServletContext()
+    public static jakarta.servlet.ServletContext getCurrentServletContext()
     {
         return getServletContext(ContextHandler.getCurrentContext());
     }
 
-    public static ServletContext getServletContext(Context context)
+    public static jakarta.servlet.ServletContext getServletContext(Context context)
     {
         if (context instanceof ServletScopedContext)
             return ((ServletScopedContext)context).getServletContext();
@@ -199,7 +210,6 @@ public class ServletContextHandler extends ContextHandler
     private Map<String, String> _localeEncodingMap;
     private String[] _welcomeFiles;
     private Logger _logger;
-    protected boolean _allowNullPathInfo;
     private int _maxFormKeys = Integer.getInteger(MAX_FORM_KEYS_KEY, DEFAULT_MAX_FORM_KEYS);
     private int _maxFormContentSize = Integer.getInteger(MAX_FORM_CONTENT_SIZE_KEY, DEFAULT_MAX_FORM_CONTENT_SIZE);
     private boolean _usingSecurityManager = getSecurityManager() != null;
@@ -230,46 +240,40 @@ public class ServletContextHandler extends ContextHandler
 
     public ServletContextHandler(String contextPath)
     {
-        this(null, contextPath);
+        this(contextPath, null, null, null, null);
     }
 
     public ServletContextHandler(int options)
     {
-        this(null, null, options);
+        this(null, options);
     }
 
-    public ServletContextHandler(Container parent, String contextPath)
+    public ServletContextHandler(String contextPath, int options)
     {
-        this(parent, contextPath, null, null, null, null);
+        this(contextPath, null, null, null, null, options);
     }
 
-    public ServletContextHandler(Container parent, String contextPath, int options)
+    public ServletContextHandler(String contextPath, boolean sessions, boolean security)
     {
-        this(parent, contextPath, null, null, null, null, options);
+        this(contextPath, (sessions ? SESSIONS : 0) | (security ? SECURITY : 0));
     }
 
-    public ServletContextHandler(Container parent, String contextPath, boolean sessions, boolean security)
+    public ServletContextHandler(SessionHandler sessionHandler, SecurityHandler securityHandler, ServletHandler servletHandler, ErrorHandler errorHandler)
     {
-        this(parent, contextPath, (sessions ? SESSIONS : 0) | (security ? SECURITY : 0));
+        this(null, sessionHandler, securityHandler, servletHandler, errorHandler);
     }
 
-    public ServletContextHandler(Container parent, SessionHandler sessionHandler, SecurityHandler securityHandler, ServletHandler servletHandler, ErrorHandler errorHandler)
+    public ServletContextHandler(String contextPath, SessionHandler sessionHandler, SecurityHandler securityHandler, ServletHandler servletHandler, ErrorHandler errorHandler)
     {
-        this(parent, null, sessionHandler, securityHandler, servletHandler, errorHandler);
+        this(contextPath, sessionHandler, securityHandler, servletHandler, errorHandler, 0);
     }
 
-    public ServletContextHandler(Container parent, String contextPath, SessionHandler sessionHandler, SecurityHandler securityHandler, ServletHandler servletHandler, ErrorHandler errorHandler)
-    {
-        this(parent, contextPath, sessionHandler, securityHandler, servletHandler, errorHandler, 0);
-    }
-
-    public ServletContextHandler(Container parent, String contextPath, SessionHandler sessionHandler, SecurityHandler securityHandler, ServletHandler servletHandler, ErrorHandler errorHandler, int options)
+    public ServletContextHandler(String contextPath, SessionHandler sessionHandler, SecurityHandler securityHandler, ServletHandler servletHandler, ErrorHandler errorHandler, int options)
     {
         _servletContext = newServletContextApi();
 
         if (contextPath != null)
             setContextPath(contextPath);
-        Container.setAsParent(parent, this);
 
         _options = options;
         _sessionHandler = sessionHandler;
@@ -335,7 +339,7 @@ public class ServletContextHandler extends ContextHandler
 
     /**
      * Get the context path in a form suitable to be returned from {@link HttpServletRequest#getContextPath()}
-     * or {@link ServletContext#getContextPath()}.
+     * or {@link jakarta.servlet.ServletContext#getContextPath()}.
      *
      * @return Returns the encoded contextPath, or empty string for root context
      */
@@ -840,7 +844,7 @@ public class ServletContextHandler extends ContextHandler
         void exitScope(ServletScopedContext context, ServletContextRequest request);
     }
 
-    public ServletContext getServletContext()
+    public jakarta.servlet.ServletContext getServletContext()
     {
         return getContext().getServletContext();
     }
@@ -1135,8 +1139,13 @@ public class ServletContextHandler extends ContextHandler
 
         // Get a servlet request, possibly from a cached version in the channel attributes.
         Attributes cache = request.getComponents().getCache();
-        ServletChannel servletChannel = (ServletChannel)cache.getAttribute(ServletChannel.class.getName());
-        if (servletChannel == null || servletChannel.getContext() != getContext())
+        Object cachedChannel = cache.getAttribute(ServletChannel.class.getName());
+        ServletChannel servletChannel;
+        if (cachedChannel instanceof ServletChannel sc && sc.getContext() == getContext())
+        {
+            servletChannel = sc;
+        }
+        else
         {
             servletChannel = new ServletChannel(this, request);
             cache.setAttribute(ServletChannel.class.getName(), servletChannel);
@@ -1151,16 +1160,15 @@ public class ServletContextHandler extends ContextHandler
     protected ContextResponse wrapResponse(ContextRequest request, Response response)
     {
         if (request instanceof ServletContextRequest servletContextRequest)
-            return servletContextRequest.getResponse();
+            return servletContextRequest.getServletContextResponse();
         throw new IllegalArgumentException();
     }
 
     @Override
     protected boolean handleByContextHandler(String pathInContext, ContextRequest request, Response response, Callback callback)
     {
-        ServletContextRequest scopedRequest = Request.as(request, ServletContextRequest.class);
-        DispatcherType dispatch = scopedRequest.getServletApiRequest().getDispatcherType();
-        if (dispatch == DispatcherType.REQUEST && isProtectedTarget(scopedRequest.getDecodedPathInContext()))
+        boolean initialDispatch = request instanceof ServletContextRequest;
+        if (initialDispatch && isProtectedTarget(pathInContext))
         {
             Response.writeError(request, response, callback, HttpServletResponse.SC_NOT_FOUND, null);
             return true;
@@ -2029,7 +2037,7 @@ public class ServletContextHandler extends ContextHandler
         }
     }
 
-    public class ServletContextApi implements ServletContext
+    public class ServletContextApi implements jakarta.servlet.ServletContext
     {
         public static final int SERVLET_MAJOR_VERSION = 6;
         public static final int SERVLET_MINOR_VERSION = 0;
@@ -2691,7 +2699,7 @@ public class ServletContextHandler extends ContextHandler
         }
 
         @Override
-        public ServletContext getContext(String uripath)
+        public jakarta.servlet.ServletContext getContext(String uripath)
         {
             //TODO jetty-12 does not currently support cross context dispatch
             return null;
@@ -2739,10 +2747,10 @@ public class ServletContextHandler extends ContextHandler
         @Override
         public String getRealPath(String path)
         {
-            // This is an API call from the application which may pass non-canonical paths.
-            // Thus, we canonicalize here, to avoid the enforcement of canonical paths in
-            // ContextHandler.this.getResource(path).
-            path = URIUtil.canonicalPath(path);
+            // This is an API call from the application which may pass non-normalized paths.
+            // Thus, we normalize here, to avoid the enforcement of normalized paths in
+            // ServletContextHandler.this.getResource(path).
+            path = URIUtil.normalizePath(path);
             if (path == null)
                 return null;
             if (path.length() == 0)
@@ -2753,12 +2761,22 @@ public class ServletContextHandler extends ContextHandler
             try
             {
                 Resource resource = ServletContextHandler.this.getResource(path);
-                if (resource != null)
+                if (resource == null)
+                    return null;
+
+                for (Resource r : resource)
                 {
-                    Path resourcePath = resource.getPath();
-                    if (resourcePath != null)
-                        return resourcePath.normalize().toString();
+                    // return first
+                    if (Resources.exists(r))
+                    {
+                        Path resourcePath = r.getPath();
+                        if (resourcePath != null)
+                            return resourcePath.normalize().toString();
+                    }
                 }
+
+                // A Resource was returned, but did not exist
+                return null;
             }
             catch (Exception e)
             {
@@ -2771,10 +2789,10 @@ public class ServletContextHandler extends ContextHandler
         @Override
         public URL getResource(String path) throws MalformedURLException
         {
-            // This is an API call from the application which may pass non-canonical paths.
-            // Thus, we canonicalize here, to avoid the enforcement of canonical paths in
-            // ContextHandler.this.getResource(path).
-            path = URIUtil.canonicalPath(path);
+            // This is an API call from the application which may pass non-normalized paths.
+            // Thus, we normalize here, to avoid the enforcement of normalized paths in
+            // ServletContextHandler.this.getResource(path).
+            path = URIUtil.normalizePath(path);
             if (path == null)
                 return null;
 
@@ -2821,10 +2839,10 @@ public class ServletContextHandler extends ContextHandler
         @Override
         public Set<String> getResourcePaths(String path)
         {
-            // This is an API call from the application which may pass non-canonical paths.
-            // Thus, we canonicalize here, to avoid the enforcement of canonical paths in
-            // ContextHandler.this.getResource(path).
-            path = URIUtil.canonicalPath(path);
+            // This is an API call from the application which may pass non-normalized paths.
+            // Thus, we normalize here, to avoid the enforcement of normalized paths in
+            // ServletContextHandler.this.getResource(path).
+            path = URIUtil.normalizePath(path);
             if (path == null)
                 return null;
             return ServletContextHandler.this.getResourcePaths(path);
@@ -3028,5 +3046,82 @@ public class ServletContextHandler extends ContextHandler
             }
             super.doStop();
         }
+    }
+
+    /**
+     * The interface used by {@link ServletApiRequest} to access the {@link ServletContextRequest} without
+     * access to the unwrapped {@link Request} methods.
+     */
+    public interface ServletRequestInfo
+    {
+        String getDecodedPathInContext();
+
+        ManagedSession getManagedSession();
+
+        Charset getQueryEncoding();
+
+        default Request getRequest()
+        {
+            return getServletChannel().getRequest();
+        }
+
+        List<ServletRequestAttributeListener> getRequestAttributeListeners();
+
+        ServletScopedContext getServletContext();
+
+        HttpInput getHttpInput();
+        
+        MatchedResource<ServletHandler.MappedServlet> getMatchedResource();
+
+        AbstractSessionManager.RequestedSession getRequestedSession();
+
+        ServletChannel getServletChannel();
+
+        ServletContextHandler getServletContextHandler();
+
+        ServletRequestState getServletRequestState();
+
+        SessionManager getSessionManager();
+
+        ServletRequestState getState();
+
+        void setQueryEncoding(String s);
+    }
+
+    /**
+     * The interface used by {@link ServletApiResponse} to access the {@link ServletContextResponse} without
+     * access to the unwrapped {@link Response} methods.
+     */
+    public interface ServletResponseInfo
+    {
+        String getCharacterEncoding(boolean setContentType);
+
+        String getCharacterEncoding();
+
+        String getContentType();
+
+        EncodingFrom getEncodingFrom();
+
+        Locale getLocale();
+
+        OutputType getOutputType();
+
+        Response getResponse();
+
+        Supplier<Map<String, String>> getTrailers();
+
+        ResponseWriter getWriter();
+
+        boolean isWriting();
+
+        void setCharacterEncoding(String encoding, EncodingFrom encodingFrom);
+
+        void setLocale(Locale locale);
+
+        void setOutputType(OutputType outputType);
+
+        void setTrailers(Supplier<Map<String, String>> trailers);
+
+        void setWriter(ResponseWriter responseWriter);
     }
 }

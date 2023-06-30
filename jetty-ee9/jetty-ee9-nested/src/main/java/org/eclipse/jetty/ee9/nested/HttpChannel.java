@@ -1014,7 +1014,7 @@ public class HttpChannel implements Runnable, HttpOutput.Interceptor
         {
             CustomRequestLog.LogDetail logDetail = new CustomRequestLog.LogDetail(
                 _request.getServletName(),
-                _request.getServletContext().getRealPath(_request.getPathInContext())
+                _request.getLastContext().getRealPath(_request.getLastPathInContext())
             );
             _request.setAttribute(CustomRequestLog.LOG_DETAIL, logDetail);
         }

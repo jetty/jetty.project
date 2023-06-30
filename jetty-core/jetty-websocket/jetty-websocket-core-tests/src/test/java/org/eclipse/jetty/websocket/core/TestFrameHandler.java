@@ -71,7 +71,7 @@ public class TestFrameHandler implements SynchronousFrameHandler
 
     protected void demand()
     {
-        coreSession.demand(1);
+        coreSession.demand();
     }
 
     @Override

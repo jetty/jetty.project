@@ -13,7 +13,7 @@
   <properties>
     <ee9.module>jetty-ee9-nested</ee9.module>
     <bundle-symbolic-name>${project.groupId}.server</bundle-symbolic-name>
-    <spotbugs.onlyAnalyze>org.eclipse.jetty.server.*</spotbugs.onlyAnalyze>
+    <spotbugs.onlyAnalyze>org.eclipse.jetty.ee8.server.*</spotbugs.onlyAnalyze>
   </properties>
 
   <build>

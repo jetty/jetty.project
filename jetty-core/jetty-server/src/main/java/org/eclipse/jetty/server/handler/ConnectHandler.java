@@ -77,7 +77,7 @@ public class ConnectHandler extends Handler.Wrapper
 
     public ConnectHandler(Handler handler)
     {
-        setHandler(handler);
+        super(handler);
     }
 
     public Executor getExecutor()

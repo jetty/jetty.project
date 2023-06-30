@@ -65,6 +65,12 @@ public class BufferedResponseHandler extends Handler.Wrapper
 
     public BufferedResponseHandler()
     {
+        this(null);
+    }
+
+    public BufferedResponseHandler(Handler handler)
+    {
+        super(handler);
         _methods.include(HttpMethod.GET.asString());
         for (String type : MimeTypes.DEFAULTS.getMimeMap().values())
         {

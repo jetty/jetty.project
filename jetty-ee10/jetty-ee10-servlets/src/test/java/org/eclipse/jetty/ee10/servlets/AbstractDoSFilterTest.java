@@ -60,7 +60,8 @@ public abstract class AbstractDoSFilterTest
         _server = new Server();
         _connector = new ServerConnector(_server);
         _server.addConnector(_connector);
-        ServletContextHandler context = new ServletContextHandler(_server, "/ctx", true, false);
+        ServletContextHandler context = new ServletContextHandler("/ctx", true, false);
+        _server.setHandler(context);
 
         DefaultSessionCache sessionCache = new DefaultSessionCache(context.getSessionHandler());
         FileSessionDataStore fileStore = new FileSessionDataStore();

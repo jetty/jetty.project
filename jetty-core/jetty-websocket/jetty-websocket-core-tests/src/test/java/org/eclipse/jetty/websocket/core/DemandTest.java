@@ -69,14 +69,14 @@ public class DemandTest
         {
             _coreSession = coreSession;
             callback.succeeded();
-            coreSession.demand(1);
+            coreSession.demand();
         }
 
         @Override
         public void onFrame(Frame frame, Callback callback)
         {
             callback.succeeded();
-            _coreSession.demand(1);
+            _coreSession.demand();
         }
 
         @Override
@@ -111,7 +111,7 @@ public class DemandTest
                     _coreSession.abort();
 
                     // Demand should not throw even if closed.
-                    _coreSession.demand(1);
+                    _coreSession.demand();
                     errorFuture.complete(null);
                 }
                 catch (Throwable t)
