@@ -367,7 +367,7 @@ public class DistributionTests extends AbstractJettyHomeTest
             toEnvironment("websocket-jakarta", env),
             toEnvironment("deploy", env),
             toEnvironment("apache-jsp", env),
-            toEnvironment("websocket-jetty-client", env)
+            toEnvironment("websocket-jetty-client-webapp", env)
         );
         try (JettyHomeTester.Run run1 = distribution.start("--approve-all-licenses", "--add-modules=" + mods))
         {
