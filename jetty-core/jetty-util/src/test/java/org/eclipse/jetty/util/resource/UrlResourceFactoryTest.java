@@ -23,11 +23,16 @@ import java.nio.channels.ReadableByteChannel;
 import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
 import java.nio.file.Path;
+import java.time.Duration;
 import java.time.Instant;
+import java.util.ArrayList;
+import java.util.List;
 
+import org.awaitility.Awaitility;
 import org.eclipse.jetty.toolchain.test.MavenTestingUtils;
 import org.eclipse.jetty.util.IO;
 import org.eclipse.jetty.util.URIUtil;
+import org.junit.jupiter.api.Disabled;
 import org.junit.jupiter.api.Tag;
 import org.junit.jupiter.api.Test;
 
@@ -86,6 +91,40 @@ public class UrlResourceFactoryTest
         {
             ResourceFactory.unregisterResourceFactory("https");
         }
+    }
+
+    @Test
+    @Disabled
+    public void testInputStreamSweep() throws MalformedURLException
+    {
+        Path path = MavenTestingUtils.getTestResourcePath("example.jar");
+        URI jarFileUri = URI.create("jar:" + path.toUri().toASCIIString() + "!/WEB-INF/");
+
+        List<Object> swept = new ArrayList<>();
+        URLResourceFactory urlResourceFactory = new URLResourceFactory();
+        URLResourceFactory.onSweepListener = (obj) -> swept.add(obj);
+        Resource resource = urlResourceFactory.newResource(jarFileUri.toURL());
+
+        Resource webResource = resource.resolve("/web.xml");
+        assertTrue(webResource.exists());
+
+        webResource = null;
+
+        Awaitility.await().atMost(Duration.ofSeconds(5))
+            .until(() ->
+            {
+                try
+                {
+                    byte[] b = new byte[1024 * 1024 * 1024];
+                    b[0] = 0;
+                }
+                catch (OutOfMemoryError ignore)
+                {
+                    // ignore
+                }
+                urlResourceFactory.newResource(jarFileUri);
+                return swept.size() > 0;
+            });
     }
 
     @Test

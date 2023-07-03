@@ -15,6 +15,9 @@ package org.eclipse.jetty.util.resource;
 
 import java.io.IOException;
 import java.io.InputStream;
+import java.lang.ref.PhantomReference;
+import java.lang.ref.Reference;
+import java.lang.ref.ReferenceQueue;
 import java.net.MalformedURLException;
 import java.net.URI;
 import java.net.URL;
@@ -23,8 +26,10 @@ import java.nio.channels.Channels;
 import java.nio.channels.ReadableByteChannel;
 import java.nio.file.Path;
 import java.time.Instant;
+import java.util.function.Consumer;
 
 import org.eclipse.jetty.util.FileID;
+import org.eclipse.jetty.util.IO;
 import org.eclipse.jetty.util.URIUtil;
 import org.eclipse.jetty.util.thread.AutoLock;
 import org.slf4j.Logger;
@@ -35,6 +40,7 @@ import org.slf4j.LoggerFactory;
  */
 public class URLResourceFactory implements ResourceFactory
 {
+    protected static Consumer<Object> onSweepListener;
     private int connectTimeout = 0;
     private int readTimeout = 0;
     private boolean useCaches = true;
@@ -101,9 +107,10 @@ public class URLResourceFactory implements ResourceFactory
     private static class URLResource extends Resource
     {
         private static final Logger LOG = LoggerFactory.getLogger(URLResource.class);
+        private static final ReferenceQueue<InputStream> inputStreamReferenceQueue = new ReferenceQueue<>();
         protected final AutoLock lock = new AutoLock();
         protected URLConnection connection;
-        protected InputStream in = null;
+        protected InputStreamRef in = null;
 
         private final URI uri;
         private final URL url;
@@ -118,6 +125,7 @@ public class URLResourceFactory implements ResourceFactory
             this.connectTimeout = connectTimeout;
             this.readTimeout = readTimeout;
             this.useCaches = useCaches;
+            sweep();
         }
 
         protected boolean checkConnection() throws IOException
@@ -227,7 +235,10 @@ public class URLResourceFactory implements ResourceFactory
                 if (checkConnection())
                 {
                     if (in == null)
-                        in = connection.getInputStream();
+                    {
+                        InputStream stream = connection.getInputStream();
+                        in = new InputStreamRef(stream);
+                    }
                     ret = in != null;
                 }
             }
@@ -250,9 +261,9 @@ public class URLResourceFactory implements ResourceFactory
                 {
                     if (in != null)
                     {
-                        InputStream stream = in;
+                        InputStreamRef streamRef = in;
                         in = null;
-                        return stream;
+                        return streamRef.stream;
                     }
                     return connection.getInputStream();
                 }
@@ -313,6 +324,43 @@ public class URLResourceFactory implements ResourceFactory
         public String toString()
         {
             return String.format("URLResource@%X(%s)", this.uri.hashCode(), this.uri.toASCIIString());
+        }
+
+        private static void sweep()
+        {
+            LOG.info("sweep");
+            while (true)
+            {
+                Reference<? extends InputStream> inputRef = inputStreamReferenceQueue.poll();
+                if (inputRef == null)
+                    return;
+
+                InputStream inputStream = inputRef.get();
+                LOG.info("swept {}", inputRef);
+                IO.close(inputStream);
+                if (onSweepListener != null)
+                    onSweepListener.accept(inputStream);
+            }
+        }
+
+        private static class InputStreamRef extends PhantomReference<InputStream>
+        {
+            final InputStream stream;
+
+            /**
+             * Creates a new phantom reference that refers to the given object and
+             * is registered with the given queue.
+             *
+             * <p> It is possible to create a phantom reference with a {@code null}
+             * queue.  Such a reference will never be enqueued.
+             *
+             * @param referent the object the new phantom reference will refer to
+             */
+            public InputStreamRef(InputStream referent)
+            {
+                super(referent, inputStreamReferenceQueue);
+                this.stream = referent;
+            }
         }
     }
 }
