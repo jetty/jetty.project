@@ -75,7 +75,7 @@ public class URLResourceFactory implements ResourceFactory
         }
     }
 
-    private static class URLResource extends Resource implements AutoCloseable
+    private static class URLResource extends Resource
     {
         private static final Logger LOG = LoggerFactory.getLogger(URLResource.class);
         protected final AutoLock lock = new AutoLock();
@@ -93,29 +93,6 @@ public class URLResourceFactory implements ResourceFactory
             this.url = uri.toURL();
             this.connectTimeout = connectTimeout;
             this.useCaches = useCaches;
-        }
-
-        @Override
-        public void close()
-        {
-            try (AutoLock l = lock.lock())
-            {
-                if (in != null)
-                {
-                    try
-                    {
-                        in.close();
-                    }
-                    catch (IOException e)
-                    {
-                        LOG.trace("IGNORED", e);
-                    }
-                    in = null;
-                }
-
-                if (connection != null)
-                    connection = null;
-            }
         }
 
         protected boolean checkConnection() throws IOException
