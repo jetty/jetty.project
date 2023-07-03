@@ -15,9 +15,9 @@ package org.eclipse.jetty.util.resource;
 
 import java.io.IOException;
 import java.io.InputStream;
-import java.lang.ref.PhantomReference;
+import java.lang.ref.Cleaner;
 import java.lang.ref.Reference;
-import java.lang.ref.ReferenceQueue;
+import java.lang.ref.SoftReference;
 import java.net.MalformedURLException;
 import java.net.URI;
 import java.net.URL;
@@ -40,7 +40,7 @@ import org.slf4j.LoggerFactory;
  */
 public class URLResourceFactory implements ResourceFactory
 {
-    protected static Consumer<Object> onSweepListener;
+    static Consumer<Reference<InputStream>> ON_SWEEP_LISTENER;
     private int connectTimeout = 0;
     private int readTimeout = 0;
     private boolean useCaches = true;
@@ -107,16 +107,16 @@ public class URLResourceFactory implements ResourceFactory
     private static class URLResource extends Resource
     {
         private static final Logger LOG = LoggerFactory.getLogger(URLResource.class);
-        private static final ReferenceQueue<InputStream> inputStreamReferenceQueue = new ReferenceQueue<>();
-        protected final AutoLock lock = new AutoLock();
-        protected URLConnection connection;
-        protected InputStreamRef in = null;
+        private static final Cleaner CLEANER = Cleaner.create();
 
+        private final AutoLock lock = new AutoLock();
         private final URI uri;
         private final URL url;
         private final int connectTimeout;
         private final int readTimeout;
         private final boolean useCaches;
+        private URLConnection connection;
+        private InputStream in = null;
 
         public URLResource(URI uri, int connectTimeout, int readTimeout, boolean useCaches) throws MalformedURLException
         {
@@ -125,7 +125,6 @@ public class URLResourceFactory implements ResourceFactory
             this.connectTimeout = connectTimeout;
             this.readTimeout = readTimeout;
             this.useCaches = useCaches;
-            sweep();
         }
 
         protected boolean checkConnection() throws IOException
@@ -166,7 +165,7 @@ public class URLResourceFactory implements ResourceFactory
         @Override
         public boolean isDirectory()
         {
-            return uri.getSchemeSpecificPart().endsWith("/");
+            return exists() && uri.getSchemeSpecificPart().endsWith("/");
         }
 
         @Override
@@ -223,8 +222,14 @@ public class URLResourceFactory implements ResourceFactory
                 {
                     if (in == null)
                     {
-                        InputStream stream = connection.getInputStream();
-                        in = new InputStreamRef(stream);
+                        in = connection.getInputStream();
+                        Reference<InputStream> ref = new SoftReference<>(in);
+                        CLEANER.register(this, () ->
+                        {
+                            IO.close(ref.get());
+                            if (ON_SWEEP_LISTENER != null)
+                                ON_SWEEP_LISTENER.accept(ref);
+                        });
                     }
                     ret = in != null;
                 }
@@ -248,9 +253,9 @@ public class URLResourceFactory implements ResourceFactory
                 {
                     if (in != null)
                     {
-                        InputStreamRef streamRef = in;
+                        InputStream stream = in;
                         in = null;
-                        return streamRef.stream;
+                        return stream;
                     }
                     return connection.getInputStream();
                 }
@@ -311,43 +316,6 @@ public class URLResourceFactory implements ResourceFactory
         public String toString()
         {
             return String.format("URLResource@%X(%s)", this.uri.hashCode(), this.uri.toASCIIString());
-        }
-
-        private static void sweep()
-        {
-            while (true)
-            {
-                Reference<? extends InputStream> inputRef = inputStreamReferenceQueue.poll();
-                if (inputRef == null)
-                    return;
-
-                InputStream inputStream = inputRef.get();
-                if (LOG.isDebugEnabled())
-                    LOG.debug("swept {}", inputRef);
-                IO.close(inputStream);
-                if (onSweepListener != null)
-                    onSweepListener.accept(inputStream);
-            }
-        }
-
-        private static class InputStreamRef extends PhantomReference<InputStream>
-        {
-            final InputStream stream;
-
-            /**
-             * Creates a new phantom reference that refers to the given object and
-             * is registered with the given queue.
-             *
-             * <p> It is possible to create a phantom reference with a {@code null}
-             * queue.  Such a reference will never be enqueued.
-             *
-             * @param referent the object the new phantom reference will refer to
-             */
-            public InputStreamRef(InputStream referent)
-            {
-                super(referent, inputStreamReferenceQueue);
-                this.stream = referent;
-            }
         }
     }
 }

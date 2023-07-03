@@ -23,19 +23,17 @@ import java.nio.channels.ReadableByteChannel;
 import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
 import java.nio.file.Path;
-import java.time.Duration;
 import java.time.Instant;
-import java.util.ArrayList;
-import java.util.List;
+import java.util.concurrent.TimeUnit;
+import java.util.concurrent.atomic.AtomicInteger;
 
-import org.awaitility.Awaitility;
 import org.eclipse.jetty.toolchain.test.MavenTestingUtils;
 import org.eclipse.jetty.util.IO;
 import org.eclipse.jetty.util.URIUtil;
-import org.junit.jupiter.api.Disabled;
 import org.junit.jupiter.api.Tag;
 import org.junit.jupiter.api.Test;
 
+import static org.awaitility.Awaitility.await;
 import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.Matchers.containsString;
 import static org.hamcrest.Matchers.is;
@@ -95,15 +93,18 @@ public class UrlResourceFactoryTest
     }
 
     @Test
-    @Disabled
-    public void testInputStreamSweep() throws MalformedURLException
+    public void testInputStreamCleanedUp() throws Exception
     {
         Path path = MavenTestingUtils.getTestResourcePath("example.jar");
         URI jarFileUri = URI.create("jar:" + path.toUri().toASCIIString() + "!/WEB-INF/");
 
-        List<Object> swept = new ArrayList<>();
+        AtomicInteger cleanedRefCount = new AtomicInteger();
         URLResourceFactory urlResourceFactory = new URLResourceFactory();
-        URLResourceFactory.onSweepListener = (obj) -> swept.add(obj);
+        URLResourceFactory.ON_SWEEP_LISTENER = ref ->
+        {
+            if (ref != null && ref.get() != null)
+                cleanedRefCount.incrementAndGet();
+        };
         Resource resource = urlResourceFactory.newResource(jarFileUri.toURL());
 
         Resource webResource = resource.resolve("/web.xml");
@@ -111,21 +112,11 @@ public class UrlResourceFactoryTest
 
         webResource = null;
 
-        Awaitility.await().atMost(Duration.ofSeconds(5))
-            .until(() ->
-            {
-                try
-                {
-                    byte[] b = new byte[1024 * 1024 * 1024];
-                    b[0] = 0;
-                }
-                catch (OutOfMemoryError ignore)
-                {
-                    // ignore
-                }
-                urlResourceFactory.newResource(jarFileUri);
-                return swept.size() > 0;
-            });
+        await().atMost(5, TimeUnit.SECONDS).until(() ->
+        {
+            System.gc();
+            return cleanedRefCount.get() > 0;
+        });
     }
 
     @Test
@@ -145,6 +136,14 @@ public class UrlResourceFactoryTest
             int read = channel.read(buffer);
             assertThat(read, is(fileSize));
         }
+    }
+
+    @Test
+    public void testIsDirectory()
+    {
+        URLResourceFactory urlResourceFactory = new URLResourceFactory();
+        Resource resource = urlResourceFactory.newResource("file:/does/not/exist/ends/with/a/slash/");
+        assertThat(resource.isDirectory(), is(false));
     }
 
     @Test
