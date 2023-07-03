@@ -1,3 +1,5 @@
+jetty-12.0.0-SNAPSHOT
+
 jetty-12.0.0.beta3 - 03 July 2023
  + 9919 Jetty-12 creates two instances of ArrayByteBufferPool
  + 9925 Bring back Jetty <12 flexibility of "current context / context handler"
