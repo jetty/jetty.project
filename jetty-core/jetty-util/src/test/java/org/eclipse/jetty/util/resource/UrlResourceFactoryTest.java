@@ -24,6 +24,8 @@ import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.time.Instant;
+import java.util.concurrent.TimeUnit;
+import java.util.concurrent.atomic.AtomicInteger;
 
 import org.eclipse.jetty.toolchain.test.MavenTestingUtils;
 import org.eclipse.jetty.util.IO;
@@ -31,12 +33,14 @@ import org.eclipse.jetty.util.URIUtil;
 import org.junit.jupiter.api.Tag;
 import org.junit.jupiter.api.Test;
 
+import static org.awaitility.Awaitility.await;
 import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.Matchers.containsString;
 import static org.hamcrest.Matchers.is;
 import static org.hamcrest.Matchers.not;
 import static org.hamcrest.Matchers.notNullValue;
 import static org.junit.jupiter.api.Assertions.assertFalse;
+import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
 public class UrlResourceFactoryTest
@@ -45,7 +49,10 @@ public class UrlResourceFactoryTest
     @Tag("external")
     public void testHttps() throws IOException
     {
-        ResourceFactory.registerResourceFactory("https", new URLResourceFactory());
+        URLResourceFactory urlResourceFactory = new URLResourceFactory();
+        urlResourceFactory.setConnectTimeout(1000);
+
+        ResourceFactory.registerResourceFactory("https", urlResourceFactory);
         try
         {
             Resource resource = ResourceFactory.root().newResource(URI.create("https://webtide.com/"));
@@ -63,7 +70,7 @@ public class UrlResourceFactoryTest
             assertTrue(resource.isDirectory());
             assertThat(resource.getFileName(), is(""));
 
-            Resource blogs = resource.resolve("blogs/");
+            Resource blogs = resource.resolve("blog/");
             assertThat(blogs, notNullValue());
             assertTrue(blogs.exists());
             assertThat(blogs.lastModified().toEpochMilli(), not(Instant.EPOCH));
@@ -86,6 +93,33 @@ public class UrlResourceFactoryTest
     }
 
     @Test
+    public void testInputStreamCleanedUp() throws Exception
+    {
+        Path path = MavenTestingUtils.getTestResourcePath("example.jar");
+        URI jarFileUri = URI.create("jar:" + path.toUri().toASCIIString() + "!/WEB-INF/");
+
+        AtomicInteger cleanedRefCount = new AtomicInteger();
+        URLResourceFactory urlResourceFactory = new URLResourceFactory();
+        URLResourceFactory.ON_SWEEP_LISTENER = ref ->
+        {
+            if (ref != null && ref.get() != null)
+                cleanedRefCount.incrementAndGet();
+        };
+        Resource resource = urlResourceFactory.newResource(jarFileUri.toURL());
+
+        Resource webResource = resource.resolve("/web.xml");
+        assertTrue(webResource.exists());
+
+        webResource = null;
+
+        await().atMost(5, TimeUnit.SECONDS).until(() ->
+        {
+            System.gc();
+            return cleanedRefCount.get() > 0;
+        });
+    }
+
+    @Test
     public void testFileUrl() throws Exception
     {
         Path path = MavenTestingUtils.getTestResourcePath("example.jar");
@@ -102,6 +136,14 @@ public class UrlResourceFactoryTest
             int read = channel.read(buffer);
             assertThat(read, is(fileSize));
         }
+    }
+
+    @Test
+    public void testIsDirectory()
+    {
+        URLResourceFactory urlResourceFactory = new URLResourceFactory();
+        Resource resource = urlResourceFactory.newResource("file:/does/not/exist/ends/with/a/slash/");
+        assertThat(resource.isDirectory(), is(false));
     }
 
     @Test
@@ -132,25 +174,73 @@ public class UrlResourceFactoryTest
         URLResourceFactory urlResourceFactory = new URLResourceFactory();
         Resource resource = urlResourceFactory.newResource(jarFileUri.toURL());
 
-        Resource webResource = resource.resolve("web.xml");
-        assertThat(webResource.isDirectory(), is(false));
+        Resource webResource = resource.resolve("/web.xml");
+        assertTrue(Resources.isReadableFile(webResource));
         URI expectedURI = URI.create(jarFileUri.toASCIIString() + "web.xml");
         assertThat(webResource.getURI(), is(expectedURI));
     }
 
+    /**
+     * Test resolve where the input path is for a parent directory location.
+     * (An attempt to break out of the base resource)
+     */
     @Test
-    public void testResolveUriNoPath() throws MalformedURLException
+    public void testResolveUriParent() throws MalformedURLException
+    {
+        Path path = MavenTestingUtils.getTestResourcePath("example.jar");
+        URI jarFileUri = URI.create("jar:" + path.toUri().toASCIIString() + "!/WEB-INF/");
+
+        URLResourceFactory urlResourceFactory = new URLResourceFactory();
+        Resource baseResource = urlResourceFactory.newResource(jarFileUri.toURL());
+        assertThrows(IllegalArgumentException.class, () ->
+        {
+            baseResource.resolve("../META-INF/MANIFEST.MF");
+        });
+    }
+
+    /**
+     * Test resolve where the base URI has no path.
+     */
+    @Test
+    public void testResolveNestedUriNoPath() throws MalformedURLException
     {
         Path path = MavenTestingUtils.getTestResourcePath("example.jar");
         URI jarFileUri = URI.create("file:" + path.toUri().toASCIIString());
+        // We now have `file:file:/path/to/example.jar` URI (with two nested "file" schemes)
+        // The first `file` will be opaque and contain no path.
 
         URLResourceFactory urlResourceFactory = new URLResourceFactory();
         Resource resource = urlResourceFactory.newResource(jarFileUri.toURL());
+        assertThat("file:file:/path/to/example.jar cannot exist", resource.exists(), is(false));
+        assertThat(resource.isDirectory(), is(false));
 
-        Resource webResource = resource.resolve("web.xml");
+        Resource webResource = resource.resolve("/WEB-INF/web.xml");
+        assertThat("resource /path/to/example.jar/WEB-INF/web.xml doesn't exist", webResource.exists(), is(false));
         assertThat(webResource.isDirectory(), is(false));
 
-        URI expectedURI = URIUtil.correctFileURI(URI.create("file:" + path.toUri().resolve("web.xml").toASCIIString()));
+        URI expectedURI = URIUtil.correctFileURI(URI.create("file:" + path.toUri().toASCIIString() + "/WEB-INF/web.xml"));
+        assertThat(webResource.getURI(), is(expectedURI));
+    }
+
+    /**
+     * Test resolve where the base URI has no path.
+     */
+    @Test
+    public void testResolveFromFile() throws MalformedURLException
+    {
+        Path path = MavenTestingUtils.getTestResourcePath("example.jar");
+        URI jarFileUri = path.toUri();
+
+        URLResourceFactory urlResourceFactory = new URLResourceFactory();
+        Resource baseResource = urlResourceFactory.newResource(jarFileUri.toURL());
+        assertThat(baseResource.exists(), is(true));
+        assertThat(baseResource.isDirectory(), is(false));
+
+        Resource webResource = baseResource.resolve("/WEB-INF/web.xml");
+        assertThat("resource /path/to/example.jar/WEB-INF/web.xml doesn't exist", webResource.exists(), is(false));
+        assertThat(webResource.isDirectory(), is(false));
+
+        URI expectedURI = URIUtil.correctFileURI(URI.create(path.toUri().toASCIIString() + "/WEB-INF/web.xml"));
         assertThat(webResource.getURI(), is(expectedURI));
     }
 
