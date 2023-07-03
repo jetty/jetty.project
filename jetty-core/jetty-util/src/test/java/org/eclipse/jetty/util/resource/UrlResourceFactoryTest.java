@@ -182,6 +182,7 @@ public class UrlResourceFactoryTest
 
     /**
      * Test resolve where the input path is for a parent directory location.
+     * (An attempt to break out of the base resource)
      */
     @Test
     public void testResolveUriParent() throws MalformedURLException
