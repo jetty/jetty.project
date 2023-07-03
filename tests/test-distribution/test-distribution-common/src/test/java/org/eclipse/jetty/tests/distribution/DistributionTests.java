@@ -1457,4 +1457,59 @@ public class DistributionTests extends AbstractJettyHomeTest
             }
         }
     }
+
+    @Test
+    public void testStaticFile() throws Exception
+    {
+        Path jettyBase = newTestJettyBaseDirectory();
+        String jettyVersion = System.getProperty("jettyVersion");
+        JettyHomeTester distribution = JettyHomeTester.Builder.newInstance()
+            .jettyVersion(jettyVersion)
+            .jettyBase(jettyBase)
+            .mavenLocalRepository(System.getProperty("mavenRepoPath"))
+            .build();
+
+        try (JettyHomeTester.Run run1 = distribution.start("--approve-all-licenses", "--add-modules=http,core-deploy"))
+        {
+            assertTrue(run1.awaitFor(START_TIMEOUT, TimeUnit.SECONDS));
+            assertEquals(0, run1.getExitValue());
+
+            // Ensure .well-known directory exists.
+            Path webappsDir = distribution.getJettyBase().resolve("webapps");
+            assertTrue(Files.exists(webappsDir));
+            Files.createDirectory(webappsDir.resolve("ROOT"));
+
+            // Write content to a file in the ROOT directory.
+            String testFileContent = "hello world " + UUID.randomUUID();
+            File testFile = webappsDir.resolve("ROOT/index.html").toFile();
+            assertTrue(testFile.createNewFile());
+            testFile.deleteOnExit();
+            try (FileWriter fileWriter = new FileWriter(testFile))
+            {
+                fileWriter.write(testFileContent);
+            }
+
+            try (JettyHomeTester.Run run2 = distribution.start("--dry-run"))
+            {
+                run2.awaitFor(START_TIMEOUT, TimeUnit.SECONDS);
+                Queue<String> logs = run2.getLogs();
+                assertThat(logs.size(), equalTo(1));
+                String log = logs.poll();
+                System.err.println(log);
+                assertThat(log, containsString("contextHandlerClass='org.eclipse.jetty.server.handler.ResourceHandler$ResourceContext'"));
+            }
+
+            int port = distribution.freePort();
+            try (JettyHomeTester.Run run2 = distribution.start("jetty.http.port=" + port))
+            {
+                assertTrue(run2.awaitConsoleLogsFor("Started oejs.Server@", START_TIMEOUT, TimeUnit.SECONDS));
+
+                // Test we can access the static index.html file.
+                startHttpClient();
+                ContentResponse response = client.GET("http://localhost:" + port + "/");
+                assertThat(response.getStatus(), is(HttpStatus.OK_200));
+                assertThat(response.getContentAsString(), is(testFileContent));
+            }
+        }
+    }
 }

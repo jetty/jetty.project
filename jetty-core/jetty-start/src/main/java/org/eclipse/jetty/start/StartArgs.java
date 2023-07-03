@@ -693,7 +693,12 @@ public class StartArgs
                 // TODO module path
 
                 for (Prop property : environment.getProperties())
-                    cmd.addArg(property.key + "=" + property.value);
+                {
+                    String value = property.value;
+                    if (isDryRun() && value != null && value.contains("$"))
+                        value = "'" + value + "'";
+                    cmd.addArg(property.key + "=" + value);
+                }
 
                 for (Path xmlFile : environment.getXmlFiles())
                     cmd.addArg(xmlFile.toAbsolutePath().toString());
