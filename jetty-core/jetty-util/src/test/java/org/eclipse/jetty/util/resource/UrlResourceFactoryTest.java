@@ -138,6 +138,14 @@ public class UrlResourceFactoryTest
     }
 
     @Test
+    public void testIsDirectory()
+    {
+        URLResourceFactory urlResourceFactory = new URLResourceFactory();
+        Resource resource = urlResourceFactory.newResource("file:/does/not/exist/ends/with/a/slash/");
+        assertThat(resource.isDirectory(), is(false));
+    }
+
+    @Test
     public void testJarFileUrl() throws Exception
     {
         Path path = MavenTestingUtils.getTestResourcePath("example.jar");

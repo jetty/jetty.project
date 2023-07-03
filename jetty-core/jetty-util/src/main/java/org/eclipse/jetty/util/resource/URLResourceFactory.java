@@ -165,7 +165,7 @@ public class URLResourceFactory implements ResourceFactory
         @Override
         public boolean isDirectory()
         {
-            return uri.getSchemeSpecificPart().endsWith("/");
+            return exists() && uri.getSchemeSpecificPart().endsWith("/");
         }
 
         @Override
