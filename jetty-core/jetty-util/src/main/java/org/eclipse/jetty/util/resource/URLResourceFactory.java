@@ -35,13 +35,20 @@ import org.slf4j.LoggerFactory;
  */
 public class URLResourceFactory implements ResourceFactory
 {
-    private int connectTimeout = 1000;
+    private int connectTimeout = 0;
+    private int readTimeout = 0;
     private boolean useCaches = true;
 
     public URLResourceFactory()
     {
     }
 
+    /**
+     * URL Connection Connect Timeout
+     *
+     * @return the connect timeout
+     * @see URLConnection#getConnectTimeout()
+     */
     public int getConnectTimeout()
     {
         return connectTimeout;
@@ -50,6 +57,22 @@ public class URLResourceFactory implements ResourceFactory
     public void setConnectTimeout(int connectTimeout)
     {
         this.connectTimeout = connectTimeout;
+    }
+
+    /**
+     * URL Connection Read Timeout.
+     *
+     * @return the read timeout
+     * @see URLConnection#getReadTimeout()
+     */
+    public int getReadTimeout()
+    {
+        return readTimeout;
+    }
+
+    public void setReadTimeout(int readTimeout)
+    {
+        this.readTimeout = readTimeout;
     }
 
     public boolean isUseCaches()
@@ -67,7 +90,7 @@ public class URLResourceFactory implements ResourceFactory
     {
         try
         {
-            return new URLResource(uri, this.connectTimeout, this.useCaches);
+            return new URLResource(uri, this.connectTimeout, this.readTimeout, this.useCaches);
         }
         catch (MalformedURLException e)
         {
@@ -85,13 +108,15 @@ public class URLResourceFactory implements ResourceFactory
         private final URI uri;
         private final URL url;
         private final int connectTimeout;
+        private final int readTimeout;
         private final boolean useCaches;
 
-        public URLResource(URI uri, int connectTimeout, boolean useCaches) throws MalformedURLException
+        public URLResource(URI uri, int connectTimeout, int readTimeout, boolean useCaches) throws MalformedURLException
         {
             this.uri = uri;
             this.url = uri.toURL();
             this.connectTimeout = connectTimeout;
+            this.readTimeout = readTimeout;
             this.useCaches = useCaches;
         }
 
@@ -104,8 +129,9 @@ public class URLResourceFactory implements ResourceFactory
                     try
                     {
                         connection = url.openConnection();
+                        connection.setConnectTimeout(connectTimeout);
+                        connection.setReadTimeout(readTimeout);
                         connection.setUseCaches(useCaches);
-                        connection.setConnectTimeout(this.connectTimeout);
                     }
                     catch (IOException e)
                     {
@@ -165,7 +191,7 @@ public class URLResourceFactory implements ResourceFactory
             URI newURI = resolve(uri, subUriPath);
             try
             {
-                return new URLResource(newURI, this.connectTimeout, this.useCaches);
+                return new URLResource(newURI, this.connectTimeout, this.readTimeout, this.useCaches);
             }
             catch (MalformedURLException e)
             {
@@ -275,12 +301,6 @@ public class URLResourceFactory implements ResourceFactory
         public ReadableByteChannel newReadableByteChannel() throws IOException
         {
             return Channels.newChannel(newInputStream());
-        }
-
-        @Override
-        public boolean isAlias()
-        {
-            return false;
         }
 
         @Override

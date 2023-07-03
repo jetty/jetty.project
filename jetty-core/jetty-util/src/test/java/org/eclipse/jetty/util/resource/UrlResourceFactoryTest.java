@@ -45,7 +45,10 @@ public class UrlResourceFactoryTest
     @Tag("external")
     public void testHttps() throws IOException
     {
-        ResourceFactory.registerResourceFactory("https", new URLResourceFactory());
+        URLResourceFactory urlResourceFactory = new URLResourceFactory();
+        urlResourceFactory.setConnectTimeout(1000);
+
+        ResourceFactory.registerResourceFactory("https", urlResourceFactory);
         try
         {
             Resource resource = ResourceFactory.root().newResource(URI.create("https://webtide.com/"));
