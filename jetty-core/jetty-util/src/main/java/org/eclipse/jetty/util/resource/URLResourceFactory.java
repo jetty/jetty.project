@@ -23,20 +23,48 @@ import java.nio.channels.Channels;
 import java.nio.channels.ReadableByteChannel;
 import java.nio.file.Path;
 import java.time.Instant;
+import java.util.HashMap;
+import java.util.Map;
 
 import org.eclipse.jetty.util.FileID;
+import org.eclipse.jetty.util.IO;
 import org.eclipse.jetty.util.URIUtil;
+import org.eclipse.jetty.util.thread.AutoLock;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 /**
  * {@link ResourceFactory} for {@link java.net.URL} based resources.
  */
-public class URLResourceFactory implements ResourceFactory
+public class URLResourceFactory implements ResourceFactory.Closeable
 {
+    private final AutoLock mapLock = new AutoLock();
+    private final Map<URI, URLResource> urlResourceMap = new HashMap<>();
+    private boolean closed = false;
     private int connectTimeout = 1000;
     private boolean useCaches = true;
 
     public URLResourceFactory()
     {
+    }
+
+    @Override
+    public void close()
+    {
+        try (AutoLock lock = mapLock.lock())
+        {
+            closed = true;
+            urlResourceMap.values().forEach(IO::close);
+            urlResourceMap.clear();
+        }
+    }
+
+    public boolean isClosed()
+    {
+        try (AutoLock lock = mapLock.lock())
+        {
+            return closed;
+        }
     }
 
     public int getConnectTimeout()
@@ -62,18 +90,39 @@ public class URLResourceFactory implements ResourceFactory
     @Override
     public Resource newResource(final URI uri)
     {
-        try
+        URLResource urlResource;
+        try (AutoLock lock = mapLock.lock())
         {
-            return new URLResource(uri, this.connectTimeout, this.useCaches);
+            urlResource = urlResourceMap.get(uri);
+            if (urlResource == null)
+            {
+                try
+                {
+                    urlResource = new URLResource(uri, this.connectTimeout, this.useCaches);
+                    cleanupReferences();
+                    urlResourceMap.put(uri, urlResource);
+                }
+                catch (MalformedURLException e)
+                {
+                    throw new RuntimeException("Bad URI: " + uri, e);
+                }
+            }
         }
-        catch (MalformedURLException e)
-        {
-            throw new RuntimeException("Bad URI: " + uri, e);
-        }
+        return urlResource;
     }
 
-    private static class URLResource extends Resource
+    private void cleanupReferences()
     {
+        // TODO
+    }
+
+    private class URLResource extends Resource implements AutoCloseable
+    {
+        private static final Logger LOG = LoggerFactory.getLogger(URLResource.class);
+        protected final AutoLock lock = new AutoLock();
+        protected URLConnection connection;
+        protected InputStream in = null;
+
         private final URI uri;
         private final URL url;
         private final int connectTimeout;
@@ -87,12 +136,53 @@ public class URLResourceFactory implements ResourceFactory
             this.useCaches = useCaches;
         }
 
-        private URLConnection newConnection() throws IOException
+        @Override
+        public void close()
         {
-            URLConnection urlConnection = url.openConnection();
-            urlConnection.setUseCaches(this.useCaches);
-            urlConnection.setConnectTimeout(this.connectTimeout);
-            return urlConnection;
+            try (AutoLock l = lock.lock())
+            {
+                if (in != null)
+                {
+                    try
+                    {
+                        in.close();
+                    }
+                    catch (IOException e)
+                    {
+                        LOG.trace("IGNORED", e);
+                    }
+                    in = null;
+                }
+
+                if (connection != null)
+                    connection = null;
+            }
+        }
+
+        protected boolean checkConnection() throws IOException
+        {
+            boolean closed = isClosed();
+
+            try (AutoLock l = lock.lock())
+            {
+                if (closed)
+                    return false;
+
+                if (connection == null)
+                {
+                    try
+                    {
+                        connection = url.openConnection();
+                        connection.setUseCaches(useCaches);
+                        connection.setConnectTimeout(this.connectTimeout);
+                    }
+                    catch (IOException e)
+                    {
+                        LOG.trace("IGNORED", e);
+                    }
+                }
+                return connection != null;
+            }
         }
 
         @Override
@@ -174,31 +264,59 @@ public class URLResourceFactory implements ResourceFactory
         @Override
         public boolean exists()
         {
-            try
+            boolean ret = false;
+            try (AutoLock l = lock.lock())
             {
-                newConnection();
-                return true;
+                if (checkConnection())
+                {
+                    if (in == null)
+                        in = connection.getInputStream();
+                    ret = in != null;
+                }
             }
             catch (IOException e)
             {
-                return false;
+                LOG.trace("IGNORED", e);
             }
+            return ret;
         }
 
         @Override
         public InputStream newInputStream() throws IOException
         {
-            URLConnection urlConnection = newConnection();
-            return urlConnection.getInputStream();
+            try (AutoLock l = lock.lock())
+            {
+                if (!checkConnection())
+                    throw new IOException("Invalid resource");
+
+                try
+                {
+                    if (in != null)
+                    {
+                        InputStream stream = in;
+                        in = null;
+                        return stream;
+                    }
+                    return connection.getInputStream();
+                }
+                finally
+                {
+                    connection = null;
+                    if (LOG.isDebugEnabled())
+                        LOG.debug("Connection nulled");
+                }
+            }
         }
 
         @Override
         public Instant lastModified()
         {
-            try
+            try (AutoLock l = lock.lock())
             {
-                URLConnection urlConnection = newConnection();
-                return Instant.ofEpochMilli(urlConnection.getLastModified());
+                if (!checkConnection())
+                    throw new IOException("Invalid resource");
+
+                return Instant.ofEpochMilli(connection.getLastModified());
             }
             catch (IOException e)
             {
@@ -209,10 +327,12 @@ public class URLResourceFactory implements ResourceFactory
         @Override
         public long length()
         {
-            try
+            try (AutoLock l = lock.lock())
             {
-                URLConnection urlConnection = newConnection();
-                return urlConnection.getContentLengthLong();
+                if (!checkConnection())
+                    throw new IOException("Invalid resource");
+
+                return connection.getContentLengthLong();
             }
             catch (IOException e)
             {
