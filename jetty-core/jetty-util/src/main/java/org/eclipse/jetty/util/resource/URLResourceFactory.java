@@ -196,7 +196,13 @@ public class URLResourceFactory implements ResourceFactory
         @Override
         public Resource resolve(String subUriPath)
         {
-            URI newURI = resolve(uri, subUriPath);
+            if (URIUtil.isNotNormalWithinSelf(subUriPath))
+                throw new IllegalArgumentException(subUriPath);
+
+            if ("/".equals(subUriPath))
+                return this;
+
+            URI newURI = URIUtil.addPath(uri, subUriPath);
             try
             {
                 return new URLResource(newURI, this.connectTimeout, this.readTimeout, this.useCaches);
@@ -204,25 +210,6 @@ public class URLResourceFactory implements ResourceFactory
             catch (MalformedURLException e)
             {
                 return null;
-            }
-        }
-
-        // This could probably live in URIUtil, but it's awefully specific to URLResourceFactory.
-        private static URI resolve(URI parent, String path)
-        {
-            if (parent.isOpaque() && parent.getPath() == null)
-            {
-                URI resolved = resolve(URI.create(parent.getRawSchemeSpecificPart()), path);
-                return URI.create(parent.getScheme() + ":" + resolved.toASCIIString());
-            }
-            else if (parent.getPath() != null)
-            {
-                return URIUtil.addPath(parent, path);
-            }
-            else
-            {
-                // Not possible to use URLs that without a path in Jetty.
-                throw new RuntimeException("URL without path not supported by Jetty: " + parent);
             }
         }
 
@@ -328,7 +315,6 @@ public class URLResourceFactory implements ResourceFactory
 
         private static void sweep()
         {
-            LOG.info("sweep");
             while (true)
             {
                 Reference<? extends InputStream> inputRef = inputStreamReferenceQueue.poll();
@@ -336,7 +322,8 @@ public class URLResourceFactory implements ResourceFactory
                     return;
 
                 InputStream inputStream = inputRef.get();
-                LOG.info("swept {}", inputRef);
+                if (LOG.isDebugEnabled())
+                    LOG.debug("swept {}", inputRef);
                 IO.close(inputStream);
                 if (onSweepListener != null)
                     onSweepListener.accept(inputStream);

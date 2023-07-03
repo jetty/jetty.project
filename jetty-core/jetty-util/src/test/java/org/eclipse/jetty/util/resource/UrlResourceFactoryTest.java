@@ -42,6 +42,7 @@ import static org.hamcrest.Matchers.is;
 import static org.hamcrest.Matchers.not;
 import static org.hamcrest.Matchers.notNullValue;
 import static org.junit.jupiter.api.Assertions.assertFalse;
+import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
 public class UrlResourceFactoryTest
@@ -180,19 +181,66 @@ public class UrlResourceFactoryTest
         assertThat(webResource.getURI(), is(expectedURI));
     }
 
+    /**
+     * Test resolve where the input path is for a parent directory location.
+     */
     @Test
-    public void testResolveUriNoPath() throws MalformedURLException
+    public void testResolveUriParent() throws MalformedURLException
+    {
+        Path path = MavenTestingUtils.getTestResourcePath("example.jar");
+        URI jarFileUri = URI.create("jar:" + path.toUri().toASCIIString() + "!/WEB-INF/");
+
+        URLResourceFactory urlResourceFactory = new URLResourceFactory();
+        Resource baseResource = urlResourceFactory.newResource(jarFileUri.toURL());
+        assertThrows(IllegalArgumentException.class, () ->
+        {
+            baseResource.resolve("../META-INF/MANIFEST.MF");
+        });
+    }
+
+    /**
+     * Test resolve where the base URI has no path.
+     */
+    @Test
+    public void testResolveNestedUriNoPath() throws MalformedURLException
     {
         Path path = MavenTestingUtils.getTestResourcePath("example.jar");
         URI jarFileUri = URI.create("file:" + path.toUri().toASCIIString());
+        // We now have `file:file:/path/to/example.jar` URI (with two nested "file" schemes)
+        // The first `file` will be opaque and contain no path.
 
         URLResourceFactory urlResourceFactory = new URLResourceFactory();
         Resource resource = urlResourceFactory.newResource(jarFileUri.toURL());
+        assertThat("file:file:/path/to/example.jar cannot exist", resource.exists(), is(false));
+        assertThat(resource.isDirectory(), is(false));
 
-        Resource webResource = resource.resolve("web.xml");
+        Resource webResource = resource.resolve("/WEB-INF/web.xml");
+        assertThat("resource /path/to/example.jar/WEB-INF/web.xml doesn't exist", webResource.exists(), is(false));
         assertThat(webResource.isDirectory(), is(false));
 
-        URI expectedURI = URIUtil.correctFileURI(URI.create("file:" + path.toUri().toASCIIString() + "/web.xml"));
+        URI expectedURI = URIUtil.correctFileURI(URI.create("file:" + path.toUri().toASCIIString() + "/WEB-INF/web.xml"));
+        assertThat(webResource.getURI(), is(expectedURI));
+    }
+
+    /**
+     * Test resolve where the base URI has no path.
+     */
+    @Test
+    public void testResolveFromFile() throws MalformedURLException
+    {
+        Path path = MavenTestingUtils.getTestResourcePath("example.jar");
+        URI jarFileUri = path.toUri();
+
+        URLResourceFactory urlResourceFactory = new URLResourceFactory();
+        Resource baseResource = urlResourceFactory.newResource(jarFileUri.toURL());
+        assertThat(baseResource.exists(), is(true));
+        assertThat(baseResource.isDirectory(), is(false));
+
+        Resource webResource = baseResource.resolve("/WEB-INF/web.xml");
+        assertThat("resource /path/to/example.jar/WEB-INF/web.xml doesn't exist", webResource.exists(), is(false));
+        assertThat(webResource.isDirectory(), is(false));
+
+        URI expectedURI = URIUtil.correctFileURI(URI.create(path.toUri().toASCIIString() + "/WEB-INF/web.xml"));
         assertThat(webResource.getURI(), is(expectedURI));
     }
 
