@@ -162,7 +162,7 @@ public class URLResourceFactory implements ResourceFactory
             }
             else if (parent.getPath() != null)
             {
-                return parent.resolve(path);
+                return URIUtil.addPath(parent, path);
             }
             else
             {

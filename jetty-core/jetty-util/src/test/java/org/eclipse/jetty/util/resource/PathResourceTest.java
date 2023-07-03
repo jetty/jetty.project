@@ -250,6 +250,12 @@ public class PathResourceTest
             assertTrue(dirResource.exists());
             assertFalse(dirResource.isAlias());
 
+            // Resolve content in dir to name, with slash
+            Resource textResource = dirResource.resolve("/test.txt");
+            assertTrue(textResource.exists());
+            assertFalse(textResource.isAlias());
+            assertTrue(Resources.isReadableFile(textResource));
+
             // Resolve directory to name, with slash
             dirResource = archiveResource.resolve("/dir/");
             assertTrue(dirResource.exists());

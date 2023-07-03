@@ -132,8 +132,8 @@ public class UrlResourceFactoryTest
         URLResourceFactory urlResourceFactory = new URLResourceFactory();
         Resource resource = urlResourceFactory.newResource(jarFileUri.toURL());
 
-        Resource webResource = resource.resolve("web.xml");
-        assertThat(webResource.isDirectory(), is(false));
+        Resource webResource = resource.resolve("/web.xml");
+        assertTrue(Resources.isReadableFile(webResource));
         URI expectedURI = URI.create(jarFileUri.toASCIIString() + "web.xml");
         assertThat(webResource.getURI(), is(expectedURI));
     }
