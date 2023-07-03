@@ -20,7 +20,5 @@ module org.eclipse.jetty.ee9.websocket.jetty.client
     requires transitive org.eclipse.jetty.client;
     requires transitive org.eclipse.jetty.ee9.websocket.jetty.api;
 
-    requires static org.eclipse.jetty.ee9.webapp;
-
     exports org.eclipse.jetty.ee9.websocket.client;
 }

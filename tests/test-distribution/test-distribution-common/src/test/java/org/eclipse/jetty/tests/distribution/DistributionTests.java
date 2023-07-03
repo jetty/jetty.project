@@ -348,8 +348,8 @@ public class DistributionTests extends AbstractJettyHomeTest
     }
 
     @ParameterizedTest
-    @CsvSource({"http,ee9", "https,ee9", "http,ee10", "https,ee10"})
-    public void testWebsocketClientInWebappProvidedByServer(String scheme, String env) throws Exception
+    @CsvSource({"http,ee9,false,", "http,ee9,true", "https,ee9,false", "http,ee10,false", "http,ee10,true", "https,ee10,false"})
+    public void testWebsocketClientInWebappProvidedByServer(String scheme, String env, String jpms) throws Exception
     {
         Path jettyBase = newTestJettyBaseDirectory();
         String jettyVersion = System.getProperty("jettyVersion");
@@ -367,7 +367,7 @@ public class DistributionTests extends AbstractJettyHomeTest
             toEnvironment("websocket-jakarta", env),
             toEnvironment("deploy", env),
             toEnvironment("apache-jsp", env),
-            toEnvironment("websocket-jetty-client", env)
+            toEnvironment("websocket-jetty-client-webapp", env)
         );
         try (JettyHomeTester.Run run1 = distribution.start("--approve-all-licenses", "--add-modules=" + mods))
         {
@@ -378,7 +378,11 @@ public class DistributionTests extends AbstractJettyHomeTest
             distribution.installWarFile(webApp, "test");
 
             int port = distribution.freePort();
-            try (JettyHomeTester.Run run2 = distribution.start(ssl ? "jetty.ssl.port=" + port : "jetty.http.port=" + port))
+            List<String> args = new ArrayList<>();
+            args.add(ssl ? "jetty.ssl.port=" + port : "jetty.http.port=" + port);
+            if (Boolean.parseBoolean(jpms))
+                args.add("--jpms");
+            try (JettyHomeTester.Run run2 = distribution.start(args))
             {
                 assertTrue(run2.awaitConsoleLogsFor("Started oejs.Server@", START_TIMEOUT, TimeUnit.SECONDS));
 
@@ -395,8 +399,8 @@ public class DistributionTests extends AbstractJettyHomeTest
     }
 
     @ParameterizedTest
-    @CsvSource({"http,ee9", "https,ee9", "http,ee10", "https,ee10"})
-    public void testWebsocketClientInWebapp(String scheme, String env) throws Exception
+    @CsvSource({"http,ee9,false", "http,ee9,true", "https,ee9,false", "http,ee10,false", "http,ee10,true", "https,ee10,false"})
+    public void testWebsocketClientInWebapp(String scheme, String env, String jpms) throws Exception
     {
         Path jettyBase = newTestJettyBaseDirectory();
         String jettyVersion = System.getProperty("jettyVersion");
@@ -424,7 +428,11 @@ public class DistributionTests extends AbstractJettyHomeTest
             distribution.installWarFile(webApp, "test");
 
             int port = distribution.freePort();
-            try (JettyHomeTester.Run run2 = distribution.start(ssl ? "jetty.ssl.port=" + port : "jetty.http.port=" + port))
+            List<String> args = new ArrayList<>();
+            args.add(ssl ? "jetty.ssl.port=" + port : "jetty.http.port=" + port);
+            if (Boolean.parseBoolean(jpms))
+                args.add("--jpms");
+            try (JettyHomeTester.Run run2 = distribution.start(args))
             {
                 assertTrue(run2.awaitConsoleLogsFor("Started oejs.Server@", START_TIMEOUT, TimeUnit.SECONDS));
 
