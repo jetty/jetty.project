@@ -37,7 +37,6 @@ import static org.hamcrest.Matchers.is;
 import static org.hamcrest.Matchers.not;
 import static org.hamcrest.Matchers.notNullValue;
 import static org.junit.jupiter.api.Assertions.assertFalse;
-import static org.junit.jupiter.api.Assertions.assertSame;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
 public class UrlResourceFactoryTest
@@ -103,9 +102,6 @@ public class UrlResourceFactoryTest
             int read = channel.read(buffer);
             assertThat(read, is(fileSize));
         }
-
-        urlResourceFactory.close();
-        assertFalse(resource.exists());
     }
 
     @Test
@@ -125,9 +121,6 @@ public class UrlResourceFactoryTest
             int read = channel.read(buffer);
             assertThat(read, is(fileSize));
         }
-
-        urlResourceFactory.close();
-        assertFalse(resource.exists());
     }
 
     @Test
@@ -143,28 +136,6 @@ public class UrlResourceFactoryTest
         assertTrue(Resources.isReadableFile(webResource));
         URI expectedURI = URI.create(jarFileUri.toASCIIString() + "web.xml");
         assertThat(webResource.getURI(), is(expectedURI));
-
-        urlResourceFactory.close();
-        assertFalse(resource.exists(), "main resource is closed");
-        assertFalse(webResource.exists(), "child resource is closed");
-    }
-
-    @Test
-    public void testNewResourceCached() throws MalformedURLException
-    {
-        Path path = MavenTestingUtils.getTestResourcePath("example.jar");
-        URI jarFileUri = URI.create("jar:" + path.toUri().toASCIIString() + "!/WEB-INF/");
-
-        URLResourceFactory urlResourceFactory = new URLResourceFactory();
-
-        Resource resourceA = urlResourceFactory.newResource(jarFileUri.toURL());
-        Resource resourceB = urlResourceFactory.newResource(jarFileUri.toURL());
-
-        assertSame(resourceA, resourceB);
-
-        urlResourceFactory.close();
-        assertFalse(resourceA.exists());
-        assertFalse(resourceB.exists());
     }
 
     @Test
@@ -181,10 +152,6 @@ public class UrlResourceFactoryTest
 
         URI expectedURI = URIUtil.correctFileURI(URI.create("file:" + path.toUri().toASCIIString() + "/web.xml"));
         assertThat(webResource.getURI(), is(expectedURI));
-
-        urlResourceFactory.close();
-        assertFalse(resource.exists());
-        assertFalse(webResource.exists());
     }
 
     private static long fileSize(URL url) throws IOException

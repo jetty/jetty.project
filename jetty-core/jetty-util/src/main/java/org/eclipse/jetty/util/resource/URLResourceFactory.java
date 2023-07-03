@@ -23,11 +23,8 @@ import java.nio.channels.Channels;
 import java.nio.channels.ReadableByteChannel;
 import java.nio.file.Path;
 import java.time.Instant;
-import java.util.HashMap;
-import java.util.Map;
 
 import org.eclipse.jetty.util.FileID;
-import org.eclipse.jetty.util.IO;
 import org.eclipse.jetty.util.URIUtil;
 import org.eclipse.jetty.util.thread.AutoLock;
 import org.slf4j.Logger;
@@ -36,35 +33,13 @@ import org.slf4j.LoggerFactory;
 /**
  * {@link ResourceFactory} for {@link java.net.URL} based resources.
  */
-public class URLResourceFactory implements ResourceFactory.Closeable
+public class URLResourceFactory implements ResourceFactory
 {
-    private final AutoLock mapLock = new AutoLock();
-    private final Map<URI, URLResource> urlResourceMap = new HashMap<>();
-    private boolean closed = false;
     private int connectTimeout = 1000;
     private boolean useCaches = true;
 
     public URLResourceFactory()
     {
-    }
-
-    @Override
-    public void close()
-    {
-        try (AutoLock lock = mapLock.lock())
-        {
-            closed = true;
-            urlResourceMap.values().forEach(IO::close);
-            urlResourceMap.clear();
-        }
-    }
-
-    public boolean isClosed()
-    {
-        try (AutoLock lock = mapLock.lock())
-        {
-            return closed;
-        }
     }
 
     public int getConnectTimeout()
@@ -90,33 +65,17 @@ public class URLResourceFactory implements ResourceFactory.Closeable
     @Override
     public Resource newResource(final URI uri)
     {
-        URLResource urlResource;
-        try (AutoLock lock = mapLock.lock())
+        try
         {
-            urlResource = urlResourceMap.get(uri);
-            if (urlResource == null)
-            {
-                try
-                {
-                    urlResource = new URLResource(uri, this.connectTimeout, this.useCaches);
-                    cleanupReferences();
-                    urlResourceMap.put(uri, urlResource);
-                }
-                catch (MalformedURLException e)
-                {
-                    throw new RuntimeException("Bad URI: " + uri, e);
-                }
-            }
+            return new URLResource(uri, this.connectTimeout, this.useCaches);
         }
-        return urlResource;
+        catch (MalformedURLException e)
+        {
+            throw new RuntimeException("Bad URI: " + uri, e);
+        }
     }
 
-    private void cleanupReferences()
-    {
-        // TODO
-    }
-
-    private class URLResource extends Resource implements AutoCloseable
+    private static class URLResource extends Resource implements AutoCloseable
     {
         private static final Logger LOG = LoggerFactory.getLogger(URLResource.class);
         protected final AutoLock lock = new AutoLock();
@@ -161,13 +120,8 @@ public class URLResourceFactory implements ResourceFactory.Closeable
 
         protected boolean checkConnection() throws IOException
         {
-            boolean closed = isClosed();
-
             try (AutoLock l = lock.lock())
             {
-                if (closed)
-                    return false;
-
                 if (connection == null)
                 {
                     try
