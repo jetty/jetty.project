@@ -100,9 +100,9 @@ public class UrlResourceFactoryTest
 
         AtomicInteger cleanedRefCount = new AtomicInteger();
         URLResourceFactory urlResourceFactory = new URLResourceFactory();
-        URLResourceFactory.ON_SWEEP_LISTENER = ref ->
+        URLResourceFactory.ON_SWEEP_LISTENER = in ->
         {
-            if (ref != null && ref.get() != null)
+            if (in != null)
                 cleanedRefCount.incrementAndGet();
         };
         Resource resource = urlResourceFactory.newResource(jarFileUri.toURL());

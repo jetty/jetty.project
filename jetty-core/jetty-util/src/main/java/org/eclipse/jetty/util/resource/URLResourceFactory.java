@@ -16,8 +16,6 @@ package org.eclipse.jetty.util.resource;
 import java.io.IOException;
 import java.io.InputStream;
 import java.lang.ref.Cleaner;
-import java.lang.ref.Reference;
-import java.lang.ref.SoftReference;
 import java.net.MalformedURLException;
 import java.net.URI;
 import java.net.URL;
@@ -40,7 +38,7 @@ import org.slf4j.LoggerFactory;
  */
 public class URLResourceFactory implements ResourceFactory
 {
-    static Consumer<Reference<InputStream>> ON_SWEEP_LISTENER;
+    static Consumer<InputStream> ON_SWEEP_LISTENER;
     private int connectTimeout = 0;
     private int readTimeout = 0;
     private boolean useCaches = true;
@@ -223,13 +221,7 @@ public class URLResourceFactory implements ResourceFactory
                     if (in == null)
                     {
                         in = connection.getInputStream();
-                        Reference<InputStream> ref = new SoftReference<>(in);
-                        CLEANER.register(this, () ->
-                        {
-                            IO.close(ref.get());
-                            if (ON_SWEEP_LISTENER != null)
-                                ON_SWEEP_LISTENER.accept(ref);
-                        });
+                        CLEANER.register(this, new InputStreamCleaner(in));
                     }
                     ret = in != null;
                 }
@@ -316,6 +308,18 @@ public class URLResourceFactory implements ResourceFactory
         public String toString()
         {
             return String.format("URLResource@%X(%s)", this.uri.hashCode(), this.uri.toASCIIString());
+        }
+
+        private record InputStreamCleaner(InputStream inputStream) implements Runnable
+        {
+            @Override
+            public void run()
+            {
+                // Called when the URLResource that held the same InputStream has been collected
+                IO.close(inputStream);
+                if (ON_SWEEP_LISTENER != null)
+                    ON_SWEEP_LISTENER.accept(inputStream);
+            }
         }
     }
 }
