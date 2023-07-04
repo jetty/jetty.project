@@ -110,8 +110,6 @@ public class UrlResourceFactoryTest
         Resource webResource = resource.resolve("/web.xml");
         assertTrue(webResource.exists());
 
-        webResource = null;
-
         await().atMost(5, TimeUnit.SECONDS).until(() ->
         {
             System.gc();

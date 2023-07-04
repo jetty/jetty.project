@@ -24,6 +24,7 @@ import java.nio.channels.Channels;
 import java.nio.channels.ReadableByteChannel;
 import java.nio.file.Path;
 import java.time.Instant;
+import java.util.concurrent.atomic.AtomicReference;
 import java.util.function.Consumer;
 
 import org.eclipse.jetty.util.FileID;
@@ -114,7 +115,7 @@ public class URLResourceFactory implements ResourceFactory
         private final int readTimeout;
         private final boolean useCaches;
         private URLConnection connection;
-        private InputStream in = null;
+        private InputStreamReference inputStreamReference = null;
 
         public URLResource(URI uri, int connectTimeout, int readTimeout, boolean useCaches) throws MalformedURLException
         {
@@ -213,24 +214,23 @@ public class URLResourceFactory implements ResourceFactory
         @Override
         public boolean exists()
         {
-            boolean ret = false;
             try (AutoLock l = lock.lock())
             {
                 if (checkConnection())
                 {
-                    if (in == null)
+                    if (inputStreamReference == null || inputStreamReference.get() == null)
                     {
-                        in = connection.getInputStream();
-                        CLEANER.register(this, new InputStreamCleaner(in));
+                        inputStreamReference = new InputStreamReference(connection.getInputStream());
+                        CLEANER.register(this, inputStreamReference);
                     }
-                    ret = in != null;
+                    return true;
                 }
             }
             catch (IOException e)
             {
                 LOG.trace("IGNORED", e);
             }
-            return ret;
+            return false;
         }
 
         @Override
@@ -243,11 +243,12 @@ public class URLResourceFactory implements ResourceFactory
 
                 try
                 {
-                    if (in != null)
+                    if (inputStreamReference != null)
                     {
-                        InputStream stream = in;
-                        in = null;
-                        return stream;
+                        InputStream stream = inputStreamReference.getAndSet(null);
+                        inputStreamReference = null;
+                        if (stream != null)
+                            return stream;
                     }
                     return connection.getInputStream();
                 }
@@ -310,16 +311,26 @@ public class URLResourceFactory implements ResourceFactory
             return String.format("URLResource@%X(%s)", this.uri.hashCode(), this.uri.toASCIIString());
         }
 
-        private record InputStreamCleaner(InputStream inputStream) implements Runnable
+        private static class InputStreamReference extends AtomicReference<InputStream> implements Runnable
         {
+            public InputStreamReference(InputStream initialValue)
+            {
+                super(initialValue);
+            }
+
             @Override
             public void run()
             {
                 // Called when the URLResource that held the same InputStream has been collected
-                IO.close(inputStream);
-                if (ON_SWEEP_LISTENER != null)
-                    ON_SWEEP_LISTENER.accept(inputStream);
+                InputStream in = getAndSet(null);
+                if (in != null)
+                {
+                    IO.close(in);
+                    if (ON_SWEEP_LISTENER != null)
+                        ON_SWEEP_LISTENER.accept(in);
+                }
             }
         }
+
     }
 }
