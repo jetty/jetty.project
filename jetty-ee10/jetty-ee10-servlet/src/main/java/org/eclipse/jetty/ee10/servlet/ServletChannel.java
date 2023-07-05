@@ -593,16 +593,6 @@ public class ServletChannel
                     {
                         if (!getServletContextResponse().isCommitted())
                         {
-                            /*
-                            TODO: isHandled does not exist and HttpOutput might not be explicitly closed.
-                            if (!_request.isHandled() && !_request.getHttpOutput().isClosed())
-                            {
-                                // The request was not actually handled
-                                _response.writeError(HttpStatus.NOT_FOUND_404, _response.getCallback());
-                                break;
-                            }
-                             */
-
                             // Indicate Connection:close if we can't consume all.
                             if (getServletContextResponse().getStatus() >= 200)
                                 ResponseUtils.ensureConsumeAvailableOrNotPersistent(_servletContextRequest, _servletContextRequest.getServletContextResponse());
