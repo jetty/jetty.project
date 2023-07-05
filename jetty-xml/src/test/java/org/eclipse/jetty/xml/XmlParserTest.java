@@ -14,7 +14,6 @@
 package org.eclipse.jetty.xml;
 
 import java.net.URL;
-
 import javax.xml.parsers.SAXParser;
 import javax.xml.parsers.SAXParserFactory;
 
