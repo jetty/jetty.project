@@ -324,11 +324,10 @@ public class URLResourceFactory implements ResourceFactory
                 // Called when the URLResource that held the same InputStream has been collected
                 InputStream in = getAndSet(null);
                 if (in != null)
-                {
                     IO.close(in);
-                    if (ON_SWEEP_LISTENER != null)
-                        ON_SWEEP_LISTENER.accept(in);
-                }
+
+                if (ON_SWEEP_LISTENER != null)
+                    ON_SWEEP_LISTENER.accept(in);
             }
         }
 
