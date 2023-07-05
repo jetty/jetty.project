@@ -18,6 +18,8 @@ import javax.xml.parsers.SAXParser;
 import javax.xml.parsers.SAXParserFactory;
 
 import org.junit.jupiter.api.Test;
+import org.xml.sax.SAXException;
+import org.xml.sax.XMLReader;
 
 import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertNotNull;
@@ -47,7 +49,7 @@ public class XmlParserTest
      * Customize SAXParserFactory behavior.
      */
     @Test
-    public void testNewSAXParserFactory()
+    public void testNewSAXParserFactory() throws SAXException
     {
         XmlParser xmlParser = new XmlParser()
         {
@@ -63,7 +65,9 @@ public class XmlParserTest
 
         SAXParser saxParser = xmlParser.getSAXParser();
         assertNotNull(saxParser);
-        // look to see it was set at parser level
-        assertFalse(saxParser.isNamespaceAware());
+
+        XMLReader xmlReader = saxParser.getXMLReader();
+        // look to see it was set at XMLReader level
+        assertFalse(xmlReader.getFeature("http://apache.org/xml/features/xinclude"));
     }
 }
