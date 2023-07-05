@@ -15,8 +15,17 @@ package org.eclipse.jetty.xml;
 
 import java.net.URL;
 
-import org.junit.jupiter.api.Test;
+import javax.xml.parsers.ParserConfigurationException;
+import javax.xml.parsers.SAXParser;
+import javax.xml.parsers.SAXParserFactory;
 
+import org.junit.jupiter.api.Test;
+import org.xml.sax.SAXNotRecognizedException;
+import org.xml.sax.SAXNotSupportedException;
+import org.xml.sax.XMLReader;
+
+import static org.junit.jupiter.api.Assertions.assertFalse;
+import static org.junit.jupiter.api.Assertions.assertNotNull;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
 public class XmlParserTest
@@ -37,5 +46,29 @@ public class XmlParserTest
 
         assertTrue(testDocStr.startsWith("<Configure"));
         assertTrue(testDocStr.endsWith("</Configure>"));
+    }
+
+    /**
+     * Customize SAXParserFactory behavior.
+     */
+    @Test
+    public void testNewSAXParserFactory()
+    {
+        XmlParser xmlParser = new XmlParser()
+        {
+            @Override
+            protected SAXParserFactory newSAXParserFactory()
+            {
+                SAXParserFactory saxParserFactory = super.newSAXParserFactory();
+                // Configure at factory level
+                saxParserFactory.setXIncludeAware(false);
+                return saxParserFactory;
+            }
+        };
+
+        SAXParser saxParser = xmlParser.getParser();
+        assertNotNull(saxParser);
+        // look to see it was set at parser level
+        assertFalse(saxParser.isNamespaceAware());
     }
 }
