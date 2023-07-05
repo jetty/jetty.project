@@ -779,6 +779,7 @@ public class ServletContextHandlerTest
         Integer timeout = Integer.valueOf(100);
         ServletContextHandler root = new ServletContextHandler(contexts, "/", ServletContextHandler.SESSIONS);
         root.getSessionHandler().setMaxInactiveInterval((int)TimeUnit.MINUTES.toSeconds(startMin));
+        root.addServlet(new ServletHolder(TestSessionTimeoutServlet.class), "/");
         root.addBean(new MySCIStarter(root.getServletContext(), new MySCI(true, timeout.intValue())), true);
         _server.start();
 
@@ -793,6 +794,17 @@ public class ServletContextHandlerTest
         assertTrue((Boolean)root.getServletContext().getAttribute("MyContextListener.getSessionTimeout"));
         //test can't set session timeout from ContextListener that is not from annotation or web.xml
         assertTrue((Boolean)root.getServletContext().getAttribute("MyContextListener.setSessionTimeout"));
+
+        //test accessing timeout from a servlet
+        StringBuilder rawRequest = new StringBuilder();
+        rawRequest.append("GET / HTTP/1.1\r\n");
+        rawRequest.append("Host: local\r\n");
+        rawRequest.append("Connection: close\r\n");
+        rawRequest.append("\r\n");
+        String rawResponse = _connector.getResponse(rawRequest.toString());
+        HttpTester.Response response = HttpTester.parseResponse(rawResponse);
+        assertEquals(200, response.getStatus(), "response status");
+        assertEquals("SessionTimeout = " + timeout, response.getContent(), "response content");
     }
 
     @Test
@@ -2131,6 +2143,20 @@ public class ServletContextHandlerTest
         {
             resp.getWriter().write("Added");
             resp.getWriter().close();
+        }
+    }
+
+    public static class TestSessionTimeoutServlet extends HttpServlet
+    {
+        private static final long serialVersionUID = 1L;
+
+        protected void doGet(HttpServletRequest req, HttpServletResponse resp)
+            throws ServletException, IOException
+        {
+            int t = req.getServletContext().getSessionTimeout();
+            resp.setStatus(HttpServletResponse.SC_OK);
+            PrintWriter writer = resp.getWriter();
+            writer.write("SessionTimeout = " + t);
         }
     }
 
