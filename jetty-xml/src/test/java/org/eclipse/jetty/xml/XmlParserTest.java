@@ -24,6 +24,7 @@ import org.xml.sax.XMLReader;
 import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertNotNull;
 import static org.junit.jupiter.api.Assertions.assertTrue;
+import static org.junit.jupiter.api.Assumptions.assumeTrue;
 
 public class XmlParserTest
 {
@@ -67,6 +68,8 @@ public class XmlParserTest
         assertNotNull(saxParser);
 
         XMLReader xmlReader = saxParser.getXMLReader();
+        // Only run testcase if Xerces is being used.
+        assumeTrue(xmlReader.getClass().getName().contains("org.apache.xerces."));
         // look to see it was set at XMLReader level
         assertFalse(xmlReader.getFeature("http://apache.org/xml/features/xinclude"));
     }
