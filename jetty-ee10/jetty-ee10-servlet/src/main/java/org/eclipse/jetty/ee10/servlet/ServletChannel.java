@@ -897,7 +897,6 @@ public class ServletChannel
 
         // Callback will either be succeeded here or failed in abort().
         Callback callback = _callback;
-        ServletContextRequest servletContextRequest = _servletContextRequest;
         // Must recycle before notification to allow for reuse.
         // Recycle always done here even if an abort is called.
         recycle();
