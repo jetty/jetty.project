@@ -15,14 +15,10 @@ package org.eclipse.jetty.xml;
 
 import java.net.URL;
 
-import javax.xml.parsers.ParserConfigurationException;
 import javax.xml.parsers.SAXParser;
 import javax.xml.parsers.SAXParserFactory;
 
 import org.junit.jupiter.api.Test;
-import org.xml.sax.SAXNotRecognizedException;
-import org.xml.sax.SAXNotSupportedException;
-import org.xml.sax.XMLReader;
 
 import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertNotNull;
@@ -66,7 +62,7 @@ public class XmlParserTest
             }
         };
 
-        SAXParser saxParser = xmlParser.getParser();
+        SAXParser saxParser = xmlParser.getSAXParser();
         assertNotNull(saxParser);
         // look to see it was set at parser level
         assertFalse(saxParser.isNamespaceAware());

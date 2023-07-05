@@ -134,7 +134,7 @@ public class XmlParser
         return _parser.isValidating();
     }
 
-    public SAXParser getParser()
+    public SAXParser getSAXParser()
     {
         return _parser;
     }
