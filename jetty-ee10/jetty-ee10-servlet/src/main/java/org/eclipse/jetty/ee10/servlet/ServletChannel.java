@@ -849,6 +849,8 @@ public class ServletChannel
      */
     protected boolean checkAndPrepareUpgrade()
     {
+        // TODO do we need to re-implement servlet upgrade?
+
         return false;
     }
 
