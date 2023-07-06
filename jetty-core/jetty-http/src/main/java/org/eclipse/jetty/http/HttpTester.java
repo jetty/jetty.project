@@ -213,7 +213,10 @@ public class HttpTester
 
     public static Response parseResponse(String response)
     {
-        return parseResponse(response, false);
+        Response r = new Response();
+        HttpParser parser = new HttpParser(r);
+        parser.parseNext(BufferUtil.toBuffer(response));
+        return r;
     }
 
     private static Response parseResponse(String response, boolean head)

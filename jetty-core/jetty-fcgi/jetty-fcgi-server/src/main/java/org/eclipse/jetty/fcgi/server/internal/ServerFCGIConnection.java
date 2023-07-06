@@ -410,7 +410,11 @@ public class ServerFCGIConnection extends AbstractConnection implements Connecti
             if (LOG.isDebugEnabled())
                 LOG.debug("Request {} failure on {}: {}", request, stream, failure);
             if (stream != null)
-                stream.getHttpChannel().onFailure(new BadMessageException(null, failure));
+            {
+                Runnable runnable = stream.getHttpChannel().onFailure(new BadMessageException(null, failure));
+                if (runnable != null)
+                    getExecutor().execute(runnable);
+            }
             stream = null;
         }
     }
