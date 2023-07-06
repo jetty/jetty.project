@@ -40,7 +40,6 @@ import org.eclipse.jetty.server.ResponseUtils;
 import org.eclipse.jetty.server.Server;
 import org.eclipse.jetty.server.handler.ContextHandler;
 import org.eclipse.jetty.server.handler.ContextRequest;
-import org.eclipse.jetty.util.Blocker;
 import org.eclipse.jetty.util.Callback;
 import org.eclipse.jetty.util.ExceptionUtil;
 import org.eclipse.jetty.util.HostPort;
@@ -183,11 +182,6 @@ public class ServletChannel
     public HttpInput getHttpInput()
     {
         return _httpInput;
-    }
-
-    public ServletContextHandler.ServletContextApi getServletContextContext()
-    {
-        return _servletContextApi;
     }
 
     public boolean isSendError()
@@ -525,16 +519,11 @@ public class ServletChannel
                             }
                             else
                             {
-                                // TODO: do this non-blocking.
-                                // Callback completeCallback = Callback.from(() -> _state.completed(null), _state::completed);
-                                // _state.completing();
-                                try (Blocker.Callback blocker = Blocker.callback())
-                                {
-                                    // We do not notify ServletRequestListener on this dispatch because it might not
-                                    // be dispatched to an error page, so we delegate this responsibility to the ErrorHandler.
-                                    dispatch(() -> errorHandler.handle(_servletContextRequest, getServletContextResponse(), blocker));
-                                    blocker.block();
-                                }
+                                // We do not notify ServletRequestListener on this dispatch because it might not
+                                // be dispatched to an error page, so we delegate this responsibility to the ErrorHandler.
+                                // We must ignore the callback because the error servlet could go async.
+                                dispatch(() ->
+                                    errorHandler.handle(_servletContextRequest, getServletContextResponse(), Callback.NOOP));
                             }
                         }
                         catch (Throwable x)
