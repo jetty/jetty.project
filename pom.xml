@@ -115,7 +115,7 @@
     <org.osgi.util.promise.version>1.2.0</org.osgi.util.promise.version>
     <plexus-component-annotations.version>2.1.1</plexus-component-annotations.version>
     <plexus-utils.version>4.0.0</plexus-utils.version>
-    <plexus-xml.version>4.0.0</plexus-xml.version>
+    <plexus-xml.version>4.0.2</plexus-xml.version>
     <slf4j.version>2.0.5</slf4j.version>
     <springboot.version>2.1.1.RELEASE</springboot.version>
     <taglibs-standard-impl.version>1.2.5</taglibs-standard-impl.version>
