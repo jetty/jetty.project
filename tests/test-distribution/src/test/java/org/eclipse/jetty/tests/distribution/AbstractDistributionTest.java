@@ -22,6 +22,7 @@ import java.util.function.Supplier;
 
 import org.eclipse.jetty.client.HttpClient;
 import org.eclipse.jetty.util.ssl.SslContextFactory;
+import org.eclipse.jetty.util.thread.QueuedThreadPool;
 import org.junit.jupiter.api.AfterEach;
 
 public class AbstractDistributionTest
@@ -44,6 +45,10 @@ public class AbstractDistributionTest
     protected void startHttpClient(Supplier<HttpClient> supplier) throws Exception
     {
         client = supplier.get();
+        client.setName("DistributionTest-Client");
+        QueuedThreadPool executor = new QueuedThreadPool();
+        executor.setName("dist-test-client");
+        client.setExecutor(executor);
         client.start();
     }
 
