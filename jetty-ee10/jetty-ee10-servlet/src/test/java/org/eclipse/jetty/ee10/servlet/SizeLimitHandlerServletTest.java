@@ -128,10 +128,6 @@ public class SizeLimitHandlerServletTest
         ContentResponse response = _client.POST(uri)
             .body(new StringRequestContent(content)).send();
 
-        System.err.println(response);
-        System.err.println(response.getHeaders());
-        System.err.println(response.getContentAsString());
-
         assertThat(response.getStatus(), equalTo(HttpStatus.PAYLOAD_TOO_LARGE_413));
     }
 
