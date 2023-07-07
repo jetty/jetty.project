@@ -37,6 +37,7 @@ import org.eclipse.jetty.http.HttpFields;
 import org.eclipse.jetty.http.HttpHeader;
 import org.eclipse.jetty.http.HttpStatus;
 import org.eclipse.jetty.http.HttpVersion;
+import org.eclipse.jetty.http.MimeTypes;
 import org.eclipse.jetty.server.Request;
 import org.eclipse.jetty.server.Response;
 import org.eclipse.jetty.session.ManagedSession;
@@ -300,9 +301,9 @@ public class ServletApiResponse implements HttpServletResponse
                 writer.reopen();
             else
             {
-                if (StringUtil.__ISO_8859_1.equalsIgnoreCase(encoding))
+                if (MimeTypes.ISO_8859_1.equalsIgnoreCase(encoding))
                     getServletResponseInfo().setWriter(writer = new ResponseWriter(new Iso88591HttpWriter(getServletChannel().getHttpOutput()), locale, encoding));
-                else if (StringUtil.__UTF8.equalsIgnoreCase(encoding))
+                else if (MimeTypes.UTF8.equalsIgnoreCase(encoding))
                     getServletResponseInfo().setWriter(writer = new ResponseWriter(new Utf8HttpWriter(getServletChannel().getHttpOutput()), locale, encoding));
                 else
                     getServletResponseInfo().setWriter(writer = new ResponseWriter(new EncodingHttpWriter(getServletChannel().getHttpOutput(), encoding), locale, encoding));

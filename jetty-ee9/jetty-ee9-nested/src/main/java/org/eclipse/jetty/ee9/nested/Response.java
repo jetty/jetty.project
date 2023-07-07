@@ -815,7 +815,7 @@ public class Response implements HttpServletResponse
         }
 
         // Fallback to last resort iso-8859-1.
-        encoding = StringUtil.__ISO_8859_1;
+        encoding = MimeTypes.ISO_8859_1;
         if (setContentType)
             setCharacterEncoding(encoding, EncodingFrom.DEFAULT);
         return encoding;
@@ -865,9 +865,9 @@ public class Response implements HttpServletResponse
                 _writer.reopen();
             else
             {
-                if (StringUtil.__ISO_8859_1.equalsIgnoreCase(encoding))
+                if (MimeTypes.ISO_8859_1.equalsIgnoreCase(encoding))
                     _writer = new ResponseWriter(new Iso88591HttpWriter(_out), locale, encoding);
-                else if (StringUtil.__UTF8.equalsIgnoreCase(encoding))
+                else if (MimeTypes.UTF8.equalsIgnoreCase(encoding))
                     _writer = new ResponseWriter(new Utf8HttpWriter(_out), locale, encoding);
                 else
                     _writer = new ResponseWriter(new EncodingHttpWriter(_out, encoding), locale, encoding);
@@ -1020,7 +1020,7 @@ public class Response implements HttpServletResponse
         else
         {
             _encodingFrom = from;
-            _characterEncoding = HttpGenerator.__STRICT ? encoding : StringUtil.normalizeCharset(encoding);
+            _characterEncoding = HttpGenerator.__STRICT ? encoding : MimeTypes.normalizeCharset(encoding);
             if (_mimeType != null)
             {
                 _contentType = _mimeType.getBaseType().asString() + ";charset=" + _characterEncoding;

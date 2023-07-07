@@ -44,7 +44,6 @@ import org.eclipse.jetty.ee9.websocket.jakarta.tests.LocalServer;
 import org.eclipse.jetty.ee9.websocket.jakarta.tests.WSEndpointTracker;
 import org.eclipse.jetty.util.BlockingArrayQueue;
 import org.eclipse.jetty.util.IO;
-import org.eclipse.jetty.util.StringUtil;
 import org.eclipse.jetty.websocket.core.CloseStatus;
 import org.eclipse.jetty.websocket.core.Frame;
 import org.eclipse.jetty.websocket.core.OpCode;
@@ -224,7 +223,7 @@ public class TextStreamTest
         writer.flush();
 
         // Lots of data after we have stopped reading and onMessage exits.
-        final String largePayload = StringUtil.stringFrom("x", serverInputBufferSize * 2);
+        final String largePayload = "x".repeat(serverInputBufferSize * 2);
         writer.write(largePayload);
         writer.close();
 

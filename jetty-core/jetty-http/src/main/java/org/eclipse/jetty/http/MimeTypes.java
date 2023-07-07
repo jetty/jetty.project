@@ -16,8 +16,10 @@ package org.eclipse.jetty.http;
 import java.io.IOException;
 import java.io.InputStream;
 import java.io.InputStreamReader;
+import java.io.UnsupportedEncodingException;
 import java.nio.charset.Charset;
 import java.nio.charset.StandardCharsets;
+import java.nio.charset.UnsupportedCharsetException;
 import java.util.Arrays;
 import java.util.Collections;
 import java.util.HashMap;
@@ -40,11 +42,18 @@ public class MimeTypes
 {
     static final  Logger LOG = LoggerFactory.getLogger(MimeTypes.class);
     private static final Set<Locale> KNOWN_LOCALES = Set.copyOf(Arrays.asList(Locale.getAvailableLocales()));
-
-    public static boolean isKnownLocale(Locale locale)
-    {
-        return KNOWN_LOCALES.contains(locale);
-    }
+    public static final String ISO_8859_1 = StandardCharsets.ISO_8859_1.name().toLowerCase();
+    public static final String UTF8 = StandardCharsets.UTF_8.name().toLowerCase();
+    public static final String UTF16 = StandardCharsets.UTF_16.name().toLowerCase();
+    private static final Index<String> CHARSETS = new Index.Builder<String>()
+        .caseSensitive(false)
+        .with("utf-8", UTF8)
+        .with("utf8", UTF8)
+        .with("utf-16", UTF16)
+        .with("utf16", UTF16)
+        .with("iso-8859-1", ISO_8859_1)
+        .with("iso_8859_1", ISO_8859_1)
+        .build();
 
     /** Enumeration of predefined MimeTypes. This is not exhaustive */
     public enum Type
@@ -233,6 +242,62 @@ public class MimeTypes
         if (contentType.charAt(type.asString().length()) == ';')
             return type.getBaseType();
         return null;
+    }
+
+    public static boolean isKnownLocale(Locale locale)
+    {
+        return KNOWN_LOCALES.contains(locale);
+    }
+
+    /**
+     * Convert alternate charset names (eg utf8) to normalized
+     * name (eg UTF-8).
+     *
+     * @param s the charset to normalize
+     * @return the normalized charset (or null if normalized version not found)
+     */
+    public static String normalizeCharset(String s)
+    {
+        String n = CHARSETS.get(s);
+        return (n == null) ? s : n;
+    }
+
+    /**
+     * Convert alternate charset names (eg utf8) to normalized
+     * name (eg UTF-8).
+     *
+     * @param s the charset to normalize
+     * @param offset the offset in the charset
+     * @param length the length of the charset in the input param
+     * @return the normalized charset (or null if not found)
+     */
+    public static String normalizeCharset(String s, int offset, int length)
+    {
+        String n = CHARSETS.get(s, offset, length);
+        return (n == null) ? s.substring(offset, offset + length) : n;
+    }
+
+    /**
+     * @param charsetName The name of the charset
+     * @return The {@link Charset} for the normalized name
+     * @throws UnsupportedEncodingException Thrown if the charset is not known to the JVM.
+     */
+    public static Charset getKnownCharset(String charsetName) throws UnsupportedEncodingException
+    {
+        // check encoding is supported
+        if (StandardCharsets.UTF_8.name().equalsIgnoreCase(charsetName))
+            return StandardCharsets.UTF_8;
+        charsetName = normalizeCharset(charsetName);
+        if (StandardCharsets.UTF_8.name().equalsIgnoreCase(charsetName))
+            return StandardCharsets.UTF_8;
+        try
+        {
+            return Charset.forName(charsetName);
+        }
+        catch (UnsupportedCharsetException e)
+        {
+            throw new UnsupportedEncodingException(e.getMessage());
+        }
     }
 
     protected final Map<String, String> _mimeMap = new HashMap<>();
@@ -625,7 +690,7 @@ public class MimeTypes
                 case 10:
                     if (!quote && (';' == b || ' ' == b) ||
                         (quote && '"' == b))
-                        return StringUtil.normalizeCharset(value, start, i - start);
+                        return normalizeCharset(value, start, i - start);
                     break;
                 default:
                     throw new IllegalStateException();
@@ -633,7 +698,7 @@ public class MimeTypes
         }
 
         if (state == 10)
-            return StringUtil.normalizeCharset(value, start, i - start);
+            return normalizeCharset(value, start, i - start);
 
         return null;
     }

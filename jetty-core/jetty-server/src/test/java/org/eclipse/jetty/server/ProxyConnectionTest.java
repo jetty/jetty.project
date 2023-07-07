@@ -22,7 +22,7 @@ import org.eclipse.jetty.http.HttpVersion;
 import org.eclipse.jetty.logging.StacklessLogging;
 import org.eclipse.jetty.server.handler.DumpHandler;
 import org.eclipse.jetty.toolchain.test.Net;
-import org.eclipse.jetty.util.TypeUtil;
+import org.eclipse.jetty.util.StringUtil;
 import org.hamcrest.Matchers;
 import org.junit.jupiter.api.Assumptions;
 import org.junit.jupiter.params.ParameterizedTest;
@@ -138,7 +138,7 @@ public class ProxyConnectionTest
             "Connection: close\n" +
             "\n";
 
-        String response = p.sendRequestWaitingForResponse(TypeUtil.fromHexString(proxy), http.getBytes(StandardCharsets.US_ASCII));
+        String response = p.sendRequestWaitingForResponse(StringUtil.fromHexString(proxy), http.getBytes(StandardCharsets.US_ASCII));
 
         assertThat(response, Matchers.containsString("HTTP/1.1 200"));
         assertThat(response, Matchers.containsString("pathInContext=/path"));
@@ -171,7 +171,7 @@ public class ProxyConnectionTest
             "Connection: close\n" +
             "\n";
 
-        String response = p.sendRequestWaitingForResponse(TypeUtil.fromHexString(proxy), http.getBytes(StandardCharsets.US_ASCII));
+        String response = p.sendRequestWaitingForResponse(StringUtil.fromHexString(proxy), http.getBytes(StandardCharsets.US_ASCII));
 
         assertThat(response, Matchers.containsString("HTTP/1.1 200"));
         assertThat(response, Matchers.containsString("pathInContext=/path"));
@@ -261,7 +261,7 @@ public class ProxyConnectionTest
             "Connection: close\n" +
             "\n";
 
-        String response = p.sendRequestWaitingForResponse(TypeUtil.fromHexString(proxy), http.getBytes(StandardCharsets.US_ASCII));
+        String response = p.sendRequestWaitingForResponse(StringUtil.fromHexString(proxy), http.getBytes(StandardCharsets.US_ASCII));
 
         assertThat(response, Matchers.containsString("HTTP/1.1 200"));
         assertThat(response, Matchers.containsString("pathInContext=/path"));
@@ -302,7 +302,7 @@ public class ProxyConnectionTest
             "Connection: close\n" +
             "\n";
 
-        String response = p.sendRequestWaitingForResponse(TypeUtil.fromHexString(proxy), http.getBytes(StandardCharsets.US_ASCII));
+        String response = p.sendRequestWaitingForResponse(StringUtil.fromHexString(proxy), http.getBytes(StandardCharsets.US_ASCII));
 
         assertThat(response, Matchers.is(Matchers.nullValue()));
     }
