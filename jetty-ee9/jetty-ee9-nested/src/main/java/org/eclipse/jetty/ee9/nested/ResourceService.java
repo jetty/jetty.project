@@ -212,8 +212,8 @@ public class ResourceService
     public boolean doGet(HttpServletRequest request, HttpServletResponse response)
         throws ServletException, IOException
     {
-        String servletPath = null;
-        String pathInfo = null;
+        String servletPath;
+        String pathInfo;
         Enumeration<String> reqRanges = null;
         boolean included = request.getAttribute(RequestDispatcher.INCLUDE_REQUEST_URI) != null;
         if (included)
@@ -528,19 +528,13 @@ public class ResourceService
                     {
                         switch (field.getHeader())
                         {
-                            case IF_MATCH:
-                                ifm = field.getValue();
-                                break;
-                            case IF_NONE_MATCH:
-                                ifnm = field.getValue();
-                                break;
-                            case IF_MODIFIED_SINCE:
-                                ifms = field.getValue();
-                                break;
-                            case IF_UNMODIFIED_SINCE:
-                                ifums = field.getValue();
-                                break;
-                            default:
+                            case IF_MATCH -> ifm = field.getValue();
+                            case IF_NONE_MATCH -> ifnm = field.getValue();
+                            case IF_MODIFIED_SINCE -> ifms = field.getValue();
+                            case IF_UNMODIFIED_SINCE -> ifums = field.getValue();
+                            default ->
+                            {
+                            }
                         }
                     }
                 }
@@ -664,7 +658,7 @@ public class ResourceService
             return;
         }
 
-        byte[] data = null;
+        byte[] data;
         String base = URIUtil.addEncodedPaths(request.getRequestURI(), "/");
         String dir = ResourceListing.getAsXHTML(resource, base, pathInContext.length() > 1, request.getQueryString());
         if (dir == null)
@@ -697,9 +691,7 @@ public class ResourceService
             out = response.getOutputStream();
 
             // has something already written to the response?
-            written = out instanceof HttpOutput
-                ? ((HttpOutput)out).isWritten()
-                : true;
+            written = !(out instanceof HttpOutput) || ((HttpOutput)out).isWritten();
         }
         catch (IllegalStateException e)
         {
@@ -831,7 +823,7 @@ public class ResourceService
             response.setContentType(ctp + multi.getBoundary());
 
             // calculate the content-length
-            int length = 0;
+            long length = 0;
             String[] header = new String[ranges.size()];
             int i = 0;
             final int CRLF = "\r\n".length();
@@ -852,7 +844,7 @@ public class ResourceService
                 i++;
             }
             length += CRLF + DASHDASH + BOUNDARY + DASHDASH + CRLF;
-            response.setContentLength(length);
+            response.setContentLengthLong(length);
 
             try (RangeWriter rangeWriter = HttpContentRangeWriter.newRangeWriter(content))
             {
