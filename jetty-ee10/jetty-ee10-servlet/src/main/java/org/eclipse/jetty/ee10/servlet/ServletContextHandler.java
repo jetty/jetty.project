@@ -20,6 +20,7 @@ import java.net.MalformedURLException;
 import java.net.URI;
 import java.net.URL;
 import java.nio.charset.Charset;
+import java.nio.file.Files;
 import java.nio.file.Path;
 import java.util.ArrayList;
 import java.util.Arrays;
@@ -2771,7 +2772,12 @@ public class ServletContextHandler extends ContextHandler
                     {
                         Path resourcePath = r.getPath();
                         if (resourcePath != null)
-                            return resourcePath.normalize().toString();
+                        {
+                            String realPath = resourcePath.normalize().toString();
+                            if (Files.isDirectory(resourcePath))
+                                realPath = realPath + "/";
+                            return realPath;
+                        }
                     }
                 }
 

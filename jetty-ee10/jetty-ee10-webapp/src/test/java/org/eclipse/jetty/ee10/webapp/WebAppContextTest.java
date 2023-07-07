@@ -589,7 +589,7 @@ public class WebAppContextTest
 
         String realPath = servletContext.getRealPath("/");
         assertThat(realPath, notNullValue());
-        assertThat(servletContext.getRealPath("/WEB-INF/"), endsWith("/WEB-INF"));
+        assertThat(servletContext.getRealPath("/WEB-INF/"), endsWith("/WEB-INF/"));
         // TODO the following assertion fails because of a bug in the JDK (see JDK-8311079 and MountedPathResourceTest.testJarFileResourceAccessBackSlash())
         //assertThat(servletContext.getRealPath(resourcePaths.get(1)), endsWith("/nested-reserved-!#\\\\$%&()*+,:=?@[]-meta-inf-resource.txt"));
 

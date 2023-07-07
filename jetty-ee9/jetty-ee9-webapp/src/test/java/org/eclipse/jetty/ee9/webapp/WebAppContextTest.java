@@ -613,7 +613,7 @@ public class WebAppContextTest
     }
 
     @Test
-    @Disabled("getRealPath() not working yet")
+    @Disabled("There is extra decoding of the nested-reserved paths that is getting in the way")
     public void testGetResourcePaths() throws Exception
     {
         Server server = newServer();
