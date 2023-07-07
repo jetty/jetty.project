@@ -171,7 +171,7 @@ public class DemoBaseTests extends AbstractDistributionTest
         {
             assertTrue(run.awaitConsoleLogsFor("Started @", 10, TimeUnit.SECONDS));
 
-            startHttpClient();
+            startHttpClient(true);
             ContentResponse response = client.GET("http://localhost:" + httpPort + "/proxy/current/");
             assertEquals(HttpStatus.OK_200, response.getStatus());
             assertThat("Expecting APIdoc contents", response.getContentAsString(), containsString("Jetty Util : Common Resource Utilities"));
