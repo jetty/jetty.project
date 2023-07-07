@@ -136,6 +136,44 @@ public class ConfigurationsTest
     }
 
     @Test
+    public void testReplacementWithInstances()
+    {
+        //ConfigDick should be replaced by ReplacementDick
+        Configurations configs = new Configurations(
+            new ConfigDick(),
+            new ConfigBar(),
+            new ConfigZ(),
+            new ConfigY(),
+            new ConfigX(),
+            new ConfigTom(),
+            new ReplacementDick(),
+            new ConfigHarry(),
+            new ConfigAdditionalHarry(),
+            new ConfigFoo()
+        );
+
+        configs.sort();
+
+        assertThat(configs.stream().map(c -> c.getClass().getName()).collect(toList()),
+            contains(
+                ConfigFoo.class.getName(),
+                ConfigBar.class.getName(),
+                ConfigX.class.getName(),
+                ConfigY.class.getName(),
+                ConfigZ.class.getName(),
+                ConfigTom.class.getName(),
+                ReplacementDick.class.getName(),
+                ConfigHarry.class.getName(),
+                ConfigAdditionalHarry.class.getName()
+            ));
+
+         assertThat(configs.stream().map(c -> c.getClass().getName()).collect(toList()),
+            not(contains(
+                ConfigDick.class.getName()
+            )));
+    }
+    
+    @Test
     public void testReplacement()
     {
         Configurations.setKnown(
