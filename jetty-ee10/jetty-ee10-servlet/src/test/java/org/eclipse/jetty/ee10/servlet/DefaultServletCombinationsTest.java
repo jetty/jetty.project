@@ -16,6 +16,8 @@ package org.eclipse.jetty.ee10.servlet;
 import java.io.IOException;
 import java.nio.file.Files;
 import java.nio.file.Path;
+import java.util.ArrayList;
+import java.util.List;
 import java.util.stream.Stream;
 
 import jakarta.servlet.ServletException;
@@ -150,77 +152,88 @@ public class DefaultServletCombinationsTest
 
     public static Stream<Data> data()
     {
-        return Stream.of(
-            new Data(false, SERVE, "/foo.welcome", HttpStatus.OK_200, "Servlet at welcome extension"),
-            new Data(false, REDIRECT, "/foo.welcome", HttpStatus.OK_200, "Servlet at welcome extension"),
-            new Data(false, REHANDLE, "/foo.welcome", HttpStatus.OK_200, "Servlet at welcome extension"),
-            new Data(true, SERVE, "/foo.welcome", HttpStatus.OK_200, "Servlet at welcome extension"),
-            new Data(true, REDIRECT, "/foo.welcome", HttpStatus.OK_200, "Servlet at welcome extension"),
-            new Data(true, REHANDLE, "/foo.welcome", HttpStatus.OK_200, "Servlet at welcome extension"),
+        List<Data> datas = new ArrayList<>();
+        for (String requestPath : List.of("/foo.welcome", "/static/foo.welcome", "/static/", "/static/subdirHtml/",
+            "/static/subdirWelcome/", "/static/subdirEmpty/", "/empty/", "/nothing/index.welcome", "/nothing/"))
+        {
+            for (ResourceService.WelcomeMode welcomeMode : List.of(SERVE, REDIRECT, REHANDLE))
+            {
+                for (boolean pathInfoOnly : List.of(false, true))
+                {
+                    int expectedStatus;
+                    String expected;
 
-            new Data(false, SERVE, "/static/foo.welcome", HttpStatus.OK_200, "Static foo.welcome at static"),
-            new Data(false, REDIRECT, "/static/foo.welcome", HttpStatus.OK_200, "Static foo.welcome at static"),
-            new Data(false, REHANDLE, "/static/foo.welcome", HttpStatus.OK_200, "Static foo.welcome at static"),
-            new Data(true, SERVE, "/static/foo.welcome", HttpStatus.OK_200, "Static foo.welcome at root"),
-            new Data(true, REDIRECT, "/static/foo.welcome", HttpStatus.OK_200, "Static foo.welcome at root"),
-            new Data(true, REHANDLE, "/static/foo.welcome", HttpStatus.OK_200, "Static foo.welcome at root"),
+                    switch (requestPath)
+                    {
+                        case "/foo.welcome" ->
+                        {
+                            expectedStatus = HttpStatus.OK_200;
+                            expected = "Servlet at welcome extension";
+                        }
+                        case "/static/foo.welcome" ->
+                        {
+                            expectedStatus = HttpStatus.OK_200;
+                            expected = pathInfoOnly ? "Static foo.welcome at root" : "Static foo.welcome at static";
+                        }
+                        case "/static/" ->
+                        {
+                            if (welcomeMode == REDIRECT)
+                            {
+                                expectedStatus = HttpStatus.FOUND_302;
+                                expected = pathInfoOnly ? "http://local/static/static/index.html" : "http://local/static/index.html";
+                            }
+                            else
+                            {
+                                expectedStatus = HttpStatus.OK_200;
+                                expected = pathInfoOnly ? "Static index.html at root" : "Static index.html at static";
+                            }
+                        }
+                        case "/static/subdirHtml/" ->
+                        {
+                            if (welcomeMode == REDIRECT)
+                            {
+                                expectedStatus = HttpStatus.FOUND_302;
+                                expected = pathInfoOnly ? "http://local/static/static/subdirHtml/index.html" : "http://local/static/subdirHtml/index.html";
+                            }
+                            else
+                            {
+                                expectedStatus = HttpStatus.OK_200;
+                                expected = pathInfoOnly ? "Static index.html at root subdirHtml" : "Static index.html at static subdirHtml";
+                            }
+                        }
+                        case "/static/subdirWelcome/" ->
+                        {
+                            expectedStatus = HttpStatus.FORBIDDEN_403;
+                            expected = null;
+                        }
+                        case "/static/subdirEmpty/" ->
+                        {
+                            expectedStatus = pathInfoOnly ? HttpStatus.NOT_FOUND_404 : HttpStatus.FORBIDDEN_403;
+                            expected = null;
+                        }
+                        case "/empty/" ->
+                        {
+                            expectedStatus = HttpStatus.NOT_FOUND_404;
+                            expected = null;
+                        }
+                        case "/nothing/index.welcome" ->
+                        {
+                            expectedStatus = HttpStatus.OK_200;
+                            expected = "Servlet at welcome extension";
+                        }
+                        case "/nothing/" ->
+                        {
+                            expectedStatus = HttpStatus.NOT_FOUND_404;
+                            expected = null;
+                        }
+                        default -> throw new AssertionError();
+                    }
 
-            new Data(false, SERVE, "/static/", HttpStatus.OK_200, "Static index.html at static"),
-            new Data(false, REDIRECT, "/static/", HttpStatus.FOUND_302, "http://local/static/index.html"),
-            new Data(false, REHANDLE, "/static/", HttpStatus.OK_200, "Static index.html at static"),
-            new Data(true, SERVE, "/static/", HttpStatus.OK_200, "Static index.html at root"),
-            new Data(true, REDIRECT, "/static/", HttpStatus.FOUND_302, "http://local/static/static/index.html"),
-            new Data(true, REHANDLE, "/static/", HttpStatus.OK_200, "Static index.html at root"),
-
-            new Data(false, SERVE, "/static/subdir/", HttpStatus.OK_200, "Static index.html at static subdir"),
-            new Data(false, REDIRECT, "/static/subdir/", HttpStatus.FOUND_302, "http://local/static/subdir/index.html"),
-            new Data(false, REHANDLE, "/static/subdir/", HttpStatus.OK_200, "Static index.html at static subdir"),
-            new Data(true, SERVE, "/static/subdir/", HttpStatus.OK_200, "Static index.html at root subdir"),
-            new Data(true, REDIRECT, "/static/subdir/", HttpStatus.FOUND_302, "http://local/static/static/subdir/index.html"),
-            new Data(true, REHANDLE, "/static/subdir/", HttpStatus.OK_200, "Static index.html at root subdir"),
-
-            new Data(false, SERVE, "/static/subdirHtml/", HttpStatus.OK_200, "Static index.html at static subdirHtml"),
-            new Data(false, REDIRECT, "/static/subdirHtml/", HttpStatus.FOUND_302, "http://local/static/subdirHtml/index.html"),
-            new Data(false, REHANDLE, "/static/subdirHtml/", HttpStatus.OK_200, "Static index.html at static subdirHtml"),
-            new Data(true, SERVE, "/static/subdirHtml/", HttpStatus.OK_200, "Static index.html at root subdirHtml"),
-            new Data(true, REDIRECT, "/static/subdirHtml/", HttpStatus.FOUND_302, "http://local/static/static/subdirHtml/index.html"),
-            new Data(true, REHANDLE, "/static/subdirHtml/", HttpStatus.OK_200, "Static index.html at root subdirHtml"),
-
-            new Data(false, SERVE, "/static/subdirWelcome/", HttpStatus.FORBIDDEN_403, null),
-            new Data(false, REDIRECT, "/static/subdirWelcome/", HttpStatus.FORBIDDEN_403, null),
-            new Data(false, REHANDLE, "/static/subdirWelcome/", HttpStatus.FORBIDDEN_403, null),
-            new Data(true, SERVE, "/static/subdirWelcome/", HttpStatus.FORBIDDEN_403, null),
-            new Data(true, REDIRECT, "/static/subdirWelcome/", HttpStatus.FORBIDDEN_403, null),
-            new Data(true, REHANDLE, "/static/subdirWelcome/", HttpStatus.FORBIDDEN_403, null),
-
-            new Data(false, SERVE, "/static/subdirEmpty/", HttpStatus.FORBIDDEN_403, null),
-            new Data(false, REDIRECT, "/static/subdirEmpty/", HttpStatus.FORBIDDEN_403, null),
-            new Data(false, REHANDLE, "/static/subdirEmpty/", HttpStatus.FORBIDDEN_403, null),
-            new Data(true, SERVE, "/static/subdirEmpty/", HttpStatus.NOT_FOUND_404, null),
-            new Data(true, REDIRECT, "/static/subdirEmpty/", HttpStatus.NOT_FOUND_404, null),
-            new Data(true, REHANDLE, "/static/subdirEmpty/", HttpStatus.NOT_FOUND_404, null),
-
-            new Data(false, SERVE, "/empty/", HttpStatus.NOT_FOUND_404, null),
-            new Data(false, REDIRECT, "/empty/", HttpStatus.NOT_FOUND_404, null),
-            new Data(false, REHANDLE, "/empty/", HttpStatus.NOT_FOUND_404, null),
-            new Data(true, SERVE, "/empty/", HttpStatus.NOT_FOUND_404, null),
-            new Data(true, REDIRECT, "/empty/", HttpStatus.NOT_FOUND_404, null),
-            new Data(true, REHANDLE, "/empty/", HttpStatus.NOT_FOUND_404, null),
-
-            new Data(false, SERVE, "/nothing/index.welcome", HttpStatus.OK_200, "Servlet at welcome extension"),
-            new Data(false, REDIRECT, "/nothing/index.welcome", HttpStatus.OK_200, "Servlet at welcome extension"),
-            new Data(false, REHANDLE, "/nothing/index.welcome", HttpStatus.OK_200, "Servlet at welcome extension"),
-            new Data(true, SERVE, "/nothing/index.welcome", HttpStatus.OK_200, "Servlet at welcome extension"),
-            new Data(true, REDIRECT, "/nothing/index.welcome", HttpStatus.OK_200, "Servlet at welcome extension"),
-            new Data(true, REHANDLE, "/nothing/index.welcome", HttpStatus.OK_200, "Servlet at welcome extension"),
-
-            new Data(false, SERVE, "/nothing/", HttpStatus.NOT_FOUND_404, null),
-            new Data(false, REDIRECT, "/nothing/", HttpStatus.NOT_FOUND_404, null),
-            new Data(false, REHANDLE, "/nothing/", HttpStatus.NOT_FOUND_404, null),
-            new Data(true, SERVE, "/nothing/", HttpStatus.NOT_FOUND_404, null),
-            new Data(true, REDIRECT, "/nothing/", HttpStatus.NOT_FOUND_404, null),
-            new Data(true, REHANDLE, "/nothing/", HttpStatus.NOT_FOUND_404, null)
-        );
+                    datas.add(new Data(pathInfoOnly, welcomeMode, requestPath, expectedStatus, expected));
+                }
+            }
+        }
+        return datas.stream();
     }
 
     @ParameterizedTest
