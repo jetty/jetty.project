@@ -17,6 +17,7 @@ import java.io.IOException;
 import java.net.InetSocketAddress;
 import java.net.SocketAddress;
 import java.util.concurrent.TimeoutException;
+import java.util.concurrent.atomic.AtomicInteger;
 import java.util.concurrent.atomic.AtomicLong;
 
 import jakarta.servlet.RequestDispatcher;
@@ -519,11 +520,22 @@ public class ServletChannel
                             }
                             else
                             {
+
+                                AtomicInteger count = new AtomicInteger();
+                                Callback errorCallback = Callback.from(() ->
+                                {
+                                    if (count.incrementAndGet() == 2)
+                                        _state.scheduleDispatch();
+                                });
+
                                 // We do not notify ServletRequestListener on this dispatch because it might not
                                 // be dispatched to an error page, so we delegate this responsibility to the ErrorHandler.
-                                // We must ignore the callback because the error servlet could go async.
-                                dispatch(() ->
-                                    errorHandler.handle(_servletContextRequest, getServletContextResponse(), Callback.NOOP));
+                                dispatch(() -> errorHandler.handle(_servletContextRequest, getServletContextResponse(), errorCallback));
+
+                                // If the callback has already been completed we should continue in handle loop.
+                                // Otherwise, the callback will schedule a dispatch to handle().
+                                if (count.incrementAndGet() != 2)
+                                    return false;
                             }
                         }
                         catch (Throwable x)
