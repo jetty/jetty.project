@@ -61,7 +61,7 @@
     <hazelcast.version>5.3.1</hazelcast.version>
     <infinispan.protostream.version>4.6.2.Final</infinispan.protostream.version>
     <infinispan.version>11.0.17.Final</infinispan.version>
-    <jackson.version>2.14.3</jackson.version>
+    <jackson.version>2.15.2</jackson.version>
     <jakarta.activation.api.version>2.0.1</jakarta.activation.api.version>
     <jakarta.annotation.api.version>2.1.1</jakarta.annotation.api.version>
     <jakarta.el.api.version>4.0.0</jakarta.el.api.version>
