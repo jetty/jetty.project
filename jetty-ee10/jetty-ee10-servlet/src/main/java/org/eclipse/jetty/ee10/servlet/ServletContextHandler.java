@@ -810,12 +810,15 @@ public class ServletContextHandler extends ContextHandler
             Resource resource = getResource(path);
 
             if (!path.endsWith("/"))
-                path = path + "/";
+                path = path + '/';
 
             HashSet<String> set = new HashSet<>();
             for (Resource item: resource.list())
             {
-                set.add(path + item.getFileName());
+                String entry = path + item.getFileName();
+                if (item.isDirectory())
+                    entry = entry + '/';
+                set.add(entry);
             }
             return set;
         }

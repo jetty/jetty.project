@@ -22,6 +22,7 @@ import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Comparator;
 import java.util.List;
+import java.util.Set;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
 
@@ -536,7 +537,33 @@ public class WebAppContextTest
         server.start();
 
         ServletContext servletContext = context.getServletContext();
-        assertThat(servletContext.getResourcePaths("/WEB-INF"), containsInAnyOrder("/WEB-INF/zero.xml", "/WEB-INF/one.xml"));
+        assertThat(servletContext.getResourcePaths("/WEB-INF/"), containsInAnyOrder("/WEB-INF/zero.xml", "/WEB-INF/one.xml"));
+    }
+
+    @Test
+    public void testGetResourcePathsWithDirsFromCollection() throws Exception
+    {
+        Server server = newServer();
+
+        WebAppContext context = new WebAppContext();
+        context.setContextPath("/");
+        context.setBaseResource(ResourceFactory.combine(
+            ResourceFactory.root().newResource(MavenTestingUtils.getTestResourcePath("wars/layer0/")),
+            ResourceFactory.root().newResource(MavenTestingUtils.getTestResourcePath("wars/layer1/")),
+            ResourceFactory.root().newResource(MavenTestingUtils.getTestResourcePath("wars/with_dirs/"))
+            ));
+        server.setHandler(context);
+        server.start();
+
+        ServletContext servletContext = context.getServletContext();
+        Set<String> results = servletContext.getResourcePaths("/WEB-INF/");
+        String[] expected = {
+            "/WEB-INF/zero.xml",
+            "/WEB-INF/one.xml",
+            "/WEB-INF/bar/",
+            "/WEB-INF/foo/"
+        };
+        assertThat(results, containsInAnyOrder(expected));
     }
 
     @Test
