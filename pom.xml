@@ -37,7 +37,7 @@
     <apache.httpclient.version>4.5.14</apache.httpclient.version>
     <apache.httpcore.version>4.4.16</apache.httpcore.version>
     <asciidoctorj-diagram.version>2.2.8</asciidoctorj-diagram.version>
-    <asciidoctorj.version>2.5.7</asciidoctorj.version>
+    <asciidoctorj.version>2.5.10</asciidoctorj.version>
     <mina.core.version>2.2.1</mina.core.version>
     <asm.version>9.5</asm.version>
     <awaitility.version>4.2.0</awaitility.version>
