@@ -232,6 +232,7 @@ public class Configurations extends AbstractList<Configuration> implements Dumpa
     public Configurations(List<Configuration> configurations)
     {
         _configurations = new ArrayList<>();
+        //ensure replacements are processed
         if (configurations != null)
             configurations.forEach(this::add);
     }
