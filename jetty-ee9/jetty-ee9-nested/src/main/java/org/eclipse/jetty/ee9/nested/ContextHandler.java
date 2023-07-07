@@ -1568,7 +1568,7 @@ public class ContextHandler extends ScopedHandler implements Attributes, Supplie
             Resource resource = getResource(path);
 
             if (!path.endsWith("/"))
-                path = path + "/";
+                path = path + '/';
 
             HashSet<String> set = new HashSet<>();
 
@@ -1576,7 +1576,10 @@ public class ContextHandler extends ScopedHandler implements Attributes, Supplie
             {
                 for (Resource item: r.list())
                 {
-                    set.add(path + item.getFileName());
+                    String entry = path + item.getFileName();
+                    if (item.isDirectory())
+                        entry = entry + '/';
+                    set.add(entry);
                 }
             }
             return set;
