@@ -363,7 +363,7 @@ public class PathResourceTest
         Path dir = tmpPath.resolve("foo-dir");
         FS.ensureDirExists(dir);
         Path file = dir.resolve("bar.txt");
-        Files.writeString(file,"This is bar.txt", StandardCharsets.UTF_8);
+        Files.writeString(file, "This is bar.txt", StandardCharsets.UTF_8);
 
         Resource baseResource = new PathResource(tmpPath);
         assertThat(baseResource.getFileName(), endsWith(File.separator));
