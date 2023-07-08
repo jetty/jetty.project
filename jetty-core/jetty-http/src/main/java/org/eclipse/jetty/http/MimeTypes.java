@@ -124,9 +124,9 @@ public class MimeTypes
         private final boolean _assumedCharset;
         private final HttpField _field;
 
-        Type(String s)
+        Type(String name)
         {
-            _string = s;
+            _string = name;
             _base = this;
             _charset = null;
             _charsetString = null;
@@ -134,20 +134,20 @@ public class MimeTypes
             _field = new PreEncodedHttpField(HttpHeader.CONTENT_TYPE, _string);
         }
 
-        Type(String s, Type base)
+        Type(String name, Type base)
         {
-            _string = s;
+            _string = name;
             _base = base;
-            int i = s.indexOf(";charset=");
-            _charset = Charset.forName(s.substring(i + 9));
+            int i = name.indexOf(";charset=");
+            _charset = Charset.forName(name.substring(i + 9));
             _charsetString = _charset.toString().toLowerCase(Locale.ENGLISH);
             _assumedCharset = false;
             _field = new PreEncodedHttpField(HttpHeader.CONTENT_TYPE, _string);
         }
 
-        Type(String s, Charset cs)
+        Type(String name, Charset cs)
         {
-            _string = s;
+            _string = name;
             _base = this;
             _charset = cs;
             _charsetString = _charset == null ? null : _charset.toString().toLowerCase(Locale.ENGLISH);
@@ -165,9 +165,9 @@ public class MimeTypes
             return _charsetString;
         }
 
-        public boolean is(String s)
+        public boolean is(String type)
         {
-            return _string.equalsIgnoreCase(s);
+            return _string.equalsIgnoreCase(type);
         }
 
         public String asString()
@@ -253,28 +253,28 @@ public class MimeTypes
      * Convert alternate charset names (eg utf8) to normalized
      * name (eg UTF-8).
      *
-     * @param s the charset to normalize
+     * @param charsetName the charset to normalize
      * @return the normalized charset (or null if normalized version not found)
      */
-    public static String normalizeCharset(String s)
+    public static String normalizeCharset(String charsetName)
     {
-        String n = CHARSETS.get(s);
-        return (n == null) ? s : n;
+        String n = CHARSETS.get(charsetName);
+        return (n == null) ? charsetName : n;
     }
 
     /**
      * Convert alternate charset names (eg utf8) to normalized
      * name (eg UTF-8).
      *
-     * @param s the charset to normalize
+     * @param charsetName the charset to normalize
      * @param offset the offset in the charset
      * @param length the length of the charset in the input param
      * @return the normalized charset (or null if not found)
      */
-    public static String normalizeCharset(String s, int offset, int length)
+    public static String normalizeCharset(String charsetName, int offset, int length)
     {
-        String n = CHARSETS.get(s, offset, length);
-        return (n == null) ? s.substring(offset, offset + length) : n;
+        String n = CHARSETS.get(charsetName, offset, length);
+        return (n == null) ? charsetName.substring(offset, offset + length) : n;
     }
 
     /**
