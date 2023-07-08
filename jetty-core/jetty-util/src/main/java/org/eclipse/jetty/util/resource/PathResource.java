@@ -13,6 +13,7 @@
 
 package org.eclipse.jetty.util.resource;
 
+import java.io.File;
 import java.io.IOException;
 import java.net.URI;
 import java.nio.file.DirectoryIteratorException;
@@ -256,7 +257,10 @@ public class PathResource extends Resource
         Path fn = path.getFileName();
         if (fn == null) // if path has no segments (eg "/")
             return "";
-        return fn.toString();
+        String ret = fn.toString();
+        if (Files.isDirectory(path))
+            ret = ret + File.separator;
+        return ret;
     }
 
     @Override

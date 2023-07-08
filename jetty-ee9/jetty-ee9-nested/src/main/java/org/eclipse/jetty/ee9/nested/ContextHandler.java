@@ -1576,12 +1576,7 @@ public class ContextHandler extends ScopedHandler implements Attributes, Supplie
             for (Resource r: resource)
             {
                 for (Resource item: r.list())
-                {
-                    String entry = path + item.getFileName();
-                    if (item.isDirectory())
-                        entry = entry + '/';
-                    set.add(entry);
-                }
+                    set.add(path + item.getFileName());
             }
             return set;
         }

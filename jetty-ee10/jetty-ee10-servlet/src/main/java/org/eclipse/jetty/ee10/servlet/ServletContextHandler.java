@@ -815,12 +815,7 @@ public class ServletContextHandler extends ContextHandler
 
             HashSet<String> set = new HashSet<>();
             for (Resource item: resource.list())
-            {
-                String entry = path + item.getFileName();
-                if (item.isDirectory())
-                    entry = entry + '/';
-                set.add(entry);
-            }
+                set.add(path + item.getFileName());
             return set;
         }
         catch (Exception e)

@@ -13,6 +13,7 @@
 
 package org.eclipse.jetty.util.resource;
 
+import java.io.File;
 import java.io.IOException;
 import java.io.InputStream;
 import java.net.URI;
@@ -27,6 +28,7 @@ import java.nio.file.Path;
 import java.util.HashMap;
 import java.util.Map;
 
+import org.eclipse.jetty.toolchain.test.FS;
 import org.eclipse.jetty.toolchain.test.MavenTestingUtils;
 import org.eclipse.jetty.toolchain.test.jupiter.WorkDir;
 import org.eclipse.jetty.toolchain.test.jupiter.WorkDirExtension;
@@ -41,6 +43,7 @@ import org.slf4j.LoggerFactory;
 
 import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.Matchers.empty;
+import static org.hamcrest.Matchers.endsWith;
 import static org.hamcrest.Matchers.equalTo;
 import static org.hamcrest.Matchers.is;
 import static org.hamcrest.Matchers.not;
@@ -351,6 +354,25 @@ public class PathResourceTest
             // this file system does allow null char ending filenames
             LOG.trace("IGNORED", e);
         }
+    }
+
+    @Test
+    public void testGetFileName(WorkDir workDir) throws IOException
+    {
+        Path tmpPath = workDir.getEmptyPathDir();
+        Path dir = tmpPath.resolve("foo-dir");
+        FS.ensureDirExists(dir);
+        Path file = dir.resolve("bar.txt");
+        Files.writeString(file,"This is bar.txt", StandardCharsets.UTF_8);
+
+        Resource baseResource = new PathResource(tmpPath);
+        assertThat(baseResource.getFileName(), endsWith(File.separator));
+
+        Resource dirResource = baseResource.resolve("foo-dir");
+        assertThat(dirResource.getFileName(), endsWith("foo-dir" + File.separator));
+
+        Resource fileResource = dirResource.resolve("bar.txt");
+        assertThat(fileResource.getFileName(), endsWith("bar.txt"));
     }
 
     @Test
