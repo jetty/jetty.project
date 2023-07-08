@@ -559,8 +559,8 @@ public class WebAppContextTest
         WebAppContext context = new WebAppContext();
         context.setContextPath("/");
         context.setBaseResource(ResourceFactory.combine(
-            ResourceFactory.root().newResource(MavenTestingUtils.getTestResourcePath("wars/layer0/")),
-            ResourceFactory.root().newResource(MavenTestingUtils.getTestResourcePath("wars/layer1/"))));
+            ResourceFactory.root().newResource(MavenPaths.findTestResourceDir("wars/layer0/")),
+            ResourceFactory.root().newResource(MavenPaths.findTestResourceDir("wars/layer1/"))));
         server.setHandler(context);
         server.start();
 
@@ -577,8 +577,8 @@ public class WebAppContextTest
         WebAppContext context = new WebAppContext();
         context.setContextPath("/");
         context.setBaseResource(ResourceFactory.combine(
-            ResourceFactory.root().newResource(MavenTestingUtils.getTestResourcePath("wars/layer0/")),
-            ResourceFactory.root().newResource(MavenTestingUtils.getTestResourcePath("wars/layer1/"))));
+            ResourceFactory.root().newResource(MavenPaths.findTestResourceDir("wars/layer0/")),
+            ResourceFactory.root().newResource(MavenPaths.findTestResourceDir("wars/layer1/"))));
         server.setHandler(context);
         server.start();
 
@@ -594,9 +594,9 @@ public class WebAppContextTest
         WebAppContext context = new WebAppContext();
         context.setContextPath("/");
         context.setBaseResource(ResourceFactory.combine(
-            ResourceFactory.root().newResource(MavenTestingUtils.getTestResourcePath("wars/layer0/")),
-            ResourceFactory.root().newResource(MavenTestingUtils.getTestResourcePath("wars/layer1/")),
-            ResourceFactory.root().newResource(MavenTestingUtils.getTestResourcePath("wars/with_dirs/"))
+            ResourceFactory.root().newResource(MavenPaths.findTestResourceDir("wars/layer0/")),
+            ResourceFactory.root().newResource(MavenPaths.findTestResourceDir("wars/layer1/")),
+            ResourceFactory.root().newResource(MavenPaths.findTestResourceDir("wars/with_dirs/"))
         ));
         server.setHandler(context);
         server.start();
@@ -620,7 +620,7 @@ public class WebAppContextTest
         LocalConnector connector = new LocalConnector(server);
         server.addConnector(connector);
 
-        Path warRoot = MavenPaths.projectBase().resolve("src/test/webapp-with-resources");
+        Path warRoot = MavenPaths.findTestResourceDir("webapp-with-resources");
         assertTrue(Files.isDirectory(warRoot), "Unable to find directory: " + warRoot);
         WebAppContext context = new WebAppContext();
         Resource warResource = context.getResourceFactory().newResource(warRoot);

@@ -38,6 +38,10 @@
         <targetPath>webapp</targetPath>
       </testResource>
       <testResource>
+        <directory>src/test/webapp-with-resources</directory>
+        <targetPath>webapp-with-resources</targetPath>
+      </testResource>
+      <testResource>
         <directory>src/test/webapp-alt-jsp</directory>
         <targetPath>webapp-alt-jsp</targetPath>
       </testResource>
