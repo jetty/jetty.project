@@ -70,11 +70,35 @@ public class FileID
      */
     public static String getFileName(String path)
     {
-        if (path == null || "/".equals(path))
+        if (path == null)
             return "";
+        if (path.equals("/"))
+            return "/";
         int idx = path.lastIndexOf('/');
         if (idx >= 0)
+        {
+            if (idx == path.length() - 1)
+            {
+                // we found the trailing slash
+                // eg: file:/path/to/dir/
+                // we want to return the "dir/" here
+                int previousSlash = path.lastIndexOf('/', idx - 1);
+                if (previousSlash >= 0)
+                {
+                    // we have a previous slash
+                    // so return the segment and trailing slash
+                    return path.substring(previousSlash + 1, idx + 1);
+                }
+                else
+                {
+                    // we have no previous slash
+                    // this input string is something like "foo/"
+                    // so return it all
+                    return path;
+                }
+            }
             return path.substring(idx + 1);
+        }
         return path;
     }
 

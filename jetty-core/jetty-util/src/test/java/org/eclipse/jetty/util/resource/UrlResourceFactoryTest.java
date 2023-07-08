@@ -27,15 +27,20 @@ import java.time.Instant;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicInteger;
 
+import org.eclipse.jetty.toolchain.test.FS;
 import org.eclipse.jetty.toolchain.test.MavenTestingUtils;
+import org.eclipse.jetty.toolchain.test.jupiter.WorkDir;
+import org.eclipse.jetty.toolchain.test.jupiter.WorkDirExtension;
 import org.eclipse.jetty.util.IO;
 import org.eclipse.jetty.util.URIUtil;
 import org.junit.jupiter.api.Tag;
 import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.extension.ExtendWith;
 
 import static org.awaitility.Awaitility.await;
 import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.Matchers.containsString;
+import static org.hamcrest.Matchers.endsWith;
 import static org.hamcrest.Matchers.is;
 import static org.hamcrest.Matchers.not;
 import static org.hamcrest.Matchers.notNullValue;
@@ -44,6 +49,7 @@ import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
+@ExtendWith(WorkDirExtension.class)
 public class UrlResourceFactoryTest
 {
     @Test
@@ -69,7 +75,7 @@ public class UrlResourceFactoryTest
             assertThat(resource.lastModified().toEpochMilli(), not(Instant.EPOCH));
             assertThat(resource.length(), not(-1));
             assertTrue(resource.isDirectory());
-            assertThat(resource.getFileName(), is(""));
+            assertThat(resource.getFileName(), is("/"));
 
             Resource blogs = resource.resolve("blog/");
             assertThat(blogs, notNullValue());
@@ -77,7 +83,7 @@ public class UrlResourceFactoryTest
             assertThat(blogs.lastModified().toEpochMilli(), not(Instant.EPOCH));
             assertThat(blogs.length(), not(-1));
             assertTrue(blogs.isDirectory());
-            assertThat(blogs.getFileName(), is(""));
+            assertThat(blogs.getFileName(), is("blog/"));
 
             Resource favicon = resource.resolve("favicon.ico");
             assertThat(favicon, notNullValue());
@@ -91,6 +97,27 @@ public class UrlResourceFactoryTest
         {
             ResourceFactory.unregisterResourceFactory("https");
         }
+    }
+
+    @Test
+    public void testGetFileName(WorkDir workDir) throws IOException
+    {
+        Path tmpPath = workDir.getEmptyPathDir();
+        Path dir = tmpPath.resolve("foo-dir");
+        FS.ensureDirExists(dir);
+        Path file = dir.resolve("bar.txt");
+        Files.writeString(file, "This is bar.txt", StandardCharsets.UTF_8);
+
+        URLResourceFactory urlResourceFactory = new URLResourceFactory();
+
+        Resource baseResource = urlResourceFactory.newResource(tmpPath);
+        assertThat(baseResource.getFileName(), endsWith("/"));
+
+        Resource dirResource = baseResource.resolve("foo-dir/");
+        assertThat(dirResource.getFileName(), endsWith("foo-dir/"));
+
+        Resource fileResource = dirResource.resolve("bar.txt");
+        assertThat(fileResource.getFileName(), endsWith("bar.txt"));
     }
 
     @Test
