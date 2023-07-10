@@ -19,7 +19,6 @@ import java.util.stream.Stream;
 
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.params.ParameterizedTest;
-import org.junit.jupiter.params.provider.Arguments;
 import org.junit.jupiter.params.provider.MethodSource;
 
 import static org.hamcrest.MatcherAssert.assertThat;
@@ -298,24 +297,5 @@ public class StringUtilTest
     public void testToHexStringEmpty()
     {
         assertThat(StringUtil.toHexString(new byte[0]), is(""));
-    }
-
-    public static Stream<Arguments> shellQuoting()
-    {
-        return Stream.of(
-            Arguments.of(null, null),
-            Arguments.of("", ""),
-            Arguments.of("Hello", "Hello"),
-            Arguments.of("Hello World", "\"Hello World\""),
-            Arguments.of("foo\\bar", "\"foo\\\\bar\""),
-            Arguments.of("'single'", "\"'single'\"")
-        );
-    }
-
-    @ParameterizedTest
-    @MethodSource("shellQuoting")
-    public void testShellQuoting(String string, String expected)
-    {
-        assertThat(StringUtil.shellQuoteIfNeeded(string), is(expected));
     }
 }

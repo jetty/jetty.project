@@ -19,8 +19,6 @@ import java.nio.file.Paths;
 import java.util.ArrayList;
 import java.util.List;
 
-import org.eclipse.jetty.util.StringUtil;
-
 public class CommandLineBuilder
 {
     public static String findJavaBin()
@@ -55,6 +53,70 @@ public class CommandLineBuilder
     }
 
     /**
+     * Quote a string suitable for use with a command line shell using double quotes.
+     * <p>This method applies doubles quoting as described for the unix {@code sh} commands:
+     * Enclosing characters within double quotes preserves the literal meaning of all characters except
+     * dollarsign ($), backquote (`), and backslash (\).
+     * The backslash inside double quotes is historically weird, and serves
+     * to quote only the following characters: {@code $ ` " \ newline}.
+     * Otherwise it remains literal.
+     * </p><p>Additionally, a string is deemed to need quoting if
+     * it contains a single quote or a {@code bash} meta character: A character that,
+     * when unquoted, separates words. One of the following: {@code |  & ; ( ) < > space tab newline}
+     * </p>
+     *
+     * @param input The string to quote if needed
+     * @return The quoted string or the original string if quotes are not necessary
+     */
+    public static String shellQuoteIfNeeded(String input)
+    {
+        if (input == null || input.length() == 0)
+            return input;
+
+        int i = 0;
+        boolean needsQuoting = false;
+        while (!needsQuoting && i < input.length())
+        {
+            char c = input.charAt(i++);
+            needsQuoting = switch (c)
+            {
+                // sh quotes
+                case '$', '`', '"', '\\',
+
+                // sh single quotes
+                '\'',
+
+                // bash metacharacter: A character that, when unquoted, separates words.
+                //                     One of the following: |  & ; ( ) < > space tab newline
+                '|', '&', ';', '(', ')', '<', '>', ' ', '\t', '\n'
+                    -> true;
+                default -> false;
+            };
+        }
+
+        if (!needsQuoting)
+            return input;
+
+        StringBuilder builder = new StringBuilder(input.length() * 2);
+        builder.append('"');
+        builder.append(input, 0, --i);
+
+        while (i < input.length())
+        {
+            char c = input.charAt(i++);
+            switch (c)
+            {
+                case '"', '\\', '`', '$' -> builder.append('\\').appendCodePoint(c);
+                default -> builder.appendCodePoint(c);
+            }
+        }
+
+        builder.append('"');
+
+        return builder.toString();
+    }
+
+    /**
      * Add a simple argument to the command line.
      * <p>
      * Will quote arguments that have a space in them.
@@ -68,7 +130,7 @@ public class CommandLineBuilder
             args.add(arg);
             if (commandLine.length() > 0)
                 commandLine.append(separator);
-            commandLine.append(StringUtil.shellQuoteIfNeeded(arg));
+            commandLine.append(shellQuoteIfNeeded(arg));
         }
     }
 
@@ -80,11 +142,11 @@ public class CommandLineBuilder
     {
         if (commandLine.length() > 0)
             commandLine.append(separator);
-        commandLine.append(StringUtil.shellQuoteIfNeeded(name));
+        commandLine.append(shellQuoteIfNeeded(name));
         if ((value != null) && (value.length() > 0))
         {
             args.add(name + "=" + value);
-            commandLine.append('=').append(StringUtil.shellQuoteIfNeeded(value));
+            commandLine.append('=').append(shellQuoteIfNeeded(value));
         }
         else
         {
@@ -102,17 +164,17 @@ public class CommandLineBuilder
         if (commandLine.length() > 0)
             commandLine.append(separator);
         commandLine.append(option);
-        if (StringUtil.isBlank(name))
+        if (name == null || name.length() == 0)
         {
             args.add(option);
         }
         else
         {
-            commandLine.append(StringUtil.shellQuoteIfNeeded(name));
+            commandLine.append(shellQuoteIfNeeded(name));
             if ((value != null) && (value.length() > 0))
             {
                 args.add(option + name + "=" + value);
-                commandLine.append(StringUtil.shellQuoteIfNeeded(name)).append('=').append(StringUtil.shellQuoteIfNeeded(value));
+                commandLine.append(shellQuoteIfNeeded(name)).append('=').append(shellQuoteIfNeeded(value));
             }
             else
             {
