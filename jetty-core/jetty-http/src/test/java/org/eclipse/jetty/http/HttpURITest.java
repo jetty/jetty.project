@@ -472,6 +472,7 @@ public class HttpURITest
 
                 // ambiguous encoding
                 {"/path/%25/info", "/path/%25/info", "/path/%/info", EnumSet.of(Violation.AMBIGUOUS_PATH_ENCODING)},
+                {"/path/%2520/info", "/path/%2520/info", "/path/%20/info", EnumSet.of(Violation.AMBIGUOUS_PATH_ENCODING)},
                 {"/path/%u0025/info", "/path/%25/info", "/path/%/info", EnumSet.of(Violation.AMBIGUOUS_PATH_ENCODING, Violation.UTF16_ENCODINGS)},
                 {"%25/info", "%25/info", "%/info", EnumSet.of(Violation.AMBIGUOUS_PATH_ENCODING)},
                 {"/path/%25../info", "/path/%25../info", "/path/%../info", EnumSet.of(Violation.AMBIGUOUS_PATH_ENCODING)},
