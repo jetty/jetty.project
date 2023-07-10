@@ -70,6 +70,21 @@ public interface Response extends Content.Sink
     Supplier<HttpFields> getTrailersSupplier();
 
     /**
+     * <p>Sets the supplier for the HTTP trailers.</p>
+     * <p>The method {@link Supplier#get()} may be called by the
+     * implementation multiple times, so it is important that
+     * the same value is returned in every invocation.</p>
+     * <p>Example:</p>
+     * <pre>{@code
+     * // Correct usage.
+     * HttpFields.Mutable trailers = HttpFields.build();
+     * response.setTrailersSupplier(() -> trailers);
+     *
+     * // WRONG usage, as the value changes for
+     * // every invocation of supplier.get().
+     * response.setTrailersSupplier(() -> HttpFields.build());
+     * }</pre>
+     *
      * @param trailers a supplier for the HTTP trailers
      */
     void setTrailersSupplier(Supplier<HttpFields> trailers);
