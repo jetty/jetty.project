@@ -1255,6 +1255,70 @@ public class StringUtil
             .toString();
     }
 
+    /**
+     * Quote a string suitable for use with a command line shell using double quotes.
+     * <p>This method applies doubles quoting as described for the unix {@code sh} commands:
+     * Enclosing characters within double quotes preserves the literal meaning of all characters except
+     * dollarsign ($), backquote (`), and backslash (\).
+     * The backslash inside double quotes is historically weird, and serves
+     * to quote only the following characters: $ ` " \ and newline.
+     * Otherwise it remains literal.
+     * </p><p>Additionally, a string is deemed to need quoting if
+     * it contains a single quote or a {@code bash} meta character: A character that,
+     * when unquoted, separates words. One of the following: |  & ; ( ) < > space tab newline
+     * </p>
+     *
+     * @param input The string to quote if needed
+     * @return The quoted string or the original string if quotes are not necessary
+     */
+    public static String shellQuoteIfNeeded(String input)
+    {
+        if (isBlank(input))
+            return input;
+
+        int i = 0;
+        boolean needsQuoting = false;
+        while (!needsQuoting && i < input.length())
+        {
+            char c = input.charAt(i++);
+            needsQuoting = switch (c)
+            {
+                // sh quotes
+                case '$', '`', '"', '\\',
+
+                // sh single quotes
+                '\'',
+
+                // bash metacharacter: A character that, when unquoted, separates words.
+                //                     One of the following: |  & ; ( ) < > space tab newline
+                '|', '&', ';', '(', ')', '<', '>', ' ', '\t', '\n'
+                    -> true;
+                default -> false;
+            };
+        }
+
+        if (!needsQuoting)
+            return input;
+
+        StringBuilder builder = new StringBuilder(input.length() * 2);
+        builder.append('"');
+        builder.append(input, 0, --i);
+
+        while (i < input.length())
+        {
+            char c = input.charAt(i++);
+            switch (c)
+            {
+                case '"', '\\', '`', '$' -> builder.append('\\').appendCodePoint(c);
+                default -> builder.appendCodePoint(c);
+            }
+        }
+
+        builder.append('"');
+
+        return builder.toString();
+    }
+
     private StringUtil()
     {
         // prevent instantiation

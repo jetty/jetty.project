@@ -72,6 +72,8 @@ Report Commands:
                      o  "main" - the main class to run
                      o  "args" - the arguments passed to the main class
                      o  "envs" - the generated XML files to create the environments
+                     o  "multipart" - a fake part that causes the command to be
+                                      generated over multiple lines
 
 Configure Commands:
 -------------------

@@ -70,6 +70,7 @@
                     <include>org/eclipse/jetty/util/ManifestUtils*</include>
                     <include>org/eclipse/jetty/util/TopologicalSort*</include>
                     <include>org/eclipse/jetty/util/FileID*</include>
+                    <include>org/eclipse/jetty/util/StringUtil*</include>
                   </includes>
                 </filter>
               </filters>
