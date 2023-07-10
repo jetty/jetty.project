@@ -542,16 +542,16 @@ public class AsyncServletTest
     @Test
     public void testFwdStartDispatch() throws Exception
     {
-        String response = process("fwd", "start=200&dispatch=20", null);
+        String response = process("fwd", "start=10000&dispatch=100", null);
         assertThat(response, startsWith("HTTP/1.1 200 OK"));
         assertThat(_history, contains(
-            "FWD REQUEST /ctx/fwd/info?start=200&dispatch=20",
+            "FWD REQUEST /ctx/fwd/info?start=10000&dispatch=100",
             "FORWARD /ctx/path1?forward=true",
             "wrapped REQ",
             "initial",
             "start",
             "dispatch",
-            "FWD ASYNC /ctx/fwd/info?start=200&dispatch=20",
+            "FWD ASYNC /ctx/fwd/info?start=10000&dispatch=100",
             "wrapped REQ",
             "FORWARD /ctx/path1?forward=true",
             "wrapped REQ",
@@ -563,16 +563,16 @@ public class AsyncServletTest
     @Test
     public void testFwdStartDispatchPath() throws Exception
     {
-        String response = process("fwd", "start=200&dispatch=20&path=/path2", null);
+        String response = process("fwd", "start=10000&dispatch=20&path=/path2", null);
         assertThat(response, startsWith("HTTP/1.1 200 OK"));
         assertThat(_history, contains(
-            "FWD REQUEST /ctx/fwd/info?start=200&dispatch=20&path=/path2",
+            "FWD REQUEST /ctx/fwd/info?start=10000&dispatch=20&path=/path2",
             "FORWARD /ctx/path1?forward=true",
             "wrapped REQ",
             "initial",
             "start",
             "dispatch",
-            "ASYNC /ctx/path2?start=200&dispatch=20&path=/path2",
+            "ASYNC /ctx/path2?start=10000&dispatch=20&path=/path2",
             "wrapped REQ",
             "!initial",
             "onComplete"));
@@ -621,7 +621,7 @@ public class AsyncServletTest
     public void testAsyncRead() throws Exception
     {
         String header = """
-            GET /ctx/path/info?start=2000&dispatch=1500 HTTP/1.1\r
+            GET /ctx/path/info?start=10000&dispatch=1500 HTTP/1.1\r
             Host: localhost\r
             Content-Length: 10\r
             Connection: close\r
@@ -641,12 +641,12 @@ public class AsyncServletTest
             assertTrue(_latch.await(1, TimeUnit.SECONDS));
             assertThat(response, startsWith("HTTP/1.1 200 OK"));
             assertThat(_history, contains(
-                "REQUEST /ctx/path/info?start=2000&dispatch=1500",
+                "REQUEST /ctx/path/info?start=10000&dispatch=1500",
                 "initial",
                 "start",
                 "async-read=10",
                 "dispatch",
-                "ASYNC /ctx/path/info?start=2000&dispatch=1500",
+                "ASYNC /ctx/path/info?start=10000&dispatch=1500",
                 "wrapped REQ",
                 "!initial",
                 "onComplete"));
