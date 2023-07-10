@@ -638,7 +638,8 @@ public class StartArgs
                 // pass properties as args
                 for (Prop p : properties)
                 {
-                    cmd.addArg(p.key, properties.expand(p.value));
+                    if (!p.key.startsWith("java."))
+                        cmd.addArg(p.key, properties.expand(p.value));
                 }
             }
             else if (properties.size() > 0)
@@ -1469,11 +1470,6 @@ public class StartArgs
             {
                 JavaVersion ver = JavaVersion.parse(value);
                 properties.setProperty("java.version.platform", Integer.toString(ver.getPlatform()), source);
-
-                // @deprecated - below will be removed in Jetty 10.x
-                properties.setProperty("java.version.major", Integer.toString(ver.getMajor()), "Deprecated");
-                properties.setProperty("java.version.minor", Integer.toString(ver.getMinor()), "Deprecated");
-                properties.setProperty("java.version.micro", Integer.toString(ver.getMicro()), "Deprecated");
 
                 // ALPN feature exists
                 properties.setProperty("runtime.feature.alpn", Boolean.toString(isMethodAvailable(javax.net.ssl.SSLParameters.class, "getApplicationProtocols", null)), source);
