@@ -1261,11 +1261,11 @@ public class StringUtil
      * Enclosing characters within double quotes preserves the literal meaning of all characters except
      * dollarsign ($), backquote (`), and backslash (\).
      * The backslash inside double quotes is historically weird, and serves
-     * to quote only the following characters: $ ` " \ and newline.
+     * to quote only the following characters: {@code $ ` " \ newline}.
      * Otherwise it remains literal.
      * </p><p>Additionally, a string is deemed to need quoting if
      * it contains a single quote or a {@code bash} meta character: A character that,
-     * when unquoted, separates words. One of the following: |  & ; ( ) < > space tab newline
+     * when unquoted, separates words. One of the following: {@code |  & ; ( ) < > space tab newline}
      * </p>
      *
      * @param input The string to quote if needed
