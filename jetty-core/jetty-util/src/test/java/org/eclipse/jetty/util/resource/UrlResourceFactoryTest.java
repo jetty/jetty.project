@@ -75,7 +75,7 @@ public class UrlResourceFactoryTest
             assertThat(resource.lastModified().toEpochMilli(), not(Instant.EPOCH));
             assertThat(resource.length(), not(-1));
             assertTrue(resource.isDirectory());
-            assertThat(resource.getFileName(), is("/"));
+            assertThat(resource.getFileName(), is(""));
 
             Resource blogs = resource.resolve("blog/");
             assertThat(blogs, notNullValue());
@@ -83,7 +83,7 @@ public class UrlResourceFactoryTest
             assertThat(blogs.lastModified().toEpochMilli(), not(Instant.EPOCH));
             assertThat(blogs.length(), not(-1));
             assertTrue(blogs.isDirectory());
-            assertThat(blogs.getFileName(), is("blog/"));
+            assertThat(blogs.getFileName(), is("blog"));
 
             Resource favicon = resource.resolve("favicon.ico");
             assertThat(favicon, notNullValue());
@@ -111,10 +111,10 @@ public class UrlResourceFactoryTest
         URLResourceFactory urlResourceFactory = new URLResourceFactory();
 
         Resource baseResource = urlResourceFactory.newResource(tmpPath);
-        assertThat(baseResource.getFileName(), endsWith("/"));
+        assertThat(baseResource.getFileName(), endsWith(""));
 
         Resource dirResource = baseResource.resolve("foo-dir/");
-        assertThat(dirResource.getFileName(), endsWith("foo-dir/"));
+        assertThat(dirResource.getFileName(), endsWith("foo-dir"));
 
         Resource fileResource = dirResource.resolve("bar.txt");
         assertThat(fileResource.getFileName(), endsWith("bar.txt"));

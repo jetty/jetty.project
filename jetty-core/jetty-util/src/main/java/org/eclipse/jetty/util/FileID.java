@@ -70,10 +70,8 @@ public class FileID
      */
     public static String getFileName(String path)
     {
-        if (path == null)
+        if (path == null || path.equals("/"))
             return "";
-        if (path.equals("/"))
-            return "/";
         int idx = path.lastIndexOf('/');
         if (idx >= 0)
         {
@@ -87,14 +85,14 @@ public class FileID
                 {
                     // we have a previous slash
                     // so return the segment and trailing slash
-                    return path.substring(previousSlash + 1, idx + 1);
+                    return path.substring(previousSlash + 1, idx);
                 }
                 else
                 {
                     // we have no previous slash
                     // this input string is something like "foo/"
                     // so return it all
-                    return path;
+                    return path.substring(0, idx);
                 }
             }
             return path.substring(idx + 1);

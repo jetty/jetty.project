@@ -13,7 +13,6 @@
 
 package org.eclipse.jetty.util.resource;
 
-import java.io.File;
 import java.io.IOException;
 import java.io.InputStream;
 import java.net.URI;
@@ -43,7 +42,6 @@ import org.slf4j.LoggerFactory;
 
 import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.Matchers.empty;
-import static org.hamcrest.Matchers.endsWith;
 import static org.hamcrest.Matchers.equalTo;
 import static org.hamcrest.Matchers.is;
 import static org.hamcrest.Matchers.not;
@@ -366,13 +364,13 @@ public class PathResourceTest
         Files.writeString(file, "This is bar.txt", StandardCharsets.UTF_8);
 
         Resource baseResource = new PathResource(tmpPath);
-        assertThat(baseResource.getFileName(), endsWith(File.separator));
+        assertThat(baseResource.getFileName(), is(tmpPath.getFileName().toString()));
 
         Resource dirResource = baseResource.resolve("foo-dir");
-        assertThat(dirResource.getFileName(), endsWith("foo-dir" + File.separator));
+        assertThat(dirResource.getFileName(), is(dir.getFileName().toString()));
 
         Resource fileResource = dirResource.resolve("bar.txt");
-        assertThat(fileResource.getFileName(), endsWith("bar.txt"));
+        assertThat(fileResource.getFileName(), is(file.getFileName().toString()));
     }
 
     @Test

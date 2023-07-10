@@ -143,7 +143,8 @@ public abstract class Resource implements Iterable<Resource>
      *
      * <p>This is the last segment of the path.</p>
      *
-     * @return the filename of the resource, or "" if there are no path segments (eg: path of "/"), or null if not backed by a Path
+     * @return the filename of the resource, or "" if there are no path segments (eg: path of "/"), or null if resource has no path.
+     * @see Path#getFileName()
      */
     public abstract String getFileName();
 
