@@ -1573,10 +1573,12 @@ public class ContextHandler extends ScopedHandler implements Attributes, Supplie
 
             HashSet<String> set = new HashSet<>();
 
-            for (Resource r: resource)
+            for (Resource item: resource.list())
             {
-                for (Resource item: r.list())
-                    set.add(path + item.getFileName());
+                String entry = path + item.getFileName();
+                if (item.isDirectory())
+                    entry = entry + '/';
+                set.add(entry);
             }
             return set;
         }
