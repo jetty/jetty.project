@@ -59,11 +59,7 @@ public class CommandLineBuilder
      * dollarsign ($), backquote (`), and backslash (\).
      * The backslash inside double quotes is historically weird, and serves
      * to quote only the following characters: {@code $ ` " \ newline}.
-     * Otherwise it remains literal.
-     * </p><p>Additionally, a string is deemed to need quoting if
-     * it contains a single quote or a {@code bash} meta character: A character that,
-     * when unquoted, separates words. One of the following: {@code |  & ; ( ) < > space tab newline}
-     * </p>
+     * Otherwise, it remains literal.
      *
      * @param input The string to quote if needed
      * @return The quoted string or the original string if quotes are not necessary
@@ -78,20 +74,17 @@ public class CommandLineBuilder
         while (!needsQuoting && i < input.length())
         {
             char c = input.charAt(i++);
-            needsQuoting = switch (c)
-            {
-                // sh quotes
-                case '$', '`', '"', '\\',
 
-                // sh single quotes
-                '\'',
-
-                // bash metacharacter: A character that, when unquoted, separates words.
-                //                     One of the following: |  & ; ( ) < > space tab newline
-                '|', '&', ';', '(', ')', '<', '>', ' ', '\t', '\n'
-                    -> true;
-                default -> false;
-            };
+            // needs quoting unless a limited set of known good characters
+            needsQuoting = !(
+                (c >= 'A' && c <= 'Z') ||
+                (c >= 'a' && c <= 'z') ||
+                (c >= '0' && c <= '9') ||
+                c == '/' ||
+                c == ':' ||
+                c == '-' ||
+                c == '_'
+            );
         }
 
         if (!needsQuoting)
