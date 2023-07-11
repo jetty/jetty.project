@@ -55,6 +55,7 @@ import org.junit.jupiter.params.provider.Arguments;
 import org.junit.jupiter.params.provider.MethodSource;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+import org.xml.sax.InputSource;
 import org.xml.sax.SAXException;
 
 import static java.nio.charset.StandardCharsets.UTF_8;
@@ -92,9 +93,12 @@ public class XmlConfigurationTest
         configuration.configure();
     }
 
-    public static String[] xmlConfigs()
+    public static Stream<Arguments> xmlConfigs()
     {
-        return new String[]{"org/eclipse/jetty/xml/configureWithAttr.xml", "org/eclipse/jetty/xml/configureWithElements.xml"};
+        return Stream.of(
+            Arguments.of("org/eclipse/jetty/xml/configureWithAttr.xml"),
+            Arguments.of("org/eclipse/jetty/xml/configureWithElements.xml")
+        );
     }
 
     @ParameterizedTest
@@ -1853,6 +1857,43 @@ public class XmlConfigurationTest
         configuration.configure(tc);
 
         assertThat(tc.testObject, instanceOf(ScheduledExecutorService.class));
+    }
+
+    public static Stream<Arguments> xmlSystemIdSource()
+    {
+        List<Arguments> ids = new ArrayList<>();
+
+        String[] schemes = {"http", "https"};
+        String[] hosts = {"eclipse.org", "www.eclipse.org", "eclipse.dev", "www.eclipse.dev"};
+        String[] paths = {"/jetty/configure.dtd", "/jetty/configure_9_3.dtd", "/jetty/configure_10_0.dtd"};
+
+        for (String scheme: schemes)
+        {
+            for (String host: hosts)
+            {
+                for (String path: paths)
+                {
+                    ids.add(Arguments.of(String.format("%s://%s%s", scheme, host, path)));
+                }
+            }
+        }
+
+        return ids.stream();
+    }
+
+    /**
+     * Test to ensure that all the XML System ID variants are covered in the
+     * {@link XmlConfiguration} internals.
+     */
+    @ParameterizedTest
+    @MethodSource("xmlSystemIdSource")
+    public void testSystemIdVariants(String xmlSystemId) throws IOException, SAXException
+    {
+        // empty raw xml, just to instantiate XmlConfiguration, so we can access the ConfigurationParser.
+        XmlConfiguration xmlConfiguration = asXmlConfiguration("<Configure class=\"org.eclipse.jetty.xml.TestConfiguration\" />");
+        XmlConfiguration.ConfigurationParser configurationProcessor = xmlConfiguration.getParser();
+        InputSource inputSource = configurationProcessor.resolveEntity(null, xmlSystemId);
+        assertNotNull(inputSource, "SystemID: " + xmlSystemId + " does not exist");
     }
 
     private ByteArrayOutputStream captureLoggingBytes(ThrowableAction action) throws Exception
