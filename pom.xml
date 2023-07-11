@@ -8,7 +8,7 @@
   <name>Jetty :: Project</name>
   <description>The Eclipse Jetty Project</description>
   <packaging>pom</packaging>
-  <url>https://eclipse.org/jetty</url>
+  <url>https://eclipse.dev/jetty</url>
   <inceptionYear>1995</inceptionYear>
 
   <properties>
@@ -16,7 +16,7 @@
     <compiler.source>17</compiler.source>
     <compiler.target>17</compiler.target>
     <compiler.release>17</compiler.release>
-    <jetty.url>https://www.eclipse.org/jetty/</jetty.url>
+    <jetty.url>https://eclipse.dev/jetty/</jetty.url>
     <jmhjar.name>benchmarks</jmhjar.name>
     <osgi.slf4j.import.packages>org.slf4j;version="[1.7,3.0)", org.slf4j.event;version="[1.7,3.0)", org.slf4j.helpers;version="[1.7,3.0)", org.slf4j.spi;version="[1.7,3.0)"</osgi.slf4j.import.packages>
     <project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
@@ -206,7 +206,7 @@
   <licenses>
     <license>
       <name>Eclipse Public License - Version 2.0</name>
-      <url>https://www.eclipse.org/legal/epl-2.0</url>
+      <url>https://www.eclipse.org/legal/epl-2.0/</url>
     </license>
     <license>
       <name>Apache Software License - Version 2.0</name>
@@ -863,7 +863,7 @@
               <require>asciidoctor-diagram</require>
             </requires>
             <attributes>
-              <JDURL>https://www.eclipse.org/jetty/javadoc/jetty-11</JDURL>
+              <JDURL>https://eclipse.dev/jetty/javadoc/jetty-11</JDURL>
               <SRCDIR>${basedir}/..</SRCDIR>
               <GITBROWSEURL>https://github.com/eclipse/jetty.project/tree/jetty-9.4.x</GITBROWSEURL>
               <GITDOCURL>https://github.com/eclipse/jetty.project/tree/jetty-10.0.x-doc-refactor/jetty-documentation/src/main/asciidoc</GITDOCURL>
@@ -2303,27 +2303,18 @@
   <mailingLists>
     <mailingList>
       <name>Jetty Developer Mailing List</name>
-      <archive>https://dev.eclipse.org/mhonarc/lists/jetty-dev/maillist.html</archive>
-      <subscribe>https://dev.eclipse.org/mailman/listinfo/jetty-dev</subscribe>
-      <unsubscribe>https://dev.eclipse.org/mailman/listinfo/jetty-dev</unsubscribe>
-    </mailingList>
-    <mailingList>
-      <name>Jetty Commit Mailing List</name>
-      <archive>https://dev.eclipse.org/mhonarc/lists/jetty-commit/maillist.html</archive>
-      <subscribe>https://dev.eclipse.org/mailman/listinfo/jetty-commit</subscribe>
-      <unsubscribe>https://dev.eclipse.org/mailman/listinfo/jetty-commit</unsubscribe>
+      <archive>https://www.eclipse.org/lists/jetty-dev/</archive>
+      <subscribe>https://accounts.eclipse.org/mailing-list/jetty-dev</subscribe>
     </mailingList>
     <mailingList>
       <name>Jetty Users Mailing List</name>
-      <archive>https://dev.eclipse.org/mhonarc/lists/jetty-users/maillist.html</archive>
-      <subscribe>https://dev.eclipse.org/mailman/listinfo/jetty-users</subscribe>
-      <unsubscribe>https://dev.eclipse.org/mailman/listinfo/jetty-users</unsubscribe>
+      <archive>https://www.eclipse.org/lists/jetty-users/</archive>
+      <subscribe>https://accounts.eclipse.org/mailing-list/jetty-users</subscribe>
     </mailingList>
     <mailingList>
       <name>Jetty Announce Mailing List</name>
-      <archive>https://dev.eclipse.org/mhonarc/lists/jetty-announce/maillist.html</archive>
-      <subscribe>https://dev.eclipse.org/mailman/listinfo/jetty-announce</subscribe>
-      <unsubscribe>https://dev.eclipse.org/mailman/listinfo/jetty-announce</unsubscribe>
+      <archive>https://www.eclipse.org/lists/jetty-announce/</archive>
+      <subscribe>https://accounts.eclipse.org/mailing-list/jetty-announce</subscribe>
     </mailingList>
   </mailingLists>
 
@@ -2409,10 +2400,6 @@
       <name>Jetty Snapshot Repository</name>
       <url>https://oss.sonatype.org/content/repositories/jetty-snapshots/</url>
     </snapshotRepository>
-    <site>
-      <id>jetty.eclipse.website</id>
-      <url>scp://build.eclipse.org:/home/data/httpd/download.eclipse.org/jetty/${project.version}/</url>
-    </site>
   </distributionManagement>
 
 </project>

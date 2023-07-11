@@ -1,4 +1,4 @@
-# DO NOT EDIT - See: https://www.eclipse.org/jetty/documentation/current/startup-modules.html
+# DO NOT EDIT - See: https://eclipse.dev/jetty/documentation/current/startup-modules.html
 
 [description]
 Provides integration of CDI within webapp to Jetty container object lifecycles.

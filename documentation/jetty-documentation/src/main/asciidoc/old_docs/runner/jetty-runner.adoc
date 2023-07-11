@@ -69,7 +69,7 @@ The default Configuration Classes are:
 `org.eclipse.jetty.plus.webapp.PlusConfiguration`
 `org.eclipse.jetty.annotations.AnnotationConfiguration`
 
-You can learn more about implementing specific Configuration Classes link:https://www.eclipse.org/jetty/documentation/current/configuring-webapps.html#webapp-configurations[here.]
+You can learn more about implementing specific Configuration Classes link:https://eclipse.dev/jetty/documentation/current/configuring-webapps.html#webapp-configurations[here.]
 
 ==== Deploying Multiple Contexts
 

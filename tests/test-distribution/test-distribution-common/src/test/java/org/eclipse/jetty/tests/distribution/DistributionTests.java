@@ -719,7 +719,7 @@ public class DistributionTests extends AbstractJettyHomeTest
             String message = "test-log-line";
             String xml = "" +
                 "<?xml version=\"1.0\"?>" +
-                "<!DOCTYPE Configure PUBLIC \"-//Jetty//Configure//EN\" \"https://www.eclipse.org/jetty/configure_10_0.dtd\">" +
+                "<!DOCTYPE Configure PUBLIC \"-//Jetty//Configure//EN\" \"https://eclipse.dev/jetty/configure_10_0.dtd\">" +
                 "<Configure>" +
                 "  <Call name=\"getLogger\" class=\"java.util.logging.Logger\">" +
                 "    <Arg>" + loggerName + "</Arg>" +
@@ -777,7 +777,7 @@ public class DistributionTests extends AbstractJettyHomeTest
             Path sslPatchXML = jettyBaseEtc.resolve("ssl-patch.xml");
             String xml = """
                 <?xml version="1.0"?>
-                <!DOCTYPE Configure PUBLIC "-//Jetty//Configure//EN" "https://www.eclipse.org/jetty/configure_10_0.dtd">
+                <!DOCTYPE Configure PUBLIC "-//Jetty//Configure//EN" "https://eclipse.dev/jetty/configure_10_0.dtd">
                 <Configure id="sslConnector" class="org.eclipse.jetty.server.ServerConnector">
                   <Call name="addIfAbsentConnectionFactory">
                     <Arg>
@@ -1229,7 +1229,7 @@ public class DistributionTests extends AbstractJettyHomeTest
             Path fcgiConnectorXML = jettyBaseEtc.resolve("fcgi-connector.xml");
             Files.writeString(fcgiConnectorXML, """
                 <?xml version="1.0"?>
-                <!DOCTYPE Configure PUBLIC "-//Jetty//Configure//EN" "https://www.eclipse.org/jetty/configure_10_0.dtd">
+                <!DOCTYPE Configure PUBLIC "-//Jetty//Configure//EN" "https://eclipse.dev/jetty/configure_10_0.dtd">
                 <Configure id="Server">
                   <Call name="addConnector">
                     <Arg>
@@ -1259,7 +1259,7 @@ public class DistributionTests extends AbstractJettyHomeTest
             Path phpXML = jettyBase.resolve("webapps").resolve("php.xml");
             Files.writeString(phpXML, """
                 <?xml version="1.0"?>
-                <!DOCTYPE Configure PUBLIC "-//Jetty//Configure//EN" "https://www.eclipse.org/jetty/configure_10_0.dtd">
+                <!DOCTYPE Configure PUBLIC "-//Jetty//Configure//EN" "https://eclipse.dev/jetty/configure_10_0.dtd">
                 <Configure class="org.eclipse.jetty.server.handler.ContextHandler">
                   <Set name="contextPath">/php</Set>
                   <Set name="baseResourceAsPath">
@@ -1281,7 +1281,7 @@ public class DistributionTests extends AbstractJettyHomeTest
             Path proxyXML = jettyBase.resolve("webapps").resolve("proxy.xml");
             Files.writeString(proxyXML, """
                 <?xml version="1.0"?>
-                <!DOCTYPE Configure PUBLIC "-//Jetty//Configure//EN" "https://www.eclipse.org/jetty/configure_10_0.dtd">
+                <!DOCTYPE Configure PUBLIC "-//Jetty//Configure//EN" "https://eclipse.dev/jetty/configure_10_0.dtd">
                 <Configure class="org.eclipse.jetty.server.handler.ContextHandler">
                   <Set name="contextPath">/proxy</Set>
                   <Set name="handler">
@@ -1344,7 +1344,7 @@ public class DistributionTests extends AbstractJettyHomeTest
             Path fcgiConnectorXML = jettyBaseEtc.resolve("fcgi-connector.xml");
             Files.writeString(fcgiConnectorXML, """
                 <?xml version="1.0"?>
-                <!DOCTYPE Configure PUBLIC "-//Jetty//Configure//EN" "https://www.eclipse.org/jetty/configure_10_0.dtd">
+                <!DOCTYPE Configure PUBLIC "-//Jetty//Configure//EN" "https://eclipse.dev/jetty/configure_10_0.dtd">
                 <Configure id="Server">
                   <Call name="addConnector">
                     <Arg>
@@ -1374,7 +1374,7 @@ public class DistributionTests extends AbstractJettyHomeTest
             Path phpXML = jettyBase.resolve("webapps").resolve("php.xml");
             Files.writeString(phpXML, """
                 <?xml version="1.0"?>
-                <!DOCTYPE Configure PUBLIC "-//Jetty//Configure//EN" "https://www.eclipse.org/jetty/configure_10_0.dtd">
+                <!DOCTYPE Configure PUBLIC "-//Jetty//Configure//EN" "https://eclipse.dev/jetty/configure_10_0.dtd">
                 <Configure class="org.eclipse.jetty.server.handler.ContextHandler">
                   <Set name="contextPath">/php</Set>
                   <Set name="baseResourceAsPath">
@@ -1396,7 +1396,7 @@ public class DistributionTests extends AbstractJettyHomeTest
             Path proxyXML = jettyBase.resolve("webapps").resolve("proxy.xml");
             Files.writeString(proxyXML, """
                 <?xml version="1.0"?>
-                <!DOCTYPE Configure PUBLIC "-//Jetty//Configure//EN" "https://www.eclipse.org/jetty/configure_10_0.dtd">
+                <!DOCTYPE Configure PUBLIC "-//Jetty//Configure//EN" "https://eclipse.dev/jetty/configure_10_0.dtd">
                 <Configure class="org.eclipse.jetty.$ENV.servlet.ServletContextHandler">
                   <Set name="contextPath">/proxy</Set>
                   <Call name="addServlet">
