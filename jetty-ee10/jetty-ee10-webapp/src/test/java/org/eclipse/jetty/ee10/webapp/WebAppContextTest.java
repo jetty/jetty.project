@@ -513,8 +513,8 @@ public class WebAppContextTest
         WebAppContext context = new WebAppContext();
         context.setContextPath("/");
         context.setBaseResource(ResourceFactory.combine(
-            ResourceFactory.root().newResource(MavenTestingUtils.getTestResourcePath("wars/layer0/")),
-            ResourceFactory.root().newResource(MavenTestingUtils.getTestResourcePath("wars/layer1/"))));
+            context.getResourceFactory().newResource(MavenTestingUtils.getTestResourcePath("wars/layer0/")),
+            context.getResourceFactory().newResource(MavenTestingUtils.getTestResourcePath("wars/layer1/"))));
         server.setHandler(context);
         server.start();
 
@@ -531,8 +531,8 @@ public class WebAppContextTest
         WebAppContext context = new WebAppContext();
         context.setContextPath("/");
         context.setBaseResource(ResourceFactory.combine(
-            ResourceFactory.root().newResource(MavenTestingUtils.getTestResourcePath("wars/layer0/")),
-            ResourceFactory.root().newResource(MavenTestingUtils.getTestResourcePath("wars/layer1/"))));
+            context.getResourceFactory().newResource(MavenTestingUtils.getTestResourcePath("wars/layer0/")),
+            context.getResourceFactory().newResource(MavenTestingUtils.getTestResourcePath("wars/layer1/"))));
         server.setHandler(context);
         server.start();
 
@@ -548,9 +548,9 @@ public class WebAppContextTest
         WebAppContext context = new WebAppContext();
         context.setContextPath("/");
         context.setBaseResource(ResourceFactory.combine(
-            ResourceFactory.root().newResource(MavenTestingUtils.getTestResourcePath("wars/layer0/")),
-            ResourceFactory.root().newResource(MavenTestingUtils.getTestResourcePath("wars/layer1/")),
-            ResourceFactory.root().newResource(MavenTestingUtils.getTestResourcePath("wars/with_dirs/"))
+            context.getResourceFactory().newResource(MavenTestingUtils.getTestResourcePath("wars/layer0/")),
+            context.getResourceFactory().newResource(MavenTestingUtils.getTestResourcePath("wars/layer1/")),
+            context.getResourceFactory().newResource(MavenTestingUtils.getTestResourcePath("wars/with_dirs/"))
             ));
         server.setHandler(context);
         server.start();
