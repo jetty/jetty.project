@@ -14,7 +14,7 @@
 [[og-begin-start]]
 ==== Starting Jetty
 
-Eclipse Jetty as a standalone server has no graphical user interface; configuring and running the server is done from the command line.
+Jetty as a standalone server has no graphical user interface; configuring and running the server is done from the command line.
 
 First, create a `$JETTY_BASE` directory.
 
@@ -93,7 +93,7 @@ $JETTY_BASE
 
 [NOTE]
 ====
-By default, Jetty does not generate `+*.ini+` configuration files in `start.d/` for modules activated as transitive dependencies.
+By default, Jetty does *not* generate `+*.ini+` configuration files in `start.d/` for modules activated as transitive dependencies.
 To manually configure such modules, you should activate them directly via Jetty's `--add-modules` flag.
 ====
 
