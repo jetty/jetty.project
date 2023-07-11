@@ -38,6 +38,10 @@
         <targetPath>webapp</targetPath>
       </testResource>
       <testResource>
+        <directory>src/test/webapp-with-resources</directory>
+        <targetPath>webapp-with-resources</targetPath>
+      </testResource>
+      <testResource>
         <directory>src/test/webapp-alt-jsp</directory>
         <targetPath>webapp-alt-jsp</targetPath>
       </testResource>
@@ -50,6 +54,8 @@
         <configuration>
           <argLine>
             @{argLine} ${jetty.surefire.argLine}
+            --add-exports org.eclipse.jetty.ee9.webapp/org.acme.webapp=org.eclipse.jetty.ee9.servlet
+            --add-exports org.eclipse.jetty.ee9.webapp/org.acme.webapp=org.eclipse.jetty.ee9.nested
           </argLine>
           <useManifestOnlyJar>false</useManifestOnlyJar>
           <additionalClasspathElements>
