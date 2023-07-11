@@ -13,7 +13,7 @@
 
 package org.eclipse.jetty.deploy;
 
-import java.io.FileInputStream;
+import java.io.InputStream;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.util.HashMap;
@@ -57,9 +57,12 @@ public class App
             Path properties = path.getParent().resolve(basename + ".properties");
             if (Files.exists(properties))
             {
-                Properties p = new Properties();
-                p.load(new FileInputStream(properties.toFile()));
-                p.keySet().stream().map(Object::toString).forEach(k -> _properties.put(k, p.getProperty(k)));
+                try (InputStream stream = Files.newInputStream(properties))
+                {
+                    Properties p = new Properties();
+                    p.load(stream);
+                    p.stringPropertyNames().forEach(k -> _properties.put(k, p.getProperty(k)));
+                }
             }
         }
         catch (Exception e)
