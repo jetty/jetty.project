@@ -70,7 +70,7 @@ public class CommandLineBuilderTest
         cmd.addArg("java");
         cmd.addArg("-Djetty.home", "/opt/jetty");
         cmd.addArg("monetary.symbol", "€");
-        assertThat(cmd.toCommandLine(), is("java -Djetty.home=/opt/jetty monetary.symbol=€"));
+        assertThat(cmd.toCommandLine(), is("java -Djetty.home=/opt/jetty monetary.symbol=\"€\""));
     }
 
     public static Stream<Arguments> shellQuoting()
@@ -106,6 +106,6 @@ public class CommandLineBuilderTest
             is("""
                 java \\
                   -Djetty.home=/opt/jetty \\
-                  monetary.symbol=€"""));
+                  monetary.symbol="€\""""));
     }
 }
