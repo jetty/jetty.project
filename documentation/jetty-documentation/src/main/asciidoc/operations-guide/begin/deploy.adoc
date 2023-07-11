@@ -65,12 +65,12 @@ Refer to the section about xref:og-deploy[deployment] for further information ab
 
 [subs=attributes]
 ----
-$ java -jar $JETTY_HOME/start.jar --add-module={ee-current}-deploy
+$ java -jar $JETTY_HOME/start.jar --add-modules={ee-current}-deploy
 ----
 
 [source,options=nowrap]
 ----
-include::jetty[setupArgs="--add-module=http",args="--add-module={ee-current}-deploy"]
+include::jetty[setupArgs="--add-modules=http",args="--add-modules={ee-current}-deploy"]
 ----
 
 The `{ee-current}-deploy` module creates `$JETTY_BASE/webapps`, which is the directory where Jetty looks for any `+*.war+` files or web application directories to deploy.
@@ -84,7 +84,7 @@ You can use one of the demos shipped with Jetty:
 
 [subs=attributes]
 ----
-$ java -jar $JETTY_HOME/start.jar --add-module={ee-current}-demo-simple
+$ java -jar $JETTY_HOME/start.jar --add-modules={ee-current}-demo-simple
 ----
 
 The `$JETTY_BASE` directory is now:

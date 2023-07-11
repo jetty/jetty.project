@@ -138,7 +138,7 @@ $ java -jar $JETTY_HOME/start.jar --list-modules=demo
 You can enable a module, for example the `http` module:
 
 ----
-$ java -jar $JETTY_HOME/start.jar --add-module=http
+$ java -jar $JETTY_HOME/start.jar --add-modules=http
 ----
 
 Once you have one or more module enabled, you can display the current configuration, to verify that the configuration is correct:
@@ -150,7 +150,7 @@ $ java -jar $JETTY_HOME/start.jar --list-config
 You can enable a Jetty demo module, which will deploy a demo web application:
 
 ----
-$ java -jar $JETTY_HOME/start.jar --add-module=demo-simple
+$ java -jar $JETTY_HOME/start.jar --add-modules=demo-simple
 ----
 
 Finally, you can start Jetty:

@@ -52,12 +52,12 @@ Now try to enable the xref:og-protocols-http[`http`] module.
 NOTE: If you want to enable support for protocols like secure HTTP/1.1 or HTTP/2 or HTTP/3, or want to configure Jetty behind a load balancer, read xref:og-protocols[this section].
 
 ----
-$ java -jar $JETTY_HOME/start.jar --add-module=http
+$ java -jar $JETTY_HOME/start.jar --add-modules=http
 ----
 
 [source,subs=quotes,options=nowrap]
 ----
-include::jetty[args="--add-module=http",highlight="([a-z\-]+ *transitively enabled)"]
+include::jetty[args="--add-modules=http",highlight="([a-z\-]+ *transitively enabled)"]
 ----
 
 When Jetty enables the `http` module, it also automatically enables a number of transitive dependencies of the `http` module, such as the `server` module, the `logging-jetty` module, and so on.

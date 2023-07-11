@@ -17,20 +17,12 @@
 Clear text HTTP/1.1 is enabled with the `http` Jetty module with the following command (issued from within the `$JETTY_BASE` directory):
 
 ----
-$ java -jar $JETTY_HOME/start.jar --add-module=http
+$ java -jar $JETTY_HOME/start.jar --add-modules=http
 ----
+
+[source,subs=quotes,options=nowrap]
 ----
-INFO  : mkdir ${jetty.base}/start.d
-INFO  : server          transitively enabled, ini template available with --add-module=server
-INFO  : logging-jetty   transitively enabled
-INFO  : http            initialized in ${jetty.base}/start.d/http.ini
-INFO  : resources       transitively enabled
-INFO  : threadpool      transitively enabled, ini template available with --add-module=threadpool
-INFO  : logging/slf4j   dynamic dependency of logging-jetty
-INFO  : bytebufferpool  transitively enabled, ini template available with --add-module=bytebufferpool
-INFO  : mkdir ${jetty.base}/resources
-INFO  : copy ${jetty.home}/modules/logging/jetty/resources/jetty-logging.properties to ${jetty.base}/resources/jetty-logging.properties
-INFO  : Base directory was modified
+include::jetty[setupArgs="--add-modules=http"]
 ----
 
 After having enabled the `http` module, the `$JETTY_BASE` directory looks like this:
@@ -53,7 +45,7 @@ Some parameters that you may want to configure are in fact common HTTP parameter
 You can force the creation of the `server.ini` file via:
 
 ----
-$ java -jar $JETTY_HOME/start.jar --add-module=server
+$ java -jar $JETTY_HOME/start.jar --add-modules=server
 ----
 
 Now the `$JETTY_BASE` directory looks like this:
