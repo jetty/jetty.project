@@ -140,6 +140,22 @@ public class DefaultServletCombinationsTest
         ((DefaultServlet)defaultHolder.getServlet()).getResourceService().setWelcomeMode(welcomeMode);
     }
 
+    private void startServer(ResourceService.WelcomeMode welcomeMode) throws Exception
+    {
+        ServletHolder defaultHolder;
+        defaultHolder = context.addServlet(DefaultServlet.class, "/static/*");
+        defaultHolder.setInitParameter("pathInfoOnly", "true");
+        defaultHolder.setInitParameter("dirAllowed", "false");
+        context.addServlet(TeapotServlet.class,  "/");
+
+        server.setHandler(context);
+        server.addConnector(connector);
+
+        server.start();
+        // Must happen after start.
+        ((DefaultServlet)defaultHolder.getServlet()).getResourceService().setWelcomeMode(welcomeMode);
+    }
+
     @AfterEach
     public void destroy() throws Exception
     {
@@ -170,7 +186,7 @@ public class DefaultServletCombinationsTest
     {
     }
 
-    public static Stream<Data> data()
+    public static Stream<Data> defaultWithPathInfoOnly()
     {
         List<Data> datas = new ArrayList<>();
         for (String requestPath : List.of("/", "/foo.welcome", "/subdirHtml/",
@@ -265,11 +281,123 @@ public class DefaultServletCombinationsTest
     }
 
     @ParameterizedTest
-    @MethodSource("data")
+    @MethodSource("defaultWithPathInfoOnly")
     public void testDefaultPathCombinations(Data data) throws Exception
     {
         startServer(data.pathInfoOnly(), data.welcomeMode());
         String requestPath = context.getContextPath() + (data.pathInfoOnly() ? "/static" : "") + data.requestPath();
+        String rawResponse = connector.getResponse(String.format("""
+            GET %s HTTP/1.1\r
+            Host: local\r
+            Connection: close\r
+            \r
+            """, requestPath));
+        HttpTester.Response response = HttpTester.parseResponse(rawResponse);
+        int status = response.getStatus();
+        assertThat(response.toString(), status, is(data.expectedStatus()));
+        if (status > 299 && status < 400)
+            assertThat(response.get(HttpHeader.LOCATION), is(data.expected));
+        else if (data.expected != null)
+            assertThat(response.getContent(), is(data.expected));
+    }
+
+    public static Stream<Data> nonDefault()
+    {
+        List<Data> datas = new ArrayList<>();
+        for (String requestPath : List.of("/", "/foo.welcome", "/subdirHtml/",
+            "/subdirWelcome/", "/empty/", "/nothing/index.welcome", "/nothing/"))
+        {
+            for (ResourceService.WelcomeMode welcomeMode : List.of(SERVE, REDIRECT, REHANDLE))
+            {
+                int expectedStatus;
+                String expected;
+
+                switch (requestPath)
+                {
+                    case "/" ->
+                    {
+                        switch (welcomeMode)
+                        {
+                            case SERVE ->
+                            {
+                                expectedStatus = HttpStatus.OK_200;
+                                expected = "Static index.html at root";
+                            }
+                            case REDIRECT ->
+                            {
+                                expectedStatus = HttpStatus.FOUND_302;
+                                expected = "http://local/ctx/static/index.html";
+                            }
+                            case REHANDLE ->
+                            {
+                                expectedStatus = HttpStatus.IM_A_TEAPOT_418;
+                                expected = null;
+                            }
+                            default -> throw new AssertionError();
+                        }
+                    }
+                    case "/foo.welcome" ->
+                    {
+                        expectedStatus = HttpStatus.OK_200;
+                        expected = "Static foo.welcome at root";
+                    }
+                    case "/subdirHtml/" ->
+                    {
+                        switch (welcomeMode)
+                        {
+                            case SERVE ->
+                            {
+                                expectedStatus = HttpStatus.OK_200;
+                                expected = "Static index.html at root subdirHtml";
+                            }
+                            case REDIRECT ->
+                            {
+                                expectedStatus = HttpStatus.FOUND_302;
+                                expected = "http://local/ctx/static/subdirHtml/index.html";
+                            }
+                            case REHANDLE ->
+                            {
+                                expectedStatus = HttpStatus.IM_A_TEAPOT_418;
+                                expected = null;
+                            }
+                            default -> throw new AssertionError();
+                        }
+                    }
+                    case "/subdirWelcome/" ->
+                    {
+                        expectedStatus = HttpStatus.FORBIDDEN_403;
+                        expected = null;
+                    }
+                    case "/empty/" ->
+                    {
+                        expectedStatus = HttpStatus.FORBIDDEN_403;
+                        expected = null;
+                    }
+                    case "/nothing/index.welcome" ->
+                    {
+                        expectedStatus = HttpStatus.NOT_FOUND_404;
+                        expected = null;
+                    }
+                    case "/nothing/" ->
+                    {
+                        expectedStatus = HttpStatus.NOT_FOUND_404;
+                        expected = null;
+                    }
+                    default -> throw new AssertionError();
+                }
+
+                datas.add(new Data(false, welcomeMode, requestPath, expectedStatus, expected));
+            }
+        }
+        return datas.stream();
+    }
+
+    @ParameterizedTest
+    @MethodSource("nonDefault")
+    public void testNonDefaultPathCombinations(Data data) throws Exception
+    {
+        startServer(data.welcomeMode());
+        String requestPath = context.getContextPath() + "/static" + data.requestPath();
         String rawResponse = connector.getResponse(String.format("""
             GET %s HTTP/1.1\r
             Host: local\r
