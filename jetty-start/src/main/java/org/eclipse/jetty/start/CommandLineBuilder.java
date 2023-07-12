@@ -70,7 +70,7 @@ public class CommandLineBuilder
 
     /**
      * Quote a string suitable for use with a command line shell using double quotes.
-     * <p>This method applies doubles quoting as described for the unix {@code sh} commands:
+     * <p>This method applies doubles quotes suitable for a POSIX compliant shell:
      * Enclosing characters within double quotes preserves the literal meaning of all characters except
      * dollarsign ($), backquote (`), and backslash (\).
      * The backslash inside double quotes is historically weird, and serves
@@ -123,6 +123,7 @@ public class CommandLineBuilder
                 case '\\':
                 case '`':
                 case '$':
+                case '\n':
                     builder.append('\\').append(c);
                     break;
                 default: builder.append(c);
