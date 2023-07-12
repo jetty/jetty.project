@@ -53,31 +53,81 @@ public class CommandLineBuilder
         return "java";
     }
 
-    /**
-     * Perform an optional quoting of the argument, being intelligent with spaces and quotes as needed. If a subString is set in quotes it won't the subString
-     * won't be escaped.
-     *
-     * @param arg the argument to quote
-     * @return the quoted and escaped argument
-     * @deprecated no replacement, quoting is done by {@link #toQuotedString()} now.
-     */
-    @Deprecated
-    public static String quote(String arg)
-    {
-        return "'" + arg + "'";
-    }
-
-    private List<String> args;
+    private final StringBuilder commandLine = new StringBuilder();
+    private final List<String> args = new ArrayList<>();
+    private final String separator;
 
     public CommandLineBuilder()
     {
-        args = new ArrayList<String>();
+        this(false);
     }
 
-    public CommandLineBuilder(String bin)
+    public CommandLineBuilder(boolean multiline)
     {
-        this();
-        args.add(bin);
+        separator = multiline ? (" \\" + System.lineSeparator() + "  ") : " ";
+    }
+
+    /**
+     * Quote a string suitable for use with a command line shell using double quotes.
+     * <p>This method applies doubles quoting as described for the unix {@code sh} commands:
+     * Enclosing characters within double quotes preserves the literal meaning of all characters except
+     * dollarsign ($), backquote (`), and backslash (\).
+     * The backslash inside double quotes is historically weird, and serves
+     * to quote only the following characters: {@code $ ` " \ newline}.
+     * Otherwise, it remains literal.
+     *
+     * @param input The string to quote if needed
+     * @return The quoted string or the original string if quotes are not necessary
+     */
+    public static String shellQuoteIfNeeded(String input)
+    {
+        if (input == null || input.length() == 0)
+            return input;
+
+        int i = 0;
+        boolean needsQuoting = false;
+        while (!needsQuoting && i < input.length())
+        {
+            char c = input.charAt(i++);
+
+            // needs quoting unless a limited set of known good characters
+            needsQuoting = !(
+                (c >= 'A' && c <= 'Z') ||
+                (c >= 'a' && c <= 'z') ||
+                (c >= '0' && c <= '9') ||
+                c == '/' ||
+                c == ':' ||
+                c == '.' ||
+                c == '-' ||
+                c == '_'
+                );
+        }
+
+        if (!needsQuoting)
+            return input;
+
+        StringBuilder builder = new StringBuilder(input.length() * 2);
+        builder.append('"');
+        builder.append(input, 0, --i);
+
+        while (i < input.length())
+        {
+            char c = input.charAt(i++);
+            switch (c)
+            {
+                case '"':
+                case '\\':
+                case'`':
+                case'$':
+                    builder.append('\\').appendCodePoint(c);
+                    break;
+                default: builder.appendCodePoint(c);
+            }
+        }
+
+        builder.append('"');
+
+        return builder.toString();
     }
 
     /**
@@ -92,29 +142,25 @@ public class CommandLineBuilder
         if (arg != null)
         {
             args.add(arg);
+            if (commandLine.length() > 0)
+                commandLine.append(separator);
+            commandLine.append(shellQuoteIfNeeded(arg));
         }
     }
 
     /**
-     * Similar to {@link #addArg(String)} but concats both name + value with an "=" sign, quoting were needed, and excluding the "=" portion if the value is
-     * undefined or empty.
-     *
-     * <pre>
-     *   addEqualsArg("-Dname", "value") = "-Dname=value"
-     *   addEqualsArg("-Djetty.home", "/opt/company inc/jetty (7)/") = "-Djetty.home=/opt/company\ inc/jetty\ (7)/"
-     *   addEqualsArg("-Djenkins.workspace", "/opt/workspaces/jetty jdk7/") = "-Djenkins.workspace=/opt/workspaces/jetty\ jdk7/"
-     *   addEqualsArg("-Dstress", null) = "-Dstress"
-     *   addEqualsArg("-Dstress", "") = "-Dstress"
-     * </pre>
-     *
      * @param name the name
      * @param value the value
      */
-    public void addEqualsArg(String name, String value)
+    public void addArg(String name, String value)
     {
+        if (commandLine.length() > 0)
+            commandLine.append(separator);
+        commandLine.append(shellQuoteIfNeeded(name));
         if ((value != null) && (value.length() > 0))
         {
             args.add(name + "=" + value);
+            commandLine.append('=').append(shellQuoteIfNeeded(value));
         }
         else
         {
@@ -123,17 +169,31 @@ public class CommandLineBuilder
     }
 
     /**
-     * Add a simple argument to the command line.
-     * <p>
-     * Will <b>NOT</b> quote/escape arguments that have a space in them.
-     *
-     * @param arg the simple argument to add
+     * @param option the option
+     * @param name the name
+     * @param value the value
      */
-    public void addRawArg(String arg)
+    public void addArg(String option, String name, String value)
     {
-        if (arg != null)
+        if (commandLine.length() > 0)
+            commandLine.append(separator);
+        commandLine.append(option);
+        if (name == null || name.length() == 0)
         {
-            args.add(arg);
+            args.add(option);
+        }
+        else
+        {
+            commandLine.append(shellQuoteIfNeeded(name));
+            if ((value != null) && (value.length() > 0))
+            {
+                args.add(option + name + "=" + value);
+                commandLine.append('=').append(shellQuoteIfNeeded(value));
+            }
+            else
+            {
+                args.add(option + name);
+            }
         }
     }
 
@@ -145,19 +205,11 @@ public class CommandLineBuilder
     @Override
     public String toString()
     {
-        return toString(" ");
-    }
-
-    public String toString(String delim)
-    {
         StringBuilder buf = new StringBuilder();
-
         for (String arg : args)
         {
             if (buf.length() > 0)
-            {
-                buf.append(delim);
-            }
+                buf.append(' ');
             buf.append(arg); // we assume escaping has occurred during addArg
         }
 
@@ -169,23 +221,9 @@ public class CommandLineBuilder
      *
      * @return the toString but each arg that has spaces is surrounded by {@code '} (single-quote tick)
      */
-    public String toQuotedString()
+    public String toCommandLine()
     {
-        StringBuilder buf = new StringBuilder();
-
-        for (String arg : args)
-        {
-            if (buf.length() > 0)
-                buf.append(' ');
-            boolean needsQuotes = (arg.contains(" "));
-            if (needsQuotes)
-                buf.append("'");
-            buf.append(arg);
-            if (needsQuotes)
-                buf.append("'");
-        }
-
-        return buf.toString();
+        return commandLine.toString();
     }
 
     public void debug()
