@@ -188,7 +188,7 @@ public class CommandLineBuilder
     /**
      * A version of {@link #toString()} where every arg is evaluated for potential {@code '} (strong quote) wrapping.
      *
-     * @return the toString but each arg that has spaces is surrounded by {@code '} (string quote)
+     * @return the toString but each arg that needs quoting is surrounded by {@code '} (strong quotes)
      */
     public String toQuotedString()
     {
