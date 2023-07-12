@@ -20,9 +20,9 @@ import jakarta.websocket.OnError;
 import jakarta.websocket.OnMessage;
 import jakarta.websocket.Session;
 import jakarta.websocket.server.ServerEndpoint;
+import org.eclipse.jetty.http.MimeTypes;
 import org.eclipse.jetty.toolchain.test.StackUtils;
 import org.eclipse.jetty.util.IO;
-import org.eclipse.jetty.util.StringUtil;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -34,7 +34,7 @@ public class InputStreamSocket
     @OnMessage
     public String onInputStream(InputStream stream) throws IOException
     {
-        return IO.toString(stream, StringUtil.__UTF8);
+        return IO.toString(stream, MimeTypes.UTF8);
     }
 
     @OnError

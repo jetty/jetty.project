@@ -25,7 +25,7 @@ import java.util.ArrayList;
 import java.util.Collections;
 
 import org.eclipse.jetty.util.Callback;
-import org.eclipse.jetty.util.TypeUtil;
+import org.eclipse.jetty.util.StringUtil;
 import org.hamcrest.Matchers;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
@@ -42,7 +42,7 @@ public class ProxyCustomizerTest
         try (Socket socket = new Socket(server.getURI().getHost(), server.getURI().getPort()))
         {
             OutputStream output = socket.getOutputStream();
-            output.write(TypeUtil.fromHexString(proxyAsHexString));
+            output.write(StringUtil.fromHexString(proxyAsHexString));
             output.write(rawHttp.getBytes(StandardCharsets.UTF_8));
             output.flush();
             socket.shutdownOutput();

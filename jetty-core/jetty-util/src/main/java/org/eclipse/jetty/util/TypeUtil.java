@@ -111,33 +111,6 @@ public class TypeUtil
         name2Class.put("java.lang.String", java.lang.String.class);
     }
 
-    private static final HashMap<Class<?>, String> class2Name = new HashMap<>();
-
-    static
-    {
-        class2Name.put(java.lang.Boolean.TYPE, "boolean");
-        class2Name.put(java.lang.Byte.TYPE, "byte");
-        class2Name.put(java.lang.Character.TYPE, "char");
-        class2Name.put(java.lang.Double.TYPE, "double");
-        class2Name.put(java.lang.Float.TYPE, "float");
-        class2Name.put(java.lang.Integer.TYPE, "int");
-        class2Name.put(java.lang.Long.TYPE, "long");
-        class2Name.put(java.lang.Short.TYPE, "short");
-        class2Name.put(java.lang.Void.TYPE, "void");
-
-        class2Name.put(java.lang.Boolean.class, "java.lang.Boolean");
-        class2Name.put(java.lang.Byte.class, "java.lang.Byte");
-        class2Name.put(java.lang.Character.class, "java.lang.Character");
-        class2Name.put(java.lang.Double.class, "java.lang.Double");
-        class2Name.put(java.lang.Float.class, "java.lang.Float");
-        class2Name.put(java.lang.Integer.class, "java.lang.Integer");
-        class2Name.put(java.lang.Long.class, "java.lang.Long");
-        class2Name.put(java.lang.Short.class, "java.lang.Short");
-
-        class2Name.put(null, "void");
-        class2Name.put(java.lang.String.class, "java.lang.String");
-    }
-
     private static final HashMap<Class<?>, Function<String, Object>> class2Value = new HashMap<>();
 
     static
@@ -207,17 +180,6 @@ public class TypeUtil
     public static Class<?> fromName(String name)
     {
         return name2Class.get(name);
-    }
-
-    /**
-     * Canonical name for a type.
-     *
-     * @param type A class , which may be a primitive TYPE field.
-     * @return Canonical name.
-     */
-    public static String toName(Class<?> type)
-    {
-        return class2Name.get(type);
     }
 
     public static String toShortName(Class<?> type)
@@ -413,20 +375,6 @@ public class TypeUtil
         return value;
     }
 
-    /**
-     * @deprecated use {@link StringUtil#fromHexString(String)} instead
-     */
-    @Deprecated
-    public static byte[] parseBytes(String s, int base)
-    {
-        byte[] bytes = new byte[s.length() / 2];
-        for (int i = 0; i < s.length(); i += 2)
-        {
-            bytes[i / 2] = (byte)TypeUtil.parseInt(s, i, 2, base);
-        }
-        return bytes;
-    }
-
     public static String toString(byte[] bytes, int base)
     {
         StringBuilder buf = new StringBuilder();
@@ -542,42 +490,6 @@ public class TypeUtil
         toHex((int)value, buf);
     }
 
-    /**
-     * @deprecated use {@link StringUtil#toHexString(byte)} instead
-     */
-    @Deprecated
-    public static String toHexString(byte b)
-    {
-        return StringUtil.toHexString(b);
-    }
-
-    /**
-     * @deprecated use {@link StringUtil#toHexString(byte[])} instead
-     */
-    @Deprecated
-    public static String toHexString(byte[] b)
-    {
-        return StringUtil.toHexString(b);
-    }
-
-    /**
-     * @deprecated use {@link StringUtil#toHexString(byte[], int, int)} instead
-     */
-    @Deprecated
-    public static String toHexString(byte[] b, int offset, int length)
-    {
-        return StringUtil.toHexString(b, offset, length);
-    }
-
-    /**
-     * @deprecated use {@link StringUtil#fromHexString(String)}
-     */
-    @Deprecated
-    public static byte[] fromHexString(String s)
-    {
-        return StringUtil.fromHexString(s);
-    }
-
     public static void dump(Class<?> c)
     {
         System.err.println("Dump: " + c);
@@ -603,7 +515,7 @@ public class TypeUtil
         if (o == null)
             return false;
         if (o instanceof Boolean)
-            return ((Boolean)o).booleanValue();
+            return (Boolean)o;
         return Boolean.parseBoolean(o.toString());
     }
 
@@ -616,7 +528,7 @@ public class TypeUtil
         if (o == null)
             return false;
         if (o instanceof Boolean)
-            return !((Boolean)o).booleanValue();
+            return !(Boolean)o;
         return "false".equalsIgnoreCase(o.toString());
     }
 
@@ -731,7 +643,7 @@ public class TypeUtil
         }
 
         Optional<ResolvedModule> resolvedModule = configuration.findModule(module.getName());
-        if ((resolvedModule == null) || !resolvedModule.isPresent())
+        if (resolvedModule.isEmpty())
         {
             return null;
         }
@@ -743,12 +655,7 @@ public class TypeUtil
         }
 
         Optional<URI> location = moduleReference.location();
-        if (location.isPresent())
-        {
-            return location.get();
-        }
-
-        return null;
+        return location.orElse(null);
     }
 
     public static <T> Iterator<T> concat(Iterator<T> i1, Iterator<T> i2)
@@ -807,7 +714,7 @@ public class TypeUtil
 
     /**
      * Utility to create a stream which provides the same functionality as {@link ServiceLoader#stream()}.
-     * However this also guards the case in which {@link Iterator#hasNext()} throws. Any exceptions
+     * However, this also guards the case in which {@link Iterator#hasNext()} throws. Any exceptions
      * from the underlying iterator will be cached until the {@link ServiceLoader.Provider#get()} is called.
      * @param serviceLoader the ServiceLoader instance to use.
      * @param <T> the type of the service to load.

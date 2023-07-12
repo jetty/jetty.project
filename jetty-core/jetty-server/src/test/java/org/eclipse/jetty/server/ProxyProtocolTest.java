@@ -26,7 +26,7 @@ import java.util.Arrays;
 import org.eclipse.jetty.io.EndPoint;
 import org.eclipse.jetty.server.internal.HttpConnection;
 import org.eclipse.jetty.util.Callback;
-import org.eclipse.jetty.util.TypeUtil;
+import org.eclipse.jetty.util.StringUtil;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.Test;
 
@@ -192,7 +192,7 @@ public class ProxyProtocolTest
                     "Host: localhost\r\n" +
                     "\r\n";
             OutputStream output = socket.getOutputStream();
-            output.write(TypeUtil.fromHexString(proxy));
+            output.write(StringUtil.fromHexString(proxy));
             output.write(request1.getBytes(StandardCharsets.UTF_8));
             output.flush();
 
@@ -270,7 +270,7 @@ public class ProxyProtocolTest
                     "Host: localhost\r\n" +
                     "\r\n";
             OutputStream output = socket.getOutputStream();
-            output.write(TypeUtil.fromHexString(proxy));
+            output.write(StringUtil.fromHexString(proxy));
             output.write(request1.getBytes(StandardCharsets.UTF_8));
             output.flush();
 

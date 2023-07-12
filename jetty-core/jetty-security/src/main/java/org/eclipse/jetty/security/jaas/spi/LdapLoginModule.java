@@ -41,6 +41,7 @@ import javax.security.auth.login.LoginException;
 
 import org.eclipse.jetty.security.UserPrincipal;
 import org.eclipse.jetty.security.jaas.callback.ObjectCallback;
+import org.eclipse.jetty.util.StringUtil;
 import org.eclipse.jetty.util.TypeUtil;
 import org.eclipse.jetty.util.security.Credential;
 import org.slf4j.Logger;
@@ -750,7 +751,7 @@ public class LdapLoginModule extends AbstractLoginModule
 
     private static String hexToBase64(String src)
     {
-        byte[] bytes = TypeUtil.fromHexString(src);
+        byte[] bytes = StringUtil.fromHexString(src);
         return Base64.getEncoder().encodeToString(bytes);
     }
 }

@@ -23,7 +23,7 @@ import org.eclipse.jetty.http.HttpVersion;
 import org.eclipse.jetty.http.MetaData;
 import org.eclipse.jetty.io.ByteBufferPool;
 import org.eclipse.jetty.util.BufferUtil;
-import org.eclipse.jetty.util.TypeUtil;
+import org.eclipse.jetty.util.StringUtil;
 import org.hamcrest.Matcher;
 
 import static org.hamcrest.MatcherAssert.assertThat;
@@ -71,7 +71,7 @@ public class QpackTestUtil
     public static ByteBuffer hexToBuffer(String hexString)
     {
         hexString = hexString.replaceAll("\\s+", "");
-        return ByteBuffer.wrap(TypeUtil.fromHexString(hexString));
+        return ByteBuffer.wrap(StringUtil.fromHexString(hexString));
     }
 
     public static String toHexString(Instruction instruction)

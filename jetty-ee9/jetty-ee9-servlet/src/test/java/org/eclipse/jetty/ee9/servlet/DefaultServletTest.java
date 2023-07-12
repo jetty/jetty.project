@@ -55,7 +55,7 @@ import org.eclipse.jetty.toolchain.test.FS;
 import org.eclipse.jetty.toolchain.test.MavenTestingUtils;
 import org.eclipse.jetty.toolchain.test.jupiter.WorkDir;
 import org.eclipse.jetty.toolchain.test.jupiter.WorkDirExtension;
-import org.eclipse.jetty.util.TypeUtil;
+import org.eclipse.jetty.util.StringUtil;
 import org.eclipse.jetty.util.resource.FileSystemPool;
 import org.eclipse.jetty.util.resource.ResourceFactory;
 import org.junit.jupiter.api.AfterEach;
@@ -2092,11 +2092,11 @@ public class DefaultServletTest
         context.addAliasCheck(new AllowedResourceAliasChecker(context.getCoreContextHandler()));
 
         // Create file with UTF-8 NFC format
-        String filename = "swedish-" + new String(TypeUtil.fromHexString("C3A5"), UTF_8) + ".txt";
+        String filename = "swedish-" + new String(StringUtil.fromHexString("C3A5"), UTF_8) + ".txt";
         createFile(docRoot.resolve(filename), "hi a-with-circle");
 
         // Using filesystem, attempt to access via NFD format
-        Path nfdPath = docRoot.resolve("swedish-a" + new String(TypeUtil.fromHexString("CC8A"), UTF_8) + ".txt");
+        Path nfdPath = docRoot.resolve("swedish-a" + new String(StringUtil.fromHexString("CC8A"), UTF_8) + ".txt");
         boolean filesystemSupportsNFDAccess = Files.exists(nfdPath);
 
         // Make requests
@@ -2132,11 +2132,11 @@ public class DefaultServletTest
         context.addAliasCheck(new AllowedResourceAliasChecker(context.getCoreContextHandler()));
 
         // Create file with UTF-8 NFD format
-        String filename = "swedish-a" + new String(TypeUtil.fromHexString("CC8A"), UTF_8) + ".txt";
+        String filename = "swedish-a" + new String(StringUtil.fromHexString("CC8A"), UTF_8) + ".txt";
         createFile(docRoot.resolve(filename), "hi a-with-circle");
 
         // Using filesystem, attempt to access via NFC format
-        Path nfcPath = docRoot.resolve("swedish-" + new String(TypeUtil.fromHexString("C3A5"), UTF_8) + ".txt");
+        Path nfcPath = docRoot.resolve("swedish-" + new String(StringUtil.fromHexString("C3A5"), UTF_8) + ".txt");
         boolean filesystemSupportsNFCAccess = Files.exists(nfcPath);
 
         String rawResponse;
