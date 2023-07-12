@@ -1085,24 +1085,6 @@ public class DefaultServlet extends HttpServlet
         }
 
         @Override
-        protected void redirectWelcome(Request request, Response response, Callback callback, String welcomeTarget) throws IOException
-        {
-            HttpServletRequest servletRequest = getServletRequest(request);
-            HttpServletResponse servletResponse = getServletResponse(response);
-
-            boolean included = isIncluded(servletRequest);
-
-            String servletPath = included ? (String)servletRequest.getAttribute(RequestDispatcher.INCLUDE_SERVLET_PATH)
-                : servletRequest.getServletPath();
-
-            if (isPathInfoOnly())
-                welcomeTarget = URIUtil.addPaths(servletPath, welcomeTarget);
-
-            servletResponse.setContentLength(0);
-            Response.sendRedirect(request, response, callback, welcomeTarget);
-        }
-
-        @Override
         protected void serveWelcome(Request request, Response response, Callback callback, String welcomeTarget) throws IOException
         {
             HttpServletRequest servletRequest = getServletRequest(request);

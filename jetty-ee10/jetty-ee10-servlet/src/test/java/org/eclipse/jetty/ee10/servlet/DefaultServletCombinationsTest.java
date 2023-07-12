@@ -108,7 +108,7 @@ public class DefaultServletCombinationsTest
 
         context = new ServletContextHandler();
         context.setBaseResourceAsPath(docRoot);
-        context.setContextPath("/");
+        context.setContextPath("/ctx");
         context.setWelcomeFiles(new String[]{"index.html", "index.welcome"});
 
         ServletHolder welcomeExtHolder = context.addServlet(WelcomeServlet.class, "*.welcome");
@@ -177,28 +177,46 @@ public class DefaultServletCombinationsTest
                         }
                         case "/static/" ->
                         {
-                            if (welcomeMode == REDIRECT)
+                            switch (welcomeMode)
                             {
-                                expectedStatus = HttpStatus.FOUND_302;
-                                expected = pathInfoOnly ? "http://local/static/static/index.html" : "http://local/static/index.html";
-                            }
-                            else
-                            {
-                                expectedStatus = HttpStatus.OK_200;
-                                expected = pathInfoOnly ? "Static index.html at root" : "Static index.html at static";
+                                case REDIRECT ->
+                                {
+                                    expectedStatus = HttpStatus.FOUND_302;
+                                    expected = "http://local/ctx/static/index.html";
+                                }
+                                case REHANDLE ->
+                                {
+                                    expectedStatus = HttpStatus.NOT_FOUND_404;
+                                    expected = null;
+                                }
+                                case SERVE ->
+                                {
+                                    expectedStatus = HttpStatus.OK_200;
+                                    expected = pathInfoOnly ? "Static index.html at root" : "Static index.html at static";
+                                }
+                                default -> throw new AssertionError();
                             }
                         }
                         case "/static/subdirHtml/" ->
                         {
-                            if (welcomeMode == REDIRECT)
+                            switch (welcomeMode)
                             {
-                                expectedStatus = HttpStatus.FOUND_302;
-                                expected = pathInfoOnly ? "http://local/static/static/subdirHtml/index.html" : "http://local/static/subdirHtml/index.html";
-                            }
-                            else
-                            {
-                                expectedStatus = HttpStatus.OK_200;
-                                expected = pathInfoOnly ? "Static index.html at root subdirHtml" : "Static index.html at static subdirHtml";
+                                case REDIRECT ->
+                                {
+                                    expectedStatus = HttpStatus.FOUND_302;
+                                    expected = "http://local/ctx/static/subdirHtml/index.html";
+                                }
+                                case REHANDLE ->
+                                {
+                                    expectedStatus = HttpStatus.NOT_FOUND_404;
+                                    expected = null;
+                                }
+                                case SERVE ->
+                                {
+                                    expectedStatus = HttpStatus.OK_200;
+                                    expected = pathInfoOnly ? "Static index.html at root subdirHtml" : "Static index.html at static subdirHtml";
+                                }
+                                default -> throw new AssertionError();
                             }
                         }
                         case "/static/subdirWelcome/" ->
@@ -246,7 +264,7 @@ public class DefaultServletCombinationsTest
             Host: local\r
             Connection: close\r
             \r
-            """, data.requestPath()));
+            """, context.getContextPath() + data.requestPath()));
         HttpTester.Response response = HttpTester.parseResponse(rawResponse);
         int status = response.getStatus();
         assertThat(response.toString(), status, is(data.expectedStatus()));
