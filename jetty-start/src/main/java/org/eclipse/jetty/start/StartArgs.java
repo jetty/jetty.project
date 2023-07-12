@@ -707,7 +707,7 @@ public class StartArgs
         if (parts.isEmpty())
             parts = ALL_PARTS;
 
-        CommandLineBuilder cmd = new CommandLineBuilder();
+        CommandLineBuilder cmd = new CommandLineBuilder(multiLine);
 
         // Special Stop/Shutdown properties
         ensureSystemPropertySet("STOP.PORT");

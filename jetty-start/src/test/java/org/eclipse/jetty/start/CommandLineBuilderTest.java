@@ -77,9 +77,13 @@ public class CommandLineBuilderTest
     {
         return Stream.of(
             Arguments.of(null, null),
-            Arguments.of("", ""),
+            Arguments.of("", "\"\""),
             Arguments.of("Hello", "Hello"),
             Arguments.of("Hell0", "Hell0"),
+            Arguments.of("Hello$World", "\"Hello\\$World\""),
+            Arguments.of("Hello\\World", "\"Hello\\\\World\""),
+            Arguments.of("Hello`World", "\"Hello\\`World\""),
+            Arguments.of("\"Hello World\"", "\"\\\"Hello World\\\"\""),
             Arguments.of("H-llo_world", "H-llo_world"),
             Arguments.of("H:llo/world", "H:llo/world"),
             Arguments.of("Hello World", "\"Hello World\""),

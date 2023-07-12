@@ -66,13 +66,13 @@ Report Commands:
 
   --dry-run=<part>(,<part>)*
                    Prints specific parts of the command line in a format usable by
-                   a the unix sh command. The parts are:
+                   the unix sh command. The parts are:
                      o  "java" - the JVM to run
                      o  "opts" - the JVM options (e.g. -D, -X and -XX flags)
                      o  "path" - the JVM class-path and/or the JPMS module-path
                      o  "main" - the main class to run
                      o  "args" - the arguments passed to the main class
-                     o  "multipart" - a fake part that causes the command to be
+                     o  "multiline" - a fake part that causes the command to be
                                       generated over multiple lines
 
 Configure Commands:
