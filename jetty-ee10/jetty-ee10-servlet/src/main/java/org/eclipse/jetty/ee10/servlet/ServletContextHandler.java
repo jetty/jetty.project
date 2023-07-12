@@ -819,6 +819,7 @@ public class ServletContextHandler extends ContextHandler
                 String entry = path + item.getFileName();
                 if (item.isDirectory())
                     entry = entry + '/';
+
                 set.add(entry);
             }
             return set;

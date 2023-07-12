@@ -566,6 +566,46 @@ public class WebAppContextTest
         assertThat(results, containsInAnyOrder(expected));
     }
 
+    public static Stream<Arguments> resourceTests()
+    {
+        return Stream.of(
+            Arguments.of("/test.txt", "/test.txt"),
+            Arguments.of("/WEB-INF/web.xml", "/WEB-INF/web.xml"),
+            Arguments.of("/WEB-INF/", "/WEB-INF/"),
+            Arguments.of("/WEB-INF", "/WEB-INF/")
+            // TODO the following assertion fails because of a bug in the JDK (see JDK-8311079 and MountedPathResourceTest.testJarFileResourceAccessBackSlash())
+            // Arguments.of("/nested-reserved-!#\\\\$%&()*+,:=?@[]-meta-inf-resource.txt", "/nested-reserved-!#\\\\$%&()*+,:=?@[]-meta-inf-resource.txt")
+        );
+    }
+
+    @ParameterizedTest
+    @MethodSource("resourceTests")
+    public void testGetResource(String resource, String expected) throws Exception
+    {
+        Server server = newServer();
+        LocalConnector connector = new LocalConnector(server);
+        server.addConnector(connector);
+
+        WebAppContext context = new WebAppContext(MavenTestingUtils.getBasePath().resolve("src/test/webapp-with-resources").toString(), "/");
+        server.setHandler(context);
+        server.start();
+
+        ServletContext servletContext = context.getServletContext();
+
+        URL url = servletContext.getResource(resource);
+        assertThat(url.toString(), endsWith(expected));
+
+        HttpTester.Response response1 = HttpTester.parseResponse(connector.getResponse("""
+            GET /resource?r=%s HTTP/1.1\r
+            Host: local\r
+            Connection: close\r
+            \r
+            """.formatted(resource)));
+
+        assertThat(response1.getStatus(), is(HttpStatus.OK_200));
+        assertThat(response1.getContent(), containsString("url=" + url));
+    }
+
     @Test
     public void testGetResourcePaths() throws Exception
     {
@@ -583,8 +623,9 @@ public class WebAppContextTest
         String[] expected = {
             "/WEB-INF/",
             "/nested-reserved-!#\\\\$%&()*+,:=?@[]-meta-inf-resource.txt",
+            "/test.txt"
         };
-        assertThat(resourcePaths.size(), is(2));
+        assertThat(resourcePaths.size(), is(expected.length));
         assertThat(resourcePaths, containsInAnyOrder(expected));
 
         String realPath = servletContext.getRealPath("/");
@@ -598,7 +639,7 @@ public class WebAppContextTest
         //assertThat(servletContext.getResource("/nested-reserved-!#\\\\$%&()*+,:=?@[]-meta-inf-resource.txt"), notNullValue());
 
         HttpTester.Response response1 = HttpTester.parseResponse(connector.getResponse("""
-            GET /resource HTTP/1.1\r
+            GET /resources HTTP/1.1\r
             Host: local\r
             Connection: close\r
             \r
