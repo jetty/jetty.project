@@ -18,6 +18,7 @@ import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Objects;
 
 public class CommandLineBuilder
 {
@@ -66,8 +67,10 @@ public class CommandLineBuilder
      */
     public static String shellQuoteIfNeeded(String input)
     {
-        if (input == null || input.length() == 0)
-            return input;
+        if (input == null)
+            return null;
+        if (input.length() == 0)
+            return "\"\"";
 
         int i = 0;
         boolean needsQuoting = false;
@@ -101,8 +104,8 @@ public class CommandLineBuilder
             char c = input.charAt(i++);
             switch (c)
             {
-                case '"', '\\', '`', '$' -> builder.append('\\').appendCodePoint(c);
-                default -> builder.appendCodePoint(c);
+                case '"', '\\', '`', '$' -> builder.append('\\').append(c);
+                default -> builder.append(c);
             }
         }
 
@@ -112,9 +115,7 @@ public class CommandLineBuilder
     }
 
     /**
-     * Add a simple argument to the command line.
-     * <p>
-     * Will quote arguments that have a space in them.
+     * Add a simple argument to the command line, quoted if necessary.
      *
      * @param arg the simple argument to add
      */
@@ -122,59 +123,66 @@ public class CommandLineBuilder
     {
         if (arg != null)
         {
-            args.add(arg);
             if (commandLine.length() > 0)
                 commandLine.append(separator);
+            args.add(arg);
             commandLine.append(shellQuoteIfNeeded(arg));
         }
     }
 
     /**
+     * Add a "name=value" style argument to the command line with
+     * name and value quoted if necessary.
      * @param name the name
      * @param value the value
      */
     public void addArg(String name, String value)
     {
+        Objects.requireNonNull(name);
+
         if (commandLine.length() > 0)
             commandLine.append(separator);
-        commandLine.append(shellQuoteIfNeeded(name));
+
         if ((value != null) && (value.length() > 0))
         {
             args.add(name + "=" + value);
-            commandLine.append('=').append(shellQuoteIfNeeded(value));
+            commandLine.append(shellQuoteIfNeeded(name)).append('=').append(shellQuoteIfNeeded(value));
         }
         else
         {
             args.add(name);
+            commandLine.append(shellQuoteIfNeeded(name));
         }
     }
 
     /**
+     * Add a "-Oname=value" style argument to the command line with
+     * name and value quoted if necessary.
      * @param option the option
      * @param name the name
      * @param value the value
      */
     public void addArg(String option, String name, String value)
     {
+        Objects.requireNonNull(option);
+
         if (commandLine.length() > 0)
             commandLine.append(separator);
-        commandLine.append(option);
+
         if (name == null || name.length() == 0)
         {
+            commandLine.append(option);
             args.add(option);
+        }
+        else if ((value != null) && (value.length() > 0))
+        {
+            args.add(option + name + "=" + value);
+            commandLine.append(option).append(shellQuoteIfNeeded(name)).append('=').append(shellQuoteIfNeeded(value));
         }
         else
         {
-            commandLine.append(shellQuoteIfNeeded(name));
-            if ((value != null) && (value.length() > 0))
-            {
-                args.add(option + name + "=" + value);
-                commandLine.append('=').append(shellQuoteIfNeeded(value));
-            }
-            else
-            {
-                args.add(option + name);
-            }
+            args.add(option + name);
+            commandLine.append(option).append(shellQuoteIfNeeded(name));
         }
     }
 
