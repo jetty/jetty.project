@@ -153,12 +153,10 @@ public class HttpStreamOverHTTP2 implements HttpStream, HTTP2Channel.Server
 
         // Check if there already is a chunk, e.g. EOF.
         Content.Chunk chunk;
-        Content.Chunk trailer;
         try (AutoLock ignored = lock.lock())
         {
             chunk = _chunk;
             _chunk = Content.Chunk.next(chunk);
-            trailer = _trailer;
         }
         if (chunk != null)
             return chunk;
@@ -168,13 +166,18 @@ public class HttpStreamOverHTTP2 implements HttpStream, HTTP2Channel.Server
             return null;
 
         // Check if the trailers must be returned.
-        if (data.frame().isEndStream() && trailer != null)
+        if (data.frame().isEndStream())
         {
+            Content.Chunk trailer;
             try (AutoLock ignored = lock.lock())
             {
-                _chunk = Content.Chunk.next(trailer);
+                trailer = _trailer;
+                if (trailer != null)
+                {
+                    _chunk = Content.Chunk.next(trailer);
+                    return trailer;
+                }
             }
-            return trailer;
         }
 
         // The data instance should be released after readData() above;
