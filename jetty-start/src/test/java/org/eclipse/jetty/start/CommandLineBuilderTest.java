@@ -13,13 +13,43 @@
 
 package org.eclipse.jetty.start;
 
+import java.util.stream.Stream;
+
 import org.junit.jupiter.api.Test;
+import org.junit.jupiter.params.ParameterizedTest;
+import org.junit.jupiter.params.provider.Arguments;
+import org.junit.jupiter.params.provider.MethodSource;
 
 import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.Matchers.is;
 
 public class CommandLineBuilderTest
 {
+    public static Stream<Arguments> shellQuoteIfNeededSource()
+    {
+        return Stream.of(
+            // The following consists of raw arguments from the start mechanism
+            // compared to the output if quoted for shell usage (--dry-run)
+            Arguments.of("", "''"),
+            Arguments.of("Foo", "Foo"),
+            Arguments.of("Foo,Bar", "'Foo,Bar'"),
+            Arguments.of("Foo Bar", "'Foo Bar'"),
+            Arguments.of("An 'internal' quoting", "'An '\\''internal'\\'' quoting'"),
+            Arguments.of("requestlog.format=%u cost for $USER", "'requestlog.format=%u cost for $USER'"),
+            // Raw system property, as defined in start.d/exec.ini
+            Arguments.of("-Dxxx.key=more values", "'-Dxxx.key=more values'")
+        );
+    }
+
+    @ParameterizedTest
+    @MethodSource("shellQuoteIfNeededSource")
+    public void testNeedsShellQuoting(String input, String expected)
+    {
+        StringBuilder result = new StringBuilder();
+        CommandLineBuilder.shellQuoteIfNeeded(result, input);
+        assertThat(result.toString(), is(expected));
+    }
+
     @Test
     public void testSimpleCommandline()
     {

@@ -15,6 +15,7 @@ package org.eclipse.jetty.start;
 
 import java.io.File;
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.List;
 
 public class CommandLineBuilder
@@ -65,6 +66,26 @@ public class CommandLineBuilder
     public static String quote(String arg)
     {
         return "'" + arg + "'";
+    }
+
+    /**
+     * Map of ASCII characters that indicate a need for quoting
+     */
+    private static final boolean[] NEEDS_QUOTING;
+
+    static
+    {
+        NEEDS_QUOTING = new boolean[256];
+        Arrays.fill(NEEDS_QUOTING, true);
+        // Allow certain characters (that shouldn't trigger quoting)
+        for (int i = 'a'; i < 'z'; i++)
+            NEEDS_QUOTING[i] = false;
+        for (int i = 'A'; i < 'Z'; i++)
+            NEEDS_QUOTING[i] = false;
+        for (int i = '0'; i < '9'; i++)
+            NEEDS_QUOTING[i] = false;
+        for (char c : "-./=_:\\".toCharArray())
+            NEEDS_QUOTING[c] = false;
     }
 
     private List<String> args;
@@ -165,9 +186,9 @@ public class CommandLineBuilder
     }
 
     /**
-     * A version of {@link #toString()} where every arg is evaluated for potential {@code '} (single-quote tick) wrapping.
+     * A version of {@link #toString()} where every arg is evaluated for potential {@code '} (strong quote) wrapping.
      *
-     * @return the toString but each arg that has spaces is surrounded by {@code '} (single-quote tick)
+     * @return the toString but each arg that has spaces is surrounded by {@code '} (string quote)
      */
     public String toQuotedString()
     {
@@ -177,15 +198,64 @@ public class CommandLineBuilder
         {
             if (buf.length() > 0)
                 buf.append(' ');
-            boolean needsQuotes = (arg.contains(" "));
-            if (needsQuotes)
-                buf.append("'");
-            buf.append(arg);
-            if (needsQuotes)
-                buf.append("'");
+            shellQuoteIfNeeded(buf, arg);
         }
 
         return buf.toString();
+    }
+
+    private static boolean needsQuoting(String input)
+    {
+        for (int i = 0; i < input.length(); i++)
+        {
+            char c = input.charAt(i);
+
+            // Characters that require quoting
+            if (NEEDS_QUOTING[c])
+            {
+                return true;
+            }
+        }
+        return false;
+    }
+
+    /**
+     * Quote a string suitable for use with a command line shell using strong quotes {@code '}.
+     * <p>This method applies strong quoting {@code '} as described for the unix {@code sh} commands:
+     * Enclosing characters within strong quotes preserves the literal meaning of all characters.
+     *
+     * @param buf the StringBuilder to append to
+     * @param input The string to quote if needed
+     */
+    public static void shellQuoteIfNeeded(StringBuilder buf, String input)
+    {
+        if (input == null)
+            return;
+
+        if (input.length() == 0)
+        {
+            buf.append("''");
+            return;
+        }
+
+        if (!needsQuoting(input))
+        {
+            buf.append(input);
+            return;
+        }
+
+        buf.append('\'');
+
+        for (int i = 0; i < input.length(); i++)
+        {
+            char c = input.charAt(i);
+            if (c == '\'')
+                buf.append("'\\''");
+            else
+                buf.append(c);
+        }
+
+        buf.append('\'');
     }
 
     public void debug()

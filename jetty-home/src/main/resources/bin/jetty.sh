@@ -499,7 +499,8 @@ case "$ACTION" in
           disown \$!
           echo \$! > \"$JETTY_PID\""
       else
-        echo ${RUN_ARGS[*]} | xargs ${JAVA} > /dev/null &
+        # echo ${RUN_ARGS[*]} | xargs ${JAVA} > /dev/null &
+        echo ${RUN_ARGS[*]} | xargs ${JAVA} & # TODO: don't check in this version only used for cli debugging
         disown $!
         echo $! > "$JETTY_PID"
       fi
