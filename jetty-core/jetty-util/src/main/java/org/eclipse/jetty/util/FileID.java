@@ -74,7 +74,29 @@ public class FileID
             return "";
         int idx = path.lastIndexOf('/');
         if (idx >= 0)
+        {
+            if (idx == path.length() - 1)
+            {
+                // we found the trailing slash
+                // eg: file:/path/to/dir/
+                // we want to return the "dir" segment here
+                int previousSlash = path.lastIndexOf('/', idx - 1);
+                if (previousSlash >= 0)
+                {
+                    // we have a previous slash
+                    // so return the segment without the trailing slash
+                    return path.substring(previousSlash + 1, idx);
+                }
+                else
+                {
+                    // we have no previous slash
+                    // this input string is something like "foo/"
+                    // so return the segment without trailing slash
+                    return path.substring(0, idx);
+                }
+            }
             return path.substring(idx + 1);
+        }
         return path;
     }
 

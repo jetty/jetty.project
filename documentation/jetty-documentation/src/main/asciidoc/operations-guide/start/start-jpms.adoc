@@ -30,6 +30,8 @@ The `--jpms` option implies the `--exec` option.
 When running on the module-path using the `--jpms` option, the Jetty start mechanism will fork a second JVM passing it the right JVM options to run on the module-path.
 
 Therefore, you will have two JVMs running: one that runs `start.jar` and one that runs Jetty on the module-path.
+
+Forking a second JVM may be avoided as explained in xref:og-start-configure-dry-run[this section].
 ====
 
 When Jetty is started in JPMS mode, all JPMS modules in the module-path are added to the set of JPMS _root modules_ through the JVM option `--add-modules ALL_MODULE_PATH`.

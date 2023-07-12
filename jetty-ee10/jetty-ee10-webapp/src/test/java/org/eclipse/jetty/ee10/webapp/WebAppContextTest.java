@@ -22,6 +22,7 @@ import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Comparator;
 import java.util.List;
+import java.util.Set;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
 
@@ -512,8 +513,8 @@ public class WebAppContextTest
         WebAppContext context = new WebAppContext();
         context.setContextPath("/");
         context.setBaseResource(ResourceFactory.combine(
-            ResourceFactory.root().newResource(MavenTestingUtils.getTestResourcePath("wars/layer0/")),
-            ResourceFactory.root().newResource(MavenTestingUtils.getTestResourcePath("wars/layer1/"))));
+            context.getResourceFactory().newResource(MavenTestingUtils.getTestResourcePath("wars/layer0/")),
+            context.getResourceFactory().newResource(MavenTestingUtils.getTestResourcePath("wars/layer1/"))));
         server.setHandler(context);
         server.start();
 
@@ -530,13 +531,39 @@ public class WebAppContextTest
         WebAppContext context = new WebAppContext();
         context.setContextPath("/");
         context.setBaseResource(ResourceFactory.combine(
-            ResourceFactory.root().newResource(MavenTestingUtils.getTestResourcePath("wars/layer0/")),
-            ResourceFactory.root().newResource(MavenTestingUtils.getTestResourcePath("wars/layer1/"))));
+            context.getResourceFactory().newResource(MavenTestingUtils.getTestResourcePath("wars/layer0/")),
+            context.getResourceFactory().newResource(MavenTestingUtils.getTestResourcePath("wars/layer1/"))));
         server.setHandler(context);
         server.start();
 
         ServletContext servletContext = context.getServletContext();
-        assertThat(servletContext.getResourcePaths("/WEB-INF"), containsInAnyOrder("/WEB-INF/zero.xml", "/WEB-INF/one.xml"));
+        assertThat(servletContext.getResourcePaths("/WEB-INF/"), containsInAnyOrder("/WEB-INF/zero.xml", "/WEB-INF/one.xml"));
+    }
+
+    @Test
+    public void testGetResourcePathsWithDirsFromCollection() throws Exception
+    {
+        Server server = newServer();
+
+        WebAppContext context = new WebAppContext();
+        context.setContextPath("/");
+        context.setBaseResource(ResourceFactory.combine(
+            context.getResourceFactory().newResource(MavenTestingUtils.getTestResourcePath("wars/layer0/")),
+            context.getResourceFactory().newResource(MavenTestingUtils.getTestResourcePath("wars/layer1/")),
+            context.getResourceFactory().newResource(MavenTestingUtils.getTestResourcePath("wars/with_dirs/"))
+            ));
+        server.setHandler(context);
+        server.start();
+
+        ServletContext servletContext = context.getServletContext();
+        Set<String> results = servletContext.getResourcePaths("/WEB-INF/");
+        String[] expected = {
+            "/WEB-INF/zero.xml",
+            "/WEB-INF/one.xml",
+            "/WEB-INF/bar/",
+            "/WEB-INF/foo/"
+        };
+        assertThat(results, containsInAnyOrder(expected));
     }
 
     @Test
@@ -552,18 +579,21 @@ public class WebAppContextTest
 
         ServletContext servletContext = context.getServletContext();
 
-        List<String> resourcePaths = List.copyOf(servletContext.getResourcePaths("/"));
+        Set<String> resourcePaths = servletContext.getResourcePaths("/");
+        String[] expected = {
+            "/WEB-INF/",
+            "/nested-reserved-!#\\\\$%&()*+,:=?@[]-meta-inf-resource.txt",
+        };
         assertThat(resourcePaths.size(), is(2));
-        assertThat(resourcePaths.get(0), is("/WEB-INF"));
-        assertThat(resourcePaths.get(1), is("/nested-reserved-!#\\\\$%&()*+,:=?@[]-meta-inf-resource.txt"));
+        assertThat(resourcePaths, containsInAnyOrder(expected));
 
         String realPath = servletContext.getRealPath("/");
         assertThat(realPath, notNullValue());
-        assertThat(servletContext.getRealPath(resourcePaths.get(0)), endsWith("/WEB-INF"));
+        assertThat(servletContext.getRealPath("/WEB-INF/"), endsWith("/WEB-INF/"));
         // TODO the following assertion fails because of a bug in the JDK (see JDK-8311079 and MountedPathResourceTest.testJarFileResourceAccessBackSlash())
         //assertThat(servletContext.getRealPath(resourcePaths.get(1)), endsWith("/nested-reserved-!#\\\\$%&()*+,:=?@[]-meta-inf-resource.txt"));
 
-        assertThat(servletContext.getResource("/WEB-INF"), notNullValue());
+        assertThat(servletContext.getResource("/WEB-INF/"), notNullValue());
         // TODO the following assertion fails because of a bug in the JDK (see JDK-8311079 and MountedPathResourceTest.testJarFileResourceAccessBackSlash())
         //assertThat(servletContext.getResource("/nested-reserved-!#\\\\$%&()*+,:=?@[]-meta-inf-resource.txt"), notNullValue());
 

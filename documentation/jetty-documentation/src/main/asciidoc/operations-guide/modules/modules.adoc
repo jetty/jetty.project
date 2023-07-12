@@ -366,7 +366,7 @@ A property defined in the `[ini]` section is available in the `+*.mod+` module f
 
 ----
 [ini]
-postgresql-version?=42.2.18
+postgresql-version?=42.6.0
 
 [lib]
 lib/postgresql-${postgresql-version}.jar

@@ -98,10 +98,10 @@ The Jetty start mechanism eventually invokes, by default, main class `org.eclips
 
 The Jetty XML files are nothing more than Java code in XML format.
 
-The XML files are processed to instantiate Jetty components such as `org.eclipse.jetty.server.Server` or `org.eclipse.jetty.util.ssl.SslContextFactory`.
+The XML files are processed to instantiate Jetty components such as `org.eclipse.jetty.server.Server` or `org.eclipse.jetty.util.ssl.SslContextFactory$Server`.
 The components are then assembled together to provide the configured Jetty features.
 
-The Jetty XML files are parametrized using properties; a property is just a name/value pair.
+The Jetty XML files are parametrized using properties, and a property is just a name/value pair.
 
 This parametrization of the XML files allows an XML file that resides in `$JETTY_HOME/etc/` to _declare_ a property such as `jetty.http.port`, and allow this property to be set in a `$JETTY_BASE/start.d/http.ini` file, so that you don't need to change the XML files in `$JETTY_HOME`, but only change files in your `$JETTY_BASE`.
 

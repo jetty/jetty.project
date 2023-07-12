@@ -101,13 +101,14 @@ public class FileIDTest
     {
         return Stream.of(
             Arguments.of(null, ""),
+            Arguments.of(URI.create("foo:bar"), "bar"),
             Arguments.of(URI.create("file:/"), ""),
             Arguments.of(URI.create("file:///"), ""),
-            Arguments.of(URI.create("file:zed/"), ""),
+            Arguments.of(URI.create("file:zed/"), "zed"),
             Arguments.of(URI.create("file:///path/to/test.txt"), "test.txt"),
-            Arguments.of(URI.create("file:///path/to/dir/"), ""),
+            Arguments.of(URI.create("file:///path/to/dir/"), "dir"),
             Arguments.of(URI.create("jar:file:///home/user/libs/jetty-server-12.jar!/org/eclipse/jetty/server/jetty-dir.css"), "jetty-dir.css"),
-            Arguments.of(URI.create("http://eclipse.org/jetty/"), ""),
+            Arguments.of(URI.create("http://eclipse.org/jetty/"), "jetty"),
             Arguments.of(URI.create("http://eclipse.org/jetty/index.html"), "index.html"),
             Arguments.of(URI.create("http://eclipse.org/jetty/docs.html?query=val#anchor"), "docs.html")
         );

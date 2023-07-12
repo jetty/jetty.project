@@ -8,8 +8,8 @@ lib/postgresql-${postgresql-version}.jar
 maven://org.postgresql/postgresql/${postgresql-version}|lib/postgresql-${postgresql-version}.jar
 
 [ini]
-postgresql-version?=42.2.18
+postgresql-version?=42.6.0
 
 [ini-template]
 ## Postgres JDBC version.
-# postgresql-version=42.2.18
+# postgresql-version=42.6.0

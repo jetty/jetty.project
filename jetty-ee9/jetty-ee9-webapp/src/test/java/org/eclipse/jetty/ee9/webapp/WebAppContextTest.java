@@ -22,6 +22,7 @@ import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Comparator;
 import java.util.List;
+import java.util.Set;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
 
@@ -49,6 +50,7 @@ import org.eclipse.jetty.toolchain.test.jupiter.WorkDirExtension;
 import org.eclipse.jetty.util.FileID;
 import org.eclipse.jetty.util.URIUtil;
 import org.eclipse.jetty.util.component.LifeCycle;
+import org.eclipse.jetty.util.resource.FileSystemPool;
 import org.eclipse.jetty.util.resource.Resource;
 import org.eclipse.jetty.util.resource.ResourceFactory;
 import org.eclipse.jetty.util.resource.Resources;
@@ -68,8 +70,13 @@ import org.slf4j.LoggerFactory;
 
 import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.Matchers.contains;
+import static org.hamcrest.Matchers.containsInAnyOrder;
+import static org.hamcrest.Matchers.containsString;
+import static org.hamcrest.Matchers.empty;
+import static org.hamcrest.Matchers.endsWith;
 import static org.hamcrest.Matchers.instanceOf;
 import static org.hamcrest.Matchers.is;
+import static org.hamcrest.Matchers.notNullValue;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertNotNull;
@@ -86,7 +93,7 @@ public class WebAppContextTest
     @BeforeEach
     public void beforeEach()
     {
-        //assertThat(FileSystemPool.INSTANCE.mounts(), empty());
+        assertThat(FileSystemPool.INSTANCE.mounts(), empty());
     }
 
     @AfterEach
@@ -94,7 +101,7 @@ public class WebAppContextTest
     {
         lifeCycles.forEach(LifeCycle::stop);
         Configurations.cleanKnown();
-        //assertThat(FileSystemPool.INSTANCE.mounts(), empty());
+        assertThat(FileSystemPool.INSTANCE.mounts(), empty());
     }
 
     private Server newServer()
@@ -349,7 +356,7 @@ public class WebAppContextTest
         FS.touch(someClass);
 
         WebAppContext context = new WebAppContext();
-        context.setBaseResource(ResourceFactory.root().newResource(tempDir));
+        context.setBaseResource(context.getResourceFactory().newResource(tempDir));
 
         context.setResourceAlias("/WEB-INF/classes/", "/classes/");
 
@@ -380,7 +387,7 @@ public class WebAppContextTest
 
         WebAppContext context = new WebAppContext();
         Path testWebapp = MavenTestingUtils.getTargetPath("test-classes/webapp");
-        context.setBaseResource(ResourceFactory.root().newResource(testWebapp));
+        context.setBaseResource(context.getResourceFactory().newResource(testWebapp));
         context.setContextPath("/");
 
         contexts.addHandler(context);
@@ -441,7 +448,7 @@ public class WebAppContextTest
 
         WebAppContext context = new WebAppContext();
         Path testWebapp = MavenTestingUtils.getTargetPath("test-classes/webapp");
-        context.setBaseResource(ResourceFactory.root().newResource(testWebapp));
+        context.setBaseResource(context.getResourceFactory().newResource(testWebapp));
         context.setContextPath("/");
         contexts.addHandler(context);
 
@@ -495,7 +502,7 @@ public class WebAppContextTest
             ServletContextHandler.NO_SESSIONS | ServletContextHandler.NO_SECURITY);
         context.setContextPath("/");
         Path testWebapp = MavenTestingUtils.getTargetPath("test-classes/webapp");
-        context.setBaseResource(ResourceFactory.root().newResource(testWebapp));
+        context.setBaseResource(context.getResourceFactory().newResource(testWebapp));
         contexts.addHandler(context);
 
         LocalConnector connector = new LocalConnector(server);
@@ -544,6 +551,132 @@ public class WebAppContextTest
         server.start();
 
         assertTrue(context.isAvailable(), "WebAppContext should be available");
+    }
+
+    @Test
+    public void testGetResourceFromCollection() throws Exception
+    {
+        Server server = newServer();
+
+        WebAppContext context = new WebAppContext();
+        context.setContextPath("/");
+        context.setBaseResource(ResourceFactory.combine(
+            context.getResourceFactory().newResource(MavenPaths.findTestResourceDir("wars/layer0/")),
+            context.getResourceFactory().newResource(MavenPaths.findTestResourceDir("wars/layer1/"))));
+        server.setHandler(context);
+        server.start();
+
+        ServletContext servletContext = context.getServletContext();
+        assertThat(servletContext.getResource("/WEB-INF/zero.xml"), notNullValue());
+        assertThat(servletContext.getResource("/WEB-INF/one.xml"), notNullValue());
+    }
+
+    @Test
+    public void testGetResourcePathsFromCollection() throws Exception
+    {
+        Server server = newServer();
+
+        WebAppContext context = new WebAppContext();
+        context.setContextPath("/");
+        context.setBaseResource(ResourceFactory.combine(
+            context.getResourceFactory().newResource(MavenPaths.findTestResourceDir("wars/layer0/")),
+            context.getResourceFactory().newResource(MavenPaths.findTestResourceDir("wars/layer1/"))));
+        server.setHandler(context);
+        server.start();
+
+        ServletContext servletContext = context.getServletContext();
+        assertThat(servletContext.getResourcePaths("/WEB-INF/"), containsInAnyOrder("/WEB-INF/zero.xml", "/WEB-INF/one.xml"));
+    }
+
+    @Test
+    public void testGetResourcePathsWithDirsFromCollection() throws Exception
+    {
+        Server server = newServer();
+
+        WebAppContext context = new WebAppContext();
+        context.setContextPath("/");
+        context.setBaseResource(ResourceFactory.combine(
+            context.getResourceFactory().newResource(MavenPaths.findTestResourceDir("wars/layer0/")),
+            context.getResourceFactory().newResource(MavenPaths.findTestResourceDir("wars/layer1/")),
+            context.getResourceFactory().newResource(MavenPaths.findTestResourceDir("wars/with_dirs/"))
+        ));
+        server.setHandler(context);
+        server.start();
+
+        ServletContext servletContext = context.getServletContext();
+        Set<String> results = servletContext.getResourcePaths("/WEB-INF/");
+        String[] expected = {
+            "/WEB-INF/zero.xml",
+            "/WEB-INF/one.xml",
+            "/WEB-INF/bar/",
+            "/WEB-INF/foo/"
+        };
+        assertThat(results, containsInAnyOrder(expected));
+    }
+
+    @Test
+    @Disabled("There is extra decoding of the nested-reserved paths that is getting in the way")
+    public void testGetResourcePaths() throws Exception
+    {
+        Server server = newServer();
+        LocalConnector connector = new LocalConnector(server);
+        server.addConnector(connector);
+
+        Path warRoot = MavenPaths.findTestResourceDir("webapp-with-resources");
+        assertTrue(Files.isDirectory(warRoot), "Unable to find directory: " + warRoot);
+        WebAppContext context = new WebAppContext();
+        Resource warResource = context.getResourceFactory().newResource(warRoot);
+        context.setWarResource(warResource);
+        context.setContextPath("/");
+        server.setHandler(context);
+        server.start();
+
+        ServletContext servletContext = context.getServletContext();
+
+        Set<String> resourcePaths = servletContext.getResourcePaths("/");
+        String[] expected = {
+            "/WEB-INF/",
+            "/nested-reserved-!#\\\\$%&()*+,:=?@[]-meta-inf-resource.txt",
+            };
+        assertThat(resourcePaths.size(), is(2));
+        assertThat(resourcePaths, containsInAnyOrder(expected));
+
+        String realPath = servletContext.getRealPath("/");
+        assertThat(realPath, notNullValue());
+        assertThat(servletContext.getRealPath("/WEB-INF/"), endsWith("/WEB-INF/"));
+        // TODO the following assertion fails because of a bug in the JDK (see JDK-8311079 and MountedPathResourceTest.testJarFileResourceAccessBackSlash())
+        //assertThat(servletContext.getRealPath(resourcePaths.get(1)), endsWith("/nested-reserved-!#\\\\$%&()*+,:=?@[]-meta-inf-resource.txt"));
+
+        assertThat(servletContext.getResource("/WEB-INF/"), notNullValue());
+        // TODO the following assertion fails because of a bug in the JDK (see JDK-8311079 and MountedPathResourceTest.testJarFileResourceAccessBackSlash())
+        //assertThat(servletContext.getResource("/nested-reserved-!#\\\\$%&()*+,:=?@[]-meta-inf-resource.txt"), notNullValue());
+
+        HttpTester.Response response1 = HttpTester.parseResponse(connector.getResponse("""
+            GET /resource HTTP/1.1\r
+            Host: local\r
+            Connection: close\r
+            \r
+            """));
+
+        assertThat(response1.getStatus(), is(HttpStatus.OK_200));
+        assertThat(response1.getContent(), containsString("/WEB-INF"));
+        assertThat(response1.getContent(), containsString("/WEB-INF/lib"));
+        assertThat(response1.getContent(), containsString("/WEB-INF/lib/odd-resource.jar"));
+        assertThat(response1.getContent(), containsString("/nested-reserved-!#\\\\$%&()*+,:=?@[]-meta-inf-resource.txt"));
+
+        HttpTester.Response response2 = HttpTester.parseResponse(connector.getResponse("""
+            GET /real HTTP/1.1\r
+            Host: local\r
+            Connection: close\r
+            \r
+            """));
+
+        assertThat(response2.getStatus(), is(HttpStatus.OK_200));
+        assertThat(response2.getContent(), containsString("/WEB-INF"));
+        assertThat(response2.getContent(), containsString("/WEB-INF/lib"));
+        assertThat(response2.getContent(), containsString("/WEB-INF/lib/odd-resource.jar"));
+        // TODO the following assertion fails because of a bug in the JDK (see JDK-8311079 and MountedPathResourceTest.testJarFileResourceAccessBackSlash())
+        //assertThat(response2.getContent(), containsString("/nested-reserved-!#\\\\$%&()*+,:=?@[]-meta-inf-resource.txt"));
     }
 
     public static Stream<Arguments> extraClasspathGlob()
