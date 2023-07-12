@@ -98,6 +98,7 @@ public class CommandLineBuilder
                 c == '/' ||
                 c == ':' ||
                 c == '.' ||
+                c == ',' ||
                 c == '-' ||
                 c == '_'
                 );
