@@ -168,7 +168,7 @@ public class CommandLineBuilder
             if ((value != null) && (value.length() > 0))
             {
                 args.add(option + name + "=" + value);
-                commandLine.append(shellQuoteIfNeeded(name)).append('=').append(shellQuoteIfNeeded(value));
+                commandLine.append('=').append(shellQuoteIfNeeded(value));
             }
             else
             {

@@ -532,9 +532,9 @@ public class StartArgs
 
         if (parts.contains("opts"))
         {
-            cmd.addArg("-Djava.io.tmpdir=" + System.getProperty("java.io.tmpdir"));
-            cmd.addArg("-Djetty.home=" + baseHome.getHome());
-            cmd.addArg("-Djetty.base=" + baseHome.getBase());
+            cmd.addArg("-D", "java.io.tmpdir", System.getProperty("java.io.tmpdir"));
+            cmd.addArg("-D", "jetty.home", baseHome.getHome());
+            cmd.addArg("-D", "jetty.base", baseHome.getBase());
 
             Props properties = jettyEnvironment.getProperties();
             for (String x : getJvmArgSources().keySet())

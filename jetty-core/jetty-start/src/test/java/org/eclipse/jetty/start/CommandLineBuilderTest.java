@@ -30,7 +30,7 @@ public class CommandLineBuilderTest
     {
         CommandLineBuilder cmd = new CommandLineBuilder();
         cmd.addArg("java");
-        cmd.addArg("-Djava.io.tmpdir", "/home/java/temp dir/");
+        cmd.addArg("-D", "java.io.tmpdir", "/home/java/temp dir/");
         cmd.addArg("--version");
         assertThat(cmd.toCommandLine(), is("java -Djava.io.tmpdir=\"/home/java/temp dir/\" --version"));
     }
