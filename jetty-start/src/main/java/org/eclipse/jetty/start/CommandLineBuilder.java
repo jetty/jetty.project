@@ -211,7 +211,7 @@ public class CommandLineBuilder
             char c = input.charAt(i);
 
             // Characters that require quoting
-            if (NEEDS_QUOTING[c])
+            if (c > NEEDS_QUOTING.length || NEEDS_QUOTING[c])
             {
                 return true;
             }

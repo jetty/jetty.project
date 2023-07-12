@@ -36,6 +36,8 @@ public class CommandLineBuilderTest
             Arguments.of("Foo Bar", "'Foo Bar'"),
             Arguments.of("An 'internal' quoting", "'An '\\''internal'\\'' quoting'"),
             Arguments.of("requestlog.format=%u cost for $USER", "'requestlog.format=%u cost for $USER'"),
+            // Unicode escaping (we escape all unicode, as shell use of unicode is undefined)
+            Arguments.of("monetary.symbol=€", "'monetary.symbol=€'"),
             // Raw system property, as defined in start.d/exec.ini
             Arguments.of("-Dxxx.key=more values", "'-Dxxx.key=more values'")
         );
@@ -90,6 +92,6 @@ public class CommandLineBuilderTest
         CommandLineBuilder cmd = new CommandLineBuilder("java");
         cmd.addEqualsArg("-Djetty.home", "/opt/jetty");
         cmd.addEqualsArg("monetary.symbol", "€");
-        assertThat(cmd.toQuotedString(), is("java -Djetty.home=/opt/jetty monetary.symbol=€"));
+        assertThat(cmd.toQuotedString(), is("java -Djetty.home=/opt/jetty 'monetary.symbol=€'"));
     }
 }
