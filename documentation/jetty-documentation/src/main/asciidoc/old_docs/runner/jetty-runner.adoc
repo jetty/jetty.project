@@ -69,7 +69,7 @@ The default Configuration Classes are:
 `org.eclipse.jetty.plus.webapp.PlusConfiguration`
 `org.eclipse.jetty.annotations.AnnotationConfiguration`
 
-You can learn more about implementing specific Configuration Classes link:https://www.eclipse.org/jetty/documentation/current/configuring-webapps.html#webapp-configurations[here.]
+You can learn more about implementing specific Configuration Classes link:https://eclipse.dev/jetty/documentation/current/configuring-webapps.html#webapp-configurations[here.]
 
 ==== Deploying Multiple Contexts
 
@@ -249,7 +249,7 @@ Here's an example of configuring a single extra classes dir:
 ____
 [NOTE]
 When using the `--jar` and/or `--lib` arguments, by default these will *not* be inspected for `META-INF` information such as `META-INF/resources`, `META-INF/web-fragment.xml`, or `META-INF/taglib.tld`.
-If you require these jar files inspected you will need to define the link:https://www.eclipse.org/jetty/documentation/current/configuring-webapps.html#webapp-context-attributes[jar pattern in your context xml file].
+If you require these jar files inspected you will need to define the jar pattern in your context xml file.
 Jetty-Runner automatically provides and appends a suitable pattern for jtsl taglibs (this pattern is different than the one in the standard Jetty distribution).
 ____
 

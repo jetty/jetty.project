@@ -6,8 +6,8 @@
 
   <bannerLeft>
     <name>${project.name}</name>
-    <src>https://www.eclipse.org/jetty/images/jetty-logo-80x22.png</src>
-    <href>https://eclipse.org/jetty/</href>
+    <src>https://eclipse.dev/jetty/images/jetty-logo-80x22.png</src>
+    <href>https://eclipse.dev/jetty/</href>
   </bannerLeft>
   <bannerRight>
     <src>https://www.eclipse.org/eclipse.org-common/themes/solstice/public/images/logo/eclipse-426x100.png</src>
