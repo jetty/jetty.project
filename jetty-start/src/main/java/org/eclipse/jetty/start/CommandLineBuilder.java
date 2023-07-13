@@ -118,6 +118,7 @@ public class CommandLineBuilder
                 c == ':' ||
                 c == '.' ||
                 c == ',' ||
+                c == '+' ||
                 c == '-' ||
                 c == '_'
                 );
@@ -213,7 +214,7 @@ public class CommandLineBuilder
     }
 
     /**
-     * Adds a "-O" style option to the command line with no quoting, for example `--help`.
+     * Adds a "-OPTION" style option to the command line with no quoting, for example `--help`.
      * @param option the option
      */
     public void addOption(String option)
@@ -222,7 +223,7 @@ public class CommandLineBuilder
     }
 
     /**
-     * Adds a "-Oname=value" style option to the command line with
+     * Adds a "-OPTIONname=value" style option to the command line with
      * name and value quoted if necessary, for example "-Dprop=value".
      * @param option the option
      * @param name the name
