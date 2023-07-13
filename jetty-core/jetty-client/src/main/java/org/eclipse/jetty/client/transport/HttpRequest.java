@@ -549,7 +549,7 @@ public class HttpRequest implements Request
     @Override
     public Request onComplete(Response.CompleteListener listener)
     {
-        responseListeners.addCompleteListener(listener);
+        responseListeners.addCompleteListener(listener, false);
         return this;
     }
 
@@ -674,7 +674,7 @@ public class HttpRequest implements Request
     void sendAsync(HttpDestination destination, Response.CompleteListener listener)
     {
         if (listener != null)
-            responseListeners.addCompleteListener(listener);
+            responseListeners.addCompleteListener(listener, true);
         destination.send(this);
     }
 
