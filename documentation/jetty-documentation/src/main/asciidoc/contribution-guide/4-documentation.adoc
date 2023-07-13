@@ -100,20 +100,19 @@ It will declare useful metadata for the proper rendering of the overall guide an
 Below is list of conventions that should be followed when developing documentation within this framework.
 These are not set in stone but you are encouraged to follow them when possible.
 
-ventilated prose::
+Ventilated prose::
   Each sentence should generally be on its own line with a hard return at the end of the line.
   Asciidoc rendering does not treat this style as separate lines and will produce paragraphs correctly.
   The primary benefit is that you can easily see changes between versions of files, and it makes it trivial to quickly look through a pull request.
   Additional benefits are the ability to comment out a sentence mid paragraph or move sentences around within a paragraph.
   Enabling Soft Line Wrap in your favorite editor can make this a bit easier to stomach.
 
-id's::
-  Critically important for being able to generate url's that can be used in a persistent fashion.
-  Without sane id's the chapters and sections will have generated id which are rooted in some obscure location based
-  voodoo.
+IDs::
+  Critically important for being able to generate URLs that can be used in a persistent fashion.
+  Without IDs the chapters and sections will have generated IDs which are rooted in some obscure location based voodoo.
   A url using these 'e12c8673' type links will not be durable across generations of the documentation.
-  These id's need to be used on chapters and sections two deep, and anywhere that you intend to cross link deeper.
-  The id values go into a global namespace so they must be unique across the entire document or the last example will win and any cross links will go there.
+  These IDs need to be used on chapters and sections two deep, and anywhere that you intend to cross link deeper.
+  The ID values go into a global namespace so they must be unique across the entire document or the last example will win and any cross links will go there.
   Links inside of a guides narrative structure should be prefixed with an acronym (contributor guide = cg-) while any links within the topics structure should be prefixed with t- and ideally the name of the topic it corresponds to.
 
 link vs xref::
@@ -121,7 +120,8 @@ link vs xref::
   However if you are linking to a section and want to use the title itself as the link text, use the `xref:` tag without the hashmark in front of the link id.
 
 cross guide linkage::
-  To link to another guide it is best to use a property to address it. The following guide shortcuts are provided.
+  To link to another guide it is best to use a property to address it.
+  The following guide shortcuts are provided:
   * DISTGUIDE
   * EMBEDGUIDE
   * QUICKGUIDE

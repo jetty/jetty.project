@@ -35,7 +35,9 @@ The https://github.com/eclipse/jetty.project[Eclipse Jetty project] is located a
 | jetty-7 | Mythical | Servlet 2.5 | Java 5
 |===
 
-If you are planning on working with a specific issue within Jetty it is important to target the correct branch for a pull request. Pull requests that are targeted at Maintenance Branches are typically merged forward into subsequent branches while historical branches are left alone merge wise.  Depending on the nature of an issue a historical branch may have an issue cherrypicked forward, but maintenance releases are merged wholesale forward as a matter of project policy.
+If you are planning on working with a specific issue within Jetty it is important to target the correct branch for a pull request.
+Pull requests that are targeted at Maintenance Branches are typically merged forward into subsequent branches while historical branches are left alone merge wise.
+Depending on the nature of an issue a historical branch may have an issue cherrypicked forward, but maintenance releases are merged wholesale forward as a matter of project policy.
 
 ==== Primary SCM
 
@@ -75,7 +77,8 @@ All relevant dependencies should be downloaded into your local repository automa
 
 ____
 [NOTE]
-Jetty has a great many test cases that run through the course of its build.  Many of these tests spin up embedded instances of Jetty itself, and it is not uncommon to see hundreds or more instances of Jetty start and stop during tests.
+Jetty has a great many test cases that run through the course of its build.
+Many of these tests spin up embedded instances of Jetty itself, and it is not uncommon to see hundreds or more instances of Jetty start and stop during tests.
 Periodically we find some test cases to be more time dependent than they should be and this results in intermittent test failures.
 You can help track these down by opening an https://github.com/eclipse/jetty.project/issues[Issue].
 ____
@@ -85,7 +88,8 @@ ____
 [[cg-coding-standards]]
 === Coding Standards
 
-Jetty uses number of conventions for its source code. The developers of Jetty use a variety of tooling and editors when developing Jetty so standards and conventions are important!
+Jetty uses number of conventions for its source code.
+The developers of Jetty use a variety of tooling and editors when developing Jetty so standards and conventions are important!
 
 ==== IntelliJ IDE
 
@@ -207,7 +211,8 @@ When deciding when and what to log, bear in mind a few things:
 ____
 [TIP]
 Be aware that `LOG.warn("Something happened", t)` is the same as `LOG.warn("Something happened {}", t)`, at least for the default jetty logging.
-In both cases, the full stacktrace is output. If you only want the log message, you need to do `LOG.warn("Something happened {}", t.toString())`.
+In both cases, the full stacktrace is output.
+If you only want the log message, you need to do `LOG.warn("Something happened {}", t.toString())`.
 ____
 
 [[cg-patches]]
