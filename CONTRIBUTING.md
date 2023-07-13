@@ -13,6 +13,7 @@ Here are some quick links to other useful resources:
 * [**Issue tracking.**](https://github.com/eclipse/jetty.project/issues) We use [GitHub Issues](https://github.com/eclipse/jetty.project/issues) to track ongoing development and issues.
 
 
+
 Eclipse Contributor Agreement
 ------------------------------
 Before we can accept your contributions to the Jetty project, you will need to create and electronically sign a [Eclipse Contributor Agreement (ECA)](http://www.eclipse.org/legal/ecafaq.php):
@@ -21,10 +22,6 @@ Before we can accept your contributions to the Jetty project, you will need to c
 2. Log into your account, click **Eclipse Contributor Agreement**, and complete the form.
 
 Be sure to use the same email address in your Eclipse account that you intend to use when you commit to GitHub.
-
-All committers and commits are bound to the [Developer Certificate of Origin](https://www.eclipse.org/legal/DCO.php).
-As such, all parties involved in a contribution must have valid ECAs, and commits must include [valid "Signed-off-by" entries](https://wiki.eclipse.org/Development_Resources/Contributing_via_Git).
-Commits can be signed off by including the `-s` attribute in your commit message, like so: `git commit -s -am 'Interesting Commit Message.`
 
 
 Reporting Security Issues
