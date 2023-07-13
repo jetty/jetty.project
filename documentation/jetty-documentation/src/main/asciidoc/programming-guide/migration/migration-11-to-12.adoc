@@ -1,0 +1,113 @@
+//
+// ========================================================================
+// Copyright (c) 1995 Mort Bay Consulting Pty Ltd and others.
+//
+// This program and the accompanying materials are made available under the
+// terms of the Eclipse Public License v. 2.0 which is available at
+// https://www.eclipse.org/legal/epl-2.0, or the Apache License, Version 2.0
+// which is available at https://www.apache.org/licenses/LICENSE-2.0.
+//
+// SPDX-License-Identifier: EPL-2.0 OR Apache-2.0
+// ========================================================================
+//
+
+[[pg-migration-11-to-12]]
+=== Migrating from Jetty 11.0.x to Jetty 12.0.x
+
+[[pg-migration-11-to-12-java-version]]
+==== Required Java Version Changes
+
+[cols="1,1", options="header"]
+|===
+| Jetty 11.0.x | Jetty 12.0.x
+| Java 11 | Java 17
+|===
+
+[[pg-migration-11-to-12-maven-artifacts]]
+==== Maven Artifacts Changes
+
+[cols="1a,1a", options="header"]
+|===
+| Jetty 11.0.x | Jetty 12.0.x
+| org.eclipse.jetty.http2:**http2-server** | org.eclipse.jetty.http2:**jetty-http2-server**
+| org.eclipse.jetty.http2:**http2-http-client-transport** | org.eclipse.jetty.http2:**jetty-http2-client-transport**
+|===
+
+[[pg-migration-11-to-12-class-packages-names]]
+==== Class Packages/Names Changes
+
+[cols="1a,1a", options="header"]
+|===
+| Jetty 11.0.x | Jetty 12.0.x
+| `org.eclipse.jetty.client.**api**.*` | `org.eclipse.jetty.client.*`
+| `org.eclipse.jetty.client.**util**.*` | `org.eclipse.jetty.client.*`
+| `org.eclipse.jetty.client.**util**.*` | `org.eclipse.jetty.client.*`
+| `org.eclipse.jetty.client.**http**.*` | `org.eclipse.jetty.client.**transport**.*`
+| `org.eclipse.jetty.http2.client.**http**.*` | `org.eclipse.jetty.http2.client.**transport**.*`
+|===
+
+[[pg-migration-11-to-12-api-changes]]
+==== APIs Changes
+
+===== `jetty-client`
+
+`Request.onResponseContentDemanded(Response.DemandedContentListener)` has been replaced by `Request.onResponseContentSource(Response.ContentSourceListener)`.
+
+However, also look at `Request.onResponseContentAsync(Response.AsyncContentListener)` and `Request.onResponseContent(Response.ContentListener)` for simpler usages.
+
+The old model was a "demand+push" model: the application was demanding content; when the content was available, the implementation was pushing content to the application by calling `DemandedContentListener.onContent(Response, LongConsumer, ByteBuffer, Callback)` for every content chunk.
+
+The new model is a "demand+pull" model: when the content is available, the implementation calls once `Response.ContentSourceListener.onContentSource(Content.Source)`; the application can then pull the content chunks from the `Content.Source`.
+
+Old usage:
+
+[source, java]
+----
+request.onResponseContentDemanded(new Response.DemandedContentListener()
+{
+    @Override
+    public void onBeforeContent(Response response, LongConsumer demand)
+    {
+        // Demand for first content.
+        demand.accept(1);
+    }
+
+    @Override
+    public void onContent(Response response, LongConsumer demand, ByteBuffer content, Callback callback)
+    {
+        // Consume the content.
+        callback.succeeded();
+
+        // Demand for more content.
+        demand.accept(1);
+    }
+});
+----
+
+New usage:
+
+[source, java]
+----
+request.onResponseContentSource((response, source) ->
+{
+    read(source);
+}
+
+private void read(Content.Source source)
+{
+    while (true)
+    {
+        // Pull the content from the source.
+        Content.Chunk chunk = source.read();
+
+        if (chunk == null)
+        {
+            source.demand(() -> read(source));
+            return;
+        }
+
+        // Consume the content.
+        chunk.release();
+    }
+});
+----
