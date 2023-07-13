@@ -841,8 +841,8 @@
             <attributes>
               <JDURL>https://eclipse.dev/jetty/javadoc/jetty-10</JDURL>
               <SRCDIR>${basedir}/..</SRCDIR>
-              <GITBROWSEURL>https://github.com/eclipse/jetty.project/tree/jetty-9.4.x</GITBROWSEURL>
-              <GITDOCURL>https://github.com/eclipse/jetty.project/tree/jetty-10.0.x-doc-refactor/jetty-documentation/src/main/asciidoc</GITDOCURL>
+              <GITBROWSEURL>https://github.com/eclipse/jetty.project/tree/jetty-10.0.x</GITBROWSEURL>
+              <GITDOCURL>https://github.com/eclipse/jetty.project/tree/jetty-10.0.x/documentation/jetty-documentation/src/main/asciidoc</GITDOCURL>
               <MVNCENTRAL>http://central.maven.org/maven2</MVNCENTRAL>
               <VERSION>${project.version}</VERSION>
               <TIMESTAMP>${maven.build.timestamp}</TIMESTAMP>
