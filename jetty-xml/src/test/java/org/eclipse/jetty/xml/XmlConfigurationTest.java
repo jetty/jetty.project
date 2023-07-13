@@ -1889,9 +1889,9 @@ public class XmlConfigurationTest
     @MethodSource("xmlSystemIdSource")
     public void testSystemIdVariants(String xmlSystemId) throws IOException, SAXException
     {
-        // empty raw xml, just to instantiate XmlConfiguration, so we can access the ConfigurationParser.
+        // empty raw xml, just to instantiate XmlConfiguration, so we can access the XmlParser / ConfigurationParser.
         XmlConfiguration xmlConfiguration = asXmlConfiguration("<Configure class=\"org.eclipse.jetty.xml.TestConfiguration\" />");
-        XmlConfiguration.ConfigurationParser configurationProcessor = xmlConfiguration.getParser();
+        XmlParser configurationProcessor = xmlConfiguration.getXmlParser();
         InputSource inputSource = configurationProcessor.resolveEntity(null, xmlSystemId);
         assertNotNull(inputSource, "SystemID: " + xmlSystemId + " does not exist");
     }
