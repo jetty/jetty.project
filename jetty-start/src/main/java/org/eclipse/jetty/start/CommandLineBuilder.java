@@ -213,13 +213,26 @@ public class CommandLineBuilder
     }
 
     /**
-     * Add a "-Oname=value" style argument to the command line with
+     * Add a "-Oname" style option to the command line with no quoting.
+     * @param option the option
+     */
+    public void addOption(String option)
+    {
+        Objects.requireNonNull(option);
+        if (commandLine.length() > 0)
+            commandLine.append(separator);
+        commandLine.append(option);
+        args.add(option);
+    }
+
+    /**
+     * Add a "-Oname=value" style option to the command line with
      * name and value quoted if necessary.
      * @param option the option
      * @param name the name
      * @param value the value
      */
-    public void addArg(String option, String name, String value)
+    public void addOption(String option, String name, String value)
     {
         Objects.requireNonNull(option);
 

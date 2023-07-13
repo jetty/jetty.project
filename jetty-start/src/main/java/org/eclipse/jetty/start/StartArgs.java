@@ -719,9 +719,9 @@ public class StartArgs
 
         if (parts.contains("opts"))
         {
-            cmd.addArg("-D", "java.io.tmpdir", System.getProperty("java.io.tmpdir"));
-            cmd.addArg("-D", "jetty.home", baseHome.getHome());
-            cmd.addArg("-D", "jetty.base", baseHome.getBase());
+            cmd.addOption("-D", "java.io.tmpdir", System.getProperty("java.io.tmpdir"));
+            cmd.addOption("-D", "jetty.home", baseHome.getHome());
+            cmd.addOption("-D", "jetty.base", baseHome.getBase());
 
             for (String x : getJvmArgSources().keySet())
             {
@@ -732,7 +732,7 @@ public class StartArgs
                     String value = assign.length == 1 ? "" : assign[1];
 
                     Prop p = processSystemProperty(key, value, null);
-                    cmd.addArg("-D", p.key, properties.expand(p.value));
+                    cmd.addOption("-D", p.key, properties.expand(p.value));
                 }
                 else
                 {
@@ -744,7 +744,7 @@ public class StartArgs
             for (String propKey : systemPropertySource.keySet())
             {
                 String value = System.getProperty(propKey);
-                cmd.addArg("-D", propKey, value);
+                cmd.addOption("-D", propKey, value);
             }
         }
 
@@ -757,7 +757,7 @@ public class StartArgs
                 List<File> files = dirsAndFiles.get(false);
                 if (files != null && !files.isEmpty())
                 {
-                    cmd.addArg("--module-path", null, null);
+                    cmd.addOption("--module-path");
                     String modules = files.stream()
                         .map(File::getAbsolutePath)
                         .collect(Collectors.joining(File.pathSeparator));
@@ -766,7 +766,7 @@ public class StartArgs
                 List<File> dirs = dirsAndFiles.get(true);
                 if (dirs != null && !dirs.isEmpty())
                 {
-                    cmd.addArg("--class-path", null, null);
+                    cmd.addOption("--class-path");
                     String directories = dirs.stream()
                         .map(File::getAbsolutePath)
                         .collect(Collectors.joining(File.pathSeparator));
@@ -780,28 +780,28 @@ public class StartArgs
                 }
                 for (Map.Entry<String, Set<String>> entry : jmodPatch.entrySet())
                 {
-                    cmd.addArg("--patch-module", null, null);
+                    cmd.addOption("--patch-module");
                     cmd.addArg(entry.getKey(), String.join(File.pathSeparator, entry.getValue()));
                 }
                 for (Map.Entry<String, Set<String>> entry : jmodOpens.entrySet())
                 {
-                    cmd.addArg("--add-opens", null, null);
+                    cmd.addOption("--add-opens");
                     cmd.addArg(entry.getKey(), String.join(",", entry.getValue()));
                 }
                 for (Map.Entry<String, Set<String>> entry : jmodExports.entrySet())
                 {
-                    cmd.addArg("--add-exports", null, null);
+                    cmd.addOption("--add-exports");
                     cmd.addArg(entry.getKey(), String.join(",", entry.getValue()));
                 }
                 for (Map.Entry<String, Set<String>> entry : jmodReads.entrySet())
                 {
-                    cmd.addArg("--add-reads", null, null);
+                    cmd.addOption("--add-reads");
                     cmd.addArg(entry.getKey(), String.join(",", entry.getValue()));
                 }
             }
             else
             {
-                cmd.addArg("--class-path", null, null);
+                cmd.addOption("--class-path");
                 cmd.addArg(classpath.toString());
             }
         }
@@ -809,7 +809,7 @@ public class StartArgs
         if (parts.contains("main"))
         {
             if (isJPMS())
-                cmd.addArg("--module", null, null);
+                cmd.addOption("--module");
             cmd.addArg(getMainClassname());
         }
 
