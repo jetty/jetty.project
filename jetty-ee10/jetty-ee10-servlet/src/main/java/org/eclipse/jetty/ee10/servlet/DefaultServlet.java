@@ -437,16 +437,8 @@ public class DefaultServlet extends HttpServlet
     protected void doGet(HttpServletRequest req, HttpServletResponse resp) throws ServletException, IOException
     {
         String includedServletPath = (String)req.getAttribute(RequestDispatcher.INCLUDE_SERVLET_PATH);
+        String encodedPathInContext = getEncodedPathInContext(req, includedServletPath);
         boolean included = includedServletPath != null;
-        String encodedPathInContext;
-        if (included)
-            encodedPathInContext = URIUtil.encodePath(getIncludedPathInContext(req, includedServletPath, isPathInfoOnly(req)));
-        else if (isPathInfoOnly(req))
-            encodedPathInContext = URIUtil.encodePath(req.getPathInfo());
-        else if (req instanceof ServletApiRequest apiRequest)
-            encodedPathInContext = Context.getPathInContext(req.getContextPath(), apiRequest.getRequest().getHttpURI().getCanonicalPath());
-        else
-            encodedPathInContext = Context.getPathInContext(req.getContextPath(), URIUtil.canonicalPath(req.getRequestURI()));
 
         if (LOG.isDebugEnabled())
             LOG.debug("doGet(req={}, resp={}) pathInContext={}, included={}", req, resp, encodedPathInContext, included);
@@ -520,6 +512,18 @@ public class DefaultServlet extends HttpServlet
                 throw new FileNotFoundException(encodedPathInContext);
             resp.setStatus(404);
         }
+    }
+
+    protected String getEncodedPathInContext(HttpServletRequest req, String includedServletPath)
+    {
+        if (includedServletPath != null)
+            return URIUtil.encodePath(getIncludedPathInContext(req, includedServletPath, !isDefaultMapping(req)));
+        else if (!isDefaultMapping(req))
+            return URIUtil.encodePath(req.getPathInfo());
+        else if (req instanceof ServletApiRequest apiRequest)
+            return Context.getPathInContext(req.getContextPath(), apiRequest.getRequest().getHttpURI().getCanonicalPath());
+        else
+            return Context.getPathInContext(req.getContextPath(), URIUtil.canonicalPath(req.getRequestURI()));
     }
 
     @Override
@@ -1050,7 +1054,7 @@ public class DefaultServlet extends HttpServlet
                     // Check whether a Servlet may serve the welcome resource.
                     if (_welcomeServletMode != WelcomeServletMode.NONE && welcomeTarget == null)
                     {
-                        if (isPathInfoOnly(getServletRequest(coreRequest)) && !isIncluded(getServletRequest(coreRequest)))
+                        if (!isDefaultMapping(getServletRequest(coreRequest)) && !isIncluded(getServletRequest(coreRequest)))
                             welcomeTarget = URIUtil.addPaths(getServletRequest(coreRequest).getPathInfo(), welcome);
 
                         ServletHandler.MappedServlet entry = _servletContextHandler.getServletHandler().getMappedServlet(welcomeInContext);
@@ -1195,9 +1199,9 @@ public class DefaultServlet extends HttpServlet
         return request.getAttribute(RequestDispatcher.INCLUDE_REQUEST_URI) != null;
     }
 
-    private static boolean isPathInfoOnly(HttpServletRequest req)
+    private static boolean isDefaultMapping(HttpServletRequest req)
     {
-        return req.getHttpServletMapping().getMappingMatch() != MappingMatch.DEFAULT;
+        return req.getHttpServletMapping().getMappingMatch() == MappingMatch.DEFAULT;
     }
 
     /**
