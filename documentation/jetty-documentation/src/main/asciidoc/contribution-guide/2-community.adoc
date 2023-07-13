@@ -20,22 +20,17 @@ In any one of these you will come across users of neophyte to expert experience 
 [[cg-mailing-lists]]
 === Mailing Lists
 
-Mailing lists are a wonderful way to interact with the community at large and for a certain class of issue have the best chances of achieving resolution.  There are a number of mailing lists available within the Jetty project and a good rule of thumb to choose between the developer and user lists is to ask yourself if your question is broadly interesting to the community, use the users list and if narrowly focused on Jetty internals or minutiae, then the dev list might be a better option.
+There are a number of mailing lists available within the Jetty project:
 
-* Jetty Developers List
-** Join - https://dev.eclipse.org/mailman/listinfo/jetty-dev
-** Archives - http://dev.eclipse.org/mhonarc/lists/jetty-dev/
-* Jetty Users List
-** Join - https://dev.eclipse.org/mailman/listinfo/jetty-users
-** Archives - http://dev.eclipse.org/mhonarc/lists/jetty-users/
-* Jetty Announcements List
-** Join - https://dev.eclipse.org/mailman/listinfo/jetty-announce
-** Archives - http://dev.eclipse.org/mhonarc/lists/jetty-announce/
+* https://dev.eclipse.org/mailman/listinfo/jetty-dev[Jetty Developers] is for narrowly focused technical discussion regarding Jetty internals. (http://dev.eclipse.org/mhonarc/lists/jetty-dev/[Archives])
+* https://dev.eclipse.org/mailman/listinfo/jetty-users[Jetty Users] is for questions of broad interest to the community of Jetty users. (http://dev.eclipse.org/mhonarc/lists/jetty-users/[Archives])
+* https://dev.eclipse.org/mailman/listinfo/jetty-announce[Jetty Announcements] is for announcements about new releases and other updates from the project's maintainers. (http://dev.eclipse.org/mhonarc/lists/jetty-announce/[Archives])
 
 [[cg-stackoverflow]]
 === Stack Overflow
 
-From a simple support perspective it is hard to beat http://stackoverflow.com[StackOverflow] for interacting with a Jetty community.  Numerous users have asked and had answered their questions on the platform by other users and developers alike.
+From a simple support perspective it is hard to beat http://stackoverflow.com[StackOverflow] for interacting with a Jetty community.
+Numerous users have asked and had answered their questions on the platform by other users and developers alike.
 
 * Check out the general https://stackoverflow.com/questions/tagged/jetty[Jetty] tag!
 * The https://stackoverflow.com/questions/tagged/embedded-jetty[Embedded-Jetty] tag has a fair amount of traffic as well.
