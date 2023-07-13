@@ -54,6 +54,17 @@ public class CommandLineBuilder
         return "java";
     }
 
+    /**
+     * @param arg string
+     * @return Quoted string
+     * @deprecated use {@link #shellQuoteIfNeeded(String)}
+     */
+    @Deprecated
+    public static String quote(String arg)
+    {
+        return "'" + arg + "'";
+    }
+
     private final StringBuilder commandLine = new StringBuilder();
     private final List<String> args = new ArrayList<>();
     private final String separator;
@@ -61,6 +72,13 @@ public class CommandLineBuilder
     public CommandLineBuilder()
     {
         this(false);
+    }
+
+    @Deprecated
+    public CommandLineBuilder(String bin)
+    {
+        this();
+        args.add(bin);
     }
 
     public CommandLineBuilder(boolean multiline)
@@ -152,6 +170,15 @@ public class CommandLineBuilder
     }
 
     /**
+     * @deprecated use {@link #addArg(String, String)}
+     */
+    @Deprecated
+    public void addEqualsArg(String name, String value)
+    {
+        addArg(name, value);
+    }
+
+    /**
      * Add a "name=value" style argument to the command line with
      * name and value quoted if necessary.
      * @param name the name
@@ -174,6 +201,15 @@ public class CommandLineBuilder
             args.add(name);
             commandLine.append(shellQuoteIfNeeded(name));
         }
+    }
+
+    /**
+     * @deprecated use {@link #addArg(String)}
+     */
+    @Deprecated
+    public void addRawArg(String arg)
+    {
+        addArg(arg);
     }
 
     /**
@@ -224,6 +260,15 @@ public class CommandLineBuilder
         }
 
         return buf.toString();
+    }
+
+    /**
+     * @deprecated use {@link #toCommandLine()}
+     */
+    @Deprecated
+    public String toQuotedString()
+    {
+        return toCommandLine();
     }
 
     /**
