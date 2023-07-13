@@ -28,8 +28,8 @@ Before your contribution can be accepted by the project, you need to create and 
 2. Click on "Eclipse ECA", and complete the form.
 
 Be sure to use the same email address in your Eclipse account that you intend to use when you commit to GitHub.
-All committers, and all commits , are bound to the [Developer Certificate of Origin.](https://www.eclipse.org/legal/DCO.php)
-As such, all parties involved in a contribution must have valid ECAs and commits must include [valid "Signed-off-by" entries.](https://wiki.eclipse.org/Development_Resources/Contributing_via_Git)
+All committers, and all commits , are bound to the [Developer Certificate of Origin](https://www.eclipse.org/legal/DCO.php).
+As such, all parties involved in a contribution must have valid ECAs and commits must include [valid "Signed-off-by" entries](https://wiki.eclipse.org/Development_Resources/Contributing_via_Git).
 Commits can be signed off by included the `-s` attribute in your commit message, for example, `git commit -s -am 'Interesting Commit Message.`
 
 
@@ -47,7 +47,8 @@ This project uses GitHub Issues to track ongoing development and issues.
 
 Create a new bug
 -----------------
-Be sure to search for existing bugs before you create another one. Remember that contributions are always welcome!
+Be sure to search for existing bugs before you create another one.
+Remember that contributions are always welcome!
 
 - [https://github.com/eclipse/jetty.project/issues](https://github.com/eclipse/jetty.project/issues)
 

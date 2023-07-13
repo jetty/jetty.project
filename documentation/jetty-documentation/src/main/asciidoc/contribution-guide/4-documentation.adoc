@@ -109,8 +109,7 @@ ventilated prose::
 
 id's::
   Critically important for being able to generate url's that can be used in a persistent fashion.
-  Without sane id's the chapters and sections will have generated id which are rooted in some obscure location based
-  voodoo.
+  Without sane id's the chapters and sections will have generated id which are rooted in some obscure location based voodoo.
   A url using these 'e12c8673' type links will not be durable across generations of the documentation.
   These id's need to be used on chapters and sections two deep, and anywhere that you intend to cross link deeper.
   The id values go into a global namespace so they must be unique across the entire document or the last example will win and any cross links will go there.
@@ -121,7 +120,8 @@ link vs xref::
   However if you are linking to a section and want to use the title itself as the link text, use the `xref:` tag without the hashmark in front of the link id.
 
 cross guide linkage::
-  To link to another guide it is best to use a property to address it. The following guide shortcuts are provided.
+  To link to another guide it is best to use a property to address it.
+  The following guide shortcuts are provided:
   * DISTGUIDE
   * EMBEDGUIDE
   * QUICKGUIDE
