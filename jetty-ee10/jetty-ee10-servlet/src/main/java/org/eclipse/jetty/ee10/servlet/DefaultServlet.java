@@ -44,6 +44,7 @@ import jakarta.servlet.http.HttpServlet;
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletResponse;
 import jakarta.servlet.http.HttpServletResponseWrapper;
+import jakarta.servlet.http.MappingMatch;
 import org.eclipse.jetty.http.CompressedContentFormat;
 import org.eclipse.jetty.http.HttpException;
 import org.eclipse.jetty.http.HttpField;
@@ -140,12 +141,6 @@ import org.slf4j.LoggerFactory;
  *     gzipped.
  *     Defaults to {@code .svgz}.
  *   </dd>
- *   <dt>pathInfoOnly</dt>
- *   <dd>
- *     Use {@code true} to use only the request {@code pathInfo} to look for
- *     static resources.
- *     Defaults to {@code false}.
- *   </dd>
  *   <dt>precompressed</dt>
  *   <dd>
  *     Omitted by default, so that no pre-compressed content will be served.
@@ -190,7 +185,6 @@ public class DefaultServlet extends HttpServlet
     private ServletResourceService _resourceService;
     private WelcomeServletMode _welcomeServletMode;
     private Resource _baseResource;
-    private boolean _isPathInfoOnly;
 
     public ResourceService getResourceService()
     {
@@ -289,8 +283,6 @@ public class DefaultServlet extends HttpServlet
         _resourceService.setPrecompressedFormats(precompressedFormats);
         _resourceService.setEtags(getInitBoolean("etags", _resourceService.isEtags()));
 
-        _isPathInfoOnly = getInitBoolean("pathInfoOnly", _isPathInfoOnly);
-
         _welcomeServletMode = WelcomeServletMode.NONE;
         String welcomeServlets = getInitParameter("welcomeServlets");
         if (welcomeServlets != null)
@@ -335,7 +327,6 @@ public class DefaultServlet extends HttpServlet
         {
             LOG.debug("  .baseResource = {}", _baseResource);
             LOG.debug("  .resourceService = {}", _resourceService);
-            LOG.debug("  .isPathInfoOnly = {}", _isPathInfoOnly);
             LOG.debug("  .welcomeServletMode = {}", _welcomeServletMode);
         }
     }
@@ -442,11 +433,6 @@ public class DefaultServlet extends HttpServlet
             servletContext.getClass().getName() + " is not " + ContextHandler.ScopedContext.class.getName());
     }
 
-    protected boolean isPathInfoOnly()
-    {
-        return _isPathInfoOnly;
-    }
-
     @Override
     protected void doGet(HttpServletRequest req, HttpServletResponse resp) throws ServletException, IOException
     {
@@ -454,8 +440,8 @@ public class DefaultServlet extends HttpServlet
         boolean included = includedServletPath != null;
         String encodedPathInContext;
         if (included)
-            encodedPathInContext = URIUtil.encodePath(getIncludedPathInContext(req, includedServletPath, isPathInfoOnly()));
-        else if (isPathInfoOnly())
+            encodedPathInContext = URIUtil.encodePath(getIncludedPathInContext(req, includedServletPath, isPathInfoOnly(req)));
+        else if (isPathInfoOnly(req))
             encodedPathInContext = URIUtil.encodePath(req.getPathInfo());
         else if (req instanceof ServletApiRequest apiRequest)
             encodedPathInContext = Context.getPathInContext(req.getContextPath(), apiRequest.getRequest().getHttpURI().getCanonicalPath());
@@ -1064,7 +1050,7 @@ public class DefaultServlet extends HttpServlet
                     // Check whether a Servlet may serve the welcome resource.
                     if (_welcomeServletMode != WelcomeServletMode.NONE && welcomeTarget == null)
                     {
-                        if (isPathInfoOnly() && !isIncluded(getServletRequest(coreRequest)))
+                        if (isPathInfoOnly(getServletRequest(coreRequest)) && !isIncluded(getServletRequest(coreRequest)))
                             welcomeTarget = URIUtil.addPaths(getServletRequest(coreRequest).getPathInfo(), welcome);
 
                         ServletHandler.MappedServlet entry = _servletContextHandler.getServletHandler().getMappedServlet(welcomeInContext);
@@ -1207,6 +1193,11 @@ public class DefaultServlet extends HttpServlet
     private static boolean isIncluded(HttpServletRequest request)
     {
         return request.getAttribute(RequestDispatcher.INCLUDE_REQUEST_URI) != null;
+    }
+
+    private static boolean isPathInfoOnly(HttpServletRequest req)
+    {
+        return req.getHttpServletMapping().getMappingMatch() != MappingMatch.DEFAULT;
     }
 
     /**
