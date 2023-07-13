@@ -17,10 +17,10 @@ import java.io.IOException;
 import java.nio.ByteBuffer;
 import java.nio.charset.StandardCharsets;
 
+import org.eclipse.jetty.http.MimeTypes;
 import org.eclipse.jetty.server.Server;
 import org.eclipse.jetty.util.BufferUtil;
 import org.eclipse.jetty.util.StringUtil;
-import org.eclipse.jetty.util.TypeUtil;
 import org.eclipse.jetty.util.Utf8StringBuilder;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Disabled;
@@ -93,7 +93,7 @@ public class HttpWriterTest
     @Test
     public void testUTF16() throws Exception
     {
-        HttpWriter writer = new EncodingHttpWriter(_httpOut, StringUtil.__UTF16);
+        HttpWriter writer = new EncodingHttpWriter(_httpOut, MimeTypes.UTF16);
         writer.write("How now \uFF22rown cow");
         assertArrayEquals("How now \uFF22rown cow".getBytes(StandardCharsets.UTF_16), BufferUtil.toArray(_bytes));
     }
@@ -104,7 +104,8 @@ public class HttpWriterTest
         HttpWriter writer = new Utf8HttpWriter(_httpOut);
         String data = "xxx\uD801\uDC00xxx";
         writer.write(data);
-        assertEquals("787878F0909080787878", TypeUtil.toHexString(BufferUtil.toArray(_bytes)));
+        byte[] b = BufferUtil.toArray(_bytes);
+        assertEquals("787878F0909080787878", StringUtil.toHexString(b));
         assertArrayEquals(data.getBytes(StandardCharsets.UTF_8), BufferUtil.toArray(_bytes));
         assertEquals(3 + 4 + 3, _bytes.remaining());
 

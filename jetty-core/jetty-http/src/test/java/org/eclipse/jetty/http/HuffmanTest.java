@@ -22,7 +22,6 @@ import org.eclipse.jetty.http.compression.HuffmanDecoder;
 import org.eclipse.jetty.http.compression.HuffmanEncoder;
 import org.eclipse.jetty.util.BufferUtil;
 import org.eclipse.jetty.util.StringUtil;
-import org.eclipse.jetty.util.TypeUtil;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.Arguments;
 import org.junit.jupiter.params.provider.MethodSource;
@@ -65,7 +64,7 @@ public class HuffmanTest
     @MethodSource("data")
     public void testDecode(String specSection, String hex, String expected) throws Exception
     {
-        byte[] encoded = TypeUtil.fromHexString(hex);
+        byte[] encoded = StringUtil.fromHexString(hex);
         HuffmanDecoder huffmanDecoder = new HuffmanDecoder();
         huffmanDecoder.setLength(encoded.length);
         String decoded = huffmanDecoder.decode(ByteBuffer.wrap(encoded));
@@ -80,7 +79,8 @@ public class HuffmanTest
         int pos = BufferUtil.flipToFill(buf);
         HuffmanEncoder.encode(buf, expected);
         BufferUtil.flipToFlush(buf, pos);
-        String encoded = TypeUtil.toHexString(BufferUtil.toArray(buf)).toLowerCase(Locale.ENGLISH);
+        byte[] b = BufferUtil.toArray(buf);
+        String encoded = StringUtil.toHexString(b).toLowerCase(Locale.ENGLISH);
         assertEquals(hex, encoded, specSection);
         assertEquals(hex.length() / 2, HuffmanEncoder.octetsNeeded(expected));
     }

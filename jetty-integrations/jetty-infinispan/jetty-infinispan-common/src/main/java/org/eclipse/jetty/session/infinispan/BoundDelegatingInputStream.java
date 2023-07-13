@@ -18,8 +18,6 @@ import java.io.InputStream;
 import java.io.ObjectInput;
 
 /**
- * BoundDelegatingInputStream
- *
  * An InputStream that delegates methods to an ObjectInput. The ObjectInput must start
  * with an integer containing the length of the data.
  */
@@ -97,7 +95,7 @@ public class BoundDelegatingInputStream extends InputStream
     @Override
     public long skip(long n) throws IOException
     {
-        long skip = 0;
+        long skip;
         if (position + n < length)
         {
             skip = objectInput.skip(length - position);
@@ -108,7 +106,7 @@ public class BoundDelegatingInputStream extends InputStream
         }
         if (skip > 0)
         {
-            position += skip;
+            position += Math.toIntExact(skip);
         }
         return skip;
     }
@@ -136,5 +134,4 @@ public class BoundDelegatingInputStream extends InputStream
     {
         objectInput.close();
     }
-    
 }

@@ -308,12 +308,7 @@ public class ResponseListeners
         }
     }
 
-    public boolean addCompleteListener(Response.CompleteListener listener)
-    {
-        return addCompleteListener(listener, true);
-    }
-
-    private boolean addCompleteListener(Response.CompleteListener listener, boolean includeOtherEvents)
+    public boolean addCompleteListener(Response.CompleteListener listener, boolean includeOtherEvents)
     {
         if (listener == null)
             return false;

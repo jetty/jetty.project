@@ -62,6 +62,7 @@ public class HttpStreamOverHTTP2 implements HttpStream, HTTP2Channel.Server
     private MetaData.Response _responseMetaData;
     private TunnelSupport tunnelSupport;
     private Content.Chunk _chunk;
+    private Content.Chunk _trailer;
     private boolean committed;
     private boolean _demand;
     private boolean _expects100Continue;
@@ -150,37 +151,51 @@ public class HttpStreamOverHTTP2 implements HttpStream, HTTP2Channel.Server
         if (tunnelSupport != null)
             return null;
 
-        while (true)
+        // Check if there already is a chunk, e.g. EOF.
+        Content.Chunk chunk;
+        try (AutoLock ignored = lock.lock())
         {
-            Content.Chunk chunk;
+            chunk = _chunk;
+            _chunk = Content.Chunk.next(chunk);
+        }
+        if (chunk != null)
+            return chunk;
+
+        Stream.Data data = _stream.readData();
+        if (data == null)
+            return null;
+
+        // Check if the trailers must be returned.
+        if (data.frame().isEndStream())
+        {
+            Content.Chunk trailer;
             try (AutoLock ignored = lock.lock())
             {
-                chunk = _chunk;
-                _chunk = Content.Chunk.next(chunk);
-            }
-            if (chunk != null)
-                return chunk;
-
-            Stream.Data data = _stream.readData();
-            if (data == null)
-                return null;
-
-            // The data instance should be released after readData() above;
-            // the chunk is stored below for later use, so should be retained;
-            // the two actions cancel each other, no need to further retain or release.
-            chunk = createChunk(data);
-
-            // Some content is read, but the 100 Continue interim
-            // response has not been sent yet, then don't bother
-            // sending it later, as the client already sent the content.
-            if (_expects100Continue && chunk.hasRemaining())
-                _expects100Continue = false;
-
-            try (AutoLock ignored = lock.lock())
-            {
-                _chunk = chunk;
+                trailer = _trailer;
+                if (trailer != null)
+                {
+                    _chunk = Content.Chunk.next(trailer);
+                    return trailer;
+                }
             }
         }
+
+        // The data instance should be released after readData() above;
+        // the chunk is stored below for later use, so should be retained;
+        // the two actions cancel each other, no need to further retain or release.
+        chunk = createChunk(data);
+
+        // Some content is read, but the 100 Continue interim
+        // response has not been sent yet, then don't bother
+        // sending it later, as the client already sent the content.
+        if (_expects100Continue && chunk.hasRemaining())
+            _expects100Continue = false;
+
+        try (AutoLock ignored = lock.lock())
+        {
+            _chunk = Content.Chunk.next(chunk);
+        }
+        return chunk;
     }
 
     @Override
@@ -190,8 +205,7 @@ public class HttpStreamOverHTTP2 implements HttpStream, HTTP2Channel.Server
         boolean demand = false;
         try (AutoLock ignored = lock.lock())
         {
-            // We may have a non-demanded chunk in case of trailers.
-            if (_chunk != null)
+            if (_chunk != null || _trailer != null)
                 notify = true;
             else if (!_demand)
                 demand = _demand = true;
@@ -237,8 +251,7 @@ public class HttpStreamOverHTTP2 implements HttpStream, HTTP2Channel.Server
         HttpFields trailers = frame.getMetaData().getHttpFields().asImmutable();
         try (AutoLock ignored = lock.lock())
         {
-            _demand = false;
-            _chunk = new Trailers(trailers);
+            _trailer = new Trailers(trailers);
         }
 
         if (LOG.isDebugEnabled())

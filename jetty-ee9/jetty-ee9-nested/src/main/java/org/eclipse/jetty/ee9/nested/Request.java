@@ -25,7 +25,6 @@ import java.net.InetSocketAddress;
 import java.net.SocketAddress;
 import java.nio.charset.Charset;
 import java.nio.charset.StandardCharsets;
-import java.nio.charset.UnsupportedCharsetException;
 import java.security.Principal;
 import java.util.AbstractList;
 import java.util.ArrayList;
@@ -1058,7 +1057,7 @@ public class Request implements HttpServletRequest
 
         String encoding = getCharacterEncoding();
         if (encoding == null)
-            encoding = StringUtil.__ISO_8859_1;
+            encoding = MimeTypes.ISO_8859_1;
 
         if (_reader == null || !encoding.equalsIgnoreCase(_readerEncoding))
         {
@@ -1747,20 +1746,8 @@ public class Request implements HttpServletRequest
         if (_inputState != INPUT_NONE)
             return;
 
+        MimeTypes.getKnownCharset(encoding);
         _characterEncoding = encoding;
-
-        // check encoding is supported
-        if (!StringUtil.isUTF8(encoding))
-        {
-            try
-            {
-                Charset.forName(encoding);
-            }
-            catch (UnsupportedCharsetException e)
-            {
-                throw new UnsupportedEncodingException(e.getMessage());
-            }
-        }
     }
 
     /*

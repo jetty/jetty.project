@@ -40,7 +40,7 @@ Then, the client uses the RMI stub to connect to the RMI server, typically to a 
 Remote access to the platform MBeans, and therefore the Jetty MBeans, is enabled by the `jmx-remote` Jetty module:
 
 ----
-$ java -jar $JETTY_HOME/start.jar --add-module=jmx-remote
+$ java -jar $JETTY_HOME/start.jar --add-modules=jmx-remote
 ----
 
 This command creates the `jmx-remote.ini` file:
@@ -155,7 +155,7 @@ The simplest way to control JMX authentication and authorization is to specify t
 This is achieved by enabling the `jmx-remote-auth` Jetty module:
 
 ----
-$ java -jar $JETTY_HOME/start.jar --add-module=jmx-remote-auth
+$ java -jar $JETTY_HOME/start.jar --add-modules=jmx-remote-auth
 ----
 
 Enabling the `jmx-remote-auth` Jetty module creates the following files:
@@ -199,7 +199,7 @@ The JMX communication via RMI happens by default in clear-text, but it is possib
 If you want to reuse the configuration that you are using for the xref:og-protocols-https[`https` module], you can just enable the `jmx-remote-ssl.xml` Jetty module:
 
 ----
-$ java -jar $JETTY_HOME/start.jar --add-module=jmx-remote-ssl
+$ java -jar $JETTY_HOME/start.jar --add-modules=jmx-remote-ssl
 ----
 
 [NOTE]

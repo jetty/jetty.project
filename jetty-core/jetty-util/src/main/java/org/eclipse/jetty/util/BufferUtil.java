@@ -1313,7 +1313,7 @@ public class BufferUtil
         else if (b == '\t')
             buf.append("\\t");
         else
-            buf.append("\\x").append(TypeUtil.toHexString(b));
+            buf.append("\\x").append(StringUtil.toHexString(b));
     }
 
     /**
@@ -1351,7 +1351,8 @@ public class BufferUtil
     {
         if (buffer == null)
             return "null";
-        return TypeUtil.toHexString(toArray(buffer));
+        byte[] b = toArray(buffer);
+        return StringUtil.toHexString(b);
     }
 
     private static final int[] decDivisors =

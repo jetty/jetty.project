@@ -18,15 +18,20 @@ import java.io.OutputStream;
 import java.nio.ByteBuffer;
 import java.util.concurrent.TimeUnit;
 
+import org.eclipse.jetty.client.ContentResponse;
+import org.eclipse.jetty.client.FutureResponseListener;
 import org.eclipse.jetty.client.InputStreamResponseListener;
 import org.eclipse.jetty.client.OutputStreamRequestContent;
+import org.eclipse.jetty.client.StringRequestContent;
 import org.eclipse.jetty.http.HttpFields;
+import org.eclipse.jetty.http.HttpHeader;
+import org.eclipse.jetty.http.HttpMethod;
+import org.eclipse.jetty.http.HttpStatus;
 import org.eclipse.jetty.io.Content;
 import org.eclipse.jetty.server.Handler;
 import org.eclipse.jetty.server.Request;
 import org.eclipse.jetty.server.Response;
 import org.eclipse.jetty.util.Callback;
-import org.junit.jupiter.api.Tag;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.MethodSource;
 
@@ -37,7 +42,6 @@ public class TrailersTest extends AbstractTest
 {
     @ParameterizedTest
     @MethodSource("transportsNoFCGI")
-    @Tag("flaky") // https://github.com/eclipse/jetty.project/issues/9662
     public void testTrailers(Transport transport) throws Exception
     {
         String trailerName = "Some-Trailer";
@@ -110,5 +114,43 @@ public class TrailersTest extends AbstractTest
         HttpFields responseTrailers = response.getTrailers();
         assertNotNull(responseTrailers);
         assertEquals(trailerValue, responseTrailers.get(trailerName));
+    }
+
+    @ParameterizedTest
+    @MethodSource("transportsNoFCGI")
+    public void testTrailersWithDelayedRead(Transport transport) throws Exception
+    {
+        start(transport, new Handler.Abstract()
+        {
+            @Override
+            public boolean handle(Request request, Response response, Callback callback) throws Exception
+            {
+                // Do not read immediately, to cause the trailers to
+                // arrive at the server, especially in case of HTTP/2.
+                Thread.sleep(500);
+
+                HttpFields.Mutable trailers = HttpFields.build();
+                response.setTrailersSupplier(() -> trailers);
+                Content.copy(request, response, Response.newTrailersChunkProcessor(response), callback);
+
+                return true;
+            }
+        });
+
+        String content = "Some-Content";
+        String trailerName = "X-Trailer";
+        String trailerValue = "0xC0FFEE";
+        var request = client.newRequest(newURI(transport))
+            .method(HttpMethod.POST)
+            .headers(headers -> headers.put(HttpHeader.TRAILER, trailerName))
+            .body(new StringRequestContent(content))
+            .trailersSupplier(() -> HttpFields.build().put(trailerName, trailerValue));
+        FutureResponseListener listener = new FutureResponseListener(request);
+        request.send(listener);
+
+        ContentResponse response = listener.get(5, TimeUnit.SECONDS);
+        assertEquals(HttpStatus.OK_200, response.getStatus());
+        assertEquals(content, response.getContentAsString());
+        assertEquals(trailerValue, response.getTrailers().get(trailerName));
     }
 }

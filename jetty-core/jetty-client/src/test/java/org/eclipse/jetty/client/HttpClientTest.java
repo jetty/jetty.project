@@ -1013,7 +1013,7 @@ public class HttpClientTest extends AbstractHttpClientServerTest
         start(scenario, new EmptyServerHandler());
 
         AtomicInteger counter = new AtomicInteger();
-        CountDownLatch latch = new CountDownLatch(1);
+        CountDownLatch latch = new CountDownLatch(2);
         Response.Listener listener = new Response.Listener()
         {
             @Override
@@ -1079,12 +1079,13 @@ public class HttpClientTest extends AbstractHttpClientServerTest
             .onResponseContentAsync(listener)
             .onResponseSuccess(listener)
             .onResponseFailure(listener)
+            .onComplete(listener)
             .send(listener);
 
         assertTrue(latch.await(5, TimeUnit.SECONDS));
-        int expectedEventsTriggeredByOnResponseXXXListeners = 3;
-        int expectedEventsTriggeredByCompletionListener = 4;
-        int expected = expectedEventsTriggeredByOnResponseXXXListeners + expectedEventsTriggeredByCompletionListener;
+        int expectedEventsTriggeredByResponseListeners = 4;
+        int expectedEventsTriggeredBySendListener = 4;
+        int expected = expectedEventsTriggeredByResponseListeners + expectedEventsTriggeredBySendListener;
         assertEquals(expected, counter.get());
     }
 

@@ -371,32 +371,43 @@ public class HTTP2Stream implements Stream, Attachable, Closeable, Callback, Dum
 
     private void onHeaders(HeadersFrame frame, Callback callback)
     {
+        boolean offered = false;
         MetaData metaData = frame.getMetaData();
-        if (metaData.isRequest() || metaData.isResponse())
+        boolean isTrailer = !metaData.isRequest() && !metaData.isResponse();
+        if (isTrailer)
+        {
+            // In case of trailers, notify first and then offer EOF to
+            // avoid race conditions due to concurrent calls to readData().
+            boolean closed = updateClose(true, CloseState.Event.RECEIVED);
+            notifyHeaders(this, frame);
+            if (closed)
+                getSession().removeStream(this);
+            // Offer EOF in case the application calls readData() or demand().
+            offered = offer(Data.eof(getId()));
+        }
+        else
         {
             HttpFields fields = metaData.getHttpFields();
             long length = -1;
             if (fields != null && !HttpMethod.CONNECT.is(request.getMethod()))
                 length = fields.getLongField(HttpHeader.CONTENT_LENGTH);
             dataLength = length;
-        }
 
-        boolean offered = false;
-        if (frame.isEndStream())
-        {
-            // Offer EOF for either the request, the response or the trailers
-            // in case the application calls readData() or demand().
-            offered = offer(Data.eof(getId()));
-        }
+            if (frame.isEndStream())
+            {
+                // Offer EOF for either the request or the response in
+                // case the application calls readData() or demand().
+                offered = offer(Data.eof(getId()));
+            }
 
-        // Requests are notified to a Session.Listener,
-        // here only handle responses and trailers.
-        if (metaData.isResponse() || !metaData.isRequest())
-        {
-            boolean closed = updateClose(frame.isEndStream(), CloseState.Event.RECEIVED);
-            notifyHeaders(this, frame);
-            if (closed)
-                getSession().removeStream(this);
+            // Requests are notified to a Session.Listener, here only notify responses.
+            if (metaData.isResponse())
+            {
+                boolean closed = updateClose(frame.isEndStream(), CloseState.Event.RECEIVED);
+                notifyHeaders(this, frame);
+                if (closed)
+                    getSession().removeStream(this);
+            }
         }
 
         if (offered)
