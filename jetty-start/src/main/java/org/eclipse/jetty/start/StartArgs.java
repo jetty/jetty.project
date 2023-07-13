@@ -780,19 +780,23 @@ public class StartArgs
                 }
                 for (Map.Entry<String, Set<String>> entry : jmodPatch.entrySet())
                 {
-                    cmd.addArg("--patch-module", entry.getKey(), String.join(File.pathSeparator, entry.getValue()));
+                    cmd.addArg("--patch-module", null, null);
+                    cmd.addArg(entry.getKey(), String.join(File.pathSeparator, entry.getValue()));
                 }
                 for (Map.Entry<String, Set<String>> entry : jmodOpens.entrySet())
                 {
-                    cmd.addArg("--add-opens", entry.getKey(), String.join(",", entry.getValue()));
+                    cmd.addArg("--add-opens", null, null);
+                    cmd.addArg(entry.getKey(), String.join(",", entry.getValue()));
                 }
                 for (Map.Entry<String, Set<String>> entry : jmodExports.entrySet())
                 {
-                    cmd.addArg("--add-exports", entry.getKey(), String.join(",", entry.getValue()));
+                    cmd.addArg("--add-exports", null, null);
+                    cmd.addArg(entry.getKey(), String.join(",", entry.getValue()));
                 }
                 for (Map.Entry<String, Set<String>> entry : jmodReads.entrySet())
                 {
-                    cmd.addArg("--add-reads", entry.getKey(), String.join(",", entry.getValue()));
+                    cmd.addArg("--add-reads", null, null);
+                    cmd.addArg(entry.getKey(), String.join(",", entry.getValue()));
                 }
             }
             else
