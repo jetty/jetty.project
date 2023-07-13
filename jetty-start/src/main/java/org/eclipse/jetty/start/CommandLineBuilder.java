@@ -15,7 +15,6 @@ package org.eclipse.jetty.start;
 
 import java.io.File;
 import java.util.ArrayList;
-import java.util.Arrays;
 import java.util.List;
 
 public class CommandLineBuilder
@@ -65,27 +64,9 @@ public class CommandLineBuilder
     @Deprecated
     public static String quote(String arg)
     {
-        return "'" + arg + "'";
-    }
-
-    /**
-     * Map of ASCII characters that indicate a need for quoting
-     */
-    private static final boolean[] NEEDS_QUOTING;
-
-    static
-    {
-        NEEDS_QUOTING = new boolean[256];
-        Arrays.fill(NEEDS_QUOTING, true);
-        // Allow certain characters (that shouldn't trigger quoting)
-        for (int i = 'a'; i < 'z'; i++)
-            NEEDS_QUOTING[i] = false;
-        for (int i = 'A'; i < 'Z'; i++)
-            NEEDS_QUOTING[i] = false;
-        for (int i = '0'; i < '9'; i++)
-            NEEDS_QUOTING[i] = false;
-        for (char c : "-./=_:\\".toCharArray())
-            NEEDS_QUOTING[c] = false;
+        StringBuilder buf = new StringBuilder();
+        shellQuoteIfNeeded(buf, arg);
+        return buf.toString();
     }
 
     private List<String> args;
@@ -117,13 +98,13 @@ public class CommandLineBuilder
     }
 
     /**
-     * Similar to {@link #addArg(String)} but concats both name + value with an "=" sign, quoting were needed, and excluding the "=" portion if the value is
+     * Similar to {@link #addArg(String)} but concats both name + value with an "=" sign, excluding the "=" portion if the value is
      * undefined or empty.
      *
      * <pre>
      *   addEqualsArg("-Dname", "value") = "-Dname=value"
-     *   addEqualsArg("-Djetty.home", "/opt/company inc/jetty (7)/") = "-Djetty.home=/opt/company\ inc/jetty\ (7)/"
-     *   addEqualsArg("-Djenkins.workspace", "/opt/workspaces/jetty jdk7/") = "-Djenkins.workspace=/opt/workspaces/jetty\ jdk7/"
+     *   addEqualsArg("-Djetty.home", "/opt/company inc/jetty (7)/") = '-Djetty.home=/opt/company inc/jetty (7)/'
+     *   addEqualsArg("-Djenkins.workspace", "/opt/workspaces/jetty jdk7/") = '-Djenkins.workspace=/opt/workspaces/jetty jdk7/'
      *   addEqualsArg("-Dstress", null) = "-Dstress"
      *   addEqualsArg("-Dstress", "") = "-Dstress"
      * </pre>
@@ -210,8 +191,17 @@ public class CommandLineBuilder
         {
             char c = input.charAt(i);
 
-            // Characters that require quoting
-            if (c > NEEDS_QUOTING.length || NEEDS_QUOTING[c])
+            // If character not part of allowed characters, then it needs quoting
+            if (!((c >= 'a' && c <= 'z') || // allow lowercase letters
+                (c >= 'A' && c <= 'Z') || // allow uppercase letters
+                (c >= '0' && c <= '9') || // allow digits
+                c == '-' || // allow dash (common filename usage)
+                c == '.' || // allow dot (common filename usage)
+                c == '/' || // allow slash (common filename usage)
+                c == '=' || // allow equals (common assignment usage)
+                c == '_' || // allow underscore (common filename usage)
+                c == ':' // allow colon (common URI/URL usage), and prevents filesystem quoting on Windows
+                ))
             {
                 return true;
             }
