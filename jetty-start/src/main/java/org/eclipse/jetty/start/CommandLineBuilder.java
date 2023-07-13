@@ -213,7 +213,7 @@ public class CommandLineBuilder
     }
 
     /**
-     * Add a "-Oname" style option to the command line with no quoting.
+     * Adds a "-O" style option to the command line with no quoting, for example `--help`.
      * @param option the option
      */
     public void addOption(String option)
@@ -222,8 +222,8 @@ public class CommandLineBuilder
     }
 
     /**
-     * Add a "-Oname=value" style option to the command line with
-     * name and value quoted if necessary.
+     * Adds a "-Oname=value" style option to the command line with
+     * name and value quoted if necessary, for example "-Dprop=value".
      * @param option the option
      * @param name the name
      * @param value the value
