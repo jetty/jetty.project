@@ -127,7 +127,7 @@ public class CommandLineBuilder
             return input;
 
         StringBuilder builder = new StringBuilder(input.length() * 2);
-        builder.append('\'');
+        builder.append("'");
         builder.append(input, 0, --i);
 
         while (i < input.length())
@@ -136,10 +136,10 @@ public class CommandLineBuilder
             if (c == '\'')
             {
                 // There is no escape for a literal single quote, so we must leave the quotes
-                // and then escape the single quote. We test for the start/end of the string so
+                // and then escape the single quote. We test for the start/end of the string, so
                 // we can be less ugly in those cases.
                 if (i == 1)
-                    builder.insert(0, '\\').append('\'');
+                    builder.insert(0, "\\").append("'");
                 else if (i == input.length())
                     builder.append("'\\");
                 else
@@ -148,7 +148,7 @@ public class CommandLineBuilder
             else
                 builder.append(c);
         }
-        builder.append('\'');
+        builder.append("'");
 
         return builder.toString();
     }
