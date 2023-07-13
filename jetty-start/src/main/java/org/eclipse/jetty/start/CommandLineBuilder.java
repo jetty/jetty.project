@@ -95,8 +95,8 @@ public class CommandLineBuilder
      */
     public static String shellQuoteIfNeeded(String input)
     {
-        // Single quotes are used because double quotes are process differently by some shells and the xarg
-        // command used by jetty.xh
+        // Single quotes are used because double quotes are processed differently by some shells and the xarg
+        // command used by jetty.sh
 
         if (input == null)
             return null;
@@ -136,8 +136,8 @@ public class CommandLineBuilder
             if (c == '\'')
             {
                 // There is no escape for a literal single quote, so we must leave the quotes
-                // and then escape the single quote.  If we are at the start or end of the string
-                // we can be less ugly and avoid an empty ''
+                // and then escape the single quote. We test for the start/end of the string so
+                // we can be less ugly in those cases.
                 if (i == 1)
                     builder.insert(0, '\\').append('\'');
                 else if (i == input.length())
@@ -218,11 +218,7 @@ public class CommandLineBuilder
      */
     public void addOption(String option)
     {
-        Objects.requireNonNull(option);
-        if (commandLine.length() > 0)
-            commandLine.append(separator);
-        commandLine.append(option);
-        args.add(option);
+        addOption(option, null, null);
     }
 
     /**

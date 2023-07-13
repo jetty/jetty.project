@@ -775,7 +775,7 @@ public class StartArgs
 
                 if (!jmodAdds.isEmpty())
                 {
-                    cmd.addArg("--add-modules");
+                    cmd.addOption("--add-modules");
                     cmd.addArg(String.join(",", jmodAdds));
                 }
                 for (Map.Entry<String, Set<String>> entry : jmodPatch.entrySet())
