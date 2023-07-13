@@ -69,23 +69,21 @@ public class CommandLineBuilder
     }
 
     /**
-     * Quote a string suitable for use with a command line shell using double quotes.
-     * <p>This method applies doubles quotes suitable for a POSIX compliant shell:
-     * Enclosing characters within double quotes preserves the literal meaning of all characters except
-     * dollarsign ($), backquote (`), and backslash (\).
-     * The backslash inside double quotes is historically weird, and serves
-     * to quote only the following characters: {@code $ ` " \ newline}.
-     * Otherwise, it remains literal.
+     * This method applies single quotes suitable for a POSIX compliant shell if
+     * necessary.
      *
      * @param input The string to quote if needed
      * @return The quoted string or the original string if quotes are not necessary
      */
     public static String shellQuoteIfNeeded(String input)
     {
+        // Single quotes are used because double quotes are process differently by some shells and the xarg
+        // command used by jetty.xh
+
         if (input == null)
             return null;
         if (input.length() == 0)
-            return "\"\"";
+            return "''";
 
         int i = 0;
         boolean needsQuoting = false;
@@ -111,26 +109,28 @@ public class CommandLineBuilder
             return input;
 
         StringBuilder builder = new StringBuilder(input.length() * 2);
-        builder.append('"');
+        builder.append('\'');
         builder.append(input, 0, --i);
 
         while (i < input.length())
         {
             char c = input.charAt(i++);
-            switch (c)
+            if (c == '\'')
             {
-                case '"':
-                case '\\':
-                case '`':
-                case '$':
-                case '\n':
-                    builder.append('\\').append(c);
-                    break;
-                default: builder.append(c);
+                // There is no escape for a literal single quote, so we must leave the quotes
+                // and then escape the single quote.  If we are at the start or end of the string
+                // we can be less ugly and avoid an empty ''
+                if (i == 1)
+                    builder.insert(0, '\\').append('\'');
+                else if (i == input.length())
+                    builder.append("'\\");
+                else
+                    builder.append("'\\''");
             }
+            else
+                builder.append(c);
         }
-
-        builder.append('"');
+        builder.append('\'');
 
         return builder.toString();
     }

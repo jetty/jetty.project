@@ -816,7 +816,7 @@ public class StartArgs
             {
                 for (Prop p : properties)
                 {
-                    if (!p.key.startsWith("java."))
+                    if (!p.key.startsWith("java.version."))
                         cmd.addArg(p.key, properties.expand(p.value));
                 }
             }
