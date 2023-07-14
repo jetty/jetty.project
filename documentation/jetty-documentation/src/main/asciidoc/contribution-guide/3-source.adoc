@@ -14,6 +14,10 @@
 [[cg-source]]
 == Participate in the Code
 
+We have additionally identified and labeled a number of issues that may be appropriate for users of different levels of expertise that might want to contribute to Jetty but not have a specific goal or issue in mind.
+
+* https://github.com/eclipse/jetty.project/issues?q=is%3Aopen+is%3Aissue+label%3A%22Help+Wanted%22[Help Wanted]
+
 If you are more interested in digging into what makes Jetty tick then this some information that you will need to arm yourself with.
 First we start with how to checkout and build Jetty, then on to our general coding standards followed by the actual patch contribution process.
 
@@ -26,13 +30,13 @@ The https://github.com/eclipse/jetty.project[Eclipse Jetty project] is located a
 .Active Eclipse Jetty Branches
 [cols="4"]
 |===
-| https://github.com/eclipse/jetty.project/tree/jetty-12.0.x[jetty-12.0.x] | Development | Servlet 6.0 | Java 17+
-| https://github.com/eclipse/jetty.project/tree/jetty-11.0.x[jetty-11.0.x] | Development | Servlet 5.0 | Java 11+
-| https://github.com/eclipse/jetty.project/tree/jetty-10.0.x[jetty-10.0.x] | Development (default branch) | Servlet 4.0 | Java 11+
+| https://github.com/eclipse/jetty.project/tree/jetty-12.0.x[jetty-12.0.x] | Development (default branch) | Servlet 6.0 | Java 17+
+| https://github.com/eclipse/jetty.project/tree/jetty-11.0.x[jetty-11.0.x] | Maintenance | Servlet 5.0 | Java 11+
+| https://github.com/eclipse/jetty.project/tree/jetty-10.0.x[jetty-10.0.x] | Maintenance | Servlet 4.0 | Java 11+
 | https://github.com/eclipse/jetty.project/tree/jetty-9.4.x[jetty-9.4.x] | End of Community Support | Servlet 3.1 | Java 8
-| https://github.com/eclipse/jetty.project/tree/jetty-9.3.x[jetty-9.3.x] | End of Life | Servlet 3.1 | Java 8
-| jetty-8 | Historical | Servlet 3.1 | Java 6
-| jetty-7 | Mythical | Servlet 2.5 | Java 5
+| https://github.com/eclipse/jetty.project/tree/jetty-9.3.x[jetty-9.3.x] | End of Life | Servlet 3.0 | Java 8
+| jetty-8.1.x | Historical | Servlet 2.0 | Java 7
+| jetty-7 | Mythical | Servlet 1.0 | Java 6
 |===
 
 If you are planning on working with a specific issue within Jetty it is important to target the correct branch for a pull request.

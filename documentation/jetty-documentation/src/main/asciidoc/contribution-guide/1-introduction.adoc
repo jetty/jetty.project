@@ -12,8 +12,42 @@
 //
 
 [[cg-introduction]]
-== Welcome!
+== The Jetty Community
 
-Eclipse Jetty is an open source project with a long pedigree of contribution.
-Starting over 20 years ago, Jetty has had many committers over the years and owes much of its success to the people that make up the community.
-There are many ways that you may contribute to Jetty, and the goal of this guide is help you get there!
+Since its inception, Jetty has owed its success to the people who have made up its community.
+
+The bulk of this guide is for developers who are interested in contributing code or documentation changes to the Jetty project.
+However, there are lots of ways to get involved, and every contribution is greatly appreciated!
+
+[[cg-mailing-lists]]
+=== Mailing Lists
+
+One of the easiest ways to get involved is via our mailing lists:
+
+* https://dev.eclipse.org/mailman/listinfo/jetty-users[Jetty Users] is for discussion and questions that are of broad interest to the community of Jetty users. (http://dev.eclipse.org/mhonarc/lists/jetty-users/[Archives])
+* https://dev.eclipse.org/mailman/listinfo/jetty-dev[Jetty Developers] is more narrowly focused on technical topics and discussion regarding Jetty internals. (http://dev.eclipse.org/mhonarc/lists/jetty-dev/[Archives])
+* https://dev.eclipse.org/mailman/listinfo/jetty-announce[Jetty Announcements] is for announcements about new releases and other updates from the project's maintainers. (http://dev.eclipse.org/mhonarc/lists/jetty-announce/[Archives])
+
+
+[[cg-stackoverflow]]
+=== Stack Overflow
+
+Another great resource -- both for Jetty novices who need help and Jetty experts who want to contribute -- is http://stackoverflow.com[StackOverflow].
+The https://stackoverflow.com/questions/tagged/jetty[`jetty`] and https://stackoverflow.com/questions/tagged/embedded-jetty[`embedded-jetty`] tags both see regular traffic.
+
+
+[[cg-issues]]
+=== Filing Issues
+
+The Jetty project uses GitHub for https://github.com/eclipse/jetty.project/issues[tracking issues].
+The issue tracker is a good place to flag potential bugs or suggest new Jetty features.
+
+:icons: font
+[WARNING]
+====
+Note that the issue tracker is **not** designed to be a standard support channel.
+For individualized help, you'll have better success using the <<cg-mailing-lists,mailing lists>> or posting your question to <<cg-stackoverflow,Stack Overflow>>.
+====
+
+Before filing a new issue, https://github.com/eclipse/jetty.project/issues[check the tracker] to see if it's already been filed by someone else.
+If you do file an issue, make sure to label it appropriately, as this will help the development team (and other users) find it more easily.
