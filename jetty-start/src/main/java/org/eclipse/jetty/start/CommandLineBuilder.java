@@ -95,8 +95,8 @@ public class CommandLineBuilder
      */
     public static String shellQuoteIfNeeded(String input)
     {
-        // Single quotes are used because double quotes are processed differently by some shells and the xarg
-        // command used by jetty.sh
+        // Single quotes are used because double quotes
+        // are evaluated differently by some shells.
 
         if (input == null)
             return null;

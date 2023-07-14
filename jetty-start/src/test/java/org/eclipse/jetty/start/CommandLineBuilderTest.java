@@ -89,7 +89,9 @@ public class CommandLineBuilderTest
             Arguments.of("H:llo/world", "H:llo/world"),
             Arguments.of("Hello World", "'Hello World'"),
             Arguments.of("foo\\bar", "'foo\\bar'"),
-            Arguments.of("foo'bar", "'foo'\\''bar'")
+            Arguments.of("foo'bar", "'foo'\\''bar'"),
+            Arguments.of("some 'internal' quoting", "'some '\\''internal'\\'' quoting'"),
+            Arguments.of("monetary.symbol=€", "'monetary.symbol=€'")
         );
     }
 
