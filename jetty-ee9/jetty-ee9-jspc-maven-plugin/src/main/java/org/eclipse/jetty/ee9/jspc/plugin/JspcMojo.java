@@ -61,7 +61,7 @@ import org.eclipse.jetty.util.IO;
  * <p>
  * Runs jspc compiler to produce .java and .class files
  * </p>
- * @see <a href="https://www.eclipse.org/jetty/documentation/">Usage Guide</a>
+ * @see <a href="https://eclipse.dev/jetty/documentation/">Usage Guide</a>
  */
 @Mojo(name = "jspc", defaultPhase = LifecyclePhase.PROCESS_CLASSES, requiresDependencyResolution = ResolutionScope.COMPILE_PLUS_RUNTIME,
     threadSafe = true)

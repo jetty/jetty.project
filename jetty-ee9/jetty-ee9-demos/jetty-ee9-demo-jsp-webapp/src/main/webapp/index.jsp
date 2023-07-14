@@ -22,7 +22,7 @@
       </center>
       <h1>Eclipse Jetty JSP Demo Webapp</h1>
      <p>
-       This is a demo webapp for the <a href="http://www.eclipse.org/jetty/">Eclipse Jetty HTTP Server and Servlet Container</a>. It was added into your <code>$JETTY_BASE/webapps</code> directory.
+       This is a demo webapp for the <a href="http://eclipse.dev/jetty/">Eclipse Jetty HTTP Server and Servlet Container</a>. It was added into your <code>$JETTY_BASE/webapps</code> directory.
      </p>
 
      <h2>JSP Examples on <%= DateTimeFormatter.ofPattern("d MMMM yyyy").format(LocalDate.now()) %></h2>
@@ -39,7 +39,7 @@
     </div>
 
     <div class="footer">
-      <center><a href="https://www.eclipse.org/jetty"><img style="border:0" src="small_powered_by.gif"/></a></center>
+      <center><a href="https://eclipse.dev/jetty"><img style="border:0" src="small_powered_by.gif"/></a></center>
     </div>
 </body>
 </html>
