@@ -3,7 +3,7 @@
 
 <!-- =============================================================== -->
 <!-- Documentation of this file format can be found at:              -->
-<!-- https://www.eclipse.org/jetty/documentation/current/        -->
+<!-- https://eclipse.dev/jetty/documentation/                        -->
 <!--                                                                 -->
 <!-- Additional configuration files are available in $JETTY_HOME/etc -->
 <!-- and can be mixed in. See start.ini file for the default         -->

@@ -274,24 +274,16 @@ public class XmlParser
             entity = (URL)_redirectMap.get(pid);
         if (entity == null)
             entity = (URL)_redirectMap.get(sid);
-        if (entity == null)
-        {
-            String dtd = sid;
-            if (dtd.lastIndexOf('/') >= 0)
-                dtd = dtd.substring(dtd.lastIndexOf('/') + 1);
 
-            if (LOG.isDebugEnabled())
-                LOG.debug("Can't exact match entity in redirect map, trying {}", dtd);
-            entity = (URL)_redirectMap.get(dtd);
-        }
-
+        // Only serve entity if found.
+        // We don't want to serve from unknown hosts or random paths.
         if (entity != null)
         {
             try
             {
                 InputStream in = entity.openStream();
                 if (LOG.isDebugEnabled())
-                    LOG.debug("Redirected entity {}  --> {}", sid,  entity);
+                    LOG.debug("Redirected entity {}  --> {}", sid, entity);
                 InputSource is = new InputSource(in);
                 is.setSystemId(sid);
                 return is;
@@ -301,6 +293,9 @@ public class XmlParser
                 LOG.trace("IGNORED", e);
             }
         }
+
+        if (LOG.isDebugEnabled())
+            LOG.debug("Entity not found for PID:{} / SID:{}", pid, sid);
         return null;
     }
 

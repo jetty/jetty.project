@@ -20,7 +20,7 @@ In addition to using Jetty in its distribution form and its multiple embedded fo
 Many products and open source projects out there distribute Jetty themselves, in both distribution and embedded forms, not to mention different operating systems bundling Jetty in other installable forms.
 
 If your platform supports Jetty from a distribution or deployment perspective and want to be included on this list just fork the documentation and submit a pull request, or contact us.
-Check out our list of http://www.eclipse.org/jetty/powered[Powered By] page for software that makes use of Jetty, often in novel and exciting ways.
+Check out our list of https://eclipse.dev/jetty/powered[Powered By] page for software that makes use of Jetty, often in novel and exciting ways.
 
 include::jelastic.adoc[]
 include::cloudfoundry.adoc[]
