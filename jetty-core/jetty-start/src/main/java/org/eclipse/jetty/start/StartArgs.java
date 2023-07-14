@@ -13,6 +13,7 @@
 
 package org.eclipse.jetty.start;
 
+import java.io.File;
 import java.io.IOException;
 import java.io.OutputStream;
 import java.io.PrintStream;
@@ -182,6 +183,7 @@ public class StartArgs
     private boolean listConfig = false;
     private boolean version = false;
     private boolean dryRun = false;
+    private boolean multiLine = false;
     private final Set<String> dryRunParts = new HashSet<>();
     private boolean jpms = false;
     private boolean createStartD = false;
@@ -494,17 +496,6 @@ public class StartArgs
     }
 
     /**
-     * Gets the List of JVM arguments detected.
-     *
-     * @deprecated use {@link #getJvmArgSources()} instead, as it will return source references with each arg.
-     */
-    @Deprecated
-    public List<String> getJvmArgs()
-    {
-        return new ArrayList<>(jvmArgSources.keySet());
-    }
-
-    /**
      * Return ordered Map of JVM arguments to Source (locations)
      *
      * @return the ordered map of JVM Argument to Source (locations)
@@ -519,7 +510,7 @@ public class StartArgs
         if (parts.isEmpty())
             parts = ALL_PARTS;
 
-        CommandLineBuilder cmd = new CommandLineBuilder();
+        CommandLineBuilder cmd = new CommandLineBuilder(multiLine);
 
         // Special Stop/Shutdown properties
         ensureSystemPropertySet("STOP.PORT");
@@ -527,13 +518,13 @@ public class StartArgs
         ensureSystemPropertySet("STOP.WAIT");
 
         if (parts.contains("java"))
-            cmd.addRawArg(CommandLineBuilder.findJavaBin());
+            cmd.addArg(CommandLineBuilder.findJavaBin());
 
         if (parts.contains("opts"))
         {
-            cmd.addRawArg("-Djava.io.tmpdir=" + System.getProperty("java.io.tmpdir"));
-            cmd.addRawArg("-Djetty.home=" + baseHome.getHome());
-            cmd.addRawArg("-Djetty.base=" + baseHome.getBase());
+            cmd.addOption("-D", "java.io.tmpdir", System.getProperty("java.io.tmpdir"));
+            cmd.addOption("-D", "jetty.home", baseHome.getHome());
+            cmd.addOption("-D", "jetty.base", baseHome.getBase());
 
             Props properties = jettyEnvironment.getProperties();
             for (String x : getJvmArgSources().keySet())
@@ -545,11 +536,11 @@ public class StartArgs
                     String value = assign.length == 1 ? "" : assign[1];
 
                     Prop p = processSystemProperty(key, value, null);
-                    cmd.addRawArg("-D" + p.key + "=" + properties.expand(p.value));
+                    cmd.addOption("-D", p.key, properties.expand(p.value));
                 }
                 else
                 {
-                    cmd.addRawArg(properties.expand(x));
+                    cmd.addArg(properties.expand(x));
                 }
             }
 
@@ -557,7 +548,7 @@ public class StartArgs
             for (String propKey : systemPropertySource.keySet())
             {
                 String value = System.getProperty(propKey);
-                cmd.addEqualsArg("-D" + propKey, value);
+                cmd.addOption("-D", propKey, value);
             }
         }
 
@@ -594,38 +585,38 @@ public class StartArgs
 
                 if (!files.isEmpty())
                 {
-                    cmd.addRawArg("--module-path");
+                    cmd.addOption("--module-path");
                     String modules = files.stream()
                         .map(Path::toAbsolutePath)
                         .map(Path::toString)
                         .collect(Collectors.joining(FS.pathSeparator()));
-                    cmd.addRawArg(modules);
+                    cmd.addArg(modules);
                 }
                 List<Path> dirs = dirsAndFiles.get(true);
                 if (dirs != null && !dirs.isEmpty())
                 {
-                    cmd.addRawArg("--class-path");
+                    cmd.addOption("--class-path");
                     String directories = dirs.stream()
                         .map(Path::toAbsolutePath)
                         .map(Path::toString)
                         .collect(Collectors.joining(FS.pathSeparator()));
-                    cmd.addRawArg(directories);
+                    cmd.addArg(directories);
                 }
 
                 generateJpmsArgs(cmd);
             }
             else
             {
-                cmd.addRawArg("--class-path");
-                cmd.addRawArg(jettyEnvironment.getClasspath().toString());
+                cmd.addOption("--class-path");
+                cmd.addArg(jettyEnvironment.getClasspath().toString());
             }
         }
 
         if (parts.contains("main"))
         {
             if (isJPMS())
-                cmd.addRawArg("--module");
-            cmd.addRawArg(getMainClassname());
+                cmd.addOption("--module");
+            cmd.addArg(getMainClassname());
         }
 
         // do properties and xmls
@@ -637,7 +628,8 @@ public class StartArgs
                 // pass properties as args
                 for (Prop p : properties)
                 {
-                    cmd.addRawArg(CommandLineBuilder.quote(p.key) + "=" + CommandLineBuilder.quote(properties.expand(p.value)));
+                    if (!p.key.startsWith("java.version."))
+                        cmd.addArg(p.key, properties.expand(p.value));
                 }
             }
             else if (properties.size() > 0)
@@ -658,17 +650,17 @@ public class StartArgs
                 {
                     properties.store(out, "start.jar properties");
                 }
-                cmd.addRawArg(propPath.toAbsolutePath().toString());
+                cmd.addArg(propPath.toAbsolutePath().toString());
             }
 
             for (Path xml : jettyEnvironment.getXmlFiles())
             {
-                cmd.addRawArg(xml.toAbsolutePath().toString());
+                cmd.addArg(xml.toAbsolutePath().toString());
             }
 
             for (Path propertyFile : jettyEnvironment.getPropertyFiles())
             {
-                cmd.addRawArg(propertyFile.toAbsolutePath().toString());
+                cmd.addArg(propertyFile.toAbsolutePath().toString());
             }
         }
 
@@ -773,28 +765,28 @@ public class StartArgs
     {
         if (!_jmodAdds.isEmpty())
         {
-            cmd.addRawArg("--add-modules");
-            cmd.addRawArg(String.join(",", _jmodAdds));
+            cmd.addOption("--add-modules");
+            cmd.addArg(String.join(",", _jmodAdds));
         }
         for (Map.Entry<String, Set<String>> entry : _jmodPatch.entrySet())
         {
-            cmd.addRawArg("--patch-module");
-            cmd.addRawArg(entry.getKey() + "=" + String.join(FS.pathSeparator(), entry.getValue()));
+            cmd.addOption("--patch-module");
+            cmd.addArg(entry.getKey(), String.join(File.pathSeparator, entry.getValue()));
         }
         for (Map.Entry<String, Set<String>> entry : _jmodOpens.entrySet())
         {
-            cmd.addRawArg("--add-opens");
-            cmd.addRawArg(entry.getKey() + "=" + String.join(",", entry.getValue()));
+            cmd.addOption("--add-opens");
+            cmd.addArg(entry.getKey(), String.join(",", entry.getValue()));
         }
         for (Map.Entry<String, Set<String>> entry : _jmodExports.entrySet())
         {
-            cmd.addRawArg("--add-exports");
-            cmd.addRawArg(entry.getKey() + "=" + String.join(",", entry.getValue()));
+            cmd.addOption("--add-exports");
+            cmd.addArg(entry.getKey(), String.join(",", entry.getValue()));
         }
         for (Map.Entry<String, Set<String>> entry : _jmodReads.entrySet())
         {
-            cmd.addRawArg("--add-reads");
-            cmd.addRawArg(entry.getKey() + "=" + String.join(",", entry.getValue()));
+            cmd.addOption("--add-reads");
+            cmd.addArg(entry.getKey(), String.join(",", entry.getValue()));
         }
     }
 
@@ -1154,6 +1146,12 @@ public class StartArgs
             int colon = arg.indexOf('=');
             for (String part : arg.substring(colon + 1).split(","))
             {
+                if ("multiline".equalsIgnoreCase(part))
+                {
+                    multiLine = true;
+                    continue;
+                }
+
                 if (!ALL_PARTS.contains(part))
                     throw new UsageException(UsageException.ERR_BAD_ARG, "Unrecognized --dry-run=\"%s\" in %s", part, source);
 

@@ -36,9 +36,9 @@
     <apache.avro.version>1.11.1</apache.avro.version>
     <apache.httpclient.version>4.5.14</apache.httpclient.version>
     <apache.httpcore.version>4.4.16</apache.httpcore.version>
-    <asciidoctorj-diagram.version>2.2.8</asciidoctorj-diagram.version>
+    <asciidoctorj-diagram.version>2.2.9</asciidoctorj-diagram.version>
     <asciidoctorj.version>2.5.10</asciidoctorj.version>
-    <mina.core.version>2.2.1</mina.core.version>
+    <mina.core.version>2.2.2</mina.core.version>
     <asm.version>9.5</asm.version>
     <awaitility.version>4.2.0</awaitility.version>
     <bndlib.version>6.4.1</bndlib.version>
@@ -46,7 +46,7 @@
     <checkstyle.version>10.6.0</checkstyle.version>
     <commons-codec.version>1.16.0</commons-codec.version>
     <commons.compress.version>1.23.0</commons.compress.version>
-    <commons.io.version>2.12.0</commons.io.version>
+    <commons.io.version>2.13.0</commons.io.version>
     <commons-lang3.version>3.12.0</commons-lang3.version>
     <conscrypt.version>2.5.2</conscrypt.version>
     <disruptor.version>3.4.2</disruptor.version>
@@ -140,12 +140,11 @@
     <plexus-xml.version>4.0.2</plexus-xml.version>
     <slf4j.version>2.0.7</slf4j.version>
     <spifly.version>1.3.6</spifly.version>
-    <springboot.version>2.1.1.RELEASE</springboot.version>
     <taglibs-standard-impl.version>1.2.5</taglibs-standard-impl.version>
     <taglibs-standard-spec.version>1.2.5</taglibs-standard-spec.version>
     <testcontainers.version>1.18.3</testcontainers.version>
     <wildfly.common.version>1.6.0.Final</wildfly.common.version>
-    <wildfly.elytron.version>2.2.0.Final</wildfly.elytron.version>
+    <wildfly.elytron.version>2.2.1.Final</wildfly.elytron.version>
     <xmemcached.version>2.4.7</xmemcached.version>
 
     <!-- some maven plugins versions -->
@@ -162,7 +161,7 @@
     <maven.antrun.plugin.version>3.1.0</maven.antrun.plugin.version>
     <maven.assembly.plugin.version>3.6.0</maven.assembly.plugin.version>
     <maven.bundle.plugin.version>5.1.9</maven.bundle.plugin.version>
-    <maven.clean.plugin.version>3.2.0</maven.clean.plugin.version>
+    <maven.clean.plugin.version>3.3.1</maven.clean.plugin.version>
     <maven.checkstyle.plugin.version>3.3.0</maven.checkstyle.plugin.version>
     <maven.compiler.plugin.version>3.11.0</maven.compiler.plugin.version>
     <maven.dependency.plugin.version>3.6.0</maven.dependency.plugin.version>
@@ -171,19 +170,19 @@
     <maven.exec.plugin.version>3.1.0</maven.exec.plugin.version>
     <maven.gpg.plugin.version>3.1.0</maven.gpg.plugin.version>
     <maven.install.plugin.version>3.1.1</maven.install.plugin.version>
-    <maven.invoker.plugin.version>3.5.1</maven.invoker.plugin.version>
+    <maven.invoker.plugin.version>3.6.0</maven.invoker.plugin.version>
     <groovy.version>4.0.6</groovy.version>
     <maven.jar.plugin.version>3.3.0</maven.jar.plugin.version>
     <maven.javadoc.plugin.version>3.5.0</maven.javadoc.plugin.version>
     <maven.plugin-tools.version>3.9.0</maven.plugin-tools.version>
     <maven-plugin.plugin.version>3.9.0</maven-plugin.plugin.version>
-    <maven.release.plugin.version>3.0.0</maven.release.plugin.version>
+    <maven.release.plugin.version>3.0.1</maven.release.plugin.version>
     <maven.remote-resources-plugin.version>3.1.0</maven.remote-resources-plugin.version>
     <maven.resources.plugin.version>3.3.1</maven.resources.plugin.version>
-    <maven.shade.plugin.version>3.4.1</maven.shade.plugin.version>
-    <maven.surefire.plugin.version>3.1.0</maven.surefire.plugin.version>
+    <maven.shade.plugin.version>3.5.0</maven.shade.plugin.version>
+    <maven.surefire.plugin.version>3.1.2</maven.surefire.plugin.version>
     <maven.source.plugin.version>3.3.0</maven.source.plugin.version>
-    <maven.war.plugin.version>3.3.2</maven.war.plugin.version>
+    <maven.war.plugin.version>3.4.0</maven.war.plugin.version>
     <spotbugs.maven.plugin.version>4.7.2.0</spotbugs.maven.plugin.version>
     <versions.maven.plugin.version>2.14.2</versions.maven.plugin.version>
 

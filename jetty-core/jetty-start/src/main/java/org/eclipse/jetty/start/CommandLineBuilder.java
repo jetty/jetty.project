@@ -18,6 +18,7 @@ import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Objects;
 
 public class CommandLineBuilder
 {
@@ -38,37 +39,90 @@ public class CommandLineBuilder
         return "java";
     }
 
-    /**
-     * Perform an optional quoting of the argument, being intelligent with spaces and quotes as needed. If a subString is set in quotes it won't the subString
-     * won't be escaped.
-     *
-     * @param arg the argument to quote
-     * @return the quoted and escaped argument
-     * @deprecated no replacement, quoting is done by {@link #toQuotedString()} now.
-     */
-    @Deprecated
-    public static String quote(String arg)
-    {
-        return "'" + arg + "'";
-    }
-
-    private List<String> args;
+    private final StringBuilder commandLine = new StringBuilder();
+    private final List<String> args = new ArrayList<>();
+    private final String separator;
 
     public CommandLineBuilder()
     {
-        args = new ArrayList<String>();
+        this(false);
     }
 
-    public CommandLineBuilder(String bin)
+    public CommandLineBuilder(boolean multiline)
     {
-        this();
-        args.add(bin);
+        separator = multiline ? (" \\" + System.lineSeparator() + "  ") : " ";
     }
 
     /**
-     * Add a simple argument to the command line.
-     * <p>
-     * Will quote arguments that have a space in them.
+     * This method applies single quotes suitable for a POSIX compliant shell if
+     * necessary.
+     *
+     * @param input The string to quote if needed
+     * @return The quoted string or the original string if quotes are not necessary
+     */
+    public static String shellQuoteIfNeeded(String input)
+    {
+        // Single quotes are used because double quotes
+        // are evaluated differently by some shells.
+
+        if (input == null)
+            return null;
+        if (input.length() == 0)
+            return "''";
+
+        int i = 0;
+        boolean needsQuoting = false;
+        while (!needsQuoting && i < input.length())
+        {
+            char c = input.charAt(i++);
+
+            // needs quoting unless a limited set of known good characters
+            needsQuoting = !(
+                (c >= 'A' && c <= 'Z') ||
+                (c >= 'a' && c <= 'z') ||
+                (c >= '0' && c <= '9') ||
+                c == '/' ||
+                c == ':' ||
+                c == '.' ||
+                c == ',' ||
+                c == '+' ||
+                c == '-' ||
+                c == '_'
+                );
+        }
+
+        if (!needsQuoting)
+            return input;
+
+        StringBuilder builder = new StringBuilder(input.length() * 2);
+        builder.append("'");
+        builder.append(input, 0, --i);
+
+        while (i < input.length())
+        {
+            char c = input.charAt(i++);
+            if (c == '\'')
+            {
+                // There is no escape for a literal single quote, so we must leave the quotes
+                // and then escape the single quote. We test for the start/end of the string, so
+                // we can be less ugly in those cases.
+                if (i == 1)
+                    builder.insert(0, "\\").append("'");
+                else if (i == input.length())
+                    builder.append("'\\");
+                else
+                    builder.append("'\\''");
+            }
+            else
+                builder.append(c);
+        }
+        builder.append("'");
+
+        return builder.toString();
+    }
+
+    /**
+     * Add a simple argument to the command line, quoted if necessary.
      *
      * @param arg the simple argument to add
      */
@@ -76,49 +130,75 @@ public class CommandLineBuilder
     {
         if (arg != null)
         {
+            if (commandLine.length() > 0)
+                commandLine.append(separator);
             args.add(arg);
+            commandLine.append(shellQuoteIfNeeded(arg));
         }
     }
 
     /**
-     * Similar to {@link #addArg(String)} but concats both name + value with an "=" sign, quoting were needed, and excluding the "=" portion if the value is
-     * undefined or empty.
-     *
-     * <pre>
-     *   addEqualsArg("-Dname", "value") = "-Dname=value"
-     *   addEqualsArg("-Djetty.home", "/opt/company inc/jetty (7)/") = "-Djetty.home=/opt/company\ inc/jetty\ (7)/"
-     *   addEqualsArg("-Djenkins.workspace", "/opt/workspaces/jetty jdk7/") = "-Djenkins.workspace=/opt/workspaces/jetty\ jdk7/"
-     *   addEqualsArg("-Dstress", null) = "-Dstress"
-     *   addEqualsArg("-Dstress", "") = "-Dstress"
-     * </pre>
-     *
+     * Add a "name=value" style argument to the command line with
+     * name and value quoted if necessary.
      * @param name the name
      * @param value the value
      */
-    public void addEqualsArg(String name, String value)
+    public void addArg(String name, String value)
     {
+        Objects.requireNonNull(name);
+
+        if (commandLine.length() > 0)
+            commandLine.append(separator);
+
         if ((value != null) && (value.length() > 0))
         {
             args.add(name + "=" + value);
+            commandLine.append(shellQuoteIfNeeded(name)).append('=').append(shellQuoteIfNeeded(value));
         }
         else
         {
             args.add(name);
+            commandLine.append(shellQuoteIfNeeded(name));
         }
     }
 
     /**
-     * Add a simple argument to the command line.
-     * <p>
-     * Will <b>NOT</b> quote/escape arguments that have a space in them.
-     *
-     * @param arg the simple argument to add
+     * Adds a "-OPTION" style option to the command line with no quoting, for example `--help`.
+     * @param option the option
      */
-    public void addRawArg(String arg)
+    public void addOption(String option)
     {
-        if (arg != null)
+        addOption(option, null, null);
+    }
+
+    /**
+     * Adds a "-OPTIONname=value" style option to the command line with
+     * name and value quoted if necessary, for example "-Dprop=value".
+     * @param option the option
+     * @param name the name
+     * @param value the value
+     */
+    public void addOption(String option, String name, String value)
+    {
+        Objects.requireNonNull(option);
+
+        if (commandLine.length() > 0)
+            commandLine.append(separator);
+
+        if (name == null || name.length() == 0)
         {
-            args.add(arg);
+            commandLine.append(option);
+            args.add(option);
+        }
+        else if ((value != null) && (value.length() > 0))
+        {
+            args.add(option + name + "=" + value);
+            commandLine.append(option).append(shellQuoteIfNeeded(name)).append('=').append(shellQuoteIfNeeded(value));
+        }
+        else
+        {
+            args.add(option + name);
+            commandLine.append(option).append(shellQuoteIfNeeded(name));
         }
     }
 
@@ -130,19 +210,11 @@ public class CommandLineBuilder
     @Override
     public String toString()
     {
-        return toString(" ");
-    }
-
-    public String toString(String delim)
-    {
         StringBuilder buf = new StringBuilder();
-
         for (String arg : args)
         {
             if (buf.length() > 0)
-            {
-                buf.append(delim);
-            }
+                buf.append(' ');
             buf.append(arg); // we assume escaping has occurred during addArg
         }
 
@@ -154,23 +226,9 @@ public class CommandLineBuilder
      *
      * @return the toString but each arg that has spaces is surrounded by {@code '} (single-quote tick)
      */
-    public String toQuotedString()
+    public String toCommandLine()
     {
-        StringBuilder buf = new StringBuilder();
-
-        for (String arg : args)
-        {
-            if (buf.length() > 0)
-                buf.append(' ');
-            boolean needsQuotes = (arg.contains(" "));
-            if (needsQuotes)
-                buf.append("'");
-            buf.append(arg);
-            if (needsQuotes)
-                buf.append("'");
-        }
-
-        return buf.toString();
+        return commandLine.toString();
     }
 
     public void debug()

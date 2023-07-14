@@ -104,11 +104,16 @@ public class XmlParser
         return _lock.lock();
     }
 
+    protected SAXParserFactory newSAXParserFactory()
+    {
+        return SAXParserFactory.newInstance();
+    }
+
     public void setValidating(boolean validating)
     {
         try
         {
-            SAXParserFactory factory = SAXParserFactory.newInstance();
+            SAXParserFactory factory = newSAXParserFactory();
             factory.setValidating(validating);
             _parser = factory.newSAXParser();
 
@@ -148,6 +153,11 @@ public class XmlParser
     public boolean isValidating()
     {
         return _parser.isValidating();
+    }
+
+    public SAXParser getSAXParser()
+    {
+        return _parser;
     }
 
     /**
