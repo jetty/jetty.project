@@ -246,7 +246,7 @@ Make sure you follow the other examples and include the `rel="nofollow"` attribu
 
 ____
 [NOTE]
-There is a separate Jenkins build job that publishes documentation to https://www.eclipse.org/jetty/documentation/current triggered by a push of changed files to the jetty-documentation project.
+There is a separate Jenkins build job that publishes documentation to https://eclipse.dev/jetty/documentation/ triggered by a push of changed files to the jetty-documentation project.
 If you commit your change to the <version> number from step 2, then these builds will use the same release version number.
 It is preferable if you _don't_ commit that version number change, or better yet, ensure that it is set to the next -SNAPSHOT version number for your jetty major release number.
 ____

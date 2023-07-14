@@ -13,6 +13,7 @@
 
 package org.eclipse.jetty.xml;
 
+import java.io.Closeable;
 import java.io.IOException;
 import java.io.InputStream;
 import java.lang.annotation.Annotation;
@@ -198,7 +199,7 @@ public class XmlConfiguration
     private final String _dtd;
     private ConfigurationProcessor _processor;
 
-    ConfigurationParser getParser()
+    public XmlParser getXmlParser()
     {
         Pool<ConfigurationParser>.Entry entry = __parsers.acquire(ConfigurationParser::new);
         if (entry == null)
@@ -215,11 +216,17 @@ public class XmlConfiguration
      */
     public XmlConfiguration(Resource resource) throws SAXException, IOException
     {
-        try (ConfigurationParser parser = getParser(); InputStream inputStream = resource.getInputStream())
+        XmlParser parser = getXmlParser();
+        try (InputStream inputStream = resource.getInputStream())
         {
             _location = resource;
             setConfig(parser.parse(inputStream));
             _dtd = parser.getDTD();
+        }
+        finally
+        {
+            if (parser instanceof Closeable)
+                ((Closeable)parser).close();
         }
     }
 
@@ -1896,7 +1903,7 @@ public class XmlConfiguration
         }
     }
 
-    private static class ConfigurationParser extends XmlParser implements AutoCloseable
+    private static class ConfigurationParser extends XmlParser implements Closeable
     {
         private final Pool<ConfigurationParser>.Entry _entry;
 
@@ -1923,14 +1930,35 @@ public class XmlConfiguration
             redirectEntity("configure_10_0.dtd", config100);
 
             redirectEntity("http://jetty.mortbay.org/configure.dtd", config93);
-            redirectEntity("http://jetty.mortbay.org/configure_9_3.dtd", config93);
             redirectEntity("http://jetty.eclipse.org/configure.dtd", config93);
             redirectEntity("https://jetty.eclipse.org/configure.dtd", config93);
             redirectEntity("http://www.eclipse.org/jetty/configure.dtd", config93);
             redirectEntity("https://www.eclipse.org/jetty/configure.dtd", config93);
+            redirectEntity("http://eclipse.org/jetty/configure.dtd", config93);
+            redirectEntity("https://eclipse.org/jetty/configure.dtd", config93);
+            redirectEntity("http://www.eclipse.dev/jetty/configure.dtd", config93);
+            redirectEntity("https://www.eclipse.dev/jetty/configure.dtd", config93);
+            redirectEntity("http://eclipse.dev/jetty/configure.dtd", config93);
+            redirectEntity("https://eclipse.dev/jetty/configure.dtd", config93);
+
+            redirectEntity("http://jetty.mortbay.org/configure_9_3.dtd", config93);
             redirectEntity("http://www.eclipse.org/jetty/configure_9_3.dtd", config93);
             redirectEntity("https://www.eclipse.org/jetty/configure_9_3.dtd", config93);
+            redirectEntity("http://eclipse.org/jetty/configure_9_3.dtd", config93);
+            redirectEntity("https://eclipse.org/jetty/configure_9_3.dtd", config93);
+            redirectEntity("http://www.eclipse.dev/jetty/configure_9_3.dtd", config93);
+            redirectEntity("https://www.eclipse.dev/jetty/configure_9_3.dtd", config93);
+            redirectEntity("http://eclipse.dev/jetty/configure_9_3.dtd", config93);
+            redirectEntity("https://eclipse.dev/jetty/configure_9_3.dtd", config93);
+
+            redirectEntity("http://www.eclipse.org/jetty/configure_10_0.dtd", config100);
             redirectEntity("https://www.eclipse.org/jetty/configure_10_0.dtd", config100);
+            redirectEntity("http://eclipse.org/jetty/configure_10_0.dtd", config100);
+            redirectEntity("https://eclipse.org/jetty/configure_10_0.dtd", config100);
+            redirectEntity("http://www.eclipse.dev/jetty/configure_10_0.dtd", config100);
+            redirectEntity("https://www.eclipse.dev/jetty/configure_10_0.dtd", config100);
+            redirectEntity("http://eclipse.dev/jetty/configure_10_0.dtd", config100);
+            redirectEntity("https://eclipse.dev/jetty/configure_10_0.dtd", config100);
 
             redirectEntity("-//Mort Bay Consulting//DTD Configure//EN", config100);
             redirectEntity("-//Jetty//Configure//EN", config100);
