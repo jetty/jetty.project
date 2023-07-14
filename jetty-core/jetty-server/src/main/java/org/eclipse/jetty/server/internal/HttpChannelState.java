@@ -980,7 +980,9 @@ public class HttpChannelState implements HttpChannel, Components
         @Override
         public void fail(Throwable failure)
         {
-            _httpChannelState.onFailure(failure);
+            Runnable runnable = _httpChannelState.onFailure(failure);
+            if (runnable != null)
+                getContext().execute(runnable);
         }
 
         @Override
