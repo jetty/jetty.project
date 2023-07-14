@@ -353,7 +353,7 @@ public class XmlParser
         }
     }
 
-    class Handler extends DefaultHandler
+    private class Handler extends DefaultHandler
     {
         Node _top = new Node(null, null, null);
         SAXParseException _error;
