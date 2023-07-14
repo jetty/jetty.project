@@ -87,14 +87,14 @@ ____
 
 Jetty uses number of conventions for its source code. The developers of Jetty use a variety of tooling and editors when developing Jetty so standards and conventions are important!
 
-==== Intelli-J
+==== IntelliJ IDE
 
-The suggested configuration for Intelli-J when working with Jetty is available in the code tree
+The suggested configuration for the IntelliJ IDE when working with Jetty is available in the code tree
 `/build-resources/jetty-codestyle-intellij.xml`
 
-==== Eclipse
+==== Eclipse IDE
 
-The Eclipse format configuration can be found in the code tree
+The Eclipse IDE format can be found in the code tree
 `/build-resources/jetty-codestyle-eclipse-ide.xml`
 
 ==== Code Conventions
