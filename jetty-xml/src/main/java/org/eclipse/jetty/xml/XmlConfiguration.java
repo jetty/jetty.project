@@ -18,6 +18,7 @@
 
 package org.eclipse.jetty.xml;
 
+import java.io.Closeable;
 import java.io.IOException;
 import java.io.InputStream;
 import java.io.StringReader;
@@ -204,7 +205,7 @@ public class XmlConfiguration
     private final String _dtd;
     private ConfigurationProcessor _processor;
 
-    ConfigurationParser getParser()
+    public XmlParser getXmlParser()
     {
         Pool<ConfigurationParser>.Entry entry = __parsers.acquire(ConfigurationParser::new);
         if (entry == null)
@@ -221,7 +222,8 @@ public class XmlConfiguration
      */
     public XmlConfiguration(Resource resource) throws SAXException, IOException
     {
-        try (ConfigurationParser parser = getParser(); InputStream inputStream = resource.getInputStream())
+        XmlParser parser = getXmlParser();
+        try (InputStream inputStream = resource.getInputStream())
         {
             _location = resource;
             setConfig(parser.parse(inputStream));
@@ -230,6 +232,11 @@ public class XmlConfiguration
         catch (SAXParseException e)
         {
             throw new SAXException("Unable to parse: " + resource + " ", e);
+        }
+        finally
+        {
+            if (parser instanceof Closeable)
+                ((Closeable)parser).close();
         }
     }
 
@@ -262,12 +269,18 @@ public class XmlConfiguration
         configuration = "<?xml version=\"1.0\" encoding=\"utf-8\"?>\n" +
             "<!DOCTYPE Configure PUBLIC \"-//Jetty//Configure//EN\" \"http://www.eclipse.org/jetty/configure_9_3.dtd\">" +
             configuration;
-        try (ConfigurationParser parser = getParser(); StringReader reader = new StringReader(configuration))
+        XmlParser parser = getXmlParser();
+        try (StringReader reader = new StringReader(configuration))
         {
             InputSource source = new InputSource(reader);
             _location = null;
             setConfig(parser.parse(source));
             _dtd = parser.getDTD();
+        }
+        finally
+        {
+            if (parser instanceof Closeable)
+                ((Closeable)parser).close();
         }
     }
 
@@ -283,11 +296,17 @@ public class XmlConfiguration
     public XmlConfiguration(InputStream configuration) throws SAXException, IOException
     {
         InputSource source = new InputSource(configuration);
-        try (ConfigurationParser parser = getParser())
+        XmlParser parser = getXmlParser();
+        try
         {
             _location = null;
             setConfig(parser.parse(source));
             _dtd = parser.getDTD();
+        }
+        finally
+        {
+            if (parser instanceof Closeable)
+                ((Closeable)parser).close();
         }
     }
 
@@ -1923,7 +1942,7 @@ public class XmlConfiguration
         }
     }
 
-    private static class ConfigurationParser extends XmlParser implements AutoCloseable
+    private static class ConfigurationParser extends XmlParser implements Closeable
     {
         private final Pool<ConfigurationParser>.Entry _entry;
 
@@ -1947,7 +1966,9 @@ public class XmlConfiguration
             redirectEntity("http://jetty.mortbay.org/configure.dtd", config93);
             redirectEntity("http://jetty.eclipse.org/configure.dtd", config93);
             redirectEntity("https://jetty.eclipse.org/configure.dtd", config93);
+            redirectEntity("http://jetty.mortbay.org/configure.dtd", config93);
 
+            // Register all variations of DOCTYPE entity references for Config 9.3
             String[] schemes = {"http", "https"};
             String[] hosts = {"www.eclipse.org", "eclipse.org", "www.eclipse.dev", "eclipse.dev"};
             String[] paths = {"/jetty/configure.dtd", "/jetty/configure_9_3.dtd"};
@@ -1958,7 +1979,7 @@ public class XmlConfiguration
                 {
                     for (String path : paths)
                     {
-                        redirectEntity(scheme + "://" + host + path, config93);
+                        redirectEntity(String.format("%s://%s%s", scheme, host, path), config93);
                     }
                 }
             }
