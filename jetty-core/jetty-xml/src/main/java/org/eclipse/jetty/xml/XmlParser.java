@@ -239,17 +239,12 @@ public class XmlParser
         }
     }
 
-    public Handler newHandler()
-    {
-        return new Handler();
-    }
-
     public Node parse(InputSource source) throws IOException, SAXException
     {
         try (AutoLock l = _lock.lock())
         {
             _dtd = null;
-            Handler handler = newHandler();
+            Handler handler = new Handler();
             XMLReader reader = _parser.getXMLReader();
             reader.setContentHandler(handler);
             reader.setErrorHandler(handler);
@@ -308,7 +303,7 @@ public class XmlParser
         return parse(new InputSource(in));
     }
 
-    private InputSource resolveEntity(String pid, String sid)
+    InputSource resolveEntity(String pid, String sid)
     {
         if (LOG.isDebugEnabled())
             LOG.debug("resolveEntity({},{})", pid, sid);
@@ -358,7 +353,7 @@ public class XmlParser
         }
     }
 
-    public class Handler extends DefaultHandler
+    class Handler extends DefaultHandler
     {
         Node _top = new Node(null, null, null);
         SAXParseException _error;

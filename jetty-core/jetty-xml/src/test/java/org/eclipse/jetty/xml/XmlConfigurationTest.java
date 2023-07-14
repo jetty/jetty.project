@@ -2003,8 +2003,7 @@ public class XmlConfigurationTest
         // empty raw xml, just to instantiate XmlConfiguration, so we can access the XmlParser / ConfigurationParser.
         XmlConfiguration xmlConfiguration = asXmlConfiguration("<Configure class=\"org.eclipse.jetty.xml.TestConfiguration\" />");
         XmlParser configurationProcessor = xmlConfiguration.getXmlParser();
-        XmlParser.Handler xmlHandler = configurationProcessor.newHandler();
-        InputSource inputSource = xmlHandler.resolveEntity(null, xmlSystemId);
+        InputSource inputSource = configurationProcessor.resolveEntity(null, xmlSystemId);
         assertNotNull(inputSource, "SystemID: " + xmlSystemId + " does not exist");
     }
 
