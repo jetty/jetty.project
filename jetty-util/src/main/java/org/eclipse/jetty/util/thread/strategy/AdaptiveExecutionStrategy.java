@@ -137,7 +137,14 @@ public class AdaptiveExecutionStrategy extends ContainerLifeCycle implements Exe
     private final Executor _executor;
     private final TryExecutor _tryExecutor;
     private final Executor _virtualExecutor;
-    private final Runnable _runPendingProducer = () -> tryProduce(true);
+    private final Runnable _runPendingProducer = new Runnable()
+    {
+        @Override
+        public void run()
+        {
+            tryProduce(true);
+        }
+    };
     private State _state = State.IDLE;
     private boolean _pending;
 
