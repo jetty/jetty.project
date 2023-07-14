@@ -197,7 +197,7 @@ Here's an example of using a context xml file to add in a pattern to match files
 [source,xml,subs=verbatim]
 ----
 <?xml version="1.0"?>
-<!DOCTYPE Configure PUBLIC "-//Jetty//Configure//EN" "https://www.eclipse.org/jetty/configure_10_0.dtd">
+<!DOCTYPE Configure PUBLIC "-//Jetty//Configure//EN" "https://eclipse.dev/jetty/configure_10_0.dtd">
 
 <Configure class="org.eclipse.jetty.ee9.webapp.WebAppContext"> <!--1-->
     <Call name="setAttribute"> <!--2-->

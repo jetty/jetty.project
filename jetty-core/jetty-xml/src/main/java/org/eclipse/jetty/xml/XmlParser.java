@@ -239,12 +239,17 @@ public class XmlParser
         }
     }
 
+    public Handler newHandler()
+    {
+        return new Handler();
+    }
+
     public Node parse(InputSource source) throws IOException, SAXException
     {
         try (AutoLock l = _lock.lock())
         {
             _dtd = null;
-            Handler handler = new Handler();
+            Handler handler = newHandler();
             XMLReader reader = _parser.getXMLReader();
             reader.setContentHandler(handler);
             reader.setErrorHandler(handler);
@@ -321,6 +326,9 @@ public class XmlParser
                 LOG.trace("IGNORE EntityResolver exception for (pid=%s, sid=%s)".formatted(pid, sid), e);
             }
         }
+
+        if (LOG.isDebugEnabled())
+            LOG.debug("Entity not found for PID:{} / SID:{}", pid, sid);
         return null;
     }
 
@@ -350,7 +358,7 @@ public class XmlParser
         }
     }
 
-    private class Handler extends DefaultHandler
+    public class Handler extends DefaultHandler
     {
         Node _top = new Node(null, null, null);
         SAXParseException _error;

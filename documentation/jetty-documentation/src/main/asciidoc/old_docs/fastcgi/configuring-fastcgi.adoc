@@ -44,7 +44,7 @@ Copy and paste the following content as `$JETTY_BASE/webapps/jetty-wordpress.xml
 [source,xml,subs="{sub-order}"]
 ----
 <?xml version="1.0" encoding="UTF-8"?>
-<!DOCTYPE Configure PUBLIC "-//Jetty//Configure//EN" "https://www.eclipse.org/jetty/configure_9_3.dtd">
+<!DOCTYPE Configure PUBLIC "-//Jetty//Configure//EN" "https://eclipse.dev/jetty/configure_9_3.dtd">
 <Configure class="org.eclipse.jetty.ee9.servlet.ServletContextHandler">
 
     <New id="root" class="java.lang.String">

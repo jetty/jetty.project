@@ -22,7 +22,7 @@ This allows you to add host specific configuration or server specific configurat
 [source,xml,highlight=8,subs="verbatim,attributes"]
 ----
 <?xml version="1.0" encoding="UTF-8"?>
-<!DOCTYPE Configure PUBLIC "-//Jetty//Configure//EN" "https://www.eclipse.org/jetty/configure_10_0.dtd">
+<!DOCTYPE Configure PUBLIC "-//Jetty//Configure//EN" "https://eclipse.dev/jetty/configure_10_0.dtd">
 
 <Configure class="org.eclipse.jetty.{ee-current}.webapp.WebAppContext">
   <Set name="contextPath">/mywebapp</Set>

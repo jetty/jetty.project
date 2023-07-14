@@ -406,4 +406,4 @@ public class FooLoginModule extends AbstractLoginModule
 
 An example webapp using JAAS can be found in the Jetty GitHub repository:
 
-* link:{GITBROWSEURL}/tests/test-webapps/test-jaas-webapp[https://github.com/eclipse/jetty.project/tree/jetty-9.4.x/tests/test-webapps/test-jaas-webapp]
+* link:{GITBROWSEURL}/tests/test-webapps/test-jaas-webapp[https://github.com/eclipse/jetty.project/tree/jetty-11.0.x/tests/test-webapps/test-jaas-webapp]
