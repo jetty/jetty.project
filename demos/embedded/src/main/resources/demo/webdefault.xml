@@ -195,7 +195,7 @@
   <!-- The JSP page compiler and execution servlet, which is the mechanism  -->
   <!-- used by the jsp container to support JSP pages.  Traditionally,      -->
   <!-- this servlet is mapped to URL pattern "*.jsp".                       -->
-  <!-- See http://https://www.eclipse.org/jetty/documentation/              -->
+  <!-- See https://eclipse.dev/jetty/documentation/                         -->
   <!-- for applicable configuration params.                                 -->
   <!-- - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -  -->
   <servlet id="jsp">

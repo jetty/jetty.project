@@ -72,7 +72,7 @@
             <version>${project.version}</version>
             <prog-guide>../programming-guide/index.html</prog-guide>
             <op-guide>../operations-guide/index.html</op-guide>
-            <javadoc-url>https://www.eclipse.org/jetty/javadoc/jetty-11</javadoc-url>
+            <javadoc-url>https://eclipse.dev/jetty/javadoc/jetty-11</javadoc-url>
           </attributes>
         </configuration>
         <executions>

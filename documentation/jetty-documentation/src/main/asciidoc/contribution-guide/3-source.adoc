@@ -26,12 +26,13 @@ The https://github.com/eclipse/jetty.project[Eclipse Jetty project] is located a
 .Active Eclipse Jetty Branches
 [cols="4"]
 |===
-| https://github.com/eclipse/jetty.project/tree/jetty-10.0.x[jetty-11.0.x] | Development | Servlet 5.0 | Java 11+
+| https://github.com/eclipse/jetty.project/tree/jetty-12.0.x[jetty-12.0.x] | Development | Servlet 6.0 | Java 17+
+| https://github.com/eclipse/jetty.project/tree/jetty-11.0.x[jetty-11.0.x] | Development | Servlet 5.0 | Java 11+
 | https://github.com/eclipse/jetty.project/tree/jetty-10.0.x[jetty-10.0.x] | Development (default branch) | Servlet 4.0 | Java 11+
-| https://github.com/eclipse/jetty.project/tree/jetty-9.4.x[jetty-9.4.x] | Maintenance | Servlet 3.1 | Java 8
-| https://github.com/eclipse/jetty.project/tree/jetty-9.3.x[jetty-9.3.x] | Maintenance | Servlet 3.0 | Java 8
-| https://github.com/eclipse/jetty.project/tree/jetty-8.1.x[jetty-8.1.x] | Historical | Servlet 2.0 | Java 7
-| https://github.com/eclipse/jetty.project/tree/jetty-7[jetty-7] | Mythical | Servlet 1.0 | Java 6
+| https://github.com/eclipse/jetty.project/tree/jetty-9.4.x[jetty-9.4.x] | End of Community Support | Servlet 3.1 | Java 8
+| https://github.com/eclipse/jetty.project/tree/jetty-9.3.x[jetty-9.3.x] | End of Life | Servlet 3.1 | Java 8
+| jetty-8 | Historical | Servlet 3.1 | Java 6
+| jetty-7 | Mythical | Servlet 2.5 | Java 5
 |===
 
 If you are planning on working with a specific issue within Jetty it is important to target the correct branch for a pull request. Pull requests that are targeted at Maintenance Branches are typically merged forward into subsequent branches while historical branches are left alone merge wise.  Depending on the nature of an issue a historical branch may have an issue cherrypicked forward, but maintenance releases are merged wholesale forward as a matter of project policy.
@@ -52,8 +53,6 @@ Administrative pom.xml file::
   https://github.com/eclipse/jetty.parent
 Build related artifacts that release separately, common assembly descriptors, remote resources, etc.::
   https://github.com/eclipse/jetty.toolchain
-Files associated with the development of Jetty -- code styles, formatting, iplogs, etc.::
-  http://git.eclipse.org/c/jetty/org.eclipse.jetty.admin.git
 
 [[cg-contributing-build]]
 === Maven Build
@@ -88,17 +87,15 @@ ____
 
 Jetty uses number of conventions for its source code. The developers of Jetty use a variety of tooling and editors when developing Jetty so standards and conventions are important!
 
-==== Intelli-J
+==== IntelliJ IDE
 
-The suggested configuration for Intelli-J when working with Jetty is available here: http://git.eclipse.org/c/jetty/org.eclipse.jetty.admin.git/tree/idea-jetty-codestyle-settings.jar[Intelli-J Codestyle]
+The suggested configuration for the IntelliJ IDE when working with Jetty is available in the code tree
+`/build-resources/jetty-codestyle-intellij.xml`
 
-==== Eclipse
+==== Eclipse IDE
 
-The Eclipse format configuration can be found here:
-http://git.eclipse.org/c/jetty/org.eclipse.jetty.admin.git/tree/jetty-eclipse-java-format.xml[Eclipse Java Formatting]
-
-There are also some templates available for Eclipse here:
-http://git.eclipse.org/c/jetty/org.eclipse.jetty.admin.git/tree/jetty-eclipse-codetemplates.xml[Eclipse Code Templates]
+The Eclipse IDE format can be found in the code tree
+`/build-resources/jetty-codestyle-eclipse-ide.xml`
 
 ==== Code Conventions
 
