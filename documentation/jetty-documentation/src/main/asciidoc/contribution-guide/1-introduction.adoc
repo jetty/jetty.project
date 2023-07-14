@@ -33,7 +33,7 @@ One of the easiest ways to get involved is via our mailing lists:
 === Stack Overflow
 
 Another great resource -- both for Jetty novices who need help and Jetty experts who want to contribute -- is http://stackoverflow.com[StackOverflow].
-The https://stackoverflow.com/questions/tagged/jetty[`jetty`] and https://stackoverflow.com/questions/tagged/embedded-jetty[`embedded-jetty`] tags both see regular traffic.
+In particular, the https://stackoverflow.com/questions/tagged/jetty[`jetty`] and https://stackoverflow.com/questions/tagged/embedded-jetty[`embedded-jetty`] tags see regular traffic.
 
 
 [[cg-issues]]

@@ -12,22 +12,40 @@
 //
 
 [[cg-source]]
-== Participate in the Code
+== Contributing Code
 
-We have additionally identified and labeled a number of issues that may be appropriate for users of different levels of expertise that might want to contribute to Jetty but not have a specific goal or issue in mind.
+Thanks for your interest in contributing to Jetty!
+We love getting patches and welcome outside contributions.
 
-* https://github.com/eclipse/jetty.project/issues?q=is%3Aopen+is%3Aissue+label%3A%22Help+Wanted%22[Help Wanted]
+[[cg-contributing-eca]]
+=== Sign the Eclipse Contributor Agreement
 
-If you are more interested in digging into what makes Jetty tick then this some information that you will need to arm yourself with.
-First we start with how to checkout and build Jetty, then on to our general coding standards followed by the actual patch contribution process.
+Since Jetty is a member of the Eclipse Foundation, all contributors must first sign the https://www.eclipse.org/legal/ECA.php[Eclipse Contributor Agreement (ECA)] before their code changes can be merged into source.
 
+[TIP]
+====
+The Eclipse Foundation maintains an http://www.eclipse.org/legal/ecafaq.php[ECA FAQ] with more information about the ECA's provisions, and a http://wiki.eclipse.org/Development_Resources/Contributing_via_Git[wiki page] about contributing changes to any Eclipse Foundation project more generally.
+====
+
+Before you set up your local development environment, we recommend creating an account at https://accounts.eclipse.org/user[eclipse.org] and submitting your signed ECA.
+
+[IMPORTANT]
+.Make sure your emails match
+====
+The email address you use to sign the ECA **must be the same** as the email you use to sign your git commits.
+====
+
+Jetty's build process has a git hook to verify that every incoming pull request is signed with an email that has an active ECA.
+If the git hook cannot verify your email, the Jetty committers **cannot do anything** to accept your commit.
 
 [[cg-community-source]]
-=== Source Control
+=== Get the source code
 
-The https://github.com/eclipse/jetty.project[Eclipse Jetty project] is located at https://github.com[Github] under the Eclipse Foundation https://github.com/eclipse[parent project]. There are a number of branches that are generally of interest.
+Jetty's source code lives on Github at https://github.com/eclipse/jetty.project where it is managed by the http://github.com/eclipse/[Eclipse Foundation].
 
-.Active Eclipse Jetty Branches
+If you are planning on working with a specific issue within Jetty it is important to target the correct branch for a pull request.
+
+.Active and inactive Jetty branches
 [cols="4"]
 |===
 | https://github.com/eclipse/jetty.project/tree/jetty-12.0.x[jetty-12.0.x] | Development (default branch) | Servlet 6.0 | Java 17+
@@ -39,9 +57,11 @@ The https://github.com/eclipse/jetty.project[Eclipse Jetty project] is located a
 | jetty-7 | Mythical | Servlet 1.0 | Java 6
 |===
 
-If you are planning on working with a specific issue within Jetty it is important to target the correct branch for a pull request.
-Pull requests that are targeted at Maintenance Branches are typically merged forward into subsequent branches while historical branches are left alone merge wise.
-Depending on the nature of an issue a historical branch may have an issue cherrypicked forward, but maintenance releases are merged wholesale forward as a matter of project policy.
+As a matter of project policy, maintenance branches are periodically merged wholesale into active development branches.
+This means that changes to maintenance branches should typically be forward compatible with later releases.
+
+Older branches remain untouched unless specifically targeted by a pull request.
+Also, changes to older branches aren't regularly merged forward -- although an individual change may be cherrypicked forward, depending on the nature of the fix.
 
 ==== Primary SCM
 
@@ -87,6 +107,12 @@ Periodically we find some test cases to be more time dependent than they should 
 You can help track these down by opening an https://github.com/eclipse/jetty.project/issues[Issue].
 ____
 
+
+[[cg-help-wanted]]
+=== Help Wanted
+We have identified and labeled a number of issues that may be appropriate for users of different levels of expertise that might want to contribute to Jetty but not have a specific goal or issue in mind.
+
+* https://github.com/eclipse/jetty.project/issues?q=is%3Aopen+is%3Aissue+label%3A%22Help+Wanted%22[Help Wanted]
 
 
 [[cg-coding-standards]]
@@ -217,43 +243,6 @@ ____
 Be aware that `LOG.warn("Something happened", t)` is the same as `LOG.warn("Something happened {}", t)`, at least for the default jetty logging.
 In both cases, the full stacktrace is output.
 If you only want the log message, you need to do `LOG.warn("Something happened {}", t.toString())`.
-____
-
-[[cg-patches]]
-=== Contributing Patches
-
-We love seeing people contribute patches to the Jetty project and the process is relatively simple.
-The requirements to commit are modest but very important to the Eclipse Foundation and the intellectual property of the open source project.
-The following is the general process by which we operate.
-
-* You must have a signed Eclipse Contributor Agreement.
-* This agreement must be under the _same_ email address as the Git pull request originates from.
-* The commit must be signed.
-* When the pull request is made, a git-hook will validate the email address.
-** If the result is a green checkbox then the Jetty committers can review the pull request.
-** If the result is a red X then there is absolutely nothing the Jetty committers can do to accept the commit at this point.
-* This may not be the final form a commit will take, there may be some back and forth and you may be asked to re-issue a pull request.
-
-
-Not everything is specifically relevant since we are at GitHub but the crux of things are detailed there.
-The ECA is *critically* important to the process.
-
-[[cg-contributing-eca]]
-==== Sign an Eclipse Contributor Agreement (ECA)
-
-The Eclipse Foundation has a strong Intellectual Property policy which tracks contributions in detail to ensure that:
-
-1.  Did the contributor author 100% of the content?
-2.  Does the contributor have the rights to contribute this content to Eclipse?
-3.  Is the contribution under the project’s license(s) (e.g. EPL)
-
-A contributor needs to e-sign a Eclipse Contributor Agreement (for more explanation see the http://www.eclipse.org/legal/ecafaq.php[Eclipse ECA FAQ] ) regardless of how their contribution patch is provided.
-You can familiarize yourself with the Eclipse wiki page at http://wiki.eclipse.org/Development_Resources/Contributing_via_Git[Contributing via Git].
-In order to have a pull request accepted by any Eclipse project you *must* complete this agreement.
-____
-[TIP]
-Log into the https://www.eclipse.org[Eclipse home page] (you will need to create an account with the Eclipse Foundation if you have not already done so), click on "Eclipse ECA", and complete the form.
-Be sure to use the _same email address_ when you create any Git commit records.
 ____
 
 [[t-contributing-git-config]]
