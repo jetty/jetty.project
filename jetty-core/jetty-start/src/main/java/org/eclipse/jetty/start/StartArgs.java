@@ -554,9 +554,10 @@ public class StartArgs
 
         if (parts.contains("path"))
         {
+            Classpath classpath = jettyEnvironment.getClasspath();
             if (isJPMS())
             {
-                Map<Boolean, List<Path>> dirsAndFiles = StreamSupport.stream(jettyEnvironment.getClasspath().spliterator(), false)
+                Map<Boolean, List<Path>> dirsAndFiles = StreamSupport.stream(classpath.spliterator(), false)
                     .collect(Collectors.groupingBy(Files::isDirectory));
 
                 List<Path> paths = dirsAndFiles.get(false);
@@ -605,10 +606,10 @@ public class StartArgs
 
                 generateJpmsArgs(cmd);
             }
-            else
+            else if (!classpath.isEmpty())
             {
                 cmd.addOption("--class-path");
-                cmd.addArg(jettyEnvironment.getClasspath().toString());
+                cmd.addArg(classpath.toString());
             }
         }
 
@@ -685,7 +686,7 @@ public class StartArgs
                 // TODO module path
 
                 for (Prop property : environment.getProperties())
-                    cmd.addArg(property.key + "=" + property.value);
+                    cmd.addArg(property.key, property.value);
 
                 for (Path xmlFile : environment.getXmlFiles())
                     cmd.addArg(xmlFile.toAbsolutePath().toString());
