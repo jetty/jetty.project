@@ -174,7 +174,7 @@ public class MainTest
         assertThat("jetty.base", baseHome.getBase(), is(homePath.toString()));
 
         CommandLineBuilder commandLineBuilder = args.getMainArgs(StartArgs.ALL_PARTS);
-        String commandLine = commandLineBuilder.toString("\n");
+        String commandLine = commandLineBuilder.toString();
         String expectedExpansion = String.format("-Xloggc:%s/logs/gc-%s.log",
             baseHome.getBase(), System.getProperty("java.version")
         );
