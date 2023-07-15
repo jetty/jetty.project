@@ -1,4 +1,5 @@
-# Eclipse Jetty Canonical Repository
+Eclipse Jetty Canonical Repository
+==================================
 
 This is the canonical repository for the Eclipse Jetty project, feel free to fork and contribute now!
 
@@ -8,7 +9,8 @@ Make sure you have an Eclipse Contributor Agreement (ECA) on file.
 
 - [eclipse.org/legal/ecafaq](https://www.eclipse.org/legal/ecafaq.php)
 
-## Project description
+Project description
+-------------------
 
 Eclipse Jetty is a lightweight, highly scalable, Java-based web server and Servlet engine.
 Jetty's goal is to support web protocols (HTTP/1, HTTP/2, HTTP/3, WebSocket, etc.) in a high volume low latency way that provides maximum performance while retaining the ease of use and compatibility with years of Servlet development.
@@ -16,7 +18,8 @@ Jetty is a modern fully asynchronous web server that has a long history as a com
 
 - [https://projects.eclipse.org/projects/rt.jetty](https://projects.eclipse.org/projects/rt.jetty)
 
-## Webapp Example
+Webapp Example
+--------------
 
 ```shell
 $ mkdir base && cd base
@@ -25,7 +28,8 @@ $ cp ~/src/myproj/target/mywebapp.war webapps
 $ java -jar $JETTY_HOME/start.jar 
 ```
 
-## Multiple Versions Webapp Example
+Multiple Versions Webapp Example
+--------------------------------
 
 ```shell
 $ mkdir base && cd base
@@ -36,7 +40,8 @@ $ echo environment: ee8 > webapps/mywebapp8.properties
 $ java -jar $JETTY_HOME/start.jar 
 ```
 
-## Embedded Example
+Embedded Example
+----------------
 
 ```java
 Server server = new Server(port);
@@ -45,13 +50,15 @@ context.addServlet(MyServlet.class, "/*");
 server.start();
 ```
 
-## Documentation
+Documentation
+-------------
 
 Project documentation is available on the Eclipse Jetty website.
 
 - [https://eclipse.dev/jetty/documentation/](https://eclipse.dev/jetty/documentation/)
 
-# Building
+Building
+========
 
 [Apache Maven](https://maven.apache.org/) and [OpenJDK](https://adoptium.net/) requirements:
 
@@ -61,7 +68,8 @@ Project documentation is available on the Eclipse Jetty website.
 | `jetty-11.0.x` | Maven 3.8.6+  | OpenJDK 11  | OpenJDK 17 (for optional virtual threads and HTTP/3 support) |
 | `jetty-12.0.x` | Maven 3.8.6+  | OpenJDK 17  | OpenJDK 17                                                   |
 
-## Full Build 
+Full Build
+----------
 
 If you want to build Jetty and run all the tests, which may takes quite some time, use the following command:
 
@@ -87,7 +95,8 @@ If a test cannot be run in parallel because it accesses/modifies some `static` f
 @Isolated("Access static field of Configurations")
 ```
 
-## Fast Build
+Fast Build
+----------
 
 If you just need the Jetty module jars and the Jetty Home distribution, you can run a fast build that does not run tests and other checks with the following command:
 
@@ -95,12 +104,14 @@ If you just need the Jetty module jars and the Jetty Home distribution, you can 
 mvn -Pfast clean install
 ```
 
-## Optional Build Tools 
+Optional Build Tools
+--------------------
 
 * [`graphviz`](https://graphviz.org/) - used by asciidoctor in the jetty-documentation module to produce various graphs
 * [`Docker`](https://www.docker.com/) - used to run some integration tests for testing third party integrations
 
-## Build Artifacts
+Build Artifacts
+---------------
 
 Once the build is complete, you can find the built Jetty Maven artifacts in your Maven local repository, along with the following locations of note:
 
@@ -113,6 +124,7 @@ Once the build is complete, you can find the built Jetty Maven artifacts in your
 | `jetty-12.0.x` | `jetty-ee9/jetty-ee9-runner/target/jetty-ee9-runner-<ver>.jar`    | The Jetty Runner distribution for EE9/Servlet 5 (`jakarta.servlet`) webapps  |
 | `jetty-12.0.x` | `jetty-ee8/jetty-ee8-runner/target/jetty-ee8-runner-<ver>.jar`    | The Jetty Runner distribution for EE8/Servlet 4 (`javax.servlet`) webapps    |
 
-# Commercial Support
+Commercial Support
+==================
 
 Expert advice and production support of Jetty are provided by [Webtide](https://webtide.com).

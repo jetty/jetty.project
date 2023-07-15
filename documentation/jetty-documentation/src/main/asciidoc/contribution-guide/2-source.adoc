@@ -86,11 +86,44 @@ Older branches remain untouched unless specifically targeted by a pull request.
 Also, changes to older branches aren't regularly merged forward -- although an individual change may be cherrypicked forward, depending on the nature of the fix.
 
 [[cg-contributing-build]]
-=== Building Jetty with Maven
+=== Building Jetty
 
-Jetty uses http://maven.apache.org/[Apache Maven] for build automation and project metadata management.
+Jetty uses http://maven.apache.org/[Apache Maven] as its build tool and for managing project metadata.
+To successfully build Jetty you will also need a recent version of the Java Development Kit (JDK).
 
-To build Jetty, navigate to your local copy of the Jetty repo and run `mvn install`:
+// TODO: tag
+==== Setting up Maven and the JDK
+
+Here are the minimum Maven and JDK version build requirements for each of the actively maintained branches of Jetty.
+
+.Build versioning requirements by branch
+[cols="4"]
+|===
+| Branch | Maven Version | Minimum JDK | Recommended JDK
+
+| jetty-10.0.x | Maven 3.8.6+  | OpenJDK 11  | OpenJDK 17 (for optional virtual threads and HTTP/3 support)
+| jetty-11.0.x | Maven 3.8.6+  | OpenJDK 11  | OpenJDK 17 (for optional virtual threads and HTTP/3 support)
+| jetty-12.0.x | Maven 3.8.6+  | OpenJDK 17  | OpenJDK 17
+|===
+
+// TODO: tag
+==== Running a fast build
+
+To get started with Jetty as quickly as possible, navigate to your local copy of the Jetty repo and run `maven -Pfast clean install`.
+
+[source, shell]
+----
+$ git clone https://github.com/eclipse/jetty.project.git
+$ cd jetty.project
+$ mvn -Pfast clean install
+----
+
+The `-Pfast` flag tells Maven to bypass running tests and other checks.
+
+// TODO: tag
+==== Running a full build
+
+To build Jetty and automatically run all tests -- which can take quite some time -- run `mvn install` without any flags:
 
 [source, shell]
 ----
@@ -99,15 +132,37 @@ $ cd jetty.project
 $ mvn install
 ----
 
-All relevant dependencies should be downloaded into your local repository automatically and the build should proceed normally.
+The full Jetty build runs hundreds of test cases, many of which spin up embedded instances of Jetty itself.
+The build also runs stress tests that may require you (depending on your hardware or operating system) to set you file descriptor limit to a value greater than 2048.
+You can view or set your file descriptor limit by running `ulimit -n [new_value]`.
 
-[NOTE]
+[TIP]
+.Flagging flaky tests
 ====
-Jetty has a great many test cases that run through the course of its build.
-Many of these tests spin up embedded instances of Jetty itself, and it is not uncommon to see hundreds or more instances of Jetty start and stop during tests.
-Periodically we find some test cases to be more time dependent than they should be and this results in intermittent test failures.
-You can help track these down by opening an https://github.com/eclipse/jetty.project/issues[Issue].
+Not all test cases are as timing independent as they should be, which can result in intermittent test failures.
+You can help us track these flaky tests by opening an https://github.com/eclipse/jetty.project/issues[issue] when you come across one.
 ====
+
+// TODO: tag
+==== Parallel execution
+
+Jetty uses https://junit.org/junit5/docs/current/user-guide/#writing-tests-parallel-execution[Junit5's parallel execution] to run test cases in parallel.
+This is configurable with the following command line flags:
+// TODO: resume from here
+[source, shell]
+----
+    # enable/disable parallel execution
+    -Djunit.jupiter.execution.parallel.enabled=true/false
+    # number of tests executed in parallel
+    -Djunit.jupiter.execution.parallel.config.fixed.parallelism=2
+----
+
+If a test cannot be run in parallel because it accesses/modifies some `static` fields or for any other reasons, the test should be marked with the annotation:
+
+[source, java]
+----
+@Isolated("Access static field of Configurations")
+----
 
 
 [[cg-coding-standards]]

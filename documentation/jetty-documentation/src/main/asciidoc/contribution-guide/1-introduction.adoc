@@ -14,8 +14,6 @@
 [[cg-introduction]]
 == Introduction
 
-Since its inception, Jetty has owed its success to the people who have made up its community.
-
 The bulk of this guide is for developers who are interested in contributing code or documentation changes to the Jetty project.
 However, there are lots of ways to get involved, and every contribution is greatly appreciated!
 
