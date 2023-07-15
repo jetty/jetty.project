@@ -50,7 +50,7 @@ You can clone a copy of the Jetty repo onto your local machine by running:
 
 [source, shell]
 ----
-git clone https://github.com/eclipse/jetty.project.git
+$ git clone https://github.com/eclipse/jetty.project.git
 ----
 
 [[cg-code-repositories]]
@@ -94,20 +94,20 @@ To build Jetty, navigate to your local copy of the Jetty repo and run `mvn insta
 
 [source, shell]
 ----
-git clone https://github.com/eclipse/jetty.project.git
-cd jetty.project
-mvn install
+$ git clone https://github.com/eclipse/jetty.project.git
+$ cd jetty.project
+$ mvn install
 ----
 
 All relevant dependencies should be downloaded into your local repository automatically and the build should proceed normally.
 
 [NOTE]
-____
+====
 Jetty has a great many test cases that run through the course of its build.
 Many of these tests spin up embedded instances of Jetty itself, and it is not uncommon to see hundreds or more instances of Jetty start and stop during tests.
 Periodically we find some test cases to be more time dependent than they should be and this results in intermittent test failures.
 You can help track these down by opening an https://github.com/eclipse/jetty.project/issues[Issue].
-____
+====
 
 
 [[cg-coding-standards]]
@@ -266,7 +266,7 @@ When the Jetty project runs releases we have an automated process that scans for
 
 [source, shell]
 ----
-git commit -s -m "Issue #123 resolving the issue by adding widget"
+$ git commit -s -m "Issue #123 resolving the issue by adding widget"
 ----
 
 [[cg-the-pull-request]]
