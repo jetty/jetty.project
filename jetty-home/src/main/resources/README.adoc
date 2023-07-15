@@ -1,6 +1,6 @@
 === ECLIPSE JETTY
 
-The link:https://www.eclipse.org/jetty/[Eclipse Jetty] Project provides a:
+The link:https://eclipse.dev/jetty/[Eclipse Jetty] Project provides a:
 
 * Java HTTP (HTTP/1.1, HTTP/2 and HTTP/3) Server and Client
 * Jakarta EE Servlet Container
@@ -8,7 +8,7 @@ The link:https://www.eclipse.org/jetty/[Eclipse Jetty] Project provides a:
 
 Jetty is available under an open source link:LICENSE.txt[license], and the full source code is available at link:https://github.com/eclipse/jetty.project[GitHub].
 
-The Jetty documentation is available at link:https://www.eclipse.org/jetty/documentation[].
+The Jetty documentation is available at link:https://eclipse.dev/jetty/documentation/[].
 
 // tag::quick[]
 ==== Quick Setup
@@ -48,7 +48,7 @@ Point your browser at `+http://localhost:8080+` to see the demo web applications
 The Jetty server can be stopped with `ctrl+c` in the terminal window.
 // end::quick[]
 
-For more information about how to start Jetty, you can read the link:https://www.eclipse.org/jetty/documentation[documentation], or run this command:
+For more information about how to start Jetty, you can read the link:https://eclipse.dev/jetty/documentation/[documentation], or run this command:
 
 ----
 $ java -jar $JETTY_HOME/start.jar --help

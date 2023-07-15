@@ -140,7 +140,7 @@ The deployer discovers and hot deploys context IoC descriptors like the followin
 [source, xml, subs="{sub-order}"]
 ----
 <?xml version="1.0"  encoding="UTF-8"?>
-<!DOCTYPE Configure PUBLIC "-//Jetty//Configure//EN" "https://www.eclipse.org/jetty/configure_9_3.dtd">
+<!DOCTYPE Configure PUBLIC "-//Jetty//Configure//EN" "https://eclipse.dev/jetty/configure_9_3.dtd">
 
 <!--
   Configure a custom context for serving javadoc as static resources
@@ -199,7 +199,7 @@ To set the contextPath from within the WAR file, you can include a `WEB-INF/jett
 [source, xml, subs="{sub-order}"]
 ----
 <?xml version="1.0"  encoding="UTF-8"?>
-<!DOCTYPE Configure PUBLIC "-//Jetty//Configure//EN" "https://www.eclipse.org/jetty/configure_9_3.dtd">
+<!DOCTYPE Configure PUBLIC "-//Jetty//Configure//EN" "https://eclipse.dev/jetty/configure_9_3.dtd">
 
 <Configure class="org.eclipse.jetty.ee9.webapp.WebAppContext">
     <Set name="contextPath">/contextpath</Set>
@@ -212,7 +212,7 @@ Instead of allowing the WAR file to be discovered by the deployer, an IoC XML fi
 [source, xml, subs="{sub-order}"]
 ----
 <?xml version="1.0"  encoding="UTF-8"?>
-<!DOCTYPE Configure PUBLIC "-//Jetty//Configure//EN" "https://www.eclipse.org/jetty/configure_9_3.dtd">
+<!DOCTYPE Configure PUBLIC "-//Jetty//Configure//EN" "https://eclipse.dev/jetty/configure_9_3.dtd">
 
 <Configure class="org.eclipse.jetty.ee9.webapp.WebAppContext">
   <Set name="war"><SystemProperty name="jetty.home" default="."/>/webapps/test.war</Set>

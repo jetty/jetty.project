@@ -49,7 +49,7 @@ server.start();
 
 Project documentation is available on the Eclipse Jetty website.
 
-- [https://www.eclipse.org/jetty/documentation](https://www.eclipse.org/jetty/documentation)
+- [https://eclipse.dev/jetty/documentation/](https://eclipse.dev/jetty/documentation/)
 
 # Building
 

@@ -24,7 +24,7 @@ In addition, the infrastructure also supports the OSGi `HttpService` interface.
 
 All of the Jetty jars contain manifest entries appropriate to ensure that they can be deployed into an OSGi container as bundles.
 You will need to install some jetty jars into your OSGi container.
-You can always find the Jetty jars either in the Maven Central repository, or you can link:https://www.eclipse.org/jetty/download.html[download] a distribution of Jetty.
+You can always find the Jetty jars either in the Maven Central repository, or you can link:https://eclipse.dev/jetty/download.php[download] a distribution of Jetty.
 Here's the absolute minimal set of Jetty jars:
 
 .Minimal Bundles
@@ -355,7 +355,7 @@ Here's an example of the contents of a `META-INF/jetty-webapp-context.xml` file:
 ----
 <?xml version="1.0" encoding="UTF-8"?>
 
-<!DOCTYPE Configure PUBLIC "-//Jetty//Configure//EN" "https://www.eclipse.org/jetty/configure_9_3.dtd">
+<!DOCTYPE Configure PUBLIC "-//Jetty//Configure//EN" "https://eclipse.dev/jetty/configure_9_3.dtd">
 
 <Configure class="org.eclipse.jetty.ee9.webapp.WebAppContext">
   <Set name="defaultsDescriptor"><Property name="bundle.root"/>META-INF/webdefault.xml</Set>
@@ -773,7 +773,7 @@ To set the pattern, you will need to provide your own etc files - see the sectio
 [source, xml, subs="{sub-order}"]
 ----
 <?xml version="1.0"?>
-<!DOCTYPE Configure PUBLIC "-//Jetty//Configure//EN" "https://www.eclipse.org/jetty/configure_9_3.dtd">
+<!DOCTYPE Configure PUBLIC "-//Jetty//Configure//EN" "https://eclipse.dev/jetty/configure_9_3.dtd">
 <Configure id="Server" class="org.eclipse.jetty.server.Server">
     <Call name="addBean">
       <Arg>

@@ -303,7 +303,7 @@ public class XmlParser
         return parse(new InputSource(in));
     }
 
-    private InputSource resolveEntity(String pid, String sid)
+    InputSource resolveEntity(String pid, String sid)
     {
         if (LOG.isDebugEnabled())
             LOG.debug("resolveEntity({},{})", pid, sid);
@@ -321,6 +321,9 @@ public class XmlParser
                 LOG.trace("IGNORE EntityResolver exception for (pid=%s, sid=%s)".formatted(pid, sid), e);
             }
         }
+
+        if (LOG.isDebugEnabled())
+            LOG.debug("Entity not found for PID:{} / SID:{}", pid, sid);
         return null;
     }
 

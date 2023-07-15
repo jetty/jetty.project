@@ -73,7 +73,7 @@ This module is equivalent to directly modifying the class path configuration wit
 [source.XML, xml]
 -------------------------------------------------------------
 <?xml version="1.0" encoding="UTF-8"?>
-<!DOCTYPE Configure PUBLIC "-//Jetty//Configure//EN" "http://www.eclipse.org/jetty/configure.dtd">
+<!DOCTYPE Configure PUBLIC "-//Jetty//Configure//EN" "http://eclipse.dev/jetty/configure.dtd">
 <Configure class="org.eclipse.jetty.ee9.webapp.WebAppContext">
    <Call name="prependServerClass">
       <Arg>-org.eclipse.jetty.util.Decorator</Arg>

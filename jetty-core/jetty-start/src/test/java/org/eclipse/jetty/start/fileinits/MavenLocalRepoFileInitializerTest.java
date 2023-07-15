@@ -68,7 +68,7 @@ public class MavenLocalRepoFileInitializerTest
     public void testGetCoordinateNotMaven()
     {
         MavenLocalRepoFileInitializer repo = new MavenLocalRepoFileInitializer(baseHome);
-        String ref = "https://www.eclipse.org/jetty/";
+        String ref = "https://eclipse.dev/jetty/";
         Coordinates coords = repo.getCoordinates(URI.create(ref));
         assertThat("Coords", coords, nullValue());
     }
@@ -77,7 +77,7 @@ public class MavenLocalRepoFileInitializerTest
     public void testGetCoordinateInvalidMaven()
     {
         MavenLocalRepoFileInitializer repo = new MavenLocalRepoFileInitializer(baseHome);
-        String ref = "maven://www.eclipse.org/jetty";
+        String ref = "maven://eclipse.dev/jetty";
         RuntimeException x = assertThrows(RuntimeException.class, () -> repo.getCoordinates(URI.create(ref)));
         assertThat(x.getMessage(), containsString("Not a valid maven:// uri"));
     }

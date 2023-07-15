@@ -85,7 +85,7 @@ For example, a Jetty XML file that allocates Jetty's `QueuedThreadPool` could be
 .jetty-threadpool.xml
 ----
 <?xml version="1.0"?>
-<!DOCTYPE Configure PUBLIC "-//Jetty//Configure//EN" "https://www.eclipse.org/jetty/configure_10_0.dtd">
+<!DOCTYPE Configure PUBLIC "-//Jetty//Configure//EN" "https://eclipse.dev/jetty/configure_10_0.dtd">
 <Configure>
   <New id="threadPool" class="org.eclipse.jetty.util.thread.QueuedThreadPool">
     <Set name="maxThreads" type="int">
@@ -235,7 +235,7 @@ The `custom-server.xml` file is the following:
 [source,xml]
 ----
 <?xml version="1.0"?>
-<!DOCTYPE Configure PUBLIC "-//Jetty//Configure//EN" "https://www.eclipse.org/jetty/configure_10_0.dtd">
+<!DOCTYPE Configure PUBLIC "-//Jetty//Configure//EN" "https://eclipse.dev/jetty/configure_10_0.dtd">
 <Configure id="Server" class="com.acme.server.CustomJettyServer">
 </Configure>
 ----

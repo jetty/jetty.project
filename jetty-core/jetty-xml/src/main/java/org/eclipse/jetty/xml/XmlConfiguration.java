@@ -13,6 +13,7 @@
 
 package org.eclipse.jetty.xml;
 
+import java.io.Closeable;
 import java.io.IOException;
 import java.io.InputStream;
 import java.lang.annotation.Annotation;
@@ -203,7 +204,7 @@ public class XmlConfiguration
     private final String _dtd;
     private ConfigurationProcessor _processor;
 
-    ConfigurationParser getParser()
+    public XmlParser getXmlParser()
     {
         Pool.Entry<ConfigurationParser> entry = __parsers.acquire(ConfigurationParser::new);
         if (entry == null)
@@ -234,13 +235,19 @@ public class XmlConfiguration
      */
     public XmlConfiguration(Resource resource, Map<String, Object> idMap, Map<String, String> properties) throws SAXException, IOException
     {
-        try (ConfigurationParser parser = getParser(); InputStream inputStream = resource.newInputStream())
+        XmlParser parser = getXmlParser();
+        try (InputStream inputStream = resource.newInputStream())
         {
             _location = resource;
             setConfig(parser.parse(inputStream));
             _dtd = parser.getDTD();
             _idMap = idMap == null ? new HashMap<>() : idMap;
             _propertyMap = properties == null ? new HashMap<>() : properties;
+        }
+        finally
+        {
+            if (parser instanceof Closeable)
+                ((Closeable)parser).close();
         }
     }
 
@@ -2004,7 +2011,7 @@ public class XmlConfiguration
         }
     }
 
-    private static class ConfigurationParser extends XmlParser implements AutoCloseable
+    private static class ConfigurationParser extends XmlParser implements Closeable
     {
         private final Pool.Entry<ConfigurationParser> _entry;
 
