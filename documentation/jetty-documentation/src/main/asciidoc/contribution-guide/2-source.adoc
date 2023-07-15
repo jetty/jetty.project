@@ -17,15 +17,18 @@
 Thanks for your interest in contributing to Jetty!
 We love getting patches and welcome outside contributions.
 
+[TIP]
+.Help wanted
+====
+If you want to contribute to Jetty but don't have a specific task or goal in mind, consider looking through our backlog of https://github.com/eclipse/jetty.project/issues?q=is%3Aopen+is%3Aissue+label%3A%22Help+Wanted%22[Help Wanted] issues. These tasks range from the simple to the complex, but they're all issues we've identified as being particularly well-suited for new contributors to tackle.
+====
+
 [[cg-contributing-eca]]
 === Sign the Eclipse Contributor Agreement
 
 Since Jetty is a member of the Eclipse Foundation, all contributors must first sign the https://www.eclipse.org/legal/ECA.php[Eclipse Contributor Agreement (ECA)] before their code changes can be merged into source.
 
-[TIP]
-====
 The Eclipse Foundation maintains an http://www.eclipse.org/legal/ecafaq.php[ECA FAQ] with more information about the ECA's provisions, and a http://wiki.eclipse.org/Development_Resources/Contributing_via_Git[wiki page] about contributing changes to any Eclipse Foundation project more generally.
-====
 
 Before you set up your local development environment, we recommend creating an account at https://accounts.eclipse.org/user[eclipse.org] and submitting your signed ECA.
 
@@ -39,10 +42,29 @@ Jetty's build process has a git hook to verify that every incoming pull request 
 If the git hook cannot verify your email, the Jetty committers **cannot do anything** to accept your commit.
 
 [[cg-community-source]]
-=== Get the source code
+=== Getting the source code
 
 Jetty's source code lives on Github at https://github.com/eclipse/jetty.project where it is managed by the http://github.com/eclipse/[Eclipse Foundation].
 
+You can clone a copy of the Jetty repo onto your local machine by running:
+
+[source, shell]
+----
+git clone https://github.com/eclipse/jetty.project.git
+----
+
+[[cg-code-repositories]]
+==== Primary and secondary repositories
+
+As well as the primary Jetty code repository, we maintain a number of secondary repos for project-related code and metadata.
+
+* *Primary Jetty code repository:* https://github.com/eclipse/jetty.project
+* *Administrative pom.xml file:* https://github.com/eclipse/jetty.parent
+* *Build toolchain artifacts:* https://github.com/eclipse/jetty.toolchain
+* *Development files/configuration:* http://git.eclipse.org/c/jetty/org.eclipse.jetty.admin.git
+
+[[cg-version-branches]]
+==== Version branches
 If you are planning on working with a specific issue within Jetty it is important to target the correct branch for a pull request.
 
 .Active and inactive Jetty branches
@@ -63,56 +85,29 @@ This means that changes to maintenance branches should typically be forward comp
 Older branches remain untouched unless specifically targeted by a pull request.
 Also, changes to older branches aren't regularly merged forward -- although an individual change may be cherrypicked forward, depending on the nature of the fix.
 
-==== Primary SCM
-
-The primary repository for Jetty is:
-
-Jetty Project Repository::
-  https://github.com/eclipse/jetty.project
-
-==== Secondary SCM
-
-These are the URLs for Jetty-related code and metadata.
-These are not needed to use Jetty; these are primarily of use for developers who are working with the open source project within Eclipse.
-
-Administrative pom.xml file::
-  https://github.com/eclipse/jetty.parent
-Build related artifacts that release separately, common assembly descriptors, remote resources, etc.::
-  https://github.com/eclipse/jetty.toolchain
-
 [[cg-contributing-build]]
-=== Maven Build
+=== Building Jetty with Maven
 
-Eclipse Jetty uses http://maven.apache.org/[Apache Maven] for managing the project metadata and controlling the build.
+Jetty uses http://maven.apache.org/[Apache Maven] for build automation and project metadata management.
 
-Building Jetty should simply be a matter of changing into the relevant directory and executing the following commands:
+To build Jetty, navigate to your local copy of the Jetty repo and run `mvn install`:
 
-[source, screen, subs="{sub-order}"]
-....
-
-$ git clone https://github.com/eclipse/jetty.project.git
-$ cd jetty.project
-$ mvn install
-
-
-....
+[source, shell]
+----
+git clone https://github.com/eclipse/jetty.project.git
+cd jetty.project
+mvn install
+----
 
 All relevant dependencies should be downloaded into your local repository automatically and the build should proceed normally.
 
-____
 [NOTE]
+____
 Jetty has a great many test cases that run through the course of its build.
 Many of these tests spin up embedded instances of Jetty itself, and it is not uncommon to see hundreds or more instances of Jetty start and stop during tests.
 Periodically we find some test cases to be more time dependent than they should be and this results in intermittent test failures.
 You can help track these down by opening an https://github.com/eclipse/jetty.project/issues[Issue].
 ____
-
-
-[[cg-help-wanted]]
-=== Help Wanted
-We have identified and labeled a number of issues that may be appropriate for users of different levels of expertise that might want to contribute to Jetty but not have a specific goal or issue in mind.
-
-* https://github.com/eclipse/jetty.project/issues?q=is%3Aopen+is%3Aissue+label%3A%22Help+Wanted%22[Help Wanted]
 
 
 [[cg-coding-standards]]
@@ -135,7 +130,7 @@ The Eclipse IDE format can be found in the code tree
 
 The following is an example of the Java formatting and naming styles to apply to Jetty:
 
-[source, java, subs="{sub-order}"]
+[source, java]
 ----
 
 import some.exact.ClassName;      // GOOD
@@ -202,7 +197,7 @@ When deciding when and what to log, bear in mind a few things:
 * we should seldom LOG.debug and then throw as that will make debug verbose and add little information
 * when interacting with a request, or information received from a client:
 ** no logging unless `isDebugEnabled`, in which case you output at `DEBUG` level eg:
-[source, java, subs="{sub-order}"]
+[source, java]
 ----
   catch (Throwable t)
   {
@@ -213,7 +208,7 @@ When deciding when and what to log, bear in mind a few things:
 
 * when calling into application code that throws an exception:
 ** use `INFO` level, and use `isDebugEnabled` to cut down on the size of the logging of stack traces:
-[source, java, subs="{sub-order}"]
+[source, java]
 ----
   catch (Throwable t)
   {
@@ -227,7 +222,7 @@ When deciding when and what to log, bear in mind a few things:
 * when exceptions happen in jetty code:
 ** mostly use `WARN` or `ERROR` level
 ** if the exception is not entirely unexpected, can happen relatively frequently, or can potentially have a very long stack trace and you don't want to clutter up the log, you can use `isDebugEnabled` to cut down on the size of the logging of the stacktrace:
-[source, java, subs="{sub-order}"]
+[source, java]
 ----
   catch (Throwable t)
   {
@@ -238,8 +233,8 @@ When deciding when and what to log, bear in mind a few things:
   }
 ----
 
-____
 [TIP]
+____
 Be aware that `LOG.warn("Something happened", t)` is the same as `LOG.warn("Something happened {}", t)`, at least for the default jetty logging.
 In both cases, the full stacktrace is output.
 If you only want the log message, you need to do `LOG.warn("Something happened {}", t.toString())`.
@@ -258,8 +253,9 @@ When making the commit for the pull request it is  _vital_ that you "sign-off" o
 Without this sign-off, your patch cannot be applied to the Jetty repository because it will be rejected.
 
 You can check out the link:https://help.github.com/articles/signing-tags-using-gpg[guide at Github] for more information.
-____
+
 [TIP]
+____
 One way to think of this is that when you sign the ECA you are indicating that you are free to contribute to eclipse, but that doesn't mean everything you ever do can be contributed.
 Using the commit signing mechanism indicates that your commit is under the auspices of your agreement.
 ____
@@ -268,9 +264,9 @@ If a pull request is for a particular issue in our repository then the format of
 The message should follow the form "Issue #123 <description of the commit>".
 When the Jetty project runs releases we have an automated process that scans for commits with this format for inclusion in our VERSION.txt file.
 
-[source, screen]
+[source, shell]
 ----
-> git commit -s -m "Issue #123 resolving the issue by adding widget"
+git commit -s -m "Issue #123 resolving the issue by adding widget"
 ----
 
 [[cg-the-pull-request]]

@@ -12,7 +12,7 @@
 //
 
 [[cg-introduction]]
-== The Jetty Community
+== Introduction
 
 Since its inception, Jetty has owed its success to the people who have made up its community.
 
