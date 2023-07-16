@@ -19,9 +19,9 @@ import java.util.concurrent.atomic.AtomicBoolean;
 
 import org.eclipse.jetty.http.HttpVersion;
 import org.eclipse.jetty.http.MetaData;
+import org.eclipse.jetty.http2.Flags;
 import org.eclipse.jetty.http2.WindowRateControl;
 import org.eclipse.jetty.http2.hpack.HpackEncoder;
-import org.eclipse.jetty.http2.internal.Flags;
 import org.eclipse.jetty.http2.parser.Parser;
 import org.eclipse.jetty.io.ArrayByteBufferPool;
 import org.eclipse.jetty.io.ByteBufferPool;

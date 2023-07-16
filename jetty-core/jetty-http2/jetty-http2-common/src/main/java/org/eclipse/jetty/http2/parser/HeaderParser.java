@@ -15,10 +15,10 @@ package org.eclipse.jetty.http2.parser;
 
 import java.nio.ByteBuffer;
 
+import org.eclipse.jetty.http2.Flags;
 import org.eclipse.jetty.http2.RateControl;
 import org.eclipse.jetty.http2.frames.Frame;
 import org.eclipse.jetty.http2.frames.FrameType;
-import org.eclipse.jetty.http2.internal.Flags;
 
 /**
  * <p>The parser for the frame header of HTTP/2 frames.</p>
