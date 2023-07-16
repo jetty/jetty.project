@@ -133,7 +133,7 @@ Real network protocols are of course more complicated and so is the implementati
 
 The Jetty client implementation provides a number of `ClientConnectionFactory` implementations that can be composed to produce and interpret the network bytes.
 
-For example, it is simple to modify the above example to use the TLS protocol so that you will be able to connect to the server on port `443`, typically reserved for the encrypted HTTP protocol.
+For example, it is simple to modify the above example to use the TLS protocol so that you will be able to connect to the server on port `443`, typically reserved for the secure HTTP protocol.
 
 The differences between the clear-text version and the TLS encrypted version are minimal:
 

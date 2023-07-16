@@ -26,7 +26,7 @@ The simpler way to perform a HTTP request is the following:
 include::../../{doc_code}/org/eclipse/jetty/docs/programming/client/http/HTTPClientDocs.java[tags=simpleBlockingGet]
 ----
 
-The method `HttpClient.GET(...)` performs a HTTP `GET` request to the given URI and returns a `ContentResponse` when the request/response conversation completes successfully.
+The method `HttpClient.GET(\...)` performs a HTTP `GET` request to the given URI and returns a `ContentResponse` when the request/response conversation completes successfully.
 
 The `ContentResponse` object contains the HTTP response information: status code, headers and possibly content.
 The content length is limited by default to 2 MiB; for larger content see xref:pg-client-http-content-response[the section on response content handling].
@@ -45,7 +45,7 @@ This is a shorthand for:
 include::../../{doc_code}/org/eclipse/jetty/docs/programming/client/http/HTTPClientDocs.java[tags=headNonFluent]
 ----
 
-You first create a request object using `httpClient.newRequest(...)`, and then you customize it using the fluent API style (that is, a chained invocation of methods on the request object).
+You first create a request object using `httpClient.newRequest(\...)`, and then you customize it using the fluent API style (that is, a chained invocation of methods on the request object).
 When the request object is customized, you call `request.send()` that produces the `ContentResponse` when the request/response conversation is complete.
 
 Simple `POST` requests also have a shortcut method:
@@ -67,7 +67,7 @@ File uploads also require one line, and make use of `java.nio.file` classes:
 include::../../{doc_code}/org/eclipse/jetty/docs/programming/client/http/HTTPClientDocs.java[tags=fileFluent]
 ----
 
-It is possible to impose a total timeout for the request/response conversation using the `Request.timeout(...)` method as follows:
+It is possible to impose a total timeout for the request/response conversation using the `Request.timeout(\...)` method as follows:
 
 [source,java,indent=0]
 ----
@@ -140,7 +140,7 @@ Have a look at the link:{javadoc-url}/org/eclipse/jetty/client/api/Request.Liste
 
 Jetty's `HttpClient` provides a number of utility classes off the shelf to handle request content.
 
-You can provide request content as `String`, `byte[]`, `ByteBuffer`, `java.nio.file.Path`, `InputStream`, and provide your own implementation of `org.eclipse.jetty.client.api.Request.Content`.
+You can provide request content as `String`, `byte[]`, `ByteBuffer`, `java.nio.file.Path`, `InputStream`, and provide your own implementation of `org.eclipse.jetty.client.Request.Content`.
 Here’s an example that provides the request content using `java.nio.file.Paths`:
 
 [source,java,indent=0]
@@ -189,14 +189,14 @@ Jetty's `HttpClient` allows applications to handle response content in different
 
 You can buffer the response content in memory; this is done when using the xref:pg-client-http-blocking[blocking APIs] and the content is buffered within a `ContentResponse` up to 2 MiB.
 
-If you want to control the length of the response content (for example limiting to values smaller than the default of 2 MiB), then you can use a `org.eclipse.jetty.client.util.FutureResponseListener` in this way:
+If you want to control the length of the response content (for example limiting to values smaller than the default of 2 MiB), then you can use a `org.eclipse.jetty.client.FutureResponseListener` in this way:
 
 [source,java,indent=0]
 ----
 include::../../{doc_code}/org/eclipse/jetty/docs/programming/client/http/HTTPClientDocs.java[tags=futureResponseListener]
 ----
 
-If the response content length is exceeded, the response will be aborted, and an exception will be thrown by method `get(...)`.
+If the response content length is exceeded, the response will be aborted, and an exception will be thrown by method `get(\...)`.
 
 You can buffer the response content in memory also using the xref:pg-client-http-non-blocking[non-blocking APIs], via the `BufferingResponseListener` utility class:
 
@@ -221,22 +221,37 @@ The listener that follows this model is `Response.ContentSourceListener`.
 After the response headers have been processed by the `HttpClient` implementation, `Response.ContentSourceListener.onContentSource(response, contentSource)` is invoked once and only once.
 This allows the application to control precisely the read/demand loop: when to read a chunk, how to process it and when to demand the next one.
 
-You must provide a `ContentSourceListener` whose implementation reads a `Content.Chunk` from the provided `Content.Source`; if the read chunk is `null`, `Content.Source.demand(Runnable)` should be called so that the demand callback is called back when more chunks are available; if the chunk is an instance of `Content.Chunk.Error` then the error should be processed; otherwise the chunk should be processed by consuming and then releasing the chunk; and finally either trying to read another chunk, or demanding for another chunk (unless the current chunk is the last).
+You must provide a `ContentSourceListener` whose implementation reads a `Content.Chunk` from the provided `Content.Source`, as follows:
+Then the following cases may happen:
+
+* The read chunk ; you should process it by consuming its bytes and then releasing the chunk, then either trying to read another chunk, or demanding for another chunk (unless the current chunk is the last).
+
+[source,java,indent=0]
+----
+include::../../{doc_code}/org/eclipse/jetty/docs/programming/client/http/HTTPClientDocs.java[tags=contentSourceListener]
+----
+
+<1> Using a `Runnable` anonymous class instead of a lambda in this example just for simplicity, and to be able to call `contentSource.demand(this)` passing `this` as parameter.
+<2> Read in a loop
+<3> Read a `Content.Chunk` from the `Content.Source`.
+<4> The read chunk is `null`, call `Content.Source.demand(Runnable)` to be called back when more chunks are available.
+<5> The read reported a failure, which may be transient or terminal; the application must handle them appropriately.
+<6> The read chunk is a normal chunk of content; the application should consume its `ByteBuffer` bytes.
+<7> The chunk must be released.
 
 IMPORTANT: Calling `Content.Chunk.release()` must be done only after the bytes in the `ByteBuffer` returned by `Content.Chunk.getByteBuffer()` have been consumed.
 When the `Content.Chunk` is released, the `HttpClient` implementation may reuse the `ByteBuffer` and overwrite the bytes with different bytes; if the application looks at the `ByteBuffer` _after_ having released the `Content.Chunk` is may see other, unrelated, bytes.
 
-// TODO: add example code snippet
-
 The invocation of `onContentSource(Request, Content.Source)` and of the demand callback passed to `contentSource.demand(Runnable)` are serialized with respect to asynchronous events such as timeouts or an asynchronous call to `Request.abort(Throwable)`.
 This means that these asynchronous events are not processed until the invocation of `onContentSource(Request, Content.Source)` returns, or until the invocation of the demand callback returns.
+With this model, applications should not worry too much about concurrent asynchronous events happening during response content handling, because they will eventually see the events as failures while reading the response content.
 
 Demanding for content and consuming the content are orthogonal activities.
 
 An application can read, store aside the `Content.Chunk` objects without releasing them (to consume them later), and demand for more chunks, but it must call `Chunk.retain()` on the stored chunks, and arrange to release them after they have been consumed later.
 
-If not done carefully, this may lead to excessive memory consumption, since the ``buffer``s are not consumed.
-Releasing the `Content.Chunk`s will result in the ``buffer``s to be disposed/recycled and may be performed at any time.
+If not done carefully, this may lead to excessive memory consumption, since the `ByteBuffer` bytes are not consumed.
+Releasing the `Content.Chunk`s will result in the ``ByteBuffer``s to be disposed/recycled and may be performed at any time.
 
 An application can also read one chunk of content, consume it, release it, and then _not_ demand for more content until a later time.
 
@@ -244,11 +259,9 @@ Subclass `Response.AsyncContentListener` overrides the behavior of `Response.Con
 
 Subclass `Response.ContentListener` overrides the behavior of `Response.AsyncContentListener`; when an application implementing its `onContent(response, buffer)` returns from the method itself, it will _both_ the effect of disposing/recycling the `buffer` _and_ the effect of demanding one more chunk of content.
 
-Previous examples of response content handling were inefficient because they involved copying the `buffer` bytes, either to accumulate them aside so that the application could use them when the request was completed, or because they were provided to an API such as `InputStream` that made use of `byte[]` (and therefore a copy from `ByteBuffer` to `byte[]` is necessary).
-
-An application that implements a forwarder between two servers can be implemented efficiently by handling the response content without copying the `buffer` bytes as in the following example:
+An application that implements a forwarder between two servers can be implemented efficiently by handling the response content without copying the `ByteBuffer` bytes as in the following example:
 
 [source,java,indent=0]
 ----
-include::../../{doc_code}/org/eclipse/jetty/docs/programming/client/http/HTTPClientDocs.java[tag=contentSourceListener]
+include::../../{doc_code}/org/eclipse/jetty/docs/programming/client/http/HTTPClientDocs.java[tag=forwardContent]
 ----

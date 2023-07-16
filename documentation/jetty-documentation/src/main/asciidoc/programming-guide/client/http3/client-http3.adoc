@@ -78,8 +78,8 @@ include::../../{doc_code}/org/eclipse/jetty/docs/programming/client/http3/HTTP3C
 [[pg-client-http3-configure]]
 ==== Configuring the Session
 
-The `connect(...)` method takes a `Session.Client.Listener` parameter.
-This listener's `onPreface(...)` method is invoked just before establishing the connection to the server to gather the client configuration to send to the server.
+The `connect(\...)` method takes a `Session.Client.Listener` parameter.
+This listener's `onPreface(\...)` method is invoked just before establishing the connection to the server to gather the client configuration to send to the server.
 Client applications can override this method to change the default configuration:
 
 [source,java,indent=0]
@@ -106,7 +106,7 @@ Sending the `HEADERS` frame opens the `Stream`:
 include::../../{doc_code}/org/eclipse/jetty/docs/programming/client/http3/HTTP3ClientDocs.java[tags=newStream]
 ----
 
-Note how `Session.newRequest(...)` takes a `Stream.Client.Listener` parameter.
+Note how `Session.newRequest(\...)` takes a `Stream.Client.Listener` parameter.
 This listener is notified of stream events originated by the server such as receiving `HEADERS` or `DATA` frames that are part of the response, discussed in more details in the xref:pg-client-http3-response[section below].
 Please refer to the `Stream.Client.Listener` link:{javadoc-url}/org/eclipse/jetty/http3/api/Stream.Client.Listener.html[javadocs] for the complete list of events.
 
@@ -117,13 +117,13 @@ HTTP requests may have content, which is sent using the `Stream` APIs:
 include::../../{doc_code}/org/eclipse/jetty/docs/programming/client/http3/HTTP3ClientDocs.java[tags=newStreamWithData]
 ----
 
-IMPORTANT: When sending two `DATA` frames consecutively, the second call to `Stream.data(...)` must be done only when the first is completed, or a `WritePendingException` will be thrown.
-Use the `CompletableFuture` APIs to ensure that the second `Stream.data(...)` call is performed when the first completed successfully.
+IMPORTANT: When sending two `DATA` frames consecutively, the second call to `Stream.data(\...)` must be done only when the first is completed, or a `WritePendingException` will be thrown.
+Use the `CompletableFuture` APIs to ensure that the second `Stream.data(\...)` call is performed when the first completed successfully.
 
 [[pg-client-http3-response]]
 ==== Receiving a Response
 
-Response events are delivered to the `Stream.Client.Listener` passed to `Session.newRequest(...)`.
+Response events are delivered to the `Stream.Client.Listener` passed to `Session.newRequest(\...)`.
 
 An HTTP response is typically composed of a `HEADERS` frame containing the HTTP status code and the response headers, and optionally one or more `DATA` frames containing the response content bytes.
 
