@@ -47,12 +47,13 @@
      </tr>
 
      </table>
-    <p>
-     By the use of Asynchronous Servlets and the Jetty Asynchronous client, the server is able to release the thread (green) while waiting for the response from Ebay.  This thread goes back into the thread pool and can service many other requests during the wait.  This greatly reduces the number of threads needed, which in turn greatly reduces the memory requirements of the server.
-    </p>
-    <p>
-     Press your browser's reload button to see even better results after JIT and TCP/IP warmup!
-    </p>
+     <p>
+      By the use of Asynchronous Servlets and the Jetty Asynchronous client, the server is able to release the thread (green) while waiting for the response from Ebay.  This thread goes back into the thread pool and can service many other requests during the wait.  This greatly reduces the number of threads needed, which in turn greatly reduces the memory requirements of the server.
+     </p>
+     <p>
+      Press your browser's reload button to see even better results after JIT and TCP/IP warmup!
+     </p>
+    </div>
 
     <div class="footer">
       <center><a href="https://eclipse.dev/jetty"><img style="border:0" src="small_powered_by.gif"/></a></center>

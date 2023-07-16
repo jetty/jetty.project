@@ -18,6 +18,7 @@ import java.nio.ByteBuffer;
 import org.eclipse.jetty.http2.RateControl;
 import org.eclipse.jetty.http2.frames.Frame;
 import org.eclipse.jetty.http2.frames.FrameType;
+import org.eclipse.jetty.http2.internal.Flags;
 
 /**
  * <p>The parser for the frame header of HTTP/2 frames.</p>
@@ -141,9 +142,29 @@ public class HeaderParser
         return type;
     }
 
+    /**
+     * <p>Returns whether the given header {@link Flags flag} is present.</p>
+     *
+     * @param bit the flag to test for presence
+     * @return whether the flag is present
+     */
     public boolean hasFlag(int bit)
     {
         return (flags & bit) == bit;
+    }
+
+    /**
+     * <p>Returns the raw value of the header flag bits.</p>
+     * <p>Use {@link #hasFlag(int)} to test for flag presence.
+     * This method should be used just to retrieve the raw value
+     * of all the flag bits.</p>
+     *
+     * @return the raw value of the headers flag bits
+     * @see #hasFlag(int)
+     */
+    public int getFlags()
+    {
+        return flags;
     }
 
     public int getStreamId()
