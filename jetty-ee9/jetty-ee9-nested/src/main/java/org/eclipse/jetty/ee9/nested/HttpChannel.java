@@ -84,6 +84,8 @@ public class HttpChannel implements Runnable, HttpOutput.Interceptor
     private final Request _request;
     private final Response _response;
     private final Listener _combinedListener;
+    private final Dispatchable _requestDispatcher;
+    private final Dispatchable _asyncDispatcher;
     @Deprecated
     private final List<Listener> _transientListeners = new ArrayList<>();
     private MetaData.Response _committedMetaData;
@@ -109,8 +111,9 @@ public class HttpChannel implements Runnable, HttpOutput.Interceptor
         _request = new Request(this, newHttpInput());
         _response = new Response(this, newHttpOutput());
         _executor = _connector.getServer().getThreadPool();
-
         _combinedListener = new HttpChannelListeners(_connector.getBeans(Listener.class));
+        _requestDispatcher = new RequestDispatchable();
+        _asyncDispatcher = new AsyncDispatchable();
 
         if (LOG.isDebugEnabled())
             LOG.debug("new {} -> {},{},{}",
@@ -567,17 +570,14 @@ public class HttpChannel implements Runnable, HttpOutput.Interceptor
                         if (!_request.hasMetaData())
                             throw new IllegalStateException("state=" + _state);
 
-                        dispatch(DispatcherType.REQUEST, () ->
-                        {
-                            _contextHandler.handle(HttpChannel.this);
-                        });
+                        dispatch(DispatcherType.REQUEST, _requestDispatcher);
 
                         break;
                     }
 
                     case ASYNC_DISPATCH:
                     {
-                        dispatch(DispatcherType.ASYNC, () -> _contextHandler.handleAsync(this));
+                        dispatch(DispatcherType.ASYNC, _asyncDispatcher);
                         break;
                     }
 
@@ -616,11 +616,7 @@ public class HttpChannel implements Runnable, HttpOutput.Interceptor
                                 break;
                             }
 
-                            dispatch(DispatcherType.ERROR, () ->
-                            {
-                                errorHandler.handle(null, _request, _request, _response);
-                                _request.setHandled(true);
-                            });
+                            dispatch(DispatcherType.ERROR, new ErrorDispatchable(errorHandler));
                         }
                         catch (Throwable x)
                         {
@@ -1659,6 +1655,41 @@ public class HttpChannel implements Runnable, HttpOutput.Interceptor
         public void onComplete(Request request)
         {
             request.getHttpChannel().notifyEvent1(listener -> listener::onComplete, request);
+        }
+    }
+
+    private class RequestDispatchable implements Dispatchable
+    {
+        @Override
+        public void dispatch() throws IOException, ServletException
+        {
+            _contextHandler.handle(HttpChannel.this);
+        }
+    }
+
+    private class AsyncDispatchable implements Dispatchable
+    {
+        @Override
+        public void dispatch() throws IOException, ServletException
+        {
+            _contextHandler.handleAsync(HttpChannel.this);
+        }
+    }
+
+    private class ErrorDispatchable implements Dispatchable
+    {
+        private final ErrorHandler _errorHandler;
+
+        public ErrorDispatchable(ErrorHandler errorHandler)
+        {
+            _errorHandler = errorHandler;
+        }
+
+        @Override
+        public void dispatch() throws IOException, ServletException
+        {
+            _errorHandler.handle(null, _request, _request, _response);
+            _request.setHandled(true);
         }
     }
 }
