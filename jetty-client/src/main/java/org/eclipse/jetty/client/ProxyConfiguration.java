@@ -41,10 +41,18 @@ public class ProxyConfiguration
     private final List<Proxy> proxies = new BlockingArrayQueue<>();
 
     /**
+     * <p>Returns the list of proxies added to this configuration.</p>
+     * <p>This method is deprecated because it has historically been
+     * used to add/remove proxies directly to/from the returned list,
+     * but this has now been replaced by {@link #addProxy(Proxy)} and
+     * {@link #removeProxy(Proxy)} instead.</p>
+     * <p>In the future, this method will return an unmodifiable
+     * list of proxies just for querying purposes.</p>
+     *
      * @deprecated use {@link #addProxy(Proxy)} and {@link #removeProxy(Proxy)} instead
      * @return the forward proxies to use
      */
-    @Deprecated(forRemoval = true)
+    @Deprecated
     public List<Proxy> getProxies()
     {
         return proxies;
