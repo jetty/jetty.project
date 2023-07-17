@@ -91,7 +91,7 @@ import org.slf4j.LoggerFactory;
  * that says that a hunter should eat (i.e. consume) what they kill (i.e. produced).</p>
  */
 @ManagedObject("Adaptive execution strategy")
-public class AdaptiveExecutionStrategy extends ContainerLifeCycle implements ExecutionStrategy
+public class AdaptiveExecutionStrategy extends ContainerLifeCycle implements ExecutionStrategy, Runnable
 {
     private static final Logger LOG = LoggerFactory.getLogger(AdaptiveExecutionStrategy.class);
 
@@ -137,14 +137,6 @@ public class AdaptiveExecutionStrategy extends ContainerLifeCycle implements Exe
     private final Executor _executor;
     private final TryExecutor _tryExecutor;
     private final Executor _virtualExecutor;
-    private final Runnable _runPendingProducer = new Runnable()
-    {
-        @Override
-        public void run()
-        {
-            tryProduce(true);
-        }
-    };
     private State _state = State.IDLE;
     private boolean _pending;
 
@@ -192,13 +184,19 @@ public class AdaptiveExecutionStrategy extends ContainerLifeCycle implements Exe
         if (LOG.isDebugEnabled())
             LOG.debug("{} dispatch {}", this, execute);
         if (execute)
-            _executor.execute(_runPendingProducer);
+            _executor.execute(this);
     }
 
     @Override
     public void produce()
     {
         tryProduce(false);
+    }
+
+    @Override
+    public void run()
+    {
+        tryProduce(true);
     }
 
     /**
@@ -315,7 +313,7 @@ public class AdaptiveExecutionStrategy extends ContainerLifeCycle implements Exe
                 try (AutoLock l = _lock.lock())
                 {
                     // If a pending producer is available or one can be started
-                    if (_pending || _tryExecutor.tryExecute(_runPendingProducer))
+                    if (_pending || _tryExecutor.tryExecute(this))
                     {
                         // Use EPC: the producer directly consumes the task, which may block
                         // and then races with the pending producer to resume production.
@@ -339,7 +337,7 @@ public class AdaptiveExecutionStrategy extends ContainerLifeCycle implements Exe
                     try (AutoLock l = _lock.lock())
                     {
                         // If a pending producer is available or one can be started
-                        if (_pending || _tryExecutor.tryExecute(_runPendingProducer))
+                        if (_pending || _tryExecutor.tryExecute(this))
                         {
                             // use EPC: The producer directly consumes the task, which may block
                             // and then races with the pending producer to resume production.
