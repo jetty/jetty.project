@@ -48,6 +48,9 @@ include::../../{doc_code}/org/eclipse/jetty/docs/programming/client/http/HTTPCli
 You first create a request object using `httpClient.newRequest(...)`, and then you customize it using the fluent API style (that is, a chained invocation of methods on the request object).
 When the request object is customized, you call `request.send()` that produces the `ContentResponse` when the request/response conversation is complete.
 
+IMPORTANT: The `Request` object, despite being mutable, cannot be reused for other requests.
+This is true also when trying to send two or more identical requests: you have to create two or more `Request` objects.
+
 Simple `POST` requests also have a shortcut method:
 
 [source,java,indent=0]
