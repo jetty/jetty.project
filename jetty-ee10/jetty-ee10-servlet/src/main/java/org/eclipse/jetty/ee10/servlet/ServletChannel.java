@@ -17,7 +17,7 @@ import java.io.IOException;
 import java.net.InetSocketAddress;
 import java.net.SocketAddress;
 import java.util.concurrent.TimeoutException;
-import java.util.concurrent.atomic.AtomicInteger;
+import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicLong;
 
 import jakarta.servlet.RequestDispatcher;
@@ -521,10 +521,10 @@ public class ServletChannel
                             else
                             {
 
-                                AtomicInteger count = new AtomicInteger();
+                                AtomicBoolean asyncCompletion = new AtomicBoolean(false);
                                 Callback errorCallback = Callback.from(() ->
                                 {
-                                    if (count.incrementAndGet() == 2)
+                                    if (!asyncCompletion.compareAndSet(false, true))
                                         _state.scheduleDispatch();
                                 });
 
@@ -534,7 +534,7 @@ public class ServletChannel
 
                                 // If the callback has already been completed we should continue in handle loop.
                                 // Otherwise, the callback will schedule a dispatch to handle().
-                                if (count.incrementAndGet() != 2)
+                                if (asyncCompletion.compareAndSet(false, true))
                                     return false;
                             }
                         }
