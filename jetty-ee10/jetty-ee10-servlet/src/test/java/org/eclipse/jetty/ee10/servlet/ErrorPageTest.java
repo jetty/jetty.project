@@ -16,6 +16,8 @@ package org.eclipse.jetty.ee10.servlet;
 import java.io.IOException;
 import java.io.PrintWriter;
 import java.nio.charset.StandardCharsets;
+import java.nio.file.Files;
+import java.nio.file.Path;
 import java.util.EnumSet;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ConcurrentMap;
@@ -46,10 +48,14 @@ import org.eclipse.jetty.server.LocalConnector;
 import org.eclipse.jetty.server.Request;
 import org.eclipse.jetty.server.Response;
 import org.eclipse.jetty.server.Server;
+import org.eclipse.jetty.toolchain.test.jupiter.WorkDir;
+import org.eclipse.jetty.toolchain.test.jupiter.WorkDirExtension;
 import org.eclipse.jetty.util.Callback;
+import org.eclipse.jetty.util.resource.ResourceFactory;
 import org.hamcrest.Matchers;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.extension.ExtendWith;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.CsvSource;
 import org.junit.jupiter.params.provider.ValueSource;
@@ -65,6 +71,7 @@ import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
+@ExtendWith(WorkDirExtension.class)
 public class ErrorPageTest
 {
     private static final Logger LOG = LoggerFactory.getLogger(ErrorPageTest.class);
@@ -1389,6 +1396,60 @@ public class ErrorPageTest
         ErrorPageErrorHandler errorPageErrorHandler = new ErrorPageErrorHandler();
         errorPageErrorHandler.addErrorPage(ErrorPageErrorHandler.GLOBAL_ERROR_PAGE, "/error/GlobalErrorPage");
         errorPageErrorHandler.addErrorPage(TestServletException.class, "/error");
+        contextHandler.setErrorHandler(errorPageErrorHandler);
+
+        startServer(contextHandler);
+
+        try (StacklessLogging stackless = new StacklessLogging(ServletChannel.class))
+        {
+            StringBuilder rawRequest = new StringBuilder();
+            rawRequest.append("GET /exception-servlet HTTP/1.1\r\n");
+            rawRequest.append("Host: test\r\n");
+            rawRequest.append("Connection: close\r\n");
+            rawRequest.append("\r\n");
+
+            String rawResponse = _connector.getResponse(rawRequest.toString());
+
+            HttpTester.Response response = HttpTester.parseResponse(rawResponse);
+            assertThat(response.getStatus(), is(500));
+            assertThat(response.get(HttpHeader.DATE), notNullValue());
+
+            String responseBody = response.getContent();
+            assertThat(responseBody, Matchers.containsString("ERROR_EXCEPTION: org.eclipse.jetty.ee10.servlet.ErrorPageTest$TestServletException"));
+            assertThat(responseBody, Matchers.containsString("ERROR_EXCEPTION_TYPE: class org.eclipse.jetty.ee10.servlet.ErrorPageTest$TestServletException"));
+        }
+    }
+
+    /**
+     * Test to ensure we can redirect an error to an HTML page
+     */
+    @Test
+    public void testErrorHtmlPage(WorkDir workDir) throws Exception
+    {
+        Path docroot = workDir.getEmptyPathDir();
+        Path html500 = docroot.resolve("500.html");
+        Files.writeString(html500, "<h1>This is the 500 HTML</h1>");
+
+        ServletContextHandler contextHandler = new ServletContextHandler(ServletContextHandler.NO_SECURITY | ServletContextHandler.NO_SESSIONS);
+        ResourceFactory resourceFactory = ResourceFactory.of(contextHandler);
+        contextHandler.setContextPath("/");
+        contextHandler.setBaseResource(resourceFactory.newResource(docroot));
+        ServletHolder defaultHolder = new ServletHolder("default", DefaultServlet.class);
+        contextHandler.addServlet(defaultHolder, "/");
+
+        HttpServlet exceptionServlet = new HttpServlet()
+        {
+            @Override
+            protected void doGet(HttpServletRequest request, HttpServletResponse response) throws ServletException, IOException
+            {
+                throw new ServletException("This exception was thrown for testing purposes by testErrorPage test. It is not a bug!");
+            }
+        };
+
+        contextHandler.addServlet(exceptionServlet, "/exception-servlet");
+
+        ErrorPageErrorHandler errorPageErrorHandler = new ErrorPageErrorHandler();
+        errorPageErrorHandler.addErrorPage(500, "/500.html");
         contextHandler.setErrorHandler(errorPageErrorHandler);
 
         startServer(contextHandler);
