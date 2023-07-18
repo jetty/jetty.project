@@ -600,7 +600,6 @@ public class Dispatcher implements RequestDispatcher
         }
     }
 
-    // TODO
     private class ErrorRequest extends ParameterRequestWrapper
     {
         private final HttpServletRequest _httpServletRequest;
@@ -620,19 +619,30 @@ public class Dispatcher implements RequestDispatcher
         @Override
         public String getPathInfo()
         {
+            if (_servletPathMapping == null)
+                return super.getPathInfo();
             return _servletPathMapping.getPathInfo();
         }
 
         @Override
         public String getServletPath()
         {
+            if (_servletPathMapping == null)
+                return super.getServletPath();
             return _servletPathMapping.getServletPath();
+        }
+
+        @Override
+        public HttpServletMapping getHttpServletMapping()
+        {
+            if (_named != null)
+                return super.getHttpServletMapping();
+            return _servletPathMapping;
         }
 
         @Override
         public String getQueryString()
         {
-            // TODO
             if (_uri != null)
             {
                 String targetQuery = _uri.getQuery();
@@ -645,26 +655,13 @@ public class Dispatcher implements RequestDispatcher
         @Override
         public String getRequestURI()
         {
-            return _uri == null ? null : _uri.getPath();
+            return _uri == null ? super.getRequestURI() : _uri.getPath();
         }
 
         @Override
-        public Object getAttribute(String name)
+        public StringBuffer getRequestURL()
         {
-            switch (name)
-            {
-                // TODO
-                default:
-                    return super.getAttribute(name);
-            }
-        }
-
-        @Override
-        public Enumeration<String> getAttributeNames()
-        {
-            ArrayList<String> names = new ArrayList<>(Collections.list(super.getAttributeNames()));
-            // TODO
-            return Collections.enumeration(names);
+            return _uri == null ? super.getRequestURL() :  new StringBuffer(HttpURI.build(_uri).query(null).scheme(super.getScheme()).host(super.getServerName()).port(super.getServerPort()).asString());
         }
     }
 
