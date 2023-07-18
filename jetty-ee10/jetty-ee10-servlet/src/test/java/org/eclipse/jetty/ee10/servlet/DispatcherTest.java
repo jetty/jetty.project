@@ -772,7 +772,7 @@ public class DispatcherTest
             \r
             """);
         response = HttpTester.parseResponse(rawResponse);
-        assertThat(response.getContent(), containsString("matchValue=DispatchServlet, pattern=/DispatchServlet, servletName=DispatchServlet, mappingMatch=EXACT"));
+        assertThat(response.getContent(), containsString("matchValue=TestServlet, pattern=/TestServlet, servletName=TestServlet, mappingMatch=EXACT"));
     }
 
     public static class WrappingFilter implements Filter
