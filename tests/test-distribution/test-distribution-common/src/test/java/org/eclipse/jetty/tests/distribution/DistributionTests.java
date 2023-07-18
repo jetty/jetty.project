@@ -17,6 +17,7 @@ import java.io.File;
 import java.io.FileWriter;
 import java.net.URI;
 import java.net.http.WebSocket;
+import java.nio.ByteBuffer;
 import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
 import java.nio.file.Path;
@@ -36,13 +37,18 @@ import org.eclipse.jetty.client.ContentResponse;
 import org.eclipse.jetty.client.HttpClient;
 import org.eclipse.jetty.client.transport.HttpClientTransportDynamic;
 import org.eclipse.jetty.client.transport.HttpClientTransportOverHTTP;
+import org.eclipse.jetty.http.HttpHeader;
 import org.eclipse.jetty.http.HttpScheme;
 import org.eclipse.jetty.http.HttpStatus;
+import org.eclipse.jetty.http.MultiPart;
+import org.eclipse.jetty.http.MultiPartByteRanges;
 import org.eclipse.jetty.http2.client.HTTP2Client;
 import org.eclipse.jetty.http2.client.transport.HttpClientTransportOverHTTP2;
 import org.eclipse.jetty.http3.client.HTTP3Client;
 import org.eclipse.jetty.http3.client.transport.HttpClientTransportOverHTTP3;
 import org.eclipse.jetty.io.ClientConnector;
+import org.eclipse.jetty.io.Content;
+import org.eclipse.jetty.io.content.ByteBufferContentSource;
 import org.eclipse.jetty.tests.hometester.JettyHomeTester;
 import org.eclipse.jetty.toolchain.test.PathMatchers;
 import org.eclipse.jetty.util.BlockingArrayQueue;
@@ -62,6 +68,7 @@ import static org.hamcrest.Matchers.equalTo;
 import static org.hamcrest.Matchers.greaterThan;
 import static org.hamcrest.Matchers.is;
 import static org.hamcrest.Matchers.not;
+import static org.hamcrest.Matchers.startsWith;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertNotEquals;
@@ -1462,6 +1469,62 @@ public class DistributionTests extends AbstractJettyHomeTest
                     .timeout(15, TimeUnit.SECONDS)
                     .send();
                 assertEquals(HttpStatus.NOT_FOUND_404, response.getStatus());
+            }
+        }
+    }
+
+    @ParameterizedTest
+    @ValueSource(strings = {"ee9", "ee10"})
+    public void testRangeRequestMultiPartRangeResponse(String env) throws Exception
+    {
+        Path jettyBase = newTestJettyBaseDirectory();
+        String jettyVersion = System.getProperty("jettyVersion");
+        JettyHomeTester distribution = JettyHomeTester.Builder.newInstance()
+            .jettyVersion(jettyVersion)
+            .jettyBase(jettyBase)
+            .mavenLocalRepository(System.getProperty("mavenRepoPath"))
+            .build();
+
+        String mods = String.join(",",
+            "resources",
+            "http",
+            toEnvironment("deploy", env),
+            toEnvironment("demo-simple", env)
+        );
+
+        try (JettyHomeTester.Run run1 = distribution.start("--add-modules=" + mods))
+        {
+            assertTrue(run1.awaitFor(START_TIMEOUT, TimeUnit.SECONDS));
+            assertEquals(0, run1.getExitValue());
+
+            Path jettyLogging = distribution.getJettyBase().resolve("resources/jetty-logging.properties");
+            String loggingConfig = """
+                org.eclipse.jetty.LEVEL=INFO
+                """;
+            Files.writeString(jettyLogging, loggingConfig, StandardOpenOption.TRUNCATE_EXISTING);
+
+            int httpPort = distribution.freePort();
+            String contextPath = "/" + toEnvironment("demo-simple", env);
+            try (JettyHomeTester.Run run2 = distribution.start(List.of("jetty.http.selectors=1", "jetty.http.port=" + httpPort)))
+            {
+                assertTrue(run2.awaitConsoleLogsFor("Started oejs.Server@", START_TIMEOUT, TimeUnit.SECONDS));
+
+                startHttpClient();
+                ContentResponse response = client.newRequest("localhost", httpPort)
+                    .path(contextPath + "/jetty.png")
+                    .headers(headers -> headers.put(HttpHeader.RANGE, "bytes=110-230,3600-4100"))
+                    .timeout(15, TimeUnit.SECONDS)
+                    .send();
+                assertEquals(HttpStatus.PARTIAL_CONTENT_206, response.getStatus());
+                String contentType = response.getHeaders().get(HttpHeader.CONTENT_TYPE);
+                assertThat(contentType, startsWith("multipart/byteranges"));
+                String boundary = MultiPart.extractBoundary(contentType);
+                Content.Source multiPartContent = new ByteBufferContentSource(ByteBuffer.wrap(response.getContent()));
+                MultiPartByteRanges.Parts parts = new MultiPartByteRanges.Parser(boundary).parse(multiPartContent).get();
+                assertThat(parts.size(), is(2));
+                // Ranges are inclusive, so 110-230 is 121 bytes.
+                assertThat(parts.get(0).getLength(), is(121L));
+                assertThat(parts.get(1).getLength(), is(501L));
             }
         }
     }
