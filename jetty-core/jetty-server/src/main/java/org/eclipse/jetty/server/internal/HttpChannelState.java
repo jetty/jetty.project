@@ -149,22 +149,23 @@ public class HttpChannelState implements HttpChannel, Components
             // applications cannot use request/response/callback anymore.
             _request._httpChannelState = null;
 
-            // Break the links with the upper and lower layers.
-            _request = null;
-            _response = null;
-            _stream = null;
-            _streamSendState = StreamSendState.SENDING;
-
             // Recycle.
             _responseHeaders.reset();
             _handling = null;
             _handled = false;
+            _streamSendState = StreamSendState.SENDING;
             _callbackCompleted = false;
-            _callbackFailure = null;
+            _request = null;
+            _response = null;
+            _oldIdleTimeout = 0;
+            // Break the link between channel and stream.
+            _stream = null;
             _committedContentLength = -1;
             _onContentAvailable = null;
+            _onIdleTimeout = null;
             _failure = null;
             _onFailure = null;
+            _callbackFailure = null;
         }
     }
 
