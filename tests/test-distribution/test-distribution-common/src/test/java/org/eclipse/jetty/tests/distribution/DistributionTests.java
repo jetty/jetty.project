@@ -1512,7 +1512,8 @@ public class DistributionTests extends AbstractJettyHomeTest
                 startHttpClient();
                 ContentResponse response = client.newRequest("localhost", httpPort)
                     .path(contextPath + "/jetty.png")
-                    .headers(headers -> headers.put(HttpHeader.RANGE, "bytes=110-230,3600-4100"))
+                    // Use a range bigger than 4096, which is the default buffer size.
+                    .headers(headers -> headers.put(HttpHeader.RANGE, "bytes=1-100,101-5000"))
                     .timeout(15, TimeUnit.SECONDS)
                     .send();
                 assertEquals(HttpStatus.PARTIAL_CONTENT_206, response.getStatus());
@@ -1522,9 +1523,9 @@ public class DistributionTests extends AbstractJettyHomeTest
                 Content.Source multiPartContent = new ByteBufferContentSource(ByteBuffer.wrap(response.getContent()));
                 MultiPartByteRanges.Parts parts = new MultiPartByteRanges.Parser(boundary).parse(multiPartContent).get();
                 assertThat(parts.size(), is(2));
-                // Ranges are inclusive, so 110-230 is 121 bytes.
-                assertThat(parts.get(0).getLength(), is(121L));
-                assertThat(parts.get(1).getLength(), is(501L));
+                // Ranges are inclusive, so 1-100 is 100 bytes.
+                assertThat(parts.get(0).getLength(), is(100L));
+                assertThat(parts.get(1).getLength(), is(4900L));
             }
         }
     }

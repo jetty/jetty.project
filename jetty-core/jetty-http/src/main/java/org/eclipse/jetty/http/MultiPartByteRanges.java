@@ -139,6 +139,7 @@ public class MultiPartByteRanges
     public static class PathContentSource extends org.eclipse.jetty.io.content.PathContentSource
     {
         private final ByteRange byteRange;
+        private long toRead;
 
         public PathContentSource(Path path, ByteRange byteRange)
         {
@@ -151,6 +152,7 @@ public class MultiPartByteRanges
         {
             SeekableByteChannel channel = super.open();
             channel.position(byteRange.first());
+            toRead = byteRange.getLength();
             return channel;
         }
 
@@ -158,12 +160,12 @@ public class MultiPartByteRanges
         protected int read(SeekableByteChannel channel, ByteBuffer byteBuffer) throws IOException
         {
             int read = super.read(channel, byteBuffer);
-            if (read < 0)
+            if (read <= 0)
                 return read;
 
-            read = (int)Math.min(read, byteRange.getLength());
+            read = (int)Math.min(read, toRead);
+            toRead -= read;
             byteBuffer.position(read);
-
             return read;
         }
 
