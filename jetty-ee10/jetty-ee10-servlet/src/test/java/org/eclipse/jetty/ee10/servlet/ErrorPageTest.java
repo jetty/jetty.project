@@ -1469,8 +1469,7 @@ public class ErrorPageTest
             assertThat(response.get(HttpHeader.DATE), notNullValue());
 
             String responseBody = response.getContent();
-            assertThat(responseBody, Matchers.containsString("ERROR_EXCEPTION: org.eclipse.jetty.ee10.servlet.ErrorPageTest$TestServletException"));
-            assertThat(responseBody, Matchers.containsString("ERROR_EXCEPTION_TYPE: class org.eclipse.jetty.ee10.servlet.ErrorPageTest$TestServletException"));
+            assertThat(responseBody, Matchers.containsString("<h1>This is the 500 HTML</h1>"));
         }
     }
 
