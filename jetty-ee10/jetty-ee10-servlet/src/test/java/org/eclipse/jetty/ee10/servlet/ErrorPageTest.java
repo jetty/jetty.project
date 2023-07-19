@@ -68,6 +68,7 @@ import static org.hamcrest.Matchers.is;
 import static org.hamcrest.Matchers.not;
 import static org.hamcrest.Matchers.notNullValue;
 import static org.junit.jupiter.api.Assertions.assertFalse;
+import static org.junit.jupiter.api.Assertions.assertNull;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
@@ -676,6 +677,51 @@ public class ErrorPageTest
         assertThat(responseBody, Matchers.containsString("ERROR_SERVLET: " + failServlet.getClass().getName()));
         assertThat(responseBody, Matchers.containsString("ERROR_REQUEST_URI: /fail/599"));
     }
+
+    @Test
+    public void testErrorCodeNoDefaultServletNonExistentErrorLocation() throws Exception
+    {
+        ServletContextHandler contextHandler = new ServletContextHandler(ServletContextHandler.NO_SECURITY | ServletContextHandler.NO_SESSIONS);
+        contextHandler.getServletHandler().setEnsureDefaultServlet(false);
+        contextHandler.setContextPath("/");
+
+        HttpServlet failServlet = new HttpServlet()
+        {
+            @Override
+            protected void doGet(HttpServletRequest req, HttpServletResponse response) throws ServletException, IOException
+            {
+                response.sendError(599);
+            }
+        };
+
+        contextHandler.addServlet(failServlet, "/fail/599");
+        contextHandler.addServlet(ErrorDumpServlet.class, "/error/*");
+
+        ErrorPageErrorHandler errorPageErrorHandler = new ErrorPageErrorHandler();
+        errorPageErrorHandler.addErrorPage(599, "/doesnotexist");
+        contextHandler.setErrorHandler(errorPageErrorHandler);
+
+        startServer(contextHandler);
+        assertNull(contextHandler.getServletHandler().getMatchedServlet("/doesnotexist"), "Context should not have a default servlet");
+
+        StringBuilder rawRequest = new StringBuilder();
+        rawRequest.append("GET /fail/599 HTTP/1.1\r\n");
+        rawRequest.append("Host: test\r\n");
+        rawRequest.append("Connection: close\r\n");
+        rawRequest.append("\r\n");
+
+        String rawResponse = _connector.getResponse(rawRequest.toString());
+
+        HttpTester.Response response = HttpTester.parseResponse(rawResponse);
+        assertThat(response.getStatus(), is(599));
+        assertThat(response.get(HttpHeader.DATE), notNullValue());
+
+        String responseBody = response.getContent();
+
+        assertThat(responseBody, Matchers.containsString("<h2>HTTP ERROR 599</h2>"));
+        assertThat(responseBody, Matchers.containsString("<th>SERVLET:</th><td>%s".formatted(failServlet.getClass().getName())));
+    }
+
 
     @Test
     public void testErrorMessage() throws Exception

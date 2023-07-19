@@ -619,25 +619,19 @@ public class Dispatcher implements RequestDispatcher
         @Override
         public String getPathInfo()
         {
-            if (_servletPathMapping == null)
-                return null;
-            return _servletPathMapping.getPathInfo();
+            return Objects.requireNonNull(_servletPathMapping).getPathInfo();
         }
 
         @Override
         public String getServletPath()
         {
-            if (_servletPathMapping == null)
-                return "";
-            return _servletPathMapping.getServletPath();
+            return Objects.requireNonNull(_servletPathMapping).getServletPath();
         }
 
         @Override
         public HttpServletMapping getHttpServletMapping()
         {
-            if (_servletPathMapping == null)
-                return null;
-            return _servletPathMapping;
+            return Objects.requireNonNull(_servletPathMapping);
         }
 
         @Override
