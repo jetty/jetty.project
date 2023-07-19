@@ -678,6 +678,8 @@ public class ErrorPageTest
         assertThat(responseBody, Matchers.containsString("ERROR_SERVLET: " + failServlet.getClass().getName()));
         assertThat(responseBody, Matchers.containsString("ERROR_REQUEST_URI: /fail/599"));
         assertThat(responseBody, Matchers.containsString("getQueryString()=[++++]"));
+        assertThat(responseBody, Matchers.containsString("getParameterMap().size=1"));
+        assertThat(responseBody, Matchers.containsString("getParameterMap()[    ]=[]"));
     }
 
     @Test
