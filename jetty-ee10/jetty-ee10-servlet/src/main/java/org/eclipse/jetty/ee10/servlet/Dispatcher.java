@@ -620,7 +620,7 @@ public class Dispatcher implements RequestDispatcher
         public String getPathInfo()
         {
             if (_servletPathMapping == null)
-                return super.getPathInfo();
+                return null;
             return _servletPathMapping.getPathInfo();
         }
 
@@ -628,7 +628,7 @@ public class Dispatcher implements RequestDispatcher
         public String getServletPath()
         {
             if (_servletPathMapping == null)
-                return super.getServletPath();
+                return "";
             return _servletPathMapping.getServletPath();
         }
 
@@ -636,7 +636,7 @@ public class Dispatcher implements RequestDispatcher
         public HttpServletMapping getHttpServletMapping()
         {
             if (_servletPathMapping == null)
-                return super.getHttpServletMapping();
+                return null;
             return _servletPathMapping;
         }
 
@@ -644,12 +644,8 @@ public class Dispatcher implements RequestDispatcher
         public String getQueryString()
         {
             if (_uri != null)
-            {
-                String targetQuery = _uri.getQuery();
-                if (!StringUtil.isEmpty(targetQuery))
-                    return targetQuery;
-            }
-            return _httpServletRequest.getQueryString();
+                return _uri.getQuery();
+            return null;
         }
 
         @Override
@@ -661,7 +657,16 @@ public class Dispatcher implements RequestDispatcher
         @Override
         public StringBuffer getRequestURL()
         {
-            return _uri == null ? super.getRequestURL() :  new StringBuffer(HttpURI.build(_uri).query(null).scheme(super.getScheme()).host(super.getServerName()).port(super.getServerPort()).asString());
+            if (_uri != null)
+            {
+                return new StringBuffer(HttpURI.build(_uri)
+                    .query(getQueryString())
+                    .scheme(super.getScheme())
+                    .host(super.getServerName())
+                    .port(super.getServerPort())
+                    .asString());
+            }
+            return super.getRequestURL();
         }
     }
 
