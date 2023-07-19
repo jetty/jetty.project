@@ -639,30 +639,24 @@ public class Dispatcher implements RequestDispatcher
         @Override
         public String getQueryString()
         {
-            if (_uri != null)
-                return _uri.getQuery();
-            return null;
+            return Objects.requireNonNull(_uri).getQuery();
         }
 
         @Override
         public String getRequestURI()
         {
-            return _uri == null ? super.getRequestURI() : _uri.getPath();
+            return Objects.requireNonNull(_uri).getPath();
         }
 
         @Override
         public StringBuffer getRequestURL()
         {
-            if (_uri != null)
-            {
-                return new StringBuffer(HttpURI.build(_uri)
-                    .query(getQueryString())
-                    .scheme(super.getScheme())
-                    .host(super.getServerName())
-                    .port(super.getServerPort())
-                    .asString());
-            }
-            return super.getRequestURL();
+            Objects.requireNonNull(_uri);
+            return new StringBuffer(HttpURI.build(_uri)
+                .scheme(super.getScheme())
+                .host(super.getServerName())
+                .port(super.getServerPort())
+                .asString());
         }
     }
 
