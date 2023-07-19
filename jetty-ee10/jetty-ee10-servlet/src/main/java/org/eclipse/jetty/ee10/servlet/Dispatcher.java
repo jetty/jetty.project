@@ -73,8 +73,12 @@ public class Dispatcher implements RequestDispatcher
 
         _servletHandler = _contextHandler.getServletHandler();
         MatchedResource<ServletHandler.MappedServlet> matchedServlet = _servletHandler.getMatchedServlet(decodedPathInContext);
+        if (matchedServlet == null)
+            throw new IllegalArgumentException("No servlet matching: " + decodedPathInContext);
         _mappedServlet = matchedServlet.getResource();
         _servletPathMapping = _mappedServlet.getServletPathMapping(_decodedPathInContext, matchedServlet.getMatchedPath());
+        if (_servletPathMapping == null)
+            throw new IllegalArgumentException("No servlet path mapping: " + _servletPathMapping);
     }
 
     public Dispatcher(ServletContextHandler contextHandler, String name) throws IllegalStateException
@@ -91,7 +95,9 @@ public class Dispatcher implements RequestDispatcher
 
     public void error(ServletRequest request, ServletResponse response) throws ServletException, IOException
     {
-        assert _named == null;
+        assert _named == null : "not allowed to have a named dispatch on error";
+        assert _servletPathMapping != null : "Servlet Path Mapping required";
+        assert _uri != null : "URI is required";
 
         HttpServletRequest httpRequest = (request instanceof HttpServletRequest) ? (HttpServletRequest)request : new ServletRequestHttpWrapper(request);
         HttpServletResponse httpResponse = (response instanceof HttpServletResponse) ? (HttpServletResponse)response : new ServletResponseHttpWrapper(response);
@@ -621,41 +627,40 @@ public class Dispatcher implements RequestDispatcher
         @Override
         public String getPathInfo()
         {
-            return Objects.requireNonNull(_servletPathMapping).getPathInfo();
+            return _servletPathMapping.getPathInfo();
         }
 
         @Override
         public String getServletPath()
         {
-            return Objects.requireNonNull(_servletPathMapping).getServletPath();
+            return _servletPathMapping.getServletPath();
         }
 
         @Override
         public HttpServletMapping getHttpServletMapping()
         {
-            return Objects.requireNonNull(_servletPathMapping);
+            return _servletPathMapping;
         }
 
         @Override
         public String getQueryString()
         {
-            return Objects.requireNonNull(_uri).getQuery();
+            return _uri.getQuery();
         }
 
         @Override
         public String getRequestURI()
         {
-            return Objects.requireNonNull(_uri).getPath();
+            return _uri.getPath();
         }
 
         @Override
         public StringBuffer getRequestURL()
         {
-            Objects.requireNonNull(_uri);
             return new StringBuffer(HttpURI.build(_uri)
-                .scheme(super.getScheme())
-                .host(super.getServerName())
-                .port(super.getServerPort())
+                .scheme(getScheme())
+                .host(getServerName())
+                .port(getServerPort())
                 .asString());
         }
     }
