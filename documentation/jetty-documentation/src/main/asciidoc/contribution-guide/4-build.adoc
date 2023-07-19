@@ -1,0 +1,121 @@
+//
+// ========================================================================
+// Copyright (c) 1995 Mort Bay Consulting Pty Ltd and others.
+//
+// This program and the accompanying materials are made available under the
+// terms of the Eclipse Public License v. 2.0 which is available at
+// https://www.eclipse.org/legal/epl-2.0, or the Apache License, Version 2.0
+// which is available at https://www.apache.org/licenses/LICENSE-2.0.
+//
+// SPDX-License-Identifier: EPL-2.0 OR Apache-2.0
+// ========================================================================
+//
+
+[[cg-building-jetty]]
+== Building Jetty
+
+Jetty uses http://maven.apache.org/[Apache Maven] as its build tool.
+To successfully build the project, you will also need a recent version of the Java Development Kit (JDK).
+
+[[cg-maven-jdk-requirements]]
+=== Maven and JDK requirements
+
+Here are the minimum Maven and JDK version build requirements for each of the actively maintained branches of Jetty.
+
+.Build versioning requirements by branch
+[cols="4"]
+|===
+| Branch | Maven Version | Minimum JDK | Recommended JDK
+
+| jetty-10.0.x | Maven 3.8.6+  | OpenJDK 11  | OpenJDK 17 (for optional virtual threads and HTTP/3 support)
+| jetty-11.0.x | Maven 3.8.6+  | OpenJDK 11  | OpenJDK 17 (for optional virtual threads and HTTP/3 support)
+| jetty-12.0.x | Maven 3.8.6+  | OpenJDK 17  | OpenJDK 17
+|===
+
+[[cg-fast-build]]
+=== Running a fast build
+
+To get started with Jetty as quickly as possible, navigate to your local copy of the Jetty repo and run `maven -Pfast clean install`.
+
+[source, shell]
+----
+$ git clone https://github.com/eclipse/jetty.project.git
+$ cd jetty.project
+$ mvn -Pfast clean install
+----
+
+The `-Pfast` flag tells Maven to bypass running tests and other checks.
+
+[[cg-full-build]]
+=== Running a full build
+
+To build Jetty and automatically run all tests -- which can take quite some time -- run `mvn install` without any flags:
+
+[source, shell]
+----
+$ git clone https://github.com/eclipse/jetty.project.git
+$ cd jetty.project
+$ mvn install
+----
+
+The full Jetty build runs hundreds of test cases, many of which spin up embedded instances of Jetty itself.
+The build also runs stress tests that may require you (depending on your hardware or operating system) to set you file descriptor limit to a value greater than 2048.
+You can view or set your file descriptor limit by running `ulimit -n [new_value]`.
+
+[TIP]
+.Flagging flaky tests
+====
+Not all test cases are as timing independent as they should be, which can result in intermittent test failures.
+You can help us track these flaky tests by opening an https://github.com/eclipse/jetty.project/issues[issue] when you come across one.
+====
+
+[[cg-parallel-execution]]
+=== Executing tests in parallel
+
+Jetty uses https://junit.org/junit5/docs/current/user-guide/#writing-tests-parallel-execution[Junit5's parallel execution] to run test cases in parallel.
+This is configurable with the following command line flags.
+
+-Djunit.jupiter.execution.parallel.enabled:: Set to `false` to disable parallel execution of tests, like so:
+
+    mvn install -Djunit.jupiter.execution.parallel.enabled=false
+
+[NOTE]
+====
+Certain tests cannot be run in parallel because they access or modify  `static` fields, and are tagged in the codebase with this annotation:
+
+[source, java]
+----
+@Isolated("Access static field of Configurations")
+----
+
+Maven will run these tests in isolation even when parallel execution is explicitly enabled.
+====
+
+-Djunit.jupiter.execution.parallel.config.fixed.parallelism:: Configures the number of tests to be executed in parallel.
+
+    mvn install -Djunit.jupiter.execution.parallel.config.fixed.parallelism=2
+
+// TODO: review this section
+[[cg-option-build-tools]]
+=== Optional build tools
+
+* https://graphviz.org/[Graphviz]: used by Asciidoctor in the `jetty-documentation` module to produce various graphs. See <<cg-documentation>> for more information.
+* https://www.docker.com/[Docker]: used to run some integration tests for testing third party integrations.
+
+// TODO: review this section
+[[cg-build-artifacts]]
+=== Build artifacts
+
+Once the build is complete, you can find the built Jetty Maven artifacts in your Maven local repository, along with the following locations of note:
+
+[cols="3"]
+|===
+| Branch(es)     | Location | Description
+
+| all            | `jetty-home/target/jetty-home-<ver>.tar.gz`  | The Jetty Home distribution
+| `jetty-10.0.x` | `jetty-runner/target/jetty-runner-<ver>.jar` | The Jetty Runner distribution
+| `jetty-11.0.x` | `jetty-runner/target/jetty-runner-<ver>.jar` | The Jetty Runner distribution
+| `jetty-12.0.x` | `jetty-ee10/jetty-ee10-runner/target/jetty-ee10-runner-<ver>.jar` | The Jetty Runner distribution for EE10/Servlet 6 (`jakarta.servlet`) webapps
+| `jetty-12.0.x` | `jetty-ee9/jetty-ee9-runner/target/jetty-ee9-runner-<ver>.jar`    | The Jetty Runner distribution for EE9/Servlet 5 (`jakarta.servlet`) webapps
+| `jetty-12.0.x` | `jetty-ee8/jetty-ee8-runner/target/jetty-ee8-runner-<ver>.jar`    | The Jetty Runner distribution for EE8/Servlet 4 (`javax.servlet`) webapps
+|===

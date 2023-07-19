@@ -11,6 +11,7 @@
 // ========================================================================
 //
 
+[[pg-intro]]
 == Eclipse Jetty Programming Guide
 
 The Eclipse Jetty Programming Guide targets developers who want to use the Jetty libraries in their applications.
