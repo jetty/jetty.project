@@ -11,12 +11,12 @@
 // ========================================================================
 //
 
+include::../config.adoc[]
 :doctitle: link:https://eclipse.org/jetty[Eclipse Jetty]: Programming Guide
-:toc-title: Jetty Programming Guide
+:toc-title: Programming Guide
 :idprefix: pg-
 :docinfo: private-head
 
-include::../config.adoc[]
 include::.asciidoctorconfig[]
 include::introduction.adoc[]
 include::client/client.adoc[]

@@ -11,12 +11,12 @@
 // ========================================================================
 //
 
-:doctitle: link:https://eclipse.org/jetty[Eclipse Jetty]: Operations Guide
+include::../config.adoc[]
+:doctitle: link:https://eclipse.dev/jetty[Eclipse Jetty]: Operations Guide
 :toc-title: Operations Guide
 :idprefix: og-
 :docinfo: private-head
 
-include::../config.adoc[]
 include::.asciidoctorconfig[]
 include::introduction.adoc[]
 include::begin/chapter.adoc[]
