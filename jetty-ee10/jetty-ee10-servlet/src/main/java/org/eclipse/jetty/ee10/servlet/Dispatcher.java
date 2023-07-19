@@ -91,6 +91,8 @@ public class Dispatcher implements RequestDispatcher
 
     public void error(ServletRequest request, ServletResponse response) throws ServletException, IOException
     {
+        assert _named == null;
+
         HttpServletRequest httpRequest = (request instanceof HttpServletRequest) ? (HttpServletRequest)request : new ServletRequestHttpWrapper(request);
         HttpServletResponse httpResponse = (response instanceof HttpServletResponse) ? (HttpServletResponse)response : new ServletResponseHttpWrapper(response);
 
