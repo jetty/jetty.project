@@ -645,7 +645,13 @@ public class Dispatcher implements RequestDispatcher
         @Override
         public String getQueryString()
         {
-            return _uri.getQuery();
+            if (_uri != null)
+            {
+                String targetQuery = _uri.getQuery();
+                if (StringUtil.isNotBlank(targetQuery))
+                    return targetQuery;
+            }
+            return _httpServletRequest.getQueryString();
         }
 
         @Override

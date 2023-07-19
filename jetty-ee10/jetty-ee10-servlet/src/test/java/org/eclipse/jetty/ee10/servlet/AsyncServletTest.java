@@ -203,7 +203,7 @@ public class AsyncServletTest
             assertThat(_history, contains(
                 "REQUEST /ctx/noasync/info?start=1000",
                 "initial",
-                "ERROR /ctx/error/custom",
+                "ERROR /ctx/error/custom?start=1000",
                 "wrapped REQ",
                 "!initial"
             ));
@@ -224,7 +224,7 @@ public class AsyncServletTest
             "initial",
             "start",
             "onTimeout",
-            "ERROR /ctx/error/custom",
+            "ERROR /ctx/error/custom?start=1000",
             "wrapped REQ",
             "!initial",
             "onComplete"));
@@ -263,7 +263,7 @@ public class AsyncServletTest
             "start",
             "onTimeout",
             "error",
-            "ERROR /ctx/error/custom",
+            "ERROR /ctx/error/custom?start=200&timeout=error",
             "wrapped REQ",
             "!initial",
             "onComplete"));
@@ -331,7 +331,7 @@ public class AsyncServletTest
             "initial",
             "start",
             "onError",
-            "ERROR /ctx/error/custom",
+            "ERROR /ctx/error/custom?start=1000&throw=1",
             "wrapped REQ",
             "!initial",
             "onComplete"));
@@ -430,7 +430,7 @@ public class AsyncServletTest
             "onStartAsync",
             "start",
             "onTimeout",
-            "ERROR /ctx/error/custom",
+            "ERROR /ctx/error/custom?start=1000&dispatch=10&start2=10",
             "wrapped REQ",
             "!initial",
             "onComplete"));
@@ -447,7 +447,7 @@ public class AsyncServletTest
             "initial",
             "start",
             "onTimeout",
-            "ERROR /ctx/error/custom",
+            "ERROR /ctx/error/custom?start=10&start2=1000&dispatch2=10",
             "wrapped REQ",
             "!initial",
             "onStartAsync",
@@ -470,7 +470,7 @@ public class AsyncServletTest
             "initial",
             "start",
             "onTimeout",
-            "ERROR /ctx/error/custom",
+            "ERROR /ctx/error/custom?start=10&start2=1000&complete2=10",
             "wrapped REQ",
             "!initial",
             "onStartAsync",
@@ -492,13 +492,13 @@ public class AsyncServletTest
             "initial",
             "start",
             "onTimeout",
-            "ERROR /ctx/path/error",
+            "ERROR /ctx/path/error?start=10&start2=10",
             "wrapped REQ",
             "!initial",
             "onStartAsync",
             "start",
             "onTimeout",
-            "ERROR /ctx/path/error",
+            "ERROR /ctx/path/error?start=10&start2=10",
             "wrapped REQ",
             "!initial",
             "onComplete")); // Error Page Loop!
