@@ -73,8 +73,12 @@ public class Dispatcher implements RequestDispatcher
 
         _servletHandler = _contextHandler.getServletHandler();
         MatchedResource<ServletHandler.MappedServlet> matchedServlet = _servletHandler.getMatchedServlet(decodedPathInContext);
+        if (matchedServlet == null)
+            throw new IllegalArgumentException("No servlet matching: " + decodedPathInContext);
         _mappedServlet = matchedServlet.getResource();
         _servletPathMapping = _mappedServlet.getServletPathMapping(_decodedPathInContext, matchedServlet.getMatchedPath());
+        if (_servletPathMapping == null)
+            throw new IllegalArgumentException("No servlet path mapping: " + _servletPathMapping);
     }
 
     public Dispatcher(ServletContextHandler contextHandler, String name) throws IllegalStateException
@@ -91,6 +95,10 @@ public class Dispatcher implements RequestDispatcher
 
     public void error(ServletRequest request, ServletResponse response) throws ServletException, IOException
     {
+        assert _named == null : "not allowed to have a named dispatch on error";
+        assert _servletPathMapping != null : "Servlet Path Mapping required";
+        assert _uri != null : "URI is required";
+
         HttpServletRequest httpRequest = (request instanceof HttpServletRequest) ? (HttpServletRequest)request : new ServletRequestHttpWrapper(request);
         HttpServletResponse httpResponse = (response instanceof HttpServletResponse) ? (HttpServletResponse)response : new ServletResponseHttpWrapper(response);
 
@@ -600,7 +608,6 @@ public class Dispatcher implements RequestDispatcher
         }
     }
 
-    // TODO
     private class ErrorRequest extends ParameterRequestWrapper
     {
         private final HttpServletRequest _httpServletRequest;
@@ -630,41 +637,31 @@ public class Dispatcher implements RequestDispatcher
         }
 
         @Override
+        public HttpServletMapping getHttpServletMapping()
+        {
+            return _servletPathMapping;
+        }
+
+        @Override
         public String getQueryString()
         {
-            // TODO
-            if (_uri != null)
-            {
-                String targetQuery = _uri.getQuery();
-                if (!StringUtil.isEmpty(targetQuery))
-                    return targetQuery;
-            }
-            return _httpServletRequest.getQueryString();
+            return _uri.getQuery();
         }
 
         @Override
         public String getRequestURI()
         {
-            return _uri == null ? null : _uri.getPath();
+            return _uri.getPath();
         }
 
         @Override
-        public Object getAttribute(String name)
+        public StringBuffer getRequestURL()
         {
-            switch (name)
-            {
-                // TODO
-                default:
-                    return super.getAttribute(name);
-            }
-        }
-
-        @Override
-        public Enumeration<String> getAttributeNames()
-        {
-            ArrayList<String> names = new ArrayList<>(Collections.list(super.getAttributeNames()));
-            // TODO
-            return Collections.enumeration(names);
+            return new StringBuffer(HttpURI.build(_uri)
+                .scheme(getScheme())
+                .host(getServerName())
+                .port(getServerPort())
+                .asString());
         }
     }
 
