@@ -11,7 +11,7 @@
 // ========================================================================
 //
 
-package org.eclipse.jetty.server.internal;
+package org.eclipse.jetty.server;
 
 import java.io.IOException;
 import java.net.SocketAddress;
@@ -57,15 +57,7 @@ import org.eclipse.jetty.io.RetainableByteBuffer;
 import org.eclipse.jetty.io.RuntimeIOException;
 import org.eclipse.jetty.io.WriteFlusher;
 import org.eclipse.jetty.io.ssl.SslConnection;
-import org.eclipse.jetty.server.ConnectionFactory;
-import org.eclipse.jetty.server.ConnectionMetaData;
-import org.eclipse.jetty.server.Connector;
-import org.eclipse.jetty.server.HttpChannel;
-import org.eclipse.jetty.server.HttpConfiguration;
-import org.eclipse.jetty.server.HttpStream;
-import org.eclipse.jetty.server.Request;
-import org.eclipse.jetty.server.Server;
-import org.eclipse.jetty.server.TunnelSupport;
+import org.eclipse.jetty.server.internal.HttpChannelState;
 import org.eclipse.jetty.util.BufferUtil;
 import org.eclipse.jetty.util.Callback;
 import org.eclipse.jetty.util.HostPort;
@@ -1096,18 +1088,17 @@ public class HttpConnection extends AbstractConnection implements Runnable, Writ
             HttpStreamOverHTTP1 stream = _stream.get();
             if (stream != null)
             {
-                BadMessageException bad = new BadMessageException("Early EOF");
-
+                EofException eof = new EofException("Early EOF");
                 if (Content.Chunk.isFailure(stream._chunk))
-                    stream._chunk.getFailure().addSuppressed(bad);
+                    stream._chunk.getFailure().addSuppressed(eof);
                 else
                 {
                     if (stream._chunk != null)
                         stream._chunk.release();
-                    stream._chunk = Content.Chunk.from(bad);
+                    stream._chunk = Content.Chunk.from(eof);
                 }
 
-                Runnable todo = _httpChannel.onFailure(bad);
+                Runnable todo = _httpChannel.onFailure(eof);
                 if (todo != null)
                     getServer().getThreadPool().execute(todo);
             }

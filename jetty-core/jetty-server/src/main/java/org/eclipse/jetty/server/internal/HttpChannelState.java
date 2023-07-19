@@ -51,6 +51,7 @@ import org.eclipse.jetty.server.Context;
 import org.eclipse.jetty.server.Handler;
 import org.eclipse.jetty.server.HttpChannel;
 import org.eclipse.jetty.server.HttpConfiguration;
+import org.eclipse.jetty.server.HttpConnection;
 import org.eclipse.jetty.server.HttpStream;
 import org.eclipse.jetty.server.Request;
 import org.eclipse.jetty.server.RequestLog;
@@ -1272,7 +1273,11 @@ public class HttpChannelState implements HttpChannel, Components
                 httpChannel.lockedStreamSendCompleted(true);
             }
             if (callback != null)
-                httpChannel._serializedInvoker.run(callback::succeeded);
+            {
+                // We cannot use the SerializedInvoker here because this may be called from a blocking call within
+                // the application which is running inside the SerializedInvoker, then it is a deadlock.
+                callback.succeeded();
+            }
         }
 
         /**

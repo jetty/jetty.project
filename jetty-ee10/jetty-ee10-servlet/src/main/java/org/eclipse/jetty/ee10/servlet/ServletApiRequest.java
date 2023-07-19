@@ -44,6 +44,7 @@ import jakarta.servlet.ServletConnection;
 import jakarta.servlet.ServletContext;
 import jakarta.servlet.ServletException;
 import jakarta.servlet.ServletInputStream;
+import jakarta.servlet.ServletOutputStream;
 import jakarta.servlet.ServletRequest;
 import jakarta.servlet.ServletRequestAttributeEvent;
 import jakarta.servlet.ServletRequestAttributeListener;
@@ -56,6 +57,7 @@ import jakarta.servlet.http.HttpSession;
 import jakarta.servlet.http.HttpUpgradeHandler;
 import jakarta.servlet.http.Part;
 import jakarta.servlet.http.PushBuilder;
+import jakarta.servlet.http.WebConnection;
 import org.eclipse.jetty.ee10.servlet.ServletContextHandler.ServletRequestInfo;
 import org.eclipse.jetty.http.BadMessageException;
 import org.eclipse.jetty.http.CookieCache;
@@ -70,12 +72,14 @@ import org.eclipse.jetty.http.HttpStatus;
 import org.eclipse.jetty.http.HttpURI;
 import org.eclipse.jetty.http.HttpVersion;
 import org.eclipse.jetty.http.MimeTypes;
+import org.eclipse.jetty.io.Connection;
 import org.eclipse.jetty.io.QuietException;
 import org.eclipse.jetty.io.RuntimeIOException;
 import org.eclipse.jetty.security.AuthenticationState;
 import org.eclipse.jetty.security.UserIdentity;
 import org.eclipse.jetty.server.ConnectionMetaData;
 import org.eclipse.jetty.server.FormFields;
+import org.eclipse.jetty.server.HttpConnection;
 import org.eclipse.jetty.server.HttpCookieUtils;
 import org.eclipse.jetty.server.Request;
 import org.eclipse.jetty.server.Response;
@@ -591,8 +595,94 @@ public class ServletApiRequest implements HttpServletRequest
     @Override
     public <T extends HttpUpgradeHandler> T upgrade(Class<T> handlerClass) throws IOException, ServletException
     {
-        // Not implemented. Throw ServletException as per spec.
-        throw new ServletException("Not implemented");
+        Response response = _servletContextRequest.getServletContextResponse();
+        if (response.getStatus() != HttpStatus.SWITCHING_PROTOCOLS_101)
+            throw new IllegalStateException("Response status should be 101");
+        if (response.getHeaders().get("Upgrade") == null)
+            throw new IllegalStateException("Missing Upgrade header");
+        if (!"Upgrade".equalsIgnoreCase(response.getHeaders().get("Connection")))
+            throw new IllegalStateException("Invalid Connection header");
+        if (response.isCommitted())
+            throw new IllegalStateException("Cannot upgrade committed response");
+        if (_servletChannel.getConnectionMetaData().getHttpVersion() != HttpVersion.HTTP_1_1)
+            throw new IllegalStateException("Only requests over HTTP/1.1 can be upgraded");
+
+        ServletOutputStream outputStream = _servletContextRequest.getHttpOutput();
+        ServletInputStream inputStream = _servletContextRequest.getHttpInput();
+
+        T upgradeHandler;
+        try
+        {
+            upgradeHandler = handlerClass.getDeclaredConstructor().newInstance();
+        }
+        catch (Exception e)
+        {
+            throw new ServletException("Unable to instantiate handler class", e);
+        }
+
+        HttpConnection httpConnection = (HttpConnection)_servletContextRequest.getConnectionMetaData().getConnection();
+        httpConnection.getParser().servletUpgrade();
+        AsyncContext asyncContext = forceStartAsync(); // force the servlet in async mode
+
+        outputStream.flush(); // commit the 101 response
+        httpConnection.getGenerator().servletUpgrade(); // tell the generator it can send data as-is
+        httpConnection.addEventListener(new Connection.Listener()
+        {
+            @Override
+            public void onClosed(Connection connection)
+            {
+                try
+                {
+                    asyncContext.complete();
+                }
+                catch (Exception e)
+                {
+                    LOG.warn("error during upgrade AsyncContext complete", e);
+                }
+                try
+                {
+                    upgradeHandler.destroy();
+                }
+                catch (Exception e)
+                {
+                    LOG.warn("error during upgrade HttpUpgradeHandler destroy", e);
+                }
+            }
+
+            @Override
+            public void onOpened(Connection connection)
+            {
+            }
+        });
+
+        upgradeHandler.init(new WebConnection()
+        {
+            @Override
+            public void close() throws Exception
+            {
+                try
+                {
+                    inputStream.close();
+                }
+                finally
+                {
+                    outputStream.close();
+                }
+            }
+
+            @Override
+            public ServletInputStream getInputStream()
+            {
+                return inputStream;
+            }
+
+            @Override
+            public ServletOutputStream getOutputStream()
+            {
+                return outputStream;
+            }
+        });
+        return upgradeHandler;
     }
 
     @Override
@@ -1207,6 +1297,11 @@ public class ServletApiRequest implements HttpServletRequest
     {
         if (!isAsyncSupported())
             throw new IllegalStateException("Async Not Supported");
+        return forceStartAsync();
+    }
+
+    private AsyncContext forceStartAsync()
+    {
         ServletRequestState state = getServletRequestInfo().getState();
         if (_async == null)
             _async = new AsyncContextState(state);
