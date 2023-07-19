@@ -19,6 +19,7 @@ import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.util.EnumSet;
+import java.util.Map;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ConcurrentMap;
 import java.util.concurrent.CountDownLatch;
@@ -633,6 +634,53 @@ public class ErrorPageTest
     }
 
     @Test
+    public void testErrorCodeWithWhiteSpaceOnlyQuery() throws Exception
+    {
+        ServletContextHandler contextHandler = new ServletContextHandler(ServletContextHandler.NO_SECURITY | ServletContextHandler.NO_SESSIONS);
+        contextHandler.setContextPath("/");
+
+        HttpServlet failServlet = new HttpServlet()
+        {
+            @Override
+            protected void doGet(HttpServletRequest req, HttpServletResponse response) throws ServletException, IOException
+            {
+                response.sendError(599);
+            }
+        };
+
+        contextHandler.addServlet(failServlet, "/fail/599");
+        contextHandler.addServlet(ErrorDumpServlet.class, "/error/*");
+
+        ErrorPageErrorHandler errorPageErrorHandler = new ErrorPageErrorHandler();
+        errorPageErrorHandler.addErrorPage(599, "/error/599");
+        contextHandler.setErrorHandler(errorPageErrorHandler);
+
+        startServer(contextHandler);
+
+        StringBuilder rawRequest = new StringBuilder();
+        rawRequest.append("GET /fail/599?++++ HTTP/1.1\r\n");
+        rawRequest.append("Host: test\r\n");
+        rawRequest.append("Connection: close\r\n");
+        rawRequest.append("\r\n");
+
+        String rawResponse = _connector.getResponse(rawRequest.toString());
+
+        HttpTester.Response response = HttpTester.parseResponse(rawResponse);
+        assertThat(response.getStatus(), is(599));
+        assertThat(response.get(HttpHeader.DATE), notNullValue());
+
+        String responseBody = response.getContent();
+
+        assertThat(responseBody, Matchers.containsString("ERROR_PAGE: /599"));
+        assertThat(responseBody, Matchers.containsString("ERROR_CODE: 599"));
+        assertThat(responseBody, Matchers.containsString("ERROR_EXCEPTION: null"));
+        assertThat(responseBody, Matchers.containsString("ERROR_EXCEPTION_TYPE: null"));
+        assertThat(responseBody, Matchers.containsString("ERROR_SERVLET: " + failServlet.getClass().getName()));
+        assertThat(responseBody, Matchers.containsString("ERROR_REQUEST_URI: /fail/599"));
+        assertThat(responseBody, Matchers.containsString("getQueryString()=[++++]"));
+    }
+
+    @Test
     public void testErrorCode() throws Exception
     {
         ServletContextHandler contextHandler = new ServletContextHandler(ServletContextHandler.NO_SECURITY | ServletContextHandler.NO_SESSIONS);
@@ -1015,7 +1063,8 @@ public class ErrorPageTest
             assertThat(responseBody, Matchers.containsString("ERROR_EXCEPTION_TYPE: class org.eclipse.jetty.http.BadMessageException"));
             assertThat(responseBody, Matchers.containsString("ERROR_SERVLET: " + appServlet.getClass().getName()));
             assertThat(responseBody, Matchers.containsString("ERROR_REQUEST_URI: /app"));
-            assertThat(responseBody, Matchers.containsString("getParameterMap()= {}"));
+            assertThat(responseBody, Matchers.containsString("getQueryString()=[baa=%88%A4]"));
+            assertThat(responseBody, Matchers.containsString("getParameterMap().size=0"));
         }
     }
 
@@ -1535,7 +1584,35 @@ public class ErrorPageTest
             writer.println("ERROR_EXCEPTION_TYPE: " + request.getAttribute(Dispatcher.ERROR_EXCEPTION_TYPE));
             writer.println("ERROR_SERVLET: " + request.getAttribute(Dispatcher.ERROR_SERVLET_NAME));
             writer.println("ERROR_REQUEST_URI: " + request.getAttribute(Dispatcher.ERROR_REQUEST_URI));
-            writer.println("getParameterMap()= " + request.getParameterMap());
+
+            writer.printf("getRequestURI()=%s%n", valueOf(request.getRequestURI()));
+            writer.printf("getRequestURL()=%s%n", valueOf(request.getRequestURL()));
+            writer.printf("getQueryString()=%s%n", valueOf(request.getQueryString()));
+            Map<String, String[]> params = request.getParameterMap();
+            writer.printf("getParameterMap().size=%d%n", params.size());
+            for (Map.Entry<String, String[]> entry : params.entrySet())
+            {
+                String value = null;
+                if (entry.getValue() != null)
+                {
+                    value = String.join(", ", entry.getValue());
+                }
+                writer.printf("getParameterMap()[%s]=%s%n", entry.getKey(), valueOf(value));
+            }
+        }
+
+        private String valueOf(Object obj)
+        {
+            if (obj == null)
+                return "null";
+            return valueOf(obj.toString());
+        }
+
+        private String valueOf(String str)
+        {
+            if (str == null)
+                return "null";
+            return String.format("[%s]", str);
         }
     }
 
