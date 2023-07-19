@@ -722,7 +722,6 @@ public class ErrorPageTest
         assertThat(responseBody, Matchers.containsString("<th>SERVLET:</th><td>%s".formatted(failServlet.getClass().getName())));
     }
 
-
     @Test
     public void testErrorMessage() throws Exception
     {
