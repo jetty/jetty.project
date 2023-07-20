@@ -1274,9 +1274,10 @@ public class HttpChannelState implements HttpChannel, Components
             }
             if (callback != null)
             {
-                // We cannot use the SerializedInvoker here because this may be called from a blocking call within
-                // the application which is running inside the SerializedInvoker, then it is a deadlock.
-                callback.succeeded();
+                // Do not use SerializedInvoker here because application code running within
+                // SerializedInvoker could issue blocking write() or close() that would deadlock.
+                // We must execute in case of recursive write within the callback.
+                getRequest().getContext().execute(callback::succeeded);
             }
         }
 
@@ -1305,7 +1306,12 @@ public class HttpChannelState implements HttpChannel, Components
                 httpChannel.lockedStreamSendCompleted(false);
             }
             if (callback != null)
-                httpChannel._serializedInvoker.run(() -> callback.failed(x));
+            {
+                // Do not use SerializedInvoker here because application code running within
+                // SerializedInvoker could issue blocking write() or close() that would deadlock.
+                // We must execute in case of recursive write within the callback.
+                getRequest().getContext().execute(() -> callback.failed(x));
+            }
         }
 
         @Override

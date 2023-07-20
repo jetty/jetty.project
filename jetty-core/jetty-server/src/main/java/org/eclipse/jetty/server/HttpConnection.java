@@ -1088,7 +1088,7 @@ public class HttpConnection extends AbstractConnection implements Runnable, Writ
             HttpStreamOverHTTP1 stream = _stream.get();
             if (stream != null)
             {
-                EofException eof = new EofException("Early EOF");
+                BadMessageException eof = new BadMessageException("Early EOF");
                 if (Content.Chunk.isFailure(stream._chunk))
                     stream._chunk.getFailure().addSuppressed(eof);
                 else
