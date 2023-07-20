@@ -634,6 +634,57 @@ public class ErrorPageTest
     }
 
     @Test
+    public void testErrorCodeWithParameter() throws Exception
+    {
+        ServletContextHandler contextHandler = new ServletContextHandler(ServletContextHandler.NO_SECURITY | ServletContextHandler.NO_SESSIONS);
+        contextHandler.setContextPath("/");
+
+        HttpServlet failServlet = new HttpServlet()
+        {
+            @Override
+            protected void doGet(HttpServletRequest req, HttpServletResponse response) throws ServletException, IOException
+            {
+                response.sendError(599);
+            }
+        };
+
+        contextHandler.addServlet(failServlet, "/fail/599");
+        contextHandler.addServlet(ErrorDumpServlet.class, "/error/*");
+
+        ErrorPageErrorHandler errorPageErrorHandler = new ErrorPageErrorHandler();
+        errorPageErrorHandler.addErrorPage(599, "/error/599?code=param");
+        contextHandler.setErrorHandler(errorPageErrorHandler);
+
+        startServer(contextHandler);
+
+        StringBuilder rawRequest = new StringBuilder();
+        rawRequest.append("GET /fail/599?value=zed HTTP/1.1\r\n");
+        rawRequest.append("Host: test\r\n");
+        rawRequest.append("Connection: close\r\n");
+        rawRequest.append("\r\n");
+
+        String rawResponse = _connector.getResponse(rawRequest.toString());
+
+        HttpTester.Response response = HttpTester.parseResponse(rawResponse);
+        assertThat(response.getStatus(), is(599));
+        assertThat(response.get(HttpHeader.DATE), notNullValue());
+
+        String responseBody = response.getContent();
+
+        assertThat(responseBody, Matchers.containsString("ERROR_PAGE: /599"));
+        assertThat(responseBody, Matchers.containsString("ERROR_CODE: 599"));
+        assertThat(responseBody, Matchers.containsString("ERROR_EXCEPTION: null"));
+        assertThat(responseBody, Matchers.containsString("ERROR_EXCEPTION_TYPE: null"));
+        assertThat(responseBody, Matchers.containsString("ERROR_SERVLET: " + failServlet.getClass().getName()));
+        assertThat(responseBody, Matchers.containsString("ERROR_REQUEST_URI: /fail/599"));
+        assertThat(responseBody, Matchers.containsString("getQueryString()=[code=param]"));
+        assertThat(responseBody, Matchers.containsString("getRequestURL()=[http://test:80/error/599?code=param]"));
+        assertThat(responseBody, Matchers.containsString("getParameterMap().size=2"));
+        assertThat(responseBody, Matchers.containsString("getParameterMap()[code]=[param]"));
+        assertThat(responseBody, Matchers.containsString("getParameterMap()[value]=[zed]"));
+    }
+
+    @Test
     public void testErrorCodeWithWhiteSpaceOnlyQuery() throws Exception
     {
         ServletContextHandler contextHandler = new ServletContextHandler(ServletContextHandler.NO_SECURITY | ServletContextHandler.NO_SESSIONS);
