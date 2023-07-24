@@ -11,8 +11,8 @@
     <div class="topnav">
       <a class="menu" href="http://localhost:8080/">Demo Home</a>
       <a class="menu" href="https://github.com/eclipse/jetty.project/tree/jetty-10.0.x/demos/demo-jsp-webapp">Source</a>
-      <a class="menu" href="https://www.eclipse.org/jetty/">Jetty Project Home</a>
-      <a class="menu" href="https://www.eclipse.org/jetty/documentation/current/">Documentation</a>
+      <a class="menu" href="https://eclipse.dev/jetty/">Jetty Project Home</a>
+      <a class="menu" href="https://eclipse.dev/jetty/documentation/">Documentation</a>
       <a class="menu" href="https://webtide.com">Commercial Support</a>
     </div>
 
@@ -22,7 +22,7 @@
       </center>
       <h1>Eclipse Jetty JSP Demo Webapp</h1>
      <p>
-       This is a demo webapp for the <a href="http://www.eclipse.org/jetty/">Eclipse Jetty HTTP Server and Servlet Container</a>. It was added into your <code>$JETTY_BASE/webapps</code> directory.
+       This is a demo webapp for the <a href="https://eclipse.dev/jetty/">Eclipse Jetty HTTP Server and Servlet Container</a>. It was added into your <code>$JETTY_BASE/webapps</code> directory.
      </p>
 
      <h2>JSP Examples on <%= DateTimeFormatter.ofPattern("d MMMM yyyy").format(LocalDate.now()) %></h2>

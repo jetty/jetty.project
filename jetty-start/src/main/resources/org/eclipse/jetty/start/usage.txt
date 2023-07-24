@@ -60,12 +60,13 @@ Report Commands:
 
   --dry-run
                    Prints the command line that start.jar generates,
-                   then exits.
+                   in a format usable by a POSIX compliant shell, then exits.
                    This may be used to generate command lines into scripts:
                      $ java -jar start.jar --dry-run > jetty.sh
 
   --dry-run=<part>(,<part>)*
-                   Prints specific parts of the command line. The parts are:
+                   Prints specific parts of the command line in a format usable by
+                   a POSIX compliant shell. The parts are:
                      o  "java" - the JVM to run
                      o  "opts" - the JVM options (e.g. -D, -X and -XX flags)
                      o  "path" - the JVM class-path and/or the JPMS module-path

@@ -41,7 +41,7 @@ Documentation
 
 Project documentation is available on the Jetty Eclipse website.
 
-- [https://www.eclipse.org/jetty/documentation](https://www.eclipse.org/jetty/documentation)
+- [https://eclipse.dev/jetty/documentation/](https://eclipse.dev/jetty/documentation/)
 
 Building
 ========

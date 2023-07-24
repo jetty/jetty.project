@@ -208,6 +208,7 @@ public class StartArgs
     private boolean listConfig = false;
     private boolean version = false;
     private boolean dryRun = false;
+    private boolean multiLine = false;
     private final Set<String> dryRunParts = new HashSet<>();
     private boolean jpms = false;
     private boolean createStartD = false;
@@ -706,7 +707,7 @@ public class StartArgs
         if (parts.isEmpty())
             parts = ALL_PARTS;
 
-        CommandLineBuilder cmd = new CommandLineBuilder();
+        CommandLineBuilder cmd = new CommandLineBuilder(multiLine);
 
         // Special Stop/Shutdown properties
         ensureSystemPropertySet("STOP.PORT");
@@ -714,13 +715,13 @@ public class StartArgs
         ensureSystemPropertySet("STOP.WAIT");
 
         if (parts.contains("java"))
-            cmd.addRawArg(CommandLineBuilder.findJavaBin());
+            cmd.addArg(CommandLineBuilder.findJavaBin());
 
         if (parts.contains("opts"))
         {
-            cmd.addRawArg("-Djava.io.tmpdir=" + System.getProperty("java.io.tmpdir"));
-            cmd.addRawArg("-Djetty.home=" + baseHome.getHome());
-            cmd.addRawArg("-Djetty.base=" + baseHome.getBase());
+            cmd.addOption("-D", "java.io.tmpdir", System.getProperty("java.io.tmpdir"));
+            cmd.addOption("-D", "jetty.home", baseHome.getHome());
+            cmd.addOption("-D", "jetty.base", baseHome.getBase());
 
             for (String x : getJvmArgSources().keySet())
             {
@@ -731,11 +732,11 @@ public class StartArgs
                     String value = assign.length == 1 ? "" : assign[1];
 
                     Prop p = processSystemProperty(key, value, null);
-                    cmd.addRawArg("-D" + p.key + "=" + getProperties().expand(p.value));
+                    cmd.addOption("-D", p.key, properties.expand(p.value));
                 }
                 else
                 {
-                    cmd.addRawArg(getProperties().expand(x));
+                    cmd.addArg(getProperties().expand(x));
                 }
             }
 
@@ -743,7 +744,7 @@ public class StartArgs
             for (String propKey : systemPropertySource.keySet())
             {
                 String value = System.getProperty(propKey);
-                cmd.addEqualsArg("-D" + propKey, value);
+                cmd.addOption("-D", propKey, value);
             }
         }
 
@@ -756,60 +757,60 @@ public class StartArgs
                 List<File> files = dirsAndFiles.get(false);
                 if (files != null && !files.isEmpty())
                 {
-                    cmd.addRawArg("--module-path");
+                    cmd.addOption("--module-path");
                     String modules = files.stream()
                         .map(File::getAbsolutePath)
                         .collect(Collectors.joining(File.pathSeparator));
-                    cmd.addRawArg(modules);
+                    cmd.addArg(modules);
                 }
                 List<File> dirs = dirsAndFiles.get(true);
                 if (dirs != null && !dirs.isEmpty())
                 {
-                    cmd.addRawArg("--class-path");
+                    cmd.addOption("--class-path");
                     String directories = dirs.stream()
                         .map(File::getAbsolutePath)
                         .collect(Collectors.joining(File.pathSeparator));
-                    cmd.addRawArg(directories);
+                    cmd.addArg(directories);
                 }
 
                 if (!jmodAdds.isEmpty())
                 {
-                    cmd.addRawArg("--add-modules");
-                    cmd.addRawArg(String.join(",", jmodAdds));
+                    cmd.addOption("--add-modules");
+                    cmd.addArg(String.join(",", jmodAdds));
                 }
                 for (Map.Entry<String, Set<String>> entry : jmodPatch.entrySet())
                 {
-                    cmd.addRawArg("--patch-module");
-                    cmd.addRawArg(entry.getKey() + "=" + String.join(File.pathSeparator, entry.getValue()));
+                    cmd.addOption("--patch-module");
+                    cmd.addArg(entry.getKey(), String.join(File.pathSeparator, entry.getValue()));
                 }
                 for (Map.Entry<String, Set<String>> entry : jmodOpens.entrySet())
                 {
-                    cmd.addRawArg("--add-opens");
-                    cmd.addRawArg(entry.getKey() + "=" + String.join(",", entry.getValue()));
+                    cmd.addOption("--add-opens");
+                    cmd.addArg(entry.getKey(), String.join(",", entry.getValue()));
                 }
                 for (Map.Entry<String, Set<String>> entry : jmodExports.entrySet())
                 {
-                    cmd.addRawArg("--add-exports");
-                    cmd.addRawArg(entry.getKey() + "=" + String.join(",", entry.getValue()));
+                    cmd.addOption("--add-exports");
+                    cmd.addArg(entry.getKey(), String.join(",", entry.getValue()));
                 }
                 for (Map.Entry<String, Set<String>> entry : jmodReads.entrySet())
                 {
-                    cmd.addRawArg("--add-reads");
-                    cmd.addRawArg(entry.getKey() + "=" + String.join(",", entry.getValue()));
+                    cmd.addOption("--add-reads");
+                    cmd.addArg(entry.getKey(), String.join(",", entry.getValue()));
                 }
             }
             else
             {
-                cmd.addRawArg("--class-path");
-                cmd.addRawArg(classpath.toString());
+                cmd.addOption("--class-path");
+                cmd.addArg(classpath.toString());
             }
         }
 
         if (parts.contains("main"))
         {
             if (isJPMS())
-                cmd.addRawArg("--module");
-            cmd.addRawArg(getMainClassname());
+                cmd.addOption("--module");
+            cmd.addArg(getMainClassname());
         }
 
         // pass properties as args or as a file
@@ -819,7 +820,8 @@ public class StartArgs
             {
                 for (Prop p : properties)
                 {
-                    cmd.addRawArg(CommandLineBuilder.quote(p.key) + "=" + CommandLineBuilder.quote(properties.expand(p.value)));
+                    if (!p.key.startsWith("java.version."))
+                        cmd.addArg(p.key, properties.expand(p.value));
                 }
             }
             else if (properties.size() > 0)
@@ -837,17 +839,17 @@ public class StartArgs
                 {
                     properties.store(out, "start.jar properties");
                 }
-                cmd.addRawArg(propPath.toAbsolutePath().toString());
+                cmd.addArg(propPath.toAbsolutePath().toString());
             }
 
             for (Path xml : xmls)
             {
-                cmd.addRawArg(xml.toAbsolutePath().toString());
+                cmd.addArg(xml.toAbsolutePath().toString());
             }
 
             for (Path propertyFile : propertyFiles)
             {
-                cmd.addRawArg(propertyFile.toAbsolutePath().toString());
+                cmd.addArg(propertyFile.toAbsolutePath().toString());
             }
         }
 
@@ -1225,6 +1227,12 @@ public class StartArgs
             int colon = arg.indexOf('=');
             for (String part : arg.substring(colon + 1).split(","))
             {
+                if ("multiline".equalsIgnoreCase(part))
+                {
+                    multiLine = true;
+                    continue;
+                }
+
                 if (!ALL_PARTS.contains(part))
                     throw new UsageException(UsageException.ERR_BAD_ARG, "Unrecognized --dry-run=\"%s\" in %s", part, source);
 

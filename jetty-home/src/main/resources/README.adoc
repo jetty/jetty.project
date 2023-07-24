@@ -1,6 +1,6 @@
 === ECLIPSE JETTY
 
-The link:https://www.eclipse.org/jetty/[Eclipse Jetty] Project provides a:
+The link:https://eclipse.dev/jetty/[Eclipse Jetty] Project provides a:
 
 * Java HTTP & WebSocket Server
 * Servlet Container
@@ -8,7 +8,7 @@ The link:https://www.eclipse.org/jetty/[Eclipse Jetty] Project provides a:
 
 Jetty is available under an open source link:LICENSE.txt[LICENSE], and the full source code is available at link:https://github.com/eclipse/jetty.project[GitHub].
 
-The Jetty documentation is available at link:https://www.eclipse.org/jetty/documentation[].
+The Jetty documentation is available at link:https://eclipse.dev/jetty/documentation/[].
 
 // tag::quick[]
 ==== Quick Setup
@@ -46,7 +46,7 @@ Point your browser at `+http://localhost:8080+` to see the demo web applications
 The Jetty server can be stopped with `ctrl+c` in the terminal window.
 // end::quick[]
 
-For more information about how to start Jetty, run this command (or go to the link:https://www.eclipse.org/jetty/documentation[documentation]):
+For more information about how to start Jetty, run this command (or go to the link:https://eclipse.dev/jetty/documentation/[documentation]):
 
 ----
 $ java -jar $JETTY_HOME/start.jar --help

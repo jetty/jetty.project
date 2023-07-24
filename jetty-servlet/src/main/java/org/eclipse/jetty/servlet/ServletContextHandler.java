@@ -1423,8 +1423,6 @@ public class ServletContextHandler extends ContextHandler
         @Override
         public int getSessionTimeout()
         {
-            if (!isStarting())
-                throw new IllegalStateException();
             if (!_enabled)
                 throw new UnsupportedOperationException();
 

@@ -66,7 +66,7 @@ public class XmlParser
      */
     public XmlParser()
     {
-        SAXParserFactory factory = SAXParserFactory.newInstance();
+        SAXParserFactory factory = newSAXParserFactory();
         boolean validatingDefault = factory.getClass().toString().contains("org.apache.xerces.");
         String validatingProp = System.getProperty("org.eclipse.jetty.xml.XmlParser.Validating", validatingDefault ? "true" : "false");
         boolean validating = Boolean.valueOf(validatingProp).booleanValue();
@@ -83,11 +83,16 @@ public class XmlParser
         return _lock.lock();
     }
 
+    protected SAXParserFactory newSAXParserFactory()
+    {
+        return SAXParserFactory.newInstance();
+    }
+
     public void setValidating(boolean validating)
     {
         try
         {
-            SAXParserFactory factory = SAXParserFactory.newInstance();
+            SAXParserFactory factory = newSAXParserFactory();
             factory.setValidating(validating);
             _parser = factory.newSAXParser();
 
@@ -127,6 +132,11 @@ public class XmlParser
     public boolean isValidating()
     {
         return _parser.isValidating();
+    }
+
+    public SAXParser getSAXParser()
+    {
+        return _parser;
     }
 
     public void redirectEntity(String name, URL entity)
@@ -264,24 +274,16 @@ public class XmlParser
             entity = (URL)_redirectMap.get(pid);
         if (entity == null)
             entity = (URL)_redirectMap.get(sid);
-        if (entity == null)
-        {
-            String dtd = sid;
-            if (dtd.lastIndexOf('/') >= 0)
-                dtd = dtd.substring(dtd.lastIndexOf('/') + 1);
 
-            if (LOG.isDebugEnabled())
-                LOG.debug("Can't exact match entity in redirect map, trying {}", dtd);
-            entity = (URL)_redirectMap.get(dtd);
-        }
-
+        // Only serve entity if found.
+        // We don't want to serve from unknown hosts or random paths.
         if (entity != null)
         {
             try
             {
                 InputStream in = entity.openStream();
                 if (LOG.isDebugEnabled())
-                    LOG.debug("Redirected entity {}  --> {}", sid,  entity);
+                    LOG.debug("Redirected entity {}  --> {}", sid, entity);
                 InputSource is = new InputSource(in);
                 is.setSystemId(sid);
                 return is;
@@ -291,6 +293,9 @@ public class XmlParser
                 LOG.trace("IGNORED", e);
             }
         }
+
+        if (LOG.isDebugEnabled())
+            LOG.debug("Entity not found for PID:{} / SID:{}", pid, sid);
         return null;
     }
 

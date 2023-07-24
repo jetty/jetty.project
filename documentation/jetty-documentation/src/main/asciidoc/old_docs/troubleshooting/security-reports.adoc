@@ -16,7 +16,7 @@
 
 ==== List of Security Reports
 
-A current list of Jetty security reports can be viewed on the link:https://www.eclipse.org/jetty/security-reports.html[Project Home Page.]
+A current list of Jetty security reports can be viewed on the link:https://eclipse.dev/jetty/security-reports.php[Project Home Page.]
 
 ==== Reporting Security Issues
 
