@@ -327,13 +327,13 @@ public class ProxyWithDynamicTransportTest
                 {
                     String id = p + "-" + i;
                     ContentResponse response = client.newRequest("localhost", serverPort)
-                    .scheme(scheme)
-                    .method(HttpMethod.POST)
-                    .path("/path/" + id)
-                    .version(serverProtocol)
-                    .body(new ByteBufferRequestContent(ByteBuffer.allocate(contentLength)))
-                    .timeout(5, TimeUnit.SECONDS)
-                    .send();
+                        .scheme(scheme)
+                        .method(HttpMethod.POST)
+                        .path("/path/" + id)
+                        .version(serverProtocol)
+                        .body(new ByteBufferRequestContent(ByteBuffer.allocate(contentLength)))
+                        .timeout(5, TimeUnit.SECONDS)
+                        .send();
 
                     assertEquals(HttpStatus.OK_200, response.getStatus());
                     assertEquals(contentLength, response.getContent().length);
