@@ -47,7 +47,7 @@ public abstract class CyclicTimeouts<T extends CyclicTimeouts.Expirable> impleme
 {
     private static final Logger LOG = LoggerFactory.getLogger(CyclicTimeouts.class);
 
-    private final AtomicLong earliestTimeout = new AtomicLong(Long.MAX_VALUE);
+    private final AtomicLong earliestNanoTime = new AtomicLong(Long.MAX_VALUE);
     private final CyclicTimeout cyclicTimeout;
 
     public CyclicTimeouts(Scheduler scheduler)
@@ -82,7 +82,7 @@ public abstract class CyclicTimeouts<T extends CyclicTimeouts.Expirable> impleme
         // A concurrent call to schedule(long) may lose an
         // earliest value, but the corresponding entity will
         // be seen during the iteration below.
-        earliestTimeout.set(earliest);
+        earliestNanoTime.set(earliest);
 
         Iterator<T> iterator = iterator();
         if (iterator == null)
@@ -95,11 +95,15 @@ public abstract class CyclicTimeouts<T extends CyclicTimeouts.Expirable> impleme
             T expirable = iterator.next();
             long expiresAt = expirable.getExpireNanoTime();
 
+            if (expiresAt == Long.MAX_VALUE)
+            {
+                if (LOG.isDebugEnabled())
+                    LOG.debug("Entity {} does not expire for {}", expirable, this);
+                continue;
+            }
+
             if (LOG.isDebugEnabled())
                 LOG.debug("Entity {} expires in {} ms for {}", expirable, NanoTime.millisElapsed(now, expiresAt), this);
-
-            if (expiresAt == -1)
-                continue;
 
             if (NanoTime.isBeforeOrSame(expiresAt, now))
             {
@@ -135,7 +139,7 @@ public abstract class CyclicTimeouts<T extends CyclicTimeouts.Expirable> impleme
         // Schedule a timeout for the earliest entity that may expire.
         // When the timeout expires, scan the entities for the next
         // earliest entity that may expire, and reschedule a new timeout.
-        long prevEarliest = earliestTimeout.getAndUpdate(t -> NanoTime.isBefore(t, expiresAt) ? t : expiresAt);
+        long prevEarliest = earliestNanoTime.getAndUpdate(t -> NanoTime.isBefore(t, expiresAt) ? t : expiresAt);
         long expires = expiresAt;
         while (NanoTime.isBefore(expires, prevEarliest))
         {
@@ -148,7 +152,7 @@ public abstract class CyclicTimeouts<T extends CyclicTimeouts.Expirable> impleme
             // If we lost a race and overwrote a schedule() with an earlier time, then that earlier time
             // is remembered by earliestTimeout, in which case we will loop and set it again ourselves.
             prevEarliest = expires;
-            expires = earliestTimeout.get();
+            expires = earliestNanoTime.get();
         }
     }
 
