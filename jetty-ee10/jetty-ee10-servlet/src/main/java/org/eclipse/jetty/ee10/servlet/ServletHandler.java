@@ -495,6 +495,8 @@ public class ServletHandler extends Handler.Wrapper
     public MappedServlet getMappedServlet(String target)
     {
         MatchedResource<MappedServlet> matchedResource = getMatchedServlet(target);
+        if (matchedResource == null) // named servlet
+            return null;
         return matchedResource.getResource();
     }
 

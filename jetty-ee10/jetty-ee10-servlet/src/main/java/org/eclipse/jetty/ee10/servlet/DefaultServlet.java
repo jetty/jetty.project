@@ -180,6 +180,7 @@ import org.slf4j.LoggerFactory;
 public class DefaultServlet extends HttpServlet
 {
     private static final Logger LOG = LoggerFactory.getLogger(DefaultServlet.class);
+    public static final String CONTEXT_INIT = "org.eclipse.jetty.servlet.Default.";
 
     private ServletContextHandler _contextHandler;
     private ServletResourceService _resourceService;
@@ -393,6 +394,15 @@ public class DefaultServlet extends HttpServlet
             ret.add(CompressedContentFormat.GZIP);
         }
         return ret;
+    }
+
+    @Override
+    public String getInitParameter(String name)
+    {
+        String value = getServletContext().getInitParameter(CONTEXT_INIT + name);
+        if (value == null)
+            value = super.getInitParameter(name);
+        return value;
     }
 
     private Boolean getInitBoolean(String name)
