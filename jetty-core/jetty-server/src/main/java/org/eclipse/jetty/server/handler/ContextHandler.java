@@ -643,6 +643,13 @@ public class ContextHandler extends Handler.Wrapper implements Attributes, Alias
         if (getContextPath() == null)
             throw new IllegalStateException("Null contextPath");
 
+        Resource baseResource = getBaseResource();
+        if (baseResource != null)
+        {
+            if (!Resources.isReadable(baseResource))
+                throw new IllegalArgumentException("Base Resource is not valid: " + baseResource);
+        }
+
         _availability.set(Availability.STARTING);
         try
         {
@@ -865,49 +872,44 @@ public class ContextHandler extends Handler.Wrapper implements Attributes, Alias
     }
 
     /**
-     * Set the base resource for this context.
+     * <p>Set the base resource to serve content from for this context.</p>
      *
-     * @param resourceBase The Path of the base resource for the context.
+     * @param resourceBase The base resource for the context.
      */
     public void setBaseResource(Resource resourceBase)
     {
         if (isStarted())
             throw new IllegalStateException(getState());
 
-        // Allow resource base to be unset
-        if (resourceBase == null)
-        {
-            _baseResource = null;
-            return;
-        }
-
-        if (Resources.isReadable(resourceBase))
-            _baseResource = resourceBase;
-        else
-            throw new IllegalArgumentException("Base Resource is not valid: " + resourceBase);
-    }
-
-    public void setBaseResourceAsPath(Path path)
-    {
-        if (path == null)
-        {
-            // allow user to unset variable
-            setBaseResource(null);
-            return;
-        }
-
-        Resource resource = ResourceFactory.of(this).newResource(path);
-        if (!Resources.isReadable(resource))
-            throw new IllegalArgumentException("Base Resource is not valid: " + path);
-
-        setBaseResource(resource);
+        _baseResource = resourceBase;
+        /* Do not test if Resource is valid here, let that happen in doStart.
+         * A resource at this point in time might be invalid or doesn't exist (yet).
+         * (eg: due to stop behaviors, or Configuration.deconfigure() behaviors),
+         */
     }
 
     /**
-     * @param base The resourceBase to server content from. If null the
-     * context resource base is used.  If non-null the {@link Resource} is created
-     * from {@link ResourceFactory#of(org.eclipse.jetty.util.component.Container)} for
-     * this context.
+     * <p>Set the base resource to serve content from.</p>
+     *
+     * <p>Note: this {@link Resource} is created from {@link ResourceFactory#of(org.eclipse.jetty.util.component.Container)}
+     * which is tied to the lifecycle of this context.</p>
+     *
+     * @param path The path to create a base resource from.
+     * @see #setBaseResource(Resource)
+     */
+    public void setBaseResourceAsPath(Path path)
+    {
+        setBaseResource(path == null ? null : ResourceFactory.of(this).newResource(path));
+    }
+
+    /**
+     * <p>Set the base resource to serve content from.</p>
+     *
+     * <p>Note: this {@link Resource} is created from {@link ResourceFactory#of(org.eclipse.jetty.util.component.Container)}
+     * which is tied to the lifecycle of this context.</p>
+     *
+     * @param base The path to create a base resource from.
+     * @see #setBaseResource(Resource)
      */
     public void setBaseResourceAsString(String base)
     {
