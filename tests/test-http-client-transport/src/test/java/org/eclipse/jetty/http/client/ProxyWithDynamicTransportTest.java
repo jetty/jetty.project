@@ -13,6 +13,7 @@
 
 package org.eclipse.jetty.http.client;
 
+import java.io.IOException;
 import java.net.ConnectException;
 import java.net.InetSocketAddress;
 import java.nio.ByteBuffer;
@@ -23,6 +24,7 @@ import java.util.concurrent.ConcurrentMap;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.TimeUnit;
 import java.util.stream.Collectors;
+import java.util.stream.IntStream;
 import javax.servlet.http.HttpServletRequest;
 import javax.servlet.http.HttpServletResponse;
 
@@ -36,7 +38,9 @@ import org.eclipse.jetty.client.api.ContentResponse;
 import org.eclipse.jetty.client.api.Destination;
 import org.eclipse.jetty.client.dynamic.HttpClientTransportDynamic;
 import org.eclipse.jetty.client.http.HttpClientConnectionFactory;
+import org.eclipse.jetty.client.util.ByteBufferRequestContent;
 import org.eclipse.jetty.http.HttpFields;
+import org.eclipse.jetty.http.HttpMethod;
 import org.eclipse.jetty.http.HttpScheme;
 import org.eclipse.jetty.http.HttpStatus;
 import org.eclipse.jetty.http.HttpVersion;
@@ -73,6 +77,7 @@ import org.eclipse.jetty.servlet.ServletHolder;
 import org.eclipse.jetty.util.BufferUtil;
 import org.eclipse.jetty.util.Callback;
 import org.eclipse.jetty.util.FuturePromise;
+import org.eclipse.jetty.util.IO;
 import org.eclipse.jetty.util.ssl.SslContextFactory;
 import org.eclipse.jetty.util.thread.QueuedThreadPool;
 import org.hamcrest.Matchers;
@@ -286,6 +291,58 @@ public class ProxyWithDynamicTransportTest
         HttpDestination destination = (HttpDestination)destinations.get(0);
         AbstractConnectionPool connectionPool = (AbstractConnectionPool)destination.getConnectionPool();
         assertEquals(1, connectionPool.getConnectionCount());
+    }
+
+    @ParameterizedTest(name = "proxyProtocol={0}, proxySecure={1}, serverProtocol={2}, serverSecure={3}")
+    @MethodSource("testParams")
+    public void testProxyConcurrentLoad(Origin.Protocol proxyProtocol, boolean proxySecure, HttpVersion serverProtocol, boolean serverSecure) throws Exception
+    {
+        start(new EmptyServerHandler()
+        {
+            @Override
+            protected void service(String target, Request jettyRequest, HttpServletRequest request, HttpServletResponse response) throws IOException
+            {
+                IO.copy(request.getInputStream(), response.getOutputStream());
+            }
+        });
+
+        int parallelism = 8;
+        boolean proxyMultiplexed = proxyProtocol.getProtocols().stream().allMatch(p -> p.startsWith("h2"));
+        client.setMaxConnectionsPerDestination(proxyMultiplexed ? 1 : parallelism);
+
+        int proxyPort = proxySecure ? proxyTLSConnector.getLocalPort() : proxyConnector.getLocalPort();
+        Origin.Address proxyAddress = new Origin.Address("localhost", proxyPort);
+        HttpProxy proxy = new HttpProxy(proxyAddress, proxySecure, proxyProtocol);
+        client.getProxyConfiguration().addProxy(proxy);
+
+        String scheme = serverSecure ? "https" : "http";
+        int serverPort = serverSecure ? serverTLSConnector.getLocalPort() : serverConnector.getLocalPort();
+        int contentLength = 128 * 1024;
+
+        int iterations = 16;
+        IntStream.range(0, parallelism).parallel().forEach(p ->
+            IntStream.range(0, iterations).forEach(i ->
+            {
+                try
+                {
+                    String id = p + "-" + i;
+                    ContentResponse response = client.newRequest("localhost", serverPort)
+                    .scheme(scheme)
+                    .method(HttpMethod.POST)
+                    .path("/path/" + id)
+                    .version(serverProtocol)
+                    .body(new ByteBufferRequestContent(ByteBuffer.allocate(contentLength)))
+                    .timeout(5, TimeUnit.SECONDS)
+                    .send();
+
+                    assertEquals(HttpStatus.OK_200, response.getStatus());
+                    assertEquals(contentLength, response.getContent().length);
+                }
+                catch (Throwable x)
+                {
+                    throw new RuntimeException(x);
+                }
+            }));
     }
 
     @Test

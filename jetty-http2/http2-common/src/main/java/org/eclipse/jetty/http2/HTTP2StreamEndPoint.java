@@ -109,7 +109,8 @@ public abstract class HTTP2StreamEndPoint implements EndPoint
                 case OSHUTTING:
                     if (!writeState.compareAndSet(current, WriteState.OSHUT))
                         break;
-                    stream.data(new DataFrame(stream.getId(), BufferUtil.EMPTY_BUFFER, true), Callback.from(this::oshutSuccess, this::oshutFailure));
+                    Callback oshutCallback = Callback.from(Invocable.InvocationType.NON_BLOCKING, this::oshutSuccess, this::oshutFailure);
+                    stream.data(new DataFrame(stream.getId(), BufferUtil.EMPTY_BUFFER, true), oshutCallback);
                     return;
                 case PENDING:
                     if (!writeState.compareAndSet(current, WriteState.OSHUTTING))
@@ -177,7 +178,7 @@ public abstract class HTTP2StreamEndPoint implements EndPoint
         if (closed.compareAndSet(false, true))
         {
             if (LOG.isDebugEnabled())
-                LOG.debug("closing {}, cause: {}", this, cause);
+                LOG.debug("closing {}", this, cause);
             shutdownOutput();
             stream.close();
             onClose(cause);
@@ -188,7 +189,7 @@ public abstract class HTTP2StreamEndPoint implements EndPoint
     public int fill(ByteBuffer sink) throws IOException
     {
         Entry entry;
-        try (AutoLock l = lock.lock())
+        try (AutoLock ignored = lock.lock())
         {
             entry = dataQueue.poll();
         }
@@ -222,7 +223,7 @@ public abstract class HTTP2StreamEndPoint implements EndPoint
 
         if (source.hasRemaining())
         {
-            try (AutoLock l = lock.lock())
+            try (AutoLock ignored = lock.lock())
             {
                 dataQueue.offerFirst(entry);
             }
@@ -248,92 +249,27 @@ public abstract class HTTP2StreamEndPoint implements EndPoint
     {
         if (LOG.isDebugEnabled())
             LOG.debug("flushing {} on {}", BufferUtil.toDetailString(buffers), this);
-        if (buffers == null || buffers.length == 0)
-        {
+        if (buffers == null || buffers.length == 0 || remaining(buffers) == 0)
             return true;
-        }
-        else
-        {
-            while (true)
-            {
-                WriteState current = writeState.get();
-                switch (current.state)
-                {
-                    case IDLE:
-                        if (!writeState.compareAndSet(current, WriteState.PENDING))
-                            break;
-                        // We must copy the buffers because, differently from
-                        // write(), the semantic of flush() is that it does not
-                        // own them, but stream.data() needs to own them.
-                        ByteBuffer buffer = coalesce(buffers, true);
-                        Callback.Completable callback = new Callback.Completable(Invocable.InvocationType.NON_BLOCKING);
-                        stream.data(new DataFrame(stream.getId(), buffer, false), callback);
-                        callback.whenComplete((nothing, failure) ->
-                        {
-                            if (failure == null)
-                                flushSuccess();
-                            else
-                                flushFailure(failure);
-                        });
-                        return callback.isDone();
-                    case PENDING:
-                        return false;
-                    case OSHUTTING:
-                    case OSHUT:
-                        throw new EofException("Output shutdown");
-                    case FAILED:
-                        Throwable failure = current.failure;
-                        if (failure instanceof IOException)
-                            throw (IOException)failure;
-                        throw new IOException(failure);
-                }
-            }
-        }
-    }
 
-    private void flushSuccess()
-    {
-        while (true)
+        WriteState current = writeState.get();
+        switch (current.state)
         {
-            WriteState current = writeState.get();
-            switch (current.state)
-            {
-                case IDLE:
-                case OSHUT:
-                    throw new IllegalStateException();
-                case PENDING:
-                    if (!writeState.compareAndSet(current, WriteState.IDLE))
-                        break;
-                    return;
-                case OSHUTTING:
-                    shutdownOutput();
-                    return;
-                case FAILED:
-                    return;
-            }
-        }
-    }
-
-    private void flushFailure(Throwable failure)
-    {
-        while (true)
-        {
-            WriteState current = writeState.get();
-            switch (current.state)
-            {
-                case IDLE:
-                case OSHUT:
-                    throw new IllegalStateException();
-                case PENDING:
-                    if (!writeState.compareAndSet(current, new WriteState(WriteState.State.FAILED, failure)))
-                        break;
-                    return;
-                case OSHUTTING:
-                    shutdownOutput();
-                    return;
-                case FAILED:
-                    return;
-            }
+            // The flush() semantic is that it must not leave pending operations, therefore we
+            // cannot call stream.data() because it would remain pending if the stream is congested.
+            case IDLE:
+            case PENDING:
+                return false;
+            case OSHUTTING:
+            case OSHUT:
+                throw new EofException("Output shutdown");
+            case FAILED:
+                Throwable failure = current.failure;
+                if (failure instanceof IOException)
+                    throw (IOException)failure;
+                throw new IOException(failure);
+            default:
+                throw new IllegalStateException("Unexpected state: " + current.state);
         }
     }
 
@@ -397,8 +333,9 @@ public abstract class HTTP2StreamEndPoint implements EndPoint
                         if (!writeState.compareAndSet(current, WriteState.PENDING))
                             break;
                         // TODO: we really need a Stream primitive to write multiple frames.
-                        ByteBuffer result = coalesce(buffers, false);
-                        stream.data(new DataFrame(stream.getId(), result, false), Callback.from(() -> writeSuccess(callback), x -> writeFailure(x, callback)));
+                        ByteBuffer result = coalesce(buffers);
+                        Callback dataCallback = Callback.from(Invocable.getInvocationType(callback), () -> writeSuccess(callback), x -> writeFailure(x, callback));
+                        stream.data(new DataFrame(stream.getId(), result, false), dataCallback);
                         return;
                     case PENDING:
                         callback.failed(new WritePendingException());
@@ -409,6 +346,9 @@ public abstract class HTTP2StreamEndPoint implements EndPoint
                         return;
                     case FAILED:
                         callback.failed(current.failure);
+                        return;
+                    default:
+                        callback.failed(new IllegalStateException("Unexpected state: " + current.state));
                         return;
                 }
             }
@@ -438,6 +378,9 @@ public abstract class HTTP2StreamEndPoint implements EndPoint
                 case FAILED:
                     callback.failed(current.failure);
                     return;
+                default:
+                    callback.failed(new IllegalStateException("Unexpected state: " + current.state));
+                    return;
             }
         }
     }
@@ -461,23 +404,21 @@ public abstract class HTTP2StreamEndPoint implements EndPoint
                     return;
                 case FAILED:
                     return;
+                default:
+                    callback.failed(new IllegalStateException("Unexpected state: " + current.state));
+                    return;
             }
         }
     }
 
     private long remaining(ByteBuffer... buffers)
     {
-        long total = 0;
-        for (ByteBuffer buffer : buffers)
-        {
-            total += buffer.remaining();
-        }
-        return total;
+        return BufferUtil.remaining(buffers);
     }
 
-    private ByteBuffer coalesce(ByteBuffer[] buffers, boolean forceCopy)
+    private ByteBuffer coalesce(ByteBuffer[] buffers)
     {
-        if (buffers.length == 1 && !forceCopy)
+        if (buffers.length == 1)
             return buffers[0];
         long capacity = remaining(buffers);
         if (capacity > Integer.MAX_VALUE)
@@ -567,7 +508,7 @@ public abstract class HTTP2StreamEndPoint implements EndPoint
 
     private void offer(ByteBuffer buffer, Callback callback, Throwable failure)
     {
-        try (AutoLock l = lock.lock())
+        try (AutoLock ignored = lock.lock())
         {
             dataQueue.offer(new Entry(buffer, callback, failure));
         }
@@ -576,7 +517,7 @@ public abstract class HTTP2StreamEndPoint implements EndPoint
     protected void process()
     {
         boolean empty;
-        try (AutoLock l = lock.lock())
+        try (AutoLock ignored = lock.lock())
         {
             empty = dataQueue.isEmpty();
         }
