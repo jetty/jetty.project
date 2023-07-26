@@ -15,8 +15,8 @@ package org.eclipse.jetty.ee10.servlet;
 
 import java.io.IOException;
 import java.io.OutputStream;
+import java.io.OutputStreamWriter;
 import java.io.PrintWriter;
-import java.nio.charset.Charset;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.Enumeration;
@@ -528,7 +528,7 @@ public class Dispatcher implements RequestDispatcher
                 }
                 catch (IllegalStateException ise)
                 {
-                    _printWriter = new PrintWriter(super.getOutputStream(), false, Charset.forName(super.getCharacterEncoding()));
+                    _printWriter = new PrintWriter(new OutputStreamWriter(super.getOutputStream(), super.getCharacterEncoding()));
                 }
             }
             return _printWriter;
