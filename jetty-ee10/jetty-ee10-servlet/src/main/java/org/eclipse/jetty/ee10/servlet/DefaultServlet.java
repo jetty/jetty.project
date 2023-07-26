@@ -541,7 +541,7 @@ public class DefaultServlet extends HttpServlet
     protected String getEncodedPathInContext(HttpServletRequest req, String includedServletPath)
     {
         if (includedServletPath != null)
-            return URIUtil.encodePath(getIncludedPathInContext(req, includedServletPath, !isDefaultMappingIncluded(req)));
+            return URIUtil.encodePath(getIncludedPathInContext(req, includedServletPath, !isDefaultMapping(req)));
         else if (!isDefaultMapping(req))
             return URIUtil.encodePath(req.getPathInfo());
         else if (req instanceof ServletApiRequest apiRequest)
@@ -1223,12 +1223,7 @@ public class DefaultServlet extends HttpServlet
         return request.getAttribute(RequestDispatcher.INCLUDE_REQUEST_URI) != null;
     }
 
-    private static boolean isDefaultMappingIncluded(HttpServletRequest req)
-    {
-        return req.getAttribute(RequestDispatcher.INCLUDE_PATH_INFO) == null;
-    }
-
-    private boolean isDefaultMapping(HttpServletRequest req)
+    protected boolean isDefaultMapping(HttpServletRequest req)
     {
         if (req.getHttpServletMapping().getMappingMatch() == MappingMatch.DEFAULT)
             return true;

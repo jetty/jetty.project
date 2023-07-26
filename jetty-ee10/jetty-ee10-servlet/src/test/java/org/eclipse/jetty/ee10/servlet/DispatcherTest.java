@@ -392,7 +392,33 @@ public class DispatcherTest
     public void testIncludeStatic() throws Exception
     {
         _contextHandler.addServlet(IncludeServlet.class, "/IncludeServlet/*");
-        _contextHandler.addServlet(DefaultServlet.class, "/");
+        _contextHandler.addServlet(new ServletHolder("default", DefaultServlet.class), "/");
+        _server.start();
+
+        String responses = _connector.getResponse("""
+            GET /context/IncludeServlet?do=static HTTP/1.1\r
+            Host: local\r
+            Connection: close\r
+            \r
+            """);
+
+        String expected = """
+            HTTP/1.1 200 OK\r
+            Content-Length: 26\r
+            Connection: close\r
+            \r
+            Include:
+            Test 2 to too two""";
+
+        assertEquals(expected, responses);
+    }
+
+    @Test
+    @Disabled("Bug #10155 - response misses the Content-Length header")
+    public void testIncludeStaticWithWriter() throws Exception
+    {
+        _contextHandler.addServlet(new ServletHolder(new IncludeServlet(true)), "/IncludeServlet/*");
+        _contextHandler.addServlet(new ServletHolder("default", DefaultServlet.class), "/");
         _server.start();
 
         String responses = _connector.getResponse("""
@@ -1033,6 +1059,19 @@ public class DispatcherTest
 
     public static class IncludeServlet extends HttpServlet implements Servlet
     {
+        // The logic linked to this field be deleted and the writer always used once #10155 is fixed.
+        private final boolean useWriter;
+
+        public IncludeServlet()
+        {
+            this(false);
+        }
+
+        public IncludeServlet(boolean useWriter)
+        {
+            this.useWriter = useWriter;
+        }
+
         @Override
         protected void doGet(HttpServletRequest request, HttpServletResponse response) throws ServletException, IOException
         {
@@ -1047,9 +1086,10 @@ public class DispatcherTest
                 dispatcher = getServletContext().getRequestDispatcher("/AssertIncludeServlet?do=end&do=the&headers=" + headers);
             else if (request.getParameter("do").equals("static"))
             {
-                //TODO: when getWriter().println() is used, testIncludeStatic fails b/c content-length is not generated
-                //response.getWriter().println("Include:");
-                response.getOutputStream().write("Include:\n".getBytes(StandardCharsets.UTF_8));
+                if (useWriter)
+                    response.getWriter().println("Include:");
+                else
+                    response.getOutputStream().write("Include:\n".getBytes(StandardCharsets.US_ASCII));
                 dispatcher = getServletContext().getRequestDispatcher("/test.txt");
             }
             assert dispatcher != null;
