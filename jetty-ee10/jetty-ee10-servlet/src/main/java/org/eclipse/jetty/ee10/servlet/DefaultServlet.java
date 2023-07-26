@@ -1223,7 +1223,7 @@ public class DefaultServlet extends HttpServlet
         return request.getAttribute(RequestDispatcher.INCLUDE_REQUEST_URI) != null;
     }
 
-    private boolean isDefaultMapping(HttpServletRequest req)
+    protected boolean isDefaultMapping(HttpServletRequest req)
     {
         if (req.getHttpServletMapping().getMappingMatch() == MappingMatch.DEFAULT)
             return true;
