@@ -938,9 +938,10 @@ public class XmlConfiguration
                 throw new IllegalArgumentException("Method name cannot be blank");
 
             // Lets just try all methods for now
-
-            Method[] methods = oClass.getMethods();
-            Arrays.sort(methods, EXECUTABLE_COMPARATOR);
+            List<Method> methods = Arrays.stream(oClass.getMethods())
+                .filter(m -> m.getName().equals(methodName))
+                .sorted(EXECUTABLE_COMPARATOR)
+                .toList();
             for (Method method : methods)
             {
                 if (!method.getName().equals(methodName))
