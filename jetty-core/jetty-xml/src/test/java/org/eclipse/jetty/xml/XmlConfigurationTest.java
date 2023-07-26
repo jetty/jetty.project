@@ -17,17 +17,22 @@ import java.io.BufferedWriter;
 import java.io.ByteArrayOutputStream;
 import java.io.IOException;
 import java.io.PrintStream;
+import java.lang.reflect.Executable;
 import java.lang.reflect.InvocationTargetException;
 import java.lang.reflect.Method;
 import java.net.URL;
 import java.nio.channels.SocketChannel;
+import java.nio.charset.Charset;
 import java.nio.file.Files;
 import java.nio.file.Path;
+import java.time.Instant;
+import java.time.temporal.Temporal;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collections;
 import java.util.HashMap;
 import java.util.List;
+import java.util.Locale;
 import java.util.Map;
 import java.util.concurrent.ConcurrentMap;
 import java.util.concurrent.ScheduledExecutorService;
@@ -68,8 +73,10 @@ import org.xml.sax.InputSource;
 import org.xml.sax.SAXException;
 
 import static java.nio.charset.StandardCharsets.UTF_8;
+import static org.eclipse.jetty.xml.XmlConfiguration.EXECUTABLE_COMPARATOR;
 import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.Matchers.allOf;
+import static org.hamcrest.Matchers.contains;
 import static org.hamcrest.Matchers.containsString;
 import static org.hamcrest.Matchers.empty;
 import static org.hamcrest.Matchers.instanceOf;
@@ -762,6 +769,22 @@ public class XmlConfigurationTest
         {
         }
 
+        public void call(Aaa aaa)
+        {
+        }
+
+        public void call(Bbb aaa)
+        {
+        }
+
+        public void call(Ccc aaa)
+        {
+        }
+
+        public void call(Abc abc)
+        {
+        }
+
         public void call(Object o)
         {
         }
@@ -779,16 +802,20 @@ public class XmlConfigurationTest
         }
     }
 
-    @RepeatedTest(10)
+    @RepeatedTest(100)
     public void testMethodOrdering() throws Exception
     {
         List<Method> methods = Arrays.stream(TestOrder.class.getMethods()).filter(m -> "call".equals(m.getName())).collect(Collectors.toList());
         Collections.shuffle(methods);
-        methods.sort(XmlConfiguration.EXECUTABLE_COMPARATOR);
+        methods.sort(EXECUTABLE_COMPARATOR);
         assertThat(methods, Matchers.contains(
             TestOrder.class.getMethod("call"),
             TestOrder.class.getMethod("call", int.class),
+            TestOrder.class.getMethod("call", Abc.class),
+            TestOrder.class.getMethod("call", Aaa.class),
             TestOrder.class.getMethod("call", String.class),
+            TestOrder.class.getMethod("call", Bbb.class),
+            TestOrder.class.getMethod("call", Ccc.class),
             TestOrder.class.getMethod("call", Object.class),
             TestOrder.class.getMethod("call", String[].class),
             TestOrder.class.getMethod("call", String.class, String[].class)
@@ -2037,5 +2064,130 @@ public class XmlConfigurationTest
     private interface ThrowableAction
     {
         void run() throws Exception;
+    }
+
+    @Test
+    public void testExecutableComparator()
+    {
+        aaa(null);
+        bbb(null);
+        ccc(null);
+
+        Stream.of(XmlConfigurationTest.class.getMethods())
+            .filter(m -> m.getName().length() == 3)
+            .filter(m -> !m.getName().equals("foo"))
+            .sorted(EXECUTABLE_COMPARATOR)
+            .map(Executable::toGenericString)
+            .forEach(System.out::println);
+
+        List<Method> methods = Arrays.asList(Arrays.stream(XmlConfigurationTest.class.getMethods())
+            .filter(m -> m.getName().length() == 3)
+            .toArray(Method[]::new));
+
+        // The implementor must also ensure that the relation is transitive: ((compare(x, y)>0) && (compare(y, z)>0)) implies compare(x, z)>0
+        assertThat(EXECUTABLE_COMPARATOR.compare(methods.get(0), methods.get(1)), is(EXECUTABLE_COMPARATOR.compare(methods.get(1), methods.get(2))));
+        assertThat(EXECUTABLE_COMPARATOR.compare(methods.get(0), methods.get(1)), is(EXECUTABLE_COMPARATOR.compare(methods.get(0), methods.get(2))));
+    }
+
+    public void aaa(Aaa ignored)
+    {
+    }
+
+    public void bbb(Bbb ignored)
+    {
+    }
+
+    public void ccc(Ccc ignored)
+    {
+    }
+
+    public interface Aaa
+    {
+    }
+
+    public interface Abc extends Aaa
+    {
+    }
+
+    public static class Bbb
+    {
+    }
+
+    public static class Ccc implements Aaa
+    {
+    }
+
+    @Test
+    public void testFooExecutableComparator()
+    {
+        List<String> orderedMethodIds = Stream.of(FooObj.class.getMethods())
+            .filter(m -> m.getName().equals("foo"))
+            .sorted(EXECUTABLE_COMPARATOR)
+            .map(Executable::toGenericString)
+            .collect(Collectors.toList());
+        orderedMethodIds.forEach(System.out::println);
+        String[] expectedOrder = {
+            "public void org.eclipse.jetty.xml.XmlConfigurationTest$FooObj.foo()", // favor fewer args
+            "public void org.eclipse.jetty.xml.XmlConfigurationTest$FooObj.foo(int)", // favor primitives over non-primitives
+            "public void org.eclipse.jetty.xml.XmlConfigurationTest$FooObj.foo(java.time.temporal.Temporal)", // favor over Instant
+            "public int org.eclipse.jetty.xml.XmlConfigurationTest$FooObj.foo(java.lang.String)",
+            "public java.util.Locale org.eclipse.jetty.xml.XmlConfigurationTest$FooObj.foo(java.nio.charset.Charset)",
+            "public void org.eclipse.jetty.xml.XmlConfigurationTest$FooObj.foo(java.time.Instant)",
+            "public void org.eclipse.jetty.xml.XmlConfigurationTest$FooObj.foo(java.util.Locale)",
+            "public void org.eclipse.jetty.xml.XmlConfigurationTest$FooObj.foo(int,java.lang.String)",
+            "public void org.eclipse.jetty.xml.XmlConfigurationTest$FooObj.foo(java.lang.String,int)",
+            "public void org.eclipse.jetty.xml.XmlConfigurationTest$FooObj.foo(int,java.lang.String,java.lang.String)",
+            "public void org.eclipse.jetty.xml.XmlConfigurationTest$FooObj.foo(int,java.lang.String,java.lang.String,java.lang.Object)"
+        };
+        assertThat(orderedMethodIds, contains(expectedOrder));
+    }
+
+    public static class FooObj
+    {
+        public void foo()
+        {
+        }
+
+        public int foo(String name)
+        {
+            return -1;
+        }
+
+        public void foo(int id)
+        {
+        }
+
+        public void foo(Locale locale)
+        {
+        }
+
+        public void foo(Instant timestamp) // Instant extends from Temporal
+        {
+        }
+
+        public void foo(Temporal temporal)
+        {
+        }
+
+        public Locale foo(Charset charset)
+        {
+            return null;
+        }
+
+        public void foo(String name, int id)
+        {
+        }
+
+        public void foo(int id, String name)
+        {
+        }
+
+        public void foo(int id, String name, String description)
+        {
+        }
+
+        public void foo(int id, String name, String description, Object value)
+        {
+        }
     }
 }
