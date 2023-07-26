@@ -1228,9 +1228,11 @@ public class DefaultServlet extends HttpServlet
         return req.getAttribute(RequestDispatcher.INCLUDE_PATH_INFO) == null;
     }
 
-    private static boolean isDefaultMapping(HttpServletRequest req)
+    private boolean isDefaultMapping(HttpServletRequest req)
     {
-        return req.getHttpServletMapping().getMappingMatch() == MappingMatch.DEFAULT;
+        if (req.getHttpServletMapping().getMappingMatch() == MappingMatch.DEFAULT)
+            return true;
+        return (req.getDispatcherType() != DispatcherType.REQUEST) && "default".equals(getServletConfig().getServletName());
     }
 
     /**
