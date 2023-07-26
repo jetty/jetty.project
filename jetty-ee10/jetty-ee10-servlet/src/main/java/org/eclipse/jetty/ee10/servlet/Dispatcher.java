@@ -184,6 +184,24 @@ public class Dispatcher implements RequestDispatcher
         }
 
         @Override
+        public String getQueryString()
+        {
+            // The current behaviour is to return the target query if not null, else the original query is returned.
+            // This means that the query string does not match the parameter map, which is merged for most dispatcher.
+            // The specification is not clear on how the query should be handled.  It is in ongoing discussion in
+            // https://github.com/jakartaee/servlet/issues/309
+            // Currently the older jetty behaviour (merging the query string) has been replaced by the behaviour used
+            // by other containers in order to pass the TCK.
+            if (_uri != null)
+            {
+                String targetQuery = _uri.getQuery();
+                if (!StringUtil.isEmpty(targetQuery))
+                    return targetQuery;
+            }
+            return super.getQueryString();
+        }
+
+        @Override
         public String getParameter(String name)
         {
             return getParams().getValue(name);
@@ -250,18 +268,6 @@ public class Dispatcher implements RequestDispatcher
                 return super.getHttpServletMapping();
 
             return _servletPathMapping;
-        }
-
-        @Override
-        public String getQueryString()
-        {
-            if (_uri != null)
-            {
-                String targetQuery = _uri.getQuery();
-                if (!StringUtil.isEmpty(targetQuery))
-                        return targetQuery;
-                }
-            return _httpServletRequest.getQueryString();
         }
 
         @Override
@@ -405,6 +411,12 @@ public class Dispatcher implements RequestDispatcher
             names.add(RequestDispatcher.INCLUDE_CONTEXT_PATH);
             names.add(RequestDispatcher.INCLUDE_QUERY_STRING);
             return Collections.enumeration(names);
+        }
+
+        @Override
+        public String getQueryString()
+        {
+            return _httpServletRequest.getQueryString();
         }
     }
 
@@ -556,18 +568,6 @@ public class Dispatcher implements RequestDispatcher
         }
 
         @Override
-        public String getQueryString()
-        {
-            if (_uri != null)
-            {
-                String targetQuery = _uri.getQuery();
-                if (!StringUtil.isEmpty(targetQuery))
-                    return targetQuery;
-            }
-            return _httpServletRequest.getQueryString();
-        }
-
-        @Override
         public String getRequestURI()
         {
             return _uri == null ? null : _uri.getPath();
@@ -640,18 +640,6 @@ public class Dispatcher implements RequestDispatcher
         public HttpServletMapping getHttpServletMapping()
         {
             return _servletPathMapping;
-        }
-
-        @Override
-        public String getQueryString()
-        {
-            if (_uri != null)
-            {
-                String targetQuery = _uri.getQuery();
-                if (StringUtil.isNotBlank(targetQuery))
-                    return targetQuery;
-            }
-            return _httpServletRequest.getQueryString();
         }
 
         @Override
