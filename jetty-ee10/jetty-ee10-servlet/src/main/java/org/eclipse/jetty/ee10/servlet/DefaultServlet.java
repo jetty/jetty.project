@@ -180,6 +180,7 @@ import org.slf4j.LoggerFactory;
 public class DefaultServlet extends HttpServlet
 {
     private static final Logger LOG = LoggerFactory.getLogger(DefaultServlet.class);
+    public static final String CONTEXT_INIT = "org.eclipse.jetty.servlet.Default.";
 
     private ServletContextHandler _contextHandler;
     private ServletResourceService _resourceService;
@@ -393,6 +394,29 @@ public class DefaultServlet extends HttpServlet
             ret.add(CompressedContentFormat.GZIP);
         }
         return ret;
+    }
+
+    /**
+     * <p>
+     *     Returns a {@code String} containing the value of the named initialization parameter, or null if the parameter does not exist.
+     * </p>
+     *
+     * <p>
+     *     Parameter lookup first checks the {@link ServletContext#getInitParameter(String)} for the
+     *     parameter prefixed with {@code org.eclipse.jetty.servlet.Default.}, then checks
+     *     {@link jakarta.servlet.ServletConfig#getInitParameter(String)} for the actual value
+     * </p>
+     *
+     * @param name a {@code String} specifying the name of the initialization parameter
+     * @return a {@code String} containing the value of the initialization parameter
+     */
+    @Override
+    public String getInitParameter(String name)
+    {
+        String value = getServletContext().getInitParameter(CONTEXT_INIT + name);
+        if (value == null)
+            value = super.getInitParameter(name);
+        return value;
     }
 
     private Boolean getInitBoolean(String name)
