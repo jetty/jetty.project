@@ -729,6 +729,22 @@ public class XmlConfigurationTest
         {
         }
 
+        public void call(Aaa aaa)
+        {
+        }
+
+        public void call(Bbb aaa)
+        {
+        }
+
+        public void call(Ccc aaa)
+        {
+        }
+
+        public void call(Abc abc)
+        {
+        }
+
         public void call(Object o)
         {
         }
@@ -746,7 +762,7 @@ public class XmlConfigurationTest
         }
     }
 
-    @RepeatedTest(10)
+    @RepeatedTest(100)
     public void testMethodOrdering() throws Exception
     {
         List<Method> methods = Arrays.stream(TestOrder.class.getMethods()).filter(m -> "call".equals(m.getName())).collect(Collectors.toList());
@@ -755,7 +771,11 @@ public class XmlConfigurationTest
         assertThat(methods, Matchers.contains(
             TestOrder.class.getMethod("call"),
             TestOrder.class.getMethod("call", int.class),
+            TestOrder.class.getMethod("call", Abc.class),
+            TestOrder.class.getMethod("call", Aaa.class),
             TestOrder.class.getMethod("call", String.class),
+            TestOrder.class.getMethod("call", Bbb.class),
+            TestOrder.class.getMethod("call", Ccc.class),
             TestOrder.class.getMethod("call", Object.class),
             TestOrder.class.getMethod("call", String[].class),
             TestOrder.class.getMethod("call", String.class, String[].class)
@@ -1932,40 +1952,44 @@ public class XmlConfigurationTest
     @Test
     public void testExecutableComparator() throws Throwable
     {
-        xx(null);
-        yy(null);
-        zz(null);
+        aaa(null);
+        bbb(null);
+        ccc(null);
 
-        List<Method> methods = Arrays.stream(XmlConfigurationTest.class.getMethods())
-            .filter(m -> m.getName().length() == 2)
-            .toList();
+        List<Method> methods = Arrays.asList(Arrays.stream(XmlConfigurationTest.class.getMethods())
+            .filter(m -> m.getName().length() == 3)
+            .toArray(Method[]::new));
 
         // The implementor must also ensure that the relation is transitive: ((compare(x, y)>0) && (compare(y, z)>0)) implies compare(x, z)>0
         assertThat(EXECUTABLE_COMPARATOR.compare(methods.get(0), methods.get(1)), is(EXECUTABLE_COMPARATOR.compare(methods.get(1), methods.get(2))));
         assertThat(EXECUTABLE_COMPARATOR.compare(methods.get(0), methods.get(1)), is(EXECUTABLE_COMPARATOR.compare(methods.get(0), methods.get(2))));
     }
 
-    public void xx(XXX ignored)
+    public void aaa(Aaa ignored)
     {
     }
 
-    public void yy(YYY ignored)
+    public void bbb(Bbb ignored)
     {
     }
 
-    public void zz(ZZZ ignored)
+    public void ccc(Ccc ignored)
     {
     }
 
-    public interface XXX
+    public interface Aaa
     {
     }
 
-    public static class YYY
+    public interface Abc extends Aaa
     {
     }
 
-    public static class ZZZ implements XXX
+    public static class Bbb
+    {
+    }
+
+    public static class Ccc implements Aaa
     {
     }
 }

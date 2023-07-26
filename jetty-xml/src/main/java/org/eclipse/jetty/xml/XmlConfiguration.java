@@ -119,31 +119,60 @@ public class XmlConfiguration
                     Class<?> t2 = p2[i].getType();
                     if (t1 != t2)
                     {
-                        // Compare distance from Object
-                        int d1 = distanceFromObject(t1);
-                        int d2 = distanceFromObject(t2);
-                        compare = Integer.compare(d2, d1);
+                        // prefer primitives
+                        compare = Boolean.compare(t2.isPrimitive(), t1.isPrimitive());
+                        if (compare == 0)
+                        {
+                            // prefer interfaces
+                            compare = Boolean.compare(t2.isInterface(), t1.isInterface());
 
-                        // break on the first different parameter (should always be true)
-                        if (compare != 0)
-                            break;
+                            if (compare == 0)
+                            {
+                                // prefer most derived
+                                int d1 = calculateDepth(t1);
+                                int d2 = calculateDepth(t2);
+                                compare = Integer.compare(d2, d1);
+                            }
+                        }
                     }
+                    // break on the first different parameter
+                    if (compare != 0)
+                        break;
                 }
             }
         }
+
+        // failsafe is to compare on the generic string
         if (compare == 0)
             compare = e1.toGenericString().compareTo(e2.toGenericString());
-        compare = Math.min(1, Math.max(compare, -1));
-        return compare;
+
+        // Return normalized to -1, 0, 1
+        return Integer.compare(compare, 0);
     };
 
-    private static int distanceFromObject(Class<?> c)
+    private static int calculateDepth(Class<?> c)
     {
         int depth = 0;
-        while (c != null && c != Object.class)
+
+        if (c.isPrimitive())
+            return Integer.MIN_VALUE;
+
+        if (c.isInterface())
         {
-            depth++;
-            c = c.getSuperclass();
+            Set<Class<?>> interfaces = Set.of(c);
+            while (!interfaces.isEmpty())
+            {
+                depth++;
+                interfaces = interfaces.stream().flatMap(i -> Arrays.stream(i.getInterfaces())).collect(Collectors.toSet());
+            }
+        }
+        else
+        {
+            while (c != Object.class && !c.isPrimitive())
+            {
+                depth++;
+                c = c.getSuperclass();
+            }
         }
         return depth;
     }
@@ -938,10 +967,11 @@ public class XmlConfiguration
                 throw new IllegalArgumentException("Method name cannot be blank");
 
             // Lets just try all methods for now
-            List<Method> methods = Arrays.stream(oClass.getMethods())
+            Method[] methods = Arrays.stream(oClass.getMethods())
                 .filter(m -> m.getName().equals(methodName))
                 .sorted(EXECUTABLE_COMPARATOR)
-                .toList();
+                .toArray(Method[]::new);
+
             for (Method method : methods)
             {
                 if (!method.getName().equals(methodName))
