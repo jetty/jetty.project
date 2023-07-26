@@ -389,6 +389,20 @@ public class DefaultServlet extends HttpServlet implements ResourceFactory, Welc
             return ContextHandler.getCurrentContext().getContextHandler();
     }
 
+    /**
+     * <p>
+     *     Returns a {@code String} containing the value of the named initialization parameter, or null if the parameter does not exist.
+     * </p>
+     *
+     * <p>
+     *     Parameter lookup first checks the {@link ServletContext#getInitParameter(String)} for the
+     *     parameter prefixed with {@code org.eclipse.jetty.servlet.Default.}, then checks
+     *     {@link jakarta.servlet.ServletConfig#getInitParameter(String)} for the actual value
+     * </p>
+     *
+     * @param name a {@code String} specifying the name of the initialization parameter
+     * @return a {@code String} containing the value of the initialization parameter
+     */
     @Override
     public String getInitParameter(String name)
     {
