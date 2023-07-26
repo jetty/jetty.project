@@ -59,6 +59,7 @@ import org.xml.sax.InputSource;
 import org.xml.sax.SAXException;
 
 import static java.nio.charset.StandardCharsets.UTF_8;
+import static org.eclipse.jetty.xml.XmlConfiguration.EXECUTABLE_COMPARATOR;
 import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.Matchers.allOf;
 import static org.hamcrest.Matchers.containsString;
@@ -750,7 +751,7 @@ public class XmlConfigurationTest
     {
         List<Method> methods = Arrays.stream(TestOrder.class.getMethods()).filter(m -> "call".equals(m.getName())).collect(Collectors.toList());
         Collections.shuffle(methods);
-        methods.sort(XmlConfiguration.EXECUTABLE_COMPARATOR);
+        methods.sort(EXECUTABLE_COMPARATOR);
         assertThat(methods, Matchers.contains(
             TestOrder.class.getMethod("call"),
             TestOrder.class.getMethod("call", int.class),
@@ -1926,5 +1927,45 @@ public class XmlConfigurationTest
     private interface ThrowableAction
     {
         void run() throws Exception;
+    }
+
+    @Test
+    public void testExecutableComparator() throws Throwable
+    {
+        xx(null);
+        yy(null);
+        zz(null);
+
+        List<Method> methods = Arrays.stream(XmlConfigurationTest.class.getMethods())
+            .filter(m -> m.getName().length() == 2)
+            .toList();
+
+        // The implementor must also ensure that the relation is transitive: ((compare(x, y)>0) && (compare(y, z)>0)) implies compare(x, z)>0
+        assertThat(EXECUTABLE_COMPARATOR.compare(methods.get(0), methods.get(1)), is(EXECUTABLE_COMPARATOR.compare(methods.get(1), methods.get(2))));
+        assertThat(EXECUTABLE_COMPARATOR.compare(methods.get(0), methods.get(1)), is(EXECUTABLE_COMPARATOR.compare(methods.get(0), methods.get(2))));
+    }
+
+    public void xx(XXX ignored)
+    {
+    }
+
+    public void yy(YYY ignored)
+    {
+    }
+
+    public void zz(ZZZ ignored)
+    {
+    }
+
+    public interface XXX
+    {
+    }
+
+    public static class YYY
+    {
+    }
+
+    public static class ZZZ implements XXX
+    {
     }
 }

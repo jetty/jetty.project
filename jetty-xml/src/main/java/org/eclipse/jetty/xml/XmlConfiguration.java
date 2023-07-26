@@ -119,16 +119,10 @@ public class XmlConfiguration
                     Class<?> t2 = p2[i].getType();
                     if (t1 != t2)
                     {
-                        // Favour derived type over base type
-                        compare = Boolean.compare(t1.isAssignableFrom(t2), t2.isAssignableFrom(t1));
-                        if (compare == 0)
-                        {
-                            // favour primitive type over reference
-                            compare = Boolean.compare(!t1.isPrimitive(), !t2.isPrimitive());
-                            if (compare == 0)
-                                // Use name to avoid non determinant sorting
-                                compare = t1.getName().compareTo(t2.getName());
-                        }
+                        // Compare distance from Object
+                        int d1 = distanceFromObject(t1);
+                        int d2 = distanceFromObject(t2);
+                        compare = Integer.compare(d2, d1);
 
                         // break on the first different parameter (should always be true)
                         if (compare != 0)
@@ -136,11 +130,23 @@ public class XmlConfiguration
                     }
                 }
             }
-            compare = Math.min(1, Math.max(compare, -1));
         }
-
+        if (compare == 0)
+            compare = e1.toGenericString().compareTo(e2.toGenericString());
+        compare = Math.min(1, Math.max(compare, -1));
         return compare;
     };
+
+    private static int distanceFromObject(Class<?> c)
+    {
+        int depth = 0;
+        while (c != null && c != Object.class)
+        {
+            depth++;
+            c = c.getSuperclass();
+        }
+        return depth;
+    }
 
     /**
      * Set the standard IDs and properties expected in a jetty XML file:
