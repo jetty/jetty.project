@@ -44,7 +44,7 @@ import org.eclipse.jetty.util.thread.Scheduler;
 public class ServerQuicSession extends QuicSession implements CyclicTimeouts.Expirable
 {
     private final Connector connector;
-    private long expireNanoTime;
+    private long expireNanoTime = Long.MAX_VALUE;
 
     protected ServerQuicSession(Executor executor, Scheduler scheduler, ByteBufferPool byteBufferPool, QuicheConnection quicheConnection, QuicConnection connection, SocketAddress remoteAddress, Connector connector)
     {
