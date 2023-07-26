@@ -1225,7 +1225,7 @@ public class DefaultServlet extends HttpServlet
 
     private static boolean isDefaultMapping(HttpServletRequest req)
     {
-        return req.getHttpServletMapping().getMappingMatch() == MappingMatch.DEFAULT;
+        return isIncluded(req) || req.getHttpServletMapping().getMappingMatch() == MappingMatch.DEFAULT;
     }
 
     /**
