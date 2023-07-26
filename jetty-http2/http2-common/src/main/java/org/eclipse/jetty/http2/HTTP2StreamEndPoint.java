@@ -252,11 +252,18 @@ public abstract class HTTP2StreamEndPoint implements EndPoint
         if (buffers == null || buffers.length == 0 || remaining(buffers) == 0)
             return true;
 
+        // Differently from other EndPoint implementations, where write() calls flush(),
+        // in this implementation all the work is done in write(), and flush() is mostly
+        // a no-operation.
+        // This is because the flush() semantic is that it must not leave pending
+        // operations if it cannot write the buffers; therefore we cannot call
+        // stream.data() from flush() because if the stream is congested, the buffers
+        // would not be fully written, we would return false from flush(), but
+        // stream.data() would remain as a pending operation.
+
         WriteState current = writeState.get();
         switch (current.state)
         {
-            // The flush() semantic is that it must not leave pending operations, therefore we
-            // cannot call stream.data() because it would remain pending if the stream is congested.
             case IDLE:
             case PENDING:
                 return false;
