@@ -872,7 +872,8 @@ public class ContextHandler extends Handler.Wrapper implements Attributes, Alias
     }
 
     /**
-     * <p>Set the base resource to serve content from for this context.</p>
+     * <p>Set the base resource to serve content from for this context,
+     * which must exist and be readable when the context is started.</p>
      *
      * @param resourceBase The base resource for the context.
      */
@@ -891,7 +892,7 @@ public class ContextHandler extends Handler.Wrapper implements Attributes, Alias
     /**
      * <p>Set the base resource to serve content from.</p>
      *
-     * <p>Note: this {@link Resource} is created from {@link ResourceFactory#of(org.eclipse.jetty.util.component.Container)}
+     * <p>Note: the {@link Resource} is created from {@link ResourceFactory#of(org.eclipse.jetty.util.component.Container)}
      * which is tied to the lifecycle of this context.</p>
      *
      * @param path The path to create a base resource from.
@@ -905,7 +906,7 @@ public class ContextHandler extends Handler.Wrapper implements Attributes, Alias
     /**
      * <p>Set the base resource to serve content from.</p>
      *
-     * <p>Note: this {@link Resource} is created from {@link ResourceFactory#of(org.eclipse.jetty.util.component.Container)}
+     * <p>Note: the {@link Resource} is created from {@link ResourceFactory#of(org.eclipse.jetty.util.component.Container)}
      * which is tied to the lifecycle of this context.</p>
      *
      * @param base The path to create a base resource from.
