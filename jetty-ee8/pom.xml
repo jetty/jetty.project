@@ -92,6 +92,8 @@
             <nonFilteredFileExtension>bmp</nonFilteredFileExtension>
             <nonFilteredFileExtension>jpg</nonFilteredFileExtension>
             <nonFilteredFileExtension>jpeg</nonFilteredFileExtension>
+            <nonFilteredFileExtension>rar</nonFilteredFileExtension>
+            <nonFilteredFileExtension>xcf</nonFilteredFileExtension>
           </nonFilteredFileExtensions>
         </configuration>
         <dependencies>
