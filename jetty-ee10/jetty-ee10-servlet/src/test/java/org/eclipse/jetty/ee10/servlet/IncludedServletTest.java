@@ -50,8 +50,8 @@ public class IncludedServletTest
         @Override
         protected void doGet(HttpServletRequest req, HttpServletResponse resp) throws ServletException, IOException
         {
-            resp.setHeader("main-page-key", "main-page-value");
             req.getRequestDispatcher("/included").include(req, resp);
+            resp.setHeader("main-page-key", "main-page-value");
 
             PrintWriter out = resp.getWriter();
             out.println("<h2> Hello, this is the top page.");

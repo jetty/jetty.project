@@ -149,7 +149,7 @@ public class Dispatcher implements RequestDispatcher
         }
         finally
         {
-            includeResponse.flushIfWriting();
+            includeResponse.onIncluded();
             servletContextResponse.included();
         }
     }
@@ -433,16 +433,17 @@ public class Dispatcher implements RequestDispatcher
         public static final String JETTY_INCLUDE_HEADER_PREFIX = "org.eclipse.jetty.server.include.";
         ServletOutputStream _servletOutputStream;
         PrintWriter _printWriter;
+        PrintWriter _mustFlush;
         
         public IncludeResponse(HttpServletResponse response)
         {
             super(response);
         }
 
-        public void flushIfWriting()
+        public void onIncluded()
         {
-            if (_printWriter != null)
-                _printWriter.flush();
+            if (_mustFlush != null)
+                _mustFlush.flush();
         }
 
         @Override
@@ -528,7 +529,7 @@ public class Dispatcher implements RequestDispatcher
                 }
                 catch (IllegalStateException ise)
                 {
-                    _printWriter = new PrintWriter(new OutputStreamWriter(super.getOutputStream(), super.getCharacterEncoding()));
+                    _printWriter = _mustFlush = new PrintWriter(new OutputStreamWriter(super.getOutputStream(), super.getCharacterEncoding()));
                 }
             }
             return _printWriter;
@@ -567,15 +568,13 @@ public class Dispatcher implements RequestDispatcher
         @Override
         public void reset()
         {
-            // TODO can include do this?
-            super.reset();
+            // NOOP for include.
         }
 
         @Override
         public void resetBuffer()
         {
-            // TODO can include do this?
-            super.resetBuffer();
+            // NOOP for include.
         }
 
         @Override
