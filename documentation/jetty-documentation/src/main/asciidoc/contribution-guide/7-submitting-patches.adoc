@@ -28,7 +28,7 @@ See link:https://help.github.com/articles/setting-your-email-in-git[this guide] 
 ==== Writing commit messages
 
 If your pull request addresses a particular issue in our repository, then the commit message should reference the issue.
-Specifically, the message should follow the form *Issue #<XXX> <description of the commit>*, like so:
+Specifically, the message should follow the form *Issue #<XXX> <description of the commit>*:
 
 [source, shell]
 ----

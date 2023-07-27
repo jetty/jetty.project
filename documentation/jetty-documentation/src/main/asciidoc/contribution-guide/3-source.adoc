@@ -14,7 +14,7 @@
 [[cg-getting-source]]
 == Getting the source code
 
-Jetty's source code lives on GitHub at https://github.com/eclipse/jetty.project where it is managed by the http://github.com/eclipse/[Eclipse Foundation].
+Jetty's source is maintained on GitHub at https://github.com/eclipse/jetty.project, where it is managed by the http://github.com/eclipse/[Eclipse Foundation].
 
 You can clone a copy of the Jetty repo onto your local machine by running:
 
@@ -24,18 +24,17 @@ git clone https://github.com/eclipse/jetty.project.git
 ----
 
 [[cg-repositories]]
-=== Primary and secondary repositories
+=== Secondary repositories
 
-As well as the primary Jetty code repository, we maintain a number of secondary repos for project-related code and metadata.
+In addition to the https://github.com/eclipse/jetty.project[primary Jetty code repository], we maintain a number of secondary repos for project-related code and metadata:
 
-Primary Jetty code repository:: https://github.com/eclipse/jetty.project
 Administrative pom.xml file:: https://github.com/eclipse/jetty.parent
 Build toolchain artifacts:: https://github.com/eclipse/jetty.toolchain
 Development files/configuration:: https://git.eclipse.org/c/jetty/org.eclipse.jetty.admin.git
 
 [[cg-version-branches]]
 === Version branches
-If you are planning on working with a specific issue within Jetty it is important to target the correct branch for a pull request.
+If you plan to work on a specific issue within Jetty, make sure to target the correct branch for your pull request.
 
 .Active and inactive Jetty branches
 [cols="4"]
@@ -49,8 +48,8 @@ If you are planning on working with a specific issue within Jetty it is importan
 | jetty-7 | Mythical | Servlet 2.5 | Java 5
 |===
 
-As a matter of project policy, maintenance branches are periodically merged wholesale into active development branches.
-This means that changes to maintenance branches should typically be forward compatible with later releases.
+Maintenance branches are periodically merged wholesale into active development branches.
+As such, *changes to maintenance branches should typically be forward compatible* with later releases.
 
-Older branches remain untouched unless specifically targeted by a pull request.
+Older branches are only updated if they get specifically targeted by a pull request.
 Also, changes to older branches aren't regularly merged forward -- although an individual change may be cherry-picked forward, depending on the nature of the fix.

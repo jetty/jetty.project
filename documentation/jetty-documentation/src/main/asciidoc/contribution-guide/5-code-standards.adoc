@@ -13,26 +13,25 @@
 
 [[cg-code-standards]]
 == Code Standards
-Jetty uses number of conventions for its source code.
-The developers of Jetty use a variety of tooling and editors when developing Jetty so standards and conventions are important!
+This section outlines the various coding conventions and standards we use throughout the Jetty codebase.
 
 [[cg-ide-configuration]]
 === Configuring your IDE
 
 IntelliJ IDE::
-An IntelliJ code style XML file is available in the Jetty code tree at
+An IntelliJ code style XML file is available in the source repo at
 https://github.com/eclipse/jetty.project/blob/jetty-10.0.x/build-resources/jetty-codestyle-intellij.xml[`/build-resources/jetty-codestyle-intellij.xml`]
 // TODO: The above link points to the jetty-10.0.x branch, but it doesn't look like there's a `build-resources` directory for jetty-12.0.x.
-Follow the https://www.jetbrains.com/help/idea/configuring-code-style.html#import-export-schemes[IntelliJ documentation] to apply these code style settings locally.
+Follow https://www.jetbrains.com/help/idea/configuring-code-style.html#import-export-schemes[IntelliJ's documentation] to import these settings into your IDE.
 
 Eclipse IDE::
-An Eclipse code style XML file can be found in the code tree
+An Eclipse code style XML file is available in the source repo at
 https://github.com/eclipse/jetty.project/blob/jetty-10.0.x/build-resources/jetty-codestyle-eclipse-ide.xml[`/build-resources/jetty-codestyle-eclipse-ide.xml`].
 
 [[cg-java-conventions]]
 === Java conventions
 
-The following sample code shows the basic Java styles and conventions used throughout the Jetty codebase:
+The following code sample shows some basic Java styles and conventions used throughout the Jetty codebase:
 
 [source, java]
 ----

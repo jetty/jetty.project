@@ -14,13 +14,13 @@
 [[cg-building-jetty]]
 == Building Jetty
 
-Jetty uses http://maven.apache.org/[Apache Maven] as its build tool.
-To successfully build the project, you will also need a recent version of the Java Development Kit (JDK).
+Jetty's uses http://maven.apache.org/[Apache Maven] for builds.
+To successfully build the project, you will also need a recent version of the https://www.oracle.com/java/technologies/downloads/[Java Development Kit (JDK)].
 
 [[cg-maven-jdk-requirements]]
 === Maven and JDK requirements
 
-Here are the minimum Maven and JDK version build requirements for each of the actively maintained branches of Jetty.
+Here are the minimum Maven and JDK version build requirements for each actively maintained branch.
 
 .Build versioning requirements by branch
 [cols="4"]
@@ -35,13 +35,11 @@ Here are the minimum Maven and JDK version build requirements for each of the ac
 [[cg-fast-build]]
 === Running a fast build
 
-To get started with Jetty as quickly as possible, navigate to your local copy of the Jetty repo and run `maven -Pfast clean install`.
+To get started with Jetty as quickly as possible, navigate to your local copy of the Jetty repo and run:
 
 [source, shell]
 ----
-$ git clone https://github.com/eclipse/jetty.project.git
-$ cd jetty.project
-$ mvn -Pfast clean install
+mvn -Pfast clean install
 ----
 
 The `-Pfast` flag tells Maven to bypass running tests and other checks.
@@ -49,16 +47,15 @@ The `-Pfast` flag tells Maven to bypass running tests and other checks.
 [[cg-full-build]]
 === Running a full build
 
-To build Jetty and automatically run all tests -- which can take quite some time -- run `mvn install` without any flags:
+To build Jetty and automatically run all tests, run:
 
 [source, shell]
 ----
-$ git clone https://github.com/eclipse/jetty.project.git
-$ cd jetty.project
-$ mvn install
+mvn install
 ----
 
-The full Jetty build runs hundreds of test cases, many of which spin up embedded instances of Jetty itself.
+The full build takes substantial time and memory, as it runs hundreds of test cases -- many of which spin up embedded instances of Jetty itself.
+
 The build also runs stress tests that may require you (depending on your hardware or operating system) to set you file descriptor limit to a value greater than 2048.
 You can view or set your file descriptor limit by running `ulimit -n [new_value]`.
 
@@ -73,11 +70,18 @@ You can help us track these flaky tests by opening an https://github.com/eclipse
 === Executing tests in parallel
 
 Jetty uses https://junit.org/junit5/docs/current/user-guide/#writing-tests-parallel-execution[Junit5's parallel execution] to run test cases in parallel.
-This is configurable with the following command line flags.
+This behavior is configurable via flags passed to Maven, like so:
 
--Djunit.jupiter.execution.parallel.enabled:: Set to `false` to disable parallel execution of tests, like so:
+[source, shell]
+----
+mvn install -Djunit.jupiter.execution.parallel.enabled=false
+----
 
-    mvn install -Djunit.jupiter.execution.parallel.enabled=false
+Here are the available configuration flags:
+
+`-Djunit.jupiter.execution.parallel.enabled=[BOOLEAN]`:: Disables parallel execution of tests.
+
+`-Djunit.jupiter.execution.parallel.config.fixed.parallelism=[NUMBER]`:: Configures the number of tests to be executed in parallel.
 
 [NOTE]
 ====
@@ -91,18 +95,12 @@ Certain tests cannot be run in parallel because they access or modify  `static` 
 Maven will run these tests in isolation even when parallel execution is explicitly enabled.
 ====
 
--Djunit.jupiter.execution.parallel.config.fixed.parallelism:: Configures the number of tests to be executed in parallel.
-
-    mvn install -Djunit.jupiter.execution.parallel.config.fixed.parallelism=2
-
-// TODO: review this section
 [[cg-option-build-tools]]
 === Optional build tools
 
 * https://graphviz.org/[Graphviz]: used by Asciidoctor in the `jetty-documentation` module to produce various graphs. See <<cg-documentation>> for more information.
 * https://www.docker.com/[Docker]: used to run some integration tests for testing third party integrations.
 
-// TODO: review this section
 [[cg-build-artifacts]]
 === Build artifacts
 
