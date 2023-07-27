@@ -94,6 +94,8 @@
             <nonFilteredFileExtension>jpeg</nonFilteredFileExtension>
             <nonFilteredFileExtension>rar</nonFilteredFileExtension>
             <nonFilteredFileExtension>xcf</nonFilteredFileExtension>
+            <nonFilteredFileExtension>svg</nonFilteredFileExtension>
+            <nonFilteredFileExtension>sha1</nonFilteredFileExtension>
           </nonFilteredFileExtensions>
         </configuration>
         <dependencies>
