@@ -29,6 +29,7 @@ import org.eclipse.jetty.client.util.BytesRequestContent;
 import org.eclipse.jetty.http.HttpField;
 import org.eclipse.jetty.http.HttpFields;
 import org.eclipse.jetty.http.HttpHeader;
+import org.eclipse.jetty.http.HttpMethod;
 import org.eclipse.jetty.http.HttpVersion;
 import org.eclipse.jetty.io.CyclicTimeouts;
 import org.eclipse.jetty.util.Attachable;
@@ -152,7 +153,9 @@ public abstract class HttpConnection implements IConnection, Attachable
         }
 
         ProxyConfiguration.Proxy proxy = destination.getProxy();
-        if (proxy instanceof HttpProxy && !HttpClient.isSchemeSecure(request.getScheme()))
+        // RFC 9112, section 3.2.2: when making a request to a proxy other than CONNECT,
+        // the client must send the target URI in absolute-form as the request target.
+        if (proxy instanceof HttpProxy && !HttpMethod.CONNECT.is(request.getMethod()))
         {
             URI uri = request.getURI();
             if (uri != null)

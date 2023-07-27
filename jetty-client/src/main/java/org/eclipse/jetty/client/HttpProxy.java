@@ -28,7 +28,6 @@ import org.eclipse.jetty.client.api.Response;
 import org.eclipse.jetty.client.api.Result;
 import org.eclipse.jetty.http.HttpHeader;
 import org.eclipse.jetty.http.HttpMethod;
-import org.eclipse.jetty.http.HttpScheme;
 import org.eclipse.jetty.http.HttpStatus;
 import org.eclipse.jetty.io.ClientConnectionFactory;
 import org.eclipse.jetty.io.ClientConnector;
@@ -194,19 +193,15 @@ public class HttpProxy extends ProxyConfiguration.Proxy
         private void tunnel(HttpDestination destination, Connection connection)
         {
             String target = destination.getOrigin().getAddress().asString();
-            Origin.Address proxyAddress = destination.getConnectAddress();
             HttpClient httpClient = destination.getHttpClient();
             long connectTimeout = httpClient.getConnectTimeout();
-            Request connect = new TunnelRequest(httpClient, proxyAddress)
+            Request connect = new TunnelRequest(httpClient, destination.getProxy().getURI())
                 .method(HttpMethod.CONNECT)
                 .path(target)
                 .headers(headers -> headers.put(HttpHeader.HOST, target))
                 // Use the connect timeout as a total timeout,
                 // since this request is to "connect" to the server.
                 .timeout(connectTimeout, TimeUnit.MILLISECONDS);
-            ProxyConfiguration.Proxy proxy = destination.getProxy();
-            if (proxy.isSecure())
-                connect.scheme(HttpScheme.HTTPS.asString());
 
             connect.attribute(Connection.class.getName(), new ProxyConnection(destination, connection, promise));
             connection.send(connect, new TunnelListener(connect));
@@ -363,9 +358,18 @@ public class HttpProxy extends ProxyConfiguration.Proxy
 
     public static class TunnelRequest extends HttpRequest
     {
-        private TunnelRequest(HttpClient client, Origin.Address address)
+        private final URI proxyURI;
+
+        private TunnelRequest(HttpClient client, URI proxyURI)
         {
-            super(client, new HttpConversation(), URI.create("http://" + address.asString()));
+            super(client, new HttpConversation(), proxyURI);
+            this.proxyURI = proxyURI;
+        }
+
+        @Override
+        public URI getURI()
+        {
+            return proxyURI;
         }
     }
 }
