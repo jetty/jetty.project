@@ -17,6 +17,7 @@ import java.io.IOException;
 import java.net.InetSocketAddress;
 import java.net.SocketAddress;
 import java.util.concurrent.TimeoutException;
+import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicLong;
 
 import jakarta.servlet.RequestDispatcher;
@@ -39,7 +40,6 @@ import org.eclipse.jetty.server.ResponseUtils;
 import org.eclipse.jetty.server.Server;
 import org.eclipse.jetty.server.handler.ContextHandler;
 import org.eclipse.jetty.server.handler.ContextRequest;
-import org.eclipse.jetty.util.Blocker;
 import org.eclipse.jetty.util.Callback;
 import org.eclipse.jetty.util.ExceptionUtil;
 import org.eclipse.jetty.util.HostPort;
@@ -79,8 +79,6 @@ public class ServletChannel
     private final AtomicLong _requests = new AtomicLong();
     private final HttpInput _httpInput;
     private final HttpOutput _httpOutput;
-    private final Dispatchable _requestDispatchable;
-    private final Dispatchable _asyncDispatchable;
     private ServletContextRequest _servletContextRequest;
     private Request _request;
     private Response _response;
@@ -101,8 +99,6 @@ public class ServletChannel
         _state = new ServletRequestState(this);
         _httpInput = new HttpInput(this);
         _httpOutput = new HttpOutput(this);
-        _requestDispatchable = new RequestDispatchable();
-        _asyncDispatchable = new AsyncDispatchable();
     }
 
     public ConnectionMetaData getConnectionMetaData()
@@ -480,13 +476,15 @@ public class ServletChannel
 
                     case DISPATCH:
                     {
-                        dispatch(_requestDispatchable);
+                        reopen();
+                        dispatch();
                         break;
                     }
 
                     case ASYNC_DISPATCH:
                     {
-                        dispatch(_asyncDispatchable);
+                        reopen();
+                        dispatchAsync();
                         break;
                     }
 
@@ -528,16 +526,22 @@ public class ServletChannel
                             }
                             else
                             {
-                                // TODO: do this non-blocking.
-                                // Callback completeCallback = Callback.from(() -> _state.completed(null), _state::completed);
-                                // _state.completing();
-                                try (Blocker.Callback blocker = Blocker.callback())
+                                AtomicBoolean asyncCompletion = new AtomicBoolean(false);
+                                Callback errorCallback = Callback.from(() ->
                                 {
-                                    // We do not notify ServletRequestListener on this dispatch because it might not
-                                    // be dispatched to an error page, so we delegate this responsibility to the ErrorHandler.
-                                    dispatch(new ErrorDispatchable(errorHandler, blocker));
-                                    blocker.block();
-                                }
+                                    if (!asyncCompletion.compareAndSet(false, true))
+                                        _state.scheduleDispatch();
+                                });
+
+                                // We do not notify ServletRequestListener on this dispatch because it might not
+                                // be dispatched to an error page, so we delegate this responsibility to the ErrorHandler.
+                                reopen();
+                                errorHandler.handle(getServletContextRequest(), getServletContextResponse(), errorCallback);
+
+                                // If the callback has already been completed we should continue in handle loop.
+                                // Otherwise, the callback will schedule a dispatch to handle().
+                                if (asyncCompletion.compareAndSet(false, true))
+                                    return false;
                             }
                         }
                         catch (Throwable x)
@@ -654,6 +658,12 @@ public class ServletChannel
         return !suspended;
     }
 
+    private void reopen()
+    {
+        _servletContextRequest.getServletContextResponse().getHttpOutput().reopen();
+        getHttpOutput().reopen();
+    }
+
     /**
      * @param message the error message.
      * @return true if we have sent an error, false if we have aborted.
@@ -677,13 +687,6 @@ public class ServletChannel
             abort(x);
         }
         return false;
-    }
-
-    private void dispatch(Dispatchable dispatchable) throws Exception
-    {
-        _servletContextRequest.getServletContextResponse().getHttpOutput().reopen();
-        getHttpOutput().reopen();
-        dispatchable.dispatch();
     }
 
     /**
@@ -837,7 +840,6 @@ public class ServletChannel
 
         // Callback will either be succeeded here or failed in abort().
         Callback callback = _callback;
-        ServletContextRequest servletContextRequest = _servletContextRequest;
         // Must recycle before notification to allow for reuse.
         // Recycle always done here even if an abort is called.
         recycle();
@@ -889,101 +891,70 @@ public class ServletChannel
         }
     }
 
-    interface Dispatchable
+    private void dispatch() throws Exception
     {
-        void dispatch() throws Exception;
-    }
-
-    private class RequestDispatchable implements Dispatchable
-    {
-        @Override
-        public void dispatch() throws Exception
+        ServletContextHandler servletContextHandler = getServletContextHandler();
+        ServletContextRequest servletContextRequest = getServletContextRequest();
+        ServletApiRequest servletApiRequest = servletContextRequest.getServletApiRequest();
+        try
         {
-            ServletContextHandler servletContextHandler = getServletContextHandler();
-            ServletContextRequest servletContextRequest = getServletContextRequest();
-            ServletApiRequest servletApiRequest = servletContextRequest.getServletApiRequest();
-            try
-            {
-                servletContextHandler.requestInitialized(servletContextRequest, servletApiRequest);
-                ServletHandler servletHandler = servletContextHandler.getServletHandler();
-                ServletHandler.MappedServlet mappedServlet = servletContextRequest.getMatchedResource().getResource();
-                mappedServlet.handle(servletHandler, Request.getPathInContext(servletContextRequest), servletApiRequest, servletContextRequest.getHttpServletResponse());
-            }
-            finally
-            {
-                servletContextHandler.requestDestroyed(servletContextRequest, servletApiRequest);
-            }
+            servletContextHandler.requestInitialized(servletContextRequest, servletApiRequest);
+            ServletHandler servletHandler = servletContextHandler.getServletHandler();
+            ServletHandler.MappedServlet mappedServlet = servletContextRequest.getMatchedResource().getResource();
+            mappedServlet.handle(servletHandler, Request.getPathInContext(servletContextRequest), servletApiRequest, servletContextRequest.getHttpServletResponse());
+        }
+        finally
+        {
+            servletContextHandler.requestDestroyed(servletContextRequest, servletApiRequest);
         }
     }
 
-    private class AsyncDispatchable implements Dispatchable
+    public void dispatchAsync() throws Exception
     {
-        @Override
-        public void dispatch() throws Exception
+        ServletContextHandler servletContextHandler = getServletContextHandler();
+        ServletContextRequest servletContextRequest = getServletContextRequest();
+        ServletApiRequest servletApiRequest = servletContextRequest.getServletApiRequest();
+        try
         {
-            ServletContextHandler servletContextHandler = getServletContextHandler();
-            ServletContextRequest servletContextRequest = getServletContextRequest();
-            ServletApiRequest servletApiRequest = servletContextRequest.getServletApiRequest();
-            try
-            {
-                servletContextHandler.requestInitialized(servletContextRequest, servletApiRequest);
+            servletContextHandler.requestInitialized(servletContextRequest, servletApiRequest);
 
-                HttpURI uri;
-                String pathInContext;
-                AsyncContextEvent asyncContextEvent = _state.getAsyncContextEvent();
-                String dispatchString = asyncContextEvent.getDispatchPath();
-                if (dispatchString != null)
+            HttpURI uri;
+            String pathInContext;
+            AsyncContextEvent asyncContextEvent = _state.getAsyncContextEvent();
+            String dispatchString = asyncContextEvent.getDispatchPath();
+            if (dispatchString != null)
+            {
+                String contextPath = _context.getContextPath();
+                HttpURI.Immutable dispatchUri = HttpURI.from(dispatchString);
+                pathInContext = URIUtil.canonicalPath(dispatchUri.getPath());
+                uri = HttpURI.build(servletContextRequest.getHttpURI())
+                    .path(URIUtil.addPaths(contextPath, pathInContext))
+                    .query(dispatchUri.getQuery());
+            }
+            else
+            {
+                uri = asyncContextEvent.getBaseURI();
+                if (uri == null)
                 {
-                    String contextPath = _context.getContextPath();
-                    HttpURI.Immutable dispatchUri = HttpURI.from(dispatchString);
-                    pathInContext = URIUtil.canonicalPath(dispatchUri.getPath());
-                    uri = HttpURI.build(servletContextRequest.getHttpURI())
-                        .path(URIUtil.addPaths(contextPath, pathInContext))
-                        .query(dispatchUri.getQuery());
+                    uri = servletContextRequest.getHttpURI();
+                    pathInContext = Request.getPathInContext(servletContextRequest);
                 }
                 else
                 {
-                    uri = asyncContextEvent.getBaseURI();
-                    if (uri == null)
-                    {
-                        uri = servletContextRequest.getHttpURI();
-                        pathInContext = Request.getPathInContext(servletContextRequest);
-                    }
-                    else
-                    {
-                        pathInContext = uri.getCanonicalPath();
-                        int length = _context.getContextPath().length();
-                        if (length > 1)
-                            pathInContext = pathInContext.substring(length);
-                    }
+                    pathInContext = uri.getCanonicalPath();
+                    int length = _context.getContextPath().length();
+                    if (length > 1)
+                        pathInContext = pathInContext.substring(length);
                 }
-                // We first worked with the core pathInContext above, but now need to convert to servlet style
-                String decodedPathInContext = URIUtil.decodePath(pathInContext);
-                Dispatcher dispatcher = new Dispatcher(servletContextHandler, uri, decodedPathInContext);
-                dispatcher.async(asyncContextEvent.getSuppliedRequest(), asyncContextEvent.getSuppliedResponse());
             }
-            finally
-            {
-                servletContextHandler.requestDestroyed(servletContextRequest, servletApiRequest);
-            }
+            // We first worked with the core pathInContext above, but now need to convert to servlet style
+            String decodedPathInContext = URIUtil.decodePath(pathInContext);
+            Dispatcher dispatcher = new Dispatcher(servletContextHandler, uri, decodedPathInContext);
+            dispatcher.async(asyncContextEvent.getSuppliedRequest(), asyncContextEvent.getSuppliedResponse());
         }
-    }
-
-    private class ErrorDispatchable implements Dispatchable
-    {
-        private final Request.Handler _errorHandler;
-        private final Callback _callback;
-
-        private ErrorDispatchable(Request.Handler errorHandler, Callback callback)
+        finally
         {
-            _errorHandler = errorHandler;
-            _callback = callback;
-        }
-
-        @Override
-        public void dispatch() throws Exception
-        {
-            _errorHandler.handle(getServletContextRequest(), getServletContextResponse(), _callback);
+            servletContextHandler.requestDestroyed(servletContextRequest, servletApiRequest);
         }
     }
 }
