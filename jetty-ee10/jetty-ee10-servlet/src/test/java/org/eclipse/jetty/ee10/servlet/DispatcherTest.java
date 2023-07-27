@@ -548,6 +548,87 @@ public class DispatcherTest
     }
 
     @Test
+    public void testIncludeStatic() throws Exception
+    {
+        _contextHandler.addServlet(IncludeServlet.class, "/IncludeServlet/*");
+        _contextHandler.addServlet(new ServletHolder("default", DefaultServlet.class), "/");
+        _server.start();
+
+        String responses = _connector.getResponse("""
+            GET /context/IncludeServlet?do=static HTTP/1.1\r
+            Host: local\r
+            Connection: close\r
+            \r
+            """);
+
+        String expected = """
+            HTTP/1.1 200 OK\r
+            Content-Length: 26\r
+            Connection: close\r
+            \r
+            Include:
+            Test 2 to too two""";
+
+        assertEquals(expected, responses);
+    }
+
+    @Test
+    @Disabled("Bug #10155 - response misses the Content-Length header")
+    public void testIncludeStaticWithWriter() throws Exception
+    {
+        _contextHandler.addServlet(new ServletHolder(new IncludeServlet(true)), "/IncludeServlet/*");
+        _contextHandler.addServlet(new ServletHolder("default", DefaultServlet.class), "/");
+        _server.start();
+
+        String responses = _connector.getResponse("""
+            GET /context/IncludeServlet?do=static HTTP/1.1\r
+            Host: local\r
+            Connection: close\r
+            \r
+            """);
+
+        String expected = """
+            HTTP/1.1 200 OK\r
+            Content-Length: 26\r
+            Connection: close\r
+            \r
+            Include:
+            Test 2 to too two""";
+
+        assertEquals(expected, responses);
+    }
+
+    @Test
+    public void testForwardStatic() throws Exception
+    {
+        _contextHandler.addServlet(ForwardServlet.class, "/ForwardServlet/*");
+        _contextHandler.addServlet(DefaultServlet.class, "/");
+        _server.start();
+
+        String responses = _connector.getResponse("""
+            GET /context/ForwardServlet?do=req.echo&uri=/test.txt HTTP/1.1\r
+            Host: local\r
+            Connection: close\r
+            \r
+            """);
+
+        responses = responses.replaceFirst("Last-Modified: .*\r\n", "Last-Modified: xxx\r\n");
+
+        String expected = """
+            HTTP/1.1 200 OK\r
+            Last-Modified: xxx\r
+            Content-Type: text/plain\r
+            Accept-Ranges: bytes\r
+            Content-Length: 17\r
+            Connection: close\r
+            \r
+            Test 2 to too two""";
+
+
+        assertEquals(expected, responses);
+    }
+
+    @Test
     public void testForwardSendError() throws Exception
     {
         _contextHandler.addServlet(ForwardServlet.class, "/forward/*");

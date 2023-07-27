@@ -277,7 +277,7 @@ public abstract class WriteFlusher
             if (buffers != null)
             {
                 if (DEBUG)
-                    LOG.debug("flushed incomplete");
+                    LOG.debug("flush incomplete {}", this);
                 PendingState pending = new PendingState(callback, address, buffers);
                 if (updateState(__WRITING, pending))
                     onIncompleteFlush();

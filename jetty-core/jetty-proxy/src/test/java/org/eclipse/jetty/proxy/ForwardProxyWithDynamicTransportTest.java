@@ -22,9 +22,11 @@ import java.util.List;
 import java.util.concurrent.ConcurrentMap;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.TimeUnit;
+import java.util.stream.IntStream;
 
 import org.eclipse.jetty.alpn.server.ALPNServerConnectionFactory;
 import org.eclipse.jetty.client.AbstractConnectionPool;
+import org.eclipse.jetty.client.ByteBufferRequestContent;
 import org.eclipse.jetty.client.ContentResponse;
 import org.eclipse.jetty.client.Destination;
 import org.eclipse.jetty.client.HttpClient;
@@ -34,6 +36,7 @@ import org.eclipse.jetty.client.transport.HttpClientConnectionFactory;
 import org.eclipse.jetty.client.transport.HttpClientTransportDynamic;
 import org.eclipse.jetty.http.HostPortHttpField;
 import org.eclipse.jetty.http.HttpFields;
+import org.eclipse.jetty.http.HttpMethod;
 import org.eclipse.jetty.http.HttpScheme;
 import org.eclipse.jetty.http.HttpStatus;
 import org.eclipse.jetty.http.HttpVersion;
@@ -52,6 +55,7 @@ import org.eclipse.jetty.http2.server.HTTP2CServerConnectionFactory;
 import org.eclipse.jetty.http2.server.HTTP2ServerConnectionFactory;
 import org.eclipse.jetty.io.ClientConnectionFactory;
 import org.eclipse.jetty.io.ClientConnector;
+import org.eclipse.jetty.io.Content;
 import org.eclipse.jetty.io.EndPoint;
 import org.eclipse.jetty.server.ConnectionFactory;
 import org.eclipse.jetty.server.Handler;
@@ -283,6 +287,59 @@ public class ForwardProxyWithDynamicTransportTest
         Destination destination = destinations.get(0);
         AbstractConnectionPool connectionPool = (AbstractConnectionPool)destination.getConnectionPool();
         assertEquals(1, connectionPool.getConnectionCount());
+    }
+
+    @ParameterizedTest(name = "proxyProtocol={0}, proxySecure={1}, serverProtocol={2}, serverSecure={3}")
+    @MethodSource("testParams")
+    public void testProxyConcurrentLoad(Origin.Protocol proxyProtocol, boolean proxySecure, HttpVersion serverProtocol, boolean serverSecure) throws Exception
+    {
+        start(new Handler.Abstract()
+        {
+            @Override
+            public boolean handle(Request request, Response response, Callback callback)
+            {
+                Content.copy(request, response, callback);
+                return true;
+            }
+        });
+
+        int parallelism = 8;
+        boolean proxyMultiplexed = proxyProtocol.getProtocols().stream().allMatch(p -> p.startsWith("h2"));
+        client.setMaxConnectionsPerDestination(proxyMultiplexed ? 1 : parallelism);
+
+        int proxyPort = proxySecure ? proxyTLSConnector.getLocalPort() : proxyConnector.getLocalPort();
+        Origin.Address proxyAddress = new Origin.Address("localhost", proxyPort);
+        HttpProxy proxy = new HttpProxy(proxyAddress, proxySecure, proxyProtocol);
+        client.getProxyConfiguration().addProxy(proxy);
+
+        String scheme = serverSecure ? "https" : "http";
+        int serverPort = serverSecure ? serverTLSConnector.getLocalPort() : serverConnector.getLocalPort();
+        int contentLength = 128 * 1024;
+
+        int iterations = 16;
+        IntStream.range(0, parallelism).parallel().forEach(p ->
+            IntStream.range(0, iterations).forEach(i ->
+            {
+                try
+                {
+                    String id = p + "-" + i;
+                    ContentResponse response = client.newRequest("localhost", serverPort)
+                        .scheme(scheme)
+                        .method(HttpMethod.POST)
+                        .path("/path/" + id)
+                        .version(serverProtocol)
+                        .body(new ByteBufferRequestContent(ByteBuffer.allocate(contentLength)))
+                        .timeout(5, TimeUnit.SECONDS)
+                        .send();
+
+                    assertEquals(HttpStatus.OK_200, response.getStatus());
+                    assertEquals(contentLength, response.getContent().length);
+                }
+                catch (Throwable x)
+                {
+                    throw new RuntimeException(x);
+                }
+            }));
     }
 
     @Test
