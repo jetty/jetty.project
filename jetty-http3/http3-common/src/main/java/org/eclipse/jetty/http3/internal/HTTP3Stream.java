@@ -42,7 +42,7 @@ public abstract class HTTP3Stream implements Stream, CyclicTimeouts.Expirable, A
     private CloseState closeState = CloseState.NOT_CLOSED;
     private FrameState frameState = FrameState.INITIAL;
     private long idleTimeout;
-    private long expireNanoTime;
+    private long expireNanoTime = Long.MAX_VALUE;
     private Object attachment;
 
     public HTTP3Stream(HTTP3Session session, QuicStreamEndPoint endPoint, boolean local)
