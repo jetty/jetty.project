@@ -95,6 +95,7 @@ import org.slf4j.LoggerFactory;
 
 import static org.hamcrest.MatcherAssert.assertThat;
 import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertNull;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
 public class ProxyWithDynamicTransportTest
@@ -362,7 +363,7 @@ public class ProxyWithDynamicTransportTest
             @Override
             protected void handleConnect(Request baseRequest, HttpServletRequest request, HttpServletResponse response, String serverAddress)
             {
-                // Handle proxy authentication for tunneled requests.
+                // Handle proxy authentication for tunnelled requests.
                 String proxyAuthorization = request.getHeader(HttpHeader.PROXY_AUTHORIZATION.asString());
                 if (proxyAuthorization == null)
                 {
@@ -379,7 +380,7 @@ public class ProxyWithDynamicTransportTest
             @Override
             protected void service(HttpServletRequest request, HttpServletResponse response) throws ServletException, IOException
             {
-                // Handle proxy authentication for non-tunneled requests.
+                // Handle proxy authentication for non-tunnelled requests.
                 String proxyAuthorization = request.getHeader(HttpHeader.PROXY_AUTHORIZATION.asString());
                 if (proxyAuthorization == null)
                     response.sendError(HttpStatus.FORBIDDEN_403);
@@ -396,10 +397,84 @@ public class ProxyWithDynamicTransportTest
         client.getProxyConfiguration().addProxy(proxy);
 
         URI uri = URI.create(proxyScheme + "://" + proxyAddress.asString());
-        client.getAuthenticationStore().addAuthenticationResult(new BasicAuthentication.BasicResult(uri, HttpHeader.PROXY_AUTHORIZATION, "jetty", "jetty"));
+        client.getAuthenticationStore().addAuthenticationResult(new BasicAuthentication.BasicResult(uri, HttpHeader.PROXY_AUTHORIZATION, "proxy", "proxy"));
 
         String serverScheme = serverSecure ? "https" : "http";
         int serverPort = serverSecure ? serverTLSConnector.getLocalPort() : serverConnector.getLocalPort();
+        ContentResponse response = client.newRequest("localhost", serverPort)
+            .scheme(serverScheme)
+            .version(serverProtocol)
+            .timeout(5, TimeUnit.SECONDS)
+            .send();
+        assertEquals(status, response.getStatus());
+    }
+
+    @ParameterizedTest(name = "proxyProtocol={0}, proxySecure={1}, serverProtocol={2}, serverSecure={3}")
+    @MethodSource("testParams")
+    public void testProxyAuthenticationAndServerAuthentication(Origin.Protocol proxyProtocol, boolean proxySecure, HttpVersion serverProtocol, boolean serverSecure) throws Exception
+    {
+        int status = HttpStatus.NO_CONTENT_204;
+        startServer(new EmptyServerHandler()
+        {
+            @Override
+            protected void service(String target, Request jettyRequest, HttpServletRequest request, HttpServletResponse response)
+            {
+                String proxyAuthorization = request.getHeader(HttpHeader.PROXY_AUTHORIZATION.asString());
+                assertNull(proxyAuthorization);
+
+                String authorization = request.getHeader(HttpHeader.AUTHORIZATION.asString());
+                if (authorization == null)
+                    response.setStatus(HttpStatus.FORBIDDEN_403);
+                else
+                    response.setStatus(status);
+            }
+        });
+        startProxy(new ConnectHandler()
+        {
+            @Override
+            protected void handleConnect(Request baseRequest, HttpServletRequest request, HttpServletResponse response, String serverAddress)
+            {
+                // Handle proxy authentication for tunnelled requests.
+                String proxyAuthorization = request.getHeader(HttpHeader.PROXY_AUTHORIZATION.asString());
+                if (proxyAuthorization == null)
+                {
+                    baseRequest.setHandled(true);
+                    response.setStatus(HttpStatus.FORBIDDEN_403);
+                }
+                else
+                {
+                    super.handleConnect(baseRequest, request, response, serverAddress);
+                }
+            }
+        }, new ForwardProxyServlet()
+        {
+            @Override
+            protected void service(HttpServletRequest request, HttpServletResponse response) throws ServletException, IOException
+            {
+                // Handle proxy authentication for non-tunnelled requests.
+                String proxyAuthorization = request.getHeader(HttpHeader.PROXY_AUTHORIZATION.asString());
+                if (proxyAuthorization == null)
+                    response.sendError(HttpStatus.FORBIDDEN_403);
+                else
+                    super.service(request, response);
+            }
+        });
+        startClient();
+
+        String proxyScheme = proxySecure ? "https" : "http";
+        int proxyPort = proxySecure ? proxyTLSConnector.getLocalPort() : proxyConnector.getLocalPort();
+        Origin.Address proxyAddress = new Origin.Address("localhost", proxyPort);
+        HttpProxy proxy = new HttpProxy(proxyAddress, proxySecure, proxyProtocol);
+        client.getProxyConfiguration().addProxy(proxy);
+
+        String serverScheme = serverSecure ? "https" : "http";
+        int serverPort = serverSecure ? serverTLSConnector.getLocalPort() : serverConnector.getLocalPort();
+
+        URI proxyURI = URI.create(proxyScheme + "://" + proxyAddress.asString());
+        client.getAuthenticationStore().addAuthenticationResult(new BasicAuthentication.BasicResult(proxyURI, HttpHeader.PROXY_AUTHORIZATION, "proxy", "proxy"));
+        URI serverURI = URI.create(serverScheme + "://localhost:" + serverPort);
+        client.getAuthenticationStore().addAuthenticationResult(new BasicAuthentication.BasicResult(serverURI, HttpHeader.AUTHORIZATION, "server", "server"));
+
         ContentResponse response = client.newRequest("localhost", serverPort)
             .scheme(serverScheme)
             .version(serverProtocol)

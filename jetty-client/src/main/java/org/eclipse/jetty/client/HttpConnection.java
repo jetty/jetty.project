@@ -29,8 +29,6 @@ import org.eclipse.jetty.client.util.BytesRequestContent;
 import org.eclipse.jetty.http.HttpField;
 import org.eclipse.jetty.http.HttpFields;
 import org.eclipse.jetty.http.HttpHeader;
-import org.eclipse.jetty.http.HttpMethod;
-import org.eclipse.jetty.http.HttpVersion;
 import org.eclipse.jetty.io.CyclicTimeouts;
 import org.eclipse.jetty.util.Attachable;
 import org.eclipse.jetty.util.HttpCookieStore;
@@ -152,23 +150,32 @@ public abstract class HttpConnection implements IConnection, Attachable
             request.path(path);
         }
 
-        // RFC 9112, section 3.2.2: when making a request to a proxy other than CONNECT,
-        // the client must send the target URI in absolute-form as the request target.
+        boolean http1 = request.getVersion().getVersion() <= 11;
+
+        boolean applyProxyAuthentication = false;
         ProxyConfiguration.Proxy proxy = destination.getProxy();
-        if (proxy instanceof HttpProxy && !HttpMethod.CONNECT.is(request.getMethod()) && !HttpClient.isSchemeSecure(request.getScheme()))
+        if (proxy instanceof HttpProxy)
         {
-            URI uri = request.getURI();
-            if (uri != null)
+            boolean tunnelled = ((HttpProxy)proxy).requiresTunnel(destination.getOrigin());
+
+            // RFC 9112, section 3.2.2: when making a request to a proxy other than CONNECT,
+            // the client must send the target URI in absolute-form as the request target.
+            // In practice, this is only valid for HTTP/1.1 requests that are not tunnelled.
+            if (http1 && !tunnelled)
             {
-                path = uri.toString();
-                request.path(path);
+                URI uri = request.getURI();
+                if (uri != null)
+                    request.path(uri.toString());
             }
+
+            // Do not send proxy authentication headers when tunnelled,
+            // otherwise proxy credentials arrive to the server.
+            applyProxyAuthentication = !tunnelled;
         }
 
-        // If we are HTTP 1.1, add the Host header
-        HttpVersion version = request.getVersion();
+        // If we are HTTP 1.1, add the Host header.
         HttpFields headers = request.getHeaders();
-        if (version.getVersion() <= 11)
+        if (http1)
         {
             if (!headers.contains(HttpHeader.HOST.asString()))
             {
@@ -180,7 +187,7 @@ public abstract class HttpConnection implements IConnection, Attachable
             }
         }
 
-        // Add content headers
+        // Add content headers.
         Request.Content content = request.getBody();
         if (content == null)
         {
@@ -207,7 +214,7 @@ public abstract class HttpConnection implements IConnection, Attachable
             }
         }
 
-        // Cookies
+        // Cookies.
         StringBuilder cookies = convertCookies(request.getCookies(), null);
         CookieStore cookieStore = getHttpClient().getCookieStore();
         if (cookieStore != null && cookieStore.getClass() != HttpCookieStore.Empty.class)
@@ -222,8 +229,9 @@ public abstract class HttpConnection implements IConnection, Attachable
             request.addHeader(cookieField);
         }
 
-        // Authentication
-        applyProxyAuthentication(request, proxy);
+        // Authentication.
+        if (applyProxyAuthentication)
+            applyProxyAuthentication(request, proxy);
         applyRequestAuthentication(request);
     }
 

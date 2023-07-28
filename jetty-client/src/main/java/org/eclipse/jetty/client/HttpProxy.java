@@ -84,6 +84,27 @@ public class HttpProxy extends ProxyConfiguration.Proxy
         return URI.create(getOrigin().asString());
     }
 
+    boolean requiresTunnel(Origin serverOrigin)
+    {
+        if (HttpClient.isSchemeSecure(serverOrigin.getScheme()))
+            return true;
+        Origin.Protocol serverProtocol = serverOrigin.getProtocol();
+        if (serverProtocol == null)
+            return true;
+        List<String> serverProtocols = serverProtocol.getProtocols();
+        return getProtocol().getProtocols().stream().noneMatch(p -> protocolMatches(p, serverProtocols));
+    }
+
+    private boolean protocolMatches(String protocol, List<String> protocols)
+    {
+        return protocols.stream().anyMatch(p -> protocol.equalsIgnoreCase(p) || (isHTTP2(p) && isHTTP2(protocol)));
+    }
+
+    private boolean isHTTP2(String protocol)
+    {
+        return "h2".equalsIgnoreCase(protocol) || "h2c".equalsIgnoreCase(protocol);
+    }
+
     private class HttpProxyClientConnectionFactory implements ClientConnectionFactory
     {
         private final ClientConnectionFactory connectionFactory;
@@ -97,9 +118,7 @@ public class HttpProxy extends ProxyConfiguration.Proxy
         public org.eclipse.jetty.io.Connection newConnection(EndPoint endPoint, Map<String, Object> context) throws IOException
         {
             HttpDestination destination = (HttpDestination)context.get(HttpClientTransport.HTTP_DESTINATION_CONTEXT_KEY);
-            Origin.Protocol serverProtocol = destination.getOrigin().getProtocol();
-            boolean sameProtocol = proxySpeaksServerProtocol(serverProtocol);
-            if (destination.isSecure() || !sameProtocol)
+            if (requiresTunnel(destination.getOrigin()))
             {
                 @SuppressWarnings("unchecked")
                 Promise<Connection> promise = (Promise<Connection>)context.get(HttpClientTransport.HTTP_CONNECTION_PROMISE_CONTEXT_KEY);
@@ -108,6 +127,7 @@ public class HttpProxy extends ProxyConfiguration.Proxy
                     wrapped = ((Promise.Wrapper<Connection>)promise).unwrap();
                 if (wrapped instanceof TunnelPromise)
                 {
+                    // TODO: review this, may not be necessary!
                     // In case the server closes the tunnel (e.g. proxy authentication
                     // required: 407 + Connection: close), we will open another tunnel
                     // so we need to tell the promise about the new EndPoint.
@@ -123,11 +143,6 @@ public class HttpProxy extends ProxyConfiguration.Proxy
             {
                 return connectionFactory.newConnection(endPoint, context);
             }
-        }
-
-        private boolean proxySpeaksServerProtocol(Origin.Protocol serverProtocol)
-        {
-            return serverProtocol != null && getProtocol().getProtocols().stream().anyMatch(p -> serverProtocol.getProtocols().stream().anyMatch(p::equalsIgnoreCase));
         }
 
         private org.eclipse.jetty.io.Connection newProxyConnection(EndPoint endPoint, Map<String, Object> context) throws IOException
@@ -209,19 +224,19 @@ public class HttpProxy extends ProxyConfiguration.Proxy
             try
             {
                 HttpDestination destination = (HttpDestination)context.get(HttpClientTransport.HTTP_DESTINATION_CONTEXT_KEY);
-                ClientConnectionFactory connectionFactory = this.connectionFactory;
+                ClientConnectionFactory factory = connectionFactory;
                 if (destination.isSecure())
                 {
                     // Don't want to do DNS resolution here.
                     InetSocketAddress address = InetSocketAddress.createUnresolved(destination.getHost(), destination.getPort());
                     context.put(ClientConnector.REMOTE_SOCKET_ADDRESS_CONTEXT_KEY, address);
-                    connectionFactory = destination.newSslClientConnectionFactory(null, connectionFactory);
+                    factory = destination.newSslClientConnectionFactory(null, factory);
                 }
                 var oldConnection = endPoint.getConnection();
-                var newConnection = connectionFactory.newConnection(endPoint, context);
-                endPoint.upgrade(newConnection);
+                var newConnection = factory.newConnection(endPoint, context);
                 if (LOG.isDebugEnabled())
                     LOG.debug("HTTP tunnel established: {} over {}", oldConnection, newConnection);
+                endPoint.upgrade(newConnection);
             }
             catch (Throwable x)
             {
