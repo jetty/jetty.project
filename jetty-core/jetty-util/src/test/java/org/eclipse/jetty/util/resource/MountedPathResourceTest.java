@@ -362,4 +362,31 @@ public class MountedPathResourceTest
             assertThat("Dir contents", actual, containsInAnyOrder(expected));
         }
     }
+
+    /**
+     * When mounting multiple points within the same JAR, only
+     * 1 mount should be created, but have reference counts
+     * tracked separately.
+     */
+    @Test
+    public void testMountByJarName()
+    {
+        Path jarPath = MavenPaths.findTestResourceFile("jar-file-resource.jar");
+        URI uriRoot = URI.create("jar:" + jarPath.toUri().toASCIIString() + "!/"); // root
+        URI uriRez = URI.create("jar:" + jarPath.toUri().toASCIIString() + "!/rez/"); // dir
+        URI uriDeep = URI.create("jar:" + jarPath.toUri().toASCIIString() + "!/rez/deep/"); // dir
+        URI uriZzz = URI.create("jar:" + jarPath.toUri().toASCIIString() + "!/rez/deep/zzz"); // file
+
+        try (ResourceFactory.Closeable resourceFactory = ResourceFactory.closeable())
+        {
+            Resource resRoot = resourceFactory.newResource(uriRoot);
+            Resource resRez = resourceFactory.newResource(uriRez);
+            Resource resDeep = resourceFactory.newResource(uriDeep);
+            Resource resZzz = resourceFactory.newResource(uriZzz);
+
+            assertThat(FileSystemPool.INSTANCE.mounts().size(), is(1));
+            int mountCount = FileSystemPool.INSTANCE.getReferenceCount(uriRoot);
+            assertThat(mountCount, is(4));
+        }
+    }
 }
