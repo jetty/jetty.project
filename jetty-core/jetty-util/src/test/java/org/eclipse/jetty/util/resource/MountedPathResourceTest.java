@@ -390,6 +390,10 @@ public class MountedPathResourceTest
             int mountCount = FileSystemPool.INSTANCE.getReferenceCount(uriRoot);
             assertThat(mountCount, is(4));
         }
+
+        assertThat(FileSystemPool.INSTANCE.mounts().size(), is(0));
+        int mountCount = FileSystemPool.INSTANCE.getReferenceCount(uriRoot);
+        assertThat(mountCount, is(0));
     }
 
     /**
@@ -431,6 +435,10 @@ public class MountedPathResourceTest
         finally
         {
             resourceFactory.stop();
+
+            assertThat(FileSystemPool.INSTANCE.mounts().size(), is(0));
+            int mountCount = FileSystemPool.INSTANCE.getReferenceCount(uriRoot);
+            assertThat(mountCount, is(0));
         }
     }
 }

@@ -258,15 +258,15 @@ public class FileSystemPool implements Dumpable
     }
 
     /**
-     * Used to test the reference count value for a URI during unit testing.
+     * Only used to test the reference count value for a URI during unit testing.
      * @param fsUri the filesystem URI to fetch
      * @return the reference count on that URI
      */
-    protected int getReferenceCount(URI fsUri)
+    int getReferenceCount(URI fsUri)
     {
         Bucket bucket = pool.get(fsUri);
         if (bucket == null)
-            return -1;
+            return 0;
         return bucket.counter.get();
     }
 
