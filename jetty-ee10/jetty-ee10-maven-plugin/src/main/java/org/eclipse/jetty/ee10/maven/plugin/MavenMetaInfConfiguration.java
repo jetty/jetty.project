@@ -87,7 +87,7 @@ public class MavenMetaInfConfiguration extends MetaInfConfiguration
      * Add in the classes dirs from test/classes and target/classes
      */
     @Override
-    protected List<Resource> findClassDirs(WebAppContext context) throws Exception
+    protected List<Resource> findClassesDirs(WebAppContext context) throws Exception
     {
         List<Resource> list = new ArrayList<>();
 
@@ -113,7 +113,7 @@ public class MavenMetaInfConfiguration extends MetaInfConfiguration
             });
         }
 
-        List<Resource> classesDirs = super.findClassDirs(context);
+        List<Resource> classesDirs = super.findClassesDirs(context);
         if (classesDirs != null)
             list.addAll(classesDirs);
         return list;

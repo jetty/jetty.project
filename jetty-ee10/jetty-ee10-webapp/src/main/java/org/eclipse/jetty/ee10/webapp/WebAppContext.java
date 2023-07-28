@@ -754,7 +754,7 @@ public class WebAppContext extends ServletContextHandler implements WebAppClassL
         return _war;
     }
 
-    public Resource getWebInf() throws IOException
+    public Resource getWebInf()
     {
         if (getBaseResource() == null)
             return null;

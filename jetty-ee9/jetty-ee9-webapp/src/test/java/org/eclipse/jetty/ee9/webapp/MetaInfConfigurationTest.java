@@ -20,6 +20,7 @@ import java.util.List;
 
 import org.eclipse.jetty.server.Server;
 import org.eclipse.jetty.toolchain.test.MavenTestingUtils;
+import org.eclipse.jetty.util.component.LifeCycle;
 import org.eclipse.jetty.util.resource.FileSystemPool;
 import org.eclipse.jetty.util.resource.Resource;
 import org.junit.jupiter.api.AfterEach;
@@ -76,6 +77,18 @@ public class MetaInfConfigurationTest
             assertTrue(expectedScanTypes.containsAll(scanTypes));
             assertEquals(expectedScanTypes.size(), scanTypes.size());
         }
+    }
+
+    @BeforeEach
+    public void beforeEach()
+    {
+        assertThat(FileSystemPool.INSTANCE.mounts(), empty());
+    }
+
+    @AfterEach
+    public void tearDown()
+    {
+        assertThat(FileSystemPool.INSTANCE.mounts(), empty());
     }
 
     @Test
@@ -154,12 +167,15 @@ public class MetaInfConfigurationTest
             for (Resource r : containerResources)
             {
                 String s = r.toString();
-                assertTrue(s.endsWith("foo-bar-janb.jar") || s.contains("servlet-api"));
+                assertTrue(s.endsWith("foo-bar-janb.jar!/") || s.contains("servlet-api"));
             }
         }
         finally
         {
             config.postConfigure(context);
+            // manually stop ResourceFactory.
+            // normally this would be done via WebAppContext.stop(), but we didn't start the context.
+            LifeCycle.stop(context.getResourceFactory()); // manu
         }
     }
 }

@@ -210,9 +210,9 @@ public class DistributionTests extends AbstractJettyHomeTest
     @ValueSource(strings = {"ee10"})
     public void testSimpleWebAppWithJSPOnModulePath(String env) throws Exception
     {
-        // Testing with env=ee9 is not possible because jakarta.transaction:1.x
-        // does not have a proper module-info.java, so JPMS resolution will fail.
-        // For env=ee10, jakarta.transaction:2.x has a proper module-info.java.
+        /* TODO Testing with env=ee9 is not possible because jakarta.transaction:1.x does not have a proper module-info.java, so JPMS resolution will fail.
+         * For env=ee10, jakarta.transaction:2.x has a proper module-info.java.
+         */
         Path jettyBase = newTestJettyBaseDirectory();
         String jettyVersion = System.getProperty("jettyVersion");
         JettyHomeTester distribution = JettyHomeTester.Builder.newInstance()
@@ -221,12 +221,13 @@ public class DistributionTests extends AbstractJettyHomeTest
             .mavenLocalRepository(System.getProperty("mavenRepoPath"))
             .build();
 
+        // Initialize jetty base
         String mods = String.join(",",
             "resources", "server", "http", "jmx",
             toEnvironment("webapp", env),
             toEnvironment("deploy", env),
-            toEnvironment("glassfish-jstl", env),
-            toEnvironment("apache-jsp", env)
+            toEnvironment("jstl", env),
+            toEnvironment("jsp", env)
         );
         try (JettyHomeTester.Run run1 = distribution.start("--approve-all-licenses", "--add-modules=" + mods))
         {
@@ -236,22 +237,32 @@ public class DistributionTests extends AbstractJettyHomeTest
             File war = distribution.resolveArtifact("org.eclipse.jetty." + env + ".demos:jetty-" + env + "-demo-jsp-webapp:war:" + jettyVersion);
             distribution.installWarFile(war, "test");
 
-            int port = distribution.freePort();
-            try (JettyHomeTester.Run run2 = distribution.start("--jpms", "jetty.http.port=" + port))
-            {
-                assertTrue(run2.awaitConsoleLogsFor("Started oejs.Server@", START_TIMEOUT, TimeUnit.SECONDS));
+            String logging = """
+                # Ensure that JettyHomeTester can find the Console Log it is looking for.
+                # The default behavior is usually sufficient.
+                # This also doubles as an example on how to customize jetty-logging for a DistributionTest
+                org.eclipse.jetty.LEVEL=INFO
+                """;
+            Files.writeString(jettyBase.resolve("resources/jetty-logging.properties"), logging, StandardCharsets.UTF_8);
+        }
 
-                startHttpClient();
-                ContentResponse response = client.GET("http://localhost:" + port + "/test/index.jsp");
-                assertEquals(HttpStatus.OK_200, response.getStatus());
-                assertThat(response.getContentAsString(), containsString("JSP Examples"));
-                assertThat(response.getContentAsString(), not(containsString("<%")));
+        // Run jetty base server in JPMS mode
+        int port = distribution.freePort();
+        try (JettyHomeTester.Run run2 = distribution.start("--jpms", "jetty.http.port=" + port))
+        {
+            assertTrue(run2.awaitConsoleLogsFor("Started oejs.Server@", START_TIMEOUT, TimeUnit.SECONDS));
 
-                response = client.GET("http://localhost:" + port + "/test/jstl.jsp");
-                assertEquals(HttpStatus.OK_200, response.getStatus());
-                assertThat(response.getContentAsString(), containsString("JSTL Example"));
-                assertThat(response.getContentAsString(), not(containsString("<c:")));
-            }
+            // Validate running server behavior by making
+            startHttpClient();
+            ContentResponse response = client.GET("http://localhost:" + port + "/test/index.jsp");
+            assertEquals(HttpStatus.OK_200, response.getStatus());
+            assertThat(response.getContentAsString(), containsString("JSP Examples"));
+            assertThat(response.getContentAsString(), not(containsString("<%")));
+
+            response = client.GET("http://localhost:" + port + "/test/jstl.jsp");
+            assertEquals(HttpStatus.OK_200, response.getStatus());
+            assertThat(response.getContentAsString(), containsString("JSTL Example"));
+            assertThat(response.getContentAsString(), not(containsString("<c:")));
         }
     }
 

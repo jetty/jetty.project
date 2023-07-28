@@ -15,6 +15,7 @@ package org.eclipse.jetty.util;
 
 import java.io.File;
 import java.io.IOException;
+import java.net.MalformedURLException;
 import java.net.URI;
 import java.net.URL;
 import java.net.URLClassLoader;
@@ -1840,6 +1841,28 @@ public final class URIUtil
         return (resourceFactory != null)
             ? correctFileURI(URI.create(resource))
             : Paths.get(resource).toUri();
+    }
+
+    /**
+     * <p>Convert a URI to a URL without checked exceptions</p>
+     *
+     * @param uri the URI to convert from
+     * @return The {@link URL} of the URI
+     * @throws RuntimeException if unable to convert the URI to URL
+     * @see URI#toURL()
+     */
+    public static URL toURL(URI uri)
+    {
+        Objects.requireNonNull(uri);
+
+        try
+        {
+            return uri.toURL();
+        }
+        catch (MalformedURLException e)
+        {
+            throw new RuntimeException(e);
+        }
     }
 
     /**

@@ -285,28 +285,33 @@ public class OSGiMetaInfConfiguration extends MetaInfConfiguration
         File file = BundleFileLocatorHelperFactory.getFactory().getHelper().getBundleInstallLocation(bundle);
         if (file.isDirectory())
         {
+            // Add directory bundle as a directory
+            resources.add(resourceFactory.newResource(file.toPath()));
+
             for (File f : file.listFiles())
             {
                 if (FileID.isJavaArchive(f.getName()) && f.isFile())
                 {
-                    resources.add(resourceFactory.newResource(f.toPath()));
+                    // add *.jar as jar files
+                    resources.add(resourceFactory.newJarFileResource(f.toPath().toUri()));
                 }
                 else if (f.isDirectory() && f.getName().equals("lib"))
                 {
-                    for (File f2 : file.listFiles())
+                    for (File libFile : file.listFiles())
                     {
-                        if (FileID.isJavaArchive(f2.getName()) && f2.isFile())
+                        if (FileID.isJavaArchive(libFile.getName()) && libFile.isFile())
                         {
-                            resources.add(resourceFactory.newResource(f.toPath()));
+                            // add lib/*.jar as jar files
+                            resources.add(resourceFactory.newJarFileResource(f.toPath().toUri()));
                         }
                     }
                 }
             }
-            resources.add(resourceFactory.newResource(file.toPath())); //TODO really???
         }
         else
         {
-            resources.add(resourceFactory.newResource(file.toPath()));
+            // Treat bundle as jar file that needs to be opened (so that resources within it can be found)
+            resources.add(resourceFactory.newJarFileResource(file.toPath().toUri()));
         }
 
         return resources;
