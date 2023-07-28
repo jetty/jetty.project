@@ -421,6 +421,12 @@ public class MountedPathResourceTest
             assertThat(FileSystemPool.INSTANCE.mounts().size(), is(1));
             int mountCount = FileSystemPool.INSTANCE.getReferenceCount(uriRoot);
             assertThat(mountCount, is(4));
+            String dump = resourceFactory.dump();
+            assertThat(dump, containsString("newResourceReferences size=4"));
+            assertThat(dump, containsString(uriRoot.toASCIIString()));
+            assertThat(dump, containsString(uriRez.toASCIIString()));
+            assertThat(dump, containsString(uriDeep.toASCIIString()));
+            assertThat(dump, containsString(uriZzz.toASCIIString()));
         }
         finally
         {

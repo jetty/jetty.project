@@ -134,7 +134,10 @@ class ResourceFactoryInternals
         @Override
         public void dump(Appendable out, String indent) throws IOException
         {
-            Dumpable.dumpObjects(out, indent, this, new DumpableCollection("mounts", _compositeResourceFactory.getMounts()));
+            List<URI> referencedUris = _compositeResourceFactory.getMounts().stream()
+                .map(mount -> mount.root().getURI())
+                .toList();
+            Dumpable.dumpObjects(out, indent, this, new DumpableCollection("newResourceReferences", referencedUris));
         }
     }
 
