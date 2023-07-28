@@ -37,7 +37,12 @@ public abstract class ExtensionFactory implements Iterable<Class<? extends Exten
     public ExtensionFactory()
     {
         availableExtensions = new HashMap<>();
-        Iterator<Extension> iterator = ServiceLoader.load(Extension.class).iterator();
+        final ServiceLoader sl = ServiceLoader.load(Extension.class);
+        if (sl == null)
+        {
+            return;
+        }
+        final Iterator<Extension> iterator = sl.iterator();
         while (true)
         {
             try
