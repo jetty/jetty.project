@@ -298,21 +298,6 @@ public class MetaInfConfiguration extends AbstractConfiguration
     }
 
     /**
-     * For backwards compatibility. This method will always scan for all types of data.
-     *
-     * @param context the context for the scan
-     * @param jars the jars to scan
-     * @param useCaches if true, the scanned info is cached
-     * @throws Exception if unable to scan the jars
-     */
-    // TODO: is this used?
-    public void scanJars(final WebAppContext context, Collection<Resource> jars, boolean useCaches)
-        throws Exception
-    {
-        scanJars(context, jars, useCaches, __allScanTypes);
-    }
-
-    /**
      * Look into the jars to discover info in META-INF. If useCaches == true, then we will
      * cache the info discovered indexed by the jar in which it was discovered: this speeds
      * up subsequent context deployments.
