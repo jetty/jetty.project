@@ -132,25 +132,19 @@ public class HttpProxy extends ProxyConfiguration.Proxy
 
         private org.eclipse.jetty.io.Connection newProxyConnection(EndPoint endPoint, Map<String, Object> context) throws IOException
         {
-            // Replace the promise with the proxy promise that creates the tunnel to the server.
-            @SuppressWarnings("unchecked")
-            Promise<Connection> promise = (Promise<Connection>)context.get(HttpClientTransport.HTTP_CONNECTION_PROMISE_CONTEXT_KEY);
-            CreateTunnelPromise tunnelPromise = new CreateTunnelPromise(connectionFactory, endPoint, promise, context);
-            context.put(HttpClientTransport.HTTP_CONNECTION_PROMISE_CONTEXT_KEY, tunnelPromise);
-
             // Replace the destination with the proxy destination.
             HttpDestination destination = (HttpDestination)context.get(HttpClientTransport.HTTP_DESTINATION_CONTEXT_KEY);
             HttpClient client = destination.getHttpClient();
             HttpDestination proxyDestination = client.resolveDestination(getOrigin());
             context.put(HttpClientTransport.HTTP_DESTINATION_CONTEXT_KEY, proxyDestination);
-            try
-            {
-                return connectionFactory.newConnection(endPoint, context);
-            }
-            finally
-            {
-                context.put(HttpClientTransport.HTTP_DESTINATION_CONTEXT_KEY, destination);
-            }
+
+            // Replace the promise with the proxy promise that creates the tunnel to the server.
+            @SuppressWarnings("unchecked")
+            Promise<Connection> promise = (Promise<Connection>)context.get(HttpClientTransport.HTTP_CONNECTION_PROMISE_CONTEXT_KEY);
+            CreateTunnelPromise tunnelPromise = new CreateTunnelPromise(connectionFactory, endPoint, destination, promise, context);
+            context.put(HttpClientTransport.HTTP_CONNECTION_PROMISE_CONTEXT_KEY, tunnelPromise);
+
+            return connectionFactory.newConnection(endPoint, context);
         }
     }
 
@@ -164,13 +158,15 @@ public class HttpProxy extends ProxyConfiguration.Proxy
     {
         private final ClientConnectionFactory connectionFactory;
         private final EndPoint endPoint;
+        private final HttpDestination destination;
         private final Promise<Connection> promise;
         private final Map<String, Object> context;
 
-        private CreateTunnelPromise(ClientConnectionFactory connectionFactory, EndPoint endPoint, Promise<Connection> promise, Map<String, Object> context)
+        private CreateTunnelPromise(ClientConnectionFactory connectionFactory, EndPoint endPoint, HttpDestination destination, Promise<Connection> promise, Map<String, Object> context)
         {
             this.connectionFactory = connectionFactory;
             this.endPoint = endPoint;
+            this.destination = destination;
             this.promise = promise;
             this.context = context;
         }
@@ -178,10 +174,11 @@ public class HttpProxy extends ProxyConfiguration.Proxy
         @Override
         public void succeeded(Connection connection)
         {
+            // Replace the destination back with the original.
+            context.put(HttpClientTransport.HTTP_DESTINATION_CONTEXT_KEY, destination);
             // Replace the promise back with the original.
             context.put(HttpClientTransport.HTTP_CONNECTION_PROMISE_CONTEXT_KEY, promise);
-            HttpDestination destination = (HttpDestination)context.get(HttpClientTransport.HTTP_DESTINATION_CONTEXT_KEY);
-            tunnel(destination, connection);
+            tunnel(connection);
         }
 
         @Override
@@ -190,20 +187,20 @@ public class HttpProxy extends ProxyConfiguration.Proxy
             tunnelFailed(endPoint, x);
         }
 
-        private void tunnel(HttpDestination destination, Connection connection)
+        private void tunnel(Connection connection)
         {
             String target = destination.getOrigin().getAddress().asString();
             HttpClient httpClient = destination.getHttpClient();
             long connectTimeout = httpClient.getConnectTimeout();
             Request connect = new TunnelRequest(httpClient, destination.getProxy().getURI())
-                .method(HttpMethod.CONNECT)
                 .path(target)
                 .headers(headers -> headers.put(HttpHeader.HOST, target))
                 // Use the connect timeout as a total timeout,
                 // since this request is to "connect" to the server.
                 .timeout(connectTimeout, TimeUnit.MILLISECONDS);
 
-            connect.attribute(Connection.class.getName(), new ProxyConnection(destination, connection, promise));
+            HttpDestination proxyDestination = httpClient.resolveDestination(destination.getProxy().getOrigin());
+            connect.attribute(Connection.class.getName(), new ProxyConnection(proxyDestination, connection, promise));
             connection.send(connect, new TunnelListener(connect));
         }
 
@@ -362,8 +359,20 @@ public class HttpProxy extends ProxyConfiguration.Proxy
 
         private TunnelRequest(HttpClient client, URI proxyURI)
         {
-            super(client, new HttpConversation(), proxyURI);
+            this(client, new HttpConversation(), proxyURI);
+        }
+
+        private TunnelRequest(HttpClient client, HttpConversation conversation, URI proxyURI)
+        {
+            super(client, conversation, proxyURI);
             this.proxyURI = proxyURI;
+            method(HttpMethod.CONNECT);
+        }
+
+        @Override
+        HttpRequest copyInstance(URI newURI)
+        {
+            return new TunnelRequest(getHttpClient(), getConversation(), newURI);
         }
 
         @Override

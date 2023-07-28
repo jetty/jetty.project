@@ -152,10 +152,10 @@ public abstract class HttpConnection implements IConnection, Attachable
             request.path(path);
         }
 
-        ProxyConfiguration.Proxy proxy = destination.getProxy();
         // RFC 9112, section 3.2.2: when making a request to a proxy other than CONNECT,
         // the client must send the target URI in absolute-form as the request target.
-        if (proxy instanceof HttpProxy && !HttpMethod.CONNECT.is(request.getMethod()))
+        ProxyConfiguration.Proxy proxy = destination.getProxy();
+        if (proxy instanceof HttpProxy && !HttpMethod.CONNECT.is(request.getMethod()) && !HttpClient.isSchemeSecure(request.getScheme()))
         {
             URI uri = request.getURI();
             if (uri != null)
