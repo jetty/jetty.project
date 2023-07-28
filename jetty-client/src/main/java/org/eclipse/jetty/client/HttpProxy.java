@@ -119,30 +119,9 @@ public class HttpProxy extends ProxyConfiguration.Proxy
         {
             HttpDestination destination = (HttpDestination)context.get(HttpClientTransport.HTTP_DESTINATION_CONTEXT_KEY);
             if (requiresTunnel(destination.getOrigin()))
-            {
-                @SuppressWarnings("unchecked")
-                Promise<Connection> promise = (Promise<Connection>)context.get(HttpClientTransport.HTTP_CONNECTION_PROMISE_CONTEXT_KEY);
-                Promise<Connection> wrapped = promise;
-                if (promise instanceof Promise.Wrapper)
-                    wrapped = ((Promise.Wrapper<Connection>)promise).unwrap();
-                if (wrapped instanceof TunnelPromise)
-                {
-                    // TODO: review this, may not be necessary!
-                    // In case the server closes the tunnel (e.g. proxy authentication
-                    // required: 407 + Connection: close), we will open another tunnel
-                    // so we need to tell the promise about the new EndPoint.
-                    ((TunnelPromise)wrapped).setEndPoint(endPoint);
-                    return connectionFactory.newConnection(endPoint, context);
-                }
-                else
-                {
-                    return newProxyConnection(endPoint, context);
-                }
-            }
+                return newProxyConnection(endPoint, context);
             else
-            {
                 return connectionFactory.newConnection(endPoint, context);
-            }
         }
 
         private org.eclipse.jetty.io.Connection newProxyConnection(EndPoint endPoint, Map<String, Object> context) throws IOException
