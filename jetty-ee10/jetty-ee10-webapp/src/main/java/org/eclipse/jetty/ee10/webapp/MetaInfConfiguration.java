@@ -298,20 +298,6 @@ public class MetaInfConfiguration extends AbstractConfiguration
     }
 
     /**
-     * For backwards compatibility. This method will always scan for all types of data.
-     *
-     * @param context the context for the scan
-     * @param jars the jars to scan
-     * @param useCaches if true, the scanned info is cached
-     * @throws Exception if unable to scan the jars
-     */
-    public void scanJars(final WebAppContext context, Collection<Resource> jars, boolean useCaches)
-        throws Exception
-    {
-        scanJars(context, jars, useCaches, __allScanTypes);
-    }
-
-    /**
      * Look into the jars to discover info in META-INF. If useCaches == true, then we will
      * cache the info discovered indexed by the jar in which it was discovered: this speeds
      * up subsequent context deployments.
@@ -398,17 +384,8 @@ public class MetaInfConfiguration extends AbstractConfiguration
             //not using caches or not in the cache so check for the resources dir
             if (LOG.isDebugEnabled())
                 LOG.debug("{} META-INF/resources checked", target);
-            if (target.isDirectory())
-            {
-                //TODO think  how to handle an unpacked jar file (eg for osgi)
-                resourcesDir = target.resolve("/META-INF/resources");
-            }
-            else
-            {
-                // Resource represents a packed jar
-                URI uri = target.getURI();
-                resourcesDir = resourceFactory.newResource(URIUtil.uriJarPrefix(uri, "!/META-INF/resources"));
-            }
+
+            resourcesDir = target.resolve("META-INF/resources");
 
             if (Resources.isReadableDirectory(resourcesDir) && (cache != null))
             {
@@ -472,15 +449,8 @@ public class MetaInfConfiguration extends AbstractConfiguration
             //not using caches or not in the cache so check for the web-fragment.xml
             if (LOG.isDebugEnabled())
                 LOG.debug("{} META-INF/web-fragment.xml checked", jar);
-            if (jar.isDirectory())
-            {
-                webFrag = resourceFactory.newResource(jar.getPath().resolve("META-INF/web-fragment.xml"));
-            }
-            else
-            {
-                URI uri = jar.getURI();
-                webFrag = resourceFactory.newResource(URIUtil.uriJarPrefix(uri, "!/META-INF/web-fragment.xml"));
-            }
+
+            webFrag = jar.resolve("META-INF/web-fragment.xml");
 
             if (Resources.isReadable(webFrag) && (cache != null))
             {
@@ -545,15 +515,7 @@ public class MetaInfConfiguration extends AbstractConfiguration
         {
             //not using caches or not in the cache so find all tlds
             tlds = new HashSet<>();
-            if (jar.isDirectory())
-            {
-                tlds.addAll(getTlds(jar.getPath()));
-            }
-            else
-            {
-                URI uri = jar.getURI();
-                tlds.addAll(getTlds(context, uri));
-            }
+            tlds.addAll(getTlds(jar));
 
             if (cache != null)
             {
@@ -592,18 +554,19 @@ public class MetaInfConfiguration extends AbstractConfiguration
     /**
      * Find all .tld files in all subdirs of the given dir.
      *
-     * @param dir the directory to scan
+     * @param res the directory to scan
      * @return the list of tlds found
      * @throws IOException if unable to scan the directory
      */
-    private Collection<URL> getTlds(Path dir) throws IOException
+    private Collection<URL> getTlds(Resource res) throws IOException
     {
-        if (dir == null || !Files.isDirectory(dir))
+        if (!Resources.isReadableDirectory(res))
             return Collections.emptySet();
 
         Set<URL> tlds = new HashSet<>();
 
-        try (Stream<Path> entries = Files.walk(dir)
+        // TODO: investigate if we can do a shallow Resource.list() or do we need to walk deeper directories to find TLDs?
+        try (Stream<Path> entries = Files.walk(res.getPath())
             .filter(Files::isRegularFile)
             .filter(FileID::isTld))
         {
@@ -614,32 +577,10 @@ public class MetaInfConfiguration extends AbstractConfiguration
                 tlds.add(entry.toUri().toURL());
             }
         }
-        return tlds;
-    }
 
-    /**
-     * Find all .tld files in the given jar.
-     *
-     * @param uri the uri to jar file
-     * @return the collection of tlds as url references
-     * @throws IOException if unable to scan the jar file
-     */
-    private Collection<URL> getTlds(WebAppContext context, URI uri) throws IOException
-    {
-        HashSet<URL> tlds = new HashSet<>();
-        Resource r = ResourceFactory.of(context).newResource(URIUtil.uriJarPrefix(uri, "!/"));
-        try (Stream<Path> stream = Files.walk(r.getPath()))
-        {
-            Iterator<Path> it = stream
-                .filter(Files::isRegularFile)
-                .filter(FileID::isTld)
-                .iterator();
-            while (it.hasNext())
-            {
-                Path entry = it.next();
-                tlds.add(entry.toUri().toURL());
-            }
-        }
+        // TODO: URL hashCode() and equals() calls on java.net.URL objects and calls that add URL objects to maps and sets.
+        // TODO: URL's equals() and hashCode() methods can perform a DNS lookup to resolve the host name.
+
         return tlds;
     }
 
@@ -699,6 +640,7 @@ public class MetaInfConfiguration extends AbstractConfiguration
         {
             return webInfLib.list().stream()
                 .filter((lib) -> FileID.isLibArchive(lib.getFileName()))
+                .map(r -> ensureJarsAreOpened(context, r))
                 .sorted(ResourceCollators.byName(true))
                 .collect(Collectors.toList());
         }
@@ -722,6 +664,7 @@ public class MetaInfConfiguration extends AbstractConfiguration
         return context.getExtraClasspath()
             .stream()
             .filter(this::isFileSupported)
+            .map(r -> ensureJarsAreOpened(context, r))
             .collect(Collectors.toList());
     }
 
@@ -765,6 +708,17 @@ public class MetaInfConfiguration extends AbstractConfiguration
             .stream()
             .filter(Resource::isDirectory)
             .collect(Collectors.toList());
+    }
+
+    private Resource ensureJarsAreOpened(WebAppContext context, Resource resource)
+    {
+        if (Resources.isReadable(resource) &&
+            FileID.isJavaArchive(resource.getURI()) &&
+            !"jar".equals(resource.getURI().getScheme()))
+        {
+            return context.getResourceFactory().newJarFileResource(resource.getURI());
+        }
+        return resource;
     }
 
     private boolean isFileSupported(Resource resource)
