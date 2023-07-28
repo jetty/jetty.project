@@ -27,7 +27,6 @@ import java.util.Collection;
 import java.util.Collections;
 import java.util.HashMap;
 import java.util.HashSet;
-import java.util.Iterator;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
@@ -144,7 +143,7 @@ public class MetaInfConfiguration extends AbstractConfiguration
                     LOG.debug("Classpath URI doesn't exist: " + uri);
             }
             else
-                context.getMetaData().addContainerResource(resource);
+                context.getMetaData().addContainerResource(ensureJarsAreOpened(context, resource));
         };
 
         List<URI> containerUris = getAllContainerJars(context);
@@ -563,25 +562,30 @@ public class MetaInfConfiguration extends AbstractConfiguration
         if (!Resources.isReadableDirectory(res))
             return Collections.emptySet();
 
-        Set<URL> tlds = new HashSet<>();
+        Resource metaInfDir = res.resolve("META-INF");
+        if (!Resources.isReadableDirectory(metaInfDir))
+            return Collections.emptySet();
 
-        // TODO: investigate if we can do a shallow Resource.list() or do we need to walk deeper directories to find TLDs?
-        try (Stream<Path> entries = Files.walk(res.getPath())
-            .filter(Files::isRegularFile)
-            .filter(FileID::isTld))
+        Set<URI> tldURIs = new HashSet<>();
+        for (Resource entry: metaInfDir.list())
         {
-            Iterator<Path> iter = entries.iterator();
-            while (iter.hasNext())
+            URI uri = entry.getURI();
+            if (FileID.isExtension(entry.getFileName(), "tld"))
             {
-                Path entry = iter.next();
-                tlds.add(entry.toUri().toURL());
+                if (Resources.isReadableFile(entry))
+                    tldURIs.add(uri);
+                else
+                    LOG.warn("TLD not a readable: {}", uri);
             }
         }
 
-        // TODO: URL hashCode() and equals() calls on java.net.URL objects and calls that add URL objects to maps and sets.
-        // TODO: URL's equals() and hashCode() methods can perform a DNS lookup to resolve the host name.
-
-        return tlds;
+        // URL hashCode() and equals() calls on java.net.URL objects and calls that add URL objects to maps and sets.
+        // URL's equals() and hashCode() methods can perform a DNS lookup to resolve the host name.
+        // This is why we collect the Set as a URI, then convert to List to satisfy the collection of unique URLs
+        List<URL> tldURLs = new ArrayList<>();
+        for (URI uri: tldURIs)
+            tldURLs.add(uri.toURL()); // done this way to allow toURL to throw if need be
+        return tldURLs;
     }
 
     protected List<Resource> findClassDirs(WebAppContext context)
