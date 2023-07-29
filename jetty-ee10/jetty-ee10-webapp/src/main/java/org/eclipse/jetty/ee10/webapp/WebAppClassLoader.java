@@ -591,11 +591,7 @@ public class WebAppClassLoader extends URLClassLoader implements ClassVisibility
 
             return defineClass(name, bytes, 0, bytes.length);
         }
-        catch (IOException e)
-        {
-            throw new ClassNotFoundException(name, e);
-        }
-        catch (IllegalClassFormatException e)
+        catch (IOException | IllegalClassFormatException e)
         {
             throw new ClassNotFoundException(name, e);
         }
