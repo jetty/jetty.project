@@ -21,6 +21,7 @@ import java.util.Arrays;
 import java.util.Collections;
 import java.util.EnumSet;
 import java.util.List;
+import java.util.stream.Stream;
 
 import jakarta.servlet.AsyncContext;
 import jakarta.servlet.DispatcherType;
@@ -61,6 +62,9 @@ import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Disabled;
 import org.junit.jupiter.api.Test;
+import org.junit.jupiter.params.ParameterizedTest;
+import org.junit.jupiter.params.provider.Arguments;
+import org.junit.jupiter.params.provider.MethodSource;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -380,10 +384,81 @@ public class DispatcherTest
             HTTP/1.1 200 OK\r
             specialSetHeader: specialSetHeader\r
             specialAddHeader: specialAddHeader\r
-            Content-Length: 7\r
+            Content-Length: 20\r
             Connection: close\r
             \r
-            INCLUDE""";
+            Include:
+            INCLUDE---
+            """;
+
+        assertEquals(expected, responses);
+    }
+
+    public static Stream<Arguments> includeTests()
+    {
+        return Stream.of(
+            Arguments.of(false, false),
+            Arguments.of(false, true),
+            Arguments.of(true, false),
+            Arguments.of(true, true)
+        );
+    }
+
+    @ParameterizedTest
+    @MethodSource("includeTests")
+    public void testIncludeOutputStreamWriter(boolean includeWriter, boolean helloWriter) throws Exception
+    {
+        _contextHandler.addServlet(new ServletHolder(new IncludeServlet(includeWriter)), "/IncludeServlet/*");
+        _contextHandler.addServlet(new ServletHolder(new HelloServlet(helloWriter)), "/Hello");
+
+        //test include, along with special extension to include that allows headers to
+        //be set during an include
+        String responses = _connector.getResponse("""
+            GET /context/IncludeServlet?do=hello HTTP/1.1\r
+            Host: local\r
+            Connection: close\r
+            \r
+            """);
+
+        responses = responses.replaceFirst("Content-Length: .*\r\n", "");
+
+        String expected = """
+            HTTP/1.1 200 OK\r
+            Connection: close\r
+            \r
+            Include:
+            Hello
+            ---
+            """;
+
+        assertEquals(expected, responses);
+    }
+
+    @Test
+    public void testIncludeWriterOutputStream() throws Exception
+    {
+        _contextHandler.addServlet(IncludeServlet.class, "/IncludeServlet/*");
+        _contextHandler.addServlet(AssertIncludeServlet.class, "/AssertIncludeServlet/*");
+
+        //test include, along with special extension to include that allows headers to
+        //be set during an include
+        String responses = _connector.getResponse("""
+            GET /context/IncludeServlet?do=assertinclude&do=more&test=1&headers=true HTTP/1.1\r
+            Host: local\r
+            Connection: close\r
+            \r
+            """);
+
+        String expected = """
+            HTTP/1.1 200 OK\r
+            specialSetHeader: specialSetHeader\r
+            specialAddHeader: specialAddHeader\r
+            Content-Length: 20\r
+            Connection: close\r
+            \r
+            Include:
+            INCLUDE---
+            """;
 
         assertEquals(expected, responses);
     }
@@ -404,17 +479,18 @@ public class DispatcherTest
 
         String expected = """
             HTTP/1.1 200 OK\r
-            Content-Length: 26\r
+            Content-Length: 31\r
             Connection: close\r
             \r
             Include:
-            Test 2 to too two""";
+            Test 2 to too two
+            ---
+            """;
 
         assertEquals(expected, responses);
     }
 
     @Test
-    @Disabled("Bug #10155 - response misses the Content-Length header")
     public void testIncludeStaticWithWriter() throws Exception
     {
         _contextHandler.addServlet(new ServletHolder(new IncludeServlet(true)), "/IncludeServlet/*");
@@ -430,11 +506,12 @@ public class DispatcherTest
 
         String expected = """
             HTTP/1.1 200 OK\r
-            Content-Length: 26\r
             Connection: close\r
             \r
             Include:
-            Test 2 to too two""";
+            Test 2 to too two
+            ---
+            """;
 
         assertEquals(expected, responses);
     }
@@ -460,10 +537,11 @@ public class DispatcherTest
             Last-Modified: xxx\r
             Content-Type: text/plain\r
             Accept-Ranges: bytes\r
-            Content-Length: 17\r
+            Content-Length: 18\r
             Connection: close\r
             \r
-            Test 2 to too two""";
+            Test 2 to too two
+            """;
 
 
         assertEquals(expected, responses);
@@ -558,10 +636,12 @@ public class DispatcherTest
 
         String expected = """
             HTTP/1.1 200 OK\r
-            Content-Length: 7\r
+            Content-Length: 20\r
             Connection: close\r
             \r
-            INCLUDE""";
+            Include:
+            INCLUDE---
+            """;
 
         assertEquals(expected, rawResponse);
     }
@@ -582,10 +662,11 @@ public class DispatcherTest
 
         String expected = """
             HTTP/1.1 200 OK\r
-            Content-Length: 7\r
+            Content-Length: 11\r
             Connection: close\r
             \r
-            FORWARD""";
+            FORWARD---
+            """;
 
         assertEquals(expected, rawResponse);
     }
@@ -1078,6 +1159,11 @@ public class DispatcherTest
             RequestDispatcher dispatcher = null;
             boolean headers = Boolean.parseBoolean(request.getParameter("headers"));
 
+            if (useWriter)
+                response.getWriter().println("Include:");
+            else
+                response.getOutputStream().write("Include:\n".getBytes(StandardCharsets.US_ASCII));
+
             if (request.getParameter("do").equals("forward"))
                 dispatcher = getServletContext().getRequestDispatcher("/ForwardServlet/forwardpath?do=assertincludeforward");
             else if (request.getParameter("do").equals("assertforwardinclude"))
@@ -1085,15 +1171,37 @@ public class DispatcherTest
             else if (request.getParameter("do").equals("assertinclude"))
                 dispatcher = getServletContext().getRequestDispatcher("/AssertIncludeServlet?do=end&do=the&headers=" + headers);
             else if (request.getParameter("do").equals("static"))
-            {
-                if (useWriter)
-                    response.getWriter().println("Include:");
-                else
-                    response.getOutputStream().write("Include:\n".getBytes(StandardCharsets.US_ASCII));
                 dispatcher = getServletContext().getRequestDispatcher("/test.txt");
-            }
+            else if (request.getParameter("do").equals("hello"))
+                dispatcher = getServletContext().getRequestDispatcher("/Hello");
+
             assert dispatcher != null;
+
             dispatcher.include(request, response);
+
+            if (useWriter)
+                response.getWriter().println("---");
+            else
+                response.getOutputStream().write("---\n".getBytes(StandardCharsets.US_ASCII));
+        }
+    }
+
+    public static class HelloServlet extends HttpServlet implements Servlet
+    {
+        private final boolean useWriter;
+
+        public HelloServlet(boolean useWriter)
+        {
+            this.useWriter = useWriter;
+        }
+
+        @Override
+        protected void doGet(HttpServletRequest request, HttpServletResponse response) throws ServletException, IOException
+        {
+            if (useWriter)
+                response.getWriter().println("Hello");
+            else
+                response.getOutputStream().write("Hello\n".getBytes(StandardCharsets.US_ASCII));
         }
     }
 

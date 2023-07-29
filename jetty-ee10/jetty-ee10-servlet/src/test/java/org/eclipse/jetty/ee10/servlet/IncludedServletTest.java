@@ -172,6 +172,9 @@ public class IncludedServletTest
             IO.copy(reader, writer);
 
             String response = writer.toString();
+            connection.getHeaderFields().entrySet().forEach(System.err::println);
+            System.err.println();
+            System.err.println(response);
             // System.out.printf("Response%n%s",response);
             assertThat("Response", response, containsString("<h2> Hello, this is the top page."));
             assertThat("Response", response, containsString("<h3> This is the included page"));

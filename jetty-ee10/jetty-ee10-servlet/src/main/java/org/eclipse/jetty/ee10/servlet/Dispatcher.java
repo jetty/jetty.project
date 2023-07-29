@@ -14,10 +14,14 @@
 package org.eclipse.jetty.ee10.servlet;
 
 import java.io.IOException;
+import java.io.OutputStream;
+import java.io.OutputStreamWriter;
+import java.io.PrintWriter;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.Enumeration;
 import java.util.List;
+import java.util.Locale;
 import java.util.Map;
 import java.util.Objects;
 
@@ -27,6 +31,7 @@ import jakarta.servlet.ServletException;
 import jakarta.servlet.ServletOutputStream;
 import jakarta.servlet.ServletRequest;
 import jakarta.servlet.ServletResponse;
+import jakarta.servlet.WriteListener;
 import jakarta.servlet.http.HttpServletMapping;
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletRequestWrapper;
@@ -35,6 +40,7 @@ import jakarta.servlet.http.HttpServletResponseWrapper;
 import org.eclipse.jetty.ee10.servlet.util.ServletOutputStreamWrapper;
 import org.eclipse.jetty.http.HttpURI;
 import org.eclipse.jetty.http.pathmap.MatchedResource;
+import org.eclipse.jetty.io.WriterOutputStream;
 import org.eclipse.jetty.util.MultiMap;
 import org.eclipse.jetty.util.StringUtil;
 import org.eclipse.jetty.util.UrlEncoded;
@@ -136,12 +142,14 @@ public class Dispatcher implements RequestDispatcher
         HttpServletResponse httpResponse = (response instanceof HttpServletResponse) ? (HttpServletResponse)response : new ServletResponseHttpWrapper(response);
         ServletContextResponse servletContextResponse = ServletContextResponse.getServletContextResponse(response);
 
+        IncludeResponse includeResponse = new IncludeResponse(httpResponse);
         try
         {
-            _mappedServlet.handle(_servletHandler, _decodedPathInContext, new IncludeRequest(httpRequest), new IncludeResponse(httpResponse));
+            _mappedServlet.handle(_servletHandler, _decodedPathInContext, new IncludeRequest(httpRequest), includeResponse);
         }
         finally
         {
+            includeResponse.onIncluded();
             servletContextResponse.included();
         }
     }
@@ -423,27 +431,118 @@ public class Dispatcher implements RequestDispatcher
     private static class IncludeResponse extends HttpServletResponseWrapper
     {
         public static final String JETTY_INCLUDE_HEADER_PREFIX = "org.eclipse.jetty.server.include.";
+        ServletOutputStream _servletOutputStream;
+        PrintWriter _printWriter;
+        PrintWriter _mustFlush;
         
         public IncludeResponse(HttpServletResponse response)
         {
             super(response);
         }
 
+        public void onIncluded()
+        {
+            if (_mustFlush != null)
+                _mustFlush.flush();
+        }
+
         @Override
         public ServletOutputStream getOutputStream() throws IOException
         {
-            return new ServletOutputStreamWrapper(getResponse().getOutputStream())
+            if (_printWriter != null)
+                throw new IllegalStateException("getWriter() called");
+            if (_servletOutputStream == null)
             {
-                @Override
-                public void close()
+                try
                 {
-                    // NOOP for include.
+                    _servletOutputStream = new ServletOutputStreamWrapper(getResponse().getOutputStream())
+                    {
+                        @Override
+                        public void close()
+                        {
+                            // NOOP for include.
+                        }
+                    };
                 }
-            };
+                catch (IllegalStateException ise)
+                {
+                    OutputStream os = new WriterOutputStream(getResponse().getWriter(), getResponse().getCharacterEncoding());
+                    _servletOutputStream = new ServletOutputStream()
+                    {
+                        @Override
+                        public boolean isReady()
+                        {
+                            return true;
+                        }
+
+                        @Override
+                        public void setWriteListener(WriteListener writeListener)
+                        {
+                            throw new UnsupportedOperationException();
+                        }
+
+                        @Override
+                        public void write(int b) throws IOException
+                        {
+                            os.write(b);
+                        }
+
+                        @Override
+                        public void write(byte[] b) throws IOException
+                        {
+                            os.write(b);
+                        }
+
+                        @Override
+                        public void write(byte[] b, int off, int len) throws IOException
+                        {
+                            os.write(b, off, len);
+                        }
+
+                        @Override
+                        public void flush() throws IOException
+                        {
+                            os.flush();
+                        }
+
+                        @Override
+                        public void close()
+                        {
+                            // NOOP for include.
+                        }
+                    };
+                }
+            }
+            return _servletOutputStream;
+        }
+
+        @Override
+        public PrintWriter getWriter() throws IOException
+        {
+            if (_servletOutputStream != null)
+                throw new IllegalStateException("getOutputStream called");
+            if (_printWriter == null)
+            {
+                try
+                {
+                    _printWriter = super.getWriter();
+                }
+                catch (IllegalStateException ise)
+                {
+                    _printWriter = _mustFlush = new PrintWriter(new OutputStreamWriter(super.getOutputStream(), super.getCharacterEncoding()));
+                }
+            }
+            return _printWriter;
         }
 
         @Override
         public void setCharacterEncoding(String charset)
+        {
+            // NOOP for include.
+        }
+
+        @Override
+        public void setLocale(Locale loc)
         {
             // NOOP for include.
         }
@@ -469,15 +568,13 @@ public class Dispatcher implements RequestDispatcher
         @Override
         public void reset()
         {
-            // TODO can include do this?
-            super.reset();
+            // NOOP for include.
         }
 
         @Override
         public void resetBuffer()
         {
-            // TODO can include do this?
-            super.resetBuffer();
+            // NOOP for include.
         }
 
         @Override
