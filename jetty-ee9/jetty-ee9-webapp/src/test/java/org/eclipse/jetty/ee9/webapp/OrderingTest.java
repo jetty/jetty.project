@@ -39,7 +39,7 @@ import static org.junit.jupiter.api.Assertions.fail;
 @ExtendWith(WorkDirExtension.class)
 public class OrderingTest
 {
-    WorkDir workDir;
+    public WorkDir workDir;
 
     private Resource newTestableDirResource(String name) throws IOException
     {
