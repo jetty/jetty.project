@@ -45,7 +45,7 @@ public class LargeDeflateTest
     private final EventSocket _serverSocket = new EventSocket();
 
     @BeforeEach
-    void before() throws Exception
+    public void before() throws Exception
     {
         _server = new Server();
         _connector = new ServerConnector(_server);
@@ -67,14 +67,14 @@ public class LargeDeflateTest
     }
 
     @AfterEach
-    void after() throws Exception
+    public void after() throws Exception
     {
         _client.stop();
         _server.stop();
     }
 
     @Test
-    void testDeflate() throws Exception
+    public void testDeflate() throws Exception
     {
         ClientUpgradeRequest upgradeRequest = new ClientUpgradeRequest();
         upgradeRequest.addExtensions("permessage-deflate");
@@ -94,7 +94,7 @@ public class LargeDeflateTest
     }
 
     @Test
-    void testDeflateLargerThanMaxMessage() throws Exception
+    public void testDeflateLargerThanMaxMessage() throws Exception
     {
         ClientUpgradeRequest upgradeRequest = new ClientUpgradeRequest();
         upgradeRequest.addExtensions("permessage-deflate");
