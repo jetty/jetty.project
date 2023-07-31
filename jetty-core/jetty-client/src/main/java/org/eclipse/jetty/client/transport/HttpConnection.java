@@ -32,8 +32,6 @@ import org.eclipse.jetty.http.HttpCookieStore;
 import org.eclipse.jetty.http.HttpField;
 import org.eclipse.jetty.http.HttpFields;
 import org.eclipse.jetty.http.HttpHeader;
-import org.eclipse.jetty.http.HttpScheme;
-import org.eclipse.jetty.http.HttpVersion;
 import org.eclipse.jetty.io.CyclicTimeouts;
 import org.eclipse.jetty.util.Attachable;
 import org.eclipse.jetty.util.NanoTime;
@@ -154,25 +152,32 @@ public abstract class HttpConnection implements IConnection, Attachable
             request.path(path);
         }
 
+        boolean http1 = request.getVersion().getVersion() <= 11;
+
+        boolean applyProxyAuthentication = false;
         ProxyConfiguration.Proxy proxy = destination.getProxy();
-        if (proxy instanceof HttpProxy)
+        if (proxy instanceof HttpProxy httpProxy)
         {
-            String scheme = request.getScheme();
-            if (!HttpScheme.isSecure(scheme))
+            boolean tunnelled = httpProxy.requiresTunnel(destination.getOrigin());
+
+            // RFC 9112, section 3.2.2: when making a request to a proxy other than CONNECT,
+            // the client must send the target URI in absolute-form as the request target.
+            // In practice, this is only valid for HTTP/1.1 requests that are not tunnelled.
+            if (http1 && !tunnelled)
             {
                 URI uri = request.getURI();
                 if (uri != null)
-                {
-                    path = uri.toString();
-                    request.path(path);
-                }
+                    request.path(uri.toString());
             }
+
+            // Do not send proxy authentication headers when tunnelled,
+            // otherwise proxy credentials arrive to the server.
+            applyProxyAuthentication = !tunnelled;
         }
 
-        // If we are HTTP 1.1, add the Host header
-        HttpVersion version = request.getVersion();
+        // If we are HTTP 1.1, add the Host header.
         HttpFields headers = request.getHeaders();
-        if (version.getVersion() <= 11)
+        if (http1)
         {
             if (!headers.contains(HttpHeader.HOST.asString()))
             {
@@ -184,7 +189,7 @@ public abstract class HttpConnection implements IConnection, Attachable
             }
         }
 
-        // Add content headers
+        // Add content headers.
         Request.Content content = request.getBody();
         if (content == null)
         {
@@ -211,7 +216,7 @@ public abstract class HttpConnection implements IConnection, Attachable
             }
         }
 
-        // Cookies
+        // Cookies.
         StringBuilder cookies = convertCookies(request.getCookies(), null);
         HttpCookieStore cookieStore = getHttpClient().getHttpCookieStore();
         if (cookieStore != null && cookieStore.getClass() != HttpCookieStore.Empty.class)
@@ -226,8 +231,9 @@ public abstract class HttpConnection implements IConnection, Attachable
             request.addHeader(cookieField);
         }
 
-        // Authentication
-        applyProxyAuthentication(request, proxy);
+        // Authentication.
+        if (applyProxyAuthentication)
+            applyProxyAuthentication(request, proxy);
         applyRequestAuthentication(request);
     }
 

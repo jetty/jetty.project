@@ -318,6 +318,10 @@ public class HttpRedirector
                     headers.remove(HttpHeader.CONTENT_TYPE);
                 });
             }
+            else if (HttpMethod.CONNECT.is(method))
+            {
+                redirect.path(httpRequest.getPath());
+            }
 
             Request.Content body = redirect.getBody();
             if (body != null && !body.rewind())

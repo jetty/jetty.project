@@ -15,6 +15,7 @@ package org.eclipse.jetty.proxy;
 
 import java.net.ConnectException;
 import java.net.InetSocketAddress;
+import java.net.URI;
 import java.nio.ByteBuffer;
 import java.nio.channels.ClosedChannelException;
 import java.nio.charset.StandardCharsets;
@@ -26,6 +27,7 @@ import java.util.stream.IntStream;
 
 import org.eclipse.jetty.alpn.server.ALPNServerConnectionFactory;
 import org.eclipse.jetty.client.AbstractConnectionPool;
+import org.eclipse.jetty.client.BasicAuthentication;
 import org.eclipse.jetty.client.ByteBufferRequestContent;
 import org.eclipse.jetty.client.ContentResponse;
 import org.eclipse.jetty.client.Destination;
@@ -36,6 +38,7 @@ import org.eclipse.jetty.client.transport.HttpClientConnectionFactory;
 import org.eclipse.jetty.client.transport.HttpClientTransportDynamic;
 import org.eclipse.jetty.http.HostPortHttpField;
 import org.eclipse.jetty.http.HttpFields;
+import org.eclipse.jetty.http.HttpHeader;
 import org.eclipse.jetty.http.HttpMethod;
 import org.eclipse.jetty.http.HttpScheme;
 import org.eclipse.jetty.http.HttpStatus;
@@ -85,6 +88,7 @@ import org.slf4j.LoggerFactory;
 
 import static org.hamcrest.MatcherAssert.assertThat;
 import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertNull;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
 public class ForwardProxyWithDynamicTransportTest
@@ -140,6 +144,11 @@ public class ForwardProxyWithDynamicTransportTest
 
     private void startProxy(ConnectHandler connectHandler) throws Exception
     {
+        startProxy(connectHandler, new ForwardProxyHandler());
+    }
+
+    private void startProxy(ConnectHandler connectHandler, ForwardProxyHandler proxyHandler) throws Exception
+    {
         SslContextFactory.Server sslContextFactory = new SslContextFactory.Server();
         sslContextFactory.setKeyStorePath("src/test/resources/keystore.p12");
         sslContextFactory.setKeyStorePassword("storepwd");
@@ -165,23 +174,7 @@ public class ForwardProxyWithDynamicTransportTest
         proxyTLSConnector = new ServerConnector(proxy, 1, 1, ssl, alpn, h2, h1, h2c);
         proxy.addConnector(proxyTLSConnector);
         proxy.setHandler(connectHandler);
-        connectHandler.setHandler(new ProxyHandler.Forward()
-        {
-            @Override
-            protected HttpClient newHttpClient()
-            {
-                QueuedThreadPool proxyClientThreads = new QueuedThreadPool();
-                proxyClientThreads.setName("proxy-client");
-                ClientConnector proxyClientConnector = new ClientConnector();
-                proxyClientConnector.setSelectors(1);
-                proxyClientConnector.setExecutor(proxyClientThreads);
-                proxyClientConnector.setSslContextFactory(new SslContextFactory.Client(true));
-                HTTP2Client proxyHTTP2Client = new HTTP2Client(proxyClientConnector);
-                ClientConnectionFactory.Info h1 = HttpClientConnectionFactory.HTTP11;
-                ClientConnectionFactory.Info http2 = new ClientConnectionFactoryOverHTTP2.HTTP2(proxyHTTP2Client);
-                return new HttpClient(new HttpClientTransportDynamic(proxyClientConnector, h1, http2));
-            }
-        });
+        connectHandler.setHandler(proxyHandler);
         proxy.start();
         LOG.info("Started proxy on :{} and :{}", proxyConnector.getLocalPort(), proxyTLSConnector.getLocalPort());
     }
@@ -209,7 +202,7 @@ public class ForwardProxyWithDynamicTransportTest
         LifeCycle.stop(server);
     }
 
-    public static java.util.stream.Stream<Arguments> testParams()
+    public static java.util.stream.Stream<Arguments> proxyMatrix()
     {
         var h1 = List.of("http/1.1");
         var h2c = List.of("h2c");
@@ -243,7 +236,7 @@ public class ForwardProxyWithDynamicTransportTest
     }
 
     @ParameterizedTest(name = "proxyProtocol={0}, proxySecure={1}, serverProtocol={2}, serverSecure={3}")
-    @MethodSource("testParams")
+    @MethodSource("proxyMatrix")
     public void testProxy(Origin.Protocol proxyProtocol, boolean proxySecure, HttpVersion serverProtocol, boolean serverSecure) throws Exception
     {
         int status = HttpStatus.NO_CONTENT_204;
@@ -290,7 +283,7 @@ public class ForwardProxyWithDynamicTransportTest
     }
 
     @ParameterizedTest(name = "proxyProtocol={0}, proxySecure={1}, serverProtocol={2}, serverSecure={3}")
-    @MethodSource("testParams")
+    @MethodSource("proxyMatrix")
     public void testProxyConcurrentLoad(Origin.Protocol proxyProtocol, boolean proxySecure, HttpVersion serverProtocol, boolean serverSecure) throws Exception
     {
         start(new Handler.Abstract()
@@ -340,6 +333,160 @@ public class ForwardProxyWithDynamicTransportTest
                     throw new RuntimeException(x);
                 }
             }));
+    }
+
+    @ParameterizedTest(name = "proxyProtocol={0}, proxySecure={1}, serverProtocol={2}, serverSecure={3}")
+    @MethodSource("proxyMatrix")
+    public void testProxyAuthentication(Origin.Protocol proxyProtocol, boolean proxySecure, HttpVersion serverProtocol, boolean serverSecure) throws Exception
+    {
+        int status = HttpStatus.NO_CONTENT_204;
+        startServer(new Handler.Abstract()
+        {
+            @Override
+            public boolean handle(Request request, Response response, Callback callback)
+            {
+                response.setStatus(status);
+                callback.succeeded();
+                return true;
+            }
+        });
+        startProxy(new ConnectHandler()
+        {
+            @Override
+            protected void handleConnect(Request request, Response response, Callback callback, String serverAddress)
+            {
+                // Handle proxy authentication for tunnelled requests.
+                String proxyAuthorization = request.getHeaders().get(HttpHeader.PROXY_AUTHORIZATION);
+                if (proxyAuthorization == null)
+                {
+                    response.setStatus(HttpStatus.FORBIDDEN_403);
+                    callback.succeeded();
+                }
+                else
+                {
+                    super.handleConnect(request, response, callback, serverAddress);
+                }
+            }
+        }, new ForwardProxyHandler()
+        {
+            @Override
+            public boolean handle(Request clientToProxyRequest, Response proxyToClientResponse, Callback proxyToClientCallback)
+            {
+                // Handle proxy authentication for non-tunnelled requests.
+                String proxyAuthorization = clientToProxyRequest.getHeaders().get(HttpHeader.PROXY_AUTHORIZATION);
+                if (proxyAuthorization == null)
+                {
+                    proxyToClientResponse.setStatus(HttpStatus.FORBIDDEN_403);
+                    proxyToClientCallback.succeeded();
+                    return true;
+                }
+                else
+                {
+                    return super.handle(clientToProxyRequest, proxyToClientResponse, proxyToClientCallback);
+                }
+            }
+        });
+        startClient();
+
+        String proxyScheme = proxySecure ? "https" : "http";
+        int proxyPort = proxySecure ? proxyTLSConnector.getLocalPort() : proxyConnector.getLocalPort();
+        Origin.Address proxyAddress = new Origin.Address("localhost", proxyPort);
+        HttpProxy proxy = new HttpProxy(proxyAddress, proxySecure, proxyProtocol);
+        client.getProxyConfiguration().addProxy(proxy);
+
+        URI uri = URI.create(proxyScheme + "://" + proxyAddress.asString());
+        client.getAuthenticationStore().addAuthenticationResult(new BasicAuthentication.BasicResult(uri, HttpHeader.PROXY_AUTHORIZATION, "proxy", "proxy"));
+
+        String serverScheme = serverSecure ? "https" : "http";
+        int serverPort = serverSecure ? serverTLSConnector.getLocalPort() : serverConnector.getLocalPort();
+        ContentResponse response = client.newRequest("localhost", serverPort)
+            .scheme(serverScheme)
+            .version(serverProtocol)
+            .timeout(5, TimeUnit.SECONDS)
+            .send();
+        assertEquals(status, response.getStatus());
+    }
+
+    @ParameterizedTest(name = "proxyProtocol={0}, proxySecure={1}, serverProtocol={2}, serverSecure={3}")
+    @MethodSource("proxyMatrix")
+    public void testProxyAuthenticationAndServerAuthentication(Origin.Protocol proxyProtocol, boolean proxySecure, HttpVersion serverProtocol, boolean serverSecure) throws Exception
+    {
+        int status = HttpStatus.NO_CONTENT_204;
+        startServer(new Handler.Abstract()
+        {
+            @Override
+            public boolean handle(Request request, Response response, Callback callback)
+            {
+                String proxyAuthorization = request.getHeaders().get(HttpHeader.PROXY_AUTHORIZATION);
+                assertNull(proxyAuthorization);
+
+                String authorization = request.getHeaders().get(HttpHeader.AUTHORIZATION);
+                if (authorization == null)
+                    response.setStatus(HttpStatus.FORBIDDEN_403);
+                else
+                    response.setStatus(status);
+                callback.succeeded();
+                return true;
+            }
+        });
+        startProxy(new ConnectHandler()
+        {
+            @Override
+            protected void handleConnect(Request request, Response response, Callback callback, String serverAddress)
+            {
+                // Handle proxy authentication for tunnelled requests.
+                String proxyAuthorization = request.getHeaders().get(HttpHeader.PROXY_AUTHORIZATION);
+                if (proxyAuthorization == null)
+                {
+                    response.setStatus(HttpStatus.FORBIDDEN_403);
+                    callback.succeeded();
+                }
+                else
+                {
+                    super.handleConnect(request, response, callback, serverAddress);
+                }
+            }
+        }, new ForwardProxyHandler()
+        {
+            @Override
+            public boolean handle(Request clientToProxyRequest, Response proxyToClientResponse, Callback proxyToClientCallback)
+            {
+                // Handle proxy authentication for non-tunnelled requests.
+                String proxyAuthorization = clientToProxyRequest.getHeaders().get(HttpHeader.PROXY_AUTHORIZATION);
+                if (proxyAuthorization == null)
+                {
+                    proxyToClientResponse.setStatus(HttpStatus.FORBIDDEN_403);
+                    proxyToClientCallback.succeeded();
+                    return true;
+                }
+                else
+                {
+                    return super.handle(clientToProxyRequest, proxyToClientResponse, proxyToClientCallback);
+                }
+            }
+        });
+        startClient();
+
+        String proxyScheme = proxySecure ? "https" : "http";
+        int proxyPort = proxySecure ? proxyTLSConnector.getLocalPort() : proxyConnector.getLocalPort();
+        Origin.Address proxyAddress = new Origin.Address("localhost", proxyPort);
+        HttpProxy proxy = new HttpProxy(proxyAddress, proxySecure, proxyProtocol);
+        client.getProxyConfiguration().addProxy(proxy);
+
+        String serverScheme = serverSecure ? "https" : "http";
+        int serverPort = serverSecure ? serverTLSConnector.getLocalPort() : serverConnector.getLocalPort();
+
+        URI proxyURI = URI.create(proxyScheme + "://" + proxyAddress.asString());
+        client.getAuthenticationStore().addAuthenticationResult(new BasicAuthentication.BasicResult(proxyURI, HttpHeader.PROXY_AUTHORIZATION, "proxy", "proxy"));
+        URI serverURI = URI.create(serverScheme + "://localhost:" + serverPort);
+        client.getAuthenticationStore().addAuthenticationResult(new BasicAuthentication.BasicResult(serverURI, HttpHeader.AUTHORIZATION, "server", "server"));
+
+        ContentResponse response = client.newRequest("localhost", serverPort)
+            .scheme(serverScheme)
+            .version(serverProtocol)
+            .timeout(5, TimeUnit.SECONDS)
+            .send();
+        assertEquals(status, response.getStatus());
     }
 
     @Test
@@ -419,6 +566,7 @@ public class ForwardProxyWithDynamicTransportTest
             {
                 request.getConnectionMetaData().getConnection().getEndPoint().close();
                 closeLatch.countDown();
+                callback.succeeded();
             }
         });
         startClient();
@@ -520,7 +668,7 @@ public class ForwardProxyWithDynamicTransportTest
         Stream stream = streamPromise.get(5, TimeUnit.SECONDS);
         assertTrue(tunnelLatch.await(5, TimeUnit.SECONDS));
 
-        // Tunnel is established, send a HTTP/1.1 request.
+        // Tunnel is established, send an HTTP/1.1 request.
         String h1 = "GET / HTTP/1.1\r\n" +
                     "Host: " + serverAddress + "\r\n" +
                     "\r\n";
@@ -614,7 +762,7 @@ public class ForwardProxyWithDynamicTransportTest
         Stream stream = streamPromise.get(5, TimeUnit.SECONDS);
         assertTrue(tunnelLatch.await(5, TimeUnit.SECONDS));
 
-        // Tunnel is established, send a HTTP/1.1 request.
+        // Tunnel is established, send an HTTP/1.1 request.
         String h1 = "GET / HTTP/1.1\r\n" +
                     "Host: " + serverAddress + "\r\n" +
                     "\r\n";
@@ -637,6 +785,24 @@ public class ForwardProxyWithDynamicTransportTest
         {
             callback.succeeded();
             return true;
+        }
+    }
+
+    private static class ForwardProxyHandler extends ProxyHandler.Forward
+    {
+        @Override
+        protected HttpClient newHttpClient()
+        {
+            QueuedThreadPool proxyClientThreads = new QueuedThreadPool();
+            proxyClientThreads.setName("proxy-client");
+            ClientConnector proxyClientConnector = new ClientConnector();
+            proxyClientConnector.setSelectors(1);
+            proxyClientConnector.setExecutor(proxyClientThreads);
+            proxyClientConnector.setSslContextFactory(new SslContextFactory.Client(true));
+            HTTP2Client proxyHTTP2Client = new HTTP2Client(proxyClientConnector);
+            ClientConnectionFactory.Info h1 = HttpClientConnectionFactory.HTTP11;
+            ClientConnectionFactory.Info http2 = new ClientConnectionFactoryOverHTTP2.HTTP2(proxyHTTP2Client);
+            return new HttpClient(new HttpClientTransportDynamic(proxyClientConnector, h1, http2));
         }
     }
 }
