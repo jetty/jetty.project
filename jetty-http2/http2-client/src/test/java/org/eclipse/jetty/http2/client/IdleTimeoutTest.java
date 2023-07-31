@@ -26,6 +26,7 @@ import jakarta.servlet.http.HttpServlet;
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletResponse;
 import org.eclipse.jetty.http.HttpFields;
+import org.eclipse.jetty.http.HttpStatus;
 import org.eclipse.jetty.http.HttpVersion;
 import org.eclipse.jetty.http.MetaData;
 import org.eclipse.jetty.http2.FlowControlStrategy;
@@ -674,6 +675,78 @@ public class IdleTimeoutTest extends AbstractTest
         sleep(1000);
 
         assertThat(((ISession)client).updateSendWindow(0), Matchers.greaterThan(0));
+    }
+
+    @Test
+    public void testDisableStreamIdleTimeout() throws Exception
+    {
+        // Set the stream idle timeout to a negative value to disable it.
+        long streamIdleTimeout = -1;
+        start(new ServerSessionListener.Adapter()
+        {
+            @Override
+            public Stream.Listener onNewStream(Stream stream, HeadersFrame frame)
+            {
+                return new Stream.Listener.Adapter()
+                {
+                    @Override
+                    public void onData(Stream stream, DataFrame frame, Callback callback)
+                    {
+                        callback.succeeded();
+                        if (frame.isEndStream())
+                        {
+                            MetaData.Response response = new MetaData.Response(HttpVersion.HTTP_2, HttpStatus.OK_200, HttpFields.EMPTY);
+                            stream.headers(new HeadersFrame(stream.getId(), response, null, true));
+                        }
+                    }
+                };
+            }
+        }, h2 -> h2.setStreamIdleTimeout(streamIdleTimeout));
+        connector.setIdleTimeout(idleTimeout);
+
+        CountDownLatch responseLatch = new CountDownLatch(2);
+        CountDownLatch resetLatch = new CountDownLatch(1);
+        Session session = newClient(new Session.Listener.Adapter());
+        MetaData.Request metaData1 = newRequest("GET", "/1", HttpFields.EMPTY);
+        Stream stream1 = session.newStream(new HeadersFrame(metaData1, null, false), new Stream.Listener.Adapter()
+        {
+            @Override
+            public void onHeaders(Stream stream, HeadersFrame frame)
+            {
+                responseLatch.countDown();
+            }
+
+            @Override
+            public void onReset(Stream stream, ResetFrame frame)
+            {
+                resetLatch.countDown();
+            }
+        }).get(5, TimeUnit.SECONDS);
+
+        MetaData.Request metaData2 = newRequest("GET", "/2", HttpFields.EMPTY);
+        Stream stream2 = session.newStream(new HeadersFrame(metaData2, null, false), new Stream.Listener.Adapter()
+        {
+            @Override
+            public void onHeaders(Stream stream, HeadersFrame frame)
+            {
+                responseLatch.countDown();
+            }
+        }).get(5, TimeUnit.SECONDS);
+        // Keep the connection busy with the stream2, stream1 must not idle timeout.
+        for (int i = 0; i < 3; ++i)
+        {
+            Thread.sleep(idleTimeout / 2);
+            stream2.data(new DataFrame(stream2.getId(), ByteBuffer.allocate(64), false));
+        }
+
+        // Stream1 must not have idle timed out.
+        assertFalse(resetLatch.await(idleTimeout / 2, TimeUnit.MILLISECONDS));
+
+        // Finish the streams.
+        stream1.data(new DataFrame(stream1.getId(), ByteBuffer.allocate(128), true));
+        stream2.data(new DataFrame(stream2.getId(), ByteBuffer.allocate(64), true));
+
+        assertTrue(responseLatch.await(5, TimeUnit.SECONDS));
     }
 
     private void sleep(long value)
