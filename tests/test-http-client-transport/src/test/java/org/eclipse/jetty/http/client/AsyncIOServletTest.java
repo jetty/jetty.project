@@ -29,6 +29,7 @@ import java.util.concurrent.Executor;
 import java.util.concurrent.Executors;
 import java.util.concurrent.LinkedBlockingDeque;
 import java.util.concurrent.TimeUnit;
+import java.util.concurrent.TimeoutException;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.concurrent.atomic.AtomicReference;
@@ -96,7 +97,9 @@ import static org.hamcrest.Matchers.is;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertNotNull;
+import static org.junit.jupiter.api.Assertions.assertNull;
 import static org.junit.jupiter.api.Assertions.assertSame;
+import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.junit.jupiter.api.Assertions.fail;
 
@@ -1321,12 +1324,12 @@ public class AsyncIOServletTest extends AbstractTest<AsyncIOServletTest.AsyncTra
         CountDownLatch clientLatch = new CountDownLatch(1);
 
         String expected =
-                "S1" +
-                "S2" +
-                "S3S3" +
-                "S4" +
-                "S5" +
-                "S6";
+            "S1" +
+            "S2" +
+            "S3S3" +
+            "S4" +
+            "S5" +
+            "S6";
 
         scenario.client.newRequest(scenario.newURI())
             .method(HttpMethod.POST)
@@ -1509,13 +1512,13 @@ public class AsyncIOServletTest extends AbstractTest<AsyncIOServletTest.AsyncTra
         CountDownLatch clientLatch = new CountDownLatch(1);
 
         String expected =
-                "0S" +
-                "1S" +
-                "2S" +
-                "3S" +
-                "4S" +
-                "5S" +
-                "6S";
+            "0S" +
+            "1S" +
+            "2S" +
+            "3S" +
+            "4S" +
+            "5S" +
+            "6S";
 
         scenario.client.newRequest(scenario.newURI())
             .method(HttpMethod.POST)
@@ -1629,10 +1632,10 @@ public class AsyncIOServletTest extends AbstractTest<AsyncIOServletTest.AsyncTra
         CountDownLatch clientLatch = new CountDownLatch(1);
 
         String expected =
-                "0S" +
-                "2S" +
-                "4S" +
-                "6S";
+            "0S" +
+            "2S" +
+            "4S" +
+            "6S";
 
         scenario.client.newRequest(scenario.newURI())
             .method(HttpMethod.POST)
@@ -1737,6 +1740,69 @@ public class AsyncIOServletTest extends AbstractTest<AsyncIOServletTest.AsyncTra
 
         assertTrue(latch.await(30, TimeUnit.SECONDS));
         assertThat(failures, empty());
+    }
+
+    @ParameterizedTest
+    @ArgumentsSource(TransportProvider.class)
+    public void testOnAllDataReadCalledOnceThenIdleTimeout(Transport transport) throws Exception
+    {
+        init(transport);
+        AtomicInteger allDataReadCount = new AtomicInteger();
+        AtomicReference<Throwable> errorRef = new AtomicReference<>();
+        scenario.start(new HttpServlet()
+        {
+            @Override
+            protected void service(HttpServletRequest request, HttpServletResponse resp) throws IOException
+            {
+                AsyncContext asyncContext = request.startAsync();
+                asyncContext.setTimeout(0);
+
+                ServletInputStream input = request.getInputStream();
+                input.setReadListener(new ReadListener()
+                {
+                    @Override
+                    public void onDataAvailable() throws IOException
+                    {
+                        while (input.isReady())
+                        {
+                            int read = input.read();
+                            if (read < 0)
+                                break;
+                        }
+                    }
+
+                    @Override
+                    public void onAllDataRead()
+                    {
+                        allDataReadCount.incrementAndGet();
+                    }
+
+                    @Override
+                    public void onError(Throwable x)
+                    {
+                        // There should be no errors because request body has
+                        // been successfully read and idle timeouts are ignored.
+                        errorRef.set(x);
+                    }
+                });
+
+                // Never reply to the request, let it idle timeout.
+                // The Servlet semantic is that the idle timeout will
+                // be ignored so the client will timeout the request.
+            }
+        });
+        long idleTimeout = 1000;
+        scenario.setConnectionIdleTimeout(2 * idleTimeout);
+        scenario.setRequestIdleTimeout(idleTimeout);
+
+        assertThrows(TimeoutException.class, () -> scenario.client.newRequest(scenario.newURI())
+            .path(scenario.servletPath)
+            .timeout(2 * idleTimeout, TimeUnit.MILLISECONDS)
+            .send()
+        );
+
+        assertNull(errorRef.get());
+        assertEquals(1, allDataReadCount.get());
     }
 
     private static class Listener implements ReadListener, WriteListener
