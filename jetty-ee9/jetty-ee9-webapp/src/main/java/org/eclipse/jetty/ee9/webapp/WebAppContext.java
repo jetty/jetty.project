@@ -1314,13 +1314,13 @@ public class WebAppContext extends ServletContextHandler implements WebAppClassL
         }
         finally
         {
-            if (!(_initialClassLoader instanceof WebAppClassLoader))
+            ClassLoader loader = getClassLoader();
+            if (loader != _initialClassLoader)
             {
-                ClassLoader loader = getClassLoader();
-                if (loader instanceof URLClassLoader)
-                    ((URLClassLoader)loader).close();
+                if (loader instanceof URLClassLoader urlClassLoader)
+                    urlClassLoader.close();
+                setClassLoader(_initialClassLoader);
             }
-            setClassLoader(_initialClassLoader);
 
             _unavailableException = null;
         }
