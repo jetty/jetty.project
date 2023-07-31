@@ -21,11 +21,9 @@ import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.StandardCopyOption;
 import java.util.HashMap;
-import java.util.Iterator;
 import java.util.Map;
 import java.util.concurrent.ExecutionException;
 import java.util.concurrent.TimeoutException;
-import java.util.stream.Stream;
 
 import org.eclipse.jetty.client.ContentResponse;
 import org.eclipse.jetty.client.HttpClient;
@@ -36,10 +34,10 @@ import org.eclipse.jetty.security.SecurityHandler;
 import org.eclipse.jetty.server.Server;
 import org.eclipse.jetty.server.ServerConnector;
 import org.eclipse.jetty.toolchain.test.FS;
-import org.eclipse.jetty.toolchain.test.IO;
 import org.eclipse.jetty.toolchain.test.MavenPaths;
 import org.eclipse.jetty.toolchain.test.jupiter.WorkDir;
 import org.eclipse.jetty.toolchain.test.jupiter.WorkDirExtension;
+import org.eclipse.jetty.util.IO;
 import org.eclipse.jetty.util.component.LifeCycle;
 import org.eclipse.jetty.util.resource.Resource;
 import org.eclipse.jetty.util.resource.ResourceFactory;
@@ -131,28 +129,8 @@ public class SpecWebAppTest
         try (FileSystem fs = FileSystems.newFileSystem(uri, env))
         {
             Path root = fs.getPath("/");
-            copyContents(depPath.resolve("target/classes"), root);
-            copyContents(depPath.resolve("src/main/resources"), root);
-        }
-    }
-
-    public void copyContents(Path srcPath, Path destPath) throws IOException
-    {
-        try (Stream<Path> srcStream = Files.walk(srcPath))
-        {
-            Iterator<Path> iter = srcStream
-                .filter(Files::isRegularFile)
-                .iterator();
-            while (iter.hasNext())
-            {
-                Path path = iter.next();
-                URI relativeSrc = srcPath.toUri().relativize(path.toUri());
-                Path destFile = destPath.resolve(relativeSrc.toASCIIString());
-                System.err.printf("Copy %s (%s) -> %s%n", path, relativeSrc, destFile);
-                if (!Files.exists(destFile.getParent()))
-                    Files.createDirectories(destFile.getParent());
-                Files.copy(path, destFile, StandardCopyOption.REPLACE_EXISTING);
-            }
+            IO.copyDir(depPath.resolve("target/classes"), root);
+            IO.copyDir(depPath.resolve("src/main/resources"), root, StandardCopyOption.REPLACE_EXISTING);
         }
     }
 
