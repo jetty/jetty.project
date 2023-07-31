@@ -103,7 +103,7 @@ public class FragmentExtension extends AbstractExtension implements DemandChain
         {
             if (first)
             {
-                if (OpCode.isControlFrame(frame.getOpCode()))
+                if (frame.isControlFrame())
                 {
                     emitFrame(frame, callback);
                     return true;

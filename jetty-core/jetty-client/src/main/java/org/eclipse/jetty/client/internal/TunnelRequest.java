@@ -16,14 +16,35 @@ package org.eclipse.jetty.client.internal;
 import java.net.URI;
 
 import org.eclipse.jetty.client.HttpClient;
-import org.eclipse.jetty.client.Origin;
 import org.eclipse.jetty.client.transport.HttpConversation;
 import org.eclipse.jetty.client.transport.HttpRequest;
+import org.eclipse.jetty.http.HttpMethod;
 
 public class TunnelRequest extends HttpRequest
 {
-    public TunnelRequest(HttpClient client, Origin.Address address)
+    private final URI proxyURI;
+
+    public TunnelRequest(HttpClient client, URI proxyURI)
     {
-        super(client, new HttpConversation(), URI.create("http://" + address.asString()));
+        this(client, new HttpConversation(), proxyURI);
+    }
+
+    private TunnelRequest(HttpClient client, HttpConversation conversation, URI proxyURI)
+    {
+        super(client, conversation, proxyURI);
+        this.proxyURI = proxyURI;
+        method(HttpMethod.CONNECT);
+    }
+
+    @Override
+    protected HttpRequest copyInstance(URI newURI)
+    {
+        return new TunnelRequest(getHttpClient(), getConversation(), newURI);
+    }
+
+    @Override
+    public URI getURI()
+    {
+        return proxyURI;
     }
 }

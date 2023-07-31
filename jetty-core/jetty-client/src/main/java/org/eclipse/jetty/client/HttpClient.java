@@ -34,7 +34,6 @@ import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ConcurrentMap;
 import java.util.concurrent.ExecutionException;
 import java.util.concurrent.Executor;
-import java.util.concurrent.TimeUnit;
 import java.util.concurrent.TimeoutException;
 
 import org.eclipse.jetty.client.internal.HttpAuthenticationStore;
@@ -450,59 +449,12 @@ public class HttpClient extends ContainerLifeCycle
 
     protected Request copyRequest(Request oldRequest, URI newURI)
     {
-        HttpRequest newRequest = newHttpRequest(((HttpRequest)oldRequest).getConversation(), newURI);
-        newRequest.method(oldRequest.getMethod())
-            .version(oldRequest.getVersion())
-            .body(oldRequest.getBody())
-            .idleTimeout(oldRequest.getIdleTimeout(), TimeUnit.MILLISECONDS)
-            .timeout(oldRequest.getTimeout(), TimeUnit.MILLISECONDS)
-            .followRedirects(oldRequest.isFollowRedirects())
-            .tag(oldRequest.getTag());
-        for (HttpField field : oldRequest.getHeaders())
-        {
-            HttpHeader header = field.getHeader();
-            // We have a new URI, so skip the host header if present.
-            if (HttpHeader.HOST == header)
-                continue;
-
-            // Remove expectation headers.
-            if (HttpHeader.EXPECT == header)
-                continue;
-
-            // Remove cookies.
-            if (HttpHeader.COOKIE == header)
-                continue;
-
-            // Remove authorization headers.
-            if (HttpHeader.AUTHORIZATION == header ||
-                HttpHeader.PROXY_AUTHORIZATION == header)
-                continue;
-
-            if (!newRequest.getHeaders().contains(field))
-                newRequest.addHeader(field);
-        }
-        return newRequest;
+        return ((HttpRequest)oldRequest).copy(newURI);
     }
 
     private HttpRequest newHttpRequest(HttpConversation conversation, URI uri)
     {
-        return new HttpRequest(this, conversation, checkHost(uri));
-    }
-
-    /**
-     * <p>Checks {@code uri} for the host to be non-null host.</p>
-     * <p>URIs built from strings that have an internationalized domain name (IDN)
-     * are parsed without errors, but {@code uri.getHost()} returns null.</p>
-     *
-     * @param uri the URI to check for non-null host
-     * @return the same {@code uri} if the host is non-null
-     * @throws IllegalArgumentException if the host is null
-     */
-    private URI checkHost(URI uri)
-    {
-        if (uri.getHost() == null)
-            throw new IllegalArgumentException(String.format("Invalid URI host: null (authority: %s)", uri.getRawAuthority()));
-        return uri;
+        return new HttpRequest(this, conversation, uri);
     }
 
     public Destination resolveDestination(Request request)

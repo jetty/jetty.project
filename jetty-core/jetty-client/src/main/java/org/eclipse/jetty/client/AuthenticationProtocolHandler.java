@@ -30,6 +30,7 @@ import org.eclipse.jetty.client.transport.HttpRequest;
 import org.eclipse.jetty.client.transport.ResponseListeners;
 import org.eclipse.jetty.http.HttpField;
 import org.eclipse.jetty.http.HttpHeader;
+import org.eclipse.jetty.http.HttpMethod;
 import org.eclipse.jetty.http.HttpStatus;
 import org.eclipse.jetty.http.QuotedCSV;
 import org.eclipse.jetty.util.NanoTime;
@@ -200,14 +201,9 @@ public abstract class AuthenticationProtocolHandler implements ProtocolHandler
 
                 conversation.setAttribute(authenticationAttribute, true);
 
-                URI requestURI = request.getURI();
-                String path = null;
-                if (requestURI == null)
-                {
-                    requestURI = resolveURI(request, null);
-                    path = request.getPath();
-                }
-                Request newRequest = client.copyRequest(request, requestURI);
+                Request newRequest = client.copyRequest(request, request.getURI());
+                if (HttpMethod.CONNECT.is(newRequest.getMethod()))
+                    newRequest.path(request.getPath());
 
                 // Adjust the timeout of the new request, taking into account the
                 // timeout of the previous request and the time already elapsed.
@@ -226,9 +222,6 @@ public abstract class AuthenticationProtocolHandler implements ProtocolHandler
                         return;
                     }
                 }
-
-                if (path != null)
-                    newRequest.path(path);
 
                 authnResult.apply(newRequest);
                 // Copy existing, explicitly set, authorization headers.

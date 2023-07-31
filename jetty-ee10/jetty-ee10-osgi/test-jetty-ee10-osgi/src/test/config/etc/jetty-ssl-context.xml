@@ -8,7 +8,7 @@
         <Set name="KeyStorePath">
           <Call name="resolvePath" class="org.eclipse.jetty.xml.XmlConfiguration">
             <Arg><Property name="jetty.base"/></Arg>
-            <Arg><Property name="jetty.sslContext.keyStorePath" deprecated="jetty.sslContext.keyStoreAbsolutePath,jetty.keystore" default="etc/keystore.p12" /></Arg>
+            <Arg><Property name="jetty.sslContext.keyStorePath" default="etc/keystore.p12" /></Arg>
           </Call>
         </Set>
         <Set name="KeyStorePassword"><Property name="jetty.sslContext.keyStorePassword" /></Set>

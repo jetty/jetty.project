@@ -21,6 +21,7 @@ import java.util.concurrent.atomic.AtomicInteger;
 import java.util.concurrent.atomic.AtomicReference;
 
 import org.eclipse.jetty.http.HttpFields;
+import org.eclipse.jetty.http.HttpStatus;
 import org.eclipse.jetty.http.HttpVersion;
 import org.eclipse.jetty.http.MetaData;
 import org.eclipse.jetty.http2.FlowControlStrategy;
@@ -750,6 +751,90 @@ public class IdleTimeoutTest extends AbstractTest
         assertThat(requests.get(), Matchers.is(count - 1));
 
         await().atMost(5, TimeUnit.SECONDS).until(responses::get, Matchers.is(count - 1));
+    }
+
+    @Test
+    public void testDisableStreamIdleTimeout() throws Exception
+    {
+        // Set the stream idle timeout to a negative value to disable it.
+        long streamIdleTimeout = -1;
+        start(new ServerSessionListener()
+        {
+            @Override
+            public Stream.Listener onNewStream(Stream stream, HeadersFrame frame)
+            {
+                stream.demand();
+                return new Stream.Listener()
+                {
+                    @Override
+                    public void onDataAvailable(Stream stream)
+                    {
+                        while (true)
+                        {
+                            Stream.Data data = stream.readData();
+                            if (data == null)
+                            {
+                                stream.demand();
+                                return;
+                            }
+                            data.release();
+                            if (data.frame().isEndStream())
+                            {
+                                MetaData.Response response = new MetaData.Response(HttpStatus.OK_200, null, HttpVersion.HTTP_2, HttpFields.EMPTY);
+                                stream.headers(new HeadersFrame(stream.getId(), response, null, true));
+                                return;
+                            }
+                        }
+                    }
+                };
+            }
+        }, h2 -> h2.setStreamIdleTimeout(streamIdleTimeout));
+        connector.setIdleTimeout(idleTimeout);
+
+        CountDownLatch responseLatch = new CountDownLatch(2);
+        CountDownLatch resetLatch = new CountDownLatch(1);
+        Session session = newClientSession(new Session.Listener() {});
+        MetaData.Request metaData1 = newRequest("GET", "/1", HttpFields.EMPTY);
+        Stream stream1 = session.newStream(new HeadersFrame(metaData1, null, false), new Stream.Listener()
+        {
+            @Override
+            public void onHeaders(Stream stream, HeadersFrame frame)
+            {
+                responseLatch.countDown();
+            }
+
+            @Override
+            public void onReset(Stream stream, ResetFrame frame, Callback callback)
+            {
+                resetLatch.countDown();
+                callback.succeeded();
+            }
+        }).get(5, TimeUnit.SECONDS);
+
+        MetaData.Request metaData2 = newRequest("GET", "/2", HttpFields.EMPTY);
+        Stream stream2 = session.newStream(new HeadersFrame(metaData2, null, false), new Stream.Listener()
+        {
+            @Override
+            public void onHeaders(Stream stream, HeadersFrame frame)
+            {
+                responseLatch.countDown();
+            }
+        }).get(5, TimeUnit.SECONDS);
+        // Keep the connection busy with the stream2, stream1 must not idle timeout.
+        for (int i = 0; i < 3; ++i)
+        {
+            Thread.sleep(idleTimeout / 2);
+            stream2.data(new DataFrame(stream2.getId(), ByteBuffer.allocate(64), false));
+        }
+
+        // Stream1 must not have idle timed out.
+        assertFalse(resetLatch.await(idleTimeout / 2, TimeUnit.MILLISECONDS));
+
+        // Finish the streams.
+        stream1.data(new DataFrame(stream1.getId(), ByteBuffer.allocate(128), true));
+        stream2.data(new DataFrame(stream2.getId(), ByteBuffer.allocate(64), true));
+
+        assertTrue(responseLatch.await(5, TimeUnit.SECONDS));
     }
 
     private void sleep(long value)

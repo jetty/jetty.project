@@ -271,7 +271,7 @@ public class PerMessageDeflateExtension extends AbstractExtension implements Dem
         @Override
         protected boolean onFrame(Frame frame, Callback callback, boolean batch)
         {
-            if (OpCode.isControlFrame(frame.getOpCode()))
+            if (frame.isControlFrame())
             {
                 nextOutgoingFrame(frame, callback, batch);
                 return true;
@@ -377,7 +377,7 @@ public class PerMessageDeflateExtension extends AbstractExtension implements Dem
         {
             if (first)
             {
-                if (OpCode.isControlFrame(frame.getOpCode()))
+                if (frame.isControlFrame())
                 {
                     emitFrame(frame, callback);
                     return true;

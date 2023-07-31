@@ -188,6 +188,15 @@ public abstract class AbstractHTTP2ServerConnectionFactory extends AbstractConne
         return streamIdleTimeout;
     }
 
+    /**
+     * <p>Sets the HTTP/2 stream idle timeout.</p>
+     * <p>Value {@code -1} disables the idle timeout,
+     * value {@code 0} implies using the default idle timeout,
+     * positive values specify the idle timeout in milliseconds.</p>
+     *
+     * @param streamIdleTimeout the idle timeout in milliseconds,
+     * {@code 0} for the default, {@code -1} to disable the idle timeout
+     */
     public void setStreamIdleTimeout(long streamIdleTimeout)
     {
         this.streamIdleTimeout = streamIdleTimeout;
@@ -309,8 +318,9 @@ public abstract class AbstractHTTP2ServerConnectionFactory extends AbstractConne
         // the typical case is that the connection will be busier and the
         // stream idle timeout will expire earlier than the connection's.
         long streamIdleTimeout = getStreamIdleTimeout();
-        if (streamIdleTimeout > 0)
-            session.setStreamIdleTimeout(streamIdleTimeout);
+        if (streamIdleTimeout == 0)
+            streamIdleTimeout = endPoint.getIdleTimeout();
+        session.setStreamIdleTimeout(streamIdleTimeout);
         session.setInitialSessionRecvWindow(getInitialSessionRecvWindow());
         session.setWriteThreshold(getHttpConfiguration().getOutputBufferSize());
         session.setConnectProtocolEnabled(isConnectProtocolEnabled());
