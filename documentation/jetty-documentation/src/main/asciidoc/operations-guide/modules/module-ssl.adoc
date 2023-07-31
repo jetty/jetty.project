@@ -50,7 +50,7 @@ include::{JETTY_HOME}/modules/ssl.mod[tags=documentation-ssl-context]
 Among the configurable properties, the most relevant are:
 
 `jetty.sslContext.keyStorePath`::
-The KeyStore path on the file system relative to `$JETTY_BASE` -- defaults to `$JETTY_BASE/etc/keystore.p12`.
+The KeyStore path on the file system, either an absolute path or a relative path to `$JETTY_BASE` -- defaults to `$JETTY_BASE/etc/keystore.p12`.
 `jetty.sslContext.keyStorePassword`::
 The KeyStore password, which you want to explicitly configure.
 The password may be obfuscated with the xref:og-password[Jetty Password Tool].
