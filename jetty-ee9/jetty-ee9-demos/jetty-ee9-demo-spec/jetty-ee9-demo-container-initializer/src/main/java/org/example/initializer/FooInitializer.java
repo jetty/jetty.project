@@ -84,7 +84,7 @@ public class FooInitializer implements ServletContainerInitializer
             throw new IllegalStateException("FooInitializer on Startup already called");
 
         context.setAttribute("org.example.Foo", new ArrayList<Class>(classes));
-        ServletRegistration.Dynamic reg = context.addServlet("AnnotationTest", "org.example.AnnotationTest");
+        ServletRegistration.Dynamic reg = context.addServlet("AnnotationTest", "org.example.test.AnnotationTest");
         context.setAttribute("org.example.AnnotationTest.complete", (reg == null));
         context.addListener(new FooListener());
 

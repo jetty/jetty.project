@@ -551,7 +551,7 @@ public class AnnotationParser
         if (!r.exists())
             return;
 
-        if (FileID.isJavaArchive(r.getPath()))
+        if (FileID.isJavaArchive(r.getPath())) // TODO: this is now always false, as all Resource objects are directories
         {
             parseJar(handlers, r);
             return;

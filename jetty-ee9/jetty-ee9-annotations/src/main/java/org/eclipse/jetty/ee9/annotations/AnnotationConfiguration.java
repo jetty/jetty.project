@@ -688,7 +688,7 @@ public class AnnotationConfiguration extends AbstractConfiguration
     }
 
     /**
-     * Check to see if the ServletContainerIntializer loaded via the ServiceLoader came
+     * Check to see if the ServletContainerInitializer loaded via the ServiceLoader came
      * from a jar that is excluded by the fragment ordering. See ServletSpec 3.0 p.85.
      *
      * @param context the context for the jars
@@ -752,7 +752,7 @@ public class AnnotationConfiguration extends AbstractConfiguration
         boolean included = false;
         for (Resource r : orderedJars)
         {
-            included = r.equals(sciResource);
+            included = r.isContainedIn(sciResource);
             if (included)
                 break;
         }
@@ -966,7 +966,7 @@ public class AnnotationConfiguration extends AbstractConfiguration
                 {
                     for (Map.Entry<ServletContainerInitializer, Resource> entry : sciResourceMap.entrySet())
                     {
-                        if (webInfJar.equals(entry.getValue()))
+                        if (webInfJar.isContainedIn(entry.getValue()))
                             nonExcludedInitializers.add(entry.getKey());
                     }
                 }
