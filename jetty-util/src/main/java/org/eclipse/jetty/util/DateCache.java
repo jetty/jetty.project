@@ -15,7 +15,6 @@ package org.eclipse.jetty.util;
 
 import java.time.Instant;
 import java.time.ZoneId;
-import java.time.ZonedDateTime;
 import java.time.format.DateTimeFormatter;
 import java.util.Date;
 import java.util.Locale;
@@ -96,15 +95,14 @@ public class DateCache
 
     public DateCache(String format, Locale l, TimeZone tz)
     {
-        if (l == null)
-            _tzFormat = DateTimeFormatter.ofPattern(format);
-        else
-            _tzFormat = DateTimeFormatter.ofPattern(format, l);
-
         _formatString = format;
         _zoneId = tz.toZoneId();
-        _tzFormat.withZone(_zoneId);
         _tick = null;
+
+        if (l == null)
+            _tzFormat = DateTimeFormatter.ofPattern(format).withZone(_zoneId);
+        else
+            _tzFormat = DateTimeFormatter.ofPattern(format, l).withZone(_zoneId);
     }
 
     public TimeZone getTimeZone()
@@ -146,7 +144,7 @@ public class DateCache
      */
     public String formatWithoutCache(Date inDate)
     {
-        return ZonedDateTime.ofInstant(inDate.toInstant(), _zoneId).format(_tzFormat);
+        return _tzFormat.format(inDate.toInstant());
     }
 
     /**
@@ -157,7 +155,7 @@ public class DateCache
      */
     public String formatWithoutCache(long inDate)
     {
-        return ZonedDateTime.ofInstant(Instant.ofEpochMilli(inDate), _zoneId).format(_tzFormat);
+        return _tzFormat.format(Instant.ofEpochMilli(inDate));
     }
 
     /**
@@ -168,11 +166,12 @@ public class DateCache
      *
      * @param now the milliseconds since unix epoch
      * @return Formatted date
+     * @deprecated use {@link #format(long)}
      */
     @Deprecated
     public String formatNow(long now)
     {
-        return formatTick(now)._string;
+        return format(now);
     }
 
     @Deprecated
@@ -195,7 +194,7 @@ public class DateCache
         // recheck the tick, to save multiple formats
         if (tick == null || tick._seconds != seconds)
         {
-            String s = ZonedDateTime.ofInstant(Instant.ofEpochMilli(inDate), _zoneId).format(_tzFormat);
+            String s = formatWithoutCache(inDate);
             _tick = new Tick(seconds, s);
             tick = _tick;
         }
