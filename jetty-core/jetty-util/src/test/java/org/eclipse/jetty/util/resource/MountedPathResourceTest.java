@@ -362,4 +362,83 @@ public class MountedPathResourceTest
             assertThat("Dir contents", actual, containsInAnyOrder(expected));
         }
     }
+
+    /**
+     * When mounting multiple points within the same JAR, only
+     * 1 mount should be created, but have reference counts
+     * tracked separately.  Done via {@link ResourceFactory.Closeable}
+     * essentially a duplicate of {@link #testMountByJarNameLifeCycle()}
+     * to ensure parity in the two implementations.
+     */
+    @Test
+    public void testMountByJarNameClosable()
+    {
+        Path jarPath = MavenPaths.findTestResourceFile("jar-file-resource.jar");
+        URI uriRoot = URI.create("jar:" + jarPath.toUri().toASCIIString() + "!/"); // root
+        URI uriRez = URI.create("jar:" + jarPath.toUri().toASCIIString() + "!/rez/"); // dir
+        URI uriDeep = URI.create("jar:" + jarPath.toUri().toASCIIString() + "!/rez/deep/"); // dir
+        URI uriZzz = URI.create("jar:" + jarPath.toUri().toASCIIString() + "!/rez/deep/zzz"); // file
+
+        try (ResourceFactory.Closeable resourceFactory = ResourceFactory.closeable())
+        {
+            Resource resRoot = resourceFactory.newResource(uriRoot);
+            Resource resRez = resourceFactory.newResource(uriRez);
+            Resource resDeep = resourceFactory.newResource(uriDeep);
+            Resource resZzz = resourceFactory.newResource(uriZzz);
+
+            assertThat(FileSystemPool.INSTANCE.mounts().size(), is(1));
+            int mountCount = FileSystemPool.INSTANCE.getReferenceCount(uriRoot);
+            assertThat(mountCount, is(4));
+        }
+
+        assertThat(FileSystemPool.INSTANCE.mounts().size(), is(0));
+        int mountCount = FileSystemPool.INSTANCE.getReferenceCount(uriRoot);
+        assertThat(mountCount, is(0));
+    }
+
+    /**
+     * When mounting multiple points within the same JAR, only
+     * 1 mount should be created, but have reference counts
+     * tracked separately.  Done via {@link ResourceFactory.LifeCycle}
+     * essentially a duplicate of {@link #testMountByJarNameClosable()}
+     * to ensure parity in the two implementations.
+     */
+    @Test
+    public void testMountByJarNameLifeCycle() throws Exception
+    {
+        Path jarPath = MavenPaths.findTestResourceFile("jar-file-resource.jar");
+        URI uriRoot = URI.create("jar:" + jarPath.toUri().toASCIIString() + "!/"); // root
+        URI uriRez = URI.create("jar:" + jarPath.toUri().toASCIIString() + "!/rez/"); // dir
+        URI uriDeep = URI.create("jar:" + jarPath.toUri().toASCIIString() + "!/rez/deep/"); // dir
+        URI uriZzz = URI.create("jar:" + jarPath.toUri().toASCIIString() + "!/rez/deep/zzz"); // file
+
+        ResourceFactory.LifeCycle resourceFactory = ResourceFactory.lifecycle();
+
+        try
+        {
+            resourceFactory.start();
+            Resource resRoot = resourceFactory.newResource(uriRoot);
+            Resource resRez = resourceFactory.newResource(uriRez);
+            Resource resDeep = resourceFactory.newResource(uriDeep);
+            Resource resZzz = resourceFactory.newResource(uriZzz);
+
+            assertThat(FileSystemPool.INSTANCE.mounts().size(), is(1));
+            int mountCount = FileSystemPool.INSTANCE.getReferenceCount(uriRoot);
+            assertThat(mountCount, is(4));
+            String dump = resourceFactory.dump();
+            assertThat(dump, containsString("newResourceReferences size=4"));
+            assertThat(dump, containsString(uriRoot.toASCIIString()));
+            assertThat(dump, containsString(uriRez.toASCIIString()));
+            assertThat(dump, containsString(uriDeep.toASCIIString()));
+            assertThat(dump, containsString(uriZzz.toASCIIString()));
+        }
+        finally
+        {
+            resourceFactory.stop();
+
+            assertThat(FileSystemPool.INSTANCE.mounts().size(), is(0));
+            int mountCount = FileSystemPool.INSTANCE.getReferenceCount(uriRoot);
+            assertThat(mountCount, is(0));
+        }
+    }
 }
