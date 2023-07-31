@@ -64,7 +64,6 @@ import static org.eclipse.jetty.util.thread.Invocable.InvocationType.NON_BLOCKIN
  * and then {@link #associate(Request, Response, Callback) associated} with possibly wrapped
  * request, response and callback.
  * </p>
- *
  * @see ServletRequestState
  * @see HttpInput
  */
@@ -113,16 +112,15 @@ public class ServletChannel
 
     /**
      * Associate this channel with a specific request.
-     * This is called by the ServletContextHandler when a core {@link Request} is accepted and associated with
-     * a servlet mapping.
+     * This method is called by the {@link ServletContextHandler} when a core {@link Request} is accepted and associated with
+     * a servlet mapping. The association remains until {@link #recycle()} is called.
      * @param servletContextRequest The servlet context request to associate
      * @see #recycle()
      */
     public void associate(ServletContextRequest servletContextRequest)
     {
-        _state.recycle();
+        assert _servletContextRequest == null;
         _httpInput.reopen();
-        _httpOutput.recycle();
         _request = _servletContextRequest = servletContextRequest;
         _response = _servletContextRequest.getServletContextResponse();
         _expects100Continue = servletContextRequest.getHeaders().contains(HttpHeader.EXPECT, HttpHeaderValue.CONTINUE.asString());
@@ -435,10 +433,14 @@ public class ServletChannel
      */
     private void recycle()
     {
+        _state.recycle();
         _httpInput.recycle();
-        _servletContextRequest = null;
+        _httpOutput.recycle();
+        _request = _servletContextRequest = null;
+        _response = null;
         _callback = null;
         _written = 0;
+        _expects100Continue = false;
     }
 
     /**
