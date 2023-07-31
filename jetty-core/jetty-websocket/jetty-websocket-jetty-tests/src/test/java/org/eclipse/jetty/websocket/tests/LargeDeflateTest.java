@@ -45,7 +45,7 @@ public class LargeDeflateTest
     private final EventSocket _serverSocket = new EventSocket();
 
     @BeforeEach
-    void before() throws Exception
+    public void before() throws Exception
     {
         _server = new Server();
         _connector = new ServerConnector(_server);
@@ -71,7 +71,7 @@ public class LargeDeflateTest
     }
 
     @AfterEach
-    void after() throws Exception
+    public void after() throws Exception
     {
         _client.stop();
         _server.stop();
