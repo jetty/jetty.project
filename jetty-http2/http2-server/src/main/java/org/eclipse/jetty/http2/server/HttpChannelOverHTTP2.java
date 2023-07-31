@@ -656,11 +656,11 @@ public class HttpChannelOverHTTP2 extends HttpChannel implements Closeable, Writ
 
         failure.addSuppressed(new Throwable("HttpInput idle timeout"));
         boolean readFailed = _contentDemander.onTimeout(failure);
-        boolean needed = false;
+        boolean handle = false;
         if (readFailed)
-            needed = getRequest().getHttpInput().onContentProducible();
+            handle = getRequest().getHttpInput().onContentProducible();
 
-        if (needed || delayed)
+        if (handle || delayed)
         {
             consumer.accept(this::handleWithContext);
             reset = false;
