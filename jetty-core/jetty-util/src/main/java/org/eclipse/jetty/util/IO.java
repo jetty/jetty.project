@@ -27,16 +27,21 @@ import java.io.PrintWriter;
 import java.io.Reader;
 import java.io.StringWriter;
 import java.io.Writer;
+import java.net.URI;
 import java.nio.ByteBuffer;
 import java.nio.channels.GatheringByteChannel;
 import java.nio.charset.Charset;
+import java.nio.file.CopyOption;
 import java.nio.file.FileVisitResult;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.SimpleFileVisitor;
 import java.nio.file.attribute.BasicFileAttributes;
+import java.util.Iterator;
+import java.util.Objects;
 import java.util.concurrent.CompletionException;
 import java.util.concurrent.ExecutionException;
+import java.util.stream.Stream;
 
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -214,6 +219,37 @@ public class IO
                 if (".".equals(name) || "..".equals(name))
                     continue;
                 copy(file, new File(to, name));
+            }
+        }
+    }
+
+    /**
+     * Copy the contents of a directory from one directory to another.
+     *
+     * @param srcDir the source directory
+     * @param destDir the destination directory
+     * @throws IOException if unable to copy the file
+     */
+    public static void copyDir(Path srcDir, Path destDir, CopyOption... copyOptions) throws IOException
+    {
+        if (!Files.isDirectory(Objects.requireNonNull(srcDir)))
+            throw new IllegalArgumentException("Source is not a directory: " + srcDir);
+        if (!Files.isDirectory(Objects.requireNonNull(destDir)))
+            throw new IllegalArgumentException("Dest is not a directory: " + destDir);
+
+        try (Stream<Path> sourceStream = Files.walk(srcDir, 20))
+        {
+            Iterator<Path> iterFiles = sourceStream
+                .filter(Files::isRegularFile)
+                .iterator();
+            while (iterFiles.hasNext())
+            {
+                Path sourceFile = iterFiles.next();
+                URI relativeSrc = srcDir.toUri().relativize(sourceFile.toUri());
+                Path destFile = destDir.resolve(relativeSrc.toASCIIString());
+                if (!Files.exists(destFile.getParent()))
+                    Files.createDirectories(destFile.getParent());
+                Files.copy(sourceFile, destFile, copyOptions);
             }
         }
     }
