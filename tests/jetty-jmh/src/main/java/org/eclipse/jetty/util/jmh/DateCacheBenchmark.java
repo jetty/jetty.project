@@ -46,21 +46,21 @@ public class DateCacheBenchmark
     @BenchmarkMode(Mode.Throughput)
     public void testDateCacheTimestamp()
     {
-        dateCache.format(timestamp);
+        dateCache.formatWithoutCache(timestamp);
     }
 
     @Benchmark
     @BenchmarkMode(Mode.Throughput)
     public void testDateCacheNow()
     {
-        dateCache.format(new Date());
+        dateCache.formatWithoutCache(new Date());
     }
 
     @Benchmark
     @BenchmarkMode(Mode.Throughput)
     public void testDateCacheFormatNow()
     {
-        dateCache.formatNow(System.currentTimeMillis());
+        dateCache.format(System.currentTimeMillis());
     }
 
     public static void main(String[] args) throws RunnerException

@@ -39,7 +39,7 @@ public class DateCacheTest
 
         Instant now = Instant.now();
         Instant end = now.plusSeconds(3);
-        String f = dc.formatNow(now.toEpochMilli());
+        String f = dc.format(now.toEpochMilli());
 
         int hits = 0;
         int misses = 0;
@@ -47,7 +47,7 @@ public class DateCacheTest
         while (now.isBefore(end))
         {
             String last = f;
-            f = dc.formatNow(now.toEpochMilli());
+            f = dc.format(now.toEpochMilli());
             // System.err.printf("%s %s%n",f,last==f);
             if (last == f)
                 hits++;
@@ -65,16 +65,16 @@ public class DateCacheTest
     {
         // we simply check we do not have any exception
         DateCache dateCache = new DateCache();
-        assertNotNull(dateCache.formatNow(System.currentTimeMillis()));
-        assertNotNull(dateCache.formatNow(new Date().getTime()));
-        assertNotNull(dateCache.formatNow(Instant.now().toEpochMilli()));
-
-        assertNotNull(dateCache.format(new Date()));
-        assertNotNull(dateCache.format(new Date(System.currentTimeMillis())));
-
         assertNotNull(dateCache.format(System.currentTimeMillis()));
         assertNotNull(dateCache.format(new Date().getTime()));
         assertNotNull(dateCache.format(Instant.now().toEpochMilli()));
+
+        assertNotNull(dateCache.formatWithoutCache(new Date()));
+        assertNotNull(dateCache.formatWithoutCache(new Date(System.currentTimeMillis())));
+
+        assertNotNull(dateCache.formatWithoutCache(System.currentTimeMillis()));
+        assertNotNull(dateCache.formatWithoutCache(new Date().getTime()));
+        assertNotNull(dateCache.formatWithoutCache(Instant.now().toEpochMilli()));
 
         assertNotNull(dateCache.formatTick(System.currentTimeMillis()));
         assertNotNull(dateCache.formatTick(new Date().getTime()));
