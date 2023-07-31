@@ -339,12 +339,6 @@ public class HttpProxy extends ProxyConfiguration.Proxy
         {
             promise.failed(x);
         }
-
-        private void setEndPoint(EndPoint endPoint)
-        {
-            HttpConversation conversation = ((HttpRequest)request).getConversation();
-            conversation.setAttribute(EndPoint.class.getName(), endPoint);
-        }
     }
 
     public static class TunnelRequest extends HttpRequest
