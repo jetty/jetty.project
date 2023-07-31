@@ -697,10 +697,6 @@ public class HttpChannel implements Runnable, HttpOutput.Interceptor
                                 break;
                         }
 
-                        // If send error is called we need to break.
-                        if (checkAndPrepareUpgrade())
-                            break;
-
                         // Set a close callback on the HttpOutput to make it an async callback
                         _response.completeOutput(Callback.from(NON_BLOCKING, () -> _state.completed(null), _state::completed));
 
@@ -981,20 +977,6 @@ public class HttpChannel implements Runnable, HttpOutput.Interceptor
             LOG.debug("onRequestComplete {}", this);
         boolean result = eof();
         _combinedListener.onRequestEnd(_request);
-    }
-
-    /**
-     * <p>Checks whether the processing of the request resulted in an upgrade,
-     * and if so performs upgrade preparation steps <em>before</em> the upgrade
-     * response is sent back to the client.</p>
-     * <p>This avoids a race where the server is unprepared if the client sends
-     * data immediately after having received the upgrade response.</p>
-     * @return true if the channel is not complete and more processing is required,
-     * typically because sendError has been called.
-     */
-    protected boolean checkAndPrepareUpgrade()
-    {
-        return false;
     }
 
     public void onCompleted()

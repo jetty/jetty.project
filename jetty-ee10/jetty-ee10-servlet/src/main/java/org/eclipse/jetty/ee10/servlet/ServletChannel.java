@@ -614,11 +614,6 @@ public class ServletChannel
                                 break;
                         }
 
-                        // If send error is called we need to break.
-                        // TODO: is this necessary? It always returns false.
-                        if (checkAndPrepareUpgrade())
-                            break;
-
                         // Set a close callback on the HttpOutput to make it an async callback
                         getServletContextResponse().completeOutput(Callback.from(NON_BLOCKING, () -> _state.completed(null), _state::completed));
 
@@ -789,20 +784,6 @@ public class ServletChannel
             _state.getState(),
             _servletContextRequest.getHttpURI(),
             timeStamp == 0 ? 0 : System.currentTimeMillis() - timeStamp);
-    }
-
-    /**
-     * <p>Checks whether the processing of the request resulted in an upgrade,
-     * and if so performs upgrade preparation steps <em>before</em> the upgrade
-     * response is sent back to the client.</p>
-     * <p>This avoids a race where the server is unprepared if the client sends
-     * data immediately after having received the upgrade response.</p>
-     * @return true if the channel is not complete and more processing is required,
-     * typically because sendError has been called.
-     */
-    protected boolean checkAndPrepareUpgrade()
-    {
-        return false;
     }
 
     void onTrailers(HttpFields trailers)
