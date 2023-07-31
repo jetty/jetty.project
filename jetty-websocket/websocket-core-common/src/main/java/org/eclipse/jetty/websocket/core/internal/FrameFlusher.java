@@ -43,7 +43,15 @@ import org.slf4j.LoggerFactory;
 
 public class FrameFlusher extends IteratingCallback
 {
-    public static final Frame FLUSH_FRAME = new Frame(OpCode.BINARY);
+    public static final Frame FLUSH_FRAME = new Frame(OpCode.UNDEFINED)
+    {
+        @Override
+        public boolean isControlFrame()
+        {
+            return true;
+        }
+    };
+
     private static final Logger LOG = LoggerFactory.getLogger(FrameFlusher.class);
     private static final Throwable CLOSED_CHANNEL = new StaticException("Closed");
 
