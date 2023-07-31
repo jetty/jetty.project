@@ -792,7 +792,7 @@ public class WebAppContextTest
     }
 
     @Test
-    void testSetServerPropagation()
+    public void testSetServerPropagation()
     {
         Server server = new Server();
         WebAppContext context = new WebAppContext();

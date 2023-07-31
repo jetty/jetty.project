@@ -74,7 +74,7 @@ public class LargeDeflateTest
     }
 
     @Test
-    void testDeflate() throws Exception
+    public void testDeflate() throws Exception
     {
         ClientUpgradeRequest upgradeRequest = new ClientUpgradeRequest();
         upgradeRequest.addExtensions("permessage-deflate");
@@ -94,7 +94,7 @@ public class LargeDeflateTest
     }
 
     @Test
-    void testDeflateLargerThanMaxMessage() throws Exception
+    public void testDeflateLargerThanMaxMessage() throws Exception
     {
         ClientUpgradeRequest upgradeRequest = new ClientUpgradeRequest();
         upgradeRequest.addExtensions("permessage-deflate");
