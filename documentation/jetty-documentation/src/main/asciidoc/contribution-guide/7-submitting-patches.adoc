@@ -11,24 +11,24 @@
 // ========================================================================
 //
 
-[[cg-submitting-patches]]
+[[cg-patches]]
 == Submitting Patches
 
 We wholeheartedly welcome contributions to Jetty.
 While not every contribution will be accepted, our commitment is to work with interested parties on the things they care about.
 
-[[cg-git-config]]
-=== Configuring git
+[[cg-patches-git-config]]
+=== Configuring `git`
 
-The email in your git commits must match the email you used to <<cg-eca,sign the Eclipse Contributor Agreement>>.
+The email in your git commits must match the email you used to xref:cg-eca[sign the Eclipse Contributor Agreement].
 As such, you'll likely want to configure `user.email` in git accordingly.
 See link:https://help.github.com/articles/setting-your-email-in-git[this guide] on GitHub for details on how to do so.
 
-[[cg-commit-messages]]
+[[cg-patches-git-commit-messages]]
 ==== Writing commit messages
 
 If your pull request addresses a particular issue in our repository, then the commit message should reference the issue.
-Specifically, the message should follow the form *Issue #<XXX> <description of the commit>*:
+Specifically, the message should follow the form *Issue #<NNN> <description of the commit>*:
 
 [source, shell]
 ----
@@ -37,38 +37,17 @@ $ git commit -s -m "Issue #123 resolving the issue by adding widget"
 
 Using this format will ensure that the commit will be included in `VERSIONS.txt` upon new releases of Jetty.
 
-
-[[cg-making-the-commit]]
+[[cg-patches-git-commit-signing]]
 === Signing the commit
 
-You must sign off on every commit in your pull request using git's https://git-scm.com/docs/git-commit#Documentation/git-commit.txt---signoff[signoff] feature (`git commit -s`).
-Without this signoff, your patch will be automatically rejected before it can be incorporated into to the Jetty repository.
-*There is nothing the Jetty committers can do to bypass this check.*
+You should sign off on every commit in your pull request using git's https://git-scm.com/docs/git-commit#Documentation/git-commit.txt---signoff[signoff] feature (`git commit -s`).
 
-
-[NOTE]
-.Why do my commits need the signoff flag if I already signed the ECA?
-====
-By signing the ECA, you are indicating that you are free to contribute to Eclipse; however, that doesn't mean every line of code you ever write is subject to the agreement!
-Signing off on your individual commits clearly indicates that you are submitting your code under the auspices of the ECA.
-====
-
-[TIP]
-====
-If you made a commit but forgot to pass the `-s` flag, you can retroactively add a signoff by running:
-
-[source,shell]
-----
-git commit --amend --signoff
-----
-====
-
-[[cg-pull-requests]]
+[[cg-patches-pull-requests]]
 === Creating pull requests
 
 Please see https://help.github.com/articles/creating-a-pull-request[GitHub's documentation for creating pull requests].
 
-[[cg-time-frames]]
+[[cg-patches-time-frames]]
 === Time frames
 
 We do our best to process contributions in a timely fashion.

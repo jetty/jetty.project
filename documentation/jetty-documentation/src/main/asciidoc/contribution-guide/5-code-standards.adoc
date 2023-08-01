@@ -15,7 +15,7 @@
 == Code Standards
 This section outlines the various coding conventions and standards we use throughout the Jetty codebase.
 
-[[cg-ide-configuration]]
+[[cg-code-standards-ide]]
 === Configuring your IDE
 
 IntelliJ IDE::
@@ -28,41 +28,38 @@ Eclipse IDE::
 An Eclipse code style XML file is available in the source repo at
 https://github.com/eclipse/jetty.project/blob/jetty-10.0.x/build-resources/jetty-codestyle-eclipse-ide.xml[`/build-resources/jetty-codestyle-eclipse-ide.xml`].
 
-[[cg-java-conventions]]
+[[cg-code-standards-java]]
 === Java conventions
 
 The following code sample shows some basic Java styles and conventions used throughout the Jetty codebase:
 
 [source, java]
 ----
-
 import some.exact.ClassName;      // GOOD
 import some.wildcard.package.*;   // BAD!
 
 package org.always.have.a.package;
 
-/* --------------------------------------------------------- */
-/** All classes should have a javadoc
+/**
+ * All classes should have a javadoc
  */
 class MyClassName
 {
     // Use 4 spaces to indent.
     // The code must format OK with default tab size of 8.
 
-    private static final int ALL_CAPS_FOR_PUBLIC_CONSTANTS=1;
+    private static final int ALL_CAPS_FOR_PUBLIC_CONSTANTS = 1;
 
-    // Prefix static fields with two underscores (__)
-    // and normal fields with one underscore (_). This
+    // Prefix fields with one underscore (_). This
     // convention is not mandatory, but the chosen style
     // should be used consistently within a single class.
-    private static String __staticField;
     private Object _privateField;
 
-
     // Use getters and setters rather than public fields.
+    // Braces always on new line.
     public void setPrivateField(Object privateField)
     {
-        _privateField=privateField;
+        _privateField = privateField;
     }
 
     public Object getPrivateField()
@@ -70,20 +67,19 @@ class MyClassName
         return _privateField;
     }
 
-    public void doSomething()
-        throws SomeException
+    public void doSomething() throws SomeException
     {
         Object local_variable = _privateField;
-        if (local_variable==null)
+        // Braces always on new line.
+        if (local_variable == null)
         {
              // do Something
         }
     }
 }
-
 ----
 
-[[cg-logging-conventions]]
+[[cg-code-standards-logging]]
 === Logging conventions
 
 When deciding when and what to log, bear in mind a few things:
@@ -92,48 +88,46 @@ When deciding when and what to log, bear in mind a few things:
 * Avoid polluting the log with very long stack traces.
 * Don't routinely produce logging events in response to data sent by a user.
 * Only call one `LOG` method for a given event, to avoid generating confusingly interleaved log messages.
-* Never call `LOG.warn()` right before throwing an exception, as this will result in double handling.
+* Never call `LOG.warn()` right before throwing an exception, as this will likely result in double logging the exception.
 * Avoid calling `LOG.debug()` right before throwing an exception, as this will make debug logs verbose while adding little information.
-* When interacting with a request or other client-provided data, *do not log* unless `LOG.isDebugEnabled()` is true, and then use `DEBUG`-level logging:
-
+* When interacting with a request or other client-provided data that result in an exception, use `DEBUG`-level logging:
++
 [source, java]
 ----
-  catch (Throwable t)
-  {
-     if (LOG.isDebugEnabled())
-       LOG.debug("Something happened {} {} {}",x, y, z, t);
-  }
+catch (Throwable t)
+{
+    if (LOG.isDebugEnabled())
+        LOG.debug("Something happened {} {} {}",x, y, z, t);
+}
 ----
-
 * When calling into application code that throws an exception, use `INFO`-level logging, and gate the log with `LOG.isDebugEnabled()` to reduce the size of logging stack traces:
-
++
 [source, java]
 ----
-  catch (Throwable t)
-  {
+catch (Throwable t)
+{
     if (LOG.isDebugEnabled())
-      LOG.info("Something happened {} {} {}", x, y, z, t);
+        LOG.info("Something happened {} {} {}", x, y, z, t);
     else
-      LOG.info("Something happened {} {} {} {}", x, y, z, t.toString());
-  }
+        LOG.info("Something happened {} {} {} {}", x, y, z, t.toString());
+}
 ----
-
-* When exceptions happen in Jetty code:
-** Mostly use the `WARN` or `ERROR` level.
-** If the exception is (1) not entirely unexpected, (2) can happen relatively frequently, or (3) can potentially have a very long stack trace, you can use `LOG.isDebugEnabled()` to cut down on the size of the logging of the stacktrace:
+* When exceptions happen in Jetty code, and if the exception is (1) not entirely unexpected, (2) can happen relatively frequently, or (3) can potentially have a very long stack trace, you can use `LOG.isDebugEnabled()` to cut down on the size of the logging of the stacktrace:
++
 [source, java]
 ----
-  catch (Throwable t)
-  {
+catch (Throwable t)
+{
     if (LOG.isDebugEnabled())
-      LOG.warn("Something happened {} {} {}", x, y, z, t);
+        LOG.warn("Something happened {} {} {}", x, y, z, t);
     else
-      LOG.warn("Something happened {} {} {} {}", x, y, z, t.toString());
-  }
+        LOG.warn("Something happened {} {} {} {}", x, y, z, t.toString());
+}
 ----
 
 [TIP]
 ====
 By default, Jetty's logger outputs a full stacktrace whether you call it like `LOG.warn("Something happened", t)` or `LOG.warn("Something happened {}", t)`.
-If you only want the log message, you need to do call `.toString()` on the caught exception, e.g., `LOG.warn("Something happened {}", t.toString())`.
+
+If you only want the log message but not the stack trace, you need to do call `.toString()` on the caught exception, e.g., `LOG.warn("Something happened {}", t.toString())`.
 ====

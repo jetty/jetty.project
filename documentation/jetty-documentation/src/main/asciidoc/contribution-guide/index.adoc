@@ -11,13 +11,14 @@
 // ========================================================================
 //
 
-include::../config.adoc[]
 :doctitle: link:https://eclipse.org/jetty[Eclipse Jetty]: Contribution Guide
 :toc-title: Contribution Guide
 :idprefix: cg-
 :breadcrumb: Home:../index.html | Contribution Guide:./index.html
 :toclevels: 3
 
+include::../config.adoc[]
+include::.asciidoctorconfig[]
 include::1-introduction.adoc[]
 include::2-eca.adoc[]
 include::3-source.adoc[]

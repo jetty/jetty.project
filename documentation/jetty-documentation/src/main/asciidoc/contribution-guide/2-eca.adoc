@@ -27,4 +27,4 @@ The email address you use to sign the ECA **must be the same** as the email you 
 ====
 
 Jetty's build process has a git hook that verifies each incoming pull request is signed with an email address with an active ECA.
-If the git hook cannot verify your email, the Jetty committers **cannot do anything** to accept your commit**.
+If the git hook cannot verify your email, the Jetty committers **cannot do anything** to accept your commit.

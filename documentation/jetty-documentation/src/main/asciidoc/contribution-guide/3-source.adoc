@@ -11,45 +11,39 @@
 // ========================================================================
 //
 
-[[cg-getting-source]]
+[[cg-source]]
 == Getting the source code
 
 Jetty's source is maintained on GitHub at https://github.com/eclipse/jetty.project, where it is managed by the http://github.com/eclipse/[Eclipse Foundation].
 
 You can clone a copy of the Jetty repo onto your local machine by running:
 
-[source, shell]
 ----
 git clone https://github.com/eclipse/jetty.project.git
 ----
 
-[[cg-repositories]]
-=== Secondary repositories
+[[cg-source-repositories]]
+=== Related repositories
 
-In addition to the https://github.com/eclipse/jetty.project[primary Jetty code repository], we maintain a number of secondary repos for project-related code and metadata:
+In addition to the https://github.com/eclipse/jetty.project[Jetty code repository], we maintain a number of related repositories:
 
-Administrative pom.xml file:: https://github.com/eclipse/jetty.parent
-Build toolchain artifacts:: https://github.com/eclipse/jetty.toolchain
-Development files/configuration:: https://git.eclipse.org/c/jetty/org.eclipse.jetty.admin.git
+Non-Eclipse Jetty Repositories:: https://github.com/jetty-project
+Build Toolchain:: https://github.com/eclipse/jetty.toolchain
 
-[[cg-version-branches]]
+[[cg-source-branches]]
 === Version branches
 If you plan to work on a specific issue within Jetty, make sure to target the correct branch for your pull request.
 
-.Active and inactive Jetty branches
+.Active Jetty branches
 [cols="4"]
 |===
 | https://github.com/eclipse/jetty.project/tree/jetty-12.0.x[jetty-12.0.x] | Development (default branch) | Servlet 6.0 | Java 17+
 | https://github.com/eclipse/jetty.project/tree/jetty-11.0.x[jetty-11.0.x] | Maintenance | Servlet 5.0 | Java 11+
 | https://github.com/eclipse/jetty.project/tree/jetty-10.0.x[jetty-10.0.x] | Maintenance | Servlet 4.0 | Java 11+
-| https://github.com/eclipse/jetty.project/tree/jetty-9.4.x[jetty-9.4.x] | End of Community Support | Servlet 3.1 | Java 8
-| https://github.com/eclipse/jetty.project/tree/jetty-9.3.x[jetty-9.3.x] | End of Life | Servlet 3.1 | Java 8
-| jetty-8 | Historical | Servlet 3.1 | Java 6
-| jetty-7 | Mythical | Servlet 2.5 | Java 5
+| https://github.com/eclipse/jetty.project/tree/jetty-9.4.x[jetty-9.4.x] | link:https://github.com/eclipse/jetty.project/issues/7958[End of Community Support] | Servlet 3.1 | Java 8+
 |===
 
-Maintenance branches are periodically merged wholesale into active development branches.
-As such, *changes to maintenance branches should typically be forward compatible* with later releases.
+Maintenance branches are periodically merged into active development branches.
 
 Older branches are only updated if they get specifically targeted by a pull request.
 Also, changes to older branches aren't regularly merged forward -- although an individual change may be cherry-picked forward, depending on the nature of the fix.
