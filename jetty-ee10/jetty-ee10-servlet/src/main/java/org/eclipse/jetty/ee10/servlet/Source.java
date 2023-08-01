@@ -23,7 +23,7 @@ import org.eclipse.jetty.util.resource.Resource;
 public class Source
 {
     public static final Source EMBEDDED = new Source(Origin.EMBEDDED);
-    public static final Source JAVAX_API = new Source(Origin.JAKARTA_API);
+    public static final Source JAKARTA_API = new Source(Origin.JAKARTA_API);
 
     public enum Origin
     {

@@ -55,13 +55,13 @@ public class ServletHandlerTest
     FilterHolder fh2 = new FilterHolder(new Source(Source.Origin.DESCRIPTOR, "foo.xml"));
     FilterMapping fm2 = new FilterMapping();
 
-    FilterHolder fh3 = new FilterHolder(Source.JAVAX_API);
+    FilterHolder fh3 = new FilterHolder(Source.JAKARTA_API);
     FilterMapping fm3 = new FilterMapping();
 
-    FilterHolder fh4 = new FilterHolder(Source.JAVAX_API);
+    FilterHolder fh4 = new FilterHolder(Source.JAKARTA_API);
     FilterMapping fm4 = new FilterMapping();
 
-    FilterHolder fh5 = new FilterHolder(Source.JAVAX_API);
+    FilterHolder fh5 = new FilterHolder(Source.JAKARTA_API);
     FilterMapping fm5 = new FilterMapping();
 
     ServletHolder sh1 = new ServletHolder(new Source(Source.Origin.DESCRIPTOR, "foo.xml"));
@@ -538,7 +538,7 @@ public class ServletHandlerTest
         assertThat(mappings[4], is(fm3)); //isMatchAfter = true;
 
         //add a programmatic one, isMatchAfter=true
-        FilterHolder pf = new FilterHolder(Source.JAVAX_API);
+        FilterHolder pf = new FilterHolder(Source.JAKARTA_API);
         pf.setName("programmaticA");
         FilterMapping pfm = new FilterMapping();
         pfm.setFilterHolder(pf);
@@ -556,7 +556,7 @@ public class ServletHandlerTest
         assertThat(mappings[5], is(pfm)); //isMatchAfter = true;
 
         //add a programmatic one, isMatchAfter=false
-        FilterHolder pf2 = new FilterHolder(Source.JAVAX_API);
+        FilterHolder pf2 = new FilterHolder(Source.JAKARTA_API);
         pf2.setName("programmaticB");
         FilterMapping pfm2 = new FilterMapping();
         pfm2.setFilterHolder(pf2);
@@ -638,7 +638,7 @@ public class ServletHandlerTest
         assertThat(mappings[4].getFilterHolder(), is(fh3)); //isMatchAfter = true;
 
         //add a programmatic one, isMatchAfter=true
-        FilterHolder pf = new FilterHolder(Source.JAVAX_API);
+        FilterHolder pf = new FilterHolder(Source.JAKARTA_API);
         pf.setServletHandler(handler);
         pf.setName("programmaticA");
         handler.addFilter(pf);
@@ -655,7 +655,7 @@ public class ServletHandlerTest
         assertThat(mappings[5].getFilterHolder(), is(pf)); //isMatchAfter = true;
 
         //add a programmatic one, isMatchAfter=false
-        FilterHolder pf2 = new FilterHolder(Source.JAVAX_API);
+        FilterHolder pf2 = new FilterHolder(Source.JAKARTA_API);
         pf2.setServletHandler(handler);
         pf2.setName("programmaticB");
         handler.addFilter(pf2);
