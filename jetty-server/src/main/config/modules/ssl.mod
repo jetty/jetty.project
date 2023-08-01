@@ -86,15 +86,11 @@ etc/jetty-ssl-context.xml
 ## The JSSE Provider.
 # jetty.sslContext.provider=
 
-## The KeyStore file path (relative to $JETTY_BASE).
+## The KeyStore file path, either an absolute path or a relative path to $JETTY_BASE.
 # jetty.sslContext.keyStorePath=etc/keystore.p12
-## The KeyStore absolute file path.
-# jetty.sslContext.keyStoreAbsolutePath=${jetty.base}/etc/keystore.p12
 
-## The TrustStore file path (relative to $JETTY_BASE).
+## The TrustStore file path, either an absolute path or a relative path to $JETTY_BASE.
 # jetty.sslContext.trustStorePath=etc/keystore.p12
-## The TrustStore absolute file path.
-# jetty.sslContext.trustStoreAbsolutePath=${jetty.base}/etc/keystore.p12
 
 ## The KeyStore password.
 # jetty.sslContext.keyStorePassword=
