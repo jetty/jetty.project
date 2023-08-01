@@ -51,8 +51,8 @@ public class TestAnnotationIntrospector
             holder.setHeldClass(ServletE.class);
             assertTrue(introspector.isIntrospectable(new ServletE(), holder));
 
-            //a JAVAX API sourced servlet can be introspected
-            holder = new ServletHolder(Source.JAVAX_API);
+            //a JAKARTA API sourced servlet can be introspected
+            holder = new ServletHolder(Source.JAKARTA_API);
             holder.setHeldClass(ServletE.class);
             assertTrue(introspector.isIntrospectable(new ServletE(), holder));
 
