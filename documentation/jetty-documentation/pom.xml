@@ -14,6 +14,7 @@
   <properties>
     <bundle-symbolic-name>${project.groupId}</bundle-symbolic-name>
     <asciidoctor.skip>${skipTests}</asciidoctor.skip>
+    <jacoco.skip>true</jacoco.skip>
   </properties>
 
   <profiles>
@@ -139,9 +140,11 @@
             <project-version>${project.version}</project-version>
             <maven-local-repo>${session.repositorySession.localRepository.basedir.absolutePath}</maven-local-repo>
             <version>${project.version}</version>
+<!--            <SRCDIR>./src/main/asciidoc</SRCDIR>-->
             <prog-guide>../programming-guide/index.html</prog-guide>
             <op-guide>../operations-guide/index.html</op-guide>
             <javadoc-url>https://eclipse.dev/jetty/javadoc/jetty-12</javadoc-url>
+<!--            <TIMESTAMP>2023-07-31T06:06:52Z</TIMESTAMP>-->
           </attributes>
         </configuration>
         <executions>
