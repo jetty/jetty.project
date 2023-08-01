@@ -86,7 +86,7 @@
     <osgi.util.promise.version>1.2.0</osgi.util.promise.version>
     <plexus-container.version>2.1.1</plexus-container.version>
     <plexus-utils.version>4.0.0</plexus-utils.version>
-    <plexus-xml.version>4.0.1</plexus-xml.version>
+    <plexus-xml.version>4.0.2</plexus-xml.version>
     <slf4j.version>1.7.36</slf4j.version>
     <taglibs-standard-impl.version>1.2.5</taglibs-standard-impl.version>
     <taglibs-standard-spec.version>1.2.5</taglibs-standard-spec.version>
