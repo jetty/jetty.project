@@ -62,7 +62,7 @@ public class LowLevelQuicheClientCertTest
     private Certificate[] serverCertificateChain;
 
     @BeforeEach
-    protected void setUp() throws Exception
+    public void setUp() throws Exception
     {
         clientSocketAddress = new InetSocketAddress("localhost", 9999);
         serverSocketAddress = new InetSocketAddress("localhost", 8888);
@@ -113,7 +113,7 @@ public class LowLevelQuicheClientCertTest
     }
 
     @AfterEach
-    protected void tearDown()
+    public void tearDown()
     {
         connectionsToDisposeOf.forEach(ForeignIncubatorQuicheConnection::dispose);
         connectionsToDisposeOf.clear();

@@ -34,7 +34,7 @@ public class WebAppDefaultServletCacheTest
     private Path resourcePath;
 
     @BeforeEach
-    protected void setUp() throws Exception
+    public void setUp() throws Exception
     {
         server = new Server();
         connector = new LocalConnector(server);
@@ -48,7 +48,7 @@ public class WebAppDefaultServletCacheTest
     }
 
     @AfterEach
-    protected void tearDown() throws Exception
+    public void tearDown() throws Exception
     {
         server.stop();
     }
