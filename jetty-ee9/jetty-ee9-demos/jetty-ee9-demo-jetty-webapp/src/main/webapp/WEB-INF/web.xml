@@ -141,7 +141,7 @@
 
   <servlet-mapping>
     <servlet-name>WSChat</servlet-name>
-    <url-pattern>/ws/*</url-pattern>
+    <url-pattern>/jetty.websocket/*</url-pattern>
   </servlet-mapping>
   
   
