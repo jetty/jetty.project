@@ -25,7 +25,7 @@
     <!-- dependency versions -->
     <alpn.agent.version>2.0.10</alpn.agent.version>
     <ant.version>1.10.13</ant.version>
-    <apache.avro.version>1.11.1</apache.avro.version>
+    <apache.avro.version>1.11.2</apache.avro.version>
     <apache.httpclient.version>4.5.14</apache.httpclient.version>
     <apache.httpcore.version>4.4.16</apache.httpcore.version>
     <asciidoctorj-diagram.version>2.2.10</asciidoctorj-diagram.version>
@@ -54,7 +54,7 @@
     <hazelcast.version>5.2.1</hazelcast.version>
     <infinispan.protostream.version>4.6.2.Final</infinispan.protostream.version>
     <infinispan.version>11.0.17.Final</infinispan.version>
-    <jackson.version>2.14.1</jackson.version>
+    <jackson.version>2.14.2</jackson.version>
     <jakarta.activation.api.version>1.2.2</jakarta.activation.api.version>
     <jakarta.annotation.api.version>1.3.5</jakarta.annotation.api.version>
     <jakarta.el-api.version>3.0.3</jakarta.el-api.version>
