@@ -31,8 +31,8 @@ $ java -jar $JETTY_HOME/start.jar
 
 ```java
 Server server = new Server(port);
-        server.setHandler(new MyHandler());
-        server.start();
+server.setHandler(new MyHandler());
+server.start();
 ```
 
 ## Embedded Servlet Example
