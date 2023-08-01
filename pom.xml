@@ -287,8 +287,8 @@
             <configuration>
               <rules>
                 <requireMavenVersion>
-                  <version>[3.8.4,)</version>
-                  <message>[ERROR] OLD MAVEN [${maven.version}] in use, Jetty ${project.version} requires Maven 3.8.4 or newer</message>
+                  <version>[3.9.2,)</version>
+                  <message>[ERROR] OLD MAVEN [${maven.version}] in use, Jetty ${project.version} requires Maven 3.9.2 or newer</message>
                 </requireMavenVersion>
                 <requireJavaVersion>
                   <version>[17,)</version>
