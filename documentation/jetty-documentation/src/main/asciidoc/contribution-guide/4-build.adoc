@@ -24,11 +24,11 @@ Here are the minimum Maven and JDK version build requirements for each actively 
 
 .Build versioning requirements by branch
 |===
-| Branch | Maven Version | Minimum JDK
+| Branch | Maven Version | Minimum JDK | Recommended JDK
 
-| jetty-12.0.x | Maven 3.8.6+  | OpenJDK 17+
-| jetty-11.0.x | Maven 3.8.6+  | OpenJDK 11+
-| jetty-10.0.x | Maven 3.8.6+  | OpenJDK 11+
+| jetty-12.0.x | Maven 3.9.2+  | OpenJDK 17+ | OpenJDK 19 (for optional quic using foreign memory)
+| jetty-11.0.x | Maven 3.8.6+  | OpenJDK 11+ | OpenJDK 17 (for optional virtual threads and HTTP/3 support)
+| jetty-10.0.x | Maven 3.8.6+  | OpenJDK 11+ | OpenJDK 17 (for optional virtual threads and HTTP/3 support)
 |===
 
 To build the Jetty documentation, OpenJDK 19+ is required due to the use of the virtual thread APIs.
@@ -71,6 +71,18 @@ $ ulimit -n [new_value]
 Not all test cases are as timing independent as they should be, which can result in intermittent test failures.
 You can help us track these flaky tests by opening an https://github.com/eclipse/jetty.project/issues[issue] when you come across one.
 ====
+
+[[cg-build-cache]]
+=== Maven Build Cache
+
+Per default, the build is using the https://maven.apache.org/extensions/maven-build-cache-extension[Maven Build Cache extension]
+this means you will use your local build cache, To disable it you can use the property
+
+[source, shell]
+----
+$ mvn clean install -Dmaven.build.cache.enabled=false
+----
+
 
 [[cg-build-parallel]]
 === Executing tests in parallel
