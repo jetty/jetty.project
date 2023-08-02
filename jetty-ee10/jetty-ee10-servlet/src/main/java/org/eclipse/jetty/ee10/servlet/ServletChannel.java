@@ -814,11 +814,17 @@ public class ServletChannel
 
         // Callback will either be succeeded here or failed in abort().
         Callback callback = _callback;
-        // Must recycle before notification to allow for reuse.
-        // Recycle always done here even if an abort is called.
-        recycle();
         if (_state.completeResponse())
+        {
+            // Must recycle before callback notification to allow for reuse.
+            recycle();
             callback.succeeded();
+        }
+        else
+        {
+            // Recycle always done here even if an abort is called.
+            recycle();
+        }
     }
 
     public boolean isCommitted()
