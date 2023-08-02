@@ -119,7 +119,9 @@ public class ServletChannel
      */
     public void associate(ServletContextRequest servletContextRequest)
     {
-        assert _servletContextRequest == null;
+        // TODO This is needed as requests that are handled before the ServletHandler are not recycled.
+        if (_servletContextRequest != null)
+            recycle();
         _httpInput.reopen();
         _request = _servletContextRequest = servletContextRequest;
         _response = _servletContextRequest.getServletContextResponse();
