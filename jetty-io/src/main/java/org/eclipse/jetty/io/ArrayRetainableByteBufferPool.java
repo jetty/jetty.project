@@ -441,15 +441,18 @@ public class ArrayRetainableByteBufferPool implements RetainableByteBufferPool, 
         for (RetainedBucket.Entry entry : bucket.values())
         {
             RetainableByteBuffer buffer = entry.getPooled();
-            // Reserved but not acquired yet? Try next.
-            if (buffer == null)
-                continue;
-            long age = NanoTime.elapsed(buffer.getLastUpdate(), now);
-            if (oldestBuffer != null && age < oldestAge)
-                continue;
-            oldestEntry = entry;
-            oldestBuffer = buffer;
-            oldestAge = age;
+            // A null buffer means the entry is reserved
+            // but not acquired yet, try the next.
+            if (buffer != null)
+            {
+                long age = NanoTime.elapsed(buffer.getLastUpdate(), now);
+                if (oldestBuffer == null || age > oldestAge)
+                {
+                    oldestEntry = entry;
+                    oldestBuffer = buffer;
+                    oldestAge = age;
+                }
+            }
         }
         return oldestEntry;
     }
