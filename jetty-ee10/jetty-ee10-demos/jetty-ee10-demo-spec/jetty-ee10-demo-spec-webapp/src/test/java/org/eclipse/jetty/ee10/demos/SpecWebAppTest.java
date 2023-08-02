@@ -118,13 +118,22 @@ public class SpecWebAppTest
 
     private void copyDependency(String depName, Path libDir) throws IOException
     {
+        // sinply use copy:dependency from maven...
+        Path targetDir = MavenPaths.projectBase().resolve("target");
+        Path jarFile = targetDir.resolve(depName + ".jar");
+        if (Files.exists(jarFile))
+        {
+            Files.copy(jarFile, libDir.resolve(depName + ".jar"));
+            return;
+        }
+
         Path depPath = MavenPaths.projectBase().resolve("../" + depName).normalize();
         if (!Files.isDirectory(depPath))
             fail("Dependency not found: " + depPath);
         Path outputJar = libDir.resolve(depName + ".jar");
+
         Map<String, String> env = new HashMap<>();
         env.put("create", "true");
-
         URI uri = URI.create("jar:" + outputJar.toUri().toASCIIString());
         try (FileSystem fs = FileSystems.newFileSystem(uri, env))
         {
