@@ -136,13 +136,13 @@ public class JakartaClientClassLoaderTest
     {
         WSServer.WebApp app = server.createWebApp(contextName);
 
-        // Exclude the Javax WebSocket configuration from the webapp (so we use versions from the webapp).
+        // Exclude the Jakarta WebSocket configuration from the webapp (so we use versions from the webapp).
         Configuration[] configurations = Configurations.getKnown().stream()
             .filter(configuration -> !(configuration instanceof JakartaWebSocketConfiguration))
             .toArray(Configuration[]::new);
         app.getWebAppContext().setConfigurations(configurations);
 
-        // Copy over the individual jars required for Javax WebSocket.
+        // Copy over the individual jars required for Jakarta WebSocket.
         app.createWebInf();
         app.copyLib(JakartaWebSocketClientContainerProvider.class, "jetty-ee9-websocket-jakarta-client.jar");
         app.copyLib(JakartaWebSocketContainer.class, "jetty-ee9-websocket-jakarta-common.jar");
@@ -197,7 +197,7 @@ public class JakartaClientClassLoaderTest
             app1.copyClass(EchoSocket.class);
             app1.deploy();
 
-            // Do not exclude JavaxWebSocketConfiguration for this webapp (we need the websocket server classes).
+            // Do not exclude JakartaWebSocketConfiguration for this webapp (we need the websocket server classes).
             WSServer.WebApp app2 = server.createWebApp("echo");
             app2.createWebInf();
             app2.copyClass(EchoSocket.class);

@@ -29,6 +29,7 @@ import java.util.concurrent.Executor;
 import java.util.concurrent.Executors;
 import java.util.concurrent.LinkedBlockingDeque;
 import java.util.concurrent.TimeUnit;
+import java.util.concurrent.TimeoutException;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.concurrent.atomic.AtomicReference;
@@ -87,7 +88,9 @@ import static org.hamcrest.Matchers.is;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertNotNull;
+import static org.junit.jupiter.api.Assertions.assertNull;
 import static org.junit.jupiter.api.Assertions.assertSame;
+import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.junit.jupiter.api.Assertions.fail;
 
@@ -1320,12 +1323,12 @@ public class AsyncIOServletTest extends AbstractTest
         CountDownLatch clientLatch = new CountDownLatch(1);
 
         String expected =
-                "S1" +
-                "S2" +
-                "S3S3" +
-                "S4" +
-                "S5" +
-                "S6";
+            "S1" +
+            "S2" +
+            "S3S3" +
+            "S4" +
+            "S5" +
+            "S6";
 
         client.newRequest(newURI(transport))
             .method(HttpMethod.POST)
@@ -1507,13 +1510,13 @@ public class AsyncIOServletTest extends AbstractTest
         CountDownLatch clientLatch = new CountDownLatch(1);
 
         String expected =
-                "0S" +
-                "1S" +
-                "2S" +
-                "3S" +
-                "4S" +
-                "5S" +
-                "6S";
+            "0S" +
+            "1S" +
+            "2S" +
+            "3S" +
+            "4S" +
+            "5S" +
+            "6S";
 
         client.newRequest(newURI(transport))
             .method(HttpMethod.POST)
@@ -1628,10 +1631,10 @@ public class AsyncIOServletTest extends AbstractTest
         CountDownLatch clientLatch = new CountDownLatch(1);
 
         String expected =
-                "0S" +
-                "2S" +
-                "4S" +
-                "6S";
+            "0S" +
+            "2S" +
+            "4S" +
+            "6S";
 
         client.newRequest(newURI(transport))
             .method(HttpMethod.POST)
@@ -1795,6 +1798,67 @@ public class AsyncIOServletTest extends AbstractTest
 
         assertFalse(dataLatch.await(1, TimeUnit.SECONDS));
         assertTrue(latch.await(5, TimeUnit.SECONDS));
+    }
+
+    @ParameterizedTest
+    @MethodSource("transportsNoFCGI")
+    public void testOnAllDataReadCalledOnceThenIdleTimeout(Transport transport) throws Exception
+    {
+        AtomicInteger allDataReadCount = new AtomicInteger();
+        AtomicReference<Throwable> errorRef = new AtomicReference<>();
+        start(transport, new HttpServlet()
+        {
+            @Override
+            protected void service(HttpServletRequest request, HttpServletResponse resp) throws IOException
+            {
+                AsyncContext asyncContext = request.startAsync();
+                asyncContext.setTimeout(0);
+
+                ServletInputStream input = request.getInputStream();
+                input.setReadListener(new ReadListener()
+                {
+                    @Override
+                    public void onDataAvailable() throws IOException
+                    {
+                        while (input.isReady())
+                        {
+                            int read = input.read();
+                            if (read < 0)
+                                break;
+                        }
+                    }
+
+                    @Override
+                    public void onAllDataRead()
+                    {
+                        allDataReadCount.incrementAndGet();
+                    }
+
+                    @Override
+                    public void onError(Throwable x)
+                    {
+                        // There should be no errors because request body has
+                        // been successfully read and idle timeouts are ignored.
+                        errorRef.set(x);
+                    }
+                });
+
+                // Never reply to the request, let it idle timeout.
+                // The Servlet semantic is that the idle timeout will
+                // be ignored so the client will timeout the request.
+            }
+        });
+        long idleTimeout = 1000;
+        connector.setIdleTimeout(2 * idleTimeout);
+        setStreamIdleTimeout(idleTimeout);
+
+        assertThrows(TimeoutException.class, () -> client.newRequest(newURI(transport))
+            .timeout(2 * idleTimeout, TimeUnit.MILLISECONDS)
+            .send()
+        );
+
+        assertNull(errorRef.get());
+        assertEquals(1, allDataReadCount.get());
     }
 
     private static class Listener implements ReadListener, WriteListener

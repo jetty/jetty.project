@@ -25,7 +25,7 @@
     <sonar.skip>true</sonar.skip>
     <ee9.module></ee9.module>
     <ee9.module.path>${maven.multiModuleProjectDirectory}/jetty-ee9/${ee9.module}</ee9.module.path>
-    <modify-sources-plugin.version>1.0.4</modify-sources-plugin.version>
+    <modify-sources-plugin.version>1.0.6</modify-sources-plugin.version>
   </properties>
 
   <modules>
@@ -84,10 +84,20 @@
             <nonFilteredFileExtension>bz2</nonFilteredFileExtension>
             <nonFilteredFileExtension>br</nonFilteredFileExtension>
             <nonFilteredFileExtension>xcf</nonFilteredFileExtension>
-            <nonFilteredFileExtension>jsp</nonFilteredFileExtension>
             <nonFilteredFileExtension>icon</nonFilteredFileExtension>
             <nonFilteredFileExtension>png</nonFilteredFileExtension>
             <nonFilteredFileExtension>webp</nonFilteredFileExtension>
+            <nonFilteredFileExtension>gif</nonFilteredFileExtension>
+            <nonFilteredFileExtension>ico</nonFilteredFileExtension>
+            <nonFilteredFileExtension>bmp</nonFilteredFileExtension>
+            <nonFilteredFileExtension>jpg</nonFilteredFileExtension>
+            <nonFilteredFileExtension>jpeg</nonFilteredFileExtension>
+            <nonFilteredFileExtension>rar</nonFilteredFileExtension>
+            <nonFilteredFileExtension>xcf</nonFilteredFileExtension>
+            <nonFilteredFileExtension>svg</nonFilteredFileExtension>
+            <nonFilteredFileExtension>sha1</nonFilteredFileExtension>
+            <nonFilteredFileExtension>png</nonFilteredFileExtension>
+            <nonFilteredFileExtension>sha</nonFilteredFileExtension>
           </nonFilteredFileExtensions>
         </configuration>
         <dependencies>

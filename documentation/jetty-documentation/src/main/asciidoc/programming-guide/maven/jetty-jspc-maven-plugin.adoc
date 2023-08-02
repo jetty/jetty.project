@@ -14,7 +14,7 @@
 [[jetty-jspc-maven-plugin]]
 === Jetty Jspc Maven Plugin
 
-This plugin will help you pre-compile your jsps and works in conjunction with the Maven war plugin to put them inside an assembled war.
+This plugin will help you pre-compile your JSP and works in conjunction with the Maven war plugin to put them inside an assembled war.
 
 [[jspc-config]]
 ==== Configuration

@@ -160,7 +160,7 @@ public class JettyClientClassLoaderTest
     {
         WebAppTester.WebApp app = webAppTester.createWebApp(contextName);
 
-        // Copy over the individual jars required for Javax WebSocket.
+        // Copy over the individual jars required for Jetty WebSocket.
         app.createWebInf();
         app.copyLib(WebSocketPolicy.class, "jetty-ee9-websocket-jetty-api.jar");
         app.copyLib(WebSocketClient.class, "jetty-ee9-websocket-jetty-client.jar");

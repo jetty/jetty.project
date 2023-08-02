@@ -1,5 +1,31 @@
 jetty-12.0.0-SNAPSHOT
 
+jetty-12.0.0.beta4 - 26 July 2023
+ + 8556 ServletContext.getSessionTimeout() incorrectly throws
+   IllegalStateException
+ + 9444 Unexpected encoding in request.getPathInfo() with Jetty 12 beta 0
+ + 9910 Inconsistent handling of welcome files between Jetty 10 and 12
+ + 10055 Deployment of static files does not work with --dry-run Jetty-12
+ + 10066 Allow `SAXParserFactory` or `SAXParser` to be configured in Jetty's
+   `XmlParser` class
+ + 10068 Jetty 12: instantiation of `HashLoginService`
+ + 10084 ServletApiContext.getResourcePaths() doesn't respect the spec
+ + 10086 Revisiting ProxyConfiguration.getProxies()
+ + 10105 Document that Request objects are not reusable
+ + 10120 OutOfMemoryError Upgrading from 9.4.49.v20220914 to 12.0.0.beta3
+ + 10122 in jetty12 beta build error-page redirects wrongly?
+ + 10123 in jetty12 beta partial http data request can get stuck now
+ + 10131 Review ERROR query-string handling
+ + 10134 `Server.stop()` and `WebInfConfiguration.deconfigure()` can throw a
+   `ClosedFileSystemException` when restoring the original base resource
+ + 10139 DefaultServlet not working with named dispatch in Jetty-12 EE10
+ + 10141 welcome-file ignored on jetty12ee10 on exploded deploy, works on ee9
+   and older jettys
+ + 10142 req.getRequestDispatcher("/test.htm").include(req, resp); does not go
+   anywhere on jetty12ee10 on exploded deploy, works on ee9 and older jetty
+ + 10143 Jetty12 startup fails randomly on JRebel
+ + 10145 WritePendingException over HTTP/2 tunnel
+
 jetty-12.0.0.beta3 - 03 July 2023
  + 9919 Jetty-12 creates two instances of ArrayByteBufferPool
  + 9925 Bring back Jetty <12 flexibility of "current context / context handler"
