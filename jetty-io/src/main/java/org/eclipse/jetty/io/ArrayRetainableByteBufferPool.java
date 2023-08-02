@@ -382,6 +382,8 @@ public class ArrayRetainableByteBufferPool implements RetainableByteBufferPool, 
 
         while (totalClearedCapacity < excess)
         {
+            // Run through all the buckets to avoid removing
+            // the buffers only from the first bucket(s).
             for (RetainedBucket bucket : buckets)
             {
                 RetainedBucket.Entry oldestEntry = findOldestEntry(now, bucket);
@@ -390,13 +392,14 @@ public class ArrayRetainableByteBufferPool implements RetainableByteBufferPool, 
 
                 if (oldestEntry.remove())
                 {
-                    int clearedCapacity = oldestEntry.getPooled().capacity();
+                    RetainableByteBuffer buffer = oldestEntry.getPooled();
+                    int clearedCapacity = buffer.capacity();
                     if (direct)
                         _currentDirectMemory.addAndGet(-clearedCapacity);
                     else
                         _currentHeapMemory.addAndGet(-clearedCapacity);
                     totalClearedCapacity += clearedCapacity;
-                    removed(oldestEntry.getPooled());
+                    removed(buffer);
                 }
                 // else a concurrent thread evicted the same entry -> do not account for its capacity.
             }
@@ -430,18 +433,25 @@ public class ArrayRetainableByteBufferPool implements RetainableByteBufferPool, 
 
     private Pool<RetainableByteBuffer>.Entry findOldestEntry(long now, Pool<RetainableByteBuffer> bucket)
     {
+        // This method may be in the hot path, do not use Java streams.
+
         RetainedBucket.Entry oldestEntry = null;
+        RetainableByteBuffer oldestBuffer = null;
+        long oldestAge = 0;
         for (RetainedBucket.Entry entry : bucket.values())
         {
-            if (oldestEntry != null)
+            RetainableByteBuffer buffer = entry.getPooled();
+            // A null buffer means the entry is reserved
+            // but not acquired yet, try the next.
+            if (buffer != null)
             {
-                long entryAge = NanoTime.elapsed(entry.getPooled().getLastUpdate(), now);
-                if (entryAge > NanoTime.elapsed(oldestEntry.getPooled().getLastUpdate(), now))
+                long age = NanoTime.elapsed(buffer.getLastUpdate(), now);
+                if (oldestBuffer == null || age > oldestAge)
+                {
                     oldestEntry = entry;
-            }
-            else
-            {
-                oldestEntry = entry;
+                    oldestBuffer = buffer;
+                    oldestAge = age;
+                }
             }
         }
         return oldestEntry;
