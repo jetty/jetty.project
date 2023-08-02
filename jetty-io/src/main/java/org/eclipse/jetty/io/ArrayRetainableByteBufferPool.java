@@ -441,7 +441,7 @@ public class ArrayRetainableByteBufferPool implements RetainableByteBufferPool, 
         for (RetainedBucket.Entry entry : bucket.values())
         {
             RetainableByteBuffer buffer = entry.getPooled();
-            // Concurrently removed? Try next.
+            // Reserved but not acquired yet? Try next.
             if (buffer == null)
                 continue;
             long age = NanoTime.elapsed(buffer.getLastUpdate(), now);
