@@ -145,7 +145,7 @@ public class ResourceService
         return _gzipEquivalentFileExtensions;
     }
 
-    public void doGet(Request request, Response response, Callback callback, HttpContent content) throws Exception
+    public void doGet(Request request, Response response, Callback callback, HttpContent content)
     {
         String pathInContext = Request.getPathInContext(request);
 
@@ -523,7 +523,7 @@ public class ResourceService
                 // TODO : check conditional headers.
                 serveWelcome(request, response, callback, welcomeAction.target);
             case REHANDLE -> rehandleWelcome(request, response, callback, welcomeAction.target);
-        };
+        }
     }
 
     /**
@@ -678,6 +678,7 @@ public class ResourceService
             putHeaders(response, content, range.getLength());
             response.setStatus(HttpStatus.PARTIAL_CONTENT_206);
             response.getHeaders().put(HttpHeader.CONTENT_RANGE, range.toHeaderValue(contentLength));
+            // TODO calculate and set the contentLength, as it should now be known
             Content.copy(new MultiPartByteRanges.PathContentSource(content.getResource().getPath(), range), response, callback);
             return;
         }
@@ -691,6 +692,7 @@ public class ResourceService
         MultiPartByteRanges.ContentSource byteRanges = new MultiPartByteRanges.ContentSource(boundary);
         ranges.forEach(range -> byteRanges.addPart(new MultiPartByteRanges.Part(content.getContentTypeValue(), content.getResource().getPath(), range, contentLength)));
         byteRanges.close();
+        // TODO calculate and set the contentLength, as it should now be known
         Content.copy(byteRanges, response, callback);
     }
 

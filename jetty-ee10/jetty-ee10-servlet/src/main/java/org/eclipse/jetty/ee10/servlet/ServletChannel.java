@@ -447,9 +447,8 @@ public class ServletChannel
 
     /**
      * Handle the servlet request. This is called on the initial dispatch and then again on any asynchronous events.
-     * @return True if the channel is ready to continue handling (ie it is not suspended)
      */
-    public boolean handle()
+    public void handle()
     {
         if (LOG.isDebugEnabled())
             LOG.debug("handle {} {} ", _servletContextRequest.getHttpURI(), this);
@@ -649,9 +648,6 @@ public class ServletChannel
 
         if (LOG.isDebugEnabled())
             LOG.debug("!handle {} {}", action, this);
-
-        boolean suspended = action == Action.WAIT;
-        return !suspended;
     }
 
     /**

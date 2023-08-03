@@ -120,6 +120,11 @@ public class ServletApiRequest implements HttpServletRequest
         _servletChannel = _servletContextRequest.getServletChannel();
     }
 
+    public ServletChannel getServletChannel()
+    {
+        return _servletChannel;
+    }
+
     public AuthenticationState getAuthentication()
     {
         return AuthenticationState.getAuthenticationState(getRequest());

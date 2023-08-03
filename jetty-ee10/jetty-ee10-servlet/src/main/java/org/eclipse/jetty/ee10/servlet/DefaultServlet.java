@@ -35,6 +35,7 @@ import java.util.concurrent.CompletableFuture;
 import java.util.function.Supplier;
 import java.util.stream.Collectors;
 
+import jakarta.servlet.AsyncContext;
 import jakarta.servlet.DispatcherType;
 import jakarta.servlet.RequestDispatcher;
 import jakarta.servlet.ServletContext;
@@ -43,7 +44,6 @@ import jakarta.servlet.UnavailableException;
 import jakarta.servlet.http.HttpServlet;
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletResponse;
-import jakarta.servlet.http.HttpServletResponseWrapper;
 import jakarta.servlet.http.MappingMatch;
 import org.eclipse.jetty.http.CompressedContentFormat;
 import org.eclipse.jetty.http.HttpException;
@@ -71,6 +71,7 @@ import org.eclipse.jetty.server.handler.ContextHandler;
 import org.eclipse.jetty.util.Blocker;
 import org.eclipse.jetty.util.BufferUtil;
 import org.eclipse.jetty.util.Callback;
+import org.eclipse.jetty.util.ExceptionUtil;
 import org.eclipse.jetty.util.IO;
 import org.eclipse.jetty.util.URIUtil;
 import org.eclipse.jetty.util.resource.Resource;
@@ -185,7 +186,6 @@ public class DefaultServlet extends HttpServlet
     private ServletContextHandler _contextHandler;
     private ServletResourceService _resourceService;
     private WelcomeServletMode _welcomeServletMode;
-    private Resource _baseResource;
 
     public ResourceService getResourceService()
     {
@@ -198,14 +198,14 @@ public class DefaultServlet extends HttpServlet
         _contextHandler = initContextHandler(getServletContext());
         _resourceService = new ServletResourceService(_contextHandler);
         _resourceService.setWelcomeFactory(_resourceService);
-        _baseResource = _contextHandler.getBaseResource();
+        Resource baseResource = _contextHandler.getBaseResource();
 
         String rb = getInitParameter("baseResource", "resourceBase");
         if (rb != null)
         {
             try
             {
-                _baseResource = Objects.requireNonNull(_contextHandler.newResource(rb));
+                baseResource = Objects.requireNonNull(_contextHandler.newResource(rb));
             }
             catch (Exception e)
             {
@@ -222,7 +222,7 @@ public class DefaultServlet extends HttpServlet
         if (contentFactory == null)
         {
             MimeTypes mimeTypes = _contextHandler.getMimeTypes();
-            ResourceFactory resourceFactory = _baseResource != null ? ResourceFactory.of(_baseResource) : this::getResource;
+            ResourceFactory resourceFactory = baseResource != null ? ResourceFactory.of(baseResource) : this::getResource;
             contentFactory = new ResourceHttpContentFactory(resourceFactory, mimeTypes);
 
             // Use the servers default stylesheet unless there is one explicitly set by an init param.
@@ -326,7 +326,7 @@ public class DefaultServlet extends HttpServlet
 
         if (LOG.isDebugEnabled())
         {
-            LOG.debug("  .baseResource = {}", _baseResource);
+            LOG.debug("  .baseResource = {}", baseResource);
             LOG.debug("  .resourceService = {}", _resourceService);
             LOG.debug("  .welcomeServletMode = {}", _welcomeServletMode);
         }
@@ -458,18 +458,18 @@ public class DefaultServlet extends HttpServlet
     }
 
     @Override
-    protected void doGet(HttpServletRequest req, HttpServletResponse resp) throws ServletException, IOException
+    protected void doGet(HttpServletRequest httpServletRequest, HttpServletResponse httpServletResponse) throws ServletException, IOException
     {
-        String includedServletPath = (String)req.getAttribute(RequestDispatcher.INCLUDE_SERVLET_PATH);
-        String encodedPathInContext = getEncodedPathInContext(req, includedServletPath);
+        String includedServletPath = (String)httpServletRequest.getAttribute(RequestDispatcher.INCLUDE_SERVLET_PATH);
+        String encodedPathInContext = getEncodedPathInContext(httpServletRequest, includedServletPath);
         boolean included = includedServletPath != null;
 
         if (LOG.isDebugEnabled())
-            LOG.debug("doGet(req={}, resp={}) pathInContext={}, included={}", req, resp, encodedPathInContext, included);
+            LOG.debug("doGet(hsReq={}, hsResp={}) pathInContext={}, included={}", httpServletRequest, httpServletResponse, encodedPathInContext, included);
 
         try
         {
-            HttpContent content = _resourceService.getContent(encodedPathInContext, ServletContextRequest.getServletContextRequest(req));
+            HttpContent content = _resourceService.getContent(encodedPathInContext, ServletContextRequest.getServletContextRequest(httpServletRequest));
             if (LOG.isDebugEnabled())
                 LOG.debug("content = {}", content);
 
@@ -487,13 +487,30 @@ public class DefaultServlet extends HttpServlet
                 }
 
                 // no content
-                resp.sendError(404);
+                httpServletResponse.sendError(404);
             }
             else
             {
-                ServletCoreRequest coreRequest = new ServletCoreRequest(req);
-                ServletCoreResponse coreResponse = new ServletCoreResponse(coreRequest, resp, included);
+                // lookup the core request and response as wrapped by the ServletContextHandler
+                ServletContextRequest servletContextRequest = ServletContextRequest.getServletContextRequest(httpServletRequest);
+                ServletContextResponse servletContextResponse = servletContextRequest.getServletContextResponse();
+                ServletChannel servletChannel = servletContextRequest.getServletChannel();
 
+                // If the servlet request has not been wrapped,
+                // we can use the core request directly,
+                // otherwise wrap the servlet request as a core request
+                Request coreRequest = httpServletRequest instanceof ServletApiRequest
+                    ? servletChannel.getRequest()
+                    : new ServletCoreRequest(httpServletRequest);
+
+                // If the servlet response has not been wrapped and has not been written to,
+                // we can use the core response directly,
+                // otherwise wrap the servlet response as a core response
+                Response coreResponse = httpServletResponse instanceof ServletApiResponse && !servletContextResponse.isWritingOrStreaming()
+                    ? servletChannel.getResponse()
+                    : new ServletCoreResponse(coreRequest, httpServletResponse, included);
+
+                // If the core response is already committed then do nothing more
                 if (coreResponse.isCommitted())
                 {
                     if (LOG.isDebugEnabled())
@@ -501,30 +518,39 @@ public class DefaultServlet extends HttpServlet
                     return;
                 }
 
+                // Get the content length before we may wrap the content
+                long contentLength = content.getContentLengthValue();
+
                 // Servlet Filters could be interacting with the Response already.
-                if (coreResponse.isHttpServletResponseWrapped() ||
-                    coreResponse.isWritingOrStreaming())
-                {
+                if (coreResponse instanceof  ServletCoreResponse)
                     content = new UnknownLengthHttpContent(content);
-                }
 
-                ServletContextResponse contextResponse = coreResponse.getServletContextResponse();
-                if (contextResponse != null)
-                {
-                    String characterEncoding = contextResponse.getRawCharacterEncoding();
-                    if (characterEncoding != null)
-                        content = new ForcedCharacterEncodingHttpContent(content, characterEncoding);
-                }
+                // The character encoding may be forced
+                String characterEncoding = servletContextResponse.getRawCharacterEncoding();
+                if (characterEncoding != null)
+                    content = new ForcedCharacterEncodingHttpContent(content, characterEncoding);
 
-                // serve content
-                try (Blocker.Callback callback = Blocker.callback())
+                // If async is supported and the unwrapped content is larger than an output buffer
+                if (httpServletRequest.isAsyncSupported() &&
+                    (contentLength < 0 || contentLength > coreRequest.getConnectionMetaData().getHttpConfiguration().getOutputBufferSize()))
                 {
+                    // send the content asynchronously
+                    AsyncContext asyncContext = httpServletRequest.startAsync();
+                    Callback callback = new AsyncContextCallback(asyncContext, httpServletResponse);
                     _resourceService.doGet(coreRequest, coreResponse, callback, content);
-                    callback.block();
                 }
-                catch (Exception e)
+                else
                 {
-                    throw new ServletException(e);
+                    // send the content blocking
+                    try (Blocker.Callback callback = Blocker.callback())
+                    {
+                        _resourceService.doGet(coreRequest, coreResponse, callback, content);
+                        callback.block();
+                    }
+                    catch (Exception e)
+                    {
+                        throw new ServletException(e);
+                    }
                 }
             }
         }
@@ -534,7 +560,7 @@ public class DefaultServlet extends HttpServlet
                 LOG.debug("InvalidPathException for pathInContext: {}", encodedPathInContext, e);
             if (included)
                 throw new FileNotFoundException(encodedPathInContext);
-            resp.setStatus(404);
+            httpServletResponse.setStatus(404);
         }
     }
 
@@ -872,12 +898,12 @@ public class DefaultServlet extends HttpServlet
         // TODO fully implement this class and move it to the top level
 
         private final HttpServletResponse _response;
-        private final ServletCoreRequest _coreRequest;
+        private final Request _coreRequest;
         private final Response _coreResponse;
         private final HttpFields.Mutable _httpFields;
         private final boolean _included;
 
-        public ServletCoreResponse(ServletCoreRequest coreRequest, HttpServletResponse response, boolean included)
+        public ServletCoreResponse(Request coreRequest, HttpServletResponse response, boolean included)
         {
             _coreRequest = coreRequest;
             _response = response;
@@ -911,37 +937,10 @@ public class DefaultServlet extends HttpServlet
             return _httpFields;
         }
 
-        public ServletContextResponse getServletContextResponse()
-        {
-            return ServletContextResponse.getServletContextResponse(_response);
-        }
-
         @Override
         public boolean isCommitted()
         {
             return _response.isCommitted();
-        }
-
-        /**
-         * Test if the HttpServletResponse is wrapped by the webapp.
-         *
-         * @return true if wrapped.
-         */
-        public boolean isHttpServletResponseWrapped()
-        {
-            return (_response instanceof HttpServletResponseWrapper);
-        }
-
-        /**
-         * Test if {@link HttpServletResponse#getOutputStream()} or
-         * {@link HttpServletResponse#getWriter()} has been called already
-         *
-         * @return true if {@link HttpServletResponse} has started to write or stream content
-         */
-        public boolean isWritingOrStreaming()
-        {
-            ServletContextResponse servletContextResponse = Response.as(_coreResponse, ServletContextResponse.class);
-            return servletContextResponse.isWritingOrStreaming();
         }
 
         public boolean isWriting()
@@ -1200,14 +1199,20 @@ public class DefaultServlet extends HttpServlet
 
         private HttpServletRequest getServletRequest(Request request)
         {
-            // TODO, this unwrapping is fragile
-            return ((ServletCoreRequest)request)._servletRequest;
+            if (request instanceof ServletContextRequest servletContextRequest)
+                return servletContextRequest.getServletApiRequest();
+            if (request instanceof ServletCoreRequest servletCoreRequest)
+                return servletCoreRequest._servletRequest;
+            throw new IllegalStateException();
         }
 
         private HttpServletResponse getServletResponse(Response response)
         {
-            // TODO, this unwrapping is fragile
-            return ((ServletCoreResponse)response)._response;
+            if (response instanceof ServletContextResponse servletContextResponse)
+                return servletContextResponse.getServletApiResponse();
+            if (response instanceof ServletCoreResponse servletCoreResponse)
+                return servletCoreResponse._response;
+            throw new IllegalStateException();
         }
     }
 
@@ -1315,5 +1320,39 @@ public class DefaultServlet extends HttpServlet
          * served, otherwise an exact matching Servlet may serve the welcome target.</p>
          */
         EXACT
+    }
+
+    private static class AsyncContextCallback implements Callback
+    {
+        private final AsyncContext _asyncContext;
+        private final HttpServletResponse _response;
+
+        private AsyncContextCallback(AsyncContext asyncContext, HttpServletResponse response)
+        {
+            _asyncContext = asyncContext;
+            _response = response;
+        }
+
+        @Override
+        public void succeeded()
+        {
+            _asyncContext.complete();
+        }
+
+        @Override
+        public void failed(Throwable x)
+        {
+            try
+            {
+                _response.sendError(-1);
+            }
+            catch (IOException e)
+            {
+                if (ExceptionUtil.areNotAssociated(x, e))
+                    x.addSuppressed(e);
+            }
+            if (LOG.isDebugEnabled())
+                LOG.debug("Async get failed", x);
+        }
     }
 }
