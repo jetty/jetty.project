@@ -136,14 +136,14 @@ public class MetaInfConfiguration extends AbstractConfiguration
         UriPatternPredicate uriPatternPredicate = new UriPatternPredicate(pattern, false);
         Consumer<URI> addContainerResource = (uri) ->
         {
-            Resource resource = resourceFactory.newResource(uri);
+            Resource resource = newDirectoryResource(context, uri);
             if (Resources.missing(resource))
             {
                 if (LOG.isDebugEnabled())
                     LOG.debug("Classpath URI doesn't exist: " + uri);
             }
             else
-                context.getMetaData().addContainerResource(toDirectoryResource(resourceFactory, resource));
+                context.getMetaData().addContainerResource(resource);
         };
 
         List<URI> containerUris = getAllContainerJars(context);
@@ -187,14 +187,14 @@ public class MetaInfConfiguration extends AbstractConfiguration
                     {
                         for (Path listEntry: listing.toList())
                         {
-                            Resource resource = toDirectoryResource(resourceFactory, resourceFactory.newResource(listEntry));
+                            Resource resource = newDirectoryResource(context, listEntry);
                             context.getMetaData().addContainerResource(resource);
                         }
                     }
                 }
                 else
                 {
-                    Resource resource = toDirectoryResource(resourceFactory, resourceFactory.newResource(path));
+                    Resource resource = newDirectoryResource(context, path);
                     context.getMetaData().addContainerResource(resource);
                 }
             }
@@ -649,7 +649,7 @@ public class MetaInfConfiguration extends AbstractConfiguration
         {
             return webInfLib.list().stream()
                 .filter((lib) -> FileID.isLibArchive(lib.getFileName()))
-                .map(r -> toDirectoryResource(context.getResourceFactory(), r))
+                .map(r -> toDirectoryResource(context, r))
                 .sorted(ResourceCollators.byName(true))
                 .collect(Collectors.toList());
         }
@@ -673,7 +673,7 @@ public class MetaInfConfiguration extends AbstractConfiguration
         return context.getExtraClasspath()
             .stream()
             .filter(this::isFileSupported)
-            .map(r -> toDirectoryResource(context.getResourceFactory(), r))
+            .map(r -> toDirectoryResource(context, r))
             .collect(Collectors.toList());
     }
 
@@ -719,13 +719,31 @@ public class MetaInfConfiguration extends AbstractConfiguration
             .collect(Collectors.toList());
     }
 
-    private Resource toDirectoryResource(ResourceFactory resourceFactory, Resource resource)
+    private Resource newDirectoryResource(WebAppContext context, Path path)
+    {
+        if (path == null)
+            return null;
+        return newDirectoryResource(context, path.toUri());
+    }
+
+    private Resource newDirectoryResource(WebAppContext context, URI uri)
+    {
+        if (FileID.isJavaArchive(uri) &&
+            !"jar".equals(uri.getScheme()))
+        {
+            return context.getResourceFactory().newJarFileResource(uri);
+        }
+
+        return context.getResourceFactory().newResource(uri);
+    }
+
+    private Resource toDirectoryResource(WebAppContext context, Resource resource)
     {
         if (Resources.isReadable(resource) &&
             FileID.isJavaArchive(resource.getURI()) &&
             !"jar".equals(resource.getURI().getScheme()))
         {
-            return resourceFactory.newJarFileResource(resource.getURI());
+            return context.getResourceFactory().newJarFileResource(resource.getURI());
         }
         return resource;
     }
