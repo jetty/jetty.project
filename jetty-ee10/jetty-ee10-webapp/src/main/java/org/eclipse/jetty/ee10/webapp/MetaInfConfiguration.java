@@ -143,7 +143,7 @@ public class MetaInfConfiguration extends AbstractConfiguration
                     LOG.debug("Classpath URI doesn't exist: " + uri);
             }
             else
-                context.getMetaData().addContainerResource(ensureJarsAreOpened(context, resource));
+                context.getMetaData().addContainerResource(toDirectoryResource(resourceFactory, resource));
         };
 
         List<URI> containerUris = getAllContainerJars(context);
@@ -179,20 +179,22 @@ public class MetaInfConfiguration extends AbstractConfiguration
                 .toList();
             for (Path path: matchingBasePaths)
             {
+                if (LOG.isDebugEnabled())
+                    LOG.debug("Found jdk.module.path entry: {}", path);
                 if (Files.isDirectory(path))
                 {
                     try (Stream<Path> listing = Files.list(path))
                     {
                         for (Path listEntry: listing.toList())
                         {
-                            Resource resource = resourceFactory.newResource(listEntry);
+                            Resource resource = toDirectoryResource(resourceFactory, resourceFactory.newResource(listEntry));
                             context.getMetaData().addContainerResource(resource);
                         }
                     }
                 }
                 else
                 {
-                    Resource resource = resourceFactory.newResource(path);
+                    Resource resource = toDirectoryResource(resourceFactory, resourceFactory.newResource(path));
                     context.getMetaData().addContainerResource(resource);
                 }
             }
@@ -500,14 +502,14 @@ public class MetaInfConfiguration extends AbstractConfiguration
             if (tmp.isEmpty())
             {
                 if (LOG.isDebugEnabled())
-                    LOG.debug("{} cached as containing no tlds", jar);
+                    LOG.debug("{} cached as containing no TLDs", jar);
                 return;
             }
             else
             {
                 tlds = tmp;
                 if (LOG.isDebugEnabled())
-                    LOG.debug("{} tlds found in cache ", jar);
+                    LOG.debug("{} found {} TLDs in cache: [{}]", jar, tlds.size(), tlds.stream().map(URL::toExternalForm).sorted().collect(Collectors.joining("\n  ")));
             }
         }
         else
@@ -516,10 +518,13 @@ public class MetaInfConfiguration extends AbstractConfiguration
             tlds = new HashSet<>();
             tlds.addAll(getTlds(jar));
 
+            if (LOG.isDebugEnabled())
+                LOG.debug("TLDs scan of {} - found {} : [{}]", jar, tlds.size(), tlds.stream().map(URL::toExternalForm).sorted().collect(Collectors.joining("\n  ")));
+
             if (cache != null)
             {
                 if (LOG.isDebugEnabled())
-                    LOG.debug("{} tld cache updated", jar);
+                    LOG.debug("{} TLD cache updated with {} entries", jar, tlds.size());
                 Collection<URL> old = cache.putIfAbsent(jar, tlds);
                 if (old != null)
                     tlds = old;
@@ -537,7 +542,7 @@ public class MetaInfConfiguration extends AbstractConfiguration
         }
         metaInfTlds.addAll(tlds);
         if (LOG.isDebugEnabled())
-            LOG.debug("tlds added to context");
+            LOG.debug("TLDs added to context: [{}]", metaInfTlds.stream().map(URL::toExternalForm).sorted().collect(Collectors.joining("\n  ")));
     }
 
     @Override
@@ -644,7 +649,7 @@ public class MetaInfConfiguration extends AbstractConfiguration
         {
             return webInfLib.list().stream()
                 .filter((lib) -> FileID.isLibArchive(lib.getFileName()))
-                .map(r -> ensureJarsAreOpened(context, r))
+                .map(r -> toDirectoryResource(context.getResourceFactory(), r))
                 .sorted(ResourceCollators.byName(true))
                 .collect(Collectors.toList());
         }
@@ -668,7 +673,7 @@ public class MetaInfConfiguration extends AbstractConfiguration
         return context.getExtraClasspath()
             .stream()
             .filter(this::isFileSupported)
-            .map(r -> ensureJarsAreOpened(context, r))
+            .map(r -> toDirectoryResource(context.getResourceFactory(), r))
             .collect(Collectors.toList());
     }
 
@@ -714,13 +719,13 @@ public class MetaInfConfiguration extends AbstractConfiguration
             .collect(Collectors.toList());
     }
 
-    private Resource ensureJarsAreOpened(WebAppContext context, Resource resource)
+    private Resource toDirectoryResource(ResourceFactory resourceFactory, Resource resource)
     {
         if (Resources.isReadable(resource) &&
             FileID.isJavaArchive(resource.getURI()) &&
             !"jar".equals(resource.getURI().getScheme()))
         {
-            return context.getResourceFactory().newJarFileResource(resource.getURI());
+            return resourceFactory.newJarFileResource(resource.getURI());
         }
         return resource;
     }
