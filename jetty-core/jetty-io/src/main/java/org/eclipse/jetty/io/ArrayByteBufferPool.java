@@ -16,7 +16,6 @@ package org.eclipse.jetty.io;
 import java.io.IOException;
 import java.nio.ByteBuffer;
 import java.util.Arrays;
-import java.util.Comparator;
 import java.util.concurrent.atomic.AtomicLong;
 import java.util.function.Consumer;
 import java.util.function.IntUnaryOperator;
@@ -388,6 +387,8 @@ public class ArrayByteBufferPool implements ByteBufferPool, Dumpable
 
         while (totalClearedCapacity < excess)
         {
+            // Run through all the buckets to avoid removing
+            // the buffers only from the first bucket(s).
             for (RetainedBucket bucket : buckets)
             {
                 Pool.Entry<RetainableByteBuffer> oldestEntry = findOldestEntry(now, bucket.getPool());
@@ -396,13 +397,14 @@ public class ArrayByteBufferPool implements ByteBufferPool, Dumpable
 
                 if (oldestEntry.remove())
                 {
-                    int clearedCapacity = oldestEntry.getPooled().capacity();
+                    RetainableByteBuffer buffer = oldestEntry.getPooled();
+                    int clearedCapacity = buffer.capacity();
                     if (direct)
                         _currentDirectMemory.addAndGet(-clearedCapacity);
                     else
                         _currentHeapMemory.addAndGet(-clearedCapacity);
                     totalClearedCapacity += clearedCapacity;
-                    removed(oldestEntry.getPooled());
+                    removed(buffer);
                 }
                 // else a concurrent thread evicted the same entry -> do not account for its capacity.
             }
@@ -436,9 +438,29 @@ public class ArrayByteBufferPool implements ByteBufferPool, Dumpable
 
     private Pool.Entry<RetainableByteBuffer> findOldestEntry(long now, Pool<RetainableByteBuffer> bucket)
     {
-        return bucket.stream()
-            .max(Comparator.comparingLong(entry -> NanoTime.elapsed(((Buffer)entry.getPooled()).getLastNanoTime(), now)))
-            .orElse(null);
+        // This method may be in the hot path, do not use Java streams.
+
+        Pool.Entry<RetainableByteBuffer> oldestEntry = null;
+        RetainableByteBuffer oldestBuffer = null;
+        long oldestAge = 0;
+        // TODO: improve Pool APIs to avoid stream().toList().
+        for (Pool.Entry<RetainableByteBuffer> entry : bucket.stream().toList())
+        {
+            Buffer buffer = (Buffer)entry.getPooled();
+            // A null buffer means the entry is reserved
+            // but not acquired yet, try the next.
+            if (buffer != null)
+            {
+                long age = NanoTime.elapsed(buffer.getLastNanoTime(), now);
+                if (oldestBuffer == null || age > oldestAge)
+                {
+                    oldestEntry = entry;
+                    oldestBuffer = buffer;
+                    oldestAge = age;
+                }
+            }
+        }
+        return oldestEntry;
     }
 
     private static class RetainedBucket
