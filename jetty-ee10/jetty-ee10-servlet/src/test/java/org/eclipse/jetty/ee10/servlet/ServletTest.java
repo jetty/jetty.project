@@ -28,6 +28,7 @@ import org.junit.jupiter.api.Test;
 
 import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.Matchers.containsString;
+import static org.junit.jupiter.api.Assertions.assertFalse;
 
 public class ServletTest
 {
@@ -79,7 +80,7 @@ public class ServletTest
     }
 
     @Test
-    public void testSimpleIdle() throws Exception
+    public void testSimpleIdleIgnored() throws Exception
     {
         _context.addServlet(new HttpServlet()
         {
@@ -107,5 +108,42 @@ public class ServletTest
             """, 5, TimeUnit.SECONDS);
         assertThat(response, containsString(" 200 OK"));
         assertThat(response, containsString("Hello!"));
+    }
+
+    @Test
+    public void testIdle() throws Exception
+    {
+        _context.addServlet(new HttpServlet()
+        {
+            @Override
+            protected void doGet(HttpServletRequest req, HttpServletResponse resp) throws ServletException, IOException
+            {
+                resp.getWriter().println("Hello!");
+            }
+        }, "/get");
+
+        _connector.setIdleTimeout(250);
+        _server.start();
+
+        try (LocalConnector.LocalEndPoint endPoint = _connector.connect())
+        {
+            String request = """
+                GET /ctx/get HTTP/1.1
+                Host: local
+                            
+                """;
+            endPoint.addInput(request);
+            String response = endPoint.getResponse();
+            assertThat(response, containsString(" 200 OK"));
+            assertThat(response, containsString("Hello!"));
+            endPoint.addInput(request);
+            response = endPoint.getResponse();
+            assertThat(response, containsString(" 200 OK"));
+            assertThat(response, containsString("Hello!"));
+
+            Thread.sleep(500);
+
+            assertFalse(endPoint.isOpen());
+        }
     }
 }
