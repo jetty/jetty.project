@@ -20,7 +20,6 @@ import java.net.URLClassLoader;
 import java.nio.file.Path;
 import java.util.ArrayList;
 import java.util.Collection;
-import java.util.Collections;
 import java.util.HashMap;
 import java.util.HashSet;
 import java.util.List;
@@ -120,14 +119,12 @@ public class MetaInfConfiguration extends AbstractConfiguration
         // add them to the context metadata
         List<Resource> containerResources = getContainerPaths(context);
         containerResources.stream()
-            .sorted(ResourceCollators.byName(true))
             .forEach(r -> context.getMetaData().addContainerResource(r));
 
         // Collect webapp paths that have selection patterns
         // add them to the context metadata
         List<Resource> webappResources = getWebAppPaths(context);
         webappResources.stream()
-            .sorted(ResourceCollators.byName(true))
             .forEach(r -> context.getMetaData().addWebInfResource(r));
 
         // -- Scan of META-INF directories --
@@ -297,7 +294,15 @@ public class MetaInfConfiguration extends AbstractConfiguration
         context.setAttribute(METAINF_TLDS, null);
     }
 
+    /**
+     * Get the list of Container Paths that should be scanned for META-INF configuration.
+     *
+     * @param context the context to search from
+     * @return the List of Resource objects to search for META-INF information in (order determined by implementation).
+     * @throws Exception if unable to get the Container Paths.
+     */
     protected List<Resource> getContainerPaths(WebAppContext context)
+        throws Exception
     {
         String pattern = (String)context.getAttribute(CONTAINER_JAR_PATTERN);
         if (LOG.isDebugEnabled())
@@ -312,15 +317,15 @@ public class MetaInfConfiguration extends AbstractConfiguration
         // We collect the unique URIs for the container first
         // as the same URI can exist in multiple places
         Set<URI> uniqueURIs = new HashSet<>();
-        uniqueURIs.addAll(getContainerJars(context));
-        uniqueURIs.addAll(getJavaClassPathJars());
-        uniqueURIs.addAll(getJdkModulePathJars());
+        uniqueURIs.addAll(getContainerClassLoaderEntries(context));
+        uniqueURIs.addAll(getJavaClassPathEntries());
+        uniqueURIs.addAll(getJdkModulePathEntries());
 
         // Stream the selected paths, based on the container include pattern
         return uniqueURIs.stream()
             .filter(containerUriPredicate)
-            .sorted()
             .map(uri -> newDirectoryResource(context, uri))
+            .sorted(ResourceCollators.byName(true))
             .toList();
     }
 
@@ -338,10 +343,16 @@ public class MetaInfConfiguration extends AbstractConfiguration
         return useContainerCache;
     }
 
-    protected List<URI> getContainerJars(WebAppContext context)
+    /**
+     * The list of Container ClassLoader entries.
+     *
+     * @param context the context to search from
+     * @return the List of URIs to in the classloader entries.
+     */
+    protected List<URI> getContainerClassLoaderEntries(WebAppContext context)
     {
         ClassLoader loader = MetaInfConfiguration.class.getClassLoader();
-        List<URI> uris = new ArrayList<>();
+        Set<URI> uris = new HashSet<>();
         while (loader != null)
         {
             if (loader instanceof URLClassLoader urlCL)
@@ -352,11 +363,16 @@ public class MetaInfConfiguration extends AbstractConfiguration
         }
 
         if (LOG.isDebugEnabled())
-            LOG.debug("Found {} container jars: {}", uris.size(), uris.stream().map(Objects::toString).sorted().collect(Collectors.joining(", ", "[", "]")));
-        return uris;
+            LOG.debug("Found {} container classloader entries: {}", uris.size(), uris.stream().map(Objects::toString).sorted().collect(Collectors.joining(", ", "[", "]")));
+        return uris.stream().sorted().toList();
     }
 
-    protected List<URI> getJavaClassPathJars()
+    /**
+     * Get the List of {@code java.class.path} (System property) entries.
+     *
+     * @return the List of URIs in the {@code java.class.path} value.
+     */
+    protected List<URI> getJavaClassPathEntries()
     {
         // On some JVMs we won't be able to look at the application
         // classloader to extract urls, so we need to examine the classpath instead.
@@ -364,15 +380,15 @@ public class MetaInfConfiguration extends AbstractConfiguration
         if (StringUtil.isBlank(classPath))
             return List.of();
 
-        List<URI> uris = Stream.of(classPath.split(File.pathSeparator))
+        Set<URI> uris = Stream.of(classPath.split(File.pathSeparator))
             .map(URIUtil::toURI)
-            .toList();
+            .collect(Collectors.toSet());
         if (LOG.isDebugEnabled())
             LOG.debug("Found {} java.class.path jars: {}", uris.size(), uris.stream().map(Objects::toString).sorted().collect(Collectors.joining(", ", "[", "]")));
-        return uris;
+        return uris.stream().sorted().toList();
     }
 
-    protected List<URI> getJdkModulePathJars()
+    protected List<URI> getJdkModulePathEntries()
     {
         // We also need to examine the other module path properties
         // TODO need to consider the jdk.module.upgrade.path - how to resolve which modules will be actually used.
@@ -380,15 +396,23 @@ public class MetaInfConfiguration extends AbstractConfiguration
         if (StringUtil.isBlank(modulePath))
             return List.of();
 
-        List<URI> uris = Stream.of(modulePath.split(File.pathSeparator))
+        Set<URI> uris = Stream.of(modulePath.split(File.pathSeparator))
             .map(URIUtil::toURI)
-            .toList();
+            .collect(Collectors.toSet());
         if (LOG.isDebugEnabled())
             LOG.debug("Found {} jdk.module.path jars: {}", uris.size(), uris.stream().map(Objects::toString).sorted().collect(Collectors.joining(", ", "[", "]")));
-        return uris;
+        return uris.stream().sorted().toList();
     }
 
+    /**
+     * Get the list of WebApp Paths that should be scanned for META-INF configuration.
+     *
+     * @param context the context to search from
+     * @return the List of Resource objects to search for META-INF information in (order determined by implementation).
+     * @throws Exception if unable to get the WebApp Paths.
+     */
     protected List<Resource> getWebAppPaths(WebAppContext context)
+        throws Exception
     {
         // Apply filter to WEB-INF/lib jars
         String pattern = (String)context.getAttribute(WEBINF_JAR_PATTERN);
@@ -396,18 +420,21 @@ public class MetaInfConfiguration extends AbstractConfiguration
 
         List<Resource> uniquePaths = new ArrayList<>();
         uniquePaths.addAll(getWebInfLibJars(context));
-        uniquePaths.addAll(getExtraClassPathJars(context));
-        Collections.sort(uniquePaths, ResourceCollators.byName(true));
+        uniquePaths.addAll(getExtraClassPathEntries(context));
 
         if (LOG.isDebugEnabled())
             LOG.debug("WebApp Paths: {}", uniquePaths.stream().map(Resource::getURI).map(URI::toASCIIString).collect(Collectors.joining(", ", "[", "]")));
 
-        return uniquePaths.stream()
-            .sorted(ResourceCollators.byName(true))
-            .toList();
+        return uniquePaths;
     }
 
-    protected Collection<Resource> getWebInfLibJars(WebAppContext context)
+    /**
+     * Get the List of Resources that need to be scanned in the context's {@code WEB-INF/lib/} tree.
+     *
+     * @param context the context to search from
+     * @return the List of Resources that need to be scanned.
+     */
+    protected List<Resource> getWebInfLibJars(WebAppContext context)
     {
         // Selection filter to apply to discovered WEB-INF/lib jars
         String pattern = (String)context.getAttribute(WEBINF_JAR_PATTERN);
@@ -427,6 +454,7 @@ public class MetaInfConfiguration extends AbstractConfiguration
         List<Resource> jars = webInfLib.list().stream()
             .filter((lib) -> FileID.isLibArchive(lib.getFileName()))
             .map(r -> toDirectoryResource(context, r))
+            .filter(webinfPredicate)
             .sorted(ResourceCollators.byName(true))
             .toList();
 
@@ -436,7 +464,13 @@ public class MetaInfConfiguration extends AbstractConfiguration
         return jars;
     }
 
-    protected Collection<Resource> getExtraClassPathJars(WebAppContext context)
+    /**
+     * Get the List of Resources that have been specified in the {@link WebAppContext#setExtraClasspath(List)} style methods.
+     *
+     * @param context the context to get configuration from
+     * @return the List of extra classpath entries
+     */
+    protected List<Resource> getExtraClassPathEntries(WebAppContext context)
     {
         if (context == null || context.getExtraClasspath() == null)
             return List.of();
