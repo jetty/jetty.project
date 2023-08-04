@@ -14,11 +14,18 @@
 package org.eclipse.jetty.io;
 
 import java.io.IOException;
+import java.io.PrintWriter;
+import java.io.StringWriter;
 import java.nio.ByteBuffer;
+import java.time.Instant;
 import java.util.Arrays;
+import java.util.Collections;
+import java.util.Set;
+import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.atomic.AtomicLong;
 import java.util.function.Consumer;
 import java.util.function.IntUnaryOperator;
+import java.util.stream.Collectors;
 
 import org.eclipse.jetty.io.internal.CompoundPool;
 import org.eclipse.jetty.io.internal.QueuedPool;
@@ -562,6 +569,114 @@ public class ArrayByteBufferPool implements ByteBufferPool, Dumpable
                 c -> 32 - Integer.numberOfLeadingZeros(c - 1),
                 i -> 1 << i
             );
+        }
+    }
+
+    /**
+     * <p>A variant of {@link ArrayByteBufferPool} that tracks buffer
+     * acquires/releases, useful to identify buffer leaks.</p>
+     * <p>Use {@link #getLeaks()} when the system is idle to get
+     * the {@link Buffer}s that have been leaked, which contain
+     * the stack trace information of where the buffer was acquired.</p>
+     */
+    public static class LeakTracking extends ArrayByteBufferPool
+    {
+        private static final Logger LOG = LoggerFactory.getLogger(LeakTracking.class);
+
+        private final Set<Buffer> buffers = Collections.newSetFromMap(new ConcurrentHashMap<>());
+
+        public LeakTracking()
+        {
+            this(0, -1, Integer.MAX_VALUE);
+        }
+
+        public LeakTracking(int minCapacity, int maxCapacity, int maxBucketSize)
+        {
+            this(minCapacity, maxCapacity, maxBucketSize, -1L, -1L);
+        }
+
+        public LeakTracking(int minCapacity, int maxCapacity, int maxBucketSize, long maxHeapMemory, long maxDirectMemory)
+        {
+            super(minCapacity, -1, maxCapacity, maxBucketSize, maxHeapMemory, maxDirectMemory);
+        }
+
+        @Override
+        public RetainableByteBuffer acquire(int size, boolean direct)
+        {
+            RetainableByteBuffer buffer = super.acquire(size, direct);
+            Buffer wrapper = new Buffer(buffer, size);
+            if (LOG.isDebugEnabled())
+                LOG.debug("acquired {}", wrapper);
+            buffers.add(wrapper);
+            return wrapper;
+        }
+
+        public Set<Buffer> getLeaks()
+        {
+            return buffers;
+        }
+
+        public String dumpLeaks()
+        {
+            return getLeaks().stream()
+                .map(Buffer::dump)
+                .collect(Collectors.joining(System.lineSeparator()));
+        }
+
+        public class Buffer extends RetainableByteBuffer.Wrapper
+        {
+            private final int size;
+            private final Instant instant;
+            private final Throwable stack;
+
+            private Buffer(RetainableByteBuffer wrapped, int size)
+            {
+                super(wrapped);
+                this.size = size;
+                this.instant = Instant.now();
+                this.stack = new Throwable();
+            }
+
+            public int getSize()
+            {
+                return size;
+            }
+
+            public Instant getInstant()
+            {
+                return instant;
+            }
+
+            public Throwable getStack()
+            {
+                return stack;
+            }
+
+            @Override
+            public boolean release()
+            {
+                boolean released = super.release();
+                if (released)
+                {
+                    buffers.remove(this);
+                    if (LOG.isDebugEnabled())
+                        LOG.debug("released {}", this);
+                }
+                return released;
+            }
+
+            public String dump()
+            {
+                StringWriter w = new StringWriter();
+                stack.printStackTrace(new PrintWriter(w));
+                return "%s of %d bytes on %s at %s".formatted(getClass().getSimpleName(), size, instant, w);
+            }
+
+            @Override
+            public String toString()
+            {
+                return "%s@%x[%s]".formatted(getClass().getSimpleName(), hashCode(), super.toString());
+            }
         }
     }
 }

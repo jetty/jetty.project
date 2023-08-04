@@ -42,7 +42,7 @@ import org.slf4j.LoggerFactory;
  * <p>This factory can be placed in front of any other connection factory
  * to process the proxy v1 or v2 line before the normal protocol handling</p>
  *
- * @see <a href="http://www.haproxy.org/download/1.5/doc/proxy-protocol.txt">http://www.haproxy.org/download/1.5/doc/proxy-protocol.txt</a>
+ * @see <a href="https://www.haproxy.org/download/2.8/doc/proxy-protocol.txt">PROXY protocol</a>
  */
 public class ProxyConnectionFactory extends DetectorConnectionFactory
 {
@@ -162,6 +162,37 @@ public class ProxyConnectionFactory extends DetectorConnectionFactory
             }
 
             @Override
+            public void onOpen()
+            {
+                super.onOpen();
+
+                try
+                {
+                    while (_index < LF_INDEX)
+                    {
+                        if (!parse())
+                        {
+                            if (LOG.isDebugEnabled())
+                                LOG.debug("Proxy v1 onOpen parsing ran out of bytes, marking as fillInterested");
+                            fillInterested();
+                            return;
+                        }
+                    }
+
+                    if (LOG.isDebugEnabled())
+                        LOG.debug("Proxy v1 onOpen parsing done, now upgrading");
+                    upgrade();
+                }
+                catch (Throwable x)
+                {
+                    LOG.warn("Proxy v1 error for {} {}", getEndPoint(), x.toString());
+                    if (LOG.isDebugEnabled())
+                        LOG.warn("Proxy v1 error", x);
+                    releaseAndClose();
+                }
+            }
+
+            @Override
             public void onFillable()
             {
                 if (LOG.isDebugEnabled())
@@ -204,37 +235,6 @@ public class ProxyConnectionFactory extends DetectorConnectionFactory
             }
 
             @Override
-            public void onOpen()
-            {
-                super.onOpen();
-
-                try
-                {
-                    while (_index < LF_INDEX)
-                    {
-                        if (!parse())
-                        {
-                            if (LOG.isDebugEnabled())
-                                LOG.debug("Proxy v1 onOpen parsing ran out of bytes, marking as fillInterested");
-                            fillInterested();
-                            return;
-                        }
-                    }
-
-                    if (LOG.isDebugEnabled())
-                        LOG.debug("Proxy v1 onOpen parsing done, now upgrading");
-                    upgrade();
-                }
-                catch (Throwable x)
-                {
-                    LOG.warn("Proxy v1 error for {} {}", getEndPoint(), x.toString());
-                    if (LOG.isDebugEnabled())
-                        LOG.warn("Proxy v1 error", x);
-                    releaseAndClose();
-                }
-            }
-
-            @Override
             public ByteBuffer onUpgradeFrom()
             {
                 if (_buffer.hasRemaining())
@@ -245,6 +245,7 @@ public class ProxyConnectionFactory extends DetectorConnectionFactory
                     _buffer.release();
                     return unconsumed;
                 }
+                _buffer.release();
                 return null;
             }
 
@@ -564,6 +565,7 @@ public class ProxyConnectionFactory extends DetectorConnectionFactory
                     _buffer.release();
                     return unconsumed;
                 }
+                _buffer.release();
                 return null;
             }
 
@@ -591,7 +593,7 @@ public class ProxyConnectionFactory extends DetectorConnectionFactory
                     SocketAddress remote;
                     switch (_family)
                     {
-                        case INET:
+                        case INET ->
                         {
                             byte[] addr = new byte[4];
                             byteBuffer.get(addr);
@@ -602,9 +604,8 @@ public class ProxyConnectionFactory extends DetectorConnectionFactory
                             int dstPort = byteBuffer.getChar();
                             local = new InetSocketAddress(dstAddr, dstPort);
                             remote = new InetSocketAddress(srcAddr, srcPort);
-                            break;
                         }
-                        case INET6:
+                        case INET6 ->
                         {
                             byte[] addr = new byte[16];
                             byteBuffer.get(addr);
@@ -615,9 +616,8 @@ public class ProxyConnectionFactory extends DetectorConnectionFactory
                             int dstPort = byteBuffer.getChar();
                             local = new InetSocketAddress(dstAddr, dstPort);
                             remote = new InetSocketAddress(srcAddr, srcPort);
-                            break;
                         }
-                        case UNIX:
+                        case UNIX ->
                         {
                             byte[] addr = new byte[108];
                             byteBuffer.get(addr);
@@ -626,12 +626,8 @@ public class ProxyConnectionFactory extends DetectorConnectionFactory
                             String dst = UnixDomain.toPath(addr);
                             local = UnixDomain.newSocketAddress(dst);
                             remote = UnixDomain.newSocketAddress(src);
-                            break;
                         }
-                        default:
-                        {
-                            throw new IllegalStateException("Unsupported family " + _family);
-                        }
+                        default -> throw new IllegalStateException("Unsupported family " + _family);
                     }
                     proxyEndPoint = new ProxyEndPoint(endPoint, local, remote);
 
@@ -714,37 +710,20 @@ public class ProxyConnectionFactory extends DetectorConnectionFactory
                 int transportAndFamily = 0xFF & byteBuffer.get();
                 switch (transportAndFamily >> 4)
                 {
-                    case 0:
-                        _family = Family.UNSPEC;
-                        break;
-                    case 1:
-                        _family = Family.INET;
-                        break;
-                    case 2:
-                        _family = Family.INET6;
-                        break;
-                    case 3:
-                        _family = Family.UNIX;
-                        break;
-                    default:
-                        throw new IOException("Proxy v2 bad PROXY family");
+                    case 0 -> _family = Family.UNSPEC;
+                    case 1 -> _family = Family.INET;
+                    case 2 -> _family = Family.INET6;
+                    case 3 -> _family = Family.UNIX;
+                    default -> throw new IOException("Proxy v2 bad PROXY family");
                 }
 
-                Transport transport;
-                switch (transportAndFamily & 0xF)
+                Transport transport = switch (transportAndFamily & 0xF)
                 {
-                    case 0:
-                        transport = Transport.UNSPEC;
-                        break;
-                    case 1:
-                        transport = Transport.STREAM;
-                        break;
-                    case 2:
-                        transport = Transport.DGRAM;
-                        break;
-                    default:
-                        throw new IOException("Proxy v2 bad PROXY family");
-                }
+                    case 0 -> Transport.UNSPEC;
+                    case 1 -> Transport.STREAM;
+                    case 2 -> Transport.DGRAM;
+                    default -> throw new IOException("Proxy v2 bad PROXY family");
+                };
 
                 _length = byteBuffer.getChar();
 
@@ -761,6 +740,8 @@ public class ProxyConnectionFactory extends DetectorConnectionFactory
 
             private void releaseAndClose()
             {
+                if (LOG.isDebugEnabled())
+                    LOG.debug("Proxy v2 releasing buffer and closing");
                 _buffer.release();
                 close();
             }
