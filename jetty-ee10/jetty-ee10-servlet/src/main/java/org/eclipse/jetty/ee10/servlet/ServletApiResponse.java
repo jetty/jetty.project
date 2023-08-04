@@ -591,7 +591,7 @@ public class ServletApiResponse implements HttpServletResponse
         @Override
         public boolean equals(Object obj)
         {
-            return obj instanceof HttpCookie && HttpCookie.equals(this, obj);
+            return HttpCookie.equals(this, obj);
         }
 
         @Override
