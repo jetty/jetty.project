@@ -354,33 +354,32 @@ public class HttpChannelState implements HttpChannel, Components
             if (LOG.isDebugEnabled())
                 LOG.debug("onIdleTimeout {}", this, t);
 
-            // if we are currently demanding, take the onContentAvailable runnable to invoke below.
-            Runnable invokeOnContentAvailable = _onContentAvailable;
-            _onContentAvailable = null;
-
-            // If a write call is in progress, take the writeCallback to fail below
-            Runnable invokeWriteFailure = _response.lockedFailWrite(t);
-
-            // If an IO operation was in progress
-            if (invokeOnContentAvailable != null || invokeWriteFailure != null)
+            // if not already a failure,
+            if (_failure == null)
             {
-                // Then we will just fail the current operation and all future IO operation.
-                // No listeners are called at all, as the application is already notified
-                // TODO should we make this read failure transient, so it can be ignored by the application?
-                if (_failure == null)
-                {
-                    _failure = Content.Chunk.from(t);
-                }
-                else if (ExceptionUtil.areNotAssociated(_failure.getFailure(), t) && _failure.getFailure().getClass() != t.getClass())
-                {
-                    _failure.getFailure().addSuppressed(t);
-                }
 
-                return _serializedInvoker.offer(invokeOnContentAvailable, invokeWriteFailure);
+                // if we are currently demanding, take the onContentAvailable runnable to invoke below.
+                Runnable invokeOnContentAvailable = _onContentAvailable;
+                _onContentAvailable = null;
+
+                // If a write call is in progress, take the writeCallback to fail below
+                Runnable invokeWriteFailure = _response.lockedFailWrite(t);
+
+                // If demand was in process, then arrange for the next read to return the idle timeout, if no other error
+                if (invokeOnContentAvailable != null)
+                    _failure = Content.Chunk.from(t, false);
+
+                // If there was an IO operation, just deliver the idle timeout via them
+                if (invokeOnContentAvailable != null || invokeWriteFailure != null)
+                    return _serializedInvoker.offer(invokeOnContentAvailable, invokeWriteFailure);
+
+                // Otherwise We ask any idle timeout listeners if we should call onFailure or not
+                onIdleTimeout = _onIdleTimeout;
             }
-
-            // Otherwise We ask any idle timeout listeners if we should call onFailure or not
-            onIdleTimeout = _onIdleTimeout;
+            else
+            {
+                onIdleTimeout = null;
+            }
         }
 
         // Ask any listener what to do
@@ -429,13 +428,9 @@ public class HttpChannelState implements HttpChannel, Components
 
             // Set the error to arrange for any subsequent reads, demands or writes to fail.
             if (_failure == null)
-            {
-                _failure = Content.Chunk.from(x);
-            }
+                _failure = Content.Chunk.from(x, true);
             else if (ExceptionUtil.areNotAssociated(_failure.getFailure(), x) && _failure.getFailure().getClass() != x.getClass())
-            {
                 _failure.getFailure().addSuppressed(x);
-            }
 
             // If not handled, then we just fail the request callback
             if (!_handled && _handling == null)
@@ -947,6 +942,7 @@ public class HttpChannelState implements HttpChannel, Components
                 HttpChannelState httpChannel = lockedGetHttpChannelState();
 
                 Content.Chunk error = httpChannel._failure;
+                httpChannel._failure = Content.Chunk.next(error);
                 if (error != null)
                     return error;
 

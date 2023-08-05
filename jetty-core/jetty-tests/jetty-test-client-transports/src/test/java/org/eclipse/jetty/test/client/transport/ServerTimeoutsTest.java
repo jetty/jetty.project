@@ -42,6 +42,7 @@ import static org.hamcrest.Matchers.instanceOf;
 import static org.hamcrest.Matchers.is;
 import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertNotNull;
+import static org.junit.jupiter.api.Assertions.assertNull;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
 public class ServerTimeoutsTest extends AbstractTest
@@ -131,9 +132,12 @@ public class ServerTimeoutsTest extends AbstractTest
 
         // Reads should yield the idle timeout.
         Content.Chunk chunk = requestRef.get().read();
-        assertTrue(Content.Chunk.isFailure(chunk, true));
+        assertTrue(Content.Chunk.isFailure(chunk, false));
         Throwable cause = chunk.getFailure();
         assertThat(cause, instanceOf(TimeoutException.class));
+
+        // Can read again
+        assertNull(requestRef.get().read());
 
         // Complete the callback as the error listener promised.
         callbackRef.get().failed(cause);
