@@ -77,6 +77,7 @@ import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.Matchers.anyOf;
 import static org.hamcrest.Matchers.containsString;
 import static org.hamcrest.Matchers.empty;
+import static org.hamcrest.Matchers.emptyString;
 import static org.hamcrest.Matchers.endsWith;
 import static org.hamcrest.Matchers.is;
 import static org.hamcrest.Matchers.not;
@@ -2160,6 +2161,110 @@ public class DefaultServletTest
         {
             assertThat(response.getStatus(), is(HttpStatus.NOT_FOUND_404));
         }
+    }
+
+    @Test
+    public void testHead() throws Exception
+    {
+        Path file = docRoot.resolve("file.txt");
+
+        context.addServlet(DefaultServlet.class, "/");
+
+        String rawResponse;
+        HttpTester.Response response;
+
+        rawResponse = connector.getResponse("""
+            HEAD /context/file.txt HTTP/1.1\r
+            Host: local\r
+            Connection: close\r
+            \r
+            """);
+        response = HttpTester.parseResponse(rawResponse);
+        assertThat(response.toString(), response.getStatus(), is(HttpStatus.NOT_FOUND_404));
+
+        Files.writeString(file, "How now brown cow", UTF_8);
+
+        rawResponse = connector.getResponse("""
+            HEAD /context/file.txt HTTP/1.1\r
+            Host: local\r
+            Connection: close\r
+            \r
+            """);
+        response = HttpTester.parseResponse(rawResponse);
+        assertThat(response.toString(), response.getStatus(), is(HttpStatus.OK_200));
+        assertThat(response.toString(), response.getContent(), emptyString());
+    }
+
+    @Test
+    public void testPost() throws Exception
+    {
+        Path file = docRoot.resolve("file.txt");
+
+        context.addServlet(DefaultServlet.class, "/");
+
+        String rawResponse;
+        HttpTester.Response response;
+
+        rawResponse = connector.getResponse("""
+            POST /context/file.txt HTTP/1.1\r
+            Host: local\r
+            Connection: close\r
+            Content-Length: 5\r
+            \r
+            abcde
+            """);
+        response = HttpTester.parseResponse(rawResponse);
+        assertThat(response.toString(), response.getStatus(), is(HttpStatus.METHOD_NOT_ALLOWED_405));
+
+        Files.writeString(file, "How now brown cow", UTF_8);
+
+        rawResponse = connector.getResponse("""
+            POST /context/file.txt HTTP/1.1\r
+            Host: local\r
+            Connection: close\r
+            Content-Length: 5\r
+            \r
+            abcde
+            """);
+        response = HttpTester.parseResponse(rawResponse);
+        assertThat(response.toString(), response.getStatus(), is(HttpStatus.METHOD_NOT_ALLOWED_405));
+    }
+
+    @Test
+    public void testTrace() throws Exception
+    {
+        context.addServlet(DefaultServlet.class, "/");
+
+        String rawResponse;
+        HttpTester.Response response;
+
+        rawResponse = connector.getResponse("""
+            TRACE /context/file.txt HTTP/1.1\r
+            Host: local\r
+            Connection: close\r
+            \r
+            """);
+        response = HttpTester.parseResponse(rawResponse);
+        assertThat(response.toString(), response.getStatus(), is(HttpStatus.METHOD_NOT_ALLOWED_405));
+    }
+
+    @Test
+    public void testOptions() throws Exception
+    {
+        context.addServlet(DefaultServlet.class, "/");
+
+        String rawResponse;
+        HttpTester.Response response;
+
+        rawResponse = connector.getResponse("""
+            OPTIONS /context/ HTTP/1.1\r
+            Host: local\r
+            Connection: close\r
+            \r
+            """);
+        response = HttpTester.parseResponse(rawResponse);
+        assertThat(response.toString(), response.getStatus(), is(HttpStatus.OK_200));
+        assertThat(response.get(HttpHeader.ALLOW), is("GET, HEAD, OPTIONS"));
     }
 
     public static class OutputFilter implements Filter

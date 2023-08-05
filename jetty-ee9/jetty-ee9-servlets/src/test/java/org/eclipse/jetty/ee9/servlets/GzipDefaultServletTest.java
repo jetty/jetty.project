@@ -85,6 +85,7 @@ public class GzipDefaultServletTest extends AbstractGzipTest
         ServletContextHandler servletContextHandler = new ServletContextHandler();
         servletContextHandler.setContextPath("/context");
         servletContextHandler.setBaseResource(ResourceFactory.of(server).newResource(contextDir));
+        // The WibbleDefaultServlet overrides the method behaviors
         ServletHolder holder = new ServletHolder("default", WibbleDefaultServlet.class);
         holder.setInitParameter("etags", "true");
         servletContextHandler.addServlet(holder, "/");
@@ -141,6 +142,7 @@ public class GzipDefaultServletTest extends AbstractGzipTest
         {
             switch (req.getMethod())
             {
+                case "POST":
                 case "WIBBLE":
                     // Disregard the method given, use GET instead.
                     doGet(req, resp);
