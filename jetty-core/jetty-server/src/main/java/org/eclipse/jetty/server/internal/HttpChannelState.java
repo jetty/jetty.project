@@ -364,7 +364,9 @@ public class HttpChannelState implements HttpChannel, Components
             // If an IO operation was in progress
             if (invokeOnContentAvailable != null || invokeWriteFailure != null)
             {
-                // Just fail current IO and any subsequent reads, demands or writes to fail.
+                // Then we will just fail the current operation and all future IO operation.
+                // No listeners are called at all, as the application is already notified
+                // TODO should we make this read failure transient, so it can be ignored by the application?
                 if (_failure == null)
                 {
                     _failure = Content.Chunk.from(t);
@@ -377,7 +379,7 @@ public class HttpChannelState implements HttpChannel, Components
                 return _serializedInvoker.offer(invokeOnContentAvailable, invokeWriteFailure);
             }
 
-            // Otherwise We ask any listener what to do
+            // Otherwise We ask any idle timeout listeners if we should call onFailure or not
             onIdleTimeout = _onIdleTimeout;
         }
 
@@ -388,6 +390,7 @@ public class HttpChannelState implements HttpChannel, Components
             {
                 if (onIdleTimeout.test(t))
                 {
+                    // If the idle timeout listener(s) return true, then we call onFailure and any task it returns.
                     Runnable task = onFailure(t);
                     if (task != null)
                         task.run();
