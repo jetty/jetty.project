@@ -353,9 +353,35 @@ public class HttpChannelState implements HttpChannel, Components
         {
             if (LOG.isDebugEnabled())
                 LOG.debug("onIdleTimeout {}", this, t);
+
+            // if we are currently demanding, take the onContentAvailable runnable to invoke below.
+            Runnable invokeOnContentAvailable = _onContentAvailable;
+            _onContentAvailable = null;
+
+            // If a write call is in progress, take the writeCallback to fail below
+            Runnable invokeWriteFailure = _response.lockedFailWrite(t);
+
+            // If an IO operation was in progress
+            if (invokeOnContentAvailable != null || invokeWriteFailure != null)
+            {
+                // Just fail current IO and any subsequent reads, demands or writes to fail.
+                if (_failure == null)
+                {
+                    _failure = Content.Chunk.from(t);
+                }
+                else if (ExceptionUtil.areNotAssociated(_failure.getFailure(), t) && _failure.getFailure().getClass() != t.getClass())
+                {
+                    _failure.getFailure().addSuppressed(t);
+                }
+
+                return _serializedInvoker.offer(invokeOnContentAvailable, invokeWriteFailure);
+            }
+
+            // Otherwise We ask any listener what to do
             onIdleTimeout = _onIdleTimeout;
         }
 
+        // Ask any listener what to do
         if (onIdleTimeout != null)
         {
             Runnable onIdle = () ->
@@ -369,7 +395,9 @@ public class HttpChannelState implements HttpChannel, Components
             };
             return _serializedInvoker.offer(onIdle);
         }
-        return onFailure(t); // TODO can we avoid double lock?
+
+        // otherwise treat as a failure
+        return onFailure(t);
     }
 
     @Override
@@ -422,7 +450,7 @@ public class HttpChannelState implements HttpChannel, Components
 
                 // Create runnable to invoke any onError listeners
                 ChannelRequest request = _request;
-                Runnable invokeListeners = () ->
+                Runnable invokeOnFailureListeners = () ->
                 {
                     Consumer<Throwable> onFailure;
                     try (AutoLock ignore = _lock.lock())
@@ -453,7 +481,7 @@ public class HttpChannelState implements HttpChannel, Components
                 };
 
                 // Serialize all the error actions.
-                task = _serializedInvoker.offer(invokeOnContentAvailable, invokeWriteFailure, invokeListeners);
+                task = _serializedInvoker.offer(invokeOnContentAvailable, invokeWriteFailure, invokeOnFailureListeners);
             }
         }
 

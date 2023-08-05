@@ -735,7 +735,7 @@ public class ServletRequestState
         {
             if (LOG.isDebugEnabled())
                 LOG.debug("onIdleTimeout {}", getStatusStringLocked(), timeout);
-            return _state == State.IDLE || _inputState == InputState.UNREADY;
+            return _state == State.IDLE;
         }
     }
 

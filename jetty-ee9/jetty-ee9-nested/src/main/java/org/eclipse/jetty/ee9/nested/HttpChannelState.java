@@ -169,7 +169,7 @@ public class HttpChannelState
     {
         try (AutoLock l = lock())
         {
-            return _state == State.IDLE || _inputState == InputState.UNREADY;
+            return _state == State.IDLE;
         }
     }
 
