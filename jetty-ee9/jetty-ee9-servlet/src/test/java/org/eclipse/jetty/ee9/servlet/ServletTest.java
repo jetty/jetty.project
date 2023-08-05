@@ -22,6 +22,7 @@ import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletResponse;
 import org.eclipse.jetty.server.LocalConnector;
 import org.eclipse.jetty.server.Server;
+import org.eclipse.jetty.util.IO;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
@@ -108,6 +109,49 @@ public class ServletTest
             """, 5, TimeUnit.SECONDS);
         assertThat(response, containsString(" 200 OK"));
         assertThat(response, containsString("Hello!"));
+    }
+
+    @Test
+    public void testSimpleIdleRead() throws Exception
+    {
+        _context.addServlet(new ServletHolder(new HttpServlet()
+        {
+            @Override
+            protected void doPost(HttpServletRequest req, HttpServletResponse resp) throws IOException
+            {
+                String input = IO.toString(req.getInputStream());
+                resp.getWriter().println("Hello " + input);
+            }
+        }), "/post");
+
+        _connector.setIdleTimeout(250);
+        _server.start();
+
+        try (LocalConnector.LocalEndPoint endPoint = _connector.connect())
+        {
+            String request = """
+                POST /ctx/post HTTP/1.1
+                Host: local
+                Content-Length: 10
+                            
+                """;
+            endPoint.addInput(request);
+            endPoint.addInput("1234567890\n");
+            String response = endPoint.getResponse(false, 5, TimeUnit.SECONDS);
+            assertThat(response, containsString(" 200 OK"));
+            assertThat(response, containsString("Hello 1234567890"));
+
+            endPoint.addInputAndExecute(request);
+            endPoint.addInput("1234567890\n");
+            response = endPoint.getResponse(false, 5, TimeUnit.SECONDS);
+            assertThat(response, containsString(" 200 OK"));
+            assertThat(response, containsString("Hello 1234567890"));
+
+            endPoint.addInputAndExecute(request);
+            response = endPoint.getResponse(false, 5, TimeUnit.SECONDS);
+            assertThat(response, containsString(" 500 "));
+            assertThat(response, containsString("Connection: close"));
+        }
     }
 
     @Test
