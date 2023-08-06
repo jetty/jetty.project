@@ -356,7 +356,6 @@ public class HttpChannelState implements HttpChannel, Components
             // if not already a failure,
             if (_failure == null)
             {
-
                 // if we are currently demanding, take the onContentAvailable runnable to invoke below.
                 Runnable invokeOnContentAvailable = _onContentAvailable;
                 _onContentAvailable = null;
@@ -365,7 +364,10 @@ public class HttpChannelState implements HttpChannel, Components
                 Runnable invokeWriteFailure = _response.lockedFailWrite(t);
 
                 // If demand was in process, then arrange for the next read to return the idle timeout, if no other error
-                // TODO to make IO timeouts transient, remove the invokeWriteFailure test below
+                // TODO to make IO timeouts transient, remove the invokeWriteFailure test below.
+                //      Probably writes cannot be made transient as it will be unclear how much of the buffer has actually
+                //      been written.  So write timeouts might always be persistent... but then we should call the listener
+                //      before calling lockedFailedWrite above.
                 if (invokeOnContentAvailable != null || invokeWriteFailure != null)
                 {
                     // TODO The chunk here should be last==false, so that IO timeout is a transient failure.
