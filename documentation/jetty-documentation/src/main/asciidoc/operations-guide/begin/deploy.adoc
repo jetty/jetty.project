@@ -68,7 +68,7 @@ Refer to the section about xref:og-deploy[deployment] for further information ab
 $ java -jar $JETTY_HOME/start.jar --add-modules={ee-current}-deploy
 ----
 
-[source,options=nowrap]
+[source,options=nowrap,subs=attributes]
 ----
 include::jetty[setupArgs="--add-modules=http",args="--add-modules={ee-current}-deploy"]
 ----

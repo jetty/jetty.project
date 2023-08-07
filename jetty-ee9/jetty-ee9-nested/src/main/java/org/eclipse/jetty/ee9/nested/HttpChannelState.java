@@ -16,6 +16,7 @@ package org.eclipse.jetty.ee9.nested;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.concurrent.TimeUnit;
+import java.util.concurrent.TimeoutException;
 
 import jakarta.servlet.AsyncListener;
 import jakarta.servlet.ServletContext;
@@ -161,6 +162,14 @@ public class HttpChannelState
         try (AutoLock l = lock())
         {
             return _state;
+        }
+    }
+
+    public boolean onIdleTimeout(TimeoutException timeout)
+    {
+        try (AutoLock l = lock())
+        {
+            return _state == State.IDLE;
         }
     }
 
