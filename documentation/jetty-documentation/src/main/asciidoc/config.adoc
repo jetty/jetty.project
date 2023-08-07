@@ -28,8 +28,6 @@
 // Use fonts for admonitions.
 :icons: font
 
-:imagesdir: images/
-
 // HTML specific directives
 ifdef::backend-html5[]
 :safe-mode-unsafe:
