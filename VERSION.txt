@@ -1,3 +1,5 @@
+jetty-12.0.1-SNAPSHOT
+
 jetty-12.0.0 - 07 August 2023
  + 8405 Servlet 3.1 ReadListener.onAllDataRead() is called twice under h2 or
    h2c if the server doesn't respond within 30s
