@@ -161,12 +161,20 @@
     </plugins>
   </build>
 
+  <dependencyManagement>
+    <dependencies>
+      <dependency>
+        <groupId>org.eclipse.jetty.ee10</groupId>
+        <artifactId>jetty-ee10-bom</artifactId>
+        <version>${project.version}</version>
+        <scope>import</scope>
+        <type>pom</type>
+      </dependency>
+    </dependencies>
+  </dependencyManagement>
+
   <dependencies>
-    <!--<dependency>
-      <groupId>org.eclipse.jetty</groupId>
-      <artifactId>jetty-annotations</artifactId>
-      <scope>provided</scope>
-    </dependency>-->
+    <!-- Jetty Core Dependencies -->
     <dependency>
       <groupId>org.eclipse.jetty</groupId>
       <artifactId>jetty-alpn-client</artifactId>
@@ -192,21 +200,11 @@
       <artifactId>jetty-alpn-java-server</artifactId>
       <scope>provided</scope>
     </dependency>
-    <!--<dependency>
+    <dependency>
       <groupId>org.eclipse.jetty</groupId>
-      <artifactId>apache-jsp</artifactId>
+      <artifactId>jetty-alpn-server</artifactId>
       <scope>provided</scope>
-    </dependency>-->
-    <!--<dependency>
-      <groupId>org.eclipse.jetty</groupId>
-      <artifactId>glassfish-jstl</artifactId>
-      <scope>provided</scope>
-    </dependency>-->
-    <!--<dependency>
-      <groupId>org.eclipse.jetty</groupId>
-      <artifactId>jetty-cdi</artifactId>
-      <scope>provided</scope>
-    </dependency>-->
+    </dependency>
     <dependency>
       <groupId>org.eclipse.jetty</groupId>
       <artifactId>jetty-client</artifactId>
@@ -224,12 +222,17 @@
     </dependency>
     <dependency>
       <groupId>org.eclipse.jetty.fcgi</groupId>
+      <artifactId>jetty-fcgi-proxy</artifactId>
+      <scope>provided</scope>
+    </dependency>
+    <dependency>
+      <groupId>org.eclipse.jetty.fcgi</groupId>
       <artifactId>jetty-fcgi-server</artifactId>
       <scope>provided</scope>
     </dependency>
     <dependency>
-      <groupId>org.eclipse.jetty.gcloud</groupId>
-      <artifactId>jetty-gcloud-session-manager</artifactId>
+      <groupId>org.eclipse.jetty</groupId>
+      <artifactId>jetty-http</artifactId>
       <scope>provided</scope>
     </dependency>
     <dependency>
@@ -269,24 +272,24 @@
     </dependency>
     <dependency>
       <groupId>org.eclipse.jetty</groupId>
-      <artifactId>jetty-security</artifactId>
-      <scope>provided</scope>
-    </dependency>
-    <dependency>
-      <groupId>org.eclipse.jetty.memcached</groupId>
-      <artifactId>jetty-memcached-sessions</artifactId>
+      <artifactId>jetty-jmx</artifactId>
       <scope>provided</scope>
     </dependency>
     <dependency>
       <groupId>org.eclipse.jetty</groupId>
-      <artifactId>jetty-nosql</artifactId>
+      <artifactId>jetty-jndi</artifactId>
       <scope>provided</scope>
     </dependency>
-    <!--<dependency>
-      <groupId>org.eclipse.jetty.osgi</groupId>
-      <artifactId>jetty-osgi-boot</artifactId>
+    <dependency>
+      <groupId>org.eclipse.jetty</groupId>
+      <artifactId>jetty-openid</artifactId>
       <scope>provided</scope>
-    </dependency>-->
+    </dependency>
+    <dependency>
+      <groupId>org.eclipse.jetty</groupId>
+      <artifactId>jetty-osgi</artifactId>
+      <scope>provided</scope>
+    </dependency>
     <dependency>
       <groupId>org.eclipse.jetty</groupId>
       <artifactId>jetty-proxy</artifactId>
@@ -302,109 +305,190 @@
       <artifactId>jetty-quic-server</artifactId>
       <scope>provided</scope>
     </dependency>
-    <!--<dependency>
-      <groupId>org.eclipse.jetty</groupId>
-      <artifactId>jetty-quickstart</artifactId>
-      <scope>provided</scope>
-    </dependency>-->
     <dependency>
       <groupId>org.eclipse.jetty</groupId>
       <artifactId>jetty-rewrite</artifactId>
-      <version>${project.version}</version>
+      <scope>provided</scope>
     </dependency>
-    <!--<dependency>
+    <dependency>
       <groupId>org.eclipse.jetty</groupId>
-      <artifactId>jetty-runner</artifactId>
+      <artifactId>jetty-security</artifactId>
       <scope>provided</scope>
-    </dependency>-->
-    <!--<dependency>
+    </dependency>
+    <dependency>
       <groupId>org.eclipse.jetty</groupId>
-      <artifactId>jetty-openid</artifactId>
+      <artifactId>jetty-server</artifactId>
       <scope>provided</scope>
-    </dependency>-->
+    </dependency>
+    <dependency>
+      <groupId>org.eclipse.jetty</groupId>
+      <artifactId>jetty-session</artifactId>
+      <scope>provided</scope>
+    </dependency>
     <dependency>
       <groupId>org.eclipse.jetty</groupId>
       <artifactId>jetty-start</artifactId>
       <scope>provided</scope>
     </dependency>
-    <!--<dependency>
-      <groupId>org.eclipse.jetty.websocket</groupId>
-      <artifactId>websocket-jakarta-server</artifactId>
-      <scope>provided</scope>
-    </dependency>
-    <dependency>
-      <groupId>org.eclipse.jetty.websocket</groupId>
-      <artifactId>websocket-jakarta-client</artifactId>
-      <scope>provided</scope>
-    </dependency>
-    <dependency>
-      <groupId>org.eclipse.jetty.websocket</groupId>
-      <artifactId>websocket-jetty-client</artifactId>
-      <scope>provided</scope>
-    </dependency>
-    <dependency>
-      <groupId>org.eclipse.jetty.websocket</groupId>
-      <artifactId>websocket-jetty-server</artifactId>
-      <scope>provided</scope>
-    </dependency>-->
     <dependency>
       <groupId>org.eclipse.jetty</groupId>
-      <artifactId>jetty-jmx</artifactId>
+      <artifactId>jetty-unixdomain-server</artifactId>
       <scope>provided</scope>
     </dependency>
-    <!-- === Jetty JNDI Deps == -->
     <dependency>
       <groupId>org.eclipse.jetty</groupId>
-      <artifactId>jetty-jndi</artifactId>
+      <artifactId>jetty-util</artifactId>
       <scope>provided</scope>
     </dependency>
-    <!-- javax.mail Dep -->
-    <!-- to support MailSessionReference.java -->
-    <!--<dependency>
+    <dependency>
+      <groupId>org.eclipse.jetty</groupId>
+      <artifactId>jetty-util-ajax</artifactId>
+      <scope>provided</scope>
+    </dependency>
+    <dependency>
+      <groupId>org.eclipse.jetty.websocket</groupId>
+      <artifactId>jetty-websocket-core-client</artifactId>
+      <scope>provided</scope>
+    </dependency>
+    <dependency>
+      <groupId>org.eclipse.jetty.websocket</groupId>
+      <artifactId>jetty-websocket-core-server</artifactId>
+      <scope>provided</scope>
+    </dependency>
+    <dependency>
+      <groupId>org.eclipse.jetty.websocket</groupId>
+      <artifactId>jetty-websocket-jetty-api</artifactId>
+      <scope>provided</scope>
+    </dependency>
+    <dependency>
+      <groupId>org.eclipse.jetty.websocket</groupId>
+      <artifactId>jetty-websocket-jetty-client</artifactId>
+      <scope>provided</scope>
+    </dependency>
+    <dependency>
+      <groupId>org.eclipse.jetty.websocket</groupId>
+      <artifactId>jetty-websocket-jetty-server</artifactId>
+      <scope>provided</scope>
+    </dependency>
+    <dependency>
+      <groupId>org.eclipse.jetty</groupId>
+      <artifactId>jetty-xml</artifactId>
+      <scope>provided</scope>
+    </dependency>
+
+    <!-- Jetty EE 10 Dependencies -->
+    <dependency>
+      <groupId>org.eclipse.jetty.ee10</groupId>
+      <artifactId>jetty-ee10-annotations</artifactId>
+      <scope>provided</scope>
+    </dependency>
+    <dependency>
+      <groupId>org.eclipse.jetty.ee10</groupId>
+      <artifactId>jetty-ee10-apache-jsp</artifactId>
+      <scope>provided</scope>
+    </dependency>
+    <dependency>
+      <groupId>org.eclipse.jetty.ee10</groupId>
+      <artifactId>jetty-ee10-cdi</artifactId>
+      <scope>provided</scope>
+    </dependency>
+    <dependency>
+      <groupId>org.eclipse.jetty.ee10</groupId>
+      <artifactId>jetty-ee10-fcgi-proxy</artifactId>
+      <scope>provided</scope>
+    </dependency>
+    <dependency>
+      <groupId>org.eclipse.jetty.ee10</groupId>
+      <artifactId>jetty-ee10-glassfish-jstl</artifactId>
+      <scope>provided</scope>
+    </dependency>
+    <dependency>
+      <groupId>org.eclipse.jetty.ee10</groupId>
+      <artifactId>jetty-ee10-jaspi</artifactId>
+      <scope>provided</scope>
+    </dependency>
+    <dependency>
+      <groupId>org.eclipse.jetty.ee10</groupId>
+      <artifactId>jetty-ee10-jndi</artifactId>
+      <scope>provided</scope>
+    </dependency>
+    <dependency>
+      <groupId>org.eclipse.jetty.ee10.osgi</groupId>
+      <artifactId>jetty-ee10-osgi-alpn</artifactId>
+      <scope>provided</scope>
+    </dependency>
+    <dependency>
+      <groupId>org.eclipse.jetty.ee10.osgi</groupId>
+      <artifactId>jetty-ee10-osgi-boot</artifactId>
+      <scope>provided</scope>
+    </dependency>
+    <dependency>
+      <groupId>org.eclipse.jetty.ee10.osgi</groupId>
+      <artifactId>jetty-ee10-osgi-boot-jsp</artifactId>
+      <scope>provided</scope>
+    </dependency>
+    <dependency>
+      <groupId>org.eclipse.jetty.ee10</groupId>
+      <artifactId>jetty-ee10-plus</artifactId>
+      <scope>provided</scope>
+    </dependency>
+    <dependency>
+      <groupId>org.eclipse.jetty.ee10</groupId>
+      <artifactId>jetty-ee10-proxy</artifactId>
+      <scope>provided</scope>
+    </dependency>
+    <dependency>
+      <groupId>org.eclipse.jetty.ee10</groupId>
+      <artifactId>jetty-ee10-quickstart</artifactId>
+      <scope>provided</scope>
+    </dependency>
+    <dependency>
+      <groupId>org.eclipse.jetty.ee10</groupId>
+      <artifactId>jetty-ee10-runner</artifactId>
+      <scope>provided</scope>
+    </dependency>
+    <dependency>
+      <groupId>org.eclipse.jetty.ee10</groupId>
+      <artifactId>jetty-ee10-servlet</artifactId>
+      <scope>provided</scope>
+    </dependency>
+    <dependency>
+      <groupId>org.eclipse.jetty.ee10</groupId>
+      <artifactId>jetty-ee10-servlets</artifactId>
+      <scope>provided</scope>
+    </dependency>
+    <dependency>
+      <groupId>org.eclipse.jetty.ee10</groupId>
+      <artifactId>jetty-ee10-webapp</artifactId>
+      <scope>provided</scope>
+    </dependency>
+    <dependency>
+      <groupId>org.eclipse.jetty.ee10.websocket</groupId>
+      <artifactId>jetty-ee10-websocket-jakarta-client</artifactId>
+      <scope>provided</scope>
+    </dependency>
+    <dependency>
+      <groupId>org.eclipse.jetty.ee10.websocket</groupId>
+      <artifactId>jetty-ee10-websocket-jakarta-server</artifactId>
+      <scope>provided</scope>
+    </dependency>
+    <dependency>
+      <groupId>org.eclipse.jetty.ee10.websocket</groupId>
+      <artifactId>jetty-ee10-websocket-jetty-server</artifactId>
+      <scope>provided</scope>
+    </dependency>
+    <dependency>
+      <groupId>org.eclipse.jetty.ee10.websocket</groupId>
+      <artifactId>jetty-ee10-websocket-servlet</artifactId>
+      <scope>provided</scope>
+    </dependency>
+
+    <!-- Necessary dependencies -->
+    <dependency>
       <groupId>jakarta.mail</groupId>
       <artifactId>jakarta.mail-api</artifactId>
+      <version>2.1.2</version>
       <scope>provided</scope>
     </dependency>
-    <dependency>
-      <groupId>com.sun.mail</groupId>
-      <artifactId>jakarta.mail</artifactId>
-      <scope>provided</scope>
-    </dependency>-->
-    <!-- === InfiniSpan Deps === -->
-    <!--<dependency>
-      <groupId>org.eclipse.jetty</groupId>
-      <artifactId>infinispan-common</artifactId>
-      <version>${project.version}</version>
-      <scope>provided</scope>
-    </dependency>-->
-    <!-- to make infinispan-common source sane -->
-    <!--<dependency>
-      <groupId>org.infinispan</groupId>
-      <artifactId>infinispan-core</artifactId>
-      <scope>provided</scope>
-       <exclusions>
-           <exclusion>
-               <groupId>org.wildfly.common</groupId>
-               <artifactId>wildfly-common</artifactId>
-           </exclusion>
-       </exclusions>
-    </dependency>-->
-    <!-- to make infinispan-common source sane -->
-    <!--<dependency>
-      <groupId>org.infinispan</groupId>
-      <artifactId>infinispan-client-hotrod</artifactId>
-      <scope>provided</scope>
-    </dependency>-->
-    <!-- to make infinispan-common source sane -->
-    <!--<dependency>
-      <groupId>org.infinispan.protostream</groupId>
-      <artifactId>protostream</artifactId>
-      <scope>provided</scope>
-    </dependency>-->
-    <!--<dependency>
-      <groupId>jakarta.activation</groupId>
-      <artifactId>jakarta.activation-api</artifactId>
-      <scope>provided</scope>
-    </dependency>-->
   </dependencies>
 </project>
