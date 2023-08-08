@@ -11,27 +11,26 @@
 // ========================================================================
 //
 
-package org.eclipse.jetty.util.component;
+package org.eclipse.jetty.server;
 
 import java.io.FileWriter;
 import java.io.Writer;
 
+import org.eclipse.jetty.util.component.LifeCycle;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 /**
  * A LifeCycle Listener that writes state changes to a file.
  * <p>This can be used with the jetty.sh script to wait for successful startup.
- * @deprecated use {@code org.eclipse.jetty.server.StateLifeCycleListener} instead
  */
-@Deprecated
-public class FileNoticeLifeCycleListener implements LifeCycle.Listener
+public class StateLifeCycleListener implements LifeCycle.Listener
 {
-    private static final Logger LOG = LoggerFactory.getLogger(FileNoticeLifeCycleListener.class);
+    private static final Logger LOG = LoggerFactory.getLogger(StateLifeCycleListener.class);
 
     private final String _filename;
 
-    public FileNoticeLifeCycleListener(String filename)
+    public StateLifeCycleListener(String filename)
     {
         _filename = filename;
     }

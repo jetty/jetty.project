@@ -11,34 +11,32 @@
 // ========================================================================
 //
 
-package org.eclipse.jetty.util.component;
+package org.eclipse.jetty.server;
 
 import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.Paths;
 
+import org.eclipse.jetty.util.annotation.Name;
+import org.eclipse.jetty.util.component.AbstractLifeCycle;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-public class PidFileLifeCycleListener implements LifeCycle.Listener
+public class PidFile extends AbstractLifeCycle
 {
-    private static final Logger LOG = LoggerFactory.getLogger(PidFileLifeCycleListener.class);
+    private static final Logger LOG = LoggerFactory.getLogger(PidFile.class);
 
     private final Path pidFile;
 
-    public PidFileLifeCycleListener(String filename)
+    public PidFile(@Name("file") String filename)
     {
         pidFile = Paths.get(filename);
-    }
-
-    @Override
-    public void lifeCycleStarting(LifeCycle event)
-    {
-        long pid = ProcessHandle.current().pid();
         try
         {
+            long pid = ProcessHandle.current().pid();
             Files.writeString(pidFile, Long.toString(pid), StandardCharsets.UTF_8);
+            ShutdownMonitor.register(this);
         }
         catch (Throwable t)
         {
@@ -47,18 +45,7 @@ public class PidFileLifeCycleListener implements LifeCycle.Listener
     }
 
     @Override
-    public void lifeCycleFailure(LifeCycle event, Throwable cause)
-    {
-        removePid();
-    }
-
-    @Override
-    public void lifeCycleStopped(LifeCycle event)
-    {
-        removePid();
-    }
-
-    private void removePid()
+    protected void doStop() throws Exception
     {
         try
         {
