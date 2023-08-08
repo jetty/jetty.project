@@ -202,6 +202,7 @@ public class StartArgs
 
     private boolean help = false;
     private boolean stopCommand = false;
+    private String pidFile = null;
     private List<String> listModules = null;
     private List<String> showModules = null;
     private boolean listClasspath = false;
@@ -919,6 +920,11 @@ public class StartArgs
         return moduleGraphFilename;
     }
 
+    public String getPidFile()
+    {
+        return pidFile;
+    }
+
     public Props getProperties()
     {
         return properties;
@@ -1166,6 +1172,13 @@ public class StartArgs
         {
             stopCommand = true;
             run = false;
+            return;
+        }
+
+        if (arg.startsWith("--pid-file="))
+        {
+            setProperty("jetty.pid.file", pidFile, source);
+            xmlRefs.add("etc/jetty-pid.xml");
             return;
         }
 

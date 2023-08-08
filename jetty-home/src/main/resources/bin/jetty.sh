@@ -495,13 +495,10 @@ case "$ACTION" in
         # FIXME: Broken solution: wordsplitting, pathname expansion, arbitrary command execution, etc.
         su - "$JETTY_USER" $SU_SHELL -c "
           cd \"$JETTY_BASE\"
-          echo ${RUN_ARGS[*]} start-log-file=\"$JETTY_START_LOG\" | xargs ${JAVA} > /dev/null &
-          disown \$!
-          echo \$! > \"$JETTY_PID\""
+          echo ${RUN_ARGS[*]} --pid-file=\"$JETTY_PID\" start-log-file=\"$JETTY_START_LOG\" | xargs ${JAVA} > /dev/null &
+          "
       else
-        echo ${RUN_ARGS[*]} | xargs ${JAVA} > /dev/null &
-        disown $!
-        echo $! > "$JETTY_PID"
+        echo ${RUN_ARGS[*]} | xargs ${JAVA} --pid-file="$JETTY_PID" > /dev/null &
       fi
 
     fi
