@@ -330,7 +330,7 @@ CYGWIN*) JETTY_STATE="`cygpath -w $JETTY_STATE`";;
 esac
 
 
-JETTY_ARGS=(${JETTY_ARGS[*]} "jetty.state=$JETTY_STATE")
+JETTY_ARGS=(${JETTY_ARGS[*]} "jetty.state=$JETTY_STATE" "jetty.pid=$JETTY_PID")
 
 ##################################################
 # Get the list of config.xml files from jetty.conf
@@ -492,13 +492,13 @@ case "$ACTION" in
 
         touch "$JETTY_PID"
         chown "$JETTY_USER" "$JETTY_PID"
-        # FIXME: Broken solution: wordsplitting, pathname expansion, arbitrary command execution, etc.
         su - "$JETTY_USER" $SU_SHELL -c "
           cd \"$JETTY_BASE\"
-          echo ${RUN_ARGS[*]} --pid-file=\"$JETTY_PID\" start-log-file=\"$JETTY_START_LOG\" | xargs ${JAVA} > /dev/null &
-          "
+          echo ${RUN_ARGS[*]} start-log-file=\"$JETTY_START_LOG\" | xargs ${JAVA} > /dev/null &
+          disown $(pgrep -P $!)"
+        pgrep
       else
-        echo ${RUN_ARGS[*]} | xargs ${JAVA} --pid-file="$JETTY_PID" > /dev/null &
+        echo ${RUN_ARGS[*]} | xargs ${JAVA} > /dev/null &
       fi
 
     fi
