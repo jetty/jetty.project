@@ -270,6 +270,8 @@ public class ServerFCGIConnection extends AbstractConnection implements Connecti
 
     private void releaseInputBuffer()
     {
+        if (networkBuffer == null)
+            return;
         boolean released = networkBuffer.release();
         if (LOG.isDebugEnabled())
             LOG.debug("releaseInputBuffer {} {}", released, this);
@@ -327,6 +329,9 @@ public class ServerFCGIConnection extends AbstractConnection implements Connecti
     @Override
     public boolean onIdleExpired(TimeoutException timeoutException)
     {
+        HttpStreamOverFCGI stream = this.stream;
+        if (stream == null)
+            return true;
         Runnable task = stream.getHttpChannel().onIdleTimeout(timeoutException);
         if (task != null)
             getExecutor().execute(task);
