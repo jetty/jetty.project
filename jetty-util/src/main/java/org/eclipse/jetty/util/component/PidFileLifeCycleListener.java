@@ -13,7 +13,6 @@
 
 package org.eclipse.jetty.util.component;
 
-import java.io.IOException;
 import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
 import java.nio.file.Path;
@@ -41,9 +40,9 @@ public class PidFileLifeCycleListener implements LifeCycle.Listener
         {
             Files.writeString(pidFile, Long.toString(pid), StandardCharsets.UTF_8);
         }
-        catch (IOException e)
+        catch (Throwable t)
         {
-            LOG.warn("Unable to create pidFile: {}", pidFile, e);
+            LOG.warn("Unable to create pidFile: {}", pidFile, t);
         }
     }
 
@@ -65,9 +64,9 @@ public class PidFileLifeCycleListener implements LifeCycle.Listener
         {
             Files.deleteIfExists(pidFile);
         }
-        catch (IOException e)
+        catch (Throwable t)
         {
-            LOG.warn("Unable to remove pidFile: {}", pidFile, e);
+            LOG.warn("Unable to remove pidFile: {}", pidFile, t);
         }
     }
 }
