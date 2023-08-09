@@ -27,7 +27,88 @@ import org.eclipse.jetty.util.component.Container;
 import org.eclipse.jetty.util.component.Dumpable;
 
 /**
- * ResourceFactory.
+ * <p>ResourceFactory is the source of new {@link Resource} instances.</p>
+ *
+ * <p>
+ *     It is important to understand the scope of any {@code ResourceFactory}
+ *     objects you create, as all {@link Resource} instances created from
+ *     it will be tied to the life of the {@link ResourceFactory}.
+ * </p>
+ *
+ * <h2>A {@code ResourceFactory} tied to a Jetty {@link org.eclipse.jetty.util.component.LifeCycle}</h2>
+ * <pre>
+ *     ResourceFactory resourceFactory = ResourceFactory.of(lifecycle);
+ *     Resource resource = resourceFactory.newResource(ref);
+ * </pre>
+ * <p>
+ *     The use of {@link ResourceFactory#of(Container)} results in a {@link ResourceFactory} that is tied
+ *     to a specific Jetty {@link org.eclipse.jetty.util.component.LifeCycle} such as a {@code Server},
+ *     {@code ServletContextHandler}, or {@code WebAppContext}.   This will free the {@code Resource}
+ *     instances created by the {@link org.eclipse.jetty.util.resource.ResourceFactory} once
+ *     the {@code lifecycle} it is associated with is stopped.
+ * </p>
+ *
+ * <h2>A {@code ResourceFactory} that exists within a {@code try-with-resources} call</h2>
+ * <pre>
+ *     try (ResourceFactory.Closeable resourceFactory = ResourceFactory.closeable()) {
+ *         Resource resource = resourceFactory.newResource(ref);
+ *     }
+ * </pre>
+ * <p>
+ *     The use of {@link ResourceFactory#closeable()} results in a {@link ResourceFactory} that only exists for
+ *     the duration of the {@code try-with-resources} code block, once this {@code try-with-resources} is closed,
+ *     all {@link Resource} objects associated with that {@link ResourceFactory} are freed as well.
+ * </p>
+ *
+ * <h2>A {@code ResourceFactory} that lives at the JVM level</h2>
+ * <pre>
+ *     ResourceFactory resourceFactory = ResourceFactory.root();
+ *     Resource resource = resourceFactory.newResource(ref);
+ * </pre>
+ * <p>
+ *     The use of {@link ResourceFactory#root()} results in a {@link ResourceFactory} that exists for
+ *     the life of the JVM, and the resources allocated via this {@link ResourceFactory} will not
+ *     be freed until the JVM exits.
+ * </p>
+ *
+ * <h2>Supported URI Schemes</h2>
+ * <p>
+ *     By default, the following schemes are supported by Jetty.
+ * </p>
+ * <dl>
+ *     <dt>file</dt>
+ *     <dd>The standard Java {@code file:/path/to/dir/} syntax</dd>
+ *
+ *     <dt>jar</dt>
+ *     <dd>The standard Java {@code jar:file:/path/to/file.jar!/} syntax</dd>
+ *
+ *     <dt>jrt</dt>
+ *     <dd>The standard Java {@code jrt:module-name} syntax</dd>
+ * </dl>
+ * <p>
+ *     An effort is made to discover any new schemes that are present
+ *     at startup by accessing a Jetty internal resource (found in
+ *     the jetty-util jar) and seeing what {@code scheme} it is using
+ *     and registering it with a call to
+ *     {@link ResourceFactory#registerResourceFactory(String, ResourceFactory)}.
+ * </p>
+ *
+ * <h2>Supporting more Schemes</h2>
+ * <p>
+ *     You can register a new URI scheme to a {@link ResourceFactory} implementation
+ *     using the {@link ResourceFactory#registerResourceFactory(String, ResourceFactory)}
+ *     method, which will cause all new uses of ResourceFactory to use this newly
+ *     registered scheme.
+ * </p>
+ * <pre>
+ *     URLResourceFactory urlResourceFactory = new URLResourceFactory();
+ *     urlResourceFactory.setConnectTimeout(1000);
+ *     ResourceFactory.registerResourceFactory("https", urlResourceFactory);
+ *
+ *     URI web = URI.create("https://eclipse.dev/jetty/");
+ *     Resource resource = ResourceFactory.root().newResource(web);
+ * </pre>
+ *
  */
 public interface ResourceFactory
 {
@@ -39,7 +120,6 @@ public interface ResourceFactory
      *         or null if none are passed.
      *         The returned {@link Resource} will always return {@code true} from {@link Resource#isDirectory()}
      * @throws IllegalArgumentException if a non-directory resource is passed.
-     * @see CombinedResource
      */
     static Resource combine(List<Resource> resources)
     {
@@ -54,7 +134,6 @@ public interface ResourceFactory
      *         or null if none are passed.
      *         The returned {@link Resource} will always return {@code true} from {@link Resource#isDirectory()}
      * @throws IllegalArgumentException if a non-directory resource is passed.
-     * @see CombinedResource
      */
     static Resource combine(Resource... resources)
     {
@@ -70,9 +149,12 @@ public interface ResourceFactory
     Resource newResource(URI uri);
 
     /**
-     * Construct a system resource from a string.
-     * The resource is tried as classloader resource before being
-     * treated as a normal resource.
+     * <p>Construct a system resource from a string.</p>
+     *
+     * <p>
+     * The resource is first attempted to be accessed via the {@link Thread#getContextClassLoader()}
+     * before being treated as a normal resource.
+     * </p>
      *
      * @param resource Resource as string representation
      * @return The new Resource
@@ -134,9 +216,12 @@ public interface ResourceFactory
     }
 
     /**
-     * Find a classpath resource.
+     * <p>Find a classpath resource.</p>
+     *
+     * <p>
      * The {@link Class#getResource(String)} method is used to lookup the resource. If it is not
      * found, then the {@link Loader#getResource(String)} method is used.
+     * </p>
      *
      * @param resource the relative name of the resource
      * @return Resource or null
@@ -164,7 +249,17 @@ public interface ResourceFactory
     }
 
     /**
+     * <p>
      * Load a URL into a memory resource.
+     * </p>
+     *
+     * <p>
+     *     A Memory Resource is created from a the contents of
+     *     {@link URL#openStream()} and kept in memory from
+     *     that point forward.  Never accessing the URL
+     *     again to refresh it's contents.
+     * </p>
+     *
      * @param url the URL to load into memory
      * @return Resource or null
      * @see #newClassPathResource(String)
@@ -192,7 +287,7 @@ public interface ResourceFactory
     }
 
     /**
-     * Construct a Resource from provided path
+     * Construct a Resource from provided path.
      *
      * @param path the path
      * @return the Resource for the provided path
@@ -206,7 +301,7 @@ public interface ResourceFactory
     }
 
     /**
-     * Construct a possible {@link CombinedResource} from a list of URIs
+     * Construct a possible {@link CombinedResource} from a list of URIs.
      *
      * @param uris the URIs
      * @return the Resource for the provided path
@@ -220,7 +315,7 @@ public interface ResourceFactory
     }
 
     /**
-     * Construct a {@link Resource} from a provided URL
+     * Construct a {@link Resource} from a provided URL.
      *
      * @param url the URL
      * @return the Resource for the provided URL
@@ -241,7 +336,7 @@ public interface ResourceFactory
     }
 
     /**
-     * Construct a {@link Resource} from a {@code file:} based URI that is mountable (eg: a jar file)
+     * Construct a {@link Resource} from a {@code file:} based URI that is mountable (eg: a jar file).
      *
      * @param uri the URI
      * @return the Resource, mounted as a {@link java.nio.file.FileSystem}
@@ -263,8 +358,6 @@ public interface ResourceFactory
      * @param scheme the scheme to support (eg: `ftp`, `http`, `resource`, etc)
      * @param resourceFactory the ResourceFactory to be responsible for the registered scheme.
      * @see #unregisterResourceFactory(String)
-     * @see #byScheme(String)
-     * @see #getBestByScheme(String)
      */
     static void registerResourceFactory(String scheme, ResourceFactory resourceFactory)
     {
@@ -277,50 +370,10 @@ public interface ResourceFactory
      * @param scheme the scheme to unregister
      * @return the existing {@link ResourceFactory} that was registered to that scheme.
      * @see #registerResourceFactory(String, ResourceFactory)
-     * @see #byScheme(String)
-     * @see #getBestByScheme(String)
      */
     static ResourceFactory unregisterResourceFactory(String scheme)
     {
         return ResourceFactoryInternals.RESOURCE_FACTORIES.remove(scheme);
-    }
-
-    /**
-     * Get the {@link ResourceFactory} that is registered for the specific scheme.
-     *
-     * <pre>{@code
-     * .byScheme("jar") == ResourceFactory supporting jar
-     * .byScheme("jar:file://foo.jar!/") == null // full url strings not supported)
-     * }</pre>
-     *
-     * @param scheme the scheme to look up
-     * @return the {@link ResourceFactory} responsible for the scheme, null if no {@link ResourceFactory} handles the scheme.
-     * @see #registerResourceFactory(String, ResourceFactory)
-     * @see #unregisterResourceFactory(String)
-     * @see #getBestByScheme(String)
-     */
-    static ResourceFactory byScheme(String scheme)
-    {
-        return ResourceFactoryInternals.RESOURCE_FACTORIES.get(scheme);
-    }
-
-    /**
-     * Get the best ResourceFactory for the provided scheme.
-     *
-     * <p>
-     * Unlike {@link #byScheme(String)}, this supports arbitrary Strings, that might start with a supported scheme.
-     * </p>
-     *
-     * @param scheme the scheme to look up
-     * @return the ResourceFactory that best fits the provided scheme.
-     * @see org.eclipse.jetty.util.Index#getBest(String)
-     * @see #registerResourceFactory(String, ResourceFactory)
-     * @see #unregisterResourceFactory(String)
-     * @see #byScheme(String)
-     */
-    static ResourceFactory getBestByScheme(String scheme)
-    {
-        return ResourceFactoryInternals.RESOURCE_FACTORIES.getBest(scheme);
     }
 
     /**

@@ -93,6 +93,44 @@ class ResourceFactoryInternals
         }
     };
 
+    /**
+     * Get the {@link ResourceFactory} that is registered for the specific scheme.
+     *
+     * <pre>{@code
+     * .byScheme("jar") == ResourceFactory supporting jar
+     * .byScheme("jar:file://foo.jar!/") == null // full url strings not supported)
+     * }</pre>
+     *
+     * @param scheme the scheme to look up
+     * @return the {@link ResourceFactory} responsible for the scheme, null if no {@link ResourceFactory} handles the scheme.
+     * @see ResourceFactory#registerResourceFactory(String, ResourceFactory)
+     * @see ResourceFactory#unregisterResourceFactory(String)
+     * @see #getBestByScheme(String)
+     */
+    static ResourceFactory byScheme(String scheme)
+    {
+        return RESOURCE_FACTORIES.get(scheme);
+    }
+
+    /**
+     * Get the best ResourceFactory for the provided scheme.
+     *
+     * <p>
+     * Unlike {@link #byScheme(String)}, this supports arbitrary Strings, that might start with a supported scheme.
+     * </p>
+     *
+     * @param scheme the scheme to look up
+     * @return the ResourceFactory that best fits the provided scheme.
+     * @see org.eclipse.jetty.util.Index#getBest(String)
+     * @see ResourceFactory#registerResourceFactory(String, ResourceFactory)
+     * @see ResourceFactory#unregisterResourceFactory(String)
+     * @see #byScheme(String)
+     */
+    static ResourceFactory getBestByScheme(String scheme)
+    {
+        return RESOURCE_FACTORIES.getBest(scheme);
+    }
+
     static class Closeable implements ResourceFactory.Closeable
     {
         private final CompositeResourceFactory _compositeResourceFactory = new CompositeResourceFactory();
@@ -168,7 +206,7 @@ class ResourceFactoryInternals
                     uri = URIUtil.correctFileURI(uri);
                 }
 
-                ResourceFactory resourceFactory = ResourceFactory.byScheme(uri.getScheme());
+                ResourceFactory resourceFactory = ResourceFactoryInternals.byScheme(uri.getScheme());
                 if (resourceFactory == null)
                     throw new IllegalArgumentException("URI scheme not supported: " + uri);
                 if (resourceFactory instanceof MountedPathResourceFactory)
