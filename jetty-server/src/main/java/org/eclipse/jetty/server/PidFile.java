@@ -26,6 +26,9 @@ import static java.nio.charset.StandardCharsets.UTF_8;
 import static java.nio.file.StandardOpenOption.TRUNCATE_EXISTING;
 import static java.nio.file.StandardOpenOption.WRITE;
 
+/**
+ * Create a PID file for the running process.
+ */
 public class PidFile extends AbstractLifeCycle
 {
     private static final Logger LOG = LoggerFactory.getLogger(PidFile.class);
