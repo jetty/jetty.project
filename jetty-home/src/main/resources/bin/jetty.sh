@@ -457,6 +457,7 @@ case "$ACTION" in
       exit
     fi
 
+    # Startup from a service file
     if [ $UID -eq 0 ] && type start-stop-daemon > /dev/null 2>&1
     then
       unset CH_USER
@@ -482,6 +483,7 @@ case "$ACTION" in
         exit 1
       fi
 
+      # Startup if switching users (not as a service, or from root)
       if [ -n "$JETTY_USER" ] && [ `whoami` != "$JETTY_USER" ]
       then
         unset SU_SHELL
@@ -496,8 +498,8 @@ case "$ACTION" in
           cd \"$JETTY_BASE\"
           echo ${RUN_ARGS[*]} start-log-file=\"$JETTY_START_LOG\" | xargs ${JAVA} > /dev/null &
           disown $(pgrep -P $!)"
-        pgrep
       else
+        # Startup if not switching users
         echo ${RUN_ARGS[*]} | xargs ${JAVA} > /dev/null &
       fi
 
@@ -520,6 +522,7 @@ case "$ACTION" in
 
   stop)
     echo -n "Stopping Jetty: "
+    # Stop from a service file
     if [ $UID -eq 0 ] && type start-stop-daemon > /dev/null 2>&1; then
       start-stop-daemon -K -p"$JETTY_PID" -d"$JETTY_HOME" -a "$JAVA" -s HUP
 
@@ -532,6 +535,7 @@ case "$ACTION" in
         sleep 1
       done
     else
+      # Stop from a non-service path
       if [ ! -f "$JETTY_PID" ] ; then
         echo "ERROR: no pid found at $JETTY_PID"
         exit 1
