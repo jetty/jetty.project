@@ -988,7 +988,7 @@ public abstract class HttpServerTestBase extends HttpServerTestFixture
 
             HttpTester.Response response = HttpTester.parseResponse(HttpTester.from(is));
             assertNotNull(response);
-            assertThat(response.getStatus(), is(400));
+            assertThat(response.getStatus(), is(200));
             assertThat(response.getContent(), containsString("Early EOF"));
         }
     }

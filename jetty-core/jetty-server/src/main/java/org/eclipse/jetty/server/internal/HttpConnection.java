@@ -1097,9 +1097,10 @@ public class HttpConnection extends AbstractConnection implements Runnable, Writ
             if (stream != null)
             {
                 BadMessageException bad = new BadMessageException("Early EOF");
-
                 if (Content.Chunk.isFailure(stream._chunk))
+                {
                     stream._chunk.getFailure().addSuppressed(bad);
+                }
                 else
                 {
                     if (stream._chunk != null)
@@ -1107,9 +1108,9 @@ public class HttpConnection extends AbstractConnection implements Runnable, Writ
                     stream._chunk = Content.Chunk.from(bad);
                 }
 
-                Runnable todo = _httpChannel.onFailure(bad);
-                if (todo != null)
-                    getServer().getThreadPool().execute(todo);
+                Runnable task = _httpChannel.onFailure(bad);
+                if (task != null)
+                    getServer().getThreadPool().execute(task);
             }
         }
 

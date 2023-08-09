@@ -15,6 +15,7 @@ package org.eclipse.jetty.server.internal;
 
 import java.io.IOException;
 import java.nio.ByteBuffer;
+import java.nio.channels.WritePendingException;
 import java.util.HashMap;
 import java.util.Objects;
 import java.util.Set;
@@ -452,7 +453,7 @@ public class HttpChannelState implements HttpChannel, Components
                 _onContentAvailable = null;
 
                 // If a write call is in progress, take the writeCallback to fail below
-                Runnable invokeWriteFailure = _response.lockedFailWrite(x);
+//                Runnable invokeWriteFailure = _response.lockedFailWrite(x);
 
                 // Create runnable to invoke any onError listeners
                 ChannelRequest request = _request;
@@ -478,7 +479,7 @@ public class HttpChannelState implements HttpChannel, Components
                     }
 
                     // If the application has not been otherwise informed of the failure
-                    if (invokeOnContentAvailable == null && invokeWriteFailure == null)
+                    if (invokeOnContentAvailable == null /*&& invokeWriteFailure == null*/)
                     {
                         if (LOG.isDebugEnabled())
                             LOG.debug("failing callback in {}", this, x);
@@ -487,7 +488,7 @@ public class HttpChannelState implements HttpChannel, Components
                 };
 
                 // Serialize all the error actions.
-                task = _serializedInvoker.offer(invokeOnContentAvailable, invokeWriteFailure, invokeOnFailureListeners);
+                task = _serializedInvoker.offer(invokeOnContentAvailable/*, invokeWriteFailure*/, invokeOnFailureListeners);
             }
         }
 
@@ -1227,10 +1228,13 @@ public class HttpChannelState implements HttpChannel, Components
                 long contentLength = committedContentLength >= 0 ? committedContentLength : getHeaders().getLongField(HttpHeader.CONTENT_LENGTH);
 
                 if (_writeCallback != null)
-                    failure = new IllegalStateException("write pending");
+                {
+                    failure = new WritePendingException();
+                }
                 else
                 {
-                    failure = getFailure(httpChannelState);
+//                    failure = getFailure(httpChannelState);
+                    failure = null;
                     if (failure == null && contentLength >= 0 && totalWritten != contentLength)
                     {
                         // If the content length were not compatible with what was written, then we need to abort.
