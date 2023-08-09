@@ -86,10 +86,11 @@ import org.eclipse.jetty.util.component.Dumpable;
  *     <dd>The standard Java {@code jrt:module-name} syntax</dd>
  * </dl>
  * <p>
- *     An effort is made to discover any new schemes that are present
- *     at startup by accessing a Jetty internal resource (found in
- *     the jetty-util jar) and seeing what {@code scheme} it is using
- *     and registering it with a call to
+ *     Special Note: An effort is made to discover any new schemes that
+ *     might be present at JVM startup (eg: graalvm and {@code bundle:} scheme).
+ *     At startup Jetty will access an internal Jetty resource (found in
+ *     the jetty-util jar) and seeing what {@code scheme} it is using to access
+ *     it, and will register it with a call to
  *     {@link ResourceFactory#registerResourceFactory(String, ResourceFactory)}.
  * </p>
  *
@@ -108,7 +109,6 @@ import org.eclipse.jetty.util.component.Dumpable;
  *     URI web = URI.create("https://eclipse.dev/jetty/");
  *     Resource resource = ResourceFactory.root().newResource(web);
  * </pre>
- *
  */
 public interface ResourceFactory
 {
@@ -144,7 +144,7 @@ public interface ResourceFactory
      * Construct a resource from a uri.
      *
      * @param uri A URI.
-     * @return A Resource object.
+     * @return A Resource object, or null if uri points to a location that does not exist.
      */
     Resource newResource(URI uri);
 
@@ -157,7 +157,8 @@ public interface ResourceFactory
      * </p>
      *
      * @param resource Resource as string representation
-     * @return The new Resource
+     * @return The new Resource, or null if string points to a location that does not exist
+     * @throws IllegalArgumentException if string is blank
      */
     default Resource newSystemResource(String resource)
     {
@@ -224,7 +225,8 @@ public interface ResourceFactory
      * </p>
      *
      * @param resource the relative name of the resource
-     * @return Resource or null
+     * @return Resource, or null if string points to a location that does not exist
+     * @throws IllegalArgumentException if string is blank
      */
     default Resource newClassPathResource(String resource)
     {
@@ -261,7 +263,8 @@ public interface ResourceFactory
      * </p>
      *
      * @param url the URL to load into memory
-     * @return Resource or null
+     * @return Resource, or null if url points to a location that does not exist
+     * @throws IllegalArgumentException if URL is null
      * @see #newClassPathResource(String)
      */
     default Resource newMemoryResource(URL url)
@@ -276,7 +279,9 @@ public interface ResourceFactory
      * Construct a resource from a string.
      *
      * @param resource A URL or filename.
-     * @return A Resource object.
+     * @return A Resource object, or null if the string points to a location
+     *    that does not exist
+     * @throws IllegalArgumentException if resource is invalid
      */
     default Resource newResource(String resource)
     {
@@ -290,7 +295,9 @@ public interface ResourceFactory
      * Construct a Resource from provided path.
      *
      * @param path the path
-     * @return the Resource for the provided path
+     * @return the Resource for the provided path, or null if the path
+     *  does not exist
+     * @throws IllegalArgumentException if path is null
      */
     default Resource newResource(Path path)
     {
@@ -301,10 +308,12 @@ public interface ResourceFactory
     }
 
     /**
-     * Construct a possible {@link CombinedResource} from a list of URIs.
+     * Construct a possible combined {@code Resource} from a list of URIs.
      *
      * @param uris the URIs
-     * @return the Resource for the provided path
+     * @return the Resource for the provided URIs, or null if all
+     *  of the provided URIs do not exist
+     * @throws IllegalArgumentException if list of URIs is empty or null
      */
     default Resource newResource(List<URI> uris)
     {
@@ -318,7 +327,9 @@ public interface ResourceFactory
      * Construct a {@link Resource} from a provided URL.
      *
      * @param url the URL
-     * @return the Resource for the provided URL
+     * @return the Resource for the provided URL, or null if the
+     *    url points to a location that does not exist
+     * @throws IllegalArgumentException if url is null
      */
     default Resource newResource(URL url)
     {
@@ -339,13 +350,41 @@ public interface ResourceFactory
      * Construct a {@link Resource} from a {@code file:} based URI that is mountable (eg: a jar file).
      *
      * @param uri the URI
-     * @return the Resource, mounted as a {@link java.nio.file.FileSystem}
+     * @return the Resource, mounted as a {@link java.nio.file.FileSystem}, or null if
+     *   the uri points to a location that does not exist.
+     * @throws IllegalArgumentException if provided URI is not "file" scheme.
      */
     default Resource newJarFileResource(URI uri)
     {
         if (!uri.getScheme().equalsIgnoreCase("file"))
             throw new IllegalArgumentException("Not an allowed path: " + uri);
         return newResource(URIUtil.toJarFileUri(uri));
+    }
+
+    /**
+     * Test to see if provided string is supported.
+     *
+     * @param str the string to test
+     * @return true if it is supported
+     */
+    static boolean isSupported(String str)
+    {
+        if (StringUtil.isBlank(str))
+            return false;
+        return ResourceFactoryInternals.getBestByScheme(str) != null;
+    }
+
+    /**
+     * Test to see if provided uri is supported.
+     *
+     * @param uri the uri to test
+     * @return true if it is supported
+     */
+    static boolean isSupported(URI uri)
+    {
+        if (uri == null || uri.getScheme() == null)
+            return false;
+        return ResourceFactoryInternals.byScheme(uri.getScheme()) != null;
     }
 
     /**
@@ -357,10 +396,14 @@ public interface ResourceFactory
      *
      * @param scheme the scheme to support (eg: `ftp`, `http`, `resource`, etc)
      * @param resourceFactory the ResourceFactory to be responsible for the registered scheme.
+     * @throws IllegalArgumentException if scheme is blank
      * @see #unregisterResourceFactory(String)
      */
     static void registerResourceFactory(String scheme, ResourceFactory resourceFactory)
     {
+        if (StringUtil.isBlank(scheme))
+            throw new IllegalArgumentException("Scheme is blank");
+
         ResourceFactoryInternals.RESOURCE_FACTORIES.put(scheme, resourceFactory);
     }
 
@@ -369,10 +412,13 @@ public interface ResourceFactory
      *
      * @param scheme the scheme to unregister
      * @return the existing {@link ResourceFactory} that was registered to that scheme.
+     * @throws IllegalArgumentException if scheme is blank
      * @see #registerResourceFactory(String, ResourceFactory)
      */
     static ResourceFactory unregisterResourceFactory(String scheme)
     {
+        if (StringUtil.isBlank(scheme))
+            throw new IllegalArgumentException("Scheme is blank");
         return ResourceFactoryInternals.RESOURCE_FACTORIES.remove(scheme);
     }
 
