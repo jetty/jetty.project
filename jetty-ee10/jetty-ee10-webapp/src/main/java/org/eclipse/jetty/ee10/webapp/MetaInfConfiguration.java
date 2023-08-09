@@ -293,7 +293,10 @@ public class MetaInfConfiguration extends AbstractConfiguration
         //only look for fragments if web.xml is not metadata complete, or it version 3.0 or greater
         List<String> scanTypes = new ArrayList<>(__allScanTypes);
         if (context.getMetaData().isMetaDataComplete() || (context.getServletContext().getEffectiveMajorVersion() < 3) && !context.isConfigurationDiscovered())
+        {
             scanTypes.remove(METAINF_FRAGMENTS);
+            scanTypes.remove(METAINF_RESOURCES);
+        }
         scanJars(context, context.getMetaData().getWebInfResources(false), false, scanTypes);
     }
 
@@ -447,7 +450,7 @@ public class MetaInfConfiguration extends AbstractConfiguration
      * Scan for META-INF/web-fragment.xml file in the given jar.
      *
      * @param context the context for the scan
-     * @param jar the jar resource to scan for fragements in
+     * @param jar the jar resource to scan for fragments in
      * @param cache the resource cache
      */
     public void scanForFragment(WebAppContext context, Resource jar, ConcurrentHashMap<Resource, Resource> cache)
