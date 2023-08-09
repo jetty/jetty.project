@@ -26,7 +26,7 @@ import jakarta.websocket.RemoteEndpoint;
 import jakarta.websocket.Session;
 import jakarta.websocket.server.ServerEndpoint;
 
-@ServerEndpoint(value = "/jakarta.websocket/", subprotocols = {"chat"})
+@ServerEndpoint(value = "/javax.websocket/", subprotocols = {"chat"})
 public class JakartaWebSocketChat
 {
     private static final List<JakartaWebSocketChat> members = new CopyOnWriteArrayList<>();

@@ -55,11 +55,6 @@ import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.junit.jupiter.api.Assumptions.assumeTrue;
 
-// TODO: the server-side timeout mechanism should be completely reworked.
-//  Currently, HttpChannel.onFailure() is called, but timeouts are different
-//  since they may be ignored, so we don't want to remember errors if they are ignored.
-//  However, this behavior is historically so because of Servlets, and we
-//  may decide differently for Handlers.
 public class ServerTimeoutsTest extends AbstractTest
 {
     @ParameterizedTest

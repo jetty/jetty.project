@@ -924,6 +924,7 @@ public class HttpChannel implements Runnable, HttpOutput.Interceptor
     public void onRequest(ContextHandler.CoreContextRequest coreRequest)
     {
         _coreRequest = coreRequest;
+        _coreRequest.addIdleTimeoutListener(_state::onIdleTimeout);
         _requests.incrementAndGet();
         _request.onRequest(coreRequest);
         _expects100Continue = coreRequest.getHeaders().contains(HttpHeader.EXPECT, HttpHeaderValue.CONTINUE.asString());

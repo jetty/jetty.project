@@ -219,6 +219,11 @@ public class ByteArrayEndPoint extends AbstractEndPoint
         addInput(BufferUtil.toBuffer(s, charset));
     }
 
+    public void addInputAndExecute(String s)
+    {
+        addInputAndExecute(BufferUtil.toBuffer(s, StandardCharsets.UTF_8));
+    }
+
     public void addInputAndExecute(ByteBuffer in)
     {
         boolean fillable = false;

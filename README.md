@@ -45,6 +45,16 @@ server.setHandler(context);
 server.start();
 ```
 
+## Building Jetty from Source
+
+```shell
+$ git clone https://github.com/eclipse/jetty.project.git
+$ cd jetty.project
+$ mvn -Pfast clean install # fast build bypasses tests and other checks
+```
+
+For more detailed information on building and contributing to the Jetty project, please see the [Contribution Guide](https://eclipse.dev/jetty/documentation/jetty-12/contribution-guide/index.html).
+
 # Documentation
 
 [Jetty's documentation](https://eclipse.dev/jetty/documentation) is available on the Eclipse Jetty website.
@@ -53,9 +63,9 @@ The documentation is divided into three guides, based on use case:
 
 * The [Operations Guide](https://eclipse.dev/jetty/documentation/jetty-12/operations-guide/index.html) targets sysops, devops, and developers who want to install Eclipse Jetty as a standalone server to deploy web applications.
 
-* The [Programming Guide](https://eclipse.dev/jetty/documentation/jetty-11/programming-guide/index.html) targets developers who want to use the Eclipse Jetty libraries in their applications, and advanced sysops/devops that want to customize the deployment of web applications.
+* The [Programming Guide](https://eclipse.dev/jetty/documentation/jetty-12/programming-guide/index.html) targets developers who want to use the Eclipse Jetty libraries in their applications, and advanced sysops/devops that want to customize the deployment of web applications.
 
-* The [Contribution Guide](https://eclipse.dev/jetty/documentation/jetty-11/contribution-guide/index.html) targets developers that wish to contribute to the Jetty Project with code patches or documentation improvements.
+* The [Contribution Guide](https://eclipse.dev/jetty/documentation/jetty-12/contribution-guide/index.html) targets developers that wish to contribute to the Jetty Project with code patches or documentation improvements.
 
 
 # Commercial Support

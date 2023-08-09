@@ -4,7 +4,7 @@
   <modelVersion>4.0.0</modelVersion>
   <groupId>org.eclipse.jetty</groupId>
   <artifactId>jetty-project</artifactId>
-  <version>12.0.0-SNAPSHOT</version>
+  <version>12.0.1-SNAPSHOT</version>
   <name>Jetty :: Project</name>
   <description>The Eclipse Jetty Project</description>
   <packaging>pom</packaging>
@@ -37,7 +37,7 @@
     <apache.avro.version>1.11.2</apache.avro.version>
     <apache.httpclient.version>4.5.14</apache.httpclient.version>
     <apache.httpcore.version>4.4.16</apache.httpcore.version>
-    <asciidoctorj-diagram.version>2.2.10</asciidoctorj-diagram.version>
+    <asciidoctorj-diagram.version>2.2.9</asciidoctorj-diagram.version>
     <asciidoctorj.version>2.5.10</asciidoctorj.version>
     <mina.core.version>2.2.2</mina.core.version>
     <asm.version>9.5</asm.version>

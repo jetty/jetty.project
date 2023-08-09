@@ -584,6 +584,20 @@ public class DefaultServlet extends HttpServlet
         doGet(req, resp);
     }
 
+    @Override
+    protected void doTrace(HttpServletRequest req, HttpServletResponse resp) throws ServletException, IOException
+    {
+        // Always return 405: Method Not Allowed for DefaultServlet
+        resp.sendError(HttpServletResponse.SC_METHOD_NOT_ALLOWED);
+    }
+
+    @Override
+    protected void doOptions(HttpServletRequest req, HttpServletResponse resp) throws ServletException, IOException
+    {
+        // override to eliminate TRACE that the default HttpServlet impl adds
+        resp.setHeader("Allow", "GET, HEAD, OPTIONS");
+    }
+
     private Resource getResource(URI uri)
     {
         String uriPath = uri.getRawPath();

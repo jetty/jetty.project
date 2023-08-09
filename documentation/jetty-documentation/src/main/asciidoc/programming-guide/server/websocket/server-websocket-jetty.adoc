@@ -23,7 +23,7 @@ Jetty's WebSocket APIs are provided by the following Maven artifact:
 ----
 <dependency>
   <groupId>org.eclipse.jetty.websocket</groupId>
-  <artifactId>websocket-jetty-api</artifactId>
+  <artifactId>jetty-websocket-jetty-api</artifactId>
   <version>{version}</version>
 </dependency>
 ----
@@ -34,14 +34,14 @@ Jetty's implementation of the Jetty WebSocket APIs is provided by the following 
 ----
 <dependency>
   <groupId>org.eclipse.jetty.websocket</groupId>
-  <artifactId>websocket-jetty-server</artifactId>
+  <artifactId>jetty-websocket-jetty-server</artifactId>
   <version>{version}</version>
 </dependency>
 ----
 
 [NOTE]
 ====
-The `websocket-jetty-api` artifact and the `websocket-jetty-server` artifact (and its transitive dependencies) should be present in the server class-path (or module-path), and never in the web application's `/WEB-INF/lib` directory.
+The `jetty-websocket-jetty-api` artifact and the `jetty-websocket-jetty-server` artifact (and its transitive dependencies) should be present in the server class-path (or module-path), and never in the web application's `/WEB-INF/lib` directory.
 ====
 
 To configure correctly your WebSocket application based on the Jetty WebSocket APIs, you need two steps:
