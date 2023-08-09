@@ -735,9 +735,7 @@ public class ServletRequestState
         {
             if (LOG.isDebugEnabled())
                 LOG.debug("onIdleTimeout {}", getStatusStringLocked(), timeout);
-            // TODO this is almost always returning false?!? what about read/write timeouts???
-            //      return _state == State.IDLE;
-            return true;
+            return _state == State.IDLE;
         }
     }
 

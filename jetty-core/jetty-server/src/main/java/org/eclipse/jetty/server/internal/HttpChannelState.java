@@ -287,7 +287,6 @@ public class HttpChannelState implements HttpChannel, Components
             if (idleTO >= 0 && _oldIdleTimeout != idleTO)
                 _stream.setIdleTimeout(idleTO);
 
-
             // This is deliberately not serialized to allow a handler to block.
             return _handlerInvoker;
         }
@@ -353,15 +352,52 @@ public class HttpChannelState implements HttpChannel, Components
         {
             if (LOG.isDebugEnabled())
                 LOG.debug("onIdleTimeout {}", this, t);
-            onIdleTimeout = _onIdleTimeout;
+
+            // if not already a failure,
+            if (_failure == null)
+            {
+                // if we are currently demanding, take the onContentAvailable runnable to invoke below.
+                Runnable invokeOnContentAvailable = _onContentAvailable;
+                _onContentAvailable = null;
+
+                // If a write call is in progress, take the writeCallback to fail below
+                Runnable invokeWriteFailure = _response.lockedFailWrite(t);
+
+                // If demand was in process, then arrange for the next read to return the idle timeout, if no other error
+                // TODO to make IO timeouts transient, remove the invokeWriteFailure test below.
+                //      Probably writes cannot be made transient as it will be unclear how much of the buffer has actually
+                //      been written.  So write timeouts might always be persistent... but then we should call the listener
+                //      before calling lockedFailedWrite above.
+                if (invokeOnContentAvailable != null || invokeWriteFailure != null)
+                {
+                    // TODO The chunk here should be last==false, so that IO timeout is a transient failure.
+                    //      However AsyncContentProducer has been written on the assumption of no transient
+                    //      failures, so it needs to be updated before we can make timeouts transients.
+                    //      See ServerTimeoutTest.testAsyncReadHttpIdleTimeoutOverridesIdleTimeout
+                    _failure = Content.Chunk.from(t, true);
+                }
+
+                // If there was an IO operation, just deliver the idle timeout via them
+                if (invokeOnContentAvailable != null || invokeWriteFailure != null)
+                    return _serializedInvoker.offer(invokeOnContentAvailable, invokeWriteFailure);
+
+                // Otherwise We ask any idle timeout listeners if we should call onFailure or not
+                onIdleTimeout = _onIdleTimeout;
+            }
+            else
+            {
+                onIdleTimeout = null;
+            }
         }
 
+        // Ask any listener what to do
         if (onIdleTimeout != null)
         {
             Runnable onIdle = () ->
             {
                 if (onIdleTimeout.test(t))
                 {
+                    // If the idle timeout listener(s) return true, then we call onFailure and any task it returns.
                     Runnable task = onFailure(t);
                     if (task != null)
                         task.run();
@@ -369,7 +405,9 @@ public class HttpChannelState implements HttpChannel, Components
             };
             return _serializedInvoker.offer(onIdle);
         }
-        return onFailure(t); // TODO can we avoid double lock?
+
+        // otherwise treat as a failure
+        return onFailure(t);
     }
 
     @Override
@@ -398,13 +436,9 @@ public class HttpChannelState implements HttpChannel, Components
 
             // Set the error to arrange for any subsequent reads, demands or writes to fail.
             if (_failure == null)
-            {
-                _failure = Content.Chunk.from(x);
-            }
+                _failure = Content.Chunk.from(x, true);
             else if (ExceptionUtil.areNotAssociated(_failure.getFailure(), x) && _failure.getFailure().getClass() != x.getClass())
-            {
                 _failure.getFailure().addSuppressed(x);
-            }
 
             // If not handled, then we just fail the request callback
             if (!_handled && _handling == null)
@@ -422,7 +456,7 @@ public class HttpChannelState implements HttpChannel, Components
 
                 // Create runnable to invoke any onError listeners
                 ChannelRequest request = _request;
-                Runnable invokeListeners = () ->
+                Runnable invokeOnFailureListeners = () ->
                 {
                     Consumer<Throwable> onFailure;
                     try (AutoLock ignore = _lock.lock())
@@ -434,7 +468,8 @@ public class HttpChannelState implements HttpChannel, Components
                     {
                         if (LOG.isDebugEnabled())
                             LOG.debug("invokeListeners {} {}", HttpChannelState.this, onFailure, x);
-                        onFailure.accept(x);
+                        if (onFailure != null)
+                            onFailure.accept(x);
                     }
                     catch (Throwable throwable)
                     {
@@ -452,7 +487,7 @@ public class HttpChannelState implements HttpChannel, Components
                 };
 
                 // Serialize all the error actions.
-                task = _serializedInvoker.offer(invokeOnContentAvailable, invokeWriteFailure, invokeListeners);
+                task = _serializedInvoker.offer(invokeOnContentAvailable, invokeWriteFailure, invokeOnFailureListeners);
             }
         }
 
@@ -915,6 +950,7 @@ public class HttpChannelState implements HttpChannel, Components
                 HttpChannelState httpChannel = lockedGetHttpChannelState();
 
                 Content.Chunk error = httpChannel._failure;
+                httpChannel._failure = Content.Chunk.next(error);
                 if (error != null)
                     return error;
 
