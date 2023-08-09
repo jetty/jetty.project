@@ -13,7 +13,6 @@
 
 package org.eclipse.jetty.server;
 
-import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.Paths;
@@ -22,6 +21,10 @@ import org.eclipse.jetty.util.annotation.Name;
 import org.eclipse.jetty.util.component.AbstractLifeCycle;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+
+import static java.nio.charset.StandardCharsets.UTF_8;
+import static java.nio.file.StandardOpenOption.TRUNCATE_EXISTING;
+import static java.nio.file.StandardOpenOption.WRITE;
 
 public class PidFile extends AbstractLifeCycle
 {
@@ -35,7 +38,7 @@ public class PidFile extends AbstractLifeCycle
         try
         {
             long pid = ProcessHandle.current().pid();
-            Files.writeString(pidFile, Long.toString(pid), StandardCharsets.UTF_8);
+            Files.writeString(pidFile, Long.toString(pid), UTF_8, WRITE, TRUNCATE_EXISTING);
             ShutdownMonitor.register(this);
         }
         catch (Throwable t)
