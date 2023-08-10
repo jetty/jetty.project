@@ -27,7 +27,7 @@ The Jetty server-side libraries provide:
 * HTTP/2 low-level support, for applications that want to explicitly handle low-level HTTP/2 _sessions_, _streams_ and _frames_, via the xref:pg-server-http2[HTTP/2 libraries]
 * HTTP/3 low-level support, for applications that want to explicitly handle low-level HTTP/3 _sessions_, _streams_ and _frames_, via the xref:pg-server-http3[HTTP/3 libraries]
 * WebSocket support, for applications that want to embed a WebSocket server, via the xref:pg-server-websocket[WebSocket libraries]
-* FCGI support, to delegate requests to python or similar scripting languages.
+* FCGI support, to delegate requests to PHP, Python, Ruby or similar scripting languages.
 
 include::compliance/server-compliance.adoc[]
 include::http/server-http.adoc[]
