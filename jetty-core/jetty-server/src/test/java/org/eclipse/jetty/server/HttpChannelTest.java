@@ -44,7 +44,6 @@ import org.eclipse.jetty.server.internal.HttpChannelState;
 import org.eclipse.jetty.util.BufferUtil;
 import org.eclipse.jetty.util.Callback;
 import org.eclipse.jetty.util.FutureCallback;
-import org.eclipse.jetty.util.FuturePromise;
 import org.eclipse.jetty.util.component.LifeCycle;
 import org.eclipse.jetty.util.thread.SerializedInvoker;
 import org.junit.jupiter.api.AfterEach;
@@ -1200,16 +1199,16 @@ public class HttpChannelTest
 
         // failure happens
         IOException failure = new IOException("Testing");
-        Runnable onError = channel.onFailure(failure);
-        assertNotNull(onError);
+        Runnable onFailure = channel.onFailure(failure);
+        assertNotNull(onFailure);
 
-        // onError not yet called
+        // Failure task not yet called
         assertThat(error.get(), nullValue());
 
         // request still handling
         assertFalse(stream.isComplete());
 
-        // but now we cannot read, demand nor write
+        // but now we cannot read nor demand
         Request rq = handling.get().getRequest();
         Content.Chunk chunk = rq.read();
         assertTrue(chunk.isLast());
@@ -1217,31 +1216,23 @@ public class HttpChannelTest
         assertThat(chunk.getFailure(), sameInstance(failure));
 
         CountDownLatch demand = new CountDownLatch(1);
-        // Callback serialized until after onError task
+        // Callback serialized until after the failure task
         rq.demand(demand::countDown);
         assertThat(demand.getCount(), is(1L));
-
-        FuturePromise<Throwable> callback = new FuturePromise<>();
-        // Callback serialized until after onError task
-        handling.get().write(false, null, Callback.from(() ->
-        {}, callback::succeeded));
-        assertFalse(callback.isDone());
 
         // process error callback
         try (StacklessLogging ignore = new StacklessLogging(Response.class))
         {
-            onError.run();
+            onFailure.run();
         }
 
-        // onError was called
+        // onFailure was called
         assertThat(error.get(), sameInstance(failure));
         // demand callback was called
         assertTrue(demand.await(5, TimeUnit.SECONDS));
-        // write callback was failed
-        assertThat(callback.get(5, TimeUnit.SECONDS), sameInstance(failure));
 
-        // request completed handling
-        assertTrue(stream.isComplete());
+        // Handler callback was not completed
+        assertFalse(stream.isComplete());
     }
 
     @Test

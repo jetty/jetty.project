@@ -173,7 +173,7 @@ class AsyncContentProducer implements ContentProducer
                 LOG.debug("consuming and releasing current chunk {}", this);
             _chunk.skip(_chunk.remaining());
             _chunk.release();
-            _chunk = _chunk.isLast() ? Content.Chunk.EOF : null;
+            _chunk = Content.Chunk.next(_chunk);
         }
         return _chunk != null && _chunk.isLast();
     }

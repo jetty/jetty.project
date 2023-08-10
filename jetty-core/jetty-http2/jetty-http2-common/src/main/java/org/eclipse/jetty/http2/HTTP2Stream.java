@@ -550,11 +550,13 @@ public class HTTP2Stream implements Stream, Attachable, Closeable, Callback, Dum
 
     private void onReset(ResetFrame frame, Callback callback)
     {
+        Throwable x = new EofException("reset");
         try (AutoLock ignored = lock.lock())
         {
             remoteReset = true;
-            failure = new EofException("reset");
+            failure = x;
         }
+        failed(x);
         close();
         if (session.removeStream(this))
             notifyReset(this, frame, callback);
@@ -577,10 +579,12 @@ public class HTTP2Stream implements Stream, Attachable, Closeable, Callback, Dum
 
     private void onFailure(FailureFrame frame, Callback callback)
     {
+        Throwable x = frame.getFailure();
         try (AutoLock ignored = lock.lock())
         {
-            failure = frame.getFailure();
+            failure = x;
         }
+        failed(x);
         close();
         if (session.removeStream(this))
             notifyFailure(this, frame, callback);

@@ -325,16 +325,17 @@ public class ServerTest
             {
                 Runnable write = new Runnable()
                 {
-                    final ByteBuffer buffer = ByteBuffer.allocate(128 * 1024 * 1024);
+                    private final ByteBuffer buffer = ByteBuffer.allocate(128 * 1024 * 1024);
+
                     @Override
                     public void run()
                     {
-                        response.write(false, buffer, Callback.from(this,
-                            t ->
-                            {
-                                writeFail.complete(t);
-                                callback.failed(t);
-                            }));
+                        // Large write to cause TCP congestion.
+                        response.write(false, buffer, Callback.from(this, t ->
+                        {
+                            writeFail.complete(t);
+                            callback.failed(t);
+                        }));
                     }
                 };
 
@@ -406,5 +407,4 @@ public class ServerTest
             assertThat(response.getStatus(), is(HttpStatus.INTERNAL_SERVER_ERROR_500));
         }
     }
-
 }

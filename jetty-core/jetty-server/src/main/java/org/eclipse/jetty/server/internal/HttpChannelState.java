@@ -441,22 +441,19 @@ public class HttpChannelState implements HttpChannel, Components
             else if (ExceptionUtil.areNotAssociated(_failure.getFailure(), x) && _failure.getFailure().getClass() != x.getClass())
                 _failure.getFailure().addSuppressed(x);
 
-            // If not handled, then we just fail the request callback
+            // If not handled, then we just fail the request callback.
+            ChannelRequest request = _request;
             if (!_handled && _handling == null)
             {
-                task = () -> _request._callback.failed(x);
+                task = () -> request._callback.failed(x);
             }
             else
             {
-                // if we are currently demanding, take the onContentAvailable runnable to invoke below.
+                // If we are currently demanding, take the onContentAvailable runnable to invoke below.
                 Runnable invokeOnContentAvailable = _onContentAvailable;
                 _onContentAvailable = null;
 
-                // If a write call is in progress, take the writeCallback to fail below
-//                Runnable invokeWriteFailure = _response.lockedFailWrite(x);
-
-                // Create runnable to invoke any onError listeners
-                ChannelRequest request = _request;
+                // Create runnable to invoke any failure listeners.
                 Runnable invokeOnFailureListeners = () ->
                 {
                     Consumer<Throwable> onFailure;
@@ -477,18 +474,10 @@ public class HttpChannelState implements HttpChannel, Components
                         if (ExceptionUtil.areNotAssociated(x, throwable))
                             x.addSuppressed(throwable);
                     }
-
-                    // If the application has not been otherwise informed of the failure
-                    if (invokeOnContentAvailable == null /*&& invokeWriteFailure == null*/)
-                    {
-                        if (LOG.isDebugEnabled())
-                            LOG.debug("failing callback in {}", this, x);
-                        request._callback.failed(x);
-                    }
                 };
 
-                // Serialize all the error actions.
-                task = _serializedInvoker.offer(invokeOnContentAvailable/*, invokeWriteFailure*/, invokeOnFailureListeners);
+                // Serialize all the failure actions.
+                task = _serializedInvoker.offer(invokeOnContentAvailable, invokeOnFailureListeners);
             }
         }
 

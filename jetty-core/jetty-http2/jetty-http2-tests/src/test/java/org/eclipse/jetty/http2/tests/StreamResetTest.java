@@ -841,7 +841,78 @@ public class StreamResetTest extends AbstractTest
     }
 
     @Test
-    public void testResetAfterTCPCongestedWrite() throws Exception
+    public void testResetAfterTCPCongestedWriteWithHTTP2APIs() throws Exception
+    {
+        AtomicReference<WriteFlusher> flusherRef = new AtomicReference<>();
+        CountDownLatch flusherLatch = new CountDownLatch(1);
+        CountDownLatch writeLatch = new CountDownLatch(1);
+        start(new ServerSessionListener()
+        {
+            @Override
+            public Stream.Listener onNewStream(Stream stream, HeadersFrame frame)
+            {
+                HTTP2Session session = (HTTP2Session)stream.getSession();
+                flusherRef.set(((AbstractEndPoint)session.getEndPoint()).getWriteFlusher());
+                flusherLatch.countDown();
+
+                MetaData.Response response = new MetaData.Response(HttpStatus.OK_200, null, HttpVersion.HTTP_2, HttpFields.EMPTY);
+                stream.headers(new HeadersFrame(stream.getId(), response, null, false))
+                    .thenCompose(s ->
+                    {
+                        // Large write to cause TCP congestion.
+                        ByteBuffer data = ByteBuffer.allocate(128 * 1024 * 1024);
+                        return s.data(new DataFrame(s.getId(), data, true));
+                    })
+                    .whenComplete((s, x) ->
+                    {
+                        // Upon reset, the callback should be failed.
+                        assertNotNull(x);
+                        writeLatch.countDown();
+                    });
+                return null;
+            }
+        });
+
+        ByteBufferPool bufferPool = http2Client.getByteBufferPool();
+        try (SocketChannel socket = SocketChannel.open())
+        {
+            String host = "localhost";
+            int port = connector.getLocalPort();
+            socket.connect(new InetSocketAddress(host, port));
+
+            Generator generator = new Generator(bufferPool);
+            ByteBufferPool.Accumulator accumulator = new ByteBufferPool.Accumulator();
+            generator.control(accumulator, new PrefaceFrame());
+            Map<Integer, Integer> clientSettings = new HashMap<>();
+            // Max the HTTP/2 flow control windows so that TCP can congest.
+            clientSettings.put(SettingsFrame.INITIAL_WINDOW_SIZE, Integer.MAX_VALUE);
+            generator.control(accumulator, new SettingsFrame(clientSettings, false));
+            generator.control(accumulator, new WindowUpdateFrame(0, Integer.MAX_VALUE - FlowControlStrategy.DEFAULT_WINDOW_SIZE));
+
+            HttpURI uri = HttpURI.from("http", host, port, "/");
+            MetaData.Request request = new MetaData.Request(HttpMethod.GET.asString(), uri, HttpVersion.HTTP_2, HttpFields.EMPTY);
+            int streamId = 3;
+            HeadersFrame headersFrame = new HeadersFrame(streamId, request, null, true);
+            generator.control(accumulator, headersFrame);
+
+            List<ByteBuffer> buffers = accumulator.getByteBuffers();
+            socket.write(buffers.toArray(ByteBuffer[]::new));
+
+            // Wait until the server is TCP congested.
+            assertTrue(flusherLatch.await(5, TimeUnit.SECONDS));
+            waitUntilTCPCongested(flusherRef.get());
+
+            accumulator.release();
+            generator.control(accumulator, new ResetFrame(streamId, ErrorCode.CANCEL_STREAM_ERROR.code));
+            buffers = accumulator.getByteBuffers();
+            socket.write(buffers.toArray(new ByteBuffer[0]));
+
+            assertTrue(writeLatch.await(555, TimeUnit.SECONDS));
+        }
+    }
+
+    @Test
+    public void testResetAfterTCPCongestedWriteWithHandlerAPIs() throws Exception
     {
         AtomicReference<WriteFlusher> flusherRef = new AtomicReference<>();
         CountDownLatch flusherLatch = new CountDownLatch(1);

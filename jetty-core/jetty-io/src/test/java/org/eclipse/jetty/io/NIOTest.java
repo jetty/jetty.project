@@ -13,22 +13,27 @@
 
 package org.eclipse.jetty.io;
 
+import java.io.IOException;
+import java.net.InetSocketAddress;
 import java.net.ServerSocket;
 import java.net.Socket;
 import java.nio.ByteBuffer;
 import java.nio.channels.SelectionKey;
 import java.nio.channels.Selector;
+import java.nio.channels.ServerSocketChannel;
 import java.nio.channels.SocketChannel;
+import java.util.Set;
 
 import org.junit.jupiter.api.Test;
 
+import static org.hamcrest.MatcherAssert.assertThat;
+import static org.hamcrest.Matchers.lessThan;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
+import static org.junit.jupiter.api.Assertions.assertSame;
+import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
-/**
- *
- */
 public class NIOTest
 {
     @Test
@@ -124,6 +129,42 @@ public class NIOTest
             assertTrue(key.isWritable());
             assertFalse(key.isReadable());
             assertEquals(SelectionKey.OP_WRITE, key.readyOps());
+        }
+    }
+
+    @Test
+    public void testTCPCongestedWriteIsWokenUpByClose() throws Exception
+    {
+        try (ServerSocketChannel acceptor = ServerSocketChannel.open().bind(new InetSocketAddress(0));
+             Selector selector = Selector.open();
+             SocketChannel client = SocketChannel.open(acceptor.getLocalAddress());
+             SocketChannel server = acceptor.accept())
+        {
+            // Cause TCP congestion.
+            server.configureBlocking(false);
+            int length = 128 * 1024 * 1024;
+            ByteBuffer buffer = ByteBuffer.allocate(length);
+            int written = server.write(buffer);
+            assertThat(written, lessThan(length));
+
+            SelectionKey key = server.register(selector, SelectionKey.OP_WRITE);
+
+            int selected = selector.selectNow();
+            assertEquals(0, selected);
+
+            // Client closes connection.
+            client.close();
+
+            // Is the write woken up?
+            selected = selector.select(1000);
+            assertEquals(1, selected);
+
+            Set<SelectionKey> selectedKeys = selector.selectedKeys();
+            assertEquals(1, selectedKeys.size());
+            assertSame(key, selectedKeys.iterator().next());
+
+            // Attempt to write again results in a failure.
+            assertThrows(IOException.class, () -> server.write(buffer));
         }
     }
 }
