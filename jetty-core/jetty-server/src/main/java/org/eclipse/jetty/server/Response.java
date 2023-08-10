@@ -207,13 +207,13 @@ public interface Response extends Content.Sink
      * @see Wrapper
      */
     @SuppressWarnings("unchecked")
-    static <T extends Response.Wrapper> T as(Response response, Class<T> type)
+    static <T extends Response> T as(Response response, Class<T> type)
     {
-        while (response instanceof Response.Wrapper wrapper)
+        while (response != null)
         {
-            if (type.isInstance(wrapper))
-                return (T)wrapper;
-            response = wrapper.getWrapped();
+            if (type.isInstance(response))
+                return (T)response;
+            response = response instanceof Response.Wrapper wrapper ? wrapper.getWrapped() : null;
         }
         return null;
     }

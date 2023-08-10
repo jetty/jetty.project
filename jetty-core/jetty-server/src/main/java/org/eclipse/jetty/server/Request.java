@@ -768,13 +768,13 @@ public interface Request extends Attributes, Content.Source
     }
 
     @SuppressWarnings("unchecked")
-    static <T extends Request.Wrapper> T as(Request request, Class<T> type)
+    static <T extends Request> T as(Request request, Class<T> type)
     {
-        while (request instanceof Request.Wrapper wrapper)
+        while (request != null)
         {
-            if (type.isInstance(wrapper))
-                return (T)wrapper;
-            request = wrapper.getWrapped();
+            if (type.isInstance(request))
+                return (T)request;
+            request = request instanceof Request.Wrapper wrapper ? wrapper.getWrapped() : null;
         }
         return null;
     }
