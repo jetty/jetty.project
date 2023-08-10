@@ -610,7 +610,6 @@ public class ServletChannel
                                 ResponseUtils.ensureConsumeAvailableOrNotPersistent(_servletContextRequest, _servletContextRequest.getServletContextResponse());
                         }
 
-
                         // RFC 7230, section 3.3.
                         if (!_servletContextRequest.isHead() &&
                             getServletContextResponse().getStatus() != HttpStatus.NOT_MODIFIED_304 &&
