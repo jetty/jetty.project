@@ -13,8 +13,6 @@
 
 package org.eclipse.jetty.util.jmh;
 
-import java.time.Instant;
-import java.util.Date;
 import java.util.concurrent.TimeUnit;
 
 import org.eclipse.jetty.util.DateCache;
@@ -38,27 +36,18 @@ import org.openjdk.jmh.runner.options.TimeValue;
 @Measurement(iterations = 7, time = 500, timeUnit = TimeUnit.MILLISECONDS)
 public class DateCacheBenchmark
 {
-
-    DateCache dateCache = new DateCache();
-    long timestamp = Instant.now().toEpochMilli();
+    DateCache dateCache = new DateCache(DateCache.DEFAULT_FORMAT + " SSS");
 
     @Benchmark
     @BenchmarkMode(Mode.Throughput)
-    public void testDateCacheTimestamp()
+    public void testFormatWithoutCache()
     {
-        dateCache.formatWithoutCache(timestamp);
+        dateCache.formatWithoutCache(System.currentTimeMillis());
     }
 
     @Benchmark
     @BenchmarkMode(Mode.Throughput)
-    public void testDateCacheNow()
-    {
-        dateCache.formatWithoutCache(new Date());
-    }
-
-    @Benchmark
-    @BenchmarkMode(Mode.Throughput)
-    public void testDateCacheFormatNow()
+    public void testFormatWithCache()
     {
         dateCache.format(System.currentTimeMillis());
     }

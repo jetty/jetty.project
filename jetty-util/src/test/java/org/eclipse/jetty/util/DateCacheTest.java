@@ -68,13 +68,8 @@ public class DateCacheTest
         assertNotNull(dateCache.format(System.currentTimeMillis()));
         assertNotNull(dateCache.format(new Date().getTime()));
         assertNotNull(dateCache.format(Instant.now().toEpochMilli()));
-
-        assertNotNull(dateCache.formatWithoutCache(new Date()));
-        assertNotNull(dateCache.formatWithoutCache(new Date(System.currentTimeMillis())));
-
-        assertNotNull(dateCache.formatWithoutCache(System.currentTimeMillis()));
-        assertNotNull(dateCache.formatWithoutCache(new Date().getTime()));
-        assertNotNull(dateCache.formatWithoutCache(Instant.now().toEpochMilli()));
+        assertNotNull(dateCache.format(new Date()));
+        assertNotNull(dateCache.format(new Date(System.currentTimeMillis())));
 
         assertNotNull(dateCache.formatTick(System.currentTimeMillis()));
         assertNotNull(dateCache.formatTick(new Date().getTime()));

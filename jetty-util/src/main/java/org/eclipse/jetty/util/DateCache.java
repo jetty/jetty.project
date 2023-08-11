@@ -35,22 +35,36 @@ import java.util.TimeZone;
 public class DateCache
 {
     public static final String DEFAULT_FORMAT = "EEE MMM dd HH:mm:ss zzz yyyy";
+    private static final String MS_CONSTANT = "@MS@";
 
     private final String _formatString;
     private final DateTimeFormatter _tzFormat;
     private final ZoneId _zoneId;
+    private final int _msIndex;
 
-    private volatile Tick _tick;
+    protected volatile Tick _tick;
 
-    public static class Tick
+    public class Tick
     {
         private final long _seconds;
-        private final String _string;
+        private final String _prefix;
+        private final String _suffix;
 
         public Tick(long seconds, String string)
         {
             _seconds = seconds;
-            _string = string;
+
+            if (_msIndex < 0)
+            {
+                _prefix = string;
+                _suffix = null;
+            }
+            else
+            {
+                _prefix = string.substring(0, _msIndex);
+                _suffix = string.substring(_msIndex + MS_CONSTANT.length());
+            }
+
         }
 
         public long getSeconds()
@@ -58,9 +72,22 @@ public class DateCache
             return _seconds;
         }
 
-        public String getString()
+        public String getString(long inDate)
         {
-            return _string;
+            if (_msIndex < 0)
+                return _prefix;
+
+            long ms = inDate % 1000;
+            StringBuilder sb = new StringBuilder();
+            sb.append(_prefix);
+            if (ms < 10)
+                sb.append("00").append(ms);
+            else if (ms < 100)
+                sb.append('0').append(ms);
+            else
+                sb.append(ms);
+            sb.append(_suffix);
+            return sb.toString();
         }
     }
 
@@ -95,9 +122,13 @@ public class DateCache
 
     public DateCache(String format, Locale l, TimeZone tz)
     {
-        _formatString = format;
         _zoneId = tz.toZoneId();
         _tick = null;
+
+        _msIndex = format.indexOf("SSS");
+        if (_msIndex >= 0)
+            format = format.substring(0, _msIndex) + MS_CONSTANT + format.substring(_msIndex + 3);
+        _formatString = format;
 
         if (l == null)
             _tzFormat = DateTimeFormatter.ofPattern(format).withZone(_zoneId);
@@ -120,7 +151,7 @@ public class DateCache
      */
     public String format(Date inDate)
     {
-        return formatTick(inDate.getTime())._string;
+        return format(inDate.getTime());
     }
 
     /**
@@ -133,18 +164,7 @@ public class DateCache
      */
     public String format(long inDate)
     {
-        return formatTick(inDate)._string;
-    }
-
-    /**
-     * Format a date according to our stored formatter without using the cache.
-     *
-     * @param inDate the Date.
-     * @return Formatted date.
-     */
-    public String formatWithoutCache(Date inDate)
-    {
-        return _tzFormat.format(inDate.toInstant());
+        return formatTick(inDate).getString(inDate);
     }
 
     /**
