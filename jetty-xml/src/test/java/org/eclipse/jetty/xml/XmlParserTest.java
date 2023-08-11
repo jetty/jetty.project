@@ -41,7 +41,7 @@ public class XmlParserTest
         URL configURL = XmlConfiguration.class.getClassLoader().getResource("org/eclipse/jetty/xml/configure_9_3.dtd");
         parser.redirectEntity("configure.dtd", configURL);
         parser.redirectEntity("configure_9_3.dtd", configURL);
-        //parser.redirectEntity("http://www.eclipse.org/jetty/configure_9_3.dtd", configURL);
+        parser.redirectEntity("http://www.eclipse.org/jetty/configure_9_3.dtd", configURL);
         parser.redirectEntity("http://jetty.eclipse.org/configure.dtd", configURL);
         parser.redirectEntity("-//Mort Bay Consulting//DTD Configure//EN", configURL);
 
