@@ -87,16 +87,16 @@ public class DateCacheTest
     }
 
     @Test
-    public void testChangeOfSecond() throws  Exception
+    public void testChangeOfSecond()
     {
         AtomicInteger counter = new AtomicInteger();
         DateCache dateCache = new DateCache(DateCache.DEFAULT_FORMAT + " | SSS", null, TimeZone.getTimeZone("UTC"))
         {
             @Override
-            public String formatWithoutCache(long inDate)
+            protected String doFormat(long inDate)
             {
                 counter.incrementAndGet();
-                return super.formatWithoutCache(inDate);
+                return super.doFormat(inDate);
             }
         };
 

@@ -13,6 +13,9 @@
 
 package org.eclipse.jetty.util.jmh;
 
+import java.time.Instant;
+import java.time.format.DateTimeFormatter;
+import java.util.TimeZone;
 import java.util.concurrent.TimeUnit;
 
 import org.eclipse.jetty.util.DateCache;
@@ -36,18 +39,19 @@ import org.openjdk.jmh.runner.options.TimeValue;
 @Measurement(iterations = 7, time = 500, timeUnit = TimeUnit.MILLISECONDS)
 public class DateCacheBenchmark
 {
+    DateTimeFormatter formatter = DateTimeFormatter.ofPattern(DateCache.DEFAULT_FORMAT + " SSS").withZone(TimeZone.getDefault().toZoneId());
     DateCache dateCache = new DateCache(DateCache.DEFAULT_FORMAT + " SSS");
 
     @Benchmark
     @BenchmarkMode(Mode.Throughput)
-    public void testFormatWithoutCache()
+    public void testDateTimeFormatter()
     {
-        dateCache.formatWithoutCache(System.currentTimeMillis());
+        formatter.format(Instant.now());
     }
 
     @Benchmark
     @BenchmarkMode(Mode.Throughput)
-    public void testFormatWithCache()
+    public void testDateCache()
     {
         dateCache.format(System.currentTimeMillis());
     }

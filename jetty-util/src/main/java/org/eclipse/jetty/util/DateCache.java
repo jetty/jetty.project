@@ -168,13 +168,14 @@ public class DateCache
 
     /**
      * Format a date according to our stored formatter without using the cache.
+     * If SSS was in the format String it will be replaced by {@link #MS_CONSTANT}
+     * instead of the correct fraction-of-second time.
      *
      * @param inDate the date in milliseconds since unix epoch.
      * @return Formatted date.
      */
-    public String formatWithoutCache(long inDate)
+    protected String doFormat(long inDate)
     {
-        // TODO: this will have the MS_replacement in it if SSS is used.
         return _tzFormat.format(Instant.ofEpochMilli(inDate));
     }
 
@@ -218,7 +219,7 @@ public class DateCache
         if (tick2 != null && tick2.getSeconds() == seconds)
             return tick2;
 
-        String s = formatWithoutCache(inDate);
+        String s = doFormat(inDate);
         Tick tick = new Tick(seconds, s);
 
         if (tick1 != null)
