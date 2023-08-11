@@ -122,13 +122,13 @@ public class DateCache
 
     public DateCache(String format, Locale l, TimeZone tz)
     {
+        _formatString = format;
         _zoneId = tz.toZoneId();
         _tick = null;
 
         _msIndex = format.indexOf("SSS");
         if (_msIndex >= 0)
             format = format.substring(0, _msIndex) + MS_CONSTANT + format.substring(_msIndex + 3);
-        _formatString = format;
 
         if (l == null)
             _tzFormat = DateTimeFormatter.ofPattern(format).withZone(_zoneId);
