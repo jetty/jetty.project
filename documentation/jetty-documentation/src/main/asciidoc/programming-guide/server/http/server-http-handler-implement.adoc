@@ -21,12 +21,24 @@ The `Handler` API consist fundamentally of just one method:
 include::../../{doc_code}/org/eclipse/jetty/docs/programming/server/http/HTTPServerDocs.java[tags=handlerAPI]
 ----
 
-The `target` parameter is an identifier for the resource.
-This is normally the URI that is parsed from an HTTP request.
-However, a request could be forwarded to either a named resource, in which case `target` will be the name of the resource, or to a different URI, in which case `target` will be the new URI.
+The code that implements the `handle(\...)` method must respect the following contract:
 
-Applications may wrap the request or response (or both) and forward the wrapped request or response to a different URI (which may be possibly handled by a different `Handler`).
-This is the reason why there are two request parameters in the `Handler` APIs: the first is the unwrapped, original, request that also gives access to Jetty-specific APIs, while the second is the application-wrapped Servlet request.
+* It may inspect `Request` immutable information such as URI and headers, typically to decide whether to return `true` or `false` (see below).
+* Returning `false` means that the implementation does not handle the request, and it **must not** complete the `callback` parameter, nor read the request content, nor write response content.
+* Returning `true` means that the implementation wants to handle the request, and it **must** eventually complete the `callback` parameter.
+The completion of the `callback` parameter may happen synchronously within the invocation to `handle(\...)`, or at a later time, asynchronously, possibly from another thread.
+If the response has not been explicitly written when `handle(\...)` returns, the implementation will write a `200` response with no content.
+
+[CAUTION]
+====
+Violating the contract above may result in undefined or unexpected behavior.
+
+For example, returning `true` from `handle(\...)`, but not completing the `callback` parameter may result in the request or the response never be completed, likely causing the client to time out.
+
+Similarly, returning `false` from `handle(\...)` but then either writing the response or completing the `callback` parameter will likely result in a garbled response be sent to the client, as the implementation will either invoke another `Handler` (that may write a response) or write a default response.
+====
+
+Applications may wrap the request or response (or both) and forward the wrapped request or response to a child `Handler`.
 
 [[pg-server-http-handler-impl-hello]]
 ====== Hello World Handler
@@ -38,7 +50,10 @@ A simple "Hello World" `Handler` is the following:
 include::../../{doc_code}/org/eclipse/jetty/docs/programming/server/http/HTTPServerDocs.java[tags=handlerHello]
 ----
 
-Such a simple `Handler` extends from `AbstractHandler` and can access the request and response main features, such as reading request headers and content, or writing response headers and content.
+Such a simple `Handler` extends from `Handler.Abstract` and can access the request and response main features, such as reading request headers and content, or writing response headers and content.
+
+Note how the `callback` parameter is passed to `Content.Sink.write(\...)` (a utility method that eventually calls `Response.write(\...)`), so that when the write completes, also the `callback` parameter is completed.
+Note also that because the `callback` parameter will eventually be completed, the value returned from `handle(\...)` is `true`.
 
 [[pg-server-http-handler-impl-filter]]
 ====== Filtering Handler

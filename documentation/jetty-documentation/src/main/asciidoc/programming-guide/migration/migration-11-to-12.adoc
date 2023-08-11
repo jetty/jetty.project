@@ -46,6 +46,12 @@
 | `org.eclipse.jetty.http2.client.**http**.*` | `org.eclipse.jetty.http2.client.**transport**.*`
 |===
 
+[[pg-migration-11-to-12-servlet-to-handler]]
+==== Migrate Servlets to Jetty Handlers
+
+
+
+
 [[pg-migration-11-to-12-api-changes]]
 ==== APIs Changes
 

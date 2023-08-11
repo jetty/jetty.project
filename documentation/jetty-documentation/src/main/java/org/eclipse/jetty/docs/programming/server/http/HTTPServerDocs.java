@@ -479,10 +479,10 @@ public class HTTPServerDocs
             @Override
             // tag::handlerAPI[]
             public boolean handle(Request request, Response response, Callback callback) throws Exception
-            {
-                return true;
-            }
             // end::handlerAPI[]
+            {
+                return false;
+            }
         }
     }
 
@@ -555,7 +555,7 @@ public class HTTPServerDocs
                     HttpURI newURI = HttpURI.build(uri).path(newPath).asImmutable();
 
                     // Modify the request object by wrapping the HttpURI
-                    request = new Request.Wrapper(request)
+                    Request newRequest = new Request.Wrapper(request)
                     {
                         @Override
                         public HttpURI getHttpURI()
@@ -563,10 +563,15 @@ public class HTTPServerDocs
                             return newURI;
                         }
                     };
-                }
 
-                // Forward to the next Handler.
-                return super.handle(request, response, callback);
+                    // Forward to the next Handler using the wrapped Request.
+                    return super.handle(newRequest, response, callback);
+                }
+                else
+                {
+                    // Forward to the next Handler as-is.
+                    return super.handle(request, response, callback);
+                }
             }
         }
 
