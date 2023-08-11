@@ -39,7 +39,8 @@ public interface Context extends Attributes, Decorator, Executor
 {
     /**
      * @return the encoded context path of this {@code Context} or
-     *         {@code null} if this is the {@link org.eclipse.jetty.server.Server.ServerContext}.
+     *         {@code null} if the context does not have a path
+     *         (e.g. the {@link org.eclipse.jetty.server.Server.ServerContext}).
      */
     String getContextPath();
 

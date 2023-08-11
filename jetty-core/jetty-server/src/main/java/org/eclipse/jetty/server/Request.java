@@ -153,9 +153,10 @@ public interface Request extends Attributes, Content.Source
 
     /**
      * Get the {@link Context} associated with this {@code Request}.
-     * If the request is not being handled by a {@link org.eclipse.jetty.server.handler.ContextHandler} then
+     * <p>Note that a {@code Request} should always have an associated {@link Context} since if the
+     * {@code Request} is not being handled by a {@link org.eclipse.jetty.server.handler.ContextHandler} then
      * the {@link org.eclipse.jetty.server.Server.ServerContext} instance will be returned.
-     * @return the {@code Context} associated with this {@code Request}
+     * @return the {@code Context} associated with this {@code Request}. Never {@code null}.
      */
     Context getContext();
 
@@ -164,9 +165,9 @@ public interface Request extends Attributes, Content.Source
      * This is equivalent to {@code request.getContext().getContextPath()}.
      *
      * @param request The request to get the context path from.
-     * @return The encoded context path of the {@link Context}.
-     *         If the request is not being handled by a {@link org.eclipse.jetty.server.handler.ContextHandler}
-     *         then {@code null} is returned (from {@link Server.ServerContext#getContextPath()}).
+     * @return The encoded context path of the {@link Context} or {@code null} if
+     *         the associated {@link Context} does not have a path
+     *         (e.g. {@link Server.ServerContext#getContextPath()}).
      * @see Context#getContextPath()
      */
     static String getContextPath(Request request)
