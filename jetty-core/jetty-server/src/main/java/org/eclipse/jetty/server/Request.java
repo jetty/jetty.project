@@ -152,6 +152,10 @@ public interface Request extends Attributes, Content.Source
     HttpURI getHttpURI();
 
     /**
+     * Get the {@link Context} associated with this request. This method should
+     * never return null as if there is no {@link org.eclipse.jetty.server.handler.ContextHandler}
+     * handling the request, then the {@link Server}s, {@link org.eclipse.jetty.server.Server.ServerContext}
+     * instance will be returned.
      * @return the {@code Context} associated with this {@code Request}
      */
     Context getContext();
@@ -161,7 +165,8 @@ public interface Request extends Attributes, Content.Source
      * <p>This is equivalent to {@code request.getContext().getContextPath()}.</p>
      *
      * @param request The request to get the context path from.
-     * @return The contextPath of the request.
+     * @return The encoded context path of the {@link Context}, or null for the {@link Server}'s context,
+     *         i.e. no {@link org.eclipse.jetty.server.handler.ContextHandler} is handling the request.
      * @see Context#getContextPath()
      */
     static String getContextPath(Request request)

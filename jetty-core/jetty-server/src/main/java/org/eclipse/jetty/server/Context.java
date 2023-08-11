@@ -38,7 +38,8 @@ import org.eclipse.jetty.util.resource.Resource;
 public interface Context extends Attributes, Decorator, Executor
 {
     /**
-     * @return the encoded context path of this Context
+     * @return the encoded context path of this {@code Context}, or null for the {@link Server}'s context,
+     *         i.e. no {@link ContextHandler} is handling the request.
      */
     String getContextPath();
 
