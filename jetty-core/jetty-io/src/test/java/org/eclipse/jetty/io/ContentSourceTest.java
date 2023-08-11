@@ -42,6 +42,7 @@ import org.eclipse.jetty.io.content.PathContentSource;
 import org.eclipse.jetty.toolchain.test.MavenTestingUtils;
 import org.eclipse.jetty.util.BufferUtil;
 import org.eclipse.jetty.util.Callback;
+import org.eclipse.jetty.util.CompletableTask;
 import org.eclipse.jetty.util.FutureCallback;
 import org.eclipse.jetty.util.FuturePromise;
 import org.eclipse.jetty.util.IO;
@@ -104,7 +105,9 @@ public class ContentSourceTest
         return List.of(asyncSource, byteBufferSource, transformerSource, pathSource, inputSource, inputSource2);
     }
 
-    /** Get the next chunk, blocking if necessary
+    /**
+     * Get the next chunk, blocking if necessary
+     *
      * @param source The source to get the next chunk from
      * @return A non null chunk
      */
@@ -113,8 +116,7 @@ public class ContentSourceTest
         Content.Chunk chunk = source.read();
         if (chunk != null)
             return chunk;
-        FuturePromise<Content.Chunk> next = new FuturePromise<>();
-        Runnable getNext = new Runnable()
+        CompletableTask<Content.Chunk> task = new CompletableTask<>()
         {
             @Override
             public void run()
@@ -122,18 +124,12 @@ public class ContentSourceTest
                 Content.Chunk chunk = source.read();
                 if (chunk == null)
                     source.demand(this);
-                next.succeeded(chunk);
+                else
+                    complete(chunk);
             }
         };
-        source.demand(getNext);
-        try
-        {
-            return next.get();
-        }
-        catch (Exception e)
-        {
-            throw new RuntimeException(e);
-        }
+        source.demand(task);
+        return task.join();
     }
 
     @ParameterizedTest
@@ -141,8 +137,7 @@ public class ContentSourceTest
     public void testRead(Content.Source source) throws Exception
     {
         StringBuilder builder = new StringBuilder();
-        CountDownLatch eof = new CountDownLatch(1);
-        source.demand(new Runnable()
+        var task = new CompletableTask<>()
         {
             @Override
             public void run()
@@ -162,14 +157,14 @@ public class ContentSourceTest
 
                     if (chunk.isLast())
                     {
-                        eof.countDown();
+                        complete(null);
                         break;
                     }
                 }
             }
-        });
-
-        assertTrue(eof.await(10, TimeUnit.SECONDS));
+        };
+        source.demand(task);
+        task.get(10, TimeUnit.SECONDS);
         assertThat(builder.toString(), is("onetwo"));
     }
 
