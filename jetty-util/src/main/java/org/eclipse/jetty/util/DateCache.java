@@ -35,7 +35,7 @@ import java.util.TimeZone;
 public class DateCache
 {
     public static final String DEFAULT_FORMAT = "EEE MMM dd HH:mm:ss zzz yyyy";
-    private static final String MS_CONSTANT = "@MS@";
+    private static final String MS_CONSTANT = "@??@";
 
     private final String _formatString;
     private final DateTimeFormatter _tzFormat;
@@ -61,8 +61,10 @@ public class DateCache
             }
             else
             {
-                _prefix = string.substring(0, _msIndex);
-                _suffix = string.substring(_msIndex + MS_CONSTANT.length());
+                // We can't use _msIndex because the size of format string is not always equal to size of the formatted result.
+                int index = string.indexOf(MS_CONSTANT);
+                _prefix = string.substring(0, index);
+                _suffix = string.substring(index + MS_CONSTANT.length());
             }
 
         }
