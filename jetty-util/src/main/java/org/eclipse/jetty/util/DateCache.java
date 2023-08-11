@@ -24,9 +24,6 @@ import java.util.TimeZone;
  * Computes String representations of Dates then caches the results so
  * that subsequent requests within the same second will be fast.
  * <p>
- * When formatting with the cache, sub second formatting will not be precise
- * and may use a cached result.
- * <p>
  * If consecutive calls are frequently very different, then this
  * may be a little slower than a normal DateFormat.
  * <p>
@@ -42,7 +39,8 @@ public class DateCache
     private final ZoneId _zoneId;
     private final int _msIndex;
 
-    protected volatile Tick _tick;
+    protected volatile Tick _tick1;
+    protected volatile Tick _tick2;
 
     public class Tick
     {
@@ -126,7 +124,6 @@ public class DateCache
     {
         _formatString = format;
         _zoneId = tz.toZoneId();
-        _tick = null;
 
         _msIndex = format.indexOf("SSS");
         if (_msIndex >= 0)
@@ -212,14 +209,21 @@ public class DateCache
     {
         long seconds = inDate / 1000;
 
-        Tick tick = _tick;
-        // recheck the tick, to save multiple formats
-        if (tick == null || tick._seconds != seconds)
-        {
-            String s = formatWithoutCache(inDate);
-            _tick = new Tick(seconds, s);
-            tick = _tick;
-        }
+        Tick tick1 = _tick1;
+        if (tick1 != null && tick1.getSeconds() == seconds)
+            return tick1;
+
+        Tick tick2 = _tick2;
+        if (tick2 != null && tick2.getSeconds() == seconds)
+            return tick2;
+
+        String s = formatWithoutCache(inDate);
+        Tick tick = new Tick(seconds, s);
+
+        if (tick1 != null)
+            _tick2 = tick1;
+        _tick1 = tick;
+
         return tick;
     }
 
