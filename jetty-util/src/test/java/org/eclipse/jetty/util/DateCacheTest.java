@@ -110,7 +110,6 @@ public class DateCacheTest
         assertThat(counter.get(), equalTo(2));
     }
 
-
     private static String format(DateCache dateCache, String instant)
     {
         return dateCache.format(Date.from(Instant.parse(instant)));
