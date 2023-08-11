@@ -119,7 +119,8 @@ public class ServletChannel
      */
     public void associate(ServletContextRequest servletContextRequest)
     {
-        // TODO This is needed as requests that are handled before the ServletHandler are not recycled.
+        // We need to recycle here sometimes as requests that are handled before the
+        // ServletHandler (e.g. by SecurityHandler) are not recycled.
         if (_servletContextRequest != null)
             recycle();
         _httpInput.reopen();
@@ -480,7 +481,6 @@ public class ServletChannel
 
                     case DISPATCH:
                     {
-                        reopen();
                         dispatch();
                         break;
                     }
