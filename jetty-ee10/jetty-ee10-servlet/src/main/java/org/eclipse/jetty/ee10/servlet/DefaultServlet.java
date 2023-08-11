@@ -15,25 +15,15 @@ package org.eclipse.jetty.ee10.servlet;
 
 import java.io.FileNotFoundException;
 import java.io.IOException;
-import java.io.InputStreamReader;
 import java.net.URI;
-import java.nio.ByteBuffer;
 import java.nio.file.InvalidPathException;
 import java.time.Duration;
 import java.util.ArrayList;
-import java.util.EnumSet;
-import java.util.Enumeration;
-import java.util.HashSet;
 import java.util.List;
-import java.util.ListIterator;
 import java.util.Locale;
 import java.util.Objects;
 import java.util.Optional;
-import java.util.Set;
 import java.util.StringTokenizer;
-import java.util.concurrent.CompletableFuture;
-import java.util.function.Supplier;
-import java.util.stream.Collectors;
 
 import jakarta.servlet.AsyncContext;
 import jakarta.servlet.DispatcherType;
@@ -48,11 +38,8 @@ import jakarta.servlet.http.MappingMatch;
 import org.eclipse.jetty.http.CompressedContentFormat;
 import org.eclipse.jetty.http.HttpException;
 import org.eclipse.jetty.http.HttpField;
-import org.eclipse.jetty.http.HttpFields;
 import org.eclipse.jetty.http.HttpHeader;
-import org.eclipse.jetty.http.HttpHeaderValue;
 import org.eclipse.jetty.http.HttpStatus;
-import org.eclipse.jetty.http.HttpURI;
 import org.eclipse.jetty.http.MimeTypes;
 import org.eclipse.jetty.http.content.FileMappingHttpContentFactory;
 import org.eclipse.jetty.http.content.HttpContent;
@@ -60,7 +47,6 @@ import org.eclipse.jetty.http.content.PreCompressedHttpContentFactory;
 import org.eclipse.jetty.http.content.ResourceHttpContentFactory;
 import org.eclipse.jetty.http.content.ValidatingCachingHttpContentFactory;
 import org.eclipse.jetty.http.content.VirtualHttpContentFactory;
-import org.eclipse.jetty.io.ByteBufferInputStream;
 import org.eclipse.jetty.io.ByteBufferPool;
 import org.eclipse.jetty.server.Context;
 import org.eclipse.jetty.server.Request;
@@ -69,16 +55,16 @@ import org.eclipse.jetty.server.Response;
 import org.eclipse.jetty.server.Server;
 import org.eclipse.jetty.server.handler.ContextHandler;
 import org.eclipse.jetty.util.Blocker;
-import org.eclipse.jetty.util.BufferUtil;
 import org.eclipse.jetty.util.Callback;
 import org.eclipse.jetty.util.ExceptionUtil;
-import org.eclipse.jetty.util.IO;
 import org.eclipse.jetty.util.URIUtil;
 import org.eclipse.jetty.util.resource.Resource;
 import org.eclipse.jetty.util.resource.ResourceFactory;
 import org.eclipse.jetty.util.resource.Resources;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+
+import static org.eclipse.jetty.util.URIUtil.encodePath;
 
 /**
  * <p>The default Servlet, normally mapped to {@code /}, that handles static resources.</p>
@@ -567,9 +553,9 @@ public class DefaultServlet extends HttpServlet
     protected String getEncodedPathInContext(HttpServletRequest req, String includedServletPath)
     {
         if (includedServletPath != null)
-            return URIUtil.encodePath(getIncludedPathInContext(req, includedServletPath, !isDefaultMapping(req)));
+            return encodePath(getIncludedPathInContext(req, includedServletPath, !isDefaultMapping(req)));
         else if (!isDefaultMapping(req))
-            return URIUtil.encodePath(req.getPathInfo());
+            return encodePath(req.getPathInfo());
         else if (req instanceof ServletApiRequest apiRequest)
             return Context.getPathInContext(req.getContextPath(), apiRequest.getRequest().getHttpURI().getCanonicalPath());
         else
@@ -613,442 +599,6 @@ public class DefaultServlet extends HttpServlet
         if (LOG.isDebugEnabled())
             LOG.debug("Resource {}={}", uriPath, result);
         return result;
-    }
-
-    private static class ServletCoreRequest extends Request.Wrapper
-    {
-        // TODO fully implement this class and move it to the top level
-        // TODO Some methods are directed to core that probably should be intercepted
-
-        private final HttpServletRequest _servletRequest;
-        private final HttpFields _httpFields;
-        private final HttpURI _uri;
-
-        ServletCoreRequest(HttpServletRequest request)
-        {
-            super(ServletContextRequest.getServletContextRequest(request));
-            _servletRequest = request;
-
-            HttpFields.Mutable fields = HttpFields.build();
-
-            Enumeration<String> headerNames = request.getHeaderNames();
-            while (headerNames.hasMoreElements())
-            {
-                String headerName = headerNames.nextElement();
-                Enumeration<String> headerValues = request.getHeaders(headerName);
-                while (headerValues.hasMoreElements())
-                {
-                    String headerValue = headerValues.nextElement();
-                    fields.add(new HttpField(headerName, headerValue));
-                }
-            }
-
-            _httpFields = fields.asImmutable();
-            String includedServletPath = (String)request.getAttribute(RequestDispatcher.INCLUDE_SERVLET_PATH);
-            boolean included = includedServletPath != null;
-            if (request.getDispatcherType() == DispatcherType.REQUEST)
-                _uri = getWrapped().getHttpURI();
-            else if (included)
-                _uri = Request.newHttpURIFrom(getWrapped(), URIUtil.encodePath(getIncludedPathInContext(request, includedServletPath, false)));
-            else
-                _uri = Request.newHttpURIFrom(getWrapped(), URIUtil.encodePath(URIUtil.addPaths(_servletRequest.getServletPath(), _servletRequest.getPathInfo())));
-        }
-
-        @Override
-        public HttpFields getHeaders()
-        {
-            return _httpFields;
-        }
-
-        @Override
-        public HttpURI getHttpURI()
-        {
-            return _uri;
-        }
-
-        @Override
-        public String getId()
-        {
-            return _servletRequest.getRequestId();
-        }
-
-        @Override
-        public String getMethod()
-        {
-            return _servletRequest.getMethod();
-        }
-
-        @Override
-        public boolean isSecure()
-        {
-            return _servletRequest.isSecure();
-        }
-
-        @Override
-        public Object removeAttribute(String name)
-        {
-            Object value = _servletRequest.getAttribute(name);
-            _servletRequest.removeAttribute(name);
-            return value;
-        }
-
-        @Override
-        public Object setAttribute(String name, Object attribute)
-        {
-            Object value = _servletRequest.getAttribute(name);
-            _servletRequest.setAttribute(name, attribute);
-            return value;
-        }
-
-        @Override
-        public Object getAttribute(String name)
-        {
-            return _servletRequest.getAttribute(name);
-        }
-
-        @Override
-        public Set<String> getAttributeNameSet()
-        {
-            Set<String> set = new HashSet<>();
-            Enumeration<String> e = _servletRequest.getAttributeNames();
-            while (e.hasMoreElements())
-                set.add(e.nextElement());
-            return set;
-        }
-
-        @Override
-        public void clearAttributes()
-        {
-            Enumeration<String> e = _servletRequest.getAttributeNames();
-            while (e.hasMoreElements())
-                _servletRequest.removeAttribute(e.nextElement());
-        }
-    }
-
-    private static class HttpServletResponseHttpFields implements HttpFields.Mutable
-    {
-        private final HttpServletResponse _response;
-
-        private HttpServletResponseHttpFields(HttpServletResponse response)
-        {
-            _response = response;
-        }
-
-        @Override
-        public ListIterator<HttpField> listIterator()
-        {
-            // The minimum requirement is to implement the listIterator, but it is inefficient.
-            // Other methods are implemented for efficiency.
-            final ListIterator<HttpField> list = _response.getHeaderNames().stream()
-                .map(n -> new HttpField(n, _response.getHeader(n)))
-                .collect(Collectors.toList())
-                .listIterator();
-
-            return new ListIterator<>()
-            {
-                HttpField _last;
-
-                @Override
-                public boolean hasNext()
-                {
-                    return list.hasNext();
-                }
-
-                @Override
-                public HttpField next()
-                {
-                    return _last = list.next();
-                }
-
-                @Override
-                public boolean hasPrevious()
-                {
-                    return list.hasPrevious();
-                }
-
-                @Override
-                public HttpField previous()
-                {
-                    return _last = list.previous();
-                }
-
-                @Override
-                public int nextIndex()
-                {
-                    return list.nextIndex();
-                }
-
-                @Override
-                public int previousIndex()
-                {
-                    return list.previousIndex();
-                }
-
-                @Override
-                public void remove()
-                {
-                    if (_last != null)
-                    {
-                        // This is not exactly the right semantic for repeated field names
-                        list.remove();
-                        _response.setHeader(_last.getName(), null);
-                    }
-                }
-
-                @Override
-                public void set(HttpField httpField)
-                {
-                    list.set(httpField);
-                    _response.setHeader(httpField.getName(), httpField.getValue());
-                }
-
-                @Override
-                public void add(HttpField httpField)
-                {
-                    list.add(httpField);
-                    _response.addHeader(httpField.getName(), httpField.getValue());
-                }
-            };
-        }
-
-        @Override
-        public Mutable add(String name, String value)
-        {
-            _response.addHeader(name, value);
-            return this;
-        }
-
-        @Override
-        public Mutable add(HttpHeader header, HttpHeaderValue value)
-        {
-            _response.addHeader(header.asString(), value.asString());
-            return this;
-        }
-
-        @Override
-        public Mutable add(HttpHeader header, String value)
-        {
-            _response.addHeader(header.asString(), value);
-            return this;
-        }
-
-        @Override
-        public Mutable add(HttpField field)
-        {
-            _response.addHeader(field.getName(), field.getValue());
-            return this;
-        }
-
-        @Override
-        public Mutable put(HttpField field)
-        {
-            _response.setHeader(field.getName(), field.getValue());
-            return this;
-        }
-
-        @Override
-        public Mutable put(String name, String value)
-        {
-            _response.setHeader(name, value);
-            return this;
-        }
-
-        @Override
-        public Mutable put(HttpHeader header, HttpHeaderValue value)
-        {
-            _response.setHeader(header.asString(), value.asString());
-            return this;
-        }
-
-        @Override
-        public Mutable put(HttpHeader header, String value)
-        {
-            _response.setHeader(header.asString(), value);
-            return this;
-        }
-
-        @Override
-        public Mutable put(String name, List<String> list)
-        {
-            Objects.requireNonNull(name);
-            Objects.requireNonNull(list);
-            boolean first = true;
-            for (String s : list)
-            {
-                if (first)
-                    _response.setHeader(name, s);
-                else
-                    _response.addHeader(name, s);
-                first = false;
-            }
-            return this;
-        }
-
-        @Override
-        public Mutable remove(HttpHeader header)
-        {
-            _response.setHeader(header.asString(), null);
-            return this;
-        }
-
-        @Override
-        public Mutable remove(EnumSet<HttpHeader> fields)
-        {
-            for (HttpHeader header : fields)
-                remove(header);
-            return this;
-        }
-
-        @Override
-        public Mutable remove(String name)
-        {
-            _response.setHeader(name, null);
-            return this;
-        }
-    }
-
-    private static class ServletCoreResponse extends Response.Wrapper
-    {
-        // TODO fully implement this class and move it to the top level
-
-        private final HttpServletResponse _response;
-        private final Request _coreRequest;
-        private final HttpFields.Mutable _httpFields;
-        private final boolean _included;
-
-        public ServletCoreResponse(Request coreRequest, HttpServletResponse response, boolean included)
-        {
-            super(coreRequest, ServletContextResponse.getServletContextResponse(response));
-            _coreRequest = coreRequest;
-            _response = response;
-            HttpFields.Mutable fields = new HttpServletResponseHttpFields(response);
-            if (included)
-            {
-                // If included, accept but ignore mutations.
-                fields = new HttpFields.Mutable.Wrapper(fields)
-                {
-                    @Override
-                    public HttpField onAddField(HttpField field)
-                    {
-                        return null;
-                    }
-
-                    @Override
-                    public boolean onRemoveField(HttpField field)
-                    {
-                        return false;
-                    }
-                };
-            }
-            _httpFields = fields;
-            _included = included;
-        }
-
-        @Override
-        public HttpFields.Mutable getHeaders()
-        {
-            return _httpFields;
-        }
-
-        @Override
-        public boolean isCommitted()
-        {
-            return _response.isCommitted();
-        }
-
-        public boolean isWriting()
-        {
-            ServletContextResponse servletContextResponse = Response.as(getWrapped(), ServletContextResponse.class);
-            return servletContextResponse.isWriting();
-        }
-
-        @Override
-        public void write(boolean last, ByteBuffer byteBuffer, Callback callback)
-        {
-            if (_included)
-                last = false;
-            try
-            {
-                if (BufferUtil.hasContent(byteBuffer))
-                {
-                    if (isWriting())
-                    {
-                        String characterEncoding = _response.getCharacterEncoding();
-                        try (ByteBufferInputStream bbis = new ByteBufferInputStream(byteBuffer);
-                             InputStreamReader reader = new InputStreamReader(bbis, characterEncoding))
-                        {
-                            IO.copy(reader, _response.getWriter());
-                        }
-
-                        if (last)
-                            _response.getWriter().close();
-                    }
-                    else
-                    {
-                        BufferUtil.writeTo(byteBuffer, _response.getOutputStream());
-                        if (last)
-                            _response.getOutputStream().close();
-                    }
-                }
-
-                callback.succeeded();
-            }
-            catch (Throwable t)
-            {
-                callback.failed(t);
-            }
-        }
-
-        @Override
-        public Request getRequest()
-        {
-            return _coreRequest;
-        }
-
-        @Override
-        public int getStatus()
-        {
-            return _response.getStatus();
-        }
-
-        @Override
-        public void setStatus(int code)
-        {
-            if (LOG.isDebugEnabled())
-                LOG.debug("{}.setStatus({})", this.getClass().getSimpleName(), code);
-            if (_included)
-                return;
-            _response.setStatus(code);
-        }
-
-        @Override
-        public Supplier<HttpFields> getTrailersSupplier()
-        {
-            return null;
-        }
-
-        @Override
-        public void setTrailersSupplier(Supplier<HttpFields> trailers)
-        {
-        }
-
-        @Override
-        public void reset()
-        {
-            _response.reset();
-        }
-
-        @Override
-        public CompletableFuture<Void> writeInterim(int status, HttpFields headers)
-        {
-            return null;
-        }
-
-        @Override
-        public String toString()
-        {
-            return "%s@%x{%s,%s}".formatted(this.getClass().getSimpleName(), hashCode(), this._coreRequest, _response);
-        }
     }
 
     private class ServletResourceService extends ResourceService implements ResourceService.WelcomeFactory
@@ -1208,7 +758,7 @@ public class DefaultServlet extends HttpServlet
         {
             ServletCoreRequest servletCoreRequest = Request.as(request, ServletCoreRequest.class);
             if (servletCoreRequest != null)
-                return servletCoreRequest._servletRequest;
+                return servletCoreRequest.getServletRequest();
 
             ServletContextRequest servletContextRequest = Request.as(request, ServletContextRequest.class);
             if (servletContextRequest != null)
@@ -1221,7 +771,7 @@ public class DefaultServlet extends HttpServlet
         {
             ServletCoreResponse servletCoreResponse = Response.as(response, ServletCoreResponse.class);
             if (servletCoreResponse != null)
-                return servletCoreResponse._response;
+                return servletCoreResponse.getServletResponse();
 
             ServletContextResponse servletContextResponse = Response.as(response, ServletContextResponse.class);
             if (servletContextResponse != null)
@@ -1231,7 +781,7 @@ public class DefaultServlet extends HttpServlet
         }
     }
 
-    private static String getIncludedPathInContext(HttpServletRequest request, String includedServletPath, boolean isPathInfoOnly)
+    static String getIncludedPathInContext(HttpServletRequest request, String includedServletPath, boolean isPathInfoOnly)
     {
         String servletPath = isPathInfoOnly ? "/" : includedServletPath;
         String pathInfo = (String)request.getAttribute(RequestDispatcher.INCLUDE_PATH_INFO);
