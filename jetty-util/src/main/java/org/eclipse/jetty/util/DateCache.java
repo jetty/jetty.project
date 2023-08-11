@@ -37,7 +37,7 @@ public class DateCache
     private final String _formatString;
     private final DateTimeFormatter _tzFormat;
     private final ZoneId _zoneId;
-    private final int _msIndex;
+    private final boolean _subSecond;
 
     protected volatile Tick _tick1;
     protected volatile Tick _tick2;
@@ -52,19 +52,18 @@ public class DateCache
         {
             _seconds = seconds;
 
-            if (_msIndex < 0)
-            {
-                _prefix = string;
-                _suffix = null;
-            }
-            else
+            if (_subSecond)
             {
                 // We can't use _msIndex because the size of format string is not always equal to size of the formatted result.
                 int index = string.indexOf(MS_CONSTANT);
                 _prefix = string.substring(0, index);
                 _suffix = string.substring(index + MS_CONSTANT.length());
             }
-
+            else
+            {
+                _prefix = string;
+                _suffix = null;
+            }
         }
 
         public long getSeconds()
@@ -74,7 +73,7 @@ public class DateCache
 
         public String getString(long inDate)
         {
-            if (_msIndex < 0)
+            if (!_subSecond)
                 return _prefix;
 
             long ms = inDate % 1000;
@@ -125,9 +124,10 @@ public class DateCache
         _formatString = format;
         _zoneId = tz.toZoneId();
 
-        _msIndex = format.indexOf("SSS");
-        if (_msIndex >= 0)
-            format = format.substring(0, _msIndex) + MS_CONSTANT + format.substring(_msIndex + 3);
+        int msIndex = format.indexOf("SSS");
+        _subSecond = (msIndex >= 0);
+        if (_subSecond)
+            format = format.substring(0, msIndex) + MS_CONSTANT + format.substring(msIndex + 3);
 
         if (l == null)
             _tzFormat = DateTimeFormatter.ofPattern(format).withZone(_zoneId);
@@ -174,6 +174,7 @@ public class DateCache
      */
     public String formatWithoutCache(long inDate)
     {
+        // TODO: this will have the MS_replacement in it if SSS is used.
         return _tzFormat.format(Instant.ofEpochMilli(inDate));
     }
 
