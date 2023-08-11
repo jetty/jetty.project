@@ -28,6 +28,7 @@ import java.lang.reflect.Method;
 import java.net.URL;
 import java.nio.file.Files;
 import java.nio.file.Path;
+import java.nio.file.StandardOpenOption;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collections;
@@ -47,7 +48,6 @@ import org.eclipse.jetty.util.log.Logger;
 import org.eclipse.jetty.util.log.StdErrLog;
 import org.eclipse.jetty.util.resource.PathResource;
 import org.hamcrest.Matchers;
-import org.junit.jupiter.api.Disabled;
 import org.junit.jupiter.api.RepeatedTest;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
@@ -274,10 +274,15 @@ public class XmlConfigurationTest
 
     public XmlConfiguration asXmlConfiguration(String filename, String rawXml) throws IOException, SAXException
     {
+        if (!rawXml.contains("!DOCTYPE"))
+            rawXml = "<?xml version=\"1.0\" encoding=\"utf-8\"?>\n" +
+                "<!DOCTYPE Configure PUBLIC \"-//Jetty//Configure//EN\" \"https://eclipse.org/jetty/configure.dtd\">\n" +
+                rawXml;
         Path testFile = workDir.getEmptyPathDir().resolve(filename);
-        try (BufferedWriter writer = Files.newBufferedWriter(testFile, UTF_8))
+        try (BufferedWriter writer = Files.newBufferedWriter(testFile, UTF_8, StandardOpenOption.WRITE, StandardOpenOption.CREATE, StandardOpenOption.TRUNCATE_EXISTING))
         {
             writer.write(rawXml);
+            writer.flush();
         }
         return new XmlConfiguration(new PathResource(testFile));
     }

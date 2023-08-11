@@ -1944,6 +1944,12 @@ public class XmlConfiguration
             redirectEntity("https://jetty.eclipse.org/configure.dtd", config93);
             redirectEntity("http://www.eclipse.org/jetty/configure.dtd", config93);
             redirectEntity("https://www.eclipse.org/jetty/configure.dtd", config93);
+            redirectEntity("http://eclipse.org/jetty/configure.dtd", config93);
+            redirectEntity("https://eclipse.org/jetty/configure.dtd", config93);
+            redirectEntity("http://www.eclipse.dev/jetty/configure.dtd", config93);
+            redirectEntity("https://www.eclipse.dev/jetty/configure.dtd", config93);
+            redirectEntity("http://eclipse.dev/jetty/configure.dtd", config93);
+            redirectEntity("https://eclipse.dev/jetty/configure.dtd", config93);
             redirectEntity("-//Mort Bay Consulting//DTD Configure//EN", config93);
             redirectEntity("-//Jetty//Configure//EN", config93);
         }
