@@ -907,21 +907,20 @@ public class DefaultServlet extends HttpServlet
         }
     }
 
-    private static class ServletCoreResponse implements Response
+    private static class ServletCoreResponse extends Response.Wrapper
     {
         // TODO fully implement this class and move it to the top level
 
         private final HttpServletResponse _response;
         private final Request _coreRequest;
-        private final Response _coreResponse;
         private final HttpFields.Mutable _httpFields;
         private final boolean _included;
 
         public ServletCoreResponse(Request coreRequest, HttpServletResponse response, boolean included)
         {
+            super(coreRequest, ServletContextResponse.getServletContextResponse(response));
             _coreRequest = coreRequest;
             _response = response;
-            _coreResponse = ServletContextResponse.getServletContextResponse(response);
             HttpFields.Mutable fields = new HttpServletResponseHttpFields(response);
             if (included)
             {
@@ -959,7 +958,7 @@ public class DefaultServlet extends HttpServlet
 
         public boolean isWriting()
         {
-            ServletContextResponse servletContextResponse = Response.as(_coreResponse, ServletContextResponse.class);
+            ServletContextResponse servletContextResponse = Response.as(getWrapped(), ServletContextResponse.class);
             return servletContextResponse.isWriting();
         }
 
@@ -1031,12 +1030,6 @@ public class DefaultServlet extends HttpServlet
         @Override
         public void setTrailersSupplier(Supplier<HttpFields> trailers)
         {
-        }
-
-        @Override
-        public boolean isCompletedSuccessfully()
-        {
-            return _coreResponse.isCompletedSuccessfully();
         }
 
         @Override
@@ -1366,12 +1359,18 @@ public class DefaultServlet extends HttpServlet
         {
             try
             {
+                if (LOG.isDebugEnabled())
+                    LOG.debug("AsyncContextCallback failed {}", _asyncContext, x);
                 _response.sendError(-1);
             }
             catch (IOException e)
             {
                 if (ExceptionUtil.areNotAssociated(x, e))
                     x.addSuppressed(e);
+            }
+            finally
+            {
+                _asyncContext.complete();
             }
             if (LOG.isDebugEnabled())
                 LOG.debug("Async get failed", x);

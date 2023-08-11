@@ -1355,6 +1355,18 @@ public class HttpChannelState implements HttpChannel, Components
         }
 
         @Override
+        public boolean isLast()
+        {
+            try (AutoLock ignored = _request._lock.lock())
+            {
+                if (_request._httpChannelState == null)
+                    return true;
+
+                return _request._httpChannelState._streamSendState != StreamSendState.SENDING;
+            }
+        }
+
+        @Override
         public boolean isCompletedSuccessfully()
         {
             try (AutoLock ignored = _request._lock.lock())

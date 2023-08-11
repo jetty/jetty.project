@@ -100,6 +100,13 @@ public interface Response extends Content.Sink
     boolean isCommitted();
 
     /**
+     * <p>Returns whether the last write has been initiated on the response.</p>
+     *
+     * @return whether the response is last
+     */
+    boolean isLast();
+
+    /**
      * <p>Returns whether the response completed successfully.</p>
      * <p>The response HTTP status code, HTTP headers and content
      * have been successfully serialized and sent over the network
@@ -578,6 +585,12 @@ public interface Response extends Content.Sink
         public boolean isCommitted()
         {
             return getWrapped().isCommitted();
+        }
+
+        @Override
+        public boolean isLast()
+        {
+            return getWrapped().isLast();
         }
 
         @Override

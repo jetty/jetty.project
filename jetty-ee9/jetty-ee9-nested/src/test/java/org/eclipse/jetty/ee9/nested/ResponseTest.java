@@ -2483,6 +2483,12 @@ public class ResponseTest
         }
 
         @Override
+        public boolean isLast()
+        {
+            return _last;
+        }
+
+        @Override
         public boolean isCompletedSuccessfully()
         {
             return _last;
