@@ -610,17 +610,14 @@ public class ServletChannel
                                 ResponseUtils.ensureConsumeAvailableOrNotPersistent(_servletContextRequest, _servletContextRequest.getServletContextResponse());
                         }
 
-                        // RFC 7230, section 3.3.
-                        /* TODO why was this needed here?
+                        // RFC 7230, section 3.3.  We do this here so that a servlet error page can be sent.
                         if (!_servletContextRequest.isHead() &&
                             getServletContextResponse().getStatus() != HttpStatus.NOT_MODIFIED_304 &&
                             getServletContextResponse().isContentIncomplete(_servletContextRequest.getHttpOutput().getWritten()))
                         {
-                            System.err.printf("\nXXX %d != %d\n", getServletContextResponse().getContentLength(), _servletContextRequest.getHttpOutput().getWritten());
                             if (sendErrorOrAbort("Insufficient content written"))
                                 break;
                         }
-                         */
 
                         // If send error is called we need to break.
                         // TODO: is this necessary? It always returns false.

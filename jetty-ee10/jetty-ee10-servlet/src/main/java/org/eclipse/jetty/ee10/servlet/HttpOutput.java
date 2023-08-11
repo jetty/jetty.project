@@ -445,6 +445,9 @@ public class HttpOutput extends ServletOutputStream implements Runnable
         Blocker.Callback blocker = null;
         try (AutoLock l = _channelState.lock())
         {
+            if (_softClose)
+                return;
+
             if (_onError != null)
             {
                 if (_onError instanceof IOException)

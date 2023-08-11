@@ -149,7 +149,7 @@ public class AsyncContextState implements AsyncContext
         _state = null;
     }
 
-    public ServletRequestState getServletChannelState()
+    public ServletRequestState getServletRequestState()
     {
         return state();
     }

@@ -628,6 +628,24 @@ public class Dispatcher implements RequestDispatcher
         {
             // NOOP for include.
         }
+
+        @Override
+        public void sendError(int sc, String msg) throws IOException
+        {
+            // NOOP for include.
+        }
+
+        @Override
+        public void sendError(int sc) throws IOException
+        {
+            // NOOP for include.
+        }
+
+        @Override
+        public void sendRedirect(String location) throws IOException
+        {
+            // NOOP for include.
+        }
     }
 
     private class AsyncRequest extends ParameterRequestWrapper

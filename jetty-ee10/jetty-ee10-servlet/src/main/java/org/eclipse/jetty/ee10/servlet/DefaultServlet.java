@@ -1206,26 +1206,26 @@ public class DefaultServlet extends HttpServlet
 
         private HttpServletRequest getServletRequest(Request request)
         {
-            ServletContextRequest servletContextRequest = Request.as(request, ServletContextRequest.class);
-            if (servletContextRequest != null)
-                return servletContextRequest.getServletApiRequest();
-
             ServletCoreRequest servletCoreRequest = Request.as(request, ServletCoreRequest.class);
             if (servletCoreRequest != null)
                 return servletCoreRequest._servletRequest;
+
+            ServletContextRequest servletContextRequest = Request.as(request, ServletContextRequest.class);
+            if (servletContextRequest != null)
+                return servletContextRequest.getServletApiRequest();
 
             throw new IllegalStateException("instanceof " + request.getClass());
         }
 
         private HttpServletResponse getServletResponse(Response response)
         {
-            ServletContextResponse servletContextResponse = Response.as(response, ServletContextResponse.class);
-            if (servletContextResponse != null)
-                return servletContextResponse.getServletApiResponse();
-
             ServletCoreResponse servletCoreResponse = Response.as(response, ServletCoreResponse.class);
             if (servletCoreResponse != null)
                 return servletCoreResponse._response;
+
+            ServletContextResponse servletContextResponse = Response.as(response, ServletContextResponse.class);
+            if (servletContextResponse != null)
+                return servletContextResponse.getServletApiResponse();
 
             throw new IllegalStateException("instanceof " + response.getClass());
         }
