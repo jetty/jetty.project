@@ -833,6 +833,10 @@ public class Server extends Handler.Wrapper implements Attributes
 
     private static class DynamicErrorHandler extends ErrorHandler {}
 
+    /**
+     * The {@link Context} associated with all {@link Request}s prior to being handled by a
+     * {@link ContextHandler}.
+     */
     class ServerContext extends Attributes.Wrapper implements Context
     {
         private final File jettyBase = IO.asFile(System.getProperty("jetty.base"));

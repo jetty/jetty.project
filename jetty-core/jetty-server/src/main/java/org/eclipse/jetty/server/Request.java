@@ -130,43 +130,43 @@ public interface Request extends Attributes, Content.Source
     String getId();
 
     /**
-     * @return the {@link Components} to be used with this request.
+     * @return the {@link Components} to be used with this {@code Request}.
      */
     Components getComponents();
 
     /**
-     * @return the {@code ConnectionMetaData} associated to this request
+     * @return the {@code ConnectionMetaData} associated to this {@code Request}
      */
     ConnectionMetaData getConnectionMetaData();
 
     /**
-     * @return the HTTP method of this request
+     * @return the HTTP method of this {@code Request}
      */
     String getMethod();
 
     /**
-     * @return the HTTP URI of this request
+     * @return the HTTP URI of this {@code Request}
      * @see #getContextPath(Request)
      * @see #getPathInContext(Request)
      */
     HttpURI getHttpURI();
 
     /**
-     * Get the {@link Context} associated with this request. This method should
-     * never return null as if there is no {@link org.eclipse.jetty.server.handler.ContextHandler}
-     * handling the request, then the {@link Server}s, {@link org.eclipse.jetty.server.Server.ServerContext}
-     * instance will be returned.
+     * Get the {@link Context} associated with this {@code Request}.
+     * If the request is not being handled by a {@link org.eclipse.jetty.server.handler.ContextHandler} then
+     * the {@link org.eclipse.jetty.server.Server.ServerContext} instance will be returned.
      * @return the {@code Context} associated with this {@code Request}
      */
     Context getContext();
 
     /**
-     * <p>Returns the context path of this Request.</p>
-     * <p>This is equivalent to {@code request.getContext().getContextPath()}.</p>
+     * Get the context path of this {@code Request}.
+     * This is equivalent to {@code request.getContext().getContextPath()}.
      *
      * @param request The request to get the context path from.
-     * @return The encoded context path of the {@link Context}, or null for the {@link Server}'s context,
-     *         i.e. no {@link org.eclipse.jetty.server.handler.ContextHandler} is handling the request.
+     * @return The encoded context path of the {@link Context}.
+     *         If the request is not being handled by a {@link org.eclipse.jetty.server.handler.ContextHandler}
+     *         then {@code null} is returned (from {@link Server.ServerContext#getContextPath()}).
      * @see Context#getContextPath()
      */
     static String getContextPath(Request request)
@@ -189,7 +189,7 @@ public interface Request extends Attributes, Content.Source
     }
 
     /**
-     * @return the HTTP headers of this request
+     * @return the HTTP headers of this {@code Request}
      */
     HttpFields getHeaders();
 
@@ -206,7 +206,7 @@ public interface Request extends Attributes, Content.Source
     void demand(Runnable demandCallback);
 
     /**
-     * @return the HTTP trailers of this request, or {@code null} if they are not present
+     * @return the HTTP trailers of this {@code Request}, or {@code null} if they are not present
      */
     HttpFields getTrailers();
 
