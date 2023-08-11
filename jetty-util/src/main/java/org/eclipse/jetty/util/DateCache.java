@@ -121,13 +121,25 @@ public class DateCache
 
     public DateCache(String format, Locale l, TimeZone tz)
     {
+        this(format, l, tz, true);
+    }
+
+    public DateCache(String format, Locale l, TimeZone tz, boolean subSecondPrecision)
+    {
         _formatString = format;
         _zoneId = tz.toZoneId();
 
-        int msIndex = format.indexOf("SSS");
-        _subSecond = (msIndex >= 0);
-        if (_subSecond)
-            format = format.substring(0, msIndex) + MS_CONSTANT + format.substring(msIndex + 3);
+        if (subSecondPrecision)
+        {
+            int msIndex = format.indexOf("SSS");
+            _subSecond = (msIndex >= 0);
+            if (_subSecond)
+                format = format.substring(0, msIndex) + MS_CONSTANT + format.substring(msIndex + 3);
+        }
+        else
+        {
+            _subSecond = false;
+        }
 
         if (l == null)
             _tzFormat = DateTimeFormatter.ofPattern(format).withZone(_zoneId);

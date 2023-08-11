@@ -39,8 +39,9 @@ import org.openjdk.jmh.runner.options.TimeValue;
 @Measurement(iterations = 7, time = 500, timeUnit = TimeUnit.MILLISECONDS)
 public class DateCacheBenchmark
 {
-    DateTimeFormatter formatter = DateTimeFormatter.ofPattern(DateCache.DEFAULT_FORMAT + " SSS").withZone(TimeZone.getDefault().toZoneId());
-    DateCache dateCache = new DateCache(DateCache.DEFAULT_FORMAT + " SSS");
+    TimeZone timeZone = TimeZone.getDefault();
+    DateTimeFormatter formatter = DateTimeFormatter.ofPattern(DateCache.DEFAULT_FORMAT + " SSS").withZone(timeZone.toZoneId());
+    DateCache dateCache = new DateCache(DateCache.DEFAULT_FORMAT + " SSS", null, timeZone, false);
 
     @Benchmark
     @BenchmarkMode(Mode.Throughput)
