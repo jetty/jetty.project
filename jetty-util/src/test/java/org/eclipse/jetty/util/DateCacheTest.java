@@ -14,6 +14,7 @@
 package org.eclipse.jetty.util;
 
 import java.time.Instant;
+import java.time.format.DateTimeFormatter;
 import java.util.Date;
 import java.util.Locale;
 import java.util.TimeZone;
@@ -93,10 +94,10 @@ public class DateCacheTest
         DateCache dateCache = new DateCache(DateCache.DEFAULT_FORMAT + " | SSS", null, TimeZone.getTimeZone("UTC"))
         {
             @Override
-            protected String doFormat(long inDate)
+            protected String doFormat(long inDate, DateTimeFormatter formatter)
             {
                 counter.incrementAndGet();
-                return super.doFormat(inDate);
+                return super.doFormat(inDate, formatter);
             }
         };
 

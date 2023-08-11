@@ -41,7 +41,7 @@ public class DateCacheBenchmark
 {
     TimeZone timeZone = TimeZone.getDefault();
     DateTimeFormatter formatter = DateTimeFormatter.ofPattern(DateCache.DEFAULT_FORMAT + " SSS").withZone(timeZone.toZoneId());
-    DateCache dateCache = new DateCache(DateCache.DEFAULT_FORMAT + " SSS", null, timeZone, false);
+    DateCache dateCache = new DateCache(DateCache.DEFAULT_FORMAT + " SSS", null, timeZone, true);
 
     @Benchmark
     @BenchmarkMode(Mode.Throughput)

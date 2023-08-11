@@ -32,10 +32,10 @@ import java.util.TimeZone;
 public class DateCache
 {
     public static final String DEFAULT_FORMAT = "EEE MMM dd HH:mm:ss zzz yyyy";
-    private static final String MS_CONSTANT = "@??@";
 
     private final String _formatString;
-    private final DateTimeFormatter _tzFormat;
+    private final DateTimeFormatter _tzFormat1;
+    private final DateTimeFormatter _tzFormat2;
     private final ZoneId _zoneId;
     private final boolean _subSecond;
 
@@ -48,22 +48,11 @@ public class DateCache
         private final String _prefix;
         private final String _suffix;
 
-        public Tick(long seconds, String string)
+        public Tick(long seconds, String prefix, String suffix)
         {
             _seconds = seconds;
-
-            if (_subSecond)
-            {
-                // We can't use _msIndex because the size of format string is not always equal to size of the formatted result.
-                int index = string.indexOf(MS_CONSTANT);
-                _prefix = string.substring(0, index);
-                _suffix = string.substring(index + MS_CONSTANT.length());
-            }
-            else
-            {
-                _prefix = string;
-                _suffix = null;
-            }
+            _prefix = prefix;
+            _suffix = suffix;
         }
 
         public long getSeconds()
@@ -129,22 +118,41 @@ public class DateCache
         _formatString = format;
         _zoneId = tz.toZoneId();
 
+        String format1 = format;
+        String format2 = null;
         if (subSecondPrecision)
         {
             int msIndex = format.indexOf("SSS");
             _subSecond = (msIndex >= 0);
             if (_subSecond)
-                format = format.substring(0, msIndex) + MS_CONSTANT + format.substring(msIndex + 3);
+            {
+                format1 = format.substring(0, msIndex);
+                format2 = format.substring(msIndex + 3);
+            }
         }
         else
         {
             _subSecond = false;
         }
 
-        if (l == null)
-            _tzFormat = DateTimeFormatter.ofPattern(format).withZone(_zoneId);
+        if (_subSecond)
+        {
+            _tzFormat1 = createFormatter(format1, l, _zoneId);
+            _tzFormat2 = createFormatter(format2, l, _zoneId);
+        }
         else
-            _tzFormat = DateTimeFormatter.ofPattern(format, l).withZone(_zoneId);
+        {
+            _tzFormat1 = createFormatter(format1, l, _zoneId);
+            _tzFormat2 = null;
+        }
+    }
+
+    private DateTimeFormatter createFormatter(String format, Locale locale, ZoneId zoneId)
+    {
+        if (locale == null)
+            return DateTimeFormatter.ofPattern(format).withZone(_zoneId);
+        else
+            return DateTimeFormatter.ofPattern(format, locale).withZone(_zoneId);
     }
 
     public TimeZone getTimeZone()
@@ -179,16 +187,16 @@ public class DateCache
     }
 
     /**
-     * Format a date according to our stored formatter without using the cache.
-     * If SSS was in the format String it will be replaced by {@link #MS_CONSTANT}
-     * instead of the correct fraction-of-second time.
+     * Format a date according to supplied formatter.
      *
      * @param inDate the date in milliseconds since unix epoch.
      * @return Formatted date.
      */
-    protected String doFormat(long inDate)
+    protected String doFormat(long inDate, DateTimeFormatter formatter)
     {
-        return _tzFormat.format(Instant.ofEpochMilli(inDate));
+        if (formatter == null)
+            return null;
+        return formatter.format(Instant.ofEpochMilli(inDate));
     }
 
     /**
@@ -231,8 +239,9 @@ public class DateCache
         if (tick2 != null && tick2.getSeconds() == seconds)
             return tick2;
 
-        String s = doFormat(inDate);
-        Tick tick = new Tick(seconds, s);
+        String prefix = doFormat(inDate, _tzFormat1);
+        String suffix = doFormat(inDate, _tzFormat2);
+        Tick tick = new Tick(seconds, prefix, suffix);
 
         if (tick1 != null)
             _tick2 = tick1;
