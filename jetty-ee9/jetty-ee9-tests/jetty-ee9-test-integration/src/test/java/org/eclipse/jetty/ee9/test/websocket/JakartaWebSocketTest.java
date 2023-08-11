@@ -58,7 +58,7 @@ public class JakartaWebSocketTest
     @Test
     public void testChatEndpoint() throws Exception
     {
-        URI uri = WSURI.toWebsocket(server.getServerURI().resolve("/ee9-demo-jetty/jakarta.websocket"));
+        URI uri = WSURI.toWebsocket(server.getServerURI().resolve("/ee9-demo-jetty/javax.websocket"));
 
         WebSocketContainer container = ContainerProvider.getWebSocketContainer();
 

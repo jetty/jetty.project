@@ -16,7 +16,6 @@ package org.eclipse.jetty.ee10.servlet;
 import java.io.IOException;
 import java.io.PrintWriter;
 import java.util.Collection;
-import java.util.Collections;
 import java.util.EnumSet;
 import java.util.Locale;
 import java.util.Map;
@@ -580,7 +579,7 @@ public class ServletApiResponse implements HttpServletResponse
         @Override
         public Map<String, String> getAttributes()
         {
-            return Collections.emptyMap();
+            return _cookie.getAttributes();
         }
 
         @Override
@@ -592,7 +591,7 @@ public class ServletApiResponse implements HttpServletResponse
         @Override
         public boolean equals(Object obj)
         {
-            return obj instanceof HttpCookie && HttpCookie.equals(this, obj);
+            return HttpCookie.equals(this, obj);
         }
 
         @Override

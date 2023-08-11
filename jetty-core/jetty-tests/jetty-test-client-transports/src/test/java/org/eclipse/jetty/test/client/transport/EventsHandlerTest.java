@@ -28,6 +28,7 @@ import org.eclipse.jetty.client.ContentResponse;
 import org.eclipse.jetty.client.StringRequestContent;
 import org.eclipse.jetty.http.HttpFields;
 import org.eclipse.jetty.io.Content;
+import org.eclipse.jetty.logging.StacklessLogging;
 import org.eclipse.jetty.server.Handler;
 import org.eclipse.jetty.server.Request;
 import org.eclipse.jetty.server.Response;
@@ -54,55 +55,58 @@ public class EventsHandlerTest extends AbstractTest
     @MethodSource("transports")
     public void testEventsBufferAndChunkAreReadOnly(Transport transport) throws Exception
     {
-        List<Throwable> onRequestReadExceptions = new CopyOnWriteArrayList<>();
-        List<Throwable> onResponseWriteExceptions = new CopyOnWriteArrayList<>();
-        EventsHandler eventsHandler = new EventsHandler(new EchoHandler())
+        try (StacklessLogging ignored = new StacklessLogging(EventsHandler.class))
         {
-            @Override
-            protected void onRequestRead(Request request, Content.Chunk chunk)
+            List<Throwable> onRequestReadExceptions = new CopyOnWriteArrayList<>();
+            List<Throwable> onResponseWriteExceptions = new CopyOnWriteArrayList<>();
+            EventsHandler eventsHandler = new EventsHandler(new EchoHandler())
             {
-                try
+                @Override
+                protected void onRequestRead(Request request, Content.Chunk chunk)
                 {
-                    if (chunk != null)
+                    try
                     {
-                        chunk.getByteBuffer().put((byte)0);
+                        if (chunk != null)
+                        {
+                            chunk.getByteBuffer().put((byte)0);
+                        }
+                    }
+                    catch (ReadOnlyBufferException e)
+                    {
+                        onRequestReadExceptions.add(e);
+                        throw e;
+                    }
+                    if (chunk != null)
+                        chunk.skip(chunk.remaining());
+                }
+
+                @Override
+                protected void onResponseWrite(Request request, boolean last, ByteBuffer content)
+                {
+                    try
+                    {
+                        if (content != null)
+                            content.put((byte)0);
+                    }
+                    catch (ReadOnlyBufferException e)
+                    {
+                        onResponseWriteExceptions.add(e);
+                        throw e;
                     }
                 }
-                catch (ReadOnlyBufferException e)
-                {
-                    onRequestReadExceptions.add(e);
-                    throw e;
-                }
-                if (chunk != null)
-                    chunk.skip(chunk.remaining());
-            }
+            };
+            startServer(transport, eventsHandler);
+            startClient(transport);
 
-            @Override
-            protected void onResponseWrite(Request request, boolean last, ByteBuffer content)
-            {
-                try
-                {
-                    if (content != null)
-                        content.put((byte)0);
-                }
-                catch (ReadOnlyBufferException e)
-                {
-                    onResponseWriteExceptions.add(e);
-                    throw e;
-                }
-            }
-        };
-        startServer(transport, eventsHandler);
-        startClient(transport);
+            ContentResponse response = client.POST(newURI(transport))
+                .body(new StringRequestContent("ABCDEF"))
+                .send();
 
-        ContentResponse response = client.POST(newURI(transport))
-            .body(new StringRequestContent("ABCDEF"))
-            .send();
-
-        assertThat(response.getStatus(), is(200));
-        assertThat(response.getContentAsString(), is("ABCDEF"));
-        assertThat(onRequestReadExceptions.size(), greaterThan(0));
-        assertThat(onResponseWriteExceptions.size(), greaterThan(0));
+            assertThat(response.getStatus(), is(200));
+            assertThat(response.getContentAsString(), is("ABCDEF"));
+            assertThat(onRequestReadExceptions.size(), greaterThan(0));
+            assertThat(onResponseWriteExceptions.size(), greaterThan(0));
+        }
     }
 
     @ParameterizedTest

@@ -4,7 +4,7 @@
   <modelVersion>4.0.0</modelVersion>
   <groupId>org.eclipse.jetty</groupId>
   <artifactId>jetty-project</artifactId>
-  <version>12.0.0-SNAPSHOT</version>
+  <version>12.0.1-SNAPSHOT</version>
   <name>Jetty :: Project</name>
   <description>The Eclipse Jetty Project</description>
   <packaging>pom</packaging>
@@ -34,7 +34,7 @@
     <!-- dependency versions -->
     <alpn.agent.version>2.0.10</alpn.agent.version>
     <ant.version>1.10.13</ant.version>
-    <apache.avro.version>1.11.1</apache.avro.version>
+    <apache.avro.version>1.11.2</apache.avro.version>
     <apache.httpclient.version>4.5.14</apache.httpclient.version>
     <apache.httpcore.version>4.4.16</apache.httpcore.version>
     <asciidoctorj-diagram.version>2.2.9</asciidoctorj-diagram.version>
@@ -48,7 +48,7 @@
     <commons-codec.version>1.16.0</commons-codec.version>
     <commons.compress.version>1.23.0</commons.compress.version>
     <commons.io.version>2.13.0</commons.io.version>
-    <commons-lang3.version>3.12.0</commons-lang3.version>
+    <commons-lang3.version>3.13.0</commons-lang3.version>
     <conscrypt.version>2.5.2</conscrypt.version>
     <disruptor.version>3.4.2</disruptor.version>
     <felix.version>7.0.5</felix.version>
@@ -98,7 +98,7 @@
     <jmh.version>1.36</jmh.version>
     <jna.version>5.13.0</jna.version>
     <json-simple.version>1.1.1</json-simple.version>
-    <json-smart.version>2.4.11</json-smart.version>
+    <json-smart.version>2.5.0</json-smart.version>
     <junit.version>5.9.3</junit.version>
     <jsp.impl.version>10.0.14</jsp.impl.version>
     <kerb-simplekdc.version>2.0.3</kerb-simplekdc.version>
@@ -108,7 +108,7 @@
     <mariadb.docker.version>10.3.6</mariadb.docker.version>
     <maven.deps.version>3.9.0</maven.deps.version>
     <maven-artifact-transfer.version>0.13.1</maven-artifact-transfer.version>
-    <maven.resolver.version>1.9.13</maven.resolver.version>
+    <maven.resolver.version>1.9.14</maven.resolver.version>
     <maven.version>3.9.0</maven.version>
     <mongodb.version>3.12.11</mongodb.version>
     <openpojo.version>0.9.1</openpojo.version>
@@ -152,7 +152,7 @@
     <asciidoctor.maven.plugin.version>2.2.4</asciidoctor.maven.plugin.version>
     <build-helper.maven.plugin.version>3.3.0</build-helper.maven.plugin.version>
     <buildnumber.maven.plugin.version>3.0.0</buildnumber.maven.plugin.version>
-    <depends.maven.plugin.version>1.4.0</depends.maven.plugin.version>
+    <depends.maven.plugin.version>1.5.0</depends.maven.plugin.version>
     <flatten.maven.plugin.version>1.3.0</flatten.maven.plugin.version>
     <groovy.version>4.0.6</groovy.version>
     <h2spec.maven.plugin.version>1.0.10</h2spec.maven.plugin.version>

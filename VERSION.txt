@@ -1,4 +1,24 @@
-jetty-12.0.0-SNAPSHOT
+jetty-12.0.1-SNAPSHOT
+
+jetty-12.0.0 - 07 August 2023
+ + 8405 Servlet 3.1 ReadListener.onAllDataRead() is called twice under h2 or
+   h2c if the server doesn't respond within 30s
+ + 9386 SSL reports deprecated setting, but ssl.ini still uses it
+ + 9720 Http2Session.streamIdleTimeout should permit being disabled from
+   AbstractHTTP2ServerConnectionFactory
+ + 10121 ee9 to ee8 conversion not working for JSP files with jakarta imports
+ + 10135 Websocket: Using PerMessageDeflateExtension and flush in batchMode
+   send FLUSH_FRAME to client. 
+ + 10155 EE10 Servlet include after `HttpServletResponse.getWriter().println()`
+   omits `Content-Length` from the response
+ + 10160 Verify PROXY_AUTHENTICATION is sent to forward proxies
+ + 10164 Needless META-INF/resources and web-fragment.xml mounts
+ + 10211 NPE in ArrayByteBufferPool.findOldestEntry()
+ + 10227 EE10 Unable to use Cookie attributes with
+   `HttpServletResponse.addCookie(jakarta.servlet.http.Cookie)`
+ + 10229 HttpConfiguration.setIdleTimeout() breaks long running requests
+ + 10231 DefaultServlet no longer supports POST and OPTIONS and returns a 405
+   instead 
 
 jetty-12.0.0.beta4 - 26 July 2023
  + 8556 ServletContext.getSessionTimeout() incorrectly throws

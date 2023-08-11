@@ -607,8 +607,9 @@ public interface Handler extends LifeCycle, Destroyable, Request.Handler
     }
 
     /**
-     * <p>A {@link Handler.Container} that contains a list of other {@code Handler}s that are
-     * tried in sequence by {@link #handle(Request, Response, Callback)}.</p>
+     * <p>A {@link Handler.Container} that contains a list of other {@link Handler}s
+     * whose {@link Handler#handle(Request, Response, Callback)} method is invoked
+     * in sequence until {@code true} is returned.</p>
      */
     class Sequence extends AbstractContainer implements Collection
     {
