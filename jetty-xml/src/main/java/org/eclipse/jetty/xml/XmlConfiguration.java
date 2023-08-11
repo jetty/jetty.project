@@ -67,6 +67,7 @@ import org.eclipse.jetty.util.log.Logger;
 import org.eclipse.jetty.util.resource.Resource;
 import org.xml.sax.InputSource;
 import org.xml.sax.SAXException;
+import org.xml.sax.SAXParseException;
 
 /**
  * <p>Configures objects from XML.</p>
@@ -225,6 +226,10 @@ public class XmlConfiguration
             _location = resource;
             setConfig(parser.parse(inputStream));
             _dtd = parser.getDTD();
+        }
+        catch (SAXParseException e)
+        {
+            throw new SAXException("Unable to parse: " + resource + " ", e);
         }
     }
 
@@ -1942,14 +1947,21 @@ public class XmlConfiguration
             redirectEntity("http://jetty.mortbay.org/configure.dtd", config93);
             redirectEntity("http://jetty.eclipse.org/configure.dtd", config93);
             redirectEntity("https://jetty.eclipse.org/configure.dtd", config93);
-            redirectEntity("http://www.eclipse.org/jetty/configure.dtd", config93);
-            redirectEntity("https://www.eclipse.org/jetty/configure.dtd", config93);
-            redirectEntity("http://eclipse.org/jetty/configure.dtd", config93);
-            redirectEntity("https://eclipse.org/jetty/configure.dtd", config93);
-            redirectEntity("http://www.eclipse.dev/jetty/configure.dtd", config93);
-            redirectEntity("https://www.eclipse.dev/jetty/configure.dtd", config93);
-            redirectEntity("http://eclipse.dev/jetty/configure.dtd", config93);
-            redirectEntity("https://eclipse.dev/jetty/configure.dtd", config93);
+
+            String[] schemes = {"http", "https"};
+            String[] hosts = {"www.eclipse.org", "eclipse.org", "www.eclipse.dev", "eclipse.dev"};
+            String[] paths = {"/jetty/configure.dtd", "/jetty/configure_9_3.dtd"};
+
+            for (String scheme : schemes)
+            {
+                for (String host : hosts)
+                {
+                    for (String path : paths)
+                    {
+                        redirectEntity(scheme + "://" + host + path, config93);
+                    }
+                }
+            }
             redirectEntity("-//Mort Bay Consulting//DTD Configure//EN", config93);
             redirectEntity("-//Jetty//Configure//EN", config93);
         }
