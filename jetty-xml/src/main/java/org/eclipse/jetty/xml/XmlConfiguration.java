@@ -231,7 +231,7 @@ public class XmlConfiguration
         }
         catch (SAXParseException e)
         {
-            throw new SAXException("Unable to parse: " + resource + " ", e);
+            throw new SAXParseException("Unable to parse: " + resource, null, e);
         }
         finally
         {
