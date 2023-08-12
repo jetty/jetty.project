@@ -29,8 +29,56 @@
 [cols="1a,1a", options="header"]
 |===
 | Jetty 11.0.x | Jetty 12.0.x
-| org.eclipse.jetty.http2:**http2-server** | org.eclipse.jetty.http2:**jetty-http2-server**
+| org.eclipse.jetty.fcgi:**fcgi-client** | org.eclipse.jetty.http2:**jetty-fcgi-client**
+| org.eclipse.jetty.fcgi:**fcgi-server** | org.eclipse.jetty.http2:**jetty-fcgi-server**
+| org.eclipse.jetty.http2:**http2-client** | org.eclipse.jetty.http2:**jetty-http2-client**
+| org.eclipse.jetty.http2:**http2-common** | org.eclipse.jetty.http2:**jetty-http2-common**
+| org.eclipse.jetty.http2:**http2-hpack** | org.eclipse.jetty.http2:**jetty-http2-hpack**
 | org.eclipse.jetty.http2:**http2-http-client-transport** | org.eclipse.jetty.http2:**jetty-http2-client-transport**
+| org.eclipse.jetty.http2:**http2-server** | org.eclipse.jetty.http2:**jetty-http2-server**
+| org.eclipse.jetty.http3:**http3-client** | org.eclipse.jetty.http3:**jetty-http3-client**
+| org.eclipse.jetty.http3:**http3-common** | org.eclipse.jetty.http3:**jetty-http3-common**
+| org.eclipse.jetty.http3:**http3-http-client-transport** | org.eclipse.jetty.http3:**jetty-http3-client-transport**
+| org.eclipse.jetty.http3:**http3-qpack** | org.eclipse.jetty.http3:**jetty-http3-qpack**
+| org.eclipse.jetty.http3:**http3-server** | org.eclipse.jetty.http3:**jetty-http3-server**
+| org.eclipse.jetty:**jetty-osgi.*** | * org.eclipse.jetty:**jetty-osgi**
+* org.eclipse.jetty.{ee-all}:**jetty-{ee-all}-osgi-***
+| org.eclipse.jetty:**jetty-proxy** | * org.eclipse.jetty:**jetty-proxy**
+* org.eclipse.jetty.{ee-all}:**jetty-{ee-all}-proxy**
+| org.eclipse.jetty.quic:**quic-client** | org.eclipse.jetty.quic:**jetty-quic-client**
+| org.eclipse.jetty.quic:**quic-common** | org.eclipse.jetty.quic:**jetty-quic-common**
+| org.eclipse.jetty.quic:**quic-quiche** | org.eclipse.jetty.quic:**jetty-quic-quiche**
+| org.eclipse.jetty.quic:**quic-server** | org.eclipse.jetty.quic:**jetty-quic-server**
+| org.eclipse.jetty:**jetty-unixsocket.*** | Removed -- Use org.eclipse.jetty:jetty-unixdomain-server
+| org.eclipse.jetty.websocket:**websocket-core-client** | org.eclipse.jetty.websocket:**jetty-websocket-core-client**
+| org.eclipse.jetty.websocket:**websocket-core-common** | org.eclipse.jetty.websocket:**jetty-websocket-core-common**
+| org.eclipse.jetty.websocket:**websocket-core-server** | org.eclipse.jetty.websocket:**jetty-websocket-core-server**
+| org.eclipse.jetty.websocket:**websocket-jetty-api** | org.eclipse.jetty.websocket:**jetty-websocket-jetty-api**
+| org.eclipse.jetty.websocket:**websocket-jetty-client** | * org.eclipse.jetty.websocket:**jetty-websocket-jetty-client**
+* org.eclipse.jetty.**{ee-all}.websocket**:jetty-**{ee-all}-websocket-jetty-client**
+| org.eclipse.jetty.websocket:**websocket-jetty-common** | * org.eclipse.jetty.websocket:**jetty-websocket-jetty-common**
+* org.eclipse.jetty.**{ee-all}.websocket**:jetty-**{ee-all}-websocket-jetty-common**
+| org.eclipse.jetty.websocket:**websocket-jetty-server** | * org.eclipse.jetty.websocket:**jetty-websocket-jetty-server**
+* org.eclipse.jetty.**{ee-all}.websocket**:jetty-**{ee-all}-websocket-jetty-server**
+| org.eclipse.jetty.**websocket**:**websocket-jakarta-client** | org.eclipse.jetty.**{ee-all}.websocket**:**jetty-{ee-all}-websocket-jakarta-client**
+| org.eclipse.jetty.**websocket**:**websocket-jakarta-common** | org.eclipse.jetty.**{ee-all}.websocket**:**jetty-{ee-all}-websocket-jakarta-common**
+| org.eclipse.jetty.**websocket**:**websocket-jakarta-server** | org.eclipse.jetty.**{ee-all}.websocket**:**jetty-{ee-all}-websocket-jakarta-server**
+| org.eclipse.jetty.**websocket**:**websocket-servlet** | org.eclipse.jetty.**{ee-all}.websocket**:**jetty-{ee-all}-websocket-servlet**
+| org.eclipse.jetty:**apache-jsp** | org.eclipse.jetty.**{ee-all}**:**jetty-{ee-all}-apache-jsp**
+| org.eclipse.jetty:**jetty-annotations** | org.eclipse.jetty.**{ee-all}**:**jetty-{ee-all}-annotations**
+| org.eclipse.jetty:**jetty-ant** | Removed -- No Replacement
+| org.eclipse.jetty:**jetty-cdi** | org.eclipse.jetty.**{ee-all}**:**jetty-{ee-all}-cdi**
+| org.eclipse.jetty:**glassfish-jstl** | org.eclipse.jetty.**{ee-all}**:**jetty-{ee-all}-glassfish-jstl**
+| org.eclipse.jetty:**jetty-jaspi** | org.eclipse.jetty.**{ee-all}**:**jetty-{ee-all}-jetty-jaspi**
+| org.eclipse.jetty:**jetty-jndi** | org.eclipse.jetty.**{ee-all}**:**jetty-{ee-all}-jetty-jndi**
+| org.eclipse.jetty:**jetty-jspc-maven-plugin** | org.eclipse.jetty.**{ee-all}**:**jetty-{ee-all}-jetty-jspc-maven-plugin**
+| org.eclipse.jetty:**jetty-maven-plugin** | org.eclipse.jetty.**{ee-all}**:**jetty-{ee-all}-jetty-maven-plugin**
+| org.eclipse.jetty:**jetty-plus** | org.eclipse.jetty.**{ee-all}**:**jetty-{ee-all}-jetty-plus**
+| org.eclipse.jetty:**jetty-quickstart** | org.eclipse.jetty.**{ee-all}**:**jetty-{ee-all}-jetty-quickstart**
+| org.eclipse.jetty:**jetty-runner** | org.eclipse.jetty.**{ee-all}**:**jetty-{ee-all}-jetty-runner**
+| org.eclipse.jetty:**jetty-servlet** | org.eclipse.jetty.**{ee-all}**:**jetty-{ee-all}-jetty-servlet**
+| org.eclipse.jetty:**jetty-servlets** | org.eclipse.jetty.**{ee-all}**:**jetty-{ee-all}-jetty-servlets**
+| org.eclipse.jetty:**jetty-webapp** | org.eclipse.jetty.**{ee-all}**:**jetty-{ee-all}-jetty-webapp**
 |===
 
 [[pg-migration-11-to-12-class-packages-names]]
