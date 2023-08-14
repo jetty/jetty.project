@@ -69,9 +69,9 @@ public class XmlParser
      */
     public XmlParser()
     {
-        SAXParserFactory factory = SAXParserFactory.newInstance();
-        boolean validatingDft = factory.getClass().toString().startsWith("org.apache.xerces.");
-        String validatingProp = System.getProperty("org.eclipse.jetty.xml.XmlParser.Validating", validatingDft ? "true" : "false");
+        SAXParserFactory factory = newSAXParserFactory();
+        boolean validatingDefault = factory.getClass().toString().contains("org.apache.xerces.");
+        String validatingProp = System.getProperty("org.eclipse.jetty.xml.XmlParser.Validating", validatingDefault ? "true" : "false");
         boolean validating = Boolean.valueOf(validatingProp).booleanValue();
         setValidating(validating);
     }
@@ -81,11 +81,16 @@ public class XmlParser
         setValidating(validating);
     }
 
+    protected SAXParserFactory newSAXParserFactory()
+    {
+        return SAXParserFactory.newInstance();
+    }
+
     public void setValidating(boolean validating)
     {
         try
         {
-            SAXParserFactory factory = SAXParserFactory.newInstance();
+            SAXParserFactory factory = newSAXParserFactory();
             factory.setValidating(validating);
             _parser = factory.newSAXParser();
 
@@ -125,6 +130,11 @@ public class XmlParser
     public boolean isValidating()
     {
         return _parser.isValidating();
+    }
+
+    public SAXParser getSAXParser()
+    {
+        return _parser;
     }
 
     public synchronized void redirectEntity(String name, URL entity)
@@ -261,18 +271,10 @@ public class XmlParser
         if (pid != null)
             entity = _redirectMap.get(pid);
         if (entity == null)
-            entity = _redirectMap.get(sid);
-        if (entity == null)
-        {
-            String dtd = sid;
-            if (dtd.lastIndexOf('/') >= 0)
-                dtd = dtd.substring(dtd.lastIndexOf('/') + 1);
+            entity = (URL)_redirectMap.get(sid);
 
-            if (LOG.isDebugEnabled())
-                LOG.debug("Can't exact match entity in redirect map, trying " + dtd);
-            entity = _redirectMap.get(dtd);
-        }
-
+        // Only serve entity if found.
+        // We don't want to serve from unknown hosts or random paths.
         if (entity != null)
         {
             try
@@ -289,6 +291,9 @@ public class XmlParser
                 LOG.ignore(e);
             }
         }
+
+        if (LOG.isDebugEnabled())
+            LOG.debug("Entity not found for PID:{} / SID:{}", pid, sid);
         return null;
     }
 

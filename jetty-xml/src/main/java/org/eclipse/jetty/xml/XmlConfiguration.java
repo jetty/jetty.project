@@ -18,6 +18,7 @@
 
 package org.eclipse.jetty.xml;
 
+import java.io.Closeable;
 import java.io.IOException;
 import java.io.InputStream;
 import java.io.StringReader;
@@ -67,6 +68,7 @@ import org.eclipse.jetty.util.log.Logger;
 import org.eclipse.jetty.util.resource.Resource;
 import org.xml.sax.InputSource;
 import org.xml.sax.SAXException;
+import org.xml.sax.SAXParseException;
 
 /**
  * <p>Configures objects from XML.</p>
@@ -203,7 +205,7 @@ public class XmlConfiguration
     private final String _dtd;
     private ConfigurationProcessor _processor;
 
-    ConfigurationParser getParser()
+    public XmlParser getXmlParser()
     {
         Pool<ConfigurationParser>.Entry entry = __parsers.acquire(ConfigurationParser::new);
         if (entry == null)
@@ -220,11 +222,21 @@ public class XmlConfiguration
      */
     public XmlConfiguration(Resource resource) throws SAXException, IOException
     {
-        try (ConfigurationParser parser = getParser(); InputStream inputStream = resource.getInputStream())
+        XmlParser parser = getXmlParser();
+        try (InputStream inputStream = resource.getInputStream())
         {
             _location = resource;
             setConfig(parser.parse(inputStream));
             _dtd = parser.getDTD();
+        }
+        catch (SAXParseException e)
+        {
+            throw new SAXParseException("Unable to parse: " + resource, null, e);
+        }
+        finally
+        {
+            if (parser instanceof Closeable)
+                ((Closeable)parser).close();
         }
     }
 
@@ -257,12 +269,18 @@ public class XmlConfiguration
         configuration = "<?xml version=\"1.0\" encoding=\"utf-8\"?>\n" +
             "<!DOCTYPE Configure PUBLIC \"-//Jetty//Configure//EN\" \"http://www.eclipse.org/jetty/configure_9_3.dtd\">" +
             configuration;
-        try (ConfigurationParser parser = getParser(); StringReader reader = new StringReader(configuration))
+        XmlParser parser = getXmlParser();
+        try (StringReader reader = new StringReader(configuration))
         {
             InputSource source = new InputSource(reader);
             _location = null;
             setConfig(parser.parse(source));
             _dtd = parser.getDTD();
+        }
+        finally
+        {
+            if (parser instanceof Closeable)
+                ((Closeable)parser).close();
         }
     }
 
@@ -278,11 +296,17 @@ public class XmlConfiguration
     public XmlConfiguration(InputStream configuration) throws SAXException, IOException
     {
         InputSource source = new InputSource(configuration);
-        try (ConfigurationParser parser = getParser())
+        XmlParser parser = getXmlParser();
+        try
         {
             _location = null;
             setConfig(parser.parse(source));
             _dtd = parser.getDTD();
+        }
+        finally
+        {
+            if (parser instanceof Closeable)
+                ((Closeable)parser).close();
         }
     }
 
@@ -1918,7 +1942,7 @@ public class XmlConfiguration
         }
     }
 
-    private static class ConfigurationParser extends XmlParser implements AutoCloseable
+    private static class ConfigurationParser extends XmlParser implements Closeable
     {
         private final Pool<ConfigurationParser>.Entry _entry;
 
@@ -1942,8 +1966,23 @@ public class XmlConfiguration
             redirectEntity("http://jetty.mortbay.org/configure.dtd", config93);
             redirectEntity("http://jetty.eclipse.org/configure.dtd", config93);
             redirectEntity("https://jetty.eclipse.org/configure.dtd", config93);
-            redirectEntity("http://www.eclipse.org/jetty/configure.dtd", config93);
-            redirectEntity("https://www.eclipse.org/jetty/configure.dtd", config93);
+            redirectEntity("http://jetty.mortbay.org/configure.dtd", config93);
+
+            // Register all variations of DOCTYPE entity references for Config 9.3
+            String[] schemes = {"http", "https"};
+            String[] hosts = {"www.eclipse.org", "eclipse.org", "www.eclipse.dev", "eclipse.dev"};
+            String[] paths = {"/jetty/configure.dtd", "/jetty/configure_9_3.dtd"};
+
+            for (String scheme : schemes)
+            {
+                for (String host : hosts)
+                {
+                    for (String path : paths)
+                    {
+                        redirectEntity(String.format("%s://%s%s", scheme, host, path), config93);
+                    }
+                }
+            }
             redirectEntity("-//Mort Bay Consulting//DTD Configure//EN", config93);
             redirectEntity("-//Jetty//Configure//EN", config93);
         }

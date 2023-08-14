@@ -28,6 +28,7 @@ import java.lang.reflect.Method;
 import java.net.URL;
 import java.nio.file.Files;
 import java.nio.file.Path;
+import java.nio.file.StandardOpenOption;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collections;
@@ -47,7 +48,6 @@ import org.eclipse.jetty.util.log.Logger;
 import org.eclipse.jetty.util.log.StdErrLog;
 import org.eclipse.jetty.util.resource.PathResource;
 import org.hamcrest.Matchers;
-import org.junit.jupiter.api.Disabled;
 import org.junit.jupiter.api.RepeatedTest;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
@@ -57,6 +57,7 @@ import org.junit.jupiter.params.provider.Arguments;
 import org.junit.jupiter.params.provider.ArgumentsProvider;
 import org.junit.jupiter.params.provider.ArgumentsSource;
 import org.junit.jupiter.params.provider.MethodSource;
+import org.xml.sax.InputSource;
 import org.xml.sax.SAXException;
 
 import static java.nio.charset.StandardCharsets.UTF_8;
@@ -105,8 +106,16 @@ public class XmlConfigurationTest
         configuration.configure();
     }
 
+    public static Stream<Arguments> xmlConfigs()
+    {
+        return Stream.of(
+            Arguments.of("org/eclipse/jetty/xml/configureWithAttr.xml"),
+            Arguments.of("org/eclipse/jetty/xml/configureWithElements.xml")
+        );
+    }
+
     @ParameterizedTest
-    @ArgumentsSource(ScenarioProvider.class)
+    @MethodSource("xmlConfigs")
     public void testPassedObject(String configure) throws Exception
     {
         Map<String, String> properties = new HashMap<>();
@@ -274,10 +283,15 @@ public class XmlConfigurationTest
 
     public XmlConfiguration asXmlConfiguration(String filename, String rawXml) throws IOException, SAXException
     {
+        if (!rawXml.contains("!DOCTYPE"))
+            rawXml = "<?xml version=\"1.0\" encoding=\"utf-8\"?>\n" +
+                "<!DOCTYPE Configure PUBLIC \"-//Jetty//Configure//EN\" \"https://eclipse.org/jetty/configure.dtd\">\n" +
+                rawXml;
         Path testFile = workDir.getEmptyPathDir().resolve(filename);
-        try (BufferedWriter writer = Files.newBufferedWriter(testFile, UTF_8))
+        try (BufferedWriter writer = Files.newBufferedWriter(testFile, UTF_8, StandardOpenOption.WRITE, StandardOpenOption.CREATE, StandardOpenOption.TRUNCATE_EXISTING))
         {
             writer.write(rawXml);
+            writer.flush();
         }
         return new XmlConfiguration(new PathResource(testFile));
     }
@@ -1721,6 +1735,43 @@ public class XmlConfigurationTest
                 line.contains(": Deprecated ") &&
                 line.contains(testClass.getName());
         }
+    }
+
+    public static Stream<Arguments> xmlSystemIdSource()
+    {
+        List<Arguments> ids = new ArrayList<>();
+
+        String[] schemes = {"http", "https"};
+        String[] hosts = {"eclipse.org", "www.eclipse.org", "eclipse.dev", "www.eclipse.dev"};
+        String[] paths = {"/jetty/configure.dtd", "/jetty/configure_9_3.dtd"};
+
+        for (String scheme: schemes)
+        {
+            for (String host: hosts)
+            {
+                for (String path: paths)
+                {
+                    ids.add(Arguments.of(String.format("%s://%s%s", scheme, host, path)));
+                }
+            }
+        }
+
+        return ids.stream();
+    }
+
+    /**
+     * Test to ensure that all the XML System ID variants are covered in the
+     * {@link XmlConfiguration} internals.
+     */
+    @ParameterizedTest
+    @MethodSource("xmlSystemIdSource")
+    public void testSystemIdVariants(String xmlSystemId) throws IOException, SAXException
+    {
+        // empty raw xml, just to instantiate XmlConfiguration, so we can access the XmlParser / ConfigurationParser.
+        XmlConfiguration xmlConfiguration = asXmlConfiguration("<Configure class=\"org.eclipse.jetty.xml.TestConfiguration\" />");
+        XmlParser configurationProcessor = xmlConfiguration.getXmlParser();
+        InputSource inputSource = configurationProcessor.resolveEntity(null, xmlSystemId);
+        assertNotNull(inputSource, "SystemID: " + xmlSystemId + " does not exist");
     }
 
     private void assertHasExpectedLines(String type, List<String> actualLines, String[] expectedLines)
