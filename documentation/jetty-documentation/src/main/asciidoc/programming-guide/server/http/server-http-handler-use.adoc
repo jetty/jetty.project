@@ -40,7 +40,7 @@ Web applications can be written using exclusively the Servlet APIs, since develo
 Embedded web applications based on the Servlet APIs are described in xref:pg-server-http-handler-use-servlet[this section].
 
 Embedded web applications may also require additional features such as access to Jetty specific APIs, or utility features such as redirection from HTTP to HTTPS, support for `gzip` content compression, etc.
-The Jetty Server Libraries provides a number of out-of-the-box __Handler__s that implement the most common functionalities and are described in xref:pg-server-http-handler-use[this section].
+The Jetty Server Libraries provides a number of out-of-the-box ``Handler``s that implement the most common functionalities and are described in the next sections.
 
 [[pg-server-http-handler-use-util-context]]
 ====== ContextHandler
@@ -75,9 +75,9 @@ However, this has no knowledge of the concept of _context_ and just iterates thr
 
 A better choice for multiple web application is `ContextHandlerCollection`, that matches a _context_ from either its _context path_ or _virtual host_, without iterating through the ``Handler``s.
 
-If `ContextHandlerCollection` does not find a match, it just returns `false` from its `process(\...)` method.
+If `ContextHandlerCollection` does not find a match, it just returns `false` from its `handle(\...)` method.
 What happens next depends on the `Handler` tree structure: other ``Handler``s may be invoked after `ContextHandlerCollection`, for example `DefaultHandler` (see xref:pg-server-http-handler-use-util-default-handler[this section]).
-Eventually, if no `Handler` returns `true` from their own `process(\...)` method, then Jetty returns an HTTP `404` response to the client.
+Eventually, if no `Handler` returns `true` from their own `handle(\...)` method, then Jetty returns an HTTP `404` response to the client.
 
 [source,java,indent=0]
 ----
@@ -132,7 +132,7 @@ If you need to serve static resources from multiple directories:
 include::../../{doc_code}/org/eclipse/jetty/docs/programming/server/http/HTTPServerDocs.java[tags=multipleResourcesHandler]
 ----
 
-If the resource is not found, `ResourceHandler` will not return `true` from the `process(\...)` method, so what happens next depends on the `Handler` tree structure.
+If the resource is not found, `ResourceHandler` will not return `true` from the `handle(\...)` method, so what happens next depends on the `Handler` tree structure.
 See also xref:pg-server-http-handler-use-util-default-handler[how to use] `DefaultHandler`.
 
 [[pg-server-http-handler-use-util-gzip-handler]]
@@ -285,7 +285,7 @@ include::../../{doc_code}/org/eclipse/jetty/docs/programming/server/http/HTTPSer
 [[pg-server-http-handler-use-util-default-handler]]
 ====== DefaultHandler
 
-`DefaultHandler` is a terminal `Handler` that always returns `true` from its `process(\...)` method and performs the following:
+`DefaultHandler` is a terminal `Handler` that always returns `true` from its `handle(\...)` method and performs the following:
 
 * Serves the `favicon.ico` Jetty icon when it is requested
 * Sends a HTTP `404` response for any other request
@@ -357,7 +357,7 @@ Note also how adding a `Servlet` or a `Filter` returns a _holder_ object that ca
 
 When a request arrives to `ServletContextHandler` the request URI will be matched against the ``Filter``s and ``Servlet`` mappings and only those that match will process the request, as dictated by the Servlet specification.
 
-IMPORTANT: `ServletContextHandler` is a terminal `Handler`, that is it always returns `true` from its `process(\...)` method when invoked.
+IMPORTANT: `ServletContextHandler` is a terminal `Handler`, that is it always returns `true` from its `handle(\...)` method when invoked.
 Server applications must be careful when creating the `Handler` tree to put ``ServletContextHandler``s as last ``Handler``s in any `Handler.Collection` or as children of a `ContextHandlerCollection`.
 
 // TODO: revise what above, as ServletContextHandler is not a terminal handler.
@@ -385,12 +385,11 @@ The web application class loader is special because it behaves differently from 
 The typical class loading model, parent-first, is _inverted_ for web application class loaders, as they use a child-first model.
 
 Furthermore, the Servlet specification requires that web applications cannot load or otherwise access the Servlet container implementation classes, also called _server classes_.
-In the Jetty case, the Servlet specification class `javax.servlet.http.HttpServletRequest` is implemented by `org.eclipse.jetty.server.Request`.
-Web applications cannot downcast Servlet's `HttpServletRequest` to Jetty's `Request` to access Jetty specific features -- this ensures maximum web application portability across Servlet container implementations.
+Web applications receive the HTTP request object as an instance of the `jakarta.servlet.http.HttpServletRequest` interface, and cannot downcast it to the Jetty specific implementation of that interface to access Jetty specific features -- this ensures maximum web application portability across Servlet container implementations.
 
-Lastly, the Servlet specification requires that other classes, also called _system classes_, such as `javax.servlet.http.HttpServletRequest` or JDK classes such as `java.lang.String` or `java.sql.Connection` cannot be modified by web applications by putting, for example, modified versions of those classes in `WEB-INF/classes` so that they are loaded first by the web application class loader (instead of the class-path class loader where they are normally loaded from).
+Lastly, the Servlet specification requires that other classes, also called _system classes_, such as `jakarta.servlet.http.HttpServletRequest` or JDK classes such as `java.lang.String` or `java.sql.Connection` cannot be modified by web applications by putting, for example, modified versions of those classes in `WEB-INF/classes` so that they are loaded first by the web application class loader (instead of the class-path class loader where they are normally loaded from).
 
-`WebAppContext` implements this class loader logic using a single class loader, `org.eclipse.jetty.ee9.webapp.WebAppClassLoader`, with filtering capabilities: when it loads a class, it checks whether the class is a _system class_ or a _server class_ and acts according to the Servlet specification.
+`WebAppContext` implements this class loader logic using a single class loader, `WebAppClassLoader`, with filtering capabilities: when it loads a class, it checks whether the class is a _system class_ or a _server class_ and acts according to the Servlet specification.
 
 When `WebAppClassLoader` is asked to load a class, it first tries to find the class locally (since it must use the inverted child-first model); if the class is found, and it is not a _system class_, the class is loaded; otherwise the class is not found locally.
 If the class is not found locally, the parent class loader is asked to load the class; the parent class loader uses the standard parent-first model, so it delegates the class loading to its parent, and so on.

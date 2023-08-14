@@ -209,10 +209,9 @@ NOTE: In Java versions where virtual threads are a preview feature, remember to 
 
 `QueuedThreadPool` can be configured to use virtual threads by specifying the virtual threads `Executor`:
 
-[source,java]
+[source,java,indent=0]
 ----
-QueuedThreadPool threadPool = new QueuedThreadPool();
-threadPool.setVirtualThreadsExecutor(Executors.newVirtualThreadPerTaskExecutor());
+include::{doc_code}/org/eclipse/jetty/docs/programming/ArchitectureDocs.java[tags=virtual]
 ----
 
 [CAUTION]
