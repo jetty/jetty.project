@@ -445,6 +445,20 @@ public class ServletChannel
         _written = 0;
     }
 
+
+    public void dispatched(Dispatchable dispatchable) throws Exception
+    {
+        if (LOG.isDebugEnabled())
+            LOG.debug("handle {} {} ", _servletContextRequest.getHttpURI(), this);
+
+        Action action = _state.handling();
+        if (action != Action.DISPATCH)
+            throw new IllegalStateException(action.name());
+
+        dispatchable.dispatch();
+
+    }
+
     /**
      * Handle the servlet request. This is called on the initial dispatch and then again on any asynchronous events.
      * @return True if the channel is ready to continue handling (ie it is not suspended)
@@ -889,7 +903,7 @@ public class ServletChannel
         }
     }
 
-    interface Dispatchable
+    public interface Dispatchable
     {
         void dispatch() throws Exception;
     }
