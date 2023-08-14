@@ -129,7 +129,7 @@ public class ServletChannel
         _expects100Continue = servletContextRequest.getHeaders().contains(HttpHeader.EXPECT, HttpHeaderValue.CONTINUE.asString());
 
         if (LOG.isDebugEnabled())
-            LOG.debug("new {} -> {},{}",
+            LOG.debug("associate {} -> {} : {}",
                 this,
                 _servletContextRequest,
                 _state);
@@ -158,6 +158,13 @@ public class ServletChannel
         _request = request;
         _response = response;
         _callback = callback;
+
+        if (LOG.isDebugEnabled())
+            LOG.debug("associate {} -> {},{},{}",
+                this,
+                _request,
+                _response,
+                _callback);
     }
 
     public ServletContextHandler.ServletScopedContext getContext()
@@ -481,6 +488,7 @@ public class ServletChannel
 
                     case DISPATCH:
                     {
+                        reopen();
                         dispatch();
                         break;
                     }
