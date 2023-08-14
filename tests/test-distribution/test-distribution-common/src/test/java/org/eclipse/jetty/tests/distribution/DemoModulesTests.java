@@ -630,7 +630,8 @@ public class DemoModulesTests extends AbstractJettyHomeTest
             String[] argsStart =
             {
                  "jetty.http.port=" + httpPort,
-                 "jetty.ssl.port=" + sslPort
+                 "jetty.ssl.port=" + sslPort,
+                 "-Dorg.eclipse.jetty.LEVEL=DEBUG"
             };
             try (JettyHomeTester.Run runStart = distribution.start(argsStart))
             {

@@ -36,6 +36,7 @@ import org.eclipse.jetty.io.Content;
 import org.eclipse.jetty.io.EofException;
 import org.eclipse.jetty.io.RetainableByteBuffer;
 import org.eclipse.jetty.server.HttpConfiguration;
+import org.eclipse.jetty.server.Response;
 import org.eclipse.jetty.util.Blocker;
 import org.eclipse.jetty.util.BufferUtil;
 import org.eclipse.jetty.util.Callback;
@@ -154,12 +155,20 @@ public class HttpOutput extends ServletOutputStream implements Runnable
             _commitSize = _bufferSize;
         }
     }
-    
+
+    /**
+     * @return True if any content has been written via the {@link jakarta.servlet.http.HttpServletResponse} API.
+     */
     public boolean isWritten()
     {
         return _written > 0;
     }
 
+    /**
+     * @return The bytes written via the {@link jakarta.servlet.http.HttpServletResponse} API.  This
+     * may differ from the bytes reported by {@link org.eclipse.jetty.server.Response#getContentBytesWritten(Response)}
+     * due to buffering, compression, other interception or writes that bypass the servlet API.
+     */
     public long getWritten()
     {
         return _written;

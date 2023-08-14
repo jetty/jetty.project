@@ -86,7 +86,6 @@ public class ServletChannel
     private Response _response;
     private Callback _callback;
     private boolean _expects100Continue;
-    private long _written;
 
     public ServletChannel(ServletContextHandler servletContextHandler, Request request)
     {
@@ -214,7 +213,7 @@ public class ServletChannel
 
     public long getBytesWritten()
     {
-        return _written;
+        return Response.getContentBytesWritten(getServletContextResponse());
     }
 
     /**
@@ -442,7 +441,6 @@ public class ServletChannel
         _httpInput.recycle();
         _servletContextRequest = null;
         _callback = null;
-        _written = 0;
     }
 
     /**
@@ -611,11 +609,10 @@ public class ServletChannel
                         }
 
                         // RFC 7230, section 3.3.  We do this here so that a servlet error page can be sent.
-                        if (!_servletContextRequest.isHead() &&
-                            getServletContextResponse().getStatus() != HttpStatus.NOT_MODIFIED_304 &&
-                            getServletContextResponse().isContentIncomplete(_servletContextRequest.getHttpOutput().getWritten()))
+                        if (!_servletContextRequest.isHead() && getServletContextResponse().getStatus() != HttpStatus.NOT_MODIFIED_304)
                         {
-                            if (sendErrorOrAbort("Insufficient content written"))
+                            long written = getBytesWritten();
+                            if (getServletContextResponse().isContentIncomplete(written) && sendErrorOrAbort("Insufficient content written %d < %d".formatted(written, getServletContextResponse().getContentLength())))
                                 break;
                         }
 
