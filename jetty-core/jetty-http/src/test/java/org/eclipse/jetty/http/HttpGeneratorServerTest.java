@@ -217,48 +217,80 @@ public class HttpGeneratorServerTest
     public void testSendServerXPoweredBy() throws Exception
     {
         ByteBuffer header = BufferUtil.allocate(8096);
+
         HttpFields.Mutable fields1 = HttpFields.build();
-        MetaData.Response info = new MetaData.Response(200, null, HttpVersion.HTTP_1_1, fields1);
+        MetaData.Response info1 = new MetaData.Response(200, null, HttpVersion.HTTP_1_1, fields1);
+
         HttpFields.Mutable fields2 = HttpFields.build();
         fields2.add(HttpHeader.SERVER, "SomeServer");
         fields2.add(HttpHeader.X_POWERED_BY, "SomePower");
-        MetaData.Response infoF = new MetaData.Response(200, null, HttpVersion.HTTP_1_1, fields2);
+        MetaData.Response info2 = new MetaData.Response(200, null, HttpVersion.HTTP_1_1, fields2);
+
         String head;
+        String rawExpected;
+        HttpTester.Response expectedResponse;
+        HttpTester.Response actualResponse;
 
         HttpGenerator gen = new HttpGenerator(true, true);
-        gen.generateResponse(info, false, header, null, null, true);
+        gen.generateResponse(info1, false, header, null, null, true);
         head = BufferUtil.toString(header);
-        BufferUtil.clear(header);
-        assertThat(head, containsString("HTTP/1.1 200 OK"));
-        assertThat(head, containsString("Server: Jetty(10.x.x)"));
-        assertThat(head, containsString("X-Powered-By: Jetty(10.x.x)"));
-        gen.reset();
-        gen.generateResponse(infoF, false, header, null, null, true);
-        head = BufferUtil.toString(header);
-        BufferUtil.clear(header);
-        assertThat(head, containsString("HTTP/1.1 200 OK"));
-        assertThat(head, not(containsString("Server: Jetty(10.x.x)")));
-        assertThat(head, containsString("Server: SomeServer"));
-        assertThat(head, containsString("X-Powered-By: Jetty(10.x.x)"));
-        assertThat(head, containsString("X-Powered-By: SomePower"));
-        gen.reset();
 
-        gen = new HttpGenerator(false, false);
-        gen.generateResponse(info, false, header, null, null, true);
-        head = BufferUtil.toString(header);
+        actualResponse = HttpTester.parseResponse(head);
+        expectedResponse = HttpTester.parseResponse("""
+            HTTP/1.1 200 OK\r
+            Content-Length: 0\r
+            Server: Jetty(12.x.x)\r
+            X-Powered-By: Jetty(12.x.x)\r
+            \r
+            """);
+        assertEquals(expectedResponse.get(), actualResponse.get());
+
         BufferUtil.clear(header);
-        assertThat(head, containsString("HTTP/1.1 200 OK"));
-        assertThat(head, not(containsString("Server: Jetty(10.x.x)")));
-        assertThat(head, not(containsString("X-Powered-By: Jetty(10.x.x)")));
         gen.reset();
-        gen.generateResponse(infoF, false, header, null, null, true);
+        gen.generateResponse(info2, false, header, null, null, true);
         head = BufferUtil.toString(header);
+
+        actualResponse = HttpTester.parseResponse(head);
+        expectedResponse = HttpTester.parseResponse("""
+            HTTP/1.1 200 OK\r
+            Server: SomeServer\r
+            X-Powered-By: SomePower\r
+            Content-Length: 0\r
+            X-Powered-By: Jetty(12.x.x)\r
+            \r
+            """);
+        assertEquals(expectedResponse.get(), actualResponse.get());
+
         BufferUtil.clear(header);
-        assertThat(head, containsString("HTTP/1.1 200 OK"));
-        assertThat(head, not(containsString("Server: Jetty(10.x.x)")));
-        assertThat(head, containsString("Server: SomeServer"));
-        assertThat(head, not(containsString("X-Powered-By: Jetty(10.x.x)")));
-        assertThat(head, containsString("X-Powered-By: SomePower"));
+        gen.reset();
+        gen = new HttpGenerator(false, false);
+        gen.generateResponse(info1, false, header, null, null, true);
+        head = BufferUtil.toString(header);
+
+        actualResponse = HttpTester.parseResponse(head);
+        expectedResponse = HttpTester.parseResponse("""
+            HTTP/1.1 200 OK\r
+            Content-Length: 0\r
+            \r
+            """);
+        assertEquals(expectedResponse.get(), actualResponse.get());
+
+        BufferUtil.clear(header);
+        gen.reset();
+        gen.generateResponse(info2, false, header, null, null, true);
+        head = BufferUtil.toString(header);
+
+        actualResponse = HttpTester.parseResponse(head);
+        expectedResponse = HttpTester.parseResponse("""
+            HTTP/1.1 200 OK\r
+            Server: SomeServer\r
+            X-Powered-By: SomePower\r
+            Content-Length: 0\r
+            \r
+            """);
+        assertEquals(expectedResponse.get(), actualResponse.get());
+
+        BufferUtil.clear(header);
         gen.reset();
     }
 

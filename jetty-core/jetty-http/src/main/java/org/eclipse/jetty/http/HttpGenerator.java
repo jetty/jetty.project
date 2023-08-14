@@ -839,9 +839,9 @@ public class HttpGenerator
     private static final byte[] TRANSFER_ENCODING_CHUNKED = StringUtil.getBytes("Transfer-Encoding: chunked\r\n");
     private static final byte[][] SEND = new byte[][]{
         new byte[0],
-        StringUtil.getBytes("Server: Jetty(10.x.x)\r\n"),
-        StringUtil.getBytes("X-Powered-By: Jetty(10.x.x)\r\n"),
-        StringUtil.getBytes("Server: Jetty(10.x.x)\r\nX-Powered-By: Jetty(10.x.x)\r\n")
+        StringUtil.getBytes("Server: Jetty(12.x.x)\r\n"),
+        StringUtil.getBytes("X-Powered-By: Jetty(12.x.x)\r\n"),
+        StringUtil.getBytes("Server: Jetty(12.x.x)\r\nX-Powered-By: Jetty(12.x.x)\r\n")
     };
 
     // Build cache of response lines for status
