@@ -918,8 +918,7 @@ public class DefaultServlet extends HttpServlet
             }
             catch (IOException e)
             {
-                if (ExceptionUtil.areNotAssociated(x, e))
-                    x.addSuppressed(e);
+                ExceptionUtil.addSuppressedIfNotAssociated(x, e);
             }
             finally
             {

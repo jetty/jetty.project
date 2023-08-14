@@ -26,6 +26,7 @@ import org.eclipse.jetty.util.thread.Invocable;
  */
 public class ExceptionUtil
 {
+
     /**
      * <p>Convert a {@link Throwable} to a specific type by casting or construction on a new instance.</p>
      *
@@ -176,6 +177,18 @@ public class ExceptionUtil
         }
 
         return true;
+    }
+
+    /**
+     * Add a suppressed exception if it is not associated.
+     * @see #areNotAssociated(Throwable, Throwable)
+     * @param throwable The main Throwable
+     * @param suppressed The Throwable to suppress if it is not associated.
+     */
+    public static void addSuppressedIfNotAssociated(Throwable throwable, Throwable suppressed)
+    {
+        if (areNotAssociated(throwable, suppressed))
+            throwable.addSuppressed(suppressed);
     }
 
     /**

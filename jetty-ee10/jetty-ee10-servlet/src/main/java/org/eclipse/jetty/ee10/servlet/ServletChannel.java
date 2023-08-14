@@ -541,8 +541,8 @@ public class ServletChannel
                         {
                             if (cause == null)
                                 cause = x;
-                            else if (ExceptionUtil.areNotAssociated(cause, x))
-                                cause.addSuppressed(x);
+                            else
+                                ExceptionUtil.addSuppressedIfNotAssociated(cause, x);
                             if (LOG.isDebugEnabled())
                                 LOG.debug("Could not perform ERROR dispatch, aborting", cause);
                             if (_state.isResponseCommitted())
@@ -558,8 +558,7 @@ public class ServletChannel
                                 }
                                 catch (Throwable t)
                                 {
-                                    if (ExceptionUtil.areNotAssociated(cause, t))
-                                        cause.addSuppressed(t);
+                                    ExceptionUtil.addSuppressedIfNotAssociated(cause, t);
                                     abort(cause);
                                 }
                             }

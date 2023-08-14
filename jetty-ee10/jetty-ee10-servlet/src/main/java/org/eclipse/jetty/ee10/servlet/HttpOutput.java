@@ -1468,8 +1468,7 @@ public class HttpOutput extends ServletOutputStream implements Runnable
             }
             catch (Throwable t)
             {
-                if (ExceptionUtil.areNotAssociated(e, t))
-                    e.addSuppressed(t);
+                ExceptionUtil.addSuppressedIfNotAssociated(e, t);
             }
             finally
             {

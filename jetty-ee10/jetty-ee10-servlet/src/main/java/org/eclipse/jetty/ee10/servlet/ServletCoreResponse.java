@@ -87,9 +87,9 @@ class ServletCoreResponse implements Response
     }
 
     @Override
-    public boolean isLastWrite()
+    public boolean hasLastWrite()
     {
-        return _servletContextResponse.isLastWrite();
+        return _servletContextResponse.hasLastWrite();
     }
 
     @Override
