@@ -72,14 +72,6 @@ public class ResponseHttpFields implements HttpFields.Mutable
     }
 
     @Override
-    public HttpFields takeAsImmutable()
-    {
-        if (_committed.get())
-            return this;
-        return _fields.asImmutable();
-    }
-
-    @Override
     public Mutable add(HttpField field)
     {
         if (field != null && !_committed.get())

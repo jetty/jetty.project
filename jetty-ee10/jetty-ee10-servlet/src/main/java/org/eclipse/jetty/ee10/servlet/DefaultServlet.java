@@ -866,9 +866,9 @@ public class DefaultServlet extends HttpServlet
         }
 
         @Override
-        public Mutable remove(EnumSet<HttpHeader> fields)
+        public Mutable remove(EnumSet<HttpHeader> headers)
         {
-            for (HttpHeader header : fields)
+            for (HttpHeader header : headers)
                 remove(header);
             return this;
         }

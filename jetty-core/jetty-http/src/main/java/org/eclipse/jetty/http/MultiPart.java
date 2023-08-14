@@ -92,7 +92,7 @@ public class MultiPart
     public static String extractBoundary(String contentType)
     {
         Map<String, String> parameters = new HashMap<>();
-        HttpField.valueParameters(contentType, parameters);
+        HttpField.getValueParameters(contentType, parameters);
         return CONTENT_DISPOSITION_TOKENIZER.unquote(parameters.get("boundary"));
     }
 
@@ -1665,7 +1665,8 @@ public class MultiPart
             this.name = null;
             String fileName = getFileName();
             this.fileName = null;
-            HttpFields headers = fields.takeAsImmutable();
+            HttpFields headers = fields.asImmutable();
+            fields.clear();
             notifyPart(name, fileName, headers);
         }
 

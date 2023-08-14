@@ -193,7 +193,7 @@ public class GzipResponseAndCallback extends Response.Wrapper implements Callbac
         String ct = response.getHeaders().get(HttpHeader.CONTENT_TYPE);
         if (ct != null)
         {
-            String baseType = HttpField.valueParameters(ct, null);
+            String baseType = HttpField.getValueParameters(ct, null);
             if (!_factory.isMimeTypeDeflatable(baseType))
             {
                 LOG.debug("{} exclude by mimeType {}", this, ct);
