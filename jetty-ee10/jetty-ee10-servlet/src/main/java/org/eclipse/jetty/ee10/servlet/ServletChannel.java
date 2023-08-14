@@ -21,7 +21,7 @@ import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicLong;
 
 import jakarta.servlet.RequestDispatcher;
-import org.eclipse.jetty.ee10.servlet.ServletRequestState.Action;
+import org.eclipse.jetty.ee10.servlet.ServletChannelState.Action;
 import org.eclipse.jetty.http.BadMessageException;
 import org.eclipse.jetty.http.HttpFields;
 import org.eclipse.jetty.http.HttpHeader;
@@ -53,7 +53,7 @@ import static org.eclipse.jetty.util.thread.Invocable.InvocationType.NON_BLOCKIN
 /**
  * The ServletChannel contains the state and behaviors associated with the Servlet API
  * lifecycle for a single request/response cycle. Specifically it uses
- * {@link ServletRequestState} to coordinate the states of dispatch state, input and
+ * {@link ServletChannelState} to coordinate the states of dispatch state, input and
  * output according to the servlet specification.  The combined state so obtained
  * is reflected in the behaviour of the contained {@link HttpInput} implementation of
  * {@link jakarta.servlet.ServletInputStream}.
@@ -64,14 +64,14 @@ import static org.eclipse.jetty.util.thread.Invocable.InvocationType.NON_BLOCKIN
  * and then {@link #associate(Request, Response, Callback) associated} with possibly wrapped
  * request, response and callback.
  * </p>
- * @see ServletRequestState
+ * @see ServletChannelState
  * @see HttpInput
  */
 public class ServletChannel
 {
     private static final Logger LOG = LoggerFactory.getLogger(ServletChannel.class);
 
-    private final ServletRequestState _state;
+    private final ServletChannelState _state;
     private final ServletContextHandler.ServletScopedContext _context;
     private final ServletContextHandler.ServletContextApi _servletContextApi;
     private final ConnectionMetaData _connectionMetaData;
@@ -95,7 +95,7 @@ public class ServletChannel
         _context = servletContextHandler.getContext();
         _servletContextApi = _context.getServletContext();
         _connectionMetaData = connectionMetaData;
-        _state = new ServletRequestState(this);
+        _state = new ServletChannelState(this);
         _httpInput = new HttpInput(this);
         _httpOutput = new HttpOutput(this);
     }
@@ -204,7 +204,7 @@ public class ServletChannel
         return HostPort.normalizeHost(addr);
     }
 
-    public ServletRequestState getServletRequestState()
+    public ServletChannelState getServletRequestState()
     {
         return _state;
     }
