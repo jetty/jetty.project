@@ -30,25 +30,28 @@ import org.eclipse.jetty.util.component.Dumpable;
  * <p>ResourceFactory is the source of new {@link Resource} instances.</p>
  *
  * <p>
- *     It is important to understand the scope of any {@code ResourceFactory}
- *     objects you create, as all {@link Resource} instances created from
- *     it will be tied to the life of the {@link ResourceFactory}.
+ *     It is important to understand that some {@link Resource} objects
+ *     have internal allocation / release model, that the {@link ResourceFactory}
+ *     is responsible for.   The type of {@link ResourceFactory} you allocate
+ *     will determine how long each {@link Resource} object is valid for (eg:
+ *     once a {@link ResourceFactory.LifeCycle} is stopped, the {@link Resource}
+ *     objects created from that {@link ResourceFactory} are also released.
  * </p>
  *
- * <h2>A {@code ResourceFactory} tied to a Jetty {@link org.eclipse.jetty.util.component.LifeCycle}</h2>
+ * <h2>A {@link ResourceFactory.LifeCycle} tied to a Jetty {@link org.eclipse.jetty.util.component.Container}</h2>
  * <pre>
- *     ResourceFactory resourceFactory = ResourceFactory.of(lifecycle);
+ *     ResourceFactory.LifeCycle resourceFactory = ResourceFactory.of(container);
  *     Resource resource = resourceFactory.newResource(ref);
  * </pre>
  * <p>
- *     The use of {@link ResourceFactory#of(Container)} results in a {@link ResourceFactory} that is tied
- *     to a specific Jetty {@link org.eclipse.jetty.util.component.LifeCycle} such as a {@code Server},
+ *     The use of {@link ResourceFactory#of(Container)} results in a {@link ResourceFactory.LifeCycle} that is tied
+ *     to a specific Jetty {@link org.eclipse.jetty.util.component.Container} such as a {@code Server},
  *     {@code ServletContextHandler}, or {@code WebAppContext}.   This will free the {@code Resource}
  *     instances created by the {@link org.eclipse.jetty.util.resource.ResourceFactory} once
- *     the {@code lifecycle} it is associated with is stopped.
+ *     the {@code container} that manages it is stopped.
  * </p>
  *
- * <h2>A {@code ResourceFactory} that exists within a {@code try-with-resources} call</h2>
+ * <h2>A {@link ResourceFactory.Closeable} that exists within a {@code try-with-resources} call</h2>
  * <pre>
  *     try (ResourceFactory.Closeable resourceFactory = ResourceFactory.closeable()) {
  *         Resource resource = resourceFactory.newResource(ref);
@@ -87,7 +90,7 @@ import org.eclipse.jetty.util.component.Dumpable;
  * </dl>
  * <p>
  *     Special Note: An effort is made to discover any new schemes that
- *     might be present at JVM startup (eg: graalvm and {@code bundle:} scheme).
+ *     might be present at JVM startup (eg: graalvm and {@code resource:} scheme).
  *     At startup Jetty will access an internal Jetty resource (found in
  *     the jetty-util jar) and seeing what {@code scheme} it is using to access
  *     it, and will register it with a call to
