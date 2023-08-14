@@ -6,8 +6,10 @@ Creates and updates state file used by jetty.sh
 [tags]
 start
 
-[depend]
+[before]
 server
+threadpool
+jvm
 
 [xml]
 etc/jetty-state.xml

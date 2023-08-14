@@ -40,6 +40,8 @@ public class PidFile extends AbstractLifeCycle
         pidFile = Paths.get(filename);
         try
         {
+            // Create the PID file as soon as possible.
+            // We don't want for doStart() as we want the PID creation to occur quickly for jetty.sh
             long pid = ProcessHandle.current().pid();
             Files.writeString(pidFile, Long.toString(pid), UTF_8, WRITE, TRUNCATE_EXISTING);
             ShutdownMonitor.register(this);

@@ -6,8 +6,10 @@ Creates and updates pid file used by jetty.sh
 [tags]
 start
 
-[depend]
+[before]
 server
+threadpool
+jvm
 
 [xml]
 etc/jetty-pid.xml

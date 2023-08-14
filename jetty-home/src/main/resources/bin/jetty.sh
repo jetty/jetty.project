@@ -501,6 +501,7 @@ case "$ACTION" in
       else
         # Startup if not switching users
         echo ${RUN_ARGS[*]} | xargs ${JAVA} > /dev/null &
+        disown $(pgrep -P $!)
       fi
 
     fi
