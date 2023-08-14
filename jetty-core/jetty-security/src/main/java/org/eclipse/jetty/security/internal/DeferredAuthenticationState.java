@@ -182,7 +182,7 @@ public class DeferredAuthenticationState implements AuthenticationState.Deferred
         }
 
         @Override
-        public boolean isLast()
+        public boolean isLastWrite()
         {
             return false;
         }

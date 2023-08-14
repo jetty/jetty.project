@@ -2483,7 +2483,7 @@ public class ResponseTest
         }
 
         @Override
-        public boolean isLast()
+        public boolean isLastWrite()
         {
             return _last;
         }

@@ -102,9 +102,9 @@ public interface Response extends Content.Sink
     /**
      * <p>Returns whether the last write has been initiated on the response.</p>
      *
-     * @return whether the response is last
+     * @return {@code true} if {@code last==true} has been passed to {@link #write(boolean, ByteBuffer, Callback)}.
      */
-    boolean isLast();
+    boolean isLastWrite();
 
     /**
      * <p>Returns whether the response completed successfully.</p>
@@ -588,9 +588,9 @@ public interface Response extends Content.Sink
         }
 
         @Override
-        public boolean isLast()
+        public boolean isLastWrite()
         {
-            return getWrapped().isLast();
+            return getWrapped().isLastWrite();
         }
 
         @Override

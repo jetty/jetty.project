@@ -37,6 +37,7 @@ import org.eclipse.jetty.util.IO;
 
 /**
  * A {@link HttpServletResponse} wrapped as a core {@link Response}.
+ * All write operations are internally converted to blocking writes on the servlet API.
  */
 class ServletCoreResponse implements Response
 {
@@ -86,9 +87,9 @@ class ServletCoreResponse implements Response
     }
 
     @Override
-    public boolean isLast()
+    public boolean isLastWrite()
     {
-        return _servletContextResponse.isLast();
+        return _servletContextResponse.isLastWrite();
     }
 
     @Override
@@ -103,7 +104,7 @@ class ServletCoreResponse implements Response
         return _response.isCommitted();
     }
 
-    public boolean isWriting()
+    private boolean isWriting()
     {
         return _servletContextResponse.isWriting();
     }
@@ -185,7 +186,7 @@ class ServletCoreResponse implements Response
     @Override
     public CompletableFuture<Void> writeInterim(int status, HttpFields headers)
     {
-        return null;
+        throw new UnsupportedOperationException();
     }
 
     @Override

@@ -1355,7 +1355,7 @@ public class HttpChannelState implements HttpChannel, Components
         }
 
         @Override
-        public boolean isLast()
+        public boolean isLastWrite()
         {
             try (AutoLock ignored = _request._lock.lock())
             {

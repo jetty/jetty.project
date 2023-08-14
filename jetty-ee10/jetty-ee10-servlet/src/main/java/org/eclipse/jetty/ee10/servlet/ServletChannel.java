@@ -647,11 +647,10 @@ public class ServletChannel
     }
 
     /**
-     * TODO Remove if really not needed
      * @param message the error message.
      * @return true if we have sent an error, false if we have aborted.
      */
-    public boolean sendErrorOrAbort(String message)
+    private boolean sendErrorOrAbort(String message)
     {
         try
         {

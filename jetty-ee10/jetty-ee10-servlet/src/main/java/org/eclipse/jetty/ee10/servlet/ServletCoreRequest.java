@@ -47,6 +47,9 @@ import static org.eclipse.jetty.util.URIUtil.encodePath;
  * as callers should not be able to access {@link Wrapper#getWrapped()} and bypass
  * the {@link jakarta.servlet.ServletRequest}.
  * </p>
+ * <p>
+ * The current implementation does not support any read operations.
+ * </p>
  */
 class ServletCoreRequest implements Request
 {

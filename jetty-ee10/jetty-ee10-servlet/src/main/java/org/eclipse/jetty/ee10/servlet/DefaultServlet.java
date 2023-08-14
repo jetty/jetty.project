@@ -489,12 +489,13 @@ public class DefaultServlet extends HttpServlet
                     ? servletChannel.getRequest()
                     : new ServletCoreRequest(httpServletRequest);
 
-                // If the servlet response has not been wrapped and has not been written to,
-                // we can use the core response directly,
-                // otherwise wrap the servlet response as a core response
-                Response coreResponse = httpServletResponse instanceof ServletApiResponse && !servletContextResponse.isWritingOrStreaming()
-                    ? servletChannel.getResponse()
-                    : new ServletCoreResponse(coreRequest, httpServletResponse, included);
+                // If the servlet response has been wrapped and has been written to,
+                // then the servlet response must be wrapped as a core response
+                // otherwise we can use the core response directly.
+                boolean useServletResponse = !(httpServletResponse instanceof ServletApiResponse) || servletContextResponse.isWritingOrStreaming();
+                Response coreResponse = useServletResponse
+                    ? new ServletCoreResponse(coreRequest, httpServletResponse, included)
+                    : servletChannel.getResponse();
 
                 // If the core response is already committed then do nothing more
                 if (coreResponse.isCommitted())
@@ -508,7 +509,7 @@ public class DefaultServlet extends HttpServlet
                 long contentLength = content.getContentLengthValue();
 
                 // Servlet Filters could be interacting with the Response already.
-                if (coreResponse instanceof  ServletCoreResponse)
+                if (useServletResponse)
                     content = new UnknownLengthHttpContent(content);
 
                 // The character encoding may be forced
@@ -911,6 +912,8 @@ public class DefaultServlet extends HttpServlet
             {
                 if (LOG.isDebugEnabled())
                     LOG.debug("AsyncContextCallback failed {}", _asyncContext, x);
+                // It is known that this callback is only failed if the response is already committed,
+                // thus we can only abort the response here.
                 _response.sendError(-1);
             }
             catch (IOException e)

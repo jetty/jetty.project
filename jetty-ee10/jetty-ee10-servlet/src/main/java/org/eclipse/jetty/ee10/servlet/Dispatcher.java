@@ -124,7 +124,7 @@ public class Dispatcher implements RequestDispatcher
         _mappedServlet.handle(_servletHandler, _decodedPathInContext, new ForwardRequest(httpRequest), httpResponse);
 
         // If we are not async and not closed already, then close via the possibly wrapped response.
-        if (!servletContextRequest.getState().isAsync() && !servletContextRequest.getServletContextResponse().isLast())
+        if (!servletContextRequest.getState().isAsync() && !servletContextRequest.getServletContextResponse().isLastWrite())
         {
             Closeable closeable;
             try
