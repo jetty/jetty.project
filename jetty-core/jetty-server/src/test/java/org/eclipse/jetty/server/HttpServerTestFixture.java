@@ -63,6 +63,7 @@ public class HttpServerTestFixture
         _connector = connector;
         _httpConfiguration = _connector.getConnectionFactory(HttpConnectionFactory.class).getHttpConfiguration();
         _httpConfiguration.setSendDateHeader(false);
+        _httpConfiguration.setSendServerVersion(false);
         _server.addConnector(_connector);
     }
 
