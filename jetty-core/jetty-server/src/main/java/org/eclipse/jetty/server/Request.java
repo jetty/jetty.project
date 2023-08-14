@@ -423,28 +423,34 @@ public interface Request extends Attributes, Content.Source
         return local == null ? null : local.toString();
     }
 
+    /**
+     * @param request
+     * @return
+     */
     static int getServerPort(Request request)
     {
         if (request == null)
             return -1;
+
+        // Does the request have an explicit port?
         HttpURI uri = request.getHttpURI();
         if (uri.hasAuthority() && uri.getPort() > 0)
             return uri.getPort();
 
+        // Is there a server authority that forces a port?
         HostPort authority = request.getConnectionMetaData().getServerAuthority();
         if (authority != null && authority.getPort() > 0)
             return authority.getPort();
 
-        if (authority == null)
-        {
-            SocketAddress local = request.getConnectionMetaData().getLocalSocketAddress();
-            if (local instanceof InetSocketAddress)
-                return ((InetSocketAddress)local).getPort();
-        }
-
+        // Is there a scheme with a default port?
         HttpScheme scheme = HttpScheme.CACHE.get(request.getHttpURI().getScheme());
-        if (scheme != null)
+        if (scheme != null && scheme.getDefaultPort() > 0)
             return scheme.getDefaultPort();
+
+        // Is there a local port?
+        SocketAddress local = request.getConnectionMetaData().getLocalSocketAddress();
+        if (local instanceof InetSocketAddress inetSocketAddress && inetSocketAddress.getPort() > 0)
+            return inetSocketAddress.getPort();
 
         return -1;
     }
