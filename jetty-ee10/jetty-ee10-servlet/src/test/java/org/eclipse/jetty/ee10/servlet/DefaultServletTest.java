@@ -2035,7 +2035,7 @@ public class DefaultServletTest
                 String body = response.getContent();
 
                 assertThat(response, containsHeaderValue("Content-Type", "multipart/byteranges"));
-                // TODO assertThat(response, containsHeaderValue("Content-Length", String.valueOf(body.length())));
+                // TODO #10307 assertThat(response, containsHeaderValue("Content-Length", String.valueOf(body.length())));
 
                 HttpField contentType = response.getField(HttpHeader.CONTENT_TYPE);
                 String boundary = getContentTypeBoundary(contentType);
@@ -2063,7 +2063,7 @@ public class DefaultServletTest
                 String body = response.getContent();
 
                 assertThat(response, containsHeaderValue("Content-Type", "multipart/byteranges"));
-                // TODO assertThat(response, containsHeaderValue("Content-Length", String.valueOf(body.length())));
+                // TODO #10307 assertThat(response, containsHeaderValue("Content-Length", String.valueOf(body.length())));
 
                 HttpField contentType = response.getField(HttpHeader.CONTENT_TYPE);
                 String boundary = getContentTypeBoundary(contentType);
@@ -2093,7 +2093,7 @@ public class DefaultServletTest
                 String body = response.getContent();
 
                 assertThat(response, containsHeaderValue("Content-Type", "multipart/byteranges"));
-                // TODO assertThat(response, containsHeaderValue("Content-Length", String.valueOf(body.length())));
+                // TODO #10307 assertThat(response, containsHeaderValue("Content-Length", String.valueOf(body.length())));
 
                 HttpField contentType = response.getField(HttpHeader.CONTENT_TYPE);
                 String boundary = getContentTypeBoundary(contentType);
@@ -2154,7 +2154,7 @@ public class DefaultServletTest
                 String body = response.getContent();
 
                 assertThat(response, containsHeaderValue("Content-Type", "multipart/byteranges"));
-                // TODO assertThat(response, containsHeaderValue("Content-Length", String.valueOf(body.length())));
+                // TODO #10307 assertThat(response, containsHeaderValue("Content-Length", String.valueOf(body.length())));
 
                 HttpField contentType = response.getField(HttpHeader.CONTENT_TYPE);
                 String boundary = getContentTypeBoundary(contentType);
@@ -2183,7 +2183,7 @@ public class DefaultServletTest
                 String body = response.getContent();
 
                 assertThat(response, containsHeaderValue("Content-Type", "multipart/byteranges"));
-                // TODO assertThat(response, containsHeaderValue("Content-Length", String.valueOf(body.length())));
+                // TODO #10307 assertThat(response, containsHeaderValue("Content-Length", String.valueOf(body.length())));
 
                 HttpField contentType = response.getField(HttpHeader.CONTENT_TYPE);
                 String boundary = getContentTypeBoundary(contentType);
