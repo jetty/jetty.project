@@ -141,9 +141,18 @@ public class MetaInfConfigurationTest
             Map<Resource, Resource> fragmentMap = getDiscoveredMetaInfFragments(context);
             assertThat("META-INF/web-fragment.xml discovered (servlet 2.5 and configuration-discovered turned off)", fragmentMap.size(), is(0));
 
-            // Since this is Servlet 2.5, and we have configuration-discovered turned off, we shouldn't see any META-INF/resources/
+            // Even on Servlet 2.5, when we have configuration-discovered turned off, we should still see the META-INF/resources/
             Set<Resource> resourceSet = getDiscoveredMetaInfResource(context);
-            assertThat("META-INF/resources discovered (servlet 2.5 and configuration-discovered turned off)", resourceSet.size(), is(0));
+            assertThat(resourceSet.size(), is(1));
+            List<String> discoveredResources = resourceSet
+                .stream()
+                .map(Resource::getURI)
+                .map(URI::toASCIIString)
+                .toList();
+            String[] expectedResources = {
+                URIUtil.toJarFileUri(barResourceJar.toUri()).toASCIIString() + "META-INF/resources/"
+            };
+            assertThat("META-INF/resources discovered (servlet 2.5 and configuration-discovered turned off)", discoveredResources, hasItems(expectedResources));
 
             // TLDs discovered
             Set<URL> tldSet = getDiscoveredMetaInfTlds(context);
@@ -478,9 +487,18 @@ public class MetaInfConfigurationTest
             Map<Resource, Resource> fragmentMap = getDiscoveredMetaInfFragments(context);
             assertThat("META-INF/web-fragment.xml discovered (servlet 3.1, and metadata-complete=true)", fragmentMap.size(), is(0));
 
-            // Since this is Servlet 3.1, and we have metadata-complete=true, we should have no META-INF/resources/
+            // Even on Servlet 3.1, with metadata-complete=true, we should still see the META-INF/resources/
             Set<Resource> resourceSet = getDiscoveredMetaInfResource(context);
-            assertThat("META-INF/resources discovered (servlet 3.1 and metadata-complete=true)", resourceSet.size(), is(0));
+            assertThat(resourceSet.size(), is(1));
+            List<String> discoveredResources = resourceSet
+                .stream()
+                .map(Resource::getURI)
+                .map(URI::toASCIIString)
+                .toList();
+            String[] expectedResources = {
+                URIUtil.toJarFileUri(barResourceJar.toUri()).toASCIIString() + "META-INF/resources/"
+            };
+            assertThat("META-INF/resources discovered (servlet 3.1 and metadata-complete=true)", discoveredResources, hasItems(expectedResources));
 
             // TLDs discovered
             Set<URL> tldSet = getDiscoveredMetaInfTlds(context);
