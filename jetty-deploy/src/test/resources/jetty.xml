@@ -1,4 +1,5 @@
-<?xml version="1.0"?><!DOCTYPE Configure PUBLIC "-//Jetty//Configure//EN" "http://www.eclipse.org/jetty/configure_9_3.dtd">
+<?xml version="1.0" encoding="utf-8"?>
+<!DOCTYPE Configure PUBLIC "-//Jetty//Configure//EN" "https://eclipse.org/jetty/configure_9_3.dtd">
 
 <!-- =============================================================== -->
 <!-- Documentation of this file format can be found at:              -->

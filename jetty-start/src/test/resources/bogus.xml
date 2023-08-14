@@ -1,2 +1,3 @@
 <?xml version="1.0"?>
+<!DOCTYPE Configure PUBLIC "-//Jetty//Configure//EN" "https://eclipse.dev/jetty/configure_9_3.dtd">
 <Configure />
