@@ -270,6 +270,18 @@ public interface AuthenticationState extends Request.AuthenticationState
         }
     };
 
+    /**
+     * Authentication should be deferred, and request allowed to bypass security constraint.
+     */
+    AuthenticationState DEFER = new AuthenticationState()
+    {
+        @Override
+        public String toString()
+        {
+            return "DEFER";
+        }
+    };
+
     static Deferred defer(LoginAuthenticator loginAuthenticator)
     {
         return new DeferredAuthenticationState(loginAuthenticator);

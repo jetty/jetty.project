@@ -62,6 +62,7 @@ public class ServletRequestState
     public enum State
     {
         IDLE,        // Idle request
+        INITIAL_DISPATCH,    // initialDispatch() has been called.
         HANDLING,    // Request dispatched to filter/servlet or Async IO callback
         WAITING,     // Suspended and waiting
         WOKEN,       // Dispatch to handle from ASYNC_WAIT
@@ -124,6 +125,7 @@ public class ServletRequestState
     public enum Action
     {
         DISPATCH,         // handle a normal request dispatch
+        INITIAL_DISPATCH, // initial request will be forwarded
         ASYNC_DISPATCH,   // handle an async request dispatch
         SEND_ERROR,       // Generate an error page or error dispatch
         ASYNC_ERROR,      // handle an async error
@@ -322,6 +324,21 @@ public class ServletRequestState
         }
     }
 
+    public void initialDispatch()
+    {
+        try (AutoLock ignored = lock())
+        {
+            switch (_state)
+            {
+                case IDLE:
+                    _state = State.INITIAL_DISPATCH;
+                    break;
+                default:
+                    throw new IllegalStateException(getStatusStringLocked());
+            }
+        }
+    }
+
     /**
      * @return Next handling of the request should proceed
      */
@@ -340,6 +357,13 @@ public class ServletRequestState
                     _initial = true;
                     _state = State.HANDLING;
                     return Action.DISPATCH;
+
+                case INITIAL_DISPATCH:
+                    if (_requestState != RequestState.BLOCKING)
+                        throw new IllegalStateException(getStatusStringLocked());
+                    _initial = true;
+                    _state = State.HANDLING;
+                    return Action.INITIAL_DISPATCH;
 
                 case WOKEN:
                     if (_event != null && _event.getThrowable() != null && !_sendError)

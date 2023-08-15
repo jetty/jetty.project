@@ -17,7 +17,6 @@ import java.util.Collections;
 import java.util.Enumeration;
 import java.util.Locale;
 
-import jakarta.servlet.RequestDispatcher;
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletRequestWrapper;
 import jakarta.servlet.http.HttpServletResponse;
@@ -26,6 +25,7 @@ import org.eclipse.jetty.ee10.servlet.ServletChannel;
 import org.eclipse.jetty.ee10.servlet.ServletContextRequest;
 import org.eclipse.jetty.http.HttpHeader;
 import org.eclipse.jetty.http.HttpHeaderValue;
+import org.eclipse.jetty.security.AuthenticationState;
 import org.eclipse.jetty.security.authentication.SessionAuthentication;
 import org.eclipse.jetty.server.Request;
 import org.eclipse.jetty.server.Response;
@@ -70,44 +70,42 @@ public class FormAuthenticator extends org.eclipse.jetty.security.authentication
     }
 
     @Override
-    protected void sendError(Request request, Response response, Callback callback)
+    protected AuthenticationState sendError(Request request, Response response, Callback callback)
     {
         if (_dispatch && getErrorPage() != null)
-            dispatch(getErrorPage(), request, response, callback);
+            return dispatch(getErrorPage(), request, response, callback);
         else
-            super.sendError(request, response, callback);
+            return super.sendError(request, response, callback);
     }
 
     @Override
-    protected void sendChallenge(Request request, Response response, Callback callback)
+    protected AuthenticationState sendChallenge(Request request, Response response, Callback callback)
     {
         if (_dispatch)
-            dispatch(getLoginPage(), request, response, callback);
+            return dispatch(getLoginPage(), request, response, callback);
         else
-            super.sendChallenge(request, response, callback);
+            return super.sendChallenge(request, response, callback);
     }
 
-    private void dispatch(String path, Request request, Response response, Callback callback)
+    private AuthenticationState dispatch(String path, Request request, Response response, Callback callback)
     {
         try
         {
-            // We are before the ServletHandler, so we must do the association.
-            ServletChannel servletChannel = Request.get(request, ServletContextRequest.class, ServletContextRequest::getServletChannel);
-            servletChannel.associate(request, response, callback);
-
             response.getHeaders().put(HttpHeader.CACHE_CONTROL.asString(), HttpHeaderValue.NO_CACHE.asString());
             response.getHeaders().putDate(HttpHeader.EXPIRES.asString(), 1);
 
             ServletContextRequest contextRequest = Request.as(request, ServletContextRequest.class);
-            RequestDispatcher dispatcher = contextRequest.getServletApiRequest().getRequestDispatcher(path);
-            dispatcher.forward(new FormRequest(contextRequest.getServletApiRequest()), new FormResponse(contextRequest.getHttpServletResponse()));
+            contextRequest.setAttribute(ServletChannel.INITIAL_DISPATCH_PATH, path);
+            contextRequest.setAttribute(ServletChannel.INITIAL_DISPATCH_REQUEST, new FormRequest(contextRequest.getServletApiRequest()));
+            contextRequest.setAttribute(ServletChannel.INITIAL_DISPATCH_RESPONSE, new FormResponse(contextRequest.getHttpServletResponse()));
+            contextRequest.getServletChannel().initialDispatch();
 
-            // TODO: we need to run the ServletChannel.
-            callback.succeeded();
+            return AuthenticationState.DEFER;
         }
         catch (Throwable t)
         {
             Response.writeError(request, response, callback, t);
+            return AuthenticationState.SEND_FAILURE;
         }
     }
 

@@ -20,6 +20,8 @@ import java.util.concurrent.TimeoutException;
 import java.util.concurrent.atomic.AtomicLong;
 
 import jakarta.servlet.RequestDispatcher;
+import jakarta.servlet.http.HttpServletRequest;
+import jakarta.servlet.http.HttpServletResponse;
 import org.eclipse.jetty.ee10.servlet.ServletRequestState.Action;
 import org.eclipse.jetty.http.BadMessageException;
 import org.eclipse.jetty.http.HttpFields;
@@ -71,6 +73,9 @@ import static org.eclipse.jetty.util.thread.Invocable.InvocationType.NON_BLOCKIN
 public class ServletChannel
 {
     private static final Logger LOG = LoggerFactory.getLogger(ServletChannel.class);
+    public static final String INITIAL_DISPATCH_REQUEST = "jetty.initial.dispatch.request";
+    public static final String INITIAL_DISPATCH_RESPONSE = "jetty.initial.dispatch.response";
+    public static final String INITIAL_DISPATCH_PATH = "jetty.initial.dispatch.path";
 
     private final ServletRequestState _state;
     private final ServletContextHandler.ServletScopedContext _context;
@@ -445,18 +450,18 @@ public class ServletChannel
         _written = 0;
     }
 
-
-    public void dispatched(Dispatchable dispatchable) throws Exception
+    /**
+     * <p>When this is called the initial dispatch will use the {@link ServletChannel#INITIAL_DISPATCH_PATH},
+     * {@link ServletChannel#INITIAL_DISPATCH_REQUEST} and {@link ServletChannel#INITIAL_DISPATCH_RESPONSE} attributes
+     * to do a {@link jakarta.servlet.DispatcherType#FORWARD} dispatch instead of the initial
+     * {@link jakarta.servlet.DispatcherType#REQUEST} dispatch.</p>
+     *
+     * <p>This must only be called before {@link ServletChannel#handle()} is first invoked.
+     * This can be used to dispatch to a different target before the initial request has been dispatched.</p>
+     */
+    public void initialDispatch()
     {
-        if (LOG.isDebugEnabled())
-            LOG.debug("handle {} {} ", _servletContextRequest.getHttpURI(), this);
-
-        Action action = _state.handling();
-        if (action != Action.DISPATCH)
-            throw new IllegalStateException(action.name());
-
-        dispatchable.dispatch();
-
+        _state.initialDispatch();
     }
 
     /**
@@ -495,6 +500,19 @@ public class ServletChannel
                     case DISPATCH:
                     {
                         dispatch(_requestDispatchable);
+                        break;
+                    }
+
+                    case INITIAL_DISPATCH:
+                    {
+                        HttpServletRequest request = (HttpServletRequest)_request.removeAttribute(INITIAL_DISPATCH_REQUEST);
+                        HttpServletResponse response = (HttpServletResponse)_request.removeAttribute(INITIAL_DISPATCH_RESPONSE);
+                        String path = (String)_request.removeAttribute(INITIAL_DISPATCH_PATH);
+
+                        // TODO: Use listeners etc...
+                        RequestDispatcher requestDispatcher = request.getRequestDispatcher(path);
+                        requestDispatcher.forward(request, response);
+
                         break;
                     }
 
@@ -903,7 +921,7 @@ public class ServletChannel
         }
     }
 
-    public interface Dispatchable
+    private interface Dispatchable
     {
         void dispatch() throws Exception;
     }

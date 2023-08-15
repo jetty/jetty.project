@@ -495,14 +495,13 @@ public abstract class SecurityHandler extends Handler.Wrapper implements Configu
                 return true;
             }
 
-            if (authenticationState == null)
+            if (authenticationState == null || authenticationState == AuthenticationState.DEFER)
                 authenticationState = _deferred;
 
             AuthenticationState.setAuthenticationState(request, authenticationState);
             IdentityService.Association association =
                 (authenticationState instanceof AuthenticationState.Succeeded user)
                 ? _identityService.associate(user.getUserIdentity(), null) : null;
-
 
             try
             {
@@ -556,8 +555,10 @@ public abstract class SecurityHandler extends Handler.Wrapper implements Configu
 
     protected boolean isNotAuthorized(Constraint constraint, AuthenticationState authenticationState)
     {
-        UserIdentity userIdentity = authenticationState instanceof AuthenticationState.Succeeded user ? user.getUserIdentity() : null;
+        if (authenticationState == AuthenticationState.DEFER)
+            return false;
 
+        UserIdentity userIdentity = authenticationState instanceof AuthenticationState.Succeeded user ? user.getUserIdentity() : null;
         return switch (constraint.getAuthorization())
         {
             case FORBIDDEN, ALLOWED, INHERIT -> false;
