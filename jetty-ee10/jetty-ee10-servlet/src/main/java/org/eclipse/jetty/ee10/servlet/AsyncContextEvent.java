@@ -29,13 +29,13 @@ public class AsyncContextEvent extends AsyncEvent implements Runnable
     private final ContextHandler.ScopedContext _context;
     private final AsyncContextState _asyncContext;
     private final HttpURI _baseURI;
-    private final ServletRequestState _state;
+    private final ServletChannelState _state;
     private ServletContext _dispatchContext;
     private String _dispatchPath;
     private volatile Scheduler.Task _timeoutTask;
     private Throwable _throwable;
 
-    public AsyncContextEvent(ContextHandler.ScopedContext context, AsyncContextState asyncContext, ServletRequestState state, ServletRequest request, ServletResponse response)
+    public AsyncContextEvent(ContextHandler.ScopedContext context, AsyncContextState asyncContext, ServletChannelState state, ServletRequest request, ServletResponse response)
     {
         super(null, request, response, null);
         _context = context;
@@ -56,7 +56,7 @@ public class AsyncContextEvent extends AsyncEvent implements Runnable
         return _baseURI;
     }
 
-    public ServletRequestState getServletRequestState()
+    public ServletChannelState getServletRequestState()
     {
         return _state;
     }
