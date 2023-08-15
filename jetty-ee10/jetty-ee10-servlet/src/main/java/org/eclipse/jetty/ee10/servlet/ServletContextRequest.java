@@ -167,7 +167,7 @@ public class ServletContextRequest extends ContextRequest implements ServletCont
     }
 
     @Override
-    public ServletRequestState getState()
+    public ServletChannelState getState()
     {
         return _servletChannel.getServletRequestState();
     }
@@ -274,7 +274,7 @@ public class ServletContextRequest extends ContextRequest implements ServletCont
     }
 
     @Override
-    public ServletRequestState getServletRequestState()
+    public ServletChannelState getServletRequestState()
     {
         return _servletChannel.getServletRequestState();
     }

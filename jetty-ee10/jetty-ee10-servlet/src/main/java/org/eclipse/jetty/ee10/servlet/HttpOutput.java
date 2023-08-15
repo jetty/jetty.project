@@ -125,7 +125,7 @@ public class HttpOutput extends ServletOutputStream implements Runnable
     private static final ThreadLocal<CharsetEncoder> _encoder = new ThreadLocal<>();
 
     private final ServletChannel _servletChannel;
-    private final ServletRequestState _channelState;
+    private final ServletChannelState _channelState;
     private final Blocker.Shared _writeBlocker;
     private ApiState _apiState = ApiState.BLOCKING;
     private State _state = State.OPEN;
