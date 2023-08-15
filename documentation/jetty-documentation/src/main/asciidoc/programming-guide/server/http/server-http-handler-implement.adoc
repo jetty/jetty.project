@@ -24,14 +24,14 @@ include::../../{doc_code}/org/eclipse/jetty/docs/programming/server/http/HTTPSer
 The code that implements the `handle(\...)` method must respect the following contract:
 
 * It may inspect `Request` immutable information such as URI and headers, typically to decide whether to return `true` or `false` (see below).
-* Returning `false` means that the implementation does not handle the request, and it **must not** complete the `callback` parameter, nor read the request content, nor write response content.
-* Returning `true` means that the implementation wants to handle the request, and it **must** eventually complete the `callback` parameter.
+* Returning `false` means that the implementation will not handle the request, and it **must not** complete the `callback` parameter, nor read the request content, nor write response content.
+* Returning `true` means that the implementation will handle the request, and it **must** eventually complete the `callback` parameter.
 The completion of the `callback` parameter may happen synchronously within the invocation to `handle(\...)`, or at a later time, asynchronously, possibly from another thread.
-If the response has not been explicitly written when `handle(\...)` returns, the implementation will write a `200` response with no content.
+If the response has not been explicitly written when the `callback` has been completed, the implementation will write a `200` response with no content if the `callback` has been succeeded, or an error response if the `callback` has been failed.
 
 [CAUTION]
 ====
-Violating the contract above may result in undefined or unexpected behavior.
+Violating the contract above may result in undefined or unexpected behavior, and possibly leak resources.
 
 For example, returning `true` from `handle(\...)`, but not completing the `callback` parameter may result in the request or the response never be completed, likely causing the client to time out.
 
