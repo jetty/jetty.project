@@ -30,12 +30,10 @@ import org.eclipse.jetty.util.component.Dumpable;
  * <p>ResourceFactory is the source of new {@link Resource} instances.</p>
  *
  * <p>
- *     It is important to understand that some {@link Resource} objects
- *     have internal allocation / release model, that the {@link ResourceFactory}
- *     is responsible for.   The type of {@link ResourceFactory} you allocate
- *     will determine how long each {@link Resource} object is valid for (eg:
- *     once a {@link ResourceFactory.LifeCycle} is stopped, the {@link Resource}
- *     objects created from that {@link ResourceFactory} are also released.
+ *     Some {@link Resource} objects have an internal allocation / release model,
+ *     that the {@link ResourceFactory} is responsible for.
+ *     Once a {@link ResourceFactory} is stopped, the {@link Resource}
+ *     objects created from that {@link ResourceFactory} are released.
  * </p>
  *
  * <h2>A {@link ResourceFactory.LifeCycle} tied to a Jetty {@link org.eclipse.jetty.util.component.Container}</h2>
@@ -372,9 +370,7 @@ public interface ResourceFactory
      */
     static boolean isSupported(String str)
     {
-        if (StringUtil.isBlank(str))
-            return false;
-        return ResourceFactoryInternals.getBestByScheme(str) != null;
+        return ResourceFactoryInternals.isSupported(str);
     }
 
     /**
@@ -385,9 +381,7 @@ public interface ResourceFactory
      */
     static boolean isSupported(URI uri)
     {
-        if (uri == null || uri.getScheme() == null)
-            return false;
-        return ResourceFactoryInternals.byScheme(uri.getScheme()) != null;
+        return ResourceFactoryInternals.isSupported(uri);
     }
 
     /**

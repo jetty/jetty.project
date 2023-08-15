@@ -24,6 +24,7 @@ import java.util.concurrent.CopyOnWriteArrayList;
 
 import org.eclipse.jetty.util.IO;
 import org.eclipse.jetty.util.Index;
+import org.eclipse.jetty.util.StringUtil;
 import org.eclipse.jetty.util.URIUtil;
 import org.eclipse.jetty.util.component.AbstractLifeCycle;
 import org.eclipse.jetty.util.component.Dumpable;
@@ -94,41 +95,36 @@ class ResourceFactoryInternals
     };
 
     /**
-     * Get the {@link ResourceFactory} that is registered for the specific scheme.
+     * Test uri to know if a {@link ResourceFactory} is registered for it.
      *
-     * <pre>{@code
-     * .byScheme("jar") == ResourceFactory supporting jar
-     * .byScheme("jar:file://foo.jar!/") == null // full url strings not supported)
-     * }</pre>
-     *
-     * @param scheme the scheme to look up
-     * @return the {@link ResourceFactory} responsible for the scheme, null if no {@link ResourceFactory} handles the scheme.
+     * @param uri the uri to test
+     * @return true if a ResourceFactory is registered to support the uri
      * @see ResourceFactory#registerResourceFactory(String, ResourceFactory)
      * @see ResourceFactory#unregisterResourceFactory(String)
-     * @see #getBestByScheme(String)
+     * @see #isSupported(String)
      */
-    static ResourceFactory byScheme(String scheme)
+    static boolean isSupported(URI uri) // TODO: boolean isSupported
     {
-        return RESOURCE_FACTORIES.get(scheme);
+        if (uri == null || uri.getScheme() == null)
+            return false;
+        return RESOURCE_FACTORIES.get(uri.getScheme()) != null;
     }
 
     /**
-     * Get the best ResourceFactory for the provided scheme.
+     * Test string to know if a {@link ResourceFactory} is registered for it.
      *
-     * <p>
-     * Unlike {@link #byScheme(String)}, this supports arbitrary Strings, that might start with a supported scheme.
-     * </p>
-     *
-     * @param scheme the scheme to look up
-     * @return the ResourceFactory that best fits the provided scheme.
+     * @param str the string representing the resource location
+     * @return true if a ResourceFactory is registered to support the string representation
      * @see org.eclipse.jetty.util.Index#getBest(String)
      * @see ResourceFactory#registerResourceFactory(String, ResourceFactory)
      * @see ResourceFactory#unregisterResourceFactory(String)
-     * @see #byScheme(String)
+     * @see #isSupported(URI)
      */
-    static ResourceFactory getBestByScheme(String scheme)
+    static boolean isSupported(String str)
     {
-        return RESOURCE_FACTORIES.getBest(scheme);
+        if (StringUtil.isBlank(str))
+            return false;
+        return RESOURCE_FACTORIES.getBest(str) != null;
     }
 
     static class Closeable implements ResourceFactory.Closeable
@@ -206,7 +202,7 @@ class ResourceFactoryInternals
                     uri = URIUtil.correctFileURI(uri);
                 }
 
-                ResourceFactory resourceFactory = ResourceFactoryInternals.byScheme(uri.getScheme());
+                ResourceFactory resourceFactory = RESOURCE_FACTORIES.get(uri.getScheme());
                 if (resourceFactory == null)
                     throw new IllegalArgumentException("URI scheme not supported: " + uri);
                 if (resourceFactory instanceof MountedPathResourceFactory)
