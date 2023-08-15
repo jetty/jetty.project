@@ -64,7 +64,8 @@ public class MetaInfConfigurationTest
     /**
      * Test of a MetaInf scan of a Servlet 2.5 webapp, where
      * {@link WebAppContext#setConfigurationDiscovered(boolean)} set to {@code false},
-     * thus not performing any Servlet 3.0+ discovery steps ({@code META-INF/web-fragment.xml} and {@code META-INF/resources})
+     * thus not performing any Servlet 3.0+ discovery steps for {@code META-INF/web-fragment.xml}.
+     * Scanning for {@code META-INF/resources} is unaffected by configuration.
      */
     @Test
     public void testScanServlet25ConfigurationDiscoveredOff(WorkDir workDir) throws Exception
@@ -175,7 +176,7 @@ public class MetaInfConfigurationTest
     /**
      * Test of a MetaInf scan of a Servlet 2.5 webapp, where
      * {@link WebAppContext#setConfigurationDiscovered(boolean)} is left at default (@{code true})
-     * allowing the performing of Servlet 3.0+ discovery steps ({@code META-INF/web-fragment.xml} and {@code META-INF/resources})
+     * allowing the performing of Servlet 3.0+ discovery steps for {@code META-INF/web-fragment.xml} and {@code META-INF/resources}
      */
     @Test
     public void testScanServlet25ConfigurationDiscoveredDefault(WorkDir workDir) throws Exception
