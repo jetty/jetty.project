@@ -473,12 +473,12 @@ public class WebAppContext extends ServletContextHandler implements WebAppClassL
 
         // Configure classloader
         _initialClassLoader = getClassLoader();
-        if (!(_initialClassLoader instanceof WebAppClassLoader))
-            setClassLoader(new WebAppClassLoader(_initialClassLoader, this));
+        ClassLoader loader = configureClassLoader(_initialClassLoader);
+        if (loader != _initialClassLoader)
+            setClassLoader(loader);
 
         if (LOG.isDebugEnabled())
         {
-            ClassLoader loader = getClassLoader();
             LOG.debug("Thread Context classloader {}", loader);
             loader = loader.getParent();
             while (loader != null)
@@ -489,6 +489,18 @@ public class WebAppContext extends ServletContextHandler implements WebAppClassL
         }
 
         _configurations.preConfigure(this);
+    }
+
+    /**
+     * Configure the context {@link ClassLoader}, potentially wrapping it.
+     * @param loader The loader initially set on this context by {@link #setClassLoader(ClassLoader)}
+     * @return Either the configured loader, or a new {@link ClassLoader} that uses the loader.
+     */
+    protected ClassLoader configureClassLoader(ClassLoader loader) throws IOException
+    {
+        if (loader instanceof WebAppClassLoader)
+            return loader;
+        return new WebAppClassLoader(loader, this);
     }
 
     public boolean configure() throws Exception
@@ -1302,13 +1314,13 @@ public class WebAppContext extends ServletContextHandler implements WebAppClassL
         }
         finally
         {
-            if (!(_initialClassLoader instanceof WebAppClassLoader))
+            ClassLoader loader = getClassLoader();
+            if (loader != _initialClassLoader)
             {
-                ClassLoader loader = getClassLoader();
-                if (loader instanceof URLClassLoader)
-                    ((URLClassLoader)loader).close();
+                if (loader instanceof URLClassLoader urlClassLoader)
+                    urlClassLoader.close();
+                setClassLoader(_initialClassLoader);
             }
-            setClassLoader(_initialClassLoader);
 
             _unavailableException = null;
         }

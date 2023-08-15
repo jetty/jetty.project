@@ -3086,11 +3086,11 @@ public class ServletContextHandler extends ContextHandler
 
         ServletContextHandler getServletContextHandler();
 
-        ServletRequestState getServletRequestState();
+        ServletChannelState getServletRequestState();
 
         SessionManager getSessionManager();
 
-        ServletRequestState getState();
+        ServletChannelState getState();
 
         void setQueryEncoding(String s);
     }
