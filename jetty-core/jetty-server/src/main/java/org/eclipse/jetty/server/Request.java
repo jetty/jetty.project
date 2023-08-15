@@ -412,7 +412,7 @@ public interface Request extends Attributes, Content.Source
         if (uri.hasAuthority())
             return HostPort.normalizeHost(uri.getHost());
 
-        HostPort authority = request.getConnectionMetaData().getServerAuthority();
+        HostPort authority = request.getConnectionMetaData().getHttpConfiguration().getServerAuthority();
         if (authority != null)
             return HostPort.normalizeHost(authority.getHost());
 
@@ -423,10 +423,6 @@ public interface Request extends Attributes, Content.Source
         return local == null ? null : local.toString();
     }
 
-    /**
-     * @param request
-     * @return
-     */
     static int getServerPort(Request request)
     {
         if (request == null)
@@ -438,7 +434,7 @@ public interface Request extends Attributes, Content.Source
             return uri.getPort();
 
         // Is there a server authority that forces a port?
-        HostPort authority = request.getConnectionMetaData().getServerAuthority();
+        HostPort authority = request.getConnectionMetaData().getHttpConfiguration().getServerAuthority();
         if (authority != null && authority.getPort() > 0)
             return authority.getPort();
 

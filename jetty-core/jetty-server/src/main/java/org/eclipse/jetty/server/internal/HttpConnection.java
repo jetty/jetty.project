@@ -293,7 +293,7 @@ public class HttpConnection extends AbstractConnection implements Runnable, Writ
     {
         HostPort authority = ConnectionMetaData.getServerAuthority(getHttpConfiguration(), this);
         if (authority == null)
-            authority = new HostPort(getLocalSocketAddress().toString(), -1);
+            authority = new HostPort(getLocalSocketAddress().toString(), -1); // TODO WRONG!!!
         return authority;
     }
 
