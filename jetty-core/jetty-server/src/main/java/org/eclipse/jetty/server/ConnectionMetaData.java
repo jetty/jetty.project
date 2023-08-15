@@ -67,7 +67,8 @@ public interface ConnectionMetaData extends Attributes
 
     /**
      * @return The URI authority that this server represents. By default, this is the address of the network socket on
-     *         which the connection was accepted, but it may be wrapped to represent a virtual address.
+     *         which the connection was accepted, but it may be configured to a specific address.
+     * @see HttpConfiguration#setServerAuthority(HostPort)
      */
     HostPort getServerAuthority();
 
@@ -77,10 +78,11 @@ public interface ConnectionMetaData extends Attributes
         if (authority != null)
             return authority;
 
-        SocketAddress local = connectionMetaData.getLocalSocketAddress();
-        if (local instanceof InetSocketAddress inet)
-            return new HostPort(inet.getHostString(), inet.getPort());
-
+        SocketAddress localSocketAddress = connectionMetaData.getLocalSocketAddress();
+        if (localSocketAddress instanceof InetSocketAddress inetSocketAddress)
+            return new HostPort(inetSocketAddress.getHostString(), inetSocketAddress.getPort());
+        else if (localSocketAddress != null)
+            return new HostPort(localSocketAddress.toString(), connectionMetaData.isSecure() ? 443 : 80);
         return null;
     }
 

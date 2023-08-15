@@ -403,6 +403,13 @@ public interface Request extends Attributes, Content.Source
         return -1;
     }
 
+    /**
+     * Get the logical name for the server, which may differ from the actual server name
+     * @param request The request to get the server name of
+     * @return The logical name the request was sent to, which may be from the authority of the
+     *         request; the configured server authority; the actual network name of the server;
+     *         otherwise null
+     */
     static String getServerName(Request request)
     {
         if (request == null)
@@ -423,6 +430,13 @@ public interface Request extends Attributes, Content.Source
         return local == null ? null : local.toString();
     }
 
+    /**
+     * Get the logical port a request was received on, which may differ from the actual network port.
+     * @param request The request to get the port of
+     * @return The port for the request, which may be from the authority of the request; the
+     *         configured server authority; the default port for the scheme; the actual network port;
+     *         otherwise -1
+     */
     static int getServerPort(Request request)
     {
         if (request == null)

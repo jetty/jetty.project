@@ -1034,7 +1034,6 @@ public class ForwardedRequestCustomizerTest
         request.configure(customizer);
 
         String rawRequest = request.getRawRequest((header) -> header);
-//        System.out.println(rawRequest);
 
         HttpTester.Response response = HttpTester.parseResponse(connector.getResponse(rawRequest));
         assertThat("status", response.getStatus(), is(200));
@@ -1054,7 +1053,6 @@ public class ForwardedRequestCustomizerTest
             .replaceFirst("X-Proxied-Https:", "Jetty-Proxied-Https:")
             .replaceFirst("Proxy-Ssl-Id:", "Jetty-Proxy-Ssl-Id:")
             .replaceFirst("Proxy-auth-cert:", "Jetty-Proxy-Auth-Cert:"));
-        // System.out.println(rawRequest);
 
         HttpTester.Response response = HttpTester.parseResponse(connectorConfigured.getResponse(rawRequest));
         assertThat("status", response.getStatus(), is(200));
@@ -1086,6 +1084,17 @@ public class ForwardedRequestCustomizerTest
                     .scheme("scheme").serverName(null).serverPort(42)
                     .secure(false)
                     .requestURL("scheme:///example")
+            ),
+            Arguments.of(
+                new TestRequest("HTTP/1.0 - Host header")
+                    .headers(
+                        "GET /example HTTP/1.0",
+                        "Host: server:9999"
+                    ),
+                new Expectations()
+                    .scheme("http").serverName("server").serverPort(9999)
+                    .secure(false)
+                    .requestURL("http://server:9999/example")
             ),
 
             // RFC7239 Tests with https.
