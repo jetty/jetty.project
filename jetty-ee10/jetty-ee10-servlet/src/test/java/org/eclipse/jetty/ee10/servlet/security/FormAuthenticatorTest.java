@@ -48,7 +48,7 @@ public class FormAuthenticatorTest
 
         ServletContextHandler contextHandler = new ServletContextHandler("/ctx", ServletContextHandler.SESSIONS);
         _server.setHandler(contextHandler);
-        contextHandler.addServlet(new AuthenticationTestServlet() , "/");
+        contextHandler.addServlet(new AuthenticationTestServlet(), "/");
 
         SecurityHandler.PathMapped securityHandler = new SecurityHandler.PathMapped();
         securityHandler.setLoginService(new EmptyLoginService());
