@@ -21,7 +21,6 @@ import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletRequestWrapper;
 import jakarta.servlet.http.HttpServletResponse;
 import jakarta.servlet.http.HttpServletResponseWrapper;
-import org.eclipse.jetty.ee10.servlet.ServletChannel;
 import org.eclipse.jetty.ee10.servlet.ServletContextRequest;
 import org.eclipse.jetty.http.HttpHeader;
 import org.eclipse.jetty.http.HttpHeaderValue;
@@ -95,10 +94,9 @@ public class FormAuthenticator extends org.eclipse.jetty.security.authentication
             response.getHeaders().putDate(HttpHeader.EXPIRES.asString(), 1);
 
             ServletContextRequest contextRequest = Request.as(request, ServletContextRequest.class);
-            contextRequest.setAttribute(ServletChannel.INITIAL_DISPATCH_PATH, path);
-            contextRequest.setAttribute(ServletChannel.INITIAL_DISPATCH_REQUEST, new FormRequest(contextRequest.getServletApiRequest()));
-            contextRequest.setAttribute(ServletChannel.INITIAL_DISPATCH_RESPONSE, new FormResponse(contextRequest.getHttpServletResponse()));
-            contextRequest.getServletChannel().initialDispatch();
+            FormRequest formRequest = new FormRequest(contextRequest.getServletApiRequest());
+            FormResponse formResponse = new FormResponse(contextRequest.getHttpServletResponse());
+            contextRequest.getServletChannel().forward(path, formRequest, formResponse);
 
             return AuthenticationState.DEFER;
         }

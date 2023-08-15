@@ -22,8 +22,8 @@ import java.util.concurrent.atomic.AtomicLong;
 
 import jakarta.servlet.RequestDispatcher;
 import jakarta.servlet.http.HttpServletRequest;
-import org.eclipse.jetty.ee10.servlet.ServletChannelState.Action;
 import jakarta.servlet.http.HttpServletResponse;
+import org.eclipse.jetty.ee10.servlet.ServletChannelState.Action;
 import org.eclipse.jetty.http.BadMessageException;
 import org.eclipse.jetty.http.HttpFields;
 import org.eclipse.jetty.http.HttpHeader;
@@ -72,9 +72,9 @@ import static org.eclipse.jetty.util.thread.Invocable.InvocationType.NON_BLOCKIN
 public class ServletChannel
 {
     private static final Logger LOG = LoggerFactory.getLogger(ServletChannel.class);
-    public static final String INITIAL_DISPATCH_REQUEST = "jetty.initial.dispatch.request";
-    public static final String INITIAL_DISPATCH_RESPONSE = "jetty.initial.dispatch.response";
-    public static final String INITIAL_DISPATCH_PATH = "jetty.initial.dispatch.path";
+    private static final String FORWARD_REQUEST = "jetty.initial.forward.request";
+    private static final String FORWARD_RESPONSE = "jetty.initial.forward.response";
+    private static final String FORWARD_PATH = "jetty.initial.forward.path";
 
     private final ServletChannelState _state;
     private final ServletContextHandler.ServletScopedContext _context;
@@ -459,16 +459,20 @@ public class ServletChannel
     }
 
     /**
-     * <p>When this is called the initial dispatch will use the {@link ServletChannel#INITIAL_DISPATCH_PATH},
-     * {@link ServletChannel#INITIAL_DISPATCH_REQUEST} and {@link ServletChannel#INITIAL_DISPATCH_RESPONSE} attributes
+     * <p>When this is called the initial dispatch will use the {@link ServletChannel#FORWARD_PATH},
+     * {@link ServletChannel#FORWARD_REQUEST} and {@link ServletChannel#FORWARD_RESPONSE} attributes
      * to do a {@link jakarta.servlet.DispatcherType#FORWARD} dispatch instead of the initial
      * {@link jakarta.servlet.DispatcherType#REQUEST} dispatch.</p>
      *
      * <p>This must only be called before {@link ServletChannel#handle()} is first invoked.
      * This can be used to dispatch to a different target before the initial request has been dispatched.</p>
      */
-    public void initialDispatch()
+    public void forward(String path, HttpServletRequest request, HttpServletResponse response)
     {
+        ServletContextRequest contextRequest = getServletContextRequest();
+        contextRequest.setAttribute(FORWARD_PATH, path);
+        contextRequest.setAttribute(FORWARD_REQUEST, request);
+        contextRequest.setAttribute(FORWARD_RESPONSE, response);
         _state.initialDispatch();
     }
 
@@ -512,16 +516,10 @@ public class ServletChannel
                         break;
                     }
 
-                    case INITIAL_DISPATCH:
+                    case FORWARD:
                     {
-                        HttpServletRequest request = (HttpServletRequest)_request.removeAttribute(INITIAL_DISPATCH_REQUEST);
-                        HttpServletResponse response = (HttpServletResponse)_request.removeAttribute(INITIAL_DISPATCH_RESPONSE);
-                        String path = (String)_request.removeAttribute(INITIAL_DISPATCH_PATH);
-
-                        // TODO: Use listeners etc...
-                        RequestDispatcher requestDispatcher = request.getRequestDispatcher(path);
-                        requestDispatcher.forward(request, response);
-
+                        reopen();
+                        initialForward();
                         break;
                     }
 
@@ -926,6 +924,27 @@ public class ServletChannel
         finally
         {
             servletContextHandler.requestDestroyed(servletContextRequest, servletApiRequest);
+        }
+    }
+
+    private void initialForward() throws Exception
+    {
+        ServletContextHandler servletContextHandler = getServletContextHandler();
+        ServletContextRequest servletContextRequest = getServletContextRequest();
+
+        HttpServletRequest request = (HttpServletRequest)servletContextRequest.removeAttribute(FORWARD_REQUEST);
+        HttpServletResponse response = (HttpServletResponse)servletContextRequest.removeAttribute(FORWARD_RESPONSE);
+        String path = (String)servletContextRequest.removeAttribute(FORWARD_PATH);
+
+        try
+        {
+            servletContextHandler.requestInitialized(servletContextRequest, request);
+            RequestDispatcher requestDispatcher = request.getRequestDispatcher(path);
+            requestDispatcher.forward(request, response);
+        }
+        finally
+        {
+            servletContextHandler.requestDestroyed(servletContextRequest, request);
         }
     }
 

@@ -62,7 +62,7 @@ public class ServletChannelState
     public enum State
     {
         IDLE,        // Idle request
-        INITIAL_DISPATCH,    // initialDispatch() has been called.
+        FORWARD,     // forward() has been called.
         HANDLING,    // Request dispatched to filter/servlet or Async IO callback
         WAITING,     // Suspended and waiting
         WOKEN,       // Dispatch to handle from ASYNC_WAIT
@@ -125,7 +125,7 @@ public class ServletChannelState
     public enum Action
     {
         DISPATCH,         // handle a normal request dispatch
-        INITIAL_DISPATCH, // initial request will be forwarded
+        FORWARD,          // initial request will be forwarded
         ASYNC_DISPATCH,   // handle an async request dispatch
         SEND_ERROR,       // Generate an error page or error dispatch
         ASYNC_ERROR,      // handle an async error
@@ -331,7 +331,7 @@ public class ServletChannelState
             switch (_state)
             {
                 case IDLE:
-                    _state = State.INITIAL_DISPATCH;
+                    _state = State.FORWARD;
                     break;
                 default:
                     throw new IllegalStateException(getStatusStringLocked());
@@ -358,12 +358,12 @@ public class ServletChannelState
                     _state = State.HANDLING;
                     return Action.DISPATCH;
 
-                case INITIAL_DISPATCH:
+                case FORWARD:
                     if (_requestState != RequestState.BLOCKING)
                         throw new IllegalStateException(getStatusStringLocked());
                     _initial = true;
                     _state = State.HANDLING;
-                    return Action.INITIAL_DISPATCH;
+                    return Action.FORWARD;
 
                 case WOKEN:
                     if (_event != null && _event.getThrowable() != null && !_sendError)
