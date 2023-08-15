@@ -26,17 +26,15 @@ pipeline {
         node { label 'linux' }
       }
       steps {
-        container( 'jetty-build' ) {
-          timeout( time: 120, unit: 'MINUTES' ) {
-            mavenBuild( "jdk11", "-T3 clean install -Djacoco.skip=true -pl :test-websocket-autobahn -am -Pautobahn -Dtest=AutobahnTests", "maven3" ) //
-            junit testResults: '**/target/surefire-reports/*.xml,**/target/invoker-reports/TEST*.xml,**/target/autobahntestsuite-reports/*.xml'
-            publishHTML([allowMissing: true, alwaysLinkToLastBuild: true, keepAll: true, reportDir: "${env.WORKSPACE}/tests/test-websocket-autobahn/target/reports/core/servers", reportFiles: 'index.html', reportName: 'Autobahn Report Core Server', reportTitles: ''])
-            publishHTML([allowMissing: true, alwaysLinkToLastBuild: true, keepAll: true, reportDir: "${env.WORKSPACE}/tests/test-websocket-autobahn/target/reports/core/clients", reportFiles: 'index.html', reportName: 'Autobahn Report Core Client', reportTitles: ''])
-            publishHTML([allowMissing: true, alwaysLinkToLastBuild: true, keepAll: true, reportDir: "${env.WORKSPACE}/tests/test-websocket-autobahn/target/reports/javax/servers", reportFiles: 'index.html', reportName: 'Autobahn Report Javax Server', reportTitles: ''])
-            publishHTML([allowMissing: true, alwaysLinkToLastBuild: true, keepAll: true, reportDir: "${env.WORKSPACE}/tests/test-websocket-autobahn/target/reports/javax/clients", reportFiles: 'index.html', reportName: 'Autobahn Report Javax Client', reportTitles: ''])
-            publishHTML([allowMissing: true, alwaysLinkToLastBuild: true, keepAll: true, reportDir: "${env.WORKSPACE}/tests/test-websocket-autobahn/target/reports/jetty/servers", reportFiles: 'index.html', reportName: 'Autobahn Report Jetty Server', reportTitles: ''])
-            publishHTML([allowMissing: true, alwaysLinkToLastBuild: true, keepAll: true, reportDir: "${env.WORKSPACE}/tests/test-websocket-autobahn/target/reports/jetty/clients", reportFiles: 'index.html', reportName: 'Autobahn Report Jetty Client', reportTitles: ''])
-          }
+        timeout( time: 120, unit: 'MINUTES' ) {
+          mavenBuild( "jdk11", "-T3 clean install -Djacoco.skip=true -pl :test-websocket-autobahn -am -Pautobahn -Dtest=AutobahnTests", "maven3" ) //
+          junit testResults: '**/target/surefire-reports/*.xml,**/target/invoker-reports/TEST*.xml,**/target/autobahntestsuite-reports/*.xml'
+          publishHTML([allowMissing: true, alwaysLinkToLastBuild: true, keepAll: true, reportDir: "${env.WORKSPACE}/tests/test-websocket-autobahn/target/reports/core/servers", reportFiles: 'index.html', reportName: 'Autobahn Report Core Server', reportTitles: ''])
+          publishHTML([allowMissing: true, alwaysLinkToLastBuild: true, keepAll: true, reportDir: "${env.WORKSPACE}/tests/test-websocket-autobahn/target/reports/core/clients", reportFiles: 'index.html', reportName: 'Autobahn Report Core Client', reportTitles: ''])
+          publishHTML([allowMissing: true, alwaysLinkToLastBuild: true, keepAll: true, reportDir: "${env.WORKSPACE}/tests/test-websocket-autobahn/target/reports/javax/servers", reportFiles: 'index.html', reportName: 'Autobahn Report Javax Server', reportTitles: ''])
+          publishHTML([allowMissing: true, alwaysLinkToLastBuild: true, keepAll: true, reportDir: "${env.WORKSPACE}/tests/test-websocket-autobahn/target/reports/javax/clients", reportFiles: 'index.html', reportName: 'Autobahn Report Javax Client', reportTitles: ''])
+          publishHTML([allowMissing: true, alwaysLinkToLastBuild: true, keepAll: true, reportDir: "${env.WORKSPACE}/tests/test-websocket-autobahn/target/reports/jetty/servers", reportFiles: 'index.html', reportName: 'Autobahn Report Jetty Server', reportTitles: ''])
+          publishHTML([allowMissing: true, alwaysLinkToLastBuild: true, keepAll: true, reportDir: "${env.WORKSPACE}/tests/test-websocket-autobahn/target/reports/jetty/clients", reportFiles: 'index.html', reportName: 'Autobahn Report Jetty Client', reportTitles: ''])
         }
       }
     }
