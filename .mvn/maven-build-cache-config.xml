@@ -28,6 +28,8 @@
         <effectivePom>
           <excludeProperties>
             <excludeProperty>scriptVariables</excludeProperty>
+            <excludeProperty>settingsFile</excludeProperty>
+            <excludeProperty>filterProperties</excludeProperty>
           </excludeProperties>
         </effectivePom>
       </plugin>
@@ -61,6 +63,8 @@
         <plugin artifactId="maven-invoker-plugin" goal="integration-test">
           <nologs>
             <nolog propertyName="scriptVariables"/>
+            <nolog propertyName="settingsFile"/>
+            <nolog propertyName="filterProperties"/>
           </nologs>
         </plugin>
         <plugin artifactId="maven-surefire-plugin" goal="test">
