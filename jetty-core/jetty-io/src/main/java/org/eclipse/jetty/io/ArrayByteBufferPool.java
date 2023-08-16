@@ -19,7 +19,6 @@ import java.io.StringWriter;
 import java.nio.ByteBuffer;
 import java.time.Instant;
 import java.util.Arrays;
-import java.util.Collections;
 import java.util.Set;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.atomic.AtomicLong;
@@ -579,23 +578,23 @@ public class ArrayByteBufferPool implements ByteBufferPool, Dumpable
      * the {@link Buffer}s that have been leaked, which contain
      * the stack trace information of where the buffer was acquired.</p>
      */
-    public static class LeakTracking extends ArrayByteBufferPool
+    public static class Tracking extends ArrayByteBufferPool
     {
-        private static final Logger LOG = LoggerFactory.getLogger(LeakTracking.class);
+        private static final Logger LOG = LoggerFactory.getLogger(Tracking.class);
 
-        private final Set<Buffer> buffers = Collections.newSetFromMap(new ConcurrentHashMap<>());
+        private final Set<Buffer> buffers = ConcurrentHashMap.newKeySet();
 
-        public LeakTracking()
+        public Tracking()
         {
             this(0, -1, Integer.MAX_VALUE);
         }
 
-        public LeakTracking(int minCapacity, int maxCapacity, int maxBucketSize)
+        public Tracking(int minCapacity, int maxCapacity, int maxBucketSize)
         {
             this(minCapacity, maxCapacity, maxBucketSize, -1L, -1L);
         }
 
-        public LeakTracking(int minCapacity, int maxCapacity, int maxBucketSize, long maxHeapMemory, long maxDirectMemory)
+        public Tracking(int minCapacity, int maxCapacity, int maxBucketSize, long maxHeapMemory, long maxDirectMemory)
         {
             super(minCapacity, -1, maxCapacity, maxBucketSize, maxHeapMemory, maxDirectMemory);
         }

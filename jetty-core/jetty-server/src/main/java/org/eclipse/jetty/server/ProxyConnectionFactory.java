@@ -162,37 +162,6 @@ public class ProxyConnectionFactory extends DetectorConnectionFactory
             }
 
             @Override
-            public void onOpen()
-            {
-                super.onOpen();
-
-                try
-                {
-                    while (_index < LF_INDEX)
-                    {
-                        if (!parse())
-                        {
-                            if (LOG.isDebugEnabled())
-                                LOG.debug("Proxy v1 onOpen parsing ran out of bytes, marking as fillInterested");
-                            fillInterested();
-                            return;
-                        }
-                    }
-
-                    if (LOG.isDebugEnabled())
-                        LOG.debug("Proxy v1 onOpen parsing done, now upgrading");
-                    upgrade();
-                }
-                catch (Throwable x)
-                {
-                    LOG.warn("Proxy v1 error for {} {}", getEndPoint(), x.toString());
-                    if (LOG.isDebugEnabled())
-                        LOG.warn("Proxy v1 error", x);
-                    releaseAndClose();
-                }
-            }
-
-            @Override
             public void onFillable()
             {
                 if (LOG.isDebugEnabled())
@@ -223,6 +192,37 @@ public class ProxyConnectionFactory extends DetectorConnectionFactory
 
                     if (LOG.isDebugEnabled())
                         LOG.debug("Proxy v1 onFillable parsing done, now upgrading");
+                    upgrade();
+                }
+                catch (Throwable x)
+                {
+                    LOG.warn("Proxy v1 error for {} {}", getEndPoint(), x.toString());
+                    if (LOG.isDebugEnabled())
+                        LOG.warn("Proxy v1 error", x);
+                    releaseAndClose();
+                }
+            }
+
+            @Override
+            public void onOpen()
+            {
+                super.onOpen();
+
+                try
+                {
+                    while (_index < LF_INDEX)
+                    {
+                        if (!parse())
+                        {
+                            if (LOG.isDebugEnabled())
+                                LOG.debug("Proxy v1 onOpen parsing ran out of bytes, marking as fillInterested");
+                            fillInterested();
+                            return;
+                        }
+                    }
+
+                    if (LOG.isDebugEnabled())
+                        LOG.debug("Proxy v1 onOpen parsing done, now upgrading");
                     upgrade();
                 }
                 catch (Throwable x)

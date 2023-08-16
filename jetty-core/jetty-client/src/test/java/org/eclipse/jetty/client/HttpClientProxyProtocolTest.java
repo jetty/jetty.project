@@ -49,17 +49,17 @@ import static org.junit.jupiter.api.Assertions.assertTrue;
 
 public class HttpClientProxyProtocolTest
 {
-    private ArrayByteBufferPool.LeakTracking serverBufferPool;
+    private ArrayByteBufferPool.Tracking serverBufferPool;
     private Server server;
     private ServerConnector connector;
-    private ArrayByteBufferPool.LeakTracking clientBufferPool;
+    private ArrayByteBufferPool.Tracking clientBufferPool;
     private HttpClient client;
 
     private void startServer(Handler handler) throws Exception
     {
         QueuedThreadPool serverThreads = new QueuedThreadPool();
         serverThreads.setName("server");
-        serverBufferPool = new ArrayByteBufferPool.LeakTracking();
+        serverBufferPool = new ArrayByteBufferPool.Tracking();
         server = new Server(serverThreads, null, serverBufferPool);
         HttpConnectionFactory http = new HttpConnectionFactory();
         ProxyConnectionFactory proxy = new ProxyConnectionFactory(http.getProtocol());
@@ -73,7 +73,7 @@ public class HttpClientProxyProtocolTest
     {
         QueuedThreadPool clientThreads = new QueuedThreadPool();
         clientThreads.setName("client");
-        clientBufferPool = new ArrayByteBufferPool.LeakTracking();
+        clientBufferPool = new ArrayByteBufferPool.Tracking();
         client = new HttpClient();
         client.setExecutor(clientThreads);
         client.setByteBufferPool(clientBufferPool);
@@ -85,9 +85,9 @@ public class HttpClientProxyProtocolTest
     {
         LifeCycle.stop(client);
         LifeCycle.stop(server);
-        Set<ArrayByteBufferPool.LeakTracking.Buffer> serverLeaks = serverBufferPool.getLeaks();
+        Set<ArrayByteBufferPool.Tracking.Buffer> serverLeaks = serverBufferPool.getLeaks();
         assertEquals(0, serverLeaks.size(), serverBufferPool.dumpLeaks());
-        Set<ArrayByteBufferPool.LeakTracking.Buffer> clientLeaks = clientBufferPool.getLeaks();
+        Set<ArrayByteBufferPool.Tracking.Buffer> clientLeaks = clientBufferPool.getLeaks();
         assertEquals(0, clientLeaks.size(), clientBufferPool.dumpLeaks());
     }
 

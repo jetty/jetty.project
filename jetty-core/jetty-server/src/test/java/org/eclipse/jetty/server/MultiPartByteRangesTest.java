@@ -47,13 +47,13 @@ public class MultiPartByteRangesTest
 {
     private Server server;
     private ServerConnector connector;
-    private ArrayByteBufferPool.LeakTracking byteBufferPool;
+    private ArrayByteBufferPool.Tracking byteBufferPool;
 
     private void start(Handler handler) throws Exception
     {
         QueuedThreadPool serverThreads = new QueuedThreadPool();
         serverThreads.setName("server");
-        byteBufferPool = new ArrayByteBufferPool.LeakTracking();
+        byteBufferPool = new ArrayByteBufferPool.Tracking();
         server = new Server(serverThreads, null, byteBufferPool);
         connector = new ServerConnector(server, 1, 1);
         server.addConnector(connector);
