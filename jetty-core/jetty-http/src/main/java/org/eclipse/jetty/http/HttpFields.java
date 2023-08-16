@@ -1679,12 +1679,12 @@ public interface HttpFields extends Iterable<HttpField>, Supplier<HttpFields>
         }
     }
 
-    @Deprecated
+    @Deprecated(forRemoval = true)
     class MutableHttpFields extends org.eclipse.jetty.http.MutableHttpFields
     {
     }
 
-    @Deprecated
+    @Deprecated(forRemoval = true)
     class ImmutableHttpFields extends org.eclipse.jetty.http.ImmutableHttpFields
     {
         protected ImmutableHttpFields(HttpField[] fields, int size)

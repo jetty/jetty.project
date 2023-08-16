@@ -176,7 +176,7 @@ public class HttpField
      * <p>Only values, and not parameters, are compared with the
      * search string.</p>
      *
-     * @param search the string search for
+     * @param search the string to search for
      * @return whether this field value, possibly multi-valued,
      * contains the specified search string
      */
@@ -192,7 +192,7 @@ public class HttpField
      * search string.</p>
      *
      * @param value the value string to search into
-     * @param search the string search for
+     * @param search the string to search for
      * @return whether the given value, possibly multi-valued,
      * contains the specified search string
      */
