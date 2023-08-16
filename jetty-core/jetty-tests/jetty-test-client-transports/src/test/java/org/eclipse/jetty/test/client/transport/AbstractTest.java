@@ -58,10 +58,12 @@ import org.eclipse.jetty.util.SocketAddressResolver;
 import org.eclipse.jetty.util.component.LifeCycle;
 import org.eclipse.jetty.util.ssl.SslContextFactory;
 import org.eclipse.jetty.util.thread.QueuedThreadPool;
+import org.hamcrest.Matchers;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.extension.BeforeTestExecutionCallback;
 import org.junit.jupiter.api.extension.RegisterExtension;
 
+import static org.hamcrest.MatcherAssert.assertThat;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
 public class AbstractTest
@@ -75,6 +77,8 @@ public class AbstractTest
     protected AbstractConnector connector;
     protected HttpClient client;
     protected Path unixDomainPath;
+    protected ArrayByteBufferPool.Tracking serverBufferPool;
+    protected ArrayByteBufferPool.Tracking clientBufferPool;
 
     public static Collection<Transport> transports()
     {
@@ -109,8 +113,18 @@ public class AbstractTest
     @AfterEach
     public void dispose()
     {
-        LifeCycle.stop(client);
-        LifeCycle.stop(server);
+        try
+        {
+            if (serverBufferPool != null)
+                assertThat("Server Leaks: " + serverBufferPool.dumpLeaks(), serverBufferPool.getLeaks().size(), Matchers.is(0));
+            if (clientBufferPool != null)
+                assertThat("Client Leaks: " + clientBufferPool.dumpLeaks(), clientBufferPool.getLeaks().size(), Matchers.is(0));
+        }
+        finally
+        {
+            LifeCycle.stop(client);
+            LifeCycle.stop(server);
+        }
     }
 
     protected void start(Transport transport, Handler handler) throws Exception
@@ -146,8 +160,8 @@ public class AbstractTest
     {
         QueuedThreadPool serverThreads = new QueuedThreadPool();
         serverThreads.setName("server");
-        // TODO: restore leak tracking.
-        return new Server(serverThreads, null, new ArrayByteBufferPool());
+        serverBufferPool = new ArrayByteBufferPool.Tracking();
+        return new Server(serverThreads, null, serverBufferPool);
     }
 
     protected SslContextFactory.Server newSslContextFactoryServer() throws Exception
@@ -176,6 +190,8 @@ public class AbstractTest
         QueuedThreadPool clientThreads = new QueuedThreadPool();
         clientThreads.setName("client");
         client = new HttpClient(newHttpClientTransport(transport));
+        clientBufferPool = new ArrayByteBufferPool.Tracking();
+        client.setByteBufferPool(clientBufferPool);
         client.setExecutor(clientThreads);
         client.setSocketAddressResolver(new SocketAddressResolver.Sync());
         client.start();

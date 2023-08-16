@@ -28,7 +28,6 @@ import javax.net.ssl.SSLSession;
 import javax.net.ssl.TrustManagerFactory;
 
 import org.eclipse.jetty.io.ArrayByteBufferPool;
-import org.eclipse.jetty.io.ByteBufferPool;
 import org.eclipse.jetty.io.Content;
 import org.eclipse.jetty.server.AbstractConnectionFactory;
 import org.eclipse.jetty.server.Handler;
@@ -43,6 +42,7 @@ import org.eclipse.jetty.toolchain.test.MavenTestingUtils;
 import org.eclipse.jetty.util.Callback;
 import org.eclipse.jetty.util.ssl.SslContextFactory;
 import org.hamcrest.Matchers;
+import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.Assumptions;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
@@ -73,9 +73,7 @@ public class ServerConnectorSslServerTest extends HttpServerTestBase
         SslContextFactory.Server sslContextFactory = new SslContextFactory.Server();
         sslContextFactory.setKeyStorePath(keystorePath);
         sslContextFactory.setKeyStorePassword("storepwd");
-        // TODO: restore leak tracking.
-//        ByteBufferPool pool = new LeakTrackingByteBufferPool(new MappedByteBufferPool.Tagged());
-        ByteBufferPool pool = new ArrayByteBufferPool();
+        ArrayByteBufferPool.Tracking pool = new ArrayByteBufferPool.Tracking();
 
         HttpConnectionFactory httpConnectionFactory = new HttpConnectionFactory();
         ServerConnector connector = new ServerConnector(_server, null, null, pool, 1, 1, AbstractConnectionFactory.getFactories(sslContextFactory, httpConnectionFactory));
@@ -107,6 +105,13 @@ public class ServerConnectorSslServerTest extends HttpServerTestBase
         {
             throw new RuntimeException(e);
         }
+    }
+
+    @AfterEach
+    public void dispose() throws Exception
+    {
+        ArrayByteBufferPool.Tracking byteBufferPool = (ArrayByteBufferPool.Tracking)_server.getConnectors()[0].getByteBufferPool();
+        assertThat("Server Leaks: " + byteBufferPool.dumpLeaks(), byteBufferPool.getLeaks().size(), Matchers.is(0));
     }
 
     @Override

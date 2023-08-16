@@ -27,13 +27,14 @@ import javax.net.ssl.SSLContext;
 import javax.net.ssl.TrustManagerFactory;
 
 import org.eclipse.jetty.io.ArrayByteBufferPool;
-import org.eclipse.jetty.io.ByteBufferPool;
 import org.eclipse.jetty.server.AbstractConnectionFactory;
 import org.eclipse.jetty.server.HttpConnectionFactory;
 import org.eclipse.jetty.server.Server;
 import org.eclipse.jetty.server.ServerConnector;
 import org.eclipse.jetty.toolchain.test.MavenTestingUtils;
+import org.eclipse.jetty.util.component.LifeCycle;
 import org.eclipse.jetty.util.ssl.SslContextFactory;
+import org.hamcrest.Matchers;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Disabled;
@@ -62,7 +63,7 @@ public class DebugHandlerTest
     {
         server = new Server();
 
-        ServerConnector httpConnector = new ServerConnector(server);
+        ServerConnector httpConnector = new ServerConnector(server, null, null, new ArrayByteBufferPool.Tracking(), 1, 1, new HttpConnectionFactory());
         httpConnector.setPort(0);
         server.addConnector(httpConnector);
 
@@ -70,10 +71,7 @@ public class DebugHandlerTest
         SslContextFactory.Server sslContextFactory = new SslContextFactory.Server();
         sslContextFactory.setKeyStorePath(keystorePath.getAbsolutePath());
         sslContextFactory.setKeyStorePassword("storepwd");
-        // TODO: restore leak tracking.
-//        ByteBufferPool pool = new LeakTrackingByteBufferPool(new MappedByteBufferPool.Tagged());
-        ByteBufferPool pool = new ArrayByteBufferPool();
-        ServerConnector sslConnector = new ServerConnector(server, null, null, pool, 1, 1,
+        ServerConnector sslConnector = new ServerConnector(server, null, null, new ArrayByteBufferPool.Tracking(), 1, 1,
             AbstractConnectionFactory.getFactories(sslContextFactory, new HttpConnectionFactory()));
 
         server.addConnector(sslConnector);
@@ -130,7 +128,15 @@ public class DebugHandlerTest
     @AfterEach
     public void stopServer() throws Exception
     {
-        server.stop();
+        ArrayByteBufferPool.Tracking byteBufferPool = (ArrayByteBufferPool.Tracking)server.getConnectors()[0].getByteBufferPool();
+        try
+        {
+            assertThat("Server Leaks: " + byteBufferPool.dumpLeaks(), byteBufferPool.getLeaks().size(), Matchers.is(0));
+        }
+        finally
+        {
+            LifeCycle.stop(server);
+        }
     }
 
     @Test
