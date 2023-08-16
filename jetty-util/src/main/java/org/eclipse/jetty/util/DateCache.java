@@ -37,12 +37,11 @@ public class DateCache
     private final DateTimeFormatter _tzFormat1;
     private final DateTimeFormatter _tzFormat2;
     private final ZoneId _zoneId;
-    private final boolean _subSecond;
 
     protected volatile Tick _tick1;
     protected volatile Tick _tick2;
 
-    public class Tick
+    public static class Tick
     {
         private final long _seconds;
         private final String _prefix;
@@ -62,7 +61,7 @@ public class DateCache
 
         public String getString(long inDate)
         {
-            if (!_subSecond)
+            if (_suffix == null)
                 return _prefix;
 
             long ms = inDate % 1000;
@@ -115,16 +114,18 @@ public class DateCache
 
     public DateCache(String format, Locale l, TimeZone tz, boolean subSecondPrecision)
     {
+        format = format.replaceFirst("S+", "SSS");
         _formatString = format;
         _zoneId = tz.toZoneId();
 
         String format1 = format;
         String format2 = null;
+        boolean subSecond;
         if (subSecondPrecision)
         {
             int msIndex = format.indexOf("SSS");
-            _subSecond = (msIndex >= 0);
-            if (_subSecond)
+            subSecond = (msIndex >= 0);
+            if (subSecond)
             {
                 format1 = format.substring(0, msIndex);
                 format2 = format.substring(msIndex + 3);
@@ -132,27 +133,20 @@ public class DateCache
         }
         else
         {
-            _subSecond = false;
+            subSecond = false;
+            format1 = format.replace("SSS", "000");
         }
 
-        if (_subSecond)
-        {
-            _tzFormat1 = createFormatter(format1, l, _zoneId);
-            _tzFormat2 = createFormatter(format2, l, _zoneId);
-        }
-        else
-        {
-            _tzFormat1 = createFormatter(format1, l, _zoneId);
-            _tzFormat2 = null;
-        }
+        _tzFormat1 = createFormatter(format1, l, _zoneId);
+        _tzFormat2 = subSecond ? createFormatter(format2, l, _zoneId) : null;
     }
 
     private DateTimeFormatter createFormatter(String format, Locale locale, ZoneId zoneId)
     {
         if (locale == null)
-            return DateTimeFormatter.ofPattern(format).withZone(_zoneId);
+            return DateTimeFormatter.ofPattern(format).withZone(zoneId);
         else
-            return DateTimeFormatter.ofPattern(format, locale).withZone(_zoneId);
+            return DateTimeFormatter.ofPattern(format, locale).withZone(zoneId);
     }
 
     public TimeZone getTimeZone()

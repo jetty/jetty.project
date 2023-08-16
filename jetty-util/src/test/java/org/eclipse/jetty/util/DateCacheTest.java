@@ -20,9 +20,13 @@ import java.util.Locale;
 import java.util.TimeZone;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicInteger;
+import java.util.stream.Stream;
 
 import org.hamcrest.Matchers;
 import org.junit.jupiter.api.Test;
+import org.junit.jupiter.params.ParameterizedTest;
+import org.junit.jupiter.params.provider.Arguments;
+import org.junit.jupiter.params.provider.MethodSource;
 
 import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.Matchers.equalTo;
@@ -107,7 +111,36 @@ public class DateCacheTest
             assertThat(format(dateCache, "2012-12-21T10:15:30.55Z"), equalTo("Fri Dec 21 10:15:30 UTC 2012 | 550"));
             assertThat(format(dateCache, "2012-12-21T10:15:31.33Z"), equalTo("Fri Dec 21 10:15:31 UTC 2012 | 330"));
         }
-        assertThat(counter.get(), equalTo(2));
+
+        // We have 4 formats, two for each second, suffix and prefix.
+        assertThat(counter.get(), equalTo(4));
+    }
+
+    static Stream<Arguments> msFormatArgs()
+    {
+        // Given a time of "2012-12-21T10:15:31.123Z" what will the format string result in.
+        return Stream.of(
+            Arguments.of("S", "123", "SSS", true),
+            Arguments.of("SS", "123", "SSS", true),
+            Arguments.of("SSS", "123", "SSS", true),
+            Arguments.of("SSSS", "123", "SSS", true),
+            Arguments.of("SSSSSS", "123", "SSS", true),
+            Arguments.of("S", "000", "SSS", false),
+            Arguments.of("SS", "000", "SSS", false),
+            Arguments.of("SSS", "000", "SSS", false),
+            Arguments.of("SSSS", "000", "SSS", false),
+            Arguments.of("SSSSSS", "000", "SSS", false)
+        );
+    }
+
+    @ParameterizedTest
+    @MethodSource("msFormatArgs")
+    public void testMsFormat(String format, String expected, String correctedFormatString, boolean msPrecision) throws Exception
+    {
+        String timeString = "2012-12-21T10:15:31.123Z";
+        DateCache dateCache = new DateCache(format, null, TimeZone.getDefault(), msPrecision);
+        assertThat(dateCache.getFormatString(), equalTo(correctedFormatString));
+        assertThat(format(dateCache, timeString), equalTo(expected));
     }
 
     private static String format(DateCache dateCache, String instant)
