@@ -476,7 +476,7 @@ public final class HttpCookieUtils
 
         public SetCookieHttpField(HttpCookie cookie, CookieCompliance compliance)
         {
-            super(HttpHeader.SET_COOKIE, HttpHeader.SET_COOKIE.asString(), null);
+            super(HttpHeader.SET_COOKIE, HttpHeader.SET_COOKIE.asString(), "");
             this._cookie = cookie;
             _compliance = compliance;
         }
