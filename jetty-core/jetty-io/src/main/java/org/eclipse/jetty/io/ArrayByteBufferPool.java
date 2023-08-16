@@ -625,15 +625,15 @@ public class ArrayByteBufferPool implements ByteBufferPool, Dumpable
         public class Buffer extends RetainableByteBuffer.Wrapper
         {
             private final int size;
-            private final Instant instant;
-            private final Throwable stack;
+            private final Instant acquireInstant;
+            private final Throwable acquireStack;
 
             private Buffer(RetainableByteBuffer wrapped, int size)
             {
                 super(wrapped);
                 this.size = size;
-                this.instant = Instant.now();
-                this.stack = new Throwable();
+                this.acquireInstant = Instant.now();
+                this.acquireStack = new Throwable();
             }
 
             public int getSize()
@@ -641,14 +641,14 @@ public class ArrayByteBufferPool implements ByteBufferPool, Dumpable
                 return size;
             }
 
-            public Instant getInstant()
+            public Instant getAcquireInstant()
             {
-                return instant;
+                return acquireInstant;
             }
 
-            public Throwable getStack()
+            public Throwable getAcquireStack()
             {
-                return stack;
+                return acquireStack;
             }
 
             @Override
@@ -667,8 +667,8 @@ public class ArrayByteBufferPool implements ByteBufferPool, Dumpable
             public String dump()
             {
                 StringWriter w = new StringWriter();
-                stack.printStackTrace(new PrintWriter(w));
-                return "%s of %d bytes on %s at %s".formatted(getClass().getSimpleName(), size, instant, w);
+                getAcquireStack().printStackTrace(new PrintWriter(w));
+                return "%s of %d bytes on %s at %s".formatted(getClass().getSimpleName(), getSize(), getAcquireInstant(), w);
             }
 
             @Override
