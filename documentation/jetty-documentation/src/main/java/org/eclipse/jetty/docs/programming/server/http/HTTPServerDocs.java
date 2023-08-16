@@ -658,18 +658,21 @@ public class HTTPServerDocs
         // end::contextHandlerCollection[]
     }
 
+    @SuppressWarnings("InnerClassMayBeStatic")
+    // tag::servletContextHandler-servlet[]
+    public class ShopCartServlet extends HttpServlet
+    {
+        @Override
+        protected void service(HttpServletRequest request, HttpServletResponse response)
+        {
+            // Implement the shop cart functionality.
+        }
+    }
+    // end::servletContextHandler-servlet[]
+
     public void servletContextHandler() throws Exception
     {
-        // tag::servletContextHandler[]
-        class ShopCartServlet extends HttpServlet
-        {
-            @Override
-            protected void service(HttpServletRequest request, HttpServletResponse response)
-            {
-                // Implement the shop cart functionality.
-            }
-        }
-
+        // tag::servletContextHandler-setup[]
         Server server = new Server();
         Connector connector = new ServerConnector(server);
         server.addConnector(connector);
@@ -692,7 +695,7 @@ public class HTTPServerDocs
         server.setHandler(context);
 
         server.start();
-        // end::servletContextHandler[]
+        // end::servletContextHandler-setup[]
     }
 
     public void webAppContextHandler() throws Exception
