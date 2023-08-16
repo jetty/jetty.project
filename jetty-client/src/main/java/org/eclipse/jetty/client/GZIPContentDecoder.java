@@ -14,7 +14,13 @@
 package org.eclipse.jetty.client;
 
 import java.nio.ByteBuffer;
+import java.util.Arrays;
+import java.util.ListIterator;
+import java.util.stream.Collectors;
 
+import org.eclipse.jetty.http.HttpField;
+import org.eclipse.jetty.http.HttpFields;
+import org.eclipse.jetty.http.HttpHeader;
 import org.eclipse.jetty.io.ByteBufferPool;
 
 /**
@@ -23,6 +29,8 @@ import org.eclipse.jetty.io.ByteBufferPool;
 public class GZIPContentDecoder extends org.eclipse.jetty.http.GZIPContentDecoder implements ContentDecoder
 {
     public static final int DEFAULT_BUFFER_SIZE = 8192;
+
+    private long decodedLength;
 
     public GZIPContentDecoder()
     {
@@ -40,10 +48,44 @@ public class GZIPContentDecoder extends org.eclipse.jetty.http.GZIPContentDecode
     }
 
     @Override
+    public void beforeDecoding(HttpExchange exchange)
+    {
+        HttpFields.Mutable headers = exchange.getResponse().headers();
+        // Content-Length is not valid anymore while we are decoding.
+        headers.remove(HttpHeader.CONTENT_LENGTH);
+        // Content-Encoding should be removed/modified as the content will be decoded.
+        ListIterator<HttpField> fields = headers.listIterator();
+        while (fields.hasNext())
+        {
+            HttpField field = fields.next();
+            if (field.getHeader() == HttpHeader.CONTENT_ENCODING)
+            {
+                String value = Arrays.stream(field.getValues())
+                    .filter(encoding -> !"gzip".equalsIgnoreCase(encoding))
+                    .collect(Collectors.joining(", "));
+                if (value.isEmpty())
+                    fields.remove();
+                else
+                    fields.set(new HttpField(HttpHeader.CONTENT_ENCODING, value));
+                break;
+            }
+        }
+    }
+
+    @Override
     protected boolean decodedChunk(ByteBuffer chunk)
     {
+        decodedLength += chunk.remaining();
         super.decodedChunk(chunk);
         return true;
+    }
+
+    @Override
+    public void afterDecoding(HttpExchange exchange)
+    {
+        HttpFields.Mutable headers = exchange.getResponse().headers();
+        headers.remove(HttpHeader.TRANSFER_ENCODING);
+        headers.putLongField(HttpHeader.CONTENT_LENGTH, decodedLength);
     }
 
     /**

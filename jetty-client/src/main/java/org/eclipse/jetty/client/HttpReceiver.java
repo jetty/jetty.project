@@ -288,30 +288,27 @@ public abstract class HttpReceiver
         HttpResponse response = exchange.getResponse();
         if (LOG.isDebugEnabled())
             LOG.debug("Response headers {}{}{}", response, System.lineSeparator(), response.getHeaders().toString().trim());
+
+        // Content-Encoding may have multiple values in the order
+        // they are applied, but we only support the last one.
+        List<String> contentEncodings = response.getHeaders().getCSV(HttpHeader.CONTENT_ENCODING.asString(), false);
+        if (contentEncodings != null && !contentEncodings.isEmpty())
+        {
+            // Pick the last content encoding from the server.
+            String contentEncoding = contentEncodings.get(contentEncodings.size() - 1);
+            decoder = getHttpDestination().getHttpClient().getContentDecoderFactories().stream()
+                .filter(f -> f.getEncoding().equalsIgnoreCase(contentEncoding))
+                .findFirst()
+                .map(ContentDecoder.Factory::newContentDecoder)
+                .map(d -> new Decoder(exchange, d))
+                .orElse(null);
+        }
+
         ResponseNotifier notifier = getHttpDestination().getResponseNotifier();
         List<Response.ResponseListener> responseListeners = exchange.getConversation().getResponseListeners();
         notifier.notifyHeaders(responseListeners, response);
         contentListeners.reset(responseListeners);
         contentListeners.notifyBeforeContent(response);
-
-        if (!contentListeners.isEmpty())
-        {
-            List<String> contentEncodings = response.getHeaders().getCSV(HttpHeader.CONTENT_ENCODING.asString(), false);
-            if (contentEncodings != null && !contentEncodings.isEmpty())
-            {
-                for (ContentDecoder.Factory factory : getHttpDestination().getHttpClient().getContentDecoderFactories())
-                {
-                    for (String encoding : contentEncodings)
-                    {
-                        if (factory.getEncoding().equalsIgnoreCase(encoding))
-                        {
-                            decoder = new Decoder(exchange, factory.newContentDecoder());
-                            break;
-                        }
-                    }
-                }
-            }
-        }
 
         if (updateResponseState(ResponseState.TRANSIENT, ResponseState.HEADERS))
         {
@@ -755,6 +752,7 @@ public abstract class HttpReceiver
         {
             this.exchange = exchange;
             this.decoder = Objects.requireNonNull(decoder);
+            decoder.beforeDecoding(exchange);
         }
 
         private boolean decode(ByteBuffer encoded, Callback callback)
@@ -868,6 +866,7 @@ public abstract class HttpReceiver
         @Override
         public void destroy()
         {
+            decoder.afterDecoding(exchange);
             if (decoder instanceof Destroyable)
                 ((Destroyable)decoder).destroy();
         }

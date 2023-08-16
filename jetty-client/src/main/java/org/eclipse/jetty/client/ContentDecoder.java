@@ -22,6 +22,10 @@ import java.nio.ByteBuffer;
  */
 public interface ContentDecoder
 {
+    public default void beforeDecoding(HttpExchange exchange)
+    {
+    }
+
     /**
      * <p>Decodes the bytes in the given {@code buffer} and returns decoded bytes, if any.</p>
      *
@@ -36,6 +40,10 @@ public interface ContentDecoder
      * @param decoded the ByteBuffer returned by {@link #decode(ByteBuffer)}
      */
     public default void release(ByteBuffer decoded)
+    {
+    }
+
+    public default void afterDecoding(HttpExchange exchange)
     {
     }
 

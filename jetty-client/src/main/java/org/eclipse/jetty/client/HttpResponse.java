@@ -87,6 +87,11 @@ public class HttpResponse implements Response
         return headers.asImmutable();
     }
 
+    protected HttpFields.Mutable headers()
+    {
+        return headers;
+    }
+
     public void clearHeaders()
     {
         headers.clear();
