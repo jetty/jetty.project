@@ -197,8 +197,7 @@ public abstract class ScanningAppProvider extends ContainerLifeCycle implements 
             }
         }
 
-        if (LOG.isDebugEnabled())
-            LOG.debug("{} ignored {}", this, app);
+        LOG.warn("{} no environment for {}, ignoring", this, app);
         return null;
     }
 
