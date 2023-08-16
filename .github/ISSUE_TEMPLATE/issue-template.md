@@ -10,6 +10,9 @@ labels: Bug
 **Jetty version(s)**
 <!--[Jetty 9.x is now at End of Community Support](https://github.com/eclipse/jetty.project/issues/7958) -->
 
+**Jetty Environment**
+<!-- Applicable for jetty-12 only, choose: core, ee8, ee9, ee10 -->
+
 **Java version/vendor** `(use: java -version)`
 
 **OS type/version**
