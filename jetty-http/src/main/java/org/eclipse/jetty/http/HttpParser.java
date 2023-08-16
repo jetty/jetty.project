@@ -1111,7 +1111,7 @@ public class HttpParser
     private long convertContentLength(String valueString)
     {
         if (valueString == null || valueString.length() == 0)
-            throw new BadMessageException("Invalid Content-Length Value");
+            throw new BadMessageException("Invalid Content-Length Value", new NumberFormatException());
 
         long value = 0;
         int length = valueString.length();
@@ -1121,7 +1121,7 @@ public class HttpParser
         {
             char c = valueString.charAt(i);
             if (c < '0' || c > '9')
-                throw new BadMessageException("Invalid Content-Length Value");
+                throw new BadMessageException("Invalid Content-Length Value", new NumberFormatException());
 
             value = Math.addExact(Math.multiplyExact(value, 10), c - '0');
         }
