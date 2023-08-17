@@ -1112,7 +1112,6 @@ public class HttpParser
         long value = 0;
         int length = valueString.length();
 
-
         for (int i = 0; i < length; i++)
         {
             char c = valueString.charAt(i);
