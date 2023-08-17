@@ -165,7 +165,7 @@ public class HttpParser
             Map<String, HttpField> map = new LinkedHashMap<>();
             for (HttpHeader h : HttpHeader.values())
             {
-                HttpField httpField = new HttpField(h, "");
+                HttpField httpField = new HttpField(h, (String)null);
                 map.put(httpField.toString(), httpField);
             }
             return map;

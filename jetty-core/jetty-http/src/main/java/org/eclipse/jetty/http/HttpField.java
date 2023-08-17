@@ -65,7 +65,7 @@ public class HttpField
             _name = _header.asString();
         else
             _name = Objects.requireNonNull(name, "name");
-        _value = Objects.requireNonNull(value);
+        _value = value != null ? value : "";
     }
 
     /**
@@ -89,7 +89,7 @@ public class HttpField
      */
     public HttpField(HttpHeader header, HttpHeaderValue value)
     {
-        this(header, header.asString(), value.asString());
+        this(header, header.asString(), value != null ? value.asString() : null);
     }
 
     /**
