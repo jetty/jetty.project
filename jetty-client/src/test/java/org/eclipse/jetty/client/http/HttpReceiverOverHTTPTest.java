@@ -210,7 +210,6 @@ public class HttpReceiverOverHTTPTest
         ExecutionException e = assertThrows(ExecutionException.class, () -> listener.get(5, TimeUnit.SECONDS));
         assertThat(e.getCause(), instanceOf(HttpResponseException.class));
         assertThat(e.getCause().getCause(), instanceOf(BadMessageException.class));
-        e.printStackTrace();
         assertThat(e.getCause().getCause().getCause(), instanceOf(NumberFormatException.class));
     }
 
