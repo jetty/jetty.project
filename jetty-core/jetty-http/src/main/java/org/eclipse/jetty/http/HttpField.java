@@ -52,6 +52,10 @@ public class HttpField
     /**
      * <p>Creates a new {@link HttpField} with the given {@link HttpHeader},
      * name string and value string.</p>
+     * <p>A {@code null} field value may be passed as parameter, and will
+     * be converted to the empty string.
+     * This allows the direct constructions of fields that have no value,
+     * and/or {@link HttpField} subclasses that override {@link #getValue()}.</p>
      *
      * @param header the {@link HttpHeader} referencing a well-known HTTP header name;
      * may be {@code null} in case of an unknown or custom HTTP header name
