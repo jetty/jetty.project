@@ -73,8 +73,8 @@
       <scope>test</scope>
     </dependency>
     <dependency>
-      <groupId>org.eclipse.jetty</groupId>
-      <artifactId>jetty-annotations</artifactId>
+      <groupId>org.eclipse.jetty.ee9</groupId>
+      <artifactId>jetty-ee9-annotations</artifactId>
       <scope>test</scope>
     </dependency>
   </dependencies>
