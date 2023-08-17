@@ -11,16 +11,11 @@
 // ========================================================================
 //
 
-package org.eclipse.jetty.ee10.servlet.security;
+package org.eclipse.jetty.security;
 
-public class FormAuthenticator extends org.eclipse.jetty.security.authentication.FormAuthenticator
+import org.eclipse.jetty.server.Request;
+
+public interface ServeAs
 {
-    public FormAuthenticator()
-    {
-    }
-
-    public FormAuthenticator(String login, String error, boolean dispatch)
-    {
-        super(login, error, dispatch);
-    }
+    Request serveAs(Request request, String path);
 }

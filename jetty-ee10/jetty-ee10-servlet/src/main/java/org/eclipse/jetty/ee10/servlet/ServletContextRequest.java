@@ -32,6 +32,7 @@ import org.eclipse.jetty.http.HttpMethod;
 import org.eclipse.jetty.http.HttpURI;
 import org.eclipse.jetty.http.UriCompliance;
 import org.eclipse.jetty.http.pathmap.MatchedResource;
+import org.eclipse.jetty.security.ServeAs;
 import org.eclipse.jetty.server.FormFields;
 import org.eclipse.jetty.server.Request;
 import org.eclipse.jetty.server.Response;
@@ -53,7 +54,7 @@ import org.eclipse.jetty.util.Fields;
  * This class is single use only.
  * </p>
  */
-public class ServletContextRequest extends ContextRequest implements ServletContextHandler.ServletRequestInfo
+public class ServletContextRequest extends ContextRequest implements ServletContextHandler.ServletRequestInfo, ServeAs
 {
     public static final String MULTIPART_CONFIG_ELEMENT = "org.eclipse.jetty.multipartConfig";
     static final int INPUT_NONE = 0;
@@ -117,6 +118,7 @@ public class ServletContextRequest extends ContextRequest implements ServletCont
         addIdleTimeoutListener(_servletChannel.getServletRequestState()::onIdleTimeout);
     }
 
+    @Override
     public Request serveAs(Request request, String path)
     {
         MatchedResource<ServletHandler.MappedServlet> matchedResource = getServletContextHandler().getServletHandler().getMatchedServlet(path);

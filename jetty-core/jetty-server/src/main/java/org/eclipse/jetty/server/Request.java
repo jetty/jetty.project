@@ -768,7 +768,7 @@ public interface Request extends Attributes, Content.Source
     }
 
     @SuppressWarnings("unchecked")
-    static <T extends Request.Wrapper> T as(Request request, Class<T> type)
+    static <T> T as(Request request, Class<T> type)
     {
         while (request instanceof Request.Wrapper wrapper)
         {

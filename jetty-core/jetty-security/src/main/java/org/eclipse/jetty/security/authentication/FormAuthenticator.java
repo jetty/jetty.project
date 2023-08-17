@@ -40,6 +40,10 @@ import org.slf4j.LoggerFactory;
 /**
  * FORM Authenticator.
  *
+ * <p>This authenticator implements form authentication will use dispatchers to
+ * the login page if the {@link #__FORM_DISPATCH} init parameter is set to true.
+ * Otherwise it will redirect.</p>
+ *
  * <p>The form authenticator redirects unauthenticated requests to a log page
  * which should use a form to gather username/password from the user and send them
  * to the /j_security_check URI within the context.  FormAuthentication uses
@@ -52,6 +56,8 @@ public class FormAuthenticator extends LoginAuthenticator
 
     public static final String __FORM_LOGIN_PAGE = "org.eclipse.jetty.security.form_login_page";
     public static final String __FORM_ERROR_PAGE = "org.eclipse.jetty.security.form_error_page";
+    public static final String __FORM_DISPATCH = "org.eclipse.jetty.security.dispatch";
+
     public static final String __J_URI = "org.eclipse.jetty.security.form_URI";
     public static final String __J_POST = "org.eclipse.jetty.security.form_POST";
     public static final String __J_METHOD = "org.eclipse.jetty.security.form_METHOD";
@@ -64,24 +70,19 @@ public class FormAuthenticator extends LoginAuthenticator
     private String _formLoginPage;
     private String _formLoginPath;
     private boolean _alwaysSaveUri;
+    private boolean _dispatch;
 
     public FormAuthenticator()
     {
     }
 
-    @Deprecated
     public FormAuthenticator(String login, String error, boolean dispatch)
     {
-        this(login, error);
-    }
-
-    public FormAuthenticator(String login, String error)
-    {
-        this();
         if (login != null)
             setLoginPage(login);
         if (error != null)
             setErrorPage(error);
+        _dispatch = dispatch;
     }
 
     /**
@@ -112,6 +113,9 @@ public class FormAuthenticator extends LoginAuthenticator
         String error = configuration.getParameter(FormAuthenticator.__FORM_ERROR_PAGE);
         if (error != null)
             setErrorPage(error);
+
+        String dispatch = configuration.getParameter(FormAuthenticator.__FORM_DISPATCH);
+        _dispatch = dispatch == null ? _dispatch : Boolean.parseBoolean(dispatch);
     }
 
     @Override
@@ -361,10 +365,36 @@ public class FormAuthenticator extends LoginAuthenticator
         return sendChallenge(request, response, callback);
     }
 
+    protected AuthenticationState dispatch(String path, Request request, Response response, Callback callback)
+    {
+        try
+        {
+            HttpURI.Mutable newUri = HttpURI.build(request.getHttpURI()).path(path);
+            return new AuthenticationState.ServeAs(newUri)
+            {
+                @Override
+                public Request wrap(Request request)
+                {
+                    org.eclipse.jetty.security.ServeAs serveAs = Request.as(request, org.eclipse.jetty.security.ServeAs.class);
+                    if (serveAs != null)
+                        return serveAs.serveAs(request, path);
+                    return super.wrap(request);
+                }
+            };
+        }
+        catch (Throwable t)
+        {
+            Response.writeError(request, response, callback, t);
+            return AuthenticationState.SEND_FAILURE;
+        }
+    }
+
     protected AuthenticationState sendError(Request request, Response response, Callback callback)
     {
         if (_formErrorPage == null)
             Response.writeError(request, response, callback, HttpStatus.FORBIDDEN_403);
+        else if (_dispatch && getErrorPage() != null)
+            return dispatch(_formErrorPage, request, response, callback);
         else
             Response.sendRedirect(request, response, callback, encodeURL(URIUtil.addPaths(request.getContext().getContextPath(), _formErrorPage), request), true);
         return AuthenticationState.SEND_FAILURE;
@@ -372,8 +402,15 @@ public class FormAuthenticator extends LoginAuthenticator
 
     protected AuthenticationState sendChallenge(Request request, Response response, Callback callback)
     {
-        Response.sendRedirect(request, response, callback, encodeURL(URIUtil.addPaths(request.getContext().getContextPath(), _formLoginPage), request), true);
-        return AuthenticationState.SEND_FAILURE;
+        if (_dispatch)
+        {
+            return dispatch(_formLoginPage, request, response, callback);
+        }
+        else
+        {
+            Response.sendRedirect(request, response, callback, encodeURL(URIUtil.addPaths(request.getContext().getContextPath(), _formLoginPage), request), true);
+            return AuthenticationState.SEND_FAILURE;
+        }
     }
 
     public boolean isJSecurityCheck(String uri)
