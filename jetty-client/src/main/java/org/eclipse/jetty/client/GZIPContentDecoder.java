@@ -17,7 +17,6 @@ import java.nio.ByteBuffer;
 import java.util.ListIterator;
 
 import org.eclipse.jetty.http.HttpField;
-import org.eclipse.jetty.http.HttpFields;
 import org.eclipse.jetty.http.HttpHeader;
 import org.eclipse.jetty.io.ByteBufferPool;
 
@@ -48,28 +47,31 @@ public class GZIPContentDecoder extends org.eclipse.jetty.http.GZIPContentDecode
     @Override
     public void beforeDecoding(HttpExchange exchange)
     {
-        ListIterator<HttpField> iterator = exchange.getResponse().headers().listIterator();
-        while (iterator.hasNext())
+        exchange.getResponse().headers(headers ->
         {
-            HttpField field = iterator.next();
-            HttpHeader header = field.getHeader();
-            if (header == HttpHeader.CONTENT_LENGTH)
+            ListIterator<HttpField> iterator = headers.listIterator();
+            while (iterator.hasNext())
             {
-                // Content-Length is not valid anymore while we are decoding.
-                iterator.remove();
-            }
-            else if (header == HttpHeader.CONTENT_ENCODING)
-            {
-                // Content-Encoding should be removed/modified as the content will be decoded.
-                String value = field.getValue();
-                int comma = value.lastIndexOf(",");
-                if (comma < 0)
+                HttpField field = iterator.next();
+                HttpHeader header = field.getHeader();
+                if (header == HttpHeader.CONTENT_LENGTH)
+                {
+                    // Content-Length is not valid anymore while we are decoding.
                     iterator.remove();
-                else
-                    iterator.set(new HttpField(HttpHeader.CONTENT_ENCODING, value.substring(0, comma)));
-                break;
+                }
+                else if (header == HttpHeader.CONTENT_ENCODING)
+                {
+                    // Content-Encoding should be removed/modified as the content will be decoded.
+                    String value = field.getValue();
+                    int comma = value.lastIndexOf(",");
+                    if (comma < 0)
+                        iterator.remove();
+                    else
+                        iterator.set(new HttpField(HttpHeader.CONTENT_ENCODING, value.substring(0, comma)));
+                    break;
+                }
             }
-        }
+        });
     }
 
     @Override
@@ -83,9 +85,11 @@ public class GZIPContentDecoder extends org.eclipse.jetty.http.GZIPContentDecode
     @Override
     public void afterDecoding(HttpExchange exchange)
     {
-        HttpFields.Mutable headers = exchange.getResponse().headers();
-        headers.remove(HttpHeader.TRANSFER_ENCODING);
-        headers.putLongField(HttpHeader.CONTENT_LENGTH, decodedLength);
+        exchange.getResponse().headers(headers ->
+        {
+            headers.remove(HttpHeader.TRANSFER_ENCODING);
+            headers.putLongField(HttpHeader.CONTENT_LENGTH, decodedLength);
+        });
     }
 
     /**
