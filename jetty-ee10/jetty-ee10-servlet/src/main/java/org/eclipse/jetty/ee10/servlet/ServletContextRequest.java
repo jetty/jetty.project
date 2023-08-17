@@ -29,6 +29,7 @@ import jakarta.servlet.http.HttpServletResponse;
 import org.eclipse.jetty.http.HttpCookie;
 import org.eclipse.jetty.http.HttpFields;
 import org.eclipse.jetty.http.HttpMethod;
+import org.eclipse.jetty.http.HttpURI;
 import org.eclipse.jetty.http.UriCompliance;
 import org.eclipse.jetty.http.pathmap.MatchedResource;
 import org.eclipse.jetty.server.FormFields;
@@ -114,6 +115,39 @@ public class ServletContextRequest extends ContextRequest implements ServletCont
         _response =  newServletContextResponse(response);
         _sessionManager = sessionManager;
         addIdleTimeoutListener(_servletChannel.getServletRequestState()::onIdleTimeout);
+    }
+
+    public Request serveAs(Request request, String path)
+    {
+        MatchedResource<ServletHandler.MappedServlet> matchedResource = getServletContextHandler().getServletHandler().getMatchedServlet(path);
+
+        if (matchedResource == null)
+            return null;
+
+        ServletHandler.MappedServlet mappedServlet = matchedResource.getResource();
+        if (mappedServlet == null)
+            return null;
+
+        ServletChannel servletChannel = getServletChannel();
+
+        HttpURI uri = HttpURI.build(request.getHttpURI()).path(path).asImmutable();
+
+        ServletContextRequest servletContextRequest = getServletContextHandler().newServletContextRequest(
+            servletChannel,
+            new Request.Wrapper(request)
+            {
+                @Override
+                public HttpURI getHttpURI()
+                {
+                    return uri;
+                }
+            },
+            _response,
+            path,
+            matchedResource
+        );
+        servletChannel.associate(servletContextRequest);
+        return servletContextRequest;
     }
 
     protected ServletApiRequest newServletApiRequest()

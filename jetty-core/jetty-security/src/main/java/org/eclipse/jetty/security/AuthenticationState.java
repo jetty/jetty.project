@@ -17,6 +17,7 @@ import java.security.Principal;
 
 import org.eclipse.jetty.http.HttpException;
 import org.eclipse.jetty.http.HttpStatus;
+import org.eclipse.jetty.http.HttpURI;
 import org.eclipse.jetty.security.IdentityService.RunAsToken;
 import org.eclipse.jetty.security.authentication.LoginAuthenticator;
 import org.eclipse.jetty.security.internal.DeferredAuthenticationState;
@@ -270,17 +271,30 @@ public interface AuthenticationState extends Request.AuthenticationState
         }
     };
 
-    /**
-     * Authentication should be deferred, and request allowed to bypass security constraint.
-     */
-    AuthenticationState DEFER = new AuthenticationState()
+    class ServeAs implements AuthenticationState
     {
-        @Override
-        public String toString()
+        private final HttpURI _uri;
+
+        public ServeAs(HttpURI uri)
         {
-            return "DEFER";
+            _uri = uri;
         }
-    };
+
+        public Request wrap(Request request)
+        {
+            if (request.getHttpURI().equals(_uri))
+                return request;
+
+            return new Request.Wrapper(request)
+            {
+                @Override
+                public HttpURI getHttpURI()
+                {
+                    return _uri;
+                }
+            };
+        }
+    }
 
     static Deferred defer(LoginAuthenticator loginAuthenticator)
     {

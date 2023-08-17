@@ -87,7 +87,7 @@ public class FormAuthenticatorTest
     {
         String response = _connector.getResponse("GET /ctx/admin/user HTTP/1.0\r\nHost:host:8888\r\n\r\n");
         assertThat(response, containsString("HTTP/1.1 200 OK"));
-        assertThat(response, containsString("dispatcherType: FORWARD"));
+        assertThat(response, containsString("dispatcherType: REQUEST"));
     }
 
     @Test
@@ -95,6 +95,6 @@ public class FormAuthenticatorTest
     {
         String response = _connector.getResponse("GET /ctx/j_security_check?j_username=user&j_password=wrong HTTP/1.0\r\nHost:host:8888\r\n\r\n");
         assertThat(response, containsString("path: /ctx/error"));
-        assertThat(response, containsString("dispatcherType: FORWARD"));
+        assertThat(response, containsString("dispatcherType: REQUEST"));
     }
 }

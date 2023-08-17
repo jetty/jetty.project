@@ -24,8 +24,12 @@ import java.util.Map;
 import java.util.ServiceLoader;
 import java.util.Set;
 
+import org.eclipse.jetty.http.HttpField;
 import org.eclipse.jetty.http.HttpFields;
+import org.eclipse.jetty.http.HttpHeader;
+import org.eclipse.jetty.http.HttpHeaderValue;
 import org.eclipse.jetty.http.HttpStatus;
+import org.eclipse.jetty.http.HttpURI;
 import org.eclipse.jetty.http.pathmap.MappedResource;
 import org.eclipse.jetty.http.pathmap.PathMappings;
 import org.eclipse.jetty.http.pathmap.PathSpec;
@@ -489,14 +493,51 @@ public abstract class SecurityHandler extends Handler.Wrapper implements Configu
             if (authenticationState instanceof AuthenticationState.ResponseSent)
                 return true;
 
-            if (mustValidate && isNotAuthorized(constraint, authenticationState))
+            if (authenticationState instanceof AuthenticationState.ServeAs serveAs)
+            {
+                HttpURI uri = request.getHttpURI();
+                request = serveAs.wrap(request);
+                if (!uri.equals(request.getHttpURI()))
+                {
+                    // URI is replaced, so filter out all metadata for the old URI
+                    response.getHeaders().put(HttpHeader.CACHE_CONTROL.asString(), HttpHeaderValue.NO_CACHE.asString());
+                    response.getHeaders().putDate(HttpHeader.EXPIRES.asString(), 1);
+                    HttpFields.Mutable headers = new HttpFields.Mutable.Wrapper(response.getHeaders())
+                    {
+                        @Override
+                        public HttpField onAddField(HttpField field)
+                        {
+                            if (field.getHeader() == null)
+                                return field;
+                            return switch (field.getHeader())
+                            {
+                                case CACHE_CONTROL, PRAGMA, ETAG, EXPIRES, LAST_MODIFIED, AGE -> null;
+                                default -> field;
+                            };
+                        }
+                    };
+
+                    response = new Response.Wrapper(request, response)
+                    {
+                        @Override
+                        public HttpFields.Mutable getHeaders()
+                        {
+                            return headers;
+                        }
+                    };
+                }
+
+                authenticationState = _deferred;
+            }
+            else if (mustValidate && !isAuthorized(constraint, authenticationState))
             {
                 Response.writeError(request, response, callback, HttpStatus.FORBIDDEN_403, "!authorized");
                 return true;
             }
-
-            if (authenticationState == null || authenticationState == AuthenticationState.DEFER)
+            else if (authenticationState == null)
+            {
                 authenticationState = _deferred;
+            }
 
             AuthenticationState.setAuthenticationState(request, authenticationState);
             IdentityService.Association association =
@@ -553,23 +594,20 @@ public abstract class SecurityHandler extends Handler.Wrapper implements Configu
         }
     }
 
-    protected boolean isNotAuthorized(Constraint constraint, AuthenticationState authenticationState)
+    protected boolean isAuthorized(Constraint constraint, AuthenticationState authenticationState)
     {
-        if (authenticationState == AuthenticationState.DEFER)
-            return false;
-
         UserIdentity userIdentity = authenticationState instanceof AuthenticationState.Succeeded user ? user.getUserIdentity() : null;
         return switch (constraint.getAuthorization())
         {
-            case FORBIDDEN, ALLOWED, INHERIT -> false;
+            case FORBIDDEN, ALLOWED, INHERIT -> true;
             case ANY_USER -> userIdentity == null || userIdentity.getUserPrincipal() == null;
             case KNOWN_ROLE ->
             {
                 if (userIdentity != null && userIdentity.getUserPrincipal() != null)
                     for (String role : getKnownRoles())
                         if (userIdentity.isUserInRole(role))
-                            yield false;
-                yield true;
+                            yield true;
+                yield false;
             }
 
             case SPECIFIC_ROLE ->
@@ -577,8 +615,8 @@ public abstract class SecurityHandler extends Handler.Wrapper implements Configu
                 if (userIdentity != null && userIdentity.getUserPrincipal() != null)
                     for (String role : constraint.getRoles())
                         if (userIdentity.isUserInRole(role))
-                            yield false;
-                yield true;
+                            yield true;
+                yield false;
             }
         };
     }

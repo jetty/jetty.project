@@ -23,7 +23,6 @@ import jakarta.servlet.http.HttpServletResponse;
 import jakarta.servlet.http.HttpServletResponseWrapper;
 import org.eclipse.jetty.ee10.servlet.ServletContextRequest;
 import org.eclipse.jetty.http.HttpHeader;
-import org.eclipse.jetty.http.HttpHeaderValue;
 import org.eclipse.jetty.security.AuthenticationState;
 import org.eclipse.jetty.security.authentication.SessionAuthentication;
 import org.eclipse.jetty.server.Request;
@@ -90,15 +89,19 @@ public class FormAuthenticator extends org.eclipse.jetty.security.authentication
     {
         try
         {
-            response.getHeaders().put(HttpHeader.CACHE_CONTROL.asString(), HttpHeaderValue.NO_CACHE.asString());
-            response.getHeaders().putDate(HttpHeader.EXPIRES.asString(), 1);
+            // Currently we do not attempt to wrap the request
+            return new AuthenticationState.ServeAs(request.getHttpURI())
+            {
+                @Override
+                public Request wrap(Request request)
+                {
+                    ServletContextRequest servletContextRequest = Request.as(request, ServletContextRequest.class);
+                    if (servletContextRequest == null)
+                        return super.wrap(request);
 
-            ServletContextRequest contextRequest = Request.as(request, ServletContextRequest.class);
-            FormRequest formRequest = new FormRequest(contextRequest.getServletApiRequest());
-            FormResponse formResponse = new FormResponse(contextRequest.getHttpServletResponse());
-            contextRequest.getServletChannel().forward(path, formRequest, formResponse);
-
-            return AuthenticationState.DEFER;
+                    return servletContextRequest.serveAs(request, path);
+                }
+            };
         }
         catch (Throwable t)
         {

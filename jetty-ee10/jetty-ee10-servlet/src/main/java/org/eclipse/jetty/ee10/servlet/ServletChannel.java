@@ -197,11 +197,6 @@ public class ServletChannel
         return _httpInput;
     }
 
-    public ServletContextHandler.ServletContextApi getServletContextContext()
-    {
-        return _servletContextApi;
-    }
-
     public boolean isSendError()
     {
         return _state.isSendError();
@@ -459,24 +454,6 @@ public class ServletChannel
     }
 
     /**
-     * <p>When this is called the initial dispatch will use the {@link ServletChannel#FORWARD_PATH},
-     * {@link ServletChannel#FORWARD_REQUEST} and {@link ServletChannel#FORWARD_RESPONSE} attributes
-     * to do a {@link jakarta.servlet.DispatcherType#FORWARD} dispatch instead of the initial
-     * {@link jakarta.servlet.DispatcherType#REQUEST} dispatch.</p>
-     *
-     * <p>This must only be called before {@link ServletChannel#handle()} is first invoked.
-     * This can be used to dispatch to a different target before the initial request has been dispatched.</p>
-     */
-    public void forward(String path, HttpServletRequest request, HttpServletResponse response)
-    {
-        ServletContextRequest contextRequest = getServletContextRequest();
-        contextRequest.setAttribute(FORWARD_PATH, path);
-        contextRequest.setAttribute(FORWARD_REQUEST, request);
-        contextRequest.setAttribute(FORWARD_RESPONSE, response);
-        _state.initialDispatch();
-    }
-
-    /**
      * Handle the servlet request. This is called on the initial dispatch and then again on any asynchronous events.
      * @return True if the channel is ready to continue handling (ie it is not suspended)
      */
@@ -513,13 +490,6 @@ public class ServletChannel
                     {
                         reopen();
                         dispatch();
-                        break;
-                    }
-
-                    case FORWARD:
-                    {
-                        reopen();
-                        initialForward();
                         break;
                     }
 
