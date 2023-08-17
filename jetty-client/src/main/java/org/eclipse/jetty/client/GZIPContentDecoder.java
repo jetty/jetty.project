@@ -14,9 +14,7 @@
 package org.eclipse.jetty.client;
 
 import java.nio.ByteBuffer;
-import java.util.Arrays;
 import java.util.ListIterator;
-import java.util.stream.Collectors;
 
 import org.eclipse.jetty.http.HttpField;
 import org.eclipse.jetty.http.HttpFields;
@@ -50,23 +48,25 @@ public class GZIPContentDecoder extends org.eclipse.jetty.http.GZIPContentDecode
     @Override
     public void beforeDecoding(HttpExchange exchange)
     {
-        HttpFields.Mutable headers = exchange.getResponse().headers();
-        // Content-Length is not valid anymore while we are decoding.
-        headers.remove(HttpHeader.CONTENT_LENGTH);
-        // Content-Encoding should be removed/modified as the content will be decoded.
-        ListIterator<HttpField> fields = headers.listIterator();
-        while (fields.hasNext())
+        ListIterator<HttpField> iterator = exchange.getResponse().headers().listIterator();
+        while (iterator.hasNext())
         {
-            HttpField field = fields.next();
-            if (field.getHeader() == HttpHeader.CONTENT_ENCODING)
+            HttpField field = iterator.next();
+            HttpHeader header = field.getHeader();
+            if (header == HttpHeader.CONTENT_LENGTH)
             {
-                String value = Arrays.stream(field.getValues())
-                    .filter(encoding -> !"gzip".equalsIgnoreCase(encoding))
-                    .collect(Collectors.joining(", "));
-                if (value.isEmpty())
-                    fields.remove();
+                // Content-Length is not valid anymore while we are decoding.
+                iterator.remove();
+            }
+            else if (header == HttpHeader.CONTENT_ENCODING)
+            {
+                // Content-Encoding should be removed/modified as the content will be decoded.
+                String value = field.getValue();
+                int comma = value.lastIndexOf(",");
+                if (comma < 0)
+                    iterator.remove();
                 else
-                    fields.set(new HttpField(HttpHeader.CONTENT_ENCODING, value));
+                    iterator.set(new HttpField(HttpHeader.CONTENT_ENCODING, value.substring(0, comma)));
                 break;
             }
         }

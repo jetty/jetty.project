@@ -22,6 +22,14 @@ import java.nio.ByteBuffer;
  */
 public interface ContentDecoder
 {
+    /**
+     * <p>Processes the exchange just before the decoding of the response content.</p>
+     * <p>Typical processing may involve modifying the response headers, for example
+     * by temporarily removing the {@code Content-Length} header, or modifying the
+     * {@code Content-Encoding} header.</p>
+     *
+     * @param exchange the exchange to process before decoding the response content
+     */
     public default void beforeDecoding(HttpExchange exchange)
     {
     }
@@ -43,6 +51,14 @@ public interface ContentDecoder
     {
     }
 
+    /**
+     * <p>Processes the exchange after the response content has been decoded.</p>
+     * <p>Typical processing may involve modifying the response headers, for example
+     * updating the {@code Content-Length} header to the length of the decoded
+     * response content.
+     *
+     * @param exchange the exchange to process after decoding the response content
+     */
     public default void afterDecoding(HttpExchange exchange)
     {
     }
