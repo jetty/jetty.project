@@ -233,14 +233,12 @@ public class ResourceService
             pathInfo = request.getPathInfo();
 
             // Is this a Range request?
-            if (_acceptRanges)
+            reqRanges = request.getHeaders(HttpHeader.RANGE.asString());
+            if (!hasDefinedRange(reqRanges))
+                reqRanges = null;
+            if (!_acceptRanges && reqRanges != null)
             {
-                reqRanges = request.getHeaders(HttpHeader.RANGE.asString());
-                if (!hasDefinedRange(reqRanges))
-                    reqRanges = null;
-            }
-            else if (request.getHeader(HttpHeader.RANGE.asString()) != null)
-            {
+                reqRanges = null;
                 response.setHeader(HttpHeader.ACCEPT_RANGES.asString(), "none");
             }
         }
