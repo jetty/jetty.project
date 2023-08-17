@@ -14,6 +14,7 @@
 package org.eclipse.jetty.server.handler;
 
 import java.net.InetSocketAddress;
+import java.nio.ByteBuffer;
 import java.nio.channels.SocketChannel;
 import java.nio.file.Files;
 import java.nio.file.Path;
@@ -25,15 +26,22 @@ import org.eclipse.jetty.http.HttpStatus;
 import org.eclipse.jetty.http.HttpTester;
 import org.eclipse.jetty.http.MultiPart;
 import org.eclipse.jetty.http.MultiPartByteRanges;
+import org.eclipse.jetty.http.content.HttpContent;
+import org.eclipse.jetty.http.content.ResourceHttpContent;
 import org.eclipse.jetty.io.Content;
 import org.eclipse.jetty.io.content.ByteBufferContentSource;
+import org.eclipse.jetty.server.Handler;
+import org.eclipse.jetty.server.ResourceService;
 import org.eclipse.jetty.server.Server;
 import org.eclipse.jetty.server.ServerConnector;
 import org.eclipse.jetty.toolchain.test.FS;
 import org.eclipse.jetty.toolchain.test.MavenTestingUtils;
+import org.eclipse.jetty.util.BufferUtil;
 import org.eclipse.jetty.util.component.LifeCycle;
 import org.eclipse.jetty.util.resource.FileSystemPool;
+import org.eclipse.jetty.util.resource.Resource;
 import org.eclipse.jetty.util.resource.ResourceFactory;
+import org.hamcrest.Matchers;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Disabled;
@@ -77,6 +85,203 @@ public class ResourceHandlerByteRangesTest
     {
         LifeCycle.stop(server);
         assertThat(FileSystemPool.INSTANCE.mounts(), empty());
+    }
+
+    private void changeHandler(Handler handler) throws Exception
+    {
+        server.stop();
+        server.setHandler(handler);
+        server.start();
+    }
+
+    @Test
+    public void testMemoryResourceRange() throws Exception
+    {
+        changeHandler(new ResourceHandler()
+        {
+            final Resource memResource = ResourceFactory.root().newMemoryResource(getClass().getResource("/simple/big.txt"));
+
+            @Override
+            protected HttpContent.Factory newHttpContentFactory()
+            {
+                return path -> new ResourceHttpContent(memResource, "text/plain");
+            }
+        });
+
+        try (SocketChannel socket = SocketChannel.open(new InetSocketAddress("localhost", connector.getLocalPort())))
+        {
+            socket.write(BufferUtil.toBuffer("""
+                GET / HTTP/1.1\r
+                Host: local\r
+                Range: bytes=234-258\r
+                Connection: close\r
+                \r
+                """));
+
+            HttpTester.Response response = HttpTester.parseResponse(HttpTester.from(socket));
+            assertNotNull(response);
+            assertEquals(HttpStatus.PARTIAL_CONTENT_206, response.getStatus());
+            assertEquals("25", response.get(HttpHeader.CONTENT_LENGTH));
+            assertEquals("    10\tThis is a big file", response.getContent());
+        }
+    }
+
+    @Test
+    public void testMemoryResourceMultipleRanges() throws Exception
+    {
+        changeHandler(new ResourceHandler()
+        {
+            final Resource memResource = ResourceFactory.root().newMemoryResource(getClass().getResource("/simple/big.txt"));
+
+            @Override
+            protected HttpContent.Factory newHttpContentFactory()
+            {
+                return path -> new ResourceHttpContent(memResource, "text/plain");
+            }
+        });
+
+        try (SocketChannel socket = SocketChannel.open(new InetSocketAddress("localhost", connector.getLocalPort())))
+        {
+            socket.write(BufferUtil.toBuffer("""
+                GET / HTTP/1.1\r
+                Host: local\r
+                Range: bytes=234-258, 494-519\r
+                Connection: close\r
+                \r
+                """));
+
+            HttpTester.Response response = HttpTester.parseResponse(HttpTester.from(socket));
+            assertNotNull(response);
+            assertEquals(HttpStatus.PARTIAL_CONTENT_206, response.getStatus());
+            assertThat(response.getContent(), Matchers.stringContainsInOrder(
+                "Content-Type: text/plain", "Content-Range: bytes 234-258/10400", "    10\tThis is a big file",
+                "Content-Type: text/plain", "Content-Range: bytes 494-519/10400", "    20\tThis is a big file")
+            );
+        }
+    }
+
+    @Test
+    public void testMemoryResourceRangeUsingBufferedHttpContent() throws Exception
+    {
+        changeHandler(new ResourceHandler()
+        {
+            final Resource memResource = ResourceFactory.root().newMemoryResource(getClass().getResource("/simple/big.txt"));
+
+            @Override
+            protected HttpContent.Factory newHttpContentFactory()
+            {
+                return path -> new ResourceHttpContent(memResource, "text/plain")
+                {
+                    final ByteBuffer buffer = BufferUtil.toBuffer(getResource(), false);
+
+                    @Override
+                    public ByteBuffer getByteBuffer()
+                    {
+                        return buffer;
+                    }
+                };
+            }
+        });
+
+        try (SocketChannel socket = SocketChannel.open(new InetSocketAddress("localhost", connector.getLocalPort())))
+        {
+            socket.write(BufferUtil.toBuffer("""
+                GET / HTTP/1.1\r
+                Host: local\r
+                Range: bytes=234-258\r
+                Connection: close\r
+                \r
+                """));
+
+            HttpTester.Response response = HttpTester.parseResponse(HttpTester.from(socket));
+            assertNotNull(response);
+            assertEquals(HttpStatus.PARTIAL_CONTENT_206, response.getStatus());
+            assertEquals("25", response.get(HttpHeader.CONTENT_LENGTH));
+            assertEquals("    10\tThis is a big file", response.getContent());
+        }
+    }
+
+    @Test
+    public void testMemoryResourceMultipleRangesUsingBufferedHttpContent() throws Exception
+    {
+        changeHandler(new ResourceHandler()
+        {
+            final Resource memResource = ResourceFactory.root().newMemoryResource(getClass().getResource("/simple/big.txt"));
+
+            @Override
+            protected HttpContent.Factory newHttpContentFactory()
+            {
+                return path -> new ResourceHttpContent(memResource, "text/plain")
+                {
+                    final ByteBuffer buffer = BufferUtil.toBuffer(getResource(), false);
+
+                    @Override
+                    public ByteBuffer getByteBuffer()
+                    {
+                        return buffer;
+                    }
+                };
+            }
+        });
+
+        try (SocketChannel socket = SocketChannel.open(new InetSocketAddress("localhost", connector.getLocalPort())))
+        {
+            socket.write(BufferUtil.toBuffer("""
+                GET / HTTP/1.1\r
+                Host: local\r
+                Range: bytes=234-258, 494-519\r
+                Connection: close\r
+                \r
+                """));
+
+            HttpTester.Response response = HttpTester.parseResponse(HttpTester.from(socket));
+            assertNotNull(response);
+            assertEquals(HttpStatus.PARTIAL_CONTENT_206, response.getStatus());
+            assertThat(response.getContent(), Matchers.stringContainsInOrder(
+                "Content-Type: text/plain", "Content-Range: bytes 234-258/10400", "    10\tThis is a big file",
+                "Content-Type: text/plain", "Content-Range: bytes 494-519/10400", "    20\tThis is a big file")
+            );
+        }
+    }
+
+    @Test
+    public void testNotAcceptRanges() throws Exception
+    {
+        changeHandler(new ResourceHandler()
+        {
+            final Resource memResource = ResourceFactory.root().newMemoryResource(getClass().getResource("/simple/big.txt"));
+
+            @Override
+            protected HttpContent.Factory newHttpContentFactory()
+            {
+                return path -> new ResourceHttpContent(memResource, "text/plain");
+            }
+
+            @Override
+            protected ResourceService newResourceService()
+            {
+                ResourceService resourceService = super.newResourceService();
+                resourceService.setAcceptRanges(false);
+                return resourceService;
+            }
+        });
+
+        try (SocketChannel socket = SocketChannel.open(new InetSocketAddress("localhost", connector.getLocalPort())))
+        {
+            socket.write(BufferUtil.toBuffer("""
+                GET / HTTP/1.1\r
+                Host: local\r
+                Range: bytes=234-258\r
+                Connection: close\r
+                \r
+                """));
+
+            HttpTester.Response response = HttpTester.parseResponse(HttpTester.from(socket));
+            assertNotNull(response);
+            assertEquals(HttpStatus.OK_200, response.getStatus());
+            assertEquals("10400", response.get(HttpHeader.CONTENT_LENGTH));
+            assertEquals("none", response.get(HttpHeader.ACCEPT_RANGES));
+        }
     }
 
     @ParameterizedTest
