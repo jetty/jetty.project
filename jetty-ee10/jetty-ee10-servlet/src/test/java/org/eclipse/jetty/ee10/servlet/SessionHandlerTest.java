@@ -493,7 +493,7 @@ public class SessionHandlerTest
             assertThat(response.getContentAsString(), containsString("valid=false"));
 
             //test with id for non-existent session
-            response = client.GET( url + ";" + SessionHandler.__DefaultSessionIdPathParameterName + "=" + "123456789");
+            response = client.GET(url + ";" + SessionHandler.__DefaultSessionIdPathParameterName + "=" + "123456789");
             assertEquals(HttpServletResponse.SC_OK, response.getStatus());
             String content = response.getContentAsString();
             assertThat(content, containsString("requestedId=123456789"));
