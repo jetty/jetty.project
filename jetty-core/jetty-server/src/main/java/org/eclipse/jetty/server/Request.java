@@ -420,7 +420,7 @@ public interface Request extends Attributes, Content.Source
 
         HostPort authority = request.getConnectionMetaData().getServerAuthority();
         if (authority != null)
-            return HostPort.normalizeHost(authority.getHost());
+            return authority.getHost();
 
         return null;
     }
