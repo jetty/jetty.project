@@ -33,6 +33,13 @@
           </excludeProperties>
         </effectivePom>
       </plugin>
+      <plugin groupId="org.apache.maven.plugins" artifactId="maven-surefire-plugin">
+        <effectivePom>
+          <excludeProperties>
+            <excludeProperty>systemPropertyVariables</excludeProperty>
+          </excludeProperties>
+        </effectivePom>
+      </plugin>
       <plugin artifactId="asciidoctor-maven-plugin" groupId="org.asciidoctor">
         <effectivePom>
           <excludeProperties>
@@ -74,6 +81,9 @@
             <reconcile propertyName="skipTests" skipValue="true"/>
             <reconcile propertyName="testFailureIgnore" skipValue="true"/>
           </reconciles>
+          <nologs>
+            <nolog propertyName="systemPropertyVariables"/>
+          </nologs>
         </plugin>
         <plugin artifactId="asciidoctor-maven-plugin" goal="process-asciidoc" groupId="org.asciidoctor">
           <nologs>
