@@ -83,7 +83,6 @@ public class ServletChannel
     private Response _response;
     private Callback _callback;
     private boolean _expects100Continue;
-    private long _written;
 
     public ServletChannel(ServletContextHandler servletContextHandler, Request request)
     {
@@ -218,7 +217,7 @@ public class ServletChannel
 
     public long getBytesWritten()
     {
-        return _written;
+        return Response.getContentBytesWritten(getServletContextResponse());
     }
 
     /**
@@ -449,15 +448,13 @@ public class ServletChannel
         _request = _servletContextRequest = null;
         _response = null;
         _callback = null;
-        _written = 0;
         _expects100Continue = false;
     }
 
     /**
      * Handle the servlet request. This is called on the initial dispatch and then again on any asynchronous events.
-     * @return True if the channel is ready to continue handling (ie it is not suspended)
      */
-    public boolean handle()
+    public void handle()
     {
         if (LOG.isDebugEnabled())
             LOG.debug("handle {} {} ", _servletContextRequest.getHttpURI(), this);
@@ -553,15 +550,15 @@ public class ServletChannel
                                 // If the callback has already been completed we should continue in handle loop.
                                 // Otherwise, the callback will schedule a dispatch to handle().
                                 if (asyncCompletion.compareAndSet(false, true))
-                                    return false;
+                                    return;
                             }
                         }
                         catch (Throwable x)
                         {
                             if (cause == null)
                                 cause = x;
-                            else if (ExceptionUtil.areNotAssociated(cause, x))
-                                cause.addSuppressed(x);
+                            else
+                                ExceptionUtil.addSuppressedIfNotAssociated(cause, x);
                             if (LOG.isDebugEnabled())
                                 LOG.debug("Could not perform ERROR dispatch, aborting", cause);
                             if (_state.isResponseCommitted())
@@ -577,8 +574,7 @@ public class ServletChannel
                                 }
                                 catch (Throwable t)
                                 {
-                                    if (ExceptionUtil.areNotAssociated(cause, t))
-                                        cause.addSuppressed(t);
+                                    ExceptionUtil.addSuppressedIfNotAssociated(cause, t);
                                     abort(cause);
                                 }
                             }
@@ -617,12 +613,11 @@ public class ServletChannel
                                 ResponseUtils.ensureConsumeAvailableOrNotPersistent(_servletContextRequest, _servletContextRequest.getServletContextResponse());
                         }
 
-                        // RFC 7230, section 3.3.
-                        if (!_servletContextRequest.isHead() &&
-                            getServletContextResponse().getStatus() != HttpStatus.NOT_MODIFIED_304 &&
-                            getServletContextResponse().isContentIncomplete(_servletContextRequest.getHttpOutput().getWritten()))
+                        // RFC 7230, section 3.3.  We do this here so that a servlet error page can be sent.
+                        if (!_servletContextRequest.isHead() && getServletContextResponse().getStatus() != HttpStatus.NOT_MODIFIED_304)
                         {
-                            if (sendErrorOrAbort("Insufficient content written"))
+                            long written = getBytesWritten();
+                            if (getServletContextResponse().isContentIncomplete(written) && sendErrorOrAbort("Insufficient content written %d < %d".formatted(written, getServletContextResponse().getContentLength())))
                                 break;
                         }
 
@@ -649,9 +644,6 @@ public class ServletChannel
 
         if (LOG.isDebugEnabled())
             LOG.debug("!handle {} {}", action, this);
-
-        boolean suspended = action == Action.WAIT;
-        return !suspended;
     }
 
     private void reopen()
@@ -664,7 +656,7 @@ public class ServletChannel
      * @param message the error message.
      * @return true if we have sent an error, false if we have aborted.
      */
-    public boolean sendErrorOrAbort(String message)
+    private boolean sendErrorOrAbort(String message)
     {
         try
         {

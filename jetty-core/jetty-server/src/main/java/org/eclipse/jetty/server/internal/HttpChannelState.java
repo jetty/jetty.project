@@ -473,8 +473,7 @@ public class HttpChannelState implements HttpChannel, Components
                     }
                     catch (Throwable throwable)
                     {
-                        if (ExceptionUtil.areNotAssociated(x, throwable))
-                            x.addSuppressed(throwable);
+                        ExceptionUtil.addSuppressedIfNotAssociated(x, throwable);
                     }
 
                     // If the application has not been otherwise informed of the failure
@@ -1080,8 +1079,7 @@ public class HttpChannelState implements HttpChannel, Components
                         }
                         catch (Throwable t)
                         {
-                            if (ExceptionUtil.areNotAssociated(throwable, t))
-                                throwable.addSuppressed(t);
+                            ExceptionUtil.addSuppressedIfNotAssociated(throwable, t);
                         }
                         finally
                         {
@@ -1355,6 +1353,18 @@ public class HttpChannelState implements HttpChannel, Components
         }
 
         @Override
+        public boolean hasLastWrite()
+        {
+            try (AutoLock ignored = _request._lock.lock())
+            {
+                if (_request._httpChannelState == null)
+                    return true;
+
+                return _request._httpChannelState._streamSendState != StreamSendState.SENDING;
+            }
+        }
+
+        @Override
         public boolean isCompletedSuccessfully()
         {
             try (AutoLock ignored = _request._lock.lock())
@@ -1540,8 +1550,7 @@ public class HttpChannelState implements HttpChannel, Components
 
                 // Consume any input.
                 Throwable unconsumed = stream.consumeAvailable();
-                if (ExceptionUtil.areNotAssociated(unconsumed, failure))
-                    failure.addSuppressed(unconsumed);
+                ExceptionUtil.addSuppressedIfNotAssociated(failure, unconsumed);
 
                 if (LOG.isDebugEnabled())
                     LOG.debug("failed stream.isCommitted={}, response.isCommitted={} {}", httpChannelState._stream.isCommitted(), httpChannelState._response.isCommitted(), this);
@@ -1689,8 +1698,7 @@ public class HttpChannelState implements HttpChannel, Components
                     Callback.from(() -> httpChannelState._handlerInvoker.failed(failure),
                         x ->
                         {
-                            if (ExceptionUtil.areNotAssociated(failure, x))
-                                failure.addSuppressed(x);
+                            ExceptionUtil.addSuppressedIfNotAssociated(failure, x);
                             httpChannelState._handlerInvoker.failed(failure);
                         }));
             }
@@ -1758,8 +1766,7 @@ public class HttpChannelState implements HttpChannel, Components
                 }
                 catch (Throwable t)
                 {
-                    if (ExceptionUtil.areNotAssociated(failure, t))
-                        failure.addSuppressed(t);
+                    ExceptionUtil.addSuppressedIfNotAssociated(failure, t);
                     super.onError(task, failure);
                 }
             }
