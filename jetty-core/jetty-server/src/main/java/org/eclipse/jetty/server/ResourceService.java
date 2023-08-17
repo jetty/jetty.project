@@ -18,6 +18,7 @@ import java.nio.ByteBuffer;
 import java.nio.channels.ReadableByteChannel;
 import java.nio.charset.Charset;
 import java.nio.charset.StandardCharsets;
+import java.nio.file.Path;
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.Collections;
@@ -151,6 +152,11 @@ public class ResourceService
 
         // Is this a Range request?
         List<String> reqRanges = request.getHeaders().getValuesList(HttpHeader.RANGE.asString());
+        if (!_acceptRanges && !reqRanges.isEmpty())
+        {
+            reqRanges = List.of();
+            response.getHeaders().add(HttpHeader.ACCEPT_RANGES.asString(), "none");
+        }
 
         boolean endsWithSlash = pathInContext.endsWith("/");
 
@@ -635,7 +641,7 @@ public class ResourceService
         response.write(true, ByteBuffer.wrap(data), callback);
     }
 
-    private void sendData(Request request, Response response, Callback callback, HttpContent content, List<String> reqRanges)
+    private void sendData(Request request, Response response, Callback callback, HttpContent content, List<String> reqRanges) throws IOException
     {
         if (LOG.isDebugEnabled())
         {
@@ -678,7 +684,13 @@ public class ResourceService
             putHeaders(response, content, range.getLength());
             response.setStatus(HttpStatus.PARTIAL_CONTENT_206);
             response.getHeaders().put(HttpHeader.CONTENT_RANGE, range.toHeaderValue(contentLength));
-            Content.copy(new MultiPartByteRanges.PathContentSource(content.getResource().getPath(), range), response, callback);
+            Path path = content.getResource().getPath();
+            Content.Source source;
+            if (path != null)
+                source = new MultiPartByteRanges.PathContentSource(path, range);
+            else
+                source = new MultiPartByteRanges.InputStreamContentSource(content.getResource().newInputStream(), range);
+            Content.copy(source, response, callback);
             return;
         }
 
@@ -687,7 +699,7 @@ public class ResourceService
         String contentType = "multipart/byteranges; boundary=";
         String boundary = MultiPart.generateBoundary(null, 24);
         MultiPartByteRanges.ContentSource byteRanges = new MultiPartByteRanges.ContentSource(boundary);
-        ranges.forEach(range -> byteRanges.addPart(new MultiPartByteRanges.Part(content.getContentTypeValue(), content.getResource().getPath(), range, contentLength)));
+        ranges.forEach(range -> byteRanges.addPart(new MultiPartByteRanges.Part(content.getContentTypeValue(), content.getResource(), range, contentLength)));
         byteRanges.close();
         long partsContentLength = byteRanges.getLength();
         putHeaders(response, content, partsContentLength);
