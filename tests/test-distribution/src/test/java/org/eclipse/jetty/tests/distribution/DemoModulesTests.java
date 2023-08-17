@@ -105,7 +105,6 @@ public class DemoModulesTests extends AbstractJettyHomeTest
 
             String[] argsStart = {
                 "jetty.http.port=" + httpPort,
-                "jetty.httpConfig.port=" + httpsPort,
                 "jetty.ssl.port=" + httpsPort
             };
 
@@ -149,7 +148,6 @@ public class DemoModulesTests extends AbstractJettyHomeTest
 
             String[] argsStart = {
                 "jetty.http.port=" + httpPort,
-                "jetty.httpConfig.port=" + httpsPort,
                 "jetty.ssl.port=" + httpsPort
             };
 
@@ -205,7 +203,6 @@ public class DemoModulesTests extends AbstractJettyHomeTest
 
             String[] argsStart = {
                 "jetty.http.port=" + httpPort,
-                "jetty.httpConfig.port=" + httpsPort,
                 "jetty.ssl.port=" + httpsPort
             };
 
@@ -260,7 +257,6 @@ public class DemoModulesTests extends AbstractJettyHomeTest
             String[] argsStart = {
                 "--jpms",
                 "jetty.http.port=" + httpPort,
-                "jetty.httpConfig.port=" + httpsPort,
                 "jetty.ssl.port=" + httpsPort
             };
             try (JettyHomeTester.Run runStart = distribution.start(argsStart))
@@ -301,7 +297,6 @@ public class DemoModulesTests extends AbstractJettyHomeTest
             int httpsPort = distribution.freePort();
             String[] argsStart = {
                 "jetty.http.port=" + httpPort,
-                "jetty.httpConfig.port=" + httpsPort,
                 "jetty.ssl.port=" + httpsPort
             };
             try (JettyHomeTester.Run runStart = distribution.start(argsStart))
