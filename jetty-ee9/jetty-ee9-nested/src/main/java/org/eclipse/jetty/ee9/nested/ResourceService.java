@@ -21,6 +21,7 @@ import java.nio.ByteBuffer;
 import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
 import java.nio.file.InvalidPathException;
+import java.nio.file.Path;
 import java.util.Arrays;
 import java.util.Collection;
 import java.util.Enumeration;
@@ -232,9 +233,16 @@ public class ResourceService
             pathInfo = request.getPathInfo();
 
             // Is this a Range request?
-            reqRanges = request.getHeaders(HttpHeader.RANGE.asString());
-            if (!hasDefinedRange(reqRanges))
-                reqRanges = null;
+            if (_acceptRanges)
+            {
+                reqRanges = request.getHeaders(HttpHeader.RANGE.asString());
+                if (!hasDefinedRange(reqRanges))
+                    reqRanges = null;
+            }
+            else if (request.getHeader(HttpHeader.RANGE.asString()) != null)
+            {
+                response.setHeader(HttpHeader.ACCEPT_RANGES.asString(), "none");
+            }
         }
 
         String pathInContext = URIUtil.addPaths(servletPath, pathInfo);
@@ -864,28 +872,37 @@ public class ResourceService
 
     private static void writeContent(HttpContent content, OutputStream out, long start, long contentLength) throws IOException
     {
-        // Is the write for the whole content?
-        if (start == 0 && content.getResource().length() == contentLength)
+        // attempt efficient ByteBuffer based write
+        ByteBuffer buffer = content.getByteBuffer();
+        if (buffer != null)
         {
-            // attempt efficient ByteBuffer based write for whole content
-            ByteBuffer buffer = content.getByteBuffer();
-            if (buffer != null)
+            // no need to modify buffer pointers when whole content is requested
+            if (start != 0 || content.getResource().length() != contentLength)
             {
-                BufferUtil.writeTo(buffer, out);
-                return;
+                buffer = buffer.asReadOnlyBuffer();
+                buffer.position((int)(buffer.position() + start));
+                buffer.limit((int)(buffer.position() + contentLength));
             }
-
-            try (InputStream input = content.getResource().newInputStream())
-            {
-                IO.copy(input, out);
-                return;
-            }
+            BufferUtil.writeTo(buffer, out);
+            return;
         }
 
-        // Use a ranged writer
-        try (SeekableByteChannelRangeWriter rangeWriter = new SeekableByteChannelRangeWriter(() -> Files.newByteChannel(content.getResource().getPath())))
+        // Use a ranged writer if resource backed by path
+        Path path = content.getResource().getPath();
+        if (path != null)
         {
-            rangeWriter.writeTo(out, start, contentLength);
+            try (SeekableByteChannelRangeWriter rangeWriter = new SeekableByteChannelRangeWriter(() -> Files.newByteChannel(path)))
+            {
+                rangeWriter.writeTo(out, start, contentLength);
+            }
+            return;
+        }
+
+        // Perform ranged write
+        try (InputStream input = content.getResource().newInputStream())
+        {
+            input.skipNBytes(start);
+            IO.copy(input, out, contentLength);
         }
     }
 
