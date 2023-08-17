@@ -404,11 +404,10 @@ public interface Request extends Attributes, Content.Source
     }
 
     /**
-     * Get the logical name for the server, which may differ from the actual server name
+     * Get the logical name the request was sent to, which may be from the authority of the
+     * request; the configured server authority; the actual network name of the server;
      * @param request The request to get the server name of
-     * @return The logical name the request was sent to, which may be from the authority of the
-     *         request; the configured server authority; the actual network name of the server;
-     *         otherwise null
+     * @return The logical server name or null if it cannot be determined.
      */
     static String getServerName(Request request)
     {
@@ -419,23 +418,18 @@ public interface Request extends Attributes, Content.Source
         if (uri.hasAuthority())
             return HostPort.normalizeHost(uri.getHost());
 
-        HostPort authority = request.getConnectionMetaData().getHttpConfiguration().getServerAuthority();
+        HostPort authority = request.getConnectionMetaData().getServerAuthority();
         if (authority != null)
             return HostPort.normalizeHost(authority.getHost());
 
-        SocketAddress local = request.getConnectionMetaData().getLocalSocketAddress();
-        if (local instanceof InetSocketAddress)
-            return HostPort.normalizeHost(((InetSocketAddress)local).getHostString());
-
-        return local == null ? null : local.toString();
+        return null;
     }
 
     /**
-     * Get the logical port a request was received on, which may differ from the actual network port.
+     * Get the logical port a request was received on, which may be from the authority of the request; the
+     * configured server authority; the default port for the scheme; or the actual network port.
      * @param request The request to get the port of
-     * @return The port for the request, which may be from the authority of the request; the
-     *         configured server authority; the default port for the scheme; the actual network port;
-     *         otherwise -1
+     * @return The port for the request if it can be determined, otherwise -1
      */
     static int getServerPort(Request request)
     {
@@ -447,7 +441,7 @@ public interface Request extends Attributes, Content.Source
         if (uri.hasAuthority() && uri.getPort() > 0)
             return uri.getPort();
 
-        // Is there a server authority that forces a port?
+        // Is there a configured server authority?
         HostPort authority = request.getConnectionMetaData().getHttpConfiguration().getServerAuthority();
         if (authority != null && authority.getPort() > 0)
             return authority.getPort();

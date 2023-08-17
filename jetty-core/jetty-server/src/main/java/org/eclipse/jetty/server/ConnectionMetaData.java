@@ -70,19 +70,18 @@ public interface ConnectionMetaData extends Attributes
      *         which the connection was accepted, but it may be configured to a specific address.
      * @see HttpConfiguration#setServerAuthority(HostPort)
      */
-    HostPort getServerAuthority();
-
-    static HostPort getServerAuthority(HttpConfiguration httpConfiguration, ConnectionMetaData connectionMetaData)
+    default HostPort getServerAuthority()
     {
+        HttpConfiguration httpConfiguration = getHttpConfiguration();
         HostPort authority = httpConfiguration.getServerAuthority();
         if (authority != null)
             return authority;
 
-        SocketAddress localSocketAddress = connectionMetaData.getLocalSocketAddress();
+        SocketAddress localSocketAddress = getLocalSocketAddress();
         if (localSocketAddress instanceof InetSocketAddress inetSocketAddress)
             return new HostPort(inetSocketAddress.getHostString(), inetSocketAddress.getPort());
         else if (localSocketAddress != null)
-            return new HostPort(localSocketAddress.toString(), connectionMetaData.isSecure() ? 443 : 80);
+            return new HostPort(localSocketAddress.toString());
         return null;
     }
 
