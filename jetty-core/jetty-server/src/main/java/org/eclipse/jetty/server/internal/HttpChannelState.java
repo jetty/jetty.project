@@ -150,6 +150,7 @@ public class HttpChannelState implements HttpChannel, Components
             _request._httpChannelState = null;
 
             // Recycle.
+            _responseHeaders.thaw();
             _responseHeaders.reset();
             _handling = null;
             _handled = false;
@@ -273,14 +274,15 @@ public class HttpChannelState implements HttpChannel, Components
             _request = new ChannelRequest(this, request);
             _response = new ChannelResponse(_request);
 
-            HttpFields.Mutable responseHeaders = _response.getHeaders();
             HttpConfiguration httpConfiguration = getHttpConfiguration();
+            ResponseHttpFields responseHeaders = _response.getHeaders();
             if (httpConfiguration.getSendServerVersion())
                 responseHeaders.add(SERVER_VERSION);
             if (httpConfiguration.getSendXPoweredBy())
                 responseHeaders.add(POWERED_BY);
             if (httpConfiguration.getSendDateHeader())
                 responseHeaders.add(getConnectionMetaData().getConnector().getServer().getDateField());
+            responseHeaders.freeze();
 
             long idleTO = httpConfiguration.getIdleTimeout();
             _oldIdleTimeout = _stream.getIdleTimeout();
@@ -1187,7 +1189,7 @@ public class HttpChannelState implements HttpChannel, Components
         }
 
         @Override
-        public HttpFields.Mutable getHeaders()
+        public ResponseHttpFields getHeaders()
         {
             return _httpFields;
         }

@@ -16,6 +16,7 @@ package org.eclipse.jetty.server.internal;
 import java.util.Iterator;
 import java.util.ListIterator;
 import java.util.concurrent.atomic.AtomicBoolean;
+import java.util.concurrent.atomic.AtomicInteger;
 import java.util.stream.Stream;
 
 import org.eclipse.jetty.http.HttpField;
@@ -28,6 +29,7 @@ public class ResponseHttpFields implements HttpFields.Mutable
     private static final Logger LOG = LoggerFactory.getLogger(ResponseHttpFields.class);
     private final Mutable _fields = HttpFields.build();
     private final AtomicBoolean _committed = new AtomicBoolean();
+    private final AtomicInteger _frozen = new AtomicInteger();
 
     public HttpFields.Mutable getMutableHttpFields()
     {
@@ -50,13 +52,23 @@ public class ResponseHttpFields implements HttpFields.Mutable
     public void reset()
     {
         _committed.set(false);
-        _fields.clear();
+        clearFields();
     }
 
     @Override
     public HttpField getField(int index)
     {
         return _fields.getField(index);
+    }
+
+    public void freeze()
+    {
+        _frozen.set(_fields.size());
+    }
+
+    public void thaw()
+    {
+        _frozen.set(0);
     }
 
     @Override
@@ -96,7 +108,25 @@ public class ResponseHttpFields implements HttpFields.Mutable
     @Override
     public Mutable clear()
     {
-        return _committed.get() ? this : _fields.clear();
+        if (!_committed.get())
+            clearFields();
+        return this;
+    }
+
+    private void clearFields()
+    {
+        int frozen = _frozen.get();
+        if (frozen == 0)
+            _fields.clear();
+        else
+        {
+            for (Iterator<HttpField> iterator = _fields.iterator(); iterator.hasNext();)
+            {
+                iterator.next();
+                if (frozen-- <= 0)
+                    iterator.remove();
+            }
+        }
     }
 
     @Override

@@ -31,6 +31,7 @@ import org.junit.jupiter.api.Test;
 import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.Matchers.containsInAnyOrder;
 import static org.hamcrest.Matchers.is;
+import static org.hamcrest.Matchers.notNullValue;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 
 public class ResponseTest
@@ -52,6 +53,56 @@ public class ResponseTest
     {
         LifeCycle.stop(server);
         connector = null;
+    }
+
+    @Test
+    public void testGET() throws Exception
+    {
+        server.setHandler(new Handler.Abstract()
+        {
+            @Override
+            public boolean handle(Request request, Response response, Callback callback)
+            {
+                callback.succeeded();
+                return true;
+            }
+        });
+        server.start();
+
+        String request = """
+                GET /path HTTP/1.0\r
+                Host: hostname\r
+                \r
+                """;
+        HttpTester.Response response = HttpTester.parseResponse(connector.getResponse(request));
+        assertEquals(HttpStatus.OK_200, response.getStatus());
+    }
+
+    @Test
+    public void testServerDate() throws Exception
+    {
+        server.setHandler(new Handler.Abstract()
+        {
+            @Override
+            public boolean handle(Request request, Response response, Callback callback)
+            {
+                response.reset();
+                callback.succeeded();
+                return true;
+            }
+        });
+        server.start();
+
+        String request = """
+                GET /path HTTP/1.0\r
+                Host: hostname\r
+                \r
+                """;
+        HttpTester.Response response = HttpTester.parseResponse(connector.getResponse(request));
+        assertEquals(HttpStatus.OK_200, response.getStatus());
+        assertThat(response.get(HttpHeader.SERVER), notNullValue());
+        assertThat(response.get(HttpHeader.DATE), notNullValue());
+        System.err.println(response.getMetaData().getHttpFields());
     }
 
     @Test
