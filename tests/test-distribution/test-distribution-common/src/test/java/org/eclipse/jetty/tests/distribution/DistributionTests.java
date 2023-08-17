@@ -50,6 +50,7 @@ import org.eclipse.jetty.io.ClientConnector;
 import org.eclipse.jetty.io.Content;
 import org.eclipse.jetty.io.content.ByteBufferContentSource;
 import org.eclipse.jetty.tests.hometester.JettyHomeTester;
+import org.eclipse.jetty.toolchain.test.FS;
 import org.eclipse.jetty.toolchain.test.PathMatchers;
 import org.eclipse.jetty.util.BlockingArrayQueue;
 import org.eclipse.jetty.util.ssl.SslContextFactory;
@@ -1526,6 +1527,87 @@ public class DistributionTests extends AbstractJettyHomeTest
                 // Ranges are inclusive, so 1-100 is 100 bytes.
                 assertThat(parts.get(0).getLength(), is(100L));
                 assertThat(parts.get(1).getLength(), is(4900L));
+            }
+        }
+    }
+
+    @ParameterizedTest
+    @ValueSource(strings = {"ee8", "ee9", "ee10"})
+    public void testXmlDeployWarNotInWebapps(String env) throws Exception
+    {
+        Path jettyBase = newTestJettyBaseDirectory();
+        String jettyVersion = System.getProperty("jettyVersion");
+        JettyHomeTester distribution = JettyHomeTester.Builder.newInstance()
+            .jettyVersion(jettyVersion)
+            .jettyBase(jettyBase)
+            .mavenLocalRepository(System.getProperty("mavenRepoPath"))
+            .build();
+
+        int httpPort = distribution.freePort();
+
+        String[] argsConfig = {
+            "--add-modules=http," + toEnvironment("deploy", env) + "," + toEnvironment("webapp", env)
+        };
+
+        try (JettyHomeTester.Run runConfig = distribution.start(argsConfig))
+        {
+            assertTrue(runConfig.awaitFor(START_TIMEOUT, TimeUnit.SECONDS));
+            assertEquals(0, runConfig.getExitValue());
+
+            String[] argsStart = {
+                "jetty.http.port=" + httpPort,
+                "jetty.httpConfig.port=" + httpPort
+            };
+
+            // Put war into ${jetty.base}/wars/ directory
+            File srcWar = distribution.resolveArtifact("org.eclipse.jetty." + env + ".demos:jetty-" + env + "-demo-simple-webapp:war:" + jettyVersion);
+            Path warsDir = jettyBase.resolve("wars");
+            FS.ensureDirExists(warsDir);
+            Path destWar = warsDir.resolve("demo.war");
+            Files.copy(srcWar.toPath(), destWar);
+
+            // Create XML for deployable
+            String xml = """
+                <?xml version="1.0" encoding="UTF-8"?>
+                <!DOCTYPE Configure PUBLIC "-//Jetty//Configure//EN" "https://eclipse.dev/jetty/configure.dtd">
+                                
+                <Configure class="org.eclipse.jetty.%s.webapp.WebAppContext">
+                  <Set name="contextPath">/demo</Set>
+                  <Set name="war">%s</Set>
+                </Configure>
+                """.formatted(env, destWar.toString());
+            Files.writeString(jettyBase.resolve("webapps/demo.xml"), xml, StandardCharsets.UTF_8);
+
+            // Specify Environment Properties for this raw XML based deployable
+            String props = """
+                environment=%s
+                """.formatted(env);
+            Files.writeString(jettyBase.resolve("webapps/demo.properties"), props, StandardCharsets.UTF_8);
+
+            /* The jetty.base tree should now look like this
+             *
+             * ${jetty.base}
+             * ├── resources/
+             * │   └── jetty-logging.properties
+             * ├── start.d/
+             * │   ├── ${env}-deploy.ini
+             * │   ├── ${env}-webapp.ini
+             * │   └── http.ini
+             * ├── wars/
+             * │   └── demo.war
+             * ├── webapps/
+             * │   ├── demo.properties
+             * │   └── demo.xml
+             * └── work/
+             */
+
+            try (JettyHomeTester.Run runStart = distribution.start(argsStart))
+            {
+                assertTrue(runStart.awaitConsoleLogsFor("Started oejs.Server@", START_TIMEOUT, TimeUnit.SECONDS));
+
+                startHttpClient();
+                ContentResponse response = client.GET("http://localhost:" + httpPort + "/demo/index.html");
+                assertEquals(HttpStatus.OK_200, response.getStatus());
             }
         }
     }
