@@ -61,7 +61,7 @@ public abstract class DownloadFileInitializer extends FileInitializer
         }
 
         if (FS.ensureDirectoryExists(destination.getParent()))
-            StartLog.info("mkdir " + _basehome.toShortForm(destination.getParent()));
+            StartLog.info("mkdir %s", _basehome.toShortForm(destination.getParent()));
 
         StartLog.info("download %s to %s", uri, _basehome.toShortForm(destination));
 

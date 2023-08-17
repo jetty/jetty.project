@@ -42,7 +42,7 @@ public class StartDirBuilder implements BaseBuilder.Config
         this.baseHome = baseBuilder.getBaseHome();
         this.startDir = baseHome.getBasePath("start.d");
         if (FS.ensureDirectoryExists(startDir))
-            StartLog.info("mkdir " + baseHome.toShortForm(startDir));
+            StartLog.info("mkdir %s", baseHome.toShortForm(startDir));
     }
 
     @Override
