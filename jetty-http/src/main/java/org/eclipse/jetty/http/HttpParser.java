@@ -754,8 +754,6 @@ public class HttpParser
                         case LF:
                             _fieldCache.prepare();
                             setState(State.HEADER);
-                            if (_responseHandler == null)
-                                throw new BadMessageException("Bad status");
                             _responseHandler.startResponse(_version, _responseStatus, null);
                             break;
 
@@ -917,8 +915,6 @@ public class HttpParser
                             String reason = takeString();
                             _fieldCache.prepare();
                             setState(State.HEADER);
-                            if (_responseHandler == null)
-                                throw new BadMessageException("Bad reason");
                             _responseHandler.startResponse(_version, _responseStatus, reason);
                             continue;
 
