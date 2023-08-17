@@ -13,29 +13,25 @@
 
 package org.eclipse.jetty.ee9.nested.resource;
 
-import java.io.IOException;
 import java.nio.ByteBuffer;
 import java.nio.file.Files;
+import java.nio.file.Path;
 import java.util.Objects;
 
 import org.eclipse.jetty.http.content.HttpContent;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
 
 /**
  * Range Writer selection for HttpContent
  */
 public class HttpContentRangeWriter
 {
-    private static final Logger LOG = LoggerFactory.getLogger(HttpContentRangeWriter.class);
-
     /**
      * Obtain a new RangeWriter for the supplied HttpContent.
      *
      * @param content the HttpContent to base RangeWriter on
      * @return the RangeWriter best suited for the supplied HttpContent
      */
-    public static RangeWriter newRangeWriter(HttpContent content) throws IOException
+    public static RangeWriter newRangeWriter(HttpContent content)
     {
         Objects.requireNonNull(content, "HttpContent");
 
@@ -44,6 +40,12 @@ public class HttpContentRangeWriter
         if (buffer != null)
             return new ByteBufferRangeWriter(buffer);
 
-        return new SeekableByteChannelRangeWriter(() -> Files.newByteChannel(content.getResource().getPath()));
+        // Try path's SeekableByteChannel
+        Path path = content.getResource().getPath();
+        if (path != null)
+            return new SeekableByteChannelRangeWriter(() -> Files.newByteChannel(path));
+
+        // Fallback to InputStream
+        return new InputStreamRangeWriter(() -> content.getResource().newInputStream());
     }
 }

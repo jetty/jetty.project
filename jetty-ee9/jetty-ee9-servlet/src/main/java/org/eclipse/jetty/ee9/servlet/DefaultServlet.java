@@ -245,35 +245,39 @@ public class DefaultServlet extends HttpServlet implements ResourceFactory, Welc
         if (cc != null)
             _resourceService.setCacheControl(new PreEncodedHttpField(HttpHeader.CACHE_CONTROL, cc));
 
-        // Try to get factory from ServletContext attribute.
-        HttpContent.Factory contentFactory = (HttpContent.Factory)getServletContext().getAttribute(HttpContent.Factory.class.getName());
-        if (contentFactory == null)
+        // Create HttpContentFactory if none already set
+        if (_resourceService.getHttpContentFactory() == null)
         {
-            contentFactory = new ResourceHttpContentFactory(this, _mimeTypes);
-            if (_useFileMappedBuffer)
-                contentFactory = new FileMappingHttpContentFactory(contentFactory);
-            contentFactory = new VirtualHttpContentFactory(contentFactory, _styleSheet, "text/css");
-            contentFactory = new PreCompressedHttpContentFactory(contentFactory, _resourceService.getPrecompressedFormats());
-
-            int maxCacheSize = getInitInt("maxCacheSize", -2);
-            int maxCachedFileSize = getInitInt("maxCachedFileSize", -2);
-            int maxCachedFiles = getInitInt("maxCachedFiles", -2);
-            long cacheValidationTime = getInitParameter("cacheValidationTime") != null ? Long.parseLong(getInitParameter("cacheValidationTime")) : -2;
-            if (maxCachedFiles != -2 || maxCacheSize != -2 || maxCachedFileSize != -2 || cacheValidationTime != -2)
+            // Try to get factory from ServletContext attribute.
+            HttpContent.Factory contentFactory = (HttpContent.Factory)getServletContext().getAttribute(HttpContent.Factory.class.getName());
+            if (contentFactory == null)
             {
-                ByteBufferPool bufferPool = getByteBufferPool(_contextHandler);
-                _cachingContentFactory = new ValidatingCachingHttpContentFactory(contentFactory,
-                    (cacheValidationTime > -2) ? cacheValidationTime : Duration.ofSeconds(1).toMillis(), bufferPool);
-                contentFactory = _cachingContentFactory;
-                if (maxCacheSize >= 0)
-                    _cachingContentFactory.setMaxCacheSize(maxCacheSize);
-                if (maxCachedFileSize >= -1)
-                    _cachingContentFactory.setMaxCachedFileSize(maxCachedFileSize);
-                if (maxCachedFiles >= -1)
-                    _cachingContentFactory.setMaxCachedFiles(maxCachedFiles);
+                contentFactory = new ResourceHttpContentFactory(this, _mimeTypes);
+                if (_useFileMappedBuffer)
+                    contentFactory = new FileMappingHttpContentFactory(contentFactory);
+                contentFactory = new VirtualHttpContentFactory(contentFactory, _styleSheet, "text/css");
+                contentFactory = new PreCompressedHttpContentFactory(contentFactory, _resourceService.getPrecompressedFormats());
+
+                int maxCacheSize = getInitInt("maxCacheSize", -2);
+                int maxCachedFileSize = getInitInt("maxCachedFileSize", -2);
+                int maxCachedFiles = getInitInt("maxCachedFiles", -2);
+                long cacheValidationTime = getInitParameter("cacheValidationTime") != null ? Long.parseLong(getInitParameter("cacheValidationTime")) : -2;
+                if (maxCachedFiles != -2 || maxCacheSize != -2 || maxCachedFileSize != -2 || cacheValidationTime != -2)
+                {
+                    ByteBufferPool bufferPool = getByteBufferPool(_contextHandler);
+                    _cachingContentFactory = new ValidatingCachingHttpContentFactory(contentFactory,
+                        (cacheValidationTime > -2) ? cacheValidationTime : Duration.ofSeconds(1).toMillis(), bufferPool);
+                    contentFactory = _cachingContentFactory;
+                    if (maxCacheSize >= 0)
+                        _cachingContentFactory.setMaxCacheSize(maxCacheSize);
+                    if (maxCachedFileSize >= -1)
+                        _cachingContentFactory.setMaxCachedFileSize(maxCachedFileSize);
+                    if (maxCachedFiles >= -1)
+                        _cachingContentFactory.setMaxCachedFiles(maxCachedFiles);
+                }
             }
+            _resourceService.setHttpContentFactory(contentFactory);
         }
-        _resourceService.setHttpContentFactory(contentFactory);
         _resourceService.setWelcomeFactory(this);
 
         List<String> gzipEquivalentFileExtensions = new ArrayList<>();
