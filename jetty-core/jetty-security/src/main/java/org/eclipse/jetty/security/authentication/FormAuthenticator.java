@@ -365,11 +365,11 @@ public class FormAuthenticator extends LoginAuthenticator
         return sendChallenge(request, response, callback);
     }
 
-    protected AuthenticationState dispatch(String path, Request request, Response response, Callback callback)
+    private AuthenticationState dispatch(String path, Request request, Response response, Callback callback)
     {
         try
         {
-            HttpURI.Mutable newUri = HttpURI.build(request.getHttpURI()).path(path);
+            HttpURI.Mutable newUri = HttpURI.build(request.getHttpURI()).pathQuery(path);
             return new AuthenticationState.ServeAs(newUri)
             {
                 @Override
@@ -389,7 +389,7 @@ public class FormAuthenticator extends LoginAuthenticator
         }
     }
 
-    protected AuthenticationState sendError(Request request, Response response, Callback callback)
+    private AuthenticationState sendError(Request request, Response response, Callback callback)
     {
         if (_formErrorPage == null)
             Response.writeError(request, response, callback, HttpStatus.FORBIDDEN_403);
@@ -400,7 +400,7 @@ public class FormAuthenticator extends LoginAuthenticator
         return AuthenticationState.SEND_FAILURE;
     }
 
-    protected AuthenticationState sendChallenge(Request request, Response response, Callback callback)
+    private AuthenticationState sendChallenge(Request request, Response response, Callback callback)
     {
         if (_dispatch)
         {
