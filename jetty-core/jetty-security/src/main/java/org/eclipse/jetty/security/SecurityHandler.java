@@ -600,7 +600,7 @@ public abstract class SecurityHandler extends Handler.Wrapper implements Configu
         return switch (constraint.getAuthorization())
         {
             case FORBIDDEN, ALLOWED, INHERIT -> true;
-            case ANY_USER -> userIdentity == null || userIdentity.getUserPrincipal() == null;
+            case ANY_USER -> userIdentity != null && userIdentity.getUserPrincipal() != null;
             case KNOWN_ROLE ->
             {
                 if (userIdentity != null && userIdentity.getUserPrincipal() != null)
