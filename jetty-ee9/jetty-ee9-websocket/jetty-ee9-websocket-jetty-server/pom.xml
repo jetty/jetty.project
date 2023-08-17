@@ -37,7 +37,7 @@
     </dependency>
     <dependency>
       <groupId>org.eclipse.jetty.ee9</groupId>
-      <artifactId>jetty-ee9-annotations</artifactId>
+      <artifactId>jetty-ee9-webapp</artifactId>
     </dependency>
     <dependency>
       <groupId>org.eclipse.jetty</groupId>
