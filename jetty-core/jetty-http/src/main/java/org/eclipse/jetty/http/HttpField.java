@@ -56,7 +56,7 @@ public class HttpField
      * @param header the {@link HttpHeader} referencing a well-known HTTP header name;
      * may be {@code null} in case of an unknown or custom HTTP header name
      * @param name the field name; if {@code null}, then {@link HttpHeader#asString()} is used
-     * @param value the non-{@code null} field value
+     * @param value the field value; if {@code null}, the empty string will be used
      */
     public HttpField(HttpHeader header, String name, String value)
     {
@@ -73,7 +73,7 @@ public class HttpField
      * and value string.</p>
      *
      * @param header the non-{@code null} {@link HttpHeader} referencing a well-known HTTP header name
-     * @param value the non-{@code null} field value
+     * @param value the field value; if {@code null}, the empty string will be used
      */
     public HttpField(HttpHeader header, String value)
     {
@@ -85,7 +85,7 @@ public class HttpField
      * and value.</p>
      *
      * @param header the non-{@code null} {@link HttpHeader} referencing a well-known HTTP header name
-     * @param value the non-{@code null} field value
+     * @param value the field value; if {@code null}, the empty string will be used
      */
     public HttpField(HttpHeader header, HttpHeaderValue value)
     {
@@ -97,7 +97,7 @@ public class HttpField
      * and value string.</p>
      *
      * @param name the non-{@code null} field name
-     * @param value the non-{@code null} field value
+     * @param value the field value; if {@code null}, the empty string will be used
      */
     public HttpField(String name, String value)
     {
