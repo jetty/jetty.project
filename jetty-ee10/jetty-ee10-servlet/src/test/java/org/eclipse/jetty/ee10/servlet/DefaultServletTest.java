@@ -20,6 +20,7 @@ import java.io.InputStream;
 import java.io.OutputStream;
 import java.net.URL;
 import java.net.URLClassLoader;
+import java.nio.ByteBuffer;
 import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
 import java.nio.file.InvalidPathException;
@@ -50,6 +51,7 @@ import org.eclipse.jetty.http.HttpHeader;
 import org.eclipse.jetty.http.HttpStatus;
 import org.eclipse.jetty.http.HttpTester;
 import org.eclipse.jetty.http.UriCompliance;
+import org.eclipse.jetty.http.content.ResourceHttpContent;
 import org.eclipse.jetty.http.content.ResourceHttpContentFactory;
 import org.eclipse.jetty.logging.StacklessLogging;
 import org.eclipse.jetty.server.AllowedResourceAliasChecker;
@@ -66,6 +68,9 @@ import org.eclipse.jetty.toolchain.test.jupiter.WorkDirExtension;
 import org.eclipse.jetty.util.BufferUtil;
 import org.eclipse.jetty.util.IO;
 import org.eclipse.jetty.util.StringUtil;
+import org.eclipse.jetty.util.resource.Resource;
+import org.eclipse.jetty.util.resource.ResourceFactory;
+import org.hamcrest.Matchers;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Disabled;
@@ -3441,6 +3446,137 @@ public class DefaultServletTest
         String rawResponse = connector.getResponse(rawRequest);
         HttpTester.Response response = HttpTester.parseResponse(rawResponse);
         assertThat(response.getContent(), containsString("testPathInfoOnly-OK"));
+    }
+
+    @Test
+    public void testMemoryResourceRange() throws Exception
+    {
+        Resource memResource = ResourceFactory.root().newMemoryResource(getClass().getResource("/contextResources/test.txt"));
+        DefaultServlet defaultServlet = new DefaultServlet();
+        context.addServlet(new ServletHolder(defaultServlet), "/");
+        defaultServlet.getResourceService().setHttpContentFactory(path -> new ResourceHttpContent(memResource, "text/plain"));
+
+        String rawResponse = connector.getResponse("""
+            GET /context/ HTTP/1.1\r
+            Host: local\r
+            Range: bytes=10-12\r
+            Connection: close\r
+            \r
+            """);
+        HttpTester.Response response = HttpTester.parseResponse(rawResponse);
+        assertThat(response.toString(), response.getStatus(), is(HttpStatus.PARTIAL_CONTENT_206));
+        assertThat(response.get(HttpHeader.CONTENT_LENGTH), is("3"));
+        assertThat(response.getContent(), is("too"));
+    }
+
+    @Test
+    public void testMemoryResourceRangeUsingBufferedHttpContent() throws Exception
+    {
+        Resource memResource = ResourceFactory.root().newMemoryResource(getClass().getResource("/contextResources/test.txt"));
+        DefaultServlet defaultServlet = new DefaultServlet();
+        context.addServlet(new ServletHolder(defaultServlet), "/");
+        defaultServlet.getResourceService().setHttpContentFactory(path -> new ResourceHttpContent(memResource, "text/plain")
+        {
+            final ByteBuffer buffer = BufferUtil.toBuffer(getResource(), false);
+
+            @Override
+            public ByteBuffer getByteBuffer()
+            {
+                return buffer;
+            }
+        });
+
+        String rawResponse = connector.getResponse("""
+            GET /context/ HTTP/1.1\r
+            Host: local\r
+            Range: bytes=10-12\r
+            Connection: close\r
+            \r
+            """);
+        HttpTester.Response response = HttpTester.parseResponse(rawResponse);
+        assertThat(response.toString(), response.getStatus(), is(HttpStatus.PARTIAL_CONTENT_206));
+        assertThat(response.get(HttpHeader.CONTENT_LENGTH), is("3"));
+        assertThat(response.getContent(), is("too"));
+    }
+
+    @Test
+    public void testMemoryResourceMultipleRanges() throws Exception
+    {
+        Resource memResource = ResourceFactory.root().newMemoryResource(getClass().getResource("/contextResources/test.txt"));
+        DefaultServlet defaultServlet = new DefaultServlet();
+        context.addServlet(new ServletHolder(defaultServlet), "/");
+        defaultServlet.getResourceService().setHttpContentFactory(path -> new ResourceHttpContent(memResource, "text/plain"));
+
+        String rawResponse = connector.getResponse("""
+            GET /context/ HTTP/1.1\r
+            Host: local\r
+            Range: bytes=5-8, 10-12\r
+            Connection: close\r
+            \r
+            """);
+        HttpTester.Response response = HttpTester.parseResponse(rawResponse);
+        assertThat(response.toString(), response.getStatus(), is(HttpStatus.PARTIAL_CONTENT_206));
+        assertThat(response.get(HttpHeader.CONTENT_LENGTH), notNullValue());
+        assertThat(response.getContent(), Matchers.stringContainsInOrder(
+            "Content-Type: text/plain", "Content-Range: bytes 5-8/18", "2 to",
+            "Content-Type: text/plain", "Content-Range: bytes 10-12/18", "too")
+        );
+    }
+
+    @Test
+    public void testMemoryResourceMultipleRangesUsingBufferedHttpContent() throws Exception
+    {
+        Resource memResource = ResourceFactory.root().newMemoryResource(getClass().getResource("/contextResources/test.txt"));
+        DefaultServlet defaultServlet = new DefaultServlet();
+        context.addServlet(new ServletHolder(defaultServlet), "/");
+        defaultServlet.getResourceService().setHttpContentFactory(path -> new ResourceHttpContent(memResource, "text/plain")
+        {
+            final ByteBuffer buffer = BufferUtil.toBuffer(getResource(), false);
+
+            @Override
+            public ByteBuffer getByteBuffer()
+            {
+                return buffer;
+            }
+        });
+
+        String rawResponse = connector.getResponse("""
+            GET /context/ HTTP/1.1\r
+            Host: local\r
+            Range: bytes=5-8, 10-12\r
+            Connection: close\r
+            \r
+            """);
+        HttpTester.Response response = HttpTester.parseResponse(rawResponse);
+        assertThat(response.toString(), response.getStatus(), is(HttpStatus.PARTIAL_CONTENT_206));
+        assertThat(response.get(HttpHeader.CONTENT_LENGTH), notNullValue());
+        assertThat(response.getContent(), Matchers.stringContainsInOrder(
+            "Content-Type: text/plain", "Content-Range: bytes 5-8/18", "2 to",
+            "Content-Type: text/plain", "Content-Range: bytes 10-12/18", "too")
+        );
+    }
+
+    @Test
+    public void testNotAcceptRanges() throws Exception
+    {
+        Resource memResource = ResourceFactory.root().newMemoryResource(getClass().getResource("/contextResources/test.txt"));
+        DefaultServlet defaultServlet = new DefaultServlet();
+        context.addServlet(new ServletHolder(defaultServlet), "/");
+        defaultServlet.getResourceService().setHttpContentFactory(path -> new ResourceHttpContent(memResource, "text/plain"));
+        defaultServlet.getResourceService().setAcceptRanges(false);
+
+        String rawResponse = connector.getResponse("""
+            GET /context/ HTTP/1.1\r
+            Host: local\r
+            Range: bytes=10-12\r
+            Connection: close\r
+            \r
+            """);
+        HttpTester.Response response = HttpTester.parseResponse(rawResponse);
+        assertThat(response.toString(), response.getStatus(), is(HttpStatus.OK_200));
+        assertThat(response.get(HttpHeader.CONTENT_LENGTH), is("18"));
+        assertThat(response.get(HttpHeader.ACCEPT_RANGES), is("none"));
+        assertThat(response.getContent(), is("Test 2 to too two\n"));
     }
 
     public static class WriterFilter implements Filter

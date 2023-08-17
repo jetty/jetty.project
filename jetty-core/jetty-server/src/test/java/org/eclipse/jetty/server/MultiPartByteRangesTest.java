@@ -35,6 +35,7 @@ import org.eclipse.jetty.toolchain.test.FS;
 import org.eclipse.jetty.toolchain.test.MavenTestingUtils;
 import org.eclipse.jetty.util.Callback;
 import org.eclipse.jetty.util.component.LifeCycle;
+import org.eclipse.jetty.util.resource.ResourceFactory;
 import org.eclipse.jetty.util.thread.QueuedThreadPool;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.Test;
@@ -90,7 +91,7 @@ public class MultiPartByteRangesTest
                 String boundary = "boundary";
                 try (MultiPartByteRanges.ContentSource content = new MultiPartByteRanges.ContentSource(boundary))
                 {
-                    ranges.forEach(range -> content.addPart(new MultiPartByteRanges.Part("text/plain", resourcePath, range, content.getLength())));
+                    ranges.forEach(range -> content.addPart(new MultiPartByteRanges.Part("text/plain", ResourceFactory.root().newResource(resourcePath), range, content.getLength())));
                     content.close();
 
                     response.setStatus(HttpStatus.PARTIAL_CONTENT_206);

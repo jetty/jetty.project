@@ -14,6 +14,7 @@
 package org.eclipse.jetty.http;
 
 import java.io.IOException;
+import java.io.InputStream;
 import java.nio.ByteBuffer;
 import java.nio.channels.SeekableByteChannel;
 import java.nio.file.Path;
@@ -23,7 +24,9 @@ import java.util.List;
 import java.util.concurrent.CompletableFuture;
 
 import org.eclipse.jetty.io.Content;
+import org.eclipse.jetty.io.RuntimeIOException;
 import org.eclipse.jetty.io.content.ContentSourceCompletableFuture;
+import org.eclipse.jetty.util.resource.Resource;
 import org.eclipse.jetty.util.thread.AutoLock;
 
 /**
@@ -133,6 +136,34 @@ public class MultiPartByteRanges
     }
 
     /**
+     * <p>A specialized {@link org.eclipse.jetty.io.content.InputStreamContentSource}
+     * whose content is sliced by a byte range.</p>
+     */
+    public static class InputStreamContentSource extends org.eclipse.jetty.io.content.InputStreamContentSource
+    {
+        private long toRead;
+
+        public InputStreamContentSource(InputStream inputStream, ByteRange byteRange) throws IOException
+        {
+            super(inputStream);
+            inputStream.skipNBytes(byteRange.first());
+            this.toRead = byteRange.getLength();
+        }
+
+        @Override
+        protected int fillBufferFromInputStream(InputStream inputStream, ByteBuffer buffer) throws IOException
+        {
+            if (toRead == 0)
+                return -1;
+            int toReadInt = (int)Math.min(Integer.MAX_VALUE, toRead);
+            int len = Math.min(toReadInt, buffer.capacity());
+            int read = inputStream.read(buffer.array(), buffer.arrayOffset(), len);
+            toRead -= read;
+            return read;
+        }
+    }
+
+    /**
      * <p>A specialized {@link org.eclipse.jetty.io.content.PathContentSource}
      * whose content is sliced by a byte range.</p>
      */
@@ -181,26 +212,37 @@ public class MultiPartByteRanges
      */
     public static class Part extends MultiPart.Part
     {
-        private final Path path;
+        private final Resource resource;
         private final ByteRange byteRange;
 
-        public Part(String contentType, Path path, ByteRange byteRange, long contentLength)
+        public Part(String contentType, Resource resource, ByteRange byteRange, long contentLength)
         {
             this(HttpFields.build().put(HttpHeader.CONTENT_TYPE, contentType)
-                .put(HttpHeader.CONTENT_RANGE, byteRange.toHeaderValue(contentLength)), path, byteRange);
+                .put(HttpHeader.CONTENT_RANGE, byteRange.toHeaderValue(contentLength)), resource, byteRange);
         }
 
-        public Part(HttpFields headers, Path path, ByteRange byteRange)
+        public Part(HttpFields headers, Resource resource, ByteRange byteRange)
         {
             super(null, null, headers);
-            this.path = path;
+            this.resource = resource;
             this.byteRange = byteRange;
         }
 
         @Override
         public Content.Source newContentSource()
         {
-            return new PathContentSource(path, byteRange);
+            Path path = resource.getPath();
+            if (path != null)
+                return new PathContentSource(path, byteRange);
+
+            try
+            {
+                return new InputStreamContentSource(resource.newInputStream(), byteRange);
+            }
+            catch (IOException e)
+            {
+                throw new RuntimeIOException(e);
+            }
         }
     }
 

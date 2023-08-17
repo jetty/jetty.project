@@ -13,6 +13,7 @@
 
 package org.eclipse.jetty.io.content;
 
+import java.io.IOException;
 import java.io.InputStream;
 import java.nio.ByteBuffer;
 
@@ -79,7 +80,7 @@ public class InputStreamContentSource implements Content.Source
         try
         {
             ByteBuffer buffer = streamBuffer.getByteBuffer();
-            int read = inputStream.read(buffer.array(), buffer.arrayOffset(), buffer.capacity());
+            int read = fillBufferFromInputStream(inputStream, buffer);
             if (read < 0)
             {
                 streamBuffer.release();
@@ -97,6 +98,11 @@ public class InputStreamContentSource implements Content.Source
             streamBuffer.release();
             return failure(x);
         }
+    }
+
+    protected int fillBufferFromInputStream(InputStream inputStream, ByteBuffer buffer) throws IOException
+    {
+        return inputStream.read(buffer.array(), buffer.arrayOffset(), buffer.capacity());
     }
 
     private void close()
