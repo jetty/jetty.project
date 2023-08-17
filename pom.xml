@@ -2054,7 +2054,6 @@
       <id>ci</id>
       <properties>
         <surefire.rerunFailingTestsCount>0</surefire.rerunFailingTestsCount>
-        <settingsPath>${env.GLOBAL_MVN_SETTINGS}</settingsPath>
         <spotbugs.failOnError>false</spotbugs.failOnError>
         <!-- Defines a SpotBugs threshold. Use "Low" to discover low-priority bugs -->
         <spotbugs.threshold>Medium</spotbugs.threshold>
