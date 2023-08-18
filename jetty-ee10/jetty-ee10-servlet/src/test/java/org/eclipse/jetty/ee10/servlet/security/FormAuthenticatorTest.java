@@ -27,7 +27,6 @@ import org.eclipse.jetty.security.SecurityHandler;
 import org.eclipse.jetty.security.authentication.FormAuthenticator;
 import org.eclipse.jetty.server.LocalConnector;
 import org.eclipse.jetty.server.Server;
-import org.eclipse.jetty.util.URIUtil;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
@@ -68,7 +67,8 @@ public class FormAuthenticatorTest
         protected void service(HttpServletRequest req, HttpServletResponse resp) throws ServletException, IOException
         {
             PrintWriter writer = resp.getWriter();
-            writer.println("path: " + URIUtil.addPaths(req.getContextPath(), req.getServletPath()));
+            writer.println("contextPath: " + req.getContextPath());
+            writer.println("servletPath: " + req.getServletPath());
             writer.println("dispatcherType: " + req.getDispatcherType());
         }
     }
@@ -89,13 +89,16 @@ public class FormAuthenticatorTest
         String response = _connector.getResponse("GET /ctx/admin/user HTTP/1.0\r\nHost:host:8888\r\n\r\n");
         assertThat(response, containsString("HTTP/1.1 200 OK"));
         assertThat(response, containsString("dispatcherType: REQUEST"));
+        assertThat(response, containsString("contextPath: /ctx"));
+        assertThat(response, containsString("servletPath: /login"));
     }
 
     @Test
-    public void testError() throws Exception
+    public void testErrorDispatch() throws Exception
     {
         String response = _connector.getResponse("GET /ctx/j_security_check?j_username=user&j_password=wrong HTTP/1.0\r\nHost:host:8888\r\n\r\n");
-        assertThat(response, containsString("path: /ctx/error"));
         assertThat(response, containsString("dispatcherType: REQUEST"));
+        assertThat(response, containsString("contextPath: /ctx"));
+        assertThat(response, containsString("servletPath: /error"));
     }
 }

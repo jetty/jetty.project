@@ -358,7 +358,8 @@ public class FormAuthenticator extends LoginAuthenticator
     {
         try
         {
-            HttpURI.Mutable newUri = HttpURI.build(request.getHttpURI()).pathQuery(path);
+            String newPath = URIUtil.addPaths(request.getContext().getContextPath(), path);
+            HttpURI.Mutable newUri = HttpURI.build(request.getHttpURI()).pathQuery(newPath);
             return new AuthenticationState.ServeAs(newUri)
             {
                 @Override
