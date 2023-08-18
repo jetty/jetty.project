@@ -13,6 +13,7 @@
 
 package org.eclipse.jetty.server.handler.gzip;
 
+import java.util.ListIterator;
 import java.util.Set;
 import java.util.zip.Deflater;
 
@@ -550,14 +551,20 @@ public class GzipHandler extends Handler.Wrapper implements GzipFactory
         boolean inflatable = false;
         boolean deflatable = false;
         boolean etagMatches = false;
-        for (HttpField field : fields)
+        boolean seenContentEncoding = false;
+        for (ListIterator<HttpField> i = fields.listIterator(fields.size()); i.hasPrevious();)
         {
+            HttpField field = i.previous();
             HttpHeader header = field.getHeader();
             if (header == null)
                 continue;
             switch (header)
             {
-                case CONTENT_ENCODING -> inflatable = field.contains("gzip");
+                case CONTENT_ENCODING ->
+                {
+                    inflatable = !seenContentEncoding && field.containsLast("gzip");
+                    seenContentEncoding = true;
+                }
                 case ACCEPT_ENCODING -> deflatable = field.contains("gzip");
                 case IF_MATCH, IF_NONE_MATCH -> etagMatches |= field.getValue().contains(EtagUtils.ETAG_SEPARATOR);
             }
