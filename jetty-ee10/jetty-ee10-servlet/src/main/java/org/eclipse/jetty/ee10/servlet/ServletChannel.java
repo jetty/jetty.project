@@ -21,8 +21,6 @@ import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicLong;
 
 import jakarta.servlet.RequestDispatcher;
-import jakarta.servlet.http.HttpServletRequest;
-import jakarta.servlet.http.HttpServletResponse;
 import org.eclipse.jetty.ee10.servlet.ServletChannelState.Action;
 import org.eclipse.jetty.http.BadMessageException;
 import org.eclipse.jetty.http.HttpFields;
@@ -72,9 +70,6 @@ import static org.eclipse.jetty.util.thread.Invocable.InvocationType.NON_BLOCKIN
 public class ServletChannel
 {
     private static final Logger LOG = LoggerFactory.getLogger(ServletChannel.class);
-    private static final String FORWARD_REQUEST = "jetty.initial.forward.request";
-    private static final String FORWARD_RESPONSE = "jetty.initial.forward.response";
-    private static final String FORWARD_PATH = "jetty.initial.forward.path";
 
     private final ServletChannelState _state;
     private final ServletContextHandler.ServletScopedContext _context;
@@ -886,27 +881,6 @@ public class ServletChannel
         finally
         {
             servletContextHandler.requestDestroyed(servletContextRequest, servletApiRequest);
-        }
-    }
-
-    private void initialForward() throws Exception
-    {
-        ServletContextHandler servletContextHandler = getServletContextHandler();
-        ServletContextRequest servletContextRequest = getServletContextRequest();
-
-        HttpServletRequest request = (HttpServletRequest)servletContextRequest.removeAttribute(FORWARD_REQUEST);
-        HttpServletResponse response = (HttpServletResponse)servletContextRequest.removeAttribute(FORWARD_RESPONSE);
-        String path = (String)servletContextRequest.removeAttribute(FORWARD_PATH);
-
-        try
-        {
-            servletContextHandler.requestInitialized(servletContextRequest, request);
-            RequestDispatcher requestDispatcher = request.getRequestDispatcher(path);
-            requestDispatcher.forward(request, response);
-        }
-        finally
-        {
-            servletContextHandler.requestDestroyed(servletContextRequest, request);
         }
     }
 

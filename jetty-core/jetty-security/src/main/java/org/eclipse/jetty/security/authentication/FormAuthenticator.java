@@ -57,7 +57,6 @@ public class FormAuthenticator extends LoginAuthenticator
     public static final String __FORM_LOGIN_PAGE = "org.eclipse.jetty.security.form_login_page";
     public static final String __FORM_ERROR_PAGE = "org.eclipse.jetty.security.form_error_page";
     public static final String __FORM_DISPATCH = "org.eclipse.jetty.security.dispatch";
-
     public static final String __J_URI = "org.eclipse.jetty.security.form_URI";
     public static final String __J_POST = "org.eclipse.jetty.security.form_POST";
     public static final String __J_METHOD = "org.eclipse.jetty.security.form_METHOD";
@@ -69,8 +68,8 @@ public class FormAuthenticator extends LoginAuthenticator
     private String _formErrorPath;
     private String _formLoginPage;
     private String _formLoginPath;
-    private boolean _alwaysSaveUri;
     private boolean _dispatch;
+    private boolean _alwaysSaveUri;
 
     public FormAuthenticator()
     {
@@ -78,6 +77,7 @@ public class FormAuthenticator extends LoginAuthenticator
 
     public FormAuthenticator(String login, String error, boolean dispatch)
     {
+        this();
         if (login != null)
             setLoginPage(login);
         if (error != null)
@@ -113,7 +113,6 @@ public class FormAuthenticator extends LoginAuthenticator
         String error = configuration.getParameter(FormAuthenticator.__FORM_ERROR_PAGE);
         if (error != null)
             setErrorPage(error);
-
         String dispatch = configuration.getParameter(FormAuthenticator.__FORM_DISPATCH);
         _dispatch = dispatch == null ? _dispatch : Boolean.parseBoolean(dispatch);
     }
@@ -137,11 +136,6 @@ public class FormAuthenticator extends LoginAuthenticator
             _formLoginPath = _formLoginPath.substring(0, _formLoginPath.indexOf('?'));
     }
 
-    public String getLoginPage()
-    {
-        return _formLoginPage;
-    }
-
     private void setErrorPage(String path)
     {
         if (path == null || path.trim().length() == 0)
@@ -162,11 +156,6 @@ public class FormAuthenticator extends LoginAuthenticator
             if (_formErrorPath.indexOf('?') > 0)
                 _formErrorPath = _formErrorPath.substring(0, _formErrorPath.indexOf('?'));
         }
-    }
-
-    public String getErrorPage()
-    {
-        return _formErrorPage;
     }
 
     @Override
@@ -375,7 +364,7 @@ public class FormAuthenticator extends LoginAuthenticator
                 @Override
                 public Request wrap(Request request)
                 {
-                    org.eclipse.jetty.security.ServeAs serveAs = Request.as(request, org.eclipse.jetty.security.ServeAs.class);
+                    ServeAs.Path serveAs = Request.as(request, ServeAs.Path.class);
                     if (serveAs != null)
                         return serveAs.serveAs(request, path);
                     return super.wrap(request);
@@ -393,7 +382,7 @@ public class FormAuthenticator extends LoginAuthenticator
     {
         if (_formErrorPage == null)
             Response.writeError(request, response, callback, HttpStatus.FORBIDDEN_403);
-        else if (_dispatch && getErrorPage() != null)
+        else if (_dispatch && _formErrorPage != null)
             return dispatch(_formErrorPage, request, response, callback);
         else
             Response.sendRedirect(request, response, callback, encodeURL(URIUtil.addPaths(request.getContext().getContextPath(), _formErrorPage), request), true);

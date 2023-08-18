@@ -294,6 +294,11 @@ public interface AuthenticationState extends Request.AuthenticationState
                 }
             };
         }
+
+        public interface Path
+        {
+            Request serveAs(Request request, String path);
+        }
     }
 
     static Deferred defer(LoginAuthenticator loginAuthenticator)
