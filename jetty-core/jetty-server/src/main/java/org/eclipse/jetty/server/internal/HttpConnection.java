@@ -289,15 +289,6 @@ public class HttpConnection extends AbstractConnection implements Runnable, Writ
     }
 
     @Override
-    public HostPort getServerAuthority()
-    {
-        HostPort authority = ConnectionMetaData.getServerAuthority(getHttpConfiguration(), this);
-        if (authority == null)
-            authority = new HostPort(getLocalSocketAddress().toString(), -1);
-        return authority;
-    }
-
-    @Override
     public Object removeAttribute(String name)
     {
         return _attributes.removeAttribute(name);

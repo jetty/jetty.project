@@ -403,6 +403,12 @@ public interface Request extends Attributes, Content.Source
         return -1;
     }
 
+    /**
+     * Get the logical name the request was sent to, which may be from the authority of the
+     * request; the configured server authority; the actual network name of the server;
+     * @param request The request to get the server name of
+     * @return The logical server name or null if it cannot be determined.
+     */
     static String getServerName(Request request)
     {
         if (request == null)
@@ -414,37 +420,41 @@ public interface Request extends Attributes, Content.Source
 
         HostPort authority = request.getConnectionMetaData().getServerAuthority();
         if (authority != null)
-            return HostPort.normalizeHost(authority.getHost());
+            return authority.getHost();
 
-        SocketAddress local = request.getConnectionMetaData().getLocalSocketAddress();
-        if (local instanceof InetSocketAddress)
-            return HostPort.normalizeHost(((InetSocketAddress)local).getHostString());
-
-        return local == null ? null : local.toString();
+        return null;
     }
 
+    /**
+     * Get the logical port a request was received on, which may be from the authority of the request; the
+     * configured server authority; the default port for the scheme; or the actual network port.
+     * @param request The request to get the port of
+     * @return The port for the request if it can be determined, otherwise -1
+     */
     static int getServerPort(Request request)
     {
         if (request == null)
             return -1;
+
+        // Does the request have an explicit port?
         HttpURI uri = request.getHttpURI();
         if (uri.hasAuthority() && uri.getPort() > 0)
             return uri.getPort();
 
-        HostPort authority = request.getConnectionMetaData().getServerAuthority();
+        // Is there a configured server authority?
+        HostPort authority = request.getConnectionMetaData().getHttpConfiguration().getServerAuthority();
         if (authority != null && authority.getPort() > 0)
             return authority.getPort();
 
-        if (authority == null)
-        {
-            SocketAddress local = request.getConnectionMetaData().getLocalSocketAddress();
-            if (local instanceof InetSocketAddress)
-                return ((InetSocketAddress)local).getPort();
-        }
-
+        // Is there a scheme with a default port?
         HttpScheme scheme = HttpScheme.CACHE.get(request.getHttpURI().getScheme());
-        if (scheme != null)
+        if (scheme != null && scheme.getDefaultPort() > 0)
             return scheme.getDefaultPort();
+
+        // Is there a local port?
+        SocketAddress local = request.getConnectionMetaData().getLocalSocketAddress();
+        if (local instanceof InetSocketAddress inetSocketAddress && inetSocketAddress.getPort() > 0)
+            return inetSocketAddress.getPort();
 
         return -1;
     }
@@ -768,13 +778,13 @@ public interface Request extends Attributes, Content.Source
     }
 
     @SuppressWarnings("unchecked")
-    static <T extends Request.Wrapper> T as(Request request, Class<T> type)
+    static <T extends Request> T as(Request request, Class<T> type)
     {
-        while (request instanceof Request.Wrapper wrapper)
+        while (request != null)
         {
-            if (type.isInstance(wrapper))
-                return (T)wrapper;
-            request = wrapper.getWrapped();
+            if (type.isInstance(request))
+                return (T)request;
+            request = request instanceof Request.Wrapper wrapper ? wrapper.getWrapped() : null;
         }
         return null;
     }

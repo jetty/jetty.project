@@ -41,7 +41,7 @@ import static jakarta.servlet.RequestDispatcher.ERROR_SERVLET_NAME;
 import static jakarta.servlet.RequestDispatcher.ERROR_STATUS_CODE;
 
 /**
- * Implementation of AsyncContext interface that holds the state of request-response cycle.
+ * holder of the state of request-response cycle.
  */
 public class ServletChannelState
 {

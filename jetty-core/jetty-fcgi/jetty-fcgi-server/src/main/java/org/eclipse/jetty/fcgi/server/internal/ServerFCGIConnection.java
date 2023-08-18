@@ -36,7 +36,6 @@ import org.eclipse.jetty.server.Connector;
 import org.eclipse.jetty.server.HttpChannel;
 import org.eclipse.jetty.server.HttpConfiguration;
 import org.eclipse.jetty.util.Attributes;
-import org.eclipse.jetty.util.HostPort;
 import org.eclipse.jetty.util.StringUtil;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -154,12 +153,6 @@ public class ServerFCGIConnection extends AbstractConnection implements Connecti
     public SocketAddress getLocalSocketAddress()
     {
         return getEndPoint().getLocalSocketAddress();
-    }
-
-    @Override
-    public HostPort getServerAuthority()
-    {
-        return ConnectionMetaData.getServerAuthority(configuration, this);
     }
 
     @Override

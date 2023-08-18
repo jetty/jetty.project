@@ -165,7 +165,7 @@ public class MavenLocalRepoFileInitializer extends DownloadFileInitializer
             if (!FS.canReadFile(localFile))
             {
                 if (FS.ensureDirectoryExists(localFile.getParent()))
-                    StartLog.info("mkdir " + _basehome.toShortForm(localFile.getParent()));
+                    StartLog.info("mkdir %s", _basehome.toShortForm(localFile.getParent()));
                 download(coords, localFile);
                 if (!FS.canReadFile(localFile))
                 {
@@ -209,7 +209,7 @@ public class MavenLocalRepoFileInitializer extends DownloadFileInitializer
             if (localRepoFile != null)
             {
                 if (FS.ensureDirectoryExists(destination.getParent()))
-                    StartLog.info("mkdir " + _basehome.toShortForm(destination.getParent()));
+                    StartLog.info("mkdir %s", _basehome.toShortForm(destination.getParent()));
                 StartLog.info("copy %s to %s", localRepoFile, _basehome.toShortForm(destination));
                 Files.copy(localRepoFile, destination);
                 return true;

@@ -186,8 +186,8 @@ public class Main
                 StartLog.error("Do not start with ${jetty.base} == ${jetty.home}!");
             else
                 StartLog.error("No enabled jetty modules found!");
-            StartLog.info("${jetty.home} = " + getBaseHome().getHomePath());
-            StartLog.info("${jetty.base} = " + getBaseHome().getBasePath());
+            StartLog.info("${jetty.home} = %s", getBaseHome().getHomePath());
+            StartLog.info("${jetty.base} = %s", getBaseHome().getBasePath());
             StartLog.error("Please create and/or configure a ${jetty.base} directory.");
             usageExit(ERR_INVOKE_MAIN);
             return;
@@ -201,7 +201,7 @@ public class Main
         }
         catch (ClassNotFoundException e)
         {
-            StartLog.error("Unable to find: " + mainclass);
+            StartLog.error("Unable to find: %s", mainclass);
             StartLog.debug(e);
             usageExit(ERR_INVOKE_MAIN);
             return;
@@ -489,7 +489,7 @@ public class Main
             final Process process = pbuilder.start();
             Runtime.getRuntime().addShutdownHook(new Thread(() ->
             {
-                StartLog.debug("Destroying " + process);
+                StartLog.debug("Destroying %s", process);
                 process.destroy();
             }));
 
@@ -685,7 +685,7 @@ public class Main
             }
             else
             {
-                StartLog.warn("Unable to find resource: " + resourceName);
+                StartLog.warn("Unable to find resource: %s", resourceName);
             }
         }
         catch (IOException e)
