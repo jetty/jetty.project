@@ -13,6 +13,7 @@
 
 package org.eclipse.jetty.fcgi.parser;
 
+import java.io.EOFException;
 import java.nio.ByteBuffer;
 
 import org.eclipse.jetty.fcgi.FCGI;
@@ -60,7 +61,7 @@ public abstract class Parser
 
     protected final HeaderParser headerParser = new HeaderParser();
     private final Listener listener;
-    private State state = State.HEADER;
+    private State state = State.INITIAL;
     private int padding;
 
     protected Parser(Listener listener)
@@ -80,6 +81,12 @@ public abstract class Parser
             {
                 switch (state)
                 {
+                    case INITIAL ->
+                    {
+                        if (!buffer.hasRemaining())
+                            return false;
+                        state = State.HEADER;
+                    }
                     case HEADER ->
                     {
                         if (!headerParser.parse(buffer))
@@ -145,10 +152,19 @@ public abstract class Parser
 
     protected abstract ContentParser findContentParser(FCGI.FrameType frameType);
 
+    public boolean eof()
+    {
+        if (state == State.INITIAL)
+            return false;
+        Throwable failure = new EOFException();
+        listener.onFailure(headerParser.getRequest(), failure);
+        return true;
+    }
+
     private void reset()
     {
         headerParser.reset();
-        state = State.HEADER;
+        state = State.INITIAL;
         padding = 0;
     }
 
@@ -190,6 +206,6 @@ public abstract class Parser
 
     private enum State
     {
-        HEADER, CONTENT, PADDING
+        INITIAL, HEADER, CONTENT, PADDING
     }
 }

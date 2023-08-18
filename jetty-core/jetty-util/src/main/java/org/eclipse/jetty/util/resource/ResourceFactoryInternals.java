@@ -24,6 +24,7 @@ import java.util.concurrent.CopyOnWriteArrayList;
 
 import org.eclipse.jetty.util.IO;
 import org.eclipse.jetty.util.Index;
+import org.eclipse.jetty.util.StringUtil;
 import org.eclipse.jetty.util.URIUtil;
 import org.eclipse.jetty.util.component.AbstractLifeCycle;
 import org.eclipse.jetty.util.component.Dumpable;
@@ -92,6 +93,39 @@ class ResourceFactoryInternals
                 LOG.warn("Leaked {} for {}", mount, uri);
         }
     };
+
+    /**
+     * Test uri to know if a {@link ResourceFactory} is registered for it.
+     *
+     * @param uri the uri to test
+     * @return true if a ResourceFactory is registered to support the uri
+     * @see ResourceFactory#registerResourceFactory(String, ResourceFactory)
+     * @see ResourceFactory#unregisterResourceFactory(String)
+     * @see #isSupported(String)
+     */
+    static boolean isSupported(URI uri) // TODO: boolean isSupported
+    {
+        if (uri == null || uri.getScheme() == null)
+            return false;
+        return RESOURCE_FACTORIES.get(uri.getScheme()) != null;
+    }
+
+    /**
+     * Test string to know if a {@link ResourceFactory} is registered for it.
+     *
+     * @param str the string representing the resource location
+     * @return true if a ResourceFactory is registered to support the string representation
+     * @see org.eclipse.jetty.util.Index#getBest(String)
+     * @see ResourceFactory#registerResourceFactory(String, ResourceFactory)
+     * @see ResourceFactory#unregisterResourceFactory(String)
+     * @see #isSupported(URI)
+     */
+    static boolean isSupported(String str)
+    {
+        if (StringUtil.isBlank(str))
+            return false;
+        return RESOURCE_FACTORIES.getBest(str) != null;
+    }
 
     static class Closeable implements ResourceFactory.Closeable
     {
@@ -168,7 +202,7 @@ class ResourceFactoryInternals
                     uri = URIUtil.correctFileURI(uri);
                 }
 
-                ResourceFactory resourceFactory = ResourceFactory.byScheme(uri.getScheme());
+                ResourceFactory resourceFactory = RESOURCE_FACTORIES.get(uri.getScheme());
                 if (resourceFactory == null)
                     throw new IllegalArgumentException("URI scheme not supported: " + uri);
                 if (resourceFactory instanceof MountedPathResourceFactory)

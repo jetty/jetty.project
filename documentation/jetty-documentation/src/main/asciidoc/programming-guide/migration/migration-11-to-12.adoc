@@ -97,8 +97,52 @@
 [[pg-migration-11-to-12-servlet-to-handler]]
 ==== Migrate Servlets to Jetty Handlers
 
+Web applications written using the Servlet APIs may be re-written using the Jetty `Handler` APIs.
+The sections below outline the Jetty `Handler` APIs that correspond to the Servlet APIs.
 
+To replace the functionalities of Servlet Filters, refer to xref:pg-server-http-handler[this section].
 
+===== Handler Request APIs
+[source,java,indent=0]
+----
+include::../{doc_code}/org/eclipse/jetty/docs/programming/migration/ServletToHandlerDocs.java[tags=request]
+----
+
+===== Handler Request Content APIs
+[source,java,indent=0]
+----
+include::../{doc_code}/org/eclipse/jetty/docs/programming/migration/ServletToHandlerDocs.java[tags=requestContent-string]
+
+include::../{doc_code}/org/eclipse/jetty/docs/programming/migration/ServletToHandlerDocs.java[tags=requestContent-buffer]
+
+include::../{doc_code}/org/eclipse/jetty/docs/programming/migration/ServletToHandlerDocs.java[tags=requestContent-stream]
+
+include::../{doc_code}/org/eclipse/jetty/docs/programming/migration/ServletToHandlerDocs.java[tags=requestContent-source]
+----
+
+===== Handler Response APIs
+[source,java,indent=0]
+----
+include::../{doc_code}/org/eclipse/jetty/docs/programming/migration/ServletToHandlerDocs.java[tags=response]
+----
+
+===== Handler Response Content APIs
+[source,java,indent=0]
+----
+include::../{doc_code}/org/eclipse/jetty/docs/programming/migration/ServletToHandlerDocs.java[tags=responseContent-implicit]
+
+include::../{doc_code}/org/eclipse/jetty/docs/programming/migration/ServletToHandlerDocs.java[tags=responseContent-implicit-status]
+
+include::../{doc_code}/org/eclipse/jetty/docs/programming/migration/ServletToHandlerDocs.java[tags=responseContent-explicit]
+
+include::../{doc_code}/org/eclipse/jetty/docs/programming/migration/ServletToHandlerDocs.java[tags=responseContent-content]
+
+include::../{doc_code}/org/eclipse/jetty/docs/programming/migration/ServletToHandlerDocs.java[tags=responseContent-string]
+
+include::../{doc_code}/org/eclipse/jetty/docs/programming/migration/ServletToHandlerDocs.java[tags=responseContent-echo]
+
+include::../{doc_code}/org/eclipse/jetty/docs/programming/migration/ServletToHandlerDocs.java[tags=responseContent-trailers]
+----
 
 [[pg-migration-11-to-12-api-changes]]
 ==== APIs Changes

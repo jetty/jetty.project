@@ -100,7 +100,6 @@ public class ServletApiRequest implements HttpServletRequest
     private static final Logger LOG = LoggerFactory.getLogger(ServletApiRequest.class);
     private final ServletContextRequest _servletContextRequest;
     private final ServletChannel _servletChannel;
-    //TODO review which fields should be in ServletContextRequest
     private AsyncContextState _async;
     private String _characterEncoding;
     private int _inputState = ServletContextRequest.INPUT_NONE;
@@ -413,7 +412,7 @@ public class ServletApiRequest implements HttpServletRequest
     public boolean isRequestedSessionIdValid()
     {
         AbstractSessionManager.RequestedSession requestedSession = getServletRequestInfo().getRequestedSession();
-        return requestedSession != null && requestedSession.sessionId() != null && !requestedSession.sessionIdFromCookie();
+        return requestedSession != null && requestedSession.sessionId() != null && requestedSession.session() != null;
     }
 
     @Override

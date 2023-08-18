@@ -12,7 +12,17 @@
 //
 
 /**
- * Jetty Util : Common Resource Utilities
+ * <p>Jetty Util : Resource Utilities</p>
+ *
+ * <p>
+ *     A {@link org.eclipse.jetty.util.resource.Resource} in Jetty is an abstraction that
+ *     allows for a common API to access various forms of resource sources across the Jetty
+ *     ecosystem.
+ * </p>
+ * <p>
+ *     A {@link org.eclipse.jetty.util.resource.Resource} is created via one of the
+ *     {@link org.eclipse.jetty.util.resource.ResourceFactory}{@code .newResource(...)} APIs.
+ * </p>
  */
 package org.eclipse.jetty.util.resource;
 

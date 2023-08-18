@@ -149,11 +149,6 @@ public class AsyncContextState implements AsyncContext
         _state = null;
     }
 
-    public ServletChannelState getServletChannelState()
-    {
-        return state();
-    }
-
     public static class WrappedAsyncListener implements AsyncListener
     {
         private final AsyncListener _listener;

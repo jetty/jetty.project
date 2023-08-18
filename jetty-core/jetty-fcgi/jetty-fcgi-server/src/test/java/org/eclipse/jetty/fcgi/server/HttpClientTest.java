@@ -32,7 +32,9 @@ import java.util.zip.GZIPOutputStream;
 
 import org.eclipse.jetty.client.AsyncRequestContent;
 import org.eclipse.jetty.client.BytesRequestContent;
+import org.eclipse.jetty.client.ConnectionPool;
 import org.eclipse.jetty.client.ContentResponse;
+import org.eclipse.jetty.client.Destination;
 import org.eclipse.jetty.client.FutureResponseListener;
 import org.eclipse.jetty.client.HttpClient;
 import org.eclipse.jetty.client.Request;
@@ -520,11 +522,42 @@ public class HttpClientTest extends AbstractHttpClientServerTest
         start(new Handler.Abstract()
         {
             @Override
+            public boolean handle(org.eclipse.jetty.server.Request request, org.eclipse.jetty.server.Response response, Callback callback)
+            {
+                callback.succeeded();
+                return true;
+            }
+        });
+        connector.setIdleTimeout(idleTimeout);
+
+        ContentResponse response = client.newRequest("localhost", connector.getLocalPort())
+            .scheme(scheme)
+            .timeout(2 * idleTimeout, TimeUnit.MILLISECONDS)
+            .send();
+        assertNotNull(response);
+        assertEquals(200, response.getStatus());
+
+        Thread.sleep(2 * idleTimeout);
+
+        assertTrue(client.getDestinations().stream()
+            .map(Destination::getConnectionPool)
+            .allMatch(ConnectionPool::isEmpty));
+    }
+
+    @Test
+    public void testConnectionIdleTimeoutIgnored() throws Exception
+    {
+        long idleTimeout = 1000;
+        start(new Handler.Abstract()
+        {
+            @Override
             public boolean handle(org.eclipse.jetty.server.Request request, org.eclipse.jetty.server.Response response, Callback callback) throws Exception
             {
-                // Handler says it will handle the idletimeout
+                // Handler says it will handle the idle timeout by ignoring it.
                 request.addIdleTimeoutListener(t -> false);
-                TimeUnit.MILLISECONDS.sleep(2 * idleTimeout);
+                // Sleep an non-integral number of idle timeouts to avoid
+                // racing with the idle timeout ticking every idle period.
+                TimeUnit.MILLISECONDS.sleep(idleTimeout * 3 / 2);
                 callback.succeeded();
                 return true;
             }

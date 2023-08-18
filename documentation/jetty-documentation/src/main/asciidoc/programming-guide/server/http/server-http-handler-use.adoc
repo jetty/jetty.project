@@ -325,20 +325,28 @@ Jetty will send an HTTP `404` response anyway if `DefaultHandler` is not used.
 
 `ServletContextHandler` is a `ContextHandler` that provides support for the Servlet APIs and implements the behaviors required by the Servlet specification.
 
-The Maven artifact coordinates are:
+The Maven artifact coordinates depend on the version of Jakarta EE you want to use, and they are:
 
 [source,xml,subs=normal]
 ----
 <dependency>
-  <groupId>org.eclipse.jetty</groupId>
-  <artifactId>jetty-servlet</artifactId>
+  <groupId>org.eclipse.jetty.{ee-all}</groupId>
+  <artifactId>jetty-{ee-all}-servlet</artifactId>
   <version>{version}</version>
 </dependency>
 ----
 
+For example, for Jakarta {ee-current-caps} the coordinates are: `org.eclipse.jetty.ee10:jetty-ee10-servlet:{version}`.
+
+Below you can find an example of how to setup a Jakarta {ee-current-caps} `ServletContextHandler`:
+
 [source,java,indent=0]
 ----
-include::../../{doc_code}/org/eclipse/jetty/docs/programming/server/http/HTTPServerDocs.java[tags=servletContextHandler]
+include::../../{doc_code}/org/eclipse/jetty/docs/programming/server/http/HTTPServerDocs.java[tags=servletContextHandler-servlet]
+----
+[source,java,indent=0]
+----
+include::../../{doc_code}/org/eclipse/jetty/docs/programming/server/http/HTTPServerDocs.java[tags=servletContextHandler-setup]
 ----
 
 The `Handler` and Servlet components tree structure looks like the following:
@@ -367,6 +375,17 @@ Server applications must be careful when creating the `Handler` tree to put ``Se
 ====== WebAppContext
 
 `WebAppContext` is a `ServletContextHandler` that auto configures itself by reading a `web.xml` Servlet configuration file.
+
+The Maven artifact coordinates depend on the version of Jakarta EE you want to use, and they are:
+
+[source,xml,subs=normal]
+----
+<dependency>
+  <groupId>org.eclipse.jetty.{ee-all}</groupId>
+  <artifactId>jetty-{ee-all}-webapp</artifactId>
+  <version>{version}</version>
+</dependency>
+----
 
 Server applications can specify a `+*.war+` file or a directory with the structure of a `+*.war+` file to `WebAppContext` to deploy a standard Servlet web application packaged as a `war` (as defined by the Servlet specification).
 
@@ -411,6 +430,19 @@ However, Jetty picks good defaults and allows server applications to customize _
 
 If you have a xref:pg-server-http-handler-use-servlet-context[Servlet web application], you may want to use a `DefaultServlet` instead of `ResourceHandler`.
 The features are similar, but `DefaultServlet` is more commonly used to serve static files for Servlet web applications.
+
+The Maven artifact coordinates depend on the version of Jakarta EE you want to use, and they are:
+
+[source,xml,subs=normal]
+----
+<dependency>
+  <groupId>org.eclipse.jetty.{ee-all}</groupId>
+  <artifactId>jetty-{ee-all}-servlet</artifactId>
+  <version>{version}</version>
+</dependency>
+----
+
+Below you can find an example of how to setup `DefaultServlet`:
 
 [source,java,indent=0]
 ----

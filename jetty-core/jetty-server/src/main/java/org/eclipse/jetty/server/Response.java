@@ -100,6 +100,13 @@ public interface Response extends Content.Sink
     boolean isCommitted();
 
     /**
+     * <p>Returns whether the last write has been initiated on the response.</p>
+     *
+     * @return {@code true} if {@code last==true} has been passed to {@link #write(boolean, ByteBuffer, Callback)}.
+     */
+    boolean hasLastWrite();
+
+    /**
      * <p>Returns whether the response completed successfully.</p>
      * <p>The response HTTP status code, HTTP headers and content
      * have been successfully serialized and sent over the network
@@ -207,13 +214,13 @@ public interface Response extends Content.Sink
      * @see Wrapper
      */
     @SuppressWarnings("unchecked")
-    static <T extends Response.Wrapper> T as(Response response, Class<T> type)
+    static <T extends Response> T as(Response response, Class<T> type)
     {
-        while (response instanceof Response.Wrapper wrapper)
+        while (response != null)
         {
-            if (type.isInstance(wrapper))
-                return (T)wrapper;
-            response = wrapper.getWrapped();
+            if (type.isInstance(response))
+                return (T)response;
+            response = response instanceof Response.Wrapper wrapper ? wrapper.getWrapped() : null;
         }
         return null;
     }
@@ -578,6 +585,12 @@ public interface Response extends Content.Sink
         public boolean isCommitted()
         {
             return getWrapped().isCommitted();
+        }
+
+        @Override
+        public boolean hasLastWrite()
+        {
+            return getWrapped().hasLastWrite();
         }
 
         @Override
