@@ -242,6 +242,8 @@ class AsyncContentProducer implements ContentProducer
         state.onReadUnready();
         _servletChannel.getRequest().demand(() ->
         {
+            if (LOG.isDebugEnabled())
+                LOG.debug("isReady() demand callback {}", this);
             if (_servletChannel.getHttpInput().onContentProducible())
                 _servletChannel.handle();
         });
