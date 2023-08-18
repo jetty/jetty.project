@@ -39,13 +39,12 @@ import org.eclipse.jetty.util.resource.Resource;
  *     <li>is a {@link org.eclipse.jetty.util.Decorator} using the {@link DecoratedObjectFactory } that can create objects specific to the context.</li>
  *     <li>has the same {@link #getTempDirectory() temporary director} specific to the context.</li>
  * </ul>
+ * @see Server#getContext()
  */
 public interface Context extends Attributes, Decorator, Executor
 {
     /**
-     * @return the encoded context path of this {@code Context} or
-     *         {@code null} if the context does not have a path
-     *         (e.g. the {@link org.eclipse.jetty.server.Server.ServerContext}).
+     * @return the encoded context path of this {@code Context} or {@code null}
      */
     String getContextPath();
 
