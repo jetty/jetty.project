@@ -38,8 +38,19 @@ public class DateCache
     private final DateTimeFormatter _tzFormat2;
     private final ZoneId _zoneId;
 
-    protected volatile Tick _tick1;
-    protected volatile Tick _tick2;
+    private volatile TickHolder _tickHolder;
+
+    private static class TickHolder
+    {
+        public TickHolder(Tick t1, Tick t2)
+        {
+            tick1 = t1;
+            tick2 = t2;
+        }
+
+        final Tick tick1;
+        final Tick tick2;
+    }
 
     public static class Tick
     {
@@ -225,22 +236,21 @@ public class DateCache
     {
         long seconds = inDate / 1000;
 
-        Tick tick1 = _tick1;
-        if (tick1 != null && tick1.getSeconds() == seconds)
-            return tick1;
-
-        Tick tick2 = _tick2;
-        if (tick2 != null && tick2.getSeconds() == seconds)
-            return tick2;
+        // Two Ticks are cached so that for monotonically increasing times to not see any jitter from multiple cores.
+        // The ticks are kept in a volatile field, so there a small risk of inconsequential multiple recalculations
+        TickHolder holder = _tickHolder;
+        if (holder != null)
+        {
+            if (holder.tick1 != null && holder.tick1.getSeconds() == seconds)
+                return holder.tick1;
+            if (holder.tick2 != null && holder.tick2.getSeconds() == seconds)
+                return holder.tick2;
+        }
 
         String prefix = doFormat(inDate, _tzFormat1);
         String suffix = doFormat(inDate, _tzFormat2);
         Tick tick = new Tick(seconds, prefix, suffix);
-
-        if (tick1 != null)
-            _tick2 = tick1;
-        _tick1 = tick;
-
+        _tickHolder = new TickHolder(tick, (holder == null) ? null : holder.tick1);
         return tick;
     }
 
