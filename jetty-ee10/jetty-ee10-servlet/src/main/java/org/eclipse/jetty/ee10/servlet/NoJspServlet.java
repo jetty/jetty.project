@@ -28,7 +28,7 @@ public class NoJspServlet extends HttpServlet
     protected void doGet(HttpServletRequest req, HttpServletResponse response) throws ServletException, IOException
     {
         if (!_warned)
-            getServletContext().log("No JSP support.  Check that JSP jars are in lib/jsp and that the JSP option has been specified to start.jar");
+            getServletContext().log("No JSP support. Check that the ee10-jsp module is enabled, or otherwise ensure the jsp jars are on the server classpath.");
         _warned = true;
 
         response.sendError(500, "JSP support not configured");
