@@ -69,8 +69,7 @@ public abstract class ReHandlingErrorHandler extends ErrorHandler
                 {
                     if (LOG.isDebugEnabled())
                         LOG.debug("Unable to process error {}", reRequest, e);
-                    if (ExceptionUtil.areNotAssociated(cause, e))
-                        cause.addSuppressed(e);
+                    ExceptionUtil.addSuppressedIfNotAssociated(cause, e);
                     response.setStatus(code);
                 }
             }

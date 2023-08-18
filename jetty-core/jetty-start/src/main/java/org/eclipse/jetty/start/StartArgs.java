@@ -428,9 +428,9 @@ public class StartArgs
             for (String rawlibref : module.getLibs())
             {
 
-                StartLog.debug("rawlibref = " + rawlibref);
+                StartLog.debug("rawlibref = %s", rawlibref);
                 String libref = environment.getProperties().expand(rawlibref);
-                StartLog.debug("expanded = " + libref);
+                StartLog.debug("expanded = %s", libref);
 
                 for (Path libpath : baseHome.getPaths(libref))
                 {
@@ -555,6 +555,7 @@ public class StartArgs
         if (parts.contains("path"))
         {
             Classpath classpath = jettyEnvironment.getClasspath();
+            StartLog.debug("classpath=%s - isJPMS=%b", classpath, isJPMS());
             if (isJPMS())
             {
                 Map<Boolean, List<Path>> dirsAndFiles = StreamSupport.stream(classpath.spliterator(), false)
@@ -605,6 +606,7 @@ public class StartArgs
                 }
 
                 generateJpmsArgs(cmd);
+                StartLog.debug("JPMS resulting cmd=%s", cmd.toCommandLine());
             }
             else if (!classpath.isEmpty())
             {
@@ -1255,7 +1257,7 @@ public class StartArgs
             if (arg.startsWith("--add-to-start=") || arg.startsWith("--add-to-startd="))
             {
                 String value = Props.getValue(arg);
-                StartLog.warn("Option " + arg.split("=")[0] + " is deprecated! Instead use: --add-modules=%s", value);
+                StartLog.warn("Option %s is deprecated! Instead use: --add-modules=%s", arg.split("=")[0], value);
             }
             startModules.addAll(Props.getValues(arg));
             run = false;

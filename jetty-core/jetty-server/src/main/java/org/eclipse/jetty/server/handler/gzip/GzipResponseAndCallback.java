@@ -136,7 +136,13 @@ public class GzipResponseAndCallback extends Response.Wrapper implements Callbac
             case NOT_COMPRESSING -> super.write(last, content, callback);
             case COMMITTING -> callback.failed(new WritePendingException());
             case COMPRESSING -> gzip(last, callback, content);
-            default -> callback.failed(new IllegalStateException("state=" + _state.get()));
+            default ->
+            {
+                if (BufferUtil.isEmpty(content))
+                    callback.succeeded();
+                else
+                    callback.failed(new IllegalStateException("state=" + _state.get()));
+            }
         }
     }
 

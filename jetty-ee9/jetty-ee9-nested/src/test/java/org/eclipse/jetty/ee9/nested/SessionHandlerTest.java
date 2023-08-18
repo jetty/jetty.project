@@ -50,7 +50,6 @@ import static org.hamcrest.Matchers.containsString;
 import static org.hamcrest.Matchers.equalTo;
 import static org.hamcrest.Matchers.not;
 import static org.hamcrest.Matchers.nullValue;
-import static org.hamcrest.Matchers.startsWith;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertThrows;
@@ -87,6 +86,7 @@ public class SessionHandlerTest
                 String pathInContext = request.getPathInfo();
                 String[] split = pathInContext.substring(1).split("/");
 
+                String requestedSessionId = request.getRequestedSessionId();
                 HttpSession session = request.getSession(false);
 
                 if (split.length > 0)
@@ -135,6 +135,10 @@ public class SessionHandlerTest
                 }
 
                 StringBuilder out = new StringBuilder();
+                out.append("requestedSessionId=" + requestedSessionId).append('\n');
+                out.append("requestedSessionIdValid=" + request.isRequestedSessionIdValid()).append('\n');
+
+
                 if (session == null)
                     out.append("No Session\n");
                 else
@@ -309,8 +313,9 @@ public class SessionHandlerTest
         String setCookie = response.get("SET-COOKIE");
         assertThat(setCookie, containsString("Path=/"));
         String content = response.getContent();
-        assertThat(content, startsWith("Session="));
-        String id = content.substring(content.indexOf('=') + 1, content.indexOf('\n'));
+        assertThat(content, containsString("Session="));
+        String id = content.substring(content.indexOf("Session=") + 8);
+        id = id.trim();
         assertThat(id, not(equalTo("oldCookieId")));
 
         endPoint.addInput("""
@@ -327,6 +332,64 @@ public class SessionHandlerTest
     }
 
     @Test
+    public void testRequestedSessionIdFromCookie() throws Exception
+    {
+        _server.stop();
+        _sessionHandler.setSessionPath(null);
+        _contextHandler.setContextPath("/");
+        _server.start();
+
+        //test with no session cookie
+        LocalConnector.LocalEndPoint endPoint = _connector.connect();
+        endPoint.addInput("""
+            GET / HTTP/1.1
+            Host: localhost
+                        
+            """);
+
+        HttpTester.Response response = HttpTester.parseResponse(endPoint.getResponse());
+        assertThat(response.getStatus(), equalTo(200));
+        assertThat(response.getContent(), containsString("No Session"));
+        assertThat(response.getContent(), containsString("requestedSessionIdValid=false"));
+
+        //test with a cookie for non-existant session
+        endPoint.addInput("""
+            GET / HTTP/1.1
+            Host: localhost
+            Cookie: JSESSIONID=%s
+                        
+            """.formatted("123456789"));
+        response = HttpTester.parseResponse(endPoint.getResponse());
+        assertThat(response.getStatus(), equalTo(200));
+        assertThat(response.getContent(), containsString("No Session"));
+        assertThat(response.getContent(), containsString("requestedSessionIdValid=false"));
+
+        //Make a real session
+        endPoint.addInput("""
+            GET /create HTTP/1.1
+            Host: localhost
+                        
+            """);
+
+        response = HttpTester.parseResponse(endPoint.getResponse());
+        assertThat(response.getStatus(), equalTo(200));
+        String content = response.getContent();
+        assertThat(content, containsString("Session="));
+        String id = content.substring(content.indexOf("Session=") + 8);
+        id = id.trim();
+
+        //Check the requestedSessionId is valid
+        endPoint.addInput("""
+            GET / HTTP/1.1
+            Host: localhost
+            Cookie: JSESSIONID=%s
+                        
+            """.formatted(id));
+        response = HttpTester.parseResponse(endPoint.getResponse());
+        assertThat(response.getContent(), containsString("requestedSessionIdValid=true"));
+    }
+
+    @Test
     public void testSetAttribute() throws Exception
     {
         LocalConnector.LocalEndPoint endPoint = _connector.connect();
@@ -339,8 +402,9 @@ public class SessionHandlerTest
         HttpTester.Response response = HttpTester.parseResponse(endPoint.getResponse());
         assertThat(response.getStatus(), equalTo(200));
         String content = response.getContent();
-        assertThat(content, startsWith("Session="));
-        String id = content.substring(content.indexOf('=') + 1, content.indexOf('\n'));
+        assertThat(content, containsString("Session="));
+        String id = content.substring(content.indexOf("Session=") + 8);
+        id = id.trim();
 
         endPoint.addInput("""
             GET /set/attribute/value HTTP/1.1
@@ -380,7 +444,7 @@ public class SessionHandlerTest
         HttpTester.Response response = HttpTester.parseResponse(endPoint.getResponse());
         assertThat(response.getStatus(), equalTo(200));
         String content = response.getContent();
-        assertThat(content, startsWith("Session="));
+        assertThat(content, containsString("Session="));
 
         String setCookie = response.get(HttpHeader.SET_COOKIE);
         String id = setCookie.substring(setCookie.indexOf("JSESSIONID=") + 11, setCookie.indexOf("; Path=/"));

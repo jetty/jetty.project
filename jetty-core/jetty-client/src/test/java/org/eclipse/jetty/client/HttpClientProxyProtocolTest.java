@@ -16,6 +16,7 @@ package org.eclipse.jetty.client;
 import java.nio.charset.StandardCharsets;
 import java.util.Collections;
 import java.util.List;
+import java.util.Set;
 import java.util.concurrent.ThreadLocalRandom;
 
 import org.eclipse.jetty.client.transport.HttpDestination;
@@ -23,6 +24,7 @@ import org.eclipse.jetty.http.HttpHeader;
 import org.eclipse.jetty.http.HttpHeaderValue;
 import org.eclipse.jetty.http.HttpStatus;
 import org.eclipse.jetty.http.MimeTypes;
+import org.eclipse.jetty.io.ArrayByteBufferPool;
 import org.eclipse.jetty.io.Content;
 import org.eclipse.jetty.io.EndPoint;
 import org.eclipse.jetty.server.Handler;
@@ -33,6 +35,7 @@ import org.eclipse.jetty.server.Response;
 import org.eclipse.jetty.server.Server;
 import org.eclipse.jetty.server.ServerConnector;
 import org.eclipse.jetty.util.Callback;
+import org.eclipse.jetty.util.component.LifeCycle;
 import org.eclipse.jetty.util.thread.QueuedThreadPool;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.Test;
@@ -46,15 +49,18 @@ import static org.junit.jupiter.api.Assertions.assertTrue;
 
 public class HttpClientProxyProtocolTest
 {
+    private ArrayByteBufferPool.Tracking serverBufferPool;
     private Server server;
     private ServerConnector connector;
+    private ArrayByteBufferPool.Tracking clientBufferPool;
     private HttpClient client;
 
     private void startServer(Handler handler) throws Exception
     {
         QueuedThreadPool serverThreads = new QueuedThreadPool();
         serverThreads.setName("server");
-        server = new Server(serverThreads);
+        serverBufferPool = new ArrayByteBufferPool.Tracking();
+        server = new Server(serverThreads, null, serverBufferPool);
         HttpConnectionFactory http = new HttpConnectionFactory();
         ProxyConnectionFactory proxy = new ProxyConnectionFactory(http.getProtocol());
         connector = new ServerConnector(server, 1, 1, proxy, http);
@@ -67,18 +73,22 @@ public class HttpClientProxyProtocolTest
     {
         QueuedThreadPool clientThreads = new QueuedThreadPool();
         clientThreads.setName("client");
+        clientBufferPool = new ArrayByteBufferPool.Tracking();
         client = new HttpClient();
         client.setExecutor(clientThreads);
+        client.setByteBufferPool(clientBufferPool);
         client.start();
     }
 
     @AfterEach
     public void dispose() throws Exception
     {
-        if (server != null)
-            server.stop();
-        if (client != null)
-            client.stop();
+        LifeCycle.stop(client);
+        LifeCycle.stop(server);
+        Set<ArrayByteBufferPool.Tracking.Buffer> serverLeaks = serverBufferPool.getLeaks();
+        assertEquals(0, serverLeaks.size(), serverBufferPool.dumpLeaks());
+        Set<ArrayByteBufferPool.Tracking.Buffer> clientLeaks = clientBufferPool.getLeaks();
+        assertEquals(0, clientLeaks.size(), clientBufferPool.dumpLeaks());
     }
 
     @Test

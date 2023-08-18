@@ -447,7 +447,7 @@ public class MetaInfConfiguration extends AbstractConfiguration
      * Scan for META-INF/web-fragment.xml file in the given jar.
      *
      * @param context the context for the scan
-     * @param jar the jar resource to scan for fragements in
+     * @param jar the jar resource to scan for fragments in
      * @param cache the resource cache
      */
     public void scanForFragment(WebAppContext context, Resource jar, ConcurrentHashMap<Resource, Resource> cache)

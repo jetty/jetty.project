@@ -54,6 +54,24 @@
         </plugins>
       </build>
     </profile>
+    <profile>
+      <id>jdk21+</id>
+      <activation>
+        <jdk>[21,)</jdk>
+      </activation>
+      <build>
+        <plugins>
+          <plugin>
+            <artifactId>maven-compiler-plugin</artifactId>
+            <configuration>
+              <source>${java.specification.version}</source>
+              <target>${java.specification.version}</target>
+              <release>${java.specification.version}</release>
+            </configuration>
+          </plugin>
+        </plugins>
+      </build>
+    </profile>
   </profiles>
 
   <build>

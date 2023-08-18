@@ -84,7 +84,7 @@ public class PathMatchers
         // use FileSystem default pattern behavior
         if (pattern.startsWith("glob:") || pattern.startsWith("regex:"))
         {
-            StartLog.debug("Using Standard " + fs.getClass().getName() + " pattern: " + pattern);
+            StartLog.debug("Using Standard %s pattern: %s", fs.getClass().getName(), pattern);
             return fs.getPathMatcher(pattern);
         }
 
@@ -93,14 +93,14 @@ public class PathMatchers
         if (isAbsolute(pattern))
         {
             String pat = "glob:" + pattern;
-            StartLog.debug("Using absolute path pattern: " + pat);
+            StartLog.debug("Using absolute path pattern: %s", pat);
             return fs.getPathMatcher(pat);
         }
 
         // Doesn't start with filesystem root, then assume the pattern
         // is a relative file path pattern.
         String pat = "glob:**/" + pattern;
-        StartLog.debug("Using relative path pattern: " + pat);
+        StartLog.debug("Using relative path pattern: %s", pat);
         return fs.getPathMatcher(pat);
     }
 

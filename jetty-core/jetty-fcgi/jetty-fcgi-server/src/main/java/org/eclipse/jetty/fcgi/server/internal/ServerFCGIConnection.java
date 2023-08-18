@@ -36,7 +36,6 @@ import org.eclipse.jetty.server.Connector;
 import org.eclipse.jetty.server.HttpChannel;
 import org.eclipse.jetty.server.HttpConfiguration;
 import org.eclipse.jetty.util.Attributes;
-import org.eclipse.jetty.util.HostPort;
 import org.eclipse.jetty.util.StringUtil;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -157,12 +156,6 @@ public class ServerFCGIConnection extends AbstractConnection implements Connecti
     }
 
     @Override
-    public HostPort getServerAuthority()
-    {
-        return ConnectionMetaData.getServerAuthority(configuration, this);
-    }
-
-    @Override
     public Object removeAttribute(String name)
     {
         return attributes.removeAttribute(name);
@@ -270,6 +263,8 @@ public class ServerFCGIConnection extends AbstractConnection implements Connecti
 
     private void releaseInputBuffer()
     {
+        if (networkBuffer == null)
+            return;
         boolean released = networkBuffer.release();
         if (LOG.isDebugEnabled())
             LOG.debug("releaseInputBuffer {} {}", released, this);
@@ -327,6 +322,9 @@ public class ServerFCGIConnection extends AbstractConnection implements Connecti
     @Override
     public boolean onIdleExpired(TimeoutException timeoutException)
     {
+        HttpStreamOverFCGI stream = this.stream;
+        if (stream == null)
+            return true;
         Runnable task = stream.getHttpChannel().onIdleTimeout(timeoutException);
         if (task != null)
             getExecutor().execute(task);

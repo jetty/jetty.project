@@ -180,7 +180,7 @@ public class ServletContextResponse extends ContextResponse implements ServletCo
         return _servletChannel.getHttpOutput();
     }
 
-    public ServletRequestState getServletRequestState()
+    public ServletChannelState getServletRequestState()
     {
         return _servletChannel.getServletRequestState();
     }

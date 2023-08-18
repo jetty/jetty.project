@@ -100,7 +100,6 @@ public class ServletApiRequest implements HttpServletRequest
     private static final Logger LOG = LoggerFactory.getLogger(ServletApiRequest.class);
     private final ServletContextRequest _servletContextRequest;
     private final ServletChannel _servletChannel;
-    //TODO review which fields should be in ServletContextRequest
     private AsyncContextState _async;
     private String _characterEncoding;
     private int _inputState = ServletContextRequest.INPUT_NONE;
@@ -413,7 +412,7 @@ public class ServletApiRequest implements HttpServletRequest
     public boolean isRequestedSessionIdValid()
     {
         AbstractSessionManager.RequestedSession requestedSession = getServletRequestInfo().getRequestedSession();
-        return requestedSession != null && requestedSession.sessionId() != null && !requestedSession.sessionIdFromCookie();
+        return requestedSession != null && requestedSession.sessionId() != null && requestedSession.session() != null;
     }
 
     @Override
@@ -1193,7 +1192,7 @@ public class ServletApiRequest implements HttpServletRequest
     {
         if (!isAsyncSupported())
             throw new IllegalStateException("Async Not Supported");
-        ServletRequestState state = getServletRequestInfo().getState();
+        ServletChannelState state = getServletRequestInfo().getState();
         if (_async == null)
             _async = new AsyncContextState(state);
         ServletRequestInfo servletRequestInfo = getServletRequestInfo();
@@ -1207,7 +1206,7 @@ public class ServletApiRequest implements HttpServletRequest
     {
         if (!isAsyncSupported())
             throw new IllegalStateException("Async Not Supported");
-        ServletRequestState state = getServletRequestInfo().getState();
+        ServletChannelState state = getServletRequestInfo().getState();
         if (_async == null)
             _async = new AsyncContextState(state);
         AsyncContextEvent event = new AsyncContextEvent(getServletRequestInfo().getServletContext(), _async, state, servletRequest, servletResponse);
@@ -1241,7 +1240,7 @@ public class ServletApiRequest implements HttpServletRequest
     @Override
     public AsyncContext getAsyncContext()
     {
-        ServletRequestState state = getServletRequestInfo().getServletChannel().getServletRequestState();
+        ServletChannelState state = getServletRequestInfo().getServletChannel().getServletRequestState();
         if (_async == null || !state.isAsyncStarted())
             throw new IllegalStateException(state.getStatusString());
 
