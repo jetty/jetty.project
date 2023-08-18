@@ -19,6 +19,7 @@ import java.util.EnumSet;
 import java.util.HashSet;
 import java.util.Iterator;
 import java.util.List;
+import java.util.ListIterator;
 import java.util.Set;
 import java.util.stream.Stream;
 
@@ -145,22 +146,7 @@ public class Http3Fields implements HttpFields
         if (httpFields == null)
             return pseudoHeadersStream;
 
-        Stream<HttpField> httpFieldStream = httpFields.stream().filter(field ->
-        {
-            HttpHeader header = field.getHeader();
-
-            // If the header is specifically ignored skip it (Connection Specific Headers).
-            if (header != null && IGNORED_HEADERS.contains(header))
-                return false;
-
-            // If this is the TE header field it can only have the value "trailers".
-            if ((header == HttpHeader.TE) && !field.contains("trailers"))
-                return false;
-
-            // Remove the headers nominated by the Connection header field.
-            String name = field.getLowerCaseName();
-            return hopHeaders == null || !hopHeaders.contains(name);
-        });
+        Stream<HttpField> httpFieldStream = httpFields.stream().filter(this::filter);
 
         if (contentLengthHeader != null)
             return Stream.concat(pseudoHeadersStream, Stream.concat(httpFieldStream, Stream.of(contentLengthHeader)));
@@ -168,9 +154,32 @@ public class Http3Fields implements HttpFields
             return Stream.concat(pseudoHeadersStream, httpFieldStream);
     }
 
+    private boolean filter(HttpField field)
+    {
+        HttpHeader header = field.getHeader();
+
+        // If the header is specifically ignored skip it (Connection Specific Headers).
+        if (header != null && IGNORED_HEADERS.contains(header))
+            return false;
+
+        // If this is the TE header field it can only have the value "trailers".
+        if ((header == HttpHeader.TE) && !field.contains("trailers"))
+            return false;
+
+        // Remove the headers nominated by the Connection header field.
+        String name = field.getLowerCaseName();
+        return hopHeaders == null || !hopHeaders.contains(name);
+    }
+
     @Override
     public Iterator<HttpField> iterator()
     {
-        return stream().iterator();
+        return httpFields.listIterator(0);
+    }
+
+    @Override
+    public ListIterator<HttpField> listIterator(int index)
+    {
+        return httpFields.listIterator(index);
     }
 }

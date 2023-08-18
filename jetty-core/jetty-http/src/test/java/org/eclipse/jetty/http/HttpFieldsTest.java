@@ -60,9 +60,9 @@ public class HttpFieldsTest
                 private final HttpFields.Mutable fields = HttpFields.build();
 
                 @Override
-                public ListIterator<HttpField> listIterator()
+                public ListIterator<HttpField> listIterator(int index)
                 {
-                    return fields.listIterator();
+                    return fields.listIterator(index);
                 }
 
                 @Override
@@ -76,9 +76,9 @@ public class HttpFieldsTest
                 private final HttpFields.Mutable fields = HttpFields.build();
 
                 @Override
-                public ListIterator<HttpField> listIterator()
+                public ListIterator<HttpField> listIterator(int index)
                 {
-                    return fields.listIterator();
+                    return fields.listIterator(index);
                 }
 
                 @Override

@@ -101,6 +101,19 @@ public interface HttpFields extends Iterable<HttpField>, Supplier<HttpFields>
         return this;
     }
 
+    @Override
+    default Iterator<HttpField> iterator()
+    {
+        return listIterator(0);
+    }
+
+    default ListIterator<HttpField> listIterator()
+    {
+        return listIterator(0);
+    }
+
+    ListIterator<HttpField> listIterator(int index);
+
     /**
      * Efficiently take the fields as an Immutable that cannot be changed by any further mutations
      * to this instance.
@@ -163,13 +176,14 @@ public interface HttpFields extends Iterable<HttpField>, Supplier<HttpFields>
      */
     default boolean containsLast(HttpHeader header, String value)
     {
-        HttpField last = null;
-        for (HttpField f : this)
+        for (ListIterator<HttpField> i = listIterator(size()); i.hasPrevious();)
         {
+            HttpField f = i.previous();
+
             if (f.getHeader() == header)
-                last = f;
+                return f.containsLast(value);
         }
-        return last != null && last.containsLast(value);
+        return false;
     }
 
     default boolean contains(String name, String value)
@@ -786,14 +800,6 @@ public interface HttpFields extends Iterable<HttpField>, Supplier<HttpFields>
             }
         }
 
-        @Override
-        default Iterator<HttpField> iterator()
-        {
-            return listIterator();
-        }
-
-        ListIterator<HttpField> listIterator();
-
         default Mutable put(HttpField field)
         {
             boolean put = false;
@@ -1293,7 +1299,13 @@ public interface HttpFields extends Iterable<HttpField>, Supplier<HttpFields>
             @Override
             public ListIterator<HttpField> listIterator()
             {
-                ListIterator<HttpField> i = _fields.listIterator();
+                return listIterator(0);
+            }
+
+            @Override
+            public ListIterator<HttpField> listIterator(int index)
+            {
+                ListIterator<HttpField> i = _fields.listIterator(index);
                 return new ListIterator<>()
                 {
                     HttpField last;
@@ -1613,7 +1625,15 @@ public interface HttpFields extends Iterable<HttpField>, Supplier<HttpFields>
         @Override
         public ListIterator<HttpField> listIterator()
         {
-            return new ListItr();
+            return new Listerator(0);
+        }
+
+        @Override
+        public ListIterator<HttpField> listIterator(int index)
+        {
+            if (index > _size)
+                throw new NoSuchElementException();
+            return new Listerator(index);
         }
 
         @Override
@@ -1802,10 +1822,15 @@ public interface HttpFields extends Iterable<HttpField>, Supplier<HttpFields>
             return asString();
         }
 
-        private class ListItr implements ListIterator<HttpField>
+        private class Listerator implements ListIterator<HttpField>
         {
-            int _cursor;       // index of next element to return
-            int _current = -1;
+            int _index;
+            int _last = -1;
+
+            Listerator(int index)
+            {
+                _index = index;
+            }
 
             @Override
             public void add(HttpField field)
@@ -1816,72 +1841,72 @@ public interface HttpFields extends Iterable<HttpField>, Supplier<HttpFields>
                 int last = _size++;
                 if (_fields.length < _size)
                     _fields = Arrays.copyOf(_fields, _fields.length + SIZE_INCREMENT);
-                System.arraycopy(_fields, _cursor, _fields, _cursor + 1, last - _cursor);
-                _fields[_cursor++] = field;
-                _current = -1;
+                System.arraycopy(_fields, _index, _fields, _index + 1, last - _index);
+                _fields[_index++] = field;
+                _last = -1;
             }
 
             @Override
             public boolean hasNext()
             {
-                return _cursor != _size;
+                return _index != _size;
             }
 
             @Override
             public boolean hasPrevious()
             {
-                return _cursor > 0;
+                return _index > 0;
             }
 
             @Override
             public HttpField next()
             {
-                if (_cursor == _size)
+                if (_index == _size)
                     throw new NoSuchElementException();
-                _current = _cursor++;
-                return _fields[_current];
+                _last = _index++;
+                return _fields[_last];
             }
 
             @Override
             public int nextIndex()
             {
-                return _cursor + 1;
+                return _index + 1;
             }
 
             @Override
             public HttpField previous()
             {
-                if (_cursor == 0)
+                if (_index == 0)
                     throw new NoSuchElementException();
-                _current = --_cursor;
-                return _fields[_current];
+                _last = --_index;
+                return _fields[_last];
             }
 
             @Override
             public int previousIndex()
             {
-                return _cursor - 1;
+                return _index - 1;
             }
 
             @Override
             public void remove()
             {
-                if (_current < 0)
+                if (_last < 0)
                     throw new IllegalStateException();
-                MutableHttpFields.this.remove(_current);
-                _cursor = _current;
-                _current = -1;
+                MutableHttpFields.this.remove(_last);
+                _index = _last;
+                _last = -1;
             }
 
             @Override
             public void set(HttpField field)
             {
-                if (_current < 0)
+                if (_last < 0)
                     throw new IllegalStateException();
                 if (field == null)
                     remove();
                 else
-                    _fields[_current] = field;
+                    _fields[_last] = field;
             }
         }
     }
@@ -2018,6 +2043,20 @@ public interface HttpFields extends Iterable<HttpField>, Supplier<HttpFields>
         }
 
         @Override
+        public ListIterator<HttpField> listIterator()
+        {
+            return listIterator(0);
+        }
+
+        @Override
+        public ListIterator<HttpField> listIterator(int index)
+        {
+            if (index > _size)
+                throw new NoSuchElementException();
+            return new Listerator(index);
+        }
+
+        @Override
         public int size()
         {
             return _size;
@@ -2033,6 +2072,77 @@ public interface HttpFields extends Iterable<HttpField>, Supplier<HttpFields>
         public String toString()
         {
             return asString();
+        }
+
+        private class Listerator implements ListIterator<HttpField>
+        {
+            int _index;
+            int _last = -1;
+
+            Listerator(int index)
+            {
+                _index = index;
+            }
+
+            @Override
+            public void add(HttpField field)
+            {
+                throw new UnsupportedOperationException();
+            }
+
+            @Override
+            public boolean hasNext()
+            {
+                return _index != _size;
+            }
+
+            @Override
+            public boolean hasPrevious()
+            {
+                return _index > 0;
+            }
+
+            @Override
+            public HttpField next()
+            {
+                if (_index >= _size)
+                    throw new NoSuchElementException();
+                _last = _index++;
+                return _fields[_last];
+            }
+
+            @Override
+            public int nextIndex()
+            {
+                return _index + 1;
+            }
+
+            @Override
+            public HttpField previous()
+            {
+                if (_index == 0)
+                    throw new NoSuchElementException();
+                _last = --_index;
+                return _fields[_last];
+            }
+
+            @Override
+            public int previousIndex()
+            {
+                return _index - 1;
+            }
+
+            @Override
+            public void remove()
+            {
+                throw new UnsupportedOperationException();
+            }
+
+            @Override
+            public void set(HttpField field)
+            {
+                throw new UnsupportedOperationException();
+            }
         }
     }
 }

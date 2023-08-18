@@ -135,9 +135,9 @@ public class ResponseHttpFields implements HttpFields.Mutable
     }
 
     @Override
-    public ListIterator<HttpField> listIterator()
+    public ListIterator<HttpField> listIterator(int index)
     {
-        ListIterator<HttpField> i = _fields.listIterator();
+        ListIterator<HttpField> i = _fields.listIterator(index);
         return new ListIterator<>()
         {
             @Override
