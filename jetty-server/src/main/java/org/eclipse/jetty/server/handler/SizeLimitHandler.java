@@ -31,8 +31,6 @@ import org.eclipse.jetty.server.HttpInput;
 import org.eclipse.jetty.server.HttpOutput;
 import org.eclipse.jetty.server.Request;
 import org.eclipse.jetty.util.Callback;
-import org.eclipse.jetty.util.log.Log;
-import org.eclipse.jetty.util.log.Logger;
 
 /**
  * <p>A handler that can limit the size of message bodies in requests and responses.</p>
@@ -46,8 +44,6 @@ import org.eclipse.jetty.util.log.Logger;
  */
 public class SizeLimitHandler extends HandlerWrapper
 {
-    private static final Logger LOG = Log.getLogger(SizeLimitHandler.class);
-
     private final long _requestLimit;
     private final long _responseLimit;
 
@@ -90,7 +86,7 @@ public class SizeLimitHandler extends HandlerWrapper
                     baseRequest.getHttpInput().addInterceptor(limit);
             }
 
-            if (_responseLimit > 0)
+            if (_responseLimit >= 0)
             {
                 httpOutput.setInterceptor(limit);
                 response = new LimitResponse(response);
@@ -132,7 +128,7 @@ public class SizeLimitHandler extends HandlerWrapper
             if (content.hasContent())
             {
                 _read += content.remaining();
-                checkResponseLimit(_read);
+                checkRequestLimit(_read);
             }
             return content;
         }
