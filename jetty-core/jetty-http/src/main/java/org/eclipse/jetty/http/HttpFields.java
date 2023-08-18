@@ -152,6 +152,26 @@ public interface HttpFields extends Iterable<HttpField>, Supplier<HttpFields>
         return false;
     }
 
+    /**
+     * Look for a value as the last value in a possible multivalued field.
+     * Parameters and specifically quality parameters are not considered.
+     * @param header The {@link HttpHeader} type to search for.
+     * @param value The value to search for (case-insensitive)
+     * @return True iff the value is contained in the field value entirely or
+     * as the last element of a quoted comma separated list.
+     * @see HttpField#containsLast(String) 
+     */
+    default boolean containsLast(HttpHeader header, String value)
+    {
+        HttpField last = null;
+        for (HttpField f : this)
+        {
+            if (f.getHeader() == header)
+                last = f;
+        }
+        return last != null && last.containsLast(value);
+    }
+
     default boolean contains(String name, String value)
     {
         for (HttpField f : this)

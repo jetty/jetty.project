@@ -90,29 +90,13 @@ public class HttpFieldsTest
                 @Override
                 public HttpFields asImmutable()
                 {
-                    HttpFields f = fields.asImmutable();
-                    return new HttpFields()
-                    {
-                        @Override
-                        public Iterator<HttpField> iterator()
-                        {
-                            return f.iterator();
-                        }
-                    };
+                    return fields.asImmutable();
                 }
 
                 @Override
                 public HttpFields takeAsImmutable()
                 {
-                    HttpFields f = fields.takeAsImmutable();
-                    return new HttpFields()
-                    {
-                        @Override
-                        public Iterator<HttpField> iterator()
-                        {
-                            return f.iterator();
-                        }
-                    };
+                    return fields.takeAsImmutable();
                 }
             }
         );
@@ -832,8 +816,38 @@ public class HttpFieldsTest
         assertFalse(header.contains(new HttpField("N8", "def")));
         assertFalse(header.contains(HttpHeader.ACCEPT, "def"));
         assertFalse(header.contains(HttpHeader.AGE, "abc"));
-
         assertFalse(header.contains("n11"));
+    }
+
+    @ParameterizedTest
+    @MethodSource("mutables")
+    public void testContainsLast(HttpFields.Mutable header)
+    {
+        assertFalse(header.containsLast(HttpHeader.TRANSFER_ENCODING, "gzip"));
+
+        header.add(HttpHeader.TRANSFER_ENCODING, "gzip");
+        assertTrue(header.containsLast(HttpHeader.TRANSFER_ENCODING, "gzip"));
+
+        header.add(HttpHeader.TRANSFER_ENCODING, "bz2");
+        assertFalse(header.containsLast(HttpHeader.TRANSFER_ENCODING, "gzip"));
+        assertTrue(header.containsLast(HttpHeader.TRANSFER_ENCODING, "bz2"));
+
+        header.add(HttpHeader.TRANSFER_ENCODING, "foo, bar");
+        assertFalse(header.containsLast(HttpHeader.TRANSFER_ENCODING, "foo"));
+        assertTrue(header.containsLast(HttpHeader.TRANSFER_ENCODING, "bar"));
+
+        header.add(HttpHeader.TRANSFER_ENCODING, "\"x\", \"y\"");
+        assertFalse(header.containsLast(HttpHeader.TRANSFER_ENCODING, "x"));
+        assertTrue(header.containsLast(HttpHeader.TRANSFER_ENCODING, "y"));
+
+        header.add(HttpHeader.TRANSFER_ENCODING, "tom,dick,harry");
+        assertFalse(header.containsLast(HttpHeader.TRANSFER_ENCODING, "tom"));
+        assertTrue(header.containsLast(HttpHeader.TRANSFER_ENCODING, "harry"));
+
+        header.add(HttpHeader.TRANSFER_ENCODING, "sponge bob");
+        assertFalse(header.containsLast(HttpHeader.TRANSFER_ENCODING, "sponge"));
+        assertFalse(header.containsLast(HttpHeader.TRANSFER_ENCODING, "bob"));
+        assertTrue(header.containsLast(HttpHeader.TRANSFER_ENCODING, "sponge bob"));
     }
 
     @ParameterizedTest

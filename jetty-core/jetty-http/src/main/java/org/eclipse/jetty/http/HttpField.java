@@ -147,8 +147,9 @@ public class HttpField
      *
      * @param search Values to search for (case-insensitive)
      * @return True iff the value is contained in the field value entirely or
-     * as an element of a quoted comma separated list. List element parameters (eg qualities) are ignored,
+     * as an element of a quoted quality comma separated list. List element parameters (eg qualities) are ignored,
      * except if they are q=0, in which case the item itself is ignored.
+     * @see QuotedQualityCSV
      */
     public boolean contains(String search)
     {
@@ -161,8 +162,9 @@ public class HttpField
      * @param value The field value to search in.
      * @param search Values to search for (case-insensitive)
      * @return True iff the value is contained in the field value entirely or
-     * as an element of a quoted comma separated list. List element parameters (eg qualities) are ignored,
+     * as an element of a quoted quality comma separated list. List element parameters (eg qualities) are ignored,
      * except if they are q=0, in which case the item itself is ignored.
+     * @see QuotedQualityCSV
      */
     public static boolean contains(String value, String search)
     {
@@ -324,6 +326,56 @@ public class HttpField
         }
 
         return param != __zeroQuality.length() && match == search.length();
+    }
+
+    /**
+     * Look for a value as the last value in a possible multivalued field
+     * Parameters and specifically quality parameters are not considered.
+     * @param search Values to search for (case-insensitive)
+     * @return True iff the value is contained in the field value entirely or
+     * as the last element of a quoted comma separated list.
+     */
+    public boolean containsLast(String search)
+    {
+        return containsLast(getValue(), search);
+    }
+
+    /**
+     * Look for the last value in a possible multivalued field
+     * Parameters and specifically quality parameters are not considered.
+     * @param value The field value to search in.
+     * @param search Values to search for (case-insensitive)
+     * @return True iff the value is contained in the field value entirely or
+     * as the last element of a quoted comma separated list.
+     */
+    public static boolean containsLast(String value, String search)
+    {
+        if (search == null)
+            return value == null;
+        if (search.isEmpty())
+            return false;
+        if (value == null)
+            return false;
+        if (search.equalsIgnoreCase(value))
+            return true;
+
+        if (value.endsWith(search))
+        {
+            int i = value.length() - search.length() - 1;
+            while (i >= 0)
+            {
+                char c = value.charAt(i--);
+                if (c == ',')
+                    return true;
+                if (c != ' ')
+                    return false;
+            }
+            return true;
+        }
+
+        QuotedCSV csv = new QuotedCSV(false, value);
+        List<String> values = csv.getValues();
+        return !values.isEmpty() && search.equalsIgnoreCase(values.get(values.size() - 1));
     }
 
     @Override
