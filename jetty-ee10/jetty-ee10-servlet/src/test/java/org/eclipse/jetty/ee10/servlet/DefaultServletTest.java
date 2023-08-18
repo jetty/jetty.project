@@ -94,6 +94,7 @@ import static org.hamcrest.Matchers.endsWith;
 import static org.hamcrest.Matchers.is;
 import static org.hamcrest.Matchers.not;
 import static org.hamcrest.Matchers.notNullValue;
+import static org.hamcrest.Matchers.nullValue;
 import static org.hamcrest.Matchers.startsWith;
 import static org.junit.jupiter.api.Assertions.assertNotNull;
 import static org.junit.jupiter.api.Assumptions.assumeTrue;
@@ -3516,7 +3517,7 @@ public class DefaultServletTest
             """);
         HttpTester.Response response = HttpTester.parseResponse(rawResponse);
         assertThat(response.toString(), response.getStatus(), is(HttpStatus.PARTIAL_CONTENT_206));
-        assertThat(response.get(HttpHeader.CONTENT_LENGTH), notNullValue());
+        assertThat(response.get(HttpHeader.CONTENT_LENGTH), nullValue()); // null because of #10307
         assertThat(response.getContent(), Matchers.stringContainsInOrder(
             "Content-Type: text/plain", "Content-Range: bytes 5-8/18", "2 to",
             "Content-Type: text/plain", "Content-Range: bytes 10-12/18", "too")
@@ -3549,7 +3550,7 @@ public class DefaultServletTest
             """);
         HttpTester.Response response = HttpTester.parseResponse(rawResponse);
         assertThat(response.toString(), response.getStatus(), is(HttpStatus.PARTIAL_CONTENT_206));
-        assertThat(response.get(HttpHeader.CONTENT_LENGTH), notNullValue());
+        assertThat(response.get(HttpHeader.CONTENT_LENGTH), nullValue()); // null because of #10307
         assertThat(response.getContent(), Matchers.stringContainsInOrder(
             "Content-Type: text/plain", "Content-Range: bytes 5-8/18", "2 to",
             "Content-Type: text/plain", "Content-Range: bytes 10-12/18", "too")
