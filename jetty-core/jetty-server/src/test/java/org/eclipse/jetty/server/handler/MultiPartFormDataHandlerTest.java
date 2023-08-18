@@ -239,7 +239,7 @@ public class MultiPartFormDataHandlerTest
             assertEquals(HttpStatus.OK_200, response.getStatus());
 
             String value = response.get(HttpHeader.CONTENT_TYPE);
-            String contentType = HttpField.valueParameters(value, null);
+            String contentType = HttpField.getValueParameters(value, null);
             assertEquals("multipart/form-data", contentType);
             String boundary = MultiPart.extractBoundary(value);
             assertNotNull(boundary);

@@ -849,7 +849,7 @@ public class ServletApiRequest implements HttpServletRequest
                     int contentLength = getContentLength();
                     if (contentLength != 0 && _inputState == ServletContextRequest.INPUT_NONE)
                     {
-                        String baseType = HttpField.valueParameters(getContentType(), null);
+                        String baseType = HttpField.getValueParameters(getContentType(), null);
                         if (MimeTypes.Type.FORM_ENCODED.is(baseType) &&
                             getRequest().getConnectionMetaData().getHttpConfiguration().isFormEncodedMethod(getMethod()))
                         {

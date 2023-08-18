@@ -274,12 +274,12 @@ public class PartialRFC2616Test
         HttpFields fields = HttpFields.build()
             .put("Q", "bbb;q=0.5,aaa,ccc;q=0.002,d;q=0,e;q=0.0001,ddd;q=0.001,aa2,abb;q=0.7").asImmutable();
         List<String> list = fields.getQualityCSV("Q");
-        assertEquals("aaa", HttpField.valueParameters(list.get(0), null), "Quality parameters");
-        assertEquals("aa2", HttpField.valueParameters(list.get(1), null), "Quality parameters");
-        assertEquals("abb", HttpField.valueParameters(list.get(2), null), "Quality parameters");
-        assertEquals("bbb", HttpField.valueParameters(list.get(3), null), "Quality parameters");
-        assertEquals("ccc", HttpField.valueParameters(list.get(4), null), "Quality parameters");
-        assertEquals("ddd", HttpField.valueParameters(list.get(5), null), "Quality parameters");
+        assertEquals("aaa", HttpField.getValueParameters(list.get(0), null), "Quality parameters");
+        assertEquals("aa2", HttpField.getValueParameters(list.get(1), null), "Quality parameters");
+        assertEquals("abb", HttpField.getValueParameters(list.get(2), null), "Quality parameters");
+        assertEquals("bbb", HttpField.getValueParameters(list.get(3), null), "Quality parameters");
+        assertEquals("ccc", HttpField.getValueParameters(list.get(4), null), "Quality parameters");
+        assertEquals("ddd", HttpField.getValueParameters(list.get(5), null), "Quality parameters");
     }
 
     @Test
