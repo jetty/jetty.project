@@ -271,6 +271,10 @@ public interface AuthenticationState extends Request.AuthenticationState
         }
     };
 
+    /**
+     * The {@link SecurityHandler} will use this to wrap the {@link Request}.
+     * And then will return a {@link Deferred} authentication to bypass security constraints.
+     */
     class ServeAs implements AuthenticationState
     {
         private final HttpURI _uri;
@@ -295,6 +299,11 @@ public interface AuthenticationState extends Request.AuthenticationState
             };
         }
 
+        /**
+         * This interface can be used inside a {@link ServeAs} implementation to wrap the request
+         * changing its target to a given path. If a {@link Request} implements this interface it can
+         * be obtained with the {@link Request#as(Request, Class)} method.
+         */
         public interface Path
         {
             Request serveAs(Request request, String path);

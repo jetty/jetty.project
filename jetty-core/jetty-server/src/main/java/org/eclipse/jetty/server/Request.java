@@ -790,15 +790,10 @@ public interface Request extends Attributes, Content.Source
     }
 
     @SuppressWarnings("unchecked")
-    static <T extends Request.Wrapper, R> R get(Request request, Class<T> type, Function<T, R> getter)
+    static <T, R> R get(Request request, Class<T> type, Function<T, R> getter)
     {
-        while (request instanceof Request.Wrapper wrapper)
-        {
-            if (type.isInstance(wrapper))
-                return getter.apply((T)wrapper);
-            request = wrapper.getWrapped();
-        }
-        return null;
+        T t = Request.as(request, type);
+        return (t == null) ? null : getter.apply(t);
     }
 
     static Request unWrap(Request request)
