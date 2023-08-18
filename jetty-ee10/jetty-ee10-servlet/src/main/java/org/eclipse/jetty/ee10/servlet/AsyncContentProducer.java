@@ -219,6 +219,18 @@ class AsyncContentProducer implements ContentProducer
     public boolean isReady()
     {
         assertLocked();
+
+        ServletChannelState state = _servletChannel.getServletRequestState();
+
+        // If already unready, do not read via produceChunk();
+        // rather, wait for the demand callback to be invoked.
+        if (state.isInputUnready())
+        {
+            if (LOG.isDebugEnabled())
+                LOG.debug("isReady(), unready {}", this);
+            return false;
+        }
+
         Content.Chunk chunk = produceChunk();
         if (chunk != null)
         {
@@ -227,7 +239,7 @@ class AsyncContentProducer implements ContentProducer
             return true;
         }
 
-        _servletChannel.getServletRequestState().onReadUnready();
+        state.onReadUnready();
         _servletChannel.getRequest().demand(() ->
         {
             if (_servletChannel.getHttpInput().onContentProducible())
