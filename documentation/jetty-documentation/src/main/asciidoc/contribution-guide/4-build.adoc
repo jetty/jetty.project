@@ -28,7 +28,7 @@ Here are the minimum Maven and JDK version build requirements for each actively 
 
 | jetty-12.0.x | Maven 3.9.2+  | OpenJDK 17+ | OpenJDK 19
 | jetty-11.0.x | Maven 3.8.6+  | OpenJDK 11+ | OpenJDK 17
-| jetty-10.0.x | Maven 3.8.6+  | OpenJDK 11+ | OpenJDK 17 
+| jetty-10.0.x | Maven 3.8.6+  | OpenJDK 11+ | OpenJDK 17
 |===
 
 To build the Jetty documentation, OpenJDK 19+ is required due to the use of the virtual thread APIs.
