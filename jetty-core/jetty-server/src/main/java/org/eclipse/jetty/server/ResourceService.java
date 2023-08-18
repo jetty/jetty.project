@@ -684,12 +684,15 @@ public class ResourceService
             putHeaders(response, content, range.getLength());
             response.setStatus(HttpStatus.PARTIAL_CONTENT_206);
             response.getHeaders().put(HttpHeader.CONTENT_RANGE, range.toHeaderValue(contentLength));
+
+            // Try using the resource's path if possible, as the nio API is async and helps to avoid buffer copies.
             Path path = content.getResource().getPath();
             Content.Source source;
             if (path != null)
                 source = new MultiPartByteRanges.PathContentSource(path, range);
             else
                 source = new MultiPartByteRanges.InputStreamContentSource(content.getResource().newInputStream(), range);
+
             Content.copy(source, response, callback);
             return;
         }

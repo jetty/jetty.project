@@ -16,6 +16,7 @@ package org.eclipse.jetty.io.content;
 import java.io.IOException;
 import java.io.InputStream;
 import java.nio.ByteBuffer;
+import java.util.Objects;
 
 import org.eclipse.jetty.io.ByteBufferPool;
 import org.eclipse.jetty.io.Content;
@@ -51,7 +52,7 @@ public class InputStreamContentSource implements Content.Source
 
     public InputStreamContentSource(InputStream inputStream, ByteBufferPool bufferPool)
     {
-        this.inputStream = inputStream;
+        this.inputStream = Objects.requireNonNull(inputStream);
         this.bufferPool = bufferPool != null ? bufferPool : new ByteBufferPool.NonPooling();
     }
 

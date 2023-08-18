@@ -231,6 +231,7 @@ public class MultiPartByteRanges
         @Override
         public Content.Source newContentSource()
         {
+            // Try using the resource's path if possible, as the nio API is async and helps to avoid buffer copies.
             Path path = resource.getPath();
             if (path != null)
                 return new PathContentSource(path, byteRange);
