@@ -59,8 +59,12 @@ public class SizeLimitHandler extends Handler.Wrapper
         if (contentLengthField != null)
         {
             long contentLength = contentLengthField.getLongValue();
-            if (contentLength > _requestLimit)
-                throw new BadMessageException(413, "Request body is too large: " + contentLength + ">" + _requestLimit);
+            if (_requestLimit >= 0 && contentLength > _requestLimit)
+            {
+                String s = "Request body is too large: " + contentLength + ">" + _requestLimit;
+                Response.writeError(request, response, callback, 413, s);
+                return true;
+            }
         }
 
         HttpFields.Mutable.Wrapper httpFields = new HttpFields.Mutable.Wrapper(response.getHeaders())
@@ -71,7 +75,7 @@ public class SizeLimitHandler extends Handler.Wrapper
                 if (field.getHeader().is(HttpHeader.CONTENT_LENGTH.asString()))
                 {
                     long contentLength = field.getLongValue();
-                    if (contentLength > _responseLimit)
+                    if (_responseLimit >= 0 && contentLength > _responseLimit)
                         throw new HttpException.RuntimeException(500, "Response body is too large: " + contentLength + ">" + _responseLimit);
                 }
                 return super.onAddField(field);
