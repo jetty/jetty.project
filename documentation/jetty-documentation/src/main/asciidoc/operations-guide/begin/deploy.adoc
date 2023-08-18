@@ -16,18 +16,18 @@
 
 You can deploy two types of web application resources with Jetty:
 
-* *Standard Web Application Archives*, in the form of `+*.war+` files or web application directories, defined by the link:https://www.oracle.com/java/technologies/java-servlet-tec.html[Servlet specification].
+* *Standard Web Application Archives*, in the form of `+*.war+` files or web application directories, defined by the link:https://jakarta.ee/specifications/servlet/[Servlet specification].
 Their deployment is described in xref:og-begin-deploy-war[this section].
-* *Jetty context XML files*, that allow you to customize the deployment of standard web applications, and also allow you to use Jetty components -- and possibly custom components written by you -- to assemble your web applications.
+* *Jetty context XML files*, that allow you to customize the deployment of standard web applications, and also allow you to use Jetty components -- and possibly custom components written by you -- to assemble and deploy your web applications.
 Their deployment is described in xref:og-deploy[this section].
 
-Jetty supports the deployment of both standard web applications and Jetty context XML files in a specific _environment_.
+Jetty supports the deployment of both standard web applications and Jetty context XML files in a specific EE _environment_, such as the old Java EE 8, or Jakarta EE 9, or Jakarta {ee-current-caps}.
 
-In the following sections you can find simple examples of deployments of Jakarta {ee-current-caps} web applications.
-
-However, Jetty supports simultaneous deployment of web applications each to a possibly different environment, for example an old Java EE 8 web application alongside a new Jakarta {ee-current-caps} web application.
+Jetty supports _simultaneous_ deployment of web applications each to a possibly different environment, for example an old Java EE 8 web application alongside a new Jakarta {ee-current-caps} web application.
 
 Refer to the section about xref:og-deploy[deployment] for further information about how to deploy to different environments.
+
+In the following sections you can find simple examples of deployments of Jakarta {ee-current-caps} web applications.
 
 [[og-begin-deploy-war]]
 ===== Deploying +*.war+ Files
@@ -50,7 +50,7 @@ mywebapp.war
 <1> Publicly accessible resources such as `+*.html+`, `+*.jsp+`, `+*.css+`, `+*.js+` files, etc. are placed in `+*.war+` or in sub-directories of the `+*.war+`.
 <2> `WEB-INF` is a special directory used to store anything related to the web application that must not be publicly accessible, but may be accessed by other resources.
 <3> `WEB-INF/classes` stores the web application's compiled `+*.class+` files
-<4> `WEB-INF/classes` stores the web application's `+*.jar+` files
+<4> `WEB-INF/lib` stores the web application's `+*.jar+` files
 <5> `WEB-INF/web.xml` is the web application deployment descriptor, which defines the components and the configuration of your web application.
 ====
 
@@ -65,18 +65,18 @@ Refer to the section about xref:og-deploy[deployment] for further information ab
 
 [subs=attributes]
 ----
-$ java -jar $JETTY_HOME/start.jar --add-module={ee-current}-deploy
+$ java -jar $JETTY_HOME/start.jar --add-modules={ee-current}-deploy
 ----
 
-[source,options=nowrap]
+[source,options=nowrap,subs=attributes]
 ----
-include::jetty[setupArgs="--add-module=http",args="--add-module={ee-current}-deploy"]
+include::jetty[setupArgs="--add-modules=http",args="--add-modules={ee-current}-deploy"]
 ----
 
 The `{ee-current}-deploy` module creates `$JETTY_BASE/webapps`, which is the directory where Jetty looks for any `+*.war+` files or web application directories to deploy.
 
 Activating one of Jetty's `{ee-all}-deploy` modules enables web application deployment.
-Whether these web applications are served via clear-text HTTP/1.1, or secure HTTP/1.1, or secure HTTP/2, or HTTP/3 (or even all of these protocols) depends on if the correspondent Jetty modules have been enabled.
+Whether these web applications are served via clear-text HTTP/1.1, or secure HTTP/1.1, or secure HTTP/2, or HTTP/3 (or even all of these protocols) depends on whether the correspondent Jetty protocol modules have been enabled.
 Refer to the xref:og-protocols[section about protocols] for further information.
 
 Now you're ready to copy a web application to the `$JETTY_BASE/webapps` directory.
@@ -84,7 +84,7 @@ You can use one of the demos shipped with Jetty:
 
 [subs=attributes]
 ----
-$ java -jar $JETTY_HOME/start.jar --add-module={ee-current}-demo-simple
+$ java -jar $JETTY_HOME/start.jar --add-modules={ee-current}-demo-simple
 ----
 
 The `$JETTY_BASE` directory is now:

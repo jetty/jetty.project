@@ -85,6 +85,47 @@ public class CyclicTimeoutsTest
     }
 
     @Test
+    public void testExpirableEntityBecomesNonExpirable() throws Exception
+    {
+        long timeout = 1000;
+        DynamicExpirable entity = new DynamicExpirable(NanoTime.now() + TimeUnit.MILLISECONDS.toNanos(timeout));
+        CountDownLatch latch = new CountDownLatch(1);
+        timeouts = new CyclicTimeouts<>(scheduler)
+        {
+            @Override
+            protected Iterator<CyclicTimeouts.Expirable> iterator()
+            {
+                entity.expireNanoTime = Long.MAX_VALUE;
+                return List.<Expirable>of(entity).iterator();
+            }
+
+            @Override
+            boolean schedule(CyclicTimeout cyclicTimeout, long delay, TimeUnit unit)
+            {
+                if (unit.toMillis(delay) > 2 * timeout)
+                    latch.countDown();
+                return super.schedule(cyclicTimeout, delay, unit);
+            }
+
+            @Override
+            protected boolean onExpired(CyclicTimeouts.Expirable expirable)
+            {
+                latch.countDown();
+                return false;
+            }
+        };
+
+        timeouts.schedule(entity);
+
+        // Wait until the timeouts check.
+        Thread.sleep(timeout);
+
+        // Since the expireNanoTime was changed to Long.MAX_VALUE,
+        // the entity must not have been scheduled nor expired.
+        Assertions.assertFalse(latch.await(1, TimeUnit.SECONDS));
+    }
+
+    @Test
     public void testScheduleZero() throws Exception
     {
         ConstantExpirable entity = ConstantExpirable.ofDelay(0, TimeUnit.SECONDS);
@@ -118,7 +159,7 @@ public class CyclicTimeoutsTest
     public void testIterateAndExpire(boolean remove) throws Exception
     {
         ConstantExpirable zero = ConstantExpirable.ofDelay(0, TimeUnit.SECONDS);
-        DynamicExpirable one = new DynamicExpirable(NanoTime.now() + TimeUnit.SECONDS.toNanos(1));
+        ConstantExpirable one = ConstantExpirable.ofDelay(1, TimeUnit.SECONDS);
         Collection<CyclicTimeouts.Expirable> collection = new ArrayList<>();
         collection.add(one);
         AtomicInteger iterations = new AtomicInteger();

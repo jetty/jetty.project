@@ -41,13 +41,13 @@ import static jakarta.servlet.RequestDispatcher.ERROR_SERVLET_NAME;
 import static jakarta.servlet.RequestDispatcher.ERROR_STATUS_CODE;
 
 /**
- * Implementation of AsyncContext interface that holds the state of request-response cycle.
+ * holder of the state of request-response cycle.
  */
-public class ServletRequestState
+public class ServletChannelState
 {
-    private static final Logger LOG = LoggerFactory.getLogger(ServletRequestState.class);
+    private static final Logger LOG = LoggerFactory.getLogger(ServletChannelState.class);
 
-    private static final long DEFAULT_TIMEOUT = Long.getLong("%s.DEFAULT_TIMEOUT".formatted(ServletRequestState.class.getName()), 30000L);
+    private static final long DEFAULT_TIMEOUT = Long.getLong("%s.DEFAULT_TIMEOUT".formatted(ServletChannelState.class.getName()), 30000L);
 
     /*
      * The state of the ServletChannel,used to control the overall lifecycle.
@@ -149,7 +149,7 @@ public class ServletRequestState
     private AsyncContextEvent _event;
     private Thread _onTimeoutThread;
 
-    protected ServletRequestState(ServletChannel servletChannel)
+    protected ServletChannelState(ServletChannel servletChannel)
     {
         _servletChannel = servletChannel;
     }
@@ -735,9 +735,7 @@ public class ServletRequestState
         {
             if (LOG.isDebugEnabled())
                 LOG.debug("onIdleTimeout {}", getStatusStringLocked(), timeout);
-            // TODO this is almost always returning false?!? what about read/write timeouts???
-            //      return _state == State.IDLE;
-            return true;
+            return _state == State.IDLE;
         }
     }
 

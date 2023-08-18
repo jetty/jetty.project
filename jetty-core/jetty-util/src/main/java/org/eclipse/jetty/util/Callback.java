@@ -478,8 +478,7 @@ public interface Callback extends Invocable
                 }
                 catch (Throwable t)
                 {
-                    if (ExceptionUtil.areNotAssociated(x, t))
-                        x.addSuppressed(t);
+                    ExceptionUtil.addSuppressedIfNotAssociated(x, t);
                 }
                 finally
                 {

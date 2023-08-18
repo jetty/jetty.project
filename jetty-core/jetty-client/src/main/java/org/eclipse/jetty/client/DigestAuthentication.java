@@ -28,7 +28,6 @@ import java.util.concurrent.atomic.AtomicInteger;
 import org.eclipse.jetty.http.HttpHeader;
 import org.eclipse.jetty.util.Attributes;
 import org.eclipse.jetty.util.StringUtil;
-import org.eclipse.jetty.util.TypeUtil;
 
 /**
  * Implementation of the HTTP "Digest" authentication defined in RFC 2617.
@@ -231,7 +230,7 @@ public class DigestAuthentication extends AbstractAuthentication
 
         private String toHexString(byte[] bytes)
         {
-            return TypeUtil.toHexString(bytes).toLowerCase(Locale.ENGLISH);
+            return StringUtil.toHexString(bytes).toLowerCase(Locale.ENGLISH);
         }
     }
 }

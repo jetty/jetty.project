@@ -7,6 +7,11 @@
   version="6.0">
 
   <servlet>
+    <servlet-name>GetResourceServlet</servlet-name>
+    <servlet-class>org.acme.webapp.GetResourceServlet</servlet-class>
+    <load-on-startup>1</load-on-startup>
+  </servlet>
+  <servlet>
     <servlet-name>GetResourcePathsServlet</servlet-name>
     <servlet-class>org.acme.webapp.GetResourcePathsServlet</servlet-class>
     <load-on-startup>1</load-on-startup>
@@ -18,8 +23,12 @@
   </servlet>
 
   <servlet-mapping>
-    <servlet-name>GetResourcePathsServlet</servlet-name>
+    <servlet-name>GetResourceServlet</servlet-name>
     <url-pattern>/resource/*</url-pattern>
+  </servlet-mapping>
+  <servlet-mapping>
+    <servlet-name>GetResourcePathsServlet</servlet-name>
+    <url-pattern>/resources/*</url-pattern>
   </servlet-mapping>
   <servlet-mapping>
     <servlet-name>GetRealPathsServlet</servlet-name>

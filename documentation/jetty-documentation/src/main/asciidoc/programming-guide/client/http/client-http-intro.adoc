@@ -38,7 +38,7 @@ Out of the box features that you get with the Jetty HTTP client include:
 * Redirect support -- redirect codes such as 302 or 303 are automatically followed.
 * Cookies support -- cookies sent by servers are stored and sent back to servers in matching requests.
 * Authentication support -- HTTP "Basic", "Digest" and "SPNEGO" authentications are supported, others are pluggable.
-* Forward proxy support -- HTTP proxying and SOCKS4 proxying.
+* Forward proxy support -- HTTP proxying, SOCKS4 and SOCKS5 proxying.
 
 [[pg-client-http-start]]
 ==== Starting HttpClient
@@ -58,7 +58,7 @@ The Maven artifact coordinates are the following:
 The main class is named `org.eclipse.jetty.client.HttpClient`.
 
 You can think of a `HttpClient` instance as a browser instance.
-Like a browser it can make requests to different domains, it manages redirects, cookies and authentication, you can configure it with a proxy, and it provides you with the responses to the requests you make.
+Like a browser it can make requests to different domains, it manages redirects, cookies and authentication, you can configure it with a forward proxy, and it provides you with the responses to the requests you make.
 
 In order to use `HttpClient`, you must instantiate it, configure it, and then start it:
 
@@ -87,7 +87,7 @@ It is recommended that when your application stops, you also stop the `HttpClien
 include::../../{doc_code}/org/eclipse/jetty/docs/programming/client/http/HTTPClientDocs.java[tags=stop]
 ----
 
-Stopping `HttpClient` makes sure that the memory it holds (for example, authentication credentials, cookies, etc.) is released, and that the thread pool and scheduler are properly stopped allowing all threads used by `HttpClient` to exit.
+Stopping `HttpClient` makes sure that the memory it holds (for example, `ByteBuffer` pools, authentication credentials, cookies, etc.) is released, and that the thread pool and scheduler are properly stopped allowing all threads used by `HttpClient` to exit.
 
 [NOTE]
 ====
@@ -108,9 +108,9 @@ A `HttpClient` instance can be thought as a browser instance, and it manages the
 * a `CookieStore` (see xref:pg-client-http-cookie[this section]).
 * a `AuthenticationStore` (see xref:pg-client-http-authentication[this section]).
 * a `ProxyConfiguration` (see xref:pg-client-http-proxy[this section]).
-* a set of _destinations_.
+* a set of ``Destination``s
 
-A _destination_ is the client-side component that represents an _origin_ server, and manages a queue of requests for that origin, and a xref:pg-client-http-connection-pool[pool of TCP connections] to that origin.
+A `Destination` is the client-side component that represents an _origin_ server, and manages a queue of requests for that origin, and a xref:pg-client-http-connection-pool[pool of TCP connections] to that origin.
 
 An _origin_ may be simply thought as the tuple `(scheme, host, port)` and it is where the client connects to in order to communicate with the server.
 However, this is not enough.
@@ -132,10 +132,10 @@ Therefore an origin is identified by the tuple `(scheme, host, port, tag, protoc
 [[pg-client-http-connection-pool]]
 ==== HttpClient Connection Pooling
 
-A destination manages a `org.eclipse.jetty.client.ConnectionPool`, where connections to a particular origin are pooled for performance reasons:
+A `Destination` manages a `org.eclipse.jetty.client.ConnectionPool`, where connections to a particular origin are pooled for performance reasons:
 opening a connection is a costly operation and it's better to reuse them for multiple requests.
 
-NOTE: Remember that to select a specific destination you must select a specific origin, and that an origin is identified by the tuple `(scheme, host, port, tag, protocol)`, so you can have multiple destinations for the same `host` and `port`.
+NOTE: Remember that to select a specific `Destination` you must select a specific origin, and that an origin is identified by the tuple `(scheme, host, port, tag, protocol)`, so you can have multiple ``Destination``s for the same `host` and `port`, and therefore multiple ``ConnectionPool``s
 
 You can access the `ConnectionPool` in this way:
 
@@ -149,6 +149,7 @@ Jetty's client library provides the following `ConnectionPool` implementations:
 * `DuplexConnectionPool`, historically the first implementation, only used by the HTTP/1.1 transport.
 * `MultiplexConnectionPool`, the generic implementation valid for any transport where connections are reused with a MRU (most recently used) algorithm (that is, the connections most recently returned to the connection pool are the more likely to be used again).
 * `RoundRobinConnectionPool`, similar to `MultiplexConnectionPool` but where connections are reused with a round-robin algorithm.
+* `RandomRobinConnectionPool`, similar to `MultiplexConnectionPool` but where connections are reused with an algorithm that chooses them randomly.
 
 The `ConnectionPool` implementation can be customized for each destination in by setting a `ConnectionPool.Factory` on the `HttpClientTransport`:
 

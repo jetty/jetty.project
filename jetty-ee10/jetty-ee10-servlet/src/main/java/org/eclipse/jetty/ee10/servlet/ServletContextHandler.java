@@ -20,6 +20,7 @@ import java.net.MalformedURLException;
 import java.net.URI;
 import java.net.URL;
 import java.nio.charset.Charset;
+import java.nio.file.Files;
 import java.nio.file.Path;
 import java.util.ArrayList;
 import java.util.Arrays;
@@ -810,12 +811,16 @@ public class ServletContextHandler extends ContextHandler
             Resource resource = getResource(path);
 
             if (!path.endsWith("/"))
-                path = path + "/";
+                path = path + '/';
 
             HashSet<String> set = new HashSet<>();
             for (Resource item: resource.list())
             {
-                set.add(path + item.getFileName());
+                String entry = path + item.getFileName();
+                if (item.isDirectory())
+                    entry = entry + '/';
+
+                set.add(entry);
             }
             return set;
         }
@@ -2136,7 +2141,7 @@ public class ServletContextHandler extends ContextHandler
             if (holder == null)
             {
                 //new filter
-                holder = handler.newFilterHolder(Source.JAVAX_API);
+                holder = handler.newFilterHolder(Source.JAKARTA_API);
                 holder.setName(filterName);
                 holder.setHeldClass(filterClass);
                 handler.addFilter(holder);
@@ -2165,7 +2170,7 @@ public class ServletContextHandler extends ContextHandler
             if (holder == null)
             {
                 //new filter
-                holder = handler.newFilterHolder(Source.JAVAX_API);
+                holder = handler.newFilterHolder(Source.JAKARTA_API);
                 holder.setName(filterName);
                 holder.setClassName(className);
                 handler.addFilter(holder);
@@ -2194,7 +2199,7 @@ public class ServletContextHandler extends ContextHandler
             if (holder == null)
             {
                 //new filter
-                holder = handler.newFilterHolder(Source.JAVAX_API);
+                holder = handler.newFilterHolder(Source.JAKARTA_API);
                 holder.setName(filterName);
                 holder.setFilter(filter);
                 handler.addFilter(holder);
@@ -2224,7 +2229,7 @@ public class ServletContextHandler extends ContextHandler
             if (holder == null)
             {
                 //new servlet
-                holder = handler.newServletHolder(Source.JAVAX_API);
+                holder = handler.newServletHolder(Source.JAKARTA_API);
                 holder.setName(servletName);
                 holder.setHeldClass(servletClass);
                 handler.addServlet(holder);
@@ -2254,7 +2259,7 @@ public class ServletContextHandler extends ContextHandler
             if (holder == null)
             {
                 //new servlet
-                holder = handler.newServletHolder(Source.JAVAX_API);
+                holder = handler.newServletHolder(Source.JAKARTA_API);
                 holder.setName(servletName);
                 holder.setClassName(className);
                 handler.addServlet(holder);
@@ -2283,7 +2288,7 @@ public class ServletContextHandler extends ContextHandler
             ServletHolder holder = handler.getServlet(servletName);
             if (holder == null)
             {
-                holder = handler.newServletHolder(Source.JAVAX_API);
+                holder = handler.newServletHolder(Source.JAKARTA_API);
                 holder.setName(servletName);
                 holder.setServlet(servlet);
                 handler.addServlet(holder);
@@ -2310,7 +2315,7 @@ public class ServletContextHandler extends ContextHandler
             if (holder == null)
             {
                 //new servlet
-                holder = handler.newServletHolder(Source.JAVAX_API);
+                holder = handler.newServletHolder(Source.JAKARTA_API);
                 holder.setName(servletName);
                 holder.setForcedPath(jspFile);
                 handler.addServlet(holder);
@@ -2463,9 +2468,6 @@ public class ServletContextHandler extends ContextHandler
         @Override
         public int getSessionTimeout()
         {
-            if (!isStarting())
-                throw new IllegalStateException();
-            
             int timeout = -1;
             if (_sessionHandler != null)
             {
@@ -2598,7 +2600,7 @@ public class ServletContextHandler extends ContextHandler
 
             checkListener(t.getClass());
 
-            ListenerHolder holder = getServletHandler().newListenerHolder(Source.JAVAX_API);
+            ListenerHolder holder = getServletHandler().newListenerHolder(Source.JAKARTA_API);
             holder.setListener(t);
             addProgrammaticListener(t);
             getServletHandler().addListener(holder);
@@ -2771,7 +2773,12 @@ public class ServletContextHandler extends ContextHandler
                     {
                         Path resourcePath = r.getPath();
                         if (resourcePath != null)
-                            return resourcePath.normalize().toString();
+                        {
+                            String realPath = resourcePath.normalize().toString();
+                            if (Files.isDirectory(resourcePath))
+                                realPath = realPath + "/";
+                            return realPath;
+                        }
                     }
                 }
 
@@ -3079,11 +3086,11 @@ public class ServletContextHandler extends ContextHandler
 
         ServletContextHandler getServletContextHandler();
 
-        ServletRequestState getServletRequestState();
+        ServletChannelState getServletRequestState();
 
         SessionManager getSessionManager();
 
-        ServletRequestState getState();
+        ServletChannelState getState();
 
         void setQueryEncoding(String s);
     }

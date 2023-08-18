@@ -65,7 +65,7 @@ import org.eclipse.jetty.server.Server;
 import org.eclipse.jetty.server.handler.ContextHandlerCollection;
 import org.eclipse.jetty.toolchain.test.MavenPaths;
 import org.eclipse.jetty.util.MultiMap;
-import org.eclipse.jetty.util.TypeUtil;
+import org.eclipse.jetty.util.StringUtil;
 import org.eclipse.jetty.util.UrlEncoded;
 import org.eclipse.jetty.util.component.LifeCycle;
 import org.hamcrest.Matcher;
@@ -115,8 +115,9 @@ public class DispatcherTest
         _contextHandler = new ServletContextHandler();
         _contextHandler.setContextPath("/context");
         _contextCollection.addHandler(_contextHandler);
+        _contextHandler.setBaseResourceAsPath(MavenPaths.findTestResourceDir("contextResources"));
         _resourceHandler = new ResourceHandler();
-        _resourceHandler.setResourceBase(MavenPaths.findTestResourceDir("dispatchResourceTest").toUri().toASCIIString());
+        _resourceHandler.setBaseResource(MavenPaths.findTestResourceDir("dispatchResourceTest"));
         _resourceHandler.setPathInfoOnly(true);
         ContextHandler resourceContextHandler = new ContextHandler("/resource");
         resourceContextHandler.setHandler(_resourceHandler);
@@ -413,6 +414,65 @@ public class DispatcherTest
                 "INCLUDE";
 
         String responses = _connector.getResponse("GET /context/IncludeServlet?do=assertinclude&do=more&test=1 HTTP/1.0\n\n");
+
+        assertEquals(expected, responses);
+    }
+
+    @Test
+    public void testIncludeStatic() throws Exception
+    {
+        createDefaultContextHandlerCollection();
+        _contextHandler.addServlet(IncludeServlet.class, "/IncludeServlet/*");
+        _contextHandler.addServlet(DefaultServlet.class, "/");
+        createServer(_contextCollection);
+        _server.start();
+
+        String responses = _connector.getResponse("""
+            GET /context/IncludeServlet?do=static HTTP/1.1\r
+            Host: local\r
+            Connection: close\r
+            \r
+            """);
+
+        String expected = """
+            HTTP/1.1 200 OK\r
+            Content-Length: 26\r
+            Connection: close\r
+            \r
+            Include:
+            Test 2 to too two""";
+
+        assertEquals(expected, responses);
+    }
+
+    @Test
+    public void testForwardStatic() throws Exception
+    {
+        createDefaultContextHandlerCollection();
+        _contextHandler.addServlet(ForwardServlet.class, "/ForwardServlet/*");
+        _contextHandler.addServlet(DefaultServlet.class, "/");
+        createServer(_contextCollection);
+        _server.start();
+
+        String responses = _connector.getResponse("""
+            GET /context/ForwardServlet?do=req.echo&uri=/test.txt HTTP/1.1\r
+            Host: local\r
+            Connection: close\r
+            \r
+            """);
+
+        responses = responses.replaceFirst("Last-Modified: .*\r\n", "Last-Modified: xxx\r\n");
+
+        String expected = """
+            HTTP/1.1 200 OK\r
+            Last-Modified: xxx\r
+            Content-Type: text/plain\r
+            Accept-Ranges: bytes\r
+            Content-Length: 17\r
+            Connection: close\r
+            \r
+            Test 2 to too two""";
+
 
         assertEquals(expected, responses);
     }
@@ -949,6 +1009,12 @@ public class DispatcherTest
                 dispatcher = getServletContext().getRequestDispatcher("/AssertForwardIncludeServlet/assertpath?do=end");
             else if (request.getParameter("do").equals("assertinclude"))
                 dispatcher = getServletContext().getRequestDispatcher("/AssertIncludeServlet?do=end&do=the");
+            else if (request.getParameter("do").equals("static"))
+            {
+                response.getWriter().println("Include:");
+                dispatcher = getServletContext().getRequestDispatcher("/test.txt");
+            }
+            assert dispatcher != null;
             dispatcher.include(request, response);
         }
     }
@@ -1178,7 +1244,7 @@ public class DispatcherTest
         @Override
         protected void doGet(HttpServletRequest request, HttpServletResponse response) throws ServletException, IOException
         {
-            byte[] cp1251Bytes = TypeUtil.fromHexString("d2e5ecefe5f0e0f2f3f0e0");
+            byte[] cp1251Bytes = StringUtil.fromHexString("d2e5ecefe5f0e0f2f3f0e0");
             String expectedCP1251String = new String(cp1251Bytes, "cp1251");
 
             assertEquals("/context/ForwardServlet", request.getAttribute(Dispatcher.FORWARD_REQUEST_URI));

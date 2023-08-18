@@ -18,6 +18,7 @@ import java.io.InputStream;
 import java.net.MalformedURLException;
 import java.net.URI;
 import java.net.URL;
+import java.nio.file.Files;
 import java.nio.file.Path;
 import java.util.ArrayList;
 import java.util.Arrays;
@@ -1568,16 +1569,16 @@ public class ContextHandler extends ScopedHandler implements Attributes, Supplie
             Resource resource = getResource(path);
 
             if (!path.endsWith("/"))
-                path = path + "/";
+                path = path + '/';
 
             HashSet<String> set = new HashSet<>();
 
-            for (Resource r: resource)
+            for (Resource item: resource.list())
             {
-                for (Resource item: r.list())
-                {
-                    set.add(path + item.getFileName());
-                }
+                String entry = path + item.getFileName();
+                if (item.isDirectory())
+                    entry = entry + '/';
+                set.add(entry);
             }
             return set;
         }
@@ -1907,9 +1908,24 @@ public class ContextHandler extends ScopedHandler implements Attributes, Supplie
                 Resource resource = ContextHandler.this.getResource(path);
                 if (resource != null)
                 {
-                    Path resourcePath = resource.getPath();
-                    if (resourcePath != null)
-                        return resourcePath.toAbsolutePath().normalize().toString();
+                    for (Resource r : resource)
+                    {
+                        // return first
+                        if (Resources.exists(r))
+                        {
+                            Path resourcePath = r.getPath();
+                            if (resourcePath != null)
+                            {
+                                String realPath = resourcePath.normalize().toString();
+                                if (Files.isDirectory(resourcePath))
+                                    realPath = realPath + "/";
+                                return realPath;
+                            }
+                        }
+                    }
+
+                    // A Resource was returned, but did not exist
+                    return null;
                 }
             }
             catch (Exception e)

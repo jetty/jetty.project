@@ -23,6 +23,7 @@ import java.nio.charset.StandardCharsets;
 import java.nio.file.Path;
 import java.util.ArrayList;
 import java.util.Collections;
+import java.util.EnumSet;
 import java.util.HashMap;
 import java.util.Iterator;
 import java.util.List;
@@ -57,6 +58,7 @@ import org.eclipse.jetty.http.HttpVersion;
 import org.eclipse.jetty.util.Fields;
 import org.eclipse.jetty.util.NanoTime;
 import org.eclipse.jetty.util.Promise;
+import org.eclipse.jetty.util.URIUtil;
 
 public class HttpRequest implements Request
 {
@@ -92,6 +94,10 @@ public class HttpRequest implements Request
 
     public HttpRequest(HttpClient client, HttpConversation conversation, URI uri)
     {
+        // URIs built from strings that have an internationalized domain name (IDN)
+        // are parsed without errors, but uri.getHost() returns null.
+        if (uri.getHost() == null)
+            throw new IllegalArgumentException(String.format("Invalid URI host: null (authority: %s)", uri.getRawAuthority()));
         this.client = client;
         this.conversation = conversation;
         scheme = uri.getScheme();
@@ -108,6 +114,47 @@ public class HttpRequest implements Request
         HttpField userAgentField = client.getUserAgentField();
         if (userAgentField != null)
             headers.put(userAgentField);
+    }
+
+    public HttpRequest copy(URI newURI)
+    {
+        if (newURI == null)
+        {
+            StringBuilder builder = new StringBuilder(64);
+            URIUtil.appendSchemeHostPort(builder, getScheme(), getHost(), getPort());
+            newURI = URI.create(builder.toString());
+        }
+
+        HttpRequest newRequest = copyInstance(newURI);
+        newRequest.method(getMethod())
+            .version(getVersion())
+            .body(getBody())
+            .idleTimeout(getIdleTimeout(), TimeUnit.MILLISECONDS)
+            .timeout(getTimeout(), TimeUnit.MILLISECONDS)
+            .followRedirects(isFollowRedirects())
+            .tag(getTag())
+            .headers(h -> h.clear().add(getHeaders())
+                // Remove the headers that depend on the URI.
+                .remove(EnumSet.of(
+                    HttpHeader.HOST,
+                    HttpHeader.EXPECT,
+                    HttpHeader.COOKIE,
+                    HttpHeader.AUTHORIZATION,
+                    HttpHeader.PROXY_AUTHORIZATION
+                ))
+            );
+
+        return newRequest;
+    }
+
+    protected HttpRequest copyInstance(URI newURI)
+    {
+        return new HttpRequest(getHttpClient(), getConversation(), newURI);
+    }
+
+    protected HttpClient getHttpClient()
+    {
+        return client;
     }
 
     public HttpConversation getConversation()
@@ -549,7 +596,7 @@ public class HttpRequest implements Request
     @Override
     public Request onComplete(Response.CompleteListener listener)
     {
-        responseListeners.addCompleteListener(listener);
+        responseListeners.addCompleteListener(listener, false);
         return this;
     }
 
@@ -674,7 +721,7 @@ public class HttpRequest implements Request
     void sendAsync(HttpDestination destination, Response.CompleteListener listener)
     {
         if (listener != null)
-            responseListeners.addCompleteListener(listener);
+            responseListeners.addCompleteListener(listener, true);
         destination.send(this);
     }
 

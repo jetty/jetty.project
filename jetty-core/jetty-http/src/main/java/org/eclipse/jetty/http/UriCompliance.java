@@ -48,29 +48,52 @@ public final class UriCompliance implements ComplianceViolation.Mode
     public enum Violation implements ComplianceViolation
     {
         /**
-         * Allow ambiguous path segments e.g. <code>/foo/%2e%2e/bar</code>
+         * Allow ambiguous path segments e.g. <code>/foo/%2e%2e/bar</code>.
+         * When allowing this {@code Violation}, the application developer/deployer must ensure that the decoded URI path is not
+         * passed to any API that may inadvertently normalize dot or double dot segments.
+         * Any resulting '.' characters in the decoded path should be treated as literal characters.
          */
         AMBIGUOUS_PATH_SEGMENT("https://tools.ietf.org/html/rfc3986#section-3.3", "Ambiguous URI path segment"),
+
         /**
-         * Allow ambiguous empty segments e.g. <code>//</code>
+         * Allow ambiguous empty segments e.g. <code>//</code>.
+         * When allowing this {@code Violation}, the application developer/deployer must ensure that the application behaves
+         * as desired when it receives a URI path containing <code>//</code>. Specifically, any URI pattern matching for
+         * security concerns needs to be carefully audited.
          */
         AMBIGUOUS_EMPTY_SEGMENT("https://tools.ietf.org/html/rfc3986#section-3.3", "Ambiguous URI empty segment"),
+
         /**
          * Allow ambiguous path separator within a URI segment e.g. <code>/foo/b%2fr</code>
+         * When allowing this {@code Violation}, the application developer/deployer must be aware that the decoded URI path is
+         * ambiguous and that it is not possible to distinguish in the decoded path a real path separator versus an encoded
+         * separator character. Any URI matching based on decoded segments may be affected by this ambiguity. It is highly
+         * recommended that applications using this violation work only with encoded URI paths.  Some APIs that return
+         * decoded paths may throw an exception rather than return such an ambiguous path.
          */
         AMBIGUOUS_PATH_SEPARATOR("https://tools.ietf.org/html/rfc3986#section-3.3", "Ambiguous URI path separator"),
+
         /**
-         * Allow ambiguous path parameters within a URI segment e.g. <code>/foo/..;/bar</code> or <code>/foo/%2e%2e;param/bar</code>
+         * Allow ambiguous path parameters within a URI segment e.g. <code>/foo/..;/bar</code> or <code>/foo/%2e%2e;param/bar</code>.
+         * Since a dot or double dot segment with a parameter will not be normalized, then when allowing this {@code Violation},
+         * the application developer/deployer must ensure that the decoded URI path is not passed to any API that may
+         * inadvertently normalize dot or double dot segments.
          */
         AMBIGUOUS_PATH_PARAMETER("https://tools.ietf.org/html/rfc3986#section-3.3", "Ambiguous URI path parameter"),
+
         /**
-         * Allow ambiguous path encoding within a URI segment e.g. <code>/%2557EB-INF</code>
+         * Allow ambiguous path encoding within a URI segment e.g. <code>/%2557EB-INF</code>.  When allowing this
+         * {@code Violation}, the deployer must ensure that the decoded URI path is not passed to any API that may inadvertently
+         * further decode any percent encoded characters. Any resulting `%` character in the decoded path should be treated as
+         * a literal character.
          */
         AMBIGUOUS_PATH_ENCODING("https://tools.ietf.org/html/rfc3986#section-3.3", "Ambiguous URI path encoding"),
+
         /**
          * Allow UTF-16 encoding eg <code>/foo%u2192bar</code>.
          */
         UTF16_ENCODINGS("https://www.w3.org/International/iri-edit/draft-duerst-iri.html#anchor29", "UTF-16 encoding"),
+
         /**
          * Allow Bad UTF-8 encodings to be substituted by the replacement character.
          */

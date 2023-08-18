@@ -145,7 +145,7 @@ public class ResourceService
         return _gzipEquivalentFileExtensions;
     }
 
-    public void doGet(Request request, Response response, Callback callback, HttpContent content) throws Exception
+    public void doGet(Request request, Response response, Callback callback, HttpContent content)
     {
         String pathInContext = Request.getPathInContext(request);
 
@@ -523,7 +523,7 @@ public class ResourceService
                 // TODO : check conditional headers.
                 serveWelcome(request, response, callback, welcomeAction.target);
             case REHANDLE -> rehandleWelcome(request, response, callback, welcomeAction.target);
-        };
+        }
     }
 
     /**
@@ -683,14 +683,15 @@ public class ResourceService
         }
 
         // There are multiple non-overlapping ranges, send a multipart/byteranges 206 response.
-        putHeaders(response, content, NO_CONTENT_LENGTH);
         response.setStatus(HttpStatus.PARTIAL_CONTENT_206);
         String contentType = "multipart/byteranges; boundary=";
         String boundary = MultiPart.generateBoundary(null, 24);
-        response.getHeaders().put(HttpHeader.CONTENT_TYPE, contentType + boundary);
         MultiPartByteRanges.ContentSource byteRanges = new MultiPartByteRanges.ContentSource(boundary);
         ranges.forEach(range -> byteRanges.addPart(new MultiPartByteRanges.Part(content.getContentTypeValue(), content.getResource().getPath(), range, contentLength)));
         byteRanges.close();
+        long partsContentLength = byteRanges.getLength();
+        putHeaders(response, content, partsContentLength);
+        response.getHeaders().put(HttpHeader.CONTENT_TYPE, contentType + boundary);
         Content.copy(byteRanges, response, callback);
     }
 

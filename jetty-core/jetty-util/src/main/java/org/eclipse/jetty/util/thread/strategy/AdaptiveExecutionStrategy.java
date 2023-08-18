@@ -91,7 +91,7 @@ import org.slf4j.LoggerFactory;
  * that says that a hunter should eat (i.e. consume) what they kill (i.e. produced).</p>
  */
 @ManagedObject("Adaptive execution strategy")
-public class AdaptiveExecutionStrategy extends ContainerLifeCycle implements ExecutionStrategy
+public class AdaptiveExecutionStrategy extends ContainerLifeCycle implements ExecutionStrategy, Runnable
 {
     private static final Logger LOG = LoggerFactory.getLogger(AdaptiveExecutionStrategy.class);
 
@@ -133,7 +133,6 @@ public class AdaptiveExecutionStrategy extends ContainerLifeCycle implements Exe
     private final Executor _executor;
     private final TryExecutor _tryExecutor;
     private final Executor _virtualExecutor;
-    private final Runnable _runPendingProducer = () -> tryProduce(true);
     private final AtomicBiInteger _state = new AtomicBiInteger();
 
     /**
@@ -187,13 +186,19 @@ public class AdaptiveExecutionStrategy extends ContainerLifeCycle implements Exe
         if (LOG.isDebugEnabled())
             LOG.debug("{} dispatch {}", this, execute);
         if (execute)
-            _executor.execute(_runPendingProducer);
+            _executor.execute(this);
     }
 
     @Override
     public void produce()
     {
         tryProduce(false);
+    }
+
+    @Override
+    public void run()
+    {
+        tryProduce(true);
     }
 
     /**
@@ -330,7 +335,7 @@ public class AdaptiveExecutionStrategy extends ContainerLifeCycle implements Exe
                     int pending = AtomicBiInteger.getHi(biState);
 
                     // If a pending producer is available or one can be started
-                    if (tryExecuted || pending <= 0 && _tryExecutor.tryExecute(_runPendingProducer))
+                    if (tryExecuted || pending <= 0 && _tryExecutor.tryExecute(this))
                     {
                         tryExecuted = true;
                         pending++;
@@ -371,7 +376,7 @@ public class AdaptiveExecutionStrategy extends ContainerLifeCycle implements Exe
                         int pending = AtomicBiInteger.getHi(biState);
 
                         // If a pending producer is available or one can be started
-                        if (tryExecuted || pending <= 0 && _tryExecutor.tryExecute(_runPendingProducer))
+                        if (tryExecuted || pending <= 0 && _tryExecutor.tryExecute(this))
                         {
                             tryExecuted = true;
                             pending++;

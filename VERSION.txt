@@ -1,5 +1,127 @@
-jetty-12.0.0-SNAPSHOT
- + Jan is now using IntelliJ!
+jetty-12.0.1-SNAPSHOT
+
+jetty-12.0.0 - 07 August 2023
+ + 8405 Servlet 3.1 ReadListener.onAllDataRead() is called twice under h2 or
+   h2c if the server doesn't respond within 30s
+ + 9386 SSL reports deprecated setting, but ssl.ini still uses it
+ + 9720 Http2Session.streamIdleTimeout should permit being disabled from
+   AbstractHTTP2ServerConnectionFactory
+ + 10121 ee9 to ee8 conversion not working for JSP files with jakarta imports
+ + 10135 Websocket: Using PerMessageDeflateExtension and flush in batchMode
+   send FLUSH_FRAME to client. 
+ + 10155 EE10 Servlet include after `HttpServletResponse.getWriter().println()`
+   omits `Content-Length` from the response
+ + 10160 Verify PROXY_AUTHENTICATION is sent to forward proxies
+ + 10164 Needless META-INF/resources and web-fragment.xml mounts
+ + 10211 NPE in ArrayByteBufferPool.findOldestEntry()
+ + 10227 EE10 Unable to use Cookie attributes with
+   `HttpServletResponse.addCookie(jakarta.servlet.http.Cookie)`
+ + 10229 HttpConfiguration.setIdleTimeout() breaks long running requests
+ + 10231 DefaultServlet no longer supports POST and OPTIONS and returns a 405
+   instead 
+
+jetty-12.0.0.beta4 - 26 July 2023
+ + 8556 ServletContext.getSessionTimeout() incorrectly throws
+   IllegalStateException
+ + 9444 Unexpected encoding in request.getPathInfo() with Jetty 12 beta 0
+ + 9910 Inconsistent handling of welcome files between Jetty 10 and 12
+ + 10055 Deployment of static files does not work with --dry-run Jetty-12
+ + 10066 Allow `SAXParserFactory` or `SAXParser` to be configured in Jetty's
+   `XmlParser` class
+ + 10068 Jetty 12: instantiation of `HashLoginService`
+ + 10084 ServletApiContext.getResourcePaths() doesn't respect the spec
+ + 10086 Revisiting ProxyConfiguration.getProxies()
+ + 10105 Document that Request objects are not reusable
+ + 10120 OutOfMemoryError Upgrading from 9.4.49.v20220914 to 12.0.0.beta3
+ + 10122 in jetty12 beta build error-page redirects wrongly?
+ + 10123 in jetty12 beta partial http data request can get stuck now
+ + 10131 Review ERROR query-string handling
+ + 10134 `Server.stop()` and `WebInfConfiguration.deconfigure()` can throw a
+   `ClosedFileSystemException` when restoring the original base resource
+ + 10139 DefaultServlet not working with named dispatch in Jetty-12 EE10
+ + 10141 welcome-file ignored on jetty12ee10 on exploded deploy, works on ee9
+   and older jettys
+ + 10142 req.getRequestDispatcher("/test.htm").include(req, resp); does not go
+   anywhere on jetty12ee10 on exploded deploy, works on ee9 and older jetty
+ + 10143 Jetty12 startup fails randomly on JRebel
+ + 10145 WritePendingException over HTTP/2 tunnel
+
+jetty-12.0.0.beta3 - 03 July 2023
+ + 9919 Jetty-12 creates two instances of ArrayByteBufferPool
+ + 9925 Bring back Jetty <12 flexibility of "current context / context handler"
+ + 9944 Remove integer for demand in websocket in Jetty-12
+ + 9946 Handler passed to Handler in constructor a parent or child?
+ + 9947 Cannot invoke "org.eclipse.jetty.io.ManagedSelector.getTotalKeys()"
+   because "selector" is null
+ + 9953 Jetty 12.0 Handle HEAD requests in Handler
+ + 9955 Jetty 12.0 beta 2 HttpServletResponse::getStatus returns 0 by default
+ + 9960 Custom logging in Jetty 12 beta2 can fail due to NullPointerException
+   in org.eclipse.jetty.server.Request
+ + 9965 prevent multiple websocket frames from being demanded in Jetty-12
+ + 9966 NullPointerException with default servlet, include and welcome pages
+ + 9972 getResourcePaths fails when a META-INF resource has reserved characters
+   in its filename
+ + 9973 Creating a Resource for an entry in a nested jar file in Jetty 12
+ + 9984 URLResource.isDirectory() throws a NullPointerException when created
+   from a jar:file: URL
+ + 9990 Server rejects certain sizes of streamed request bodies
+
+jetty-12.0.0.beta2 - 16 June 2023
+ + 6140 Report total number of keys in SelectorManager
+ + 7091 Add SOCKS5 support
+ + 8694 Make QuicServerConnector respect configured key store instances
+ + 8819 Jetty-12 Improve CustomRequestLog efficiency
+ + 8885 Jetty-12, replacement for HttpChannel.Listener
+ + 9072 The great Jetty-12 renaming omnibus
+ + 9150 jetty-http-spi: Jetty's implementation of HttpExchange.setStreams
+   method faulty
+ + 9173 Configuring SameSite on a per-cookie basis in Jetty 12
+ + 9397 HTTP/3 encryption configuration
+ + 9524 InputStreamResponseListener's InputStream creates an exception on
+   close()
+ + 9554 Move (qpack/hpack) HuffmanDecoder / HuffmanEncoder / NBitInteger* to
+   common location
+ + 9630 Jetty 12 - Make Context dumpable
+ + 9631 Update jaspi jar for jetty-10 and verify permission names
+ + 9637 jetty-12 ee10 ServletRequestListeners called too many times on
+   sendError
+ + 9639 Deprecated properties used in jetty-12 demos
+ + 9648 jetty-12 ee10 ServletApiResponse.sendError does not check for the
+   response already being committed
+ + 9649 jetty-12 ee10 ServletApiResponse.addIntHeader does not ignore headers
+   after response committed
+ + 9650 jetty-12 ee10 `ServletApiResponse.resetBuffer` does not check for
+   response being committed
+ + 9655 Flaky test in jetty-12
+   org.eclipse.jetty.test.client.transport.HttpClientLoadTest#testIterative
+ + 9657 jetty-12 ee9 & ee10 Request.upgrade returns null
+ + 9680 Jetty-12 QuickStartTest leaking resources
+ + 9682 A possible native memory leak through RetainableByteBuffers
+ + 9685 Jetty doesn't set the date header on error responses
+ + 9731 Infinite loop with mapped roles
+ + 9734 Cookie config can be set after SessionHandler is started
+ + 9743 jetty-12 ee9 changeSessionId should throw ISE if no exception
+ + 9745 jetty-12 SecurityHandler role checking with * not correct
+ + 9750 jetty-12 ee10 wrong authType for CLIENT-CERT
+ + 9760 jetty-12 ee9 Omnibus tck failure analysis
+ + 9762 jetty-12 ee9 Double parsing of cookies
+ + 9765 Flaky test  testBlockingReadInADifferentThread â
+   org.eclipse.jetty.http3.tests.DataDemandTest
+ + 9766 jetty-12 ee9 ServerPush failures
+ + 9767 jetty-12 ee10 ServerPush failures
+ + 9770 Pictures are missed in documentation
+ + 9772 Improve Quiche certificates deployment
+ + 9774 jetty-12 ee10 Cross context dispatch is not supported
+ + 9777 CrossOriginFilter does not return Vary header on no-cors mode
+ + 9785 jetty-12 ee9  contextPath not set correctly on nested ContextHandler
+ + 9795 http3-server is leaking the Jetty logging service to web applications
+ + 9879 Jetty-12 rewrite demo not working
+ + 9880 Jetty 12 - jetty.sh does not work on Ubuntu
+ + 9881 H2 perf can be pathologically bad
+ + 9887 Deprecate CGI Servlet
+ + 9895 A MessageTooLargeException doesn't close a WebSocket connection
+ + 9906 Inconsistent handling of empty "path info" between Jetty 10 and 12
+ + Jan (@janbartel) is now using IntelliJ!
 
 jetty-12.0.0.beta1 - 02 May 2023
  + 6184 Remove usages of classes associated with JEP-411 that deprecate/remove

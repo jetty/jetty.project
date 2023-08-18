@@ -17,7 +17,7 @@ import java.nio.ByteBuffer;
 
 import org.eclipse.jetty.http.compression.NBitIntegerDecoder;
 import org.eclipse.jetty.util.BufferUtil;
-import org.eclipse.jetty.util.TypeUtil;
+import org.eclipse.jetty.util.StringUtil;
 import org.junit.jupiter.api.Test;
 
 import static org.hamcrest.MatcherAssert.assertThat;
@@ -32,7 +32,7 @@ public class NBitIntegerParserTest
         NBitIntegerDecoder decoder = new NBitIntegerDecoder();
 
         String encoded = "FFBA09";
-        byte[] bytes = TypeUtil.fromHexString(encoded);
+        byte[] bytes = StringUtil.fromHexString(encoded);
         bytes[0] = (byte)(bytes[0] | 0x80); // set the first bit so it is a section acknowledgement.
         ByteBuffer buffer1 = BufferUtil.toBuffer(bytes, 0, 2);
         ByteBuffer buffer2 = BufferUtil.toBuffer(bytes, 2, 1);

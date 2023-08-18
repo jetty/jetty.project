@@ -35,7 +35,7 @@ Enable the `quickstart` module for your jetty base:
 
 ----
 $ cd $JETTY-BASE
-$ java -jar $JETTY_HOME/start.jar --add-module=quickstart
+$ java -jar $JETTY_HOME/start.jar --add-modules=quickstart
 ----
 
 The `$JETTY-BASE/start.d/quickstart.ini` file contains these configurable parameters:

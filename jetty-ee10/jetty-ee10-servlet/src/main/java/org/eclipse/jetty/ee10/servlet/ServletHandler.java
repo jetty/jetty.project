@@ -495,6 +495,8 @@ public class ServletHandler extends Handler.Wrapper
     public MappedServlet getMappedServlet(String target)
     {
         MatchedResource<MappedServlet> matchedResource = getMatchedServlet(target);
+        if (matchedResource == null) // named servlet
+            return null;
         return matchedResource.getResource();
     }
 
@@ -1068,7 +1070,7 @@ public class ServletHandler extends Handler.Wrapper
             if (_filterMappings.isEmpty())
             {
                 _filterMappings.add(mapping);
-                if (source == Source.JAVAX_API)
+                if (source == Source.JAKARTA_API)
                     _matchAfterIndex = 0;
             }
             else
@@ -1076,7 +1078,7 @@ public class ServletHandler extends Handler.Wrapper
                 //there are existing entries. If this is a programmatic filtermapping, it is added at the end of the list.
                 //If this is a normal filtermapping, it is inserted after all the other filtermappings (matchBefores and normals),
                 //but before the first matchAfter filtermapping.
-                if (Source.JAVAX_API == source)
+                if (Source.JAKARTA_API == source)
                 {
                     _filterMappings.add(mapping);
                     if (_matchAfterIndex < 0)
@@ -1114,12 +1116,12 @@ public class ServletHandler extends Handler.Wrapper
             if (_filterMappings.isEmpty())
             {
                 _filterMappings.add(mapping);
-                if (Source.JAVAX_API == source)
+                if (Source.JAKARTA_API == source)
                     _matchBeforeIndex = 0;
             }
             else
             {
-                if (Source.JAVAX_API == source)
+                if (Source.JAKARTA_API == source)
                 {
                     //programmatically defined filter mappings are prepended to mapping list in the order
                     //in which they were defined. In other words, insert this mapping at the tail of the 

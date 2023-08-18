@@ -20,7 +20,6 @@ import java.util.EventListener;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Set;
-import java.util.concurrent.TimeoutException;
 
 import jakarta.servlet.AsyncListener;
 import jakarta.servlet.ServletRequest;
@@ -114,7 +113,7 @@ public class ServletContextRequest extends ContextRequest implements ServletCont
         _decodedPathInContext = decodedPathInContext;
         _response =  newServletContextResponse(response);
         _sessionManager = sessionManager;
-        addIdleTimeoutListener(this::onIdleTimeout);
+        addIdleTimeoutListener(_servletChannel.getServletRequestState()::onIdleTimeout);
     }
 
     protected ServletApiRequest newServletApiRequest()
@@ -136,11 +135,6 @@ public class ServletContextRequest extends ContextRequest implements ServletCont
     protected ServletContextResponse newServletContextResponse(Response response)
     {
         return new ServletContextResponse(_servletChannel, this, response);
-    }
-
-    private boolean onIdleTimeout(TimeoutException timeout)
-    {
-        return _servletChannel.getServletRequestState().onIdleTimeout(timeout);
     }
 
     @Override
@@ -173,7 +167,7 @@ public class ServletContextRequest extends ContextRequest implements ServletCont
     }
 
     @Override
-    public ServletRequestState getState()
+    public ServletChannelState getState()
     {
         return _servletChannel.getServletRequestState();
     }
@@ -280,7 +274,7 @@ public class ServletContextRequest extends ContextRequest implements ServletCont
     }
 
     @Override
-    public ServletRequestState getServletRequestState()
+    public ServletChannelState getServletRequestState()
     {
         return _servletChannel.getServletRequestState();
     }

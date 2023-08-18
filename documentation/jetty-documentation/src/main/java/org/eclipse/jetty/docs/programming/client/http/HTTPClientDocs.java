@@ -72,6 +72,7 @@ import org.eclipse.jetty.util.Callback;
 import org.eclipse.jetty.util.component.LifeCycle;
 import org.eclipse.jetty.util.ssl.SslContextFactory;
 
+import static java.lang.System.Logger.Level.ERROR;
 import static java.lang.System.Logger.Level.INFO;
 
 @SuppressWarnings("unused")
@@ -453,11 +454,95 @@ public class HTTPClientDocs
         HttpClient httpClient = new HttpClient();
         httpClient.start();
 
+        // tag::contentSourceListener[]
+        httpClient.newRequest("http://domain.com/path")
+            .onResponseContentSource(((response, contentSource) ->
+            {
+                // The function (as a Runnable) that reads the response content.
+                Runnable demander = new Runnable() // <1>
+                {
+                    @Override
+                    public void run()
+                    {
+                        while (true) // <2>
+                        {
+                            Content.Chunk chunk = contentSource.read(); // <3>
+
+                            // No chunk of content, demand again and return.
+                            if (chunk == null)
+                            {
+                                contentSource.demand(this); // <4>
+                                return;
+                            }
+
+                            // A failure happened.
+                            if (Content.Chunk.isFailure(chunk)) // <5>
+                            {
+                                Throwable failure = chunk.getFailure();
+                                if (chunk.isLast())
+                                {
+                                    // A terminal failure, such as a network failure.
+                                    // Your logic to handle terminal failures here.
+                                    System.getLogger("failure").log(ERROR, "Unexpected terminal failure", failure);
+                                    return;
+                                }
+                                else
+                                {
+                                    // A transient failure such as a read timeout.
+                                    // Your logic to handle transient failures here.
+                                    if (ignoreTransientFailure(response, failure))
+                                    {
+                                        // Try to read again.
+                                        continue;
+                                    }
+                                    else
+                                    {
+                                        // The transient failure is treated as a terminal failure.
+                                        System.getLogger("failure").log(ERROR, "Unexpected transient failure", failure);
+                                        return;
+                                    }
+                                }
+                            }
+
+                            // A normal chunk of content.
+                            consumeResponseContentChunk(response, chunk); // <6>
+                            // Release the chunk.
+                            chunk.release(); // <7>
+
+                            // Loop around to read another response chunk.
+                        }
+                    }
+                };
+
+                // Initiate the reads.
+                demander.run();
+            }))
+            .send(result ->
+            {
+
+            });
+        // end::contentSourceListener[]
+    }
+
+    private boolean ignoreTransientFailure(Response response, Throwable failure)
+    {
+        return false;
+    }
+
+    private void consumeResponseContentChunk(Response response, Content.Chunk chunk)
+    {
+    }
+
+    public void forwardContent() throws Exception
+    {
+        HttpClient httpClient = new HttpClient();
+        httpClient.start();
+
         String host1 = "localhost";
         String host2 = "localhost";
         int port1 = 8080;
         int port2 = 8080;
-        // tag::contentSourceListener[]
+        // tag::forwardContent[]
         // Prepare a request to server1, the source.
         Request request1 = httpClient.newRequest(host1, port1)
             .path("/source");
@@ -533,7 +618,7 @@ public class HTTPClientDocs
 
         // Send the request to server1.
         request1.send(result -> System.getLogger("forwarder").log(INFO, "Sourcing from server1 complete"));
-        // end::contentSourceListener[]
+        // end::forwardContent[]
     }
 
     public void getCookies() throws Exception

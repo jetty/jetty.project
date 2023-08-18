@@ -4,7 +4,7 @@
   <parent>
     <groupId>org.eclipse.jetty.ee10.demos</groupId>
     <artifactId>jetty-ee10-demos</artifactId>
-    <version>12.0.0-SNAPSHOT</version>
+    <version>12.0.1-SNAPSHOT</version>
     <relativePath>../../pom.xml</relativePath>
   </parent>
   <name>EE10 :: Demo :: Servlet Spec :: WebApp</name>
@@ -207,20 +207,30 @@
       <groupId>org.eclipse.jetty.ee10.demos</groupId>
       <artifactId>jetty-ee10-demo-container-initializer</artifactId>
     </dependency>
-
-    <!-- deliberately old version to test classloading -->
-    <!-- TODO uncomment and update the following once 9.4.19 is released with a fix for #3726
+    <dependency>
+      <groupId>org.eclipse.jetty.ee10</groupId>
+      <artifactId>jetty-ee10-webapp</artifactId>
+      <scope>test</scope>
+    </dependency>
+    <dependency>
+      <groupId>org.eclipse.jetty.ee10</groupId>
+      <artifactId>jetty-ee10-annotations</artifactId>
+      <scope>test</scope>
+    </dependency>
+    <dependency>
+      <groupId>org.eclipse.jetty.ee10.demos</groupId>
+      <artifactId>jetty-ee10-demo-mock-resources</artifactId>
+      <scope>test</scope>
+    </dependency>
     <dependency>
       <groupId>org.eclipse.jetty</groupId>
-      <artifactId>jetty-util</artifactId>
-      <version>9.4.19.vXXXXXXXX</version>
-      <exclusions>
-        <exclusion>
-          <groupId>jakarta.servlet</groupId>
-          <artifactId>jakarta.servlet-api</artifactId>
-        </exclusion>
-      </exclusions>
+      <artifactId>jetty-client</artifactId>
+      <scope>test</scope>
     </dependency>
- -->
+    <dependency>
+      <groupId>org.eclipse.jetty</groupId>
+      <artifactId>jetty-slf4j-impl</artifactId>
+      <scope>test</scope>
+    </dependency>
   </dependencies>
 </project>

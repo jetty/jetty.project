@@ -16,8 +16,8 @@ package org.eclipse.jetty.http2.parser;
 import java.nio.ByteBuffer;
 
 import org.eclipse.jetty.http2.ErrorCode;
+import org.eclipse.jetty.http2.Flags;
 import org.eclipse.jetty.http2.frames.PingFrame;
-import org.eclipse.jetty.http2.internal.Flags;
 
 public class PingBodyParser extends BodyParser
 {

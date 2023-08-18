@@ -110,6 +110,13 @@
               <jettyXmls>
                   <jettyXml>${basedir}/src/config/jetty.xml</jettyXml>
               </jettyXmls>
+              <loginServices>
+                <loginService implementation="org.eclipse.jetty.security.HashLoginService">
+                  <config implementation="org.eclipse.jetty.ee9.maven.plugin.MavenResource">
+                    <resourceAsString>${basedir}/src/config/login.xml</resourceAsString>
+                  </config>
+                </loginService>
+              </loginServices>
             </configuration>
           </execution>
         </executions>

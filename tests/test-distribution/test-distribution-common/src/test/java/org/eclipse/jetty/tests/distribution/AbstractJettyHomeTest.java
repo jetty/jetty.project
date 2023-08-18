@@ -13,8 +13,6 @@
 
 package org.eclipse.jetty.tests.distribution;
 
-import java.io.IOException;
-import java.nio.file.Files;
 import java.nio.file.Path;
 import java.util.function.Supplier;
 
@@ -22,8 +20,6 @@ import org.eclipse.jetty.client.ContentResponse;
 import org.eclipse.jetty.client.HttpClient;
 import org.eclipse.jetty.client.transport.HttpClientTransportOverHTTP;
 import org.eclipse.jetty.io.ClientConnector;
-import org.eclipse.jetty.toolchain.test.FS;
-import org.eclipse.jetty.toolchain.test.MavenTestingUtils;
 import org.eclipse.jetty.toolchain.test.jupiter.WorkDir;
 import org.eclipse.jetty.toolchain.test.jupiter.WorkDirExtension;
 import org.eclipse.jetty.util.ssl.SslContextFactory;
@@ -53,6 +49,7 @@ public class AbstractJettyHomeTest
         {
             SslContextFactory.Client sslContextFactory = new SslContextFactory.Client(true);
             ClientConnector clientConnector = new ClientConnector();
+            clientConnector.setSelectors(1);
             clientConnector.setSslContextFactory(sslContextFactory);
             HttpClientTransportOverHTTP httpClientTransportOverHTTP = new HttpClientTransportOverHTTP(clientConnector);
             startHttpClient(() -> new HttpClient(httpClientTransportOverHTTP));
@@ -69,7 +66,7 @@ public class AbstractJettyHomeTest
 
     public WorkDir workDir;
 
-    public Path newTestJettyBaseDirectory() throws IOException
+    public Path newTestJettyBaseDirectory()
     {
         return workDir.getEmptyPathDir();
     }
@@ -81,7 +78,7 @@ public class AbstractJettyHomeTest
             client.stop();
     }
 
-    protected class ResponseDetails implements Supplier<String>
+    protected static class ResponseDetails implements Supplier<String>
     {
         private final ContentResponse response;
 

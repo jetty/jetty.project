@@ -122,7 +122,6 @@ public abstract class HTTP2Session extends ContainerLifeCycle implements Session
         this.maxLocalStreams = -1;
         this.maxRemoteStreams = -1;
         this.localStreamIds.set(initialStreamId);
-        this.streamIdleTimeout = endPoint.getIdleTimeout();
         this.sendWindow.set(FlowControlStrategy.DEFAULT_WINDOW_SIZE);
         this.recvWindow.set(FlowControlStrategy.DEFAULT_WINDOW_SIZE);
         this.writeThreshold = 32 * 1024;

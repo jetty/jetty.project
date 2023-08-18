@@ -16,10 +16,10 @@ package org.eclipse.jetty.http2.generator;
 import java.nio.ByteBuffer;
 import java.util.Arrays;
 
+import org.eclipse.jetty.http2.Flags;
 import org.eclipse.jetty.http2.frames.Frame;
 import org.eclipse.jetty.http2.frames.FrameType;
 import org.eclipse.jetty.http2.frames.GoAwayFrame;
-import org.eclipse.jetty.http2.internal.Flags;
 import org.eclipse.jetty.io.ByteBufferPool;
 import org.eclipse.jetty.io.RetainableByteBuffer;
 import org.eclipse.jetty.util.BufferUtil;

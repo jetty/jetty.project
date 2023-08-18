@@ -16,11 +16,12 @@ package org.eclipse.jetty.ee10.servlet;
 import java.io.ByteArrayOutputStream;
 import java.io.IOException;
 import java.io.OutputStream;
-import java.nio.file.Path;
+import java.nio.charset.StandardCharsets;
 import java.util.Arrays;
 import java.util.Collections;
 import java.util.EnumSet;
 import java.util.List;
+import java.util.stream.Stream;
 
 import jakarta.servlet.AsyncContext;
 import jakarta.servlet.DispatcherType;
@@ -61,6 +62,9 @@ import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Disabled;
 import org.junit.jupiter.api.Test;
+import org.junit.jupiter.params.ParameterizedTest;
+import org.junit.jupiter.params.provider.Arguments;
+import org.junit.jupiter.params.provider.MethodSource;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -92,10 +96,10 @@ public class DispatcherTest
         ContextHandlerCollection contextCollection = new ContextHandlerCollection();
         _contextHandler = new ServletContextHandler();
         _contextHandler.setContextPath("/context");
+        _contextHandler.setBaseResourceAsPath(MavenTestingUtils.getTestResourcePathDir("contextResources"));
         contextCollection.addHandler(_contextHandler);
         ResourceHandler resourceHandler = new ResourceHandler();
-        Path basePath = MavenTestingUtils.getTestResourcePathDir("dispatchResourceTest");
-        resourceHandler.setBaseResource(ResourceFactory.root().newResource(basePath));
+        resourceHandler.setBaseResource(ResourceFactory.root().newResource(MavenTestingUtils.getTestResourcePathDir("dispatchResourceTest")));
         ContextHandler resourceContextHandler = new ContextHandler("/resource");
         resourceContextHandler.setHandler(resourceHandler);
         contextCollection.addHandler(resourceContextHandler);
@@ -380,10 +384,165 @@ public class DispatcherTest
             HTTP/1.1 200 OK\r
             specialSetHeader: specialSetHeader\r
             specialAddHeader: specialAddHeader\r
-            Content-Length: 7\r
+            Content-Length: 20\r
             Connection: close\r
             \r
-            INCLUDE""";
+            Include:
+            INCLUDE---
+            """;
+
+        assertEquals(expected, responses);
+    }
+
+    public static Stream<Arguments> includeTests()
+    {
+        return Stream.of(
+            Arguments.of(false, false),
+            Arguments.of(false, true),
+            Arguments.of(true, false),
+            Arguments.of(true, true)
+        );
+    }
+
+    @ParameterizedTest
+    @MethodSource("includeTests")
+    public void testIncludeOutputStreamWriter(boolean includeWriter, boolean helloWriter) throws Exception
+    {
+        _contextHandler.addServlet(new ServletHolder(new IncludeServlet(includeWriter)), "/IncludeServlet/*");
+        _contextHandler.addServlet(new ServletHolder(new HelloServlet(helloWriter)), "/Hello");
+
+        //test include, along with special extension to include that allows headers to
+        //be set during an include
+        String responses = _connector.getResponse("""
+            GET /context/IncludeServlet?do=hello HTTP/1.1\r
+            Host: local\r
+            Connection: close\r
+            \r
+            """);
+
+        responses = responses.replaceFirst("Content-Length: .*\r\n", "");
+
+        String expected = """
+            HTTP/1.1 200 OK\r
+            Connection: close\r
+            \r
+            Include:
+            Hello
+            ---
+            """;
+
+        assertEquals(expected, responses);
+    }
+
+    @Test
+    public void testIncludeWriterOutputStream() throws Exception
+    {
+        _contextHandler.addServlet(IncludeServlet.class, "/IncludeServlet/*");
+        _contextHandler.addServlet(AssertIncludeServlet.class, "/AssertIncludeServlet/*");
+
+        //test include, along with special extension to include that allows headers to
+        //be set during an include
+        String responses = _connector.getResponse("""
+            GET /context/IncludeServlet?do=assertinclude&do=more&test=1&headers=true HTTP/1.1\r
+            Host: local\r
+            Connection: close\r
+            \r
+            """);
+
+        String expected = """
+            HTTP/1.1 200 OK\r
+            specialSetHeader: specialSetHeader\r
+            specialAddHeader: specialAddHeader\r
+            Content-Length: 20\r
+            Connection: close\r
+            \r
+            Include:
+            INCLUDE---
+            """;
+
+        assertEquals(expected, responses);
+    }
+
+    @Test
+    public void testIncludeStatic() throws Exception
+    {
+        _contextHandler.addServlet(IncludeServlet.class, "/IncludeServlet/*");
+        _contextHandler.addServlet(new ServletHolder("default", DefaultServlet.class), "/");
+        _server.start();
+
+        String responses = _connector.getResponse("""
+            GET /context/IncludeServlet?do=static HTTP/1.1\r
+            Host: local\r
+            Connection: close\r
+            \r
+            """);
+
+        String expected = """
+            HTTP/1.1 200 OK\r
+            Content-Length: 31\r
+            Connection: close\r
+            \r
+            Include:
+            Test 2 to too two
+            ---
+            """;
+
+        assertEquals(expected, responses);
+    }
+
+    @Test
+    public void testIncludeStaticWithWriter() throws Exception
+    {
+        _contextHandler.addServlet(new ServletHolder(new IncludeServlet(true)), "/IncludeServlet/*");
+        _contextHandler.addServlet(new ServletHolder("default", DefaultServlet.class), "/");
+        _server.start();
+
+        String responses = _connector.getResponse("""
+            GET /context/IncludeServlet?do=static HTTP/1.1\r
+            Host: local\r
+            Connection: close\r
+            \r
+            """);
+
+        String expected = """
+            HTTP/1.1 200 OK\r
+            Connection: close\r
+            \r
+            Include:
+            Test 2 to too two
+            ---
+            """;
+
+        assertEquals(expected, responses);
+    }
+
+    @Test
+    public void testForwardStatic() throws Exception
+    {
+        _contextHandler.addServlet(ForwardServlet.class, "/ForwardServlet/*");
+        _contextHandler.addServlet(DefaultServlet.class, "/");
+        _server.start();
+
+        String responses = _connector.getResponse("""
+            GET /context/ForwardServlet?do=req.echo&uri=/test.txt HTTP/1.1\r
+            Host: local\r
+            Connection: close\r
+            \r
+            """);
+
+        responses = responses.replaceFirst("Last-Modified: .*\r\n", "Last-Modified: xxx\r\n");
+
+        String expected = """
+            HTTP/1.1 200 OK\r
+            Last-Modified: xxx\r
+            Content-Type: text/plain\r
+            Accept-Ranges: bytes\r
+            Content-Length: 18\r
+            Connection: close\r
+            \r
+            Test 2 to too two
+            """;
+
 
         assertEquals(expected, responses);
     }
@@ -477,10 +636,12 @@ public class DispatcherTest
 
         String expected = """
             HTTP/1.1 200 OK\r
-            Content-Length: 7\r
+            Content-Length: 20\r
             Connection: close\r
             \r
-            INCLUDE""";
+            Include:
+            INCLUDE---
+            """;
 
         assertEquals(expected, rawResponse);
     }
@@ -501,10 +662,11 @@ public class DispatcherTest
 
         String expected = """
             HTTP/1.1 200 OK\r
-            Content-Length: 7\r
+            Content-Length: 11\r
             Connection: close\r
             \r
-            FORWARD""";
+            FORWARD---
+            """;
 
         assertEquals(expected, rawResponse);
     }
@@ -772,15 +934,11 @@ public class DispatcherTest
             \r
             """);
         response = HttpTester.parseResponse(rawResponse);
-        assertThat(response.getContent(), containsString("matchValue=DispatchServlet, pattern=/DispatchServlet, servletName=DispatchServlet, mappingMatch=EXACT"));
+        assertThat(response.getContent(), containsString("matchValue=TestServlet, pattern=/TestServlet, servletName=TestServlet, mappingMatch=EXACT"));
     }
 
     public static class WrappingFilter implements Filter
     {
-        @Override
-        public void init(FilterConfig filterConfig) throws ServletException
-        {
-        }
 
         @Override
         public void doFilter(ServletRequest request, ServletResponse response, FilterChain chain) throws IOException, ServletException
@@ -788,11 +946,6 @@ public class DispatcherTest
             ResponseWrapper wrapper = new ResponseWrapper((HttpServletResponse)response);
             chain.doFilter(request, wrapper);
             wrapper.sendResponse(response.getOutputStream());
-        }
-
-        @Override
-        public void destroy()
-        {
         }
     }
 
@@ -960,12 +1113,6 @@ public class DispatcherTest
                 chain.doFilter(request, response);
             }
         }
-
-        @Override
-        public void destroy()
-        {
-
-        }
     }
 
     public static class DispatchServletServlet extends HttpServlet implements Servlet
@@ -993,11 +1140,29 @@ public class DispatcherTest
 
     public static class IncludeServlet extends HttpServlet implements Servlet
     {
+        // The logic linked to this field be deleted and the writer always used once #10155 is fixed.
+        private final boolean useWriter;
+
+        public IncludeServlet()
+        {
+            this(false);
+        }
+
+        public IncludeServlet(boolean useWriter)
+        {
+            this.useWriter = useWriter;
+        }
+
         @Override
         protected void doGet(HttpServletRequest request, HttpServletResponse response) throws ServletException, IOException
         {
             RequestDispatcher dispatcher = null;
-            Boolean headers = Boolean.valueOf(request.getParameter("headers"));
+            boolean headers = Boolean.parseBoolean(request.getParameter("headers"));
+
+            if (useWriter)
+                response.getWriter().println("Include:");
+            else
+                response.getOutputStream().write("Include:\n".getBytes(StandardCharsets.US_ASCII));
 
             if (request.getParameter("do").equals("forward"))
                 dispatcher = getServletContext().getRequestDispatcher("/ForwardServlet/forwardpath?do=assertincludeforward");
@@ -1005,8 +1170,38 @@ public class DispatcherTest
                 dispatcher = getServletContext().getRequestDispatcher("/AssertForwardIncludeServlet/assertpath?do=end");
             else if (request.getParameter("do").equals("assertinclude"))
                 dispatcher = getServletContext().getRequestDispatcher("/AssertIncludeServlet?do=end&do=the&headers=" + headers);
+            else if (request.getParameter("do").equals("static"))
+                dispatcher = getServletContext().getRequestDispatcher("/test.txt");
+            else if (request.getParameter("do").equals("hello"))
+                dispatcher = getServletContext().getRequestDispatcher("/Hello");
+
             assert dispatcher != null;
+
             dispatcher.include(request, response);
+
+            if (useWriter)
+                response.getWriter().println("---");
+            else
+                response.getOutputStream().write("---\n".getBytes(StandardCharsets.US_ASCII));
+        }
+    }
+
+    public static class HelloServlet extends HttpServlet implements Servlet
+    {
+        private final boolean useWriter;
+
+        public HelloServlet(boolean useWriter)
+        {
+            this.useWriter = useWriter;
+        }
+
+        @Override
+        protected void doGet(HttpServletRequest request, HttpServletResponse response) throws ServletException, IOException
+        {
+            if (useWriter)
+                response.getWriter().println("Hello");
+            else
+                response.getOutputStream().write("Hello\n".getBytes(StandardCharsets.US_ASCII));
         }
     }
 
@@ -1334,7 +1529,7 @@ public class DispatcherTest
             assertEquals("/IncludeServlet", request.getServletPath());
 
             response.setContentType("text/html");
-            if (Boolean.valueOf(request.getParameter("headers")))
+            if (Boolean.parseBoolean(request.getParameter("headers")))
             {
                 response.setHeader("org.eclipse.jetty.server.include.specialSetHeader", "specialSetHeader");
                 response.setHeader("org.eclipse.jetty.server.include.specialAddHeader", "specialAddHeader");

@@ -26,19 +26,31 @@ import org.eclipse.jetty.util.HostPort;
 import org.eclipse.jetty.util.ssl.SslContextFactory;
 
 /**
- * The configuration of the forward proxy to use with {@link org.eclipse.jetty.client.HttpClient}.
- * <p>
- * Applications add subclasses of {@link Proxy} to this configuration via:
- * <pre>
+ * <p>The configuration of the forward proxies to use with
+ * {@link org.eclipse.jetty.client.HttpClient}.</p>
+ * <p>Applications add subclasses of {@link Proxy} to this
+ * configuration via, for example:</p>
+ * <pre>{@code
  * ProxyConfiguration proxyConfig = httpClient.getProxyConfiguration();
  * proxyConfig.addProxy(new HttpProxy(proxyHost, 8080));
- * </pre>
+ * }</pre>
  *
  * @see HttpClient#getProxyConfiguration()
  */
 public class ProxyConfiguration
 {
     private final List<Proxy> proxies = new BlockingArrayQueue<>();
+
+    /**
+     * <p>Returns an unmodifiable list of proxies added to this configuration.</p>
+     *
+     * @return the forward proxies
+     * @see #addProxy(Proxy)
+     */
+    public List<Proxy> getProxies()
+    {
+        return List.copyOf(proxies);
+    }
 
     /**
      * Adds a proxy.

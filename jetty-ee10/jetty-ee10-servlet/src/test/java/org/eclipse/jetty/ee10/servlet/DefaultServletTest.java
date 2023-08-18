@@ -84,6 +84,7 @@ import static org.eclipse.jetty.http.tools.matchers.HttpFieldsMatchers.headerVal
 import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.Matchers.anyOf;
 import static org.hamcrest.Matchers.containsString;
+import static org.hamcrest.Matchers.emptyString;
 import static org.hamcrest.Matchers.endsWith;
 import static org.hamcrest.Matchers.is;
 import static org.hamcrest.Matchers.not;
@@ -171,6 +172,110 @@ public class DefaultServletTest
         response = HttpTester.parseResponse(rawResponse);
         assertThat(response.toString(), response.getStatus(), is(HttpStatus.OK_200));
         assertThat(response.toString(), response.getContent(), is("How now brown cow"));
+    }
+
+    @Test
+    public void testHead() throws Exception
+    {
+        Path file = docRoot.resolve("file.txt");
+
+        context.addServlet(DefaultServlet.class, "/");
+
+        String rawResponse;
+        HttpTester.Response response;
+
+        rawResponse = connector.getResponse("""
+            HEAD /context/file.txt HTTP/1.1\r
+            Host: local\r
+            Connection: close\r
+            \r
+            """);
+        response = HttpTester.parseResponse(rawResponse);
+        assertThat(response.toString(), response.getStatus(), is(HttpStatus.NOT_FOUND_404));
+
+        Files.writeString(file, "How now brown cow", UTF_8);
+
+        rawResponse = connector.getResponse("""
+            HEAD /context/file.txt HTTP/1.1\r
+            Host: local\r
+            Connection: close\r
+            \r
+            """);
+        response = HttpTester.parseResponse(rawResponse);
+        assertThat(response.toString(), response.getStatus(), is(HttpStatus.OK_200));
+        assertThat(response.toString(), response.getContent(), emptyString());
+    }
+
+    @Test
+    public void testPost() throws Exception
+    {
+        Path file = docRoot.resolve("file.txt");
+
+        context.addServlet(DefaultServlet.class, "/");
+
+        String rawResponse;
+        HttpTester.Response response;
+
+        rawResponse = connector.getResponse("""
+            POST /context/file.txt HTTP/1.1\r
+            Host: local\r
+            Connection: close\r
+            Content-Length: 5\r
+            \r
+            abcde
+            """);
+        response = HttpTester.parseResponse(rawResponse);
+        assertThat(response.toString(), response.getStatus(), is(HttpStatus.METHOD_NOT_ALLOWED_405));
+
+        Files.writeString(file, "How now brown cow", UTF_8);
+
+        rawResponse = connector.getResponse("""
+            POST /context/file.txt HTTP/1.1\r
+            Host: local\r
+            Connection: close\r
+            Content-Length: 5\r
+            \r
+            abcde
+            """);
+        response = HttpTester.parseResponse(rawResponse);
+        assertThat(response.toString(), response.getStatus(), is(HttpStatus.METHOD_NOT_ALLOWED_405));
+    }
+
+    @Test
+    public void testTrace() throws Exception
+    {
+        context.addServlet(DefaultServlet.class, "/");
+
+        String rawResponse;
+        HttpTester.Response response;
+
+        rawResponse = connector.getResponse("""
+            TRACE /context/file.txt HTTP/1.1\r
+            Host: local\r
+            Connection: close\r
+            \r
+            """);
+        response = HttpTester.parseResponse(rawResponse);
+        assertThat(response.toString(), response.getStatus(), is(HttpStatus.METHOD_NOT_ALLOWED_405));
+    }
+
+    @Test
+    public void testOptions() throws Exception
+    {
+        context.addServlet(DefaultServlet.class, "/");
+
+        String rawResponse;
+        HttpTester.Response response;
+
+        rawResponse = connector.getResponse("""
+            OPTIONS /context/ HTTP/1.1\r
+            Host: local\r
+            Connection: close\r
+            \r
+            """);
+        response = HttpTester.parseResponse(rawResponse);
+        assertThat(response.toString(), response.getStatus(), is(HttpStatus.OK_200));
+        assertThat(response.get(HttpHeader.ALLOW), is("GET, HEAD, OPTIONS"));
     }
 
     @Test
@@ -531,7 +636,6 @@ public class DefaultServletTest
 
         ServletHolder defholder = context.addServlet(DefaultServlet.class, "/extra/*");
         defholder.setInitParameter("resourceBase", extraResourceBaseString);
-        defholder.setInitParameter("pathInfoOnly", "true");
         defholder.setInitParameter("dirAllowed", "true");
         defholder.setInitParameter("redirectWelcome", "false");
         defholder.setInitParameter("gzip", "false");
@@ -1056,7 +1160,6 @@ public class DefaultServletTest
 
         ServletHolder altholder = context.addServlet(DefaultServlet.class, "/alt/*");
         altholder.setInitParameter("resourceBase", altRoot.toUri().toASCIIString());
-        altholder.setInitParameter("pathInfoOnly", "true");
         altholder.setInitParameter("dirAllowed", "false");
         altholder.setInitParameter("redirectWelcome", "false");
         altholder.setInitParameter("welcomeServlets", "false");
@@ -1064,7 +1167,6 @@ public class DefaultServletTest
 
         ServletHolder otherholder = context.addServlet(DefaultServlet.class, "/other/*");
         otherholder.setInitParameter("resourceBase", altRoot.toUri().toASCIIString());
-        otherholder.setInitParameter("pathInfoOnly", "true");
         otherholder.setInitParameter("dirAllowed", "true");
         otherholder.setInitParameter("redirectWelcome", "false");
         otherholder.setInitParameter("welcomeServlets", "false");
@@ -1242,7 +1344,6 @@ public class DefaultServletTest
         defholder.setInitParameter("dirAllowed", "false");
         defholder.setInitParameter("redirectWelcome", "false");
         defholder.setInitParameter("welcomeServlets", "true");
-        defholder.setInitParameter("pathInfoOnly", "true");
 
         ServletHolder gwholder = new ServletHolder("gateway", new HttpServlet()
         {
@@ -1934,7 +2035,7 @@ public class DefaultServletTest
                 String body = response.getContent();
 
                 assertThat(response, containsHeaderValue("Content-Type", "multipart/byteranges"));
-                assertThat(response, containsHeaderValue("Content-Length", "" + body.length()));
+                // TODO #10307 assertThat(response, containsHeaderValue("Content-Length", String.valueOf(body.length())));
 
                 HttpField contentType = response.getField(HttpHeader.CONTENT_TYPE);
                 String boundary = getContentTypeBoundary(contentType);
@@ -1962,7 +2063,7 @@ public class DefaultServletTest
                 String body = response.getContent();
 
                 assertThat(response, containsHeaderValue("Content-Type", "multipart/byteranges"));
-                assertThat(response, containsHeaderValue("Content-Length", "" + body.length()));
+                // TODO #10307 assertThat(response, containsHeaderValue("Content-Length", String.valueOf(body.length())));
 
                 HttpField contentType = response.getField(HttpHeader.CONTENT_TYPE);
                 String boundary = getContentTypeBoundary(contentType);
@@ -1992,7 +2093,7 @@ public class DefaultServletTest
                 String body = response.getContent();
 
                 assertThat(response, containsHeaderValue("Content-Type", "multipart/byteranges"));
-                assertThat(response, containsHeaderValue("Content-Length", "" + body.length()));
+                // TODO #10307 assertThat(response, containsHeaderValue("Content-Length", String.valueOf(body.length())));
 
                 HttpField contentType = response.getField(HttpHeader.CONTENT_TYPE);
                 String boundary = getContentTypeBoundary(contentType);
@@ -2053,7 +2154,7 @@ public class DefaultServletTest
                 String body = response.getContent();
 
                 assertThat(response, containsHeaderValue("Content-Type", "multipart/byteranges"));
-                assertThat(response, containsHeaderValue("Content-Length", "" + body.length()));
+                // TODO #10307 assertThat(response, containsHeaderValue("Content-Length", String.valueOf(body.length())));
 
                 HttpField contentType = response.getField(HttpHeader.CONTENT_TYPE);
                 String boundary = getContentTypeBoundary(contentType);
@@ -2082,7 +2183,7 @@ public class DefaultServletTest
                 String body = response.getContent();
 
                 assertThat(response, containsHeaderValue("Content-Type", "multipart/byteranges"));
-                assertThat(response, containsHeaderValue("Content-Length", "" + body.length()));
+                // TODO #10307 assertThat(response, containsHeaderValue("Content-Length", String.valueOf(body.length())));
 
                 HttpField contentType = response.getField(HttpHeader.CONTENT_TYPE);
                 String boundary = getContentTypeBoundary(contentType);
@@ -2194,7 +2295,7 @@ public class DefaultServletTest
         HttpTester.Response response = HttpTester.parseResponse(rawResponse);
         assertThat(response.toString(), response.getStatus(), is(HttpStatus.OK_200));
         String body = response.getContent();
-        assertThat(response, containsHeaderValue(HttpHeader.CONTENT_LENGTH, "" + body.length()));
+        assertThat(response, containsHeaderValue(HttpHeader.CONTENT_LENGTH, String.valueOf(body.length())));
         assertThat(response, containsHeaderValue(HttpHeader.CONTENT_TYPE, "text/plain;charset=UTF-8"));
         assertThat(body, containsString("Extra Info"));
 
@@ -2207,7 +2308,7 @@ public class DefaultServletTest
         response = HttpTester.parseResponse(rawResponse);
         assertThat(response.toString(), response.getStatus(), is(HttpStatus.OK_200));
         body = response.getContent();
-        assertThat(response, containsHeaderValue(HttpHeader.CONTENT_LENGTH, "" + body.length()));
+        assertThat(response, containsHeaderValue(HttpHeader.CONTENT_LENGTH, String.valueOf(body.length())));
         assertThat(response, containsHeaderValue(HttpHeader.CONTENT_TYPE, "image/jpeg;charset=utf-8"));
         assertThat(body, containsString("Extra Info"));
     }
@@ -3317,7 +3418,6 @@ public class DefaultServletTest
         ServletHolder slashHolder = new ServletHolder("default", new DefaultServlet());
         slashHolder.setInitParameter("redirectWelcome", "false");
         slashHolder.setInitParameter("welcomeServlets", "true");
-        slashHolder.setInitParameter("pathInfoOnly", "false");
         slashHolder.setInitParameter("baseResource", defaultDir.toAbsolutePath().toString());
         context.addServlet(slashHolder, "/");
 
@@ -3325,7 +3425,6 @@ public class DefaultServletTest
         ServletHolder rHolder = new ServletHolder("rdefault", new DefaultServlet());
         rHolder.setInitParameter("redirectWelcome", "false");
         rHolder.setInitParameter("welcomeServlets", "true");
-        rHolder.setInitParameter("pathInfoOnly", "true");
         rHolder.setInitParameter("baseResource", rDir.toAbsolutePath().toString());
         context.addServlet(rHolder, "/r/*");
 

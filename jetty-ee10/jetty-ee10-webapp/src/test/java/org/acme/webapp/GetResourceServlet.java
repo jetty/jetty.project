@@ -11,14 +11,19 @@
 // ========================================================================
 //
 
-package org.eclipse.jetty.http2.internal;
+package org.acme.webapp;
 
-public interface Flags
+import java.io.IOException;
+
+import jakarta.servlet.http.HttpServlet;
+import jakarta.servlet.http.HttpServletRequest;
+import jakarta.servlet.http.HttpServletResponse;
+
+public class GetResourceServlet extends HttpServlet
 {
-    public static final int NONE = 0x00;
-    public static final int END_STREAM = 0x01;
-    public static final int ACK = 0x01;
-    public static final int END_HEADERS = 0x04;
-    public static final int PADDING = 0x08;
-    public static final int PRIORITY = 0x20;
+    @Override
+    protected void doGet(HttpServletRequest req, HttpServletResponse resp) throws IOException
+    {
+        resp.getWriter().printf("url=%s\n", req.getServletContext().getResource(req.getParameter("r")));
+    }
 }

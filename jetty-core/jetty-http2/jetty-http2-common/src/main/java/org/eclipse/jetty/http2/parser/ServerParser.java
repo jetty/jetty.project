@@ -16,9 +16,9 @@ package org.eclipse.jetty.http2.parser;
 import java.nio.ByteBuffer;
 
 import org.eclipse.jetty.http2.ErrorCode;
+import org.eclipse.jetty.http2.Flags;
 import org.eclipse.jetty.http2.RateControl;
 import org.eclipse.jetty.http2.frames.FrameType;
-import org.eclipse.jetty.http2.internal.Flags;
 import org.eclipse.jetty.io.ByteBufferPool;
 import org.eclipse.jetty.util.BufferUtil;
 import org.slf4j.Logger;

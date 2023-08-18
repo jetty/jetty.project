@@ -43,7 +43,7 @@ public class ServletHolderTest
     @Test
     public void testInitParams() throws Exception
     {
-        ServletHolder holder = new ServletHolder(Source.JAVAX_API);
+        ServletHolder holder = new ServletHolder(Source.JAKARTA_API);
         ServletRegistration reg = holder.getRegistration();
 
         assertThrows(IllegalArgumentException.class, () -> reg.setInitParameter(null, "foo"));

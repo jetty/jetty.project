@@ -59,7 +59,7 @@ You want to create the `$JETTY_BASE/etc/tls-config.xml` with the following templ
 [source,xml,subs=verbatim]
 ----
 <?xml version="1.0"?>
-<!DOCTYPE Configure PUBLIC "-//Jetty//Configure//EN" "http://www.eclipse.org/jetty/configure_10_0.dtd">
+<!DOCTYPE Configure PUBLIC "-//Jetty//Configure//EN" "http://eclipse.dev/jetty/configure_10_0.dtd">
 
 <Configure>
   <Ref refid="sslContextFactory">
@@ -71,7 +71,7 @@ You want to create the `$JETTY_BASE/etc/tls-config.xml` with the following templ
 
 The `tls-config.xml` file references the `sslContextFactory` component (created by the `ssl` Jetty module) that configures the KeyStore and TLS parameters, so that you can now call its APIs via XML, and you will have full flexibility for any advanced configuration you want (see below for few examples).
 
-Refer to the link:{javadoc-url}/org/eclipse/jetty/util/ssl/SslContextFactory.html[SslContextFactory javadocs] for the list of methods that you can call through the Jetty XML file.
+Refer to the link:{javadoc-url}/org/eclipse/jetty/util/ssl/SslContextFactory.Server.html[SslContextFactory.Server javadocs] for the list of methods that you can call through the Jetty XML file.
 
 CAUTION: Use module properties whenever possible, and only resort to use a Jetty XML file for advanced configuration that you cannot do using module properties.
 
@@ -85,7 +85,7 @@ To explicitly add the exclusion of TLSv1.0 and TLSv1.1 (that are also vulnerable
 [source,xml]
 ----
 <?xml version="1.0"?>
-<!DOCTYPE Configure PUBLIC "-//Jetty//Configure//EN" "http://www.eclipse.org/jetty/configure_10_0.dtd">
+<!DOCTYPE Configure PUBLIC "-//Jetty//Configure//EN" "http://eclipse.dev/jetty/configure_10_0.dtd">
 
 <Configure>
   <Ref refid="sslContextFactory">
@@ -110,7 +110,7 @@ You can precisely set the list of excluded ciphers, completely overriding Jetty'
 [source,xml]
 ----
 <?xml version="1.0"?>
-<!DOCTYPE Configure PUBLIC "-//Jetty//Configure//EN" "http://www.eclipse.org/jetty/configure_10_0.dtd">
+<!DOCTYPE Configure PUBLIC "-//Jetty//Configure//EN" "http://eclipse.dev/jetty/configure_10_0.dtd">
 
 <Configure>
   <Ref refid="sslContextFactory">
@@ -156,7 +156,7 @@ Jetty can be configured to monitor the directory of the KeyStore file, and reloa
 This feature can be enabled by activating the `ssl-reload` Jetty module:
 
 ----
-$ java -jar $JETTY_HOME/start.jar --add-module=ssl-reload
+$ java -jar $JETTY_HOME/start.jar --add-modules=ssl-reload
 ----
 
 For more information about the configuration of the `ssl-reload` Jetty module, see xref:og-module-ssl-reload[this section].
@@ -175,7 +175,7 @@ CAUTION: As Conscrypt eventually binds to a native library, there is a higher ri
 To use Conscrypt as the TLS provider just enable the `conscrypt` Jetty module:
 
 ----
-$ java -jar $JETTY_HOME/start.jar --add-module=conscrypt
+$ java -jar $JETTY_HOME/start.jar --add-modules=conscrypt
 ----
 
 [[og-protocols-ssl-sni]]

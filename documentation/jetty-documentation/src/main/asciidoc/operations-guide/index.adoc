@@ -11,7 +11,7 @@
 // ========================================================================
 //
 
-:doctitle: link:https://eclipse.org/jetty[Eclipse Jetty]: Operations Guide
+:doctitle: link:https://eclipse.dev/jetty[Eclipse Jetty]: Operations Guide
 :toc-title: Operations Guide
 :idprefix: og-
 :docinfo: private-head

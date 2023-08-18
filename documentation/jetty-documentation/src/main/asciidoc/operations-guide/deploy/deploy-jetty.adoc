@@ -26,7 +26,7 @@ A simple Jetty context XML file, for example named `wiki.xml` is the following:
 [source,xml,subs="verbatim,attributes"]
 ----
 <?xml version="1.0" encoding="UTF-8"?>
-<!DOCTYPE Configure PUBLIC "-//Jetty//Configure//EN" "https://www.eclipse.org/jetty/configure_10_0.dtd">
+<!DOCTYPE Configure PUBLIC "-//Jetty//Configure//EN" "https://eclipse.dev/jetty/configure_10_0.dtd">
 
 <Configure class="org.eclipse.jetty.{ee-current}.webapp.WebAppContext"> <1>
   <Set name="contextPath">/wiki</Set> <2>
@@ -60,7 +60,7 @@ You can use the features of xref:og-xml[Jetty XML files] to avoid to hard-code f
 [source,xml,subs="verbatim,attributes"]
 ----
 <?xml version="1.0" encoding="UTF-8"?>
-<!DOCTYPE Configure PUBLIC "-//Jetty//Configure//EN" "https://www.eclipse.org/jetty/configure_10_0.dtd">
+<!DOCTYPE Configure PUBLIC "-//Jetty//Configure//EN" "https://eclipse.dev/jetty/configure_10_0.dtd">
 
 <Configure class="org.eclipse.jetty.{ee-current}.webapp.WebAppContext">
   <Set name="contextPath">/wiki</Set>

@@ -51,7 +51,6 @@ import org.eclipse.jetty.server.HttpConfiguration;
 import org.eclipse.jetty.util.Attributes;
 import org.eclipse.jetty.util.BufferUtil;
 import org.eclipse.jetty.util.Callback;
-import org.eclipse.jetty.util.HostPort;
 import org.eclipse.jetty.util.Promise;
 import org.eclipse.jetty.util.StringUtil;
 import org.slf4j.Logger;
@@ -415,12 +414,6 @@ public class HTTP2ServerConnection extends HTTP2Connection implements Connection
     public SocketAddress getLocalSocketAddress()
     {
         return getEndPoint().getLocalSocketAddress();
-    }
-
-    @Override
-    public HostPort getServerAuthority()
-    {
-        return ConnectionMetaData.getServerAuthority(httpConfig, this);
     }
 
     @Override

@@ -14,12 +14,17 @@
 package org.eclipse.jetty.io;
 
 import java.io.IOException;
+import java.io.PrintWriter;
+import java.io.StringWriter;
 import java.nio.ByteBuffer;
+import java.time.Instant;
 import java.util.Arrays;
-import java.util.Comparator;
+import java.util.Set;
+import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.atomic.AtomicLong;
 import java.util.function.Consumer;
 import java.util.function.IntUnaryOperator;
+import java.util.stream.Collectors;
 
 import org.eclipse.jetty.io.internal.CompoundPool;
 import org.eclipse.jetty.io.internal.QueuedPool;
@@ -388,6 +393,8 @@ public class ArrayByteBufferPool implements ByteBufferPool, Dumpable
 
         while (totalClearedCapacity < excess)
         {
+            // Run through all the buckets to avoid removing
+            // the buffers only from the first bucket(s).
             for (RetainedBucket bucket : buckets)
             {
                 Pool.Entry<RetainableByteBuffer> oldestEntry = findOldestEntry(now, bucket.getPool());
@@ -396,13 +403,14 @@ public class ArrayByteBufferPool implements ByteBufferPool, Dumpable
 
                 if (oldestEntry.remove())
                 {
-                    int clearedCapacity = oldestEntry.getPooled().capacity();
+                    RetainableByteBuffer buffer = oldestEntry.getPooled();
+                    int clearedCapacity = buffer.capacity();
                     if (direct)
                         _currentDirectMemory.addAndGet(-clearedCapacity);
                     else
                         _currentHeapMemory.addAndGet(-clearedCapacity);
                     totalClearedCapacity += clearedCapacity;
-                    removed(oldestEntry.getPooled());
+                    removed(buffer);
                 }
                 // else a concurrent thread evicted the same entry -> do not account for its capacity.
             }
@@ -436,9 +444,29 @@ public class ArrayByteBufferPool implements ByteBufferPool, Dumpable
 
     private Pool.Entry<RetainableByteBuffer> findOldestEntry(long now, Pool<RetainableByteBuffer> bucket)
     {
-        return bucket.stream()
-            .max(Comparator.comparingLong(entry -> NanoTime.elapsed(((Buffer)entry.getPooled()).getLastNanoTime(), now)))
-            .orElse(null);
+        // This method may be in the hot path, do not use Java streams.
+
+        Pool.Entry<RetainableByteBuffer> oldestEntry = null;
+        RetainableByteBuffer oldestBuffer = null;
+        long oldestAge = 0;
+        // TODO: improve Pool APIs to avoid stream().toList().
+        for (Pool.Entry<RetainableByteBuffer> entry : bucket.stream().toList())
+        {
+            Buffer buffer = (Buffer)entry.getPooled();
+            // A null buffer means the entry is reserved
+            // but not acquired yet, try the next.
+            if (buffer != null)
+            {
+                long age = NanoTime.elapsed(buffer.getLastNanoTime(), now);
+                if (oldestBuffer == null || age > oldestAge)
+                {
+                    oldestEntry = entry;
+                    oldestBuffer = buffer;
+                    oldestAge = age;
+                }
+            }
+        }
+        return oldestEntry;
     }
 
     private static class RetainedBucket
@@ -540,6 +568,114 @@ public class ArrayByteBufferPool implements ByteBufferPool, Dumpable
                 c -> 32 - Integer.numberOfLeadingZeros(c - 1),
                 i -> 1 << i
             );
+        }
+    }
+
+    /**
+     * <p>A variant of {@link ArrayByteBufferPool} that tracks buffer
+     * acquires/releases, useful to identify buffer leaks.</p>
+     * <p>Use {@link #getLeaks()} when the system is idle to get
+     * the {@link Buffer}s that have been leaked, which contain
+     * the stack trace information of where the buffer was acquired.</p>
+     */
+    public static class Tracking extends ArrayByteBufferPool
+    {
+        private static final Logger LOG = LoggerFactory.getLogger(Tracking.class);
+
+        private final Set<Buffer> buffers = ConcurrentHashMap.newKeySet();
+
+        public Tracking()
+        {
+            this(0, -1, Integer.MAX_VALUE);
+        }
+
+        public Tracking(int minCapacity, int maxCapacity, int maxBucketSize)
+        {
+            this(minCapacity, maxCapacity, maxBucketSize, -1L, -1L);
+        }
+
+        public Tracking(int minCapacity, int maxCapacity, int maxBucketSize, long maxHeapMemory, long maxDirectMemory)
+        {
+            super(minCapacity, -1, maxCapacity, maxBucketSize, maxHeapMemory, maxDirectMemory);
+        }
+
+        @Override
+        public RetainableByteBuffer acquire(int size, boolean direct)
+        {
+            RetainableByteBuffer buffer = super.acquire(size, direct);
+            Buffer wrapper = new Buffer(buffer, size);
+            if (LOG.isDebugEnabled())
+                LOG.debug("acquired {}", wrapper);
+            buffers.add(wrapper);
+            return wrapper;
+        }
+
+        public Set<Buffer> getLeaks()
+        {
+            return buffers;
+        }
+
+        public String dumpLeaks()
+        {
+            return getLeaks().stream()
+                .map(Buffer::dump)
+                .collect(Collectors.joining(System.lineSeparator()));
+        }
+
+        public class Buffer extends RetainableByteBuffer.Wrapper
+        {
+            private final int size;
+            private final Instant acquireInstant;
+            private final Throwable acquireStack;
+
+            private Buffer(RetainableByteBuffer wrapped, int size)
+            {
+                super(wrapped);
+                this.size = size;
+                this.acquireInstant = Instant.now();
+                this.acquireStack = new Throwable();
+            }
+
+            public int getSize()
+            {
+                return size;
+            }
+
+            public Instant getAcquireInstant()
+            {
+                return acquireInstant;
+            }
+
+            public Throwable getAcquireStack()
+            {
+                return acquireStack;
+            }
+
+            @Override
+            public boolean release()
+            {
+                boolean released = super.release();
+                if (released)
+                {
+                    buffers.remove(this);
+                    if (LOG.isDebugEnabled())
+                        LOG.debug("released {}", this);
+                }
+                return released;
+            }
+
+            public String dump()
+            {
+                StringWriter w = new StringWriter();
+                getAcquireStack().printStackTrace(new PrintWriter(w));
+                return "%s of %d bytes on %s at %s".formatted(getClass().getSimpleName(), getSize(), getAcquireInstant(), w);
+            }
+
+            @Override
+            public String toString()
+            {
+                return "%s@%x[%s]".formatted(getClass().getSimpleName(), hashCode(), super.toString());
+            }
         }
     }
 }

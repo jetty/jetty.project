@@ -148,7 +148,8 @@ public class ManagedSelector extends ContainerLifeCycle implements Dumpable
     @ManagedAttribute(value = "Total number of keys", readonly = true)
     public int getTotalKeys()
     {
-        return _selector.keys().size();
+        Selector selector = _selector;
+        return selector == null ? 0 : selector.keys().size();
     }
 
     @ManagedAttribute(value = "Average number of selected keys", readonly = true)

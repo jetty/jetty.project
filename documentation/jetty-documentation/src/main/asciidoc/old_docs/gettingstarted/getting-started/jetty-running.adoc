@@ -24,7 +24,7 @@ To start Jetty on the default port of 8080, run the following command:
 ----
 $ java -jar start.jar
 2017-09-20 15:45:11.986:INFO::main: Logging initialized @683ms to org.eclipse.jetty.util.log.StdErrLog
-2017-09-20 15:45:12.197:WARN:oejs.HomeBaseWarning:main: This instance of Jetty is not running from a separate {jetty.base} directory, this is not recommended.  See documentation at https://www.eclipse.org/jetty/documentation/current/startup.html
+2017-09-20 15:45:12.197:WARN:oejs.HomeBaseWarning:main: This instance of Jetty is not running from a separate {jetty.base} directory, this is not recommended.  See documentation at https://eclipse.dev/jetty/documentation/
 2017-09-20 15:45:12.243:INFO:oejs.Server:main: {VERSION}
 2017-09-20 15:45:12.266:INFO:oejdp.ScanningAppProvider:main: Deployment monitor [file:///installs/repository/jetty/webapps/] at interval 1
 2017-09-20 15:45:12.298:INFO:oejs.AbstractConnector:main: Started ServerConnector@39c0f4a{HTTP/1.1,[http/1.1]}{0.0.0.0:8080}

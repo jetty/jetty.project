@@ -15,7 +15,6 @@ package org.eclipse.jetty.ee10.servlet;
 
 import java.io.IOException;
 import java.util.ArrayList;
-import java.util.Arrays;
 import java.util.EnumSet;
 import java.util.List;
 import java.util.function.Consumer;
@@ -46,6 +45,7 @@ import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.Test;
 
 import static org.hamcrest.MatcherAssert.assertThat;
+import static org.hamcrest.Matchers.contains;
 import static org.hamcrest.Matchers.equalTo;
 
 public class ServletRequestListenerTest
@@ -316,7 +316,7 @@ public class ServletRequestListenerTest
 
     private void assertEvents(String... events)
     {
-        assertThat(_events, equalTo(Arrays.asList(events)));
+        assertThat(_events, contains(events));
         _events.clear();
     }
 }

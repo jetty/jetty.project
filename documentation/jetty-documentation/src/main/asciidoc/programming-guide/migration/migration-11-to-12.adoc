@@ -1,0 +1,211 @@
+//
+// ========================================================================
+// Copyright (c) 1995 Mort Bay Consulting Pty Ltd and others.
+//
+// This program and the accompanying materials are made available under the
+// terms of the Eclipse Public License v. 2.0 which is available at
+// https://www.eclipse.org/legal/epl-2.0, or the Apache License, Version 2.0
+// which is available at https://www.apache.org/licenses/LICENSE-2.0.
+//
+// SPDX-License-Identifier: EPL-2.0 OR Apache-2.0
+// ========================================================================
+//
+
+[[pg-migration-11-to-12]]
+=== Migrating from Jetty 11.0.x to Jetty 12.0.x
+
+[[pg-migration-11-to-12-java-version]]
+==== Required Java Version Changes
+
+[cols="1,1", options="header"]
+|===
+| Jetty 11.0.x | Jetty 12.0.x
+| Java 11 | Java 17
+|===
+
+[[pg-migration-11-to-12-maven-artifacts]]
+==== Maven Artifacts Changes
+
+[cols="1a,1a", options="header"]
+|===
+| Jetty 11.0.x | Jetty 12.0.x
+| org.eclipse.jetty.fcgi:**fcgi-client** | org.eclipse.jetty.http2:**jetty-fcgi-client**
+| org.eclipse.jetty.fcgi:**fcgi-server** | org.eclipse.jetty.http2:**jetty-fcgi-server**
+| org.eclipse.jetty.http2:**http2-client** | org.eclipse.jetty.http2:**jetty-http2-client**
+| org.eclipse.jetty.http2:**http2-common** | org.eclipse.jetty.http2:**jetty-http2-common**
+| org.eclipse.jetty.http2:**http2-hpack** | org.eclipse.jetty.http2:**jetty-http2-hpack**
+| org.eclipse.jetty.http2:**http2-http-client-transport** | org.eclipse.jetty.http2:**jetty-http2-client-transport**
+| org.eclipse.jetty.http2:**http2-server** | org.eclipse.jetty.http2:**jetty-http2-server**
+| org.eclipse.jetty.http3:**http3-client** | org.eclipse.jetty.http3:**jetty-http3-client**
+| org.eclipse.jetty.http3:**http3-common** | org.eclipse.jetty.http3:**jetty-http3-common**
+| org.eclipse.jetty.http3:**http3-http-client-transport** | org.eclipse.jetty.http3:**jetty-http3-client-transport**
+| org.eclipse.jetty.http3:**http3-qpack** | org.eclipse.jetty.http3:**jetty-http3-qpack**
+| org.eclipse.jetty.http3:**http3-server** | org.eclipse.jetty.http3:**jetty-http3-server**
+| org.eclipse.jetty:**jetty-osgi.*** | * org.eclipse.jetty:**jetty-osgi**
+* org.eclipse.jetty.{ee-all}:**jetty-{ee-all}-osgi-***
+| org.eclipse.jetty:**jetty-proxy** | * org.eclipse.jetty:**jetty-proxy**
+* org.eclipse.jetty.{ee-all}:**jetty-{ee-all}-proxy**
+| org.eclipse.jetty.quic:**quic-client** | org.eclipse.jetty.quic:**jetty-quic-client**
+| org.eclipse.jetty.quic:**quic-common** | org.eclipse.jetty.quic:**jetty-quic-common**
+| org.eclipse.jetty.quic:**quic-quiche** | org.eclipse.jetty.quic:**jetty-quic-quiche**
+| org.eclipse.jetty.quic:**quic-server** | org.eclipse.jetty.quic:**jetty-quic-server**
+| org.eclipse.jetty:**jetty-unixsocket.*** | Removed -- Use org.eclipse.jetty:jetty-unixdomain-server
+| org.eclipse.jetty.websocket:**websocket-core-client** | org.eclipse.jetty.websocket:**jetty-websocket-core-client**
+| org.eclipse.jetty.websocket:**websocket-core-common** | org.eclipse.jetty.websocket:**jetty-websocket-core-common**
+| org.eclipse.jetty.websocket:**websocket-core-server** | org.eclipse.jetty.websocket:**jetty-websocket-core-server**
+| org.eclipse.jetty.websocket:**websocket-jetty-api** | org.eclipse.jetty.websocket:**jetty-websocket-jetty-api**
+| org.eclipse.jetty.websocket:**websocket-jetty-client** | * org.eclipse.jetty.websocket:**jetty-websocket-jetty-client**
+* org.eclipse.jetty.**{ee-all}.websocket**:jetty-**{ee-all}-websocket-jetty-client**
+| org.eclipse.jetty.websocket:**websocket-jetty-common** | * org.eclipse.jetty.websocket:**jetty-websocket-jetty-common**
+* org.eclipse.jetty.**{ee-all}.websocket**:jetty-**{ee-all}-websocket-jetty-common**
+| org.eclipse.jetty.websocket:**websocket-jetty-server** | * org.eclipse.jetty.websocket:**jetty-websocket-jetty-server**
+* org.eclipse.jetty.**{ee-all}.websocket**:jetty-**{ee-all}-websocket-jetty-server**
+| org.eclipse.jetty.**websocket**:**websocket-jakarta-client** | org.eclipse.jetty.**{ee-all}.websocket**:**jetty-{ee-all}-websocket-jakarta-client**
+| org.eclipse.jetty.**websocket**:**websocket-jakarta-common** | org.eclipse.jetty.**{ee-all}.websocket**:**jetty-{ee-all}-websocket-jakarta-common**
+| org.eclipse.jetty.**websocket**:**websocket-jakarta-server** | org.eclipse.jetty.**{ee-all}.websocket**:**jetty-{ee-all}-websocket-jakarta-server**
+| org.eclipse.jetty.**websocket**:**websocket-servlet** | org.eclipse.jetty.**{ee-all}.websocket**:**jetty-{ee-all}-websocket-servlet**
+| org.eclipse.jetty:**apache-jsp** | org.eclipse.jetty.**{ee-all}**:**jetty-{ee-all}-apache-jsp**
+| org.eclipse.jetty:**jetty-annotations** | org.eclipse.jetty.**{ee-all}**:**jetty-{ee-all}-annotations**
+| org.eclipse.jetty:**jetty-ant** | Removed -- No Replacement
+| org.eclipse.jetty:**jetty-cdi** | org.eclipse.jetty.**{ee-all}**:**jetty-{ee-all}-cdi**
+| org.eclipse.jetty:**glassfish-jstl** | org.eclipse.jetty.**{ee-all}**:**jetty-{ee-all}-glassfish-jstl**
+| org.eclipse.jetty:**jetty-jaspi** | org.eclipse.jetty.**{ee-all}**:**jetty-{ee-all}-jetty-jaspi**
+| org.eclipse.jetty:**jetty-jndi** | org.eclipse.jetty.**{ee-all}**:**jetty-{ee-all}-jetty-jndi**
+| org.eclipse.jetty:**jetty-jspc-maven-plugin** | org.eclipse.jetty.**{ee-all}**:**jetty-{ee-all}-jetty-jspc-maven-plugin**
+| org.eclipse.jetty:**jetty-maven-plugin** | org.eclipse.jetty.**{ee-all}**:**jetty-{ee-all}-jetty-maven-plugin**
+| org.eclipse.jetty:**jetty-plus** | org.eclipse.jetty.**{ee-all}**:**jetty-{ee-all}-jetty-plus**
+| org.eclipse.jetty:**jetty-quickstart** | org.eclipse.jetty.**{ee-all}**:**jetty-{ee-all}-jetty-quickstart**
+| org.eclipse.jetty:**jetty-runner** | org.eclipse.jetty.**{ee-all}**:**jetty-{ee-all}-jetty-runner**
+| org.eclipse.jetty:**jetty-servlet** | org.eclipse.jetty.**{ee-all}**:**jetty-{ee-all}-jetty-servlet**
+| org.eclipse.jetty:**jetty-servlets** | org.eclipse.jetty.**{ee-all}**:**jetty-{ee-all}-jetty-servlets**
+| org.eclipse.jetty:**jetty-webapp** | org.eclipse.jetty.**{ee-all}**:**jetty-{ee-all}-jetty-webapp**
+|===
+
+[[pg-migration-11-to-12-class-packages-names]]
+==== Class Packages/Names Changes
+
+[cols="1a,1a", options="header"]
+|===
+| Jetty 11.0.x | Jetty 12.0.x
+| `org.eclipse.jetty.client.**api**.*` | `org.eclipse.jetty.client.*`
+| `org.eclipse.jetty.client.**util**.*` | `org.eclipse.jetty.client.*`
+| `org.eclipse.jetty.client.**util**.*` | `org.eclipse.jetty.client.*`
+| `org.eclipse.jetty.client.**http**.*` | `org.eclipse.jetty.client.**transport**.*`
+| `org.eclipse.jetty.http2.client.**http**.*` | `org.eclipse.jetty.http2.client.**transport**.*`
+|===
+
+[[pg-migration-11-to-12-servlet-to-handler]]
+==== Migrate Servlets to Jetty Handlers
+
+Web applications written using the Servlet APIs may be re-written using the Jetty `Handler` APIs.
+The sections below outline the Jetty `Handler` APIs that correspond to the Servlet APIs.
+
+To replace the functionalities of Servlet Filters, refer to xref:pg-server-http-handler[this section].
+
+===== Handler Request APIs
+[source,java,indent=0]
+----
+include::../{doc_code}/org/eclipse/jetty/docs/programming/migration/ServletToHandlerDocs.java[tags=request]
+----
+
+===== Handler Request Content APIs
+[source,java,indent=0]
+----
+include::../{doc_code}/org/eclipse/jetty/docs/programming/migration/ServletToHandlerDocs.java[tags=requestContent-string]
+
+include::../{doc_code}/org/eclipse/jetty/docs/programming/migration/ServletToHandlerDocs.java[tags=requestContent-buffer]
+
+include::../{doc_code}/org/eclipse/jetty/docs/programming/migration/ServletToHandlerDocs.java[tags=requestContent-stream]
+
+include::../{doc_code}/org/eclipse/jetty/docs/programming/migration/ServletToHandlerDocs.java[tags=requestContent-source]
+----
+
+===== Handler Response APIs
+[source,java,indent=0]
+----
+include::../{doc_code}/org/eclipse/jetty/docs/programming/migration/ServletToHandlerDocs.java[tags=response]
+----
+
+===== Handler Response Content APIs
+[source,java,indent=0]
+----
+include::../{doc_code}/org/eclipse/jetty/docs/programming/migration/ServletToHandlerDocs.java[tags=responseContent-implicit]
+
+include::../{doc_code}/org/eclipse/jetty/docs/programming/migration/ServletToHandlerDocs.java[tags=responseContent-implicit-status]
+
+include::../{doc_code}/org/eclipse/jetty/docs/programming/migration/ServletToHandlerDocs.java[tags=responseContent-explicit]
+
+include::../{doc_code}/org/eclipse/jetty/docs/programming/migration/ServletToHandlerDocs.java[tags=responseContent-content]
+
+include::../{doc_code}/org/eclipse/jetty/docs/programming/migration/ServletToHandlerDocs.java[tags=responseContent-string]
+
+include::../{doc_code}/org/eclipse/jetty/docs/programming/migration/ServletToHandlerDocs.java[tags=responseContent-echo]
+
+include::../{doc_code}/org/eclipse/jetty/docs/programming/migration/ServletToHandlerDocs.java[tags=responseContent-trailers]
+----
+
+[[pg-migration-11-to-12-api-changes]]
+==== APIs Changes
+
+===== `jetty-client`
+
+`Request.onResponseContentDemanded(Response.DemandedContentListener)` has been replaced by `Request.onResponseContentSource(Response.ContentSourceListener)`.
+
+However, also look at `Request.onResponseContentAsync(Response.AsyncContentListener)` and `Request.onResponseContent(Response.ContentListener)` for simpler usages.
+
+The old model was a "demand+push" model: the application was demanding content; when the content was available, the implementation was pushing content to the application by calling `DemandedContentListener.onContent(Response, LongConsumer, ByteBuffer, Callback)` for every content chunk.
+
+The new model is a "demand+pull" model: when the content is available, the implementation calls once `Response.ContentSourceListener.onContentSource(Content.Source)`; the application can then pull the content chunks from the `Content.Source`.
+
+Old usage:
+
+[source, java]
+----
+request.onResponseContentDemanded(new Response.DemandedContentListener()
+{
+    @Override
+    public void onBeforeContent(Response response, LongConsumer demand)
+    {
+        // Demand for first content.
+        demand.accept(1);
+    }
+
+    @Override
+    public void onContent(Response response, LongConsumer demand, ByteBuffer content, Callback callback)
+    {
+        // Consume the content.
+        callback.succeeded();
+
+        // Demand for more content.
+        demand.accept(1);
+    }
+});
+----
+
+New usage:
+
+[source, java]
+----
+request.onResponseContentSource((response, source) ->
+{
+    read(source);
+}
+
+private void read(Content.Source source)
+{
+    while (true)
+    {
+        // Pull the content from the source.
+        Content.Chunk chunk = source.read();
+
+        if (chunk == null)
+        {
+            source.demand(() -> read(source));
+            return;
+        }
+
+        // Consume the content.
+        chunk.release();
+    }
+});
+----

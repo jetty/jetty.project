@@ -972,7 +972,7 @@ public class ServletHolder extends Holder<Servlet> implements UserIdentityScope,
                 return clash;
 
             //otherwise apply all of them
-            ServletMapping mapping = new ServletMapping(Source.JAVAX_API);
+            ServletMapping mapping = new ServletMapping(Source.JAKARTA_API);
             mapping.setServletName(ServletHolder.this.getName());
             mapping.setPathSpecs(urlPatterns);
             getServletHandler().addServletMapping(mapping);

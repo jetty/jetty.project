@@ -479,10 +479,10 @@ public class HTTPServerDocs
             @Override
             // tag::handlerAPI[]
             public boolean handle(Request request, Response response, Callback callback) throws Exception
-            {
-                return true;
-            }
             // end::handlerAPI[]
+            {
+                return false;
+            }
         }
     }
 
@@ -555,7 +555,7 @@ public class HTTPServerDocs
                     HttpURI newURI = HttpURI.build(uri).path(newPath).asImmutable();
 
                     // Modify the request object by wrapping the HttpURI
-                    request = new Request.Wrapper(request)
+                    Request newRequest = new Request.Wrapper(request)
                     {
                         @Override
                         public HttpURI getHttpURI()
@@ -563,10 +563,15 @@ public class HTTPServerDocs
                             return newURI;
                         }
                     };
-                }
 
-                // Forward to the next Handler.
-                return super.handle(request, response, callback);
+                    // Forward to the next Handler using the wrapped Request.
+                    return super.handle(newRequest, response, callback);
+                }
+                else
+                {
+                    // Forward to the next Handler as-is.
+                    return super.handle(request, response, callback);
+                }
             }
         }
 
@@ -653,18 +658,21 @@ public class HTTPServerDocs
         // end::contextHandlerCollection[]
     }
 
+    @SuppressWarnings("InnerClassMayBeStatic")
+    // tag::servletContextHandler-servlet[]
+    public class ShopCartServlet extends HttpServlet
+    {
+        @Override
+        protected void service(HttpServletRequest request, HttpServletResponse response)
+        {
+            // Implement the shop cart functionality.
+        }
+    }
+    // end::servletContextHandler-servlet[]
+
     public void servletContextHandler() throws Exception
     {
-        // tag::servletContextHandler[]
-        class ShopCartServlet extends HttpServlet
-        {
-            @Override
-            protected void service(HttpServletRequest request, HttpServletResponse response)
-            {
-                // Implement the shop cart functionality.
-            }
-        }
-
+        // tag::servletContextHandler-setup[]
         Server server = new Server();
         Connector connector = new ServerConnector(server);
         server.addConnector(connector);
@@ -687,7 +695,7 @@ public class HTTPServerDocs
         server.setHandler(context);
 
         server.start();
-        // end::servletContextHandler[]
+        // end::servletContextHandler-setup[]
     }
 
     public void webAppContextHandler() throws Exception

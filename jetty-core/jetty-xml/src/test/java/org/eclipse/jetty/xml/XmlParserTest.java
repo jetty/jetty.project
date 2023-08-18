@@ -15,12 +15,18 @@ package org.eclipse.jetty.xml;
 
 import java.net.URL;
 import java.nio.file.Path;
+import javax.xml.parsers.SAXParser;
+import javax.xml.parsers.SAXParserFactory;
 
 import org.eclipse.jetty.toolchain.test.MavenTestingUtils;
 import org.junit.jupiter.api.Test;
+import org.xml.sax.SAXException;
+import org.xml.sax.XMLReader;
 
+import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertNotNull;
 import static org.junit.jupiter.api.Assertions.assertTrue;
+import static org.junit.jupiter.api.Assumptions.assumeTrue;
 
 public class XmlParserTest
 {
@@ -72,5 +78,33 @@ public class XmlParserTest
 
         assertTrue(testDocStr.startsWith("<test"));
         assertTrue(testDocStr.endsWith("</test>"));
+    }
+
+    /**
+     * Customize SAXParserFactory behavior.
+     */
+    @Test
+    public void testNewSAXParserFactory() throws SAXException
+    {
+        XmlParser xmlParser = new XmlParser()
+        {
+            @Override
+            protected SAXParserFactory newSAXParserFactory()
+            {
+                SAXParserFactory saxParserFactory = super.newSAXParserFactory();
+                // Configure at factory level
+                saxParserFactory.setXIncludeAware(false);
+                return saxParserFactory;
+            }
+        };
+
+        SAXParser saxParser = xmlParser.getSAXParser();
+        assertNotNull(saxParser);
+
+        XMLReader xmlReader = saxParser.getXMLReader();
+        // Only run testcase if Xerces is being used.
+        assumeTrue(xmlReader.getClass().getName().contains("org.apache.xerces."));
+        // look to see it was set at XMLReader level
+        assertFalse(xmlReader.getFeature("http://apache.org/xml/features/xinclude"));
     }
 }

@@ -774,7 +774,7 @@ public class HttpGenerator
         }
 
         if (LOG.isDebugEnabled())
-            LOG.debug(_endOfContent.toString());
+            LOG.debug("endOfContent {} content-Length {}", _endOfContent.toString(), contentLength);
 
         // Add transfer encoding if it is not chunking
         if (transferEncoding != null)

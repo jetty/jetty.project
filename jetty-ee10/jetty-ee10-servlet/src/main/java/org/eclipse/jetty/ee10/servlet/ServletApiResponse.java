@@ -16,7 +16,6 @@ package org.eclipse.jetty.ee10.servlet;
 import java.io.IOException;
 import java.io.PrintWriter;
 import java.util.Collection;
-import java.util.Collections;
 import java.util.EnumSet;
 import java.util.Locale;
 import java.util.Map;
@@ -37,6 +36,7 @@ import org.eclipse.jetty.http.HttpFields;
 import org.eclipse.jetty.http.HttpHeader;
 import org.eclipse.jetty.http.HttpStatus;
 import org.eclipse.jetty.http.HttpVersion;
+import org.eclipse.jetty.http.MimeTypes;
 import org.eclipse.jetty.server.Request;
 import org.eclipse.jetty.server.Response;
 import org.eclipse.jetty.session.ManagedSession;
@@ -300,9 +300,9 @@ public class ServletApiResponse implements HttpServletResponse
                 writer.reopen();
             else
             {
-                if (StringUtil.__ISO_8859_1.equalsIgnoreCase(encoding))
+                if (MimeTypes.ISO_8859_1.equalsIgnoreCase(encoding))
                     getServletResponseInfo().setWriter(writer = new ResponseWriter(new Iso88591HttpWriter(getServletChannel().getHttpOutput()), locale, encoding));
-                else if (StringUtil.__UTF8.equalsIgnoreCase(encoding))
+                else if (MimeTypes.UTF8.equalsIgnoreCase(encoding))
                     getServletResponseInfo().setWriter(writer = new ResponseWriter(new Utf8HttpWriter(getServletChannel().getHttpOutput()), locale, encoding));
                 else
                     getServletResponseInfo().setWriter(writer = new ResponseWriter(new EncodingHttpWriter(getServletChannel().getHttpOutput(), encoding), locale, encoding));
@@ -579,7 +579,7 @@ public class ServletApiResponse implements HttpServletResponse
         @Override
         public Map<String, String> getAttributes()
         {
-            return Collections.emptyMap();
+            return _cookie.getAttributes();
         }
 
         @Override
@@ -591,7 +591,7 @@ public class ServletApiResponse implements HttpServletResponse
         @Override
         public boolean equals(Object obj)
         {
-            return obj instanceof HttpCookie && HttpCookie.equals(this, obj);
+            return HttpCookie.equals(this, obj);
         }
 
         @Override

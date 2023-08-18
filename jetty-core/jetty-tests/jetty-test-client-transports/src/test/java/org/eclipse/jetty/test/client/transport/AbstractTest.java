@@ -59,11 +59,16 @@ import org.eclipse.jetty.util.component.LifeCycle;
 import org.eclipse.jetty.util.ssl.SslContextFactory;
 import org.eclipse.jetty.util.thread.QueuedThreadPool;
 import org.junit.jupiter.api.AfterEach;
+import org.junit.jupiter.api.extension.BeforeTestExecutionCallback;
+import org.junit.jupiter.api.extension.RegisterExtension;
 
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
 public class AbstractTest
 {
+    @RegisterExtension
+    public final BeforeTestExecutionCallback printMethodName = context ->
+        System.err.printf("Running %s.%s() %s%n", context.getRequiredTestClass().getSimpleName(), context.getRequiredTestMethod().getName(), context.getDisplayName());
     protected final HttpConfiguration httpConfig = new HttpConfiguration();
     protected SslContextFactory.Server sslContextFactoryServer;
     protected Server server;

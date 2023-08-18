@@ -27,7 +27,7 @@ The Maven artifact coordinates are the following:
 ----
 <dependency>
   <groupId>org.eclipse.jetty.websocket</groupId>
-  <artifactId>websocket-jetty-client</artifactId>
+  <artifactId>jetty-websocket-jetty-client</artifactId>
   <version>{version}</version>
 </dependency>
 ----
@@ -35,7 +35,7 @@ The Maven artifact coordinates are the following:
 [[pg-client-websocket-start]]
 ==== Starting WebSocketClient
 
-The main class is `org.eclipse.jetty.websocket.client.WebSocketClient`; you instantiate it, configure it, and then start it like may other Jetty components.
+The main class is `org.eclipse.jetty.websocket.client.WebSocketClient`; you instantiate it, configure it, and then start it like many other Jetty components.
 This is a minimal example:
 
 [source,java,indent=0]

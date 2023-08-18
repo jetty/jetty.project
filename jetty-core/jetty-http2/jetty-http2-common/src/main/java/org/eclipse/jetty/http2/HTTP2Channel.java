@@ -21,7 +21,7 @@ import org.eclipse.jetty.util.Callback;
 import org.eclipse.jetty.util.Promise;
 
 /**
- * <p>A HTTP/2 specific handler of events for normal and tunneled exchanges.</p>
+ * <p>A HTTP/2 specific handler of events for normal and tunnelled exchanges.</p>
  */
 public interface HTTP2Channel
 {

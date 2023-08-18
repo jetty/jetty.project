@@ -27,6 +27,7 @@ import java.nio.file.Path;
 import java.util.HashMap;
 import java.util.Map;
 
+import org.eclipse.jetty.toolchain.test.FS;
 import org.eclipse.jetty.toolchain.test.MavenTestingUtils;
 import org.eclipse.jetty.toolchain.test.jupiter.WorkDir;
 import org.eclipse.jetty.toolchain.test.jupiter.WorkDirExtension;
@@ -351,6 +352,25 @@ public class PathResourceTest
             // this file system does allow null char ending filenames
             LOG.trace("IGNORED", e);
         }
+    }
+
+    @Test
+    public void testGetFileName(WorkDir workDir) throws IOException
+    {
+        Path tmpPath = workDir.getEmptyPathDir();
+        Path dir = tmpPath.resolve("foo-dir");
+        FS.ensureDirExists(dir);
+        Path file = dir.resolve("bar.txt");
+        Files.writeString(file, "This is bar.txt", StandardCharsets.UTF_8);
+
+        Resource baseResource = new PathResource(tmpPath);
+        assertThat(baseResource.getFileName(), is(tmpPath.getFileName().toString()));
+
+        Resource dirResource = baseResource.resolve("foo-dir");
+        assertThat(dirResource.getFileName(), is(dir.getFileName().toString()));
+
+        Resource fileResource = dirResource.resolve("bar.txt");
+        assertThat(fileResource.getFileName(), is(file.getFileName().toString()));
     }
 
     @Test

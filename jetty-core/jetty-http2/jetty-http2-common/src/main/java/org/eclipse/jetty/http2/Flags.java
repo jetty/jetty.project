@@ -11,15 +11,14 @@
 // ========================================================================
 //
 
-[[cg-conclusion]]
-== Thank you!
+package org.eclipse.jetty.http2;
 
-Your interest in contributing to Eclipse Jetty is welcome and if there is anything you feel this guide is lacking please let us know.
-Feel free to open an Issue as described in this document and perhaps even contribute your suggestion to {GITDOCURL}/contribution-guide[this document] itself!
-
-[[cg-contributing-guides]]
-
-Our current guides are:
-
-* {GUIDEBASEURL}/quickstart/[Distribution Quickstart Guide]
-* {GUIDEBASEURL}/contribution/[Contribution Guide]
+public interface Flags
+{
+    public static final int NONE = 0x00;
+    public static final int END_STREAM = 0x01;
+    public static final int ACK = 0x01;
+    public static final int END_HEADERS = 0x04;
+    public static final int PADDING = 0x08;
+    public static final int PRIORITY = 0x20;
+}

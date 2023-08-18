@@ -3,7 +3,7 @@
   <parent>
     <groupId>org.eclipse.jetty.documentation</groupId>
     <artifactId>documentation</artifactId>
-    <version>12.0.0-SNAPSHOT</version>
+    <version>12.0.1-SNAPSHOT</version>
   </parent>
 
   <modelVersion>4.0.0</modelVersion>
@@ -15,6 +15,64 @@
     <bundle-symbolic-name>${project.groupId}</bundle-symbolic-name>
     <asciidoctor.skip>${skipTests}</asciidoctor.skip>
   </properties>
+
+  <profiles>
+    <profile>
+      <id>jdk17-18</id>
+      <activation>
+        <jdk>[17,19)</jdk>
+      </activation>
+      <build>
+        <plugins>
+          <plugin>
+            <artifactId>maven-compiler-plugin</artifactId>
+            <configuration>
+              <excludes>
+                <exclude>**/ArchitectureDocs.java</exclude>
+              </excludes>
+            </configuration>
+          </plugin>
+        </plugins>
+      </build>
+    </profile>
+    <profile>
+      <id>jdk19-20</id>
+      <activation>
+        <jdk>[19,21)</jdk>
+      </activation>
+      <build>
+        <plugins>
+          <plugin>
+            <artifactId>maven-compiler-plugin</artifactId>
+            <configuration>
+              <source>${java.specification.version}</source>
+              <target>${java.specification.version}</target>
+              <release>${java.specification.version}</release>
+              <enablePreview>true</enablePreview>
+            </configuration>
+          </plugin>
+        </plugins>
+      </build>
+    </profile>
+    <profile>
+      <id>jdk21+</id>
+      <activation>
+        <jdk>[21,)</jdk>
+      </activation>
+      <build>
+        <plugins>
+          <plugin>
+            <artifactId>maven-compiler-plugin</artifactId>
+            <configuration>
+              <source>${java.specification.version}</source>
+              <target>${java.specification.version}</target>
+              <release>${java.specification.version}</release>
+            </configuration>
+          </plugin>
+        </plugins>
+      </build>
+    </profile>
+  </profiles>
 
   <build>
     <resources>
@@ -83,7 +141,7 @@
             <version>${project.version}</version>
             <prog-guide>../programming-guide/index.html</prog-guide>
             <op-guide>../operations-guide/index.html</op-guide>
-            <javadoc-url>https://www.eclipse.org/jetty/javadoc/jetty-11</javadoc-url>
+            <javadoc-url>https://eclipse.dev/jetty/javadoc/jetty-12</javadoc-url>
           </attributes>
         </configuration>
         <executions>

@@ -8,14 +8,17 @@ labels: Bug
 ---
 
 **Jetty version(s)**
-_[Jetty 9.x is now at End of Community Support](https://github.com/eclipse/jetty.project/issues/7958)_
+<!--[Jetty 9.x is now at End of Community Support](https://github.com/eclipse/jetty.project/issues/7958) -->
+
+**Jetty Environment**
+<!-- Applicable for jetty-12 only, choose: core, ee8, ee9, ee10 -->
 
 **Java version/vendor** `(use: java -version)`
 
 **OS type/version**
 
 **Description**
-_Do not report security issues here! See [Jetty Security Reports](https://www.eclipse.org/jetty/security_reports.php)._
+<!-- Do not report security issues here! See [Jetty Security Reports](https://eclipse.dev/jetty/security_reports.php) -->
 
 **How to reproduce?**
 

@@ -13,11 +13,16 @@
 
 package org.eclipse.jetty.ee10.servlet;
 
+import java.io.Closeable;
 import java.io.IOException;
+import java.io.OutputStream;
+import java.io.OutputStreamWriter;
+import java.io.PrintWriter;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.Enumeration;
 import java.util.List;
+import java.util.Locale;
 import java.util.Map;
 import java.util.Objects;
 
@@ -27,6 +32,7 @@ import jakarta.servlet.ServletException;
 import jakarta.servlet.ServletOutputStream;
 import jakarta.servlet.ServletRequest;
 import jakarta.servlet.ServletResponse;
+import jakarta.servlet.WriteListener;
 import jakarta.servlet.http.HttpServletMapping;
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletRequestWrapper;
@@ -35,6 +41,8 @@ import jakarta.servlet.http.HttpServletResponseWrapper;
 import org.eclipse.jetty.ee10.servlet.util.ServletOutputStreamWrapper;
 import org.eclipse.jetty.http.HttpURI;
 import org.eclipse.jetty.http.pathmap.MatchedResource;
+import org.eclipse.jetty.io.WriterOutputStream;
+import org.eclipse.jetty.util.IO;
 import org.eclipse.jetty.util.MultiMap;
 import org.eclipse.jetty.util.StringUtil;
 import org.eclipse.jetty.util.UrlEncoded;
@@ -73,8 +81,12 @@ public class Dispatcher implements RequestDispatcher
 
         _servletHandler = _contextHandler.getServletHandler();
         MatchedResource<ServletHandler.MappedServlet> matchedServlet = _servletHandler.getMatchedServlet(decodedPathInContext);
+        if (matchedServlet == null)
+            throw new IllegalArgumentException("No servlet matching: " + decodedPathInContext);
         _mappedServlet = matchedServlet.getResource();
         _servletPathMapping = _mappedServlet.getServletPathMapping(_decodedPathInContext, matchedServlet.getMatchedPath());
+        if (_servletPathMapping == null)
+            throw new IllegalArgumentException("No servlet path mapping: " + _servletPathMapping);
     }
 
     public Dispatcher(ServletContextHandler contextHandler, String name) throws IllegalStateException
@@ -91,6 +103,10 @@ public class Dispatcher implements RequestDispatcher
 
     public void error(ServletRequest request, ServletResponse response) throws ServletException, IOException
     {
+        assert _named == null : "not allowed to have a named dispatch on error";
+        assert _servletPathMapping != null : "Servlet Path Mapping required";
+        assert _uri != null : "URI is required";
+
         HttpServletRequest httpRequest = (request instanceof HttpServletRequest) ? (HttpServletRequest)request : new ServletRequestHttpWrapper(request);
         HttpServletResponse httpResponse = (response instanceof HttpServletResponse) ? (HttpServletResponse)response : new ServletResponseHttpWrapper(response);
 
@@ -108,16 +124,18 @@ public class Dispatcher implements RequestDispatcher
         _mappedServlet.handle(_servletHandler, _decodedPathInContext, new ForwardRequest(httpRequest), httpResponse);
 
         // If we are not async and not closed already, then close via the possibly wrapped response.
-        if (!servletContextRequest.getState().isAsync() && !servletContextRequest.getHttpOutput().isClosed())
+        if (!servletContextRequest.getState().isAsync() && !servletContextRequest.getServletContextResponse().hasLastWrite())
         {
+            Closeable closeable;
             try
             {
-                response.getOutputStream().close();
+                closeable = response.getOutputStream();
             }
             catch (IllegalStateException e)
             {
-                response.getWriter().close();
+                closeable = response.getWriter();
             }
+            IO.close(closeable);
         }
     }
 
@@ -128,12 +146,14 @@ public class Dispatcher implements RequestDispatcher
         HttpServletResponse httpResponse = (response instanceof HttpServletResponse) ? (HttpServletResponse)response : new ServletResponseHttpWrapper(response);
         ServletContextResponse servletContextResponse = ServletContextResponse.getServletContextResponse(response);
 
+        IncludeResponse includeResponse = new IncludeResponse(httpResponse);
         try
         {
-            _mappedServlet.handle(_servletHandler, _decodedPathInContext, new IncludeRequest(httpRequest), new IncludeResponse(httpResponse));
+            _mappedServlet.handle(_servletHandler, _decodedPathInContext, new IncludeRequest(httpRequest), includeResponse);
         }
         finally
         {
+            includeResponse.onIncluded();
             servletContextResponse.included();
         }
     }
@@ -173,6 +193,24 @@ public class Dispatcher implements RequestDispatcher
                 }
             }
             return _params;
+        }
+
+        @Override
+        public String getQueryString()
+        {
+            // The current behaviour is to return the target query if not null, else the original query is returned.
+            // This means that the query string does not match the parameter map, which is merged for most dispatcher.
+            // The specification is not clear on how the query should be handled.  It is in ongoing discussion in
+            // https://github.com/jakartaee/servlet/issues/309
+            // Currently the older jetty behaviour (merging the query string) has been replaced by the behaviour used
+            // by other containers in order to pass the TCK.
+            if (_uri != null)
+            {
+                String targetQuery = _uri.getQuery();
+                if (!StringUtil.isEmpty(targetQuery))
+                    return targetQuery;
+            }
+            return super.getQueryString();
         }
 
         @Override
@@ -242,18 +280,6 @@ public class Dispatcher implements RequestDispatcher
                 return super.getHttpServletMapping();
 
             return _servletPathMapping;
-        }
-
-        @Override
-        public String getQueryString()
-        {
-            if (_uri != null)
-            {
-                String targetQuery = _uri.getQuery();
-                if (!StringUtil.isEmpty(targetQuery))
-                        return targetQuery;
-                }
-            return _httpServletRequest.getQueryString();
         }
 
         @Override
@@ -398,32 +424,129 @@ public class Dispatcher implements RequestDispatcher
             names.add(RequestDispatcher.INCLUDE_QUERY_STRING);
             return Collections.enumeration(names);
         }
+
+        @Override
+        public String getQueryString()
+        {
+            return _httpServletRequest.getQueryString();
+        }
     }
 
     private static class IncludeResponse extends HttpServletResponseWrapper
     {
         public static final String JETTY_INCLUDE_HEADER_PREFIX = "org.eclipse.jetty.server.include.";
+        ServletOutputStream _servletOutputStream;
+        PrintWriter _printWriter;
+        PrintWriter _mustFlush;
         
         public IncludeResponse(HttpServletResponse response)
         {
             super(response);
         }
 
+        public void onIncluded()
+        {
+            if (_mustFlush != null)
+                _mustFlush.flush();
+        }
+
         @Override
         public ServletOutputStream getOutputStream() throws IOException
         {
-            return new ServletOutputStreamWrapper(getResponse().getOutputStream())
+            if (_printWriter != null)
+                throw new IllegalStateException("getWriter() called");
+            if (_servletOutputStream == null)
             {
-                @Override
-                public void close()
+                try
                 {
-                    // NOOP for include.
+                    _servletOutputStream = new ServletOutputStreamWrapper(getResponse().getOutputStream())
+                    {
+                        @Override
+                        public void close()
+                        {
+                            // NOOP for include.
+                        }
+                    };
                 }
-            };
+                catch (IllegalStateException ise)
+                {
+                    OutputStream os = new WriterOutputStream(getResponse().getWriter(), getResponse().getCharacterEncoding());
+                    _servletOutputStream = new ServletOutputStream()
+                    {
+                        @Override
+                        public boolean isReady()
+                        {
+                            return true;
+                        }
+
+                        @Override
+                        public void setWriteListener(WriteListener writeListener)
+                        {
+                            throw new UnsupportedOperationException();
+                        }
+
+                        @Override
+                        public void write(int b) throws IOException
+                        {
+                            os.write(b);
+                        }
+
+                        @Override
+                        public void write(byte[] b) throws IOException
+                        {
+                            os.write(b);
+                        }
+
+                        @Override
+                        public void write(byte[] b, int off, int len) throws IOException
+                        {
+                            os.write(b, off, len);
+                        }
+
+                        @Override
+                        public void flush() throws IOException
+                        {
+                            os.flush();
+                        }
+
+                        @Override
+                        public void close()
+                        {
+                            // NOOP for include.
+                        }
+                    };
+                }
+            }
+            return _servletOutputStream;
+        }
+
+        @Override
+        public PrintWriter getWriter() throws IOException
+        {
+            if (_servletOutputStream != null)
+                throw new IllegalStateException("getOutputStream called");
+            if (_printWriter == null)
+            {
+                try
+                {
+                    _printWriter = super.getWriter();
+                }
+                catch (IllegalStateException ise)
+                {
+                    _printWriter = _mustFlush = new PrintWriter(new OutputStreamWriter(super.getOutputStream(), super.getCharacterEncoding()));
+                }
+            }
+            return _printWriter;
         }
 
         @Override
         public void setCharacterEncoding(String charset)
+        {
+            // NOOP for include.
+        }
+
+        @Override
+        public void setLocale(Locale loc)
         {
             // NOOP for include.
         }
@@ -449,15 +572,13 @@ public class Dispatcher implements RequestDispatcher
         @Override
         public void reset()
         {
-            // TODO can include do this?
-            super.reset();
+            // NOOP for include.
         }
 
         @Override
         public void resetBuffer()
         {
-            // TODO can include do this?
-            super.resetBuffer();
+            // NOOP for include.
         }
 
         @Override
@@ -507,6 +628,24 @@ public class Dispatcher implements RequestDispatcher
         {
             // NOOP for include.
         }
+
+        @Override
+        public void sendError(int sc, String msg) throws IOException
+        {
+            // NOOP for include.
+        }
+
+        @Override
+        public void sendError(int sc) throws IOException
+        {
+            // NOOP for include.
+        }
+
+        @Override
+        public void sendRedirect(String location) throws IOException
+        {
+            // NOOP for include.
+        }
     }
 
     private class AsyncRequest extends ParameterRequestWrapper
@@ -545,18 +684,6 @@ public class Dispatcher implements RequestDispatcher
         {
             // TODO what about a 404 dispatch?
             return Objects.requireNonNull(_servletPathMapping);
-        }
-
-        @Override
-        public String getQueryString()
-        {
-            if (_uri != null)
-            {
-                String targetQuery = _uri.getQuery();
-                if (!StringUtil.isEmpty(targetQuery))
-                    return targetQuery;
-            }
-            return _httpServletRequest.getQueryString();
         }
 
         @Override
@@ -600,7 +727,6 @@ public class Dispatcher implements RequestDispatcher
         }
     }
 
-    // TODO
     private class ErrorRequest extends ParameterRequestWrapper
     {
         private final HttpServletRequest _httpServletRequest;
@@ -630,41 +756,25 @@ public class Dispatcher implements RequestDispatcher
         }
 
         @Override
-        public String getQueryString()
+        public HttpServletMapping getHttpServletMapping()
         {
-            // TODO
-            if (_uri != null)
-            {
-                String targetQuery = _uri.getQuery();
-                if (!StringUtil.isEmpty(targetQuery))
-                    return targetQuery;
-            }
-            return _httpServletRequest.getQueryString();
+            return _servletPathMapping;
         }
 
         @Override
         public String getRequestURI()
         {
-            return _uri == null ? null : _uri.getPath();
+            return _uri.getPath();
         }
 
         @Override
-        public Object getAttribute(String name)
+        public StringBuffer getRequestURL()
         {
-            switch (name)
-            {
-                // TODO
-                default:
-                    return super.getAttribute(name);
-            }
-        }
-
-        @Override
-        public Enumeration<String> getAttributeNames()
-        {
-            ArrayList<String> names = new ArrayList<>(Collections.list(super.getAttributeNames()));
-            // TODO
-            return Collections.enumeration(names);
+            return new StringBuffer(HttpURI.build(_uri)
+                .scheme(getScheme())
+                .host(getServerName())
+                .port(getServerPort())
+                .asString());
         }
     }
 

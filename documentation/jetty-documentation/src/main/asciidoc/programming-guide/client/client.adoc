@@ -14,7 +14,7 @@
 [[pg-client]]
 == Client Libraries
 
-The Eclipse Jetty Project provides client-side libraries that allow you to embed a client in your applications.
+The Eclipse Jetty Project provides client-side libraries that allow you to embed an HTTP or WebSocket client in your applications.
 A typical example is a client application that needs to contact a third party service via HTTP (for example a REST service).
 Another example is a proxy application that receives HTTP requests and forwards them as FCGI requests to a PHP application such as WordPress, or receives HTTP/1.1 requests and converts them to HTTP/2 or HTTP/3.
 Yet another example is a client application that needs to receive events from a WebSocket server.
@@ -23,12 +23,12 @@ The client libraries are designed to be non-blocking and offer both synchronous 
 
 These are the available client libraries:
 
-* xref:pg-client-http[The High-Level HTTP Client Library] for HTTP/1.1, HTTP/2 and FastCGI
+* xref:pg-client-http[The High-Level HTTP Client Library] for HTTP/1.1, HTTP/2, HTTP/3 and FastCGI
 * xref:pg-client-http2[The Low-Level HTTP/2 Client Library] for low-level HTTP/2
 * xref:pg-client-http3[The Low-Level HTTP/3 Client Library] for low-level HTTP/3
 * xref:pg-client-websocket[The WebSocket client library]
 
-If you are interested in the low-level details of how the Eclipse Jetty client libraries work, or are interested in writing a custom protocol, look at the xref:pg-client-io-arch[Client I/O Architecture].
+If you are interested in the low-level details of how the Jetty client libraries work, or are interested in writing a custom protocol, look at the xref:pg-client-io-arch[Client I/O Architecture].
 
 include::client-io-arch.adoc[]
 include::http/client-http.adoc[]

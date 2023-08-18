@@ -1,116 +1,73 @@
-Eclipse Jetty Canonical Repository
-==================================
+# Eclipse Jetty
 
-This is the canonical repository for the Jetty project, feel free to fork and contribute now!
+Eclipse Jetty is a lightweight, highly scalable, Java-based web server and Servlet engine.
+Jetty's goal is to support web protocols (HTTP/1, HTTP/2, HTTP/3, WebSocket, etc.) in a high volume low latency way that provides maximum performance while retaining the ease of use and compatibility with years of Servlet development.
+Jetty is a modern fully asynchronous web server that has a long history as a component oriented technology, and can be easily embedded into applications while still offering a solid traditional distribution for webapp deployment.
 
-Submitting a patch or pull request?
+- https://eclipse.dev/jetty/
+- https://projects.eclipse.org/projects/rt.jetty
 
-Make sure you have an Eclipse Contributor Agreement (ECA) on file.
+## Webapp Example
 
-- [eclipse.org/legal/ecafaq](https://www.eclipse.org/legal/ecafaq.php)
-
-Project description
--------------------
-
-Jetty is a lightweight highly scalable java based web server and servlet engine.
-Our goal is to support web protocols like HTTP, HTTP/2 and WebSocket in a high volume low latency way that provides maximum performance while retaining the ease of use and compatibility with years of servlet development.
-Jetty is a modern fully async web server that has a long history as a component oriented technology easily embedded into applications while still offering a solid traditional distribution for webapp deployment.
-
-- [https://projects.eclipse.org/projects/rt.jetty](https://projects.eclipse.org/projects/rt.jetty)
-
-Webapp Example
---------------
 ```shell
-$ mkdir base && cd base
+$ mkdir jetty-base && cd jetty-base
 $ java -jar $JETTY_HOME/start.jar --add-modules=http,ee10-deploy
 $ cp ~/src/myproj/target/mywebapp.war webapps
 $ java -jar $JETTY_HOME/start.jar 
 ```
 
-Multiple Versions Webapp Example
---------------------------------
+## Multiple Versions Webapp Example
+
 ```shell
-$ mkdir base && cd base
+$ mkdir jetty-base && cd jetty-base
 $ java -jar $JETTY_HOME/start.jar --add-modules=http,ee10-deploy,ee8-deploy
 $ cp ~/src/myproj/target/mywebapp10.war webapps
 $ cp ~/src/myproj/target/mywebapp8.war webapps
-$ echo environment: ee8 > webapps/mywebapp8.properties
+$ echo "environment: ee8" > webapps/mywebapp8.properties
 $ java -jar $JETTY_HOME/start.jar 
 ```
 
-Embedded Example
-----------------
+## Embedded Jetty Example
+
 ```java
 Server server = new Server(port);
-ServletContextHandler context = new ServletContextHandler(server, "/");
-context.addServlet(MyServlet.class, "/*");
+server.setHandler(new MyHandler());
 server.start();
 ```
 
-Documentation
--------------
+## Embedded Servlet Example
 
-Project documentation is available on the Jetty Eclipse website.
-
-- [https://www.eclipse.org/jetty/documentation](https://www.eclipse.org/jetty/documentation)
-
-Building
-========
-
-[Apache Maven 3.8.0](https://maven.apache.org/) and [OpenJDK](https://adoptium.net/) requirements:
-
-Branch         | Maven Version | Minimum JDK | Recommended JDK
----------------|---------------|-------------| ---------------
-`jetty-10.0.x` | Maven 3.8.6+  | OpenJDK 11  | OpenJDK 17 (for optional loom and http/3 support)
-`jetty-11.0.x` | Maven 3.8.6+  | OpenJDK 11  | OpenJDK 17 (for optional loom and http/3 support)
-`jetty-12.0.x` | Maven 3.8.6+  | OpenJDK 17  | OpenJDK 17
-
-Full Build with All Tests:
-
-``` shell
-mvn clean install
-```
-
-Fast Build if you need jars and distribution (not running tests, checkstyle, enforcer, license check):
-
-``` shell
-mvn -Pfast clean install
-```
-Optional build tools: 
-
-* [`graphviz`](https://graphviz.org/) - used by asciidoctor in the jetty-documentation build to produce various graphs
-* [`Docker`](https://www.docker.com/) - used to run some integration tests for testing third party integrations
-
-Once the build is complete, you can find the built Jetty Maven artifacts in your Maven local repository.
-Along with the following locations of note:
-
-Branches       | Location                                                          | Description
----------------|-------------------------------------------------------------------|---------
-all            | `jetty-home/target/jetty-home-<ver>.tar.gz`                       | The Jetty Home standalone tarball
-`jetty-10.0.x` | `jetty-runner/target/jetty-runner-<ver>.jar`                      | The Jetty Runner uber jar
-`jetty-11.0.x` | `jetty-runner/target/jetty-runner-<ver>.jar`                      | The Jetty Runner uber jar
-`jetty-12.0.x` | `jetty-ee10/jetty-ee10-runner/target/jetty-ee10-runner-<ver>.jar` | The Jetty Runner uber jar for ee10/Servlet 6 (jakarta.servlet) webapps
-`jetty-12.0.x` | `jetty-ee9/jetty-ee9-runner/target/jetty-ee9-runner-<ver>.jar`    | The Jetty Runner uber jar for ee9/Servlet 5 (jakarta.servlet) webapps
-`jetty-12.0.x` | `jetty-ee8/jetty-ee8-runner/target/jetty-ee8-runner-<ver>.jar`    | The Jetty Runner uber jar for ee8/Servlet 4 (javax.servlet) webapps
-
-Note: The build tests do a lot of stress testing, and on some machines it is necessary to set the 
-file descriptor limit to greater than 2048 for the tests to all pass successfully (check your `ulimit -n` value).
-
-Note: The tests are running in parallel using [Junit5 parallel execution](https://junit.org/junit5/docs/current/user-guide/#writing-tests-parallel-execution).
-This is configurable using the following properties:
-```
-    # to enable/disable the parallel execution
-    -Djunit.jupiter.execution.parallel.enabled=true/false
-    # number of tests executed in parallel
-    -Djunit.jupiter.execution.parallel.config.fixed.parallelism=2
-```
-If a test cannot be runned in parallel because accessing/modifying some static fields or for any other reasons, the test should be marked with the annotation
 ```java
-@Isolated("Access static field of Configurations")
+Server server = new Server(port);
+ServletContextHandler context = new ServletContextHandler("/");
+context.addServlet(MyServlet.class, "/*");
+server.setHandler(context);
+server.start();
 ```
 
+## Building Jetty from Source
 
-Professional Services
----------------------
+```shell
+$ git clone https://github.com/eclipse/jetty.project.git
+$ cd jetty.project
+$ mvn -Pfast clean install # fast build bypasses tests and other checks
+```
 
-Expert advice and production support are available through [Webtide.com](https://webtide.com).
+For more detailed information on building and contributing to the Jetty project, please see the [Contribution Guide](https://eclipse.dev/jetty/documentation/jetty-12/contribution-guide/index.html).
+
+# Documentation
+
+[Jetty's documentation](https://eclipse.dev/jetty/documentation) is available on the Eclipse Jetty website.
+
+The documentation is divided into three guides, based on use case:
+
+* The [Operations Guide](https://eclipse.dev/jetty/documentation/jetty-12/operations-guide/index.html) targets sysops, devops, and developers who want to install Eclipse Jetty as a standalone server to deploy web applications.
+
+* The [Programming Guide](https://eclipse.dev/jetty/documentation/jetty-12/programming-guide/index.html) targets developers who want to use the Eclipse Jetty libraries in their applications, and advanced sysops/devops that want to customize the deployment of web applications.
+
+* The [Contribution Guide](https://eclipse.dev/jetty/documentation/jetty-12/contribution-guide/index.html) targets developers that wish to contribute to the Jetty Project with code patches or documentation improvements.
+
+
+# Commercial Support
+
+Expert advice and production support of Jetty are provided by [Webtide](https://webtide.com).

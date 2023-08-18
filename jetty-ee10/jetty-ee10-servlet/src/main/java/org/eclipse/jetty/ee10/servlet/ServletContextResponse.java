@@ -38,7 +38,6 @@ import org.eclipse.jetty.server.Response;
 import org.eclipse.jetty.server.handler.ContextResponse;
 import org.eclipse.jetty.session.ManagedSession;
 import org.eclipse.jetty.util.Callback;
-import org.eclipse.jetty.util.StringUtil;
 
 /**
  * A core response wrapper that carries the servlet related response state,
@@ -181,7 +180,7 @@ public class ServletContextResponse extends ContextResponse implements ServletCo
         return _servletChannel.getHttpOutput();
     }
 
-    public ServletRequestState getServletRequestState()
+    public ServletChannelState getServletRequestState()
     {
         return _servletChannel.getServletRequestState();
     }
@@ -423,7 +422,7 @@ public class ServletContextResponse extends ContextResponse implements ServletCo
         }
 
         // Fallback to last resort iso-8859-1.
-        encoding = StringUtil.__ISO_8859_1;
+        encoding = MimeTypes.ISO_8859_1;
         if (setContentType)
             setCharacterEncoding(encoding, EncodingFrom.DEFAULT);
         return encoding;
@@ -463,7 +462,7 @@ public class ServletContextResponse extends ContextResponse implements ServletCo
         else
         {
             _encodingFrom = from;
-            _characterEncoding = HttpGenerator.__STRICT ? encoding : StringUtil.normalizeCharset(encoding);
+            _characterEncoding = HttpGenerator.__STRICT ? encoding : MimeTypes.normalizeCharset(encoding);
             if (_mimeType != null)
             {
                 _contentType = _mimeType.getBaseType().asString() + ";charset=" + _characterEncoding;

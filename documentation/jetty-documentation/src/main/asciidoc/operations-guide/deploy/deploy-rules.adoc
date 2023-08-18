@@ -44,20 +44,33 @@ A web application is always deployed to a specific environment.
 
 If you enabled only one specific deployer module, for example `{ee-current}-deploy`, then the web applications and the Jetty context XML files in `$JETTY_BASE/webapps` will be deployed to the `{ee-current}` environment.
 
-You can enable multiple deployer modules if you need to deploy multiple web applications each to a specific environment.
+You can enable simultaneously multiple deployer modules if you need to deploy multiple web applications each to a specific environment.
 
 For example, you have an `old-ee9.war` web application that you want to deploy to the Jakarta EE 9 environment, and a `new-{ee-current}.war` web application that you want to deploy to the Jakarta {ee-current-caps} environment.
 First, you must enable both the `ee9-deploy` and the `{ee-current}-deploy` modules.
 Then, you add a `+*.properties+` file with the same name of the web application, in the example above `$JETTY_BASE/webapps/old-ee9.properties`, with the following content:
 
+.old-ee9.properties
 [source,properties]
-====
+----
 environment=ee9
+----
+
+In case of simultaneous multiple environments, it is good practice to always specify the `+*.properties+` file for your web applications.
+
+[CAUTION]
 ====
+If you do *not* specify the `+*.properties+` file for your web applications, then the deployer for the most recent EE version will be used.
 
-You may also add a `+*.properties+` file for `new-{ee-current}.war`, but it is not necessary because the most recent environment is used by default.
-// TODO: verify the statement above. For an ee8 and an ee9 webapp, is it true that ee9 will be used by default (or ee10 will)?
+For example, if you have enabled the EE deployer Jetty module for all EE versions, and you deploy an EE 9 web application _without_ the `+*.properties+` file, then it will be deployed by the {ee-current-caps} deployer, with unspecified results.
 
+This unspecified deployment may not work as the EE 9 web application may use APIs that have been removed in {ee-current-caps}, causing an error at runtime.
+====
 
 // TODO: add section about the work directory from
 //  old_docs/contexts/temporary-directories.adoc
+
+// rules for temp dir
+// 1) add XML file and call setTempDirectory() on ContextHandler
+// 2) if not 1, then you can add-modules=work.mod
+// 3) if not 2, then you can specify java.io.tmpdir

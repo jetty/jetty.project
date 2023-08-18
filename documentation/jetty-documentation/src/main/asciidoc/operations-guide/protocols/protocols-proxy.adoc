@@ -73,18 +73,18 @@ In the example above, the intermediary added the `Forwarded` header specifying t
 Let's assume you have already configured Jetty with the HTTP/1.1 protocol with the following command (issued from within the `$JETTY_BASE` directory):
 
 ----
-$ java -jar $JETTY_HOME/start.jar --add-module=http
+$ java -jar $JETTY_HOME/start.jar --add-modules=http
 ----
 
 Support for the `Forwarded` HTTP header (and its predecessor `X-Forwarded-*` headers) is enabled with the `http-forwarded` Jetty module:
 
 ----
-$ java -jar $JETTY_HOME/start.jar --add-module=http-forwarded
+$ java -jar $JETTY_HOME/start.jar --add-modules=http-forwarded
 ----
 
 [source,options=nowrap]
 ----
-include::jetty[setupArgs="--add-module=http",args="--add-module=http-forwarded"]
+include::jetty[setupArgs="--add-modules=http",args="--add-modules=http-forwarded"]
 ----
 
 With the `http-forwarded` Jetty module enabled, Jetty interprets the `Forwarded` header and makes its information available to web applications via the standard Servlet APIs.
@@ -113,18 +113,18 @@ Support for the proxy protocol can be enabled for the clear-text connector or fo
 Let's assume you have already configured Jetty with the HTTP/1.1 clear-text protocol with the following command (issued from within the `$JETTY_BASE` directory):
 
 ----
-$ java -jar $JETTY_HOME/start.jar --add-module=http
+$ java -jar $JETTY_HOME/start.jar --add-modules=http
 ----
 
 To enable proxy protocol support for the clear-text connector, enable the `proxy-protocol` Jetty module:
 
 ----
-$ java -jar $JETTY_HOME/start.jar --add-module=proxy-protocol
+$ java -jar $JETTY_HOME/start.jar --add-modules=proxy-protocol
 ----
 
 [source,options=nowrap]
 ----
-include::jetty[setupArgs="--add-module=http",args="--add-module=proxy-protocol"]
+include::jetty[setupArgs="--add-modules=http",args="--add-modules=proxy-protocol"]
 ----
 
 Starting Jetty yields:
@@ -146,18 +146,18 @@ Enabling proxy protocol support for the secure connector is similar.
 Let's assume you have already configured Jetty with the HTTP/1.1 secure protocol and the test KeyStore with the following command (issued from within the `$JETTY_BASE` directory):
 
 ----
-$ java -jar $JETTY_HOME/start.jar --add-module=https,test-keystore
+$ java -jar $JETTY_HOME/start.jar --add-modules=https,test-keystore
 ----
 
 Enable the `proxy-protocol-ssl` Jetty module with the following command (issued from within the `$JETTY_BASE` directory):
 
 ----
-$ java -jar $JETTY_HOME/start.jar --add-module=proxy-protocol-ssl
+$ java -jar $JETTY_HOME/start.jar --add-modules=proxy-protocol-ssl
 ----
 
 [source,options=nowrap]
 ----
-include::jetty[setupArgs="--add-module=https",args="--add-module=proxy-protocol-ssl"]
+include::jetty[setupArgs="--add-modules=https",args="--add-modules=proxy-protocol-ssl"]
 ----
 
 Starting Jetty yields:

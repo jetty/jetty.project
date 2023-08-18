@@ -165,10 +165,10 @@ public class URLEncodedTest
     {
         String[][] charsets = new String[][]
             {
-                {StringUtil.__UTF8, null, "%30"},
-                {StringUtil.__ISO_8859_1, StringUtil.__ISO_8859_1, "%30"},
-                {StringUtil.__UTF8, StringUtil.__UTF8, "%30"},
-                {StringUtil.__UTF16, StringUtil.__UTF16, "%00%30"},
+                {StandardCharsets.UTF_8.name(), null, "%30"},
+                {StandardCharsets.ISO_8859_1.name(), StandardCharsets.ISO_8859_1.name(), "%30"},
+                {StandardCharsets.UTF_8.name(), StandardCharsets.UTF_8.name(), "%30"},
+                {StandardCharsets.UTF_16.name(), StandardCharsets.UTF_16.name(), "%00%30"},
             };
 
         // Note: "%30" -> decode -> "0"
@@ -218,12 +218,12 @@ public class URLEncodedTest
     public void testCharsetViaSystemProperty()
         throws Exception
     {
-        try (ByteArrayInputStream in3 = new ByteArrayInputStream("name=libell%E9".getBytes(StringUtil.__ISO_8859_1)))
+        try (ByteArrayInputStream in3 = new ByteArrayInputStream("name=libell%E9".getBytes(StandardCharsets.ISO_8859_1)))
         {
             MultiMap<String> m3 = new MultiMap<>();
             Charset nullCharset = null; // use the one from the system property
             UrlEncoded.decodeTo(in3, m3, nullCharset, -1, -1);
-            assertEquals("libell\u00E9", m3.getString("name"), "stream name");
+            assertEquals("libellé", m3.getString("name"), "stream name");
         }
     }
 
@@ -238,7 +238,7 @@ public class URLEncodedTest
         UrlEncoded.decodeTo("text=%E0%B8%9F%E0%B8%AB%E0%B8%81%E0%B8%A7%E0%B8%94%E0%B8%B2%E0%B9%88%E0%B8%81%E0%B8%9F%E0%B8%A7%E0%B8%AB%E0%B8%AA%E0%B8%94%E0%B8%B2%E0%B9%88%E0%B8%AB%E0%B8%9F%E0%B8%81%E0%B8%A7%E0%B8%94%E0%B8%AA%E0%B8%B2%E0%B8%9F%E0%B8%81%E0%B8%AB%E0%B8%A3%E0%B8%94%E0%B9%89%E0%B8%9F%E0%B8%AB%E0%B8%99%E0%B8%81%E0%B8%A3%E0%B8%94%E0%B8%B5&Action=Submit", urlEncoded, UrlEncoded.ENCODING);
 
         String hex = "E0B89FE0B8ABE0B881E0B8A7E0B894E0B8B2E0B988E0B881E0B89FE0B8A7E0B8ABE0B8AAE0B894E0B8B2E0B988E0B8ABE0B89FE0B881E0B8A7E0B894E0B8AAE0B8B2E0B89FE0B881E0B8ABE0B8A3E0B894E0B989E0B89FE0B8ABE0B899E0B881E0B8A3E0B894E0B8B5";
-        String expected = new String(TypeUtil.fromHexString(hex), "utf-8");
+        String expected = new String(StringUtil.fromHexString(hex), UTF_8);
         assertEquals(expected, urlEncoded.getString("text"));
     }
 

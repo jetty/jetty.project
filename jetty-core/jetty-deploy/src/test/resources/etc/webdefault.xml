@@ -104,8 +104,6 @@
  *                    servlet context root. Useful for only serving static content out
  *                    of only specific subdirectories.
  *
- *  pathInfoOnly      If true, only the path info will be applied to the baseResource
- *
  *  stylesheet        Set with the location of an optional stylesheet that will be used
  *                    to decorate the directory listing html.
  *

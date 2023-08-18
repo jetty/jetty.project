@@ -70,6 +70,21 @@ public interface Response extends Content.Sink
     Supplier<HttpFields> getTrailersSupplier();
 
     /**
+     * <p>Sets the supplier for the HTTP trailers.</p>
+     * <p>The method {@link Supplier#get()} may be called by the
+     * implementation multiple times, so it is important that
+     * the same value is returned in every invocation.</p>
+     * <p>Example:</p>
+     * <pre>{@code
+     * // Correct usage.
+     * HttpFields.Mutable trailers = HttpFields.build();
+     * response.setTrailersSupplier(() -> trailers);
+     *
+     * // WRONG usage, as the value changes for
+     * // every invocation of supplier.get().
+     * response.setTrailersSupplier(() -> HttpFields.build());
+     * }</pre>
+     *
      * @param trailers a supplier for the HTTP trailers
      */
     void setTrailersSupplier(Supplier<HttpFields> trailers);
@@ -83,6 +98,13 @@ public interface Response extends Content.Sink
      * @return whether this response has already been committed
      */
     boolean isCommitted();
+
+    /**
+     * <p>Returns whether the last write has been initiated on the response.</p>
+     *
+     * @return {@code true} if {@code last==true} has been passed to {@link #write(boolean, ByteBuffer, Callback)}.
+     */
+    boolean hasLastWrite();
 
     /**
      * <p>Returns whether the response completed successfully.</p>
@@ -192,13 +214,13 @@ public interface Response extends Content.Sink
      * @see Wrapper
      */
     @SuppressWarnings("unchecked")
-    static <T extends Response.Wrapper> T as(Response response, Class<T> type)
+    static <T extends Response> T as(Response response, Class<T> type)
     {
-        while (response instanceof Response.Wrapper wrapper)
+        while (response != null)
         {
-            if (type.isInstance(wrapper))
-                return (T)wrapper;
-            response = wrapper.getWrapped();
+            if (type.isInstance(response))
+                return (T)response;
+            response = response instanceof Response.Wrapper wrapper ? wrapper.getWrapped() : null;
         }
         return null;
     }
@@ -563,6 +585,12 @@ public interface Response extends Content.Sink
         public boolean isCommitted()
         {
             return getWrapped().isCommitted();
+        }
+
+        @Override
+        public boolean hasLastWrite()
+        {
+            return getWrapped().hasLastWrite();
         }
 
         @Override

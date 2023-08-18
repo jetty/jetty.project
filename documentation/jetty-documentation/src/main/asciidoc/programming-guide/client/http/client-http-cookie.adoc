@@ -69,11 +69,11 @@ The example above will retain only cookies that come from the `google.com` domai
 
 Jetty is compliant with link:https://tools.ietf.org/html/rfc6265[RFC6265], and as such care must be taken when setting a cookie value that includes special characters such as `;`.
 
-Previously, `Version=1` cookies defined in link:https://tools.ietf.org/html/rfc2109[RFC2109] (and continued in link:https://tools.ietf.org/html/rfc2965[RFC2965]) allowed for special/reserved characters to be enclosed within double quotes when declared in a `Set-Cookie` response header:
+Previously, `Version=1` cookies defined in link:https://tools.ietf.org/html/rfc2109[RFC2109] (and continued in link:https://tools.ietf.org/html/rfc2965[RFC2965]) allowed for special/reserved characters to be enclosed within double quotes when declared in a `Set-Cookie` response header:
 
 [source,screen]
 ----
-Set-Cookie: foo="bar;baz";Version=1;Path="/secur"
+Set-Cookie: foo="bar;baz";Version=1;Path="/secure"
 ----
 
 This was added to the HTTP Response as follows:
@@ -82,7 +82,7 @@ This was added to the HTTP Response as follows:
 ----
 protected void service(HttpServletRequest request, HttpServletResponse response)
 {
-    javax.servlet.http.Cookie cookie = new Cookie("foo", "bar;baz");
+    jakarta.servlet.http.Cookie cookie = new Cookie("foo", "bar;baz");
     cookie.setPath("/secure");
     response.addCookie(cookie);
 }
@@ -93,7 +93,7 @@ This can be done utilizing `jakarta.servlet.http.Cookie` as follows:
 
 [source,java]
 ----
-javax.servlet.http.Cookie cookie = new Cookie("foo", URLEncoder.encode("bar;baz", "UTF-8"));
+jakarta.servlet.http.Cookie cookie = new Cookie("foo", URLEncoder.encode("bar;baz", "UTF-8"));
 ----
 
 Jetty validates all cookie names and values being added to the `HttpServletResponse` via the `addCookie(Cookie)` method.
