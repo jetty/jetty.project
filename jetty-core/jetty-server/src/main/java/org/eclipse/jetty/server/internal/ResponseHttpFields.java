@@ -61,11 +61,17 @@ public class ResponseHttpFields implements HttpFields.Mutable
         return _fields.getField(index);
     }
 
+    /**
+     * Freeze the headers so that existing headers cannot be removed or reset.
+     */
     public void freeze()
     {
         _frozen.set(_fields.size());
     }
 
+    /**
+     * Reverse a call to {@link #freeze()}
+     */
     public void thaw()
     {
         _frozen.set(0);
@@ -142,6 +148,8 @@ public class ResponseHttpFields implements HttpFields.Mutable
         Iterator<HttpField> i = _fields.iterator();
         return new Iterator<>()
         {
+            int index;
+
             @Override
             public boolean hasNext()
             {
@@ -151,6 +159,7 @@ public class ResponseHttpFields implements HttpFields.Mutable
             @Override
             public HttpField next()
             {
+                index++;
                 return i.next();
             }
 
@@ -159,6 +168,9 @@ public class ResponseHttpFields implements HttpFields.Mutable
             {
                 if (_committed.get())
                     throw new UnsupportedOperationException("Read Only");
+                int frozen = _frozen.get();
+                if (frozen > 0 && index <= frozen)
+                    throw new IllegalStateException("Frozen field");
                 i.remove();
             }
         };
@@ -170,6 +182,9 @@ public class ResponseHttpFields implements HttpFields.Mutable
         ListIterator<HttpField> i = _fields.listIterator();
         return new ListIterator<>()
         {
+            int index;
+            boolean forward = true;
+
             @Override
             public boolean hasNext()
             {
@@ -179,6 +194,9 @@ public class ResponseHttpFields implements HttpFields.Mutable
             @Override
             public HttpField next()
             {
+                if (forward)
+                    index++;
+                forward = true;
                 return i.next();
             }
 
@@ -191,6 +209,9 @@ public class ResponseHttpFields implements HttpFields.Mutable
             @Override
             public HttpField previous()
             {
+                if (!forward)
+                    index--;
+                forward = false;
                 return i.previous();
             }
 
@@ -211,6 +232,9 @@ public class ResponseHttpFields implements HttpFields.Mutable
             {
                 if (_committed.get())
                     throw new UnsupportedOperationException("Read Only");
+                int frozen = _frozen.get();
+                if (frozen > 0 && index <= frozen)
+                    throw new IllegalStateException("Frozen field");
                 i.remove();
             }
 
@@ -219,6 +243,9 @@ public class ResponseHttpFields implements HttpFields.Mutable
             {
                 if (_committed.get())
                     throw new UnsupportedOperationException("Read Only");
+                int frozen = _frozen.get();
+                if (frozen > 0 && index <= frozen)
+                    throw new IllegalStateException("Frozen field");
                 if (field == null)
                     i.remove();
                 else
@@ -230,8 +257,14 @@ public class ResponseHttpFields implements HttpFields.Mutable
             {
                 if (_committed.get())
                     throw new UnsupportedOperationException("Read Only");
+                int frozen = _frozen.get();
+                if (frozen > 0 && index < frozen)
+                    throw new IllegalStateException("Frozen field");
                 if (field != null)
+                {
+                    index++;
                     i.add(field);
+                }
             }
         };
     }
