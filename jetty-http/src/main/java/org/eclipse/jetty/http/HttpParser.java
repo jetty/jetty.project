@@ -499,7 +499,7 @@ public class HttpParser
     /* Quick lookahead for the start state looking for a request method or an HTTP version,
      * otherwise skip white space until something else to parse.
      */
-    private boolean quickStart(ByteBuffer buffer)
+    private void quickStart(ByteBuffer buffer)
     {
         if (_requestHandler != null)
         {
@@ -510,7 +510,7 @@ public class HttpParser
                 buffer.position(buffer.position() + _methodString.length() + 1);
 
                 setState(State.SPACE1);
-                return false;
+                return;
             }
         }
         else if (_responseHandler != null)
@@ -520,7 +520,7 @@ public class HttpParser
             {
                 buffer.position(buffer.position() + _version.asString().length() + 1);
                 setState(State.SPACE1);
-                return false;
+                return;
             }
         }
 
@@ -541,7 +541,7 @@ public class HttpParser
                     _string.setLength(0);
                     _string.append(t.getChar());
                     setState(_requestHandler != null ? State.METHOD : State.RESPONSE_VERSION);
-                    return false;
+                    return;
                 }
                 case OTEXT:
                 case SPACE:
@@ -559,7 +559,6 @@ public class HttpParser
                 throw new BadMessageException(HttpStatus.BAD_REQUEST_400);
             }
         }
-        return false;
     }
 
     private void setString(String s)
@@ -972,25 +971,21 @@ public class HttpParser
                 switch (_header)
                 {
                     case CONTENT_LENGTH:
-                        if (_hasTransferEncoding && complianceViolation(TRANSFER_ENCODING_WITH_CONTENT_LENGTH))
-                            throw new BadMessageException(HttpStatus.BAD_REQUEST_400, "Transfer-Encoding and Content-Length");
-
+                        if (_hasTransferEncoding)
+                            complianceViolation(TRANSFER_ENCODING_WITH_CONTENT_LENGTH);
+                        long contentLength = convertContentLength(_valueString);
                         if (_hasContentLength)
                         {
-                            if (complianceViolation(MULTIPLE_CONTENT_LENGTHS))
-                                throw new BadMessageException(HttpStatus.BAD_REQUEST_400, MULTIPLE_CONTENT_LENGTHS.description);
-                            if (convertContentLength(_valueString) != _contentLength)
-                                throw new BadMessageException(HttpStatus.BAD_REQUEST_400, MULTIPLE_CONTENT_LENGTHS.description);
+                            complianceViolation(MULTIPLE_CONTENT_LENGTHS);
+                            if (contentLength != _contentLength)
+                                throw new BadMessageException(HttpStatus.BAD_REQUEST_400, MULTIPLE_CONTENT_LENGTHS.getDescription());
                         }
                         _hasContentLength = true;
 
                         if (_endOfContent != EndOfContent.CHUNKED_CONTENT)
                         {
-                            _contentLength = convertContentLength(_valueString);
-                            if (_contentLength <= 0)
-                                _endOfContent = EndOfContent.NO_CONTENT;
-                            else
-                                _endOfContent = EndOfContent.CONTENT_LENGTH;
+                            _contentLength = contentLength;
+                            _endOfContent = EndOfContent.CONTENT_LENGTH;
                         }
                         break;
 
@@ -1107,15 +1102,21 @@ public class HttpParser
 
     private long convertContentLength(String valueString)
     {
-        try
+        if (valueString == null || valueString.length() == 0)
+            throw new BadMessageException("Invalid Content-Length Value", new NumberFormatException());
+
+        long value = 0;
+        int length = valueString.length();
+
+        for (int i = 0; i < length; i++)
         {
-            return Long.parseLong(valueString);
+            char c = valueString.charAt(i);
+            if (c < '0' || c > '9')
+                throw new BadMessageException("Invalid Content-Length Value", new NumberFormatException());
+
+            value = Math.addExact(Math.multiplyExact(value, 10L), c - '0');
         }
-        catch (NumberFormatException e)
-        {
-            LOG.ignore(e);
-            throw new BadMessageException(HttpStatus.BAD_REQUEST_400, "Invalid Content-Length Value", e);
-        }
+        return value;
     }
 
     /*
@@ -1511,12 +1512,11 @@ public class HttpParser
                 _methodString = null;
                 _endOfContent = EndOfContent.UNKNOWN_CONTENT;
                 _header = null;
-                if (quickStart(buffer))
-                    return true;
+                quickStart(buffer);
             }
 
             // Request/response line
-            if (_state.ordinal() >= State.START.ordinal() && _state.ordinal() < State.HEADER.ordinal())
+            if (_state.ordinal() < State.HEADER.ordinal())
             {
                 if (parseLine(buffer))
                     return true;
@@ -2036,7 +2036,6 @@ public class HttpParser
         }
     }
 
-    @SuppressWarnings("serial")
     private static class IllegalCharacterException extends BadMessageException
     {
         private IllegalCharacterException(State state, HttpTokens.Token token, ByteBuffer buffer)
