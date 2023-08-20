@@ -309,7 +309,7 @@ public class HttpTester
     {
     }
 
-    public abstract static class Message extends HttpFields.MutableHttpFields implements HttpParser.HttpHandler
+    public abstract static class Message extends MutableHttpFields implements HttpParser.HttpHandler
     {
         boolean _earlyEOF;
         boolean _complete = false;

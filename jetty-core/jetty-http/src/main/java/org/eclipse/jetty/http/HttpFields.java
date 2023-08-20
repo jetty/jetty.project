@@ -14,7 +14,6 @@
 package org.eclipse.jetty.http;
 
 import java.util.ArrayList;
-import java.util.Arrays;
 import java.util.Collections;
 import java.util.EnumSet;
 import java.util.Enumeration;
@@ -23,12 +22,9 @@ import java.util.List;
 import java.util.ListIterator;
 import java.util.Map;
 import java.util.NoSuchElementException;
-import java.util.Objects;
 import java.util.Set;
-import java.util.Spliterators;
 import java.util.function.BiFunction;
 import java.util.function.BiPredicate;
-import java.util.function.Function;
 import java.util.function.Supplier;
 import java.util.function.ToIntFunction;
 import java.util.stream.Collectors;
@@ -36,63 +32,127 @@ import java.util.stream.Stream;
 import java.util.stream.StreamSupport;
 
 /**
- * Interface that represents on ordered collection of {@link HttpField}s.
- * Both {@link MutableHttpFields} and {@link ImmutableHttpFields} implementations are available
- * via the static methods such as {@link #build()} and {@link #from(HttpField...)}.
- * To implement this interface, only the {@link #iterator()} method
- * need be implemented, however default implementations may be inefficient
+ * <p>An ordered collection of {@link HttpField}s that represent the HTTP headers
+ * or HTTP trailers of an HTTP request or an HTTP response.</p>
+ * <p>{@link HttpFields} is immutable and typically used in server-side HTTP requests
+ * and client-side HTTP responses, while {@link HttpFields.Mutable} is mutable and
+ * typically used in server-side HTTP responses and client-side HTTP requests.</p>
  */
 public interface HttpFields extends Iterable<HttpField>, Supplier<HttpFields>
 {
+    /**
+     * <p>A constant {@link HttpField} for the HTTP header:</p>
+     * <p>{@code Expires: Thu, 01 Jan 1970 00:00:00 GMT}</p>
+     */
     HttpField EXPIRES_01JAN1970 = new PreEncodedHttpField(HttpHeader.EXPIRES, DateGenerator.__01Jan1970);
+    /**
+     * <p>A constant {@link HttpField} for the HTTP header:</p>
+     * <p>{@code Connection: close}</p>
+     */
     HttpField CONNECTION_CLOSE = new PreEncodedHttpField(HttpHeader.CONNECTION, HttpHeaderValue.CLOSE.asString());
+    /**
+     * <p>A constant {@link HttpField} for the HTTP header:</p>
+     * <p>{@code Connection: keep-alive}</p>
+     */
     HttpField CONNECTION_KEEPALIVE = new PreEncodedHttpField(HttpHeader.CONNECTION, HttpHeaderValue.KEEP_ALIVE.asString());
+    /**
+     * <p>A constant {@link HttpField} for the HTTP header:</p>
+     * <p>{@code Content-Length: 0}</p>
+     */
     HttpField CONTENT_LENGTH_0 = new PreEncodedHttpField(HttpHeader.CONTENT_LENGTH, 0L);
 
+    /**
+     * <p>A constant for an immutable and empty {@link HttpFields}.</p>
+     */
     HttpFields EMPTY = build().asImmutable();
 
+    /**
+     * <p>Returns an empty {@link Mutable} instance.</p>
+     *
+     * @return an empty {@link Mutable} instance
+     */
     static Mutable build()
     {
-        return new MutableHttpFields();
+        return new org.eclipse.jetty.http.MutableHttpFields();
     }
 
+    /**
+     * <p>Returns an empty {@link Mutable} instance with the given initial {@code capacity}.</p>
+     * <p>The given {@code capacity} indicates the initial capacity of the storage for the
+     * {@link HttpField}s.</p>
+     * <p>When the capacity is exceeded, the storage is resized to accommodate the additional
+     * {@link HttpField}s.</p>
+     *
+     * @param capacity the initial capacity of the storage for the {@link HttpField}s
+     * @return an empty instance with the given initial {@code capacity}
+     */
     static Mutable build(int capacity)
     {
-        return new MutableHttpFields(capacity);
+        return new org.eclipse.jetty.http.MutableHttpFields(capacity);
     }
 
+    /**
+     * <p>Returns a new {@link Mutable} instance containing a copy of all the
+     * {@link HttpField}s of the given {@link HttpFields} parameter.</p>
+     *
+     * @param fields the {@link HttpFields} to copy
+     * @return a new {@link Mutable} instance containing a copy of the given {@link HttpFields}
+     */
     static Mutable build(HttpFields fields)
     {
-        return new MutableHttpFields(fields);
+        return new org.eclipse.jetty.http.MutableHttpFields(fields);
     }
 
+    /**
+     * <p>Returns a new {@link Mutable} instance containing a copy of all the
+     * {@link HttpField}s of the given {@link HttpFields}, replacing with the
+     * given {@link HttpField} all the fields {@link HttpField}s with the same
+     * name.</p>
+     * <p>All existing {@link HttpField}s with the same name as the
+     * replacing {@link HttpField} will be replaced by the given {@link HttpField}.
+     * If there are no fields with that name, the given {@link HttpField}
+     * is added to the returned {@link Mutable} instance.</p>
+     *
+     * @param fields the {@link HttpFields} to copy
+     * @param replaceField the {@link HttpField} that replaces others with the same name
+     * @return a new {@link Mutable} instance containing the given {@link HttpFields}
+     * and the given replacement {@link HttpField}
+     */
     static Mutable build(HttpFields fields, HttpField replaceField)
     {
-        return new MutableHttpFields(fields, replaceField);
+        return new org.eclipse.jetty.http.MutableHttpFields(fields, replaceField);
     }
 
+    /**
+     * <p>Returns a new {@link Mutable} instance containing a copy of all the
+     * {@link HttpField}s of the given {@link HttpFields}, removing the
+     * {@link HttpField}s with the given names.</p>
+     *
+     * @param fields the {@link HttpFields} to copy
+     * @param removeFields the names of the fields to remove
+     * @return a new {@link Mutable} instance containing the given {@link HttpFields}
+     * without the fields with the given names
+     */
     static Mutable build(HttpFields fields, EnumSet<HttpHeader> removeFields)
     {
-        return new MutableHttpFields(fields, removeFields);
+        return new org.eclipse.jetty.http.MutableHttpFields(fields, removeFields);
     }
 
-    static ImmutableHttpFields from(HttpField... fields)
+    /**
+     * <p>Returns an immutable {@link HttpFields} instance containing the given
+     * {@link HttpField}s.</p>
+     *
+     * @param fields the {@link HttpField}s to be contained in the returned instance
+     * @return a new immutable {@link HttpFields} instance with the given {@link HttpField}s
+     */
+    static HttpFields from(HttpField... fields)
     {
-        return new ImmutableHttpFields(fields);
-    }
-
-    static ImmutableHttpFields from(HttpFields fields, Function<HttpField, HttpField> mutation)
-    {
-        return new ImmutableHttpFields(fields.stream().map(mutation).filter(Objects::nonNull).toArray(HttpField[]::new));
-    }
-
-    default HttpFields asImmutable()
-    {
-        return HttpFields.build(this).asImmutable();
+        return new org.eclipse.jetty.http.ImmutableHttpFields(fields);
     }
 
     /**
      * <p>Supplies this instance, typically used to supply HTTP trailers.</p>
+     *
      * @return this instance
      */
     @Override
@@ -102,15 +162,27 @@ public interface HttpFields extends Iterable<HttpField>, Supplier<HttpFields>
     }
 
     /**
-     * Efficiently take the fields as an Immutable that cannot be changed by any further mutations
-     * to this instance.
-     * @return An immutable version of the fields.
+     * <p>Returns an immutable copy of this {@link HttpFields} instance.</p>
+     *
+     * @return a new immutable copy of this {@link HttpFields} instance
      */
-    default HttpFields takeAsImmutable()
+    default HttpFields asImmutable()
     {
-        return HttpFields.build(this).takeAsImmutable();
+        return HttpFields.build(this).asImmutable();
     }
 
+    /**
+     * <p>Returns the HTTP/1.1 string representation of the {@link HttpField}s of this instance.</p>
+     * <p>The format of each field is: {@code <name>: <value>\r\n}, and there will be
+     * an additional {@code \r\n} after the last field, for example:</p>
+     * <pre>{@code
+     * Host: localhost\r\n
+     * Connection: close\r\n
+     * \r\n
+     * }</pre>
+     *
+     * @return an HTTP/1.1 string representation of the {@link HttpField}s of this instance
+     */
     default String asString()
     {
         StringBuilder buffer = new StringBuilder();
@@ -132,6 +204,16 @@ public interface HttpFields extends Iterable<HttpField>, Supplier<HttpFields>
         return buffer.toString();
     }
 
+    /**
+     * <p>Returns whether this instance contains the given {@link HttpField}.</p>
+     * <p>The comparison of {@link HttpField} names is case-insensitive via
+     * {@link HttpField#isSameName(HttpField)}.
+     * The comparison of the field value is case-insensitive via
+     * {@link HttpField#contains(String)}.</p>
+     *
+     * @param field the {@link HttpField} to search for
+     * @return whether this instance contains the given {@link HttpField}
+     */
     default boolean contains(HttpField field)
     {
         for (HttpField f : this)
@@ -142,6 +224,17 @@ public interface HttpFields extends Iterable<HttpField>, Supplier<HttpFields>
         return false;
     }
 
+    /**
+     * <p>Returns whether this instance contains the given {@link HttpHeader}
+     * with the given value.</p>
+     * <p>The comparison of the field value is case-insensitive via
+     * {@link HttpField#contains(String)}.</p>
+     *
+     * @param header the name of the field to search for
+     * @param value the value to search for
+     * @return whether this instance contains the given
+     * {@link HttpHeader} with the given value
+     */
     default boolean contains(HttpHeader header, String value)
     {
         for (HttpField f : this)
@@ -152,6 +245,19 @@ public interface HttpFields extends Iterable<HttpField>, Supplier<HttpFields>
         return false;
     }
 
+    /**
+     * <p>Returns whether this instance contains the given field name
+     * with the given value.</p>
+     * <p>The comparison of field name is case-insensitive via
+     * {@link HttpField#is(String)}.
+     * The comparison of the field value is case-insensitive via
+     * {@link HttpField#contains(String)}.</p>
+     *
+     * @param name the case-insensitive field name to search for
+     * @param value the field value to search for
+     * @return whether this instance contains the given
+     * field name with the given value
+     */
     default boolean contains(String name, String value)
     {
         for (HttpField f : this)
@@ -162,6 +268,12 @@ public interface HttpFields extends Iterable<HttpField>, Supplier<HttpFields>
         return false;
     }
 
+    /**
+     * <p>Returns whether this instance contains the given field name.</p>
+     *
+     * @param header the field name to search for
+     * @return whether this instance contains the given field name
+     */
     default boolean contains(HttpHeader header)
     {
         for (HttpField f : this)
@@ -172,6 +284,13 @@ public interface HttpFields extends Iterable<HttpField>, Supplier<HttpFields>
         return false;
     }
 
+    /**
+     * <p>Returns whether this instance contains at least one of the given
+     * field names.</p>
+     *
+     * @param headers the field names to search among
+     * @return whether this instance contains at least one of the given field names
+     */
     default boolean contains(EnumSet<HttpHeader> headers)
     {
         for (HttpField f : this)
@@ -182,6 +301,14 @@ public interface HttpFields extends Iterable<HttpField>, Supplier<HttpFields>
         return false;
     }
 
+    /**
+     * <p>Returns whether this instance contains the given field name.</p>
+     * <p>The comparison of field name is case-insensitive via
+     * {@link HttpField#is(String)}.
+     *
+     * @param name the case-insensitive field name to search for
+     * @return whether this instance contains the given field name
+     */
     default boolean contains(String name)
     {
         for (HttpField f : this)
@@ -192,6 +319,17 @@ public interface HttpFields extends Iterable<HttpField>, Supplier<HttpFields>
         return false;
     }
 
+    /**
+     * <p>Returns the encoded value of the first field with the given field name,
+     * or {@code null} if no such header is present.</p>
+     * <p>In case of multi-valued fields, the returned value is the encoded
+     * value, including commas and quotes, as returned by {@link HttpField#getValue()}.</p>
+     *
+     * @param header the field name to search for
+     * @return the raw value of the first field with the given field name,
+     * or {@code null} if no such header is present
+     * @see HttpField#getValue()
+     */
     default String get(HttpHeader header)
     {
         for (HttpField f : this)
@@ -202,23 +340,38 @@ public interface HttpFields extends Iterable<HttpField>, Supplier<HttpFields>
         return null;
     }
 
-    default String get(String header)
+    /**
+     * <p>Returns the encoded value of the first field with the given field name,
+     * or {@code null} if no such field is present.</p>
+     * <p>The comparison of field name is case-insensitive via
+     * {@link HttpField#is(String)}.</p>
+     * <p>In case of multi-valued fields, the returned value is the encoded
+     * value, including commas and quotes, as returned by {@link HttpField#getValue()}.</p>
+     *
+     * @param name the case-insensitive field name to search for
+     * @return the raw value of the first field with the given field name,
+     * or {@code null} if no such field is present
+     * @see HttpField#getValue()
+     */
+    default String get(String name)
     {
         for (HttpField f : this)
         {
-            if (f.is(header))
+            if (f.is(name))
                 return f.getValue();
         }
         return null;
     }
 
     /**
-     * Get multiple field values of the same name, split
-     * as a {@link QuotedCSV}
+     * <p>Returns all the values of all the fields with the given field name.</p>
+     * <p>In case of multi-valued fields, the multi-value of the field is split using
+     * {@link QuotedCSV}, taking into account the given {@code keepQuotes} parameter.</p>
      *
-     * @param header The header
-     * @param keepQuotes True if the fields are kept quoted
-     * @return List the values with OWS stripped
+     * @param header the field name to search for
+     * @param keepQuotes whether the fields values should retain the quotes
+     * @return a list of all the values of all the fields with the given name,
+     * or an empty list if no such field name is present
      */
     default List<String> getCSV(HttpHeader header, boolean keepQuotes)
     {
@@ -236,12 +389,16 @@ public interface HttpFields extends Iterable<HttpField>, Supplier<HttpFields>
     }
 
     /**
-     * Get multiple field values of the same name
-     * as a {@link QuotedCSV}
+     * <p>Returns all the values of all the fields with the given field name.</p>
+     * <p>The comparison of field name is case-insensitive via
+     * {@link HttpField#is(String)}.</p>
+     * <p>In case of multi-valued fields, the multi-value of the field is split using
+     * {@link QuotedCSV}, taking into account the given {@code keepQuotes} parameter.</p>
      *
-     * @param name the case-insensitive field name
-     * @param keepQuotes True if the fields are kept quoted
-     * @return List the values with OWS stripped
+     * @param name the case-insensitive field name to search for
+     * @param keepQuotes whether the fields values should retain the quotes
+     * @return a list of all the values of all the fields with the given name,
+     * or an empty list if no such field name is present
      */
     default List<String> getCSV(String name, boolean keepQuotes)
     {
@@ -259,11 +416,14 @@ public interface HttpFields extends Iterable<HttpField>, Supplier<HttpFields>
     }
 
     /**
-     * Get a header as a date value. Returns the value of a date field, or -1 if not found. The case
-     * of the field name is ignored.
+     * <p>Returns the value of a date field as the number of milliseconds
+     * since the Unix Epoch, or -1 if no such field is present.</p>
+     * <p>The comparison of field name is case-insensitive via
+     * {@link HttpField#is(String)}.</p>
      *
-     * @param name the case-insensitive field name
-     * @return the value of the field as a number of milliseconds since unix epoch
+     * @param name the case-insensitive field name to search for
+     * @return the value of the field as the number of milliseconds since Unix Epoch,
+     * or -1 if no such field is present
      */
     default long getDateField(String name)
     {
@@ -271,18 +431,19 @@ public interface HttpFields extends Iterable<HttpField>, Supplier<HttpFields>
     }
 
     /**
-     * Get a header as a date value. Returns the value of a date field, or -1 if not found. The case
-     * of the field name is ignored.
+     * <p>Returns the value of a date field as the number of milliseconds
+     * since the Unix Epoch, or -1 if no such field is present.</p>
      *
-     * @param header the header
-     * @return the value of the field as a number of milliseconds since unix epoch
+     * @param header the field name to search for
+     * @return the value of the field as the number of milliseconds since Unix Epoch,
+     * or -1 if no such field is present
      */
     default long getDateField(HttpHeader header)
     {
         return parseDateField(getField(header));
     }
 
-    static long parseDateField(HttpField field)
+    private static long parseDateField(HttpField field)
     {
         if (field == null)
             return -1;
@@ -298,15 +459,17 @@ public interface HttpFields extends Iterable<HttpField>, Supplier<HttpFields>
     }
 
     /**
-     * Get a Field by index.
+     * <p>Returns the {@link HttpField} at the given {@code index},
+     * or {@code null} if there is no field at the given index.</p>
      *
-     * @param index the field index
-     * @return A Field value or null if the Field value has not been set
+     * @param index the index of the {@link HttpField}
+     * @return the {@link HttpField} at the given {@code index},
+     * or {@code null} if there is no field at the given index
      */
     default HttpField getField(int index)
     {
         int i = 0;
-        for (HttpField f: this)
+        for (HttpField f : this)
         {
             if (i++ == index)
                 return f;
@@ -314,6 +477,14 @@ public interface HttpFields extends Iterable<HttpField>, Supplier<HttpFields>
         return null;
     }
 
+    /**
+     * <p>Returns the first {@link HttpField} with the given field name,
+     * or {@code null} if no such field is present.</p>
+     *
+     * @param header the field name to search for
+     * @return the first {@link HttpField} with the given field name,
+     * or {@code null} if no such field is present
+     */
     default HttpField getField(HttpHeader header)
     {
         for (HttpField f : this)
@@ -324,6 +495,16 @@ public interface HttpFields extends Iterable<HttpField>, Supplier<HttpFields>
         return null;
     }
 
+    /**
+     * <p>Returns the first {@link HttpField} with the given field name,
+     * or {@code null} if no such field is present.</p>
+     * <p>The comparison of field name is case-insensitive via
+     * {@link HttpField#is(String)}.</p>
+     *
+     * @param name the case-insensitive field name to search for
+     * @return the first {@link HttpField} with the given field name,
+     * or {@code null} if no such field is present
+     */
     default HttpField getField(String name)
     {
         for (HttpField f : this)
@@ -335,9 +516,6 @@ public interface HttpFields extends Iterable<HttpField>, Supplier<HttpFields>
     }
 
     /**
-     * Get enumeration of header _names. Returns an enumeration of strings representing the header
-     * _names for this request.
-     *
      * @return an enumeration of field names
      * @deprecated use {@link #getFieldNamesCollection()}
      */
@@ -348,9 +526,10 @@ public interface HttpFields extends Iterable<HttpField>, Supplier<HttpFields>
     }
 
     /**
-     * Get Set of header names.
+     * <p>Returns a {@link Set} of the field names.</p>
+     * <p>Case-sensitivity of the field names is preserved.</p>
      *
-     * @return the unique set of field names.
+     * @return a {@link Set} of the field names
      */
     default Set<String> getFieldNamesCollection()
     {
@@ -358,16 +537,26 @@ public interface HttpFields extends Iterable<HttpField>, Supplier<HttpFields>
     }
 
     /**
-     * Get multiple fields of the same header
+     * <p>Returns all the {@link HttpField}s with the given field name.</p>
      *
-     * @param header the header
-     * @return List the fields
+     * @param header the field name to search for
+     * @return a list of the {@link HttpField}s with the given field name,
+     * or an empty list if no such field name is present
      */
     default List<HttpField> getFields(HttpHeader header)
     {
         return getFields(header, (f, h) -> f.getHeader() == h);
     }
 
+    /**
+     * <p>Returns all the {@link HttpField}s with the given field name.</p>
+     * <p>The comparison of field name is case-insensitive via
+     * {@link HttpField#is(String)}.</p>
+     *
+     * @param name the case-insensitive field name to search for
+     * @return a list of the {@link HttpField}s with the given field name,
+     * or an empty list if no such field name is present
+     */
     default List<HttpField> getFields(String name)
     {
         return getFields(name, (f, n) -> f.is(name));
@@ -381,12 +570,16 @@ public interface HttpFields extends Iterable<HttpField>, Supplier<HttpFields>
     }
 
     /**
-     * Get a header as an long value. Returns the value of an integer field or -1 if not found. The
-     * case of the field name is ignored.
+     * <p>Returns the value of a field as a {@code long} value,
+     * or -1 if no such field is present.</p>
+     * <p>The comparison of field name is case-insensitive via
+     * {@link HttpField#is(String)}.</p>
      *
      * @param name the case-insensitive field name
-     * @return the value of the field as a long
-     * @throws NumberFormatException If bad long found
+     * @return the value of the field as a {@code long},
+     * or -1 if no such field is present
+     * @throws NumberFormatException if the value of the field
+     * cannot be converted to a {@link long}
      */
     default long getLongField(String name) throws NumberFormatException
     {
@@ -395,12 +588,14 @@ public interface HttpFields extends Iterable<HttpField>, Supplier<HttpFields>
     }
 
     /**
-     * Get a header as an long value. Returns the value of an integer field or -1 if not found. The
-     * case of the field name is ignored.
+     * <p>Returns the value of a field as a {@code long} value,
+     * or -1 if no such field is present.</p>
      *
-     * @param header the header type
-     * @return the value of the field as a long
-     * @throws NumberFormatException If bad long found
+     * @param header the field name
+     * @return the value of the field as a {@code long},
+     * or -1 if no such field is present
+     * @throws NumberFormatException if the value of the field
+     * cannot be converted to a {@link long}
      */
     default long getLongField(HttpHeader header) throws NumberFormatException
     {
@@ -409,11 +604,13 @@ public interface HttpFields extends Iterable<HttpField>, Supplier<HttpFields>
     }
 
     /**
-     * Get multiple field values of the same name, split and
-     * sorted as a {@link QuotedQualityCSV}
+     * <p>Returns all the values of all the fields with the given name,
+     * split and sorted in quality order using {@link QuotedQualityCSV}.</p>
      *
-     * @param header The header
-     * @return List the values in quality order with the q param and OWS stripped
+     * @param header the field name to search for
+     * @return a list of all the values of all the fields with the given name,
+     * split and sorted in quality order,
+     * or an empty list if no such field name is present
      */
     default List<String> getQualityCSV(HttpHeader header)
     {
@@ -421,12 +618,17 @@ public interface HttpFields extends Iterable<HttpField>, Supplier<HttpFields>
     }
 
     /**
-     * Get multiple field values of the same name, split and
-     * sorted as a {@link QuotedQualityCSV}
+     * <p>Returns all the values of all the fields with the given name,
+     * split and sorted first in quality order and then optionally further
+     * sorted with the given function, using {@link QuotedQualityCSV}.</p>
      *
-     * @param header The header
-     * @param secondaryOrdering Function to apply an ordering other than specified by quality
-     * @return List the values in quality order with the q param and OWS stripped
+     * @param header the field name to search for
+     * @param secondaryOrdering the secondary sort function, or {@code null}
+     * for no secondary sort
+     * @return a list of all the values of all the fields with the given name,
+     * split and sorted in quality order and optionally further sorted with
+     * the given function,
+     * or an empty list if no such field name is present
      */
     default List<String> getQualityCSV(HttpHeader header, ToIntFunction<String> secondaryOrdering)
     {
@@ -445,11 +647,15 @@ public interface HttpFields extends Iterable<HttpField>, Supplier<HttpFields>
     }
 
     /**
-     * Get multiple field values of the same name, split and
-     * sorted as a {@link QuotedQualityCSV}
+     * <p>Returns all the values of all the fields with the given name,
+     * split and sorted in quality order using {@link QuotedQualityCSV}.</p>
+     * <p>The comparison of field name is case-insensitive via
+     * {@link HttpField#is(String)}.</p>
      *
-     * @param name the case-insensitive field name
-     * @return List the values in quality order with the q param and OWS stripped
+     * @param name the case-insensitive field name to search for
+     * @return a list of all the values of all the fields with the given name,
+     * split and sorted in quality order,
+     * or an empty list if no such field name is present
      */
     default List<String> getQualityCSV(String name)
     {
@@ -467,10 +673,16 @@ public interface HttpFields extends Iterable<HttpField>, Supplier<HttpFields>
     }
 
     /**
-     * Get multi headers
+     * <p>Returns an {@link Enumeration} of the encoded values of all the fields
+     * with the given name.</p>
+     * <p>The comparison of field name is case-insensitive via
+     * {@link HttpField#is(String)}.</p>
+     * <p>In case of multi-valued fields, the returned value is the encoded
+     * value, including commas and quotes, as returned by {@link HttpField#getValue()}.</p>
      *
-     * @param name the case-insensitive field name
-     * @return Enumeration of the values
+     * @param name the case-insensitive field name to search for
+     * @return an {@link Enumeration} of the encoded values of all
+     * the fields with the given name
      */
     default Enumeration<String> getValues(String name)
     {
@@ -511,10 +723,15 @@ public interface HttpFields extends Iterable<HttpField>, Supplier<HttpFields>
     }
 
     /**
-     * Get multiple field values of the same name
+     * <p>Returns a list of the encoded values of all the fields
+     * with the given name.</p>
+     * <p>In case of multi-valued fields, the returned value is the encoded
+     * value, including commas and quotes, as returned by {@link HttpField#getValue()}.</p>
      *
-     * @param header the header
-     * @return List the values
+     * @param header the field name to search for
+     * @return a list of the encoded values of all the fields
+     * with the given name,
+     * or an empty list if no such field name is present
      */
     default List<String> getValuesList(HttpHeader header)
     {
@@ -528,10 +745,17 @@ public interface HttpFields extends Iterable<HttpField>, Supplier<HttpFields>
     }
 
     /**
-     * Get multiple header of the same name
+     * <p>Returns a list of the encoded values of all the fields
+     * with the given name.</p>
+     * <p>The comparison of field name is case-insensitive via
+     * {@link HttpField#is(String)}.</p>
+     * <p>In case of multi-valued fields, the returned value is the encoded
+     * value, including commas and quotes, as returned by {@link HttpField#getValue()}.</p>
      *
-     * @param name the case-insensitive field name
-     * @return List the header values
+     * @param name the field name to search for
+     * @return a list of the encoded values of all the fields
+     * with the given name,
+     * or an empty list if no such field name is present
      */
     default List<String> getValuesList(String name)
     {
@@ -544,6 +768,16 @@ public interface HttpFields extends Iterable<HttpField>, Supplier<HttpFields>
         return list;
     }
 
+    /**
+     * <p>Returns whether this instance is equal to the given instance.</p>
+     * <p>Returns {@code true} if and only if the two instances have the
+     * same number of fields, in the same order, and each field is equal,
+     * but makes no difference between {@link Mutable} and non-{@link Mutable}
+     * instances.</p>
+     *
+     * @param that the {@link HttpFields} instance to compare to
+     * @return whether the two instances are equal
+     */
     default boolean isEqualTo(HttpFields that)
     {
         if (size() != that.size())
@@ -560,113 +794,149 @@ public interface HttpFields extends Iterable<HttpField>, Supplier<HttpFields>
         return !i.hasNext();
     }
 
+    /**
+     * @return the number of {@link HttpField}s in this instance
+     */
     default int size()
     {
-        int s = 0;
+        int size = 0;
         for (HttpField ignored : this)
-            s++;
-        return s;
-    }
-
-    default Stream<HttpField> stream()
-    {
-        return StreamSupport.stream(Spliterators.spliteratorUnknownSize(iterator(), 0), false);
+        {
+            size++;
+        }
+        return size;
     }
 
     /**
-     * A mutable HttpFields interface.
-     * To implement this interface, only the {@link #listIterator()}
-     * method needs to be implemented, however default implementations
-     * may not be efficient.
+     * @return a sequential stream of the {@link HttpField}s in this instance
      */
-    interface Mutable extends Iterable<HttpField>, HttpFields
+    default Stream<HttpField> stream()
+    {
+        return StreamSupport.stream(spliterator(), false);
+    }
+
+    /**
+     * <p>A mutable version of {@link HttpFields}.</p>
+     * <p>Name and value pairs representing HTTP headers or HTTP
+     * trailers can be added to or removed from this instance.</p>
+     */
+    interface Mutable extends HttpFields
     {
         /**
-         * Add to or set a field. If the field is allowed to have multiple values, add will add multiple
-         * headers of the same name.
+         * <p>Adds a new {@link HttpField} with the given name and string value.</p>
+         * <p>The new {@link HttpField} is added even if a field with the
+         * same name is already present.</p>
          *
-         * @param name the name of the field
-         * @param value the value of the field.
-         * @return this builder
+         * @param name the non-{@code null} name of the field
+         * @param value the non-{@code null} value of the field
+         * @return this instance
          */
         default Mutable add(String name, String value)
         {
-            if (value != null)
-                return add(new HttpField(name, value));
-            return this;
+            if (value == null)
+                throw new IllegalArgumentException("null value");
+            return add(new HttpField(name, value));
         }
 
         /**
-         * Add to or set a field. If the field is allowed to have multiple values, add will add multiple
-         * headers of the same name.
+         * <p>Adds a new {@link HttpField} with the given name and {@code long} value.</p>
+         * <p>The new {@link HttpField} is added even if a field with the
+         * same name is already present.</p>
          *
-         * @param name the name of the field
-         * @param value the value of the field.
-         * @return this builder
+         * @param name the non-{@code null} name of the field
+         * @param value the value of the field
+         * @return this instance
          */
         default Mutable add(String name, long value)
         {
             return add(new HttpField.LongValueHttpField(name, value));
         }
 
+        /**
+         * <p>Adds a new {@link HttpField} with the given name and value.</p>
+         * <p>The new {@link HttpField} is added even if a field with the
+         * same name is already present.</p>
+         *
+         * @param header the non-{@code null} name of the field
+         * @param value the non-{@code null} value of the field
+         * @return this instance
+         */
         default Mutable add(HttpHeader header, HttpHeaderValue value)
         {
             return add(header, value.toString());
         }
 
         /**
-         * Add to or set a field. If the field is allowed to have multiple values, add will add multiple
-         * headers of the same name.
+         * <p>Adds a new {@link HttpField} with the given name and string value.</p>
+         * <p>The new {@link HttpField} is added even if a field with the
+         * same name is already present.</p>
          *
-         * @param header the header
-         * @param value the value of the field.
-         * @return this builder
+         * @param header the non-{@code null} name of the field
+         * @param value the non-{@code null} value of the field
+         * @return this instance
          */
         default Mutable add(HttpHeader header, String value)
         {
             if (value == null)
                 throw new IllegalArgumentException("null value");
-
-            HttpField field = new HttpField(header, value);
-            return add(field);
+            return add(new HttpField(header, value));
         }
 
         /**
-         * Add to or set a field. If the field is allowed to have multiple values, add will add multiple
-         * headers of the same name.
+         * <p>Adds a new {@link HttpField} with the given name and {@code long} value.</p>
+         * <p>The new {@link HttpField} is added even if a field with the
+         * same name is already present.</p>
          *
-         * @param header the header
-         * @param value the value of the field.
-         * @return this builder
+         * @param header the non-{@code null} name of the field
+         * @param value the value of the field
+         * @return this instance
          */
         default Mutable add(HttpHeader header, long value)
         {
             return add(new HttpField.LongValueHttpField(header, value));
         }
 
+        /**
+         * <p>Adds the given {@link HttpField} to this instance.</p>
+         *
+         * @param field the {@link HttpField} to add
+         * @return this instance
+         */
         default Mutable add(HttpField field)
         {
             ListIterator<HttpField> i = listIterator();
             while (i.hasNext())
+            {
                 i.next();
+            }
             i.add(field);
             return this;
         }
 
+        /**
+         * <p>Adds all the {@link HttpField}s of the given {@link HttpFields}
+         * to this instance.</p>
+         *
+         * @param fields the fields to add
+         * @return this instance
+         */
         default Mutable add(HttpFields fields)
         {
             for (HttpField field : fields)
+            {
                 add(field);
+            }
             return this;
         }
 
         /**
-         * Add comma separated values, but only if not already
-         * present.
+         * <p>Adds the given value(s) to the {@link HttpField} with the given name,
+         * encoding them as comma-separated if necessary,
+         * unless they are already present in existing fields with the same name.</p>
          *
-         * @param header The header to add the value(s) to
-         * @param values The value(s) to add
-         * @return this builder
+         * @param header the field name of the field to add the value(s) to
+         * @param values the value(s) to add
+         * @return this instance
          */
         default Mutable addCSV(HttpHeader header, String... values)
         {
@@ -687,12 +957,13 @@ public interface HttpFields extends Iterable<HttpField>, Supplier<HttpFields>
         }
 
         /**
-         * Add comma separated values, but only if not already
-         * present.
+         * <p>Adds the given value(s) to the {@link HttpField} with the given name,
+         * encoding them as comma-separated if necessary,
+         * unless they are already present in existing fields with the same name.</p>
          *
-         * @param name The header to add the value(s) to
-         * @param values The value(s) to add
-         * @return this builder
+         * @param name the field name of the field to add the value(s) to
+         * @param values the value(s) to add
+         * @return this instance
          */
         default Mutable addCSV(String name, String... values)
         {
@@ -713,11 +984,13 @@ public interface HttpFields extends Iterable<HttpField>, Supplier<HttpFields>
         }
 
         /**
-         * Sets the value of a date field.
+         * <p>Adds a new date {@link HttpField} with the given name and {@code date} value.</p>
+         * The {@code date} parameter is the number of milliseconds from the Unix Epoch,
+         * and it is formatted into a string via {@link DateGenerator#formatDate(long)}.
          *
-         * @param name the field name
+         * @param name the non-{@code null} name of the field
          * @param date the field date value
-         * @return this builder
+         * @return this instance
          */
         default Mutable addDateField(String name, long date)
         {
@@ -725,9 +998,15 @@ public interface HttpFields extends Iterable<HttpField>, Supplier<HttpFields>
             return this;
         }
 
+        /**
+         * <p>Removes all the fields from this instance.</p>
+         *
+         * @return this instance
+         */
         default Mutable clear()
         {
-            for (ListIterator<HttpField> i = listIterator(); i.hasNext(); )
+            Iterator<HttpField> i = iterator();
+            while (i.hasNext())
             {
                 i.next();
                 i.remove();
@@ -736,54 +1015,70 @@ public interface HttpFields extends Iterable<HttpField>, Supplier<HttpFields>
         }
 
         /**
-         * Ensure that specific HttpField exists when the field may not exist or may
-         * exist and be multi valued.  Multiple existing fields are merged into a
-         * single field.
+         * <p>Ensures that the given {@link HttpField} is present when the field
+         * may not exist or may exist and be multi-valued.</p>
+         * <p>Multiple existing {@link HttpField}s are merged into a single field.</p>
          *
-         * @param field The header to ensure is contained.  The field is used
-         * directly if possible so {@link PreEncodedHttpField}s can be
-         * passed.  If the value needs to be merged with existing values,
-         * then a new field is created.
+         * @param field the field to ensure to be present
          */
         default void ensureField(HttpField field)
         {
+            HttpHeader header = field.getHeader();
             // Is the field value multi valued?
             if (field.getValue().indexOf(',') < 0)
             {
-                // Call Single valued computeEnsure with either String header name or enum HttpHeader
-                if (field.getHeader() != null)
-                    computeField(field.getHeader(), (h, l) -> computeEnsure(field, l));
+                if (header != null)
+                    computeField(header, (h, l) -> computeEnsure(field, l));
                 else
                     computeField(field.getName(), (h, l) -> computeEnsure(field, l));
             }
             else
             {
-                // call multi valued computeEnsure with either String header name or enum HttpHeader
-                if (field.getHeader() != null)
-                    computeField(field.getHeader(), (h, l) -> computeEnsure(field, field.getValues(), l));
+                if (header != null)
+                    computeField(header, (h, l) -> computeEnsure(field, field.getValues(), l));
                 else
                     computeField(field.getName(), (h, l) -> computeEnsure(field, field.getValues(), l));
             }
         }
 
+        /**
+         * @return an {@link Iterator} over the {@link HttpField}s of this instance
+         */
         @Override
         default Iterator<HttpField> iterator()
         {
             return listIterator();
         }
 
+        /**
+         * @return a {@link ListIterator} over the {@link HttpField}s of this instance
+         */
         ListIterator<HttpField> listIterator();
 
+        /**
+         * <p>Puts the given {@link HttpField} into this instance.</p>
+         * <p>If a fields with the same name is present, the given field
+         * replaces it, and other existing fields with the same name
+         * are removed, so that only the given field will be present.</p>
+         * <p>If a field with the same name is not present, the given
+         * field will be added.</p>
+         *
+         * @param field the field to put
+         * @return this instance
+         */
         default Mutable put(HttpField field)
         {
             boolean put = false;
-            for (ListIterator<HttpField> i = listIterator(); i.hasNext(); )
+            ListIterator<HttpField> i = listIterator();
+            while (i.hasNext())
             {
                 HttpField f = i.next();
                 if (f.isSameName(field))
                 {
                     if (put)
+                    {
                         i.remove();
+                    }
                     else
                     {
                         i.set(field);
@@ -797,11 +1092,13 @@ public interface HttpFields extends Iterable<HttpField>, Supplier<HttpFields>
         }
 
         /**
-         * Set a field.
+         * <p>This method behaves like {@link #remove(String)} when
+         * the given {@code value} is {@code null}, otherwise behaves
+         * like {@link #put(HttpField)}.</p>
          *
          * @param name the name of the field
-         * @param value the value of the field. If null the field is cleared.
-         * @return this builder
+         * @param value the value of the field; if {@code null} the field is removed
+         * @return this instance
          */
         default Mutable put(String name, String value)
         {
@@ -810,6 +1107,15 @@ public interface HttpFields extends Iterable<HttpField>, Supplier<HttpFields>
             return put(new HttpField(name, value));
         }
 
+        /**
+         * <p>This method behaves like {@link #remove(HttpHeader)} when
+         * the given {@code value} is {@code null}, otherwise behaves
+         * like {@link #put(HttpField)}.</p>
+         * 
+         * @param header the name of the field
+         * @param value the value of the field; if {@code null} the field is removed
+         * @return this instance
+         */
         default Mutable put(HttpHeader header, HttpHeaderValue value)
         {
             if (value == null)
@@ -818,11 +1124,13 @@ public interface HttpFields extends Iterable<HttpField>, Supplier<HttpFields>
         }
 
         /**
-         * Set a field.
+         * <p>This method behaves like {@link #remove(HttpHeader)} when
+         * the given {@code value} is {@code null}, otherwise behaves
+         * like {@link #put(HttpField)}.</p>
          *
-         * @param header the header name of the field
-         * @param value the value of the field. If null the field is cleared.
-         * @return this builder
+         * @param header the name of the field
+         * @param value the value of the field; if {@code null} the field is removed
+         * @return this instance
          */
         default Mutable put(HttpHeader header, String value)
         {
@@ -840,8 +1148,8 @@ public interface HttpFields extends Iterable<HttpField>, Supplier<HttpFields>
          */
         default Mutable put(String name, List<String> list)
         {
-            Objects.requireNonNull(name);
-            Objects.requireNonNull(list);
+            // TODO: this implementation should not add
+            //  multiple headers, see RFC 9110 section 5.3.
             boolean first = true;
             for (String s : list)
             {
@@ -856,11 +1164,14 @@ public interface HttpFields extends Iterable<HttpField>, Supplier<HttpFields>
         }
 
         /**
-         * Sets the value of a date field.
+         * <p>Puts a new date {@link HttpField} with the given name and {@code date} value,
+         * with the semantic of {@link #put(HttpField)}.</p>
+         * The {@code date} parameter is the number of milliseconds from the Unix Epoch,
+         * and it is formatted into a string via {@link DateGenerator#formatDate(long)}.
          *
-         * @param name the field name
+         * @param name the non-{@code null} name of the field
          * @param date the field date value
-         * @return this builder
+         * @return this instance
          */
         default Mutable putDate(HttpHeader name, long date)
         {
@@ -868,11 +1179,14 @@ public interface HttpFields extends Iterable<HttpField>, Supplier<HttpFields>
         }
 
         /**
-         * Sets the value of a date field.
+         * <p>Puts a new date {@link HttpField} with the given name and {@code date} value,
+         * with the semantic of {@link #put(HttpField)}.</p>
+         * The {@code date} parameter is the number of milliseconds from the Unix Epoch,
+         * and it is formatted into a string via {@link DateGenerator#formatDate(long)}.
          *
-         * @param name the field name
+         * @param name the non-{@code null} name of the field
          * @param date the field date value
-         * @return this builder
+         * @return this instance
          */
         default Mutable putDate(String name, long date)
         {
@@ -880,11 +1194,12 @@ public interface HttpFields extends Iterable<HttpField>, Supplier<HttpFields>
         }
 
         /**
-         * Sets the value of a long field.
+         * <p>Puts a new {@link HttpField} with the given name and {@code long} value,
+         * with the semantic of {@link #put(HttpField)}.</p>
          *
-         * @param header the field name
-         * @param value the field long value
-         * @return this builder
+         * @param header the non-{@code null} name of the field
+         * @param value the value of the field
+         * @return this instance
          */
         default Mutable put(HttpHeader header, long value)
         {
@@ -894,11 +1209,12 @@ public interface HttpFields extends Iterable<HttpField>, Supplier<HttpFields>
         }
 
         /**
-         * Sets the value of a long field.
+         * <p>Puts a new {@link HttpField} with the given name and {@code long} value,
+         * with the semantic of {@link #put(HttpField)}.</p>
          *
-         * @param name the field name
-         * @param value the field long value
-         * @return this builder
+         * @param name the non-{@code null} name of the field
+         * @param value the value of the field
+         * @return this instance
          */
         default Mutable put(String name, long value)
         {
@@ -908,24 +1224,24 @@ public interface HttpFields extends Iterable<HttpField>, Supplier<HttpFields>
         }
 
         /**
-         * <p>Computes a single field for the given HttpHeader and for existing fields with the same header.</p>
+         * <p>Computes a single field for the given {@link HttpHeader} and for existing fields with the same header.</p>
          *
          * <p>The compute function receives the field name and a list of fields with the same name
          * so that their values can be used to compute the value of the field that is returned
-         * by the compute function.
+         * by the compute function parameter.
          * If the compute function returns {@code null}, the fields with the given name are removed.</p>
          * <p>This method comes handy when you want to add an HTTP header if it does not exist,
          * or add a value if the HTTP header already exists, similarly to
          * {@link Map#compute(Object, BiFunction)}.</p>
          *
          * <p>This method can be used to {@link #put(HttpField) put} a new field (or blindly replace its value):</p>
-         * <pre>
+         * <pre>{@code
          * httpFields.computeField("X-New-Header",
-         *     (name, fields) -&gt; new HttpField(name, "NewValue"));
-         * </pre>
+         *     (name, fields) -> new HttpField(name, "NewValue"));
+         * }</pre>
          *
          * <p>This method can be used to coalesce many fields into one:</p>
-         * <pre>
+         * <pre>{@code
          * // Input:
          * GET / HTTP/1.1
          * Host: localhost
@@ -934,7 +1250,7 @@ public interface HttpFields extends Iterable<HttpField>, Supplier<HttpFields>
          * User-Agent: Jetty
          *
          * // Computation:
-         * httpFields.computeField("Cookie", (name, fields) -&gt;
+         * httpFields.computeField("Cookie", (name, fields) ->
          * {
          *     // No cookies, nothing to do.
          *     if (fields == null)
@@ -942,7 +1258,7 @@ public interface HttpFields extends Iterable<HttpField>, Supplier<HttpFields>
          *
          *     // Coalesces all cookies.
          *     String coalesced = fields.stream()
-         *         .flatMap(field -&gt; Stream.of(field.getValues()))
+         *         .flatMap(field -> Stream.of(field.getValues()))
          *         .collect(Collectors.joining(", "));
          *
          *     // Returns a single Cookie header with all cookies.
@@ -954,11 +1270,11 @@ public interface HttpFields extends Iterable<HttpField>, Supplier<HttpFields>
          * Host: localhost
          * Cookie: foo=1, bar=2, baz=3
          * User-Agent: Jetty
-         * </pre>
+         * }</pre>
          *
          * <p>This method can be used to replace a field:</p>
-         * <pre>
-         * httpFields.computeField("X-Length", (name, fields) -&gt;
+         * <pre>{@code
+         * httpFields.computeField("X-Length", (name, fields) ->
          * {
          *     if (fields == null)
          *         return null;
@@ -972,42 +1288,45 @@ public interface HttpFields extends Iterable<HttpField>, Supplier<HttpFields>
          *     // Replace X-Length headers with X-Capacity header.
          *     return new HttpField("X-Capacity", length);
          * });
-         * </pre>
+         * }</pre>
          *
          * <p>This method can be used to remove a field:</p>
-         * <pre>
-         * httpFields.computeField("Connection", (name, fields) -&gt; null);
-         * </pre>
+         * <pre>{@code
+         * httpFields.computeField("Connection", (name, fields) -> null);
+         * }</pre>
          *
-         * @param header the HTTP header
+         * @param header the field name
          * @param computeFn the compute function
+         * @return this instance
          */
-        default void computeField(HttpHeader header, BiFunction<HttpHeader, List<HttpField>, HttpField> computeFn)
+        default Mutable computeField(HttpHeader header, BiFunction<HttpHeader, List<HttpField>, HttpField> computeFn)
         {
-            put(computeFn.apply(header, stream().filter(f -> f.getHeader() == header).collect(Collectors.toList())));
+            return put(computeFn.apply(header, stream().filter(f -> f.getHeader() == header).collect(Collectors.toList())));
         }
 
         /**
-         * <p>Computes a single field for the given HTTP header name and for existing fields with the same name.</p>
+         * <p>Computes a single field for the given HTTP field name and for existing fields with the same name.</p>
          *
-         * @param name the HTTP header name
+         * @param name the field name
          * @param computeFn the compute function
+         * @return this instance
          * @see #computeField(HttpHeader, BiFunction)
          */
-        default void computeField(String name, BiFunction<String, List<HttpField>, HttpField> computeFn)
+        default Mutable computeField(String name, BiFunction<String, List<HttpField>, HttpField> computeFn)
         {
-            put(computeFn.apply(name, stream().filter(f -> f.is(name)).collect(Collectors.toList())));
+            return put(computeFn.apply(name, stream().filter(f -> f.is(name)).collect(Collectors.toList())));
         }
 
         /**
-         * Remove a field.
+         * <p>Removes all the fields with the given name.</p>
          *
-         * @param header the field to remove
-         * @return this builder
+         * @param header the name of the fields to remove
+         * @return this instance
          */
         default Mutable remove(HttpHeader header)
         {
-            for (ListIterator<HttpField> i = listIterator(); i.hasNext();)
+            Iterator<HttpField> i = iterator();
+            while (i.hasNext())
             {
                 HttpField f = i.next();
                 if (f.getHeader() == header)
@@ -1016,27 +1335,34 @@ public interface HttpFields extends Iterable<HttpField>, Supplier<HttpFields>
             return this;
         }
 
-        default Mutable remove(EnumSet<HttpHeader> fields)
+        /**
+         * <p>Removes all the fields with the given names.</p>
+         *
+         * @param headers the names of the fields to remove
+         * @return this instance
+         */
+        default Mutable remove(EnumSet<HttpHeader> headers)
         {
-            for (ListIterator<HttpField> i = listIterator(); i.hasNext();)
+            Iterator<HttpField> i = iterator();
+            while (i.hasNext())
             {
                 HttpField f = i.next();
                 HttpHeader h = f.getHeader();
-                if (h != null && fields.contains(h))
+                if (h != null && headers.contains(h))
                     i.remove();
             }
             return this;
         }
 
         /**
-         * Remove a field.
+         * <p>Removes all the fields with the given name.</p>
          *
-         * @param name the field to remove
-         * @return this builder
+         * @param name the name of the fields to remove
+         * @return this instance
          */
         default Mutable remove(String name)
         {
-            for (ListIterator<HttpField> i = listIterator(); i.hasNext();)
+            for (ListIterator<HttpField> i = listIterator(); i.hasNext(); )
             {
                 HttpField f = i.next();
                 if (f.is(name))
@@ -1045,7 +1371,7 @@ public interface HttpFields extends Iterable<HttpField>, Supplier<HttpFields>
             return this;
         }
 
-        static String formatCsvExcludingExisting(QuotedCSV existing, String... values)
+        private static String formatCsvExcludingExisting(QuotedCSV existing, String... values)
         {
             // remove any existing values from the new values
             boolean add = true;
@@ -1070,23 +1396,18 @@ public interface HttpFields extends Iterable<HttpField>, Supplier<HttpFields>
                 {
                     if (v == null)
                         continue;
-                    if (value.length() > 0)
+                    if (!value.isEmpty())
                         value.append(", ");
                     value.append(v);
                 }
-                if (value.length() > 0)
+                if (!value.isEmpty())
                     return value.toString();
             }
 
             return null;
         }
 
-        /**
-         * Compute ensure field with a single value
-         * @param ensure The field to ensure exists
-         * @param fields The list of existing fields with the same header
-         */
-        static HttpField computeEnsure(HttpField ensure, List<HttpField> fields)
+        private static HttpField computeEnsure(HttpField ensure, List<HttpField> fields)
         {
             // If no existing fields return the ensure field
             if (fields == null || fields.isEmpty())
@@ -1109,7 +1430,7 @@ public interface HttpFields extends Iterable<HttpField>, Supplier<HttpFields>
             for (HttpField f : fields)
             {
                 // Always append multiple fields into a single field value
-                if (v.length() > 0)
+                if (!v.isEmpty())
                     v.append(", ");
                 v.append(f.getValue());
 
@@ -1125,13 +1446,7 @@ public interface HttpFields extends Iterable<HttpField>, Supplier<HttpFields>
             return new HttpField(ensure.getHeader(), ensure.getName(), v.toString());
         }
 
-        /**
-         * Compute ensure field with a multiple values
-         * @param ensure The field to ensure exists
-         * @param values The QuotedCSV parsed field values.
-         * @param fields The list of existing fields with the same header
-         */
-        static HttpField computeEnsure(HttpField ensure, String[] values, List<HttpField> fields)
+        private static HttpField computeEnsure(HttpField ensure, String[] values, List<HttpField> fields)
         {
             // If no existing fields return the ensure field
             if (fields == null || fields.isEmpty())
@@ -1175,7 +1490,7 @@ public interface HttpFields extends Iterable<HttpField>, Supplier<HttpFields>
             for (HttpField f : fields)
             {
                 // Always append multiple fields into a single field value
-                if (v.length() > 0)
+                if (!v.isEmpty())
                     v.append(", ");
                 v.append(f.getValue());
 
@@ -1197,8 +1512,10 @@ public interface HttpFields extends Iterable<HttpField>, Supplier<HttpFields>
             else if (ensured > 0)
             {
                 for (String value : values)
+                {
                     if (value != null)
                         v.append(", ").append(value);
+                }
             }
 
             // return a merged header with missing ensured values added
@@ -1206,7 +1523,7 @@ public interface HttpFields extends Iterable<HttpField>, Supplier<HttpFields>
         }
 
         /**
-         * A wrapper of {@link HttpFields}.
+         * A wrapper of {@link HttpFields} instances.
          */
         class Wrapper implements Mutable
         {
@@ -1219,6 +1536,7 @@ public interface HttpFields extends Iterable<HttpField>, Supplier<HttpFields>
 
             /**
              * Called when a field is added (including as part of a put).
+             *
              * @param field The field being added.
              * @return The field to add, or null if the add is to be ignored.
              */
@@ -1229,18 +1547,13 @@ public interface HttpFields extends Iterable<HttpField>, Supplier<HttpFields>
 
             /**
              * Called when a field is removed (including as part of a put).
+             *
              * @param field The field being removed.
              * @return True if the field should be removed, false otherwise.
              */
             public boolean onRemoveField(HttpField field)
             {
                 return true;
-            }
-
-            @Override
-            public HttpFields takeAsImmutable()
-            {
-                return Mutable.super.takeAsImmutable();
             }
 
             @Override
@@ -1260,12 +1573,11 @@ public interface HttpFields extends Iterable<HttpField>, Supplier<HttpFields>
             @Override
             public Mutable add(HttpField field)
             {
-                // This impl needed only as an optimization
                 if (field != null)
                 {
                     field = onAddField(field);
                     if (field != null)
-                       return _fields.add(field);
+                        return _fields.add(field);
                 }
                 return this;
             }
@@ -1367,652 +1679,17 @@ public interface HttpFields extends Iterable<HttpField>, Supplier<HttpFields>
         }
     }
 
-    /**
-     * HTTP Fields. A collection of HTTP header and or Trailer fields.
-     *
-     * <p>This class is not synchronized as it is expected that modifications will only be performed by a
-     * single thread.
-     *
-     * <p>The cookie handling provided by this class is guided by the Servlet specification and RFC6265.
-     */
-    class MutableHttpFields implements Mutable
+    @Deprecated(forRemoval = true)
+    class MutableHttpFields extends org.eclipse.jetty.http.MutableHttpFields
     {
-        private static final int INITIAL_SIZE = 16;
-        private static final int SIZE_INCREMENT = 4;
-        
-        private HttpField[] _fields;
-        private int _size;
-
-        /**
-         * Initialize an empty HttpFields.
-         */
-        protected MutableHttpFields()
-        {
-            this(INITIAL_SIZE);  // Based on small sample of Chrome requests.
-        }
-
-        /**
-         * Initialize an empty HttpFields.
-         *
-         * @param capacity the capacity of the http fields
-         */
-        protected MutableHttpFields(int capacity)
-        {
-            _fields = new HttpField[capacity];
-        }
-
-        /**
-         * Initialize HttpFields from another.
-         *
-         * @param fields the fields to copy data from
-         */
-        protected MutableHttpFields(HttpFields fields)
-        {
-            add(fields);
-        }
-
-        /**
-         * Initialize HttpFields from another and replace a field
-         *
-         * @param fields the fields to copy data from
-         * @param replaceField the replacement field
-         */
-        protected MutableHttpFields(HttpFields fields, HttpField replaceField)
-        {
-            _fields = new HttpField[fields.size() + SIZE_INCREMENT];
-            _size = 0;
-            boolean put = false;
-            for (HttpField f : fields)
-            {
-                if (replaceField.isSameName(f))
-                {
-                    if (!put)
-                        _fields[_size++] = replaceField;
-                    put = true;
-                }
-                else
-                {
-                    _fields[_size++] = f;
-                }
-            }
-            if (!put)
-                _fields[_size++] = replaceField;
-        }
-
-        /**
-         * Initialize HttpFields from another and remove fields
-         *
-         * @param fields the fields to copy data from
-         * @param removeFields the the fields to remove
-         */
-        protected MutableHttpFields(HttpFields fields, EnumSet<HttpHeader> removeFields)
-        {
-            _fields = new HttpField[fields.size() + SIZE_INCREMENT];
-            _size = 0;
-            for (HttpField f : fields)
-            {
-                if (f.getHeader() == null || !removeFields.contains(f.getHeader()))
-                    _fields[_size++] = f;
-            }
-        }
-
-        @Override
-        public Mutable add(HttpField field)
-        {
-            if (field != null)
-            {
-                if (_fields == null)
-                    _fields = new HttpField[INITIAL_SIZE];
-                if (_size == _fields.length)
-                    _fields = Arrays.copyOf(_fields, _size + SIZE_INCREMENT);
-                _fields[_size++] = field;
-            }
-            return this;
-        }
-
-        @Override
-        public Mutable add(HttpFields fields)
-        {
-            if (_fields == null)
-                _fields = new HttpField[fields.size() + SIZE_INCREMENT];
-            else if (_size + fields.size() >= _fields.length)
-                _fields = Arrays.copyOf(_fields, _size + fields.size() + SIZE_INCREMENT);
-
-            if (fields.size() == 0)
-                return this;
-
-            if (fields instanceof ImmutableHttpFields immutable)
-            {
-                System.arraycopy(immutable._fields, 0, _fields, _size, immutable._size);
-                _size += immutable._size;
-            }
-            else if (fields instanceof MutableHttpFields mutable)
-            {
-                System.arraycopy(mutable._fields, 0, _fields, _size, mutable._size);
-                _size += mutable._size;
-            }
-            else
-            {
-                for (HttpField f : fields)
-                    _fields[_size++] = f;
-            }
-            return this;
-        }
-
-        @Override
-        public HttpFields asImmutable()
-        {
-            return new ImmutableHttpFields(Arrays.copyOf(_fields, _size));
-        }
-
-        @Override
-        public HttpFields takeAsImmutable()
-        {
-            HttpField[] fields = _fields == null ? new HttpField[0] : _fields;
-            int size = _size;
-            _fields = null;
-            _size = 0;
-
-            return new ImmutableHttpFields(fields, size);
-        }
-
-        @Override
-        public Mutable clear()
-        {
-            _size = 0;
-            return this;
-        }
-
-        @Override
-        public boolean equals(Object o)
-        {
-            if (this == o)
-                return true;
-            if (!(o instanceof MutableHttpFields))
-                return false;
-
-            return isEqualTo((HttpFields)o);
-        }
-
-        /**
-         * Get a Field by index.
-         *
-         * @param index the field index
-         * @return A Field value or null if the Field value has not been set
-         */
-        @Override
-        public HttpField getField(int index)
-        {
-            if (index >= _size || index < 0)
-                throw new NoSuchElementException();
-            return _fields[index];
-        }
-
-        @Override
-        public int hashCode()
-        {
-            int hash = 0;
-            for (int i = _size; i-- > 0; )
-            {
-                HttpField field = _fields[i];
-                if (field != null)
-                    hash ^= field.hashCode();
-            }
-            return hash;
-        }
-
-        @Override
-        public Iterator<HttpField> iterator()
-        {
-            return new Iterator<>()
-            {
-                int _index = 0;
-
-                @Override
-                public boolean hasNext()
-                {
-                    return _index < _size;
-                }
-
-                @Override
-                public HttpField next()
-                {
-                    return _fields[_index++];
-                }
-
-                @Override
-                public void remove()
-                {
-                    if (_size == 0)
-                        throw new IllegalStateException();
-                    MutableHttpFields.this.remove(--_index);
-                }
-            };
-        }
-
-        @Override
-        public ListIterator<HttpField> listIterator()
-        {
-            return new ListItr();
-        }
-
-        @Override
-        public Mutable put(HttpField field)
-        {
-            boolean put = false;
-
-            for (int i = 0; i < _size; i++)
-            {
-                HttpField f = _fields[i];
-                if (f.isSameName(field))
-                {
-                    if (put)
-                        System.arraycopy(_fields, i + 1, _fields, i, _size-- - i-- - 1);
-                    else
-                    {
-                        _fields[i] = field;
-                        put = true;
-                    }
-                }
-            }
-            if (!put)
-                add(field);
-            return this;
-        }
-
-        @Override
-        public Mutable put(String name, String value)
-        {
-            return (value == null)
-                ? remove(name)
-                : put(new HttpField(name, value));
-        }
-
-        @Override
-        public Mutable put(HttpHeader header, HttpHeaderValue value)
-        {
-            return put(header, value.toString());
-        }
-
-        @Override
-        public Mutable put(HttpHeader header, String value)
-        {
-            return (value == null)
-                ? remove(header)
-                : put(new HttpField(header, value));
-        }
-
-        @Override
-        public Mutable put(String name, List<String> list)
-        {
-            Objects.requireNonNull(name);
-            Objects.requireNonNull(list);
-            remove(name);
-            for (String v : list)
-            {
-                if (v != null)
-                    add(name, v);
-            }
-            return this;
-        }
-
-        @Override
-        public void computeField(HttpHeader header, BiFunction<HttpHeader, List<HttpField>, HttpField> computeFn)
-        {
-            computeField(header, computeFn, (f, h) -> f.getHeader() == h);
-        }
-
-        @Override
-        public void computeField(String name, BiFunction<String, List<HttpField>, HttpField> computeFn)
-        {
-            computeField(name, computeFn, HttpField::is);
-        }
-
-        public <T> void computeField(T header, BiFunction<T, List<HttpField>, HttpField> computeFn, BiPredicate<HttpField, T> matcher)
-        {
-            // Look for first occurrence
-            int first = -1;
-            for (int i = 0; i < _size; i++)
-            {
-                HttpField f = _fields[i];
-                if (matcher.test(f, header))
-                {
-                    first = i;
-                    break;
-                }
-            }
-
-            // If the header is not found, add a new one;
-            if (first < 0)
-            {
-                HttpField newField = computeFn.apply(header, null);
-                if (newField != null)
-                    add(newField);
-                return;
-            }
-
-            // Are there any more occurrences?
-            List<HttpField> found = null;
-            for (int i = first + 1; i < _size; i++)
-            {
-                HttpField f = _fields[i];
-                if (matcher.test(f, header))
-                {
-                    if (found == null)
-                    {
-                        found = new ArrayList<>();
-                        found.add(_fields[first]);
-                    }
-                    // Remember and remove additional fields
-                    found.add(f);
-                    remove(i--);
-                }
-            }
-
-            // If no additional fields were found, handle singleton case
-            if (found == null)
-                found = Collections.singletonList(_fields[first]);
-            else
-                found = Collections.unmodifiableList(found);
-
-            HttpField newField = computeFn.apply(header, found);
-            if (newField == null)
-                remove(first);
-            else
-                _fields[first] = newField;
-        }
-
-        @Override
-        public Mutable remove(HttpHeader name)
-        {
-            for (int i = 0; i < _size; i++)
-            {
-                HttpField f = _fields[i];
-                if (f.getHeader() == name)
-                    remove(i--);
-            }
-            return this;
-        }
-
-        @Override
-        public Mutable remove(EnumSet<HttpHeader> fields)
-        {
-            for (int i = 0; i < _size; i++)
-            {
-                HttpField f = _fields[i];
-                if (fields.contains(f.getHeader()))
-                    remove(i--);
-            }
-            return this;
-        }
-
-        @Override
-        public Mutable remove(String name)
-        {
-            for (int i = 0; i < _size; i++)
-            {
-                HttpField f = _fields[i];
-                if (f.is(name))
-                    remove(i--);
-            }
-            return this;
-        }
-
-        private void remove(int i)
-        {
-            _size--;
-            System.arraycopy(_fields, i + 1, _fields, i, _size - i);
-            _fields[_size] = null;
-        }
-
-        public int size()
-        {
-            return _size;
-        }
-
-        @Override
-        public Stream<HttpField> stream()
-        {
-            return Arrays.stream(_fields, 0, _size);
-        }
-
-        @Override
-        public String toString()
-        {
-            return asString();
-        }
-
-        private class ListItr implements ListIterator<HttpField>
-        {
-            int _cursor;       // index of next element to return
-            int _current = -1;
-
-            @Override
-            public void add(HttpField field)
-            {
-                if (field == null)
-                    return;
-
-                int last = _size++;
-                if (_fields.length < _size)
-                    _fields = Arrays.copyOf(_fields, _fields.length + SIZE_INCREMENT);
-                System.arraycopy(_fields, _cursor, _fields, _cursor + 1, last - _cursor);
-                _fields[_cursor++] = field;
-                _current = -1;
-            }
-
-            @Override
-            public boolean hasNext()
-            {
-                return _cursor != _size;
-            }
-
-            @Override
-            public boolean hasPrevious()
-            {
-                return _cursor > 0;
-            }
-
-            @Override
-            public HttpField next()
-            {
-                if (_cursor == _size)
-                    throw new NoSuchElementException();
-                _current = _cursor++;
-                return _fields[_current];
-            }
-
-            @Override
-            public int nextIndex()
-            {
-                return _cursor + 1;
-            }
-
-            @Override
-            public HttpField previous()
-            {
-                if (_cursor == 0)
-                    throw new NoSuchElementException();
-                _current = --_cursor;
-                return _fields[_current];
-            }
-
-            @Override
-            public int previousIndex()
-            {
-                return _cursor - 1;
-            }
-
-            @Override
-            public void remove()
-            {
-                if (_current < 0)
-                    throw new IllegalStateException();
-                MutableHttpFields.this.remove(_current);
-                _cursor = _current;
-                _current = -1;
-            }
-
-            @Override
-            public void set(HttpField field)
-            {
-                if (_current < 0)
-                    throw new IllegalStateException();
-                if (field == null)
-                    remove();
-                else
-                    _fields[_current] = field;
-            }
-        }
     }
 
-    /**
-     * HTTP Fields. A collection of HTTP header and or Trailer fields.
-     *
-     * <p>This class is not synchronized as it is expected that modifications will only be performed by a
-     * single thread.
-     *
-     * <p>The cookie handling provided by this class is guided by the Servlet specification and RFC6265.
-     */
-    class ImmutableHttpFields implements HttpFields
+    @Deprecated(forRemoval = true)
+    class ImmutableHttpFields extends org.eclipse.jetty.http.ImmutableHttpFields
     {
-        final HttpField[] _fields;
-        final int _size;
-
-        /**
-         * Initialize HttpFields from copy.
-         *
-         * @param fields the fields to copy data from
-         */
-        protected ImmutableHttpFields(HttpField[] fields)
-        {
-            this(fields, fields.length);
-        }
-
         protected ImmutableHttpFields(HttpField[] fields, int size)
         {
-            Objects.requireNonNull(fields);
-            _fields = fields;
-            _size = size;
-        }
-
-        @Override
-        public HttpFields asImmutable()
-        {
-            return this;
-        }
-
-        @Override
-        public HttpFields takeAsImmutable()
-        {
-            return this;
-        }
-
-        @Override
-        public boolean equals(Object o)
-        {
-            if (this == o)
-                return true;
-            if (!(o instanceof ImmutableHttpFields))
-                return false;
-
-            return isEqualTo((HttpFields)o);
-        }
-
-        @Override
-        public String get(String header)
-        {
-            // default impl overridden for efficiency
-            for (HttpField f : _fields)
-                if (f != null && f.is(header))
-                    return f.getValue();
-            return null;
-        }
-
-        @Override
-        public String get(HttpHeader header)
-        {
-            // default impl overridden for efficiency
-            for (HttpField f : _fields)
-                if (f != null && f.getHeader() == header)
-                    return f.getValue();
-            return null;
-        }
-
-        @Override
-        public HttpField getField(HttpHeader header)
-        {
-            // default impl overridden for efficiency
-            for (HttpField f : _fields)
-                if (f != null && f.getHeader() == header)
-                    return f;
-            return null;
-        }
-
-        @Override
-        public HttpField getField(String name)
-        {
-            // default impl overridden for efficiency
-            for (HttpField f : _fields)
-                if (f != null && f.is(name))
-                    return f;
-            return null;
-        }
-
-        @Override
-        public HttpField getField(int index)
-        {
-            if (index >= _fields.length)
-                throw new NoSuchElementException();
-            return _fields[index];
-        }
-
-        @Override
-        public int hashCode()
-        {
-            int hash = 0;
-            for (int i = _fields.length; i-- > 0; )
-                hash ^= _fields[i].hashCode();
-            return hash;
-        }
-
-        @Override
-        public Iterator<HttpField> iterator()
-        {
-            return new Iterator<>()
-            {
-                int _index = 0;
-
-                @Override
-                public boolean hasNext()
-                {
-                    return _index < _size;
-                }
-
-                @Override
-                public HttpField next()
-                {
-                    return _fields[_index++];
-                }
-            };
-        }
-
-        @Override
-        public int size()
-        {
-            return _size;
-        }
-
-        @Override
-        public Stream<HttpField> stream()
-        {
-            return Arrays.stream(_fields).filter(Objects::nonNull);
-        }
-
-        @Override
-        public String toString()
-        {
-            return asString();
+            super(fields, size);
         }
     }
 }

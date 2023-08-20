@@ -130,39 +130,47 @@ public interface Request extends Attributes, Content.Source
     String getId();
 
     /**
-     * @return the {@link Components} to be used with this request.
+     * @return the {@link Components} to be used with this {@code Request}.
      */
     Components getComponents();
 
     /**
-     * @return the {@code ConnectionMetaData} associated to this request
+     * @return the {@code ConnectionMetaData} associated to this {@code Request}
      */
     ConnectionMetaData getConnectionMetaData();
 
     /**
-     * @return the HTTP method of this request
+     * @return the HTTP method of this {@code Request}
      */
     String getMethod();
 
     /**
-     * @return the HTTP URI of this request
+     * @return the HTTP URI of this {@code Request}
      * @see #getContextPath(Request)
      * @see #getPathInContext(Request)
      */
     HttpURI getHttpURI();
 
     /**
-     * @return the {@code Context} associated with this {@code Request}
+     * Get the {@link Context} associated with this {@code Request}.
+     * <p>Note that a {@code Request} should always have an associated {@link Context} since if the
+     * {@code Request} is not being handled by a {@link org.eclipse.jetty.server.handler.ContextHandler} then
+     * the {@link Context} from {@link Server#getContext()} will be used.
+     * @return the {@link Context} associated with this {@code Request}. Never {@code null}.
+     * @see org.eclipse.jetty.server.handler.ContextHandler
+     * @see Server#getContext()
      */
     Context getContext();
 
     /**
-     * <p>Returns the context path of this Request.</p>
-     * <p>This is equivalent to {@code request.getContext().getContextPath()}.</p>
+     * Get the context path of this {@code Request}.
+     * This is equivalent to {@code request.getContext().getContextPath()}.
      *
      * @param request The request to get the context path from.
-     * @return The contextPath of the request.
+     * @return The encoded context path of the {@link Context} or {@code null}.
+     * @see #getContext()
      * @see Context#getContextPath()
+     * @see Server#getContext()
      */
     static String getContextPath(Request request)
     {
@@ -184,7 +192,7 @@ public interface Request extends Attributes, Content.Source
     }
 
     /**
-     * @return the HTTP headers of this request
+     * @return the HTTP headers of this {@code Request}
      */
     HttpFields getHeaders();
 
@@ -201,7 +209,7 @@ public interface Request extends Attributes, Content.Source
     void demand(Runnable demandCallback);
 
     /**
-     * @return the HTTP trailers of this request, or {@code null} if they are not present
+     * @return the HTTP trailers of this {@code Request}, or {@code null} if they are not present
      */
     HttpFields getTrailers();
 

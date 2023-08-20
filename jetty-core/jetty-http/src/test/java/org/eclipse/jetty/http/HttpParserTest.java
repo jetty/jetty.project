@@ -42,6 +42,7 @@ import static org.hamcrest.Matchers.contains;
 import static org.hamcrest.Matchers.containsString;
 import static org.hamcrest.Matchers.empty;
 import static org.hamcrest.Matchers.is;
+import static org.hamcrest.Matchers.notNullValue;
 import static org.hamcrest.Matchers.nullValue;
 import static org.hamcrest.Matchers.startsWith;
 import static org.junit.jupiter.api.Assertions.assertEquals;
@@ -1946,67 +1947,30 @@ public class HttpParserTest
     }
 
     @ParameterizedTest
-    @ValueSource(strings = {"\r\n", "\n"})
-    public void testBadContentLength0(String eoln)
+    @ValueSource(strings = {
+        "abc",
+        "1.5",
+        "9999999999999999999999999999999999999999999999",
+        "-10",
+        "+10",
+        "1.0",
+        "1,0",
+        "10,"
+    })
+    public void testBadContentLengths(String contentLength)
     {
         ByteBuffer buffer = BufferUtil.toBuffer(
-            "GET / HTTP/1.0" + eoln +
-                "Content-Length: abc" + eoln +
-                "Connection: close" + eoln +
-                eoln);
+            "GET /test HTTP/1.1\r\n" +
+                "Host: localhost\r\n" +
+                "Content-Length: " + contentLength + "\r\n" +
+                "\r\n" +
+                "1234567890\r\n");
 
         HttpParser.RequestHandler handler = new Handler();
-        HttpParser parser = new HttpParser(handler);
+        HttpParser parser = new HttpParser(handler, HttpCompliance.RFC2616_LEGACY);
+        parseAll(parser, buffer);
 
-        parser.parseNext(buffer);
-        assertEquals("GET", _methodOrVersion);
-        assertEquals("Invalid Content-Length Value", _bad);
-        assertFalse(buffer.hasRemaining());
-        assertEquals(HttpParser.State.CLOSE, parser.getState());
-        parser.atEOF();
-        parser.parseNext(BufferUtil.EMPTY_BUFFER);
-        assertEquals(HttpParser.State.CLOSED, parser.getState());
-    }
-
-    @ParameterizedTest
-    @ValueSource(strings = {"\r\n", "\n"})
-    public void testBadContentLength1(String eoln)
-    {
-        ByteBuffer buffer = BufferUtil.toBuffer(
-            "GET / HTTP/1.0" + eoln +
-                "Content-Length: 9999999999999999999999999999999999999999999999" + eoln +
-                "Connection: close" + eoln +
-                eoln);
-
-        HttpParser.RequestHandler handler = new Handler();
-        HttpParser parser = new HttpParser(handler);
-
-        parser.parseNext(buffer);
-        assertEquals("GET", _methodOrVersion);
-        assertEquals("Invalid Content-Length Value", _bad);
-        assertFalse(buffer.hasRemaining());
-        assertEquals(HttpParser.State.CLOSE, parser.getState());
-        parser.atEOF();
-        parser.parseNext(BufferUtil.EMPTY_BUFFER);
-        assertEquals(HttpParser.State.CLOSED, parser.getState());
-    }
-
-    @ParameterizedTest
-    @ValueSource(strings = {"\r\n", "\n"})
-    public void testBadContentLength2(String eoln)
-    {
-        ByteBuffer buffer = BufferUtil.toBuffer(
-            "GET / HTTP/1.0" + eoln +
-                "Content-Length: 1.5" + eoln +
-                "Connection: close" + eoln +
-                eoln);
-
-        HttpParser.RequestHandler handler = new Handler();
-        HttpParser parser = new HttpParser(handler);
-
-        parser.parseNext(buffer);
-        assertEquals("GET", _methodOrVersion);
-        assertEquals("Invalid Content-Length Value", _bad);
+        assertThat(_bad, notNullValue());
         assertFalse(buffer.hasRemaining());
         assertEquals(HttpParser.State.CLOSE, parser.getState());
         parser.atEOF();
@@ -2262,7 +2226,7 @@ public class HttpParserTest
 
     public static Stream<String> badHostHeaderSource()
     {
-        return List.of(
+        return Stream.of(
             ":80", // no host, port only
             "host:", // no port
             "127.0.0.1:", // no port
@@ -2297,7 +2261,7 @@ public class HttpParserTest
             "' *; host xyz.hacking.pro; '",
             "'/**/OR/**/1/**/=/**/1",
             "AND (SELECT 1 FROM(SELECT COUNT(*),CONCAT('x',(SELECT (ELT(1=1,1))),'x',FLOOR(RAND(0)*2))x FROM INFORMATION_SCHEMA.CHARACTER_SETS GROUP BY x)a)"
-        ).stream();
+        );
     }
 
     @ParameterizedTest
