@@ -475,6 +475,11 @@ public class Server extends Handler.Wrapper implements Attributes
         _dumpBeforeStop = dumpBeforeStop;
     }
 
+    /**
+     * @return A {@link HttpField} instance efficiently recording the current time to a second resolution,
+     * that cannot be cleared from a {@link ResponseHttpFields} instance.
+     * @see ResponseHttpFields.PersistentPreEncodedHttpField
+     */
     public HttpField getDateField()
     {
         long now = System.currentTimeMillis();
