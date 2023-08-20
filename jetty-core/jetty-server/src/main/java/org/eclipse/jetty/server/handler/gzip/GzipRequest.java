@@ -108,8 +108,7 @@ public class GzipRequest extends Request.Wrapper
                 }
             }
         }
-        fields = newFields.takeAsImmutable();
-        return fields;
+        return newFields.asImmutable();
     }
 
     @Override

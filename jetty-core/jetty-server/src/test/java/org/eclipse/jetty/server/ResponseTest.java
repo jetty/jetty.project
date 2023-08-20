@@ -13,6 +13,7 @@
 
 package org.eclipse.jetty.server;
 
+import java.util.Iterator;
 import java.util.ListIterator;
 
 import org.eclipse.jetty.http.HttpCookie;
@@ -31,7 +32,10 @@ import org.junit.jupiter.api.Test;
 import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.Matchers.containsInAnyOrder;
 import static org.hamcrest.Matchers.is;
+import static org.hamcrest.Matchers.notNullValue;
 import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertFalse;
+import static org.junit.jupiter.api.Assertions.assertThrows;
 
 public class ResponseTest
 {
@@ -52,6 +56,94 @@ public class ResponseTest
     {
         LifeCycle.stop(server);
         connector = null;
+    }
+
+    @Test
+    public void testGET() throws Exception
+    {
+        server.setHandler(new Handler.Abstract()
+        {
+            @Override
+            public boolean handle(Request request, Response response, Callback callback)
+            {
+                callback.succeeded();
+                return true;
+            }
+        });
+        server.start();
+
+        String request = """
+                GET /path HTTP/1.0\r
+                Host: hostname\r
+                \r
+                """;
+        HttpTester.Response response = HttpTester.parseResponse(connector.getResponse(request));
+        assertEquals(HttpStatus.OK_200, response.getStatus());
+    }
+
+    @Test
+    public void testServerDateFieldsFrozen() throws Exception
+    {
+        server.setHandler(new Handler.Abstract()
+        {
+            @Override
+            public boolean handle(Request request, Response response, Callback callback)
+            {
+                response.getHeaders().add("Temp", "field");
+                response.getHeaders().add("Test", "before reset");
+                assertThrows(IllegalStateException.class, () -> response.getHeaders().remove(HttpHeader.SERVER));
+                assertThrows(IllegalStateException.class, () -> response.getHeaders().remove(HttpHeader.DATE));
+                response.getHeaders().remove("Temp");
+
+                response.getHeaders().add("Temp", "field");
+                Iterator<HttpField> iterator = response.getHeaders().iterator();
+                assertThat(iterator.next().getHeader(), is(HttpHeader.SERVER));
+                assertThrows(IllegalStateException.class, iterator::remove);
+                assertThat(iterator.next().getHeader(), is(HttpHeader.DATE));
+                assertThrows(IllegalStateException.class, iterator::remove);
+                assertThat(iterator.next().getName(), is("Test"));
+                assertThat(iterator.next().getName(), is("Temp"));
+                iterator.remove();
+                assertFalse(response.getHeaders().contains("Temp"));
+                assertThrows(IllegalStateException.class, () -> response.getHeaders().remove(HttpHeader.SERVER));
+                assertFalse(iterator.hasNext());
+
+                ListIterator<HttpField> listIterator = response.getHeaders().listIterator();
+                assertThat(listIterator.next().getHeader(), is(HttpHeader.SERVER));
+                assertThrows(IllegalStateException.class, listIterator::remove);
+                assertThrows(IllegalStateException.class, () -> listIterator.set(new HttpField("X", "Y")));
+                assertThat(listIterator.next().getHeader(), is(HttpHeader.DATE));
+                assertThrows(IllegalStateException.class, listIterator::remove);
+                assertThat(listIterator.previous().getHeader(), is(HttpHeader.DATE));
+                assertThat(listIterator.previous().getHeader(), is(HttpHeader.SERVER));
+                assertThrows(IllegalStateException.class, listIterator::remove);
+                assertThat(listIterator.next().getHeader(), is(HttpHeader.SERVER));
+                assertThat(listIterator.next().getHeader(), is(HttpHeader.DATE));
+                assertThrows(IllegalStateException.class, listIterator::remove);
+                listIterator.add(new HttpField("Temp", "value"));
+                assertThat(listIterator.previous().getName(), is("Temp"));
+                listIterator.remove();
+                assertFalse(response.getHeaders().contains("Temp"));
+
+                response.getHeaders().add("Temp", "field");
+                response.reset();
+                response.getHeaders().add("Test", "after reset");
+                callback.succeeded();
+                return true;
+            }
+        });
+        server.start();
+
+        String request = """
+                GET /path HTTP/1.0\r
+                Host: hostname\r
+                \r
+                """;
+        HttpTester.Response response = HttpTester.parseResponse(connector.getResponse(request));
+        assertEquals(HttpStatus.OK_200, response.getStatus());
+        assertThat(response.get(HttpHeader.SERVER), notNullValue());
+        assertThat(response.get(HttpHeader.DATE), notNullValue());
+        assertThat(response.get("Test"), is("after reset"));
     }
 
     @Test

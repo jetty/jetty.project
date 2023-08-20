@@ -34,12 +34,12 @@ import org.eclipse.jetty.http.HttpField;
 import org.eclipse.jetty.http.HttpGenerator;
 import org.eclipse.jetty.http.HttpHeader;
 import org.eclipse.jetty.http.MimeTypes;
-import org.eclipse.jetty.http.PreEncodedHttpField;
 import org.eclipse.jetty.io.ArrayByteBufferPool;
 import org.eclipse.jetty.io.ByteBufferPool;
 import org.eclipse.jetty.io.Connection;
 import org.eclipse.jetty.server.handler.ContextHandler;
 import org.eclipse.jetty.server.handler.ErrorHandler;
+import org.eclipse.jetty.server.internal.ResponseHttpFields;
 import org.eclipse.jetty.util.Attributes;
 import org.eclipse.jetty.util.Callback;
 import org.eclipse.jetty.util.DecoratedObjectFactory;
@@ -229,6 +229,18 @@ public class Server extends Handler.Wrapper implements Attributes
         _serverInfo = serverInfo;
     }
 
+    /**
+     * Get the {@link Context} associated with all {@link Request}s prior to being handled by a
+     * {@link ContextHandler}. A {@code Server}'s {@link Context}:
+     * <ul>
+     *     <li>has a {@code null} {@link Context#getContextPath() context path}</li>
+     *     <li>returns the {@link ClassLoader} that loaded the {@link Server} from {@link Context#getClassLoader()}.</li>
+     *     <li>is an {@link java.util.concurrent.Executor} that delegates to the {@link Server#getThreadPool() Server ThreadPool}</li>
+     *     <li>is a {@link org.eclipse.jetty.util.Decorator} using the {@link DecoratedObjectFactory} found
+     *     as a {@link #getBean(Class) bean} of the {@link Server}</li>
+     *     <li>has the same {@link #getTempDirectory() temporary director} of the {@link Server#getTempDirectory() server}</li>
+     * </ul>
+     */
     public Context getContext()
     {
         return _serverContext;
@@ -463,6 +475,11 @@ public class Server extends Handler.Wrapper implements Attributes
         _dumpBeforeStop = dumpBeforeStop;
     }
 
+    /**
+     * @return A {@link HttpField} instance efficiently recording the current time to a second resolution,
+     * that cannot be cleared from a {@link ResponseHttpFields} instance.
+     * @see ResponseHttpFields.PersistentPreEncodedHttpField
+     */
     public HttpField getDateField()
     {
         long now = System.currentTimeMillis();
@@ -476,7 +493,7 @@ public class Server extends Handler.Wrapper implements Attributes
                 df = _dateField;
                 if (df == null || df._seconds != seconds)
                 {
-                    HttpField field = new PreEncodedHttpField(HttpHeader.DATE, DateGenerator.formatDate(now));
+                    HttpField field = new ResponseHttpFields.PersistentPreEncodedHttpField(HttpHeader.DATE, DateGenerator.formatDate(now));
                     _dateField = new DateField(seconds, field);
                     return field;
                 }

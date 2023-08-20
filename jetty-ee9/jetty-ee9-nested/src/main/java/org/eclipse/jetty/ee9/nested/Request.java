@@ -449,7 +449,7 @@ public class Request implements HttpServletRequest
             int contentLength = getContentLength();
             if (contentLength != 0 && _inputState == INPUT_NONE)
             {
-                String baseType = HttpField.valueParameters(contentType, null);
+                String baseType = HttpField.getValueParameters(contentType, null);
                 if (MimeTypes.Type.FORM_ENCODED.is(baseType) &&
                     _channel.getHttpConfiguration().isFormEncodedMethod(getMethod()))
                 {
@@ -1905,7 +1905,7 @@ public class Request implements HttpServletRequest
     public Collection<Part> getParts() throws IOException, ServletException
     {
         String contentType = getContentType();
-        if (contentType == null || !MimeTypes.Type.MULTIPART_FORM_DATA.is(HttpField.valueParameters(contentType, null)))
+        if (contentType == null || !MimeTypes.Type.MULTIPART_FORM_DATA.is(HttpField.getValueParameters(contentType, null)))
             throw new ServletException("Unsupported Content-Type [" + contentType + "], expected [multipart/form-data]");
         return getParts(null);
     }

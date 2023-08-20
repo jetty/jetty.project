@@ -122,12 +122,6 @@ public class Http3Fields implements HttpFields
     }
 
     @Override
-    public HttpFields takeAsImmutable()
-    {
-        return asImmutable();
-    }
-
-    @Override
     public HttpField getField(int index)
     {
         return stream().skip(index).findFirst().orElse(null);
@@ -136,6 +130,7 @@ public class Http3Fields implements HttpFields
     @Override
     public int size()
     {
+        // TODO this is very inefficient
         return Math.toIntExact(stream().count());
     }
 
@@ -174,12 +169,13 @@ public class Http3Fields implements HttpFields
     @Override
     public Iterator<HttpField> iterator()
     {
-        return httpFields.listIterator(0);
+        return stream().iterator();
     }
 
     @Override
     public ListIterator<HttpField> listIterator(int index)
     {
-        return httpFields.listIterator(index);
+        // TODO this is very inefficient and read only
+        return stream().toList().listIterator(index);
     }
 }

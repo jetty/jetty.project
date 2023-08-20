@@ -20,6 +20,8 @@ import java.util.stream.Stream;
 
 import org.eclipse.jetty.http.HttpField;
 import org.eclipse.jetty.http.HttpFields;
+import org.eclipse.jetty.http.HttpHeader;
+import org.eclipse.jetty.http.PreEncodedHttpField;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -72,14 +74,6 @@ public class ResponseHttpFields implements HttpFields.Mutable
     }
 
     @Override
-    public HttpFields takeAsImmutable()
-    {
-        if (_committed.get())
-            return this;
-        return _fields.asImmutable();
-    }
-
-    @Override
     public Mutable add(HttpField field)
     {
         if (field != null && !_committed.get())
@@ -96,7 +90,16 @@ public class ResponseHttpFields implements HttpFields.Mutable
     @Override
     public Mutable clear()
     {
-        return _committed.get() ? this : _fields.clear();
+        if (!_committed.get())
+        {
+            for (ListIterator<HttpField> iterator = _fields.listIterator(_fields.size()); iterator.hasPrevious();)
+            {
+                HttpField field = iterator.previous();
+                if (!(field instanceof PersistentPreEncodedHttpField))
+                    iterator.remove();
+            }
+        }
+        return this;
     }
 
     @Override
@@ -112,6 +115,8 @@ public class ResponseHttpFields implements HttpFields.Mutable
         Iterator<HttpField> i = _fields.iterator();
         return new Iterator<>()
         {
+            HttpField _current;
+
             @Override
             public boolean hasNext()
             {
@@ -121,7 +126,8 @@ public class ResponseHttpFields implements HttpFields.Mutable
             @Override
             public HttpField next()
             {
-                return i.next();
+                _current = i.next();
+                return _current;
             }
 
             @Override
@@ -129,7 +135,10 @@ public class ResponseHttpFields implements HttpFields.Mutable
             {
                 if (_committed.get())
                     throw new UnsupportedOperationException("Read Only");
+                if (_current instanceof PersistentPreEncodedHttpField)
+                    throw new IllegalStateException("Persistent field");
                 i.remove();
+                _current = null;
             }
         };
     }
@@ -140,6 +149,8 @@ public class ResponseHttpFields implements HttpFields.Mutable
         ListIterator<HttpField> i = _fields.listIterator(index);
         return new ListIterator<>()
         {
+            HttpField _current;
+
             @Override
             public boolean hasNext()
             {
@@ -149,7 +160,8 @@ public class ResponseHttpFields implements HttpFields.Mutable
             @Override
             public HttpField next()
             {
-                return i.next();
+                _current = i.next();
+                return _current;
             }
 
             @Override
@@ -161,7 +173,8 @@ public class ResponseHttpFields implements HttpFields.Mutable
             @Override
             public HttpField previous()
             {
-                return i.previous();
+                _current = i.previous();
+                return _current;
             }
 
             @Override
@@ -181,7 +194,10 @@ public class ResponseHttpFields implements HttpFields.Mutable
             {
                 if (_committed.get())
                     throw new UnsupportedOperationException("Read Only");
+                if (_current instanceof PersistentPreEncodedHttpField)
+                    throw new IllegalStateException("Persistent field");
                 i.remove();
+                _current = null;
             }
 
             @Override
@@ -189,10 +205,13 @@ public class ResponseHttpFields implements HttpFields.Mutable
             {
                 if (_committed.get())
                     throw new UnsupportedOperationException("Read Only");
+                if (_current instanceof PersistentPreEncodedHttpField)
+                    throw new IllegalStateException("Persistent field");
                 if (field == null)
                     i.remove();
                 else
                     i.set(field);
+                _current = field;
             }
 
             @Override
@@ -210,5 +229,17 @@ public class ResponseHttpFields implements HttpFields.Mutable
     public String toString()
     {
         return _fields.toString();
+    }
+
+    /**
+     * A PreEncodedHttpField that cannot be {@link #remove(HttpHeader) removed} or {@link #clear() cleared}
+     * from a {@link ResponseHttpFields} instance.
+     */
+    public static class PersistentPreEncodedHttpField extends PreEncodedHttpField
+    {
+        public PersistentPreEncodedHttpField(HttpHeader header, String value)
+        {
+            super(header, value);
+        }
     }
 }
