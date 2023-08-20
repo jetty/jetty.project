@@ -34,12 +34,12 @@ import org.eclipse.jetty.http.HttpField;
 import org.eclipse.jetty.http.HttpGenerator;
 import org.eclipse.jetty.http.HttpHeader;
 import org.eclipse.jetty.http.MimeTypes;
-import org.eclipse.jetty.http.PreEncodedHttpField;
 import org.eclipse.jetty.io.ArrayByteBufferPool;
 import org.eclipse.jetty.io.ByteBufferPool;
 import org.eclipse.jetty.io.Connection;
 import org.eclipse.jetty.server.handler.ContextHandler;
 import org.eclipse.jetty.server.handler.ErrorHandler;
+import org.eclipse.jetty.server.internal.ResponseHttpFields;
 import org.eclipse.jetty.util.Attributes;
 import org.eclipse.jetty.util.Callback;
 import org.eclipse.jetty.util.DecoratedObjectFactory;
@@ -488,7 +488,7 @@ public class Server extends Handler.Wrapper implements Attributes
                 df = _dateField;
                 if (df == null || df._seconds != seconds)
                 {
-                    HttpField field = new PreEncodedHttpField(HttpHeader.DATE, DateGenerator.formatDate(now));
+                    HttpField field = new ResponseHttpFields.PersistentPreEncodedHttpField(HttpHeader.DATE, DateGenerator.formatDate(now));
                     _dateField = new DateField(seconds, field);
                     return field;
                 }

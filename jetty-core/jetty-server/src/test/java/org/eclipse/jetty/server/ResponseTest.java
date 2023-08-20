@@ -111,7 +111,6 @@ public class ResponseTest
                 ListIterator<HttpField> listIterator = response.getHeaders().listIterator();
                 assertThat(listIterator.next().getHeader(), is(HttpHeader.SERVER));
                 assertThrows(IllegalStateException.class, listIterator::remove);
-                assertThrows(IllegalStateException.class, () -> listIterator.add(new HttpField("X", "Y")));
                 assertThrows(IllegalStateException.class, () -> listIterator.set(new HttpField("X", "Y")));
                 assertThat(listIterator.next().getHeader(), is(HttpHeader.DATE));
                 assertThrows(IllegalStateException.class, listIterator::remove);

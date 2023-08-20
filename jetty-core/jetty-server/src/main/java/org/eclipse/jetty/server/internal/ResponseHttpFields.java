@@ -16,11 +16,12 @@ package org.eclipse.jetty.server.internal;
 import java.util.Iterator;
 import java.util.ListIterator;
 import java.util.concurrent.atomic.AtomicBoolean;
-import java.util.concurrent.atomic.AtomicInteger;
 import java.util.stream.Stream;
 
 import org.eclipse.jetty.http.HttpField;
 import org.eclipse.jetty.http.HttpFields;
+import org.eclipse.jetty.http.HttpHeader;
+import org.eclipse.jetty.http.PreEncodedHttpField;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -29,7 +30,6 @@ public class ResponseHttpFields implements HttpFields.Mutable
     private static final Logger LOG = LoggerFactory.getLogger(ResponseHttpFields.class);
     private final Mutable _fields = HttpFields.build();
     private final AtomicBoolean _committed = new AtomicBoolean();
-    private final AtomicInteger _frozen = new AtomicInteger();
 
     public HttpFields.Mutable getMutableHttpFields()
     {
@@ -52,29 +52,13 @@ public class ResponseHttpFields implements HttpFields.Mutable
     public void reset()
     {
         _committed.set(false);
-        clearFields();
+        _fields.clear();
     }
 
     @Override
     public HttpField getField(int index)
     {
         return _fields.getField(index);
-    }
-
-    /**
-     * Freeze the headers so that existing headers cannot be removed or reset.
-     */
-    public void freeze()
-    {
-        _frozen.set(_fields.size());
-    }
-
-    /**
-     * Reverse a call to {@link #freeze()}
-     */
-    public void thaw()
-    {
-        _frozen.set(0);
     }
 
     @Override
@@ -107,24 +91,16 @@ public class ResponseHttpFields implements HttpFields.Mutable
     public Mutable clear()
     {
         if (!_committed.get())
-            clearFields();
-        return this;
-    }
-
-    private void clearFields()
-    {
-        int frozen = _frozen.get();
-        if (frozen == 0)
-            _fields.clear();
-        else
         {
+            // TODO iterate backwards when the list iterator of that form is available
             for (Iterator<HttpField> iterator = _fields.iterator(); iterator.hasNext();)
             {
-                iterator.next();
-                if (frozen-- <= 0)
+                HttpField field = iterator.next();
+                if (!(field instanceof PersistentPreEncodedHttpField))
                     iterator.remove();
             }
         }
+        return this;
     }
 
     @Override
@@ -140,7 +116,7 @@ public class ResponseHttpFields implements HttpFields.Mutable
         Iterator<HttpField> i = _fields.iterator();
         return new Iterator<>()
         {
-            int index;
+            HttpField _current;
 
             @Override
             public boolean hasNext()
@@ -151,8 +127,8 @@ public class ResponseHttpFields implements HttpFields.Mutable
             @Override
             public HttpField next()
             {
-                index++;
-                return i.next();
+                _current = i.next();
+                return _current;
             }
 
             @Override
@@ -160,10 +136,10 @@ public class ResponseHttpFields implements HttpFields.Mutable
             {
                 if (_committed.get())
                     throw new UnsupportedOperationException("Read Only");
-                int frozen = _frozen.get();
-                if (frozen > 0 && index <= frozen)
-                    throw new IllegalStateException("Frozen field");
+                if (_current instanceof PersistentPreEncodedHttpField)
+                    throw new IllegalStateException("Persistent field");
                 i.remove();
+                _current = null;
             }
         };
     }
@@ -174,8 +150,7 @@ public class ResponseHttpFields implements HttpFields.Mutable
         ListIterator<HttpField> i = _fields.listIterator();
         return new ListIterator<>()
         {
-            int index;
-            boolean forward = true;
+            HttpField _current;
 
             @Override
             public boolean hasNext()
@@ -186,10 +161,8 @@ public class ResponseHttpFields implements HttpFields.Mutable
             @Override
             public HttpField next()
             {
-                if (forward)
-                    index++;
-                forward = true;
-                return i.next();
+                _current = i.next();
+                return _current;
             }
 
             @Override
@@ -201,10 +174,8 @@ public class ResponseHttpFields implements HttpFields.Mutable
             @Override
             public HttpField previous()
             {
-                if (!forward)
-                    index--;
-                forward = false;
-                return i.previous();
+                _current = i.previous();
+                return _current;
             }
 
             @Override
@@ -224,10 +195,10 @@ public class ResponseHttpFields implements HttpFields.Mutable
             {
                 if (_committed.get())
                     throw new UnsupportedOperationException("Read Only");
-                int frozen = _frozen.get();
-                if (frozen > 0 && index <= frozen)
-                    throw new IllegalStateException("Frozen field");
+                if (_current instanceof PersistentPreEncodedHttpField)
+                    throw new IllegalStateException("Persistent field");
                 i.remove();
+                _current = null;
             }
 
             @Override
@@ -235,13 +206,13 @@ public class ResponseHttpFields implements HttpFields.Mutable
             {
                 if (_committed.get())
                     throw new UnsupportedOperationException("Read Only");
-                int frozen = _frozen.get();
-                if (frozen > 0 && index <= frozen)
-                    throw new IllegalStateException("Frozen field");
+                if (_current instanceof PersistentPreEncodedHttpField)
+                    throw new IllegalStateException("Persistent field");
                 if (field == null)
                     i.remove();
                 else
                     i.set(field);
+                _current = field;
             }
 
             @Override
@@ -249,14 +220,8 @@ public class ResponseHttpFields implements HttpFields.Mutable
             {
                 if (_committed.get())
                     throw new UnsupportedOperationException("Read Only");
-                int frozen = _frozen.get();
-                if (frozen > 0 && index < frozen)
-                    throw new IllegalStateException("Frozen field");
                 if (field != null)
-                {
-                    index++;
                     i.add(field);
-                }
             }
         };
     }
@@ -265,5 +230,17 @@ public class ResponseHttpFields implements HttpFields.Mutable
     public String toString()
     {
         return _fields.toString();
+    }
+
+    /**
+     * A PreEncodedHttpField that cannot be {@link #remove(HttpHeader) removed} or {@link #clear() cleared}
+     * from a {@link ResponseHttpFields} instance.
+     */
+    public static class PersistentPreEncodedHttpField extends PreEncodedHttpField
+    {
+        public PersistentPreEncodedHttpField(HttpHeader header, String value)
+        {
+            super(header, value);
+        }
     }
 }
