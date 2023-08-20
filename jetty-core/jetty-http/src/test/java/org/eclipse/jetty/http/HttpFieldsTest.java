@@ -844,6 +844,11 @@ public class HttpFieldsTest
         assertFalse(header.containsLast(HttpHeader.TRANSFER_ENCODING, "tom"));
         assertTrue(header.containsLast(HttpHeader.TRANSFER_ENCODING, "harry"));
 
+        header.add(HttpHeader.TRANSFER_ENCODING, "spongebob");
+        assertFalse(header.containsLast(HttpHeader.TRANSFER_ENCODING, "sponge"));
+        assertFalse(header.containsLast(HttpHeader.TRANSFER_ENCODING, "bob"));
+        assertTrue(header.containsLast(HttpHeader.TRANSFER_ENCODING, "spongebob"));
+
         header.add(HttpHeader.TRANSFER_ENCODING, "sponge bob");
         assertFalse(header.containsLast(HttpHeader.TRANSFER_ENCODING, "sponge"));
         assertFalse(header.containsLast(HttpHeader.TRANSFER_ENCODING, "bob"));
