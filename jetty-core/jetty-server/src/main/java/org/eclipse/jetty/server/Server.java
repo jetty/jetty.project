@@ -229,6 +229,18 @@ public class Server extends Handler.Wrapper implements Attributes
         _serverInfo = serverInfo;
     }
 
+    /**
+     * Get the {@link Context} associated with all {@link Request}s prior to being handled by a
+     * {@link ContextHandler}. A {@code Server}'s {@link Context}:
+     * <ul>
+     *     <li>has a {@code null} {@link Context#getContextPath() context path}</li>
+     *     <li>returns the {@link ClassLoader} that loaded the {@link Server} from {@link Context#getClassLoader()}.</li>
+     *     <li>is an {@link java.util.concurrent.Executor} that delegates to the {@link Server#getThreadPool() Server ThreadPool}</li>
+     *     <li>is a {@link org.eclipse.jetty.util.Decorator} using the {@link DecoratedObjectFactory} found
+     *     as a {@link #getBean(Class) bean} of the {@link Server}</li>
+     *     <li>has the same {@link #getTempDirectory() temporary director} of the {@link Server#getTempDirectory() server}</li>
+     * </ul>
+     */
     public Context getContext()
     {
         return _serverContext;

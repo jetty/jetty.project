@@ -62,6 +62,9 @@ import org.eclipse.jetty.util.thread.Invocable;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+/**
+ * A {@link Handler} that scopes a request to a specific {@link Context}.
+ */
 public class ContextHandler extends Handler.Wrapper implements Attributes, AliasCheck
 {
     private static final Logger LOG = LoggerFactory.getLogger(ContextHandler.class);
