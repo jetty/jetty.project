@@ -130,8 +130,6 @@ public abstract class AbstractHandshaker implements Handshaker
         connectionMetaData.getConnector().getEventListeners().forEach(connection::addEventListener);
 
         prepareResponse(response, negotiation);
-        if (httpConfig.getSendServerVersion())
-            response.getHeaders().put(SERVER_VERSION);
 
         request.setAttribute(HttpStream.UPGRADE_CONNECTION_ATTRIBUTE, connection);
 
