@@ -66,7 +66,7 @@ public class UpgradeProtocolHandler implements ProtocolHandler
             @Override
             public void onComplete(Result result)
             {
-                HttpResponse response = (HttpResponse)result.getResponse();
+                Response response = result.getResponse();
                 HttpRequest request = (HttpRequest)response.getRequest();
                 if (result.isSucceeded())
                 {
