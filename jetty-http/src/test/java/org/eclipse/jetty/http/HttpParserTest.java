@@ -41,6 +41,7 @@ import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.Matchers.contains;
 import static org.hamcrest.Matchers.containsString;
 import static org.hamcrest.Matchers.is;
+import static org.hamcrest.Matchers.notNullValue;
 import static org.hamcrest.Matchers.nullValue;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
@@ -1672,7 +1673,7 @@ public class HttpParserTest
     }
 
     @Test
-    public void testUnknownReponseVersion()
+    public void testUnknownResponseVersion()
     {
         ByteBuffer buffer = BufferUtil.toBuffer(
             "HPPT/7.7 200 OK\r\n" +
@@ -1815,65 +1816,31 @@ public class HttpParserTest
         assertEquals(HttpParser.State.CLOSED, parser.getState());
     }
 
-    @Test
-    public void testBadContentLength0()
+    @ParameterizedTest
+    @ValueSource(strings = {
+        "abc",
+        "1.5",
+        "9999999999999999999999999999999999999999999999",
+        "-10",
+        "+10",
+        "1.0",
+        "1,0",
+        "10,"
+    })
+    public void testBadContentLengths(String contentLength)
     {
         ByteBuffer buffer = BufferUtil.toBuffer(
-            "GET / HTTP/1.0\r\n" +
-                "Content-Length: abc\r\n" +
-                "Connection: close\r\n" +
-                "\r\n");
+            "GET /test HTTP/1.1\r\n" +
+                "Host: localhost\r\n" +
+                "Content-Length: " + contentLength + "\r\n" +
+                "\r\n" +
+                "1234567890\r\n");
 
         HttpParser.RequestHandler handler = new Handler();
-        HttpParser parser = new HttpParser(handler);
+        HttpParser parser = new HttpParser(handler, HttpCompliance.RFC2616_LEGACY);
+        parseAll(parser, buffer);
 
-        parser.parseNext(buffer);
-        assertEquals("GET", _methodOrVersion);
-        assertEquals("Invalid Content-Length Value", _bad);
-        assertFalse(buffer.hasRemaining());
-        assertEquals(HttpParser.State.CLOSE, parser.getState());
-        parser.atEOF();
-        parser.parseNext(BufferUtil.EMPTY_BUFFER);
-        assertEquals(HttpParser.State.CLOSED, parser.getState());
-    }
-
-    @Test
-    public void testBadContentLength1()
-    {
-        ByteBuffer buffer = BufferUtil.toBuffer(
-            "GET / HTTP/1.0\r\n" +
-                "Content-Length: 9999999999999999999999999999999999999999999999\r\n" +
-                "Connection: close\r\n" +
-                "\r\n");
-
-        HttpParser.RequestHandler handler = new Handler();
-        HttpParser parser = new HttpParser(handler);
-
-        parser.parseNext(buffer);
-        assertEquals("GET", _methodOrVersion);
-        assertEquals("Invalid Content-Length Value", _bad);
-        assertFalse(buffer.hasRemaining());
-        assertEquals(HttpParser.State.CLOSE, parser.getState());
-        parser.atEOF();
-        parser.parseNext(BufferUtil.EMPTY_BUFFER);
-        assertEquals(HttpParser.State.CLOSED, parser.getState());
-    }
-
-    @Test
-    public void testBadContentLength2()
-    {
-        ByteBuffer buffer = BufferUtil.toBuffer(
-            "GET / HTTP/1.0\r\n" +
-                "Content-Length: 1.5\r\n" +
-                "Connection: close\r\n" +
-                "\r\n");
-
-        HttpParser.RequestHandler handler = new Handler();
-        HttpParser parser = new HttpParser(handler);
-
-        parser.parseNext(buffer);
-        assertEquals("GET", _methodOrVersion);
-        assertEquals("Invalid Content-Length Value", _bad);
+        assertThat(_bad, notNullValue());
         assertFalse(buffer.hasRemaining());
         assertEquals(HttpParser.State.CLOSE, parser.getState());
         parser.atEOF();
@@ -2084,7 +2051,7 @@ public class HttpParserTest
     @Test
     public void testBadIPv6Host()
     {
-        try (StacklessLogging s = new StacklessLogging(HttpParser.class))
+        try (StacklessLogging ignored = new StacklessLogging(HttpParser.class))
         {
             ByteBuffer buffer = BufferUtil.toBuffer(
                 "GET / HTTP/1.1\r\n" +
@@ -2930,8 +2897,8 @@ public class HttpParserTest
     private String _methodOrVersion;
     private String _uriOrStatus;
     private String _versionOrReason;
-    private List<HttpField> _fields = new ArrayList<>();
-    private List<HttpField> _trailers = new ArrayList<>();
+    private final List<HttpField> _fields = new ArrayList<>();
+    private final List<HttpField> _trailers = new ArrayList<>();
     private String[] _hdr;
     private String[] _val;
     private int _headers;
