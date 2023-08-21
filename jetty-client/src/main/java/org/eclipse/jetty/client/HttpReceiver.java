@@ -31,8 +31,11 @@ import java.util.function.LongUnaryOperator;
 import org.eclipse.jetty.client.api.Response;
 import org.eclipse.jetty.client.api.Result;
 import org.eclipse.jetty.http.HttpField;
+import org.eclipse.jetty.http.HttpFields;
 import org.eclipse.jetty.http.HttpHeader;
+import org.eclipse.jetty.http.HttpMethod;
 import org.eclipse.jetty.http.HttpStatus;
+import org.eclipse.jetty.http.QuotedCSV;
 import org.eclipse.jetty.util.BufferUtil;
 import org.eclipse.jetty.util.Callback;
 import org.eclipse.jetty.util.MathUtils;
@@ -286,32 +289,44 @@ public abstract class HttpReceiver
             return false;
 
         HttpResponse response = exchange.getResponse();
+        HttpFields responseHeaders = response.getHeaders();
         if (LOG.isDebugEnabled())
-            LOG.debug("Response headers {}{}{}", response, System.lineSeparator(), response.getHeaders().toString().trim());
+            LOG.debug("Response headers {}{}{}", response, System.lineSeparator(), responseHeaders.toString().trim());
+
+        // HEAD responses may have Content-Encoding
+        // and Content-Length, but have no content.
+        if (!HttpMethod.HEAD.is(exchange.getRequest().getMethod()))
+        {
+            // Content-Encoding may have multiple values in the order they
+            // are applied, but we only support one decoding pass, the last one.
+            String contentEncoding = responseHeaders.get(HttpHeader.CONTENT_ENCODING);
+            if (contentEncoding != null)
+            {
+                int comma = contentEncoding.indexOf(",");
+                if (comma > 0)
+                {
+                    QuotedCSV parser = new QuotedCSV(false);
+                    parser.addValue(contentEncoding);
+                    List<String> values = parser.getValues();
+                    contentEncoding = values.get(values.size() - 1);
+                }
+                // If there is a matching content decoder factory, build a decoder.
+                for (ContentDecoder.Factory factory : getHttpDestination().getHttpClient().getContentDecoderFactories())
+                {
+                    if (factory.getEncoding().equalsIgnoreCase(contentEncoding))
+                    {
+                        decoder = new Decoder(exchange, factory.newContentDecoder());
+                        break;
+                    }
+                }
+            }
+        }
+
         ResponseNotifier notifier = getHttpDestination().getResponseNotifier();
         List<Response.ResponseListener> responseListeners = exchange.getConversation().getResponseListeners();
         notifier.notifyHeaders(responseListeners, response);
         contentListeners.reset(responseListeners);
         contentListeners.notifyBeforeContent(response);
-
-        if (!contentListeners.isEmpty())
-        {
-            List<String> contentEncodings = response.getHeaders().getCSV(HttpHeader.CONTENT_ENCODING.asString(), false);
-            if (contentEncodings != null && !contentEncodings.isEmpty())
-            {
-                for (ContentDecoder.Factory factory : getHttpDestination().getHttpClient().getContentDecoderFactories())
-                {
-                    for (String encoding : contentEncodings)
-                    {
-                        if (factory.getEncoding().equalsIgnoreCase(encoding))
-                        {
-                            decoder = new Decoder(exchange, factory.newContentDecoder());
-                            break;
-                        }
-                    }
-                }
-            }
-        }
 
         if (updateResponseState(ResponseState.TRANSIENT, ResponseState.HEADERS))
         {
@@ -755,6 +770,7 @@ public abstract class HttpReceiver
         {
             this.exchange = exchange;
             this.decoder = Objects.requireNonNull(decoder);
+            decoder.beforeDecoding(exchange);
         }
 
         private boolean decode(ByteBuffer encoded, Callback callback)
@@ -868,6 +884,7 @@ public abstract class HttpReceiver
         @Override
         public void destroy()
         {
+            decoder.afterDecoding(exchange);
             if (decoder instanceof Destroyable)
                 ((Destroyable)decoder).destroy();
         }
