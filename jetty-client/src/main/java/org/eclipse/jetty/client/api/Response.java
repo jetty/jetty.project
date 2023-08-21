@@ -65,6 +65,18 @@ public interface Response
     String getReason();
 
     /**
+     * <p>Returns the headers of this response.</p>
+     * <p>Some headers sent by the server may not be present,
+     * or be present but modified, while the content is being
+     * processed.
+     * A typical example is the {@code Content-Length} header
+     * when the content is sent compressed by the server and
+     * automatically decompressed by the client: the
+     * {@code Content-Length} header will be removed.</p>
+     * <p>Similarly, the {@code Content-Encoding} header
+     * may be removed or modified, as the content is
+     * decoded by the client.</p>
+     *
      * @return the headers of this response
      */
     HttpFields getHeaders();

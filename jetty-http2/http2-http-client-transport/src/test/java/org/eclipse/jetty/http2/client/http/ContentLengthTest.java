@@ -20,13 +20,15 @@ import jakarta.servlet.http.HttpServletResponse;
 import org.eclipse.jetty.client.api.ContentResponse;
 import org.eclipse.jetty.http.HttpFields;
 import org.eclipse.jetty.http.HttpHeader;
+import org.eclipse.jetty.http.HttpMethod;
 import org.eclipse.jetty.server.Request;
 import org.eclipse.jetty.server.handler.gzip.GzipHandler;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.ValueSource;
 
+import static org.hamcrest.MatcherAssert.assertThat;
+import static org.hamcrest.Matchers.lessThan;
 import static org.junit.jupiter.api.Assertions.assertEquals;
-import static org.junit.jupiter.api.Assertions.assertTrue;
 
 public class ContentLengthTest extends AbstractTest
 {
@@ -94,7 +96,10 @@ public class ContentLengthTest extends AbstractTest
             .send();
 
         HttpFields responseHeaders = response.getHeaders();
-        long contentLength = responseHeaders.getLongField(HttpHeader.CONTENT_LENGTH.asString());
-        assertTrue(0 < contentLength && contentLength < data.length);
+        long contentLength = responseHeaders.getLongField(HttpHeader.CONTENT_LENGTH);
+        if (HttpMethod.HEAD.is(method))
+            assertThat(contentLength, lessThan((long)data.length));
+        else
+            assertEquals(data.length, contentLength);
     }
 }

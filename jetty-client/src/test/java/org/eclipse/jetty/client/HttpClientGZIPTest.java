@@ -13,6 +13,7 @@
 
 package org.eclipse.jetty.client;
 
+import java.io.ByteArrayInputStream;
 import java.io.ByteArrayOutputStream;
 import java.io.IOException;
 import java.io.InputStream;
@@ -22,6 +23,8 @@ import java.util.Arrays;
 import java.util.Random;
 import java.util.concurrent.ExecutionException;
 import java.util.concurrent.TimeUnit;
+import java.util.concurrent.atomic.AtomicLong;
+import java.util.zip.GZIPInputStream;
 import java.util.zip.GZIPOutputStream;
 
 import jakarta.servlet.ServletOutputStream;
@@ -30,6 +33,7 @@ import jakarta.servlet.http.HttpServletResponse;
 import org.eclipse.jetty.client.api.ContentResponse;
 import org.eclipse.jetty.client.api.Response;
 import org.eclipse.jetty.client.util.InputStreamResponseListener;
+import org.eclipse.jetty.http.HttpFields;
 import org.eclipse.jetty.http.HttpHeader;
 import org.eclipse.jetty.http.HttpStatus;
 import org.eclipse.jetty.io.ByteBufferPool;
@@ -43,6 +47,7 @@ import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.Matchers.lessThan;
 import static org.junit.jupiter.api.Assertions.assertArrayEquals;
 import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertNull;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.api.Assumptions.assumeTrue;
 
@@ -72,6 +77,81 @@ public class HttpClientGZIPTest extends AbstractHttpClientServerTest
 
         assertEquals(200, response.getStatus());
         assertArrayEquals(data, response.getContent());
+        HttpFields responseHeaders = response.getHeaders();
+        // The content has been decoded, so Content-Encoding must be absent.
+        assertNull(responseHeaders.get(HttpHeader.CONTENT_ENCODING));
+        // The Content-Length must be the decoded one.
+        assertEquals(data.length, responseHeaders.getLongField(HttpHeader.CONTENT_LENGTH));
+    }
+
+    @ParameterizedTest
+    @ArgumentsSource(ScenarioProvider.class)
+    public void testMultipleContentEncodingsFooGZIP(Scenario scenario) throws Exception
+    {
+        final byte[] data = "HELLO WORLD".getBytes(StandardCharsets.UTF_8);
+        start(scenario, new EmptyServerHandler()
+        {
+            @Override
+            protected void service(String target, Request jettyRequest, HttpServletRequest request, HttpServletResponse response) throws IOException
+            {
+                response.setHeader("Content-Encoding", "foo,gzip");
+                GZIPOutputStream gzipOutput = new GZIPOutputStream(response.getOutputStream());
+                gzipOutput.write(data);
+                gzipOutput.finish();
+            }
+        });
+
+        ContentResponse response = client.newRequest("localhost", connector.getLocalPort())
+            .scheme(scenario.getScheme())
+            .timeout(5, TimeUnit.SECONDS)
+            .send();
+
+        assertEquals(200, response.getStatus());
+        assertArrayEquals(data, response.getContent());
+        HttpFields responseHeaders = response.getHeaders();
+        // The content has been decoded, so Content-Encoding must be only be "foo".
+        assertEquals("foo", responseHeaders.get(HttpHeader.CONTENT_ENCODING));
+        // The Content-Length must be the decoded one.
+        assertEquals(data.length, responseHeaders.getLongField(HttpHeader.CONTENT_LENGTH));
+    }
+
+    @ParameterizedTest
+    @ArgumentsSource(ScenarioProvider.class)
+    public void testMultipleContentEncodingsGZIPFoo(Scenario scenario) throws Exception
+    {
+        final byte[] data = "HELLO WORLD".getBytes(StandardCharsets.UTF_8);
+        start(scenario, new EmptyServerHandler()
+        {
+            @Override
+            protected void service(String target, Request jettyRequest, HttpServletRequest request, HttpServletResponse response) throws IOException
+            {
+                response.setHeader("Content-Encoding", "gzip,foo");
+                GZIPOutputStream gzipOutput = new GZIPOutputStream(response.getOutputStream());
+                gzipOutput.write(data);
+                gzipOutput.finish();
+            }
+        });
+
+        // There is no "foo" content decoder factory, so content must remain gzipped.
+        AtomicLong encodedContentLength = new AtomicLong();
+        ContentResponse response = client.newRequest("localhost", connector.getLocalPort())
+            .scheme(scenario.getScheme())
+            .onResponseHeader((r, field) ->
+            {
+                if (field.getHeader() == HttpHeader.CONTENT_LENGTH)
+                    encodedContentLength.set(field.getLongValue());
+                return true;
+            })
+            .timeout(5, TimeUnit.SECONDS)
+            .send();
+
+        assertEquals(200, response.getStatus());
+
+        byte[] content = IO.readBytes(new GZIPInputStream(new ByteArrayInputStream(response.getContent())));
+        assertArrayEquals(data, content);
+        HttpFields responseHeaders = response.getHeaders();
+        assertEquals("gzip,foo", responseHeaders.get(HttpHeader.CONTENT_ENCODING));
+        assertEquals(encodedContentLength.get(), responseHeaders.getLongField(HttpHeader.CONTENT_LENGTH));
     }
 
     @ParameterizedTest
@@ -297,6 +377,12 @@ public class HttpClientGZIPTest extends AbstractHttpClientServerTest
 
         Response response = listener.get(20, TimeUnit.SECONDS);
         assertEquals(HttpStatus.OK_200, response.getStatus());
+        // No Content-Length because HttpClient does not know yet the length of the decoded content.
+        assertNull(response.getHeaders().get(HttpHeader.CONTENT_LENGTH));
+        // No Content-Encoding, because the content will be decoded automatically.
+        // In this way applications will know that the content is already un-gzipped
+        // and will not do the un-gzipping themselves.
+        assertNull(response.getHeaders().get(HttpHeader.CONTENT_ENCODING));
 
         ByteArrayOutputStream output = new ByteArrayOutputStream();
         try (InputStream input = listener.getInputStream())
@@ -304,6 +390,8 @@ public class HttpClientGZIPTest extends AbstractHttpClientServerTest
             IO.copy(input, output);
         }
         assertArrayEquals(content, output.toByteArray());
+        // After the content has been decoded, the length is known again.
+        assertEquals(content.length, response.getHeaders().getLongField(HttpHeader.CONTENT_LENGTH));
     }
 
     private static void sleep(long ms) throws IOException
