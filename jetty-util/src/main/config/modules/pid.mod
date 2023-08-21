@@ -16,6 +16,6 @@ etc/jetty-pid.xml
 
 [ini-template]
 ## PID Config
-jetty.pid=${jetty.base}/jetty.pid
+# jetty.pid=${jetty.base}/jetty.pid
 
 

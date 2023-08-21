@@ -16,6 +16,6 @@ etc/jetty-state.xml
 
 [ini-template]
 ## State Config
-jetty.state=${jetty.base}/jetty.state
+# jetty.state=${jetty.base}/jetty.state
 
 
