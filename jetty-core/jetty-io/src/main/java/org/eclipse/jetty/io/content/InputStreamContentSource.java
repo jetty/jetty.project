@@ -81,7 +81,7 @@ public class InputStreamContentSource implements Content.Source
         try
         {
             ByteBuffer buffer = streamBuffer.getByteBuffer();
-            int read = fillBufferFromInputStream(inputStream, buffer);
+            int read = fillBufferFromInputStream(inputStream, buffer.array());
             if (read < 0)
             {
                 streamBuffer.release();
@@ -101,9 +101,9 @@ public class InputStreamContentSource implements Content.Source
         }
     }
 
-    protected int fillBufferFromInputStream(InputStream inputStream, ByteBuffer buffer) throws IOException
+    protected int fillBufferFromInputStream(InputStream inputStream, byte[] buffer) throws IOException
     {
-        return inputStream.read(buffer.array(), buffer.arrayOffset(), buffer.capacity());
+        return inputStream.read(buffer, 0, buffer.length);
     }
 
     private void close()

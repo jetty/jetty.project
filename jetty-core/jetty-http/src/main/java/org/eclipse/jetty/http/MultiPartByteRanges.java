@@ -151,13 +151,13 @@ public class MultiPartByteRanges
         }
 
         @Override
-        protected int fillBufferFromInputStream(InputStream inputStream, ByteBuffer buffer) throws IOException
+        protected int fillBufferFromInputStream(InputStream inputStream, byte[] buffer) throws IOException
         {
             if (toRead == 0)
                 return -1;
             int toReadInt = (int)Math.min(Integer.MAX_VALUE, toRead);
-            int len = Math.min(toReadInt, buffer.capacity());
-            int read = inputStream.read(buffer.array(), buffer.arrayOffset(), len);
+            int len = Math.min(toReadInt, buffer.length);
+            int read = inputStream.read(buffer, 0, len);
             toRead -= read;
             return read;
         }
@@ -208,7 +208,7 @@ public class MultiPartByteRanges
     }
 
     /**
-     * <p>A {@link MultiPart.Part} whose content is a byte range of a file.</p>
+     * <p>A {@link MultiPart.Part} whose content is a byte range of a {@link Resource}.</p>
      */
     public static class Part extends MultiPart.Part
     {
