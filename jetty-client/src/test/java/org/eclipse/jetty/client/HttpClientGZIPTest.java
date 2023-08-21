@@ -390,7 +390,7 @@ public class HttpClientGZIPTest extends AbstractHttpClientServerTest
             IO.copy(input, output);
         }
         assertArrayEquals(content, output.toByteArray());
-        // After the content has been coded, the length is known again.
+        // After the content has been decoded, the length is known again.
         assertEquals(content.length, response.getHeaders().getLongField(HttpHeader.CONTENT_LENGTH));
     }
 
