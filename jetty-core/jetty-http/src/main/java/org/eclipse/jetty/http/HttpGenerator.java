@@ -86,33 +86,17 @@ public class HttpGenerator
     private boolean _noContentResponse = false;
     private Boolean _persistent = null;
 
-    private final int _send;
-    private static final int SEND_SERVER = 0x01;
-    private static final int SEND_XPOWEREDBY = 0x02;
     private static final Index<Boolean> ASSUMED_CONTENT_METHODS = new Index.Builder<Boolean>()
         .caseSensitive(false)
         .with(HttpMethod.POST.asString(), Boolean.TRUE)
         .with(HttpMethod.PUT.asString(), Boolean.TRUE)
         .build();
 
-    public static void setJettyVersion(String serverVersion)
-    {
-        SEND[SEND_SERVER] = StringUtil.getBytes("Server: " + serverVersion + "\r\n");
-        SEND[SEND_XPOWEREDBY] = StringUtil.getBytes("X-Powered-By: " + serverVersion + "\r\n");
-        SEND[SEND_SERVER | SEND_XPOWEREDBY] = StringUtil.getBytes("Server: " + serverVersion + "\r\nX-Powered-By: " + serverVersion + "\r\n");
-    }
-
     // data
     private boolean _needCRLF = false;
 
     public HttpGenerator()
     {
-        this(false, false);
-    }
-
-    public HttpGenerator(boolean sendServerVersion, boolean sendXPoweredBy)
-    {
-        _send = (sendServerVersion ? SEND_SERVER : 0) | (sendXPoweredBy ? SEND_XPOWEREDBY : 0);
     }
 
     public void reset()
@@ -595,7 +579,6 @@ public class HttpGenerator
         }
 
         // default field values
-        int send = _send;
         HttpField transferEncoding = null;
         boolean http11 = _info.getHttpVersion() == HttpVersion.HTTP_1_1;
         boolean close = false;
@@ -665,13 +648,6 @@ public class HttpGenerator
                                     Stream.of(field.getValues()).filter(s -> !HttpHeaderValue.KEEP_ALIVE.is(s))
                                         .collect(Collectors.joining(", ")));
                             }
-                            putTo(field, header);
-                            break;
-                        }
-
-                        case SERVER:
-                        {
-                            send = send & ~SEND_SERVER;
                             putTo(field, header);
                             break;
                         }
@@ -792,11 +768,6 @@ public class HttpGenerator
             }
         }
 
-        // Send server?
-        int status = response != null ? response.getStatus() : -1;
-        if (status > 199)
-            header.put(SEND[send]);
-
         // end the header.
         header.put(HttpTokens.CRLF);
     }
@@ -839,9 +810,9 @@ public class HttpGenerator
     private static final byte[] TRANSFER_ENCODING_CHUNKED = StringUtil.getBytes("Transfer-Encoding: chunked\r\n");
     private static final byte[][] SEND = new byte[][]{
         new byte[0],
-        StringUtil.getBytes("Server: Jetty(10.x.x)\r\n"),
-        StringUtil.getBytes("X-Powered-By: Jetty(10.x.x)\r\n"),
-        StringUtil.getBytes("Server: Jetty(10.x.x)\r\nX-Powered-By: Jetty(10.x.x)\r\n")
+        StringUtil.getBytes("Server: Jetty(12.x.x)\r\n"),
+        StringUtil.getBytes("X-Powered-By: Jetty(12.x.x)\r\n"),
+        StringUtil.getBytes("Server: Jetty(12.x.x)\r\nX-Powered-By: Jetty(12.x.x)\r\n")
     };
 
     // Build cache of response lines for status

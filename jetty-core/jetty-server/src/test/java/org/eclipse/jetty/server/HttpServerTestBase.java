@@ -94,7 +94,6 @@ public abstract class HttpServerTestBase extends HttpServerTestFixture
     private static final String REQUEST1 = REQUEST1_HEADER + REQUEST1_CONTENT.getBytes().length + "\n\n" + REQUEST1_CONTENT;
 
     private static final String RESPONSE1 = "HTTP/1.1 200 OK\n" +
-        "Server: Jetty(" + Server.getVersion() + ")\n" +
         "Content-Type: text/plain;charset=utf-8\n" +
         "Content-Length: 5\n" +
         "\n" +
@@ -124,7 +123,6 @@ public abstract class HttpServerTestBase extends HttpServerTestFixture
 
     protected static final String RESPONSE2 =
         "HTTP/1.1 200 OK\n" +
-            "Server: Jetty(" + Server.getVersion() + ")\n" +
             "Content-Type: text/xml; charset=ISO-8859-1\n" +
             "Content-Length: " + REQUEST2_CONTENT.getBytes().length + "\n" +
             "\n" +
@@ -728,7 +726,7 @@ public abstract class HttpServerTestBase extends HttpServerTestFixture
         }
     }
 
-    /*
+    /**
      * Feed the server fragmentary headers and see how it copes with it.
      */
     @Test

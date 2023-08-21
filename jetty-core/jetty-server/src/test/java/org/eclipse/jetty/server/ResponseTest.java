@@ -13,6 +13,7 @@
 
 package org.eclipse.jetty.server;
 
+import java.util.List;
 import java.util.ListIterator;
 
 import org.eclipse.jetty.http.HttpCookie;
@@ -31,6 +32,7 @@ import org.junit.jupiter.api.Test;
 import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.Matchers.containsInAnyOrder;
 import static org.hamcrest.Matchers.is;
+import static org.hamcrest.Matchers.notNullValue;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 
 public class ResponseTest
@@ -192,6 +194,80 @@ public class ResponseTest
         response = HttpTester.parseResponse(connector.getResponse(request));
         assertEquals(HttpStatus.SEE_OTHER_303, response.getStatus());
         assertThat(response.get(HttpHeader.LOCATION), is("/somewhere/else"));
+    }
+
+    @Test
+    public void testXPoweredByDefault() throws Exception
+    {
+        server.getConnectors()[0].getConnectionFactory(HttpConnectionFactory.class)
+            .getHttpConfiguration().setSendXPoweredBy(true);
+        server.setHandler(new Handler.Abstract()
+        {
+            @Override
+            public boolean handle(Request request, Response response, Callback callback)
+            {
+                Content.Sink.write(response, true, "Test", callback);
+                return true;
+            }
+        });
+        server.start();
+
+        String request = """
+                GET /test HTTP/1.0\r
+                Host: hostname\r
+                \r
+                """;
+        HttpTester.Response response = HttpTester.parseResponse(connector.getResponse(request));
+        assertEquals(HttpStatus.OK_200, response.getStatus());
+
+        // ensure there are only 1 entry for each of these headers
+        List<HttpHeader> expectedHeaders = List.of(HttpHeader.SERVER, HttpHeader.X_POWERED_BY, HttpHeader.DATE, HttpHeader.CONTENT_LENGTH);
+        for (HttpHeader expectedHeader: expectedHeaders)
+        {
+            List<String> actualHeader = response.getValuesList(expectedHeader);
+            assertThat(expectedHeader + " exists", actualHeader, is(notNullValue()));
+            assertThat(expectedHeader + " header count", actualHeader.size(), is(1));
+        }
+        assertThat(response.get(HttpHeader.CONTENT_LENGTH), is("4"));
+        assertThat(response.get(HttpHeader.X_POWERED_BY), is(HttpConfiguration.SERVER_VERSION));
+    }
+
+    @Test
+    public void testXPoweredByOverride() throws Exception
+    {
+        server.getConnectors()[0].getConnectionFactory(HttpConnectionFactory.class)
+            .getHttpConfiguration().setSendXPoweredBy(true);
+        server.setHandler(new Handler.Abstract()
+        {
+            @Override
+            public boolean handle(Request request, Response response, Callback callback)
+            {
+                // replace the X-Powered-By value
+                response.getHeaders().put(HttpHeader.X_POWERED_BY, "SomeServer");
+                Content.Sink.write(response, true, "Test", callback);
+                return true;
+            }
+        });
+        server.start();
+
+        String request = """
+                GET /test HTTP/1.0\r
+                Host: hostname\r
+                \r
+                """;
+        HttpTester.Response response = HttpTester.parseResponse(connector.getResponse(request));
+        assertEquals(HttpStatus.OK_200, response.getStatus());
+
+        // ensure there are only 1 entry for each of these headers
+        List<HttpHeader> expectedHeaders = List.of(HttpHeader.SERVER, HttpHeader.X_POWERED_BY, HttpHeader.DATE, HttpHeader.CONTENT_LENGTH);
+        for (HttpHeader expectedHeader: expectedHeaders)
+        {
+            List<String> actualHeader = response.getValuesList(expectedHeader);
+            assertThat(expectedHeader + " exists", actualHeader, is(notNullValue()));
+            assertThat(expectedHeader + " header count", actualHeader.size(), is(1));
+        }
+        assertThat(response.get(HttpHeader.CONTENT_LENGTH), is("4"));
+        assertThat(response.get(HttpHeader.X_POWERED_BY), is("SomeServer"));
     }
 
     @Test

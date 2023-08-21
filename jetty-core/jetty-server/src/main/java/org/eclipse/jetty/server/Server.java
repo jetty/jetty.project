@@ -31,7 +31,6 @@ import java.util.concurrent.TimeUnit;
 
 import org.eclipse.jetty.http.DateGenerator;
 import org.eclipse.jetty.http.HttpField;
-import org.eclipse.jetty.http.HttpGenerator;
 import org.eclipse.jetty.http.HttpHeader;
 import org.eclipse.jetty.http.MimeTypes;
 import org.eclipse.jetty.http.PreEncodedHttpField;
@@ -526,8 +525,6 @@ public class Server extends Handler.Wrapper implements Attributes
                 LOG.warn("THIS IS NOT A STABLE RELEASE! DO NOT USE IN PRODUCTION!");
                 LOG.warn("Download a stable release from https://download.eclipse.org/jetty/");
             }
-
-            HttpGenerator.setJettyVersion(HttpConfiguration.SERVER_VERSION);
 
             final ExceptionUtil.MultiException multiException = new ExceptionUtil.MultiException();
 

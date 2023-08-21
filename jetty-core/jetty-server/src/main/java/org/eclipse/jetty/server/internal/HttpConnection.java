@@ -165,7 +165,7 @@ public class HttpConnection extends AbstractConnection implements Runnable, Writ
 
     protected HttpGenerator newHttpGenerator()
     {
-        return new HttpGenerator(_configuration.getSendServerVersion(), _configuration.getSendXPoweredBy());
+        return new HttpGenerator();
     }
 
     protected HttpParser newHttpParser(HttpCompliance compliance)
