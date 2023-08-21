@@ -383,6 +383,28 @@ public interface HttpFields extends Iterable<HttpField>, Supplier<HttpFields>
     }
 
     /**
+     * <p>Returns the encoded value of the last field with the given field name,
+     * or {@code null} if no such header is present.</p>
+     * <p>In case of multi-valued fields, the returned value is the encoded
+     * value, including commas and quotes, as returned by {@link HttpField#getValue()}.</p>
+     *
+     * @param header the field name to search for
+     * @return the raw value of the last field with the given field name,
+     * or {@code null} if no such header is present
+     * @see HttpField#getValue()
+     */
+    default String getLast(HttpHeader header)
+    {
+        for (ListIterator<HttpField> i = listIterator(size()); i.hasPrevious();)
+        {
+            HttpField f = i.previous();
+            if (f.getHeader() == header)
+                return f.getValue();
+        }
+        return null;
+    }
+
+    /**
      * <p>Returns the encoded value of the first field with the given field name,
      * or {@code null} if no such field is present.</p>
      * <p>The comparison of field name is case-insensitive via
