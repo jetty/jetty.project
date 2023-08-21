@@ -167,11 +167,19 @@ public interface HttpFields extends Iterable<HttpField>, Supplier<HttpFields>
         return listIterator(0);
     }
 
+    /**
+     * @return an iterator over the {@link HttpField}s in this {@code HttpFields}.
+     * @see #listIterator(int)
+     */
     default ListIterator<HttpField> listIterator()
     {
         return listIterator(0);
     }
 
+    /**
+     * @return an iterator over the {@link HttpField}s in this {@code HttpFields} starting at the given index.
+     * @see #listIterator()
+     */
     ListIterator<HttpField> listIterator(int index);
 
     /**
@@ -938,11 +946,7 @@ public interface HttpFields extends Iterable<HttpField>, Supplier<HttpFields>
          */
         default Mutable add(HttpField field)
         {
-            ListIterator<HttpField> i = listIterator();
-            while (i.hasNext())
-            {
-                i.next();
-            }
+            ListIterator<HttpField> i = listIterator(size());
             i.add(field);
             return this;
         }
