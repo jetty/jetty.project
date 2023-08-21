@@ -205,14 +205,14 @@ class ServletCoreResponse implements Response
         }
 
         @Override
-        public ListIterator<HttpField> listIterator(int index)
+        public ListIterator<HttpField> listIterator()
         {
             // The minimum requirement is to implement the listIterator, but it is inefficient.
             // Other methods are implemented for efficiency.
             final ListIterator<HttpField> list = _response.getHeaderNames().stream()
                 .map(n -> new HttpField(n, _response.getHeader(n)))
                 .collect(Collectors.toList())
-                .listIterator(index);
+                .listIterator();
 
             return new ListIterator<>()
             {
