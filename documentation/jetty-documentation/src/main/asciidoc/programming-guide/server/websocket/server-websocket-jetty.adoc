@@ -14,7 +14,7 @@
 [[pg-server-websocket-jetty]]
 ==== Jetty APIs Implementation
 
-When you write a WebSocket application using the Jetty WebSocket APIs, your code typically need to depend on just the Jetty WebSocket APIs to compile your application.
+When you write a WebSocket application using the Jetty WebSocket APIs, your code typically needs to depend on just the Jetty WebSocket APIs to compile your application.
 However, at runtime you need to have the _implementation_ of the Jetty WebSocket APIs in your class-path (or module-path).
 
 Jetty's WebSocket APIs are provided by the following Maven artifact:
@@ -41,20 +41,21 @@ Jetty's implementation of the Jetty WebSocket APIs is provided by the following 
 
 [NOTE]
 ====
-The `jetty-websocket-jetty-api` artifact and the `jetty-websocket-jetty-server` artifact (and its transitive dependencies) should be present in the server class-path (or module-path), and never in the web application's `/WEB-INF/lib` directory.
+The `jetty-websocket-jetty-api` artifact and the `jetty-websocket-jetty-server` artifact (and its transitive dependencies) should be present in the server class-path (or module-path), and never in a web application's `/WEB-INF/lib` directory.
 ====
 
 To configure correctly your WebSocket application based on the Jetty WebSocket APIs, you need two steps:
 
-. Make sure that Jetty xref:pg-server-websocket-jetty-container[sets up] an instance of `JettyWebSocketServerContainer`.
-. Use the `JettyWebSocketServerContainer` APIs in your applications to xref:pg-server-websocket-jetty-endpoints[register your WebSocket endpoints] that implement your application logic.
+. Make sure that Jetty xref:pg-server-websocket-jetty-container[sets up] an instance of `org.eclipse.jetty.websocket.server.ServerWebSocketContainer`.
+. Use the `ServerWebSocketContainer` APIs in your applications to xref:pg-server-websocket-jetty-endpoints[register the WebSocket endpoints] that implement your application logic.
 
 You can read more about the xref:pg-websocket-architecture[Jetty WebSocket architecture], which is common to both client-side and server-side, to get familiar with the terminology used in the following sections.
 
 [[pg-server-websocket-jetty-container]]
-===== Setting up `JettyWebSocketServerContainer`
+===== Setting up `ServerWebSocketContainer`
 
-Jetty sets up a `JettyWebSocketServerContainer` instance using `JettyWebSocketServletContainerInitializer`.
+// TODO: update the sections below.
+Jetty sets up a `ServerWebSocketContainer` instance using `JettyWebSocketServletContainerInitializer`.
 
 When you deploy web applications using xref:pg-server-http-handler-use-webapp-context[`WebAppContext`], then  `JettyWebSocketServletContainerInitializer` is automatically discovered and initialized by Jetty when the web application starts, so that it sets up the `JettyWebSocketServerContainer`.
 In this way, you do not need to write any additional code:

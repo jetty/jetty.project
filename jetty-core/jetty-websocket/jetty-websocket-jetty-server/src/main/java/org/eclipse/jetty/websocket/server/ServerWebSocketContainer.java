@@ -21,6 +21,7 @@ import java.util.concurrent.Executor;
 import java.util.function.Consumer;
 
 import org.eclipse.jetty.http.pathmap.PathSpec;
+import org.eclipse.jetty.server.Handler;
 import org.eclipse.jetty.server.Request;
 import org.eclipse.jetty.server.Response;
 import org.eclipse.jetty.util.Callback;
@@ -226,24 +227,31 @@ public class ServerWebSocketContainer extends ContainerLifeCycle implements WebS
         if (mappings.getWebSocketNegotiator(pathSpec) != null)
             throw new WebSocketException("Duplicate WebSocket Mapping for PathSpec " + pathSpec);
 
-        org.eclipse.jetty.websocket.core.server.WebSocketCreator coreCreator = (request, response, callback) ->
-        {
-            try
-            {
-                Object webSocket = creator.createWebSocket(new ServerUpgradeRequestDelegate(request), new ServerUpgradeResponseDelegate(request, response), callback);
-                if (webSocket == null)
-                    callback.succeeded();
-                return webSocket;
-            }
-            catch (Throwable x)
-            {
-                callback.failed(x);
-                return null;
-            }
-        };
+        var coreCreator = newWebSocketCreator(creator);
         mappings.addMapping(pathSpec, coreCreator, factory, configuration);
     }
 
+    /**
+     * <p>Matches the given {@code request} against existing WebSocket mappings,
+     * upgrading to WebSocket if there is a match.</p>
+     * <p>Direct upgrades without using WebSocket mappings may be performed via
+     * {@link #upgrade(WebSocketCreator, Request, Response, Callback)}.</p>
+     * <p>When {@code true} is returned, a response has been sent to the client
+     * and the {@code callback} has been completed; either because of a successful
+     * WebSocket upgrade, or because an error has occurred.</p>
+     * <p>When {@code false} is returned, a response has not been sent to the
+     * client, and the {@code callback} has not been completed; typically because
+     * the request path does not match any existing WebSocket mappings, so that
+     * the request can be handled by other {@link Handler}s.</p>
+     *
+     * @param request the request to handle, possibly a WebSocket upgrade request
+     * @param response the response to handle
+     * @param callback the callback to complete when the handling is complete
+     * @return {@code true} in case of WebSocket upgrades or failures,
+     * {@code false} if the request was not handled
+     * @see #addMapping(PathSpec, WebSocketCreator)
+     * @see #upgrade(WebSocketCreator, Request, Response, Callback)
+     */
     public boolean handle(Request request, Response response, Callback callback)
     {
         String target = Request.getPathInContext(request);
@@ -257,6 +265,55 @@ public class ServerWebSocketContainer extends ContainerLifeCycle implements WebS
         if (negotiator == null)
             return false;
 
+        return upgrade(negotiator, request, response, callback);
+    }
+
+    /**
+     * <p>Upgrades the given {@code request} without matching against the WebSocket mappings.</p>
+     * <p>When {@code true} is returned, a response has been sent to the client
+     * and the {@code callback} has been completed; either because of a successful
+     * WebSocket upgrade, or because an error has occurred.</p>
+     * <p>When {@code false} is returned, a response has not been sent to the
+     * client, and the {@code callback} has not been completed; for example because
+     * the request is not a WebSocket upgrade; in this case the caller must arrange
+     * to send a response and complete the callback.</p>
+     *
+     * @param creator the creator of the WebSocket endpoint
+     * @param request the request to upgrade, possibly a WebSocket upgrade request
+     * @param response the response
+     * @param callback the callback to complete when the upgrade is complete
+     * @return {@code true} in case of WebSocket upgrades or failures,
+     * {@code false} if the request was not upgraded
+     * @see #handle(Request, Response, Callback)
+     */
+    public boolean upgrade(WebSocketCreator creator, Request request, Response response, Callback callback)
+    {
+        var coreCreator = newWebSocketCreator(creator);
+        WebSocketNegotiator negotiator = WebSocketNegotiator.from(coreCreator, factory, configuration);
+        return upgrade(negotiator, request, response, callback);
+    }
+
+    private org.eclipse.jetty.websocket.core.server.WebSocketCreator newWebSocketCreator(WebSocketCreator creator)
+    {
+        return (rq, rs, cb) ->
+        {
+            try
+            {
+                Object webSocket = creator.createWebSocket(new ServerUpgradeRequestDelegate(rq), new ServerUpgradeResponseDelegate(rq, rs), cb);
+                if (webSocket == null)
+                    cb.succeeded();
+                return webSocket;
+            }
+            catch (Throwable x)
+            {
+                cb.failed(x);
+                return null;
+            }
+        };
+    }
+
+    private boolean upgrade(WebSocketNegotiator negotiator, Request request, Response response, Callback callback)
+    {
         try
         {
             return mappings.upgrade(negotiator, request, response, callback, configuration);

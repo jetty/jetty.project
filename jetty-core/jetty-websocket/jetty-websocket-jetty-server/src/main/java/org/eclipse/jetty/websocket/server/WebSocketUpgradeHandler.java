@@ -14,6 +14,7 @@
 package org.eclipse.jetty.websocket.server;
 
 import java.util.function.Consumer;
+import java.util.function.Function;
 
 import org.eclipse.jetty.server.Handler;
 import org.eclipse.jetty.server.Request;
@@ -84,18 +85,23 @@ public class WebSocketUpgradeHandler extends Handler.Wrapper
      */
     public static WebSocketUpgradeHandler from(Server server, ContextHandler context)
     {
+        return from(server, context, WebSocketUpgradeHandler::new);
+    }
+
+    public static WebSocketUpgradeHandler from(Server server, ContextHandler context, Function<ServerWebSocketContainer, WebSocketUpgradeHandler> factory)
+    {
         WebSocketComponents components = WebSocketServerComponents.ensureWebSocketComponents(server, context);
         WebSocketMappings mappings = new WebSocketMappings(components);
         ServerWebSocketContainer container = new ServerWebSocketContainer(mappings);
 
-        WebSocketUpgradeHandler wsHandler = new WebSocketUpgradeHandler(container);
+        WebSocketUpgradeHandler wsHandler = factory.apply(container);
         context.getContext().setAttribute(WebSocketContainer.class.getName(), wsHandler._container);
         return wsHandler;
     }
 
     private final ServerWebSocketContainer _container;
 
-    private WebSocketUpgradeHandler(ServerWebSocketContainer container)
+    protected WebSocketUpgradeHandler(ServerWebSocketContainer container)
     {
         _container = container;
         addBean(container);
@@ -117,9 +123,14 @@ public class WebSocketUpgradeHandler extends Handler.Wrapper
     @Override
     public boolean handle(Request request, Response response, Callback callback) throws Exception
     {
-        if (_container.handle(request, response, callback))
+        if (handle(_container, request, response, callback))
             return true;
         return super.handle(request, response, callback);
+    }
+
+    protected boolean handle(ServerWebSocketContainer container, Request request, Response response, Callback callback)
+    {
+        return container.handle(request, response, callback);
     }
 
     @Override
