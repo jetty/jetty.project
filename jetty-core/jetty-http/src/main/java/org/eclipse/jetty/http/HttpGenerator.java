@@ -91,7 +91,8 @@ public class HttpGenerator
     private boolean _needCRLF = false;
 
     public HttpGenerator()
-    {}
+    {
+    }
 
     public void reset()
     {
