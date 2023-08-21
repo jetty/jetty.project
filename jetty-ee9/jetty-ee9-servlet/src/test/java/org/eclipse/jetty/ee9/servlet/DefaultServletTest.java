@@ -123,7 +123,7 @@ public class DefaultServletTest
         URLClassLoader extraClassLoader = new URLClassLoader(urls, parentClassLoader);
 
         context = new ServletContextHandler();
-        context.setBaseResource(ResourceFactory.root().newResource(docRoot));
+        context.setBaseResource(ResourceFactory.of(context).newResource(docRoot));
         context.setContextPath("/context");
         context.setWelcomeFiles(new String[]{"index.html", "index.jsp", "index.htm"});
         context.setClassLoader(extraClassLoader);
@@ -2275,7 +2275,7 @@ public class DefaultServletTest
     @Test
     public void testMemoryResourceRange() throws Exception
     {
-        Resource memResource = ResourceFactory.root().newMemoryResource(getClass().getResource("/contextResources/test.txt"));
+        Resource memResource = ResourceFactory.of(context).newMemoryResource(getClass().getResource("/contextResources/test.txt"));
         ResourceService resourceService = new ResourceService();
         resourceService.setHttpContentFactory(path -> new ResourceHttpContent(memResource, "text/plain"));
         DefaultServlet defaultServlet = new DefaultServlet(resourceService);
@@ -2297,7 +2297,7 @@ public class DefaultServletTest
     @Test
     public void testMemoryResourceMultipleRanges() throws Exception
     {
-        Resource memResource = ResourceFactory.root().newMemoryResource(getClass().getResource("/contextResources/test.txt"));
+        Resource memResource = ResourceFactory.of(context).newMemoryResource(getClass().getResource("/contextResources/test.txt"));
         ResourceService resourceService = new ResourceService();
         resourceService.setHttpContentFactory(path -> new ResourceHttpContent(memResource, "text/plain"));
         DefaultServlet defaultServlet = new DefaultServlet(resourceService);
@@ -2322,7 +2322,7 @@ public class DefaultServletTest
     @Test
     public void testMemoryResourceRangeUsingBufferedHttpContent() throws Exception
     {
-        Resource memResource = ResourceFactory.root().newMemoryResource(getClass().getResource("/contextResources/test.txt"));
+        Resource memResource = ResourceFactory.of(context).newMemoryResource(getClass().getResource("/contextResources/test.txt"));
         ResourceService resourceService = new ResourceService();
         resourceService.setHttpContentFactory(path -> new ResourceHttpContent(memResource, "text/plain")
         {
@@ -2353,7 +2353,7 @@ public class DefaultServletTest
     @Test
     public void testMemoryResourceMultipleRangesUsingBufferedHttpContent() throws Exception
     {
-        Resource memResource = ResourceFactory.root().newMemoryResource(getClass().getResource("/contextResources/test.txt"));
+        Resource memResource = ResourceFactory.of(context).newMemoryResource(getClass().getResource("/contextResources/test.txt"));
         ResourceService resourceService = new ResourceService();
         resourceService.setHttpContentFactory(path -> new ResourceHttpContent(memResource, "text/plain")
         {
@@ -2387,7 +2387,7 @@ public class DefaultServletTest
     @Test
     public void testNotAcceptRanges() throws Exception
     {
-        Resource memResource = ResourceFactory.root().newMemoryResource(getClass().getResource("/contextResources/test.txt"));
+        Resource memResource = ResourceFactory.of(context).newMemoryResource(getClass().getResource("/contextResources/test.txt"));
         ResourceService resourceService = new ResourceService();
         resourceService.setHttpContentFactory(path -> new ResourceHttpContent(memResource, "text/plain"));
         resourceService.setAcceptRanges(false);

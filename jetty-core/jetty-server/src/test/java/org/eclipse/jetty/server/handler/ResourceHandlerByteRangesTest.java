@@ -75,7 +75,7 @@ public class ResourceHandlerByteRangesTest
         Files.writeString(rangeFile, rangeChars);
 
         ResourceHandler handler = new ResourceHandler();
-        handler.setBaseResource(ResourceFactory.root().newResource(dir));
+        handler.setBaseResource(ResourceFactory.of(handler).newResource(dir));
         server.setHandler(handler);
         server.start();
     }
@@ -99,7 +99,7 @@ public class ResourceHandlerByteRangesTest
     {
         changeHandler(new ResourceHandler()
         {
-            final Resource memResource = ResourceFactory.root().newMemoryResource(getClass().getResource("/simple/big.txt"));
+            final Resource memResource = ResourceFactory.of(this).newMemoryResource(getClass().getResource("/simple/big.txt"));
 
             @Override
             protected HttpContent.Factory newHttpContentFactory()
@@ -131,7 +131,7 @@ public class ResourceHandlerByteRangesTest
     {
         changeHandler(new ResourceHandler()
         {
-            final Resource memResource = ResourceFactory.root().newMemoryResource(getClass().getResource("/simple/big.txt"));
+            final Resource memResource = ResourceFactory.of(this).newMemoryResource(getClass().getResource("/simple/big.txt"));
 
             @Override
             protected HttpContent.Factory newHttpContentFactory()
@@ -165,7 +165,7 @@ public class ResourceHandlerByteRangesTest
     {
         changeHandler(new ResourceHandler()
         {
-            final Resource memResource = ResourceFactory.root().newMemoryResource(getClass().getResource("/simple/big.txt"));
+            final Resource memResource = ResourceFactory.of(this).newMemoryResource(getClass().getResource("/simple/big.txt"));
 
             @Override
             protected HttpContent.Factory newHttpContentFactory()
@@ -206,7 +206,7 @@ public class ResourceHandlerByteRangesTest
     {
         changeHandler(new ResourceHandler()
         {
-            final Resource memResource = ResourceFactory.root().newMemoryResource(getClass().getResource("/simple/big.txt"));
+            final Resource memResource = ResourceFactory.of(this).newMemoryResource(getClass().getResource("/simple/big.txt"));
 
             @Override
             protected HttpContent.Factory newHttpContentFactory()
@@ -249,7 +249,7 @@ public class ResourceHandlerByteRangesTest
     {
         changeHandler(new ResourceHandler()
         {
-            final Resource memResource = ResourceFactory.root().newMemoryResource(getClass().getResource("/simple/big.txt"));
+            final Resource memResource = ResourceFactory.of(this).newMemoryResource(getClass().getResource("/simple/big.txt"));
 
             @Override
             protected HttpContent.Factory newHttpContentFactory()
