@@ -68,7 +68,6 @@ public class GZIPContentDecoder extends org.eclipse.jetty.http.GZIPContentDecode
                         iterator.remove();
                     else
                         iterator.set(new HttpField(HttpHeader.CONTENT_ENCODING, value.substring(0, comma)));
-                    break;
                 }
             }
         });
