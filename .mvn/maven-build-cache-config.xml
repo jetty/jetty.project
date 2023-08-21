@@ -4,6 +4,7 @@
     <hashAlgorithm>XXMM</hashAlgorithm>
     <enabled>true</enabled>
     <!-- activated via cli -->
+    <!-- to disable it just use -Dmaven.build.cache.enabled=false -->
     <!--
       -Dmaven.build.cache.remote.url=dav:http://nginx-cache-service.jenkins.svc.cluster.local:80 -Dmaven.build.cache.remote.enabled=true
       -Dmaven.build.cache.remote.save.enabled=true -Dmaven.build.cache.remote.server.id=remote-build-cache-server
