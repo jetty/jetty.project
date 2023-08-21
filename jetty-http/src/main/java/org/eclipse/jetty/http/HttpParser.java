@@ -971,12 +971,13 @@ public class HttpParser
                 switch (_header)
                 {
                     case CONTENT_LENGTH:
-                        if (_hasTransferEncoding)
-                            complianceViolation(TRANSFER_ENCODING_WITH_CONTENT_LENGTH);
+                        if (_hasTransferEncoding && complianceViolation(TRANSFER_ENCODING_WITH_CONTENT_LENGTH))
+                            throw new BadMessageException(HttpStatus.BAD_REQUEST_400, "Transfer-Encoding and Content-Length");
                         long contentLength = convertContentLength(_valueString);
                         if (_hasContentLength)
                         {
-                            complianceViolation(MULTIPLE_CONTENT_LENGTHS);
+                            if (complianceViolation(MULTIPLE_CONTENT_LENGTHS))
+                                throw new BadMessageException(HttpStatus.BAD_REQUEST_400, MULTIPLE_CONTENT_LENGTHS.description);
                             if (contentLength != _contentLength)
                                 throw new BadMessageException(HttpStatus.BAD_REQUEST_400, MULTIPLE_CONTENT_LENGTHS.getDescription());
                         }
