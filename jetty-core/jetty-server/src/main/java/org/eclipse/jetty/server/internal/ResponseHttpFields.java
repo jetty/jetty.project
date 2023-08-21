@@ -98,7 +98,7 @@ public class ResponseHttpFields implements HttpFields.Mutable
             for (Iterator<HttpField> iterator = _fields.iterator(); iterator.hasNext();)
             {
                 HttpField field = iterator.next();
-                if (!(field instanceof PersistentPreEncodedHttpField))
+                if (!PersistentField.isPersistent(field))
                     iterator.remove();
             }
         }
