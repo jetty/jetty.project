@@ -46,6 +46,7 @@ import org.eclipse.jetty.client.AsyncRequestContent;
 import org.eclipse.jetty.client.BufferingResponseListener;
 import org.eclipse.jetty.client.ContentResponse;
 import org.eclipse.jetty.client.Destination;
+import org.eclipse.jetty.client.FutureResponseListener;
 import org.eclipse.jetty.client.InputStreamRequestContent;
 import org.eclipse.jetty.client.OutputStreamRequestContent;
 import org.eclipse.jetty.client.Response;
@@ -1458,6 +1459,85 @@ public class AsyncIOServletTest extends AbstractTest
 
         assertNull(errorRef.get());
         assertEquals(1, allDataReadCount.get());
+    }
+
+    @ParameterizedTest
+    @MethodSource("transportsNoFCGI")
+    public void testIsReadyIdempotent(Transport transport) throws Exception
+    {
+        CountDownLatch bodyLatch = new CountDownLatch(1);
+        CountDownLatch dataLatch = new CountDownLatch(1);
+        start(transport, new HttpServlet()
+        {
+            @Override
+            protected void service(HttpServletRequest request, HttpServletResponse response) throws IOException
+            {
+                AsyncContext asyncContext = request.startAsync();
+                asyncContext.setTimeout(0);
+
+                ServletInputStream input = request.getInputStream();
+                input.setReadListener(new ReadListener()
+                {
+                    @Override
+                    public void onDataAvailable() throws IOException
+                    {
+                        while (input.isReady())
+                        {
+                            int read = input.read();
+                            if (read < 0)
+                                break;
+                        }
+
+                        // Call again isReady() to verify it is idempotent.
+                        if (input.isReady())
+                            throw new IOException();
+
+                        dataLatch.countDown();
+                    }
+
+                    @Override
+                    public void onAllDataRead()
+                    {
+                        response.setStatus(HttpStatus.NO_CONTENT_204);
+                        asyncContext.complete();
+                    }
+
+                    @Override
+                    public void onError(Throwable x)
+                    {
+                        response.setStatus(HttpStatus.INTERNAL_SERVER_ERROR_500);
+                        asyncContext.complete();
+                    }
+                });
+
+                // The call to setReadListener() may call isReady(),
+                // here call it again to verify that it is idempotent.
+                assertFalse(input.isReady());
+
+                bodyLatch.countDown();
+            }
+        });
+
+        AsyncRequestContent body = new AsyncRequestContent();
+        var request = client.newRequest(newURI(transport))
+            .method(HttpMethod.POST)
+            .body(body)
+            .timeout(15, TimeUnit.SECONDS);
+        FutureResponseListener listener = new FutureResponseListener(request);
+        request.send(listener);
+
+        assertTrue(bodyLatch.await(5, TimeUnit.SECONDS));
+
+        // Send a first chunk of body.
+        body.write(ByteBuffer.allocate(512), Callback.NOOP);
+
+        assertTrue(dataLatch.await(5, TimeUnit.SECONDS));
+
+        // Complete the body.
+        body.close();
+
+        ContentResponse response = listener.get(5, TimeUnit.SECONDS);
+        assertEquals(HttpStatus.NO_CONTENT_204, response.getStatus());
     }
 
     private static class Listener implements ReadListener, WriteListener
