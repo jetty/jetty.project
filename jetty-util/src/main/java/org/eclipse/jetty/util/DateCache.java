@@ -70,7 +70,7 @@ public class DateCache
             return _seconds;
         }
 
-        public String getString(long inDate)
+        public String format(long inDate)
         {
             if (_suffix == null)
                 return _prefix;
@@ -188,7 +188,7 @@ public class DateCache
      */
     public String format(long inDate)
     {
-        return formatTick(inDate).getString(inDate);
+        return formatTick(inDate).format(inDate);
     }
 
     /**
