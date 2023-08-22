@@ -209,6 +209,12 @@ jetty-12.0.0.beta0 - 23 February 2023
  + 9403 TCK failure: DefaultServlet only sets status 404 instead of sending 404
    response
 
+jetty-9.4.51.v20230217 - 17 February 2023
+ + 9059 IteratingCallback not serializing close() and failed()
+ + 9181 NPE in SessionHandler.checkRequestedSessionId()
+ + 9345 Backport Fix for CVE-2023-26048
+ + 9352 Backport Fix for CVE-2023-26049
+
 jetty-12.0.0.alpha3 - 07 December 2022
  + 5681 Unrecognized jetty-home/start.jar command line option not reported
    clearly
@@ -297,6 +303,20 @@ jetty-11.0.15 - 11 April 2023
  + 9517 Jetty 10.0.14 uses wrong pathSpec for request
  + 9556 Password Util does not ask for password
 
+jetty-10.0.15 - 11 April 2023
+ + 6184 JEP-411 will deprecate/remove the SecurityManager from the JVM
+ + 6483 Jetty http client SSL connectivity over CNTLM proxy fails
+ + 9237 Decouple QTP `idleTimeout` from pool shrink rate
+ + 9309 `jetty.sh` cannot handle complex Jetty properties from `start.d/*.ini`
+ + 9400 Jetty logs warning with stacktrace when annotation parser encounters
+   module-info.class file inside elasticsearch-x-content jar
+ + 9464 Respect expiry time of ID token
+ + 9468 Jetty 11.0.14 is less tolerant of non-compliant cookies than 11.0.13
+ + 9497 Maven plugin effective web xml: add support for jar projects
+ + 9501 jetty client with proxy - ssl traffic between both proxy and servers
+ + 9517 Jetty 10.0.14 uses wrong pathSpec for request
+ + 9556 Password Util does not ask for password
+
 jetty-11.0.14 - 22 February 2023
  + 7650 QueuedThreadPool: Stopped without executing or closing null
  + 9059 IteratingCallback not serializing close() and failed()
@@ -351,52 +371,6 @@ jetty-11.0.14 - 22 February 2023
  + 8913 Review Jetty XML syntax to allow calling JDK methods
  + 8942 Use Logback 1.3.x for Jetty 10.0.x
 
-jetty-11.0.12 - 14 September 2022
- + 7970 Maven Plugin - the option to set extraClasspath in the plugin
-   configuration isn't working
- + 8007 Support Loom
- + 8151 `JakartaWebSocketSession.close()` blocks long time when called from
-   `SendHandlerCallback`
- + 8152 jetty.sh does not read JAVA_OPTIONS anymore
- + 8170 WebSockets closed abruptly when using HTTP/2
- + 8196 Remove unused jetty-plus.xml file
- + 8206 Stopping server from within AbstractConnector#accept fails and results
-   in a partially stopped QueuedThreadPool
- + 8216 OpenID logout / more extensibible OpenIdConfiguration
- + 8222 Jetty start.jar fails with NullPointerException when referencing a non
-   existent module and using JVM args
- + 8259 Symlinks cause 404 with DefaultServlet when its "resourceBase" is
-   different from ContextHandler's
- + 8294 java.lang.ClassCastException: class org.eclipse.jetty.http.HttpField
-   cannot be cast to class org.eclipse.jetty.http.HttpCookie$SetCookieHttpField
- + 8296 SymlinkAllowedResourceAliasChecker is initialized after checkAlias is
-   called resulting that access to resource is denied
- + 8319 Allow configuring initial queue size per destination
- + 8353 Automatic pongs should not be sent when connection is closed
- + 8414 BlockingArrayQueue drops all contents on drain
- + 8493 Review HTTP client feature `setRemoveIdleDestinations`
- + 8497 `jetty-bom/11.0.11` depends on `jetty-slf4j-impl/10.0.8-SNAPSHO` that
-   cause 404 error
- + 8532 Review System.nanoTime() usages
- + 8540 Maven pom is not correct for `org.eclipse.jetty/infinispan-embedded`
-   and `org.eclipse.jetty/infinispan-remote`
- + 8578 `getRequestURL` can append "null" if `getRequestURI` is unspecified in
-   an authority-form request-target
-
-jetty-10.0.15 - 11 April 2023
- + 6184 JEP-411 will deprecate/remove the SecurityManager from the JVM
- + 6483 Jetty http client SSL connectivity over CNTLM proxy fails
- + 9237 Decouple QTP `idleTimeout` from pool shrink rate
- + 9309 `jetty.sh` cannot handle complex Jetty properties from `start.d/*.ini`
- + 9400 Jetty logs warning with stacktrace when annotation parser encounters
-   module-info.class file inside elasticsearch-x-content jar
- + 9464 Respect expiry time of ID token
- + 9468 Jetty 11.0.14 is less tolerant of non-compliant cookies than 11.0.13
- + 9497 Maven plugin effective web xml: add support for jar projects
- + 9501 jetty client with proxy - ssl traffic between both proxy and servers
- + 9517 Jetty 10.0.14 uses wrong pathSpec for request
- + 9556 Password Util does not ask for password
-
 jetty-10.0.14 - 22 February 2023
  + 7650 QueuedThreadPool: Stopped without executing or closing null
  + 9059 IteratingCallback not serializing close() and failed()
@@ -410,6 +384,49 @@ jetty-10.0.14 - 22 February 2023
  + 9334 Better support for Cookie RFC 2965 compliance
  + 9337 LowResourceMonitor.getReasons should include detailed reason instead of
    hard-coded message
+
+jetty-11.0.13 - 07 December 2022
+ + 7117 Timeout with Expect 100 continue when using ProxyServlet
+ + 7286 WebSocket write can time out even if the frame / callback has not been
+   failed.
+ + 7993 HttpClient idleTimeout configuration being ignored/overridden
+ + 8330 Persistent OpenId sessions can throw IllegalStateException
+ + 8460 Log or throw exception if DefaultSessionIdManager is used but has not
+   been started.
+ + 8536 HotSwapHandler race condition
+ + 8558 Idle timeout occured sometimes on HTTP/2 client with
+   `InputStreamResponseListener`
+ + 8584 org.eclipse.jetty.client.HttpRequest.send() never returns
+ + 8591 Indicate units of HttpClient properties
+ + 8623 Use AutoLock in InputStreamResponseListener
+ + 8628 Pseudo restore `PathMappings.getMatch(String)` for backwards compat
+   reasons
+ + 8678 Jetty client is not responding to GO_AWAY packet received from (Jetty)
+   Server and continue to send traffic on same connection
+ + 8695 Update quiche to 0.16.0
+ + 8712 ELContextCleaner no longer needed
+ + 8716 Multiple Host header values handled poorly
+ + 8721 jetty:effective-web-xml doesn't generate quickstart information for web
+   fragment jars that contain META-INF/resources
+ + 8723 Provide a thread-safe way to modify HttpClient proxies at runtime
+ + 8750 AbstractProxyServlet.onServerResponseHeaders does not support headers
+   with empty values
+ + 8753 Starting HttpClient with destinationIdleTimeout set throws NPE
+ + 8770 Review whether to send request body in redirects
+ + 8779 CompactPathRule drops query section on use
+ + 8786 KeyStoreScanner is not able to monitor a symlink file and always
+   resolves to the target.
+ + 8810 `ArrayRetainableByteBufferPool` inefficiently calculates bucket indices
+ + 8811 HTTP/2 session shutdown race may cause `Server.stop()` to block until
+   stop timeout
+ + 8863 Provide a possibility to name virtual threads
+ + 8895 Generate downloadable version of javadocs documentation in website
+   deploy script
+ + 8897 Update Conditional request handling for RFC7232
+ + 8905 GzipHandler fails to set Vary header on 304 responses
+ + 8913 Review Jetty XML syntax to allow calling JDK methods
+ + 8942 Use Logback 1.3.x for Jetty 10.0.x
+ + 9006 WebSocket Message InputStream read() returns signed byte
 
 jetty-10.0.13 - 07 December 2022
  + 7117 Timeout with Expect 100 continue when using ProxyServlet
@@ -453,6 +470,11 @@ jetty-10.0.13 - 07 December 2022
  + 8913 Review Jetty XML syntax to allow calling JDK methods
  + 8942 Use Logback 1.3.x for Jetty 10.0.x
  + 9006 WebSocket Message InputStream read() returns signed byte
+
+jetty-9.4.50.v20221201 - 01 December 2022
+ + 8774 Added SizeLimitHandler
+ + 8678 Jetty client is not responding to GO_AWAY packet received from (Jetty)
+   Server and continue to send traffic on same connection
 
 jetty-12.0.0.alpha1 - 15 September 2022
  + 8474 Jetty 12 : Resource API Review
@@ -538,6 +560,10 @@ jetty-11.0.11 - 21 June 2022
  + 8184 All suffix globs except first fail to match if path has `.` character
    in prefix section
 
+jetty-10.0.11 - 21 June 2022
+ + 8184 All suffix globs except first fail to match if path has `.` character
+   in prefix section
+
 jetty-11.0.10 - 16 June 2022
  + 1771 Add module for SecuredRedirect support
  + 4414 GZipHandler not excluding inflation for specified paths
@@ -570,7 +596,73 @@ jetty-11.0.10 - 16 June 2022
    properties
  + 8161 Improve SSLConnection buffers handling (Resolves CVE-2022-2191)
 
+jetty-10.0.10 - 16 June 2022
+ + 1771 Add module for SecuredRedirect support
+ + 4414 GZipHandler not excluding inflation for specified paths
+ + 7635 QPACK decoder should fail connection if the encoder blocks more than
+   SETTINGS_QPACK_BLOCKED_STREAMS
+ + 7748 Allow overriding of url-pattern mapping in ServletContextHandler to
+   allow for regex or uri-template matching
+ + 7754 jetty.sh ignores JAVA_OPTIONS environment variable
+ + 7801 Session cookie can be set twice after session id changed
+ + 7818 Modifying of HTTP headers in HttpChannel.Listener#onResponseBegin is no
+   longer possible with Jetty 10
+ + 7855 Remove accidentally included package-info.class in all packages
+ + 7858 GZipHandler does not play nice with other handlers in HandlerCollection
+ + 7863 Default servlet drops first accept-encoding header if there is more
+   than one.
+ + 7880 DefaultServlet should not overwrite programmatically configured
+   precompressed formats with defaults
+ + 7891 Better Servlet PathMappings for Regex
+ + 7918 PathMappings.asPathSpec does not allow root ServletPathSpec
+ + 7935 Review HTTP/2 error handling (Resolves CVE-2022-2048)
+ + 7975 `ForwardedRequestCustomizer` setters do not clear existing handlers
+ + 7977 UpgradeHttpServletRequest.setAttribute &
+   UpgradeHttpServletRequest.removeAttribute can throw NullPointerException
+ + 7994 Ability to construct a detached client Request
+ + 8014 Review HttpRequest URI construction (Resolves CVE-2022-2047)
+ + 8057 Support Http Response 103 (Early Hints)
+ + 8067 Wall time usage in DoSFilter RateTracker results in false positive
+   alert
+ + 8088 Add option to configure exitVm on ShutdownMonitor from System
+   properties
+ + 8161 Improve SSLConnection buffers handling (Resolves CVE-2022-2191)
+
 jetty-11.0.9 - 30 March 2022
+ + 5681 Unrecognized jetty-home/start.jar command line option not reported
+   clearly
+ + 5965 Option --write-module-graph produces wrong .dot file
+ + 6879 Remove jminix (not maintained) module as hawtio provide same features
+ + 7182 jetty.sh start process should remove jetty_state whenever deleting the
+   pid
+ + 7344 Incompatible with jacoco due to shutdown race condition
+ + 7414 QoSFilter.setMaxRequests throws NullPointerException
+ + 7513 Getter/setter type mismatch for mbean attribute file in class
+   org.eclipse.jetty.deploy.PropertiesConfigurationManager
+ + 7517 Some ArrayTrie methods throw StackOverflowError when cointaining a very
+   large entry
+ + 7518 ArrayTrie getBest fails to match the empty string entry in certain
+   cases
+ + 7545 Named arguments do not work in jetty-openid.xml
+ + 7548 Interrupt flag is not always cleared in between requests
+ + 7567 Gzip compression not working for multipart/form-data when added to the
+   allowed list using addIncludedMimeTypes.
+ + 7573 WebSockets - "Unsupported PathParam Type: java.lang.Integer"
+ + 7575 Misleading docs for `HttpClientTransportDynamic`
+ + 7613 Configurations.add(Configuration) results in
+   UnsupportedOperationException
+ + 7615 HttpServletResponse.encodeURL not working for URLs starting with ../
+ + 7617 Logback-access RequestLog not working
+ + 7625 HTTP/3 error against www.google.com
+ + 7677 jetty-maven-plugin - maven internal dependencies included on webapp
+   classloader
+ + 7683 GZIPContentDecoder ignores setUseInputDirectByteBuffers setting and
+   always uses non-direct buffers (causing GC locking)
+ + 7688 Read data to native memory from HttpInput
+ + 7748 Allow overriding of url-pattern mapping in ServletContextHandler to
+   allow for regex or uri-template matching
+
+jetty-10.0.9 - 30 March 2022
  + 5681 Unrecognized jetty-home/start.jar command line option not reported
    clearly
  + 5965 Option --write-module-graph produces wrong .dot file
@@ -668,76 +760,6 @@ jetty-11.0.8 - 07 February 2022
  + 7523 Typo in AnnotationConfiguration
  + 7524 Missing package in JmxConfiguration
  + 7529 Upgrade quiche to version 0.11.0
-
-jetty-10.0.11 - 21 June 2022
- + 8184 All suffix globs except first fail to match if path has `.` character
-   in prefix section
-
-jetty-10.0.10 - 16 June 2022
- + 1771 Add module for SecuredRedirect support
- + 4414 GZipHandler not excluding inflation for specified paths
- + 7635 QPACK decoder should fail connection if the encoder blocks more than
-   SETTINGS_QPACK_BLOCKED_STREAMS
- + 7748 Allow overriding of url-pattern mapping in ServletContextHandler to
-   allow for regex or uri-template matching
- + 7754 jetty.sh ignores JAVA_OPTIONS environment variable
- + 7801 Session cookie can be set twice after session id changed
- + 7818 Modifying of HTTP headers in HttpChannel.Listener#onResponseBegin is no
-   longer possible with Jetty 10
- + 7855 Remove accidentally included package-info.class in all packages
- + 7858 GZipHandler does not play nice with other handlers in HandlerCollection
- + 7863 Default servlet drops first accept-encoding header if there is more
-   than one.
- + 7880 DefaultServlet should not overwrite programmatically configured
-   precompressed formats with defaults
- + 7891 Better Servlet PathMappings for Regex
- + 7918 PathMappings.asPathSpec does not allow root ServletPathSpec
- + 7935 Review HTTP/2 error handling (Resolves CVE-2022-2048)
- + 7975 `ForwardedRequestCustomizer` setters do not clear existing handlers
- + 7977 UpgradeHttpServletRequest.setAttribute &
-   UpgradeHttpServletRequest.removeAttribute can throw NullPointerException
- + 7994 Ability to construct a detached client Request
- + 8014 Review HttpRequest URI construction (Resolves CVE-2022-2047)
- + 8057 Support Http Response 103 (Early Hints)
- + 8067 Wall time usage in DoSFilter RateTracker results in false positive
-   alert
- + 8088 Add option to configure exitVm on ShutdownMonitor from System
-   properties
- + 8161 Improve SSLConnection buffers handling (Resolves CVE-2022-2191)
-
-jetty-10.0.9 - 30 March 2022
- + 5681 Unrecognized jetty-home/start.jar command line option not reported
-   clearly
- + 5965 Option --write-module-graph produces wrong .dot file
- + 6879 Remove jminix (not maintained) module as hawtio provide same features
- + 7182 jetty.sh start process should remove jetty_state whenever deleting the
-   pid
- + 7344 Incompatible with jacoco due to shutdown race condition
- + 7414 QoSFilter.setMaxRequests throws NullPointerException
- + 7513 Getter/setter type mismatch for mbean attribute file in class
-   org.eclipse.jetty.deploy.PropertiesConfigurationManager
- + 7517 Some ArrayTrie methods throw StackOverflowError when cointaining a very
-   large entry
- + 7518 ArrayTrie getBest fails to match the empty string entry in certain
-   cases
- + 7545 Named arguments do not work in jetty-openid.xml
- + 7548 Interrupt flag is not always cleared in between requests
- + 7567 Gzip compression not working for multipart/form-data when added to the
-   allowed list using addIncludedMimeTypes.
- + 7573 WebSockets - "Unsupported PathParam Type: java.lang.Integer"
- + 7575 Misleading docs for `HttpClientTransportDynamic`
- + 7613 Configurations.add(Configuration) results in
-   UnsupportedOperationException
- + 7615 HttpServletResponse.encodeURL not working for URLs starting with ../
- + 7617 Logback-access RequestLog not working
- + 7625 HTTP/3 error against www.google.com
- + 7677 jetty-maven-plugin - maven internal dependencies included on webapp
-   classloader
- + 7683 GZIPContentDecoder ignores setUseInputDirectByteBuffers setting and
-   always uses non-direct buffers (causing GC locking)
- + 7688 Read data to native memory from HttpInput
- + 7748 Allow overriding of url-pattern mapping in ServletContextHandler to
-   allow for regex or uri-template matching
 
 jetty-10.0.8 - 07 February 2022
  + 2504 Expose more WebSocket details in JMX and Server Dump
