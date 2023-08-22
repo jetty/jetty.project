@@ -365,7 +365,7 @@ public class FormAuthenticator extends LoginAuthenticator
                 @Override
                 public Request wrap(Request request)
                 {
-                    ServeAs.Path serveAs = Request.as(request, ServeAs.Path.class);
+                    PathWrapper serveAs = Request.as(request, PathWrapper.class);
                     if (serveAs != null)
                         return serveAs.serveAs(request, path);
                     return super.wrap(request);

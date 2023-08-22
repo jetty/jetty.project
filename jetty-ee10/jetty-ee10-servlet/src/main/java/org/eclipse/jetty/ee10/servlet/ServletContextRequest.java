@@ -54,7 +54,7 @@ import org.eclipse.jetty.util.Fields;
  * This class is single use only.
  * </p>
  */
-public class ServletContextRequest extends ContextRequest implements ServletContextHandler.ServletRequestInfo, ServeAs.Path
+public class ServletContextRequest extends ContextRequest implements ServletContextHandler.ServletRequestInfo, ServeAs.PathWrapper
 {
     public static final String MULTIPART_CONFIG_ELEMENT = "org.eclipse.jetty.multipartConfig";
     static final int INPUT_NONE = 0;

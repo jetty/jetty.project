@@ -304,8 +304,14 @@ public interface AuthenticationState extends Request.AuthenticationState
          * changing its target to a given path. If a {@link Request} implements this interface it can
          * be obtained with the {@link Request#as(Request, Class)} method.
          */
-        public interface Path
+        public interface PathWrapper
         {
+            /**
+             * Wraps a request but changes the path so that it can be served to a different target.
+             * @param request the original request.
+             * @param path the path of the new target.
+             * @return the request wrapped to the new target.
+             */
             Request serveAs(Request request, String path);
         }
     }
