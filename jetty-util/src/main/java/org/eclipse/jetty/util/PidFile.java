@@ -39,13 +39,15 @@ public class PidFile extends AbstractLifeCycle
 
     public PidFile(@Name("file") String filename)
     {
-        pidFile = Paths.get(filename);
+        pidFile = Paths.get(filename).toAbsolutePath();
         try
         {
             // Create the PID file as soon as possible.
             // We don't want for doStart() as we want the PID creation to occur quickly for jetty.sh
             long pid = ProcessHandle.current().pid();
             Files.writeString(pidFile, Long.toString(pid), UTF_8, CREATE, WRITE, TRUNCATE_EXISTING);
+            if (LOG.isDebugEnabled())
+                LOG.debug("PID File: {}", pidFile);
             ShutdownThread.register(this);
         }
         catch (Throwable t)
