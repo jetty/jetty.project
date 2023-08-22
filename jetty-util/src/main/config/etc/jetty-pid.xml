@@ -2,5 +2,5 @@
 <!DOCTYPE Configure PUBLIC "-//Jetty//Configure//EN" "https://www.eclipse.org/jetty/configure_10_0.dtd">
 
 <Configure id="Pid" class="org.eclipse.jetty.util.PidFile">
-  <Arg name="file"><Property name="jetty.pid" default="./jetty.pid"/></Arg>
+  <Arg name="file"><Property name="jetty.pid" default="jetty.pid"/></Arg>
 </Configure>
