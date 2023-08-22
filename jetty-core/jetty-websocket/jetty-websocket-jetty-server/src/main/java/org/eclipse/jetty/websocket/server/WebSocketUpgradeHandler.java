@@ -14,7 +14,6 @@
 package org.eclipse.jetty.websocket.server;
 
 import java.util.function.Consumer;
-import java.util.function.Function;
 
 import org.eclipse.jetty.server.Handler;
 import org.eclipse.jetty.server.Request;
@@ -85,23 +84,18 @@ public class WebSocketUpgradeHandler extends Handler.Wrapper
      */
     public static WebSocketUpgradeHandler from(Server server, ContextHandler context)
     {
-        return from(server, context, WebSocketUpgradeHandler::new);
-    }
-
-    public static WebSocketUpgradeHandler from(Server server, ContextHandler context, Function<ServerWebSocketContainer, WebSocketUpgradeHandler> factory)
-    {
         WebSocketComponents components = WebSocketServerComponents.ensureWebSocketComponents(server, context);
         WebSocketMappings mappings = new WebSocketMappings(components);
         ServerWebSocketContainer container = new ServerWebSocketContainer(mappings);
 
-        WebSocketUpgradeHandler wsHandler = factory.apply(container);
+        WebSocketUpgradeHandler wsHandler = new WebSocketUpgradeHandler(container);
         context.getContext().setAttribute(WebSocketContainer.class.getName(), wsHandler._container);
         return wsHandler;
     }
 
     private final ServerWebSocketContainer _container;
 
-    protected WebSocketUpgradeHandler(ServerWebSocketContainer container)
+    public WebSocketUpgradeHandler(ServerWebSocketContainer container)
     {
         _container = container;
         addBean(container);
@@ -130,7 +124,15 @@ public class WebSocketUpgradeHandler extends Handler.Wrapper
 
     protected boolean handle(ServerWebSocketContainer container, Request request, Response response, Callback callback)
     {
-        return container.handle(request, response, callback);
+        try
+        {
+            return container.handle(request, response, callback);
+        }
+        catch (Throwable x)
+        {
+            Response.writeError(request, response, callback, x);
+            return true;
+        }
     }
 
     @Override

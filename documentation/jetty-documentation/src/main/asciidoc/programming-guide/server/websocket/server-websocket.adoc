@@ -19,7 +19,7 @@ Jetty provides different implementations of the WebSocket protocol:
 * A Jakarta EE 8 (`javax.websocket`) implementation, based on the link:https://jakarta.ee/specifications/websocket/1.1/[Jakarta WebSocket 1.1 Specification].
 * A Jakarta EE 9 (`jakarta.websocket`) implementation, based on the link:https://jakarta.ee/specifications/websocket/2.0/[Jakarta WebSocket 2.0 Specification].
 * A Jakarta EE 10 (`jakarta.websocket`) implementation, based on the link:https://jakarta.ee/specifications/websocket/2.1/[Jakarta WebSocket 2.1 Specification].
-* A Jetty specific implementation, based on the Jetty WebSocket APIs.
+* A Jetty specific implementation, based on the Jetty WebSocket APIs, that does not depend on any Jakarta EE APIs.
 
 The Jakarta EE implementations and APIs are described in xref:pg-server-websocket-standard[this section].
 
@@ -34,14 +34,14 @@ Using the Jetty WebSocket APIs allows your applications to be more efficient and
 
 * A demand mechanism to control backpressure.
 * Remote socket address (IP address and port) information.
-* Advanced request URI matching with regular expressions or Servlet patterns.
-* Configuration of the network buffer capacity.
-* WebSocket upgrade handling via either URI matching or direct upgrade for maximum flexibility.
+* Advanced request URI matching with regular expressions, in addition to Servlet patterns and URI template patterns.
+* More configuration options, for example the network buffer capacity.
+* Programmatic WebSocket upgrade, in addition to WebSocket upgrade based on URI matching, for maximum flexibility.
 
 If your application needs specific features that are not provided by the standard APIs, the Jetty WebSocket APIs may provide such features.
 
-TIP: If the feature you are looking for is not present, you may ask for these features by submitting an issue to the Jetty Project without waiting for the standard Jakarta EE process to approve them.
+TIP: If the feature you are looking for is not present, you may ask for these features by link:https://github.com/eclipse/jetty.project/issues[submitting an issue] to the Jetty Project without waiting for the standard Jakarta EE process to approve them and release a new version of the Jakarta EE WebSocket specification.
 
 include::server-websocket-standard.adoc[]
-include::server-websocket-jetty.adoc[]
 include::server-websocket-filter.adoc[]
+include::server-websocket-jetty.adoc[]

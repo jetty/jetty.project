@@ -318,8 +318,8 @@
       <artifactId>jetty-websocket-jetty-client</artifactId>
     </dependency>
     <dependency>
-      <groupId>org.eclipse.jetty.ee10.websocket</groupId>
-      <artifactId>jetty-ee10-websocket-jetty-server</artifactId>
+      <groupId>org.eclipse.jetty.websocket</groupId>
+      <artifactId>jetty-websocket-jetty-server</artifactId>
     </dependency>
     <dependency>
       <groupId>org.eclipse.jetty.ee10.websocket</groupId>

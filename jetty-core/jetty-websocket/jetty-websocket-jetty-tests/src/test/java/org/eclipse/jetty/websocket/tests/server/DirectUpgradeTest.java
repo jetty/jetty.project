@@ -40,6 +40,7 @@ import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.Test;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertNotNull;
 
 public class DirectUpgradeTest
 {
@@ -47,20 +48,12 @@ public class DirectUpgradeTest
     private HttpClient httpClient;
     private WebSocketClient wsClient;
 
-    public void start(Function<ServerWebSocketContainer, WebSocketUpgradeHandler> factory, Handler handler) throws Exception
+    public void start(Function<Server, ContextHandler> factory) throws Exception
     {
         server = new Server();
-
         ServerConnector connector = new ServerConnector(server, 1, 1);
         server.addConnector(connector);
-
-        ContextHandler context = new ContextHandler("/ctx");
-
-        WebSocketUpgradeHandler wsHandler = WebSocketUpgradeHandler.from(server, context, factory);
-        context.setHandler(wsHandler);
-
-        wsHandler.setHandler(handler);
-
+        ContextHandler context = factory.apply(server);
         server.setHandler(context);
         server.start();
 
@@ -77,18 +70,73 @@ public class DirectUpgradeTest
     }
 
     @Test
-    public void testDirectWebSocketUpgrade() throws Exception
+    public void testDirectWebSocketUpgradeInChildHandler() throws Exception
     {
-        start(container -> new WebSocketUpgradeHandler(container)
+        start(server ->
         {
-            @Override
-            protected boolean handle(ServerWebSocketContainer container, Request request, Response response, Callback callback)
+            ContextHandler context = new ContextHandler("/ctx");
+            // Create a WebSocketUpgradeHandler with no mappings.
+            WebSocketUpgradeHandler wsHandler = WebSocketUpgradeHandler.from(server, context);
+            context.setHandler(wsHandler);
+            // Set up the Handler that will perform the upgrade.
+            wsHandler.setHandler(new Handler.Abstract()
             {
-                return container.upgrade((upgradeRequest, upgradeResponse, upgradeCallback) -> new EchoSocket(), request, response, callback);
-            }
-        }, null);
+                @Override
+                public boolean handle(Request request, Response response, Callback callback) throws Exception
+                {
+                    ServerWebSocketContainer container = ServerWebSocketContainer.from(request.getContext());
+                    assertNotNull(container);
+                    // Direct upgrade.
+                    return container.upgrade((upgradeRequest, upgradeResponse, upgradeCallback) -> new EchoSocket(), request, response, callback);
+                }
+            });
+            return context;
+        });
 
-        // No mappings added, direct upgrade in handle() above, connect() must succeed.
+        URI wsUri = WSURI.toWebsocket(server.getURI().resolve("/ctx/ws"));
+        EventSocket clientEndpoint = new EventSocket();
+        Session session = wsClient.connect(clientEndpoint, wsUri).get(5, TimeUnit.SECONDS);
+        String text = "ECHO";
+        session.sendText(text, null);
+        String echo = clientEndpoint.textMessages.poll(5, TimeUnit.SECONDS);
+        assertEquals(text, echo);
+    }
+
+    @Test
+    public void testDirectWebSocketUpgradeInChildHandlerWithoutWebSocketUpgradeHandler() throws Exception
+    {
+        start(server ->
+        {
+            ContextHandler context = new ContextHandler("/ctx");
+            // Do not set up a WebSocketUpgradeHandler.
+            // Set up the Handler that will perform the upgrade.
+            context.setHandler(new Handler.Abstract()
+            {
+                private ServerWebSocketContainer container;
+
+                @Override
+                protected void doStart() throws Exception
+                {
+                    super.doStart();
+                    Server server = getServer();
+                    assertNotNull(server);
+                    ContextHandler contextHandler = ContextHandler.getCurrentContextHandler();
+                    assertNotNull(contextHandler);
+                    // Alternatively, the container can be created when the ContextHandler is created.
+                    container = ServerWebSocketContainer.ensure(getServer(), contextHandler);
+                    assertNotNull(container);
+                }
+
+                @Override
+                public boolean handle(Request request, Response response, Callback callback)
+                {
+                    // Direct upgrade.
+                    return container.upgrade((upgradeRequest, upgradeResponse, upgradeCallback) -> new EchoSocket(), request, response, callback);
+                }
+            });
+            return context;
+        });
+
         URI wsUri = WSURI.toWebsocket(server.getURI().resolve("/ctx/ws"));
         EventSocket clientEndpoint = new EventSocket();
         Session session = wsClient.connect(clientEndpoint, wsUri).get(5, TimeUnit.SECONDS);
@@ -101,21 +149,34 @@ public class DirectUpgradeTest
     @Test
     public void testNotWebSocketUpgrade() throws Exception
     {
-        start(container -> new WebSocketUpgradeHandler(container)
+        start(server ->
         {
-            @Override
-            protected boolean handle(ServerWebSocketContainer container, Request request, Response response, Callback callback)
+            ContextHandler context = new ContextHandler("/ctx");
+            ServerWebSocketContainer container = ServerWebSocketContainer.ensure(server, context);
+            // Allow for WebSocketUpgradeHandler to be subclassed.
+            WebSocketUpgradeHandler wsHandler = new WebSocketUpgradeHandler(container)
             {
-                return container.upgrade((upgradeRequest, upgradeResponse, upgradeCallback) -> new EchoSocket(), request, response, callback);
-            }
-        }, new Handler.Abstract()
-        {
-            @Override
-            public boolean handle(Request request, Response response, Callback callback)
+                @Override
+                protected boolean handle(ServerWebSocketContainer container, Request request, Response response, Callback callback)
+                {
+                    // Modify the behavior to do a direct upgrade instead of mappings upgrade.
+                    return container.upgrade((upgradeRequest, upgradeResponse, upgradeCallback) -> new EchoSocket(), request, response, callback);
+                }
+            };
+            context.setHandler(wsHandler);
+
+            // Since the request is not a WebSocket upgrade, this Handler will handle it.
+            wsHandler.setHandler(new Handler.Abstract()
             {
-                Content.Sink.write(response, true, "HELLO", callback);
-                return true;
-            }
+                @Override
+                public boolean handle(Request request, Response response, Callback callback)
+                {
+                    Content.Sink.write(response, true, "HELLO", callback);
+                    return true;
+                }
+            });
+
+            return context;
         });
 
         // Send a request that is not a WebSocket upgrade.

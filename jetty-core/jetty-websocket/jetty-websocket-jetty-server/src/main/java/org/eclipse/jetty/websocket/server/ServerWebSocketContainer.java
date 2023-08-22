@@ -13,6 +13,7 @@
 
 package org.eclipse.jetty.websocket.server;
 
+import java.io.IOException;
 import java.time.Duration;
 import java.util.ArrayList;
 import java.util.Collection;
@@ -21,9 +22,12 @@ import java.util.concurrent.Executor;
 import java.util.function.Consumer;
 
 import org.eclipse.jetty.http.pathmap.PathSpec;
+import org.eclipse.jetty.server.Context;
 import org.eclipse.jetty.server.Handler;
 import org.eclipse.jetty.server.Request;
 import org.eclipse.jetty.server.Response;
+import org.eclipse.jetty.server.Server;
+import org.eclipse.jetty.server.handler.ContextHandler;
 import org.eclipse.jetty.util.Callback;
 import org.eclipse.jetty.util.component.ContainerLifeCycle;
 import org.eclipse.jetty.util.thread.Invocable;
@@ -32,10 +36,12 @@ import org.eclipse.jetty.websocket.api.Session;
 import org.eclipse.jetty.websocket.api.WebSocketContainer;
 import org.eclipse.jetty.websocket.api.WebSocketSessionListener;
 import org.eclipse.jetty.websocket.common.SessionTracker;
+import org.eclipse.jetty.websocket.core.WebSocketComponents;
 import org.eclipse.jetty.websocket.core.exception.WebSocketException;
 import org.eclipse.jetty.websocket.core.server.FrameHandlerFactory;
 import org.eclipse.jetty.websocket.core.server.WebSocketMappings;
 import org.eclipse.jetty.websocket.core.server.WebSocketNegotiator;
+import org.eclipse.jetty.websocket.core.server.WebSocketServerComponents;
 import org.eclipse.jetty.websocket.server.internal.ServerFrameHandlerFactory;
 import org.eclipse.jetty.websocket.server.internal.ServerUpgradeRequestDelegate;
 import org.eclipse.jetty.websocket.server.internal.ServerUpgradeResponseDelegate;
@@ -46,10 +52,53 @@ import org.slf4j.LoggerFactory;
  * <p>A server-side WebSocket container that allows to {@link #addMapping(String, WebSocketCreator) map}
  * URI paths to WebSocket endpoints and configure WebSocket parameters such as idle timeouts,
  * max WebSocket message sizes, etc.</p>
+ * <p>Direct WebSocket upgrades not mapped to URI paths are possible via
+ * {@link #upgrade(WebSocketCreator, Request, Response, Callback)}.</p>
  */
-public class ServerWebSocketContainer extends ContainerLifeCycle implements WebSocketContainer, Configurable, Invocable
+public class ServerWebSocketContainer extends ContainerLifeCycle implements WebSocketContainer, Configurable, Invocable, Request.Handler
 {
     private static final Logger LOG = LoggerFactory.getLogger(ServerWebSocketContainer.class);
+
+    /**
+     * <p>Returns the {@link ServerWebSocketContainer}, ensuring that
+     * it is available via {@link #from(Context)}.</p>
+     * <p>If the {@link ServerWebSocketContainer} is not already available,
+     * an instance is created, stored to be available via {@link #from(Context)}
+     * and returned.</p>
+     * <p>This method should be invoked during the setup of the
+     * {@link Handler} hierarchy.</p>
+     *
+     * @param server the {@link Server} object used to lookup common WebSocket components
+     * @param contextHandler the {@link ContextHandler} used to store the {@link ServerWebSocketContainer}
+     * @return a non-{@code null} {@link ServerWebSocketContainer}
+     */
+    public static ServerWebSocketContainer ensure(Server server, ContextHandler contextHandler)
+    {
+        Context context = contextHandler.getContext();
+        ServerWebSocketContainer container = from(context);
+        if (container == null)
+        {
+            WebSocketComponents components = WebSocketServerComponents.ensureWebSocketComponents(server, contextHandler);
+            WebSocketMappings mappings = new WebSocketMappings(components);
+            container = new ServerWebSocketContainer(mappings);
+            context.setAttribute(WebSocketContainer.class.getName(), container);
+        }
+        return container;
+    }
+
+    /**
+     * <p>Returns the {@link ServerWebSocketContainer} present as the context attribute
+     * under the name corresponding to the full qualified name of class
+     * {@link WebSocketContainer}.</p>
+     *
+     * @param context the {@link Context} to look for the attribute
+     * @return the {@link ServerWebSocketContainer} stored as an attribute,
+     * or {@code null} if no such attribute is present
+     */
+    public static ServerWebSocketContainer from(Context context)
+    {
+        return (ServerWebSocketContainer)context.getAttribute(WebSocketContainer.class.getName());
+    }
 
     private final List<WebSocketSessionListener> listeners = new ArrayList<>();
     private final SessionTracker sessionTracker = new SessionTracker();
@@ -252,20 +301,10 @@ public class ServerWebSocketContainer extends ContainerLifeCycle implements WebS
      * @see #addMapping(PathSpec, WebSocketCreator)
      * @see #upgrade(WebSocketCreator, Request, Response, Callback)
      */
-    public boolean handle(Request request, Response response, Callback callback)
+    @Override
+    public boolean handle(Request request, Response response, Callback callback) throws IOException
     {
-        String target = Request.getPathInContext(request);
-        WebSocketNegotiator negotiator = mappings.getMatchedNegotiator(target, pathSpec ->
-        {
-            // Store PathSpec resource mapping as request attribute,
-            // for WebSocketCreator implementors to use later if they wish.
-            request.setAttribute(PathSpec.class.getName(), pathSpec);
-        });
-
-        if (negotiator == null)
-            return false;
-
-        return upgrade(negotiator, request, response, callback);
+        return mappings.upgrade(request, response, callback, configuration);
     }
 
     /**
@@ -288,9 +327,17 @@ public class ServerWebSocketContainer extends ContainerLifeCycle implements WebS
      */
     public boolean upgrade(WebSocketCreator creator, Request request, Response response, Callback callback)
     {
-        var coreCreator = newWebSocketCreator(creator);
-        WebSocketNegotiator negotiator = WebSocketNegotiator.from(coreCreator, factory, configuration);
-        return upgrade(negotiator, request, response, callback);
+        try
+        {
+            var coreCreator = newWebSocketCreator(creator);
+            WebSocketNegotiator negotiator = WebSocketNegotiator.from(coreCreator, factory);
+            return mappings.upgrade(negotiator, request, response, callback, configuration);
+        }
+        catch (Throwable x)
+        {
+            Response.writeError(request, response, callback, x);
+            return true;
+        }
     }
 
     private org.eclipse.jetty.websocket.core.server.WebSocketCreator newWebSocketCreator(WebSocketCreator creator)
@@ -310,19 +357,6 @@ public class ServerWebSocketContainer extends ContainerLifeCycle implements WebS
                 return null;
             }
         };
-    }
-
-    private boolean upgrade(WebSocketNegotiator negotiator, Request request, Response response, Callback callback)
-    {
-        try
-        {
-            return mappings.upgrade(negotiator, request, response, callback, configuration);
-        }
-        catch (Throwable x)
-        {
-            callback.failed(x);
-            return true;
-        }
     }
 
     /**

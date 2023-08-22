@@ -14,9 +14,8 @@
 package org.eclipse.jetty.websocket.core.server;
 
 import java.io.IOException;
-import java.util.function.Consumer;
+import java.util.function.BiConsumer;
 
-import org.eclipse.jetty.http.pathmap.MappedResource;
 import org.eclipse.jetty.http.pathmap.MatchedResource;
 import org.eclipse.jetty.http.pathmap.PathMappings;
 import org.eclipse.jetty.http.pathmap.PathSpec;
@@ -214,22 +213,30 @@ public class WebSocketMappings implements Dumpable, LifeCycle.Listener
     }
 
     /**
-     * Get the matching {@link MappedResource} for the provided target.
+     * <p>Returns the mapped {@link WebSocketNegotiator} if there is a match of given {@code request}
+     * against a {@link #addMapping(PathSpec, WebSocketNegotiator) registered mapping}, otherwise
+     * returns {@code null} if there is no match.</p>
+     * <p>If there is a match, the given consumer is invoked with the {@link PathSpec} that matched
+     * so that, for example, it can be stored as a request attribute for later usage.
+     * This is important in case of {@link UriTemplatePathSpec}, where applications may want to
+     * extract the values of the template groups.</p>
      *
-     * @param target the target path
-     * @param pathSpecConsumer the path
-     * @return the matching resource, or null if no match.
+     * @param request the request to match
+     * @param consumer the consumer to invoke in case of match
+     * @return the {@link WebSocketNegotiator} if there is a match,
+     * or {@code null} if there is no match
      */
-    public WebSocketNegotiator getMatchedNegotiator(String target, Consumer<PathSpec> pathSpecConsumer)
+    public WebSocketNegotiator getMatchedNegotiator(Request request, BiConsumer<Request, PathSpec> consumer)
     {
-        MatchedResource<WebSocketNegotiator> mapping = this.mappings.getMatched(target);
+        String target = Request.getPathInContext(request);
+        MatchedResource<WebSocketNegotiator> mapping = mappings.getMatched(target);
         if (mapping == null)
             return null;
 
-        pathSpecConsumer.accept(mapping.getPathSpec());
+        consumer.accept(request, mapping.getPathSpec());
         WebSocketNegotiator negotiator = mapping.getResource();
         if (LOG.isDebugEnabled())
-            LOG.debug("WebSocket Negotiated detected on {} for endpoint {}", target, negotiator);
+            LOG.debug("WebSocket Negotiated detected on {} for endpoint {}", request, negotiator);
 
         return negotiator;
     }
@@ -251,15 +258,15 @@ public class WebSocketMappings implements Dumpable, LifeCycle.Listener
      */
     public boolean upgrade(Request request, Response response, Callback callback, Configuration.Customizer defaultCustomizer) throws IOException
     {
-        String target = Request.getPathInContext(request);
-        WebSocketNegotiator negotiator = getMatchedNegotiator(target, pathSpec ->
-        {
-            // Store PathSpec resource mapping as request attribute,
-            // for WebSocketCreator implementors to use later if they wish.
-            request.setAttribute(PathSpec.class.getName(), pathSpec);
-        });
-
+        WebSocketNegotiator negotiator = getMatchedNegotiator(request, WebSocketMappings::storePathSpec);
         return upgrade(negotiator, request, response, callback, defaultCustomizer);
+    }
+
+    private static void storePathSpec(Request request, PathSpec pathSpec)
+    {
+        // Store PathSpec resource mapping as request attribute,
+        // for WebSocketCreator implementors to use later if they wish.
+        request.setAttribute(PathSpec.class.getName(), pathSpec);
     }
 
     /**
