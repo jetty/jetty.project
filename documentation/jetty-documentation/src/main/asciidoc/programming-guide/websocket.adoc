@@ -76,7 +76,7 @@ For large WebSocket messages, the memory usage may be large due to the fact that
 
 To stream textual or binary messages, you override either `org.eclipse.jetty.websocket.api.Session.Listener.onWebSocketPartialText(\...)` or `org.eclipse.jetty.websocket.api.Session.Listener.onWebSocketPartialBinary(\...)`.
 
-These methods that receive _chunks_ of, respectively, text and bytes that form the whole WebSocket message.
+These methods receive _chunks_ of, respectively, text and bytes that form the whole WebSocket message.
 
 You may accumulate the chunks yourself, or process each chunk as it arrives, or stream the chunks elsewhere, for example:
 
@@ -105,17 +105,7 @@ The method may take an optional `Session` as first parameter.
 <5> Use the `@OnWebSocketMessage` annotation for the _message_ event, both for textual and binary messages.
 The method may take an optional `Session` as first parameter.
 
-[NOTE]
-====
-For binary messages, you may declare the annotated method with this signature:
-
-[source,java]
-----
-@OnWebSocketMessage
-public void methodName(ByteBuffer buffer, Callback callback) { ... }
-----
-====
-
+[[pg-websocket-endpoints-annotated-streaming]]
 ====== Message Streaming Reads
 
 If you need to deal with large WebSocket messages, you may reduce the memory usage by streaming the message content.
@@ -186,12 +176,11 @@ include::{doc_code}/org/eclipse/jetty/docs/programming/WebSocketDocs.java[tags=s
 <2> Note how the second send must be performed from inside the callback.
 <3> Sequential sends may throw `WritePendingException`.
 
-// TODO: rewrite this section in light of maxOutgoingFrames.
-Non-blocking APIs are more difficult to use since you are required to meet the following condition:
-
 [IMPORTANT]
 ====
-You cannot initiate another send of any kind until the previous send is completed.
+Non-blocking APIs are more difficult to use since you are required to meet the following condition:
+
+* You cannot initiate another send of any kind until the previous send is completed.
 
 For example, if you have initiated a text send, you cannot initiate a binary send, until the previous send has completed.
 
@@ -206,7 +195,7 @@ We strongly recommend that you follow the condition above.
 
 However, there may be cases where you want to explicitly control the number of outgoing buffered messages using `RemoteEndpoint.setMaxOutgoingFrames(int)`.
 
-Remember that trying to control the number of outgoing buffered messages is very difficult and tricky; you may set `maxOutgoingFrames=4` and have a situation where 6 threads try to concurrently send messages: threads 1 to 4 will be able to successfully buffer their messages, thread 5 may fail, but thread 6 may succeed because one of the previous threads completed its send.
+Remember that trying to control the number of outgoing frames is very difficult and tricky; you may set `maxOutgoingFrames=4` and have a situation where 6 threads try to concurrently send messages: threads 1 to 4 will be able to successfully buffer their messages, thread 5 may fail, but thread 6 may succeed because one of the previous threads completed its send.
 At this point you have an out-of-order message delivery that could be unexpected and very difficult to troubleshoot because it will happen non-deterministically.
 ====
 
@@ -227,8 +216,8 @@ Fortunately, Jetty provides the `IteratingCallback` utility class (described in 
 ----
 include::{doc_code}/org/eclipse/jetty/docs/programming/WebSocketDocs.java[tags=streamSendNonBlocking]
 ----
-<1> Implementing `Callback` allows to pass `this` to `sendPartialBinary(...)`.
-<2> The `process()` method is called iteratively when each `sendPartialBinary(...)` is completed.
+<1> Implementing `Callback` allows to pass `this` to `sendPartialBinary(\...)`.
+<2> The `process()` method is called iteratively when each `sendPartialBinary(\...)` is completed.
 <3> Sends the message chunks.
 
 [[pg-websocket-session-ping]]

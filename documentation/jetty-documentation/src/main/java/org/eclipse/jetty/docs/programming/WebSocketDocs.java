@@ -16,7 +16,6 @@ package org.eclipse.jetty.docs.programming;
 import java.io.InputStream;
 import java.io.Reader;
 import java.nio.ByteBuffer;
-import java.nio.file.Path;
 import java.time.Duration;
 
 import org.eclipse.jetty.util.IteratingCallback;
@@ -98,6 +97,8 @@ public class WebSocketDocs
                     return;
             }
             savePNGImage(payload);
+
+            // Complete the callback to release the payload ByteBuffer.
             callback.succeed();
         }
     }
@@ -107,8 +108,6 @@ public class WebSocketDocs
     // tag::streamingListenerEndpoint[]
     public class StreamingListenerEndpoint implements Session.Listener
     {
-        private Path textPath;
-
         @Override
         public void onWebSocketPartialText(String payload, boolean fin)
         {
@@ -121,7 +120,8 @@ public class WebSocketDocs
         {
             // Save chunks to file.
             appendToFile(payload, fin);
-            // Complete the callback.
+
+            // Complete the callback to release the payload ByteBuffer.
             callback.succeed();
         }
     }
