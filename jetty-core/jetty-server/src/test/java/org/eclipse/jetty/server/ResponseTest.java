@@ -130,6 +130,8 @@ public class ResponseTest
                 response.getHeaders().add("Temp", "field");
                 response.reset();
                 response.getHeaders().add("Test", "after reset");
+                response.getHeaders().put(HttpHeader.SERVER, "jettyrocks");
+                assertThrows(IllegalStateException.class, () -> response.getHeaders().put(HttpHeader.SERVER, (String)null));
                 callback.succeeded();
                 return true;
             }
