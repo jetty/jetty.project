@@ -102,8 +102,6 @@
         </executions>
         <configuration>
           <junitPackageName>org.eclipse.jetty.maven.its.ee8</junitPackageName>
-          <addTestClassPath>true</addTestClassPath>
-          <ignoreFailures>true</ignoreFailures>
           <setupIncludes>
             <setupInclude>it-parent-pom/pom.xml</setupInclude>
           </setupIncludes>

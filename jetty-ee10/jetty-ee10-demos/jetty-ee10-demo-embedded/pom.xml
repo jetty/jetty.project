@@ -118,6 +118,12 @@
       <scope>test</scope>
     </dependency>
     <dependency>
+      <groupId>org.eclipse.jetty.ee9.demos</groupId>
+      <artifactId>jetty-ee9-demo-jndi-webapp</artifactId>
+      <version>${project.version}</version>
+      <type>war</type>
+    </dependency>
+    <dependency>
       <groupId>org.eclipse.jetty.ee10.demos</groupId>
       <artifactId>jetty-ee10-demo-jsp-webapp</artifactId>
       <version>${project.version}</version>
@@ -125,7 +131,19 @@
     </dependency>
     <dependency>
       <groupId>org.eclipse.jetty.ee10.demos</groupId>
+      <artifactId>jetty-ee10-demo-simple-webapp</artifactId>
+      <version>${project.version}</version>
+      <type>war</type>
+    </dependency>
+    <dependency>
+      <groupId>org.eclipse.jetty.ee10.demos</groupId>
       <artifactId>jetty-ee10-demo-spec-webapp</artifactId>
+      <version>${project.version}</version>
+      <type>war</type>
+    </dependency>
+    <dependency>
+      <groupId>org.eclipse.jetty.ee10.demos</groupId>
+      <artifactId>jetty-ee10-demo-async-rest-webapp</artifactId>
       <version>${project.version}</version>
       <type>war</type>
     </dependency>
@@ -137,8 +155,12 @@
         <artifactId>maven-surefire-plugin</artifactId>
         <configuration>
           <environmentVariables>
-            <mavenRepoPath>${settings.localRepository}</mavenRepoPath>
+            <jettyVersion>${project.version}</jettyVersion>
           </environmentVariables>
+          <systemPropertyVariables>
+            <mavenRepoPath>${session.repositorySession.localRepository.basedir.absolutePath}</mavenRepoPath>
+            <jettyVersion>${project.version}</jettyVersion>
+          </systemPropertyVariables>
           <useManifestOnlyJar>false</useManifestOnlyJar>
         </configuration>
       </plugin>

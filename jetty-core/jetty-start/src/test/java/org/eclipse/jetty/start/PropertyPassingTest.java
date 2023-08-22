@@ -163,7 +163,7 @@ public class PropertyPassingTest
         cp.append(pathSep);
         cp.append(MavenTestingUtils.getProjectDir("target/test-classes"));
         cp.append(pathSep);
-        cp.append(MavenTestingUtils.getProjectDir("../jetty-util/target/classes")); // TODO horrible hack!
+        cp.append(MavenTestingUtils.getProjectDir("target/jetty-util"));
         return cp.toString();
     }
 

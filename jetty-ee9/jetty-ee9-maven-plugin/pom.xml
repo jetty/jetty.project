@@ -77,6 +77,33 @@
       </plugin>
       <plugin>
         <groupId>org.apache.maven.plugins</groupId>
+        <artifactId>maven-dependency-plugin</artifactId>
+        <executions>
+          <execution>
+            <id>copy</id>
+            <phase>package</phase>
+            <goals>
+              <goal>copy</goal>
+            </goals>
+          </execution>
+        </executions>
+        <configuration>
+          <artifactItems>
+            <artifactItem>
+              <groupId>org.eclipse.jetty</groupId>
+              <artifactId>jetty-home</artifactId>
+              <type>zip</type>
+              <overWrite>false</overWrite>
+              <outputDirectory>${project.build.directory}</outputDirectory>
+              <destFileName>${jettyHomeZipFileName}</destFileName>
+            </artifactItem>
+          </artifactItems>
+          <overWriteReleases>false</overWriteReleases>
+          <overWriteSnapshots>true</overWriteSnapshots>
+        </configuration>
+      </plugin>
+      <plugin>
+        <groupId>org.apache.maven.plugins</groupId>
         <artifactId>maven-jar-plugin</artifactId>
         <executions>
           <execution>
@@ -102,8 +129,6 @@
         </executions>
         <configuration>
           <junitPackageName>org.eclipse.jetty.maven.its.ee9</junitPackageName>
-          <addTestClassPath>true</addTestClassPath>
-          <ignoreFailures>true</ignoreFailures>
           <setupIncludes>
             <setupInclude>it-parent-pom/pom.xml</setupInclude>
           </setupIncludes>
@@ -122,8 +147,9 @@
             <jettyStopPort>${jetty.stopPort}</jettyStopPort>
             <maven.surefire.plugin.version>${maven.surefire.plugin.version}</maven.surefire.plugin.version>
             <servletApiVersion>${jetty.servlet.api.version}</servletApiVersion>
+            <localRepoPath>${localRepoPath}</localRepoPath>
+            <jettyHomeZip>${jettyHomeZip}</jettyHomeZip>
           </scriptVariables>
-          <settingsFile>src/it/settings.xml</settingsFile>
           <goals>
             <goal>clean</goal>
           </goals>
