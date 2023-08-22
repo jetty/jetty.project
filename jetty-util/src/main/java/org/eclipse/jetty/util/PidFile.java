@@ -19,6 +19,7 @@ import java.nio.file.Paths;
 
 import org.eclipse.jetty.util.annotation.Name;
 import org.eclipse.jetty.util.component.AbstractLifeCycle;
+import org.eclipse.jetty.util.component.LifeCycle;
 import org.eclipse.jetty.util.thread.ShutdownThread;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -30,6 +31,11 @@ import static java.nio.file.StandardOpenOption.WRITE;
 
 /**
  * Create a PID file for the running process.
+ *
+ * <p>
+ *     This class will automatically register itself with a call to
+ *     {@link ShutdownThread#register(LifeCycle...)}.
+ * </p>
  */
 public class PidFile extends AbstractLifeCycle
 {
@@ -59,6 +65,7 @@ public class PidFile extends AbstractLifeCycle
     @Override
     protected void doStop() throws Exception
     {
+        ShutdownThread.deregister(this);
         try
         {
             Files.deleteIfExists(pidFile);
