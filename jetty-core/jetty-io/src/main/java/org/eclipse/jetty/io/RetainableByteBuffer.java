@@ -37,6 +37,11 @@ import org.eclipse.jetty.util.BufferUtil;
 public interface RetainableByteBuffer extends Retainable
 {
     /**
+     * A Zero-capacity, non-retainable {@code RetainableByteBuffer}.
+     */
+    public static RetainableByteBuffer EMPTY = wrap(BufferUtil.EMPTY_BUFFER);
+
+    /**
      * <p>Returns a non-retainable {@code RetainableByteBuffer} that wraps
      * the given {@code ByteBuffer}.</p>
      * <p>Use this method to wrap user-provided {@code ByteBuffer}s, or
