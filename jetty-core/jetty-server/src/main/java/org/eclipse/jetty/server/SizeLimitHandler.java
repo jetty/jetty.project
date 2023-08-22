@@ -62,7 +62,7 @@ public class SizeLimitHandler extends Handler.Wrapper
             if (_requestLimit >= 0 && contentLength > _requestLimit)
             {
                 String s = "Request body is too large: " + contentLength + ">" + _requestLimit;
-                Response.writeError(request, response, callback, 413, s);
+                callback.failed(new HttpException.RuntimeException(413, s));
                 return true;
             }
         }
