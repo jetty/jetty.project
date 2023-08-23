@@ -58,7 +58,6 @@ public class DemoModulesTests extends AbstractJettyHomeTest
         JettyHomeTester distribution = JettyHomeTester.Builder.newInstance()
             .jettyVersion(jettyVersion)
             .jettyBase(jettyBase)
-            .mavenLocalRepository(System.getProperty("mavenRepoPath"))
             .build();
 
         int httpPort = distribution.freePort();
@@ -107,7 +106,6 @@ public class DemoModulesTests extends AbstractJettyHomeTest
         JettyHomeTester distribution = JettyHomeTester.Builder.newInstance()
             .jettyVersion(jettyVersion)
             .jettyBase(jettyBase)
-            .mavenLocalRepository(System.getProperty("mavenRepoPath"))
             .build();
 
         String[] argsConfig = {
@@ -147,7 +145,6 @@ public class DemoModulesTests extends AbstractJettyHomeTest
         JettyHomeTester distribution = JettyHomeTester.Builder.newInstance()
             .jettyVersion(jettyVersion)
             .jettyBase(jettyBase)
-            .mavenLocalRepository(System.getProperty("mavenRepoPath"))
             .build();
 
         int httpPort = distribution.freePort();
@@ -194,7 +191,6 @@ public class DemoModulesTests extends AbstractJettyHomeTest
         JettyHomeTester distribution = JettyHomeTester.Builder.newInstance()
                 .jettyVersion(jettyVersion)
                 .jettyBase(jettyBase)
-                .mavenLocalRepository(System.getProperty("mavenRepoPath"))
                 .build();
 
         int httpPort = distribution.freePort();
@@ -242,7 +238,6 @@ public class DemoModulesTests extends AbstractJettyHomeTest
         JettyHomeTester distribution = JettyHomeTester.Builder.newInstance()
                 .jettyVersion(jettyVersion)
                 .jettyBase(jettyBase)
-                .mavenLocalRepository(System.getProperty("mavenRepoPath"))
                 .build();
 
         int httpPort = distribution.freePort();
@@ -291,7 +286,6 @@ public class DemoModulesTests extends AbstractJettyHomeTest
         JettyHomeTester distribution = JettyHomeTester.Builder.newInstance()
             .jettyVersion(jettyVersion)
             .jettyBase(jettyBase)
-            .mavenLocalRepository(System.getProperty("mavenRepoPath"))
             .build();
 
         int httpPort = distribution.freePort();
@@ -348,7 +342,6 @@ public class DemoModulesTests extends AbstractJettyHomeTest
         JettyHomeTester distribution = JettyHomeTester.Builder.newInstance()
             .jettyVersion(jettyVersion)
             .jettyBase(jettyBase)
-            .mavenLocalRepository(System.getProperty("mavenRepoPath"))
             .build();
 
         int httpPort = distribution.freePort();
@@ -405,7 +398,6 @@ public class DemoModulesTests extends AbstractJettyHomeTest
         JettyHomeTester distribution = JettyHomeTester.Builder.newInstance()
             .jettyVersion(jettyVersion)
             .jettyBase(jettyBase)
-            .mavenLocalRepository(System.getProperty("mavenRepoPath"))
             .build();
 
         int httpPort = distribution.freePort();
@@ -454,7 +446,6 @@ public class DemoModulesTests extends AbstractJettyHomeTest
         JettyHomeTester distribution = JettyHomeTester.Builder.newInstance()
             .jettyVersion(jettyVersion)
             .jettyBase(jettyBase)
-            .mavenLocalRepository(System.getProperty("mavenRepoPath"))
             .build();
 
         String[] argsConfig = {
@@ -522,7 +513,6 @@ public class DemoModulesTests extends AbstractJettyHomeTest
         JettyHomeTester distribution = JettyHomeTester.Builder.newInstance()
             .jettyVersion(jettyVersion)
             .jettyBase(jettyBase)
-            .mavenLocalRepository(System.getProperty("mavenRepoPath"))
             .build();
 
         String[] argsConfig = {
@@ -567,7 +557,6 @@ public class DemoModulesTests extends AbstractJettyHomeTest
         JettyHomeTester distribution = JettyHomeTester.Builder.newInstance()
                 .jettyVersion(jettyVersion)
                 .jettyBase(jettyBase)
-                .mavenLocalRepository(System.getProperty("mavenRepoPath"))
                 .build();
 
         int httpPort = distribution.freePort();
@@ -611,7 +600,6 @@ public class DemoModulesTests extends AbstractJettyHomeTest
         JettyHomeTester distribution = JettyHomeTester.Builder.newInstance()
             .jettyVersion(jettyVersion)
             .jettyBase(jettyBase)
-            .mavenLocalRepository(System.getProperty("mavenRepoPath"))
             .build();
 
         int httpPort = distribution.freePort();
