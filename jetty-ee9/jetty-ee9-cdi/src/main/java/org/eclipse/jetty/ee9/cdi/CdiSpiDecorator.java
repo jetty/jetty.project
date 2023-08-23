@@ -17,9 +17,9 @@ import java.lang.invoke.MethodHandle;
 import java.lang.invoke.MethodHandles;
 import java.lang.invoke.MethodType;
 import java.util.Arrays;
-import java.util.Collections;
 import java.util.HashMap;
 import java.util.HashSet;
+import java.util.List;
 import java.util.Map;
 import java.util.Set;
 
@@ -56,11 +56,12 @@ public class CdiSpiDecorator implements Decorator
     private final MethodHandle _getBeanManager;
     private final MethodHandle _createAnnotatedType;
     private final MethodHandle _createInjectionTarget;
+    private final MethodHandle _getInjectionTargetFactory;
     private final MethodHandle _createCreationalContext;
     private final MethodHandle _inject;
     private final MethodHandle _dispose;
     private final MethodHandle _release;
-    private final Set<String> _undecorated = new HashSet<>(Collections.singletonList("org.jboss.weld.environment.servlet.Listener"));
+    private final Set<String> _undecorated = new HashSet<>(List.of("org.jboss.weld.environment.servlet.Listener", "org.jboss.weld.environment.servlet.EnhancedListener"));
 
     public CdiSpiDecorator(ServletContextHandler context) throws UnsupportedOperationException
     {
@@ -73,9 +74,11 @@ public class CdiSpiDecorator implements Decorator
         try
         {
             Class<?> cdiClass = classLoader.loadClass("jakarta.enterprise.inject.spi.CDI");
+            Class<?> beanClass = classLoader.loadClass("jakarta.enterprise.inject.spi.Bean");
             Class<?> beanManagerClass = classLoader.loadClass("jakarta.enterprise.inject.spi.BeanManager");
             Class<?> annotatedTypeClass = classLoader.loadClass("jakarta.enterprise.inject.spi.AnnotatedType");
             Class<?> injectionTargetClass = classLoader.loadClass("jakarta.enterprise.inject.spi.InjectionTarget");
+            Class<?> injectionTargetFactoryClass = classLoader.loadClass("jakarta.enterprise.inject.spi.InjectionTargetFactory");
             Class<?> creationalContextClass = classLoader.loadClass("jakarta.enterprise.context.spi.CreationalContext");
             Class<?> contextualClass = classLoader.loadClass("jakarta.enterprise.context.spi.Contextual");
 
@@ -83,7 +86,8 @@ public class CdiSpiDecorator implements Decorator
             _current = lookup.findStatic(cdiClass, "current", MethodType.methodType(cdiClass));
             _getBeanManager = lookup.findVirtual(cdiClass, "getBeanManager", MethodType.methodType(beanManagerClass));
             _createAnnotatedType = lookup.findVirtual(beanManagerClass, "createAnnotatedType", MethodType.methodType(annotatedTypeClass, Class.class));
-            _createInjectionTarget = lookup.findVirtual(beanManagerClass, "createInjectionTarget", MethodType.methodType(injectionTargetClass, annotatedTypeClass));
+            _getInjectionTargetFactory = lookup.findVirtual(beanManagerClass, "getInjectionTargetFactory", MethodType.methodType(injectionTargetFactoryClass, annotatedTypeClass));
+            _createInjectionTarget = lookup.findVirtual(injectionTargetFactoryClass, "createInjectionTarget", MethodType.methodType(injectionTargetClass, beanClass));
             _createCreationalContext = lookup.findVirtual(beanManagerClass, "createCreationalContext", MethodType.methodType(creationalContextClass, contextualClass));
             _inject = lookup.findVirtual(injectionTargetClass, "inject", MethodType.methodType(Void.TYPE, Object.class, creationalContextClass));
             _dispose = lookup.findVirtual(injectionTargetClass, "dispose", MethodType.methodType(Void.TYPE, Object.class));
@@ -203,8 +207,10 @@ public class CdiSpiDecorator implements Decorator
             Object annotatedType = _createAnnotatedType.invoke(manager, o.getClass());
             // CreationalContext creationalContext = manager.createCreationalContext(null);
             _creationalContext = _createCreationalContext.invoke(manager, null);
-            // InjectionTarget injectionTarget = manager.createInjectionTarget();
-            _injectionTarget = _createInjectionTarget.invoke(manager, annotatedType);
+            //InjectionTargetFactory injectionTargetFactory = manager.getInjectionTargetFactory(AnnotatedType<T)
+            Object injectionTargetFactory = _getInjectionTargetFactory.invoke(manager, annotatedType);
+            // InjectionTarget injectionTarget = injectionTargetFactory.createInjectionTarget();
+            _injectionTarget = _createInjectionTarget.invoke(injectionTargetFactory, null);
             // injectionTarget.inject(o, creationalContext);
             _inject.invoke(_injectionTarget, o, _creationalContext);
         }
