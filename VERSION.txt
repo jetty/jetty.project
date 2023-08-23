@@ -1,4 +1,11 @@
-jetty-9.4.52-SNAPSHOT
+jetty-9.4.52.v20230823 - 23 August 2023
+ + 9476 onCompleteFailure called multiple times
+ + 9887 Deprecate CGI Servlet
+ + 10066 Allow `SAXParserFactory` or `SAXParser` to be configured in Jetty's
+   `XmlParser` class
+ + 10168 NPE in websocket extension startup
+ + 10352 Backport various cleanups in `HttpParser` from `jetty-10.0.x`
+ + 10337 SizeLimitHandler does not enforce 0 responseLimit
 
 jetty-9.4.51.v20230217 - 17 February 2023
  + 9059 IteratingCallback not serializing close() and failed()
