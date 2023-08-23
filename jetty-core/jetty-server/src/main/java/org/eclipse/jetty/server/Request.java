@@ -584,6 +584,50 @@ public interface Request extends Attributes, Content.Source
     }
 
     /**
+     * This interface will be detected by the {@link #wrap(Request, HttpURI)} static method to wrap the request
+     * changing its target to a given path. If a {@link Request} implements this interface it can
+     * be obtained with the {@link Request#as(Request, Class)} method.
+     * @see #serveAs(Request, HttpURI)
+     */
+    interface ServeAs extends Request
+    {
+        /**
+         * Wraps a request but changes the uri so that it can be served to a different target.
+         * @param request the original request.
+         * @param uri the uri of the new target.
+         * @return the request wrapped to the new target.
+         */
+        Request wrap(Request request, HttpURI uri);
+    }
+
+    /**
+     * Return a request with its {@link HttpURI} changed to the supplied target.
+     * If the passed request or any of the requests that it wraps implements {@link ServeAs} then
+     * {@link ServeAs#wrap(Request, HttpURI)} will be used to do the wrap,
+     * otherwise a simple {@link Request.Wrapper} may be returned.
+     * @param request the original request.
+     * @param uri the new URI to target.
+     * @return the possibly wrapped request to target the new URI.
+     */
+    static Request serveAs(Request request, HttpURI uri)
+    {
+        if (request.getHttpURI().equals(uri))
+            return request;
+
+        ServeAs serveAs = Request.as(request, ServeAs.class);
+        if (serveAs != null)
+            return serveAs.wrap(request, uri);
+        return new Request.Wrapper(request)
+        {
+            @Override
+            public HttpURI getHttpURI()
+            {
+                return uri;
+            }
+        };
+    }
+
+    /**
      * <p>A handler for an HTTP request and response.</p>
      * <p>The handling typically involves reading the request content (if any) and producing a response.</p>
      */

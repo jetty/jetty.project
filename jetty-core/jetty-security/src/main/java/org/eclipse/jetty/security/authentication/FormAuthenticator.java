@@ -360,17 +360,7 @@ public class FormAuthenticator extends LoginAuthenticator
         {
             String newPath = URIUtil.addPaths(request.getContext().getContextPath(), path);
             HttpURI.Mutable newUri = HttpURI.build(request.getHttpURI()).pathQuery(newPath);
-            return new AuthenticationState.ServeAs(newUri)
-            {
-                @Override
-                public Request wrap(Request request)
-                {
-                    PathWrapper serveAs = Request.as(request, PathWrapper.class);
-                    if (serveAs != null)
-                        return serveAs.serveAs(request, newUri);
-                    return super.wrap(request);
-                }
-            };
+            return (AuthenticationState.ServeAs)req -> Request.serveAs(req, newUri);
         }
         catch (Throwable t)
         {
@@ -383,7 +373,7 @@ public class FormAuthenticator extends LoginAuthenticator
     {
         if (_formErrorPage == null)
             Response.writeError(request, response, callback, HttpStatus.FORBIDDEN_403);
-        else if (_dispatch && _formErrorPage != null)
+        else if (_dispatch)
             return dispatch(_formErrorPage, request, response, callback);
         else
             Response.sendRedirect(request, response, callback, encodeURL(URIUtil.addPaths(request.getContext().getContextPath(), _formErrorPage), request), true);

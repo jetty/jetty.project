@@ -17,7 +17,6 @@ import java.security.Principal;
 
 import org.eclipse.jetty.http.HttpException;
 import org.eclipse.jetty.http.HttpStatus;
-import org.eclipse.jetty.http.HttpURI;
 import org.eclipse.jetty.security.IdentityService.RunAsToken;
 import org.eclipse.jetty.security.authentication.LoginAuthenticator;
 import org.eclipse.jetty.security.internal.DeferredAuthenticationState;
@@ -275,45 +274,9 @@ public interface AuthenticationState extends Request.AuthenticationState
      * The {@link SecurityHandler} will use this to wrap the {@link Request}.
      * And then will return a {@link Deferred} authentication to bypass security constraints.
      */
-    class ServeAs implements AuthenticationState
+    interface ServeAs extends AuthenticationState
     {
-        private final HttpURI _uri;
-
-        public ServeAs(HttpURI uri)
-        {
-            _uri = uri;
-        }
-
-        public Request wrap(Request request)
-        {
-            if (request.getHttpURI().equals(_uri))
-                return request;
-
-            return new Request.Wrapper(request)
-            {
-                @Override
-                public HttpURI getHttpURI()
-                {
-                    return _uri;
-                }
-            };
-        }
-
-        /**
-         * This interface can be used inside a {@link ServeAs} implementation to wrap the request
-         * changing its target to a given path. If a {@link Request} implements this interface it can
-         * be obtained with the {@link Request#as(Request, Class)} method.
-         */
-        public interface PathWrapper
-        {
-            /**
-             * Wraps a request but changes the path so that it can be served to a different target.
-             * @param request the original request.
-             * @param uri the uri of the new target.
-             * @return the request wrapped to the new target.
-             */
-            Request serveAs(Request request, HttpURI uri);
-        }
+        Request wrap(Request request);
     }
 
     static Deferred defer(LoginAuthenticator loginAuthenticator)
