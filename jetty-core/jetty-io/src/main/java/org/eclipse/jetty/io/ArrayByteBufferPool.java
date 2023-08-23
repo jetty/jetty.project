@@ -691,7 +691,7 @@ public class ArrayByteBufferPool implements ByteBufferPool, Dumpable
                 {
                     releaseStack.printStackTrace(pw);
                 }
-                return "%s@%x of %d bytes on %s acquired at %s".formatted(getClass().getSimpleName(), hashCode(), getSize(), getAcquireInstant(), w);
+                return "%s@%x of %d bytes on %s wrapping %s acquired at %s".formatted(getClass().getSimpleName(), hashCode(), getSize(), getAcquireInstant(), getWrapped(), w);
             }
         }
     }
