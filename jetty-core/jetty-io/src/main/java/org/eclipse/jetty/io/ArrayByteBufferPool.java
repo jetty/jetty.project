@@ -19,8 +19,10 @@ import java.io.StringWriter;
 import java.nio.ByteBuffer;
 import java.time.Instant;
 import java.util.Arrays;
+import java.util.List;
 import java.util.Set;
 import java.util.concurrent.ConcurrentHashMap;
+import java.util.concurrent.CopyOnWriteArrayList;
 import java.util.concurrent.atomic.AtomicLong;
 import java.util.function.Consumer;
 import java.util.function.IntUnaryOperator;
@@ -575,14 +577,14 @@ public class ArrayByteBufferPool implements ByteBufferPool, Dumpable
      * <p>A variant of {@link ArrayByteBufferPool} that tracks buffer
      * acquires/releases, useful to identify buffer leaks.</p>
      * <p>Use {@link #getLeaks()} when the system is idle to get
-     * the {@link Buffer}s that have been leaked, which contain
+     * the {@link TrackingBuffer}s that have been leaked, which contain
      * the stack trace information of where the buffer was acquired.</p>
      */
     public static class Tracking extends ArrayByteBufferPool
     {
         private static final Logger LOG = LoggerFactory.getLogger(Tracking.class);
 
-        private final Set<Buffer> buffers = ConcurrentHashMap.newKeySet();
+        private final Set<TrackingBuffer> buffers = ConcurrentHashMap.newKeySet();
 
         public Tracking()
         {
@@ -603,14 +605,14 @@ public class ArrayByteBufferPool implements ByteBufferPool, Dumpable
         public RetainableByteBuffer acquire(int size, boolean direct)
         {
             RetainableByteBuffer buffer = super.acquire(size, direct);
-            Buffer wrapper = new Buffer(buffer, size);
+            TrackingBuffer wrapper = new TrackingBuffer(buffer, size);
             if (LOG.isDebugEnabled())
                 LOG.debug("acquired {}", wrapper);
             buffers.add(wrapper);
             return wrapper;
         }
 
-        public Set<Buffer> getLeaks()
+        public Set<TrackingBuffer> getLeaks()
         {
             return buffers;
         }
@@ -618,17 +620,19 @@ public class ArrayByteBufferPool implements ByteBufferPool, Dumpable
         public String dumpLeaks()
         {
             return getLeaks().stream()
-                .map(Buffer::dump)
+                .map(TrackingBuffer::dump)
                 .collect(Collectors.joining(System.lineSeparator()));
         }
 
-        public class Buffer extends RetainableByteBuffer.Wrapper
+        public class TrackingBuffer extends RetainableByteBuffer.Wrapper
         {
             private final int size;
             private final Instant acquireInstant;
             private final Throwable acquireStack;
+            private final List<Throwable> retainStacks = new CopyOnWriteArrayList<>();
+            private final List<Throwable> releaseStacks = new CopyOnWriteArrayList<>();
 
-            private Buffer(RetainableByteBuffer wrapped, int size)
+            private TrackingBuffer(RetainableByteBuffer wrapped, int size)
             {
                 super(wrapped);
                 this.size = size;
@@ -652,6 +656,13 @@ public class ArrayByteBufferPool implements ByteBufferPool, Dumpable
             }
 
             @Override
+            public void retain()
+            {
+                super.retain();
+                retainStacks.add(new Throwable());
+            }
+
+            @Override
             public boolean release()
             {
                 boolean released = super.release();
@@ -661,20 +672,26 @@ public class ArrayByteBufferPool implements ByteBufferPool, Dumpable
                     if (LOG.isDebugEnabled())
                         LOG.debug("released {}", this);
                 }
+                releaseStacks.add(new Throwable());
                 return released;
             }
 
             public String dump()
             {
                 StringWriter w = new StringWriter();
-                getAcquireStack().printStackTrace(new PrintWriter(w));
-                return "%s of %d bytes on %s at %s".formatted(getClass().getSimpleName(), getSize(), getAcquireInstant(), w);
-            }
-
-            @Override
-            public String toString()
-            {
-                return "%s@%x[%s]".formatted(getClass().getSimpleName(), hashCode(), super.toString());
+                PrintWriter pw = new PrintWriter(w);
+                getAcquireStack().printStackTrace(pw);
+                pw.println("\n" + retainStacks.size() + " retain(s)");
+                for (Throwable retainStack : retainStacks)
+                {
+                    retainStack.printStackTrace(pw);
+                }
+                pw.println("\n" + releaseStacks.size() + " release(s)");
+                for (Throwable releaseStack : releaseStacks)
+                {
+                    releaseStack.printStackTrace(pw);
+                }
+                return "%s@%x of %d bytes on %s acquired at %s".formatted(getClass().getSimpleName(), hashCode(), getSize(), getAcquireInstant(), w);
             }
         }
     }
