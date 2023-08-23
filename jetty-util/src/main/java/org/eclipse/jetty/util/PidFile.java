@@ -13,9 +13,12 @@
 
 package org.eclipse.jetty.util;
 
+import java.io.IOException;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.Paths;
+import java.util.Set;
+import java.util.concurrent.ConcurrentHashMap;
 
 import org.eclipse.jetty.util.annotation.Name;
 import org.slf4j.Logger;
@@ -34,34 +37,35 @@ import static java.nio.file.StandardOpenOption.WRITE;
  *     to cleanup the PID file it created during normal JVM shutdown.
  * </p>
  */
-public class PidFile implements Runnable
+public class PidFile extends Thread
 {
     private static final Logger LOG = LoggerFactory.getLogger(PidFile.class);
 
+    private static final Set<Path> activeFiles = ConcurrentHashMap.newKeySet();
     private final Path pidFile;
 
-    public PidFile(@Name("file") String filename)
+    public static void create(@Name("file") String filename) throws IOException
     {
-        pidFile = Paths.get(filename).toAbsolutePath();
+        Path pidFile = Paths.get(filename).toAbsolutePath();
 
-        if (Files.exists(pidFile))
-            LOG.warn("Overwriting existing PID file: {}", pidFile);
-
-        try
+        if (activeFiles.add(pidFile))
         {
+            Runtime.getRuntime().addShutdownHook(new PidFile(pidFile));
+
+            if (Files.exists(pidFile))
+                LOG.info("Overwriting existing PID file: {}", pidFile);
+
             // Create the PID file as soon as possible.
-            // We don't want for doStart() as we want the PID creation to occur quickly for jetty.sh
             long pid = ProcessHandle.current().pid();
             Files.writeString(pidFile, Long.toString(pid), UTF_8, CREATE, WRITE, TRUNCATE_EXISTING);
             if (LOG.isDebugEnabled())
                 LOG.debug("PID file: {}", pidFile);
         }
-        catch (Throwable t)
-        {
-            LOG.warn("Unable to create PID file: {}", pidFile, t);
-        }
+    }
 
-        Runtime.getRuntime().addShutdownHook(new Thread(this));
+    private PidFile(Path pidFile)
+    {
+        this.pidFile = pidFile;
     }
 
     @Override
