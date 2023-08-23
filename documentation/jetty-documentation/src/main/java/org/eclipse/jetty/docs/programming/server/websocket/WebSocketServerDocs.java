@@ -229,7 +229,7 @@ public class WebSocketServerDocs
             public boolean handle(Request request, Response response, Callback callback)
             {
                 // Retrieve the ServerWebSocketContainer.
-                ServerWebSocketContainer container = ServerWebSocketContainer.from(request.getContext());
+                ServerWebSocketContainer container = ServerWebSocketContainer.get(request.getContext());
 
                 // Verify special conditions for which a request should be upgraded to WebSocket.
                 String pathInContext = Request.getPathInContext(request);

@@ -61,9 +61,9 @@ public class ServerWebSocketContainer extends ContainerLifeCycle implements WebS
 
     /**
      * <p>Returns the {@link ServerWebSocketContainer}, ensuring that
-     * it is available via {@link #from(Context)}.</p>
+     * it is available via {@link #get(Context)}.</p>
      * <p>If the {@link ServerWebSocketContainer} is not already available,
-     * an instance is created, stored to be available via {@link #from(Context)}
+     * an instance is created, stored to be available via {@link #get(Context)}
      * and returned.</p>
      * <p>This method should be invoked during the setup of the
      * {@link Handler} hierarchy.</p>
@@ -75,7 +75,7 @@ public class ServerWebSocketContainer extends ContainerLifeCycle implements WebS
     public static ServerWebSocketContainer ensure(Server server, ContextHandler contextHandler)
     {
         Context context = contextHandler.getContext();
-        ServerWebSocketContainer container = from(context);
+        ServerWebSocketContainer container = get(context);
         if (container == null)
         {
             WebSocketComponents components = WebSocketServerComponents.ensureWebSocketComponents(server, contextHandler);
@@ -95,7 +95,7 @@ public class ServerWebSocketContainer extends ContainerLifeCycle implements WebS
      * @return the {@link ServerWebSocketContainer} stored as an attribute,
      * or {@code null} if no such attribute is present
      */
-    public static ServerWebSocketContainer from(Context context)
+    public static ServerWebSocketContainer get(Context context)
     {
         return (ServerWebSocketContainer)context.getAttribute(WebSocketContainer.class.getName());
     }

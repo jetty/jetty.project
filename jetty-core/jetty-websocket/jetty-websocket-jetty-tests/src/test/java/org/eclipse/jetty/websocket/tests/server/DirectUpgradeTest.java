@@ -84,7 +84,7 @@ public class DirectUpgradeTest
                 @Override
                 public boolean handle(Request request, Response response, Callback callback) throws Exception
                 {
-                    ServerWebSocketContainer container = ServerWebSocketContainer.from(request.getContext());
+                    ServerWebSocketContainer container = ServerWebSocketContainer.get(request.getContext());
                     assertNotNull(container);
                     // Direct upgrade.
                     return container.upgrade((upgradeRequest, upgradeResponse, upgradeCallback) -> new EchoSocket(), request, response, callback);
