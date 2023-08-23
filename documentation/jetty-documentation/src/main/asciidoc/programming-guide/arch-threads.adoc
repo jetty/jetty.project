@@ -176,7 +176,7 @@ Jetty's xref:pg-arch-threads[threading architecture] requires a more sophisticat
 
 Jetty's default thread pool implementation is link:{javadoc-url}/org/eclipse/jetty/util/thread/QueuedThreadPool.html[`QueuedThreadPool`].
 
-`QueuedThreadPool` integrates with the xref:pg-arch-bean[Jetty component model], implements `Executor`, provides a `TryExecutor` implementation (discussed in the xref:pg-arch-threads-execution-strategy-adaptive[adaptive execution strategy section]), and supports xref:pg-arch-threads-thread-pool-virtual-threads[virtual threads] (introduced as a preview feature in Java 19).
+`QueuedThreadPool` integrates with the xref:pg-arch-bean[Jetty component model], implements `Executor`, provides a `TryExecutor` implementation (discussed in the xref:pg-arch-threads-execution-strategy-adaptive[adaptive execution strategy section]), and supports xref:pg-arch-threads-thread-pool-virtual-threads[virtual threads] (introduced as a preview feature in Java 19 and Java 20, and as an official feature since Java 21).
 
 `QueuedThreadPool` can be configured with a `maxThreads` value.
 
@@ -203,9 +203,9 @@ A good balance between `QueuedThreadPool.idleTimeout` and `QueuedThreadPool.maxE
 
 [[pg-arch-threads-thread-pool-virtual-threads]]
 ===== Virtual Threads
-Virtual threads have been introduced in Java 19 as a preview feature.
+Virtual threads have been introduced in Java 19 and Java 20 as a preview feature, and have become an official feature since Java 21.
 
-NOTE: In Java versions where virtual threads are a preview feature, remember to add `+--enable-preview+` to the command line options to use virtual threads.
+NOTE: In Java versions where virtual threads are a preview feature, remember to add `+--enable-preview+` to the JVM command line options to use virtual threads.
 
 `QueuedThreadPool` can be configured to use virtual threads by specifying the virtual threads `Executor`:
 
