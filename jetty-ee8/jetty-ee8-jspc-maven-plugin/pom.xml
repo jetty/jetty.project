@@ -45,8 +45,6 @@
           </execution>
         </executions>
         <configuration>
-          <addTestClassPath>true</addTestClassPath>
-          <ignoreFailures>true</ignoreFailures>
           <scriptVariables>
             <maven.surefire.plugin.version>${maven.surefire.plugin.version}</maven.surefire.plugin.version>
           </scriptVariables>

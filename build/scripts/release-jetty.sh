@@ -88,7 +88,7 @@ if [ ! -d "$ALT_DEPLOY_DIR" ] ; then
 fi
 
 # DEPLOY_OPTS="-Dmaven.test.failure.ignore=true"
-DEPLOY_OPTS="-DskipTests -Dasciidoctor.skip=false"
+DEPLOY_OPTS="-DskipTests -Dasciidoctor.skip=false -Dmaven.build.cache.enabled=false"
 # DEPLOY_OPTS="$DEPLOY_OPTS -DaltDeploymentRepository=intarget::default::file://$ALT_DEPLOY_DIR/"
 
 # Uncomment for Java 1.7
@@ -131,10 +131,10 @@ reportMavenTestFailures() {
 
 echo ""
 if proceedyn "Are you sure you want to release using above? (y/N)" n; then
-    mvn clean install -pl build
+    mvn clean install -pl build -Dmaven.build.cache.enabled=false
     echo ""
     if proceedyn "Update VERSION.txt for $VER_RELEASE? (Y/n)" y; then
-        mvn -N -Pupdate-version generate-resources
+        mvn -N -Pupdate-version generate-resources -Dmaven.build.cache.enabled=false
         cp VERSION.txt VERSION.txt.backup
         cat VERSION.txt.backup | sed -e "s/$VER_CURRENT/$VER_RELEASE/" > VERSION.txt
         rm VERSION.txt.backup
@@ -146,6 +146,7 @@ if proceedyn "Are you sure you want to release using above? (y/N)" n; then
     # This is equivalent to 'mvn release:prepare'
     if proceedyn "Update project.versions for $VER_RELEASE? (Y/n)" y; then
         mvn org.codehaus.mojo:versions-maven-plugin:2.7:set \
+            -Dmaven.build.cache.enabled=false \
             -Peclipse-release \
             -DoldVersion="$VER_CURRENT" \
             -DnewVersion="$VER_RELEASE" \
@@ -175,6 +176,7 @@ if proceedyn "Are you sure you want to release using above? (y/N)" n; then
         cat VERSION.txt.backup >> VERSION.txt
         echo "Update project.versions for $VER_NEXT"
         mvn org.codehaus.mojo:versions-maven-plugin:2.7:set \
+            -Dmaven.build.cache.enabled=false \
             -Peclipse-release \
             -DoldVersion="$VER_RELEASE" \
             -DnewVersion="$VER_NEXT" \

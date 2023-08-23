@@ -35,7 +35,9 @@ public class ServerWithJNDI
         // Create a WebApp
         WebAppContext webapp = new WebAppContext();
         webapp.setContextPath("/");
-        Path testJndiWar = JettyDemos.find("jetty-ee9-demo-jndi-webapp/target/jetty-ee9-demo-jndi-webapp-@VER@.war");
+        JettyDemos.MavenCoordinate mavenCoordinate = new JettyDemos.MavenCoordinate("org.eclipse.jetty.ee9.demos",
+                "jetty-ee9-demo-jndi-webapp", "", "war");
+        Path testJndiWar = JettyDemos.find("jetty-ee9-demo-jndi-webapp/target/jetty-ee9-demo-jndi-webapp-@VER@.war", mavenCoordinate);
         webapp.setWarResource(webapp.getResourceFactory().newResource(testJndiWar));
         server.setHandler(webapp);
 
