@@ -13,16 +13,22 @@
 
 package org.eclipse.jetty.test.client.transport;
 
+import java.io.IOException;
 import java.io.InputStream;
+import java.lang.management.ManagementFactory;
 import java.net.URI;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.security.KeyStore;
 import java.util.Collection;
+import java.util.Comparator;
 import java.util.EnumSet;
 import java.util.List;
 import java.util.concurrent.TimeUnit;
+import java.util.stream.Stream;
+import javax.management.MBeanServer;
 
+import com.sun.management.HotSpotDiagnosticMXBean;
 import org.awaitility.Awaitility;
 import org.eclipse.jetty.alpn.server.ALPNServerConnectionFactory;
 import org.eclipse.jetty.client.HttpClient;
@@ -62,6 +68,7 @@ import org.eclipse.jetty.util.ssl.SslContextFactory;
 import org.eclipse.jetty.util.thread.QueuedThreadPool;
 import org.hamcrest.Matchers;
 import org.junit.jupiter.api.AfterEach;
+import org.junit.jupiter.api.TestInfo;
 import org.junit.jupiter.api.extension.BeforeTestExecutionCallback;
 import org.junit.jupiter.api.extension.RegisterExtension;
 
@@ -113,7 +120,7 @@ public class AbstractTest
     }
 
     @AfterEach
-    public void dispose()
+    public void dispose(TestInfo testInfo) throws Exception
     {
         try
         {
@@ -125,6 +132,8 @@ public class AbstractTest
                 }
                 catch (Exception e)
                 {
+                    String className = testInfo.getTestClass().orElseThrow().getName();
+                    dumpHeap("server-" + className);
                     fail(e.getMessage() + "\n---\nServer Leaks: " + serverBufferPool.dumpLeaks() + "---\n");
                 }
             }
@@ -136,6 +145,8 @@ public class AbstractTest
                 }
                 catch (Exception e)
                 {
+                    String className = testInfo.getTestClass().orElseThrow().getName();
+                    dumpHeap("client-" + className);
                     fail(e.getMessage() + "\n---\nClient Leaks: " + clientBufferPool.dumpLeaks() + "---\n");
                 }
             }
@@ -145,6 +156,24 @@ public class AbstractTest
             LifeCycle.stop(client);
             LifeCycle.stop(server);
         }
+    }
+
+    private static void dumpHeap(String testMethodName) throws IOException
+    {
+        Path targetDir = Path.of("target/leaks");
+        try (Stream<Path> stream = Files.walk(targetDir))
+        {
+            stream.sorted(Comparator.reverseOrder())
+                .map(Path::toFile)
+                .forEach(java.io.File::delete);
+        }
+        Files.createDirectories(targetDir);
+        String dumpName = targetDir.resolve(testMethodName + ".hprof").toString();
+
+        MBeanServer server = ManagementFactory.getPlatformMBeanServer();
+        HotSpotDiagnosticMXBean mxBean = ManagementFactory.newPlatformMXBeanProxy(
+            server, "com.sun.management:type=HotSpotDiagnostic", HotSpotDiagnosticMXBean.class);
+        mxBean.dumpHeap(dumpName, true);
     }
 
     protected void start(Transport transport, Handler handler) throws Exception
