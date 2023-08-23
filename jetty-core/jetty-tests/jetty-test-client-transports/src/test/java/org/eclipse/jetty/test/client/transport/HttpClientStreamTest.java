@@ -541,7 +541,9 @@ public class HttpClientStreamTest extends AbstractTest
     public void testDownloadWithCloseMiddleOfContent(Transport transport) throws Exception
     {
         byte[] data1 = new byte[1024];
+        Arrays.fill(data1, (byte)1);
         byte[] data2 = new byte[1024];
+        Arrays.fill(data2, (byte)2);
         CountDownLatch latch = new CountDownLatch(1);
         start(transport, new Handler.Abstract()
         {
