@@ -1,3 +1,5 @@
+jetty-9.4.53-SNAPSHOT
+
 jetty-9.4.52.v20230823 - 23 August 2023
  + 9476 onCompleteFailure called multiple times
  + 9887 Deprecate CGI Servlet
