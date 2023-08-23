@@ -439,7 +439,7 @@ public class ErrorHandler implements Request.Handler
         writer.write("</td></tr>\n");
     }
 
-    private void writeErrorPlain(HttpServletRequest request, PrintWriter writer, int code, String message)
+    protected void writeErrorPlain(HttpServletRequest request, PrintWriter writer, int code, String message)
     {
         writer.write("HTTP ERROR ");
         writer.write(Integer.toString(code));
@@ -465,7 +465,7 @@ public class ErrorHandler implements Request.Handler
         }
     }
 
-    private void writeErrorJson(HttpServletRequest request, PrintWriter writer, int code, String message)
+    protected void writeErrorJson(HttpServletRequest request, PrintWriter writer, int code, String message)
     {
         Throwable cause = (Throwable)request.getAttribute(Dispatcher.ERROR_EXCEPTION);
         Object servlet = request.getAttribute(Dispatcher.ERROR_SERVLET_NAME);

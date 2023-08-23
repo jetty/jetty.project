@@ -582,10 +582,13 @@ public class ServletContextResponse extends ContextResponse implements ServletCo
                     {
                         if (!isCommitted())
                         {
-                            if (_locale == null)
-                                _characterEncoding = null;
                             _contentType = null;
                             _mimeType = null;
+                            _characterEncoding = switch (_encodingFrom)
+                            {
+                                case SET_CHARACTER_ENCODING, SET_LOCALE -> _characterEncoding;
+                                default -> null;
+                            };
                         }
                     }
                 }

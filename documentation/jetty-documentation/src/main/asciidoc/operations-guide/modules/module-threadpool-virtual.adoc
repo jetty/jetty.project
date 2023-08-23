@@ -11,31 +11,26 @@
 // ========================================================================
 //
 
-[[og-module-threadpool-virtual-preview]]
-===== Module `threadpool-virtual-preview`
+[[og-module-threadpool-virtual]]
+===== Module `threadpool-virtual`
 
-The `threadpool-virtual-preview` module allows you to configure the server-wide thread pool, similarly to what you can do with the xref:og-module-threadpool[`threadpool`] Jetty module, but also specify to use virtual threads, introduced as a preview feature in Java 19 and in Java 20.
+The `threadpool-virtual` module allows you to configure the server-wide thread pool, similarly to what you can do with the xref:og-module-threadpool[`threadpool`] Jetty module, but also specify to use virtual threads, introduced as an official feature since Java 21.
 
-CAUTION: Only use this module if you are using Java 19 or Java 20.
-If you are using Java 21 or later, use the xref:og-module-threadpool-virtual[`threadpool-virtual`] Jetty module instead.
-
-NOTE: To enable preview features, this module needs to specify the `+--enable-preview+` command line option using the xref:og-modules-directive-exec[[exec\] directive], and as such it will fork another JVM.
+CAUTION: Only use this module if you are using Java 21 or later.
+If you are using Java 19 or Java 20, use the xref:og-module-threadpool-virtual-preview[`threadpool-virtual-preview`] Jetty module instead.
 
 Refer to the xref:og-module-threadpool[`threadpool`] Jetty module for the general features provided by that Jetty module that also this Jetty module provides.
 
 The module properties to configure the thread pool are:
 
 ----
-include::{jetty-home}/modules/threadpool-virtual-preview.mod[tags=documentation]
+include::{JETTY_HOME}/modules/threadpool-virtual.mod[tags=documentation]
 ----
 
 The specific properties to configure virtual threads are:
 
 `jetty.threadPool.virtual.namePrefix`::
 The name prefix to use for the virtual thread names.
-
-`jetty.threadPool.virtual.allowSetThreadLocals`::
-Whether virtual threads are allowed to set thread locals.
 
 `jetty.threadPool.virtual.inheritInheritableThreadLocals`::
 Whether virtual threads inherit the values of `InheritableThreadLocal` variables.
