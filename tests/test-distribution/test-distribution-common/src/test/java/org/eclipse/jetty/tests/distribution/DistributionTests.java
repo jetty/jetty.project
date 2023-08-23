@@ -1446,9 +1446,11 @@ public class DistributionTests extends AbstractJettyHomeTest
     @DisabledForJreRange(max = JRE.JAVA_18)
     public void testVirtualThreadPoolPreview() throws Exception
     {
+        Path jettyBase = newTestJettyBaseDirectory();
         String jettyVersion = System.getProperty("jettyVersion");
         JettyHomeTester distribution = JettyHomeTester.Builder.newInstance()
             .jettyVersion(jettyVersion)
+            .jettyBase(jettyBase)
             .mavenLocalRepository(System.getProperty("mavenRepoPath"))
             .build();
 
