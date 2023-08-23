@@ -13,6 +13,15 @@
 
 package org.eclipse.jetty.fcgi.server;
 
+import java.lang.management.ManagementFactory;
+import java.nio.file.Files;
+import java.nio.file.Path;
+import java.util.Comparator;
+import java.util.concurrent.TimeUnit;
+import java.util.stream.Stream;
+import javax.management.MBeanServer;
+
+import org.awaitility.Awaitility;
 import org.eclipse.jetty.client.HttpClient;
 import org.eclipse.jetty.client.HttpClientTransport;
 import org.eclipse.jetty.fcgi.client.transport.HttpClientTransportOverFCGI;
@@ -28,8 +37,9 @@ import org.eclipse.jetty.util.component.LifeCycle;
 import org.eclipse.jetty.util.thread.QueuedThreadPool;
 import org.hamcrest.Matchers;
 import org.junit.jupiter.api.AfterEach;
+import org.junit.jupiter.api.TestInfo;
 
-import static org.hamcrest.MatcherAssert.assertThat;
+import static org.junit.jupiter.api.Assertions.fail;
 
 public abstract class AbstractHttpClientServerTest
 {
@@ -67,19 +77,63 @@ public abstract class AbstractHttpClientServerTest
     }
 
     @AfterEach
-    public void dispose()
+    public void dispose(TestInfo testInfo) throws Exception
     {
         try
         {
             if (serverBufferPool != null)
-                assertThat("Server Leaks: " + serverBufferPool.getLeaks(), serverBufferPool.getLeaks().size(), Matchers.is(0));
+            {
+                try
+                {
+                    Awaitility.await().atMost(3, TimeUnit.SECONDS).until(() -> serverBufferPool.getLeaks().size(), Matchers.is(0));
+                }
+                catch (Exception e)
+                {
+                    String className = testInfo.getTestClass().orElseThrow().getName();
+                    dumpHeap("server-" + className);
+                    fail(e.getMessage() + "\n---\nServer Leaks: " + serverBufferPool.dumpLeaks() + "---\n");
+                }
+            }
             if (clientBufferPool != null)
-                assertThat("Client Leaks: " + clientBufferPool.getLeaks(), clientBufferPool.getLeaks().size(), Matchers.is(0));
+            {
+                try
+                {
+                    Awaitility.await().atMost(3, TimeUnit.SECONDS).until(() -> clientBufferPool.getLeaks().size(), Matchers.is(0));
+                }
+                catch (Exception e)
+                {
+                    String className = testInfo.getTestClass().orElseThrow().getName();
+                    dumpHeap("client-" + className);
+                    fail(e.getMessage() + "\n---\nClient Leaks: " + clientBufferPool.dumpLeaks() + "---\n");
+                }
+            }
         }
         finally
         {
             LifeCycle.stop(client);
             LifeCycle.stop(server);
         }
+    }
+
+    private static void dumpHeap(String testMethodName) throws Exception
+    {
+        Path targetDir = Path.of("target/leaks");
+        if (Files.exists(targetDir))
+        {
+            try (Stream<Path> stream = Files.walk(targetDir))
+            {
+                stream.sorted(Comparator.reverseOrder())
+                    .map(Path::toFile)
+                    .forEach(java.io.File::delete);
+            }
+        }
+        Files.createDirectories(targetDir);
+        String dumpName = targetDir.resolve(testMethodName + ".hprof").toString();
+
+        MBeanServer server = ManagementFactory.getPlatformMBeanServer();
+        Class<?> mxBeanClass = Class.forName("com.sun.management.HotSpotDiagnosticMXBean");
+        Object mxBean = ManagementFactory.newPlatformMXBeanProxy(
+            server, "com.sun.management:type=HotSpotDiagnostic", mxBeanClass);
+        mxBeanClass.getMethod("dumpHeap", String.class, boolean.class).invoke(mxBean, dumpName, true);
     }
 }
