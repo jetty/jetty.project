@@ -21,7 +21,9 @@ import java.security.KeyStore;
 import java.util.Collection;
 import java.util.EnumSet;
 import java.util.List;
+import java.util.concurrent.TimeUnit;
 
+import org.awaitility.Awaitility;
 import org.eclipse.jetty.alpn.server.ALPNServerConnectionFactory;
 import org.eclipse.jetty.client.HttpClient;
 import org.eclipse.jetty.client.HttpClientTransport;
@@ -63,8 +65,8 @@ import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.extension.BeforeTestExecutionCallback;
 import org.junit.jupiter.api.extension.RegisterExtension;
 
-import static org.hamcrest.MatcherAssert.assertThat;
 import static org.junit.jupiter.api.Assertions.assertTrue;
+import static org.junit.jupiter.api.Assertions.fail;
 
 public class AbstractTest
 {
@@ -116,9 +118,27 @@ public class AbstractTest
         try
         {
             if (serverBufferPool != null)
-                assertThat("Server Leaks: " + serverBufferPool.dumpLeaks(), serverBufferPool.getLeaks().size(), Matchers.is(0));
+            {
+                try
+                {
+                    Awaitility.await().atMost(3, TimeUnit.SECONDS).until(() -> serverBufferPool.getLeaks().size(), Matchers.is(0));
+                }
+                catch (Exception e)
+                {
+                    fail(e.getMessage() + "\n---\nServer Leaks: " + serverBufferPool.dumpLeaks() + "---\n");
+                }
+            }
             if (clientBufferPool != null)
-                assertThat("Client Leaks: " + clientBufferPool.dumpLeaks(), clientBufferPool.getLeaks().size(), Matchers.is(0));
+            {
+                try
+                {
+                    Awaitility.await().atMost(3, TimeUnit.SECONDS).until(() -> clientBufferPool.getLeaks().size(), Matchers.is(0));
+                }
+                catch (Exception e)
+                {
+                    fail(e.getMessage() + "\n---\nClient Leaks: " + clientBufferPool.dumpLeaks() + "---\n");
+                }
+            }
         }
         finally
         {
