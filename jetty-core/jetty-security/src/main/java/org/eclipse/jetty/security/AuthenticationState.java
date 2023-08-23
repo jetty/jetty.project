@@ -17,6 +17,7 @@ import java.security.Principal;
 
 import org.eclipse.jetty.http.HttpException;
 import org.eclipse.jetty.http.HttpStatus;
+import org.eclipse.jetty.http.HttpURI;
 import org.eclipse.jetty.security.IdentityService.RunAsToken;
 import org.eclipse.jetty.security.authentication.LoginAuthenticator;
 import org.eclipse.jetty.security.internal.DeferredAuthenticationState;
@@ -274,9 +275,19 @@ public interface AuthenticationState extends Request.AuthenticationState
      * The {@link SecurityHandler} will use this to wrap the {@link Request}.
      * And then will return a {@link Deferred} authentication to bypass security constraints.
      */
-    interface ServeAs extends AuthenticationState
+    class ServeAs implements AuthenticationState
     {
-        Request wrap(Request request);
+        private final HttpURI _uri;
+
+        public ServeAs(HttpURI uri)
+        {
+            _uri = uri;
+        }
+
+        public Request wrap(Request request)
+        {
+            return Request.serveAs(request, _uri);
+        }
     }
 
     static Deferred defer(LoginAuthenticator loginAuthenticator)

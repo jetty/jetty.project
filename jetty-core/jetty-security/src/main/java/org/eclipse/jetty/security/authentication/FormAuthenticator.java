@@ -360,7 +360,7 @@ public class FormAuthenticator extends LoginAuthenticator
         {
             String newPath = URIUtil.addPaths(request.getContext().getContextPath(), path);
             HttpURI.Mutable newUri = HttpURI.build(request.getHttpURI()).pathQuery(newPath);
-            return (AuthenticationState.ServeAs)req -> Request.serveAs(req, newUri);
+            return new AuthenticationState.ServeAs(newUri);
         }
         catch (Throwable t)
         {
