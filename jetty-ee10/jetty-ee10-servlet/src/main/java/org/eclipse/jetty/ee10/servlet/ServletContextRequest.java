@@ -121,7 +121,7 @@ public class ServletContextRequest extends ContextRequest implements ServletCont
     @Override
     public Request wrap(Request request, HttpURI uri)
     {
-        String decodedPathInContext = URIUtil.decodePath(getContext().getPathInContext(request.getHttpURI().getCanonicalPath()));
+        String decodedPathInContext = URIUtil.decodePath(getContext().getPathInContext(uri.getCanonicalPath()));
         MatchedResource<ServletHandler.MappedServlet> matchedResource = getServletContextHandler()
             .getServletHandler()
             .getMatchedServlet(decodedPathInContext);
