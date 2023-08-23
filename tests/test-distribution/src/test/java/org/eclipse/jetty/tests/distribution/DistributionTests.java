@@ -108,6 +108,40 @@ public class DistributionTests extends AbstractJettyHomeTest
     }
 
     @Test
+    public void testPidFile() throws Exception
+    {
+        String jettyVersion = System.getProperty("jettyVersion");
+        JettyHomeTester distribution = JettyHomeTester.Builder.newInstance()
+            .jettyVersion(jettyVersion)
+            .mavenLocalRepository(System.getProperty("mavenRepoPath"))
+            .build();
+
+        try (JettyHomeTester.Run run1 = distribution.start("--add-modules=http,pid"))
+        {
+            assertTrue(run1.awaitFor(10, TimeUnit.SECONDS));
+            assertEquals(0, run1.getExitValue());
+
+            Path pidfile = run1.getConfig().getJettyBase().resolve("jetty.pid");
+
+            int port = distribution.freePort();
+            try (JettyHomeTester.Run run2 = distribution.start("jetty.http.port=" + port, "jetty.pid=" + pidfile))
+            {
+                assertTrue(run2.awaitConsoleLogsFor("Started Server@", 10, TimeUnit.SECONDS));
+
+                assertTrue(Files.isRegularFile(pidfile), "PID file should exist");
+
+                startHttpClient();
+                ContentResponse response = client.GET("http://localhost:" + port);
+                assertEquals(HttpStatus.NOT_FOUND_404, response.getStatus());
+
+                run2.stop();
+                assertTrue(run2.awaitFor(10, TimeUnit.SECONDS));
+            }
+            assertFalse(Files.exists(pidfile), "PID file should have been deleted");
+        }
+    }
+
+    @Test
     public void testQuickStartGenerationAndRun() throws Exception
     {
         String jettyVersion = System.getProperty("jettyVersion");

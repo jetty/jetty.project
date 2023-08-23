@@ -18,9 +18,6 @@ import java.nio.file.Path;
 import java.nio.file.Paths;
 
 import org.eclipse.jetty.util.annotation.Name;
-import org.eclipse.jetty.util.component.AbstractLifeCycle;
-import org.eclipse.jetty.util.component.LifeCycle;
-import org.eclipse.jetty.util.thread.ShutdownThread;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -33,11 +30,11 @@ import static java.nio.file.StandardOpenOption.WRITE;
  * Create a PID file for the running process.
  *
  * <p>
- *     This class will automatically register itself with a call to
- *     {@link ShutdownThread#register(LifeCycle...)}.
+ *     Will register itself in a {@link Runtime#addShutdownHook(Thread)}
+ *     to cleanup the PID file it created during normal JVM shutdown.
  * </p>
  */
-public class PidFile extends AbstractLifeCycle
+public class PidFile implements Runnable
 {
     private static final Logger LOG = LoggerFactory.getLogger(PidFile.class);
 
@@ -46,6 +43,10 @@ public class PidFile extends AbstractLifeCycle
     public PidFile(@Name("file") String filename)
     {
         pidFile = Paths.get(filename).toAbsolutePath();
+
+        if (Files.exists(pidFile))
+            LOG.warn("Overwriting existing PID file: {}", pidFile);
+
         try
         {
             // Create the PID file as soon as possible.
@@ -53,26 +54,26 @@ public class PidFile extends AbstractLifeCycle
             long pid = ProcessHandle.current().pid();
             Files.writeString(pidFile, Long.toString(pid), UTF_8, CREATE, WRITE, TRUNCATE_EXISTING);
             if (LOG.isDebugEnabled())
-                LOG.debug("PID File: {}", pidFile);
-            ShutdownThread.register(this);
+                LOG.debug("PID file: {}", pidFile);
         }
         catch (Throwable t)
         {
-            LOG.warn("Unable to create pidFile: {}", pidFile, t);
+            LOG.warn("Unable to create PID file: {}", pidFile, t);
         }
+
+        Runtime.getRuntime().addShutdownHook(new Thread(this));
     }
 
     @Override
-    protected void doStop() throws Exception
+    public void run()
     {
-        ShutdownThread.deregister(this);
         try
         {
             Files.deleteIfExists(pidFile);
         }
         catch (Throwable t)
         {
-            LOG.warn("Unable to remove pidFile: {}", pidFile, t);
+            LOG.warn("Unable to remove PID file: {}", pidFile, t);
         }
     }
 }
