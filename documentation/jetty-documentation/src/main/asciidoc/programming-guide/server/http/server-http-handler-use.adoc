@@ -42,7 +42,7 @@ Embedded web applications based on the Servlet APIs are described in xref:pg-ser
 Embedded web applications may also require additional features such as access to Jetty specific APIs, or utility features such as redirection from HTTP to HTTPS, support for `gzip` content compression, etc.
 The Jetty Server Libraries provides a number of out-of-the-box ``Handler``s that implement the most common functionalities and are described in the next sections.
 
-[[pg-server-http-handler-use-util-context]]
+[[pg-server-http-handler-use-context]]
 ====== ContextHandler
 
 `ContextHandler` is a `Handler` that represents a _context_ for a web application.
@@ -65,7 +65,7 @@ Server
     └── ShopHandler
 ----
 
-[[pg-server-http-handler-use-util-context-collection]]
+[[pg-server-http-handler-use-context-collection]]
 ====== ContextHandlerCollection
 
 Server applications may need to deploy to Jetty more than one web application.
@@ -76,7 +76,7 @@ However, this has no knowledge of the concept of _context_ and just iterates thr
 A better choice for multiple web application is `ContextHandlerCollection`, that matches a _context_ from either its _context path_ or _virtual host_, without iterating through the ``Handler``s.
 
 If `ContextHandlerCollection` does not find a match, it just returns `false` from its `handle(\...)` method.
-What happens next depends on the `Handler` tree structure: other ``Handler``s may be invoked after `ContextHandlerCollection`, for example `DefaultHandler` (see xref:pg-server-http-handler-use-util-default-handler[this section]).
+What happens next depends on the `Handler` tree structure: other ``Handler``s may be invoked after `ContextHandlerCollection`, for example `DefaultHandler` (see xref:pg-server-http-handler-use-default[this section]).
 Eventually, if no `Handler` returns `true` from their own `handle(\...)` method, then Jetty returns an HTTP `404` response to the client.
 
 [source,java,indent=0]
@@ -96,7 +96,7 @@ Server
         └── RESTHandler
 ----
 
-[[pg-server-http-handler-use-util-resource-handler]]
+[[pg-server-http-handler-use-resource]]
 ====== ResourceHandler -- Static Content
 
 Static content such as images or files (HTML, JavaScript, CSS) can be sent by Jetty very efficiently because Jetty can write the content asynchronously, using direct ``ByteBuffer``s to minimize data copy, and using a memory cache for faster access to the data to send.
@@ -116,7 +116,7 @@ Therefore, the traditional architecture where Nginx/Apache was the front-end ser
 This leads to simpler systems (less components to configure and manage) and more performance (no need to proxy dynamic requests from front-end servers to back-end servers).
 
 NOTE: It is common to use Nginx/Apache as load balancers, or as rewrite/redirect servers.
-We typically recommend link:https://haproxy.org[HAProxy] as load balancer, and Jetty has xref:pg-server-http-handler-use-util-rewrite-handler[rewrite/redirect features] as well.
+We typically recommend link:https://haproxy.org[HAProxy] as load balancer, and Jetty has xref:pg-server-http-handler-use-rewrite[rewrite/redirect features] as well.
 
 This is how you configure a `ResourceHandler` to create a simple file server:
 
@@ -133,9 +133,9 @@ include::../../{doc_code}/org/eclipse/jetty/docs/programming/server/http/HTTPSer
 ----
 
 If the resource is not found, `ResourceHandler` will not return `true` from the `handle(\...)` method, so what happens next depends on the `Handler` tree structure.
-See also xref:pg-server-http-handler-use-util-default-handler[how to use] `DefaultHandler`.
+See also xref:pg-server-http-handler-use-default[how to use] `DefaultHandler`.
 
-[[pg-server-http-handler-use-util-gzip-handler]]
+[[pg-server-http-handler-use-gzip]]
 ====== GzipHandler
 
 `GzipHandler` provides supports for automatic decompression of compressed request content and automatic compression of response content.
@@ -185,7 +185,7 @@ Server
 
 // TODO: does ServletContextHandler really need a special configuration?
 
-[[pg-server-http-handler-use-util-rewrite-handler]]
+[[pg-server-http-handler-use-rewrite]]
 ====== RewriteHandler
 
 `RewriteHandler` provides support for URL rewriting, very similarly to link:https://httpd.apache.org/docs/current/mod/mod_rewrite.html[Apache's mod_rewrite] or link:https://nginx.org/en/docs/http/ngx_http_rewrite_module.html[Nginx rewrite module].
@@ -226,7 +226,7 @@ Server
         └── ContextHandler N
 ----
 
-[[pg-server-http-handler-use-util-stats-handler]]
+[[pg-server-http-handler-use-statistics]]
 ====== StatisticsHandler
 
 `StatisticsHandler` gathers and exposes a number of statistic values related to request processing such as:
@@ -266,7 +266,13 @@ For instance, `StatisticsHandler.MinimumDataRateHandler` can be used to enforce 
 include::../../{doc_code}/org/eclipse/jetty/docs/programming/server/http/HTTPServerDocs.java[tags=dataRateHandler]
 ----
 
-[[pg-server-http-handler-use-util-secure-handler]]
+[[pg-server-http-handler-use-limit]]
+====== QoSHandler
+TODO
+// TODO: see #10361
+//  Also port documentation from old_docs/extras/qos-filter
+
+[[pg-server-http-handler-use-secured]]
 ====== SecuredRedirectHandler -- Redirect from HTTP to HTTPS
 
 `SecuredRedirectHandler` allows to redirect requests made with the `http` scheme (and therefore to the clear-text port) to the `https` scheme (and therefore to the encrypted port).
@@ -282,7 +288,7 @@ Server applications must configure a `HttpConfiguration` object with the secure 
 include::../../{doc_code}/org/eclipse/jetty/docs/programming/server/http/HTTPServerDocs.java[tags=securedHandler]
 ----
 
-[[pg-server-http-handler-use-util-default-handler]]
+[[pg-server-http-handler-use-default]]
 ====== DefaultHandler
 
 `DefaultHandler` is a terminal `Handler` that always returns `true` from its `handle(\...)` method and performs the following:
