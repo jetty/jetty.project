@@ -273,7 +273,7 @@ public class HttpChannelState implements HttpChannel, Components
             _response = new ChannelResponse(_request);
 
             HttpConfiguration httpConfiguration = getHttpConfiguration();
-            ResponseHttpFields responseHeaders = _response.getHeaders();
+            HttpFields.Mutable responseHeaders = _response.getHeaders();
             if (httpConfiguration.getSendServerVersion())
                 responseHeaders.add(SERVER_VERSION);
             if (httpConfiguration.getSendXPoweredBy())
@@ -1184,7 +1184,7 @@ public class HttpChannelState implements HttpChannel, Components
         }
 
         @Override
-        public ResponseHttpFields getHeaders()
+        public HttpFields.Mutable getHeaders()
         {
             return _httpFields;
         }
