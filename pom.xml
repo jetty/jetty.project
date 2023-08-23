@@ -24,7 +24,7 @@
 
     <!-- dependency versions -->
     <alpn.agent.version>2.0.10</alpn.agent.version>
-    <ant.version>1.10.13</ant.version>
+    <ant.version>1.10.14</ant.version>
     <apache.avro.version>1.11.2</apache.avro.version>
     <apache.httpclient.version>4.5.14</apache.httpclient.version>
     <apache.httpcore.version>4.4.16</apache.httpcore.version>
