@@ -309,10 +309,10 @@ public interface AuthenticationState extends Request.AuthenticationState
             /**
              * Wraps a request but changes the path so that it can be served to a different target.
              * @param request the original request.
-             * @param path the path of the new target.
+             * @param uri the uri of the new target.
              * @return the request wrapped to the new target.
              */
-            Request serveAs(Request request, String path);
+            Request serveAs(Request request, HttpURI uri);
         }
     }
 

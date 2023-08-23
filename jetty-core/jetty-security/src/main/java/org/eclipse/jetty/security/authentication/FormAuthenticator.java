@@ -367,7 +367,7 @@ public class FormAuthenticator extends LoginAuthenticator
                 {
                     PathWrapper serveAs = Request.as(request, PathWrapper.class);
                     if (serveAs != null)
-                        return serveAs.serveAs(request, path);
+                        return serveAs.serveAs(request, newUri);
                     return super.wrap(request);
                 }
             };

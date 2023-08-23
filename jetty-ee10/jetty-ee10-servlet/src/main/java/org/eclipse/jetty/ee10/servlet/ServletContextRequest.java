@@ -44,6 +44,7 @@ import org.eclipse.jetty.session.AbstractSessionManager;
 import org.eclipse.jetty.session.ManagedSession;
 import org.eclipse.jetty.session.SessionManager;
 import org.eclipse.jetty.util.Fields;
+import org.eclipse.jetty.util.URIUtil;
 
 /**
  * A core request wrapper that carries the servlet related request state,
@@ -119,9 +120,12 @@ public class ServletContextRequest extends ContextRequest implements ServletCont
     }
 
     @Override
-    public Request serveAs(Request request, String path)
+    public Request serveAs(Request request, HttpURI uri)
     {
-        MatchedResource<ServletHandler.MappedServlet> matchedResource = getServletContextHandler().getServletHandler().getMatchedServlet(path);
+        String decodedPathInContext = URIUtil.decodePath(getContext().getPathInContext(request.getHttpURI().getCanonicalPath()));
+        MatchedResource<ServletHandler.MappedServlet> matchedResource = getServletContextHandler()
+            .getServletHandler()
+            .getMatchedServlet(decodedPathInContext);
 
         if (matchedResource == null)
             return null;
@@ -131,9 +135,6 @@ public class ServletContextRequest extends ContextRequest implements ServletCont
             return null;
 
         ServletChannel servletChannel = getServletChannel();
-
-        HttpURI uri = HttpURI.build(request.getHttpURI()).path(path).asImmutable();
-
         ServletContextRequest servletContextRequest = getServletContextHandler().newServletContextRequest(
             servletChannel,
             new Request.Wrapper(request)
@@ -145,7 +146,7 @@ public class ServletContextRequest extends ContextRequest implements ServletCont
                 }
             },
             _response,
-            path,
+            decodedPathInContext,
             matchedResource
         );
         servletChannel.associate(servletContextRequest);
