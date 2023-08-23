@@ -16,11 +16,13 @@ package org.eclipse.jetty.ee10.servlet;
 import java.io.IOException;
 import java.io.UnsupportedEncodingException;
 import java.nio.ByteBuffer;
+import java.nio.charset.StandardCharsets;
 
 import jakarta.servlet.ServletException;
 import jakarta.servlet.http.HttpServlet;
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletResponse;
+import org.eclipse.jetty.http.HttpHeader;
 import org.eclipse.jetty.http.HttpTester;
 import org.eclipse.jetty.http.HttpVersion;
 import org.eclipse.jetty.server.LocalConnector;
@@ -54,6 +56,20 @@ public class CharacterEncodingTest
         }
     }
 
+    public static class CharsetContentTypeSetTwiceServlet extends HttpServlet
+    {
+        @Override
+        protected void doGet(HttpServletRequest request, HttpServletResponse response) throws ServletException, IOException
+        {
+            response.setCharacterEncoding(StandardCharsets.UTF_8.name());
+            response.setContentType("text/plain");
+            assertThat(response.getContentType(), is("text/plain;charset=utf-8"));
+            response.setContentType("text/plain");
+            assertThat(response.getContentType(), is("text/plain;charset=utf-8"));
+            response.getWriter().println("OK");
+        }
+    }
+
     private static Server server;
     private static LocalConnector connector;
 
@@ -69,6 +85,7 @@ public class CharacterEncodingTest
         server.setHandler(context);
 
         context.addServlet(CharsetChangeToJsonMimeTypeSetCharsetToNullServlet.class, "/character-encoding/not-exists/*");
+        context.addServlet(CharsetContentTypeSetTwiceServlet.class, "/character-encoding/set-twice/*");
 
         server.start();
     }
@@ -102,4 +119,22 @@ public class CharacterEncodingTest
         assertThat("Response Code", response.getStatus(), is(200));
 
     }
+
+    @Test
+    public void testCharacterEncodingSetTwice() throws Exception
+    {
+        HttpTester.Request request = new HttpTester.Request();
+        request.setMethod("GET");
+        request.setURI("/character-encoding/set-twice/");
+        request.setVersion(HttpVersion.HTTP_1_1);
+        request.setHeader("Host", "test");
+
+        ByteBuffer responseBuffer = connector.getResponse(request.generate());
+        HttpTester.Response response = HttpTester.parseResponse(responseBuffer);
+
+        // Now test for properly formatted HTTP Response Headers.
+        assertThat("Response Code", response.getStatus(), is(200));
+        assertThat(response.get(HttpHeader.CONTENT_TYPE), is("text/plain;charset=UTF-8"));
+    }
+
 }
