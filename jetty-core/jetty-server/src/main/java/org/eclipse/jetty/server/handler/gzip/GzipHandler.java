@@ -562,7 +562,7 @@ public class GzipHandler extends Handler.Wrapper implements GzipFactory
             {
                 case CONTENT_ENCODING ->
                 {
-                    inflatable = !seenContentEncoding && field.containsLast("gzip");
+                    inflatable |= !seenContentEncoding && field.containsLast("gzip");
                     seenContentEncoding = true;
                 }
                 case ACCEPT_ENCODING -> deflatable = field.contains("gzip");

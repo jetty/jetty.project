@@ -117,7 +117,7 @@ public class ResponseHttpFields implements HttpFields.Mutable
         Iterator<HttpField> i = _fields.iterator();
         return new Iterator<>()
         {
-            HttpField _current;
+            private HttpField _current;
 
             @Override
             public boolean hasNext()
@@ -153,7 +153,7 @@ public class ResponseHttpFields implements HttpFields.Mutable
         ListIterator<HttpField> i = _fields.listIterator(index);
         return new ListIterator<>()
         {
-            HttpField _current;
+            private HttpField _current;
 
             @Override
             public boolean hasNext()
@@ -294,11 +294,6 @@ public class ResponseHttpFields implements HttpFields.Mutable
     public static class PersistentPreEncodedHttpField extends PreEncodedHttpField implements Persistent
     {
         public PersistentPreEncodedHttpField(HttpHeader header, String value)
-        {
-            this(header, value, true);
-        }
-
-        public PersistentPreEncodedHttpField(HttpHeader header, String value, boolean immutable)
         {
             super(header, value);
         }

@@ -164,7 +164,7 @@ public interface HttpFields extends Iterable<HttpField>, Supplier<HttpFields>
     @Override
     default Iterator<HttpField> iterator()
     {
-        return listIterator(0);
+        return listIterator();
     }
 
     /**
@@ -1633,12 +1633,6 @@ public interface HttpFields extends Iterable<HttpField>, Supplier<HttpFields>
             {
                 _fields.clear();
                 return this;
-            }
-
-            @Override
-            public ListIterator<HttpField> listIterator()
-            {
-                return listIterator(0);
             }
 
             @Override

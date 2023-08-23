@@ -83,7 +83,7 @@ public class ResponseTest
     }
 
     @Test
-    public void testServerDateFieldsFrozen() throws Exception
+    public void testServerDateFieldsPersistent() throws Exception
     {
         server.setHandler(new Handler.Abstract()
         {
@@ -127,14 +127,14 @@ public class ResponseTest
                 listIterator.remove();
                 assertFalse(response.getHeaders().contains("Temp"));
 
-                response.getHeaders().putDate("Date", 1L);
-                assertThrows(UnsupportedOperationException.class, () -> response.getHeaders().put(HttpHeader.SERVER, (String)null));
-
                 response.getHeaders().add("Temp", "field");
                 response.reset();
                 response.getHeaders().add("Test", "after reset");
+
+                response.getHeaders().putDate("Date", 1L);
+                assertThrows(UnsupportedOperationException.class, () -> response.getHeaders().put(HttpHeader.SERVER, (String)null));
                 response.getHeaders().put(HttpHeader.SERVER, "jettyrocks");
-                assertThrows(IllegalStateException.class, () -> response.getHeaders().put(HttpHeader.SERVER, (String)null));
+                assertThrows(UnsupportedOperationException.class, () -> response.getHeaders().put(HttpHeader.SERVER, (String)null));
                 callback.succeeded();
                 return true;
             }

@@ -141,7 +141,7 @@ public class Http3Fields implements HttpFields
         if (httpFields == null)
             return pseudoHeadersStream;
 
-        Stream<HttpField> httpFieldStream = httpFields.stream().filter(this::filter);
+        Stream<HttpField> httpFieldStream = httpFields.stream().filter(this::filterIgnored);
 
         if (contentLengthHeader != null)
             return Stream.concat(pseudoHeadersStream, Stream.concat(httpFieldStream, Stream.of(contentLengthHeader)));
@@ -149,7 +149,7 @@ public class Http3Fields implements HttpFields
             return Stream.concat(pseudoHeadersStream, httpFieldStream);
     }
 
-    private boolean filter(HttpField field)
+    private boolean filterIgnored(HttpField field)
     {
         HttpHeader header = field.getHeader();
 
@@ -175,7 +175,7 @@ public class Http3Fields implements HttpFields
     @Override
     public ListIterator<HttpField> listIterator(int index)
     {
-        // TODO this is very inefficient and read only
+        // TODO this is very inefficient and toList returns an unmodifiable list
         return stream().toList().listIterator(index);
     }
 }

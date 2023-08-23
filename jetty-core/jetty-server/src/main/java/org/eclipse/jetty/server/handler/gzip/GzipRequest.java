@@ -98,7 +98,6 @@ public class GzipRequest extends Request.Wrapper
                     {
                         i.set(new HttpField(field.getHeader(), etagsNoSuffix));
                         request.setAttribute(GzipHandler.GZIP_HANDLER_ETAGS, etags);
-                        continue;
                     }
                 }
                 case CONTENT_LENGTH ->

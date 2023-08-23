@@ -441,11 +441,13 @@ class MutableHttpFields implements HttpFields.Mutable
 
     private class Listerator implements ListIterator<HttpField>
     {
-        int _index;
-        int _last = -1;
+        private int _index;
+        private int _last = -1;
 
         Listerator(int index)
         {
+            if (index < 0 || index > _size)
+                throw new NoSuchElementException(Integer.toString(index));
             _index = index;
         }
 
@@ -466,7 +468,7 @@ class MutableHttpFields implements HttpFields.Mutable
         @Override
         public boolean hasNext()
         {
-            return _index != _size;
+            return _index < _size;
         }
 
         @Override
@@ -479,7 +481,7 @@ class MutableHttpFields implements HttpFields.Mutable
         public HttpField next()
         {
             if (_index == _size)
-                throw new NoSuchElementException();
+                throw new NoSuchElementException(Integer.toString(_index));
             _last = _index++;
             return _fields[_last];
         }
@@ -494,7 +496,7 @@ class MutableHttpFields implements HttpFields.Mutable
         public HttpField previous()
         {
             if (_index == 0)
-                throw new NoSuchElementException();
+                throw new NoSuchElementException("-1");
             _last = --_index;
             return _fields[_last];
         }

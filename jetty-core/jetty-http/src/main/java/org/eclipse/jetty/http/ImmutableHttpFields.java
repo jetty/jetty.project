@@ -14,7 +14,6 @@
 package org.eclipse.jetty.http;
 
 import java.util.Arrays;
-import java.util.Iterator;
 import java.util.ListIterator;
 import java.util.NoSuchElementException;
 import java.util.Objects;
@@ -135,27 +134,6 @@ class ImmutableHttpFields implements HttpFields
     }
 
     @Override
-    public Iterator<HttpField> iterator()
-    {
-        return new Iterator<>()
-        {
-            int _index = 0;
-
-            @Override
-            public boolean hasNext()
-            {
-                return _index < _size;
-            }
-
-            @Override
-            public HttpField next()
-            {
-                return _fields[_index++];
-            }
-        };
-    }
-
-    @Override
     public ListIterator<HttpField> listIterator(int index)
     {
         return new Listerator(index);
@@ -181,11 +159,13 @@ class ImmutableHttpFields implements HttpFields
 
     private class Listerator implements ListIterator<HttpField>
     {
-        int _index;
-        int _last = -1;
+        private int _index;
+        private int _last = -1;
 
         Listerator(int index)
         {
+            if (index < 0 || index > _size)
+                throw new NoSuchElementException(Integer.toString(index));
             _index = index;
         }
 
@@ -198,7 +178,7 @@ class ImmutableHttpFields implements HttpFields
         @Override
         public boolean hasNext()
         {
-            return _index != _size;
+            return _index < _size;
         }
 
         @Override
@@ -211,7 +191,7 @@ class ImmutableHttpFields implements HttpFields
         public HttpField next()
         {
             if (_index >= _size)
-                throw new NoSuchElementException();
+                throw new NoSuchElementException(Integer.toString(_index));
             _last = _index++;
             return _fields[_last];
         }
@@ -226,7 +206,7 @@ class ImmutableHttpFields implements HttpFields
         public HttpField previous()
         {
             if (_index == 0)
-                throw new NoSuchElementException();
+                throw new NoSuchElementException("-1");
             _last = --_index;
             return _fields[_last];
         }
