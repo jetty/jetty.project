@@ -13,7 +13,6 @@
 
 package org.eclipse.jetty.test.client.transport;
 
-import java.io.IOException;
 import java.io.InputStream;
 import java.lang.management.ManagementFactory;
 import java.net.URI;
@@ -28,7 +27,6 @@ import java.util.concurrent.TimeUnit;
 import java.util.stream.Stream;
 import javax.management.MBeanServer;
 
-import com.sun.management.HotSpotDiagnosticMXBean;
 import org.awaitility.Awaitility;
 import org.eclipse.jetty.alpn.server.ALPNServerConnectionFactory;
 import org.eclipse.jetty.client.HttpClient;
@@ -158,22 +156,26 @@ public class AbstractTest
         }
     }
 
-    private static void dumpHeap(String testMethodName) throws IOException
+    private static void dumpHeap(String testMethodName) throws Exception
     {
         Path targetDir = Path.of("target/leaks");
-        try (Stream<Path> stream = Files.walk(targetDir))
+        if (Files.exists(targetDir))
         {
-            stream.sorted(Comparator.reverseOrder())
-                .map(Path::toFile)
-                .forEach(java.io.File::delete);
+            try (Stream<Path> stream = Files.walk(targetDir))
+            {
+                stream.sorted(Comparator.reverseOrder())
+                    .map(Path::toFile)
+                    .forEach(java.io.File::delete);
+            }
         }
         Files.createDirectories(targetDir);
         String dumpName = targetDir.resolve(testMethodName + ".hprof").toString();
 
         MBeanServer server = ManagementFactory.getPlatformMBeanServer();
-        HotSpotDiagnosticMXBean mxBean = ManagementFactory.newPlatformMXBeanProxy(
-            server, "com.sun.management:type=HotSpotDiagnostic", HotSpotDiagnosticMXBean.class);
-        mxBean.dumpHeap(dumpName, true);
+        Class<?> mxBeanClass = Class.forName("com.sun.management.HotSpotDiagnosticMXBean");
+        Object mxBean = ManagementFactory.newPlatformMXBeanProxy(
+            server, "com.sun.management:type=HotSpotDiagnostic", mxBeanClass);
+        mxBeanClass.getMethod("dumpHeap", String.class, boolean.class).invoke(mxBean, dumpName, true);
     }
 
     protected void start(Transport transport, Handler handler) throws Exception

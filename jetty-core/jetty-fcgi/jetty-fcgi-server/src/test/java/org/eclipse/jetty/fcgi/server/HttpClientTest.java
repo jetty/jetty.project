@@ -240,6 +240,7 @@ public class HttpClientTest extends AbstractHttpClientServerTest
                 String paramValue2 = fields.getValue(paramName2);
                 assertEquals("", paramValue2);
                 Content.Sink.write(response, true, UTF_8.encode("empty"));
+                callback.succeeded();
                 return true;
             }
         });
@@ -274,6 +275,7 @@ public class HttpClientTest extends AbstractHttpClientServerTest
                 }
                 String paramValue2 = fields.getValue(paramName2);
                 Content.Sink.write(response, true, UTF_8.encode(paramValue2));
+                callback.succeeded();
                 return true;
             }
         });
@@ -650,6 +652,7 @@ public class HttpClientTest extends AbstractHttpClientServerTest
     @Test
     public void testLongPollIsAbortedWhenClientIsStopped() throws Exception
     {
+        AtomicReference<Callback> callbackRef = new AtomicReference<>();
         CountDownLatch latch = new CountDownLatch(1);
         start(new Handler.Abstract()
         {
@@ -657,26 +660,38 @@ public class HttpClientTest extends AbstractHttpClientServerTest
             public boolean handle(org.eclipse.jetty.server.Request request, org.eclipse.jetty.server.Response response, Callback callback)
             {
                 latch.countDown();
-                // Do not complete the callback.
+                // Do not complete the callback, but store it aside for
+                // releasing the buffer later on.
+                callbackRef.set(callback);
                 return true;
             }
         });
 
-        CountDownLatch completeLatch = new CountDownLatch(1);
-        client.newRequest("localhost", connector.getLocalPort())
-            .scheme(scheme)
-            .send(result ->
-            {
-                if (result.isFailed())
-                    completeLatch.countDown();
-            });
+        try
+        {
+            CountDownLatch completeLatch = new CountDownLatch(1);
+            client.newRequest("localhost", connector.getLocalPort())
+                .scheme(scheme)
+                .send(result ->
+                {
+                    if (result.isFailed())
+                        completeLatch.countDown();
+                });
 
-        assertTrue(latch.await(5, TimeUnit.SECONDS));
+            assertTrue(latch.await(5, TimeUnit.SECONDS));
 
-        // Stop the client, the complete listener must be invoked.
-        client.stop();
+            // Stop the client, the complete listener must be invoked.
+            client.stop();
 
-        assertTrue(completeLatch.await(5, TimeUnit.SECONDS));
+            assertTrue(completeLatch.await(5, TimeUnit.SECONDS));
+        }
+        finally
+        {
+            // Release the buffer.
+            Callback callback = callbackRef.get();
+            if (callback != null)
+                callback.succeeded();
+        }
     }
 
     @Test
@@ -757,6 +772,7 @@ public class HttpClientTest extends AbstractHttpClientServerTest
             {
                 Content.Sink.write(response, false, UTF_8.encode("A"));
                 Content.Sink.write(response, true, UTF_8.encode("B"));
+                callback.succeeded();
                 return true;
             }
         });
