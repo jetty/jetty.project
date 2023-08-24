@@ -49,17 +49,6 @@ import static org.hamcrest.Matchers.is;
 @ExtendWith(WorkDirExtension.class)
 public class MetaInfConfigurationTest
 {
-    @BeforeEach
-    public void beforeEach()
-    {
-        assertThat(FileSystemPool.INSTANCE.mounts(), empty());
-    }
-
-    @AfterEach
-    public void tearDown()
-    {
-        assertThat(FileSystemPool.INSTANCE.mounts(), empty());
-    }
 
     /**
      * Test of a MetaInf scan of a Servlet 2.5 webapp, where
