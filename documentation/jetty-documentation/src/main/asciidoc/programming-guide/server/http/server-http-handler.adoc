@@ -47,7 +47,7 @@ Refer to xref:pg-server-http-handler-use[this section] for more information abou
 
 However, in some cases the additional features are not required, or additional constraints on memory footprint, or performance, or just simplicity must be met.
 In these cases, implementing your own `Handler` may be a better solution.
-Refer to xref:pg-server-http-handler-implement[this section] for more information about how to write your own ``Handler``s.
+Refer to xref:pg-server-http-handler-impl[this section] for more information about how to write your own ``Handler``s.
 
 // TODO: document ScopedHandler? Is this really necessary or just an implementation detail that application will never worry about?
 
