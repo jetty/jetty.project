@@ -1443,7 +1443,7 @@ public class DistributionTests extends AbstractJettyHomeTest
     }
 
     @Test
-    @DisabledForJreRange(max = JRE.JAVA_18)
+    @EnabledForJreRange(min = JRE.JAVA_19, max = JRE.JAVA_20)
     public void testVirtualThreadPoolPreview() throws Exception
     {
         Path jettyBase = newTestJettyBaseDirectory();

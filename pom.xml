@@ -33,11 +33,11 @@
 
     <!-- dependency versions -->
     <alpn.agent.version>2.0.10</alpn.agent.version>
-    <ant.version>1.10.13</ant.version>
+    <ant.version>1.10.14</ant.version>
     <apache.avro.version>1.11.2</apache.avro.version>
     <apache.httpclient.version>4.5.14</apache.httpclient.version>
     <apache.httpcore.version>4.4.16</apache.httpcore.version>
-    <asciidoctorj-diagram.version>2.2.9</asciidoctorj-diagram.version>
+    <asciidoctorj-diagram.version>2.2.11</asciidoctorj-diagram.version>
     <asciidoctorj.version>2.5.10</asciidoctorj.version>
     <mina.core.version>2.2.2</mina.core.version>
     <asm.version>9.5</asm.version>
@@ -87,7 +87,7 @@
     <jboss.logging.annotations.version>2.2.1.Final</jboss.logging.annotations.version>
     <jboss.logging.processor.version>2.2.1.Final</jboss.logging.processor.version>
     <jboss.logging.version>3.5.3.Final</jboss.logging.version>
-    <jboss-logmanager.version>3.0.1.Final</jboss-logmanager.version>
+    <jboss-logmanager.version>3.0.2.Final</jboss-logmanager.version>
     <jboss-threads.version>3.5.0.Final</jboss-threads.version>
     <jetty-assembly-descriptors.version>1.1</jetty-assembly-descriptors.version>
     <jetty.perf-helper.version>1.0.7</jetty.perf-helper.version>
@@ -157,7 +157,7 @@
     <flatten.maven.plugin.version>1.3.0</flatten.maven.plugin.version>
     <groovy.version>4.0.6</groovy.version>
     <h2spec.maven.plugin.version>1.0.10</h2spec.maven.plugin.version>
-    <jacoco.maven.plugin.version>0.8.8</jacoco.maven.plugin.version>
+    <jacoco.maven.plugin.version>0.8.10</jacoco.maven.plugin.version>
     <jetty-version.maven.plugin.version>2.7</jetty-version.maven.plugin.version>
     <license.maven.plugin.version>4.1</license.maven.plugin.version>
     <maven.antrun.plugin.version>3.1.0</maven.antrun.plugin.version>
@@ -168,7 +168,7 @@
     <maven.compiler.plugin.version>3.11.0</maven.compiler.plugin.version>
     <maven.dependency.plugin.version>3.6.0</maven.dependency.plugin.version>
     <maven.deploy.plugin.version>3.1.1</maven.deploy.plugin.version>
-    <maven.enforcer.plugin.version>3.3.0</maven.enforcer.plugin.version>
+    <maven.enforcer.plugin.version>3.4.0</maven.enforcer.plugin.version>
     <maven.exec.plugin.version>3.1.0</maven.exec.plugin.version>
     <maven.gpg.plugin.version>3.1.0</maven.gpg.plugin.version>
     <maven.install.plugin.version>3.1.1</maven.install.plugin.version>
@@ -406,6 +406,7 @@
       </plugin>
       <!-- The source maven plugin creates the source bundle and adds manifest -->
       <!-- if removing this we need to add it back in eclipse-release profile -->
+<!--
       <plugin>
         <groupId>org.apache.maven.plugins</groupId>
         <artifactId>maven-source-plugin</artifactId>
@@ -420,6 +421,7 @@
           </execution>
         </executions>
       </plugin>
+-->
       <plugin>
         <groupId>com.mycila</groupId>
         <artifactId>license-maven-plugin</artifactId>
