@@ -52,7 +52,7 @@
   </input>
   <executionControl>
     <runAlways>
-<!--      <goalsLists>-->
+      <goalsLists>
 <!--        <goalsList artifactId="maven-install-plugin">-->
 <!--          <goals>-->
 <!--            <goal>install</goal>-->
