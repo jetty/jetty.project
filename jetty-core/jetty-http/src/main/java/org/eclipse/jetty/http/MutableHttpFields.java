@@ -495,8 +495,8 @@ class MutableHttpFields implements HttpFields.Mutable
         @Override
         public HttpField previous()
         {
-            if (_index == 0)
-                throw new NoSuchElementException("-1");
+            if (_index <= 0)
+                throw new NoSuchElementException(Integer.toString(_index - 1));
             _last = --_index;
             return _fields[_last];
         }
