@@ -91,10 +91,11 @@ public class TrailersTest extends AbstractTest
             client.newRequest(newURI(transport))
                 .trailersSupplier(() -> requestTrailers)
                 .body(body)
+                .timeout(5, TimeUnit.SECONDS)
                 .send(listener);
 
             // Write the content first, then the trailers.
-            output.write(new byte[1024 * 1024]);
+            output.write(new byte[128 * 1024 * 1024]);
             requestTrailers.put(trailerName, trailerValue);
         }
 
