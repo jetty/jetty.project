@@ -24,11 +24,11 @@
 
     <!-- dependency versions -->
     <alpn.agent.version>2.0.10</alpn.agent.version>
-    <ant.version>1.10.13</ant.version>
+    <ant.version>1.10.14</ant.version>
     <apache.avro.version>1.11.2</apache.avro.version>
     <apache.httpclient.version>4.5.14</apache.httpclient.version>
     <apache.httpcore.version>4.4.16</apache.httpcore.version>
-    <asciidoctorj-diagram.version>2.2.10</asciidoctorj-diagram.version>
+    <asciidoctorj-diagram.version>2.2.11</asciidoctorj-diagram.version>
     <asciidoctorj.version>2.5.6</asciidoctorj.version>
     <mina.core.version>2.2.2</mina.core.version>
     <asm.version>9.5</asm.version>
@@ -120,7 +120,7 @@
     <springboot.version>2.1.1.RELEASE</springboot.version>
     <taglibs-standard-impl.version>1.2.5</taglibs-standard-impl.version>
     <taglibs-standard-spec.version>1.2.5</taglibs-standard-spec.version>
-    <testcontainers.version>1.18.3</testcontainers.version>
+    <testcontainers.version>1.19.0</testcontainers.version>
     <weld.version>3.1.9.Final</weld.version>
     <wildfly.common.version>1.6.0.Final</wildfly.common.version>
     <wildfly.elytron.version>2.2.1.Final</wildfly.elytron.version>
@@ -2216,8 +2216,8 @@
                 <configuration>
                   <rules>
                     <requireJavaVersion>
-                      <version>[19,)</version>
-                      <message>[ERROR] OLD JDK [${java.version}] in use. Jetty Release ${project.version} MUST use JDK 19 or newer</message>
+                      <version>[21,)</version>
+                      <message>[ERROR] OLD JDK [${java.version}] in use. Jetty Release ${project.version} MUST use JDK 21 or newer</message>
                     </requireJavaVersion>
                   </rules>
                 </configuration>
