@@ -1,5 +1,5 @@
 [description]
-Enables and configures the Server ThreadPool with support for virtual threads.
+Enables and configures the Server ThreadPool with support for virtual threads in Java 19 and Java 20.
 
 [exec]
 --enable-preview
