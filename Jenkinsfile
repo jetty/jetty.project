@@ -126,7 +126,7 @@ def mavenBuild(jdk, cmdline, mvnName) {
     {
       junit testResults: '**/target/surefire-reports/*.xml,**/target/invoker-reports/TEST*.xml', allowEmptyResults: true
       // debug purpose
-      sh "cat jetty-ee10/jetty-ee10-maven-plugin/target/it/jetty-start-war-distro-mojo-it/jetty-simple-webapp/target/jetty-start-war.out"
+      //sh "cat jetty-ee10/jetty-ee10-maven-plugin/target/it/jetty-start-war-distro-mojo-it/jetty-simple-webapp/target/jetty-start-war.out"
     }
   }
 }
