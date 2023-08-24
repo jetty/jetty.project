@@ -877,14 +877,6 @@
       <optional>true</optional>
     </dependency>
     <dependency>
-      <groupId>org.eclipse.jetty</groupId>
-      <artifactId>javadoc</artifactId>
-      <version>${project.version}</version>
-      <classifier>javadoc</classifier>
-      <type>jar</type>
-      <optional>true</optional>
-    </dependency>
-    <dependency>
       <groupId>org.apache.logging.log4j</groupId>
       <artifactId>log4j-api</artifactId>
       <optional>true</optional>
