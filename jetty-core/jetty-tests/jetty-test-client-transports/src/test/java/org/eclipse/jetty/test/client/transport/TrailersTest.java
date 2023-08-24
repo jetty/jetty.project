@@ -95,7 +95,7 @@ public class TrailersTest extends AbstractTest
                 .send(listener);
 
             // Write the content first, then the trailers.
-            output.write(new byte[128 * 1024 * 1024]);
+            output.write(new byte[1024 * 1024]);
             requestTrailers.put(trailerName, trailerValue);
         }
 
