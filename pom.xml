@@ -406,6 +406,7 @@
       </plugin>
       <!-- The source maven plugin creates the source bundle and adds manifest -->
       <!-- if removing this we need to add it back in eclipse-release profile -->
+<!--
       <plugin>
         <groupId>org.apache.maven.plugins</groupId>
         <artifactId>maven-source-plugin</artifactId>
@@ -420,6 +421,7 @@
           </execution>
         </executions>
       </plugin>
+-->
       <plugin>
         <groupId>com.mycila</groupId>
         <artifactId>license-maven-plugin</artifactId>
