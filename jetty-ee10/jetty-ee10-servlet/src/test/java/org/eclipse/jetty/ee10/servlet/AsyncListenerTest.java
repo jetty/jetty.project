@@ -60,16 +60,9 @@ public class AsyncListenerTest
     }
 
     @BeforeEach
-    public void beforeAll()
+    public void before()
     {
         stacklessLogging = new StacklessLogging(ServletChannelState.class);
-    }
-
-    @AfterEach
-    public void afterAll()
-    {
-        stacklessLogging.close();
-        stacklessLogging = null;
     }
 
     @AfterEach
@@ -77,6 +70,9 @@ public class AsyncListenerTest
     {
         if (server != null)
             server.stop();
+
+        stacklessLogging.close();
+        stacklessLogging = null;
     }
 
     @Test
