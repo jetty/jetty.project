@@ -58,6 +58,11 @@
             <goal>install</goal>
           </goals>
         </goalsList>
+        <goalsList artifactId="maven-invoker-plugin">
+          <goals>
+            <goal>install</goal>
+          </goals>
+        </goalsList>
       </goalsLists>
     </runAlways>
     <reconcile>
