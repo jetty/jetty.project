@@ -46,7 +46,7 @@ Out of the box features that you get with the Jetty HTTP client include:
 The Jetty artifact that provides the main HTTP client implementation is `jetty-client`.
 The Maven artifact coordinates are the following:
 
-[source,xml,subs=normal]
+[source,xml]
 ----
 <dependency>
   <groupId>org.eclipse.jetty</groupId>

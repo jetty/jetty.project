@@ -27,7 +27,7 @@ See also the correspondent xref:pg-server-http2[HTTP/2 server library].
 
 The Maven artifact coordinates for the HTTP/2 client library are the following:
 
-[source,xml,subs=normal]
+[source,xml]
 ----
 <dependency>
   <groupId>org.eclipse.jetty.http2</groupId>

@@ -29,7 +29,7 @@ Similarly, when a component is removed from the tree, `MBeanContainer` is notifi
 
 The Maven coordinates for the Jetty JMX support are:
 
-[source,xml,subs=normal]
+[source,xml]
 ----
 <dependency>
   <groupId>org.eclipse.jetty</groupId>

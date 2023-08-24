@@ -192,7 +192,7 @@ Server
 
 The Maven artifact coordinates are:
 
-[source,xml,subs=normal]
+[source,xml]
 ----
 <dependency>
   <groupId>org.eclipse.jetty</groupId>
@@ -320,7 +320,7 @@ Jetty will send an HTTP `404` response anyway if `DefaultHandler` is not used.
 
 The Maven artifact coordinates are:
 
-[source,xml,subs=normal]
+[source,xml]
 ----
 <dependency>
   <groupId>org.eclipse.jetty</groupId>

@@ -18,7 +18,7 @@ A web application may _reference_ a JNDI entry, such as a JDBC `DataSource` from
 The JNDI entry must be _defined_ in a xref:og-jndi-xml[Jetty XML file], for example a context XML like so:
 
 .mywebapp.xml
-[source,xml,subs=normal]
+[source,xml]
 ----
 <?xml version="1.0" encoding="UTF-8"?>
 <!DOCTYPE Configure PUBLIC "-//Jetty//Configure//EN" "https://www.eclipse.org/jetty/configure_10_0.dtd">

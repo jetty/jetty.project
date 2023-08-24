@@ -27,7 +27,7 @@ See also the correspondent xref:pg-server-http3[HTTP/3 server library].
 
 The Maven artifact coordinates for the HTTP/3 client library are the following:
 
-[source,xml,subs=normal]
+[source,xml]
 ----
 <dependency>
   <groupId>org.eclipse.jetty.http3</groupId>

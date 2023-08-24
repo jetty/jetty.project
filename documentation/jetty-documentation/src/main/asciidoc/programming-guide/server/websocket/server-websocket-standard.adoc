@@ -19,7 +19,7 @@ However, at runtime you need to have an implementation of the standard APIs in y
 
 The standard `javax.websocket` APIs are provided by the following Maven artifact:
 
-[source,xml,subs=normal]
+[source,xml]
 ----
 <dependency>
   <groupId>javax.websocket</groupId>
@@ -32,7 +32,7 @@ However, the artifact above lacks a proper JPMS `module-info.class` file, and th
 
 If you want to use JPMS for your application, you can use this Maven artifact instead:
 
-[source,xml,subs=normal]
+[source,xml]
 ----
 <dependency>
   <groupId>org.eclipse.jetty.toolchain</groupId>
@@ -47,7 +47,7 @@ At runtime, you also need an implementation of the standard `javax.websocket` AP
 
 Jetty's implementation of the standard `javax.websocket` APIs is provided by the following Maven artifact (and its transitive dependencies):
 
-[source,xml,subs=normal]
+[source,xml]
 ----
 <dependency>
   <groupId>org.eclipse.jetty.websocket</groupId>

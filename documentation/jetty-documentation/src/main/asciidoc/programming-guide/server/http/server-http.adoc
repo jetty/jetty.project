@@ -22,7 +22,7 @@ This result in your web applications to be available to HTTP clients as if you d
 
 The Maven artifact coordinates are:
 
-[source,xml,subs=normal]
+[source,xml]
 ----
 <dependency>
   <groupId>org.eclipse.jetty</groupId>
