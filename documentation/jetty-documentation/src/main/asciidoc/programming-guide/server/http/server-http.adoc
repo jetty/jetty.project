@@ -16,7 +16,7 @@
 
 Web application development typically involves writing your web applications, packaging them into a web application archive, the `+*.war+` file, and then deploy the `+*.war+` file into a standalone Servlet Container that you have previously installed.
 
-The Eclipse Jetty server libraries allow you to write web applications components using either the Jetty APIs (by writing xref:pg-server-http-handler[Jetty ``Handler``s]) or using the standard xref:pg-server-http-handler-use-servlet[Servlet APIs] (by writing ``Servlet``s and Servlet ``Filter``s).
+The Jetty server libraries allow you to write web applications components using either the Jetty APIs (by writing xref:pg-server-http-handler[Jetty ``Handler``s]) or using the standard xref:pg-server-http-handler-use-servlet[Servlet APIs] (by writing ``Servlet``s and Servlet ``Filter``s).
 These components can then be programmatically assembled together, without the need of creating a `+*.war+` file, added to a Jetty ``Server`` instance that is then started.
 This result in your web applications to be available to HTTP clients as if you deployed your `+*.war+` files in a standalone Jetty server.
 
@@ -90,6 +90,7 @@ participant ManagedSelector
 participant EndPoint
 participant Connection
 participant Parser
+participant HttpStream
 participant HttpChannel
 participant Server
 participant Handlers
@@ -99,8 +100,8 @@ EndPoint -> Connection : onFillable()
 Connection -> EndPoint : fill()
 EndPoint --> Connection
 Connection -> Parser : parse()
-Parser -> HttpChannel : events
-Connection -> HttpChannel : handle()
+Parser -> HttpStream : events
+Connection -> HttpChannel : onRequest()
 HttpChannel -> Server : handle()
 Server -> Handlers : handle()
 ----
@@ -110,48 +111,16 @@ This event is converted to a call to `AbstractConnection.onFillable()`, where th
 
 The parser emit events that are protocol specific; the HTTP/2 parser, for example, emits events for each HTTP/2 frame that has been parsed, and similarly does the HTTP/3 parser.
 The parser events are then converted to protocol independent events such as _"request start"_, _"request headers"_, _"request content chunk"_, etc.
-that in turn are converted into method calls to `HttpChannelState`.
 
-When enough of the HTTP request is arrived, the `Connection` calls `HttpChannel.handle()` that calls the `Handler` chain, that eventually calls the server application code.
+When enough of the HTTP request is arrived, the `Connection` calls `HttpChannel.onRequest()` that calls the `Handler` chain starting from the `Server` instance, that eventually calls the server application code.
 
-[[pg-server-http-channel-events]]
-===== HttpChannel Events
+[[pg-server-http-request-processing-events]]
+===== Request Processing Events
 
-The central component processing HTTP requests is `HttpChannelState`.
-There is a 1-to-1 relationship between an HTTP request/response and an `HttpChannelState`, no matter what is the specific protocol that carries the HTTP request over the network (HTTP/1.1, HTTP/2, HTTP/3 or FastCGI).
+Advanced server applications may be interested in the progress of the processing of an HTTP request/response.
+A typical case is to know exactly _when_ the HTTP request/response processing starts and when it is complete, for example to monitor processing times.
 
-Advanced server applications may be interested in the progress of the processing of an HTTP request/response by `HttpChannelState`.
-A typical case is to know exactly _when_ the HTTP request/response processing is complete, for example to monitor processing times.
-
-NOTE: A `Handler` or a Servlet `Filter` may not report precisely when an HTTP request/response processing is finished.
-A server application may write a small enough content that is aggregated by Jetty for efficiency reasons; the write returns immediately, but nothing has been written to the network yet.
-
-`HttpChannelState` notifies ``HttpChannel.Listener``s of the progress of the HTTP request/response handling.
-Currently, the following events are available:
-
-* `requestBegin`
-* `beforeDispatch`
-* `dispatchFailure`
-* `afterDispatch`
-* `requestContent`
-* `requestContentEnd`
-* `requestTrailers`
-* `requestEnd`
-* `responseBegin`
-* `responseCommit`
-* `responseContent`
-* `responseFailure`
-* `responseEnd`
-* `complete`
-
-Please refer to the `HttpChannel.Listener` link:{javadoc-url}/org/eclipse/jetty/server/HttpChannel.Listener.html[javadocs] for the complete list of events.
-
-Server applications can register `HttpChannel.Listener` by adding them as xref:pg-arch-bean[beans] to the `Connector`:
-
-[source,java,indent=0]
-----
-include::../../{doc_code}/org/eclipse/jetty/docs/programming/server/http/HTTPServerDocs.java[tags=httpChannelListener]
-----
+This is conveniently implemented by `org.eclipse.jetty.server.handler.EventsHandler`, described in more details in xref:pg-server-http-handler-use-events[this section].
 
 [[pg-server-http-request-logging]]
 ==== Request Logging
