@@ -99,12 +99,5 @@
       </plugins>
     </reconcile>
   </executionControl>
-  <output>
-    <exclude>
-      <patterns>
-        <pattern>.*\.zip</pattern>
-      </patterns>
-    </exclude>
-  </output>
 </cache>
 
