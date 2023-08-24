@@ -40,9 +40,7 @@ import static java.nio.file.StandardOpenOption.WRITE;
 public class PidFile extends Thread
 {
     private static final Logger LOG = LoggerFactory.getLogger(PidFile.class);
-
     private static final Set<Path> activeFiles = ConcurrentHashMap.newKeySet();
-    private final Path pidFile;
 
     public static void create(@Name("file") String filename) throws IOException
     {
@@ -63,6 +61,8 @@ public class PidFile extends Thread
         }
     }
 
+    private final Path pidFile;
+
     private PidFile(Path pidFile)
     {
         this.pidFile = pidFile;
@@ -77,7 +77,7 @@ public class PidFile extends Thread
         }
         catch (Throwable t)
         {
-            LOG.warn("Unable to remove PID file: {}", pidFile, t);
+            LOG.info("Unable to remove PID file: {}", pidFile, t);
         }
     }
 }

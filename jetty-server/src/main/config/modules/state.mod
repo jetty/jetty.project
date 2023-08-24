@@ -13,7 +13,5 @@ server
 etc/jetty-state.xml
 
 [ini-template]
-## State Config
+## State file path
 # jetty.state=${jetty.base}/jetty.state
-
-
