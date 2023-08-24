@@ -28,10 +28,12 @@ import jakarta.servlet.http.HttpServletResponse;
 import org.eclipse.jetty.http.HttpStatus;
 import org.eclipse.jetty.http.HttpTester;
 import org.eclipse.jetty.io.QuietException;
+import org.eclipse.jetty.logging.StacklessLogging;
 import org.eclipse.jetty.server.LocalConnector;
 import org.eclipse.jetty.server.Server;
 import org.eclipse.jetty.util.thread.QueuedThreadPool;
 import org.junit.jupiter.api.AfterEach;
+import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 
 import static org.hamcrest.MatcherAssert.assertThat;
@@ -44,15 +46,30 @@ public class AsyncListenerTest
     private QueuedThreadPool threadPool;
     private Server server;
     private LocalConnector connector;
+    private StacklessLogging stacklessLogging;
 
     public void startServer(ServletContextHandler context) throws Exception
     {
         server = threadPool == null ? new Server() : new Server(threadPool);
+        server.setStopTimeout(1000);
         connector = new LocalConnector(server);
         connector.setIdleTimeout(20 * 60 * 1000L);
         server.addConnector(connector);
         server.setHandler(context);
         server.start();
+    }
+
+    @BeforeEach
+    public void beforeAll()
+    {
+        stacklessLogging = new StacklessLogging(ServletChannelState.class);
+    }
+
+    @AfterEach
+    public void afterAll()
+    {
+        stacklessLogging.close();
+        stacklessLogging = null;
     }
 
     @AfterEach
