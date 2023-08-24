@@ -872,14 +872,5 @@
       <type>jar</type>
       <optional>true</optional>
     </dependency>
-    <dependency>
-      <groupId>org.eclipse.jetty</groupId>
-      <artifactId>javadoc</artifactId>
-      <version>${project.version}</version>
-      <classifier>javadoc</classifier>
-      <type>jar</type>
-      <optional>true</optional>
-    </dependency>
   </dependencies>
-
 </project>
