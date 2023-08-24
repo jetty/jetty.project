@@ -2216,8 +2216,8 @@
                 <configuration>
                   <rules>
                     <requireJavaVersion>
-                      <version>[19,)</version>
-                      <message>[ERROR] OLD JDK [${java.version}] in use. Jetty Release ${project.version} MUST use JDK 19 or newer</message>
+                      <version>[21,)</version>
+                      <message>[ERROR] OLD JDK [${java.version}] in use. Jetty Release ${project.version} MUST use JDK 21 or newer</message>
                     </requireJavaVersion>
                   </rules>
                 </configuration>

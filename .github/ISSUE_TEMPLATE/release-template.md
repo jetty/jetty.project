@@ -32,14 +32,11 @@ This release process will produce releases:
   + [ ] Create and use branches `release/<ver>` to perform version specific release work from.
   + [ ] Ensure `VERSION.txt` additions for each release will be meaningful, descriptive, correct text.
   + [ ] Stage 9.4 release with Java 11.
-  + [ ] Stage 10 release with Java 19.
-  + [ ] Stage 11 release with Java 19.
+  + [ ] Stage 10 release with Java 21.
+  + [ ] Stage 11 release with Java 21.
   + [ ] Push release branches `release/<ver>` to to https://github.com/eclipse/jetty.project
   + [ ] Push release tags `jetty-<ver>` to https://github.com/eclipse/jetty.project
   + [ ] Edit a draft release (for each Jetty release) in GitHub (https://github.com/eclipse/jetty.project/releases). Content is generated with the "changelog tool".
-        Be mindful of the order you create multiple release drafts.  The first one created will be the "oldest" when published. (eg: Draft is 9, then 10, then 11)
-        The last created "draft" will show up as "latest" in the github UI.
-        If you have to reroll, you'll have to delete the drafts and recreate them (especially so if 9 w/timestamp is in the mix of releases being worked on)
 - [ ] Assign issue to "test manager", who will oversee the testing of the staged releases.
   + [ ] Test [CometD](https://github.com/cometd/cometd).
   + [ ] Test [Reactive HttpClient](https://github.com/jetty-project/jetty-reactive-httpclient).
@@ -58,7 +55,7 @@ This release process will produce releases:
 - [ ] Update Jetty versions on the website ( follow instructions in [jetty-website](https://github.com/eclipse/jetty-website/blob/master/README.md) ).
   + [ ] Update (or check) [Download](https://eclipse.dev/jetty/download.php) page is updated.
   + [ ] Update (or check) documentation page(s) are updated.
-- [ ] Publish GitHub Releases in the order of oldest (eg: 9) to newest (eg: 11) (to ensure that "latest" in github is truly the latest)
+- [ ] Publish GitHub Releases.
 - [ ] Prepare release announcement for mailing lists.
 - [ ] Publish any [security advisories](https://github.com/eclipse/jetty.project/security/advisories).
   + [ ] Edit `VERSION.txt` to include any actual CVE number next to correspondent issue.
