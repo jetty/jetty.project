@@ -766,6 +766,9 @@ public class JettyHomeTester
          */
         public Builder mavenLocalRepository(String mavenLocalRepository)
         {
+            if (StringUtils.isBlank(mavenLocalRepository))
+                return this;
+
             config.mavenLocalRepository = mavenLocalRepository;
             return this;
         }

@@ -56,7 +56,6 @@ public abstract class AbstractSessionDistributionTests extends AbstractJettyHome
         jettyHomeTester = JettyHomeTester.Builder.newInstance()
                 .jettyVersion(jettyVersion)
                 .env(env())
-                .mavenLocalRepository(System.getProperty("mavenRepoPath"))
                 .build();
     }
 

@@ -153,7 +153,6 @@ public class HazelcastSessionDistributionTests extends AbstractSessionDistributi
             String jettyVersion = System.getProperty("jettyVersion");
             JettyHomeTester distribution = JettyHomeTester.Builder.newInstance()
                 .jettyVersion(jettyVersion)
-                .mavenLocalRepository(System.getProperty("mavenRepoPath"))
                 .build();
 
             String[] args1 = {
