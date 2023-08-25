@@ -20,7 +20,9 @@ import org.eclipse.jetty.ee10.webapp.AbstractConfiguration;
 /**
  * <p>CDI Configuration</p>
  * <p>This configuration configures the WebAppContext server/system classes to
- * be able to see the {@link CdiServletContainerInitializer}.
+ * be able to see the {@link CdiServletContainerInitializer}. Also hides the
+ * jakarta cdi classes that are on the environment/server classpath and allows
+ * the webapp to provide their own.
  * </p>
  */
 public class CdiConfiguration extends AbstractConfiguration
@@ -29,6 +31,7 @@ public class CdiConfiguration extends AbstractConfiguration
     {
         super(new Builder()
             .protectAndExpose("org.eclipse.jetty.ee10.cdi.CdiServletContainerInitializer")
+            .hide("jakarta.enterprise.", "jakarta.decorator.")
             .addDependents(AnnotationConfiguration.class, PlusConfiguration.class));
     }
 }

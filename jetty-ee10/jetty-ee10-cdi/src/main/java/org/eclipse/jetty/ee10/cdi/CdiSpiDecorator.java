@@ -14,8 +14,7 @@
 package org.eclipse.jetty.ee10.cdi;
 
 import java.lang.invoke.MethodHandle;
-import java.lang.invoke.MethodHandles;
-import java.lang.invoke.MethodType;
+import java.lang.reflect.Method;
 import java.util.Arrays;
 import java.util.HashMap;
 import java.util.HashSet;
@@ -47,20 +46,24 @@ import org.slf4j.LoggerFactory;
 public class CdiSpiDecorator implements Decorator
 {
     private static final Logger LOG = LoggerFactory.getLogger(CdiServletContainerInitializer.class);
+
+    private static final Object NULL_SINGLETON_ARG = null;
+    private static final Object[] NULL_ARRAY_ARG = new Object[]{null};
+
     public static final String MODE = "CdiSpiDecorator";
 
     private final ServletContextHandler _context;
     private final Map<Object, Decorated> _decorated = new HashMap<>();
 
-    private final MethodHandle _current;
-    private final MethodHandle _getBeanManager;
-    private final MethodHandle _createAnnotatedType;
-    private final MethodHandle _createInjectionTarget;
-    private final MethodHandle _getInjectionTargetFactory;
-    private final MethodHandle _createCreationalContext;
-    private final MethodHandle _inject;
-    private final MethodHandle _dispose;
-    private final MethodHandle _release;
+    private final Method _current;
+    private final Method _getBeanManager;
+    private final Method _createAnnotatedType;
+    private final Method _createInjectionTarget;
+    private final Method _getInjectionTargetFactory;
+    private final Method _createCreationalContext;
+    private final Method _inject;
+    private final Method _dispose;
+    private final Method _release;
     private final Set<String> _undecorated = new HashSet<>(List.of("org.jboss.weld.environment.servlet.Listener", "org.jboss.weld.environment.servlet.EnhancedListener"));
 
     public CdiSpiDecorator(ServletContextHandler context) throws UnsupportedOperationException
@@ -82,16 +85,15 @@ public class CdiSpiDecorator implements Decorator
             Class<?> creationalContextClass = classLoader.loadClass("jakarta.enterprise.context.spi.CreationalContext");
             Class<?> contextualClass = classLoader.loadClass("jakarta.enterprise.context.spi.Contextual");
 
-            MethodHandles.Lookup lookup = MethodHandles.lookup();
-            _current = lookup.findStatic(cdiClass, "current", MethodType.methodType(cdiClass));
-            _getBeanManager = lookup.findVirtual(cdiClass, "getBeanManager", MethodType.methodType(beanManagerClass));
-            _createAnnotatedType = lookup.findVirtual(beanManagerClass, "createAnnotatedType", MethodType.methodType(annotatedTypeClass, Class.class));
-            _getInjectionTargetFactory = lookup.findVirtual(beanManagerClass, "getInjectionTargetFactory", MethodType.methodType(injectionTargetFactoryClass, annotatedTypeClass));
-            _createInjectionTarget = lookup.findVirtual(injectionTargetFactoryClass, "createInjectionTarget", MethodType.methodType(injectionTargetClass, beanClass));
-            _createCreationalContext = lookup.findVirtual(beanManagerClass, "createCreationalContext", MethodType.methodType(creationalContextClass, contextualClass));
-            _inject = lookup.findVirtual(injectionTargetClass, "inject", MethodType.methodType(Void.TYPE, Object.class, creationalContextClass));
-            _dispose = lookup.findVirtual(injectionTargetClass, "dispose", MethodType.methodType(Void.TYPE, Object.class));
-            _release = lookup.findVirtual(creationalContextClass, "release", MethodType.methodType(Void.TYPE));
+            _current = cdiClass.getMethod("current", null);
+            _getBeanManager = cdiClass.getMethod("getBeanManager", null);
+            _createAnnotatedType = beanManagerClass.getMethod("createAnnotatedType", Class.class);
+            _getInjectionTargetFactory = beanManagerClass.getMethod("getInjectionTargetFactory", annotatedTypeClass);
+            _createInjectionTarget = injectionTargetFactoryClass.getMethod("createInjectionTarget", beanClass);
+            _createCreationalContext = beanManagerClass.getMethod("createCreationalContext", contextualClass);
+            _inject = injectionTargetClass.getMethod("inject", Object.class, creationalContextClass);
+            _dispose = injectionTargetClass.getMethod("dispose", Object.class);
+            _release = creationalContextClass.getMethod("release", null);
         }
         catch (Exception e)
         {
@@ -202,15 +204,15 @@ public class CdiSpiDecorator implements Decorator
         Decorated(Object o) throws Throwable
         {
             // BeanManager manager = CDI.current().getBeanManager();
-            Object manager = _getBeanManager.invoke(_current.invoke());
+            Object manager = _getBeanManager.invoke(_current.invoke(null));
             // AnnotatedType annotatedType = manager.createAnnotatedType((Class<T>)o.getClass());
             Object annotatedType = _createAnnotatedType.invoke(manager, o.getClass());
             // CreationalContext creationalContext = manager.createCreationalContext(null);
-            _creationalContext = _createCreationalContext.invoke(manager, null);
+            _creationalContext = _createCreationalContext.invoke(manager, NULL_SINGLETON_ARG);
             //InjectionTargetFactory injectionTargetFactory = manager.getInjectionTargetFactory(AnnotatedType<T)
             Object injectionTargetFactory = _getInjectionTargetFactory.invoke(manager, annotatedType);
             // InjectionTarget injectionTarget = injectionTargetFactory.createInjectionTarget();
-            _injectionTarget = _createInjectionTarget.invoke(injectionTargetFactory, null);
+            _injectionTarget = _createInjectionTarget.invoke(injectionTargetFactory, NULL_ARRAY_ARG);
             // injectionTarget.inject(o, creationalContext);
             _inject.invoke(_injectionTarget, o, _creationalContext);
         }
