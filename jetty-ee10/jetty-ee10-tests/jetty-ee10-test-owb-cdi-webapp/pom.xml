@@ -37,10 +37,10 @@
     </dependency>
 
     <!-- included in webapp -->
-    <dependency>
+    <!-- dependency>
       <groupId>jakarta.annotation</groupId>
       <artifactId>jakarta.annotation-api</artifactId>
-    </dependency>
+    </dependency -->
     <dependency>
       <groupId>jakarta.enterprise</groupId>
       <artifactId>jakarta.enterprise.cdi-api</artifactId>
@@ -58,10 +58,10 @@
       <artifactId>openwebbeans-web</artifactId>
       <version>${openwebbeans.version}</version>
     </dependency>
-    <dependency>
+    <!-- dependency>
       <groupId>org.apache.openwebbeans</groupId>
       <artifactId>openwebbeans-jetty9</artifactId>
       <version>${openwebbeans.version}</version>
-    </dependency>
+    </dependency -->
   </dependencies>
 </project>
