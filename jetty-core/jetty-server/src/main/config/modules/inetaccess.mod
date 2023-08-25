@@ -2,7 +2,7 @@
 
 [description]
 Enables the InetAccessHandler.
-Applies a include/exclude control of the remote IP of requests.
+Applies an include/exclude control of the remote IP of requests.
 
 [tags]
 connector
@@ -18,15 +18,9 @@ etc/jetty-inetaccess.xml
 
 [ini-template]
 
-## List of InetAddress patterns to include
-#jetty.inetaccess.include=127.0.0.1,127.0.0.2
+## List of InetAddress patterns to include (connectorName@addressPattern|pathSpec)
+#jetty.inetaccess.include=http@127.0.0.1-127.0.0.2|/pathSpec,tls@,|/pathSpec2,127.0.0.20
 
-## List of InetAddress patterns to exclude
-#jetty.inetaccess.exclude=127.0.0.1,127.0.0.2
-
-## List of Connector names to include
-#jetty.inetaccess.includeConnectors=http
-
-## List of Connector names to exclude
-#jetty.inetaccess.excludeConnectors=tls
+## List of InetAddress patterns to exclude (connectorName@addressPattern|pathSpec)
+#jetty.inetaccess.exclude=http@127.0.0.1-127.0.0.2|/pathSpec,tls@,|/pathSpec2,127.0.0.20
 

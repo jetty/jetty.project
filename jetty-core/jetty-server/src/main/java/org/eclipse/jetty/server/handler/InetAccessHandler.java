@@ -166,57 +166,6 @@ public class InetAccessHandler extends Handler.Wrapper
         _set.exclude(new PatternTuple(connectorName, InetAddressPattern.from(addressPattern), pathSpec));
     }
 
-    /**
-     * Includes a connector name.
-     *
-     * @param name Connector name to include in this handler.
-     * @deprecated use {@link InetAccessHandler#include(String)} instead.
-     */
-    @Deprecated
-    public void includeConnector(String name)
-    {
-        throw new UnsupportedOperationException();
-    }
-
-    /**
-     * Excludes a connector name.
-     *
-     * @param name Connector name to exclude in this handler.
-     * @deprecated use {@link InetAccessHandler#include(String)} instead.
-     */
-    @Deprecated
-    public void excludeConnector(String name)
-    {
-        _set.exclude(new PatternTuple(name, null, null));
-    }
-
-    /**
-     * Includes connector names.
-     *
-     * @param names Connector names to include in this handler.
-     * @deprecated use {@link InetAccessHandler#include(String)} instead.
-     */
-    @Deprecated
-    public void includeConnectors(String... names)
-    {
-        throw new UnsupportedOperationException();
-    }
-
-    /**
-     * Excludes connector names.
-     *
-     * @param names Connector names to exclude in this handler.
-     * @deprecated use {@link InetAccessHandler#include(String)} instead.
-     */
-    @Deprecated
-    public void excludeConnectors(String... names)
-    {
-        for (String name : names)
-        {
-            excludeConnector(name);
-        }
-    }
-
     @Override
     public boolean handle(Request request, Response response, Callback callback) throws Exception
     {
