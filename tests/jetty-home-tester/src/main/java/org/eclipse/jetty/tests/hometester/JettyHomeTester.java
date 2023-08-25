@@ -24,6 +24,7 @@ import java.io.RandomAccessFile;
 import java.net.InetSocketAddress;
 import java.net.ServerSocket;
 import java.net.URI;
+import java.nio.file.CopyOption;
 import java.nio.file.FileAlreadyExistsException;
 import java.nio.file.FileSystem;
 import java.nio.file.FileSystems;
@@ -214,10 +215,24 @@ public class JettyHomeTester
      */
     public void installBaseResource(String testResourcePath, String baseResourcePath) throws IOException
     {
+        this.installBaseResource(testResourcePath, baseResourcePath, null);
+    }
+
+    /**
+     * Installs in {@code ${jetty.base}/webapps} the given war file under the given context path.
+     *
+     * @param warFile the war file to install
+     * @param context the context path
+     * @param options optional CopyOptions
+     * @return the path to the installed webapp exploded directory
+     * @throws IOException if the installation fails
+     */
+   public void installBaseResource(String testResourcePath, String baseResourcePath, CopyOption... options) throws IOException
+    {
         Path srcFile = MavenTestingUtils.getTestResourcePath(testResourcePath);
         Path destFile = config.jettyBase.resolve(baseResourcePath);
 
-        Files.copy(srcFile, destFile);
+        Files.copy(srcFile, destFile, options);
     }
 
     /**
