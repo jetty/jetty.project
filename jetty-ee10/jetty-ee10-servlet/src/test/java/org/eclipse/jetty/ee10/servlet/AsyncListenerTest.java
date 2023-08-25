@@ -48,7 +48,6 @@ public class AsyncListenerTest
     public void startServer(ServletContextHandler context) throws Exception
     {
         server = threadPool == null ? new Server() : new Server(threadPool);
-        server.setStopTimeout(1000);
         connector = new LocalConnector(server);
         connector.setIdleTimeout(20 * 60 * 1000L);
         server.addConnector(connector);
