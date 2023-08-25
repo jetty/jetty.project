@@ -147,7 +147,7 @@
     <taglibs-standard-spec.version>1.2.5</taglibs-standard-spec.version>
     <testcontainers.version>1.18.3</testcontainers.version>
     <wildfly.common.version>1.6.0.Final</wildfly.common.version>
-    <wildfly.elytron.version>2.2.1.Final</wildfly.elytron.version>
+    <wildfly.elytron.version>1.20.4.Final</wildfly.elytron.version>
     <xmemcached.version>2.4.7</xmemcached.version>
 
     <!-- some maven plugins versions -->
@@ -1677,6 +1677,11 @@
         <groupId>org.jboss.threads</groupId>
         <artifactId>jboss-threads</artifactId>
         <version>${jboss-threads.version}</version>
+      </dependency>
+      <dependency>
+        <groupId>org.wildfly.security</groupId>
+        <artifactId>wildfly-elytron</artifactId>
+        <version>${wildfly.elytron.version}</version>
       </dependency>
       <dependency>
         <groupId>org.junit</groupId>
