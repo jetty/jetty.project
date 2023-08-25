@@ -13,6 +13,7 @@
 
 package org.eclipse.jetty.util;
 
+import java.nio.ByteBuffer;
 import java.nio.charset.Charset;
 import java.nio.charset.StandardCharsets;
 import java.util.stream.Stream;
@@ -23,6 +24,7 @@ import org.junit.jupiter.params.provider.MethodSource;
 
 import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.Matchers.equalTo;
+import static org.hamcrest.Matchers.is;
 
 // @checkstyle-disable-check : AvoidEscapedUnicodeCharactersCheck
 public class CharsetStringBuilderTest
@@ -55,5 +57,48 @@ public class CharsetStringBuilderTest
         builder.append(bytes[0]);
         builder.append(bytes, 1, bytes.length - 1);
         assertThat(builder.build(), equalTo(test));
+    }
+
+    public static Stream<Charset> charsets()
+    {
+        return Stream.of(
+            StandardCharsets.UTF_8,
+            StandardCharsets.ISO_8859_1,
+            StandardCharsets.US_ASCII,
+            StandardCharsets.UTF_16
+        );
+    }
+
+    @ParameterizedTest
+    @MethodSource("charsets")
+    public void testBasicApi(Charset charset) throws Exception
+    {
+        CharsetStringBuilder builder = CharsetStringBuilder.forCharset(charset);
+        ByteBuffer encoded = charset.encode("1");
+        while (encoded.hasRemaining())
+            builder.append(encoded.get());
+
+        builder.append('2');
+
+        builder.append(charset.encode("34"));
+
+        encoded = charset.encode("abc");
+        int offset = encoded.remaining();
+        encoded = charset.encode("abc56");
+        int length = encoded.remaining() - offset;
+        encoded = charset.encode("abc56xyz");
+        byte[] bytes = new byte[1028];
+        encoded.get(bytes, 0, encoded.remaining());
+        builder.append(bytes, offset, length);
+
+        encoded = charset.encode("abc78xyz");
+        encoded.position(offset);
+        encoded.limit(offset + length);
+        builder.append(encoded);
+
+        builder.append("9A", 0, 2);
+        builder.append("xyzBCpqy", 3, 2);
+
+        assertThat(builder.build(), is("123456789ABC"));
     }
 }

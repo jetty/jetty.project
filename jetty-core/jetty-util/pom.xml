@@ -56,7 +56,7 @@
         <artifactId>maven-surefire-plugin</artifactId>
         <configuration>
           <systemPropertyVariables>
-            <mavenRepoPath>${settings.localRepository}</mavenRepoPath>
+            <mavenRepoPath>${session.repositorySession.localRepository.basedir.absolutePath}</mavenRepoPath>
           </systemPropertyVariables>
           <argLine>
             @{argLine} ${jetty.surefire.argLine} --add-reads org.eclipse.jetty.util=org.eclipse.jetty.logging

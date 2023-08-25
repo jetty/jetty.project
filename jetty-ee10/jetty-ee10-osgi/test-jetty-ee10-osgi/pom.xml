@@ -391,6 +391,13 @@
       <groupId>org.eclipse.jetty.ee10.demos</groupId>
       <artifactId>jetty-ee10-demo-jetty-webapp</artifactId>
       <version>${project.version}</version>
+      <type>war</type>
+      <scope>test</scope>
+    </dependency>
+    <dependency>
+      <groupId>org.eclipse.jetty.ee10.demos</groupId>
+      <artifactId>jetty-ee10-demo-jetty-webapp</artifactId>
+      <version>${project.version}</version>
       <classifier>webbundle</classifier>
       <scope>test</scope>
     </dependency>
@@ -505,7 +512,7 @@
           <configuration>
             <skipTests>${skipTests}</skipTests>
             <systemPropertyVariables>
-              <mavenRepoPath>${settings.localRepository}</mavenRepoPath>
+              <mavenRepoPath>${session.repositorySession.localRepository.basedir.absolutePath}</mavenRepoPath>
               <settingsFilePath>${env.GLOBAL_MVN_SETTINGS}</settingsFilePath>
             </systemPropertyVariables>
             <argLine>-Dconscrypt-version=${conscrypt.version}</argLine>

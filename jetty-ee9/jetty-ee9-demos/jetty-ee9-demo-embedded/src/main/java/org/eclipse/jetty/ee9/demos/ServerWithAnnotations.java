@@ -45,7 +45,9 @@ public class ServerWithAnnotations
         webapp.addConfiguration(new EnvConfiguration(), new PlusConfiguration(), new AnnotationConfiguration());
 
         webapp.setContextPath("/");
-        Path warFile = JettyDemos.find("jetty-ee9-demo-spec/jetty-ee9-demo-spec-webapp/target/jetty-ee9-demo-spec-webapp-@VER@.war");
+        JettyDemos.MavenCoordinate mavenCoordinate = new JettyDemos.MavenCoordinate("org.eclipse.jetty.ee9.demos",
+                "jetty-ee9-demo-spec-webapp", "", "war");
+        Path warFile = JettyDemos.find("jetty-ee9-demo-spec/jetty-ee9-demo-spec-webapp/target/jetty-ee9-demo-spec-webapp-@VER@.war", mavenCoordinate);
 
         webapp.setWar(warFile.toString());
         webapp.setAttribute(

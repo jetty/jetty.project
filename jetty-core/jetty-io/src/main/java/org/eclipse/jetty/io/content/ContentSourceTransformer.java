@@ -47,6 +47,11 @@ public abstract class ContentSourceTransformer implements Content.Source
         this.invoker = invoker;
     }
 
+    protected Content.Source getContentSource()
+    {
+        return rawSource;
+    }
+
     @Override
     public Content.Chunk read()
     {

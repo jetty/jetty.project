@@ -14,6 +14,7 @@
   <properties>
     <bundle-symbolic-name>${project.groupId}</bundle-symbolic-name>
     <asciidoctor.skip>${skipTests}</asciidoctor.skip>
+    <jacoco.skip>true</jacoco.skip>
   </properties>
 
   <profiles>
@@ -92,8 +93,8 @@
           <fail>false</fail>
           <rules>
             <requireJavaVersion>
-              <version>[19,)</version>
-              <message>[ERROR] OLD JDK [${java.version}] in use. Jetty documentation ${project.version} MUST use JDK 19 or newer</message>
+              <version>[21,)</version>
+              <message>[ERROR] OLD JDK [${java.version}] in use. Jetty documentation ${project.version} MUST use JDK 21 or newer</message>
             </requireJavaVersion>
           </rules>
         </configuration>
@@ -137,11 +138,13 @@
           <attributes>
             <project-basedir>${project.basedir}</project-basedir>
             <project-version>${project.version}</project-version>
-            <maven-local-repo>${settings.localRepository}</maven-local-repo>
+            <maven-local-repo>${session.repositorySession.localRepository.basedir.absolutePath}</maven-local-repo>
             <version>${project.version}</version>
+<!--            <SRCDIR>./src/main/asciidoc</SRCDIR>-->
             <prog-guide>../programming-guide/index.html</prog-guide>
             <op-guide>../operations-guide/index.html</op-guide>
             <javadoc-url>https://eclipse.dev/jetty/javadoc/jetty-12</javadoc-url>
+<!--            <TIMESTAMP>2023-07-31T06:06:52Z</TIMESTAMP>-->
           </attributes>
         </configuration>
         <executions>
@@ -203,6 +206,30 @@
               <sourceDirectory>${basedir}/src/main/asciidoc/old_docs</sourceDirectory>
               <sourceDocumentName>index.adoc</sourceDocumentName>
               <outputDirectory>${project.build.directory}/html/old_docs</outputDirectory>
+            </configuration>
+          </execution>
+        </executions>
+      </plugin>
+      <plugin>
+        <groupId>org.apache.maven.plugins</groupId>
+        <artifactId>maven-dependency-plugin</artifactId>
+        <executions>
+          <execution>
+            <id>unpack-jetty-home</id>
+            <phase>generate-resources</phase>
+            <goals>
+              <goal>unpack</goal>
+            </goals>
+            <configuration>
+              <artifactItems>
+                <artifactItem>
+                  <groupId>org.eclipse.jetty</groupId>
+                  <artifactId>jetty-home</artifactId>
+                  <version>${project.version}</version>
+                  <type>zip</type>
+                </artifactItem>
+              </artifactItems>
+              <outputDirectory>${project.build.directory}/</outputDirectory>
             </configuration>
           </execution>
         </executions>
@@ -324,6 +351,13 @@
     <dependency>
       <groupId>org.eclipse.jetty.ee10.websocket</groupId>
       <artifactId>jetty-ee10-websocket-jakarta-server</artifactId>
+    </dependency>
+    <dependency>
+      <groupId>org.eclipse.jetty</groupId>
+      <artifactId>jetty-home</artifactId>
+      <version>${project.version}</version>
+      <type>zip</type>
+      <optional>true</optional>
     </dependency>
   </dependencies>
 </project>

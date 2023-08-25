@@ -35,8 +35,8 @@ import org.eclipse.jetty.util.Callback;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.ValueSource;
 
-import static org.hamcrest.CoreMatchers.is;
 import static org.hamcrest.MatcherAssert.assertThat;
+import static org.hamcrest.Matchers.lessThan;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
@@ -148,7 +148,11 @@ public class ContentLengthTest extends AbstractTest
             .method(method)
             .send();
 
-        if (!HttpMethod.HEAD.is(method))
-            assertThat(response.getContent().length, is(data.length));
+        HttpFields responseHeaders = response.getHeaders();
+        long contentLength = responseHeaders.getLongField(HttpHeader.CONTENT_LENGTH);
+        if (HttpMethod.HEAD.is(method))
+            assertThat(contentLength, lessThan((long)data.length));
+        else
+            assertEquals(data.length, contentLength);
     }
 }

@@ -22,7 +22,11 @@ import org.eclipse.jetty.util.QuotedStringTokenizer;
 import org.eclipse.jetty.util.StringUtil;
 
 /**
- * An HTTP Field
+ * <p>An immutable class representing an HTTP header or trailer.</p>
+ * <p>{@link HttpField} has a case-insensitive name and case sensitive value,
+ * and may be multi-valued with each value separated by a comma.</p>
+ *
+ * @see HttpFields
  */
 public class HttpField
 {
@@ -38,12 +42,26 @@ public class HttpField
      */
     public static final QuotedStringTokenizer NAME_VALUE_TOKENIZER = QuotedStringTokenizer.builder().delimiters("=").build();
 
-    private static final String __zeroQuality = "q=0";
+    private static final String ZERO_QUALITY = "q=0";
+
     private final HttpHeader _header;
     private final String _name;
     private final String _value;
     private int _hash = 0;
 
+    /**
+     * <p>Creates a new {@link HttpField} with the given {@link HttpHeader},
+     * name string and value string.</p>
+     * <p>A {@code null} field value may be passed as parameter, and will
+     * be converted to the empty string.
+     * This allows the direct constructions of fields that have no value,
+     * and/or {@link HttpField} subclasses that override {@link #getValue()}.</p>
+     *
+     * @param header the {@link HttpHeader} referencing a well-known HTTP header name;
+     * may be {@code null} in case of an unknown or custom HTTP header name
+     * @param name the field name; if {@code null}, then {@link HttpHeader#asString()} is used
+     * @param value the field value; if {@code null}, the empty string will be used
+     */
     public HttpField(HttpHeader header, String name, String value)
     {
         _header = header;
@@ -51,37 +69,58 @@ public class HttpField
             _name = _header.asString();
         else
             _name = Objects.requireNonNull(name, "name");
-        _value = value;
+        _value = value != null ? value : "";
     }
 
+    /**
+     * <p>Creates a new {@link HttpField} with the given {@link HttpHeader}
+     * and value string.</p>
+     *
+     * @param header the non-{@code null} {@link HttpHeader} referencing a well-known HTTP header name
+     * @param value the field value; if {@code null}, the empty string will be used
+     */
     public HttpField(HttpHeader header, String value)
     {
         this(header, header.asString(), value);
     }
 
+    /**
+     * <p>Creates a new {@link HttpField} with the given {@link HttpHeader}
+     * and value.</p>
+     *
+     * @param header the non-{@code null} {@link HttpHeader} referencing a well-known HTTP header name
+     * @param value the field value; if {@code null}, the empty string will be used
+     */
     public HttpField(HttpHeader header, HttpHeaderValue value)
     {
-        this(header, header.asString(), value.asString());
+        this(header, header.asString(), value != null ? value.asString() : null);
     }
 
+    /**
+     * <p>Creates a new {@link HttpField} with the given name string
+     * and value string.</p>
+     *
+     * @param name the non-{@code null} field name
+     * @param value the field value; if {@code null}, the empty string will be used
+     */
     public HttpField(String name, String value)
     {
         this(HttpHeader.CACHE.get(name), name, value);
     }
 
     /**
-     * Get field value parameters. Some field values can have parameters. This method separates the
-     * value from the parameters and optionally populates a map with the parameters. For example:
+     * <p>Returns the field value and its parameters.</p>
+     * <p>A field value may have parameters, typically separated by {@code ;}, for example</p>
+     * <pre>{@code
+     * Content-Type: text/plain; charset=UTF-8
+     * Accept: text/html, text/plain; q=0.5
+     * }</pre>
      *
-     * <PRE>
-     *
-     * FieldName : Value ; param1=val1 ; param2=val2
-     *
-     * </PRE>
-     *
-     * @param valueParams The Field value, possibly with parameters.
-     * @param parameters A map to populate with the parameters, or null
-     * @return The value.
+     * @param valueParams the field value, possibly with parameters
+     * @param parameters An output map to populate with the parameters,
+     * or {@code null} to strip the parameters
+     * @return the field value without parameters
+     * @see #stripParameters(String)
      */
     public static String getValueParameters(String valueParams, Map<String, String> parameters)
     {
@@ -91,6 +130,7 @@ public class HttpField
         Iterator<String> tokens = PARAMETER_TOKENIZER.tokenize(valueParams);
         if (!tokens.hasNext())
             return null;
+
         String value = tokens.next();
         if (parameters != null)
         {
@@ -114,41 +154,35 @@ public class HttpField
     }
 
     /**
-     * Get field value without parameters. Some field values can have parameters. This method separates the
-     * value from the parameters and optionally populates a map with the parameters. For example:
+     * <p>Returns the field value, stripped of its parameters.</p>
      *
-     * <PRE>
-     *
-     * FieldName : Value ; param1=val1 ; param2=val2
-     *
-     * </PRE>
-     *
-     * @param value The Field value, possibly with parameters.
-     * @return The value.
+     * @param value the field value, possibly with parameters
+     * @return the field value without parameters
+     * @see #getValueParameters(String, Map)
      */
     public static String stripParameters(String value)
     {
-        if (value == null)
-            return null;
-
-        int i = value.indexOf(';');
-        if (i < 0)
-            return value;
-        return value.substring(0, i).trim();
+        return getValueParameters(value, null);
     }
 
+    /**
+     * @deprecated use {@link #getValueParameters(String, Map)} instead
+     */
+    @Deprecated
     public static String valueParameters(String value, Map<String, String> parameters)
     {
         return getValueParameters(value, parameters);
     }
 
     /**
-     * Look for a value in a possible multivalued field
+     * <p>Returns whether this field value, possibly multi-valued,
+     * contains the specified search string, case-insensitively.</p>
+     * <p>Only values, and not parameters, are compared with the
+     * search string.</p>
      *
-     * @param search Values to search for (case-insensitive)
-     * @return True iff the value is contained in the field value entirely or
-     * as an element of a quoted comma separated list. List element parameters (eg qualities) are ignored,
-     * except if they are q=0, in which case the item itself is ignored.
+     * @param search the string to search for
+     * @return whether this field value, possibly multi-valued,
+     * contains the specified search string
      */
     public boolean contains(String search)
     {
@@ -156,13 +190,15 @@ public class HttpField
     }
 
     /**
-     * Look for a value in a possible multivalued field
+     * <p>Returns whether the given value, possibly multi-valued,
+     * contains the specified search string, case-insensitively.</p>
+     * <p>Only values, and not parameters, are compared with the
+     * search string.</p>
      *
-     * @param value The field value to search in.
-     * @param search Values to search for (case-insensitive)
-     * @return True iff the value is contained in the field value entirely or
-     * as an element of a quoted comma separated list. List element parameters (eg qualities) are ignored,
-     * except if they are q=0, in which case the item itself is ignored.
+     * @param value the value string to search into
+     * @param search the string to search for
+     * @return whether the given value, possibly multi-valued,
+     * contains the specified search string
      */
     public static boolean contains(String value, String search)
     {
@@ -299,7 +335,7 @@ public class HttpField
                     {
                         case ',': // end token
                             // Have we matched the token and not q=0?
-                            if (param != __zeroQuality.length() && match == search.length())
+                            if (param != ZERO_QUALITY.length() && match == search.length())
                                 return true;
                             param = 0;
                             state = 0;
@@ -312,8 +348,8 @@ public class HttpField
                         default:
                             if (param >= 0)
                             {
-                                if (param < __zeroQuality.length())
-                                    param = c == __zeroQuality.charAt(param) ? (param + 1) : -1;
+                                if (param < ZERO_QUALITY.length())
+                                    param = c == ZERO_QUALITY.charAt(param) ? (param + 1) : -1;
                                 else if (c != '0' && c != '.')
                                     param = -1;
                             }
@@ -323,7 +359,16 @@ public class HttpField
             }
         }
 
-        return param != __zeroQuality.length() && match == search.length();
+        return param != ZERO_QUALITY.length() && match == search.length();
+    }
+
+    @Override
+    public int hashCode()
+    {
+        int vhc = Objects.hashCode(getValue());
+        if (_header == null)
+            return vhc ^ nameHashCode();
+        return vhc ^ _header.hashCode();
     }
 
     @Override
@@ -340,36 +385,60 @@ public class HttpField
         return Objects.equals(getValue(), field.getValue());
     }
 
+    /**
+     * @return the {@link HttpHeader} of this field, or {@code null}
+     */
     public HttpHeader getHeader()
     {
         return _header;
     }
 
+    /**
+     * @return the value of this field as an {@code int}
+     * @throws NumberFormatException if the value cannot be parsed as an {@code int}
+     */
     public int getIntValue()
     {
         return Integer.parseInt(getValue());
     }
 
+    /**
+     * @return the value of this field as an {@code long}
+     * @throws NumberFormatException if the value cannot be parsed as an {@code long}
+     */
     public long getLongValue()
     {
         return Long.parseLong(getValue());
     }
 
+    /**
+     * @return the field name in lower-case
+     */
     public String getLowerCaseName()
     {
         return _header != null ? _header.lowerCaseName() : StringUtil.asciiToLowerCase(_name);
     }
 
+    /**
+     * @return the field name
+     */
     public String getName()
     {
         return _name;
     }
 
+    /**
+     * @return the field value
+     */
     public String getValue()
     {
         return _value;
     }
 
+    /**
+     * @return the field values as a {@code String[]}
+     * @see #getValueList()
+     */
     public String[] getValues()
     {
         List<String> values = getValueList();
@@ -378,6 +447,15 @@ public class HttpField
         return values.toArray(String[]::new);
     }
 
+    /**
+     * <p>Returns a list of the field values.</p>
+     * <p>If the field value is multi-valued, the encoded field value is split
+     * into multiple values using {@link QuotedCSV} and the different values
+     * returned in a list.</p>
+     * <p>If the field value is single-valued, the value is wrapped into a list.</p>
+     *
+     * @return a list of the field values
+     */
     public List<String> getValueList()
     {
         String value = getValue();
@@ -387,15 +465,14 @@ public class HttpField
         return list.getValues();
     }
 
-    @Override
-    public int hashCode()
-    {
-        int vhc = Objects.hashCode(getValue());
-        if (_header == null)
-            return vhc ^ nameHashCode();
-        return vhc ^ _header.hashCode();
-    }
-
+    /**
+     * <p>Returns whether this field has the same name as the given field.</p>
+     * <p>The comparison of field name is case-insensitive via
+     * {@link #is(String)}.</p>
+     *
+     * @param field the field to compare the name to
+     * @return whether this field has the same name as the given field
+     */
     public boolean isSameName(HttpField field)
     {
         if (field == null)
@@ -404,9 +481,16 @@ public class HttpField
             return true;
         if (_header != null && _header == field.getHeader())
             return true;
-        return _name.equalsIgnoreCase(field.getName());
+        return is(field.getName());
     }
 
+    /**
+     * <p>Returns whether this field name is the same as the given string.</p>
+     * <p>The comparison of field name is case-insensitive.</p>
+     *
+     * @param name the field name to compare to
+     * @return whether this field name is the same as the given string
+     */
     public boolean is(String name)
     {
         return _name.equalsIgnoreCase(name);
@@ -439,6 +523,9 @@ public class HttpField
         return getName() + ": " + (v == null ? "" : v);
     }
 
+    /**
+     * <p>A specialized {@link HttpField} whose value is an {@code int}.</p>
+     */
     public static class IntValueHttpField extends HttpField
     {
         private final int _int;
@@ -482,6 +569,9 @@ public class HttpField
         }
     }
 
+    /**
+     * <p>A specialized {@link HttpField} whose value is a {@code long}.</p>
+     */
     public static class LongValueHttpField extends HttpField
     {
         private final long _long;

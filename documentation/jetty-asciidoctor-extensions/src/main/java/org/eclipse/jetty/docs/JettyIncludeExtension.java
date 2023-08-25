@@ -89,9 +89,10 @@ public class JettyIncludeExtension implements ExtensionRegistry
         {
             try
             {
+                String jettyVersion = (String)document.getAttribute("project-version");
                 // Document attributes are converted by Asciidoctor to lowercase.
                 Path jettyDocsPath = Path.of((String)document.getAttribute("project-basedir"));
-                Path jettyHome = jettyDocsPath.resolve("../../jetty-home/target/jetty-home").normalize();
+                Path jettyHome = jettyDocsPath.resolve("target/jetty-home-" + jettyVersion).normalize();
 
                 JettyHomeTester jetty = JettyHomeTester.Builder.newInstance()
                     .jettyHome(jettyHome)

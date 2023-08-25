@@ -599,7 +599,7 @@ public class GzipHandler extends Handler.Wrapper implements GzipFactory
         String mimeType = mimeTypes.getMimeByExtension(requestURI);
         if (mimeType != null)
         {
-            mimeType = HttpField.valueParameters(mimeType, null);
+            mimeType = HttpField.getValueParameters(mimeType, null);
             return isMimeTypeDeflatable(mimeType);
         }
         return true;

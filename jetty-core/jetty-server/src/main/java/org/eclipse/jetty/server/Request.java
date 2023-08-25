@@ -130,39 +130,47 @@ public interface Request extends Attributes, Content.Source
     String getId();
 
     /**
-     * @return the {@link Components} to be used with this request.
+     * @return the {@link Components} to be used with this {@code Request}.
      */
     Components getComponents();
 
     /**
-     * @return the {@code ConnectionMetaData} associated to this request
+     * @return the {@code ConnectionMetaData} associated to this {@code Request}
      */
     ConnectionMetaData getConnectionMetaData();
 
     /**
-     * @return the HTTP method of this request
+     * @return the HTTP method of this {@code Request}
      */
     String getMethod();
 
     /**
-     * @return the HTTP URI of this request
+     * @return the HTTP URI of this {@code Request}
      * @see #getContextPath(Request)
      * @see #getPathInContext(Request)
      */
     HttpURI getHttpURI();
 
     /**
-     * @return the {@code Context} associated with this {@code Request}
+     * Get the {@link Context} associated with this {@code Request}.
+     * <p>Note that a {@code Request} should always have an associated {@link Context} since if the
+     * {@code Request} is not being handled by a {@link org.eclipse.jetty.server.handler.ContextHandler} then
+     * the {@link Context} from {@link Server#getContext()} will be used.
+     * @return the {@link Context} associated with this {@code Request}. Never {@code null}.
+     * @see org.eclipse.jetty.server.handler.ContextHandler
+     * @see Server#getContext()
      */
     Context getContext();
 
     /**
-     * <p>Returns the context path of this Request.</p>
-     * <p>This is equivalent to {@code request.getContext().getContextPath()}.</p>
+     * Get the context path of this {@code Request}.
+     * This is equivalent to {@code request.getContext().getContextPath()}.
      *
      * @param request The request to get the context path from.
-     * @return The contextPath of the request.
+     * @return The encoded context path of the {@link Context} or {@code null}.
+     * @see #getContext()
      * @see Context#getContextPath()
+     * @see Server#getContext()
      */
     static String getContextPath(Request request)
     {
@@ -184,7 +192,7 @@ public interface Request extends Attributes, Content.Source
     }
 
     /**
-     * @return the HTTP headers of this request
+     * @return the HTTP headers of this {@code Request}
      */
     HttpFields getHeaders();
 
@@ -201,7 +209,7 @@ public interface Request extends Attributes, Content.Source
     void demand(Runnable demandCallback);
 
     /**
-     * @return the HTTP trailers of this request, or {@code null} if they are not present
+     * @return the HTTP trailers of this {@code Request}, or {@code null} if they are not present
      */
     HttpFields getTrailers();
 
@@ -584,6 +592,50 @@ public interface Request extends Attributes, Content.Source
     }
 
     /**
+     * This interface will be detected by the {@link #wrap(Request, HttpURI)} static method to wrap the request
+     * changing its target to a given path. If a {@link Request} implements this interface it can
+     * be obtained with the {@link Request#as(Request, Class)} method.
+     * @see #serveAs(Request, HttpURI)
+     */
+    interface ServeAs extends Request
+    {
+        /**
+         * Wraps a request but changes the uri so that it can be served to a different target.
+         * @param request the original request.
+         * @param uri the uri of the new target.
+         * @return the request wrapped to the new target.
+         */
+        Request wrap(Request request, HttpURI uri);
+    }
+
+    /**
+     * Return a request with its {@link HttpURI} changed to the supplied target.
+     * If the passed request or any of the requests that it wraps implements {@link ServeAs} then
+     * {@link ServeAs#wrap(Request, HttpURI)} will be used to do the wrap,
+     * otherwise a simple {@link Request.Wrapper} may be returned.
+     * @param request the original request.
+     * @param uri the new URI to target.
+     * @return the possibly wrapped request to target the new URI.
+     */
+    static Request serveAs(Request request, HttpURI uri)
+    {
+        if (request.getHttpURI().equals(uri))
+            return request;
+
+        ServeAs serveAs = Request.as(request, ServeAs.class);
+        if (serveAs != null)
+            return serveAs.wrap(request, uri);
+        return new Request.Wrapper(request)
+        {
+            @Override
+            public HttpURI getHttpURI()
+            {
+                return uri;
+            }
+        };
+    }
+
+    /**
      * <p>A handler for an HTTP request and response.</p>
      * <p>The handling typically involves reading the request content (if any) and producing a response.</p>
      */
@@ -778,7 +830,7 @@ public interface Request extends Attributes, Content.Source
     }
 
     @SuppressWarnings("unchecked")
-    static <T extends Request> T as(Request request, Class<T> type)
+    static <T> T as(Request request, Class<T> type)
     {
         while (request != null)
         {
@@ -790,15 +842,10 @@ public interface Request extends Attributes, Content.Source
     }
 
     @SuppressWarnings("unchecked")
-    static <T extends Request.Wrapper, R> R get(Request request, Class<T> type, Function<T, R> getter)
+    static <T, R> R get(Request request, Class<T> type, Function<T, R> getter)
     {
-        while (request instanceof Request.Wrapper wrapper)
-        {
-            if (type.isInstance(wrapper))
-                return getter.apply((T)wrapper);
-            request = wrapper.getWrapped();
-        }
-        return null;
+        T t = Request.as(request, type);
+        return (t == null) ? null : getter.apply(t);
     }
 
     static Request unWrap(Request request)

@@ -26,7 +26,6 @@ import org.eclipse.jetty.server.Server;
 import org.eclipse.jetty.server.handler.ContextHandler;
 import org.eclipse.jetty.session.SessionHandler;
 import org.junit.jupiter.api.AfterEach;
-import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 
 import static org.hamcrest.MatcherAssert.assertThat;
@@ -43,8 +42,7 @@ public class FormAuthenticatorTest
     private SessionHandler _sessionHandler;
     private SecurityHandler.PathMapped _securityHandler;
 
-    @BeforeEach
-    public void configureServer() throws Exception
+    public void configureServer(boolean dispatch) throws Exception
     {
         _server = new Server();
 
@@ -96,7 +94,7 @@ public class FormAuthenticatorTest
         _securityHandler.put("/any/*", Constraint.ANY_USER);
         _securityHandler.put("/known/*", Constraint.KNOWN_ROLE);
         _securityHandler.put("/admin/*", Constraint.from("admin"));
-        _securityHandler.setAuthenticator(new FormAuthenticator("/login", "/error", false));
+        _securityHandler.setAuthenticator(new FormAuthenticator("/login", "/error", dispatch));
         _server.start();
     }
 
@@ -113,6 +111,8 @@ public class FormAuthenticatorTest
     @Test
     public void testLoginRedirect() throws Exception
     {
+        configureServer(false);
+
         String response;
         response = _connector.getResponse("GET /ctx/some/thing HTTP/1.0\r\n\r\n");
         assertThat(response, containsString("HTTP/1.1 200 OK"));
@@ -146,6 +146,8 @@ public class FormAuthenticatorTest
     @Test
     public void testUseExistingSession() throws Exception
     {
+        configureServer(false);
+
         String response;
         response = _connector.getResponse("GET /ctx/some/thing?action=session HTTP/1.0\r\n\r\n");
         assertThat(response, containsString("HTTP/1.1 200 OK"));
@@ -162,6 +164,8 @@ public class FormAuthenticatorTest
     @Test
     public void testError() throws Exception
     {
+        configureServer(false);
+
         String response;
 
         String sessionId = "unknown";
@@ -193,6 +197,8 @@ public class FormAuthenticatorTest
     @Test
     public void testLoginQuery() throws Exception
     {
+        configureServer(false);
+
         String response;
 
         String sessionId = "unknown";
@@ -229,6 +235,8 @@ public class FormAuthenticatorTest
     @Test
     public void testLoginForm() throws Exception
     {
+        configureServer(false);
+
         String response;
 
         String sessionId = "unknown";
@@ -273,6 +281,8 @@ public class FormAuthenticatorTest
     @Test
     public void testRedirectToPost() throws Exception
     {
+        configureServer(false);
+
         String response;
         String sessionId = "unknown";
 
@@ -305,5 +315,27 @@ public class FormAuthenticatorTest
         assertThat(response, containsString("name1:value1,"));
         assertThat(response, containsString("name2:value2,"));
         assertThat(response, containsString("user is OK"));
+    }
+
+    @Test
+    public void testLoginDispatch() throws Exception
+    {
+        configureServer(true);
+
+        String response = _connector.getResponse("GET /ctx/admin/user HTTP/1.0\r\nHost:host:8888\r\n\r\n");
+        assertThat(response, containsString("HTTP/1.1 200 OK"));
+        assertThat(response, containsString("Deferred"));
+        assertThat(response, containsString("path=/ctx/login,"));
+    }
+
+    @Test
+    public void testErrorDispatch() throws Exception
+    {
+        configureServer(true);
+
+        String response = _connector.getResponse("GET /ctx/j_security_check?j_username=user&j_password=wrong HTTP/1.0\r\nHost:host:8888\r\n\r\n");
+        assertThat(response, containsString("HTTP/1.1 200 OK"));
+        assertThat(response, containsString("Deferred"));
+        assertThat(response, containsString("path=/ctx/error,"));
     }
 }

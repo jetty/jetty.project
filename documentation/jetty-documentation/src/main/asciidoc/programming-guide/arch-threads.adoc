@@ -176,7 +176,35 @@ Jetty's xref:pg-arch-threads[threading architecture] requires a more sophisticat
 
 Jetty's default thread pool implementation is link:{javadoc-url}/org/eclipse/jetty/util/thread/QueuedThreadPool.html[`QueuedThreadPool`].
 
-`QueuedThreadPool` integrates with the xref:pg-arch-bean[Jetty component model], implements `Executor`, provides a `TryExecutor` implementation (discussed in the xref:pg-arch-threads-execution-strategy-adaptive[adaptive execution strategy section]), and supports xref:pg-arch-threads-thread-pool-virtual-threads[virtual threads] (introduced as a preview feature in Java 19).
+`QueuedThreadPool` integrates with the xref:pg-arch-bean[Jetty component model], implements `Executor`, provides a `TryExecutor` implementation (discussed in the xref:pg-arch-threads-execution-strategy-adaptive[adaptive execution strategy section]), and supports xref:pg-arch-threads-thread-pool-virtual-threads[virtual threads] (introduced as a preview feature in Java 19 and Java 20, and as an official feature since Java 21).
+
+[[pg-arch-threads-thread-pool-queue]]
+===== Thread Pool Queue
+
+`QueuedThreadPool` uses a `BlockingQueue` to store tasks that will be executed as soon as a thread is available.
+
+It is common, but too simplistic, to think that an upper bound to the thread pool queue is a good way to limit the number of concurrent HTTP requests.
+
+In case of asynchronous servers like Jetty, applications may have more than one thread handling a single request.
+Furthermore, the server implementation may produce a number of tasks that _must_ be run by the thread pool, otherwise the server stops working properly.
+
+Therefore, the "one-thread-per-request" model is too simplistic, and the real model that predicts the number of threads that are necessary is too complicated to produce an accurate value.
+
+For example, a sudden large spike of requests arriving to the server may find the thread pool in an idle state where the number of threads is shrunk to the minimum.
+This will cause many tasks to be queued up, way before an HTTP request is even read from the network.
+Add to this that there could be I/O failures processing requests, which may be submitted as a new task to the thread pool.
+Furthermore, multiplexed protocols like HTTP/2 have a much more complex model (due to xref:pg-server-http2-flow-control[data flow control]) where the implementation must be able to write in order to progress reads (and must be able to read in order to progress writes), possibly causing more tasks to be submitted to the thread pool.
+
+If any of the submitted tasks is rejected because the queue is bounded the server may grind to a halt, because the task _must_ be executed, sometimes _necessarily_ in a different thread.
+
+For these reasons:
+
+IMPORTANT: The thread pool queue must be unbounded.
+
+There are better strategies to limit the number of concurrent requests, discussed in xref:pg-server-http-handler-use-limit[this section].
+
+[[pg-arch-threads-thread-pool-configuration]]
+===== `QueuedThreadPool` configuration
 
 `QueuedThreadPool` can be configured with a `maxThreads` value.
 
@@ -203,9 +231,9 @@ A good balance between `QueuedThreadPool.idleTimeout` and `QueuedThreadPool.maxE
 
 [[pg-arch-threads-thread-pool-virtual-threads]]
 ===== Virtual Threads
-Virtual threads have been introduced in Java 19 as a preview feature.
+Virtual threads have been introduced in Java 19 and Java 20 as a preview feature, and have become an official feature since Java 21.
 
-NOTE: In Java versions where virtual threads are a preview feature, remember to add `+--enable-preview+` to the command line options to use virtual threads.
+NOTE: In Java versions where virtual threads are a preview feature, remember to add `+--enable-preview+` to the JVM command line options to use virtual threads.
 
 `QueuedThreadPool` can be configured to use virtual threads by specifying the virtual threads `Executor`:
 

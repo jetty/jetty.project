@@ -33,11 +33,11 @@
 
     <!-- dependency versions -->
     <alpn.agent.version>2.0.10</alpn.agent.version>
-    <ant.version>1.10.13</ant.version>
+    <ant.version>1.10.14</ant.version>
     <apache.avro.version>1.11.2</apache.avro.version>
     <apache.httpclient.version>4.5.14</apache.httpclient.version>
     <apache.httpcore.version>4.4.16</apache.httpcore.version>
-    <asciidoctorj-diagram.version>2.2.9</asciidoctorj-diagram.version>
+    <asciidoctorj-diagram.version>2.2.11</asciidoctorj-diagram.version>
     <asciidoctorj.version>2.5.10</asciidoctorj.version>
     <mina.core.version>2.2.2</mina.core.version>
     <asm.version>9.5</asm.version>
@@ -87,7 +87,7 @@
     <jboss.logging.annotations.version>2.2.1.Final</jboss.logging.annotations.version>
     <jboss.logging.processor.version>2.2.1.Final</jboss.logging.processor.version>
     <jboss.logging.version>3.5.3.Final</jboss.logging.version>
-    <jboss-logmanager.version>3.0.1.Final</jboss-logmanager.version>
+    <jboss-logmanager.version>3.0.2.Final</jboss-logmanager.version>
     <jboss-threads.version>3.5.0.Final</jboss-threads.version>
     <jetty-assembly-descriptors.version>1.1</jetty-assembly-descriptors.version>
     <jetty.perf-helper.version>1.0.7</jetty.perf-helper.version>
@@ -107,6 +107,7 @@
     <mariadb.version>3.1.4</mariadb.version>
     <mariadb.docker.version>10.3.6</mariadb.docker.version>
     <maven.deps.version>3.9.0</maven.deps.version>
+    <maven-build-cache.version>1.0.1</maven-build-cache.version>
     <maven-artifact-transfer.version>0.13.1</maven-artifact-transfer.version>
     <maven.resolver.version>1.9.15</maven.resolver.version>
     <maven.version>3.9.0</maven.version>
@@ -156,7 +157,7 @@
     <flatten.maven.plugin.version>1.3.0</flatten.maven.plugin.version>
     <groovy.version>4.0.6</groovy.version>
     <h2spec.maven.plugin.version>1.0.10</h2spec.maven.plugin.version>
-    <jacoco.maven.plugin.version>0.8.8</jacoco.maven.plugin.version>
+    <jacoco.maven.plugin.version>0.8.10</jacoco.maven.plugin.version>
     <jetty-version.maven.plugin.version>2.7</jetty-version.maven.plugin.version>
     <license.maven.plugin.version>4.1</license.maven.plugin.version>
     <maven.antrun.plugin.version>3.1.0</maven.antrun.plugin.version>
@@ -167,7 +168,7 @@
     <maven.compiler.plugin.version>3.11.0</maven.compiler.plugin.version>
     <maven.dependency.plugin.version>3.6.0</maven.dependency.plugin.version>
     <maven.deploy.plugin.version>3.1.1</maven.deploy.plugin.version>
-    <maven.enforcer.plugin.version>3.3.0</maven.enforcer.plugin.version>
+    <maven.enforcer.plugin.version>3.4.0</maven.enforcer.plugin.version>
     <maven.exec.plugin.version>3.1.0</maven.exec.plugin.version>
     <maven.gpg.plugin.version>3.1.0</maven.gpg.plugin.version>
     <maven.install.plugin.version>3.1.1</maven.install.plugin.version>
@@ -191,6 +192,8 @@
     <invoker.mergeUserSettings>false</invoker.mergeUserSettings>
     <it.debug>false</it.debug>
     <localRepoPath>${project.build.directory}/local-repo</localRepoPath>
+    <jettyHomeZipFileName>jetty-home.zip</jettyHomeZipFileName>
+    <jettyHomeZip>${project.build.directory}/${jettyHomeZipFileName}</jettyHomeZip>
     <jetty.surefire.argLine>-Dfile.encoding=UTF-8 -Duser.language=en -Duser.region=US -Djava.io.tmpdir=${project.build.directory} -showversion -Xmx6g -Xms4g -Xlog:gc:stderr:time,level,tags</jetty.surefire.argLine>
     <jetty.testtracker.log>true</jetty.testtracker.log>
     <jetty.unixdomain.dir>/tmp</jetty.unixdomain.dir>
@@ -201,6 +204,8 @@
     <!-- if changing this version please update default in RemoteInfinispanTestSupport you will get thanks from Eclipse IDE users -->
     <!-- but hey we have no more strange people?? :P -->
     <infinispan.docker.image.version>11.0.14.Final</infinispan.docker.image.version>
+
+    <project.build.outputTimestamp>2023-06-05T23:12:49Z</project.build.outputTimestamp>
   </properties>
 
   <licenses>
@@ -235,6 +240,13 @@
   </modules>
 
   <build>
+    <extensions>
+      <extension>
+        <groupId>org.apache.maven.extensions</groupId>
+        <artifactId>maven-build-cache-extension</artifactId>
+        <version>${maven-build-cache.version}</version>
+      </extension>
+    </extensions>
     <plugins>
       <plugin>
         <groupId>org.apache.maven.plugins</groupId>
@@ -275,8 +287,8 @@
             <configuration>
               <rules>
                 <requireMavenVersion>
-                  <version>[3.8.4,)</version>
-                  <message>[ERROR] OLD MAVEN [${maven.version}] in use, Jetty ${project.version} requires Maven 3.8.4 or newer</message>
+                  <version>[3.9.2,)</version>
+                  <message>[ERROR] OLD MAVEN [${maven.version}] in use, Jetty ${project.version} requires Maven 3.9.2 or newer</message>
                 </requireMavenVersion>
                 <requireJavaVersion>
                   <version>[17,)</version>
@@ -394,6 +406,7 @@
       </plugin>
       <!-- The source maven plugin creates the source bundle and adds manifest -->
       <!-- if removing this we need to add it back in eclipse-release profile -->
+<!--
       <plugin>
         <groupId>org.apache.maven.plugins</groupId>
         <artifactId>maven-source-plugin</artifactId>
@@ -408,6 +421,7 @@
           </execution>
         </executions>
       </plugin>
+-->
       <plugin>
         <groupId>com.mycila</groupId>
         <artifactId>license-maven-plugin</artifactId>
@@ -613,6 +627,7 @@
           <artifactId>maven-invoker-plugin</artifactId>
           <version>${maven.invoker.plugin.version}</version>
           <configuration>
+            <addTestClassPath>true</addTestClassPath>
             <mergeUserSettings>${invoker.mergeUserSettings}</mergeUserSettings>
             <writeJunitReport>true</writeJunitReport>
             <junitPackageName>org.eclipse.jetty.maven.its</junitPackageName>
@@ -626,8 +641,8 @@
             <cloneProjectsTo>${project.build.directory}/it</cloneProjectsTo>
             <localRepositoryPath>${localRepoPath}</localRepositoryPath>
             <settingsFile>${settingsPath}</settingsFile>
-            <ignoreFailures>true</ignoreFailures>
             <skipInvocation>${skipTests}</skipInvocation>
+            <streamLogsOnFailures>true</streamLogsOnFailures>
             <pomIncludes>
               <pomInclude>*/pom.xml</pomInclude>
             </pomIncludes>
@@ -1971,8 +1986,8 @@
                 <configuration>
                   <rules>
                     <requireJavaVersion>
-                      <version>[19,)</version>
-                      <message>[ERROR] OLD JDK [${java.version}] in use. Jetty Release ${project.version} MUST use JDK 19 or newer</message>
+                      <version>[21,)</version>
+                      <message>[ERROR] OLD JDK [${java.version}] in use. Jetty Release ${project.version} MUST use JDK 21 or newer</message>
                     </requireJavaVersion>
                   </rules>
                 </configuration>
@@ -2041,7 +2056,6 @@
       <id>ci</id>
       <properties>
         <surefire.rerunFailingTestsCount>0</surefire.rerunFailingTestsCount>
-        <settingsPath>${env.GLOBAL_MVN_SETTINGS}</settingsPath>
         <spotbugs.failOnError>false</spotbugs.failOnError>
         <!-- Defines a SpotBugs threshold. Use "Low" to discover low-priority bugs -->
         <spotbugs.threshold>Medium</spotbugs.threshold>
@@ -2049,7 +2063,8 @@
         <spotbugs.effort>Default</spotbugs.effort>
         <spotbugs.skip>false</spotbugs.skip>
         <spotbugs.onlyAnalyze>org.eclipse.jetty.*</spotbugs.onlyAnalyze>
-        <maven.repo.uri></maven.repo.uri>
+        <!-- need a good default value if running this profile locally with empty repo -->
+        <maven.repo.uri>https://repo.maven.apache.org/maven2/</maven.repo.uri>
         <home.start.timeout>120</home.start.timeout>
       </properties>
       <modules>
@@ -2081,6 +2096,18 @@
           </plugins>
         </pluginManagement>
         <plugins>
+          <plugin>
+            <groupId>org.apache.maven.plugins</groupId>
+            <artifactId>maven-javadoc-plugin</artifactId>
+            <executions>
+              <execution>
+                <phase>package</phase>
+                <goals>
+                  <goal>javadoc-no-fork</goal>
+                </goals>
+              </execution>
+            </executions>
+          </plugin>
           <plugin>
             <groupId>com.github.spotbugs</groupId>
             <artifactId>spotbugs-maven-plugin</artifactId>

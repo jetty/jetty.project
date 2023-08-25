@@ -13,6 +13,11 @@
 
 package org.eclipse.jetty.client;
 
+import java.util.ListIterator;
+
+import org.eclipse.jetty.client.transport.HttpResponse;
+import org.eclipse.jetty.http.HttpField;
+import org.eclipse.jetty.http.HttpHeader;
 import org.eclipse.jetty.io.ByteBufferPool;
 import org.eclipse.jetty.io.RetainableByteBuffer;
 
@@ -22,6 +27,8 @@ import org.eclipse.jetty.io.RetainableByteBuffer;
 public class GZIPContentDecoder extends org.eclipse.jetty.http.GZIPContentDecoder implements ContentDecoder
 {
     public static final int DEFAULT_BUFFER_SIZE = 8192;
+
+    private long decodedLength;
 
     public GZIPContentDecoder()
     {
@@ -39,10 +46,52 @@ public class GZIPContentDecoder extends org.eclipse.jetty.http.GZIPContentDecode
     }
 
     @Override
+    public void beforeDecoding(Response response)
+    {
+        HttpResponse httpResponse = (HttpResponse)response;
+        httpResponse.headers(headers ->
+        {
+            ListIterator<HttpField> iterator = headers.listIterator();
+            while (iterator.hasNext())
+            {
+                HttpField field = iterator.next();
+                HttpHeader header = field.getHeader();
+                if (header == HttpHeader.CONTENT_LENGTH)
+                {
+                    // Content-Length is not valid anymore while we are decoding.
+                    iterator.remove();
+                }
+                else if (header == HttpHeader.CONTENT_ENCODING)
+                {
+                    // Content-Encoding should be removed/modified as the content will be decoded.
+                    String value = field.getValue();
+                    int comma = value.lastIndexOf(",");
+                    if (comma < 0)
+                        iterator.remove();
+                    else
+                        iterator.set(new HttpField(HttpHeader.CONTENT_ENCODING, value.substring(0, comma)));
+                }
+            }
+        });
+    }
+
+    @Override
     protected boolean decodedChunk(RetainableByteBuffer chunk)
     {
+        decodedLength += chunk.remaining();
         super.decodedChunk(chunk);
         return true;
+    }
+
+    @Override
+    public void afterDecoding(Response response)
+    {
+        HttpResponse httpResponse = (HttpResponse)response;
+        httpResponse.headers(headers ->
+        {
+            headers.remove(HttpHeader.TRANSFER_ENCODING);
+            headers.put(HttpHeader.CONTENT_LENGTH, decodedLength);
+        });
     }
 
     /**

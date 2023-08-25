@@ -368,7 +368,7 @@ public class ErrorHandler implements Request.Handler
         }
     }
 
-    private void writeErrorJson(Request request, PrintWriter writer, int code, String message, Throwable cause, boolean showStacks)
+    protected void writeErrorJson(Request request, PrintWriter writer, int code, String message, Throwable cause, boolean showStacks)
     {
         Map<String, String> json = new HashMap<>();
 
