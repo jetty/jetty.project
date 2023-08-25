@@ -386,6 +386,7 @@ public class HttpClientTimeoutTest extends AbstractTest
 
     @ParameterizedTest
     @MethodSource("transports")
+    @Tag("DisableLeakTracking:client:FCGI")
     public void testVeryShortTimeout(Transport transport) throws Exception
     {
         start(transport, new EmptyServerHandler());

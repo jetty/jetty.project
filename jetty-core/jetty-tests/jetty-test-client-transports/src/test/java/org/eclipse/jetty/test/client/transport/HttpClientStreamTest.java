@@ -78,7 +78,6 @@ import static org.junit.jupiter.api.Assertions.assertSame;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
-@Tag("DisableLeakTracking")
 public class HttpClientStreamTest extends AbstractTest
 {
     @ParameterizedTest
@@ -215,6 +214,8 @@ public class HttpClientStreamTest extends AbstractTest
 
     @ParameterizedTest
     @MethodSource("transports")
+    @Tag("DisableLeakTracking:client:H2")
+    @Tag("DisableLeakTracking:client:H2C")
     public void testDownloadWithFailure(Transport transport) throws Exception
     {
         byte[] data = new byte[64 * 1024];
@@ -266,6 +267,7 @@ public class HttpClientStreamTest extends AbstractTest
 
     @ParameterizedTest
     @MethodSource("transports")
+    @Tag("DisableLeakTracking:client:FCGI")
     public void testInputStreamResponseListenerClosedBeforeReading(Transport transport) throws Exception
     {
         start(transport, new Handler.Abstract()
@@ -294,6 +296,9 @@ public class HttpClientStreamTest extends AbstractTest
 
     @ParameterizedTest
     @MethodSource("transports")
+    @Tag("DisableLeakTracking:client:HTTP")
+    @Tag("DisableLeakTracking:client:FCGI")
+    @Tag("DisableLeakTracking:client:UNIX_DOMAIN")
     public void testInputStreamResponseListenerClosedBeforeContent(Transport transport) throws Exception
     {
         AtomicReference<HandlerContext> contextRef = new AtomicReference<>();
@@ -337,6 +342,9 @@ public class HttpClientStreamTest extends AbstractTest
 
     @ParameterizedTest
     @MethodSource("transports")
+    @Tag("DisableLeakTracking:client:H2C")
+    @Tag("DisableLeakTracking:client:H3")
+    @Tag("DisableLeakTracking:client:FCGI")
     public void testInputStreamResponseListenerClosedWhileWaiting(Transport transport) throws Exception
     {
         byte[] chunk1 = new byte[]{0, 1};
@@ -389,6 +397,7 @@ public class HttpClientStreamTest extends AbstractTest
 
     @ParameterizedTest
     @MethodSource("transports")
+    @Tag("DisableLeakTracking:client:FCGI")
     public void testInputStreamResponseListenerFailedWhileWaiting(Transport transport) throws Exception
     {
         start(transport, new Handler.Abstract()
@@ -491,6 +500,8 @@ public class HttpClientStreamTest extends AbstractTest
 
     @ParameterizedTest
     @MethodSource("transports")
+    @Tag("DisableLeakTracking:client:H3")
+    @Tag("DisableLeakTracking:client:FCGI")
     @Tag("flaky")
     public void testDownloadWithCloseBeforeContent(Transport transport) throws Exception
     {
@@ -538,6 +549,9 @@ public class HttpClientStreamTest extends AbstractTest
 
     @ParameterizedTest
     @Tag("flaky")
+    @Tag("DisableLeakTracking:client:HTTP")
+    @Tag("DisableLeakTracking:client:FCGI")
+    @Tag("DisableLeakTracking:client:UNIX_DOMAIN")
     @MethodSource("transports")
     public void testDownloadWithCloseMiddleOfContent(Transport transport) throws Exception
     {
@@ -962,6 +976,11 @@ public class HttpClientStreamTest extends AbstractTest
 
     @ParameterizedTest
     @MethodSource("transports")
+    @Tag("DisableLeakTracking:server:HTTP")
+    @Tag("DisableLeakTracking:server:HTTPS")
+    @Tag("DisableLeakTracking:client:H3")
+    @Tag("DisableLeakTracking:server:FCGI")
+    @Tag("DisableLeakTracking:server:UNIX_DOMAIN")
     public void testUploadWithConcurrentServerCloseClosesStream(Transport transport) throws Exception
     {
         CountDownLatch serverLatch = new CountDownLatch(1);

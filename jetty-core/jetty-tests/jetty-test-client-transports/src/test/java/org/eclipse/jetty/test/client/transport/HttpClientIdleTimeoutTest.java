@@ -35,7 +35,7 @@ public class HttpClientIdleTimeoutTest extends AbstractTest
 
     @ParameterizedTest
     @MethodSource("transports")
-    @Tag("DisableLeakTracking")
+    @Tag("DisableLeakTracking:server:FCGI")
     public void testClientIdleTimeout(Transport transport) throws Exception
     {
         start(transport, new Handler.Abstract()
@@ -71,7 +71,7 @@ public class HttpClientIdleTimeoutTest extends AbstractTest
 
     @ParameterizedTest
     @MethodSource("transports")
-    @Tag("DisableLeakTracking")
+    @Tag("DisableLeakTracking:server:FCGI")
     public void testRequestIdleTimeout(Transport transport) throws Exception
     {
         start(transport, new Handler.Abstract()

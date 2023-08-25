@@ -13,14 +13,7 @@
 
 package org.eclipse.jetty.fcgi.server;
 
-import java.lang.management.ManagementFactory;
-import java.lang.reflect.AnnotatedElement;
-import java.nio.file.Files;
-import java.nio.file.Path;
-import java.util.Comparator;
 import java.util.concurrent.TimeUnit;
-import java.util.stream.Stream;
-import javax.management.MBeanServer;
 
 import org.awaitility.Awaitility;
 import org.eclipse.jetty.client.HttpClient;
@@ -38,9 +31,6 @@ import org.eclipse.jetty.util.component.LifeCycle;
 import org.eclipse.jetty.util.thread.QueuedThreadPool;
 import org.hamcrest.Matchers;
 import org.junit.jupiter.api.AfterEach;
-import org.junit.jupiter.api.Tag;
-import org.junit.jupiter.api.Tags;
-import org.junit.jupiter.api.TestInfo;
 
 import static org.junit.jupiter.api.Assertions.fail;
 
@@ -80,13 +70,10 @@ public abstract class AbstractHttpClientServerTest
     }
 
     @AfterEach
-    public void dispose(TestInfo testInfo) throws Exception
+    public void dispose()
     {
         try
         {
-            if (isLeakTrackingDisabled(testInfo))
-                return;
-
             if (serverBufferPool != null)
             {
                 try
@@ -95,8 +82,6 @@ public abstract class AbstractHttpClientServerTest
                 }
                 catch (Exception e)
                 {
-                    String className = testInfo.getTestClass().orElseThrow().getName();
-                    dumpHeap("server-" + className);
                     fail(e.getMessage() + "\n---\nServer Leaks: " + serverBufferPool.dumpLeaks() + "---\n");
                 }
             }
@@ -108,8 +93,6 @@ public abstract class AbstractHttpClientServerTest
                 }
                 catch (Exception e)
                 {
-                    String className = testInfo.getTestClass().orElseThrow().getName();
-                    dumpHeap("client-" + className);
                     fail(e.getMessage() + "\n---\nClient Leaks: " + clientBufferPool.dumpLeaks() + "---\n");
                 }
             }
@@ -119,53 +102,5 @@ public abstract class AbstractHttpClientServerTest
             LifeCycle.stop(client);
             LifeCycle.stop(server);
         }
-    }
-
-    private static boolean isLeakTrackingDisabled(TestInfo testInfo)
-    {
-        String disableLeakTrackingTagValue = "DisableLeakTracking";
-        return isAnnotatedWithTagValue(testInfo.getTestMethod().orElseThrow(), disableLeakTrackingTagValue) ||
-            isAnnotatedWithTagValue(testInfo.getTestClass().orElseThrow(), disableLeakTrackingTagValue);
-    }
-
-    private static boolean isAnnotatedWithTagValue(AnnotatedElement annotatedElement, String tagValue)
-    {
-        Tags tags = annotatedElement.getAnnotation(Tags.class);
-        if (tags != null)
-        {
-            for (Tag tag : tags.value())
-            {
-                if (tag != null && tagValue.equalsIgnoreCase(tag.value()))
-                    return true;
-            }
-            return false;
-        }
-        else
-        {
-            Tag tag = annotatedElement.getAnnotation(Tag.class);
-            return tag != null && tagValue.equalsIgnoreCase(tag.value());
-        }
-    }
-
-    private static void dumpHeap(String testMethodName) throws Exception
-    {
-        Path targetDir = Path.of("target/leaks");
-        if (Files.exists(targetDir))
-        {
-            try (Stream<Path> stream = Files.walk(targetDir))
-            {
-                stream.sorted(Comparator.reverseOrder())
-                    .map(Path::toFile)
-                    .forEach(java.io.File::delete);
-            }
-        }
-        Files.createDirectories(targetDir);
-        String dumpName = targetDir.resolve(testMethodName + ".hprof").toString();
-
-        MBeanServer server = ManagementFactory.getPlatformMBeanServer();
-        Class<?> mxBeanClass = Class.forName("com.sun.management.HotSpotDiagnosticMXBean");
-        Object mxBean = ManagementFactory.newPlatformMXBeanProxy(
-            server, "com.sun.management:type=HotSpotDiagnostic", mxBeanClass);
-        mxBeanClass.getMethod("dumpHeap", String.class, boolean.class).invoke(mxBean, dumpName, true);
     }
 }

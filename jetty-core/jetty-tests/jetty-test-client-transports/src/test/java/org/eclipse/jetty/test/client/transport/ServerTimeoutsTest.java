@@ -95,7 +95,9 @@ public class ServerTimeoutsTest extends AbstractTest
 
     @ParameterizedTest
     @MethodSource("transportsAndTrueIdleTimeoutListeners")
-    @Tag("DisableLeakTracking")
+    @Tag("DisableLeakTracking:server:HTTP")
+    @Tag("DisableLeakTracking:server:HTTPS")
+    @Tag("DisableLeakTracking:server:UNIX_DOMAIN")
     public void testIdleTimeoutWithDemand(Transport transport, boolean listener) throws Exception
     {
         AtomicBoolean listenerCalled = new AtomicBoolean();
