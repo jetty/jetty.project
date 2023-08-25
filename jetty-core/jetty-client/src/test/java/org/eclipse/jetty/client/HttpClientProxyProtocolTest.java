@@ -85,9 +85,9 @@ public class HttpClientProxyProtocolTest
     {
         LifeCycle.stop(client);
         LifeCycle.stop(server);
-        Set<ArrayByteBufferPool.Tracking.TrackingBuffer> serverLeaks = serverBufferPool.getLeaks();
+        Set<ArrayByteBufferPool.Tracking.Buffer> serverLeaks = serverBufferPool.getLeaks();
         assertEquals(0, serverLeaks.size(), serverBufferPool.dumpLeaks());
-        Set<ArrayByteBufferPool.Tracking.TrackingBuffer> clientLeaks = clientBufferPool.getLeaks();
+        Set<ArrayByteBufferPool.Tracking.Buffer> clientLeaks = clientBufferPool.getLeaks();
         assertEquals(0, clientLeaks.size(), clientBufferPool.dumpLeaks());
     }
 

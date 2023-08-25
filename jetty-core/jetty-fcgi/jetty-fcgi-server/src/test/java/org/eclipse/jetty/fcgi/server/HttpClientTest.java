@@ -239,8 +239,7 @@ public class HttpClientTest extends AbstractHttpClientServerTest
                 Content.Sink.write(response, false, UTF_8.encode(paramValue1));
                 String paramValue2 = fields.getValue(paramName2);
                 assertEquals("", paramValue2);
-                Content.Sink.write(response, true, UTF_8.encode("empty"));
-                callback.succeeded();
+                Content.Sink.write(response, true, "empty", callback);
                 return true;
             }
         });
@@ -274,8 +273,7 @@ public class HttpClientTest extends AbstractHttpClientServerTest
                     Content.Sink.write(response, false, UTF_8.encode(paramValue));
                 }
                 String paramValue2 = fields.getValue(paramName2);
-                Content.Sink.write(response, true, UTF_8.encode(paramValue2));
-                callback.succeeded();
+                Content.Sink.write(response, true, paramValue2, callback);
                 return true;
             }
         });
@@ -771,8 +769,7 @@ public class HttpClientTest extends AbstractHttpClientServerTest
             public boolean handle(org.eclipse.jetty.server.Request request, org.eclipse.jetty.server.Response response, Callback callback) throws Exception
             {
                 Content.Sink.write(response, false, UTF_8.encode("A"));
-                Content.Sink.write(response, true, UTF_8.encode("B"));
-                callback.succeeded();
+                Content.Sink.write(response, true, "B", callback);
                 return true;
             }
         });

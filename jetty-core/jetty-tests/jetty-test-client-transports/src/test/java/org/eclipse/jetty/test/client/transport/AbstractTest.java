@@ -126,36 +126,28 @@ public class AbstractTest
         try
         {
             if (serverBufferPool != null && !isLeakTrackingDisabled(testInfo, "server"))
-            {
-                try
-                {
-                    Awaitility.await().atMost(3, TimeUnit.SECONDS).until(() -> serverBufferPool.getLeaks().size(), Matchers.is(0));
-                }
-                catch (Exception e)
-                {
-                    String className = testInfo.getTestClass().orElseThrow().getName();
-                    dumpHeap("server-" + className);
-                    fail(e.getMessage() + "\n---\nServer Leaks: " + serverBufferPool.dumpLeaks() + "---\n");
-                }
-            }
+                assertNoLeaks(serverBufferPool, testInfo, "server-", "\n---\nServer Leaks: " + serverBufferPool.dumpLeaks() + "---\n");
             if (clientBufferPool != null && !isLeakTrackingDisabled(testInfo, "client"))
-            {
-                try
-                {
-                    Awaitility.await().atMost(3, TimeUnit.SECONDS).until(() -> clientBufferPool.getLeaks().size(), Matchers.is(0));
-                }
-                catch (Exception e)
-                {
-                    String className = testInfo.getTestClass().orElseThrow().getName();
-                    dumpHeap("client-" + className);
-                    fail(e.getMessage() + "\n---\nClient Leaks: " + clientBufferPool.dumpLeaks() + "---\n");
-                }
-            }
+                assertNoLeaks(clientBufferPool, testInfo, "client-", "\n---\nClient Leaks: " + clientBufferPool.dumpLeaks() + "---\n");
         }
         finally
         {
             LifeCycle.stop(client);
             LifeCycle.stop(server);
+        }
+    }
+
+    private void assertNoLeaks(ArrayByteBufferPool.Tracking bufferPool, TestInfo testInfo, String prefix, String msg) throws Exception
+    {
+        try
+        {
+            Awaitility.await().atMost(3, TimeUnit.SECONDS).until(() -> bufferPool.getLeaks().size(), Matchers.is(0));
+        }
+        catch (Exception e)
+        {
+            String className = testInfo.getTestClass().orElseThrow().getName();
+            dumpHeap(prefix + className + msg);
+            fail(e.getMessage());
         }
     }
 

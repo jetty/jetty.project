@@ -60,6 +60,7 @@ import static org.junit.jupiter.api.Assertions.assertEquals;
 public class ServerConnectorSslServerTest extends HttpServerTestBase
 {
     private SSLContext _sslContext;
+    private ArrayByteBufferPool.Tracking trackingBufferPool;
 
     public ServerConnectorSslServerTest()
     {
@@ -73,10 +74,10 @@ public class ServerConnectorSslServerTest extends HttpServerTestBase
         SslContextFactory.Server sslContextFactory = new SslContextFactory.Server();
         sslContextFactory.setKeyStorePath(keystorePath);
         sslContextFactory.setKeyStorePassword("storepwd");
-        ArrayByteBufferPool.Tracking pool = new ArrayByteBufferPool.Tracking();
+        trackingBufferPool = new ArrayByteBufferPool.Tracking();
 
         HttpConnectionFactory httpConnectionFactory = new HttpConnectionFactory();
-        ServerConnector connector = new ServerConnector(_server, null, null, pool, 1, 1, AbstractConnectionFactory.getFactories(sslContextFactory, httpConnectionFactory));
+        ServerConnector connector = new ServerConnector(_server, null, null, trackingBufferPool, 1, 1, AbstractConnectionFactory.getFactories(sslContextFactory, httpConnectionFactory));
         SecureRequestCustomizer secureRequestCustomer = new SecureRequestCustomizer();
         secureRequestCustomer.setSslSessionAttribute("SSL_SESSION");
         httpConnectionFactory.getHttpConfiguration().addCustomizer(secureRequestCustomer);
@@ -110,8 +111,7 @@ public class ServerConnectorSslServerTest extends HttpServerTestBase
     @AfterEach
     public void dispose() throws Exception
     {
-        ArrayByteBufferPool.Tracking byteBufferPool = (ArrayByteBufferPool.Tracking)_server.getConnectors()[0].getByteBufferPool();
-        assertThat("Server Leaks: " + byteBufferPool.dumpLeaks(), byteBufferPool.getLeaks().size(), Matchers.is(0));
+        assertThat("Server Leaks: " + trackingBufferPool.dumpLeaks(), trackingBufferPool.getLeaks().size(), Matchers.is(0));
     }
 
     @Override
