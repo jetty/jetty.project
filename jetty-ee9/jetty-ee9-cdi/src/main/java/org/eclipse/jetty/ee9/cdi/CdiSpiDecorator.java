@@ -82,7 +82,10 @@ public class CdiSpiDecorator implements Decorator
             Class<?> injectionTargetFactoryClass = classLoader.loadClass("jakarta.enterprise.inject.spi.InjectionTargetFactory");
             Class<?> creationalContextClass = classLoader.loadClass("jakarta.enterprise.context.spi.CreationalContext");
             Class<?> contextualClass = classLoader.loadClass("jakarta.enterprise.context.spi.Contextual");
-
+            
+            //Use reflection rather than MethodHandles. Reflection respects the classloader that loaded the class, which means
+            //that as it's a WebAppClassLoader it will do hiding of the cdi spi classes that are on the server classpath. MethodHandles
+            //see both the cdi api classes from the server classpath and the webapp classpath and throws an exception.
             _current = cdiClass.getMethod("current", null);
             _getBeanManager = cdiClass.getMethod("getBeanManager", null);
             _createAnnotatedType = beanManagerClass.getMethod("createAnnotatedType", Class.class);
