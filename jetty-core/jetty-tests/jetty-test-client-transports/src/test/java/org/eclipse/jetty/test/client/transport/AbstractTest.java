@@ -146,8 +146,8 @@ public class AbstractTest
         catch (Exception e)
         {
             String className = testInfo.getTestClass().orElseThrow().getName();
-            dumpHeap(prefix + className + msg);
-            fail(e.getMessage());
+            dumpHeap(prefix + className);
+            fail(e.getMessage() + msg);
         }
     }
 
