@@ -46,11 +46,6 @@ public class HttpGenerator
 
     private static final byte[] __colon_space = new byte[]{':', ' '};
     public static final MetaData.Response CONTINUE_100_INFO = new MetaData.Response(100, null, HttpVersion.HTTP_1_1, HttpFields.EMPTY);
-    public static final MetaData.Response PROGRESS_102_INFO = new MetaData.Response(102, null, HttpVersion.HTTP_1_1, HttpFields.EMPTY);
-    public static final MetaData.Response RESPONSE_400_INFO =
-        new MetaData.Response(HttpStatus.BAD_REQUEST_400, null, HttpVersion.HTTP_1_1, HttpFields.build().add(HttpFields.CONNECTION_CLOSE), 0);
-    public static final MetaData.Response RESPONSE_500_INFO =
-        new MetaData.Response(INTERNAL_SERVER_ERROR_500, null, HttpVersion.HTTP_1_1, HttpFields.build().add(HttpFields.CONNECTION_CLOSE), 0);
 
     // states
     public enum State
@@ -808,12 +803,6 @@ public class HttpGenerator
     private static final byte[] CONNECTION_CLOSE = StringUtil.getBytes("Connection: close\r\n");
     private static final byte[] HTTP_1_1_SPACE = StringUtil.getBytes(HttpVersion.HTTP_1_1 + " ");
     private static final byte[] TRANSFER_ENCODING_CHUNKED = StringUtil.getBytes("Transfer-Encoding: chunked\r\n");
-    private static final byte[][] SEND = new byte[][]{
-        new byte[0],
-        StringUtil.getBytes("Server: Jetty(12.x.x)\r\n"),
-        StringUtil.getBytes("X-Powered-By: Jetty(12.x.x)\r\n"),
-        StringUtil.getBytes("Server: Jetty(12.x.x)\r\nX-Powered-By: Jetty(12.x.x)\r\n")
-    };
 
     // Build cache of response lines for status
     private static class PreparedResponse

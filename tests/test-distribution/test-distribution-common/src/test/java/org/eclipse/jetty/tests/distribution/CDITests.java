@@ -84,7 +84,6 @@ public class CDITests extends AbstractJettyHomeTest
             .jettyVersion(jettyVersion)
             .jettyBase(jettyBase)
             .jvmArgs(jvmArgs == null ? Collections.emptyList() : Arrays.asList(jvmArgs.split("\\s+")))
-            .mavenLocalRepository(System.getProperty("mavenRepoPath"))
             .build();
 
         String mods = "http," +

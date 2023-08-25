@@ -388,14 +388,7 @@ public class ResourceHandler extends Handler.Wrapper
         protected void rehandleWelcome(Request request, Response response, Callback callback, String welcomeTarget) throws Exception
         {
             HttpURI newHttpURI = HttpURI.build(request.getHttpURI()).pathQuery(welcomeTarget);
-            Request newRequest = new Request.Wrapper(request)
-            {
-                @Override
-                public HttpURI getHttpURI()
-                {
-                    return newHttpURI;
-                }
-            };
+            Request newRequest = Request.serveAs(request, newHttpURI);
 
             if (getServer().handle(newRequest, response, callback))
                 return;

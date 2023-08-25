@@ -11,7 +11,7 @@
 // ========================================================================
 //
 
-[[pg-server-http-handler-implement]]
+[[pg-server-http-handler-impl]]
 ===== Implementing Handler
 
 The `Handler` API consist fundamentally of just one method:

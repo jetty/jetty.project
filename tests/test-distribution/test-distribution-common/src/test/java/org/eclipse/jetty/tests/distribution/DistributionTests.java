@@ -85,7 +85,6 @@ public class DistributionTests extends AbstractJettyHomeTest
         JettyHomeTester distribution = JettyHomeTester.Builder.newInstance()
             .jettyVersion(jettyVersion)
             .jettyBase(jettyBase)
-            .mavenLocalRepository(System.getProperty("mavenRepoPath"))
             .build();
 
         try (JettyHomeTester.Run run1 = distribution.start("--add-modules=http"))
@@ -117,7 +116,6 @@ public class DistributionTests extends AbstractJettyHomeTest
         JettyHomeTester distribution = JettyHomeTester.Builder.newInstance()
             .jettyVersion(jettyVersion)
                 .jettyBase(jettyBase)
-            .mavenLocalRepository(System.getProperty("mavenRepoPath"))
             .build();
 
         String mods = String.join(",",
@@ -172,7 +170,6 @@ public class DistributionTests extends AbstractJettyHomeTest
         JettyHomeTester distribution = JettyHomeTester.Builder.newInstance()
             .jettyVersion(jettyVersion)
                 .jettyBase(jettyBase)
-            .mavenLocalRepository(System.getProperty("mavenRepoPath"))
             .build();
 
         String mods = String.join(",",
@@ -219,7 +216,6 @@ public class DistributionTests extends AbstractJettyHomeTest
         JettyHomeTester distribution = JettyHomeTester.Builder.newInstance()
             .jettyVersion(jettyVersion)
             .jettyBase(jettyBase)
-            .mavenLocalRepository(System.getProperty("mavenRepoPath"))
             .build();
 
         String mods = String.join(",",
@@ -278,7 +274,6 @@ public class DistributionTests extends AbstractJettyHomeTest
         JettyHomeTester distribution = JettyHomeTester.Builder.newInstance()
             .jettyVersion(jettyVersion)
             .jettyBase(jettyBase)
-            .mavenLocalRepository(System.getProperty("mavenRepoPath"))
             .build();
 
         String mods = String.join(",",
@@ -321,7 +316,6 @@ public class DistributionTests extends AbstractJettyHomeTest
         JettyHomeTester distribution = JettyHomeTester.Builder.newInstance()
             .jettyVersion(jettyVersion)
             .jettyBase(jettyBase)
-            .mavenLocalRepository(System.getProperty("mavenRepoPath"))
             .build();
 
         String mods = String.join(",",
@@ -364,7 +358,6 @@ public class DistributionTests extends AbstractJettyHomeTest
         JettyHomeTester distribution = JettyHomeTester.Builder.newInstance()
             .jettyVersion(jettyVersion)
             .jettyBase(jettyBase)
-            .mavenLocalRepository(System.getProperty("mavenRepoPath"))
             .build();
 
         boolean ssl = "https".equals(scheme);
@@ -415,7 +408,6 @@ public class DistributionTests extends AbstractJettyHomeTest
         JettyHomeTester distribution = JettyHomeTester.Builder.newInstance()
             .jettyVersion(jettyVersion)
             .jettyBase(jettyBase)
-            .mavenLocalRepository(System.getProperty("mavenRepoPath"))
             .build();
 
         boolean ssl = "https".equals(scheme);
@@ -465,7 +457,6 @@ public class DistributionTests extends AbstractJettyHomeTest
         JettyHomeTester distribution = JettyHomeTester.Builder.newInstance()
             .jettyVersion(jettyVersion)
             .jettyBase(jettyBase)
-            .mavenLocalRepository(System.getProperty("mavenRepoPath"))
             .build();
 
         String downloadURI = "https://repo1.maven.org/maven2/org/eclipse/jetty/maven-metadata.xml";
@@ -487,7 +478,6 @@ public class DistributionTests extends AbstractJettyHomeTest
         JettyHomeTester distribution = JettyHomeTester.Builder.newInstance()
             .jettyVersion(jettyVersion)
             .jettyBase(jettyBase)
-            .mavenLocalRepository(System.getProperty("mavenRepoPath"))
             .build();
 
         String mods = String.join(",",
@@ -550,7 +540,6 @@ public class DistributionTests extends AbstractJettyHomeTest
         JettyHomeTester distribution = JettyHomeTester.Builder.newInstance()
             .jettyVersion(jettyVersion)
             .jettyBase(jettyBase)
-            .mavenLocalRepository(System.getProperty("mavenRepoPath"))
             .build();
 
         String mods = String.join(",",
@@ -634,7 +623,6 @@ public class DistributionTests extends AbstractJettyHomeTest
         JettyHomeTester distribution = JettyHomeTester.Builder.newInstance()
             .jettyVersion(jettyVersion)
             .jettyBase(jettyBase)
-            .mavenLocalRepository(System.getProperty("mavenRepoPath"))
             .build();
 
         try (JettyHomeTester.Run run1 = distribution.start("--approve-all-licenses", "--add-modules=http,logging-log4j2"))
@@ -671,7 +659,6 @@ public class DistributionTests extends AbstractJettyHomeTest
         JettyHomeTester distribution = JettyHomeTester.Builder.newInstance()
             .jettyVersion(jettyVersion)
             .jettyBase(jettyBase)
-            .mavenLocalRepository(System.getProperty("mavenRepoPath"))
             .build();
 
         try (JettyHomeTester.Run run1 = distribution.start("--approve-all-licenses", "--add-modules=http,logging-jul"))
@@ -707,7 +694,6 @@ public class DistributionTests extends AbstractJettyHomeTest
         JettyHomeTester distribution = JettyHomeTester.Builder.newInstance()
             .jettyVersion(jettyVersion)
             .jettyBase(jettyBase)
-            .mavenLocalRepository(System.getProperty("mavenRepoPath"))
             .build();
 
         try (JettyHomeTester.Run run1 = distribution.start("--approve-all-licenses", "--add-modules=http,logging-jul-capture"))
@@ -770,7 +756,6 @@ public class DistributionTests extends AbstractJettyHomeTest
         JettyHomeTester distribution = JettyHomeTester.Builder.newInstance()
             .jettyVersion(jettyVersion)
             .jettyBase(jettyBase)
-            .mavenLocalRepository(System.getProperty("mavenRepoPath"))
             .build();
 
         try (JettyHomeTester.Run run1 = distribution.start("--add-modules=https,test-keystore"))
@@ -859,7 +844,6 @@ public class DistributionTests extends AbstractJettyHomeTest
         JettyHomeTester distribution1 = JettyHomeTester.Builder.newInstance()
             .jettyVersion(jettyVersion)
             .jettyBase(jettyBase)
-            .mavenLocalRepository(System.getProperty("mavenRepoPath"))
             .build();
 
         try (JettyHomeTester.Run run1 = distribution1.start("--approve-all-licenses", "--add-modules=logging-logback,http"))
@@ -876,7 +860,6 @@ public class DistributionTests extends AbstractJettyHomeTest
 
         JettyHomeTester distribution2 = JettyHomeTester.Builder.newInstance()
             .jettyVersion(jettyVersion)
-            .mavenLocalRepository(System.getProperty("mavenRepoPath"))
             .build();
 
         // Try the modules in reverse order, since it may execute a different code path.
@@ -902,7 +885,6 @@ public class DistributionTests extends AbstractJettyHomeTest
         JettyHomeTester distribution = JettyHomeTester.Builder.newInstance()
             .jettyVersion(jettyVersion)
             .jettyBase(jettyBase)
-            .mavenLocalRepository(System.getProperty("mavenRepoPath"))
             .build();
 
         try (JettyHomeTester.Run run1 = distribution.start("--add-modules=unixdomain-http"))
@@ -936,7 +918,6 @@ public class DistributionTests extends AbstractJettyHomeTest
         JettyHomeTester distribution = JettyHomeTester.Builder.newInstance()
             .jettyVersion(jettyVersion)
             .jettyBase(jettyBase)
-            .mavenLocalRepository(System.getProperty("mavenRepoPath"))
             .build();
 
         Path jettyBaseModules = jettyBase.resolve("modules");
@@ -970,7 +951,6 @@ public class DistributionTests extends AbstractJettyHomeTest
         JettyHomeTester distribution = JettyHomeTester.Builder.newInstance()
             .jettyVersion(jettyVersion)
             .jettyBase(jettyBase)
-            .mavenLocalRepository(System.getProperty("mavenRepoPath"))
             .build();
 
         Path jettyBaseModules = jettyBase.resolve("modules");
@@ -1010,7 +990,6 @@ public class DistributionTests extends AbstractJettyHomeTest
         JettyHomeTester distribution = JettyHomeTester.Builder.newInstance()
             .jettyVersion(jettyVersion)
             .jettyBase(jettyBase)
-            .mavenLocalRepository(System.getProperty("mavenRepoPath"))
             .build();
 
         try (JettyHomeTester.Run run1 = distribution.start("--approve-all-licenses", "--add-modules=http,well-known"))
@@ -1054,7 +1033,6 @@ public class DistributionTests extends AbstractJettyHomeTest
         JettyHomeTester distribution = JettyHomeTester.Builder.newInstance()
             .jettyVersion(jettyVersion)
             .jettyBase(jettyBase)
-            .mavenLocalRepository(System.getProperty("mavenRepoPath"))
             .build();
 
         Path jettyBaseModules = jettyBase.resolve("modules");
@@ -1106,7 +1084,6 @@ public class DistributionTests extends AbstractJettyHomeTest
         JettyHomeTester distribution = JettyHomeTester.Builder.newInstance()
             .jettyVersion(jettyVersion)
             .jettyBase(jettyBase)
-            .mavenLocalRepository(System.getProperty("mavenRepoPath"))
             .build();
 
         try (JettyHomeTester.Run run1 = distribution.start("--approve-all-licenses", "--add-modules=http3,test-keystore"))
@@ -1142,7 +1119,6 @@ public class DistributionTests extends AbstractJettyHomeTest
         JettyHomeTester distribution = JettyHomeTester.Builder.newInstance()
             .jettyVersion(jettyVersion)
             .jettyBase(jettyBase)
-            .mavenLocalRepository(System.getProperty("mavenRepoPath"))
             .build();
 
         try (JettyHomeTester.Run run1 = distribution.start("--add-to-start=server,logging-jetty"))
@@ -1168,7 +1144,6 @@ public class DistributionTests extends AbstractJettyHomeTest
         JettyHomeTester distribution = JettyHomeTester.Builder.newInstance()
             .jettyVersion(jettyVersion)
             .jettyBase(jettyBase)
-            .mavenLocalRepository(System.getProperty("mavenRepoPath"))
             .build();
 
         String[] args1 = {"--add-module=server,http,deploy,requestlog"};
@@ -1221,7 +1196,6 @@ public class DistributionTests extends AbstractJettyHomeTest
         JettyHomeTester distribution = JettyHomeTester.Builder.newInstance()
             .jettyVersion(jettyVersion)
             .jettyBase(jettyBase)
-            .mavenLocalRepository(System.getProperty("mavenRepoPath"))
             .build();
 
         try (JettyHomeTester.Run run1 = distribution.start(List.of("--add-modules=resources,http,fcgi,fcgi-proxy,core-deploy")))
@@ -1326,7 +1300,6 @@ public class DistributionTests extends AbstractJettyHomeTest
         JettyHomeTester distribution = JettyHomeTester.Builder.newInstance()
             .jettyVersion(jettyVersion)
             .jettyBase(jettyBase)
-            .mavenLocalRepository(System.getProperty("mavenRepoPath"))
             .build();
 
         String mods = String.join(",",
@@ -1443,7 +1416,7 @@ public class DistributionTests extends AbstractJettyHomeTest
     }
 
     @Test
-    @DisabledForJreRange(max = JRE.JAVA_18)
+    @EnabledForJreRange(min = JRE.JAVA_19, max = JRE.JAVA_20)
     public void testVirtualThreadPoolPreview() throws Exception
     {
         Path jettyBase = newTestJettyBaseDirectory();
@@ -1451,7 +1424,6 @@ public class DistributionTests extends AbstractJettyHomeTest
         JettyHomeTester distribution = JettyHomeTester.Builder.newInstance()
             .jettyVersion(jettyVersion)
             .jettyBase(jettyBase)
-            .mavenLocalRepository(System.getProperty("mavenRepoPath"))
             .build();
 
         try (JettyHomeTester.Run run1 = distribution.start("--add-modules=threadpool-virtual-preview,http"))
@@ -1482,7 +1454,6 @@ public class DistributionTests extends AbstractJettyHomeTest
         JettyHomeTester distribution = JettyHomeTester.Builder.newInstance()
             .jettyVersion(jettyVersion)
             .jettyBase(jettyBase)
-            .mavenLocalRepository(System.getProperty("mavenRepoPath"))
             .build();
 
         try (JettyHomeTester.Run run1 = distribution.start("--add-modules=threadpool-virtual,http"))
@@ -1513,7 +1484,6 @@ public class DistributionTests extends AbstractJettyHomeTest
         JettyHomeTester distribution = JettyHomeTester.Builder.newInstance()
             .jettyVersion(jettyVersion)
             .jettyBase(jettyBase)
-            .mavenLocalRepository(System.getProperty("mavenRepoPath"))
             .build();
 
         String mods = String.join(",",
@@ -1570,7 +1540,6 @@ public class DistributionTests extends AbstractJettyHomeTest
         JettyHomeTester distribution = JettyHomeTester.Builder.newInstance()
             .jettyVersion(jettyVersion)
             .jettyBase(jettyBase)
-            .mavenLocalRepository(System.getProperty("mavenRepoPath"))
             .build();
 
         int httpPort = distribution.freePort();

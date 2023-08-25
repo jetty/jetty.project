@@ -211,6 +211,30 @@
         </executions>
       </plugin>
       <plugin>
+        <groupId>org.apache.maven.plugins</groupId>
+        <artifactId>maven-dependency-plugin</artifactId>
+        <executions>
+          <execution>
+            <id>unpack-jetty-home</id>
+            <phase>generate-resources</phase>
+            <goals>
+              <goal>unpack</goal>
+            </goals>
+            <configuration>
+              <artifactItems>
+                <artifactItem>
+                  <groupId>org.eclipse.jetty</groupId>
+                  <artifactId>jetty-home</artifactId>
+                  <version>${project.version}</version>
+                  <type>zip</type>
+                </artifactItem>
+              </artifactItems>
+              <outputDirectory>${project.build.directory}/</outputDirectory>
+            </configuration>
+          </execution>
+        </executions>
+      </plugin>
+      <plugin>
         <artifactId>maven-assembly-plugin</artifactId>
         <configuration>
           <descriptors>
@@ -327,6 +351,13 @@
     <dependency>
       <groupId>org.eclipse.jetty.ee10.websocket</groupId>
       <artifactId>jetty-ee10-websocket-jakarta-server</artifactId>
+    </dependency>
+    <dependency>
+      <groupId>org.eclipse.jetty</groupId>
+      <artifactId>jetty-home</artifactId>
+      <version>${project.version}</version>
+      <type>zip</type>
+      <optional>true</optional>
     </dependency>
   </dependencies>
 </project>

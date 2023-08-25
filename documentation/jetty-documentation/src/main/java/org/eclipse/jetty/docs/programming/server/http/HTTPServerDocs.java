@@ -555,14 +555,7 @@ public class HTTPServerDocs
                     HttpURI newURI = HttpURI.build(uri).path(newPath).asImmutable();
 
                     // Modify the request object by wrapping the HttpURI
-                    Request newRequest = new Request.Wrapper(request)
-                    {
-                        @Override
-                        public HttpURI getHttpURI()
-                        {
-                            return newURI;
-                        }
-                    };
+                    Request newRequest = Request.serveAs(request, newURI);
 
                     // Forward to the next Handler using the wrapped Request.
                     return super.handle(newRequest, response, callback);

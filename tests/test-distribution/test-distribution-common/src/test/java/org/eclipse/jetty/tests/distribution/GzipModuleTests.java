@@ -22,7 +22,6 @@ import org.eclipse.jetty.http.HttpHeader;
 import org.eclipse.jetty.http.HttpStatus;
 import org.eclipse.jetty.tests.hometester.JettyHomeTester;
 import org.junit.jupiter.api.Disabled;
-import org.junit.jupiter.api.extension.ExtendWith;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.ValueSource;
 
@@ -45,7 +44,6 @@ public class GzipModuleTests extends AbstractJettyHomeTest
         JettyHomeTester distribution = JettyHomeTester.Builder.newInstance()
             .jettyVersion(jettyVersion)
             .jettyBase(jettyBase)
-            .mavenLocalRepository(System.getProperty("mavenRepoPath"))
             .build();
 
         int httpPort = distribution.freePort();
@@ -88,7 +86,6 @@ public class GzipModuleTests extends AbstractJettyHomeTest
         JettyHomeTester distribution = JettyHomeTester.Builder.newInstance()
             .jettyVersion(jettyVersion)
             .jettyBase(jettyBase)
-            .mavenLocalRepository(System.getProperty("mavenRepoPath"))
             .build();
 
         int httpPort = distribution.freePort();
@@ -132,7 +129,6 @@ public class GzipModuleTests extends AbstractJettyHomeTest
         JettyHomeTester distribution = JettyHomeTester.Builder.newInstance()
             .jettyVersion(jettyVersion)
             .jettyBase(jettyBase)
-            .mavenLocalRepository(System.getProperty("mavenRepoPath"))
             .build();
 
         int httpPort = distribution.freePort();

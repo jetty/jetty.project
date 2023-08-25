@@ -135,7 +135,9 @@ public class HttpClientIdleTimeoutTest extends AbstractTest
         Thread.sleep(2 * idleTimeout);
 
         // Make sure we can make another request successfully.
-        ContentResponse response2 = client.newRequest(newURI(transport)).send();
+        ContentResponse response2 = client.newRequest(newURI(transport))
+            .timeout(5, TimeUnit.SECONDS)
+            .send();
         assertEquals(HttpStatus.OK_200, response2.getStatus());
     }
 }

@@ -191,11 +191,6 @@ public class ServletChannel
         return _httpInput;
     }
 
-    public ServletContextHandler.ServletContextApi getServletContextContext()
-    {
-        return _servletContextApi;
-    }
-
     public boolean isSendError()
     {
         return _state.isSendError();
