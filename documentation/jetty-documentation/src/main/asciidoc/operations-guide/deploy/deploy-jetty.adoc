@@ -37,6 +37,14 @@ A simple Jetty context XML file, for example named `wiki.xml` is the following:
 <2> Specifies the web application `contextPath`, which may be different from the `+*.war+` file name.
 <3> Specifies the file system path of the `+*.war+` file.
 
+The context XML file must be accompanied by a `+.properties+` file, specifying which environment (eg: `+ee8+`, `+ee9+` or`+ee10+`) to use:
+
+.wiki.properties
+[source,properties]
+----
+environment=ee10
+----
+
 The `$JETTY_BASE` directory would look like this:
 
 ----
@@ -47,6 +55,7 @@ $JETTY_BASE
 │   ├── deploy.ini
 │   └── http.ini
 └── webapps
+    ├── wiki.properties
     └── wiki.xml
 ----
 
