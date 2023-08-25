@@ -162,10 +162,7 @@ if proceedyn "Are you sure you want to release using above? (y/N)" n; then
 
     # This is equivalent to 'mvn release:perform'
     if proceedyn "Build/Deploy from tag $TAG_NAME? (Y/n)" y; then
-        git checkout $TAG_NAME
         mvn clean deploy -Peclipse-release $DEPLOY_OPTS
-        reportMavenTestFailures
-        git checkout $GIT_BRANCH_ID
     fi
     if proceedyn "Update working directory for $VER_NEXT? (Y/n)" y; then
         echo "Update VERSION.txt for $VER_NEXT"
