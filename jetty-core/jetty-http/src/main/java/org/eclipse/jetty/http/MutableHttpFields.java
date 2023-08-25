@@ -480,7 +480,7 @@ class MutableHttpFields implements HttpFields.Mutable
         @Override
         public HttpField next()
         {
-            if (_index == _size)
+            if (_index >= _size)
                 throw new NoSuchElementException(Integer.toString(_index));
             _last = _index++;
             return _fields[_last];
