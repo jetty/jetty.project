@@ -1631,7 +1631,7 @@ public class DistributionTests extends AbstractJettyHomeTest
                 "jetty.http.port=" + httpPort);
             try (JettyHomeTester.Run run2 = distribution.start(args))
             {
-                assertTrue(run2.awaitConsoleLogsFor("Started Server@", 10, TimeUnit.SECONDS));
+                assertTrue(run2.awaitConsoleLogsFor("Started oejs.Server@", START_TIMEOUT, TimeUnit.SECONDS));
                 startHttpClient();
 
                 // Excluded path returns 403 response.
