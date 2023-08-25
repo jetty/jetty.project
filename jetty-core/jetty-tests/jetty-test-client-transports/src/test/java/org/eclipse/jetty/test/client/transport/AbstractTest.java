@@ -125,10 +125,7 @@ public class AbstractTest
     {
         try
         {
-            if (isLeakTrackingDisabled(testInfo))
-                return;
-
-            if (serverBufferPool != null)
+            if (serverBufferPool != null && !isLeakTrackingDisabled(testInfo, "server"))
             {
                 try
                 {
@@ -141,7 +138,7 @@ public class AbstractTest
                     fail(e.getMessage() + "\n---\nServer Leaks: " + serverBufferPool.dumpLeaks() + "---\n");
                 }
             }
-            if (clientBufferPool != null)
+            if (clientBufferPool != null && !isLeakTrackingDisabled(testInfo, "client"))
             {
                 try
                 {
@@ -162,11 +159,52 @@ public class AbstractTest
         }
     }
 
-    private static boolean isLeakTrackingDisabled(TestInfo testInfo)
+    private static boolean isLeakTrackingDisabled(TestInfo testInfo, String tagSubValue)
     {
         String disableLeakTrackingTagValue = "DisableLeakTracking";
-        return isAnnotatedWithTagValue(testInfo.getTestMethod().orElseThrow(), disableLeakTrackingTagValue) ||
+        String[] split = testInfo.getDisplayName().replace(",", " ").split(" ");
+        String transports = split.length > 1 ? split[1] : "";
+        String[] transportNames = transports.split("\\|");
+
+        boolean disabled = isAnnotatedWithTagValue(testInfo.getTestMethod().orElseThrow(), disableLeakTrackingTagValue) ||
             isAnnotatedWithTagValue(testInfo.getTestClass().orElseThrow(), disableLeakTrackingTagValue);
+        if (disabled)
+        {
+            System.err.println("Not tracking leaks");
+            return true;
+        }
+
+        for (String transportName : transportNames)
+        {
+            disabled = isAnnotatedWithTagValue(testInfo.getTestMethod().orElseThrow(), disableLeakTrackingTagValue + ":" + transportName) ||
+                isAnnotatedWithTagValue(testInfo.getTestClass().orElseThrow(), disableLeakTrackingTagValue + ":" + transportName);
+            if (disabled)
+            {
+                System.err.println("Not tracking leaks for transport " + transportName);
+                return true;
+            }
+        }
+
+        disabled = isAnnotatedWithTagValue(testInfo.getTestMethod().orElseThrow(), disableLeakTrackingTagValue + ":" + tagSubValue) ||
+            isAnnotatedWithTagValue(testInfo.getTestClass().orElseThrow(), disableLeakTrackingTagValue + ":" + tagSubValue);
+        if (disabled)
+        {
+            System.err.println("Not tracking leaks for " + tagSubValue);
+            return true;
+        }
+
+        for (String transportName : transportNames)
+        {
+            disabled = isAnnotatedWithTagValue(testInfo.getTestMethod().orElseThrow(), disableLeakTrackingTagValue + ":" + tagSubValue + ":" + transportName) ||
+                isAnnotatedWithTagValue(testInfo.getTestClass().orElseThrow(), disableLeakTrackingTagValue + ":" + tagSubValue + ":" + transportName);
+            if (disabled)
+            {
+                System.err.println("Not tracking leaks for " + tagSubValue + " using transport " + transportName);
+                return true;
+            }
+        }
+
+        return disabled;
     }
 
     private static boolean isAnnotatedWithTagValue(AnnotatedElement annotatedElement, String tagValue)
