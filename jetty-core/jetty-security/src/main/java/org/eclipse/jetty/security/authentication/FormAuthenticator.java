@@ -270,7 +270,8 @@ public class FormAuthenticator extends LoginAuthenticator
             final String password = parameters.getValue(__J_PASSWORD);
 
             UserIdentity user = login(username, password, request, response);
-            LOG.debug("jsecuritycheck {} {}", username, user);
+            if (LOG.isDebugEnabled())
+                LOG.debug("jsecuritycheck {} {}", username, user);
             if (user != null)
             {
                 // Redirect to original request
@@ -285,12 +286,9 @@ public class FormAuthenticator extends LoginAuthenticator
             }
 
             // not authenticated
-            if (_formErrorPage == null)
-                Response.writeError(request, response, callback, HttpStatus.FORBIDDEN_403);
-            else
-                Response.sendRedirect(request, response, callback, encodeURL(URIUtil.addPaths(request.getContext().getContextPath(), _formErrorPage), request), true);
-
-            return AuthenticationState.SEND_FAILURE;
+            if (LOG.isDebugEnabled())
+                LOG.debug("auth failed {}=={}", username, _formErrorPage);
+            return sendError(request, response, callback);
         }
 
         // Look for cached authentication
@@ -313,7 +311,8 @@ public class FormAuthenticator extends LoginAuthenticator
         // if we can't send challenge
         if (response.isCommitted())
         {
-            LOG.debug("auth deferred {}", session == null ? null : session.getId());
+            if (LOG.isDebugEnabled())
+                LOG.debug("auth deferred {}", session == null ? null : session.getId());
             return null;
         }
 
@@ -352,8 +351,46 @@ public class FormAuthenticator extends LoginAuthenticator
         // send the challenge
         if (LOG.isDebugEnabled())
             LOG.debug("challenge {}->{}", session.getId(), _formLoginPage);
-        Response.sendRedirect(request, response, callback, encodeURL(URIUtil.addPaths(request.getContext().getContextPath(), _formLoginPage), request), true);
-        return AuthenticationState.CHALLENGE;
+        return sendChallenge(request, response, callback);
+    }
+
+    private AuthenticationState dispatch(String path, Request request, Response response, Callback callback)
+    {
+        try
+        {
+            String newPath = URIUtil.addPaths(request.getContext().getContextPath(), path);
+            HttpURI.Mutable newUri = HttpURI.build(request.getHttpURI()).pathQuery(newPath);
+            return new AuthenticationState.ServeAs(newUri);
+        }
+        catch (Throwable t)
+        {
+            Response.writeError(request, response, callback, t);
+            return AuthenticationState.SEND_FAILURE;
+        }
+    }
+
+    private AuthenticationState sendError(Request request, Response response, Callback callback)
+    {
+        if (_formErrorPage == null)
+            Response.writeError(request, response, callback, HttpStatus.FORBIDDEN_403);
+        else if (_dispatch)
+            return dispatch(_formErrorPage, request, response, callback);
+        else
+            Response.sendRedirect(request, response, callback, encodeURL(URIUtil.addPaths(request.getContext().getContextPath(), _formErrorPage), request), true);
+        return AuthenticationState.SEND_FAILURE;
+    }
+
+    private AuthenticationState sendChallenge(Request request, Response response, Callback callback)
+    {
+        if (_dispatch)
+        {
+            return dispatch(_formLoginPage, request, response, callback);
+        }
+        else
+        {
+            Response.sendRedirect(request, response, callback, encodeURL(URIUtil.addPaths(request.getContext().getContextPath(), _formLoginPage), request), true);
+            return AuthenticationState.SEND_FAILURE;
+        }
     }
 
     public boolean isJSecurityCheck(String uri)

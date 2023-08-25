@@ -150,7 +150,7 @@ public class TryPathsHandler extends Handler.Wrapper
         for (String path : paths)
         {
             String interpolated = interpolate(request, path);
-            TryPathsRequest tryRequest = new TryPathsRequest(request, interpolated);
+            Request tryRequest = tryPath(request, interpolated);
             if (LOG.isDebugEnabled())
                 LOG.debug("rewritten request URI {} -> {}", request.getHttpURI(), tryRequest.getHttpURI());
             boolean handled = super.handle(tryRequest, response, callback);
@@ -168,49 +168,37 @@ public class TryPathsHandler extends Handler.Wrapper
         return value.replace("$path", path);
     }
 
-    private class TryPathsRequest extends Request.Wrapper
+    private Request tryPath(Request wrapped, String newPathQuery)
     {
-        private final HttpURI uri;
+        HttpURI originalURI = wrapped.getHttpURI();
 
-        public TryPathsRequest(Request wrapped, String newPathQuery)
+        String originalPathAttribute = getOriginalPathAttribute();
+        if (originalPathAttribute != null)
         {
-            super(wrapped);
-
-            HttpURI originalURI = wrapped.getHttpURI();
-
-            String originalPathAttribute = getOriginalPathAttribute();
-            if (originalPathAttribute != null)
-            {
-                if (getAttribute(originalPathAttribute) == null)
-                    setAttribute(originalPathAttribute, Request.getPathInContext(wrapped));
-            }
-            String originalQueryAttribute = getOriginalQueryAttribute();
-            if (originalQueryAttribute != null)
-            {
-                if (getAttribute(originalQueryAttribute) == null)
-                    setAttribute(originalQueryAttribute, originalURI.getQuery());
-            }
-
-            String originalContextPath = Request.getContextPath(wrapped);
-            HttpURI.Mutable rewrittenURI = HttpURI.build(originalURI);
-            int queryIdx = newPathQuery.indexOf('?');
-            if (queryIdx >= 0)
-            {
-                String path = newPathQuery.substring(0, queryIdx);
-                rewrittenURI.path(URIUtil.addPaths(originalContextPath, path));
-                rewrittenURI.query(newPathQuery.substring(queryIdx + 1));
-            }
-            else
-            {
-                rewrittenURI.path(URIUtil.addPaths(originalContextPath, newPathQuery));
-            }
-            uri = rewrittenURI.asImmutable();
+            if (wrapped.getAttribute(originalPathAttribute) == null)
+                wrapped.setAttribute(originalPathAttribute, Request.getPathInContext(wrapped));
+        }
+        String originalQueryAttribute = getOriginalQueryAttribute();
+        if (originalQueryAttribute != null)
+        {
+            if (wrapped.getAttribute(originalQueryAttribute) == null)
+                wrapped.setAttribute(originalQueryAttribute, originalURI.getQuery());
         }
 
-        @Override
-        public HttpURI getHttpURI()
+        String originalContextPath = Request.getContextPath(wrapped);
+        HttpURI.Mutable rewrittenURI = HttpURI.build(originalURI);
+        int queryIdx = newPathQuery.indexOf('?');
+        if (queryIdx >= 0)
         {
-            return uri;
+            String path = newPathQuery.substring(0, queryIdx);
+            rewrittenURI.path(URIUtil.addPaths(originalContextPath, path));
+            rewrittenURI.query(newPathQuery.substring(queryIdx + 1));
         }
+        else
+        {
+            rewrittenURI.path(URIUtil.addPaths(originalContextPath, newPathQuery));
+        }
+        HttpURI uri = rewrittenURI.asImmutable();
+        return Request.serveAs(wrapped, uri);
     }
 }

@@ -214,7 +214,7 @@ public interface Response extends Content.Sink
      * @see Wrapper
      */
     @SuppressWarnings("unchecked")
-    static <T extends Response> T as(Response response, Class<T> type)
+    static <T> T as(Response response, Class<T> type)
     {
         while (response != null)
         {

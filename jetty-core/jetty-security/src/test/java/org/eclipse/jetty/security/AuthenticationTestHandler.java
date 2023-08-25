@@ -100,6 +100,7 @@ public class AuthenticationTestHandler extends Handler.Abstract
         else
             out.append(authenticationState).append(" is not OK");
 
+        out.append(",path=").append(request.getHttpURI().getCanonicalPath()).append(",");
         response.getHeaders().add(HttpHeader.CONTENT_TYPE, "text/plain");
         Content.Sink.write(response, true, out.toString(), callback);
         return true;
