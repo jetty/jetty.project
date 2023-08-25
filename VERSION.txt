@@ -1,3 +1,5 @@
+jetty-11.0.17-SNAPSHOT
+
 jetty-11.0.16 - 25 August 2023
  + 6140 Report total number of keys in SelectorManager
  + 7091 Add SOCKS5 support
