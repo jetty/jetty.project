@@ -37,7 +37,6 @@ import org.eclipse.jetty.http.HttpURI;
 import org.eclipse.jetty.http.HttpVersion;
 import org.eclipse.jetty.http.MetaData;
 import org.eclipse.jetty.http.MultiPartFormData.Parts;
-import org.eclipse.jetty.http.PreEncodedHttpField;
 import org.eclipse.jetty.http.Trailers;
 import org.eclipse.jetty.http.UriCompliance;
 import org.eclipse.jetty.io.ByteBufferPool;
@@ -97,8 +96,8 @@ public class HttpChannelState implements HttpChannel, Components
 
     private static final Logger LOG = LoggerFactory.getLogger(HttpChannelState.class);
     private static final Throwable DO_NOT_SEND = new Throwable("No Send");
-    private static final HttpField SERVER_VERSION = new PreEncodedHttpField(HttpHeader.SERVER, HttpConfiguration.SERVER_VERSION);
-    private static final HttpField POWERED_BY = new PreEncodedHttpField(HttpHeader.X_POWERED_BY, HttpConfiguration.SERVER_VERSION);
+    private static final HttpField SERVER_VERSION = new ResponseHttpFields.PersistentPreEncodedHttpField(HttpHeader.SERVER, HttpConfiguration.SERVER_VERSION);
+    private static final HttpField POWERED_BY = new ResponseHttpFields.PersistentPreEncodedHttpField(HttpHeader.X_POWERED_BY, HttpConfiguration.SERVER_VERSION);
 
     private final AutoLock _lock = new AutoLock();
     private final HandlerInvoker _handlerInvoker = new HandlerInvoker();
@@ -273,8 +272,8 @@ public class HttpChannelState implements HttpChannel, Components
             _request = new ChannelRequest(this, request);
             _response = new ChannelResponse(_request);
 
-            HttpFields.Mutable responseHeaders = _response.getHeaders();
             HttpConfiguration httpConfiguration = getHttpConfiguration();
+            HttpFields.Mutable responseHeaders = _response.getHeaders();
             if (httpConfiguration.getSendServerVersion())
                 responseHeaders.add(SERVER_VERSION);
             if (httpConfiguration.getSendXPoweredBy())

@@ -1583,6 +1583,13 @@ public interface HttpFields extends Iterable<HttpField>, Supplier<HttpFields>
             }
 
             @Override
+            public Mutable clear()
+            {
+                _fields.clear();
+                return this;
+            }
+
+            @Override
             public ListIterator<HttpField> listIterator()
             {
                 ListIterator<HttpField> i = _fields.listIterator();
