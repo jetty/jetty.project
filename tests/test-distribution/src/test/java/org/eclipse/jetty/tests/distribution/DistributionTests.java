@@ -1401,13 +1401,13 @@ public class DistributionTests extends AbstractJettyHomeTest
                 startHttpClient();
 
                 // Excluded path returns 403 response.
-                ContentResponse response = client.newRequest("http://localhost:" + httpPort +"/excludedPath")
+                ContentResponse response = client.newRequest("http://localhost:" + httpPort + "/excludedPath")
                     .timeout(15, TimeUnit.SECONDS)
                     .send();
                 assertEquals(HttpStatus.FORBIDDEN_403, response.getStatus());
 
                 // Other paths return 404 response.
-                response = client.newRequest("http://localhost:" + httpPort +"/path")
+                response = client.newRequest("http://localhost:" + httpPort + "/path")
                     .timeout(15, TimeUnit.SECONDS)
                     .send();
                 assertEquals(HttpStatus.NOT_FOUND_404, response.getStatus());
