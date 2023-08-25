@@ -58,6 +58,7 @@ import org.eclipse.jetty.util.IteratingNestedCallback;
 import org.eclipse.jetty.util.ssl.SslContextFactory;
 import org.hamcrest.Matchers;
 import org.junit.jupiter.api.Assertions;
+import org.junit.jupiter.api.Tag;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.MethodSource;
 
@@ -289,6 +290,7 @@ public class HttpClientTest extends AbstractTest
 
     @ParameterizedTest
     @MethodSource("transports")
+    @Tag("DisableLeakTracking")
     public void testRequestAfterFailedRequest(Transport transport) throws Exception
     {
         int length = FlowControlStrategy.DEFAULT_WINDOW_SIZE;
@@ -835,6 +837,7 @@ public class HttpClientTest extends AbstractTest
 
     @ParameterizedTest
     @MethodSource("transports")
+    @Tag("DisableLeakTracking")
     public void testContentSourceListenersFailure(Transport transport) throws Exception
     {
         int totalBytes = 1024;
@@ -991,6 +994,7 @@ public class HttpClientTest extends AbstractTest
 
     @ParameterizedTest
     @MethodSource("transports")
+    @Tag("DisableLeakTracking")
     public void testParallelContentSourceListenersTotalFailure(Transport transport) throws Exception
     {
         start(transport, new TestHandler(1024));

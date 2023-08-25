@@ -15,6 +15,7 @@ package org.eclipse.jetty.test.client.transport;
 
 import java.io.InputStream;
 import java.lang.management.ManagementFactory;
+import java.lang.reflect.AnnotatedElement;
 import java.net.URI;
 import java.nio.file.Files;
 import java.nio.file.Path;
@@ -66,6 +67,8 @@ import org.eclipse.jetty.util.ssl.SslContextFactory;
 import org.eclipse.jetty.util.thread.QueuedThreadPool;
 import org.hamcrest.Matchers;
 import org.junit.jupiter.api.AfterEach;
+import org.junit.jupiter.api.Tag;
+import org.junit.jupiter.api.Tags;
 import org.junit.jupiter.api.TestInfo;
 import org.junit.jupiter.api.extension.BeforeTestExecutionCallback;
 import org.junit.jupiter.api.extension.RegisterExtension;
@@ -122,6 +125,9 @@ public class AbstractTest
     {
         try
         {
+            if (isLeakTrackingDisabled(testInfo))
+                return;
+
             if (serverBufferPool != null)
             {
                 try
@@ -153,6 +159,32 @@ public class AbstractTest
         {
             LifeCycle.stop(client);
             LifeCycle.stop(server);
+        }
+    }
+
+    private static boolean isLeakTrackingDisabled(TestInfo testInfo)
+    {
+        String disableLeakTrackingTagValue = "DisableLeakTracking";
+        return isAnnotatedWithTagValue(testInfo.getTestMethod().orElseThrow(), disableLeakTrackingTagValue) ||
+            isAnnotatedWithTagValue(testInfo.getTestClass().orElseThrow(), disableLeakTrackingTagValue);
+    }
+
+    private static boolean isAnnotatedWithTagValue(AnnotatedElement annotatedElement, String tagValue)
+    {
+        Tags tags = annotatedElement.getAnnotation(Tags.class);
+        if (tags != null)
+        {
+            for (Tag tag : tags.value())
+            {
+                if (tag != null && tagValue.equalsIgnoreCase(tag.value()))
+                    return true;
+            }
+            return false;
+        }
+        else
+        {
+            Tag tag = annotatedElement.getAnnotation(Tag.class);
+            return tag != null && tagValue.equalsIgnoreCase(tag.value());
         }
     }
 

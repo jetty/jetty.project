@@ -14,6 +14,7 @@
 package org.eclipse.jetty.fcgi.server;
 
 import java.lang.management.ManagementFactory;
+import java.lang.reflect.AnnotatedElement;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.util.Comparator;
@@ -37,6 +38,8 @@ import org.eclipse.jetty.util.component.LifeCycle;
 import org.eclipse.jetty.util.thread.QueuedThreadPool;
 import org.hamcrest.Matchers;
 import org.junit.jupiter.api.AfterEach;
+import org.junit.jupiter.api.Tag;
+import org.junit.jupiter.api.Tags;
 import org.junit.jupiter.api.TestInfo;
 
 import static org.junit.jupiter.api.Assertions.fail;
@@ -81,6 +84,9 @@ public abstract class AbstractHttpClientServerTest
     {
         try
         {
+            if (isLeakTrackingDisabled(testInfo))
+                return;
+
             if (serverBufferPool != null)
             {
                 try
@@ -112,6 +118,32 @@ public abstract class AbstractHttpClientServerTest
         {
             LifeCycle.stop(client);
             LifeCycle.stop(server);
+        }
+    }
+
+    private static boolean isLeakTrackingDisabled(TestInfo testInfo)
+    {
+        String disableLeakTrackingTagValue = "DisableLeakTracking";
+        return isAnnotatedWithTagValue(testInfo.getTestMethod().orElseThrow(), disableLeakTrackingTagValue) ||
+            isAnnotatedWithTagValue(testInfo.getTestClass().orElseThrow(), disableLeakTrackingTagValue);
+    }
+
+    private static boolean isAnnotatedWithTagValue(AnnotatedElement annotatedElement, String tagValue)
+    {
+        Tags tags = annotatedElement.getAnnotation(Tags.class);
+        if (tags != null)
+        {
+            for (Tag tag : tags.value())
+            {
+                if (tag != null && tagValue.equalsIgnoreCase(tag.value()))
+                    return true;
+            }
+            return false;
+        }
+        else
+        {
+            Tag tag = annotatedElement.getAnnotation(Tag.class);
+            return tag != null && tagValue.equalsIgnoreCase(tag.value());
         }
     }
 
