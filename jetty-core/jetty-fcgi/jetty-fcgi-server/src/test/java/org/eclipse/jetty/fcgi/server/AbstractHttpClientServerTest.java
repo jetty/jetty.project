@@ -75,32 +75,26 @@ public abstract class AbstractHttpClientServerTest
         try
         {
             if (serverBufferPool != null)
-            {
-                try
-                {
-                    Awaitility.await().atMost(3, TimeUnit.SECONDS).until(() -> serverBufferPool.getLeaks().size(), Matchers.is(0));
-                }
-                catch (Exception e)
-                {
-                    fail(e.getMessage() + "\n---\nServer Leaks: " + serverBufferPool.dumpLeaks() + "---\n");
-                }
-            }
+                assertNoLeaks(serverBufferPool, "\n---\nServer Leaks: " + serverBufferPool.dumpLeaks() + "---\n");
             if (clientBufferPool != null)
-            {
-                try
-                {
-                    Awaitility.await().atMost(3, TimeUnit.SECONDS).until(() -> clientBufferPool.getLeaks().size(), Matchers.is(0));
-                }
-                catch (Exception e)
-                {
-                    fail(e.getMessage() + "\n---\nClient Leaks: " + clientBufferPool.dumpLeaks() + "---\n");
-                }
-            }
+                assertNoLeaks(clientBufferPool, "\n---\nClient Leaks: " + clientBufferPool.dumpLeaks() + "---\n");
         }
         finally
         {
             LifeCycle.stop(client);
             LifeCycle.stop(server);
+        }
+    }
+
+    private void assertNoLeaks(ArrayByteBufferPool.Tracking bufferPool, String msg)
+    {
+        try
+        {
+            Awaitility.await().atMost(3, TimeUnit.SECONDS).until(() -> bufferPool.getLeaks().size(), Matchers.is(0));
+        }
+        catch (Exception e)
+        {
+            fail(e.getMessage() + msg);
         }
     }
 }

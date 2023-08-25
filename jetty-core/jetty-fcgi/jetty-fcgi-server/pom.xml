@@ -22,8 +22,6 @@
           <argLine>
             @{argLine} ${jetty.surefire.argLine}
             --add-reads org.eclipse.jetty.fcgi.server=org.eclipse.jetty.logging
-            --add-reads org.eclipse.jetty.fcgi.server=java.management
-            --add-reads org.eclipse.jetty.fcgi.server=jdk.management
           </argLine>
         </configuration>
       </plugin>

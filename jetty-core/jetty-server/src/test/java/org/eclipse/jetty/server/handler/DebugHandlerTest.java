@@ -14,12 +14,12 @@
 package org.eclipse.jetty.server.handler;
 
 import java.io.ByteArrayOutputStream;
-import java.io.File;
 import java.io.IOException;
 import java.io.InputStream;
 import java.net.HttpURLConnection;
 import java.net.URI;
 import java.nio.charset.StandardCharsets;
+import java.nio.file.Path;
 import java.security.KeyStore;
 import javax.net.ssl.HostnameVerifier;
 import javax.net.ssl.HttpsURLConnection;
@@ -52,6 +52,8 @@ public class DebugHandlerTest
 
     private SSLContext sslContext;
     private Server server;
+    private ArrayByteBufferPool.Tracking httpTrackingBufferPool;
+    private ArrayByteBufferPool.Tracking sslTrackingBufferPool;
     private URI serverURI;
     private URI secureServerURI;
 
@@ -63,15 +65,17 @@ public class DebugHandlerTest
     {
         server = new Server();
 
-        ServerConnector httpConnector = new ServerConnector(server, null, null, new ArrayByteBufferPool.Tracking(), 1, 1, new HttpConnectionFactory());
+        httpTrackingBufferPool = new ArrayByteBufferPool.Tracking();
+        ServerConnector httpConnector = new ServerConnector(server, null, null, httpTrackingBufferPool, 1, 1, new HttpConnectionFactory());
         httpConnector.setPort(0);
         server.addConnector(httpConnector);
 
-        File keystorePath = MavenTestingUtils.getTestResourceFile("keystore.p12");
+        Path keystorePath = MavenTestingUtils.getTestResourcePath("keystore.p12");
         SslContextFactory.Server sslContextFactory = new SslContextFactory.Server();
-        sslContextFactory.setKeyStorePath(keystorePath.getAbsolutePath());
+        sslContextFactory.setKeyStorePath(keystorePath.toAbsolutePath().toString());
         sslContextFactory.setKeyStorePassword("storepwd");
-        ServerConnector sslConnector = new ServerConnector(server, null, null, new ArrayByteBufferPool.Tracking(), 1, 1,
+        sslTrackingBufferPool = new ArrayByteBufferPool.Tracking();
+        ServerConnector sslConnector = new ServerConnector(server, null, null, sslTrackingBufferPool, 1, 1,
             AbstractConnectionFactory.getFactories(sslContextFactory, new HttpConnectionFactory()));
 
         server.addConnector(sslConnector);
@@ -128,10 +132,10 @@ public class DebugHandlerTest
     @AfterEach
     public void stopServer() throws Exception
     {
-        ArrayByteBufferPool.Tracking byteBufferPool = (ArrayByteBufferPool.Tracking)server.getConnectors()[0].getByteBufferPool();
         try
         {
-            assertThat("Server Leaks: " + byteBufferPool.dumpLeaks(), byteBufferPool.getLeaks().size(), Matchers.is(0));
+            assertThat("Server HTTP Leaks: " + httpTrackingBufferPool.dumpLeaks(), httpTrackingBufferPool.getLeaks().size(), Matchers.is(0));
+            assertThat("Server SSL Leaks: " + sslTrackingBufferPool.dumpLeaks(), sslTrackingBufferPool.getLeaks().size(), Matchers.is(0));
         }
         finally
         {
