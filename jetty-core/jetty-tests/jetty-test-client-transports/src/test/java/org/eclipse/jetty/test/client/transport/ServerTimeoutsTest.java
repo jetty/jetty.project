@@ -32,6 +32,7 @@ import org.eclipse.jetty.server.Handler;
 import org.eclipse.jetty.server.Request;
 import org.eclipse.jetty.server.Response;
 import org.eclipse.jetty.util.Callback;
+import org.junit.jupiter.api.Tag;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.Arguments;
 import org.junit.jupiter.params.provider.MethodSource;
@@ -94,6 +95,7 @@ public class ServerTimeoutsTest extends AbstractTest
 
     @ParameterizedTest
     @MethodSource("transportsAndTrueIdleTimeoutListeners")
+    @Tag("DisableLeakTracking")
     public void testIdleTimeoutWithDemand(Transport transport, boolean listener) throws Exception
     {
         AtomicBoolean listenerCalled = new AtomicBoolean();
