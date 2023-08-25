@@ -14,7 +14,7 @@
   <properties>
     <assembly-directory>${basedir}/target/jetty-home</assembly-directory>
     <source-assembly-directory>${basedir}/target/jetty-home-sources</source-assembly-directory>
-    <jetty-setuid-version>2.0.0</jetty-setuid-version>
+    <jetty-setuid-version>2.0.1</jetty-setuid-version>
     <spotbugs.skip>true</spotbugs.skip>
   </properties>
 
@@ -81,25 +81,6 @@
                   <includes>**</includes>
                   <outputDirectory>${assembly-directory}</outputDirectory>
                   <destFileName>start.jar</destFileName>
-                </artifactItem>
-              </artifactItems>
-            </configuration>
-          </execution>
-          <execution>
-            <id>copy-setuid-dep</id>
-            <phase>generate-resources</phase>
-            <goals>
-              <goal>copy</goal>
-            </goals>
-            <configuration>
-              <artifactItems>
-                <artifactItem>
-                  <groupId>org.eclipse.jetty.toolchain.setuid</groupId>
-                  <artifactId>jetty-setuid-jna</artifactId>
-                  <version>${jetty-setuid-version}</version>
-                  <type>jar</type>
-                  <overWrite>true</overWrite>
-                  <outputDirectory>${assembly-directory}/lib/setuid</outputDirectory>
                 </artifactItem>
               </artifactItems>
             </configuration>
@@ -286,7 +267,7 @@
             <configuration>
               <!-- useful for troubleshooting the source archive of a particular file: <useSubDirectoryPerArtifact>true</useSubDirectoryPerArtifact> -->
               <includeGroupIds>
-                org.eclipse.jetty, org.eclipse.jetty.websocket
+                org.eclipse.jetty, org.eclipse.jetty.websocket, org.eclipse.jetty.toolchain.setuid
               </includeGroupIds>
               <excludeArtifactIds>jetty-infinispan-embedded,jetty-infinispan-remote,jetty-test-helper,alpn-api,javax.security.auth.message,javax.activation</excludeArtifactIds>
               <classifier>config</classifier>
@@ -611,18 +592,21 @@
       <artifactId>jetty-nosql</artifactId>
       <optional>true</optional>
     </dependency>
-
     <dependency>
       <groupId>org.eclipse.jetty.demos</groupId>
       <artifactId>jetty-demo-handler</artifactId>
       <version>${project.version}</version>
       <optional>true</optional>
     </dependency>
-
     <dependency>
       <groupId>org.eclipse.jetty</groupId>
       <artifactId>jetty-keystore</artifactId>
       <optional>true</optional>
+    </dependency>
+    <dependency>
+      <groupId>org.eclipse.jetty.toolchain.setuid</groupId>
+      <artifactId>jetty-setuid-jna</artifactId>
+      <version>${jetty-setuid-version}</version>
     </dependency>
   </dependencies>
 </project>
