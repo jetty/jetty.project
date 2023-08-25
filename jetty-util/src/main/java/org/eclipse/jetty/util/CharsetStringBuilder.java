@@ -23,7 +23,7 @@ import java.util.Arrays;
 import java.util.Objects;
 
 /**
- * <p>Build a string from a sequence of bytes.</p>
+ * <p>Build a string from a sequence of bytes and/or characters.</p>
  * <p>Implementations of this interface are optimized for processing a mix of calls to already decoded
  * character based appends (e.g. {@link #append(char)} and calls to undecoded byte methods (e.g. {@link #append(byte)}.
  * This is particularly useful for decoding % encoded strings that are mostly already decoded but may contain
@@ -36,15 +36,29 @@ import java.util.Objects;
  */
 public interface CharsetStringBuilder
 {
+    /**
+     * @param b An encoded byte to append
+     */
     void append(byte b);
 
+    /**
+     * @param c A decoded character to append
+     */
     void append(char c);
 
+    /**
+     * @param bytes Array of encoded bytes to append
+     */
     default void append(byte[] bytes)
     {
         append(bytes, 0, bytes.length);
     }
 
+    /**
+     * @param b Array of encoded bytes
+     * @param offset offset into the array
+     * @param length the number of bytes to append from the array.
+     */
     default void append(byte[] b, int offset, int length)
     {
         int end = offset + length;
@@ -52,6 +66,11 @@ public interface CharsetStringBuilder
             append(b[i]);
     }
 
+    /**
+     * @param chars sequence of decoded characters
+     * @param offset offset into the array
+     * @param length the number of character to append from the sequence.
+     */
     default void append(CharSequence chars, int offset, int length)
     {
         int end = offset + length;
@@ -59,6 +78,9 @@ public interface CharsetStringBuilder
             append(chars.charAt(i));
     }
 
+    /**
+     * @param buf Buffer of encoded bytes to append. The bytes are consumed from the buffer.
+     */
     default void append(ByteBuffer buf)
     {
         int end = buf.position() + buf.remaining();
@@ -75,6 +97,10 @@ public interface CharsetStringBuilder
 
     void reset();
 
+    /**
+     * @param charset The charset
+     * @return A {@link CharsetStringBuilder} suitable for the charset.
+     */
     static CharsetStringBuilder forCharset(Charset charset)
     {
         Objects.requireNonNull(charset);
@@ -106,7 +132,7 @@ public interface CharsetStringBuilder
         @Override
         public void append(CharSequence chars, int offset, int length)
         {
-            _builder.append(chars, offset, length);
+            _builder.append(chars, offset, offset + length);
         }
 
         @Override
@@ -145,7 +171,7 @@ public interface CharsetStringBuilder
         @Override
         public void append(CharSequence chars, int offset, int length)
         {
-            _builder.append(chars, offset, length);
+            _builder.append(chars, offset, offset + length);
         }
 
         @Override
