@@ -1376,4 +1376,42 @@ public class DistributionTests extends AbstractJettyHomeTest
             }
         }
     }
+
+    @Test
+    public void testInetAccessHandler() throws Exception
+    {
+        String jettyVersion = System.getProperty("jettyVersion");
+        JettyHomeTester distribution = JettyHomeTester.Builder.newInstance()
+            .jettyVersion(jettyVersion)
+            .mavenLocalRepository(System.getProperty("mavenRepoPath"))
+            .build();
+
+        try (JettyHomeTester.Run run1 = distribution.start("--add-modules=inetaccess,http"))
+        {
+            assertTrue(run1.awaitFor(10, TimeUnit.SECONDS));
+            assertEquals(0, run1.getExitValue());
+
+            int httpPort = distribution.freePort();
+            List<String> args = List.of(
+                "jetty.inetaccess.exclude=|/excludedPath/*",
+                "jetty.http.port=" + httpPort);
+            try (JettyHomeTester.Run run2 = distribution.start(args))
+            {
+                assertTrue(run2.awaitConsoleLogsFor("Started Server@", 10, TimeUnit.SECONDS));
+                startHttpClient();
+
+                // Excluded path returns 403 response.
+                ContentResponse response = client.newRequest("http://localhost:" + httpPort + "/excludedPath")
+                    .timeout(15, TimeUnit.SECONDS)
+                    .send();
+                assertEquals(HttpStatus.FORBIDDEN_403, response.getStatus());
+
+                // Other paths return 404 response.
+                response = client.newRequest("http://localhost:" + httpPort + "/path")
+                    .timeout(15, TimeUnit.SECONDS)
+                    .send();
+                assertEquals(HttpStatus.NOT_FOUND_404, response.getStatus());
+            }
+        }
+    }
 }
