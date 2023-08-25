@@ -112,6 +112,7 @@
     <maven.resolver.version>1.9.15</maven.resolver.version>
     <maven.version>3.9.0</maven.version>
     <mongodb.version>3.12.11</mongodb.version>
+    <netty.version>4.1.95.Final</netty.version>
     <openpojo.version>0.9.1</openpojo.version>
     <org.osgi.annotation.version>8.1.0</org.osgi.annotation.version>
     <org.osgi.core.version>8.0.0</org.osgi.core.version>
@@ -1126,6 +1127,11 @@
         <groupId>org.apache.maven.plugin-tools</groupId>
         <artifactId>maven-plugin-tools-api</artifactId>
         <version>${maven.plugin-tools.version}</version>
+      </dependency>
+      <dependency>
+        <groupId>io.netty</groupId>
+        <artifactId>netty-handler</artifactId>
+        <version>${netty.version}</version>
       </dependency>
       <dependency>
         <groupId>org.awaitility</groupId>
