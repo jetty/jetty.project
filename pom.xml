@@ -46,7 +46,7 @@
     <build-support.version>1.5</build-support.version>
     <checkstyle.version>10.6.0</checkstyle.version>
     <commons-codec.version>1.16.0</commons-codec.version>
-    <commons.compress.version>1.23.0</commons.compress.version>
+    <commons-compress.version>1.23.0</commons-compress.version>
     <commons.io.version>2.13.0</commons.io.version>
     <commons-lang3.version>3.13.0</commons-lang3.version>
     <conscrypt.version>2.5.2</conscrypt.version>
@@ -1009,6 +1009,11 @@
         <groupId>commons-codec</groupId>
         <artifactId>commons-codec</artifactId>
         <version>${commons-codec.version}</version>
+      </dependency>
+      <dependency>
+        <groupId>org.apache.commons</groupId>
+        <artifactId>commons-compress</artifactId>
+        <version>${commons-compress.version}</version>
       </dependency>
       <dependency>
         <groupId>io.grpc</groupId>
