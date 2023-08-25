@@ -23,6 +23,7 @@ import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.nio.file.StandardCopyOption;
 import java.nio.file.StandardOpenOption;
+import java.time.Duration;
 import java.util.Arrays;
 import java.util.List;
 import java.util.Queue;
@@ -64,6 +65,7 @@ import org.junit.jupiter.api.condition.OS;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.ValueSource;
 
+import static org.awaitility.Awaitility.await;
 import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.Matchers.containsString;
 import static org.hamcrest.Matchers.equalTo;
@@ -104,6 +106,45 @@ public class DistributionTests extends AbstractJettyHomeTest
                 run2.stop();
                 assertTrue(run2.awaitFor(10, TimeUnit.SECONDS));
             }
+        }
+    }
+
+    @ParameterizedTest
+    @ValueSource(booleans = {true, false})
+    public void testPidFile(boolean includeJettyPidConfig) throws Exception
+    {
+        String jettyVersion = System.getProperty("jettyVersion");
+        JettyHomeTester distribution = JettyHomeTester.Builder.newInstance()
+            .jettyVersion(jettyVersion)
+            .mavenLocalRepository(System.getProperty("mavenRepoPath"))
+            .build();
+
+        try (JettyHomeTester.Run run1 = distribution.start("--add-modules=http,pid"))
+        {
+            assertTrue(run1.awaitFor(10, TimeUnit.SECONDS));
+            assertEquals(0, run1.getExitValue());
+
+            Path pidfile = run1.getConfig().getJettyBase().resolve("jetty.pid");
+
+            int port = distribution.freePort();
+
+            String[] args = new String[includeJettyPidConfig ? 2 : 1];
+            args[0] = "jetty.http.port=" + port;
+            if (includeJettyPidConfig)
+                args[1] = "jetty.pid=" + pidfile;
+
+            try (JettyHomeTester.Run run2 = distribution.start(args))
+            {
+                assertTrue(run2.awaitConsoleLogsFor("Started Server@", 10, TimeUnit.SECONDS));
+
+                assertTrue(Files.isRegularFile(pidfile), "PID file should exist");
+
+                startHttpClient();
+                ContentResponse response = client.GET("http://localhost:" + port);
+                assertEquals(HttpStatus.NOT_FOUND_404, response.getStatus());
+            }
+
+            await().atMost(Duration.ofSeconds(10)).until(() -> !Files.exists(pidfile));
         }
     }
 
