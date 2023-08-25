@@ -9,7 +9,7 @@ changing to a restricted user (e.g. Jetty).
 server
 
 [lib]
-lib/setuid/jetty-setuid-java-1.0.4.jar
+lib/setuid/jetty-setuid-jna-2.0.0.jar
 
 [xml]
 etc/jetty-setuid.xml
