@@ -13,15 +13,6 @@
 
 package org.eclipse.jetty.jsp;
 
-import java.io.File;
-import java.io.IOException;
-import java.net.URL;
-import java.net.URLClassLoader;
-import javax.servlet.http.HttpServlet;
-import javax.servlet.http.HttpServletRequest;
-import javax.servlet.http.HttpServletResponse;
-import javax.servlet.jsp.JspFactory;
-
 import org.apache.jasper.runtime.JspFactoryImpl;
 import org.apache.tomcat.InstanceManager;
 import org.apache.tomcat.SimpleInstanceManager;
@@ -30,14 +21,23 @@ import org.eclipse.jetty.server.LocalConnector;
 import org.eclipse.jetty.server.Server;
 import org.eclipse.jetty.servlet.ServletContextHandler;
 import org.eclipse.jetty.servlet.ServletHolder;
-import org.eclipse.jetty.toolchain.test.MavenTestingUtils;
 import org.eclipse.jetty.toolchain.test.jupiter.WorkDir;
 import org.eclipse.jetty.toolchain.test.jupiter.WorkDirExtension;
 import org.eclipse.jetty.util.component.LifeCycle;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
-import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
+import org.junit.jupiter.params.ParameterizedTest;
+import org.junit.jupiter.params.provider.ValueSource;
+
+import javax.servlet.http.HttpServlet;
+import javax.servlet.http.HttpServletRequest;
+import javax.servlet.http.HttpServletResponse;
+import javax.servlet.jsp.JspFactory;
+import java.io.IOException;
+import java.net.URL;
+import java.net.URLClassLoader;
+import java.nio.file.Path;
 
 import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.Matchers.containsString;
@@ -46,6 +46,8 @@ import static org.hamcrest.Matchers.not;
 @ExtendWith(WorkDirExtension.class)
 public class TestJettyJspServlet
 {
+    private static final String DEFAULT_RESP_OUTPUT = "This.Is.The.Default";
+
     public WorkDir workdir;
     private Server _server;
     private LocalConnector _connector;
@@ -56,7 +58,7 @@ public class TestJettyJspServlet
         protected void doGet(HttpServletRequest req, HttpServletResponse resp) throws IOException
         {
             resp.setContentType("html/text");
-            resp.getOutputStream().println("This.Is.The.Default.");
+            resp.getOutputStream().println(DEFAULT_RESP_OUTPUT);
         }
     }
 
@@ -64,7 +66,7 @@ public class TestJettyJspServlet
     public void setUp() throws Exception
     {
         JspFactory.setDefaultFactory(new JspFactoryImpl());
-        File baseDir = MavenTestingUtils.getTestResourceDir("base");
+        final Path path = Path.of("src", "java", "resources", "base").toAbsolutePath();
         _server = new Server();
         _connector = new LocalConnector(_server);
         _server.addConnector(_connector);
@@ -72,7 +74,7 @@ public class TestJettyJspServlet
         context.setClassLoader(new URLClassLoader(new URL[0], Thread.currentThread().getContextClassLoader()));
         ServletHolder jspHolder = context.addServlet(JettyJspServlet.class, "/*");
         jspHolder.setInitParameter("scratchdir", workdir.getPath().toString());
-        context.setResourceBase(baseDir.getAbsolutePath());
+        context.setResourceBase(path.toString());
         context.setAttribute(InstanceManager.class.getName(), new SimpleInstanceManager());
         ServletHolder dfltHolder = new ServletHolder();
         dfltHolder.setName("default");
@@ -87,32 +89,20 @@ public class TestJettyJspServlet
         LifeCycle.stop(_server);
     }
 
-    @Test
-    public void testWithJsp() throws Exception
+
+    @ParameterizedTest
+    @ValueSource(strings = {"foo.jsp", "dir"})
+    public void checkIsServed(String urlPath) throws Exception
     {
-        //test that an ordinary jsp is served by jsp servlet
         String request =
-            "GET /context/foo.jsp HTTP/1.1\r\n" +
+            "GET /context/" + urlPath + " HTTP/1.1\r\n" +
                 "Host: localhost\r\n" +
                 "Connection: close\r\n" +
                 "\r\n";
 
         String rawResponse = _connector.getResponse(request);
         HttpTester.Response response = HttpTester.parseResponse(rawResponse);
-        assertThat(response.toString(), response.getContent(), not(containsString("This.Is.The.Default.")));
+        assertThat(response.toString(), response.getContent(), not(containsString(DEFAULT_RESP_OUTPUT)));
     }
 
-    @Test
-    public void testWithDirectory() throws Exception
-    {
-        //test that a dir is served by the default servlet
-        String request =
-            "GET /context/dir HTTP/1.1\r\n" +
-                "Host: localhost\r\n" +
-                "Connection: close\r\n" +
-                "\r\n";
-        String rawResponse = _connector.getResponse(request);
-        HttpTester.Response response = HttpTester.parseResponse(rawResponse);
-        assertThat(response.toString(), response.getContent(), containsString("This.Is.The.Default."));
-    }
 }
