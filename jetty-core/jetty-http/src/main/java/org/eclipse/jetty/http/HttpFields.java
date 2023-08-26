@@ -161,6 +161,27 @@ public interface HttpFields extends Iterable<HttpField>, Supplier<HttpFields>
         return this;
     }
 
+    @Override
+    default Iterator<HttpField> iterator()
+    {
+        return listIterator();
+    }
+
+    /**
+     * @return an iterator over the {@link HttpField}s in this {@code HttpFields}.
+     * @see #listIterator(int)
+     */
+    default ListIterator<HttpField> listIterator()
+    {
+        return listIterator(0);
+    }
+
+    /**
+     * @return an iterator over the {@link HttpField}s in this {@code HttpFields} starting at the given index.
+     * @see #listIterator()
+     */
+    ListIterator<HttpField> listIterator(int index);
+
     /**
      * <p>Returns an immutable copy of this {@link HttpFields} instance.</p>
      *
@@ -241,6 +262,27 @@ public interface HttpFields extends Iterable<HttpField>, Supplier<HttpFields>
         {
             if (f.getHeader() == header && f.contains(value))
                 return true;
+        }
+        return false;
+    }
+
+    /**
+     * Look for a value as the last value in a possible multivalued field.
+     * Parameters and specifically quality parameters are not considered.
+     * @param header The {@link HttpHeader} type to search for.
+     * @param value The value to search for (case-insensitive)
+     * @return True iff the value is contained in the field value entirely or
+     * as the last element of a quoted comma separated list.
+     * @see HttpField#containsLast(String)
+     */
+    default boolean containsLast(HttpHeader header, String value)
+    {
+        for (ListIterator<HttpField> i = listIterator(size()); i.hasPrevious();)
+        {
+            HttpField f = i.previous();
+
+            if (f.getHeader() == header)
+                return f.containsLast(value);
         }
         return false;
     }
@@ -334,6 +376,28 @@ public interface HttpFields extends Iterable<HttpField>, Supplier<HttpFields>
     {
         for (HttpField f : this)
         {
+            if (f.getHeader() == header)
+                return f.getValue();
+        }
+        return null;
+    }
+
+    /**
+     * <p>Returns the encoded value of the last field with the given field name,
+     * or {@code null} if no such header is present.</p>
+     * <p>In case of multi-valued fields, the returned value is the encoded
+     * value, including commas and quotes, as returned by {@link HttpField#getValue()}.</p>
+     *
+     * @param header the field name to search for
+     * @return the raw value of the last field with the given field name,
+     * or {@code null} if no such header is present
+     * @see HttpField#getValue()
+     */
+    default String getLast(HttpHeader header)
+    {
+        for (ListIterator<HttpField> i = listIterator(size()); i.hasPrevious();)
+        {
+            HttpField f = i.previous();
             if (f.getHeader() == header)
                 return f.getValue();
         }
@@ -904,11 +968,7 @@ public interface HttpFields extends Iterable<HttpField>, Supplier<HttpFields>
          */
         default Mutable add(HttpField field)
         {
-            ListIterator<HttpField> i = listIterator();
-            while (i.hasNext())
-            {
-                i.next();
-            }
+            ListIterator<HttpField> i = listIterator(size());
             i.add(field);
             return this;
         }
@@ -1042,20 +1102,6 @@ public interface HttpFields extends Iterable<HttpField>, Supplier<HttpFields>
         }
 
         /**
-         * @return an {@link Iterator} over the {@link HttpField}s of this instance
-         */
-        @Override
-        default Iterator<HttpField> iterator()
-        {
-            return listIterator();
-        }
-
-        /**
-         * @return a {@link ListIterator} over the {@link HttpField}s of this instance
-         */
-        ListIterator<HttpField> listIterator();
-
-        /**
          * <p>Puts the given {@link HttpField} into this instance.</p>
          * <p>If a fields with the same name is present, the given field
          * replaces it, and other existing fields with the same name
@@ -1111,7 +1157,7 @@ public interface HttpFields extends Iterable<HttpField>, Supplier<HttpFields>
          * <p>This method behaves like {@link #remove(HttpHeader)} when
          * the given {@code value} is {@code null}, otherwise behaves
          * like {@link #put(HttpField)}.</p>
-         * 
+         *
          * @param header the name of the field
          * @param value the value of the field; if {@code null} the field is removed
          * @return this instance
@@ -1590,9 +1636,9 @@ public interface HttpFields extends Iterable<HttpField>, Supplier<HttpFields>
             }
 
             @Override
-            public ListIterator<HttpField> listIterator()
+            public ListIterator<HttpField> listIterator(int index)
             {
-                ListIterator<HttpField> i = _fields.listIterator();
+                ListIterator<HttpField> i = _fields.listIterator(index);
                 return new ListIterator<>()
                 {
                     HttpField last;

@@ -258,15 +258,13 @@ public abstract class HttpReceiver
             {
                 // Content-Encoding may have multiple values in the order they
                 // are applied, but we only support one decoding pass, the last one.
-                String contentEncoding = responseHeaders.get(HttpHeader.CONTENT_ENCODING);
+                String contentEncoding = responseHeaders.getLast(HttpHeader.CONTENT_ENCODING);
                 if (contentEncoding != null)
                 {
                     int comma = contentEncoding.indexOf(",");
                     if (comma > 0)
                     {
-                        QuotedCSV parser = new QuotedCSV(false);
-                        parser.addValue(contentEncoding);
-                        List<String> values = parser.getValues();
+                        List<String> values = new QuotedCSV(false, contentEncoding).getValues();
                         contentEncoding = values.get(values.size() - 1);
                     }
                 }

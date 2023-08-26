@@ -51,19 +51,20 @@ public class GZIPContentDecoder extends org.eclipse.jetty.http.GZIPContentDecode
         HttpResponse httpResponse = (HttpResponse)response;
         httpResponse.headers(headers ->
         {
-            ListIterator<HttpField> iterator = headers.listIterator();
-            while (iterator.hasNext())
+            boolean seenContentEncoding = false;
+            for (ListIterator<HttpField> iterator = headers.listIterator(headers.size()); iterator.hasPrevious();)
             {
-                HttpField field = iterator.next();
+                HttpField field = iterator.previous();
                 HttpHeader header = field.getHeader();
                 if (header == HttpHeader.CONTENT_LENGTH)
                 {
                     // Content-Length is not valid anymore while we are decoding.
                     iterator.remove();
                 }
-                else if (header == HttpHeader.CONTENT_ENCODING)
+                else if (header == HttpHeader.CONTENT_ENCODING && !seenContentEncoding)
                 {
-                    // Content-Encoding should be removed/modified as the content will be decoded.
+                    // Last Content-Encoding should be removed/modified as the content will be decoded.
+                    seenContentEncoding = true;
                     String value = field.getValue();
                     int comma = value.lastIndexOf(",");
                     if (comma < 0)
