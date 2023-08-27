@@ -30,7 +30,6 @@ import org.eclipse.jetty.deploy.App;
 import org.eclipse.jetty.deploy.AppProvider;
 import org.eclipse.jetty.deploy.DeploymentManager;
 import org.eclipse.jetty.server.Deployable;
-import org.eclipse.jetty.util.FileID;
 import org.eclipse.jetty.util.Scanner;
 import org.eclipse.jetty.util.StringUtil;
 import org.eclipse.jetty.util.annotation.ManagedAttribute;
@@ -148,33 +147,15 @@ public abstract class ScanningAppProvider extends ContainerLifeCycle implements 
         if (LOG.isDebugEnabled())
             LOG.debug("{} creating {}", this, app);
 
-        String environmentName = app.getEnvironmentName();
-
         String defaultEnvironmentName = _deploymentManager.getDefaultEnvironmentName();
-        if (StringUtil.isBlank(environmentName))
+
+        String environmentName = app.getEnvironmentName();
+        if (StringUtil.isBlank(environmentName) && StringUtil.isNotBlank(defaultEnvironmentName))
         {
-            // We may be able to default the environmentName
-            String basename = FileID.getBasename(path);
-            boolean isWebapp = FileID.isWebArchive(path) ||
-                Files.isDirectory(path) && Files.exists(path.resolve("WEB-INF")) ||
-                FileID.isXml(path) && (
-                    Files.exists(path.getParent().resolve(basename + ".war")) ||
-                        Files.exists(path.getParent().resolve(basename + ".WAR")) ||
-                        Files.exists(path.getParent().resolve(basename + "/WEB-INF")));
-            boolean coreProvider = _deploymentManager.hasAppProviderFor(Environment.CORE.getName());
-
-            // TODO review these heuristics... or even if we should have them at all
-            if (isWebapp || (Files.isDirectory(path) && defaultEnvironmentName != null))
-                environmentName = defaultEnvironmentName;
-            else if (coreProvider)
-                environmentName = Environment.CORE.getName();
-
-            if (StringUtil.isNotBlank(environmentName))
-            {
-                app.getProperties().put(Deployable.ENVIRONMENT, environmentName);
-                if (LOG.isDebugEnabled())
-                    LOG.debug("{} default environment for {}", this, app);
-            }
+            environmentName = defaultEnvironmentName;
+            app.getProperties().put(Deployable.ENVIRONMENT, environmentName);
+            if (LOG.isDebugEnabled())
+                LOG.debug("{} default environment for {}", this, app);
         }
 
         if (StringUtil.isNotBlank(environmentName))
