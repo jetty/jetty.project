@@ -257,6 +257,11 @@
           <version>1.2.5</version>
         </dependency>
         <dependency>
+          <groupId>xalan</groupId>
+          <artifactId>xalan</artifactId>
+          <version>2.7.3</version>
+        </dependency>
+        <dependency>
           <groupId>org.eclipse.jetty.toolchain</groupId>
           <artifactId>jetty-javax-websocket-api</artifactId>
           <version>${jakarta.websocket.api.version}</version>
