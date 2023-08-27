@@ -55,8 +55,71 @@ Applications interested in this type of messages receive a `String` representing
 ** BINARY.
 Applications interested in this type of messages receive a `ByteBuffer` representing the raw bytes received.
 
-Only one thread at a time will be delivering frame or message events to the corresponding methods; the next frame or message event will not be delivered until the previous call to the corresponding method has exited, and if there is demand for it.
+xref:pg-websocket-endpoints-listener[Listener endpoints] are notified of events by invoking the correspondent method defined by the `org.eclipse.jetty.websocket.api.Session.Listener` interface.
+
+xref:pg-websocket-endpoints-annotated[Annotated endpoints] are notified of events by invoking the correspondent method annotated with the correspondent annotation from the `+org.eclipse.jetty.websocket.api.annotations.*+` package.
+
+For both types of WebSocket endpoints, only one thread at a time will be delivering frame or message events to the corresponding methods; the next frame or message event will not be delivered until the previous call to the corresponding method has exited, and if there is xref:pg-websocket-endpoints-demand[demand] for it.
 Endpoints will always be notified of message events in the same order they were received over the network.
+
+[[pg-websocket-endpoints-demand]]
+===== WebSocket Events Demand
+
+In order to receive WebSocket events, you must _demand_ for them; the only exception is the _open_ event, because it is the initial event that applications can interact with.
+
+When a WebSocket event is received by an endpoint, the demand for WebSocket events (for that endpoint) is reset, so that no more WebSocket events will be received by the endpoint.
+It is responsibility of the endpoint to demand to receive more WebSocket events.
+
+For simple cases, you can just annotate your WebSocket endpoint with `@WebSocket(autoDemand = true)`, or implement `Session.Listener.AutoDemanding`.
+In these two cases, when a method that receives a WebSocket event returns, the Jetty implementation automatically demands for another WebSocket event.
+
+For example:
+
+[source,java,indent=0]
+----
+include::{doc_code}/org/eclipse/jetty/docs/programming/WebSocketDocs.java[tags=autoDemand]
+----
+
+While auto-demand works for simple cases, it may not work in all cases, especially those where the method that receives the WebSocket event performs asynchronous operations.
+
+The following example shows the problem:
+
+[source,java,indent=0]
+----
+include::{doc_code}/org/eclipse/jetty/docs/programming/WebSocketDocs.java[tags=autoDemandWrong]
+----
+
+Note how, in the example above, auto-demanding has the problem that receiving WebSocket text messages may happen faster than echoing them back, because the call to `sendText(\...)` may return almost immediately but be slow to complete because it is asynchronous.
+
+In the example above, if another WebSocket text message arrives, and the `sendText(\...)` operation is not complete, a `WritePendingException` will be thrown.
+
+In other cases, this may lead to infinite buffering of data, eventually causing ``OutOfMemoryError``s, and in general excessive resource consumption that may be difficult to diagnose and troubleshoot.
+
+For more information, see also the xref:pg-websocket-session-send[section about sending data].
+
+[CAUTION]
+====
+Always be careful when using auto-demand.
+
+Analyze the operations that your endpoint performs and make sure they complete synchronously within the method.
+====
+
+To solve the problem outlined above, you must explicitly demand for the next WebSocket event, only when the processing of the previous events is complete.
+
+For example:
+
+[source,java,indent=0]
+----
+include::{doc_code}/org/eclipse/jetty/docs/programming/WebSocketDocs.java[tags=explicitDemand]
+----
+
+Note how it is necessary to invoke `Session.demand()` from the _open_ event, in order to receive _message_ events.
+
+Furthermore, note how every time a text message is received, a possibly slow asynchronous operation is initiated (which returns almost immediately, although it may not be completed yet) and then the method returns.
+
+Because there is no demand when the method returns (because the asynchronous operation is not completed yet), the implementation will not notify any other WebSocket event (not even _frame_, _close_ or _error_ events).
+
+When the asynchronous operation completes successfully the callback is notified; this, in turn, invokes `Session.demand()`, and the implementation may notify another WebSocket event (if any) to the WebSocket endpoint.
 
 [[pg-websocket-endpoints-listener]]
 ===== Listener Endpoints
@@ -67,7 +130,6 @@ A WebSocket endpoint may implement the `org.eclipse.jetty.websocket.api.Session.
 ----
 include::{doc_code}/org/eclipse/jetty/docs/programming/WebSocketDocs.java[tags=listenerEndpoint]
 ----
-<1> Your listener class implements `Session.Listener`.
 
 ====== Message Streaming Reads
 
@@ -88,29 +150,33 @@ include::{doc_code}/org/eclipse/jetty/docs/programming/WebSocketDocs.java[tags=s
 [[pg-websocket-endpoints-annotated]]
 ===== Annotated Endpoints
 
-A WebSocket endpoint may annotate methods with `org.eclipse.jetty.websocket.api.annotations.*` annotations to receive WebSocket events.
+A WebSocket endpoint may annotate methods with `+org.eclipse.jetty.websocket.api.annotations.*+` annotations to receive WebSocket events.
 Each annotated method may take an optional `Session` argument as its first parameter:
 
 [source,java,indent=0]
 ----
 include::{doc_code}/org/eclipse/jetty/docs/programming/WebSocketDocs.java[tags=annotatedEndpoint]
 ----
-<1> Use the `@WebSocket` annotation at the class level to make it a WebSocket endpoint.
+<1> Use the `@WebSocket` annotation at the class level to make it a WebSocket endpoint, and disable auto-demand.
 <2> Use the `@OnWebSocketOpen` annotation for the _open_ event.
 As this is the first event notified to the endpoint, you can configure the `Session` object.
-<3> Use the `@OnWebSocketClose` annotation for the _close_ event.
-The method may take an optional `Session` as first parameter.
+<3> Use the `@OnWebSocketMessage` annotation for the _message_ event, both for textual and binary messages.
 <4> Use the `@OnWebSocketError` annotation for the _error_ event.
-The method may take an optional `Session` as first parameter.
-<5> Use the `@OnWebSocketMessage` annotation for the _message_ event, both for textual and binary messages.
-The method may take an optional `Session` as first parameter.
+<5> Use the `@OnWebSocketClose` annotation for the _close_ event.
 
 [[pg-websocket-endpoints-annotated-streaming]]
 ====== Message Streaming Reads
 
 If you need to deal with large WebSocket messages, you may reduce the memory usage by streaming the message content.
 
-To stream textual or binary messages, you still use the `@OnWebSocketMessage` annotation, but you change the signature of the method to take, respectively a `Reader` and an `InputStream`:
+To stream textual or binary messages, you still use the `@OnWebSocketMessage` annotation, but you change the signature of the method to take an additional `boolean` parameter:
+
+[source,java,indent=0]
+----
+include::{doc_code}/org/eclipse/jetty/docs/programming/WebSocketDocs.java[tags=partialAnnotatedEndpoint]
+----
+
+Alternatively, but less efficiently, you can use the `@OnWebSocketMessage` annotation, but you change the signature of the method to take, respectively, a `Reader` and an `InputStream`:
 
 [source,java,indent=0]
 ----
@@ -121,6 +187,9 @@ include::{doc_code}/org/eclipse/jetty/docs/programming/WebSocketDocs.java[tags=s
 ====
 `Reader` or `InputStream` only offer blocking APIs, so if the remote peers are slow in sending the large WebSocket messages, reading threads may be blocked in `Reader.read(char[])` or `InputStream.read(byte[])`, possibly exhausting the thread pool.
 ====
+
+Note that when you use blocking APIs, the invocations to `Session.demand()` are now performed by the `Reader` or `InputStream` implementations (as well as the `ByteBuffer` lifecycle management).
+You indirectly control the demand by deciding when to read from `Reader` or `InputStream`.
 
 [[pg-websocket-session]]
 ==== WebSocket Session
@@ -182,9 +251,7 @@ Non-blocking APIs are more difficult to use since you are required to meet the f
 
 * You cannot initiate another send of any kind until the previous send is completed.
 
-For example, if you have initiated a text send, you cannot initiate a binary send, until the previous send has completed.
-
-Furthermore, if you have initiated a non-blocking send, you cannot initiate a blocking send, until the previous send has completed.
+For example, if you have initiated a text send, you cannot initiate another text or binary send, until the previous send has completed.
 ====
 
 This requirement is necessary to avoid unbounded buffering that could lead to ``OutOfMemoryError``s.
@@ -206,9 +273,9 @@ While non-blocking APIs are more difficult to use, they don't block the sender t
 
 If you need to send large WebSocket messages, you may reduce the memory usage by streaming the message content.
 
-The APIs offer `sendPartial*(\...)` methods that allow you to send a chunk of the whole message at a time, therefore reducing the memory usage since it is not necessary to have the whole message `String` or `ByteBuffer` in memory to send it.
+The Jetty WebSocket APIs offer `sendPartial*(\...)` methods that allow you to send a chunk of the whole message at a time, therefore reducing the memory usage since it is not necessary to have the whole message `String` or `ByteBuffer` in memory to send it.
 
-The APIs for streaming the message content are non-blocking and therefore slightly more complicated to use, as you should wait (without blocking!) for the callbacks to complete.
+The Jetty WebSocket APIs for streaming the message content are non-blocking and therefore you should wait (without blocking!) for the callbacks to complete.
 
 Fortunately, Jetty provides the `IteratingCallback` utility class (described in more details xref:pg-arch-io-echo[in this section]) which greatly simplify the use of non-blocking APIs:
 
@@ -219,6 +286,8 @@ include::{doc_code}/org/eclipse/jetty/docs/programming/WebSocketDocs.java[tags=s
 <1> Implementing `Callback` allows to pass `this` to `sendPartialBinary(\...)`.
 <2> The `process()` method is called iteratively when each `sendPartialBinary(\...)` is completed.
 <3> Sends the message chunks.
+<4> When the last chunk as been sent, complete successfully the `IteratingCallback`.
+<5> Only when the `IteratingCallback` is completed successfully, demand for more WebSocket events.
 
 [[pg-websocket-session-ping]]
 ===== Sending Ping/Pong
@@ -241,7 +310,6 @@ To handle `PING`/`PONG` events, you may implement methods `Session.Listener.onWe
 ----
 include::{doc_code}/org/eclipse/jetty/docs/programming/WebSocketDocs.java[tags=pingPongListener]
 ----
-<1> The WebSocket endpoint class must implement `Session.Listener`
 
 [[pg-websocket-session-close]]
 ===== Closing the Session

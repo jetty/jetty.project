@@ -103,7 +103,11 @@ Note how the call to `ServerWebSocketContainer.upgrade(\...)` allows you to perf
 ===== WebSocket Endpoints
 
 When using the Jetty WebSocket APIs, the WebSocket endpoint classes must be either annotated with the Jetty WebSocket annotations from the `org.eclipse.jetty.websocket.api.annotations` package, or implement the `org.eclipse.jetty.websocket.api.Session.Listener` interface.
-Refer to the Jetty WebSocket architecture xref:pg-websocket-endpoints[section] for more information about Jetty WebSocket endpoints.
+
+In the case you want to implement the `Session.Listener` interface, remember that you have to explicitly demand to receive the next WebSocket event.
+Use `Session.Listener.AutoDemanding` to automate the demand for simple use cases.
+
+Refer to the Jetty WebSocket architecture xref:pg-websocket-endpoints[section] for more information about Jetty WebSocket endpoints and how to correctly deal with the demand for WebSocket events.
 
 There is no automatic discovery of WebSocket endpoints; all the WebSocket endpoints of your application must be returned by a `org.eclipse.jetty.websocket.server.WebSocketCreator` that is either mapped to a request URI via `ServerWebSocketContainer.addMapping(\...)`, or directly upgraded via `ServerWebSocketContainer.upgrade(\...)`.
 

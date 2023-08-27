@@ -14,8 +14,10 @@
 package org.eclipse.jetty.websocket.tests.server;
 
 import java.net.URI;
+import java.nio.ByteBuffer;
 import java.util.concurrent.TimeUnit;
 import java.util.function.Function;
+import java.util.function.Supplier;
 
 import org.eclipse.jetty.client.ContentResponse;
 import org.eclipse.jetty.client.HttpClient;
@@ -70,7 +72,18 @@ public class DirectUpgradeTest
     }
 
     @Test
-    public void testDirectWebSocketUpgradeInChildHandler() throws Exception
+    public void testAnnotatedDirectWebSocketUpgradeInChildHandler() throws Exception
+    {
+        testDirectWebSocketUpgradeInChildHandler(EchoSocket::new);
+    }
+
+    @Test
+    public void testListenerDirectWebSocketUpgradeInChildHandler() throws Exception
+    {
+        testDirectWebSocketUpgradeInChildHandler(EchoListener::new);
+    }
+
+    private void testDirectWebSocketUpgradeInChildHandler(Supplier<Object> supplier) throws Exception
     {
         start(server ->
         {
@@ -87,7 +100,7 @@ public class DirectUpgradeTest
                     ServerWebSocketContainer container = ServerWebSocketContainer.get(request.getContext());
                     assertNotNull(container);
                     // Direct upgrade.
-                    return container.upgrade((upgradeRequest, upgradeResponse, upgradeCallback) -> new EchoSocket(), request, response, callback);
+                    return container.upgrade((upgradeRequest, upgradeResponse, upgradeCallback) -> supplier.get(), request, response, callback);
                 }
             });
             return context;
@@ -95,11 +108,13 @@ public class DirectUpgradeTest
 
         URI wsUri = WSURI.toWebsocket(server.getURI().resolve("/ctx/ws"));
         EventSocket clientEndpoint = new EventSocket();
-        Session session = wsClient.connect(clientEndpoint, wsUri).get(5, TimeUnit.SECONDS);
-        String text = "ECHO";
-        session.sendText(text, null);
-        String echo = clientEndpoint.textMessages.poll(5, TimeUnit.SECONDS);
-        assertEquals(text, echo);
+        try (Session session = wsClient.connect(clientEndpoint, wsUri).get(5, TimeUnit.SECONDS))
+        {
+            String text = "ECHO";
+            session.sendText(text, null);
+            String echo = clientEndpoint.textMessages.poll(5, TimeUnit.SECONDS);
+            assertEquals(text, echo);
+        }
     }
 
     @Test
@@ -186,5 +201,30 @@ public class DirectUpgradeTest
             .timeout(5, TimeUnit.SECONDS)
             .send();
         assertEquals("HELLO", response.getContentAsString());
+    }
+
+    private static class EchoListener implements Session.Listener
+    {
+        private Session session;
+
+        @Override
+        public void onWebSocketOpen(Session session)
+        {
+            this.session = session;
+            session.demand();
+        }
+
+        @Override
+        public void onWebSocketBinary(ByteBuffer payload, org.eclipse.jetty.websocket.api.Callback callback)
+        {
+            org.eclipse.jetty.websocket.api.Callback.Completable.with(c -> session.sendBinary(payload, c))
+                .whenComplete(callback.asConsumer());
+        }
+
+        @Override
+        public void onWebSocketText(String message)
+        {
+            session.sendText(message, org.eclipse.jetty.websocket.api.Callback.from(session::demand, Throwable::printStackTrace));
+        }
     }
 }
