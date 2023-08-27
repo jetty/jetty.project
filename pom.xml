@@ -46,7 +46,7 @@
     <build-support.version>1.5</build-support.version>
     <checkstyle.version>10.6.0</checkstyle.version>
     <commons-codec.version>1.16.0</commons-codec.version>
-    <commons.compress.version>1.23.0</commons.compress.version>
+    <commons-compress.version>1.23.0</commons-compress.version>
     <commons.io.version>2.13.0</commons.io.version>
     <commons-lang3.version>3.13.0</commons-lang3.version>
     <conscrypt.version>2.5.2</conscrypt.version>
@@ -112,6 +112,7 @@
     <maven.resolver.version>1.9.15</maven.resolver.version>
     <maven.version>3.9.0</maven.version>
     <mongodb.version>3.12.11</mongodb.version>
+    <netty.version>4.1.95.Final</netty.version>
     <openpojo.version>0.9.1</openpojo.version>
     <org.osgi.annotation.version>8.1.0</org.osgi.annotation.version>
     <org.osgi.core.version>8.0.0</org.osgi.core.version>
@@ -146,7 +147,7 @@
     <taglibs-standard-spec.version>1.2.5</taglibs-standard-spec.version>
     <testcontainers.version>1.18.3</testcontainers.version>
     <wildfly.common.version>1.6.0.Final</wildfly.common.version>
-    <wildfly.elytron.version>2.2.1.Final</wildfly.elytron.version>
+    <wildfly.elytron.version>1.20.4.Final</wildfly.elytron.version>
     <xmemcached.version>2.4.7</xmemcached.version>
 
     <!-- some maven plugins versions -->
@@ -1010,6 +1011,16 @@
         <version>${commons-codec.version}</version>
       </dependency>
       <dependency>
+        <groupId>org.apache.commons</groupId>
+        <artifactId>commons-compress</artifactId>
+        <version>${commons-compress.version}</version>
+      </dependency>
+      <dependency>
+        <groupId>org.apache.avro</groupId>
+        <artifactId>avro</artifactId>
+        <version>${apache.avro.version}</version>
+      </dependency>
+      <dependency>
         <groupId>io.grpc</groupId>
         <artifactId>grpc-core</artifactId>
         <version>${grpc.version}</version>
@@ -1126,6 +1137,11 @@
         <groupId>org.apache.maven.plugin-tools</groupId>
         <artifactId>maven-plugin-tools-api</artifactId>
         <version>${maven.plugin-tools.version}</version>
+      </dependency>
+      <dependency>
+        <groupId>io.netty</groupId>
+        <artifactId>netty-handler</artifactId>
+        <version>${netty.version}</version>
       </dependency>
       <dependency>
         <groupId>org.awaitility</groupId>
@@ -1671,6 +1687,11 @@
         <groupId>org.jboss.threads</groupId>
         <artifactId>jboss-threads</artifactId>
         <version>${jboss-threads.version}</version>
+      </dependency>
+      <dependency>
+        <groupId>org.wildfly.security</groupId>
+        <artifactId>wildfly-elytron</artifactId>
+        <version>${wildfly.elytron.version}</version>
       </dependency>
       <dependency>
         <groupId>org.junit</groupId>

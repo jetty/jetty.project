@@ -401,6 +401,10 @@
       <artifactId>jetty-ee8-glassfish-jstl</artifactId>
       <exclusions>
         <exclusion>
+          <groupId>xalan</groupId>
+          <artifactId>xalan</artifactId>
+        </exclusion>
+        <exclusion>
           <groupId>javax.el</groupId>
           <artifactId>el-api</artifactId>
         </exclusion>
@@ -409,6 +413,10 @@
           <artifactId>jakarta.el-api</artifactId>
         </exclusion>
       </exclusions>
+    </dependency>
+    <dependency>
+      <groupId>xalan</groupId>
+      <artifactId>xalan</artifactId>
     </dependency>
     <dependency>
       <groupId>org.eclipse.jetty.ee8</groupId>
