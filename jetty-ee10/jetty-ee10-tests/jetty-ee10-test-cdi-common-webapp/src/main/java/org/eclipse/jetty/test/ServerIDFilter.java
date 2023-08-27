@@ -41,7 +41,7 @@ public class ServerIDFilter implements Filter
         if (response instanceof HttpServletResponse)
         {
             String serverID = (String)request.getServletContext().getAttribute("ServerID");
-            ((HttpServletResponse)response).setHeader("Server", serverID);
+            ((HttpServletResponse)response).setHeader("CDI-Server", serverID);
         }
         chain.doFilter(request, response);
     }
