@@ -96,10 +96,10 @@ public class Response implements HttpServletResponse
     public static final String SET_INCLUDE_HEADER_PREFIX = "org.eclipse.jetty.server.include.";
 
     private final HttpChannel _channel;
-    private final HttpFields.Mutable _fields = HttpFields.build();
     private final AtomicBiInteger _errorSentAndIncludes = new AtomicBiInteger(); // hi is errorSent flag, lo is include count
     private final HttpOutput _out;
     private int _status = HttpStatus.OK_200;
+    private HttpFields.Mutable _fields;
     private String _reason;
     private Locale _locale;
     private MimeTypes.Type _mimeType;
@@ -158,10 +158,15 @@ public class Response implements HttpServletResponse
         return _channel;
     }
 
+    protected void onResponse(HttpFields.Mutable headers)
+    {
+        _fields = headers;
+    }
+
     protected void recycle()
     {
         // _channel need not be recycled
-        _fields.clear();
+        _fields = null;
         _errorSentAndIncludes.set(0);
         _out.recycle();
         _status = HttpStatus.OK_200;
@@ -1272,25 +1277,7 @@ public class Response implements HttpServletResponse
 
     protected MetaData.Response newResponseMetaData()
     {
-        return new MetaData.Response(getStatus(), getReason(), _channel.getRequest().getHttpVersion(), _fields, getLongContentLength(), getTrailers());
-    }
-
-    /**
-     * Get the MetaData.Response committed for this response.
-     * This may differ from the meta data in this response for
-     * exceptional responses (eg 4xx and 5xx responses generated
-     * by the container) and the committedMetaData should be used
-     * for logging purposes.
-     *
-     * @return The committed MetaData or a {@link #newResponseMetaData()}
-     * if not yet committed.
-     */
-    public MetaData.Response getCommittedMetaData()
-    {
-        MetaData.Response meta = _channel.getCommittedMetaData();
-        if (meta == null)
-            return newResponseMetaData();
-        return meta;
+        return new MetaData.Response(getStatus(), getReason(), _channel.getRequest().getHttpVersion(), _channel.getCoreResponse().getHeaders(), getLongContentLength(), getTrailers());
     }
 
     @Override
