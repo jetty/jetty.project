@@ -19,8 +19,10 @@ import java.net.SocketAddress;
 import java.nio.ByteBuffer;
 import java.util.ArrayList;
 import java.util.EventListener;
+import java.util.HashSet;
 import java.util.List;
 import java.util.Objects;
+import java.util.Set;
 import java.util.concurrent.Executor;
 import java.util.concurrent.TimeoutException;
 import java.util.concurrent.atomic.AtomicLong;
@@ -1111,7 +1113,15 @@ public class HttpChannel implements Runnable, HttpOutput.Interceptor
             // TODO: why can't we just do _coreResponse.setMetaData(response), without copying?
             _coreResponse.setStatus(response.getStatus());
             // TODO: at least avoid copying the headers?
-            _coreResponse.getHeaders().add(response.getHttpFields());
+            // TODO: hack!
+            Set<String> known = new HashSet<>(_coreResponse.getHeaders().getFieldNamesCollection());
+            for (HttpField field : response.getHttpFields())
+            {
+                if (known.contains(field.getName()))
+                    _coreResponse.getHeaders().put(field);
+                else
+                    _coreResponse.getHeaders().add(field);
+            }
             _coreResponse.setTrailersSupplier(response.getTrailersSupplier());
         }
         _coreResponse.write(complete, content, callback);
