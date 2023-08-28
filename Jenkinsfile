@@ -140,7 +140,10 @@ def useBuildCache() {
     labelNoBuildCache = pullRequest.labels.contains("build-no-cache")
   }
   def noBuildCache = (env.BRANCH_NAME == 'jetty-12.0.x') || labelNoBuildCache;
-  return !noBuildCache;
+  if(pullRequest.labels.contains("force-build-cache")) {
+    return true;
+  }
+  return false; //!noBuildCache;
   // want to skip build cache
   // return false
 }
