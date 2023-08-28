@@ -30,8 +30,7 @@
             --add-modules org.eclipse.jetty.server 
             --add-modules org.eclipse.jetty.session 
             --add-modules org.eclipse.jetty.ee9.nested 
-            --add-reads org.eclipse.jetty.ee9.servlets=java.management 
-            --add-reads org.eclipse.jetty.ee9.servlets=org.eclipse.jetty.jmx 
+            --add-reads org.eclipse.jetty.ee9.servlets=java.management
             --add-reads org.eclipse.jetty.ee9.servlets=org.eclipse.jetty.logging
           </argLine>
         </configuration>
