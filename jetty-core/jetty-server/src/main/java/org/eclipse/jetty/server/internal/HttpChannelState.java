@@ -395,13 +395,12 @@ public class HttpChannelState implements HttpChannel, Components
                     });
                 }
 
-                // otherwise, we are going to fail the callback, either directly or by a call to onFailure, so ensure all future IO
-                // operations are failed as well
-                _failure = Content.Chunk.from(t, true);
-
-                // if there is no failure listener, then we can fail the callback directly without a double lock
+                // otherwise, if there is no failure listener, then we can fail the callback directly without a double lock
                 if (_onFailure == null && _request != null)
+                {
+                    _failure = Content.Chunk.from(t, true);
                     return () -> _request._callback.failed(t);
+                }
             }
         }
 
