@@ -382,6 +382,10 @@ public class HttpChannelState implements HttpChannel, Components
 
                 // Otherwise We ask any idle timeout listeners if we should call onFailure or not
                 onIdleTimeout = _onIdleTimeout;
+
+                // If there is no idle nor failure listener, then we can fail the callback directly without double lock
+                if (onIdleTimeout == null && _onFailure == null && _request != null)
+                    return () -> _request._callback.failed(t);
             }
             else
             {
@@ -476,7 +480,7 @@ public class HttpChannelState implements HttpChannel, Components
                     }
 
                     // If the application has not been otherwise informed of the failure
-                    if (invokeOnContentAvailable == null && invokeWriteFailure == null)
+                    if (invokeOnContentAvailable == null && invokeWriteFailure == null && onFailure == null)
                     {
                         if (LOG.isDebugEnabled())
                             LOG.debug("failing callback in {}", this, x);
