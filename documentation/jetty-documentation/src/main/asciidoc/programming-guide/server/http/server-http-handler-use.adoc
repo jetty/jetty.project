@@ -266,6 +266,75 @@ For instance, `StatisticsHandler.MinimumDataRateHandler` can be used to enforce 
 include::../../{doc_code}/org/eclipse/jetty/docs/programming/server/http/HTTPServerDocs.java[tags=dataRateHandler]
 ----
 
+[[pg-server-http-handler-use-events]]
+====== EventsHandler
+
+`EventsHandler` allows applications to be notified of xref:pg-server-http-request-processing-events[request processing] events.
+
+`EventsHandler` must be subclassed, and the relevant `onXYZ()` methods overridden to capture the request processing events you are interested in.
+The request processing events can be used in conjunction with `Request` APIs that provide the information you may be interested in.
+
+For example, if you want to use `EventsHandler` to record processing times, you can use the request processing events with the following `Request` APIs:
+
+* `Request.getBeginNanoTime()`, which returns the earliest possible nanoTime the request was received.
+* `Request.getHeadersNanoTime()`, which returns the nanoTime at which the parsing of the HTTP headers was completed.
+
+[CAUTION]
+====
+The `Request` and `Response` objects may be inspected during events, but it is recommended to avoid modifying them, for example by adding/removing headers or by reading/writing content, because any modification may interfere with the processing performed by other ``Handler``s.
+====
+
+`EventsHandler` emits the following events:
+
+`beforeHandling`::
+Emitted just before `EventsHandler` invokes the `Handler.handle(\...)` method of the next `Handler` in the `Handler` tree.
+`afterHandling`::
+Emitted just after the invocation to the `Handler.handle(\...)` method of the next `Handler` in the `Handler` tree returns, either normally or by throwing.
+`requestRead`::
+Emitted every time a chunk of content is read from the `Request`.
+`responseBegin`::
+Emitted when the response first write happens.
+`responseWrite`::
+Emitted every time the write of some response content is initiated.
+`responseWriteComplete`::
+Emitted every time the write of some response content is completed, either successfully or with a failure.
+`responseTrailersComplete`::
+Emitted when the write of the response trailers is completed.
+`complete`::
+Emitted when both request and the response have been completely processed.
+
+Your `EventsHandler` subclass should then be linked in the `Handler` tree in the relevant position, typically as the outermost `Handler` after `Server`:
+
+[source,java,indent=0]
+----
+include::../../{doc_code}/org/eclipse/jetty/docs/programming/server/http/HTTPServerDocs.java[tags=eventsHandler]
+----
+
+The `Handler` tree structure looks like the following:
+
+[source,screen]
+----
+Server
+└── MyEventsHandler
+    └── ContextHandler /app
+----
+
+You can link the `EventsHandler` at any point in the `Handler` tree structure, and even have multiple ``EventsHandler``s to be notified of the request processing events at the different stages of the `Handler` tree, for example:
+
+[source,screen]
+----
+Server
+└── TotalEventsHandler
+    └── SlowHandler
+        └── AppEventsHandler
+            └── ContextHandler /app
+----
+
+In the example above, `TotalEventsHandler` may record the total times of request processing, from `SlowHandler` all the way to the `ContextHandler`.
+On the other hand, `AppEventsHandler` may record both the time it takes for the request to flow from `TotalEventsHandler` to `AppEventsHandler`, therefore effectively measuring the processing time due to `SlowHandler`, and the time it takes to process the request by the `ContextHandler`.
+
+Refere to the `EventsHandler` link:{javadoc-url}/org/eclipse/jetty/server/handler/EventsHandler[javadocs] for further information.
+
 [[pg-server-http-handler-use-limit]]
 ====== QoSHandler
 TODO

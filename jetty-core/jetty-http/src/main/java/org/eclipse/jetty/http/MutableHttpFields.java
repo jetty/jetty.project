@@ -243,7 +243,13 @@ class MutableHttpFields implements HttpFields.Mutable
     @Override
     public ListIterator<HttpField> listIterator()
     {
-        return new ListItr();
+        return new Listerator(0);
+    }
+
+    @Override
+    public ListIterator<HttpField> listIterator(int index)
+    {
+        return new Listerator(index);
     }
 
     @Override
@@ -433,10 +439,17 @@ class MutableHttpFields implements HttpFields.Mutable
         return asString();
     }
 
-    private class ListItr implements ListIterator<HttpField>
+    private class Listerator implements ListIterator<HttpField>
     {
-        int _cursor;       // index of next element to return
-        int _current = -1;
+        private int _index;
+        private int _last = -1;
+
+        Listerator(int index)
+        {
+            if (index < 0 || index > _size)
+                throw new NoSuchElementException(Integer.toString(index));
+            _index = index;
+        }
 
         @Override
         public void add(HttpField field)
@@ -447,72 +460,72 @@ class MutableHttpFields implements HttpFields.Mutable
             int last = _size++;
             if (_fields.length < _size)
                 _fields = Arrays.copyOf(_fields, _fields.length + SIZE_INCREMENT);
-            System.arraycopy(_fields, _cursor, _fields, _cursor + 1, last - _cursor);
-            _fields[_cursor++] = field;
-            _current = -1;
+            System.arraycopy(_fields, _index, _fields, _index + 1, last - _index);
+            _fields[_index++] = field;
+            _last = -1;
         }
 
         @Override
         public boolean hasNext()
         {
-            return _cursor != _size;
+            return _index < _size;
         }
 
         @Override
         public boolean hasPrevious()
         {
-            return _cursor > 0;
+            return _index > 0;
         }
 
         @Override
         public HttpField next()
         {
-            if (_cursor == _size)
-                throw new NoSuchElementException();
-            _current = _cursor++;
-            return _fields[_current];
+            if (_index >= _size)
+                throw new NoSuchElementException(Integer.toString(_index));
+            _last = _index++;
+            return _fields[_last];
         }
 
         @Override
         public int nextIndex()
         {
-            return _cursor + 1;
+            return _index + 1;
         }
 
         @Override
         public HttpField previous()
         {
-            if (_cursor == 0)
-                throw new NoSuchElementException();
-            _current = --_cursor;
-            return _fields[_current];
+            if (_index <= 0)
+                throw new NoSuchElementException(Integer.toString(_index - 1));
+            _last = --_index;
+            return _fields[_last];
         }
 
         @Override
         public int previousIndex()
         {
-            return _cursor - 1;
+            return _index - 1;
         }
 
         @Override
         public void remove()
         {
-            if (_current < 0)
+            if (_last < 0)
                 throw new IllegalStateException();
-            org.eclipse.jetty.http.MutableHttpFields.this.remove(_current);
-            _cursor = _current;
-            _current = -1;
+            org.eclipse.jetty.http.MutableHttpFields.this.remove(_last);
+            _index = _last;
+            _last = -1;
         }
 
         @Override
         public void set(HttpField field)
         {
-            if (_current < 0)
+            if (_last < 0)
                 throw new IllegalStateException();
             if (field == null)
                 remove();
             else
-                _fields[_current] = field;
+                _fields[_last] = field;
         }
     }
 }

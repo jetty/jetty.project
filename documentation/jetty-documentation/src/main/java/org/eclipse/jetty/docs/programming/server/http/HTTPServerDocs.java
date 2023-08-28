@@ -63,16 +63,20 @@ import org.eclipse.jetty.server.SslConnectionFactory;
 import org.eclipse.jetty.server.handler.ContextHandler;
 import org.eclipse.jetty.server.handler.ContextHandlerCollection;
 import org.eclipse.jetty.server.handler.DefaultHandler;
+import org.eclipse.jetty.server.handler.EventsHandler;
 import org.eclipse.jetty.server.handler.ResourceHandler;
 import org.eclipse.jetty.server.handler.SecuredRedirectHandler;
 import org.eclipse.jetty.server.handler.StatisticsHandler;
 import org.eclipse.jetty.server.handler.gzip.GzipHandler;
 import org.eclipse.jetty.unixdomain.server.UnixDomainServerConnector;
 import org.eclipse.jetty.util.Callback;
+import org.eclipse.jetty.util.NanoTime;
 import org.eclipse.jetty.util.resource.Resource;
 import org.eclipse.jetty.util.resource.ResourceFactory;
 import org.eclipse.jetty.util.ssl.SslContextFactory;
 import org.eclipse.jetty.util.thread.QueuedThreadPool;
+
+import static java.lang.System.Logger.Level.INFO;
 
 @SuppressWarnings("unused")
 public class HTTPServerDocs
@@ -908,6 +912,48 @@ public class HTTPServerDocs
 
         server.start();
         // end::dataRateHandler[]
+    }
+
+    public void eventsHandler() throws Exception
+    {
+        // tag::eventsHandler[]
+        class MyEventsHandler extends EventsHandler
+        {
+            @Override
+            protected void onBeforeHandling(Request request)
+            {
+                // The nanoTime at which the request is first received.
+                long requestBeginNanoTime = request.getBeginNanoTime();
+
+                // The nanoTime just before invoking the next Handler.
+                request.setAttribute("beforeHandlingNanoTime", NanoTime.now());
+            }
+
+            @Override
+            protected void onComplete(Request request, Throwable failure)
+            {
+                // Retrieve the before handling nanoTime.
+                long beforeHandlingNanoTime = (long)request.getAttribute("beforeHandlingNanoTime");
+
+                // Record the request processing time.
+                long processingTime = NanoTime.millisSince(beforeHandlingNanoTime);
+                System.getLogger("trackTime").log(INFO, "processing request %s took %d ms", request, processingTime);
+            }
+        }
+
+        Server server = new Server();
+        ServerConnector connector = new ServerConnector(server);
+        server.addConnector(connector);
+
+        // Link the EventsHandler as the outermost Handler after Server.
+        MyEventsHandler eventsHandler = new MyEventsHandler();
+        server.setHandler(eventsHandler);
+
+        ContextHandler appHandler = new ContextHandler("/app");
+        eventsHandler.setHandler(appHandler);
+
+        server.start();
+        // end::eventsHandler[]
     }
 
     public void securedHandler() throws Exception

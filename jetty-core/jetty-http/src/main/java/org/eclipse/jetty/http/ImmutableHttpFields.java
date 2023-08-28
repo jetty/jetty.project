@@ -14,7 +14,7 @@
 package org.eclipse.jetty.http;
 
 import java.util.Arrays;
-import java.util.Iterator;
+import java.util.ListIterator;
 import java.util.NoSuchElementException;
 import java.util.Objects;
 import java.util.stream.Stream;
@@ -134,24 +134,9 @@ class ImmutableHttpFields implements HttpFields
     }
 
     @Override
-    public Iterator<HttpField> iterator()
+    public ListIterator<HttpField> listIterator(int index)
     {
-        return new Iterator<>()
-        {
-            int _index = 0;
-
-            @Override
-            public boolean hasNext()
-            {
-                return _index < _size;
-            }
-
-            @Override
-            public HttpField next()
-            {
-                return _fields[_index++];
-            }
-        };
+        return new Listerator(index);
     }
 
     @Override
@@ -170,5 +155,78 @@ class ImmutableHttpFields implements HttpFields
     public String toString()
     {
         return asString();
+    }
+
+    private class Listerator implements ListIterator<HttpField>
+    {
+        private int _index;
+        private int _last = -1;
+
+        Listerator(int index)
+        {
+            if (index < 0 || index > _size)
+                throw new NoSuchElementException(Integer.toString(index));
+            _index = index;
+        }
+
+        @Override
+        public void add(HttpField field)
+        {
+            throw new UnsupportedOperationException();
+        }
+
+        @Override
+        public boolean hasNext()
+        {
+            return _index < _size;
+        }
+
+        @Override
+        public boolean hasPrevious()
+        {
+            return _index > 0;
+        }
+
+        @Override
+        public HttpField next()
+        {
+            if (_index >= _size)
+                throw new NoSuchElementException(Integer.toString(_index));
+            _last = _index++;
+            return _fields[_last];
+        }
+
+        @Override
+        public int nextIndex()
+        {
+            return _index + 1;
+        }
+
+        @Override
+        public HttpField previous()
+        {
+            if (_index <= 0)
+                throw new NoSuchElementException(Integer.toString(_index - 1));
+            _last = --_index;
+            return _fields[_last];
+        }
+
+        @Override
+        public int previousIndex()
+        {
+            return _index - 1;
+        }
+
+        @Override
+        public void remove()
+        {
+            throw new UnsupportedOperationException();
+        }
+
+        @Override
+        public void set(HttpField field)
+        {
+            throw new UnsupportedOperationException();
+        }
     }
 }
