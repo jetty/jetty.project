@@ -103,7 +103,7 @@ def mavenBuild(jdk, cmdline, mvnName) {
     try {
       withEnv(["JAVA_HOME=${ tool "$jdk" }",
                "PATH+MAVEN=${ tool "$jdk" }/bin:${tool "$mvnName"}/bin",
-               "MAVEN_OPTS=-Xms2g -Xmx4g -Djava.awt.headless=true"]) {
+               "MAVEN_OPTS=-Xms4g -Xmx6g -Djava.awt.headless=true"]) {
       configFileProvider(
         [configFile(fileId: 'oss-settings.xml', variable: 'GLOBAL_MVN_SETTINGS'),
           configFile(fileId: 'maven-build-cache-config.xml', variable: 'MVN_BUILD_CACHE_CONFIG')]) {
