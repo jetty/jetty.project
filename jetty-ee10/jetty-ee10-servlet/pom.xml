@@ -25,8 +25,6 @@
             @{argLine} ${jetty.surefire.argLine}
             --add-modules org.eclipse.jetty.util.ajax
             --add-reads org.eclipse.jetty.ee10.servlet=org.eclipse.jetty.logging
-            --add-reads org.eclipse.jetty.http2.client=org.eclipse.jetty.http2.hpack
-            --add-reads org.eclipse.jetty.http2.client=org.eclipse.jetty.logging
           </argLine>
         </configuration>
       </plugin>
