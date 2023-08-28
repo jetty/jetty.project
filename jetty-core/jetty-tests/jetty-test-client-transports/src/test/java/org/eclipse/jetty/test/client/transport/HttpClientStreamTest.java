@@ -297,6 +297,7 @@ public class HttpClientStreamTest extends AbstractTest
     @ParameterizedTest
     @MethodSource("transports")
     @Tag("DisableLeakTracking:client:HTTP")
+    @Tag("DisableLeakTracking:client:HTTPS")
     @Tag("DisableLeakTracking:client:FCGI")
     @Tag("DisableLeakTracking:client:UNIX_DOMAIN")
     public void testInputStreamResponseListenerClosedBeforeContent(Transport transport) throws Exception
@@ -395,7 +396,10 @@ public class HttpClientStreamTest extends AbstractTest
 
     @ParameterizedTest
     @MethodSource("transports")
+    @Tag("DisableLeakTracking:client:HTTP")
+    @Tag("DisableLeakTracking:client:HTTPS")
     @Tag("DisableLeakTracking:client:FCGI")
+    @Tag("DisableLeakTracking:client:UNIX_DOMAIN")
     public void testInputStreamResponseListenerFailedWhileWaiting(Transport transport) throws Exception
     {
         start(transport, new Handler.Abstract()
