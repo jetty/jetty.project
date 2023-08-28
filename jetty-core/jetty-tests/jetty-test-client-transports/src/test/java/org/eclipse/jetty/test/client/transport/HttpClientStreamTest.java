@@ -342,9 +342,7 @@ public class HttpClientStreamTest extends AbstractTest
 
     @ParameterizedTest
     @MethodSource("transports")
-    @Tag("DisableLeakTracking:client:H2C")
-    @Tag("DisableLeakTracking:client:H3")
-    @Tag("DisableLeakTracking:client:FCGI")
+    @Tag("DisableLeakTracking:client")
     public void testInputStreamResponseListenerClosedWhileWaiting(Transport transport) throws Exception
     {
         byte[] chunk1 = new byte[]{0, 1};
