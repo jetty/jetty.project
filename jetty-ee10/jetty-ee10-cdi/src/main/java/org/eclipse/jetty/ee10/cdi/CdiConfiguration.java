@@ -13,6 +13,8 @@
 
 package org.eclipse.jetty.ee10.cdi;
 
+import java.util.function.Predicate;
+
 import org.eclipse.jetty.ee10.annotations.AnnotationConfiguration;
 import org.eclipse.jetty.ee10.plus.webapp.PlusConfiguration;
 import org.eclipse.jetty.ee10.webapp.AbstractConfiguration;
@@ -31,8 +33,16 @@ public class CdiConfiguration extends AbstractConfiguration
     {
         super(new Builder()
             .protectAndExpose("org.eclipse.jetty.ee10.cdi.CdiServletContainerInitializer")
-            .hide("jakarta.enterprise.", "jakarta.decorator.")
+            .hide(getHiddenClasses())
             .addDependents(AnnotationConfiguration.class, PlusConfiguration.class));
     }
-}
 
+    private static String[] getHiddenClasses()
+    {
+        //Only hide the cdi api classes if there is not also an impl on the
+        //environment classpath - vital for embedded uses.
+        if (CdiConfiguration.class.getClassLoader().getResource("META-INF/services/jakarta.enterprise.inject.spi.CDIProvider") == null)
+            return new String[]{"jakarta.enterprise.", "jakarta.decorator."};
+        return new String[0];
+    }
+}
