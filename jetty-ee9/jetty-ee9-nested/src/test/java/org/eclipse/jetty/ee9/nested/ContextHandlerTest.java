@@ -21,6 +21,7 @@ import java.util.concurrent.ConcurrentLinkedQueue;
 
 import jakarta.servlet.AsyncContext;
 import jakarta.servlet.DispatcherType;
+import jakarta.servlet.ServletException;
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletRequestWrapper;
 import jakarta.servlet.http.HttpServletResponse;
@@ -35,6 +36,7 @@ import org.eclipse.jetty.server.LocalConnector;
 import org.eclipse.jetty.server.Server;
 import org.eclipse.jetty.server.handler.ContextHandlerCollection;
 import org.junit.jupiter.api.AfterEach;
+import org.junit.jupiter.api.Assertions;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 
@@ -173,6 +175,54 @@ public class ContextHandlerTest
         assertThat(response.getField(HttpHeader.CONTENT_LENGTH).getIntValue(), greaterThan(0));
         assertThat(response.getContent(), containsString("contextPath=/context"));
         assertThat(response.getContent(), containsString("pathInfo=/path/info"));
+    }
+
+    @Test
+    public void testPersistentHeaders() throws Exception
+    {
+        _contextHandler.setContextPath("/context");
+        _contextHandler.setHandler(new AbstractHandler()
+        {
+            @Override
+            public void handle(String target, Request baseRequest, HttpServletRequest request, HttpServletResponse response) throws IOException, ServletException
+            {
+                Assertions.assertThrows(UnsupportedOperationException.class, () -> response.setHeader("Server", null));
+                Assertions.assertThrows(UnsupportedOperationException.class, () -> response.setHeader("Date", null));
+                String server = response.getHeader(HttpHeader.SERVER.asString());
+                String date = response.getHeader(HttpHeader.DATE.asString());
+                response.setHeader("Server", "testing123");
+                response.setDateHeader("Date", 1);
+
+                // Can set them to new values
+                assertThat(response.getHeader(HttpHeader.SERVER.asString()), is("testing123"));
+                assertThat(response.getHeader(HttpHeader.DATE.asString()), containsString("01 Jan 1970"));
+
+                // reset reverts to original values
+                response.reset();
+                assertThat(response.getHeader(HttpHeader.SERVER.asString()), is(server));
+                assertThat(response.getHeader(HttpHeader.DATE.asString()), is(date));
+
+                // But we can still modify them, and the modified values will be sent
+                response.setHeader("Server", "testing123");
+                response.setDateHeader("Date", 1);
+
+                baseRequest.setHandled(true);
+                response.getWriter().println("OK");
+            }
+        });
+        _server.start();
+
+        String rawResponse = _connector.getResponse("""
+            GET /context/test HTTP/1.0
+            
+            """);
+
+        HttpTester.Response response = HttpTester.parseResponse(rawResponse);
+
+        assertThat(response.getStatus(), is(200));
+        assertThat(response.getField(HttpHeader.CONTENT_LENGTH).getIntValue(), greaterThan(0));
+        assertThat(response.getField(HttpHeader.SERVER).getValue(), is("testing123"));
+        assertThat(response.getField(HttpHeader.DATE).getValue(), containsString("01 Jan 1970"));
     }
 
     @Test

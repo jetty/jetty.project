@@ -149,7 +149,7 @@ public class HttpChannelState implements HttpChannel, Components
             _request._httpChannelState = null;
 
             // Recycle.
-            _responseHeaders.reset();
+            _responseHeaders.recycle();
             _handling = null;
             _handled = false;
             _streamSendState = StreamSendState.SENDING;

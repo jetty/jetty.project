@@ -90,6 +90,9 @@ public class ResponseTest
             @Override
             public boolean handle(Request request, Response response, Callback callback)
             {
+                String date = response.getHeaders().get(HttpHeader.DATE);
+                String server = response.getHeaders().get(HttpHeader.SERVER);
+
                 response.getHeaders().add("Temp", "field");
                 response.getHeaders().add("Test", "before reset");
                 assertThrows(UnsupportedOperationException.class, () -> response.getHeaders().remove(HttpHeader.SERVER));
@@ -128,7 +131,13 @@ public class ResponseTest
                 assertFalse(response.getHeaders().contains("Temp"));
 
                 response.getHeaders().add("Temp", "field");
+                response.getHeaders().put(HttpHeader.DATE, "1970-02-02");
+
                 response.reset();
+
+                assertThat(response.getHeaders().get(HttpHeader.DATE), is(date));
+                assertThat(response.getHeaders().get(HttpHeader.SERVER), is(server));
+
                 response.getHeaders().add("Test", "after reset");
 
                 response.getHeaders().putDate("Date", 1L);

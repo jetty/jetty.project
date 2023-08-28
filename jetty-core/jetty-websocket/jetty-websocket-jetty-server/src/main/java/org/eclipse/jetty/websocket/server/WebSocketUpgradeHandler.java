@@ -95,7 +95,7 @@ public class WebSocketUpgradeHandler extends Handler.Wrapper
 
     private final ServerWebSocketContainer _container;
 
-    private WebSocketUpgradeHandler(ServerWebSocketContainer container)
+    public WebSocketUpgradeHandler(ServerWebSocketContainer container)
     {
         _container = container;
         addBean(container);
@@ -117,9 +117,22 @@ public class WebSocketUpgradeHandler extends Handler.Wrapper
     @Override
     public boolean handle(Request request, Response response, Callback callback) throws Exception
     {
-        if (_container.handle(request, response, callback))
+        if (handle(_container, request, response, callback))
             return true;
         return super.handle(request, response, callback);
+    }
+
+    protected boolean handle(ServerWebSocketContainer container, Request request, Response response, Callback callback)
+    {
+        try
+        {
+            return container.handle(request, response, callback);
+        }
+        catch (Throwable x)
+        {
+            Response.writeError(request, response, callback, x);
+            return true;
+        }
     }
 
     @Override

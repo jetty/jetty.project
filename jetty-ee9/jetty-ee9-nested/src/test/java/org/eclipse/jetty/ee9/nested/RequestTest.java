@@ -1946,6 +1946,7 @@ public class RequestTest
         String uri = "http://host/foo/something";
         HttpChannel httpChannel = new HttpChannel(_context, new MockConnectionMetaData(_connector));
         Request request = new MockRequest(httpChannel, new HttpInput(httpChannel));
+        request.getResponse().onResponse(HttpFields.build());
         request.getResponse().getHttpFields().add(new HttpCookieUtils.SetCookieHttpField(HttpCookie.from("good", "thumbsup", Map.of(HttpCookie.MAX_AGE_ATTRIBUTE, Long.toString(100))), CookieCompliance.RFC6265));
         request.getResponse().getHttpFields().add(new HttpCookieUtils.SetCookieHttpField(HttpCookie.from("bonza", "bewdy", Map.of(HttpCookie.MAX_AGE_ATTRIBUTE, Long.toString(1))), CookieCompliance.RFC6265));
         request.getResponse().getHttpFields().add(new HttpCookieUtils.SetCookieHttpField(HttpCookie.from("bad", "thumbsdown", Map.of(HttpCookie.MAX_AGE_ATTRIBUTE, Long.toString(0))), CookieCompliance.RFC6265));
@@ -1995,6 +1996,7 @@ public class RequestTest
         };
         HttpFields.Mutable fields = HttpFields.build();
         request.onRequest(new TestCoreRequest(uri, fields));
+        request.getResponse().onResponse(HttpFields.build());
         assertTrue(request.isPushSupported());
         PushBuilder builder = request.newPushBuilder();
         assertNotNull(builder);
