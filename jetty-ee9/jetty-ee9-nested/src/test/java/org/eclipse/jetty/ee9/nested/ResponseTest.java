@@ -196,7 +196,7 @@ public class ResponseTest
         assertEquals("bar", en.next());
         assertFalse(en.hasNext());
 
-        response.recycle();
+        response = getResponse();
 
         response.setContentType("text/html");
         assertEquals("text/html", response.getContentType());
@@ -205,29 +205,29 @@ public class ResponseTest
         response.setContentType("foo2/bar2;charset=utf-8");
         assertEquals("foo2/bar2;charset=utf-8", response.getContentType());
 
-        response.recycle();
+        response = getResponse();
         response.setContentType("text/xml;charset=ISO-8859-7");
         response.getWriter();
         assertEquals("text/xml;charset=ISO-8859-7", response.getContentType());
         response.setContentType("text/html;charset=UTF-8");
         assertEquals("text/html;charset=ISO-8859-7", response.getContentType());
 
-        response.recycle();
+        response = getResponse();
         response.setContentType("text/html;charset=US-ASCII");
         response.getWriter();
         assertEquals("text/html;charset=US-ASCII", response.getContentType());
 
-        response.recycle();
+        response = getResponse();
         response.setContentType("text/html; charset=UTF-8");
         response.getWriter();
         assertEquals("text/html;charset=utf-8", response.getContentType());
 
-        response.recycle();
+        response = getResponse();
         response.setContentType("text/json");
         response.getWriter();
         assertEquals("text/json", response.getContentType());
 
-        response.recycle();
+        response = getResponse();
         response.setContentType("text/json");
         response.setCharacterEncoding("UTF-8");
         response.getWriter();
@@ -246,37 +246,37 @@ public class ResponseTest
         response.setContentType("foo/bar");
         assertEquals("foo/bar;charset=xyz", response.getContentType());
 
-        response.recycle();
+        response = getResponse();
         response.setContentType("foo/bar");
         response.setCharacterEncoding("xyz");
         assertEquals("foo/bar;charset=xyz", response.getContentType());
 
-        response.recycle();
+        response = getResponse();
         response.setCharacterEncoding("xyz");
         response.setContentType("foo/bar;charset=abc");
         assertEquals("foo/bar;charset=abc", response.getContentType());
 
-        response.recycle();
+        response = getResponse();
         response.setContentType("foo/bar;charset=abc");
         response.setCharacterEncoding("xyz");
         assertEquals("foo/bar;charset=xyz", response.getContentType());
 
-        response.recycle();
+        response = getResponse();
         response.setCharacterEncoding("xyz");
         response.setContentType("foo/bar");
         response.setCharacterEncoding(null);
         assertEquals("foo/bar", response.getContentType());
 
-        response.recycle();
+        response = getResponse();
         response.setCharacterEncoding("xyz");
         response.setCharacterEncoding(null);
         response.setContentType("foo/bar");
         assertEquals("foo/bar", response.getContentType());
-        response.recycle();
+        response = getResponse();
         response.addHeader("Content-Type", "text/something");
         assertEquals("text/something", response.getContentType());
 
-        response.recycle();
+        response = getResponse();
         response.addHeader("Content-Type", "application/json");
         response.getWriter();
         assertEquals("application/json", response.getContentType());
@@ -310,7 +310,7 @@ public class ResponseTest
         assertEquals("text/json", response.getContentType());
         assertEquals("utf-8", response.getCharacterEncoding());
 
-        response.recycle();
+        response = getResponse();
 
         // Assumed from encoding.properties
         assertNull(response.getContentType());
@@ -328,7 +328,7 @@ public class ResponseTest
 
         assertNull(response.getContentType());
 
-        response.recycle();
+        response = getResponse();
         response.setContentType("text/html;charset=utf-8;charset=UTF-8");
         response.getWriter();
         assertEquals("text/html;charset=utf-8;charset=UTF-8", response.getContentType());
@@ -349,7 +349,7 @@ public class ResponseTest
         response.setContentType("text/plain");
         assertEquals("text/plain;charset=ISO-8859-2", response.getContentType());
 
-        response.recycle();
+        response = getResponse();
         response.setContentType("text/plain");
         response.setCharacterEncoding("utf-8");
         response.setLocale(java.util.Locale.ITALIAN);
@@ -409,7 +409,7 @@ public class ResponseTest
         Response response = getResponse();
         assertThat("utf-16", Matchers.equalTo(response.getCharacterEncoding()));
 
-        response.recycle();
+        response = getResponse();
 
         //test that explicit overrides default
         response = getResponse();
@@ -419,7 +419,7 @@ public class ResponseTest
         response.getWriter();
         assertThat("ascii", Matchers.equalTo(response.getCharacterEncoding()));
 
-        response.recycle();
+        response = getResponse();
 
         //test that assumed overrides default
         response = getResponse();
@@ -429,7 +429,7 @@ public class ResponseTest
         //getWriter should not have modified character encoding
         assertThat("utf-8", Matchers.equalTo(response.getCharacterEncoding()));
 
-        response.recycle();
+        response = getResponse();
 
         //test that inferred overrides default
         response = getResponse();
@@ -439,7 +439,7 @@ public class ResponseTest
         response.getWriter();
         assertThat("utf-8", Matchers.equalTo(response.getCharacterEncoding()));
 
-        response.recycle();
+        response = getResponse();
 
         //test that without a default or any content type, use iso-8859-1
         response = getResponse();
@@ -521,7 +521,7 @@ public class ResponseTest
         response.setCharacterEncoding("ISO-8859-1");
         assertEquals("foo2/bar2;charset=utf-8", response.getContentType());
 
-        response.recycle();
+        response = getResponse();
 
         response.setContentType("text/html");
         response.setCharacterEncoding("UTF-8");
@@ -559,7 +559,7 @@ public class ResponseTest
         response.setCharacterEncoding("ISO-8859-1");
         assertEquals("foo2/bar2;charset=utf-8", response.getContentType());
 
-        response.recycle();
+        response = getResponse();
 
         response.setCharacterEncoding("utf-8");
         response.setContentType("text/html");
@@ -587,7 +587,7 @@ public class ResponseTest
         response.setCharacterEncoding("ISO-8859-1");
         assertEquals("foo2/bar2;charset=utf-8", response.getContentType());
 
-        response.recycle();
+        response = getResponse();
         response.reopen();
 
         response.setCharacterEncoding("utf16");
@@ -600,7 +600,7 @@ public class ResponseTest
         response.setCharacterEncoding("iso-8859-1");
         assertEquals("text/xml;charset=utf-8", response.getContentType());
 
-        response.recycle();
+        response = getResponse();
         response.reopen();
         response.setCharacterEncoding("utf-16");
         response.setContentType("foo/bar");
@@ -1499,7 +1499,7 @@ public class ResponseTest
         response.setContentType("foo2/bar2");
         assertEquals("foo2/bar2;charset=iso-8859-1", response.getContentType());
 
-        response.recycle();
+        response = getResponse();
 
         response.setCharacterEncoding("uTf-8");
         response.setContentType("text/html; other=xyz");
@@ -1521,7 +1521,7 @@ public class ResponseTest
         response.getWriter();
         assertEquals("foo/bar; charset=utf-8 other=xyz", response.getContentType());
 
-        response.recycle();
+        response = getResponse();
 
         response.setCharacterEncoding("utf16");
         response.setContentType("text/html; other=xyz charset=utf-8");
@@ -1529,7 +1529,7 @@ public class ResponseTest
         response.getWriter();
         assertEquals("text/html; other=xyz charset=utf-8;charset=utf-16", response.getContentType());
 
-        response.recycle();
+        response = getResponse();
 
         response.setCharacterEncoding("utf16");
         response.setContentType("foo/bar; other=pq charset=utf-8 other=xyz");
