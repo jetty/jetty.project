@@ -114,6 +114,8 @@ public class JettyHomeTester
 {
     private static final Logger LOGGER = LoggerFactory.getLogger(JettyHomeTester.class);
 
+    private static final CopyOption[] EMPTY_OPTIONS = new CopyOption[]{};
+
     private final Config config;
 
     private JettyHomeTester(Config config)
@@ -204,18 +206,6 @@ public class JettyHomeTester
             server.bind(new InetSocketAddress("localhost", 0));
             return server.getLocalPort();
         }
-    }
-
-    /**
-     * Installs content from {@code src/test/resources/<testResourcePath>} into {@code ${jetty.base}/<baseResourcePath>}
-     *
-     * @param testResourcePath the location of the source file in {@code src/test/resources}
-     * @param baseResourcePath the location of the destination file in {@code ${jetty.base}}
-     * @throws IOException if unable to copy file
-     */
-    public void installBaseResource(String testResourcePath, String baseResourcePath) throws IOException
-    {
-        this.installBaseResource(testResourcePath, baseResourcePath, null);
     }
 
     /**
