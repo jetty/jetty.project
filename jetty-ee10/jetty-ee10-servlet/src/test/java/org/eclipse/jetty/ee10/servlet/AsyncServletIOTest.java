@@ -714,12 +714,14 @@ public class AsyncServletIOTest
                 @Override
                 public void onError(Throwable t)
                 {
+                    System.err.println("onError");
                     t.printStackTrace();
                 }
 
                 @Override
                 public void onDataAvailable() throws IOException
                 {
+                    System.err.println("onDataAvailable");
                     onDA.incrementAndGet();
 
                     boolean readF = false;
@@ -750,6 +752,7 @@ public class AsyncServletIOTest
                             @Override
                             public void onWritePossible() throws IOException
                             {
+                                System.err.println("onWritePossible");
                                 onWP.incrementAndGet();
 
                                 while (out.isReady())
@@ -785,6 +788,7 @@ public class AsyncServletIOTest
                 @Override
                 public void onAllDataRead() throws IOException
                 {
+                    System.err.println("onAllDataRead");
                     throw new IllegalStateException();
                 }
             });

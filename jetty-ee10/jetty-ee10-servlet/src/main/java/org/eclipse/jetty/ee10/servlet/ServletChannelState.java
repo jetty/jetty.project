@@ -113,6 +113,7 @@ public class ServletChannelState
      */
     private enum OutputState
     {
+        IDLE,
         OPEN,
         COMPLETED,
         ABORTED,
@@ -140,7 +141,7 @@ public class ServletChannelState
     private List<AsyncListener> _asyncListeners;
     private State _state = State.IDLE;
     private RequestState _requestState = RequestState.BLOCKING;
-    private OutputState _outputState = OutputState.OPEN;
+    private OutputState _outputState = OutputState.IDLE;
     private InputState _inputState = InputState.IDLE;
     private boolean _initial = true;
     private boolean _sendError;
@@ -157,6 +158,24 @@ public class ServletChannelState
     public ServletChannel getServletChannel()
     {
         return _servletChannel;
+    }
+
+    public boolean isAborted()
+    {
+        try (AutoLock ignored = lock())
+        {
+            return _outputState == OutputState.ABORTED;
+        }
+    }
+
+    public void open()
+    {
+        try (AutoLock ignored = lock())
+        {
+            if (_outputState != OutputState.IDLE)
+                throw new IllegalStateException(toStringLocked());
+            _outputState = OutputState.OPEN;
+        }
     }
 
     AutoLock lock()
@@ -1042,7 +1061,8 @@ public class ServletChannelState
             _asyncListeners = null;
             _state = State.IDLE;
             _requestState = RequestState.BLOCKING;
-            _outputState = OutputState.OPEN;
+            if (_outputState != OutputState.ABORTED)
+                _outputState = OutputState.IDLE;
             _initial = true;
             _inputState = InputState.IDLE;
             _asyncWritePossible = false;
