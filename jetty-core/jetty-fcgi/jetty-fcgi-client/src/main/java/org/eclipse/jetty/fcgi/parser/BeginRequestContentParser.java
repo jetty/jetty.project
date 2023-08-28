@@ -16,6 +16,7 @@ package org.eclipse.jetty.fcgi.parser;
 import java.nio.ByteBuffer;
 
 import org.eclipse.jetty.fcgi.FCGI;
+import org.eclipse.jetty.util.NanoTime;
 
 /**
  * <p>Parser for the BEGIN_REQUEST frame content.</p>
@@ -34,11 +35,17 @@ public class BeginRequestContentParser extends ContentParser
     private int cursor;
     private int role;
     private int flags;
+    private long beginNanoTime;
 
     public BeginRequestContentParser(HeaderParser headerParser, ServerParser.Listener listener)
     {
         super(headerParser);
         this.listener = listener;
+    }
+
+    public long getBeginNanoTime()
+    {
+        return beginNanoTime;
     }
 
     @Override
@@ -50,6 +57,7 @@ public class BeginRequestContentParser extends ContentParser
             {
                 case ROLE:
                 {
+                    beginNanoTime = NanoTime.now();
                     if (buffer.remaining() >= 2)
                     {
                         role = buffer.getShort();
