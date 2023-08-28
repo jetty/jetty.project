@@ -19,10 +19,9 @@ import java.util.function.Consumer;
 
 /**
  * <p>A callback object that handles success/failure events of asynchronous operations.</p>
- *
- * @apiNote This interface is almost identical to {@code org.eclipse.jetty.util.Callback},
+ * <p>NOTE: This interface is almost identical to {@code org.eclipse.jetty.util.Callback},
  * which however cannot be used in the Jetty WebSocket APIs for web application classloading
- * reasons.
+ * reasons.</p>
  */
 public interface Callback
 {
