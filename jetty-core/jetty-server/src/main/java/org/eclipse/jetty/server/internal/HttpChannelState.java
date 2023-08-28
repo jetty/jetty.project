@@ -346,7 +346,6 @@ public class HttpChannelState implements HttpChannel, Components
     @Override
     public Runnable onIdleTimeout(TimeoutException t)
     {
-        Predicate<TimeoutException> onIdleTimeout;
         try (AutoLock ignored = _lock.lock())
         {
             if (LOG.isDebugEnabled())
@@ -380,33 +379,30 @@ public class HttpChannelState implements HttpChannel, Components
                 if (invokeOnContentAvailable != null || invokeWriteFailure != null)
                     return _serializedInvoker.offer(invokeOnContentAvailable, invokeWriteFailure);
 
-                // Otherwise We ask any idle timeout listeners if we should call onFailure or not
-                onIdleTimeout = _onIdleTimeout;
+                // otherwise, if there is an idle timeout listener, we ask if if we should call onFailure or not
+                Predicate<TimeoutException> onIdleTimeout = _onIdleTimeout;
+                if (onIdleTimeout != null)
+                {
+                    return _serializedInvoker.offer(() ->
+                    {
+                        if (onIdleTimeout.test(t))
+                        {
+                            // If the idle timeout listener(s) return true, then we call onFailure and any task it returns.
+                            Runnable task = onFailure(t);
+                            if (task != null)
+                                task.run();
+                        }
+                    });
+                }
 
-                // If there is no idle nor failure listener, then we can fail the callback directly without double lock
-                if (onIdleTimeout == null && _onFailure == null && _request != null)
+                // otherwise, we are going to fail the callback, either directly or by a call to onFailure, so ensure all future IO
+                // operations are failed as well
+                _failure = Content.Chunk.from(t, true);
+
+                // if there is no failure listener, then we can fail the callback directly without a double lock
+                if (_onFailure == null && _request != null)
                     return () -> _request._callback.failed(t);
             }
-            else
-            {
-                onIdleTimeout = null;
-            }
-        }
-
-        // Ask any listener what to do
-        if (onIdleTimeout != null)
-        {
-            Runnable onIdle = () ->
-            {
-                if (onIdleTimeout.test(t))
-                {
-                    // If the idle timeout listener(s) return true, then we call onFailure and any task it returns.
-                    Runnable task = onFailure(t);
-                    if (task != null)
-                        task.run();
-                }
-            };
-            return _serializedInvoker.offer(onIdle);
         }
 
         // otherwise treat as a failure
