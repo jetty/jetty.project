@@ -70,6 +70,11 @@ public class ServerFCGIConnection extends AbstractConnection implements Connecti
         this.id = StringUtil.randomAlphaNumeric(16);
     }
 
+    public long getBeginNanoTime()
+    {
+        return parser.getBeginNanoTime();
+    }
+
     Flusher getFlusher()
     {
         return flusher;
