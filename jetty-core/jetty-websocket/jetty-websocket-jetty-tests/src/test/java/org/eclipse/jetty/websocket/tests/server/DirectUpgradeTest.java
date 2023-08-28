@@ -218,7 +218,8 @@ public class DirectUpgradeTest
         public void onWebSocketBinary(ByteBuffer payload, org.eclipse.jetty.websocket.api.Callback callback)
         {
             org.eclipse.jetty.websocket.api.Callback.Completable.with(c -> session.sendBinary(payload, c))
-                .whenComplete(callback.asConsumer());
+                .whenComplete(callback.asBiConsumer())
+                .thenRun(session::demand);
         }
 
         @Override

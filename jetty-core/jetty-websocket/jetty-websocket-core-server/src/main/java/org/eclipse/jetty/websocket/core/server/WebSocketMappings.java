@@ -254,9 +254,9 @@ public class WebSocketMappings implements Dumpable, LifeCycle.Listener
      * @param callback the callback
      * @param defaultCustomizer the customizer
      * @return true if the WebSocket upgrade was accepted
-     * @throws IOException there is an error during the upgrade
+     * @throws WebSocketException there is an error during the upgrade
      */
-    public boolean upgrade(Request request, Response response, Callback callback, Configuration.Customizer defaultCustomizer) throws IOException
+    public boolean upgrade(Request request, Response response, Callback callback, Configuration.Customizer defaultCustomizer) throws WebSocketException
     {
         WebSocketNegotiator negotiator = getMatchedNegotiator(request, WebSocketMappings::storePathSpec);
         return upgrade(negotiator, request, response, callback, defaultCustomizer);
@@ -283,9 +283,9 @@ public class WebSocketMappings implements Dumpable, LifeCycle.Listener
      * @param callback the callback
      * @param defaultCustomizer the customizer
      * @return true if the WebSocket upgrade was accepted
-     * @throws IOException there is an error during the upgrade
+     * @throws WebSocketException there is an error during the upgrade
      */
-    public boolean upgrade(WebSocketNegotiator negotiator, Request request, Response response, Callback callback, Configuration.Customizer defaultCustomizer) throws IOException
+    public boolean upgrade(WebSocketNegotiator negotiator, Request request, Response response, Callback callback, Configuration.Customizer defaultCustomizer) throws WebSocketException
     {
         if (negotiator == null)
             return false;

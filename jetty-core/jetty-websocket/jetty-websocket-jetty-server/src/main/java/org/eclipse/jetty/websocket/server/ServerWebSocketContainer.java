@@ -13,7 +13,6 @@
 
 package org.eclipse.jetty.websocket.server;
 
-import java.io.IOException;
 import java.time.Duration;
 import java.util.ArrayList;
 import java.util.Collection;
@@ -298,11 +297,12 @@ public class ServerWebSocketContainer extends ContainerLifeCycle implements WebS
      * @param callback the callback to complete when the handling is complete
      * @return {@code true} in case of WebSocket upgrades or failures,
      * {@code false} if the request was not handled
+     * @throws WebSocketException there is an error during the upgrade
      * @see #addMapping(PathSpec, WebSocketCreator)
      * @see #upgrade(WebSocketCreator, Request, Response, Callback)
      */
     @Override
-    public boolean handle(Request request, Response response, Callback callback) throws IOException
+    public boolean handle(Request request, Response response, Callback callback) throws WebSocketException
     {
         return mappings.upgrade(request, response, callback, configuration);
     }
@@ -323,21 +323,14 @@ public class ServerWebSocketContainer extends ContainerLifeCycle implements WebS
      * @param callback the callback to complete when the upgrade is complete
      * @return {@code true} in case of WebSocket upgrades or failures,
      * {@code false} if the request was not upgraded
+     * @throws WebSocketException there is an error during the upgrade
      * @see #handle(Request, Response, Callback)
      */
-    public boolean upgrade(WebSocketCreator creator, Request request, Response response, Callback callback)
+    public boolean upgrade(WebSocketCreator creator, Request request, Response response, Callback callback) throws WebSocketException
     {
-        try
-        {
-            var coreCreator = newWebSocketCreator(creator);
-            WebSocketNegotiator negotiator = WebSocketNegotiator.from(coreCreator, factory);
-            return mappings.upgrade(negotiator, request, response, callback, configuration);
-        }
-        catch (Throwable x)
-        {
-            Response.writeError(request, response, callback, x);
-            return true;
-        }
+        var coreCreator = newWebSocketCreator(creator);
+        WebSocketNegotiator negotiator = WebSocketNegotiator.from(coreCreator, factory);
+        return mappings.upgrade(negotiator, request, response, callback, configuration);
     }
 
     private org.eclipse.jetty.websocket.core.server.WebSocketCreator newWebSocketCreator(WebSocketCreator creator)

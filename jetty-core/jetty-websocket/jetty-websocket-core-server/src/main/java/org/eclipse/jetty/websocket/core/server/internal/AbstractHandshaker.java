@@ -13,7 +13,6 @@
 
 package org.eclipse.jetty.websocket.core.server.internal;
 
-import java.io.IOException;
 import java.util.List;
 import java.util.concurrent.Executor;
 
@@ -52,7 +51,7 @@ public abstract class AbstractHandshaker implements Handshaker
     private static final HttpField SERVER_VERSION = new PreEncodedHttpField(HttpHeader.SERVER, HttpConfiguration.SERVER_VERSION);
 
     @Override
-    public boolean upgradeRequest(WebSocketNegotiator negotiator, Request request, Response response, Callback callback, WebSocketComponents components, Configuration.Customizer defaultCustomizer) throws IOException
+    public boolean upgradeRequest(WebSocketNegotiator negotiator, Request request, Response response, Callback callback, WebSocketComponents components, Configuration.Customizer defaultCustomizer) throws WebSocketException
     {
         if (!isWebSocketUpgradeRequest(request))
             return false;

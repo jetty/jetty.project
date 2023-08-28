@@ -13,13 +13,12 @@
 
 package org.eclipse.jetty.websocket.core.server;
 
-import java.io.IOException;
-
 import org.eclipse.jetty.server.Request;
 import org.eclipse.jetty.server.Response;
 import org.eclipse.jetty.util.Callback;
 import org.eclipse.jetty.websocket.core.Configuration;
 import org.eclipse.jetty.websocket.core.WebSocketComponents;
+import org.eclipse.jetty.websocket.core.exception.WebSocketException;
 import org.eclipse.jetty.websocket.core.server.internal.HandshakerSelector;
 
 public interface Handshaker
@@ -55,7 +54,7 @@ public interface Handshaker
      * @param components the WebSocket components
      * @param defaultCustomizer the customizer
      * @return true if a response was generated, false if a response is not generated
-     * @throws IOException there is an error during the upgrade
+     * @throws WebSocketException there is an error during the upgrade
      */
-    boolean upgradeRequest(WebSocketNegotiator negotiator, Request request, Response response, Callback callback, WebSocketComponents components, Configuration.Customizer defaultCustomizer) throws IOException;
+    boolean upgradeRequest(WebSocketNegotiator negotiator, Request request, Response response, Callback callback, WebSocketComponents components, Configuration.Customizer defaultCustomizer) throws WebSocketException;
 }

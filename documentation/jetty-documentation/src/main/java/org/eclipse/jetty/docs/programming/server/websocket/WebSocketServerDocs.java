@@ -235,12 +235,21 @@ public class WebSocketServerDocs
                 String pathInContext = Request.getPathInContext(request);
                 if (pathInContext.startsWith("/ws/echo") && request.getHeaders().contains("X-WS", "true"))
                 {
-                    // This is a WebSocket upgrade request, perform a direct upgrade.
-                    if (container.upgrade((rq, rs, cb) -> new EchoEndPoint(), request, response, callback))
+                    try
+                    {
+                        // This is a WebSocket upgrade request, perform a direct upgrade.
+                        boolean upgraded = container.upgrade((rq, rs, cb) -> new EchoEndPoint(), request, response, callback);
+                        if (upgraded)
+                            return true;
+                        // This was supposed to be a WebSocket upgrade request, but something went wrong.
+                        Response.writeError(request, response, callback, HttpStatus.UPGRADE_REQUIRED_426);
                         return true;
-                    // This was supposed to be a WebSocket upgrade request, but something went wrong.
-                    Response.writeError(request, response, callback, HttpStatus.UPGRADE_REQUIRED_426);
-                    return true;
+                    }
+                    catch (Exception x)
+                    {
+                        Response.writeError(request, response, callback, HttpStatus.UPGRADE_REQUIRED_426, "failed to upgrade", x);
+                        return true;
+                    }
                 }
                 else
                 {
