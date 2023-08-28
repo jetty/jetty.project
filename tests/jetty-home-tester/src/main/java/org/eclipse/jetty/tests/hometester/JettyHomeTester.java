@@ -211,16 +211,18 @@ public class JettyHomeTester
     /**
      * Installs in {@code ${jetty.base}/webapps} the given war file under the given context path.
      *
-     * @param warFile the war file to install
-     * @param context the context path
-     * @param options optional CopyOptions
-     * @return the path to the installed webapp exploded directory
+     * @param testResourcePath the location of the source file in {@code src/test/resources}
+     * @param baseResourcePath the location of the destination file in {@code ${jetty.base}}
+     * @param options optional CopyOption
      * @throws IOException if the installation fails
      */
    public void installBaseResource(String testResourcePath, String baseResourcePath, CopyOption... options) throws IOException
     {
         Path srcFile = MavenTestingUtils.getTestResourcePath(testResourcePath);
         Path destFile = config.jettyBase.resolve(baseResourcePath);
+        Files.deleteIfExists(destFile);
+        if (!Files.exists(destFile.getParent()))
+            Files.createDirectories(destFile.getParent());
 
         Files.copy(srcFile, destFile, options);
     }
