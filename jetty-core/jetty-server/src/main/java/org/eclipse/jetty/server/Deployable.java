@@ -46,7 +46,7 @@ public interface Deployable
             return 1;
         }
         if (m2.matches())
-            return -11;
+            return -1;
 
         return e1.compareTo(e2);
     };
