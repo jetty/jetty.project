@@ -1146,7 +1146,10 @@ public class HttpConnection extends AbstractConnection implements Runnable, Writ
             Throwable result = HttpStream.consumeAvailable(this, getHttpConfiguration());
             if (result != null)
                 _generator.setPersistent(false);
-            releaseRequestBuffer();
+            // If the parser is not at the end, an idle timeout occurred and nothing
+            // is ever going to release the buffer -> release it here.
+            if (!_parser.isState(HttpParser.State.END))
+                releaseRequestBuffer();
             return result;
         }
 
