@@ -51,7 +51,7 @@ public class ResponseHttpFields implements HttpFields.Mutable
         return _committed.get();
     }
 
-    public void reset()
+    public void recycle()
     {
         _committed.set(false);
         _fields.clear();
@@ -97,7 +97,9 @@ public class ResponseHttpFields implements HttpFields.Mutable
             for (ListIterator<HttpField> iterator = _fields.listIterator(_fields.size()); iterator.hasPrevious();)
             {
                 HttpField field = iterator.previous();
-                if (!Persistent.isPersistent(field))
+                if (field instanceof Persistent persistent)
+                    iterator.set(persistent.getOriginal());
+                else
                     iterator.remove();
             }
         }
@@ -211,17 +213,16 @@ public class ResponseHttpFields implements HttpFields.Mutable
             {
                 if (_committed.get())
                     throw new UnsupportedOperationException("Read Only");
-                if (isPersistent(_current))
+                if (_current instanceof Persistent persistent)
                 {
                     // cannot change the field name
                     if (field == null || !field.isSameName(_current))
                         throw new UnsupportedOperationException("Persistent field");
 
-                    // new field must also be persistent
-                    if (!isPersistent(field))
-                        field = (field instanceof PreEncodedHttpField)
-                            ? new PersistentPreEncodedHttpField(field.getHeader(), field.getValue())
-                            : new PersistentHttpField(field);
+                    // new field must also be persistent and clear back to the previous value
+                    field = (field instanceof PreEncodedHttpField)
+                        ? new PersistentPreEncodedHttpField(_current.getHeader(), field.getValue(), persistent.getOriginal())
+                        : new PersistentHttpField(field, persistent.getOriginal());
                 }
                 if (_current == null)
                     throw new IllegalStateException("No current field");
@@ -260,6 +261,11 @@ public class ResponseHttpFields implements HttpFields.Mutable
         {
             return field instanceof Persistent;
         }
+
+        /**
+         * @return the original persistent field set before any mutations
+         */
+        HttpField getOriginal();
     }
 
     /**
@@ -268,11 +274,18 @@ public class ResponseHttpFields implements HttpFields.Mutable
     public static class PersistentHttpField extends HttpField implements Persistent
     {
         private final HttpField _field;
+        private final HttpField _original;
 
         public PersistentHttpField(HttpField field)
         {
+            this(field, null);
+        }
+
+        PersistentHttpField(HttpField field, HttpField original)
+        {
             super(field.getHeader(), field.getName(), field.getValue());
             _field = field;
+            _original = original == null ? this : original;
         }
 
         @Override
@@ -286,6 +299,12 @@ public class ResponseHttpFields implements HttpFields.Mutable
         {
             return _field.getIntValue();
         }
+
+        @Override
+        public HttpField getOriginal()
+        {
+            return _original;
+        }
     }
 
     /**
@@ -293,9 +312,23 @@ public class ResponseHttpFields implements HttpFields.Mutable
      */
     public static class PersistentPreEncodedHttpField extends PreEncodedHttpField implements Persistent
     {
+        private final HttpField _original;
+
         public PersistentPreEncodedHttpField(HttpHeader header, String value)
         {
+            this(header, value, null);
+        }
+
+        PersistentPreEncodedHttpField(HttpHeader header, String value, HttpField original)
+        {
             super(header, value);
+            _original = original == null ? this : original;
+        }
+
+        @Override
+        public HttpField getOriginal()
+        {
+            return _original;
         }
     }
 }

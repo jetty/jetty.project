@@ -1146,7 +1146,7 @@ public class ServletContextHandler extends ContextHandler
         Attributes cache = request.getComponents().getCache();
         Object cachedChannel = cache.getAttribute(ServletChannel.class.getName());
         ServletChannel servletChannel;
-        if (cachedChannel instanceof ServletChannel sc && sc.getContext() == getContext())
+        if (cachedChannel instanceof ServletChannel sc && sc.getContext() == getContext() && !sc.isAborted())
         {
             servletChannel = sc;
         }

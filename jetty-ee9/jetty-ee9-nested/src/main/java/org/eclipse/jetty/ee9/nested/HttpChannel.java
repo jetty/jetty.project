@@ -938,8 +938,7 @@ public class HttpChannel implements Runnable, HttpOutput.Interceptor
     {
         _coreResponse = coreResponse;
         _coreCallback = coreCallback;
-
-        long idleTO = _configuration.getIdleTimeout();
+        _response.onResponse(coreResponse.getHeaders());
 
         if (LOG.isDebugEnabled())
         {
@@ -1081,7 +1080,6 @@ public class HttpChannel implements Runnable, HttpOutput.Interceptor
             if (response == null)
                 response = _response.newResponseMetaData();
             commit(response);
-            _request.onResponseCommit();
 
             // wrap callback to process informational responses
             final int status = response.getStatus();
@@ -1108,10 +1106,7 @@ public class HttpChannel implements Runnable, HttpOutput.Interceptor
     {
         if (response != null)
         {
-            // TODO: why can't we just do _coreResponse.setMetaData(response), without copying?
             _coreResponse.setStatus(response.getStatus());
-            // TODO: at least avoid copying the headers?
-            _coreResponse.getHeaders().add(response.getHttpFields());
             _coreResponse.setTrailersSupplier(response.getTrailersSupplier());
         }
         _coreResponse.write(complete, content, callback);

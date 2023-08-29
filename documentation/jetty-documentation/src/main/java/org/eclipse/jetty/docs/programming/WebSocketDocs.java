@@ -16,8 +16,8 @@ package org.eclipse.jetty.docs.programming;
 import java.io.InputStream;
 import java.io.Reader;
 import java.nio.ByteBuffer;
-import java.nio.file.Path;
 import java.time.Duration;
+import java.util.concurrent.CompletableFuture;
 
 import org.eclipse.jetty.util.IteratingCallback;
 import org.eclipse.jetty.util.NanoTime;
@@ -30,12 +30,116 @@ import org.eclipse.jetty.websocket.api.annotations.OnWebSocketMessage;
 import org.eclipse.jetty.websocket.api.annotations.OnWebSocketOpen;
 import org.eclipse.jetty.websocket.api.annotations.WebSocket;
 
+import static java.lang.System.Logger.Level.INFO;
+
 @SuppressWarnings("unused")
 public class WebSocketDocs
 {
     @SuppressWarnings("InnerClassMayBeStatic")
+    // tag::autoDemand[]
+    // Attribute autoDemand is true by default.
+    @WebSocket(autoDemand = true)
+    public class AutoDemandAnnotatedEndPoint
+    {
+        @OnWebSocketOpen
+        public void onOpen(Session session)
+        {
+            // No need to demand here, because this endpoint is auto-demanding.
+        }
+
+        @OnWebSocketMessage
+        public void onText(String message)
+        {
+            System.getLogger("ws.message").log(INFO, message);
+            // No need to demand here, because this endpoint is auto-demanding.
+        }
+    }
+
+    public class AutoDemandListenerEndPoint implements Session.Listener.AutoDemanding
+    {
+        private Session session;
+
+        @Override
+        public void onWebSocketOpen(Session session)
+        {
+            this.session = session;
+            // No need to demand here, because this endpoint is auto-demanding.
+        }
+
+        @Override
+        public void onWebSocketText(String message)
+        {
+            System.getLogger("ws.message").log(INFO, message);
+            // No need to demand here, because this endpoint is auto-demanding.
+        }
+    }
+    // end::autoDemand[]
+
+    @SuppressWarnings("InnerClassMayBeStatic")
+    // tag::autoDemandWrong[]
+    public class WrongAutoDemandListenerEndPoint implements Session.Listener.AutoDemanding
+    {
+        private Session session;
+
+        @Override
+        public void onWebSocketOpen(Session session)
+        {
+            this.session = session;
+            // No need to demand here, because this endpoint is auto-demanding.
+        }
+
+        @Override
+        public void onWebSocketText(String message)
+        {
+            // Perform an asynchronous operation, such as invoking
+            // a third party service or just echoing the message back.
+            session.sendText(message, Callback.NOOP);
+
+            // Returning from this method will automatically demand,
+            // so this method may be entered again before sendText()
+            // has been completed, causing a WritePendingException.
+        }
+    }
+    // end::autoDemandWrong[]
+
+    @SuppressWarnings("InnerClassMayBeStatic")
+    // tag::explicitDemand[]
+    public class ExplicitDemandListenerEndPoint implements Session.Listener
+    {
+        private Session session;
+
+        @Override
+        public void onWebSocketOpen(Session session)
+        {
+            this.session = session;
+
+            // Explicitly demand here, otherwise no other event is received.
+            session.demand();
+        }
+
+        @Override
+        public void onWebSocketText(String message)
+        {
+            // Perform an asynchronous operation, such as invoking
+            // a third party service or just echoing the message back.
+
+            // We want to demand only when sendText() has completed,
+            // which is notified to the callback passed to sendText().
+            session.sendText(message, Callback.from(session::demand, failure ->
+            {
+                // Handle the failure, in this case just closing the session.
+                session.close(StatusCode.SERVER_ERROR, "failure", Callback.NOOP);
+            }));
+
+            // Return from the method without demanding yet,
+            // waiting for the completion of sendText() to demand.
+        }
+    }
+    // end::explicitDemand[]
+
+    @SuppressWarnings("InnerClassMayBeStatic")
     // tag::listenerEndpoint[]
-    public class ListenerEndPoint implements Session.Listener // <1>
+    public class ListenerEndPoint implements Session.Listener
     {
         private Session session;
 
@@ -51,16 +155,53 @@ public class WebSocketDocs
             session.setMaxTextMessageSize(16 * 1024);
 
             // You may immediately send a message to the remote peer.
-            session.sendText("connected", Callback.NOOP);
+            session.sendText("connected", Callback.from(session::demand, Throwable::printStackTrace));
         }
 
         @Override
-        public void onWebSocketClose(int statusCode, String reason)
+        public void onWebSocketText(String message)
         {
-            // The WebSocket endpoint has been closed.
+            // A WebSocket text message is received.
 
-            // You may dispose resources.
-            disposeResources();
+            // You may echo it back if it matches certain criteria.
+            if (message.startsWith("echo:"))
+            {
+                // Only demand for more events when sendText() is completed successfully.
+                session.sendText(message.substring("echo:".length()), Callback.from(session::demand, Throwable::printStackTrace));
+            }
+            else
+            {
+                // Discard the message, and demand for more events.
+                session.demand();
+            }
+        }
+
+        @Override
+        public void onWebSocketBinary(ByteBuffer payload, Callback callback)
+        {
+            // A WebSocket binary message is received.
+
+            // Save only PNG images.
+            boolean isPNG = true;
+            byte[] pngBytes = new byte[]{(byte)0x89, 'P', 'N', 'G'};
+            for (int i = 0; i < pngBytes.length; ++i)
+            {
+                if (pngBytes[i] != payload.get(i))
+                {
+                    // Not a PNG image.
+                    isPNG = false;
+                    break;
+                }
+            }
+
+            if (isPNG)
+                savePNGImage(payload);
+
+            // Complete the callback to release the payload ByteBuffer.
+            callback.succeed();
+
+            // Demand for more events.
+            session.demand();
         }
 
         @Override
@@ -76,29 +217,12 @@ public class WebSocketDocs
         }
 
         @Override
-        public void onWebSocketText(String message)
+        public void onWebSocketClose(int statusCode, String reason)
         {
-            // A WebSocket textual message is received.
+            // The WebSocket endpoint has been closed.
 
-            // You may echo it back if it matches certain criteria.
-            if (message.startsWith("echo:"))
-                session.sendText(message.substring("echo:".length()), Callback.NOOP);
-        }
-
-        @Override
-        public void onWebSocketBinary(ByteBuffer payload, Callback callback)
-        {
-            // A WebSocket binary message is received.
-
-            // Save only PNG images.
-            byte[] pngBytes = new byte[]{(byte)0x89, 'P', 'N', 'G'};
-            for (int i = 0; i < pngBytes.length; ++i)
-            {
-                if (pngBytes[i] != payload.get(i))
-                    return;
-            }
-            savePNGImage(payload);
-            callback.succeed();
+            // You may dispose resources.
+            disposeResources();
         }
     }
     // end::listenerEndpoint[]
@@ -107,13 +231,28 @@ public class WebSocketDocs
     // tag::streamingListenerEndpoint[]
     public class StreamingListenerEndpoint implements Session.Listener
     {
-        private Path textPath;
+        private Session session;
+
+        @Override
+        public void onWebSocketOpen(Session session)
+        {
+            this.session = session;
+            session.demand();
+        }
 
         @Override
         public void onWebSocketPartialText(String payload, boolean fin)
         {
-            // Forward chunks to external REST service.
-            forwardToREST(payload, fin);
+            // Forward chunks to external REST service, asynchronously.
+            // Only demand when the forwarding completed successfully.
+            CompletableFuture<Void> result = forwardToREST(payload, fin);
+            result.whenComplete((ignored, failure) ->
+            {
+                if (failure == null)
+                    session.demand();
+                else
+                    failure.printStackTrace();
+            });
         }
 
         @Override
@@ -121,41 +260,77 @@ public class WebSocketDocs
         {
             // Save chunks to file.
             appendToFile(payload, fin);
-            // Complete the callback.
+
+            // Complete the callback to release the payload ByteBuffer.
             callback.succeed();
+
+            // Demand for more events.
+            session.demand();
         }
     }
     // end::streamingListenerEndpoint[]
 
     @SuppressWarnings("InnerClassMayBeStatic")
     // tag::annotatedEndpoint[]
-    @WebSocket // <1>
+    @WebSocket(autoDemand = false) // <1>
     public class AnnotatedEndPoint
     {
-        private Session session;
-
         @OnWebSocketOpen // <2>
         public void onOpen(Session session)
         {
             // The WebSocket endpoint has been opened.
 
-            // Store the session to be able to send data to the remote peer.
-            this.session = session;
-
             // You may configure the session.
             session.setMaxTextMessageSize(16 * 1024);
 
             // You may immediately send a message to the remote peer.
-            session.sendText("connected", Callback.NOOP);
+            session.sendText("connected", Callback.from(session::demand, Throwable::printStackTrace));
         }
 
-        @OnWebSocketClose // <3>
-        public void onClose(int statusCode, String reason)
+        @OnWebSocketMessage // <3>
+        public void onTextMessage(Session session, String message)
         {
-            // The WebSocket endpoint has been closed.
+            // A WebSocket textual message is received.
 
-            // You may dispose resources.
-            disposeResources();
+            // You may echo it back if it matches certain criteria.
+            if (message.startsWith("echo:"))
+            {
+                // Only demand for more events when sendText() is completed successfully.
+                session.sendText(message.substring("echo:".length()), Callback.from(session::demand, Throwable::printStackTrace));
+            }
+            else
+            {
+                // Discard the message, and demand for more events.
+                session.demand();
+            }
+        }
+
+        @OnWebSocketMessage // <3>
+        public void onBinaryMessage(Session session, ByteBuffer payload, Callback callback)
+        {
+            // A WebSocket binary message is received.
+
+            // Save only PNG images.
+            boolean isPNG = true;
+            byte[] pngBytes = new byte[]{(byte)0x89, 'P', 'N', 'G'};
+            for (int i = 0; i < pngBytes.length; ++i)
+            {
+                if (pngBytes[i] != payload.get(i))
+                {
+                    // Not a PNG image.
+                    isPNG = false;
+                    break;
+                }
+            }
+
+            if (isPNG)
+                savePNGImage(payload);
+
+            // Complete the callback to release the payload ByteBuffer.
+            callback.succeed();
+
+            // Demand for more events.
+            session.demand();
         }
 
         @OnWebSocketError // <4>
@@ -170,32 +345,49 @@ public class WebSocketDocs
             disposeResources();
         }
 
-        @OnWebSocketMessage // <5>
-        public void onTextMessage(Session session, String message) // <3>
+        @OnWebSocketClose // <5>
+        public void onClose(int statusCode, String reason)
         {
-            // A WebSocket textual message is received.
+            // The WebSocket endpoint has been closed.
 
-            // You may echo it back if it matches certain criteria.
-            if (message.startsWith("echo:"))
-                session.sendText(message.substring("echo:".length()), Callback.NOOP);
-        }
-
-        @OnWebSocketMessage // <5>
-        public void onBinaryMessage(ByteBuffer payload, Callback callback)
-        {
-            // A WebSocket binary message is received.
-
-            // Save only PNG images.
-            byte[] pngBytes = new byte[]{(byte)0x89, 'P', 'N', 'G'};
-            for (int i = 0; i < pngBytes.length; ++i)
-            {
-                if (pngBytes[i] != payload.get(i))
-                    return;
-            }
-            savePNGImage(payload);
+            // You may dispose resources.
+            disposeResources();
         }
     }
     // end::annotatedEndpoint[]
+
+    @SuppressWarnings("InnerClassMayBeStatic")
+    // tag::partialAnnotatedEndpoint[]
+    @WebSocket(autoDemand = false)
+    public class PartialAnnotatedEndpoint
+    {
+        @OnWebSocketMessage
+        public void onTextMessage(Session session, String partialText, boolean fin)
+        {
+            // Forward the partial text.
+            // Demand only when the forward completed.
+            CompletableFuture<Void> result = forwardToREST(partialText, fin);
+            result.whenComplete((ignored, failure) ->
+            {
+                if (failure == null)
+                    session.demand();
+                else
+                    failure.printStackTrace();
+            });
+        }
+
+        @OnWebSocketMessage
+        public void onBinaryMessage(Session session, ByteBuffer partialPayload, boolean fin, Callback callback)
+        {
+            // Save partial payloads to file.
+            appendToFile(partialPayload, fin);
+            // Complete the callback to release the payload ByteBuffer.
+            callback.succeed();
+            // Demand for more events.
+            session.demand();
+        }
+    }
+    // end::partialAnnotatedEndpoint[]
 
     @SuppressWarnings("InnerClassMayBeStatic")
     // tag::streamingAnnotatedEndpoint[]
@@ -205,14 +397,16 @@ public class WebSocketDocs
         @OnWebSocketMessage
         public void onTextMessage(Reader reader)
         {
-            // Read chunks and forward.
+            // Read from the Reader and forward.
+            // Caution: blocking APIs.
             forwardToREST(reader);
         }
 
         @OnWebSocketMessage
         public void onBinaryMessage(InputStream stream)
         {
-            // Save chunks to file.
+            // Read from the InputStream and save to file.
+            // Caution: blocking APIs.
             appendToFile(stream);
         }
     }
@@ -230,6 +424,9 @@ public class WebSocketDocs
 
             // Configure the idle timeout.
             session.setIdleTimeout(Duration.ofSeconds(30));
+
+            // Demand for more events.
+            session.demand();
         }
     }
     // end::sessionConfigure[]
@@ -281,7 +478,7 @@ public class WebSocketDocs
 
     @SuppressWarnings("InnerClassMayBeStatic")
     // tag::streamSendNonBlocking[]
-    @WebSocket
+    @WebSocket(autoDemand = false)
     public class StreamSendNonBlockingEndpoint
     {
         @OnWebSocketMessage
@@ -292,6 +489,7 @@ public class WebSocketDocs
 
         private class Sender extends IteratingCallback implements Callback // <1>
         {
+            private final ByteBuffer byteBuffer = ByteBuffer.allocateDirect(1024);
             private final Session session;
             private boolean finished;
 
@@ -304,20 +502,20 @@ public class WebSocketDocs
             protected Action process() throws Throwable // <2>
             {
                 if (finished)
-                    return Action.SUCCEEDED;
+                    return Action.SUCCEEDED; // <4>
 
-                ByteBuffer chunk = readChunkToSend();
-                if (chunk == null)
+                int read = readChunkToSendInto(byteBuffer);
+                if (read < 0)
                 {
-                    // No more bytes, finish the WebSocket message.
-                    session.sendPartialBinary(ByteBuffer.allocate(0), true, this); // <3>
+                    // No more bytes to send, finish the WebSocket message.
+                    session.sendPartialBinary(byteBuffer, true, this); // <3>
                     finished = true;
                     return Action.SCHEDULED;
                 }
                 else
                 {
                     // Send the chunk.
-                    session.sendPartialBinary(ByteBuffer.allocate(0), false, this); // <3>
+                    session.sendPartialBinary(byteBuffer, false, this); // <3>
                     return Action.SCHEDULED;
                 }
             }
@@ -337,6 +535,12 @@ public class WebSocketDocs
             }
 
             @Override
+            protected void onCompleteSuccess()
+            {
+                session.demand(); // <5>
+            }
+
+            @Override
             protected void onCompleteFailure(Throwable x)
             {
                 x.printStackTrace();
@@ -347,14 +551,19 @@ public class WebSocketDocs
 
     @SuppressWarnings("InnerClassMayBeStatic")
     // tag::pingPongListener[]
-    public class RoundTripListenerEndpoint implements Session.Listener // <1>
+    public class RoundTripListenerEndpoint implements Session.Listener
     {
+        private Session session;
+
         @Override
         public void onWebSocketOpen(Session session)
         {
+            this.session = session;
             // Send to the remote peer the local nanoTime.
             ByteBuffer buffer = ByteBuffer.allocate(8).putLong(NanoTime.now()).flip();
             session.sendPing(buffer, Callback.NOOP);
+            // Demand for more events.
+            session.demand();
         }
 
         @Override
@@ -365,6 +574,9 @@ public class WebSocketDocs
 
             // Calculate the round-trip time.
             long roundTrip = NanoTime.since(start);
+
+            // Demand for more events.
+            session.demand();
         }
     }
     // end::pingPongListener[]
@@ -383,8 +595,9 @@ public class WebSocketDocs
     }
     // end::sessionClose[]
 
-    private static void forwardToREST(String payload, boolean fin)
+    private static CompletableFuture<Void> forwardToREST(String payload, boolean fin)
     {
+        return null;
     }
 
     private static void forwardToREST(Reader reader)
@@ -412,8 +625,8 @@ public class WebSocketDocs
         return null;
     }
 
-    private static ByteBuffer readChunkToSend()
+    private static int readChunkToSendInto(ByteBuffer byteBuffer)
     {
-        return null;
+        return 0;
     }
 }

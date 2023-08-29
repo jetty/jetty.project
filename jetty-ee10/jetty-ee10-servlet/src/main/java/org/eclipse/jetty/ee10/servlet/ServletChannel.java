@@ -157,6 +157,7 @@ public class ServletChannel
         _request = request;
         _response = response;
         _callback = callback;
+        _state.openOutput();
 
         if (LOG.isDebugEnabled())
             LOG.debug("associate {} -> {},{},{}",
@@ -189,6 +190,11 @@ public class ServletChannel
     public HttpInput getHttpInput()
     {
         return _httpInput;
+    }
+
+    public boolean isAborted()
+    {
+        return _state.isAborted();
     }
 
     public boolean isSendError()

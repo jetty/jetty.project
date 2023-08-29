@@ -1299,15 +1299,6 @@ public class Request implements HttpServletRequest
     }
 
     /**
-     * Called when a response is about to be committed, ie sent
-     * back to the client
-     */
-    public void onResponseCommit()
-    {
-        // TODO remove this method?
-    }
-
-    /**
      * Find a session that this request has already entered for the
      * given SessionHandler
      *
