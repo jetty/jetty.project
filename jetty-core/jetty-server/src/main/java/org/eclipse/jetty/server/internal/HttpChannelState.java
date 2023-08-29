@@ -346,7 +346,6 @@ public class HttpChannelState implements HttpChannel, Components
     @Override
     public Runnable onIdleTimeout(TimeoutException t)
     {
-        Predicate<TimeoutException> onIdleTimeout;
         try (AutoLock ignored = _lock.lock())
         {
             if (LOG.isDebugEnabled())
@@ -380,29 +379,29 @@ public class HttpChannelState implements HttpChannel, Components
                 if (invokeOnContentAvailable != null || invokeWriteFailure != null)
                     return _serializedInvoker.offer(invokeOnContentAvailable, invokeWriteFailure);
 
-                // Otherwise We ask any idle timeout listeners if we should call onFailure or not
-                onIdleTimeout = _onIdleTimeout;
-            }
-            else
-            {
-                onIdleTimeout = null;
-            }
-        }
-
-        // Ask any listener what to do
-        if (onIdleTimeout != null)
-        {
-            Runnable onIdle = () ->
-            {
-                if (onIdleTimeout.test(t))
+                // otherwise, if there is an idle timeout listener, we ask if if we should call onFailure or not
+                Predicate<TimeoutException> onIdleTimeout = _onIdleTimeout;
+                if (onIdleTimeout != null)
                 {
-                    // If the idle timeout listener(s) return true, then we call onFailure and any task it returns.
-                    Runnable task = onFailure(t);
-                    if (task != null)
-                        task.run();
+                    return _serializedInvoker.offer(() ->
+                    {
+                        if (onIdleTimeout.test(t))
+                        {
+                            // If the idle timeout listener(s) return true, then we call onFailure and run any task it returns.
+                            Runnable task = onFailure(t);
+                            if (task != null)
+                                task.run();
+                        }
+                    });
                 }
-            };
-            return _serializedInvoker.offer(onIdle);
+
+                // otherwise, if there is no failure listener, then we can fail the callback directly without a double lock
+                if (_onFailure == null && _request != null)
+                {
+                    _failure = Content.Chunk.from(t, true);
+                    return () -> _request._callback.failed(t);
+                }
+            }
         }
 
         // otherwise treat as a failure
@@ -476,7 +475,7 @@ public class HttpChannelState implements HttpChannel, Components
                     }
 
                     // If the application has not been otherwise informed of the failure
-                    if (invokeOnContentAvailable == null && invokeWriteFailure == null)
+                    if (invokeOnContentAvailable == null && invokeWriteFailure == null && onFailure == null)
                     {
                         if (LOG.isDebugEnabled())
                             LOG.debug("failing callback in {}", this, x);
