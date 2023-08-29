@@ -168,7 +168,7 @@ public class ServletChannelState
         }
     }
 
-    public void open()
+    public void openOutput()
     {
         try (AutoLock ignored = lock())
         {

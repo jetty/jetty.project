@@ -157,7 +157,7 @@ public class ServletChannel
         _request = request;
         _response = response;
         _callback = callback;
-        _state.open();
+        _state.openOutput();
 
         if (LOG.isDebugEnabled())
             LOG.debug("associate {} -> {},{},{}",
