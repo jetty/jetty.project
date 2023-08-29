@@ -24,6 +24,7 @@ import java.io.RandomAccessFile;
 import java.net.InetSocketAddress;
 import java.net.ServerSocket;
 import java.net.URI;
+import java.nio.file.CopyOption;
 import java.nio.file.FileAlreadyExistsException;
 import java.nio.file.FileSystem;
 import java.nio.file.FileSystems;
@@ -112,6 +113,8 @@ import static org.awaitility.Awaitility.await;
 public class JettyHomeTester
 {
     private static final Logger LOGGER = LoggerFactory.getLogger(JettyHomeTester.class);
+
+    private static final CopyOption[] EMPTY_OPTIONS = new CopyOption[]{};
 
     private final Config config;
 
@@ -206,18 +209,22 @@ public class JettyHomeTester
     }
 
     /**
-     * Installs content from {@code src/test/resources/<testResourcePath>} into {@code ${jetty.base}/<baseResourcePath>}
+     * Installs in {@code ${jetty.base}/webapps} the given war file under the given context path.
      *
      * @param testResourcePath the location of the source file in {@code src/test/resources}
      * @param baseResourcePath the location of the destination file in {@code ${jetty.base}}
-     * @throws IOException if unable to copy file
+     * @param options optional CopyOption
+     * @throws IOException if the installation fails
      */
-    public void installBaseResource(String testResourcePath, String baseResourcePath) throws IOException
+   public void installBaseResource(String testResourcePath, String baseResourcePath, CopyOption... options) throws IOException
     {
         Path srcFile = MavenTestingUtils.getTestResourcePath(testResourcePath);
         Path destFile = config.jettyBase.resolve(baseResourcePath);
+        Files.deleteIfExists(destFile);
+        if (!Files.exists(destFile.getParent()))
+            Files.createDirectories(destFile.getParent());
 
-        Files.copy(srcFile, destFile);
+        Files.copy(srcFile, destFile, options);
     }
 
     /**

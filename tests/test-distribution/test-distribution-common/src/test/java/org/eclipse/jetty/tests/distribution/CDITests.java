@@ -17,6 +17,7 @@ import java.io.File;
 import java.io.IOException;
 import java.nio.file.Files;
 import java.nio.file.Path;
+import java.nio.file.StandardCopyOption;
 import java.util.Arrays;
 import java.util.Collections;
 import java.util.concurrent.TimeUnit;
@@ -27,7 +28,6 @@ import org.eclipse.jetty.client.ContentResponse;
 import org.eclipse.jetty.http.HttpStatus;
 import org.eclipse.jetty.tests.hometester.JettyHomeTester;
 import org.eclipse.jetty.util.StringUtil;
-import org.junit.jupiter.api.Disabled;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.Arguments;
 import org.junit.jupiter.params.provider.MethodSource;
@@ -37,7 +37,6 @@ import static org.hamcrest.Matchers.containsString;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
-@Disabled("JAKARTA namespace for 3rd party libraries")
 public class CDITests extends AbstractJettyHomeTest
 {
     // Tests from here use these parameters
@@ -58,21 +57,14 @@ public class CDITests extends AbstractJettyHomeTest
         };
 
         return Stream.of(
-            //TODO enable ee9 tests
-            // -- Weld --
-            // Uses test-weld-cdi-webapp
-            //Arguments.of("ee9", "weld", "cdi-spi", null), // Weld >= 3.1.2            
-            Arguments.of("ee10", "weld", "cdi-spi", null), // Weld >= 3.1.2
-            //Arguments.of("ee9", "weld", "decorate", null), // Weld >= 3.1.2           
-            Arguments.of("ee10", "weld", "decorate", null), // Weld >= 3.1.2
-            //Arguments.of("ee9", "weld", "cdi-decorate", null), // Weld >= 3.1.3
-            Arguments.of("ee10", "weld", "cdi-decorate", null), // Weld >= 3.1.3
-            // -- Apache OpenWebBeans --
+            Arguments.of("ee9", "cdi-spi", "weld", null), // Weld >= 3.1.2
+            Arguments.of("ee10", "cdi-spi", "weld", null), // Weld >= 3.1.2
+            Arguments.of("ee9", "cdi-decorate", "weld", null), // Weld >= 3.1.3
+            Arguments.of("ee10", "cdi-decorate", "weld", null) // Weld >= 3.1.3
+            // -- Apache OpenWebBeans -- as of 2.0.27 was not ported to jakarta namespace
             // Uses test-owb-cdi-webapp
             //Arguments.of("ee9", "owb", "cdi-spi", null),
-            Arguments.of("ee10", "owb", "cdi-spi", null)
-            // Arguments.of("owb", "decorate", null), // Not supported
-            // Arguments.of("owb", "cdi-decorate", null) // Not supported
+            //Arguments.of("ee10", "cdi-spi", "owb", null)
         );
     }
 
@@ -84,10 +76,12 @@ public class CDITests extends AbstractJettyHomeTest
     @MethodSource("tests")
     public void testCDIIncludedInWebapp(String env, String implementation, String integration, Consumer<JettyHomeTester> configure) throws Exception
     {
+        Path jettyBase = newTestJettyBaseDirectory();
         String jettyVersion = System.getProperty("jettyVersion");
         String jvmArgs = System.getProperty("cdi.tests.jvmArgs");
         JettyHomeTester distribution = JettyHomeTester.Builder.newInstance()
             .jettyVersion(jettyVersion)
+            .jettyBase(jettyBase)
             .jvmArgs(jvmArgs == null ? Collections.emptyList() : Arrays.asList(jvmArgs.split("\\s+")))
             .build();
 
@@ -96,7 +90,7 @@ public class CDITests extends AbstractJettyHomeTest
             toEnvironment("annotations", env) + "," +
             toEnvironment("jsp", env);
         
-        if (!StringUtil.isBlank(implementation) && !("decorate".equals(implementation)))
+        if (!StringUtil.isBlank(implementation))
         {
             mods = mods + "," + toEnvironment(implementation, env);
         }
@@ -110,8 +104,10 @@ public class CDITests extends AbstractJettyHomeTest
             assertTrue(run1.awaitFor(START_TIMEOUT, TimeUnit.SECONDS));
             assertEquals(0, run1.getExitValue());
 
-            File war = distribution.resolveArtifact("org.eclipse.jetty." + env + ".tests:test-jetty-" + env + "-" + implementation + "-cdi-webapp:war:" + jettyVersion);
+            File war = distribution.resolveArtifact("org.eclipse.jetty." + env + ":jetty-" + env + "-test-" + integration + "-cdi-webapp:war:" + jettyVersion);
             distribution.installWarFile(war, "demo");
+
+            distribution.installBaseResource("jetty-logging.properties", "resources/jetty-logging.properties", StandardCopyOption.REPLACE_EXISTING);
             if (configure != null)
                 configure.accept(distribution);
 
@@ -126,7 +122,7 @@ public class CDITests extends AbstractJettyHomeTest
                 // Confirm Servlet based CDI
                 assertThat(response.getContentAsString(), containsString("Hello GreetingsServlet"));
                 // Confirm Listener based CDI (this has been a problem in the past, keep this for regression testing!)
-                assertThat(response.getHeaders().get("Server"), containsString("CDI-Demo-org.eclipse.jetty.test"));
+                assertThat(response.getHeaders().get("CDI-Server"), containsString("CDI-Demo-org.eclipse.jetty.test"));
 
                 run2.stop();
                 assertTrue(run2.awaitFor(START_TIMEOUT, TimeUnit.SECONDS));

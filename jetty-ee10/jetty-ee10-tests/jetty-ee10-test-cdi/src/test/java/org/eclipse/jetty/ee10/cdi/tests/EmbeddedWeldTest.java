@@ -28,6 +28,7 @@ import org.eclipse.jetty.ee10.servlet.ServletContextHandler;
 import org.eclipse.jetty.ee10.webapp.WebAppContext;
 import org.eclipse.jetty.server.LocalConnector;
 import org.eclipse.jetty.server.Server;
+import org.junit.jupiter.api.Assumptions;
 import org.junit.jupiter.api.Disabled;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.params.ParameterizedTest;
@@ -36,7 +37,6 @@ import org.junit.jupiter.params.provider.ValueSource;
 import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.Matchers.containsString;
 
-@Disabled //TODO misatch weld version and cdi api?
 public class EmbeddedWeldTest
 {
     static
@@ -107,7 +107,7 @@ public class EmbeddedWeldTest
             case "CdiServletContainerInitializer+Listener":
                 // Expect:INFO: WELD-ENV-001213: Jetty CDI SPI support detected, CDI injection will be available in Listeners, Servlets and Filters.
                 context.addServletContainerInitializer(new CdiServletContainerInitializer());
-                context.addEventListener(new org.jboss.weld.environment.servlet.Listener());
+                context.getServletHandler().addListener(new ListenerHolder(org.jboss.weld.environment.servlet.Listener.class));
                 break;
 
             case "CdiServletContainerInitializer(CdiDecoratingListener)+Listener":
@@ -149,6 +149,13 @@ public class EmbeddedWeldTest
         })
     public void testServletContext(String mode) throws Exception
     {
+        //Mode "none" is incompatible with jetty-12. This mode delegates to Weld to work out how to
+        //instantiate injection capabilities into jetty, but as of Weld 5.1.1 this relied on pre jetty-12 classes.
+        //Mode "DecoratingListener+Listener is incompatible with jetty-12. The name of the attribute that communicates
+        //the injector decorator between Weld and jetty-12 relies on the classname of the DecoratingListener class, which
+        //in pre jetty-12 was org.eclipse.jetty.webapp.DecoratingListener, but is now org.eclipse.jetty.ee10.webapp.DecoratingListener.
+        Assumptions.assumeFalse(mode.equals("none") || mode.equals("DecoratingListener+Listener"));
+
         Server server = createServerWithServletContext(mode);
         server.start();
         LocalConnector connector = server.getBean(LocalConnector.class);
@@ -169,7 +176,7 @@ public class EmbeddedWeldTest
     @Test
     public void testServletContextSimone() throws Exception
     {
-        Server server = createServerWithServletContext("none");
+        Server server = createServerWithServletContext("CdiDecoratingListener+Listener");
         server.start();
         LocalConnector connector = server.getBean(LocalConnector.class);
         String response = connector.getResponse("GET / HTTP/1.0\r\n\r\n");
@@ -225,11 +232,11 @@ public class EmbeddedWeldTest
         webapp.setBaseResourceAsPath(Paths.get("src", "test", "weldtest"));
         server.setHandler(webapp);
 
-        // Need the AnnotationConfiguration to detect SCIs
-        webapp.addConfiguration(new AnnotationConfiguration());
-
-        // Need to expose our SCI.  This is ugly could be made better in jetty-10 with a CdiConfiguration
+        // Need to expose our SCI.
         webapp.addConfiguration(new CdiConfiguration());
+
+        //ensure our CDI SCI is run first so the decorator is set up before Weld runs
+        webapp.setAttribute(AnnotationConfiguration.SERVLET_CONTAINER_INITIALIZER_ORDER, "org.eclipse.jetty.ee10.cdi.CdiServletContainerInitializer, *");
 
         // This is ugly but needed for maven for testing in a overlaid war pom
         String pkg = EmbeddedWeldTest.class.getPackage().getName();
@@ -244,7 +251,6 @@ public class EmbeddedWeldTest
 
         LocalConnector connector = server.getBean(LocalConnector.class);
         String response = connector.getResponse("GET / HTTP/1.0\r\n\r\n");
-        System.err.println(response);
         assertThat(response, containsString("HTTP/1.1 200 OK"));
         assertThat(response, containsString("Hello GreetingsServlet filtered by Weld BeanManager "));
         assertThat(response, containsString("Beans from Weld BeanManager "));
