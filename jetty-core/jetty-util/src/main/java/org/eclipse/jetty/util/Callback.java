@@ -495,7 +495,7 @@ public interface Callback extends Invocable
     }
 
     /**
-     * <p>A CompletableFuture that is also a Callback.</p>
+     * <p>A {@link CompletableFuture} that is also a {@link Callback}.</p>
      */
     class Completable extends CompletableFuture<Void> implements Callback
     {
@@ -567,6 +567,29 @@ public interface Callback extends Invocable
         public InvocationType getInvocationType()
         {
             return invocation;
+        }
+
+        /**
+         * <p>Returns a new {@link Completable} that, when this {@link Completable}
+         * succeeds, is passed to the given consumer and then returned.</p>
+         * <p>If this {@link Completable} fails, the new {@link Completable} is
+         * also failed, and the consumer is not invoked.</p>
+         *
+         * @param consumer the consumer that receives the {@link Completable}
+         * @return a new {@link Completable} passed to the consumer
+         * @see #with(Consumer)
+         */
+        public Completable compose(Consumer<Completable> consumer)
+        {
+            Completable completable = new Completable();
+            whenComplete((r, x) ->
+            {
+                if (x == null)
+                    consumer.accept(completable);
+                else
+                    completable.failed(x);
+            });
+            return completable;
         }
     }
 }

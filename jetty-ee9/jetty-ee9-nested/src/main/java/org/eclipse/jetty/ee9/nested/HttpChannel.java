@@ -510,7 +510,7 @@ public class HttpChannel implements Runnable, HttpOutput.Interceptor
     {
         try
         {
-            _coreResponse.writeInterim(HttpStatus.EARLY_HINT_103, headers).get();
+            _coreResponse.writeInterim(HttpStatus.EARLY_HINTS_103, headers).get();
         }
         catch (Throwable x)
         {

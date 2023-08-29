@@ -137,7 +137,7 @@ public interface Callback
          * <p>Returns a new {@link Completable} that, when this {@link Completable}
          * succeeds, is passed to the given consumer and then returned.</p>
          * <p>If this {@link Completable} fails, the new {@link Completable} is
-         * also failed.</p>
+         * also failed, and the consumer is not invoked.</p>
          * <p>For example:</p>
          * <pre>{@code
          * Callback.Completable.with(completable1 -> session.sendPartialText("hello", false, completable1))

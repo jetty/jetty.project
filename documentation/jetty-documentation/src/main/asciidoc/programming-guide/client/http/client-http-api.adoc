@@ -224,6 +224,8 @@ The listener that follows this model is `Response.ContentSourceListener`.
 After the response headers have been processed by the `HttpClient` implementation, `Response.ContentSourceListener.onContentSource(response, contentSource)` is invoked once and only once.
 This allows the application to control precisely the read/demand loop: when to read a chunk, how to process it and when to demand the next one.
 
+// TODO: move this section to the IO arch docs.
+
 You must provide a `ContentSourceListener` whose implementation reads a `Content.Chunk` from the provided `Content.Source`, as follows:
 Then the following cases may happen:
 

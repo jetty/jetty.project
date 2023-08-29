@@ -23,6 +23,7 @@ import java.security.Principal;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Locale;
+import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.TimeoutException;
 import java.util.function.Consumer;
 import java.util.function.Function;
@@ -522,9 +523,14 @@ public interface Request extends Attributes, Content.Source
 
     static Fields getParameters(Request request) throws Exception
     {
+        return getParametersAsync(request).get();
+    }
+
+    static CompletableFuture<Fields> getParametersAsync(Request request)
+    {
         Fields queryFields = Request.extractQueryParameters(request);
-        Fields formFields = FormFields.from(request).get();
-        return Fields.combine(queryFields, formFields);
+        CompletableFuture<Fields> contentFields = FormFields.from(request);
+        return contentFields.thenApply(formFields -> Fields.combine(queryFields, formFields));
     }
 
     @SuppressWarnings("unchecked")

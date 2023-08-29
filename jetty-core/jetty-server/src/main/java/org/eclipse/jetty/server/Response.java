@@ -129,7 +129,7 @@ public interface Response extends Content.Sink
      * <p>Writes an {@link HttpStatus#isInterim(int) HTTP interim response},
      * with the given HTTP status code and HTTP headers.</p>
      * <p>It is possible to write more than one interim response, for example
-     * in case of {@link HttpStatus#EARLY_HINT_103}.</p>
+     * in case of {@link HttpStatus#EARLY_HINTS_103}.</p>
      * <p>The returned {@link CompletableFuture} is notified of the result
      * of this write, whether it succeeded or failed.</p>
      *

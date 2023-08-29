@@ -460,7 +460,7 @@ public abstract class ProxyHandler extends Handler.Abstract
     {
         if (LOG.isDebugEnabled())
             LOG.debug("{} P2C 103 interim response {}", requestId(clientToProxyRequest), serverToProxyResponseHeaders);
-        proxyToClientResponse.writeInterim(HttpStatus.EARLY_HINT_103, serverToProxyResponseHeaders);
+        proxyToClientResponse.writeInterim(HttpStatus.EARLY_HINTS_103, serverToProxyResponseHeaders);
     }
 
     protected void onProxyToClientResponseComplete(Request clientToProxyRequest, org.eclipse.jetty.client.Request proxyToServerRequest, org.eclipse.jetty.client.Response serverToProxyResponse, Response proxyToClientResponse, Callback proxyToClientCallback)

@@ -35,11 +35,9 @@ In the first case the contexts were `(domain.com, /shop)` and `(domain.com, /api
 Server applications using the Jetty Server Libraries create and configure a _context_ for each web application.
 Many __context__s can be deployed together to enrich the web application offering -- for example a catalog context, a shop context, an API context, an administration context, etc.
 
-Web applications can be written using exclusively the Servlet APIs, since developers know well the Servlet API and because they guarantee better portability across Servlet container implementations.
+Web applications can be written using exclusively the Servlet APIs, since developers know well the Servlet API and because they guarantee better portability across Servlet container implementations, as described in xref:pg-server-http-handler-use-servlet[this section].
 
-Embedded web applications based on the Servlet APIs are described in xref:pg-server-http-handler-use-servlet[this section].
-
-Embedded web applications may also require additional features such as access to Jetty specific APIs, or utility features such as redirection from HTTP to HTTPS, support for `gzip` content compression, etc.
+On the other hand, web applications can be written using the Jetty APIs, for better performance, or to be able to  access to Jetty specific APIs, or to use features such as redirection from HTTP to HTTPS, support for `gzip` content compression, URI rewriting, etc.
 The Jetty Server Libraries provides a number of out-of-the-box ``Handler``s that implement the most common functionalities and are described in the next sections.
 
 [[pg-server-http-handler-use-context]]
@@ -333,7 +331,7 @@ Server
 In the example above, `TotalEventsHandler` may record the total times of request processing, from `SlowHandler` all the way to the `ContextHandler`.
 On the other hand, `AppEventsHandler` may record both the time it takes for the request to flow from `TotalEventsHandler` to `AppEventsHandler`, therefore effectively measuring the processing time due to `SlowHandler`, and the time it takes to process the request by the `ContextHandler`.
 
-Refere to the `EventsHandler` link:{javadoc-url}/org/eclipse/jetty/server/handler/EventsHandler[javadocs] for further information.
+Refer to the `EventsHandler` link:{javadoc-url}/org/eclipse/jetty/server/handler/EventsHandler[javadocs] for further information.
 
 [[pg-server-http-handler-use-limit]]
 ====== QoSHandler
@@ -366,7 +364,7 @@ include::../../{doc_code}/org/eclipse/jetty/docs/programming/server/http/HTTPSer
 * Sends a HTTP `404` response for any other request
 * The HTTP `404` response content nicely shows a HTML table with all the contexts deployed on the `Server` instance
 
-`DefaultHandler` is best used directly set on the server, for example:
+`DefaultHandler` is set directly on the server, for example:
 
 [source,java,indent=0]
 ----
@@ -388,7 +386,7 @@ Server
 In the example above, `ContextHandlerCollection` will try to match a request to one of the contexts; if the match fails, `Server` will call the `DefaultHandler` that will return a HTTP `404` with an HTML page showing the existing contexts deployed on the `Server`.
 
 NOTE: `DefaultHandler` just sends a nicer HTTP `404` response in case of wrong requests from clients.
-Jetty will send an HTTP `404` response anyway if `DefaultHandler` is not used.
+Jetty will send an HTTP `404` response anyway if `DefaultHandler` has not been set.
 
 [[pg-server-http-handler-use-servlet]]
 ===== Servlet API Handlers
@@ -399,6 +397,10 @@ Jetty will send an HTTP `404` response anyway if `DefaultHandler` is not used.
 ``Handler``s are easy to write, but often web applications have already been written using the Servlet APIs, using ``Servlet``s and ``Filter``s.
 
 `ServletContextHandler` is a `ContextHandler` that provides support for the Servlet APIs and implements the behaviors required by the Servlet specification.
+
+However, differently from xref:pg-server-http-handler-use-webapp-context[`WebAppContext`], it does not require web application to be packaged as a `+*.war+`, nor it requires a `web.xml` for configuration.
+
+With `ServletContextHandler` you can just put all your Servlet components in a `+*.jar+` and configure each component using the `ServletContextHandler` APIs, in a way equivalent to what you would write in a `web.xml`.
 
 The Maven artifact coordinates depend on the version of Jakarta EE you want to use, and they are:
 
@@ -411,9 +413,9 @@ The Maven artifact coordinates depend on the version of Jakarta EE you want to u
 </dependency>
 ----
 
-For example, for Jakarta {ee-current-caps} the coordinates are: `org.eclipse.jetty.ee10:jetty-ee10-servlet:{version}`.
+For example, for Jakarta {ee-current-caps} the coordinates are: `org.eclipse.jetty.{ee-current}:jetty-{ee-current}-servlet:{version}`.
 
-Below you can find an example of how to setup a Jakarta {ee-current-caps} `ServletContextHandler`:
+Below you can find an example of how to set up a Jakarta {ee-current-caps} `ServletContextHandler`:
 
 [source,java,indent=0]
 ----
@@ -436,7 +438,7 @@ Server
 
 Note how the Servlet components (they are not ``Handler``s) are represented in _italic_.
 
-Note also how adding a `Servlet` or a `Filter` returns a _holder_ object that can be used to specify additional configuration for that particular `Servlet` or `Filter`.
+Note also how adding a `Servlet` or a `Filter` returns a _holder_ object that can be used to specify additional configuration for that particular `Servlet` or `Filter`, for example initialization parameters (equivalent to `<init-param>` in `web.xml`).
 
 When a request arrives to `ServletContextHandler` the request URI will be matched against the ``Filter``s and ``Servlet`` mappings and only those that match will process the request, as dictated by the Servlet specification.
 
@@ -449,7 +451,7 @@ Server applications must be careful when creating the `Handler` tree to put ``Se
 [[pg-server-http-handler-use-webapp-context]]
 ====== WebAppContext
 
-`WebAppContext` is a `ServletContextHandler` that auto configures itself by reading a `web.xml` Servlet configuration file.
+`WebAppContext` is a `ServletContextHandler` that autoconfigures itself by reading a `web.xml` Servlet configuration file.
 
 The Maven artifact coordinates depend on the version of Jakarta EE you want to use, and they are:
 
@@ -464,7 +466,7 @@ The Maven artifact coordinates depend on the version of Jakarta EE you want to u
 
 Server applications can specify a `+*.war+` file or a directory with the structure of a `+*.war+` file to `WebAppContext` to deploy a standard Servlet web application packaged as a `war` (as defined by the Servlet specification).
 
-Where server applications using `ServletContextHandler` must manually invoke methods to add ``Servlet``s and ``Filter``s, `WebAppContext` reads `WEB-INF/web.xml` to add ``Servlet``s and ``Filter``s, and also enforces a number of restrictions defined by the Servlet specification, in particular related to class loading.
+Where server applications using `ServletContextHandler` must manually invoke methods to add ``Servlet``s and ``Filter``s as described in xref:pg-server-http-handler-use-servlet-context[this section], `WebAppContext` reads `WEB-INF/web.xml` to add ``Servlet``s and ``Filter``s, and also enforces a number of restrictions defined by the Servlet specification, in particular related to class loading.
 
 [source,java,indent=0]
 ----

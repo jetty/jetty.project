@@ -469,7 +469,7 @@ public class Response implements HttpServletResponse
         {
             case -1 -> _channel.abort(new IOException(message));
             case HttpStatus.PROCESSING_102 -> sendProcessing();
-            case HttpStatus.EARLY_HINT_103 -> sendEarlyHint();
+            case HttpStatus.EARLY_HINTS_103 -> sendEarlyHint();
             default -> _channel.getState().sendError(code, message);
         }
     }

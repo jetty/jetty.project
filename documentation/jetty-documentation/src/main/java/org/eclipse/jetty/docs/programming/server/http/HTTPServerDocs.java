@@ -14,10 +14,12 @@
 package org.eclipse.jetty.docs.programming.server.http;
 
 import java.io.IOException;
+import java.nio.ByteBuffer;
 import java.nio.file.Path;
 import java.util.EnumSet;
 import java.util.List;
 import java.util.TimeZone;
+import java.util.concurrent.CompletableFuture;
 
 import jakarta.servlet.DispatcherType;
 import jakarta.servlet.ServletInputStream;
@@ -32,11 +34,15 @@ import org.eclipse.jetty.ee10.servlet.ServletHolder;
 import org.eclipse.jetty.ee10.servlets.CrossOriginFilter;
 import org.eclipse.jetty.ee10.webapp.WebAppContext;
 import org.eclipse.jetty.http.HttpCompliance;
+import org.eclipse.jetty.http.HttpFields;
 import org.eclipse.jetty.http.HttpHeader;
 import org.eclipse.jetty.http.HttpHeaderValue;
 import org.eclipse.jetty.http.HttpMethod;
 import org.eclipse.jetty.http.HttpStatus;
 import org.eclipse.jetty.http.HttpURI;
+import org.eclipse.jetty.http.MimeTypes;
+import org.eclipse.jetty.http.MultiPart;
+import org.eclipse.jetty.http.MultiPartFormData;
 import org.eclipse.jetty.http2.server.HTTP2CServerConnectionFactory;
 import org.eclipse.jetty.http2.server.HTTP2ServerConnectionFactory;
 import org.eclipse.jetty.http3.server.HTTP3ServerConnectionFactory;
@@ -48,6 +54,7 @@ import org.eclipse.jetty.rewrite.handler.RewriteHandler;
 import org.eclipse.jetty.rewrite.handler.RewriteRegexRule;
 import org.eclipse.jetty.server.Connector;
 import org.eclipse.jetty.server.CustomRequestLog;
+import org.eclipse.jetty.server.FormFields;
 import org.eclipse.jetty.server.Handler;
 import org.eclipse.jetty.server.HttpConfiguration;
 import org.eclipse.jetty.server.HttpConnectionFactory;
@@ -70,13 +77,16 @@ import org.eclipse.jetty.server.handler.StatisticsHandler;
 import org.eclipse.jetty.server.handler.gzip.GzipHandler;
 import org.eclipse.jetty.unixdomain.server.UnixDomainServerConnector;
 import org.eclipse.jetty.util.Callback;
+import org.eclipse.jetty.util.Fields;
 import org.eclipse.jetty.util.NanoTime;
+import org.eclipse.jetty.util.Promise;
 import org.eclipse.jetty.util.resource.Resource;
 import org.eclipse.jetty.util.resource.ResourceFactory;
 import org.eclipse.jetty.util.ssl.SslContextFactory;
 import org.eclipse.jetty.util.thread.QueuedThreadPool;
 
 import static java.lang.System.Logger.Level.INFO;
+import static java.nio.charset.StandardCharsets.UTF_8;
 
 @SuppressWarnings("unused")
 public class HTTPServerDocs
@@ -103,13 +113,14 @@ public class HTTPServerDocs
             @Override
             public boolean handle(Request request, Response response, Callback callback)
             {
-                // Succeed the callback to write the response.
+                // Succeed the callback to signal that the
+                // request/response processing is complete.
                 callback.succeeded();
                 return true;
             }
         });
 
-        // Start the Server so it starts accepting connections from clients.
+        // Start the Server to start accepting connections from clients.
         server.start();
         // end::simple[]
     }
@@ -139,33 +150,6 @@ public class HTTPServerDocs
         // Set the RequestLog to log to the given file, rolling over at midnight.
         server.setRequestLog(new CustomRequestLog(logWriter, CustomRequestLog.EXTENDED_NCSA_FORMAT));
         // end::serverRequestLogFile[]
-    }
-
-    public void contextRequestLog()
-    {
-        // tag::contextRequestLog[]
-        Server server = new Server();
-
-        // Create a first ServletContextHandler for your main application.
-        ServletContextHandler mainContext = new ServletContextHandler();
-        mainContext.setContextPath("/main");
-
-        // Create a RequestLogHandler to log requests for your main application.
-        // TODO: RequestLogHandler may need to be re-introduced, to allow per-context logging?
-/*
-        RequestLogHandler requestLogHandler = new RequestLogHandler();
-        requestLogHandler.setRequestLog(new CustomRequestLog());
-        // Wrap the main application with the request log handler.
-        requestLogHandler.setHandler(mainContext);
-
-        // Create a second ServletContextHandler for your other application.
-        // No request logging for this application.
-        ServletContextHandler otherContext = new ServletContextHandler();
-        mainContext.setContextPath("/other");
-
-        server.setHandler(new Handler.Collection(requestLogHandler, otherContext));
-*/
-        // end::contextRequestLog[]
     }
 
     public void configureConnector() throws Exception
@@ -222,6 +206,29 @@ public class HTTPServerDocs
         server.addConnector(connector);
         server.start();
         // end::configureConnectorUnix[]
+    }
+
+    public void configureConnectorQuic() throws Exception
+    {
+        // tag::configureConnectorQuic[]
+        Server server = new Server();
+
+        // Configure the SslContextFactory with the keyStore information.
+        SslContextFactory.Server sslContextFactory = new SslContextFactory.Server();
+        sslContextFactory.setKeyStorePath("/path/to/keystore");
+        sslContextFactory.setKeyStorePassword("secret");
+
+        // Create an HTTP3ServerConnector instance.
+        HTTP3ServerConnector connector = new HTTP3ServerConnector(server, sslContextFactory, new HTTP3ServerConnectionFactory());
+
+        // The port to listen to.
+        connector.setPort(8080);
+        // The address to bind to.
+        connector.setHost("127.0.0.1");
+
+        server.addConnector(connector);
+        server.start();
+        // end::configureConnectorQuic[]
     }
 
     public void configureConnectors() throws Exception
@@ -325,7 +332,7 @@ public class HTTPServerDocs
 
         // The HTTP configuration object.
         HttpConfiguration httpConfig = new HttpConfiguration();
-        // Add the SecureRequestCustomizer because we are using TLS.
+        // Add the SecureRequestCustomizer because TLS is used.
         httpConfig.addCustomizer(new SecureRequestCustomizer());
 
         // The ConnectionFactory for HTTP/1.1.
@@ -378,7 +385,7 @@ public class HTTPServerDocs
 
         // The HTTP configuration object.
         HttpConfiguration httpConfig = new HttpConfiguration();
-        // Add the SecureRequestCustomizer because we are using TLS.
+        // Add the SecureRequestCustomizer because TLS is used.
         httpConfig.addCustomizer(new SecureRequestCustomizer());
 
         // The ConnectionFactory for HTTP/1.1.
@@ -435,7 +442,7 @@ public class HTTPServerDocs
         class LoggingHandler extends Handler.Abstract
         {
             @Override
-            public boolean handle(Request request, Response response, Callback callback) throws Exception
+            public boolean handle(Request request, Response response, Callback callback)
             {
                 callback.succeeded();
                 return true;
@@ -445,7 +452,7 @@ public class HTTPServerDocs
         class App1Handler extends Handler.Abstract
         {
             @Override
-            public boolean handle(Request request, Response response, Callback callback) throws Exception
+            public boolean handle(Request request, Response response, Callback callback)
             {
                 callback.succeeded();
                 return true;
@@ -455,7 +462,7 @@ public class HTTPServerDocs
         class App2Handler extends Handler.Abstract
         {
             @Override
-            public boolean handle(Request request, Response response, Callback callback) throws Exception
+            public boolean handle(Request request, Response response, Callback callback)
             {
                 callback.succeeded();
                 return true;
@@ -465,14 +472,14 @@ public class HTTPServerDocs
         // tag::handlerTree[]
         Server server = new Server();
 
-        Handler.Sequence sequence = new Handler.Sequence();
-        sequence.addHandler(new App1Handler());
-        sequence.addHandler(new App2Handler());
-
-        GzipHandler gzipHandler = new GzipHandler(sequence);
-
+        GzipHandler gzipHandler = new GzipHandler();
         server.setHandler(gzipHandler);
 
+        Handler.Sequence sequence = new Handler.Sequence();
+        gzipHandler.setHandler(sequence);
+
+        sequence.addHandler(new App1Handler());
+        sequence.addHandler(new App2Handler());
         // end::handlerTree[]
     }
 
@@ -493,7 +500,7 @@ public class HTTPServerDocs
     public void handlerHello() throws Exception
     {
         // tag::handlerHello[]
-        class HelloWorldHandler extends Handler.Abstract
+        class HelloWorldHandler extends Handler.Abstract.NonBlocking
         {
             @Override
             public boolean handle(Request request, Response response, Callback callback)
@@ -558,7 +565,7 @@ public class HTTPServerDocs
                     String newPath = "/new_path/" + path.substring("/old_path/".length());
                     HttpURI newURI = HttpURI.build(uri).path(newPath).asImmutable();
 
-                    // Modify the request object by wrapping the HttpURI
+                    // Modify the request object by wrapping the HttpURI.
                     Request newRequest = Request.serveAs(request, newURI);
 
                     // Forward to the next Handler using the wrapped Request.
@@ -576,11 +583,312 @@ public class HTTPServerDocs
         Connector connector = new ServerConnector(server);
         server.addConnector(connector);
 
-        // Link the Handlers.
+        // Link the Handlers in a chain.
         server.setHandler(new FilterHandler(new HelloWorldHandler()));
 
         server.start();
         // end::handlerFilter[]
+    }
+
+    public void handlerForm()
+    {
+        // tag::handlerForm[]
+        class FormHandler extends Handler.Abstract.NonBlocking
+        {
+            @Override
+            public boolean handle(Request request, Response response, Callback callback)
+            {
+                String contentType = request.getHeaders().get(HttpHeader.CONTENT_TYPE);
+                if (MimeTypes.Type.FORM_ENCODED.is(contentType))
+                {
+                    // Convert the request content into Fields.
+                    CompletableFuture<Fields> completableFields = FormFields.from(request); // <1>
+
+                    // When all the request content has arrived, process the fields.
+                    completableFields.whenComplete((fields, failure) -> // <2>
+                    {
+                        if (failure == null)
+                        {
+                            processFields(fields);
+                            // Send a simple 200 response, completing the callback.
+                            response.setStatus(HttpStatus.OK_200);
+                            callback.succeeded();
+                        }
+                        else
+                        {
+                            // Reading the request content failed.
+                            // Send an error response, completing the callback.
+                            Response.writeError(request, response, callback, failure);
+                        }
+                    });
+
+                    // The callback will be eventually completed in all cases, return true.
+                    return true;
+                }
+                else
+                {
+                    // Send an error response, completing the callback, and returning true.
+                    Response.writeError(request, response, callback, HttpStatus.BAD_REQUEST_400, "invalid request");
+                    return true;
+                }
+            }
+        }
+        // end::handlerForm[]
+    }
+
+    private static void processFields(Fields fields)
+    {
+    }
+
+    public void handlerMultiPart()
+    {
+        // tag::handlerMultiPart[]
+        class MultiPartFormDataHandler extends Handler.Abstract.NonBlocking
+        {
+            @Override
+            public boolean handle(Request request, Response response, Callback callback)
+            {
+                String contentType = request.getHeaders().get(HttpHeader.CONTENT_TYPE);
+                if (MimeTypes.Type.MULTIPART_FORM_DATA.is(contentType))
+                {
+                    // Extract the multipart boundary.
+                    String boundary = MultiPart.extractBoundary(contentType);
+
+                    // Create and configure the multipart parser.
+                    MultiPartFormData.Parser parser = new MultiPartFormData.Parser(boundary);
+                    // By default, uploaded files are stored in this directory, to
+                    // avoid to read the file content (which can be large) in memory.
+                    parser.setFilesDirectory(Path.of("/tmp"));
+                    // Convert the request content into parts.
+                    CompletableFuture<MultiPartFormData.Parts> completableParts = parser.parse(request); // <1>
+
+                    // When all the request content has arrived, process the parts.
+                    completableParts.whenComplete((parts, failure) -> // <2>
+                    {
+                        if (failure == null)
+                        {
+                            // Use the Parts API to process the parts.
+                            processParts(parts);
+                            // Send a simple 200 response, completing the callback.
+                            response.setStatus(HttpStatus.OK_200);
+                            callback.succeeded();
+                        }
+                        else
+                        {
+                            // Reading the request content failed.
+                            // Send an error response, completing the callback.
+                            Response.writeError(request, response, callback, failure);
+                        }
+                    });
+
+                    // The callback will be eventually completed in all cases, return true.
+                    return true;
+                }
+                else
+                {
+                    // Send an error response, completing the callback, and returning true.
+                    Response.writeError(request, response, callback, HttpStatus.BAD_REQUEST_400, "invalid request");
+                    return true;
+                }
+            }
+        }
+        // end::handlerMultiPart[]
+    }
+
+    private void processParts(MultiPartFormData.Parts parts)
+    {
+    }
+
+    public void flush()
+    {
+        // tag::flush[]
+        class FlushingHandler extends Handler.Abstract.NonBlocking
+        {
+            @Override
+            public boolean handle(Request request, Response response, Callback callback)
+            {
+                // Set the response status code.
+                response.setStatus(HttpStatus.OK_200);
+                // Set the response headers.
+                response.getHeaders().put(HttpHeader.CONTENT_TYPE, "text/plain");
+
+                // Commit the response with a "flush" write.
+                Callback.Completable.with(flush -> response.write(false, null, flush))
+                    // When the flush is finished, send the content and complete the callback.
+                    .whenComplete((ignored, failure) ->
+                    {
+                        if (failure == null)
+                            response.write(true, UTF_8.encode("HELLO"), callback);
+                        else
+                            callback.failed(failure);
+                    });
+
+                // Return true because the callback will eventually be completed.
+                return true;
+            }
+        }
+        // end::flush[]
+    }
+
+    public void contentLength()
+    {
+        // tag::contentLength[]
+        class ContentLengthHandler extends Handler.Abstract.NonBlocking
+        {
+            @Override
+            public boolean handle(Request request, Response response, Callback callback)
+            {
+                // Set the response status code.
+                response.setStatus(HttpStatus.OK_200);
+
+                String content = """
+                    {
+                      "result": 0,
+                      "advice": {
+                        "message": "Jetty Rocks!"
+                      }
+                    }
+                    """;
+                // Must count the bytes, not the characters!
+                byte[] bytes = content.getBytes(UTF_8);
+                long contentLength = bytes.length;
+
+                // Set the response headers before the response is committed.
+                HttpFields.Mutable responseHeaders = response.getHeaders();
+                // Set the content type.
+                responseHeaders.put(HttpHeader.CONTENT_TYPE, "application/json; charset=UTF-8");
+                // Set the response content length.
+                responseHeaders.put(HttpHeader.CONTENT_LENGTH, contentLength);
+
+                // Commit the response.
+                response.write(true, ByteBuffer.wrap(bytes), callback);
+
+                // Return true because the callback will eventually be completed.
+                return true;
+            }
+        }
+        // end::contentLength[]
+    }
+
+    public void handlerContinue100()
+    {
+        // tag::continue[]
+        class Continue100Handler extends Handler.Wrapper
+        {
+            public Continue100Handler(Handler handler)
+            {
+                super(handler);
+            }
+
+            @Override
+            public boolean handle(Request request, Response response, Callback callback) throws Exception
+            {
+                HttpFields requestHeaders = request.getHeaders();
+                if (requestHeaders.contains(HttpHeader.EXPECT, HttpHeaderValue.CONTINUE.asString()))
+                {
+                    // Analyze the request and decide whether to receive the content.
+                    long contentLength = requestHeaders.getLongField(HttpHeader.CONTENT_LENGTH);
+                    if (contentLength > 0 && contentLength < 1024)
+                    {
+                        // Small request content, ask to send it by
+                        // sending a 100 Continue interim response.
+                        CompletableFuture<Void> processing = response.writeInterim(HttpStatus.CONTINUE_100, HttpFields.EMPTY) // <1>
+                            // Then read the request content into a ByteBuffer.
+                            .thenCompose(ignored -> Promise.Completable.<ByteBuffer>with(p -> Content.Source.asByteBuffer(request, p)))
+                            // Then store the ByteBuffer somewhere.
+                            .thenCompose(byteBuffer -> store(byteBuffer));
+
+                        // At the end of the processing, complete
+                        // the callback with the CompletableFuture,
+                        // a simple 200 response in case of success,
+                        // or a 500 response in case of failure.
+                        callback.completeWith(processing); // <2>
+                        return true;
+                    }
+                    else
+                    {
+                        // The request content is too large, send an error.
+                        Response.writeError(request, response, callback, HttpStatus.PAYLOAD_TOO_LARGE_413);
+                        return true;
+                    }
+                }
+                else
+                {
+                    return super.handle(request, response, callback);
+                }
+            }
+        }
+        // end::continue[]
+    }
+
+    private static CompletableFuture<Void> store(ByteBuffer byteBuffer)
+    {
+        return new CompletableFuture<>();
+    }
+
+    public void earlyHints()
+    {
+        // tag::earlyHints103[]
+        class EarlyHints103Handler extends Handler.Wrapper
+        {
+            public EarlyHints103Handler(Handler handler)
+            {
+                super(handler);
+            }
+
+            @Override
+            public boolean handle(Request request, Response response, Callback callback) throws Exception
+            {
+                String pathInContext = Request.getPathInContext(request);
+
+                // Simple logic that assumes that every HTML
+                // file has associated the same CSS stylesheet.
+                if (pathInContext.endsWith(".html"))
+                {
+                    // Tell the client that a Link is coming
+                    // sending a 103 Early Hints interim response.
+                    HttpFields.Mutable interimHeaders = HttpFields.build()
+                        .put(HttpHeader.LINK, "</style.css>; rel=preload; as=style");
+
+                    response.writeInterim(HttpStatus.EARLY_HINTS_103, interimHeaders) // <1>
+                        .whenComplete((ignored, failure) -> // <2>
+                        {
+                            if (failure == null)
+                            {
+                                try
+                                {
+                                    // Delegate the handling to the child Handler.
+                                    boolean handled = super.handle(request, response, callback);
+                                    if (!handled)
+                                    {
+                                        // The child Handler did not produce a final response, do it here.
+                                        Response.writeError(request, response, callback, HttpStatus.NOT_FOUND_404);
+                                    }
+                                }
+                                catch (Throwable x)
+                                {
+                                    callback.failed(x);
+                                }
+                            }
+                            else
+                            {
+                                callback.failed(failure);
+                            }
+                        });
+
+                    // This Handler sent an interim response, so this Handler
+                    // (or its descendants) must produce a final response, so return true.
+                    return true;
+                }
+                else
+                {
+                    // Not a request for an HTML page, delegate
+                    // the handling to the child Handler.
+                    return super.handle(request, response, callback);
+                }
+            }
+        }
+        // end::earlyHints103[]
     }
 
     public void contextHandler() throws Exception
@@ -589,7 +897,7 @@ public class HTTPServerDocs
         class ShopHandler extends Handler.Abstract
         {
             @Override
-            public boolean handle(Request request, Response response, Callback callback) throws Exception
+            public boolean handle(Request request, Response response, Callback callback)
             {
                 // Implement the shop, remembering to complete the callback.
                 return true;
@@ -616,7 +924,7 @@ public class HTTPServerDocs
         class ShopHandler extends Handler.Abstract
         {
             @Override
-            public boolean handle(Request request, Response response, Callback callback) throws Exception
+            public boolean handle(Request request, Response response, Callback callback)
             {
                 // Implement the shop, remembering to complete the callback.
                 return true;
@@ -626,7 +934,7 @@ public class HTTPServerDocs
         class RESTHandler extends Handler.Abstract
         {
             @Override
-            public boolean handle(Request request, Response response, Callback callback) throws Exception
+            public boolean handle(Request request, Response response, Callback callback)
             {
                 // Implement the REST APIs, remembering to complete the callback.
                 return true;
@@ -677,6 +985,8 @@ public class HTTPServerDocs
         // Create a ServletContextHandler with contextPath.
         ServletContextHandler context = new ServletContextHandler();
         context.setContextPath("/shop");
+        // Link the context to the server.
+        server.setHandler(context);
 
         // Add the Servlet implementing the cart functionality to the context.
         ServletHolder servletHolder = context.addServlet(ShopCartServlet.class, "/cart/*");
@@ -687,9 +997,6 @@ public class HTTPServerDocs
         FilterHolder filterHolder = context.addFilter(CrossOriginFilter.class, "/*", EnumSet.of(DispatcherType.REQUEST));
         // Configure the filter.
         filterHolder.setAsyncSupported(true);
-
-        // Link the context to the server.
-        server.setHandler(context);
 
         server.start();
         // end::servletContextHandler-setup[]
@@ -704,13 +1011,13 @@ public class HTTPServerDocs
 
         // Create a WebAppContext.
         WebAppContext context = new WebAppContext();
+        // Link the context to the server.
+        server.setHandler(context);
+
         // Configure the path of the packaged web application (file or directory).
         context.setWar("/path/to/webapp.war");
         // Configure the contextPath.
         context.setContextPath("/app");
-
-        // Link the context to the server.
-        server.setHandler(context);
 
         server.start();
         // end::webAppContextHandler[]
@@ -728,8 +1035,7 @@ public class HTTPServerDocs
         // Configure the directory where static resources are located.
         handler.setBaseResource(ResourceFactory.of(handler).newResource("/path/to/static/resources/"));
         // Configure directory listing.
-        // TODO: is the directoriesListed feature still present?
-//        handler.setDirectoriesListed(false);
+        handler.setDirAllowed(false);
         // Configure welcome files.
         handler.setWelcomeFiles(List.of("index.html"));
         // Configure whether to accept range requests.
@@ -742,7 +1048,7 @@ public class HTTPServerDocs
         // end::resourceHandler[]
     }
 
-    public void multipleResourcesHandler() throws Exception
+    public void multipleResourcesHandler()
     {
         // tag::multipleResourcesHandler[]
         ResourceHandler handler = new ResourceHandler();
@@ -778,10 +1084,9 @@ public class HTTPServerDocs
         Connector connector = new ServerConnector(server);
         server.addConnector(connector);
 
-        // Create a ContextHandlerCollection to manage contexts.
-        ContextHandlerCollection contexts = new ContextHandlerCollection();
-        // Create and configure GzipHandler linked to the ContextHandlerCollection.
-        GzipHandler gzipHandler = new GzipHandler(contexts);
+        // Create and configure GzipHandler.
+        GzipHandler gzipHandler = new GzipHandler();
+        server.setHandler(gzipHandler);
         // Only compress response content larger than this.
         gzipHandler.setMinGzipSize(1024);
         // Do not compress these URI paths.
@@ -791,8 +1096,9 @@ public class HTTPServerDocs
         // Do not compress these mime types.
         gzipHandler.addExcludedMimeTypes("font/ttf");
 
-        // Link the GzipHandler to the Server.
-        server.setHandler(gzipHandler);
+        // Create a ContextHandlerCollection to manage contexts.
+        ContextHandlerCollection contexts = new ContextHandlerCollection();
+        gzipHandler.setHandler(contexts);
 
         server.start();
         // end::serverGzipHandler[]
@@ -803,7 +1109,7 @@ public class HTTPServerDocs
         class ShopHandler extends Handler.Abstract
         {
             @Override
-            public boolean handle(Request request, Response response, Callback callback) throws Exception
+            public boolean handle(Request request, Response response, Callback callback)
             {
                 // Implement the shop, remembering to complete the callback.
                 return true;
@@ -813,20 +1119,22 @@ public class HTTPServerDocs
         class RESTHandler extends Handler.Abstract
         {
             @Override
-            public boolean handle(Request request, Response response, Callback callback) throws Exception
+            public boolean handle(Request request, Response response, Callback callback)
             {
                 // Implement the REST APIs, remembering to complete the callback.
                 return true;
             }
         }
 
+        // tag::contextGzipHandler[]
         Server server = new Server();
         ServerConnector connector = new ServerConnector(server);
         server.addConnector(connector);
 
-        // tag::contextGzipHandler[]
         // Create a ContextHandlerCollection to hold contexts.
         ContextHandlerCollection contextCollection = new ContextHandlerCollection();
+        // Link the ContextHandlerCollection to the Server.
+        server.setHandler(contextCollection);
 
         // Create the context for the shop web application wrapped with GzipHandler so only the shop will do gzip.
         GzipHandler shopGzipHandler = new GzipHandler(new ContextHandler(new ShopHandler(), "/shop"));
@@ -840,11 +1148,8 @@ public class HTTPServerDocs
         // Add it to ContextHandlerCollection.
         contextCollection.addHandler(apiContext);
 
-        // Link the ContextHandlerCollection to the Server.
-        server.setHandler(contextCollection);
-        // end::contextGzipHandler[]
-
         server.start();
+        // end::contextGzipHandler[]
     }
 
     public void rewriteHandler() throws Exception
@@ -854,10 +1159,10 @@ public class HTTPServerDocs
         ServerConnector connector = new ServerConnector(server);
         server.addConnector(connector);
 
-        // Create a ContextHandlerCollection to hold contexts.
-        ContextHandlerCollection contextCollection = new ContextHandlerCollection();
-        // Link the ContextHandlerCollection to the RewriteHandler.
-        RewriteHandler rewriteHandler = new RewriteHandler(contextCollection);
+        // Create and link the RewriteHandler to the Server.
+        RewriteHandler rewriteHandler = new RewriteHandler();
+        server.setHandler(rewriteHandler);
+
         // Compacts URI paths with double slashes, e.g. /ctx//path/to//resource.
         rewriteHandler.addRule(new CompactPathRule());
         // Rewrites */products/* to */p/*.
@@ -867,8 +1172,9 @@ public class HTTPServerDocs
         redirectRule.setStatusCode(HttpStatus.MOVED_PERMANENTLY_301);
         rewriteHandler.addRule(redirectRule);
 
-        // Link the RewriteHandler to the Server.
-        server.setHandler(rewriteHandler);
+        // Create a ContextHandlerCollection to hold contexts.
+        ContextHandlerCollection contextCollection = new ContextHandlerCollection();
+        rewriteHandler.setHandler(contextCollection);
 
         server.start();
         // end::rewriteHandler[]
@@ -881,14 +1187,13 @@ public class HTTPServerDocs
         ServerConnector connector = new ServerConnector(server);
         server.addConnector(connector);
 
+        // Create and link the StatisticsHandler to the Server.
+        StatisticsHandler statsHandler = new StatisticsHandler();
+        server.setHandler(statsHandler);
+
         // Create a ContextHandlerCollection to hold contexts.
         ContextHandlerCollection contextCollection = new ContextHandlerCollection();
-
-        // Link the ContextHandlerCollection to the StatisticsHandler.
-        StatisticsHandler statsHandler = new StatisticsHandler(contextCollection);
-
-        // Link the StatisticsHandler to the Server.
-        server.setHandler(statsHandler);
+        statsHandler.setHandler(contextCollection);
 
         server.start();
         // end::statisticsHandler[]
@@ -901,14 +1206,14 @@ public class HTTPServerDocs
         ServerConnector connector = new ServerConnector(server);
         server.addConnector(connector);
 
+        // Create and link the MinimumDataRateHandler to the Server.
+        // Create the MinimumDataRateHandler with a minimum read rate of 1KB per second and no minimum write rate.
+        StatisticsHandler.MinimumDataRateHandler dataRateHandler = new StatisticsHandler.MinimumDataRateHandler(1024L, 0L);
+        server.setHandler(dataRateHandler);
+
         // Create a ContextHandlerCollection to hold contexts.
         ContextHandlerCollection contextCollection = new ContextHandlerCollection();
-
-        // Create the MinimumDataRateHandler linked the ContextHandlerCollection with a minimum read rate of 1KB per second and no minimum write rate.
-        StatisticsHandler.MinimumDataRateHandler dataRateHandler = new StatisticsHandler.MinimumDataRateHandler(contextCollection, 1024L, 0L);
-
-        // Link the MinimumDataRateHandler to the Server.
-        server.setHandler(dataRateHandler);
+        dataRateHandler.setHandler(contextCollection);
 
         server.start();
         // end::dataRateHandler[]
@@ -971,12 +1276,12 @@ public class HTTPServerDocs
         connector.setPort(8080);
         server.addConnector(connector);
 
-        // Configure the HttpConfiguration for the encrypted connector.
+        // Configure the HttpConfiguration for the secure connector.
         HttpConfiguration httpsConfig = new HttpConfiguration(httpConfig);
-        // Add the SecureRequestCustomizer because we are using TLS.
+        // Add the SecureRequestCustomizer because TLS is used.
         httpConfig.addCustomizer(new SecureRequestCustomizer());
 
-        // The HttpConnectionFactory for the encrypted connector.
+        // The HttpConnectionFactory for the secure connector.
         HttpConnectionFactory http11 = new HttpConnectionFactory(httpsConfig);
 
         // Configure the SslContextFactory with the keyStore information.
@@ -987,19 +1292,18 @@ public class HTTPServerDocs
         // The ConnectionFactory for TLS.
         SslConnectionFactory tls = new SslConnectionFactory(sslContextFactory, http11.getProtocol());
 
-        // The encrypted connector.
+        // The secure connector.
         ServerConnector secureConnector = new ServerConnector(server, tls, http11);
         secureConnector.setPort(8443);
         server.addConnector(secureConnector);
 
+        // Create and link the SecuredRedirectHandler to the Server.
+        SecuredRedirectHandler securedHandler = new SecuredRedirectHandler();
+        server.setHandler(securedHandler);
+
         // Create a ContextHandlerCollection to hold contexts.
         ContextHandlerCollection contextCollection = new ContextHandlerCollection();
-
-        // Link the ContextHandlerCollection to the SecuredRedirectHandler.
-        SecuredRedirectHandler securedHandler = new SecuredRedirectHandler(contextCollection);
-
-        // Link the SecuredRedirectHandler to the Server.
-        server.setHandler(securedHandler);
+        securedHandler.setHandler(contextCollection);
 
         server.start();
         // end::securedHandler[]
