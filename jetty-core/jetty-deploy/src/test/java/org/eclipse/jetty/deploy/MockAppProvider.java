@@ -84,4 +84,10 @@ public class MockAppProvider extends AbstractLifeCycle implements AppProvider
 
         return contextHandler;
     }
+
+    @Override
+    public String toString()
+    {
+        return String.format("MockAppProvider@%x:%s", hashCode(), getEnvironmentName());
+    }
 }
