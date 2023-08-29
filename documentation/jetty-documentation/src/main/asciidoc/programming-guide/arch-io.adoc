@@ -200,3 +200,134 @@ Asynchronous programming is hard.
 
 Rely on the Jetty classes to implement `Connection` to avoid mistakes that will be difficult to diagnose and reproduce.
 ====
+
+[[pg-arch-io-content-source]]
+==== `Content.Source`
+
+The high-level abstraction that Jetty offers to read bytes is `org.eclipse.jetty.io.Content.Source`.
+
+`Content.Source` offers a non-blocking demand/read model where a read returns a `Content.Chunk` (see also xref:pg-arch-io-content-source-chunk[this section]).
+
+A `Content.Chunk` groups the following information:
+
+* A `ByteBuffer` with the bytes that have been read; it may be empty.
+* Whether the read reached end-of-file.
+* A failure that might have happened during the read.
+
+The ``Content.Chunk``'s `ByteBuffer` is typically a slice of a different `ByteBuffer` that has been read by a lower layer.
+There may be multiple layers between the bottom layer (where the initial read typically happens) and the application layer.
+
+By slicing the `ByteBuffer` (rather than copying its bytes), there is no copy of the bytes between the layers.
+However, this comes with the cost that the `ByteBuffer`, and the associated `Content.Chunk`, have an intrinsic lifecycle: the final consumer of a `Content.Chunk` at the application layer must indicate when it has consumed the chunk, so that the bottom layer may reuse/recycle the `ByteBuffer`.
+
+Consuming the chunk means that the bytes in the `ByteBuffer` are read (or ignored), and that the application will not look at or reference that `ByteBuffer` ever again.
+
+`Content.Chunk` offers a retain/release model to deal with the `ByteBuffer` lifecycle, with a simple rule:
+
+IMPORTANT: A `Content.Chunk` returned by a call to `Content.Source.read()` **must** be released.
+
+The example below is the idiomatic way to read from a `Content.Source`:
+
+[source,java,indent=0]
+----
+include::{doc_code}/org/eclipse/jetty/docs/programming/ContentDocs.java[tags=idiomatic]
+----
+<1> The `read()` that must be paired with a `release()`.
+<2> The `release()` that pairs the `read()`.
+
+Note how the reads happens in a loop, consuming the `Content.Source` as soon as it has content available to be read, and therefore no backpressure is applied to the reads.
+
+An alternative way to read from a `Content.Source`, to use when the chunk is consumed asynchronously, and you don't want to read again until the `Content.Chunk` is consumed, is the following:
+
+[source,java,indent=0]
+----
+include::{doc_code}/org/eclipse/jetty/docs/programming/ContentDocs.java[tags=async]
+----
+<1> The `read()` that must be paired with a `release()`.
+<2> The `release()` that pairs the `read()`.
+
+Note how the reads do not happen in a loop, and therefore backpressure is applied to the reads, because there is not a next read until the chunk from the previous read has been consumed (and this may take time).
+
+You can use `Content.Source` static methods to conveniently read (in a blocking way or non-blocking way), for example via `static Content.Source.asStringAsync(Content.Source, Charset)`, or via an `InputStream` using `static Content.Source.asInputStream(Content.Source source)`.
+
+For
+
+Refer to the `Content.Source` link:{javadoc-url}/org/eclipse/jetty/io/Content.Source.html[`javadocs`] for further details.
+
+[[pg-arch-io-content-source-chunk]]
+===== `Content.Chunk`
+
+`Content.Chunk` offers a retain/release API to control the lifecycle of its `ByteBuffer`.
+
+When ``Content.Chunk``s are consumed synchronously, no additional retain/release API call is necessary, for example:
+
+[source,java,indent=0]
+----
+include::{doc_code}/org/eclipse/jetty/docs/programming/ContentDocs.java[tags=chunkSync]
+----
+
+On the other hand, if the `Content.Chunk` is not consumed immediately, then it must be retained, and you must arrange for the `Content.Chunk` to be released at a later time, thus pairing the retain.
+For example, you may accumulate the ``Content.Chunk``s in a `List` to convert them to a `String` when all the ``Content.Chunk``s have been read.
+
+Since reading from a `Content.Source` is asynchronous, the `String` result is produced via a `CompletableFuture`:
+
+[source,java,indent=0]
+----
+include::{doc_code}/org/eclipse/jetty/docs/programming/ContentDocs.java[tags=chunkAsync]
+----
+<1> The `read()` that must be paired with a `release()`.
+<2> The `release()` that pairs the `read()`.
+<3> The `retain()` that must be paired with a `release()`.
+<4> The `release()` that pairs the `retain()`.
+
+Note how method `consume(Content.Chunk)` retains the `Content.Chunk` because it does not consume it, but rather stores it away for later use.
+With this additional retain, the retain count is now `2`: one implicitly from the `read()` that returned the `Content.Chunk`, and one explicit in `consume(Content.Chunk)`.
+
+However, just after returning from `consume(Content.Chunk)` the `Content.Chunk` is released (pairing the implicit retain from `read()`), so that the retain count goes to `1`, and an additional release is still necessary.
+
+Method `getResult()` arranges to release all the ``Content.Chunk``s that have been accumulated, pairing the retains done in `consume(Content.Chunk)`, so that the retain count for the ``Content.Chunk``s goes finally to `0`.
+
+[[pg-arch-io-content-sink]]
+==== `Content.Sink`
+
+The high-level abstraction that Jetty offers to write bytes is `org.eclipse.jetty.io.Content.Sink`.
+
+The primary method to use is `Content.Sink.write(boolean, ByteBuffer, Callback)`, which performs a non-blocking write of the given `ByteBuffer`, with the indication of whether the write is the last.
+
+The `Callback` parameter is completed, successfully or with a failure, and possibly asynchronously by a different thread, when the write is complete.
+
+Your application can typically perform zero or more non-last writes, and one final last write.
+
+However, because the writes may be asynchronous, you cannot start a next write before the previous write is completed.
+
+This code is wrong:
+
+[source,java,indent=0]
+----
+include::{doc_code}/org/eclipse/jetty/docs/programming/ContentDocs.java[tags=sinkWrong]
+----
+
+You must initiate a second write only when the first is finished, for example:
+
+[source,java,indent=0]
+----
+include::{doc_code}/org/eclipse/jetty/docs/programming/ContentDocs.java[tags=sinkMany]
+----
+
+When you need to perform an unknown number of writes, you must use an `IteratingCallback`, explained in xref:pg-arch-io-echo[this section], to avoid ``StackOverFlowError``s.
+
+For example, to copy from a `Content.Source` to a `Content.Sink` you should use the convenience method `Content.copy(Content.Source, Content.Sink, Callback)`.
+For illustrative purposes, below you can find the implementation of `copy(Content.Source, Content.Sink, Callback)` that uses an `IteratingCallback`:
+
+[source,java,indent=0]
+----
+include::{doc_code}/org/eclipse/jetty/docs/programming/ContentDocs.java[tags=copy]
+----
+
+Non-blocking writes can be easily turned in blocking writes.
+This leads to perhaps code that is simpler to read, but that also comes with a price: greater resource usage that may lead to less scalability and less performance.
+
+[source,java,indent=0]
+----
+include::{doc_code}/org/eclipse/jetty/docs/programming/ContentDocs.java[tags=blocking]
+----

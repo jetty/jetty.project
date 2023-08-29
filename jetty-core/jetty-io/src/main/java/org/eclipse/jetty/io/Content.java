@@ -20,6 +20,7 @@ import java.nio.ByteBuffer;
 import java.nio.charset.Charset;
 import java.nio.charset.StandardCharsets;
 import java.util.Objects;
+import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.Flow;
 import java.util.function.Consumer;
 
@@ -199,14 +200,27 @@ public class Content
         {
             try
             {
-                FuturePromise<String> promise = new FuturePromise<>();
-                asString(source, charset, promise);
-                return promise.get();
+                return asStringAsync(source, charset).get();
             }
             catch (Throwable x)
             {
                 throw IO.rethrow(x);
             }
+        }
+
+        /**
+         * <p>Read, non-blocking, the whole content source into a {@link String}, converting
+         * the bytes using the given {@link Charset}.</p>
+         *
+         * @param source the source to read
+         * @param charset the charset to use to decode bytes
+         * @return the {@link CompletableFuture} to notify when the whole content has been read
+         */
+        static CompletableFuture<String> asStringAsync(Source source, Charset charset)
+        {
+            Promise.Completable<String> completable = new Promise.Completable<>();
+            asString(source, charset, completable);
+            return completable;
         }
 
         /**

@@ -61,7 +61,7 @@ public class HTTP3StreamClient extends HTTP3Stream implements Stream.Client
         {
             case HttpStatus.CONTINUE_100 -> validateAndUpdate(EnumSet.of(FrameState.INITIAL), FrameState.INFORMATIONAL);
             case HttpStatus.PROCESSING_102,
-                HttpStatus.EARLY_HINT_103 -> validateAndUpdate(EnumSet.of(FrameState.INITIAL, FrameState.INFORMATIONAL), FrameState.INFORMATIONAL);
+                HttpStatus.EARLY_HINTS_103 -> validateAndUpdate(EnumSet.of(FrameState.INITIAL, FrameState.INFORMATIONAL), FrameState.INFORMATIONAL);
             default -> validateAndUpdate(EnumSet.of(FrameState.INITIAL, FrameState.INFORMATIONAL), FrameState.HEADER);
         };
         if (valid)

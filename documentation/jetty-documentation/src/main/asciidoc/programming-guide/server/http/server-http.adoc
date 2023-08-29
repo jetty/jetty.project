@@ -61,14 +61,16 @@ A `Server` must be created, configured and started:
 include::../../{doc_code}/org/eclipse/jetty/docs/programming/server/http/HTTPServerDocs.java[tags=simple]
 ----
 
-The example above shows the simplest HTTP/1.1 server; it has no support for HTTP sessions, for HTTP authentication, or for any of the features required by the Servlet specification.
+The example above shows the simplest HTTP/1.1 server; it has no support for HTTP sessions, nor for HTTP authentication, nor for any of the features required by the Servlet specification.
 
-All these features are provided by the Jetty Server Libraries, and server applications only need to put the required components together to provide all the required features.
+These features (HTTP session support, HTTP authentication support, etc.) are provided by the Jetty server libraries, but not all of them may be necessary in your web application.
+You need to put together the required Jetty components to provide the features required by your web applications.
+The advantage is that you do not pay the cost for features that you do not use, saving resources and likely increasing performance.
 
-The ``Handler``s provided by the Jetty Server Libraries allow writing server applications that have functionalities similar to Apache HTTPD or Nginx (for example: URL redirection, URL rewriting, serving static content, reverse proxying, etc.), as well as generating content dynamically by processing incoming requests.
+The built-in ``Handler``s provided by the Jetty server libraries allow you to write web applications that have functionalities similar to Apache HTTPD or Nginx (for example: URL redirection, URL rewriting, serving static content, reverse proxying, etc.), as well as generating content dynamically by processing incoming requests.
 Read xref:pg-server-http-handler[this section] for further details about ``Handler``s.
 
-If you are interested in writing your server application based on the Servlet APIs, jump to xref:pg-server-http-handler-use-servlet[this section].
+If you are interested in writing your web application based on the Servlet APIs, jump to xref:pg-server-http-handler-use-servlet[this section].
 
 [[pg-server-http-request-processing]]
 ==== Request Processing
@@ -112,12 +114,12 @@ This event is converted to a call to `AbstractConnection.onFillable()`, where th
 The parser emit events that are protocol specific; the HTTP/2 parser, for example, emits events for each HTTP/2 frame that has been parsed, and similarly does the HTTP/3 parser.
 The parser events are then converted to protocol independent events such as _"request start"_, _"request headers"_, _"request content chunk"_, etc.
 
-When enough of the HTTP request is arrived, the `Connection` calls `HttpChannel.onRequest()` that calls the `Handler` chain starting from the `Server` instance, that eventually calls the server application code.
+When enough of the HTTP request is arrived, the `Connection` calls `HttpChannel.onRequest()` that calls the `Handler` chain starting from the `Server` instance, that eventually calls your web application code.
 
 [[pg-server-http-request-processing-events]]
 ===== Request Processing Events
 
-Advanced server applications may be interested in the progress of the processing of an HTTP request/response.
+Advanced web applications may be interested in the progress of the processing of an HTTP request/response.
 A typical case is to know exactly _when_ the HTTP request/response processing starts and when it is complete, for example to monitor processing times.
 
 This is conveniently implemented by `org.eclipse.jetty.server.handler.EventsHandler`, described in more details in xref:pg-server-http-handler-use-events[this section].
@@ -137,7 +139,7 @@ Typically, the extended NCSA format is the is enough and it's the standard used 
 To customize the request/response log line format see the link:{javadoc-url}/org/eclipse/jetty/server/CustomRequestLog.html[`CustomRequestLog` javadocs].
 ====
 
-Request logging can be enabled at the server level, or at the web application context level.
+Request logging can be enabled at the `Server` level.
 
 The request logging output can be directed to an SLF4J logger named `"org.eclipse.jetty.server.RequestLog"` at `INFO` level, and therefore to any logging library implementation of your choice (see also xref:pg-troubleshooting-logging[this section] about logging).
 
@@ -157,13 +159,6 @@ For maximum flexibility, you can log to multiple ``RequestLog``s using class `Re
 
 You can use `CustomRequestLog` with a custom `RequestLog.Writer` to direct the request logging output to your custom targets (for example, an RDBMS).
 You can implement your own `RequestLog` if you want to have functionalities that are not implemented by `CustomRequestLog`.
-
-Request logging can also be enabled at the web application context level, using `RequestLogHandler` (see xref:pg-server-http-handler[this section] about how to organize Jetty ``Handler``s) to wrap a web application `Handler`:
-
-[source,java,indent=0]
-----
-include::../../{doc_code}/org/eclipse/jetty/docs/programming/server/http/HTTPServerDocs.java[tags=contextRequestLog]
-----
 
 include::server-http-connector.adoc[]
 include::server-http-handler.adoc[]

@@ -381,7 +381,7 @@ public class HttpGenerator
                         {
                             case HttpStatus.SWITCHING_PROTOCOLS_101:
                                 break;
-                            case HttpStatus.EARLY_HINT_103:
+                            case HttpStatus.EARLY_HINTS_103:
                                 generateHeaders(header, content, last);
                                 _state = State.COMPLETING_1XX;
                                 return Result.FLUSH;
