@@ -1146,6 +1146,7 @@ public class HttpConnection extends AbstractConnection implements Runnable, Writ
             Throwable result = HttpStream.consumeAvailable(this, getHttpConfiguration());
             if (result != null)
                 _generator.setPersistent(false);
+            releaseRequestBuffer();
             return result;
         }
 
