@@ -1,3 +1,5 @@
+jetty-12.0.2-SNAPSHOT
+
 jetty-12.0.1 - 29 August 2023
  + 8926 HttpClient GZIPContentDecoder should remove Content-Length and
    Content-Encoding: gzip
