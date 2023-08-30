@@ -30,7 +30,6 @@ import org.eclipse.jetty.io.ByteBufferPool;
 import org.eclipse.jetty.io.Connection;
 import org.eclipse.jetty.io.Content;
 import org.eclipse.jetty.io.EndPoint;
-import org.eclipse.jetty.io.EofException;
 import org.eclipse.jetty.io.RetainableByteBuffer;
 import org.eclipse.jetty.server.ConnectionMetaData;
 import org.eclipse.jetty.server.Connector;
@@ -206,8 +205,8 @@ public class ServerFCGIConnection extends AbstractConnection implements Connecti
             networkBuffer.release();
             networkBuffer = null;
         }
-        if (stream != null)
-            stream.failed(new EofException());
+        if (stream != null && cause != null)
+            stream.failed(cause);
 
         super.onClose(cause);
     }
