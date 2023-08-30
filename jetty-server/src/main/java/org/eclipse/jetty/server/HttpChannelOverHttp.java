@@ -36,6 +36,7 @@ import org.eclipse.jetty.http.MetaData;
 import org.eclipse.jetty.io.Connection;
 import org.eclipse.jetty.io.EndPoint;
 import org.eclipse.jetty.io.EofException;
+import org.eclipse.jetty.util.NanoTime;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -340,6 +341,7 @@ public class HttpChannelOverHttp extends HttpChannel implements HttpParser.Reque
     @Override
     public boolean headerComplete()
     {
+        _requestBuilder.beginNanoTime(_httpConnection.getBeginNanoTime());
         _metadata = _requestBuilder.build();
         onRequest(_metadata);
 
@@ -705,6 +707,7 @@ public class HttpChannelOverHttp extends HttpChannel implements HttpParser.Reque
         private final HttpURI.Mutable _uriBuilder = HttpURI.build();
         private String _method;
         private HttpVersion _version;
+        private long _beginNanoTime = Long.MIN_VALUE;
 
         public String method()
         {
@@ -719,6 +722,13 @@ public class HttpChannelOverHttp extends HttpChannel implements HttpParser.Reque
             _fieldsBuilder.clear();
         }
 
+        public void beginNanoTime(long nanoTime)
+        {
+            if (nanoTime == Long.MIN_VALUE)
+                nanoTime++;
+            _beginNanoTime = nanoTime;
+        }
+
         public HttpFields.Mutable getFields()
         {
             return _fieldsBuilder;
@@ -726,7 +736,8 @@ public class HttpChannelOverHttp extends HttpChannel implements HttpParser.Reque
 
         public MetaData.Request build()
         {
-            return new MetaData.Request(_method, _uriBuilder, _version, _fieldsBuilder);
+            long nanoTime = _beginNanoTime == Long.MIN_VALUE ? NanoTime.now() : _beginNanoTime;
+            return new MetaData.Request(nanoTime, _method, _uriBuilder, _version, _fieldsBuilder);
         }
 
         public HttpVersion version()

@@ -17,6 +17,8 @@ import java.util.Collections;
 import java.util.Iterator;
 import java.util.function.Supplier;
 
+import org.eclipse.jetty.util.NanoTime;
+
 public class MetaData implements Iterable<HttpField>
 {
     /**
@@ -115,6 +117,7 @@ public class MetaData implements Iterable<HttpField>
     {
         private final String _method;
         private final HttpURI _uri;
+        private final long _beginNanoTime;
 
         public Request(HttpFields fields)
         {
@@ -126,11 +129,19 @@ public class MetaData implements Iterable<HttpField>
             this(method, uri, version, fields, Long.MIN_VALUE);
         }
 
+        public Request(long beginNanoTime, String method, HttpURI uri, HttpVersion version, HttpFields fields)
+        {
+            this(beginNanoTime, method, uri, version, fields, Long.MIN_VALUE);
+        }
+
         public Request(String method, HttpURI uri, HttpVersion version, HttpFields fields, long contentLength)
         {
-            super(version, fields, contentLength);
-            _method = method;
-            _uri = uri.asImmutable();
+            this(method, uri.asImmutable(), version, fields, contentLength, null);
+        }
+
+        public Request(long beginNanoTime, String method, HttpURI uri, HttpVersion version, HttpFields fields, long contentLength)
+        {
+            this(beginNanoTime, method, uri.asImmutable(), version, fields, contentLength, null);
         }
 
         public Request(String method, String scheme, HostPortHttpField authority, String uri, HttpVersion version, HttpFields fields, long contentLength)
@@ -142,9 +153,20 @@ public class MetaData implements Iterable<HttpField>
 
         public Request(String method, HttpURI uri, HttpVersion version, HttpFields fields, long contentLength, Supplier<HttpFields> trailers)
         {
+            this(NanoTime.now(), method, uri, version, fields, contentLength, trailers);
+        }
+
+        public Request(long beginNanoTime, String method, HttpURI uri, HttpVersion version, HttpFields fields, long contentLength, Supplier<HttpFields> trailers)
+        {
             super(version, fields, contentLength, trailers);
             _method = method;
             _uri = uri;
+            _beginNanoTime = beginNanoTime;
+        }
+
+        public long getBeginNanoTime()
+        {
+            return _beginNanoTime;
         }
 
         @Override
