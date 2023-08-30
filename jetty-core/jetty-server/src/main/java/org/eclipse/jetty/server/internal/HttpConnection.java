@@ -1145,11 +1145,18 @@ public class HttpConnection extends AbstractConnection implements Runnable, Writ
         {
             Throwable result = HttpStream.consumeAvailable(this, getHttpConfiguration());
             if (result != null)
+            {
                 _generator.setPersistent(false);
-            // If the parser is not at the end, an idle timeout occurred and nothing
-            // is ever going to release the buffer -> release it here.
-            if (!_parser.isState(HttpParser.State.END))
-                releaseRequestBuffer();
+                // If HttpStream.consumeAvailable() returns an error, there may be unconsumed content left,
+                // so we must make sure the buffer is released and that the next chunk indicates the end of the stream.
+                if (_retainableByteBuffer != null)
+                {
+                    _retainableByteBuffer.release();
+                    _retainableByteBuffer = null;
+                }
+                if (_chunk == null)
+                    _chunk = Content.Chunk.from(result, true);
+            }
             return result;
         }
 
