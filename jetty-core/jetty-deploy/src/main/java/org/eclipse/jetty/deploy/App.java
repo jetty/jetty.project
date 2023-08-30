@@ -143,6 +143,6 @@ public class App
     @Override
     public String toString()
     {
-        return "App@%x[%s,%s,%s]".formatted(hashCode(), getEnvironmentName(), _context, _path);
+        return "%s@%x[%s,%s,%s]".formatted(getClass().getSimpleName(), hashCode(), getEnvironmentName(), _context, _path);
     }
 }

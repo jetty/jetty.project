@@ -178,7 +178,8 @@ public abstract class ScanningAppProvider extends ContainerLifeCycle implements 
             }
         }
 
-        LOG.warn("{} no environment for {}, ignoring", this, app);
+        if (LOG.isDebugEnabled())
+            LOG.debug("{} no environment for {}, default environment {}: deploy skipped", this, app, defaultEnvironmentName);
         return null;
     }
 
@@ -397,6 +398,6 @@ public abstract class ScanningAppProvider extends ContainerLifeCycle implements 
     @Override
     public String toString()
     {
-        return String.format("%s@%x%s", this.getClass(), hashCode(), _monitored);
+        return String.format("%s@%x[%s,%s]", getClass().getSimpleName(), hashCode(), getEnvironmentName(), _monitored);
     }
 }
