@@ -678,8 +678,8 @@ public class HttpConnection extends AbstractConnection implements Runnable, Writ
             _retainableByteBuffer = null;
         }
         HttpStreamOverHTTP1 stream = _stream.get();
-        if (stream != null)
-            stream.failed(new EofException());
+        if (stream != null && cause != null)
+            stream.failed(cause);
 
         // TODO: do we really need to do this?
         //  This event is fired really late, sendCallback should already be failed at this point.
