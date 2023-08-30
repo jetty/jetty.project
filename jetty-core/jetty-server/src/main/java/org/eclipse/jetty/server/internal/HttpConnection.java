@@ -672,6 +672,15 @@ public class HttpConnection extends AbstractConnection implements Runnable, Writ
     @Override
     public void onClose(Throwable cause)
     {
+        if (_retainableByteBuffer != null)
+        {
+            _retainableByteBuffer.release();
+            _retainableByteBuffer = null;
+        }
+        HttpStreamOverHTTP1 stream = _stream.get();
+        if (stream != null)
+            stream.failed(new EofException());
+
         // TODO: do we really need to do this?
         //  This event is fired really late, sendCallback should already be failed at this point.
         if (cause == null)
