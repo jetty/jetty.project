@@ -33,6 +33,7 @@ import org.junit.jupiter.api.BeforeEach;
 
 import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.Matchers.is;
+import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertNotNull;
 
 public abstract class AbstractHttpTest
@@ -42,12 +43,14 @@ public abstract class AbstractHttpTest
     protected static Server server;
     protected static ServerConnector connector;
     private StacklessLogging stacklessChannelLogging;
+    private ArrayByteBufferPool.Tracking bufferPool;
 
     @BeforeEach
     public void setUp() throws Exception
     {
         server = new Server();
-        connector = new ServerConnector(server, null, null, new ArrayByteBufferPool(64, 2048, 64 * 1024), 1, 1, new HttpConnectionFactory());
+        bufferPool = new ArrayByteBufferPool.Tracking();
+        connector = new ServerConnector(server, null, null, bufferPool, 1, 1, new HttpConnectionFactory());
         connector.setIdleTimeout(100000);
 
         server.addConnector(connector);
@@ -57,8 +60,16 @@ public abstract class AbstractHttpTest
     @AfterEach
     public void tearDown() throws Exception
     {
-        server.stop();
-        stacklessChannelLogging.close();
+        try
+        {
+            Set<ArrayByteBufferPool.Tracking.Buffer> serverLeaks = bufferPool.getLeaks();
+            assertEquals(0, serverLeaks.size(), bufferPool.dumpLeaks());
+        }
+        finally
+        {
+            server.stop();
+            stacklessChannelLogging.close();
+        }
     }
 
     protected HttpTester.Response executeRequest(HttpVersion httpVersion) throws URISyntaxException, IOException
