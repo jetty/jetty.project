@@ -1706,6 +1706,16 @@ public class Request implements HttpServletRequest
         _secure = secure;
     }
 
+    /**
+     * <p>Get the nanoTime at which the request arrived to a connector, obtained via {@link System#nanoTime()}.
+     * This method can be used when measuring latencies.</p>
+     * @return The nanoTime at which the request was received/created in nanoseconds
+     */
+    public long getBeginNanoTime()
+    {
+        return _metaData.getBeginNanoTime();
+    }
+
     @Override
     public boolean isUserInRole(String role)
     {

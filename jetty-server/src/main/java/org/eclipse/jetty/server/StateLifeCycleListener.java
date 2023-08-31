@@ -11,34 +11,43 @@
 // ========================================================================
 //
 
-package org.eclipse.jetty.util.component;
+package org.eclipse.jetty.server;
 
-import java.io.FileWriter;
 import java.io.Writer;
+import java.nio.file.Files;
+import java.nio.file.Path;
+import java.nio.file.Paths;
 
+import org.eclipse.jetty.util.component.LifeCycle;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+
+import static java.nio.charset.StandardCharsets.UTF_8;
+import static java.nio.file.StandardOpenOption.APPEND;
+import static java.nio.file.StandardOpenOption.CREATE;
+import static java.nio.file.StandardOpenOption.WRITE;
 
 /**
  * A LifeCycle Listener that writes state changes to a file.
  * <p>This can be used with the jetty.sh script to wait for successful startup.
- * @deprecated use {@code org.eclipse.jetty.server.StateLifeCycleListener} instead
  */
-@Deprecated
-public class FileNoticeLifeCycleListener implements LifeCycle.Listener
+public class StateLifeCycleListener implements LifeCycle.Listener
 {
-    private static final Logger LOG = LoggerFactory.getLogger(FileNoticeLifeCycleListener.class);
+    private static final Logger LOG = LoggerFactory.getLogger(StateLifeCycleListener.class);
 
-    private final String _filename;
+    private final Path _filename;
 
-    public FileNoticeLifeCycleListener(String filename)
+    public StateLifeCycleListener(String filename)
     {
-        _filename = filename;
+        _filename = Paths.get(filename).toAbsolutePath();
+
+        if (LOG.isDebugEnabled())
+            LOG.debug("State File: {}", _filename);
     }
 
     private void writeState(String action, LifeCycle lifecycle)
     {
-        try (Writer out = new FileWriter(_filename, true))
+        try (Writer out = Files.newBufferedWriter(_filename, UTF_8, WRITE, CREATE, APPEND))
         {
             out.append(action).append(" ").append(lifecycle.toString()).append("\n");
         }

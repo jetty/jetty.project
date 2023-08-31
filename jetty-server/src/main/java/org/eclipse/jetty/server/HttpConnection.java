@@ -107,6 +107,11 @@ public class HttpConnection extends AbstractConnection implements Runnable, Http
             LOG.debug("New HTTP Connection {}", this);
     }
 
+    public long getBeginNanoTime()
+    {
+        return _parser.getBeginNanoTime();
+    }
+
     public HttpConfiguration getHttpConfiguration()
     {
         return _config;
