@@ -1,5 +1,54 @@
-jetty-11.0.16-SNAPSHOT
- + Jan is now using IntelliJ!
+jetty-11.0.17-SNAPSHOT
+
+jetty-11.0.16 - 25 August 2023
+ + 6140 Report total number of keys in SelectorManager
+ + 7091 Add SOCKS5 support
+ + 8405 Servlet 3.1 ReadListener.onAllDataRead() is called twice under h2 or
+   h2c if the server doesn't respond within 30s
+ + 8556 ServletContext.getSessionTimeout() incorrectly throws
+   IllegalStateException
+ + 8694 Make QuicServerConnector respect configured key store instances
+ + 8926 HttpClient GZIPContentDecoder should remove Content-Length and
+   Content-Encoding: gzip
+ + 9150 jetty-http-spi: Jetty's implementation of HttpExchange.setStreams
+   method faulty
+ + 9386 SSL reports deprecated setting, but ssl.ini still uses it
+ + 9397 HTTP/3 encryption configuration
+ + 9476 onCompleteFailure called multiple times
+ + 9524 InputStreamResponseListener's InputStream creates an exception on
+   close()
+ + 9554 Move (qpack/hpack) HuffmanDecoder / HuffmanEncoder / NBitInteger* to
+   common location
+ + 9682 RetainableByteBuffer buffer release bug in WebSocket
+ + 9685 Jetty doesn't set the date header on error responses
+ + 9720 Http2Session.streamIdleTimeout should permit being disabled from
+   AbstractHTTP2ServerConnectionFactory
+ + 9772 Improve Quiche certificates deployment
+ + 9777 CrossOriginFilter does not return Vary header on no-cors mode
+ + 9795 http3-server is leaking the Jetty logging service to web applications 
+ + 9887 Deprecate CGI Servlet
+ + 9895 A MessageTooLargeException doesn't close a WebSocket connection
+ + 9947 Cannot invoke "org.eclipse.jetty.io.ManagedSelector.getTotalKeys()"
+   because "selector" is null
+ + 9990 Server rejects certain sizes of streamed request bodies
+ + 10066 Allow `SAXParserFactory` or `SAXParser` to be configured in Jetty's
+   `XmlParser` class
+ + 10086 Revisiting ProxyConfiguration.getProxies()
+ + 10105 Document that Request objects are not reusable
+ + 10120 OutOfMemoryError caused by CyclicTimeouts
+ + 10135 Websocket: Using PerMessageDeflateExtension and flush in batchMode
+   send FLUSH_FRAME to client. 
+ + 10143 Startup fails due to IllegalArgumentException: Comparison method
+   violates its general contract
+ + 10145 WritePendingException over HTTP/2 tunnel
+ + 10160 Verify PROXY_AUTHENTICATION is sent to forward proxies
+ + 10211 NPE in ArrayByteBufferPool.findOldestEntry()
+ + 10312 Remove jetty-home-with-docs to eliminate build time cyclic
+   dependencies
+ + 10350 Support Java 21 virtual threads
+ + 10352 various cleanups in `HttpParser`
+ + 10388 Jetty10 inetaccess mod started error
+ + 10397 Iso88591StringBuilder.append seems to have a logic error
 
 jetty-11.0.15 - 11 April 2023
  + 6184 Remove usages of classes associated with JEP-411 that deprecate/remove
@@ -1086,7 +1135,7 @@ jetty-11.0.0.beta1 - 10 July 2020
    SETTINGS Frame.
  + 4903 Give better errors for non public Websocket Endpoints
  + 4904 WebsocketClient creates more connections than needed
- + 4907
+ + 4907 
    org.eclipse.jetty.websocket.tests.SuspendResumeTest#testSuspendAfterClose
  + 4920 Restore ability to delete sessions on stop
  + 4921 Quickstart run improperly runs dynamically added context initializers
