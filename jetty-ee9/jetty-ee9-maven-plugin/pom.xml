@@ -132,6 +132,9 @@
           <setupIncludes>
             <setupInclude>it-parent-pom/pom.xml</setupInclude>
           </setupIncludes>
+          <extraArtifacts>
+            <extraArtifact>org.eclipse.jetty:jetty-slf4j-impl:${project.version}</extraArtifact>
+          </extraArtifacts>
           <pomExcludes>
             <!-- enable again when springboot is migrated to jakarta -->
             <pomExclude>javax-annotation-api/pom.xml</pomExclude>
