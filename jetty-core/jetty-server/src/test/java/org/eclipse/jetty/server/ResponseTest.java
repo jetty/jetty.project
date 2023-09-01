@@ -396,9 +396,8 @@ public class ResponseTest
                             if (field.getHeader() != HttpHeader.SET_COOKIE)
                                 continue;
 
-                            HttpCookie cookie = HttpCookieUtils.getSetCookie(field);
-                            if (cookie == null)
-                                continue;
+                            List<HttpCookie> cookies = HttpCookie.parse(field.getValue());
+                            HttpCookie cookie = cookies.get(0);
 
                             i.set(new HttpCookieUtils.SetCookieHttpField(
                                 HttpCookie.build(cookie)
@@ -411,7 +410,7 @@ public class ResponseTest
                 });
                 response.setStatus(200);
                 Response.addCookie(response, HttpCookie.from("name", "test1"));
-                response.getHeaders().add(HttpHeader.SET_COOKIE, "other=test2; Domain=wrong; SameSite=wrong; Attr=x");
+                response.getHeaders().add(HttpHeader.SET_COOKIE, "other=test2; Domain=original; SameSite=None; Attr=x");
                 Content.Sink.write(response, true, "OK", callback);
                 return true;
             }
