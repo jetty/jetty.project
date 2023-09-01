@@ -27,7 +27,7 @@ import static org.junit.jupiter.api.Assertions.assertThrows;
 
 public class HttpCookieTest
 {
-    public static List<Arguments> validCookies()
+    public static List<Arguments> cookies()
     {
         return List.of(
             // Single cookie.
@@ -77,6 +77,12 @@ public class HttpCookieTest
                     HttpCookie.build("B", "2").secure(true).path("/").build()
                 )
             ),
+            // Invalid cookies.
+            Arguments.of("A=1; Expires=blah", List.of()),
+            Arguments.of("A=1; HttpOnly=blah", List.of()),
+            Arguments.of("A=1; Max-Age=blah", List.of()),
+            Arguments.of("A=1; SameSite=blah", List.of()),
+            Arguments.of("A=1; Secure=blah", List.of()),
             // Mixed valid and invalid cookies.
             Arguments.of("A=1; Expires=blah, B=2", List.of(HttpCookie.build("B", "2").build())),
             Arguments.of("A=1; Expires=blah; Path=/, B=2", List.of(HttpCookie.build("B", "2").build())),
@@ -93,8 +99,8 @@ public class HttpCookieTest
     }
 
     @ParameterizedTest
-    @MethodSource("validCookies")
-    public void testParseValidCookies(String setCookieValue, List<HttpCookie> expectedCookies)
+    @MethodSource("cookies")
+    public void testParseCookies(String setCookieValue, List<HttpCookie> expectedCookies)
     {
         List<HttpCookie> cookies = HttpCookie.parse(setCookieValue);
         assertEquals(expectedCookies.size(), cookies.size());
@@ -107,21 +113,22 @@ public class HttpCookieTest
         }
     }
 
-    public static List<Arguments> invalidCookies()
+    public static List<Arguments> invalidAttributes()
     {
         return List.of(
-            Arguments.of("A=1; Expires=blah", DateTimeParseException.class),
-            Arguments.of("A=1; HttpOnly=blah", IllegalArgumentException.class),
-            Arguments.of("A=1; Max-Age=blah", NumberFormatException.class),
-            Arguments.of("A=1; SameSite=blah", IllegalArgumentException.class),
-            Arguments.of("A=1; Secure=blah", IllegalArgumentException.class)
+            Arguments.of("Expires", "blah", DateTimeParseException.class),
+            Arguments.of("HttpOnly", "blah", IllegalArgumentException.class),
+            Arguments.of("Max-Age", "blah", NumberFormatException.class),
+            Arguments.of("SameSite", "blah", IllegalArgumentException.class),
+            Arguments.of("Secure", "blah", IllegalArgumentException.class)
         );
     }
 
     @ParameterizedTest
-    @MethodSource("invalidCookies")
-    public void testParseInvalidCookies(String setCookieValue, Class<? extends Throwable> failure)
+    @MethodSource("invalidAttributes")
+    public void testParseInvalidAttributes(String name, String value, Class<? extends Throwable> failure)
     {
-        assertThrows(failure, () -> HttpCookie.parse(setCookieValue));
+        assertThrows(failure, () -> HttpCookie.build("A", "1")
+            .attribute(name, value));
     }
 }
