@@ -536,6 +536,8 @@ public interface HttpCookie
 
         public Builder attribute(String name, String value)
         {
+            if (name == null)
+                return this;
             // Sanity checks on the values, expensive but necessary to avoid to store garbage.
             switch (name.toLowerCase(Locale.ENGLISH))
             {
