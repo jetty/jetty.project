@@ -19,6 +19,8 @@ import java.util.List;
 import java.util.concurrent.TimeUnit;
 
 import org.junit.jupiter.api.Test;
+import org.junit.jupiter.params.ParameterizedTest;
+import org.junit.jupiter.params.provider.ValueSource;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
@@ -68,6 +70,20 @@ public class HttpCookieStoreTest
         HttpCookieStore store = new HttpCookieStore.Default();
         URI uri = URI.create("http://localhost");
         assertTrue(store.add(uri, HttpCookie.build("n", "v").domain("localhost").build()));
+    }
+
+    @ParameterizedTest
+    @ValueSource(strings = {
+        "1.2.3.4",
+        "127.0.0.1",
+        "[2001:db8::1:0]",
+        "[::1]"
+    })
+    public void testAcceptCookieForIPAddress(String address)
+    {
+        HttpCookieStore store = new HttpCookieStore.Default();
+        URI uri = URI.create("http://" + address);
+        assertTrue(store.add(uri, HttpCookie.build("n", "v").domain(address).build()));
     }
 
     @Test

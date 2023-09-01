@@ -142,14 +142,8 @@ public interface HttpCookieStore
                 // RFC 6265 section 4.1.2.3, ignore Domain if ends with ".".
                 if (cookieDomain.endsWith("."))
                     cookieDomain = uri.getHost();
-                // Reject top-level domains.
-                // TODO: should also reject "top" domain such as co.uk, gov.au, etc.
-                if (!cookieDomain.contains("."))
-                {
-                    if (!cookieDomain.equals("localhost"))
-                        return false;
-                }
-
+                if (!allowDomain(cookieDomain))
+                    return false;
                 String domain = uri.getHost();
                 if (domain != null)
                 {
@@ -200,6 +194,27 @@ public interface HttpCookieStore
             }
 
             return result[0];
+        }
+
+        protected boolean allowDomain(String domain)
+        {
+            // Reject top-level domains such as "com", "net", etc. to
+            // disallow "super-cookies" that would apply to all domains.
+            // A precise rejection is really complicated because there are "top"
+            // level domains that look like subdomains, such as co.uk, gov.au, etc.
+            // See https://publicsuffix.org/.
+
+            // Normal domains such as example.com, IPv4 addresses,
+            // but unfortunately also "top" level domains such as co.uk.
+            if (domain.contains("."))
+                return true;
+
+            // Support localhost for testing.
+            if (domain.equals("localhost"))
+                return true;
+
+            // Support IPv6 for testing.
+            return domain.startsWith("[") && domain.endsWith("]");
         }
 
         @Override
@@ -368,7 +383,7 @@ public interface HttpCookieStore
         {
             private final long creationNanoTime = NanoTime.now();
 
-            public Cookie(HttpCookie wrapped)
+            private Cookie(HttpCookie wrapped)
             {
                 super(wrapped);
             }
