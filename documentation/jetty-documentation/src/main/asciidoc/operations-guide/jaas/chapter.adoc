@@ -90,7 +90,7 @@ The `org.eclipse.jetty.security.jaas.JAASLoginService` can be declared in a coup
 
 * If you have more than one webapp that you would like to use the same security infrastructure, then you can declare your `org.eclipse.jetty.security.jaas.JAASLoginService` as a bean that is added to the `org.eclipse.jetty.server.Server`.
 The file in which you declare this needs to be on Jetty's execution path.
-The recommended procedure is to create a file in your `$jetty.base/etc` directory and then ensure it is on the classpath either by adding it to the Jetty xref:og-start-jar[start command line], or more conveniently to a xref:custom-modules[custom module].
+The recommended procedure is to create a file in your `$jetty.base/etc` directory and then ensure it is on the classpath either by adding it to the Jetty xref:og-start[start command line], or more conveniently to a xref:og-modules-custom[custom module].
 +
 Here's an example of this type of XML file:
 +
