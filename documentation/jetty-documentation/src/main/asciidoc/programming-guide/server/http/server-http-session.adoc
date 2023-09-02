@@ -25,7 +25,7 @@ Since not all web applications need support for the HTTP session, Jetty offers t
 
 The Maven coordinates for the Jetty HTTP session support are:
 
-[source,xml]
+[source,xml,subs="verbatim,attributes"]
 ----
 <dependency>
   <groupId>org.eclipse.jetty</groupId>

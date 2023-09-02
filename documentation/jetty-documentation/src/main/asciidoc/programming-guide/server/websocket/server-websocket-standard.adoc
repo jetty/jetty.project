@@ -19,7 +19,7 @@ However, at runtime you need to have an implementation of the standard APIs in y
 
 The standard `jakarta.websocket` APIs, for example for Jakarta {ee-current-caps}, are provided by the following Maven artifact:
 
-[source,xml,subs=normal]
+[source,xml]
 ----
 <dependency>
   <groupId>jakarta.websocket</groupId>
@@ -30,7 +30,7 @@ The standard `jakarta.websocket` APIs, for example for Jakarta {ee-current-caps}
 
 At runtime, you also need an implementation of the standard Jakarta {ee-current-caps} WebSocket APIs, that Jetty provides with the following Maven artifact (and its transitive dependencies):
 
-[source,xml,subs=normal]
+[source,xml,subs="verbatim,attributes"]
 ----
 <dependency>
   <groupId>org.eclipse.jetty.{ee-current}.websocket</groupId>

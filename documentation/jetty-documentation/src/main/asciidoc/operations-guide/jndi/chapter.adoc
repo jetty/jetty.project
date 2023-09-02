@@ -46,7 +46,7 @@ For the link between a `web.xml` resource name and a naming entry
 
 Declarations of each of these types follow a similar pattern:
 
-[source,xml,subs=verbatim]
+[source,xml]
 ----
 <New class="org.eclipse.jetty.plus.jndi.xxxx"> <!--1-->
   <Arg><!-- scope --></Arg> <!--2-->
@@ -68,7 +68,7 @@ In such cases, you can use the `org.eclipse.jetty.plus.jndi.EnvEntry` class, and
 
 Here's an example that defines the equivalent of an `env-entry` called `mySpecialValue` with value `4000` that overrides an `<env-entry>` declaration of the same name in web.xml:
 
-[source,xml,subs=verbatim]
+[source,xml]
 ----
 <New class="org.eclipse.jetty.plus.jndi.EnvEntry"> <!--1-->
   <Arg></Arg> <!--2-->
@@ -118,7 +118,7 @@ Let's examine how to configure some of the most common types of resources.
 
 In this example, we'll configure a link:http://db.apache.org/derby[Derby] DataSource named `jdbc/myds`:
 
-[source,xml,subs=verbatim]
+[source,xml]
 ----
 <Configure id='wac' class="org.eclipse.jetty.ee9.webapp.WebAppContext">
   <New class="org.eclipse.jetty.plus.jndi.Resource">
@@ -136,7 +136,7 @@ In this example, we'll configure a link:http://db.apache.org/derby[Derby] DataSo
 
 This would linked into the webapps JNDI namespace via an entry in a `web.xml` like so:
 
-[source,xml,subs=verbatim]
+[source,xml]
 ----
 <resource-ref>
   <res-ref-name>jdbc/myds</res-ref-name>
@@ -164,7 +164,7 @@ Jetty can bind any implementation of the JMS destinations and connection factori
 
 Here is an example of binding an link:http://activemq.apache.org[ActiveMQ] in-JVM connection factory:
 
-[source,xml,subs=verbatim]
+[source,xml]
 ----
 <Configure id='wac' class="org.eclipse.jetty.ee9.webapp.WebAppContext">
   <New class="org.eclipse.jetty.plus.jndi.Resource">
@@ -181,7 +181,7 @@ Here is an example of binding an link:http://activemq.apache.org[ActiveMQ] in-JV
 
 The corresponding entry in `web.xml` to bind the ConnectionFactory into the webapp's JNDI namespace would be:
 
-[source,xml,subs=verbatim]
+[source,xml]
 ----
 <resource-ref>
   <res-ref-name>jms/connectionFactory</res-ref-name>
@@ -200,7 +200,7 @@ Eg The ConnectionFactory bound in Jetty as `jms/inqueue` would be looked up by t
 
 To configure access to `javax.mail.Session` from within a webapp, declare an `org.eclipse.jetty.plus.jndi.Resource` with an `org.eclipse.jetty.jndi.factories.MailSessionReference` that will hold the mail configuration and create the instance of the `Session` when it is referenced:
 
-[source,xml,subs=verbatim]
+[source,xml]
 ----
 <Configure id='wac' class="org.eclipse.jetty.ee9.webapp.WebAppContext">
   <New class="org.eclipse.jetty.plus.jndi.Resource">
@@ -249,7 +249,7 @@ Use the link:{javadoc-url}/org/eclipse/jetty/plus/jndi/Transaction.html[org.ecli
 
 The following example configures the link:http://www.atomikos.com/[Atomikos] transaction manager:
 
-[source,xml,subs=verbatim]
+[source,xml]
 ----
 <New id="tx" class="org.eclipse.jetty.plus.jndi.Transaction">
   <Arg>
@@ -275,7 +275,7 @@ You can create a `WEB-INF/jetty-env.xml` file with an `org.eclipse.jetty.plus.jn
 
 The context XML file declares `jdbc/workforce`:
 
-[source,xml,subs=verbatim]
+[source,xml]
 ----
 <Configure id='wac' class="org.eclipse.jetty.ee9.webapp.WebAppContext">
   <New class="org.eclipse.jetty.plus.jndi.Resource">
@@ -293,7 +293,7 @@ The context XML file declares `jdbc/workforce`:
 
 The `web.xml` refers to it as `jdbc/employees`:
 
-[source,xml,subs=verbatim]
+[source,xml]
 ----
 <resource-ref>
   <res-ref-name>jdbc/employees</res-ref-name>
@@ -304,7 +304,7 @@ The `web.xml` refers to it as `jdbc/employees`:
 
 Create a `WEB-INF/jetty-env.xml` file with a `org.eclipse.jetty.plus.jndi.Link` to link these names together:
 
-[source,xml,subs=verbatim]
+[source,xml]
 ----
 <New class="org.eclipse.jetty.plus.jndi.Link">
   <Arg><Ref refid='wac'/></Arg>
@@ -341,7 +341,7 @@ Naming resources within Jetty belong to one of three different scopes, in increa
 The name is unique across the JVM instance, and is visible to all application code.
 This scope is represented by a `null` first parameter to the resource declaration.
 For example:
-[source,xml,subs=verbatim]
+[source,xml]
 ----
 <New id="cf" class="org.eclipse.jetty.plus.jndi.Resource">
   <Arg></Arg>  <!--1-->
@@ -359,7 +359,7 @@ For example:
 The name is unique to a Server instance, and is only visible to applications associated with that instance.
 This scope is represented by referencing the Server instance as the first parameter to the resource declaration.
 For example:
-[source,xml,subs=verbatim]
+[source,xml]
 ----
 <New id="cf" class="org.eclipse.jetty.plus.jndi.Resource">
   <Arg><Ref refid="Server"/></Arg>  <!--1-->
@@ -377,7 +377,7 @@ For example:
 The name is unique to the `org.eclipse.jetty.ee9.webapp.WebAppContext` instance, and is only visible to that application.
 This scope is represented by referencing the instance as the first parameter to the resource declaration.
 For example:
-[source,xml,subs=verbatim]
+[source,xml]
 ----
 <New class="org.eclipse.jetty.plus.jndi.Resource">
   <Arg><Ref refid='wac'/></Arg> <!--1-->

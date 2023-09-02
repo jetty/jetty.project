@@ -45,13 +45,13 @@ If it is `metadata-complete=false`, or your web.xml predates the inclusion of th
 To prevent annotation scanning you can use the `WebAppContext.setConfigurationDiscovered(false)` method.
 Here's an example context xml file that calls this method:
 
-[source,xml,subs=verbatim]
+[source,xml]
 ----
 <?xml version="1.0"?>
 <!DOCTYPE Configure PUBLIC "-//Jetty//Configure//EN" "https://eclipse.dev/jetty/configure_10_0.dtd">
 
-<Configure class="org.eclipse.jetty.ee9.webapp.WebAppContext"> <1>
-  <Set name="configurationDiscovered">false</Set> <2>
+<Configure class="org.eclipse.jetty.ee9.webapp.WebAppContext"> <!--1-->
+  <Set name="configurationDiscovered">false</Set> <!--2-->
 </Configure>
 ----
 <1> Configures a link:{javadoc-url}/org/eclipse/jetty/webapp/WebAppContext.html[`WebAppContext`], which is the Jetty component that represents a standard Servlet web application.
@@ -73,15 +73,15 @@ The value of this attribute is a regular expression.
 
 Here's an example from a context xml file that includes any jar whose name starts with "foo-" or "bar-", or a directory named "classes":
 
-[source,xml,subs=verbatim]
+[source,xml]
 ----
 <?xml version="1.0"?>
 <!DOCTYPE Configure PUBLIC "-//Jetty//Configure//EN" "https://eclipse.dev/jetty/configure_10_0.dtd">
 
-<Configure class="org.eclipse.jetty.ee9.webapp.WebAppContext"> <1>
-    <Call name="setAttribute"> <2>
-      <Arg>org.eclipse.jetty.server.webapp.ContainerIncludeJarPattern</Arg> <3>
-      <Arg>.*/foo-[^/]*\.jar$|.*/bar-[^/]*\.jar$|.*/classes/.*</Arg> <4>
+<Configure class="org.eclipse.jetty.ee9.webapp.WebAppContext"> <!--1-->
+    <Call name="setAttribute"> <!--2-->
+      <Arg>org.eclipse.jetty.server.webapp.ContainerIncludeJarPattern</Arg> <!--3-->
+      <Arg>.*/foo-[^/]*\.jar$|.*/bar-[^/]*\.jar$|.*/classes/.*</Arg> <!--4-->
     </Call>
 </Configure>
 ----
@@ -103,15 +103,15 @@ Use the `org.eclipse.jetty.server.webapp.WebInfIncludeJarPattern` context attrib
 
 Here's an example of a context xml file that sets a pattern that matches any jar on the webapp's classpath that starts with `spring-`:
 
-[source,xml,subs=verbatim]
+[source,xml]
 ----
 <?xml version="1.0"?>
 <!DOCTYPE Configure PUBLIC "-//Jetty//Configure//EN" "https://eclipse.dev/jetty/configure_10_0.dtd">
 
-<Configure class="org.eclipse.jetty.ee9.webapp.WebAppContext"> <1>
-    <Call name="setAttribute">  <2>
-      <Arg>org.eclipse.jetty.server.webapp.WebInfIncludeJarPattern</Arg>  <3>
-      <Arg>.*/spring-[^/]*\.jar$</Arg>  <4>
+<Configure class="org.eclipse.jetty.ee9.webapp.WebAppContext"> <!--1-->
+    <Call name="setAttribute">  <!--2-->
+      <Arg>org.eclipse.jetty.server.webapp.WebInfIncludeJarPattern</Arg>  <!--3-->
+      <Arg>.*/spring-[^/]*\.jar$</Arg>  <!--4-->
     </Call>
 </Configure>
 ----
@@ -169,15 +169,15 @@ In this case, you can define the `org.eclipse.jetty.containerInitializerExclusio
 This is a regular expression that defines http://docs.oracle.com/javase/7/docs/api/java/util/regex/Pattern.html[patterns] of classnames that you want to exclude.
 Here's an example of setting the context attribute in a context xml file:
 
-[source,xml,subs=verbatim]
+[source,xml]
 ----
 <?xml version="1.0"?>
 <!DOCTYPE Configure PUBLIC "-//Jetty//Configure//EN" "https://eclipse.dev/jetty/configure_10_0.dtd">
 
-<Configure class="org.eclipse.jetty.ee9.webapp.WebAppContext"> <1>
-    <Call name="setAttribute">  <2>
-      <Arg>org.eclipse.jetty.containerInitializerExclusionPattern</Arg>  <3>
-      <Arg>com.acme.*|com.corp.SlowContainerInitializer</Arg>  <4>
+<Configure class="org.eclipse.jetty.ee9.webapp.WebAppContext"> <!--1-->
+    <Call name="setAttribute">  <!--2-->
+      <Arg>org.eclipse.jetty.containerInitializerExclusionPattern</Arg>  <!--3-->
+      <Arg>com.acme.*|com.corp.SlowContainerInitializer</Arg>  <!--4-->
     </Call>
 </Configure>
 ----
@@ -200,15 +200,15 @@ It will match all `ServletContainerInitializer` classes not explicitly named in 
 
 Here is an example context xml file that ensures the `com.example.PrioritySCI` will be called first, followed by the `com.acme.FooSCI`, then all other SCIs:
 
-[source,xml,subs=verbatim]
+[source,xml]
 ----
 <?xml version="1.0"?>
 <!DOCTYPE Configure PUBLIC "-//Jetty//Configure//EN" "https://eclipse.dev/jetty/configure_10_0.dtd">
 
-<Configure class="org.eclipse.jetty.ee9.webapp.WebAppContext"> <1>
-    <Call name="setAttribute">  <2>
-      <Arg>org.eclipse.jetty.containerInitializerOrder</Arg>  <3>
-      <Arg>org.eclipse.jetty.websocket.javax.server.JavaxWebSocketServletContainerInitializer, com.acme.FooSCI, *</Arg>  <4>
+<Configure class="org.eclipse.jetty.ee9.webapp.WebAppContext"> <!--1-->
+    <Call name="setAttribute">  <!--2-->
+      <Arg>org.eclipse.jetty.containerInitializerOrder</Arg>  <!--3-->
+      <Arg>org.eclipse.jetty.websocket.javax.server.JavaxWebSocketServletContainerInitializer, com.acme.FooSCI, *</Arg>  <!--4-->
     </Call>
 </Configure>
 ----

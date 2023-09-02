@@ -45,7 +45,7 @@ It is not uncommon for the network packets containing a request header to arrive
 `jetty.httpConfig.sendServerVersion`::
 Whether you want to send the `Server` header in every HTTP response:
 +
-[source,screen,subs=normal]
+[source,subs="verbatim,attributes"]
 ----
 HTTP/1.1 200 OK
 Content-Length: 0

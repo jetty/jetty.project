@@ -38,9 +38,9 @@ own custom link:https://docs.oracle.com/javase/7/docs/api/javax/security/auth/sp
 
 Enable the `{ee-all}-jaas` module appropriate for your EE platform:
 
-[subs=attributes]
+[source]
 ----
-include::{jetty-home}/modules/{ee-current}-jaas.mod[]
+include::{jetty-home}/modules/jaas.mod[]
 ----
 
 The configurable items in the resulting `$jetty.base/start.d/jaas.ini` file are:
@@ -60,7 +60,7 @@ The `<realm-name>` in `web.xml` will be used to identify the `org.eclipse.jetty.
 
 For example, this `web.xml` contains a realm called `Test JAAS Realm`:
 
-[source,xml,subs=verbatim]
+[source,xml]
 ----
 <login-config>
   <auth-method>FORM</auth-method>
@@ -76,7 +76,7 @@ For example, this `web.xml` contains a realm called `Test JAAS Realm`:
 We now need to declare an `org.eclipse.jetty.security.jaas.JAASLoginService` that references the realm name of `Test JAAS Realm`.
 Here's an example of a suitable XML snippet:
 
-[source,xml,subs=verbatim]
+[source,xml]
 ----
 <New class="org.eclipse.jetty.security.jaas.JAASLoginService">
   <Set name="Name">Test JAAS Realm</Set> <!--1-->
@@ -138,7 +138,7 @@ Refer to the link:https://docs.oracle.com/javase/7/docs/api/javax/security/auth/
 
 Remembering the example we set up xref:og-jaas-webapp[previously], the contents of the `$jetty.base/etc/login.conf` file could look as follows:
 
-[source,subs=verbatim]
+[source]
 ----
 xyz  { <1>
   com.acme.SomeLoginModule required debug=true; <2>
@@ -172,7 +172,7 @@ You can configure the JDBC connection information, as well as the names of the t
 
 Here is an example xref:og-jaas-loginconf[login module configuration file] entry for it using an HSQLDB driver:
 
-[source,subs=verbatim]
+[source]
 ----
 jdbc { <1>
   org.eclipse.jetty.security.jaas.spi.JDBCLoginModule required <2><3>
@@ -221,7 +221,7 @@ The `javax.sql.DataSource` is obtained at runtime by performing a JNDI lookup on
 
 A sample login module configuration for this `LoginModule`: 
 
-[source,subs=verbatim]
+[source]
 ----
 ds { <1>
   org.eclipse.jetty.security.jaas.spi.DataSourceLoginModule required <2><3>
@@ -249,7 +249,7 @@ ds { <1>
 
 With this login module implementation, the authentication and role information is read from a property file.
 
-[source,subs=verbatim]
+[source]
 ----
 props { <1>
   org.eclipse.jetty.security.jaas.spi.PropertyFileLoginModule required  <2><3>
@@ -263,7 +263,7 @@ props { <1>
 
 The property file must be of the format:
 
-[source,text,subs=verbatim]
+[source]
 ----
 <username>: <password> [,<rolename> ...]
 ----
@@ -286,7 +286,7 @@ The LDAP connection information and structure of the authentication/authorizatio
 
 Here's an example:
 
-[source,subs=verbatim]
+[source]
 ----
 example  { <1>
   org.eclipse.jetty.security.jaas.spi.LdapLoginModule required  <2><3>
