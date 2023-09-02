@@ -16,7 +16,7 @@
 
 The `server` module provides generic server support, and configures generic HTTP properties that apply to all HTTP protocols, the scheduler properties and the server specific properties.
 
-The `server` module depends on the xref:og-module-threadpool[`threadpool` module], the xref:og-module-bytebufferpool[`bytebufferpool` module] and the xref:og-module-logging[`logging`  module].
+The `server` module depends on the xref:og-module-threadpool[`threadpool` module], the xref:og-module-bytebufferpool[`bytebufferpool` module] and the xref:og-module-logging[`logging` module].
 
 [NOTE]
 ====

@@ -161,8 +161,7 @@ Refer to the link:https://docs.oracle.com/javase/7/docs/api/javax/security/auth/
 
 [NOTE]
 ====
-Passwords can be stored in clear text, obfuscated or checksummed.
-The class link:{javadoc-url}/org/eclipse/jetty/util/security/Password.html[`org.eclipse.jetty.util.security.Password`] should be used to generate all varieties of passwords,the output from which can be put in to property files or entered into database tables.
+Passwords can be obfuscated using the xref:og-tools-password[Jetty Password tool].
 ====
 
 ===== JDBCLoginModule
