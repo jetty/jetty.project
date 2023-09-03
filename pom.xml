@@ -60,7 +60,7 @@
     <guice.version>7.0.0</guice.version>
     <hamcrest.version>2.2</hamcrest.version>
     <hazelcast.version>5.3.1</hazelcast.version>
-    <infinispan.protostream.version>4.6.2.Final</infinispan.protostream.version>
+    <infinispan.protostream.version>4.65.Final</infinispan.protostream.version>
     <infinispan.version>11.0.17.Final</infinispan.version>
     <jackson.version>2.15.2</jackson.version>
     <jakarta.activation.api.version>2.0.1</jakarta.activation.api.version>
@@ -147,7 +147,7 @@
     <taglibs-standard-spec.version>1.2.5</taglibs-standard-spec.version>
     <testcontainers.version>1.18.3</testcontainers.version>
     <wildfly.common.version>1.6.0.Final</wildfly.common.version>
-    <wildfly.elytron.version>1.20.4.Final</wildfly.elytron.version>
+    <wildfly.elytron.version>2.2.2.Final</wildfly.elytron.version>
     <xmemcached.version>2.4.7</xmemcached.version>
 
     <!-- some maven plugins versions -->
