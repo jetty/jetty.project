@@ -14,7 +14,7 @@
     <jetty-orbit-url>https://download.eclipse.org/jetty/orbit/</jetty-orbit-url>
     <assembly-directory>target/distribution</assembly-directory>
     <pax.exam.version>4.13.1</pax.exam.version>
-    <pax.url.version>2.6.2</pax.url.version>
+    <pax.url.version>2.6.14</pax.url.version>
     <swissbox.version>1.8.3</swissbox.version>
     <tinybundles.version>3.0.0</tinybundles.version>
     <injection.bundle.version>1.2</injection.bundle.version>
