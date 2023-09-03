@@ -28,6 +28,7 @@ import java.util.Properties;
 import org.eclipse.jetty.session.infinispan.InfinispanSerializationContextInitializer;
 import org.eclipse.jetty.util.IO;
 import org.infinispan.client.hotrod.RemoteCacheManager;
+import org.infinispan.client.hotrod.configuration.ClientIntelligence;
 import org.infinispan.client.hotrod.configuration.Configuration;
 import org.infinispan.client.hotrod.configuration.ConfigurationBuilder;
 import org.infinispan.commons.configuration.XMLStringConfiguration;
@@ -68,7 +69,7 @@ public class InfinispanSessionDistributionTests extends AbstractSessionDistribut
                         .withEnv("MGMT_PASS", "admin")
                         .withEnv("CONFIG_PATH", "/user-config/config.yaml")
                         .waitingFor(Wait.forListeningPorts(11222))
-                        .waitingFor(Wait.forLogMessage(".*Infinispan Server.*started in.*\\s", 1))
+                        //.waitingFor(Wait.forLogMessage(".*Infinispan Server.*started in.*\\s", 1))
                         .withExposedPorts(4712, 4713, 8088, 8089, 8443, 9990, 9993, 11211, 11222, 11223, 11224)
                         .withLogConsumer(new Slf4jLogConsumer(INFINISPAN_LOG))
                         .withClasspathResourceMapping("/config.yaml", "/user-config/config.yaml", BindMode.READ_ONLY);
@@ -89,6 +90,7 @@ public class InfinispanSessionDistributionTests extends AbstractSessionDistribut
         properties.put("infinispan.client.hotrod.sasl_mechanism", "DIGEST-MD5");
         properties.put("infinispan.client.hotrod.auth_username", "theuser");
         properties.put("infinispan.client.hotrod.auth_password", "foobar");
+        properties.put("infinispan.client.hotrod.client_intelligence", "BASIC");
 
         Path hotrod = Path.of(resourcesDirectory.toString(), "hotrod-client.properties");
         Files.deleteIfExists(hotrod);
@@ -104,6 +106,7 @@ public class InfinispanSessionDistributionTests extends AbstractSessionDistribut
                 .addContextInitializer(new InfinispanSerializationContextInitializer())
                 .security().authentication().saslMechanism("DIGEST-MD5")
                 .username("theuser").password("foobar")
+                .clientIntelligence(ClientIntelligence.BASIC)
                 .build();
 
         RemoteCacheManager remoteCacheManager = new RemoteCacheManager(configuration);
@@ -171,6 +174,8 @@ public class InfinispanSessionDistributionTests extends AbstractSessionDistribut
             writer.write("infinispan.client.hotrod.auth_username=theuser");
             writer.newLine();
             writer.write("infinispan.client.hotrod.auth_password=foobar");
+            writer.newLine();
+            writer.write("infinispan.client.hotrod.client_intelligence=BASIC");
             writer.newLine();
         }
     }
