@@ -38,6 +38,7 @@ import org.testcontainers.containers.BindMode;
 import org.testcontainers.containers.GenericContainer;
 import org.testcontainers.containers.output.Slf4jLogConsumer;
 import org.testcontainers.containers.wait.strategy.LogMessageWaitStrategy;
+import org.testcontainers.containers.wait.strategy.Wait;
 
 /**
  *
@@ -49,7 +50,7 @@ public class InfinispanSessionDistributionTests extends AbstractSessionDistribut
     private static final Logger INFINISPAN_LOG = LoggerFactory.getLogger("org.eclipse.jetty.tests.distribution.session.infinispan");
 
     @SuppressWarnings("rawtypes")
-    private GenericContainer infinispan;
+    private GenericContainer<?> infinispan;
 
     private String host;
     private int port;
@@ -59,20 +60,20 @@ public class InfinispanSessionDistributionTests extends AbstractSessionDistribut
     {
         String infinispanVersion = System.getProperty("infinispan.docker.image.version", "11.0.14.Final");
         infinispan =
-                new GenericContainer(System.getProperty("infinispan.docker.image.name", "infinispan/server") +
+                new GenericContainer<>(System.getProperty("infinispan.docker.image.name", "infinispan/server") +
                         ":" + infinispanVersion)
                         .withEnv("USER", "theuser")
                         .withEnv("PASS", "foobar")
                         .withEnv("MGMT_USER", "admin")
                         .withEnv("MGMT_PASS", "admin")
                         .withEnv("CONFIG_PATH", "/user-config/config.yaml")
-                        .waitingFor(new LogMessageWaitStrategy()
-                                .withRegEx(".*Infinispan Server.*started in.*\\s"))
+                        .waitingFor(Wait.forListeningPorts(11222))
+                        .waitingFor(Wait.forLogMessage(".*Infinispan Server.*started in.*\\s", 1))
                         .withExposedPorts(4712, 4713, 8088, 8089, 8443, 9990, 9993, 11211, 11222, 11223, 11224)
                         .withLogConsumer(new Slf4jLogConsumer(INFINISPAN_LOG))
                         .withClasspathResourceMapping("/config.yaml", "/user-config/config.yaml", BindMode.READ_ONLY);
         infinispan.start();
-        host = infinispan.getContainerIpAddress();
+        host = infinispan.getHost();
         port = infinispan.getMappedPort(11222);
 
         Path resourcesDirectory = Path.of(jettyHomeTester.getJettyBase().toString(), "resources/");
@@ -88,7 +89,6 @@ public class InfinispanSessionDistributionTests extends AbstractSessionDistribut
         properties.put("infinispan.client.hotrod.sasl_mechanism", "DIGEST-MD5");
         properties.put("infinispan.client.hotrod.auth_username", "theuser");
         properties.put("infinispan.client.hotrod.auth_password", "foobar");
-
 
         Path hotrod = Path.of(resourcesDirectory.toString(), "hotrod-client.properties");
         Files.deleteIfExists(hotrod);
@@ -140,7 +140,7 @@ public class InfinispanSessionDistributionTests extends AbstractSessionDistribut
     @Override
     public List<String> getFirstStartExtraArgs()
     {
-        return Arrays.asList();
+        return List.of();
     }
 
     @Override
@@ -152,7 +152,7 @@ public class InfinispanSessionDistributionTests extends AbstractSessionDistribut
     @Override
     public List<String> getSecondStartExtraArgs()
     {
-        return Arrays.asList();
+        return List.of();
     }
 
     @Override
