@@ -52,7 +52,8 @@ public class HazelcastSessionDistributionTests extends AbstractSessionDistributi
 
     private GenericContainer<?> hazelcast = new GenericContainer<>("hazelcast/hazelcast:" + System.getProperty("hazelcast.version", "4.2.2"))
             .withExposedPorts(5701)
-            .waitingFor(Wait.forLogMessage(".*is STARTED.*", 1))
+            .waitingFor(Wait.forListeningPorts(5701))
+            //.waitingFor(Wait.forLogMessage(".*is STARTED.*", 1))
             .withLogConsumer(new Slf4jLogConsumer(HAZELCAST_LOG));
 
     private Path hazelcastJettyPath;
@@ -124,9 +125,10 @@ public class HazelcastSessionDistributionTests extends AbstractSessionDistributi
         env.put("JAVA_OPTS", "-Dhazelcast.config=/opt/hazelcast/config_ext/hazelcast.xml");
         try (GenericContainer<?> hazelcast =
                  new GenericContainer<>("hazelcast/hazelcast:" + System.getProperty("hazelcast.version", "4.1"))
-                     .withExposedPorts(5701, 5705)
+                     .withExposedPorts(5701)
                      .withEnv(env)
-                     .waitingFor(Wait.forLogMessage(".*is STARTED.*", 1))
+                     .waitingFor(Wait.forListeningPorts(5701))
+                     //.waitingFor(Wait.forLogMessage(".*is STARTED.*", 1))
                      //.withNetworkMode("host")
                      //.waitingFor(Wait.forListeningPort())
                      .withClasspathResourceMapping("hazelcast-server.xml",
