@@ -1253,28 +1253,29 @@ public abstract class AbstractSessionManager extends ContainerLifeCycle implemen
             HttpURI uri = request.getHttpURI();
             String param = uri.getParam();
             param = (param == null ? "" : param.trim());
-            int start = param.indexOf(getSessionIdPathParameterName());
+            String parameterName = getSessionIdPathParameterName();
+            int start = param.indexOf(parameterName);
             if (start >= 0)
             {
-                int s = start;
-                s += getSessionIdPathParameterName().length();
-                if (param.charAt(s) == '=')
-                    s++;
-                int i = s;
-                while (i < param.length())
+                start += parameterName.length();
+                if (param.length() > start && param.charAt(start++) == '=')
                 {
-                    char c = param.charAt(i);
-                    if (c == ';' || c == '#' || c == '?' || c == '/')
-                        break;
-                    i++;
+                    int i = start;
+                    while (i < param.length())
+                    {
+                        char c = param.charAt(i);
+                        if (c == ';' || c == '#' || c == '?' || c == '/')
+                            break;
+                        i++;
+                    }
+                    requestedSessionId = param.substring(start, i);
+                    requestedSessionIdFromCookie = false;
+
+                    if (LOG.isDebugEnabled())
+                        LOG.debug("Got Session ID {} from URL", requestedSessionId);
+
+                    session = getManagedSession(requestedSessionId);
                 }
-                requestedSessionId = param.substring(s, i);
-                requestedSessionIdFromCookie = false;
-
-                if (LOG.isDebugEnabled())
-                    LOG.debug("Got Session ID {} from URL", requestedSessionId);
-
-                session = getManagedSession(requestedSessionId);
             }
         }
 
