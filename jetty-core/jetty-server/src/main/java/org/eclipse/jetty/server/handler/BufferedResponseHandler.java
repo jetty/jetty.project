@@ -20,7 +20,6 @@ import org.eclipse.jetty.http.HttpMethod;
 import org.eclipse.jetty.http.HttpStatus;
 import org.eclipse.jetty.http.MimeTypes;
 import org.eclipse.jetty.http.pathmap.PathSpecSet;
-import org.eclipse.jetty.io.ByteBufferAccumulator;
 import org.eclipse.jetty.io.ByteBufferPool;
 import org.eclipse.jetty.io.RetainableByteBuffer;
 import org.eclipse.jetty.server.ConnectionMetaData;
@@ -56,12 +55,14 @@ import org.slf4j.LoggerFactory;
 public class BufferedResponseHandler extends Handler.Wrapper
 {
     public static final String BUFFER_SIZE_ATTRIBUTE_NAME = BufferedResponseHandler.class.getName() + ".buffer-size";
+    public static final int DEFAULT_BUFFER_SIZE = 16384;
 
     private static final Logger LOG = LoggerFactory.getLogger(BufferedResponseHandler.class);
 
     private final IncludeExclude<String> _methods = new IncludeExclude<>();
     private final IncludeExclude<String> _paths = new IncludeExclude<>(PathSpecSet.class);
     private final IncludeExclude<String> _mimeTypes = new IncludeExclude<>();
+    private int bufferSize = DEFAULT_BUFFER_SIZE;
 
     public BufferedResponseHandler()
     {
@@ -97,6 +98,16 @@ public class BufferedResponseHandler extends Handler.Wrapper
     public IncludeExclude<String> getMimeIncludeExclude()
     {
         return _mimeTypes;
+    }
+
+    public int getBufferSize()
+    {
+        return bufferSize;
+    }
+
+    public void setBufferSize(int bufferSize)
+    {
+        this.bufferSize = bufferSize;
     }
 
     protected boolean isMimeTypeBufferable(String mimetype)
@@ -236,7 +247,7 @@ public class BufferedResponseHandler extends Handler.Wrapper
         private int getBufferSize()
         {
             Object attribute = getRequest().getAttribute(BufferedResponseHandler.BUFFER_SIZE_ATTRIBUTE_NAME);
-            return attribute instanceof Integer ? (int)attribute : Integer.MAX_VALUE;
+            return attribute instanceof Integer ? (int)attribute : bufferSize;
         }
 
         @Override
@@ -269,53 +280,53 @@ public class BufferedResponseHandler extends Handler.Wrapper
 
     private static class CountingByteBufferAccumulator implements AutoCloseable
     {
-        private final ByteBufferAccumulator _accumulator;
+        private final ByteBufferPool _bufferPool;
+        private final boolean _direct;
         private final int _maxSize;
-        private int _accumulatedCount;
+        private RetainableByteBuffer _retainableByteBuffer;
+        private int _accumulatedSize;
 
         private CountingByteBufferAccumulator(ByteBufferPool bufferPool, boolean direct, int maxSize)
         {
             if (maxSize <= 0)
                 throw new IllegalArgumentException("maxSize must be > 0, was: " + maxSize);
+            _bufferPool = (bufferPool == null) ? new ByteBufferPool.NonPooling() : bufferPool;
+            _direct = direct;
             _maxSize = maxSize;
-            _accumulator = new ByteBufferAccumulator(bufferPool, direct);
         }
 
         private boolean copyBuffer(ByteBuffer buffer)
         {
-            int remainingCapacity = space();
-            if (buffer.remaining() >= remainingCapacity)
+            if (_retainableByteBuffer == null)
             {
-                _accumulatedCount += remainingCapacity;
-                int end = buffer.position() + remainingCapacity;
-                _accumulator.copyBuffer(buffer.duplicate().limit(end));
-                buffer.position(end);
-                return true;
+                _retainableByteBuffer = _bufferPool.acquire(_maxSize, _direct);
+                BufferUtil.flipToFill(_retainableByteBuffer.getByteBuffer());
             }
-            else
-            {
-                _accumulatedCount += buffer.remaining();
-                _accumulator.copyBuffer(buffer);
-                return false;
-            }
+            int prevPos = buffer.position();
+            int copySize = Math.min(buffer.remaining(), _maxSize);
+            _retainableByteBuffer.getByteBuffer().put(_retainableByteBuffer.getByteBuffer().position(), buffer, buffer.position(), copySize);
+            _retainableByteBuffer.getByteBuffer().position(_retainableByteBuffer.getByteBuffer().position() + copySize);
+            buffer.position(buffer.position() + copySize);
+            _accumulatedSize += buffer.position() - prevPos;
+            return _accumulatedSize == _maxSize;
         }
 
-        private int space()
+        public RetainableByteBuffer takeRetainableByteBuffer()
         {
-            return _maxSize - _accumulatedCount;
-        }
-
-        private RetainableByteBuffer takeRetainableByteBuffer()
-        {
-            _accumulatedCount = 0;
-            return _accumulator.takeRetainableByteBuffer();
+            BufferUtil.flipToFlush(_retainableByteBuffer.getByteBuffer(), 0);
+            RetainableByteBuffer result = _retainableByteBuffer;
+            _retainableByteBuffer = null;
+            return result;
         }
 
         @Override
         public void close()
         {
-            _accumulatedCount = 0;
-            _accumulator.close();
+            if (_retainableByteBuffer != null)
+            {
+                _retainableByteBuffer.release();
+                _retainableByteBuffer = null;
+            }
         }
     }
 }

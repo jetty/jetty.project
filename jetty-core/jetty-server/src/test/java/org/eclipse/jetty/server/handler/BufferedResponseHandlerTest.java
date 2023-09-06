@@ -92,6 +92,7 @@ public class BufferedResponseHandlerTest
         assertThat(response, containsString("Write: 0"));
         assertThat(response, containsString("Write: 9"));
         assertThat(response, containsString("Written: true"));
+        assertThat(response, containsString("Content-Length: "));
     }
 
     @Test
