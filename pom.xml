@@ -1978,6 +1978,18 @@
     <profile>
       <id>eclipse-release</id>
       <build>
+        <pluginManagement>
+          <plugins>
+            <plugin>
+              <groupId>org.asciidoctor</groupId>
+              <artifactId>asciidoctor-maven-plugin</artifactId>
+              <configuration>
+                <!-- do not skip documentation generation during release -->
+                <skip>false</skip>
+              </configuration>
+            </plugin>
+          </plugins>
+        </pluginManagement>
         <plugins>
           <plugin>
             <artifactId>maven-enforcer-plugin</artifactId>
