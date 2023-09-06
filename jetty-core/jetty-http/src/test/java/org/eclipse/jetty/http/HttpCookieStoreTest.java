@@ -60,6 +60,7 @@ public class HttpCookieStoreTest
         URI uri = URI.create("http://sub.example.com");
         assertTrue(store.add(uri, HttpCookie.build("n", "v").domain("sub.example.com").build()));
         assertTrue(store.add(uri, HttpCookie.build("n", "v").domain("example.com").build()));
+        assertEquals(2, store.all().size());
     }
 
     @Test
@@ -78,6 +79,7 @@ public class HttpCookieStoreTest
         assertTrue(store.add(uri, HttpCookie.from("n", "v1")));
         // Replace the cookie with another that has a different value.
         assertTrue(store.add(uri, HttpCookie.from("n", "v2")));
+        assertEquals(1, store.all().size());
         List<HttpCookie> matches = store.match(uri);
         assertEquals(1, matches.size());
         assertEquals("v2", matches.get(0).getValue());
@@ -92,6 +94,7 @@ public class HttpCookieStoreTest
         // Replace the cookie with another that has a different value.
         // Domain comparison must be case-insensitive.
         assertTrue(store.add(uri, HttpCookie.build("n", "v2").domain("EXAMPLE.COM").build()));
+        assertEquals(1, store.all().size());
         List<HttpCookie> matches = store.match(uri);
         assertEquals(1, matches.size());
         assertEquals("v2", matches.get(0).getValue());
@@ -106,13 +109,13 @@ public class HttpCookieStoreTest
         // Replace the cookie with another that has a different value.
         // Path comparison must be case-sensitive.
         assertTrue(store.add(uri, HttpCookie.build("n", "v2").path("/path").build()));
+        assertEquals(1, store.all().size());
         List<HttpCookie> matches = store.match(uri);
         assertEquals(1, matches.size());
         assertEquals("v2", matches.get(0).getValue());
         // Same path but different case should generate another cookie.
         assertTrue(store.add(uri, HttpCookie.build("n", "v3").path("/PATH").build()));
-        matches = store.all();
-        assertEquals(2, matches.size());
+        assertEquals(2, store.all().size());
     }
 
     @Test
@@ -221,6 +224,46 @@ public class HttpCookieStoreTest
     }
 
     @Test
+    public void testMatchWithEscapedURIPath()
+    {
+        HttpCookieStore store = new HttpCookieStore.Default();
+        URI cookieURI = URI.create("http://example.com/foo%2Fbar/baz");
+        assertTrue(store.add(cookieURI, HttpCookie.build("n1", "v1").build()));
+
+        URI uri = URI.create("http://example.com/foo");
+        List<HttpCookie> matches = store.match(uri);
+        assertEquals(0, matches.size());
+
+        uri = URI.create("http://example.com/foo/");
+        matches = store.match(uri);
+        assertEquals(0, matches.size());
+
+        uri = URI.create("http://example.com/foo/bar");
+        matches = store.match(uri);
+        assertEquals(0, matches.size());
+
+        uri = URI.create("http://example.com/foo/bar/");
+        matches = store.match(uri);
+        assertEquals(0, matches.size());
+
+        uri = URI.create("http://example.com/foo/bar/baz");
+        matches = store.match(uri);
+        assertEquals(0, matches.size());
+
+        uri = URI.create("http://example.com/foo%2Fbar");
+        matches = store.match(uri);
+        assertEquals(1, matches.size());
+
+        uri = URI.create("http://example.com/foo%2Fbar/");
+        matches = store.match(uri);
+        assertEquals(1, matches.size());
+
+        uri = URI.create("http://example.com/foo%2Fbar/qux");
+        matches = store.match(uri);
+        assertEquals(1, matches.size());
+    }
+
+    @Test
     public void testExpiredCookieDoesNotMatch() throws Exception
     {
         HttpCookieStore store = new HttpCookieStore.Default();
@@ -237,14 +280,48 @@ public class HttpCookieStoreTest
     @Test
     public void testRemove()
     {
+        // Note that the URI path is "/path/", but the cookie path "/remove" is used.
         HttpCookieStore store = new HttpCookieStore.Default();
-        URI cookieURI = URI.create("http://example.com/path");
-        assertTrue(store.add(cookieURI, HttpCookie.from("n1", "v1")));
+        URI cookieURI = URI.create("http://example.com/path/");
+        assertTrue(store.add(cookieURI, HttpCookie.build("n1", "v1").path("/remove").build()));
 
-        URI removeURI = URI.create("http://example.com");
+        // Path does not match.
+        assertFalse(store.remove(URI.create("http://example.com"), HttpCookie.from("n1", "v2")));
+        assertFalse(store.remove(URI.create("http://example.com/path/"), HttpCookie.from("n1", "v2")));
+        assertFalse(store.remove(URI.create("http://example.com"), HttpCookie.build("n1", "v2").path("/path").build()));
+        assertFalse(store.remove(URI.create("http://example.com/remove/"), HttpCookie.build("n1", "v2").path("/path").build()));
+
+        // Domain does not match.
+        assertFalse(store.remove(URI.create("http://domain.com/remove/"), HttpCookie.build("n1", "v2").build()));
+
         // Cookie value should not matter.
-        assertTrue(store.remove(removeURI, HttpCookie.from("n1", "n2")));
-        assertFalse(store.remove(removeURI, HttpCookie.from("n1", "n2")));
+        // The URI path must be "/remove/" (end with slash) because URI paths
+        // are chopped to the parent directory while cookie paths are not chopped.
+        URI removeURI = URI.create("http://example.com/remove/");
+        assertTrue(store.remove(removeURI, HttpCookie.from("n1", "v2")));
+        // Try again, should not be there.
+        assertFalse(store.remove(removeURI, HttpCookie.from("n1", "v2")));
+    }
+
+    @Test
+    public void testRemoveWithSubDomains()
+    {
+        // Subdomains can set cookies on the parent domain.
+        HttpCookieStore store = new HttpCookieStore.Default();
+        URI cookieURI = URI.create("http://sub.example.com/path");
+        assertTrue(store.add(cookieURI, HttpCookie.build("n1", "v1").domain("example.com").build()));
+
+        // Cannot remove the cookie from the parent domain.
+        assertFalse(store.remove(URI.create("http://example.com/path"), HttpCookie.from("n1", "v2")));
+        assertFalse(store.remove(URI.create("http://example.com/path"), HttpCookie.build("n1", "v2").domain("example.com").build()));
+        assertFalse(store.remove(URI.create("http://example.com/path"), HttpCookie.build("n1", "v2").domain("sub.example.com").build()));
+
+        // Cannot remove the cookie from a sibling domain.
+        assertFalse(store.remove(URI.create("http://foo.example.com/path"), HttpCookie.from("n1", "v2")));
+        assertFalse(store.remove(URI.create("http://foo.example.com/path"), HttpCookie.build("n1", "v2").domain("sub.example.com").build()));
+
+        // Remove the cookie.
+        assertTrue(store.remove(cookieURI, HttpCookie.from("n1", "v2")));
     }
 
     @Test
@@ -252,17 +329,19 @@ public class HttpCookieStoreTest
     {
         HttpCookieStore store = new HttpCookieStore.Default();
         URI uri = URI.create("http://example.com");
-        // Dumb server sending a secure cookie on clear-text scheme.
-        assertFalse(store.add(uri, HttpCookie.build("n1", "v1").secure(true).build()));
+        // A secure cookie on clear-text scheme.
+        assertTrue(store.add(uri, HttpCookie.build("n1", "v1").secure(true).build()));
+
         URI secureURI = URI.create("https://example.com");
         assertTrue(store.add(secureURI, HttpCookie.build("n2", "v2").secure(true).build()));
         assertTrue(store.add(secureURI, HttpCookie.from("n3", "v3")));
 
         List<HttpCookie> matches = store.match(uri);
-        assertEquals(0, matches.size());
+        assertEquals(1, matches.size());
+        assertEquals("n3", matches.get(0).getName());
 
         matches = store.match(secureURI);
-        assertEquals(2, matches.size());
+        assertEquals(3, matches.size());
     }
 
     @Test
@@ -290,9 +369,10 @@ public class HttpCookieStoreTest
         cookieURI = URI.create("wss://example.com");
         assertTrue(store.add(cookieURI, HttpCookie.from("n2", "v2")));
 
+        // Cookie matching does not depend on the scheme,
+        // not even with regard to non-secure vs secure.
         matchURI = URI.create("https://example.com");
         matches = store.match(matchURI);
-        assertEquals(1, matches.size());
-        assertEquals("n2", matches.get(0).getName());
+        assertEquals(2, matches.size());
     }
 }

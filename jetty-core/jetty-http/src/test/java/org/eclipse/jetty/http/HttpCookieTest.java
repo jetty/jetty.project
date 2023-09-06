@@ -94,7 +94,10 @@ public class HttpCookieTest
             Arguments.of("A=1; HttpOnly=blah, B=2; SameSite=Lax, C=3; Secure=blah", List.of(
                     HttpCookie.build("B", "2").sameSite(HttpCookie.SameSite.LAX).build()
                 )
-            )
+            ),
+            // Weird cookies.
+            Arguments.of("A=1; Domain=example.org; Domain=domain.com", List.of(HttpCookie.build("A", "1").domain("domain.com").build())),
+            Arguments.of("A=1; Path=/; Path=/ctx", List.of(HttpCookie.build("A", "1").path("/ctx").build()))
         );
     }
 

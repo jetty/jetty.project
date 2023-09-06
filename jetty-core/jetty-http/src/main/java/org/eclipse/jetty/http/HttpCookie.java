@@ -176,7 +176,7 @@ public interface HttpCookie
 
         public Wrapper(HttpCookie wrapped)
         {
-            this.wrapped = wrapped;
+            this.wrapped = Objects.requireNonNull(wrapped);
         }
 
         public HttpCookie getWrapped()
@@ -544,9 +544,9 @@ public interface HttpCookie
                 case "expires" -> expires(parseExpires(value));
                 case "httponly" ->
                 {
-                    if (value != null && !value.isEmpty())
+                    if (!isTruthy(value))
                         throw new IllegalArgumentException("Invalid HttpOnly attribute");
-                    httpOnly(value != null);
+                    httpOnly(true);
                 }
                 case "max-age" -> maxAge(Long.parseLong(value));
                 case "samesite" ->
@@ -558,13 +558,18 @@ public interface HttpCookie
                 }
                 case "secure" ->
                 {
-                    if (value != null && !value.isEmpty())
+                    if (!isTruthy(value))
                         throw new IllegalArgumentException("Invalid Secure attribute");
-                    secure(value != null);
+                    secure(true);
                 }
                 default -> _attributes = lazyAttributePut(_attributes, name, value);
             }
             return this;
+        }
+
+        private boolean isTruthy(String value)
+        {
+            return value != null && (value.isEmpty() || "true".equalsIgnoreCase(value));
         }
 
         public Builder comment(String comment)
