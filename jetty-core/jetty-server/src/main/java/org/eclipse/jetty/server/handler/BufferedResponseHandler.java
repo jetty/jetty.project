@@ -21,15 +21,13 @@ import org.eclipse.jetty.http.HttpStatus;
 import org.eclipse.jetty.http.MimeTypes;
 import org.eclipse.jetty.http.pathmap.PathSpecSet;
 import org.eclipse.jetty.io.ByteBufferPool;
-import org.eclipse.jetty.io.RetainableByteBuffer;
+import org.eclipse.jetty.io.Content;
 import org.eclipse.jetty.server.ConnectionMetaData;
 import org.eclipse.jetty.server.Handler;
 import org.eclipse.jetty.server.Request;
 import org.eclipse.jetty.server.Response;
-import org.eclipse.jetty.util.BufferUtil;
 import org.eclipse.jetty.util.Callback;
 import org.eclipse.jetty.util.IncludeExclude;
-import org.eclipse.jetty.util.IteratingNestedCallback;
 import org.eclipse.jetty.util.StringUtil;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -189,8 +187,9 @@ public class BufferedResponseHandler extends Handler.Wrapper
     private class BufferedResponse extends Response.Wrapper implements Callback
     {
         private final Callback _callback;
-        private CountingByteBufferAccumulator _accumulator;
+        private Content.Sink _bufferedContentSink;
         private boolean _firstWrite = true;
+        private boolean _lastWritten;
 
         private BufferedResponse(Request request, Response response, Callback callback)
         {
@@ -208,40 +207,13 @@ public class BufferedResponseHandler extends Handler.Wrapper
                     ConnectionMetaData connectionMetaData = getRequest().getConnectionMetaData();
                     ByteBufferPool bufferPool = connectionMetaData.getConnector().getByteBufferPool();
                     boolean useOutputDirectByteBuffers = connectionMetaData.getHttpConfiguration().isUseOutputDirectByteBuffers();
-                    _accumulator = new CountingByteBufferAccumulator(bufferPool, useOutputDirectByteBuffers, getBufferSize());
+                    _bufferedContentSink = Content.Sink.asBuffered(getWrapped(), bufferPool, useOutputDirectByteBuffers, getBufferSize());
                 }
                 _firstWrite = false;
             }
-
-            if (_accumulator != null)
-            {
-                ByteBuffer current = byteBuffer != null ? byteBuffer : BufferUtil.EMPTY_BUFFER;
-                IteratingNestedCallback writer = new IteratingNestedCallback(callback)
-                {
-                    private boolean complete;
-
-                    @Override
-                    protected Action process()
-                    {
-                        if (complete)
-                            return Action.SUCCEEDED;
-                        boolean write = _accumulator.copyBuffer(current);
-                        complete = last && !current.hasRemaining();
-                        if (write || complete)
-                        {
-                            RetainableByteBuffer buffer = _accumulator.takeRetainableByteBuffer();
-                            BufferedResponse.super.write(complete, buffer.getByteBuffer(), Callback.from(this, buffer::release));
-                            return Action.SCHEDULED;
-                        }
-                        return Action.SUCCEEDED;
-                    }
-                };
-                writer.iterate();
-            }
-            else
-            {
-                super.write(last, byteBuffer, callback);
-            }
+            _lastWritten |= last;
+            Content.Sink destSink = _bufferedContentSink != null ? _bufferedContentSink : getWrapped();
+            destSink.write(last, byteBuffer, callback);
         }
 
         private int getBufferSize()
@@ -253,80 +225,18 @@ public class BufferedResponseHandler extends Handler.Wrapper
         @Override
         public void succeeded()
         {
-            // TODO pass all accumulated buffers as an array instead of allocating & copying into a single one.
-            if (_accumulator != null)
-            {
-                RetainableByteBuffer buffer = _accumulator.takeRetainableByteBuffer();
-                super.write(true, buffer.getByteBuffer(), Callback.from(_callback, () ->
-                {
-                    buffer.release();
-                    _accumulator.close();
-                }));
-            }
+            if (_bufferedContentSink != null && !_lastWritten)
+                _bufferedContentSink.write(true, null, _callback);
             else
-            {
                 _callback.succeeded();
-            }
         }
 
         @Override
         public void failed(Throwable x)
         {
-            if (_accumulator != null)
-                _accumulator.close();
+            if (_bufferedContentSink != null && !_lastWritten)
+                _bufferedContentSink.write(true, null, Callback.NOOP);
             _callback.failed(x);
-        }
-    }
-
-    private static class CountingByteBufferAccumulator implements AutoCloseable
-    {
-        private final ByteBufferPool _bufferPool;
-        private final boolean _direct;
-        private final int _maxSize;
-        private RetainableByteBuffer _retainableByteBuffer;
-        private int _accumulatedSize;
-
-        private CountingByteBufferAccumulator(ByteBufferPool bufferPool, boolean direct, int maxSize)
-        {
-            if (maxSize <= 0)
-                throw new IllegalArgumentException("maxSize must be > 0, was: " + maxSize);
-            _bufferPool = (bufferPool == null) ? new ByteBufferPool.NonPooling() : bufferPool;
-            _direct = direct;
-            _maxSize = maxSize;
-        }
-
-        private boolean copyBuffer(ByteBuffer buffer)
-        {
-            if (_retainableByteBuffer == null)
-            {
-                _retainableByteBuffer = _bufferPool.acquire(_maxSize, _direct);
-                BufferUtil.flipToFill(_retainableByteBuffer.getByteBuffer());
-            }
-            int prevPos = buffer.position();
-            int copySize = Math.min(buffer.remaining(), _maxSize);
-            _retainableByteBuffer.getByteBuffer().put(_retainableByteBuffer.getByteBuffer().position(), buffer, buffer.position(), copySize);
-            _retainableByteBuffer.getByteBuffer().position(_retainableByteBuffer.getByteBuffer().position() + copySize);
-            buffer.position(buffer.position() + copySize);
-            _accumulatedSize += buffer.position() - prevPos;
-            return _accumulatedSize == _maxSize;
-        }
-
-        public RetainableByteBuffer takeRetainableByteBuffer()
-        {
-            BufferUtil.flipToFlush(_retainableByteBuffer.getByteBuffer(), 0);
-            RetainableByteBuffer result = _retainableByteBuffer;
-            _retainableByteBuffer = null;
-            return result;
-        }
-
-        @Override
-        public void close()
-        {
-            if (_retainableByteBuffer != null)
-            {
-                _retainableByteBuffer.release();
-                _retainableByteBuffer = null;
-            }
         }
     }
 }
