@@ -95,6 +95,7 @@ public class BufferedContentSink implements Content.Sink
         private final int _maxSize;
         private RetainableByteBuffer _retainableByteBuffer;
         private int _accumulatedSize;
+        private int _currentSize;
 
         private CountingByteBufferAccumulator(ByteBufferPool bufferPool, boolean direct, int maxSize)
         {
@@ -103,22 +104,23 @@ public class BufferedContentSink implements Content.Sink
             _bufferPool = (bufferPool == null) ? new ByteBufferPool.NonPooling() : bufferPool;
             _direct = direct;
             _maxSize = maxSize;
+            _currentSize = Math.min(maxSize, 1024);
         }
 
         private boolean copyBuffer(ByteBuffer buffer)
         {
             if (_retainableByteBuffer == null)
             {
-                _retainableByteBuffer = _bufferPool.acquire(_maxSize, _direct);
+                _retainableByteBuffer = _bufferPool.acquire(_currentSize, _direct);
                 BufferUtil.flipToFill(_retainableByteBuffer.getByteBuffer());
             }
             int prevPos = buffer.position();
-            int copySize = Math.min(buffer.remaining(), _maxSize);
+            int copySize = Math.min(_currentSize - _accumulatedSize, Math.min(buffer.remaining(), _currentSize));
             _retainableByteBuffer.getByteBuffer().put(_retainableByteBuffer.getByteBuffer().position(), buffer, buffer.position(), copySize);
             _retainableByteBuffer.getByteBuffer().position(_retainableByteBuffer.getByteBuffer().position() + copySize);
             buffer.position(buffer.position() + copySize);
             _accumulatedSize += buffer.position() - prevPos;
-            return _accumulatedSize == _maxSize;
+            return _accumulatedSize == _currentSize;
         }
 
         public RetainableByteBuffer takeRetainableByteBuffer()
@@ -127,6 +129,8 @@ public class BufferedContentSink implements Content.Sink
             RetainableByteBuffer result = _retainableByteBuffer;
             _retainableByteBuffer = null;
             _accumulatedSize = 0;
+            if (_currentSize != _maxSize)
+                _currentSize = Math.min(_maxSize, _currentSize << 1);
             return result;
         }
     }

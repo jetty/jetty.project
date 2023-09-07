@@ -153,18 +153,18 @@ public class BufferedContentSinkTest
         {
             BufferedContentSink buffered = new BufferedContentSink(async, _bufferPool, true, 4096);
 
-            buffered.write(false, ByteBuffer.wrap("one\n".getBytes(UTF_8)), Callback.NOOP);
+            buffered.write(false, ByteBuffer.wrap("one ".getBytes(UTF_8)), Callback.NOOP);
             Content.Chunk chunk = async.read();
             assertThat(chunk, nullValue());
 
-            buffered.write(false, ByteBuffer.wrap("two\n".getBytes(UTF_8)), Callback.NOOP);
+            buffered.write(false, ByteBuffer.wrap("two".getBytes(UTF_8)), Callback.NOOP);
             chunk = async.read();
             assertThat(chunk, nullValue());
 
             buffered.write(true, null, Callback.NOOP);
             chunk = async.read();
             assertThat(chunk.isLast(), is(true));
-            assertThat(BufferUtil.toString(chunk.getByteBuffer(), UTF_8), is("one\ntwo\n"));
+            assertThat(BufferUtil.toString(chunk.getByteBuffer(), UTF_8), is("one two"));
             assertThat(chunk.release(), is(true));
         }
     }
@@ -172,6 +172,7 @@ public class BufferedContentSinkTest
     @Test
     public void testSmallBuffer()
     {
+        int maxBufferSize = 16;
         byte[] input1 = new byte[1024];
         Arrays.fill(input1, (byte)'1');
         byte[] input2 = new byte[1023];
@@ -182,13 +183,15 @@ public class BufferedContentSinkTest
 
         try (AsyncContent async = new AsyncContent())
         {
-            BufferedContentSink buffered = new BufferedContentSink(async, _bufferPool, true, 16);
+            BufferedContentSink buffered = new BufferedContentSink(async, _bufferPool, true, maxBufferSize);
 
             buffered.write(false, ByteBuffer.wrap(input1), Callback.from(() ->
                 buffered.write(true, ByteBuffer.wrap(input2), Callback.NOOP)));
 
+            int loopCount = 0;
             while (true)
             {
+                loopCount++;
                 Content.Chunk chunk = async.read();
                 assertThat(chunk, notNullValue());
                 accumulatingBuffer.put(chunk.getByteBuffer());
@@ -196,6 +199,67 @@ public class BufferedContentSinkTest
                 if (chunk.isLast())
                     break;
             }
+            assertThat(loopCount, is((int)Math.ceil((input1.length + input2.length) / (double)maxBufferSize)));
+
+            BufferUtil.flipToFlush(accumulatingBuffer, 0);
+            assertThat(accumulatingBuffer.remaining(), is(input1.length + input2.length));
+            for (byte b : input1)
+            {
+                assertThat(accumulatingBuffer.get(), is(b));
+            }
+            for (byte b : input2)
+            {
+                assertThat(accumulatingBuffer.get(), is(b));
+            }
+        }
+    }
+
+    @Test
+    public void testBufferGrowth()
+    {
+        byte[] input1 = new byte[5000];
+        Arrays.fill(input1, (byte)'1');
+        byte[] input2 = new byte[5000];
+        Arrays.fill(input2, (byte)'2');
+
+        ByteBuffer accumulatingBuffer = BufferUtil.allocate(16384);
+        BufferUtil.flipToFill(accumulatingBuffer);
+
+        try (AsyncContent async = new AsyncContent())
+        {
+            BufferedContentSink buffered = new BufferedContentSink(async, _bufferPool, true, 4096);
+
+            buffered.write(false, ByteBuffer.wrap(input1), Callback.from(() ->
+                buffered.write(true, ByteBuffer.wrap(input2), Callback.NOOP)));
+
+            // We expect 4 buffer flushes: 1024b + 2048b + 4096b + 2832b == 10_000b.
+            Content.Chunk chunk = async.read();
+            assertThat(chunk, notNullValue());
+            assertThat(chunk.remaining(), is(1024));
+            accumulatingBuffer.put(chunk.getByteBuffer());
+            assertThat(chunk.release(), is(true));
+            assertThat(chunk.isLast(), is(false));
+
+            chunk = async.read();
+            assertThat(chunk, notNullValue());
+            assertThat(chunk.remaining(), is(2048));
+            accumulatingBuffer.put(chunk.getByteBuffer());
+            assertThat(chunk.release(), is(true));
+            assertThat(chunk.isLast(), is(false));
+
+            chunk = async.read();
+            assertThat(chunk, notNullValue());
+            assertThat(chunk.remaining(), is(4096));
+            accumulatingBuffer.put(chunk.getByteBuffer());
+            assertThat(chunk.release(), is(true));
+            assertThat(chunk.isLast(), is(false));
+
+            chunk = async.read();
+            assertThat(chunk, notNullValue());
+            assertThat(chunk.remaining(), is(2832));
+            accumulatingBuffer.put(chunk.getByteBuffer());
+            assertThat(chunk.release(), is(true));
+            assertThat(chunk.isLast(), is(true));
 
             BufferUtil.flipToFlush(accumulatingBuffer, 0);
             assertThat(accumulatingBuffer.remaining(), is(input1.length + input2.length));
