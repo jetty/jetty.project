@@ -13,6 +13,7 @@
 
 package org.eclipse.jetty.http;
 
+import java.time.Instant;
 import java.time.format.DateTimeParseException;
 import java.util.List;
 
@@ -30,90 +31,60 @@ public class HttpCookieTest
     public static List<Arguments> cookies()
     {
         return List.of(
-            // Single cookie.
-            Arguments.of("=", List.of()),
-            Arguments.of("=B", List.of()),
-            Arguments.of("=B; a", List.of()),
-            Arguments.of("=B; a=", List.of()),
-            Arguments.of("=B; a=v", List.of()),
-            Arguments.of("A", List.of()),
-            Arguments.of("A=", List.of(HttpCookie.build("A", "").build())),
-            Arguments.of("A=; HttpOnly", List.of(HttpCookie.build("A", "").httpOnly(true).build())),
-            Arguments.of("A=; a", List.of(HttpCookie.build("A", "").attribute("a", "").build())),
-            Arguments.of("A=; a=", List.of(HttpCookie.build("A", "").attribute("a", "").build())),
-            Arguments.of("A=; a=v", List.of(HttpCookie.build("A", "").attribute("a", "v").build())),
-            Arguments.of("A=B", List.of(HttpCookie.build("A", "B").build())),
-            Arguments.of("A=B; Secure", List.of(HttpCookie.build("A", "B").secure(true).build())),
-            Arguments.of("A=B; a", List.of(HttpCookie.build("A", "B").attribute("a", "").build())),
-            Arguments.of("A=B; a=", List.of(HttpCookie.build("A", "B").attribute("a", "").build())),
-            Arguments.of("A=B; a=v", List.of(HttpCookie.build("A", "B").attribute("a", "v").build())),
-            Arguments.of("A=B; Secure; Path=/", List.of(HttpCookie.build("A", "B").secure(true).path("/").build())),
-            // Multiple cookies.
-            Arguments.of("=,=", List.of()),
-            Arguments.of("=B,=C", List.of()),
-            Arguments.of("=B; b, =C", List.of()),
-            Arguments.of("=B; b, =C; c", List.of()),
-            Arguments.of("=B; b=, =C; c=", List.of()),
-            Arguments.of("=B; b=2, =C; c=3", List.of()),
-            Arguments.of("A, B", List.of()),
-            Arguments.of("A=, B=", List.of(
-                    HttpCookie.build("A", "").build(),
-                    HttpCookie.build("B", "").build()
-                )
-            ),
-            Arguments.of("A=1, B=2", List.of(
-                    HttpCookie.build("A", "1").build(),
-                    HttpCookie.build("B", "2").build()
-                )
-            ),
-            Arguments.of("A=1; HttpOnly, B=2; Secure; Path=/", List.of(
-                    HttpCookie.build("A", "1").httpOnly(true).build(),
-                    HttpCookie.build("B", "2").secure(true).path("/").build()
-                )
-            ),
-            // Quoted cookies.
-            Arguments.of("A=\"1\"; HttpOnly, B=2; Secure; Path=\"/\"", List.of(
-                    HttpCookie.build("A", "1").httpOnly(true).build(),
-                    HttpCookie.build("B", "2").secure(true).path("/").build()
-                )
-            ),
-            // Invalid cookies.
-            Arguments.of("A=1; Expires=blah", List.of()),
-            Arguments.of("A=1; HttpOnly=blah", List.of()),
-            Arguments.of("A=1; Max-Age=blah", List.of()),
-            Arguments.of("A=1; SameSite=blah", List.of()),
-            Arguments.of("A=1; Secure=blah", List.of()),
-            // Mixed valid and invalid cookies.
-            Arguments.of("A=1; Expires=blah, B=2", List.of(HttpCookie.build("B", "2").build())),
-            Arguments.of("A=1; Expires=blah; Path=/, B=2", List.of(HttpCookie.build("B", "2").build())),
-            Arguments.of("A=1, B=2; Max-Age=blah, C=3", List.of(
-                    HttpCookie.build("A", "1").build(),
-                    HttpCookie.build("C", "3").build()
-                )
-            ),
-            Arguments.of("A=1; HttpOnly=blah, B=2; SameSite=Lax, C=3; Secure=blah", List.of(
-                    HttpCookie.build("B", "2").sameSite(HttpCookie.SameSite.LAX).build()
-                )
-            ),
-            // Weird cookies.
-            Arguments.of("A=1; Domain=example.org; Domain=domain.com", List.of(HttpCookie.build("A", "1").domain("domain.com").build())),
-            Arguments.of("A=1; Path=/; Path=/ctx", List.of(HttpCookie.build("A", "1").path("/ctx").build()))
+            Arguments.of("=", null),
+            Arguments.of("=B", null),
+            Arguments.of("=B; a", null),
+            Arguments.of("=B; a=", null),
+            Arguments.of("=B; a=v", null),
+            Arguments.of("A", null),
+            Arguments.of("A=", HttpCookie.build("A", "").build()),
+            Arguments.of("A=; HttpOnly", HttpCookie.build("A", "").httpOnly(true).build()),
+            Arguments.of("A=; a", HttpCookie.build("A", "").attribute("a", "").build()),
+            Arguments.of("A=; a=", HttpCookie.build("A", "").attribute("a", "").build()),
+            Arguments.of("A=; a=v", HttpCookie.build("A", "").attribute("a", "v").build()),
+            Arguments.of("A=B", HttpCookie.build("A", "B").build()),
+            Arguments.of("A= B", HttpCookie.build("A", "B").build()),
+            Arguments.of("A =B", HttpCookie.build("A", "B").build()),
+            Arguments.of(" A=B", HttpCookie.build("A", "B").build()),
+            Arguments.of(" A= B", HttpCookie.build("A", "B").build()),
+            Arguments.of("A=B; Secure", HttpCookie.build("A", "B").secure(true).build()),
+            Arguments.of("A=B; Expires=Thu, 01 Jan 1970 00:00:00 GMT", HttpCookie.build("A", "B").expires(Instant.EPOCH).build()),
+            Arguments.of("A=B; a", HttpCookie.build("A", "B").attribute("a", "").build()),
+            Arguments.of("A=B; a=", HttpCookie.build("A", "B").attribute("a", "").build()),
+            Arguments.of("A=B; a=v", HttpCookie.build("A", "B").attribute("a", "v").build()),
+            Arguments.of("A=B; Secure; Path=/", HttpCookie.build("A", "B").secure(true).path("/").build()),
+            // Quoted cookie.
+            Arguments.of("A=\"1\"", HttpCookie.build("A", "1").build()),
+            Arguments.of("A=\"1\"; HttpOnly", HttpCookie.build("A", "1").httpOnly(true).build()),
+            Arguments.of(" A = \"1\" ; a = v", HttpCookie.build("A", "1").attribute("a", "v").build()),
+            Arguments.of(" A = \"1\" ; a = \"v\"; Secure", HttpCookie.build("A", "1").attribute("a", "v").secure(true).build()),
+            Arguments.of(" A = \"1\" ; Path= \"/\"", HttpCookie.build("A", "1").path("/").build()),
+            Arguments.of(" A = \"1\" ; Expires= \"Thu, 01 Jan 1970 00:00:00 GMT\"", HttpCookie.build("A", "1").expires(Instant.EPOCH).build()),
+            // Invalid cookie.
+            Arguments.of("A=\"1\" Bad", null),
+            Arguments.of("A=1; Expires=blah", null),
+            Arguments.of("A=1; Expires=blah; HttpOnly", null),
+            Arguments.of("A=1; HttpOnly=blah", null),
+            Arguments.of("A=1; Max-Age=blah", null),
+            Arguments.of("A=1; SameSite=blah", null),
+            Arguments.of("A=1; SameSite=blah; Secure", null),
+            Arguments.of("A=1; Secure=blah", null),
+            Arguments.of("A=1; Max-Age=\"blah\"", null),
+            // Weird cookie.
+            Arguments.of("A=1; Domain=example.org; Domain=domain.com", HttpCookie.build("A", "1").domain("domain.com").build()),
+            Arguments.of("A=1; Path=/; Path=/ctx", HttpCookie.build("A", "1").path("/ctx").build())
         );
     }
 
     @ParameterizedTest
     @MethodSource("cookies")
-    public void testParseCookies(String setCookieValue, List<HttpCookie> expectedCookies)
+    public void testParseCookies(String setCookieValue, HttpCookie expectedCookie)
     {
-        List<HttpCookie> cookies = HttpCookie.parse(setCookieValue);
-        assertEquals(expectedCookies.size(), cookies.size());
-        for (int i = 0; i < cookies.size(); ++i)
-        {
-            HttpCookie expected = expectedCookies.get(i);
-            HttpCookie cookie = cookies.get(i);
-            assertEquals(expected, cookie);
-            assertThat(expected.getAttributes(), is(cookie.getAttributes()));
-        }
+        SetCookieParser parser = SetCookieParser.newInstance();
+        HttpCookie parsed = parser.parse(setCookieValue);
+        assertEquals(expectedCookie, parsed);
+        if (expectedCookie != null)
+            assertThat(expectedCookie.getAttributes(), is(parsed.getAttributes()));
     }
 
     public static List<Arguments> invalidAttributes()

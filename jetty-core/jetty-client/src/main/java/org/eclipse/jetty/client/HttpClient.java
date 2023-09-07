@@ -45,6 +45,7 @@ import org.eclipse.jetty.http.HttpHeader;
 import org.eclipse.jetty.http.HttpMethod;
 import org.eclipse.jetty.http.HttpParser;
 import org.eclipse.jetty.http.HttpScheme;
+import org.eclipse.jetty.http.SetCookieParser;
 import org.eclipse.jetty.io.ArrayByteBufferPool;
 import org.eclipse.jetty.io.ByteBufferPool;
 import org.eclipse.jetty.io.ClientConnectionFactory;
@@ -108,6 +109,7 @@ public class HttpClient extends ContainerLifeCycle
 {
     public static final String USER_AGENT = "Jetty/" + Jetty.VERSION;
     private static final Logger LOG = LoggerFactory.getLogger(HttpClient.class);
+    private static final SetCookieParser COOKIE_PARSER = SetCookieParser.newInstance();
 
     private final ConcurrentMap<Origin, HttpDestination> destinations = new ConcurrentHashMap<>();
     private final ProtocolHandlers handlers = new ProtocolHandlers();
@@ -277,10 +279,9 @@ public class HttpClient extends ContainerLifeCycle
 
     public void putCookie(URI uri, HttpField field)
     {
-        for (HttpCookie cookie : HttpCookie.parse(field.getValue()))
-        {
+        HttpCookie cookie = COOKIE_PARSER.parse(field.getValue());
+        if (cookie != null)
             cookieStore.add(uri, cookie);
-        }
     }
 
     /**

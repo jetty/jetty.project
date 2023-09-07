@@ -23,6 +23,7 @@ import org.eclipse.jetty.http.HttpFields;
 import org.eclipse.jetty.http.HttpHeader;
 import org.eclipse.jetty.http.HttpStatus;
 import org.eclipse.jetty.http.HttpTester;
+import org.eclipse.jetty.http.SetCookieParser;
 import org.eclipse.jetty.io.Content;
 import org.eclipse.jetty.util.Callback;
 import org.eclipse.jetty.util.component.LifeCycle;
@@ -396,8 +397,7 @@ public class ResponseTest
                             if (field.getHeader() != HttpHeader.SET_COOKIE)
                                 continue;
 
-                            List<HttpCookie> cookies = HttpCookie.parse(field.getValue());
-                            HttpCookie cookie = cookies.get(0);
+                            HttpCookie cookie = SetCookieParser.newInstance().parse(field.getValue());
 
                             i.set(new HttpCookieUtils.SetCookieHttpField(
                                 HttpCookie.build(cookie)

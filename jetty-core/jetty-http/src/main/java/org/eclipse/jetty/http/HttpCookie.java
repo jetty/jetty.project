@@ -17,9 +17,7 @@ import java.time.Instant;
 import java.time.ZoneOffset;
 import java.time.ZonedDateTime;
 import java.time.format.DateTimeFormatter;
-import java.util.ArrayList;
 import java.util.Collections;
-import java.util.List;
 import java.util.Locale;
 import java.util.Map;
 import java.util.Objects;
@@ -936,94 +934,5 @@ public interface HttpCookie
     private static Map<String, String> lazyAttributes(Map<String, String> attributes)
     {
         return attributes == null || attributes.isEmpty() ? Collections.emptyMap() : Collections.unmodifiableMap(attributes);
-    }
-
-    /**
-     * <p>Parses the value of a {@code Set-Cookie} header, returning a list of {@link HttpCookie}s.</p>
-     * <p>Invalid cookies are discarded, for example when they have no name or invalid attributes.</p>
-     * <p>The {@code Set-Cookie} header may carry multiple cookies, separated by commas.
-     * For example:</p>
-     * <pre>{@code Set-Cookie: A=1; HttpOnly, B=2; Path=/foo}</pre>
-     * <p>identifies two cookies, the first named {@code A} and the second named {@code B}.</p>
-     * <p>The {@code Set-Cookie} header may be present multiple times in an HTTP response,
-     * so this method may need to be invoked multiple times to parse all the cookies.</p>
-     *
-     * @param setCookieValue the value of the {@code Set-Cookie} header
-     * @return a possibly empty list of cookies
-     */
-    static List<HttpCookie> parse(String setCookieValue)
-    {
-        List<HttpCookie> cookies = new ArrayList<>();
-        QuotedCSVParser parser = new QuotedCSVParser(false)
-        {
-            private static final HttpCookie.Builder IGNORE_COOKIE = build("", "");
-            private HttpCookie.Builder cookie;
-
-            @Override
-            protected void parsedParam(StringBuffer buffer, int valueLength, int paramName, int paramValue)
-            {
-                if (cookie == null)
-                {
-                    if (paramValue < 0)
-                    {
-                        String name = buffer.substring(paramName, buffer.length() - 1);
-                        if (name.isBlank())
-                            cookie = IGNORE_COOKIE;
-                        else
-                            cookie = HttpCookie.build(name, "");
-                    }
-                    else
-                    {
-                        String name = buffer.substring(paramName, paramValue - 1);
-                        if (name.isBlank())
-                        {
-                            cookie = IGNORE_COOKIE;
-                        }
-                        else
-                        {
-                            String value = buffer.substring(paramValue);
-                            cookie = HttpCookie.build(name, value);
-                        }
-                    }
-                }
-                else
-                {
-                    if (cookie != IGNORE_COOKIE)
-                    {
-                        try
-                        {
-                            if (paramValue < 0)
-                            {
-                                int index = buffer.length();
-                                if (buffer.charAt(index - 1) == '=')
-                                    --index;
-                                String name = buffer.substring(paramName, index);
-                                cookie.attribute(name, "");
-                            }
-                            else
-                            {
-                                String name = buffer.substring(paramName, paramValue - 1);
-                                String value = buffer.substring(paramValue);
-                                cookie.attribute(name, value);
-                            }
-                        }
-                        catch (Throwable x)
-                        {
-                            cookie = IGNORE_COOKIE;
-                        }
-                    }
-                }
-            }
-
-            @Override
-            protected void parsedValueAndParams(StringBuffer buffer)
-            {
-                if (cookie != null && cookie != IGNORE_COOKIE)
-                    cookies.add(cookie.build());
-                cookie = null;
-            }
-        };
-        parser.addValue(setCookieValue);
-        return cookies;
     }
 }
