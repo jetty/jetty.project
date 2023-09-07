@@ -208,8 +208,7 @@ public class BufferedResponseHandler extends Handler.Wrapper
                     ConnectionMetaData connectionMetaData = getRequest().getConnectionMetaData();
                     ByteBufferPool bufferPool = connectionMetaData.getConnector().getByteBufferPool();
                     boolean useOutputDirectByteBuffers = connectionMetaData.getHttpConfiguration().isUseOutputDirectByteBuffers();
-                    int bufferSize = getBufferSize();
-                    _bufferedContentSink = Content.Sink.asBuffered(getWrapped(), bufferPool, useOutputDirectByteBuffers, bufferSize, bufferSize);
+                    _bufferedContentSink = Content.Sink.asBuffered(getWrapped(), bufferPool, useOutputDirectByteBuffers, getBufferSize());
                 }
                 _firstWrite = false;
             }

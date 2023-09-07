@@ -57,23 +57,10 @@ public class BufferedContentSinkTest
     }
 
     @Test
-    public void testWrongMinBufferSize()
-    {
-        assertThrows(IllegalArgumentException.class, () -> new BufferedContentSink(new AsyncContent(), _bufferPool, true, 0, 4096));
-        assertThrows(IllegalArgumentException.class, () -> new BufferedContentSink(new AsyncContent(), _bufferPool, true, -1, 4096));
-    }
-
-    @Test
     public void testWrongMaxBufferSize()
     {
-        assertThrows(IllegalArgumentException.class, () -> new BufferedContentSink(new AsyncContent(), _bufferPool, true, 16, 0));
-        assertThrows(IllegalArgumentException.class, () -> new BufferedContentSink(new AsyncContent(), _bufferPool, true, 16, -1));
-    }
-
-    @Test
-    public void testMinBufferSizeGreatherThanMax()
-    {
-        assertThrows(IllegalArgumentException.class, () -> new BufferedContentSink(new AsyncContent(), _bufferPool, true, 1024, 16));
+        assertThrows(IllegalArgumentException.class, () -> new BufferedContentSink(new AsyncContent(), _bufferPool, true, 0));
+        assertThrows(IllegalArgumentException.class, () -> new BufferedContentSink(new AsyncContent(), _bufferPool, true, -1));
     }
 
     @Test
@@ -81,7 +68,7 @@ public class BufferedContentSinkTest
     {
         try (AsyncContent async = new AsyncContent())
         {
-            BufferedContentSink buffered = new BufferedContentSink(async, _bufferPool, true, 1024, 4096);
+            BufferedContentSink buffered = new BufferedContentSink(async, _bufferPool, true, 4096);
 
             CountDownLatch latch = new CountDownLatch(1);
             async.demand(latch::countDown);
@@ -102,7 +89,7 @@ public class BufferedContentSinkTest
     {
         try (AsyncContent async = new AsyncContent())
         {
-            BufferedContentSink buffered = new BufferedContentSink(async, _bufferPool, true, 1024, 4096);
+            BufferedContentSink buffered = new BufferedContentSink(async, _bufferPool, true, 4096);
 
             AtomicInteger successCounter = new AtomicInteger();
             AtomicReference<Throwable> failureRef = new AtomicReference<>();
@@ -125,7 +112,7 @@ public class BufferedContentSinkTest
     {
         try (AsyncContent async = new AsyncContent())
         {
-            BufferedContentSink buffered = new BufferedContentSink(async, _bufferPool, true, 1024, 4096);
+            BufferedContentSink buffered = new BufferedContentSink(async, _bufferPool, true, 4096);
 
             AtomicInteger successCounter = new AtomicInteger();
             AtomicReference<Throwable> failureRef = new AtomicReference<>();
@@ -147,7 +134,7 @@ public class BufferedContentSinkTest
     {
         try (AsyncContent async = new AsyncContent())
         {
-            BufferedContentSink buffered = new BufferedContentSink(async, _bufferPool, true, 1024, 4096);
+            BufferedContentSink buffered = new BufferedContentSink(async, _bufferPool, true, 4096);
 
             AtomicInteger successCounter = new AtomicInteger();
             AtomicReference<Throwable> failureRef = new AtomicReference<>();
@@ -172,7 +159,7 @@ public class BufferedContentSinkTest
     {
         try (AsyncContent async = new AsyncContent())
         {
-            BufferedContentSink buffered = new BufferedContentSink(async, _bufferPool, true, 1024, 4096);
+            BufferedContentSink buffered = new BufferedContentSink(async, _bufferPool, true, 4096);
 
             buffered.write(false, ByteBuffer.wrap("one ".getBytes(UTF_8)), Callback.NOOP);
             Content.Chunk chunk = async.read();
@@ -204,7 +191,7 @@ public class BufferedContentSinkTest
 
         try (AsyncContent async = new AsyncContent())
         {
-            BufferedContentSink buffered = new BufferedContentSink(async, _bufferPool, true, maxBufferSize, maxBufferSize);
+            BufferedContentSink buffered = new BufferedContentSink(async, _bufferPool, true, maxBufferSize);
 
             buffered.write(false, ByteBuffer.wrap(input1), Callback.from(() ->
                 buffered.write(true, ByteBuffer.wrap(input2), Callback.NOOP)));
@@ -248,22 +235,15 @@ public class BufferedContentSinkTest
 
         try (AsyncContent async = new AsyncContent())
         {
-            BufferedContentSink buffered = new BufferedContentSink(async, _bufferPool, true, 1024, 4096);
+            BufferedContentSink buffered = new BufferedContentSink(async, _bufferPool, true, 4096);
 
             buffered.write(false, ByteBuffer.wrap(input1), Callback.from(() ->
                 buffered.write(true, ByteBuffer.wrap(input2), Callback.NOOP)));
 
-            // We expect 4 buffer flushes: 1024b + 2048b + 4096b + 2832b == 10_000b.
+            // We expect 3 buffer flushes: 4096b + 4096b + 1808b == 10_000b.
             Content.Chunk chunk = async.read();
             assertThat(chunk, notNullValue());
-            assertThat(chunk.remaining(), is(1024));
-            accumulatingBuffer.put(chunk.getByteBuffer());
-            assertThat(chunk.release(), is(true));
-            assertThat(chunk.isLast(), is(false));
-
-            chunk = async.read();
-            assertThat(chunk, notNullValue());
-            assertThat(chunk.remaining(), is(2048));
+            assertThat(chunk.remaining(), is(4096));
             accumulatingBuffer.put(chunk.getByteBuffer());
             assertThat(chunk.release(), is(true));
             assertThat(chunk.isLast(), is(false));
@@ -277,7 +257,7 @@ public class BufferedContentSinkTest
 
             chunk = async.read();
             assertThat(chunk, notNullValue());
-            assertThat(chunk.remaining(), is(2832));
+            assertThat(chunk.remaining(), is(1808));
             accumulatingBuffer.put(chunk.getByteBuffer());
             assertThat(chunk.release(), is(true));
             assertThat(chunk.isLast(), is(true));
