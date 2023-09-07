@@ -405,12 +405,13 @@ public class Content
          * @param sink the sink to write to
          * @param bufferPool the {@link org.eclipse.jetty.io.ByteBufferPool} to use
          * @param direct true to use direct buffers, false to use heap buffers
+         * @param minBufferSize the minimum size of the buffer
          * @param maxBufferSize the maximum size of the buffer
          * @return a Sink that writes to the given content sink
          */
-        static Sink asBuffered(Sink sink, ByteBufferPool bufferPool, boolean direct, int maxBufferSize)
+        static Sink asBuffered(Sink sink, ByteBufferPool bufferPool, boolean direct, int minBufferSize, int maxBufferSize)
         {
-            return new BufferedContentSink(sink, bufferPool, direct, maxBufferSize);
+            return new BufferedContentSink(sink, bufferPool, direct, minBufferSize, maxBufferSize);
         }
 
         /**
