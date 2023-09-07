@@ -35,17 +35,23 @@ public class BufferedContentSink implements Content.Sink
     private final ByteBufferPool _bufferPool;
     private final boolean _direct;
     private final int _maxBufferSize;
+    private final int _minBufferSize;
     private CountingByteBufferAccumulator _accumulator;
     private boolean _firstWrite = true;
     private boolean _lastWritten;
 
-    public BufferedContentSink(Content.Sink delegate, ByteBufferPool bufferPool, boolean direct, int maxBufferSize)
+    public BufferedContentSink(Content.Sink delegate, ByteBufferPool bufferPool, boolean direct, int minBufferSize, int maxBufferSize)
     {
         if (maxBufferSize <= 0)
             throw new IllegalArgumentException("maxBufferSize must be > 0, was: " + maxBufferSize);
+        if (minBufferSize <= 0)
+            throw new IllegalArgumentException("minBufferSize must be > 0, was: " + maxBufferSize);
+        if (minBufferSize > maxBufferSize)
+            throw new IllegalArgumentException("minBufferSize (" + minBufferSize + ") must be > maxBufferSize (" + maxBufferSize + ")");
         _delegate = delegate;
         _bufferPool = (bufferPool == null) ? new ByteBufferPool.NonPooling() : bufferPool;
         _direct = direct;
+        _minBufferSize = minBufferSize;
         _maxBufferSize = maxBufferSize;
     }
 
@@ -59,7 +65,7 @@ public class BufferedContentSink implements Content.Sink
         }
         if (_firstWrite)
         {
-            _accumulator = new CountingByteBufferAccumulator(_bufferPool, _direct, _maxBufferSize);
+            _accumulator = new CountingByteBufferAccumulator(_bufferPool, _direct, _minBufferSize, _maxBufferSize);
             _firstWrite = false;
         }
         _lastWritten |= last;
@@ -97,14 +103,18 @@ public class BufferedContentSink implements Content.Sink
         private int _accumulatedSize;
         private int _currentSize;
 
-        private CountingByteBufferAccumulator(ByteBufferPool bufferPool, boolean direct, int maxSize)
+        private CountingByteBufferAccumulator(ByteBufferPool bufferPool, boolean direct, int minSize, int maxSize)
         {
             if (maxSize <= 0)
                 throw new IllegalArgumentException("maxSize must be > 0, was: " + maxSize);
+            if (minSize <= 0)
+                throw new IllegalArgumentException("minSize must be > 0, was: " + maxSize);
+            if (minSize > maxSize)
+                throw new IllegalArgumentException("minSize (" + minSize + ") must be > maxSize (" + maxSize + ")");
             _bufferPool = (bufferPool == null) ? new ByteBufferPool.NonPooling() : bufferPool;
             _direct = direct;
             _maxSize = maxSize;
-            _currentSize = Math.min(maxSize, 1024);
+            _currentSize = minSize;
         }
 
         private boolean copyBuffer(ByteBuffer buffer)

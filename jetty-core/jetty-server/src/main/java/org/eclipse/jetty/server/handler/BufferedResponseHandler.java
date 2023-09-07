@@ -189,7 +189,8 @@ public class BufferedResponseHandler extends ConditionalHandler.Abstract
                     ConnectionMetaData connectionMetaData = getRequest().getConnectionMetaData();
                     ByteBufferPool bufferPool = connectionMetaData.getConnector().getByteBufferPool();
                     boolean useOutputDirectByteBuffers = connectionMetaData.getHttpConfiguration().isUseOutputDirectByteBuffers();
-                    _bufferedContentSink = Content.Sink.asBuffered(getWrapped(), bufferPool, useOutputDirectByteBuffers, getBufferSize());
+                    int bufferSize = getBufferSize();
+                    _bufferedContentSink = Content.Sink.asBuffered(getWrapped(), bufferPool, useOutputDirectByteBuffers, bufferSize, bufferSize);
                 }
                 _firstWrite = false;
             }
