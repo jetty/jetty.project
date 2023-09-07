@@ -53,7 +53,8 @@ import org.slf4j.LoggerFactory;
 public class BufferedResponseHandler extends Handler.Wrapper
 {
     public static final String BUFFER_SIZE_ATTRIBUTE_NAME = BufferedResponseHandler.class.getName() + ".buffer-size";
-    public static final int DEFAULT_BUFFER_SIZE = 16384;
+
+    private static final int DEFAULT_BUFFER_SIZE = 16384;
 
     private static final Logger LOG = LoggerFactory.getLogger(BufferedResponseHandler.class);
 
