@@ -27,6 +27,7 @@ import org.eclipse.jetty.util.BufferUtil;
 import org.eclipse.jetty.util.Callback;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.Disabled;
 import org.junit.jupiter.api.Test;
 
 import static java.nio.charset.StandardCharsets.UTF_8;
@@ -207,7 +208,7 @@ public class BufferedContentSinkTest
                 if (chunk.isLast())
                     break;
             }
-            assertThat(loopCount, is((int)Math.ceil((input1.length + input2.length) / (double)maxBufferSize)));
+            assertThat(loopCount, is(2));
 
             BufferUtil.flipToFlush(accumulatingBuffer, 0);
             assertThat(accumulatingBuffer.remaining(), is(input1.length + input2.length));
@@ -225,10 +226,12 @@ public class BufferedContentSinkTest
     @Test
     public void testBufferGrowth()
     {
-        byte[] input1 = new byte[5000];
+        byte[] input1 = new byte[4000];
         Arrays.fill(input1, (byte)'1');
-        byte[] input2 = new byte[5000];
+        byte[] input2 = new byte[4000];
         Arrays.fill(input2, (byte)'2');
+        byte[] input3 = new byte[2000];
+        Arrays.fill(input3, (byte)'3');
 
         ByteBuffer accumulatingBuffer = BufferUtil.allocate(16384);
         BufferUtil.flipToFill(accumulatingBuffer);
@@ -238,7 +241,8 @@ public class BufferedContentSinkTest
             BufferedContentSink buffered = new BufferedContentSink(async, _bufferPool, true, 4096);
 
             buffered.write(false, ByteBuffer.wrap(input1), Callback.from(() ->
-                buffered.write(true, ByteBuffer.wrap(input2), Callback.NOOP)));
+                buffered.write(false, ByteBuffer.wrap(input2), Callback.from(() ->
+                    buffered.write(true, ByteBuffer.wrap(input3), Callback.NOOP)))));
 
             // We expect 3 buffer flushes: 4096b + 4096b + 1808b == 10_000b.
             Content.Chunk chunk = async.read();
@@ -263,7 +267,7 @@ public class BufferedContentSinkTest
             assertThat(chunk.isLast(), is(true));
 
             BufferUtil.flipToFlush(accumulatingBuffer, 0);
-            assertThat(accumulatingBuffer.remaining(), is(input1.length + input2.length));
+            assertThat(accumulatingBuffer.remaining(), is(input1.length + input2.length + input3.length));
             for (byte b : input1)
             {
                 assertThat(accumulatingBuffer.get(), is(b));
@@ -272,6 +276,41 @@ public class BufferedContentSinkTest
             {
                 assertThat(accumulatingBuffer.get(), is(b));
             }
+            for (byte b : input3)
+            {
+                assertThat(accumulatingBuffer.get(), is(b));
+            }
+        }
+    }
+
+    @Test
+    @Disabled
+    public void testByteByByteRecursion() throws Exception
+    {
+        try (AsyncContent async = new AsyncContent())
+        {
+            BufferedContentSink buffered = new BufferedContentSink(async, _bufferPool, true, 4096);
+            AtomicInteger count = new AtomicInteger(8192);
+            CountDownLatch complete = new CountDownLatch(1);
+            Callback callback = new Callback()
+            {
+                @Override
+                public void succeeded()
+                {
+                    int c = count.decrementAndGet();
+                    if (c > 0)
+                        buffered.write(false, ByteBuffer.wrap(new byte[1]), this);
+                    else if (c == 0)
+                        buffered.write(true, ByteBuffer.wrap(new byte[1]), this);
+                    else
+                        complete.countDown();
+                }
+            };
+
+            callback.succeeded();
+            assertTrue(complete.await(10, TimeUnit.SECONDS));
+            assertThat(count.get(), is(0));
+            // TODO more checks
         }
     }
 }
