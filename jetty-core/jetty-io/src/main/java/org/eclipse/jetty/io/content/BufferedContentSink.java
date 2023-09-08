@@ -61,8 +61,15 @@ public class BufferedContentSink implements Content.Sink
         }
         if (_firstWrite)
         {
-            _accumulator = new CountingByteBufferAccumulator(_bufferPool, _direct, _maxBufferSize);
             _firstWrite = false;
+            if (last)
+            {
+                // No need to buffer if this is both the first and the last write.
+                _lastWritten = true;
+                _delegate.write(true, byteBuffer, callback);
+                return;
+            }
+            _accumulator = new CountingByteBufferAccumulator(_bufferPool, _direct, _maxBufferSize);
         }
         _lastWritten |= last;
 
