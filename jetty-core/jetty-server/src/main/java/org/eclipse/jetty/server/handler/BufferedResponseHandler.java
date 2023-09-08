@@ -19,10 +19,9 @@ import org.eclipse.jetty.http.HttpHeader;
 import org.eclipse.jetty.http.HttpMethod;
 import org.eclipse.jetty.http.HttpStatus;
 import org.eclipse.jetty.http.MimeTypes;
-import org.eclipse.jetty.io.ByteBufferPool;
 import org.eclipse.jetty.io.Content;
-import org.eclipse.jetty.server.ConnectionMetaData;
 import org.eclipse.jetty.server.Handler;
+import org.eclipse.jetty.server.HttpConfiguration;
 import org.eclipse.jetty.server.Request;
 import org.eclipse.jetty.server.Response;
 import org.eclipse.jetty.util.Callback;
@@ -44,21 +43,22 @@ import org.slf4j.LoggerFactory;
  * decision to buffer or not.
  * </p>
  * <p>
- * Note also that there are no memory limits to the size of the buffer, thus
- * this handler can represent an unbounded memory commitment if the content
- * generated can also be unbounded.
+ * Note also that the size of the buffer can be controlled by setting the
+ * {@link #BUFFER_SIZE_ATTRIBUTE_NAME} request attribute to an integer.
+ * In the absence of such header, the {@link HttpConfiguration#getOutputBufferSize()}
+ * config setting is used.
  * </p>
  */
 public class BufferedResponseHandler extends ConditionalHandler.Abstract
 {
+    /**
+     * The name of the request attribute used to control the buffer size of a particular request.
+     */
     public static final String BUFFER_SIZE_ATTRIBUTE_NAME = BufferedResponseHandler.class.getName() + ".buffer-size";
-
-    private static final int DEFAULT_BUFFER_SIZE = 16384;
 
     private static final Logger LOG = LoggerFactory.getLogger(BufferedResponseHandler.class);
 
     private final IncludeExclude<String> _mimeTypes = new IncludeExclude<>();
-    private int bufferSize = DEFAULT_BUFFER_SIZE;
 
     public BufferedResponseHandler()
     {
@@ -97,16 +97,6 @@ public class BufferedResponseHandler extends ConditionalHandler.Abstract
         if (isStarted())
             throw new IllegalStateException(getState());
         _mimeTypes.exclude(mimeTypes);
-    }
-
-    public int getBufferSize()
-    {
-        return bufferSize;
-    }
-
-    public void setBufferSize(int bufferSize)
-    {
-        this.bufferSize = bufferSize;
     }
 
     protected boolean isMimeTypeBufferable(String mimetype)
@@ -186,10 +176,8 @@ public class BufferedResponseHandler extends ConditionalHandler.Abstract
             {
                 if (shouldBuffer(this, last))
                 {
-                    ConnectionMetaData connectionMetaData = getRequest().getConnectionMetaData();
-                    ByteBufferPool bufferPool = connectionMetaData.getConnector().getByteBufferPool();
-                    boolean useOutputDirectByteBuffers = connectionMetaData.getHttpConfiguration().isUseOutputDirectByteBuffers();
-                    _bufferedContentSink = Content.Sink.asBuffered(getWrapped(), bufferPool, useOutputDirectByteBuffers, getBufferSize());
+                    Request request = getRequest();
+                    _bufferedContentSink = Response.asBufferedSink(request, getWrapped(), getBufferSize(request), useDirectBuffers(request));
                 }
                 _firstWrite = false;
             }
@@ -198,10 +186,15 @@ public class BufferedResponseHandler extends ConditionalHandler.Abstract
             destSink.write(last, byteBuffer, callback);
         }
 
-        private int getBufferSize()
+        private static boolean useDirectBuffers(Request request)
         {
-            Object attribute = getRequest().getAttribute(BufferedResponseHandler.BUFFER_SIZE_ATTRIBUTE_NAME);
-            return attribute instanceof Integer ? (int)attribute : bufferSize;
+            return request.getConnectionMetaData().getHttpConfiguration().isUseOutputDirectByteBuffers();
+        }
+
+        private static int getBufferSize(Request request)
+        {
+            Object attribute = request.getAttribute(BufferedResponseHandler.BUFFER_SIZE_ATTRIBUTE_NAME);
+            return attribute instanceof Integer ? (int)attribute : request.getConnectionMetaData().getHttpConfiguration().getOutputBufferSize();
         }
 
         @Override

@@ -30,6 +30,7 @@ import org.eclipse.jetty.http.HttpMethod;
 import org.eclipse.jetty.http.HttpStatus;
 import org.eclipse.jetty.http.HttpVersion;
 import org.eclipse.jetty.http.Trailers;
+import org.eclipse.jetty.io.ByteBufferPool;
 import org.eclipse.jetty.io.Content;
 import org.eclipse.jetty.io.QuietException;
 import org.eclipse.jetty.server.handler.ErrorHandler;
@@ -528,6 +529,37 @@ public interface Response extends Content.Sink
         if (originalResponse instanceof HttpChannelState.ChannelResponse channelResponse)
             return channelResponse.getContentBytesWritten();
         return -1;
+    }
+
+    /**
+     * Wraps a {@link Response} as a {@link Content.Sink} that performs buffering. The necessary
+     * {@link ByteBufferPool} is taken from the request's connector while the size and direction of the buffer
+     * is read from the request's {@link HttpConfiguration}.
+     * @param request the request from which to get the buffering sink's settings
+     * @param response the response to wrap
+     * @return a buffering {@link Content.Sink}
+     */
+    static Content.Sink asBufferedSink(Request request, Response response)
+    {
+        ConnectionMetaData connectionMetaData = request.getConnectionMetaData();
+        int bufferSize = connectionMetaData.getHttpConfiguration().getOutputBufferSize();
+        boolean useOutputDirectByteBuffers = connectionMetaData.getHttpConfiguration().isUseOutputDirectByteBuffers();
+        return asBufferedSink(request, response, bufferSize, useOutputDirectByteBuffers);
+    }
+
+    /**
+     * Wraps a {@link Response} as a {@link Content.Sink} that performs buffering.
+     * @param request the request from which to get the connector's {@link ByteBufferPool} used to get the buffer
+     * @param response the response to wrap
+     * @param bufferSize the size of the buffer
+     * @param direct whether to use direct buffers or not
+     * @return a buffering {@link Content.Sink}
+     */
+    static Content.Sink asBufferedSink(Request request, Response response, int bufferSize, boolean direct)
+    {
+        ConnectionMetaData connectionMetaData = request.getConnectionMetaData();
+        ByteBufferPool bufferPool = connectionMetaData.getConnector().getByteBufferPool();
+        return Content.Sink.asBuffered(response, bufferPool, direct, bufferSize);
     }
 
     class Wrapper implements Response
