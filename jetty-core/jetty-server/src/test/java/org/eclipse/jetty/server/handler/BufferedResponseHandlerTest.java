@@ -87,6 +87,7 @@ public class BufferedResponseHandlerTest
     @Test
     public void testIncluded() throws Exception
     {
+        _test._bufferSize = 2048;
         String response = _local.getResponse("GET /ctx/include/path HTTP/1.1\r\nHost: localhost\r\n\r\n");
         assertThat(response, containsString(" 200 OK"));
         assertThat(response, containsString("Write: 0"));
@@ -125,6 +126,7 @@ public class BufferedResponseHandlerTest
     public void testFlushed() throws Exception
     {
         _test._flush = true;
+        _test._bufferSize = 2048;
         String response = _local.getResponse("GET /ctx/include/path HTTP/1.1\r\nHost: localhost\r\n\r\n");
         assertThat(response, containsString(" 200 OK"));
         assertThat(response, containsString("Write: 0"));
@@ -188,6 +190,7 @@ public class BufferedResponseHandlerTest
     public void testReset() throws Exception
     {
         _test._reset = true;
+        _test._bufferSize = 2048;
         String response = _local.getResponse("GET /ctx/include/path HTTP/1.1\r\nHost: localhost\r\n\r\n");
         assertThat(response, containsString(" 200 OK"));
         assertThat(response, containsString("Write: 0"));
