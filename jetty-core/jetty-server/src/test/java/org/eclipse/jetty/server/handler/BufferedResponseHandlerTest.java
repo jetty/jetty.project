@@ -46,7 +46,6 @@ public class BufferedResponseHandlerTest
         _server = new Server();
         HttpConfiguration config = new HttpConfiguration();
         config.setOutputBufferSize(1024);
-        config.setOutputAggregationSize(256);
         _local = new LocalConnector(_server, new HttpConnectionFactory(config));
         _server.addConnector(_local);
 
