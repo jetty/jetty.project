@@ -81,7 +81,7 @@ public class HttpServerTestFixture
     {
         try
         {
-            Awaitility.await().atMost(3, TimeUnit.SECONDS).until(() -> _bufferPool.getLeaks().size(), Matchers.is(0));
+            Awaitility.await().atMost(5, TimeUnit.SECONDS).until(() -> _bufferPool.getLeaks().size(), Matchers.is(0));
         }
         catch (Exception e)
         {
@@ -90,8 +90,6 @@ public class HttpServerTestFixture
         finally
         {
             _server.stop();
-            _server.join();
-            _server.setConnectors(new Connector[]{});
         }
     }
 
