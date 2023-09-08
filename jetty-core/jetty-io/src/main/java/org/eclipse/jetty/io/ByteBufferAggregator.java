@@ -116,14 +116,22 @@ public class ByteBufferAggregator
      * Takes the buffer out of the aggregator. Once the buffer has been taken out,
      * the aggregator resets itself and a new buffer will be acquired from the pool
      * during the next {@link #copyBuffer(ByteBuffer)} call.
-     * @return the aggregated buffer
+     * @return the aggregated buffer, or null if nothing has been buffered yet
      */
     public RetainableByteBuffer takeRetainableByteBuffer()
     {
+        if (_retainableByteBuffer == null)
+            return null;
         BufferUtil.flipToFlush(_retainableByteBuffer.getByteBuffer(), 0);
         RetainableByteBuffer result = _retainableByteBuffer;
         _retainableByteBuffer = null;
         _aggregatedSize = 0;
         return result;
+    }
+
+    @Override
+    public String toString()
+    {
+        return "%s@%x{a=%d c=%d b=%s}".formatted(getClass().getSimpleName(), hashCode(), _aggregatedSize, _currentSize, _retainableByteBuffer);
     }
 }
