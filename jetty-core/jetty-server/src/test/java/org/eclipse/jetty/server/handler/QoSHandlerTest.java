@@ -17,6 +17,7 @@ import java.time.Duration;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.concurrent.TimeUnit;
+import java.util.stream.IntStream;
 
 import org.eclipse.jetty.http.HttpStatus;
 import org.eclipse.jetty.http.HttpTester;
@@ -37,6 +38,7 @@ import static org.hamcrest.Matchers.greaterThan;
 import static org.hamcrest.Matchers.is;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertNull;
+import static org.junit.jupiter.api.Assertions.fail;
 
 public class QoSHandlerTest
 {
@@ -94,7 +96,7 @@ public class QoSHandlerTest
             LocalConnector.LocalEndPoint endPoint = connector.executeRequest("""
                 GET /%d HTTP/1.1
                 Host: localhost
-                
+                                
                 """.formatted(i));
             endPoints.add(endPoint);
             // Wait that the request arrives at the server.
@@ -103,10 +105,10 @@ public class QoSHandlerTest
 
         // Send one more request, it should be suspended by QoSHandler.
         LocalConnector.LocalEndPoint endPoint = connector.executeRequest("""
-                GET /%d HTTP/1.1
-                Host: localhost
-                
-                """.formatted(maxRequests));
+            GET /%d HTTP/1.1
+            Host: localhost
+                            
+            """.formatted(maxRequests));
         endPoints.add(endPoint);
 
         assertEquals(maxRequests, callbacks.size());
@@ -158,18 +160,18 @@ public class QoSHandlerTest
         start(qosHandler);
 
         LocalConnector.LocalEndPoint endPoint0 = connector.executeRequest("""
-                GET /0 HTTP/1.1
-                Host: localhost
-                
-                """);
+            GET /0 HTTP/1.1
+            Host: localhost
+                            
+            """);
         await().atMost(5, TimeUnit.SECONDS).until(callbacks::size, is(1));
 
         // This request is suspended by QoSHandler.
         LocalConnector.LocalEndPoint endPoint1 = connector.executeRequest("""
-                GET /1 HTTP/1.1
-                Host: localhost
-                
-                """);
+            GET /1 HTTP/1.1
+            Host: localhost
+                            
+            """);
         await().atMost(5, TimeUnit.SECONDS).until(qosHandler::getSuspendedRequests, is(1L));
 
         // Do not succeed the callback of the first request.
@@ -188,10 +190,10 @@ public class QoSHandlerTest
 
         // Verify that a third request goes through.
         LocalConnector.LocalEndPoint endPoint2 = connector.executeRequest("""
-                GET /2 HTTP/1.1
-                Host: localhost
-                
-                """);
+            GET /2 HTTP/1.1
+            Host: localhost
+                            
+            """);
         await().atMost(5, TimeUnit.SECONDS).until(callbacks::size, is(1));
         callbacks.remove(0).succeeded();
         text = endPoint2.getResponse(false, 5, TimeUnit.SECONDS);
@@ -212,7 +214,6 @@ public class QoSHandlerTest
         };
         qosHandler.setMaxRequests(1);
         qosHandler.setMaxSuspend(Duration.ofSeconds(5));
-        qosHandler.setMaxPriority(1);
         List<Callback> callbacks = new ArrayList<>();
         qosHandler.setHandler(new Handler.Abstract()
         {
@@ -228,28 +229,28 @@ public class QoSHandlerTest
 
         // Make a first request.
         LocalConnector.LocalEndPoint endPoint0 = connector.executeRequest("""
-                GET /0 HTTP/1.1
-                Host: localhost
-                
-                """);
+            GET /0 HTTP/1.1
+            Host: localhost
+                            
+            """);
         await().atMost(5, TimeUnit.SECONDS).until(callbacks::size, is(1));
 
         // Make a second request, will be suspended
         LocalConnector.LocalEndPoint endPoint1 = connector.executeRequest("""
-                GET /1 HTTP/1.1
-                Host: localhost
-                Priority: 0
-                
-                """);
+            GET /1 HTTP/1.1
+            Host: localhost
+            Priority: 0
+                            
+            """);
         await().atMost(5, TimeUnit.SECONDS).until(callbacks::size, is(1));
 
         // Make a third request, will be suspended.
         LocalConnector.LocalEndPoint endPoint2 = connector.executeRequest("""
-                GET /2 HTTP/1.1
-                Host: localhost
-                Priority: 1
-                
-                """);
+            GET /2 HTTP/1.1
+            Host: localhost
+            Priority: 1
+                            
+            """);
         await().atMost(5, TimeUnit.SECONDS).until(callbacks::size, is(1));
 
         // Complete the first request.
@@ -274,5 +275,46 @@ public class QoSHandlerTest
         text = endPoint1.getResponse(false, 5, TimeUnit.SECONDS);
         response = HttpTester.parseResponse(text);
         assertEquals(HttpStatus.OK_200, response.getStatus());
+    }
+
+    @Test
+    public void testConcurrentRequests() throws Exception
+    {
+        int delay = 100;
+        QoSHandler qosHandler = new QoSHandler();
+        qosHandler.setMaxRequests(2);
+        qosHandler.setHandler(new Handler.Abstract()
+        {
+            @Override
+            public boolean handle(Request request, Response response, Callback callback) throws Exception
+            {
+                Thread.sleep(delay);
+                callback.succeeded();
+                return true;
+            }
+        });
+        start(qosHandler);
+
+        int parallelism = 8;
+        int iterations = 4;
+        IntStream.range(0, parallelism).parallel().forEach(i ->
+            IntStream.range(0, iterations).forEach(j ->
+            {
+                try (LocalConnector.LocalEndPoint endPoint = connector.executeRequest("""
+                    GET /%d/%d HTTP/1.1
+                    Host: localhost
+                                    
+                    """.formatted(i, j)))
+                {
+                    String text = endPoint.getResponse(false, parallelism * iterations * delay * 5, TimeUnit.MILLISECONDS);
+                    HttpTester.Response response = HttpTester.parseResponse(text);
+                    assertEquals(HttpStatus.OK_200, response.getStatus());
+                }
+                catch (Exception x)
+                {
+                    fail(x);
+                }
+            })
+        );
     }
 }

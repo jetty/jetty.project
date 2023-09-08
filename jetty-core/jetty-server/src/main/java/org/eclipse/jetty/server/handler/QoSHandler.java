@@ -14,13 +14,15 @@
 package org.eclipse.jetty.server.handler;
 
 import java.time.Duration;
-import java.util.ArrayList;
+import java.util.Comparator;
 import java.util.Iterator;
-import java.util.List;
-import java.util.ListIterator;
+import java.util.Map;
 import java.util.Queue;
+import java.util.Set;
+import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ConcurrentLinkedQueue;
-import java.util.concurrent.Semaphore;
+import java.util.concurrent.ConcurrentSkipListSet;
+import java.util.concurrent.TimeoutException;
 
 import org.eclipse.jetty.http.HttpStatus;
 import org.eclipse.jetty.io.CyclicTimeouts;
@@ -28,7 +30,9 @@ import org.eclipse.jetty.server.Handler;
 import org.eclipse.jetty.server.HttpStream;
 import org.eclipse.jetty.server.Request;
 import org.eclipse.jetty.server.Response;
+import org.eclipse.jetty.util.AtomicBiInteger;
 import org.eclipse.jetty.util.Callback;
+import org.eclipse.jetty.util.IteratingCallback;
 import org.eclipse.jetty.util.NanoTime;
 import org.eclipse.jetty.util.ProcessorUtils;
 import org.eclipse.jetty.util.annotation.ManagedAttribute;
@@ -47,10 +51,10 @@ import org.slf4j.LoggerFactory;
  * If more requests are received, they are suspended (that is, not
  * forwarded to the child {@code Handler}) and stored in a priority
  * queue.
- * Priorities are determined via {@link #getPriority(Request)}, that
- * returns values between {@code 0} (lowest) and the value set via
- * {@link #setMaxPriority(int)} (highest).</p>
- * <p>This filter is ideal to avoid contending on slow/limited
+ * Priorities are determined via {@link #getPriority(Request)},
+ * that should return values between {@code 0} (the lowest priority)
+ * and positive numbers, typically in the range {@code 0-10}.</p>
+ * <p>This {@link Handler} is ideal to avoid contending on slow/limited
  * resources such as a JDBC connection pool, avoiding the situation
  * where all server threads blocked contending on the limited
  * resource, therefore leaving threads free to process other
@@ -68,12 +72,14 @@ public class QoSHandler extends Handler.Wrapper
 {
     private static final Logger LOG = LoggerFactory.getLogger(QoSHandler.class);
 
+    // hi=permits, lo=suspended.
+    private final AtomicBiInteger state = new AtomicBiInteger();
+    private final Forwarder forwarder = new Forwarder();
+    private final Map<Integer, Queue<Entry>> queues = new ConcurrentHashMap<>();
+    private final Set<Integer> priorities = new ConcurrentSkipListSet<>(Comparator.reverseOrder());
     private CyclicTimeouts<Entry> timeouts;
-    private List<Queue<Entry>> queues;
     private int maxRequests;
     private Duration maxSuspend = Duration.ZERO;
-    private int maxPriority;
-    private Semaphore semaphore;
 
     public QoSHandler()
     {
@@ -113,6 +119,8 @@ public class QoSHandler extends Handler.Wrapper
 
     /**
      * <p>Sets the max duration of time a request may stay suspended.</p>
+     * <p>Once the duration expires, the request is failed with an HTTP
+     * status of {@code 503 Service Unavailable}.</p>
      * <p>{@link Duration#ZERO} means that the request may stay suspended forever.</p>
      *
      * @param maxSuspend the max duration of time a request may stay suspended
@@ -124,37 +132,10 @@ public class QoSHandler extends Handler.Wrapper
         this.maxSuspend = maxSuspend;
     }
 
-    /**
-     * @return the max priority of suspended requests
-     */
-    @ManagedAttribute("The maximum priority of suspended requests")
-    public int getMaxPriority()
-    {
-        return maxPriority;
-    }
-
-    /**
-     * <p>Sets the max priority that suspended requests may have.</p>
-     * <p>The value must be {@code 0} or greater, and typically only
-     * few priorities are necessary, say from {@code 0} to {@code 4}
-     * for 5 different priorities.</p>
-     *
-     * @param maxPriority the max priority of suspended requests
-     * @see #getPriority(Request)
-     */
-    public void setMaxPriority(int maxPriority)
-    {
-        if (maxPriority < 0)
-            throw new IllegalArgumentException("invalid maxPriority");
-        this.maxPriority = maxPriority;
-    }
-
     @ManagedAttribute("The number of suspended requests")
     public long getSuspendedRequests()
     {
-        return queues.stream()
-            .mapToLong(Queue::size)
-            .sum();
+        return state.getLo();
     }
 
     @Override
@@ -173,18 +154,10 @@ public class QoSHandler extends Handler.Wrapper
                 maxRequests = ProcessorUtils.availableProcessors();
             setMaxRequests(maxRequests);
         }
-        semaphore = new Semaphore(maxRequests);
-
-        int maxPriority = getMaxPriority();
-        int capacity = maxPriority + 1;
-        queues = new ArrayList<>(capacity);
-        for (int i = 0; i < capacity; ++i)
-        {
-            queues.add(new ConcurrentLinkedQueue<>());
-        }
+        state.set(maxRequests, 0);
 
         if (LOG.isDebugEnabled())
-            LOG.debug("{} initialized maxRequests={} maxPriority={}", this, maxRequests, maxPriority);
+            LOG.debug("{} initialized maxRequests={}", this, maxRequests);
 
         super.doStart();
     }
@@ -202,82 +175,121 @@ public class QoSHandler extends Handler.Wrapper
     {
         if (LOG.isDebugEnabled())
             LOG.debug("{} handling {}", this, request);
-        return process(request, response, callback);
-    }
 
-    private boolean process(Request request, Response response, Callback callback) throws Exception
-    {
-        if (semaphore.tryAcquire())
+        while (true)
         {
-            if (LOG.isDebugEnabled())
-                LOG.debug("{} forwarding {}", this, request);
-            request.addHttpStreamWrapper(stream -> new Resumer(stream, request));
-            return super.handle(request, response, callback);
-        }
-        else
-        {
-            if (LOG.isDebugEnabled())
-                LOG.debug("{} suspending {}", this, request);
-            int priority = getPriority(request);
-            priority = Math.min(Math.max(0, priority), getMaxPriority());
-            Entry entry = new Entry(request, response, callback, priority);
-            queues.get(priority).offer(entry);
-            timeouts.schedule(entry);
-            return true;
+            long encoded = state.get();
+            int permits = AtomicBiInteger.getHi(encoded);
+            if (permits > 0)
+            {
+                if (!state.compareAndSet(encoded, permits - 1, 0))
+                    continue;
+                return forward(request, response, callback);
+            }
+            else
+            {
+                // Avoid this race condition:
+                // T1 in handle() may find no permits, so it will suspend the request.
+                // T2 in resume() finds no suspended requests and increments the permits.
+                // T1 suspends the request, which will remain suspended despite permits are available.
+                // Below, the suspended request count is only incremented if there are no permits.
+                // See correspondent code in resume().
+                int suspended = AtomicBiInteger.getLo(encoded);
+                if (!state.compareAndSet(encoded, 0, suspended + 1))
+                    continue;
+                suspend(request, response, callback);
+                return true;
+            }
         }
     }
 
     /**
-     * <p>Returns the priority of the given suspended request.</p>
+     * <p>Returns the priority of the given suspended request,
+     * a value greater than or equal to {@code 0}.</p>
+     * <p>Priority {@code 0} is the lowest priority.</p>
+     * <p>The set of returned priorities should be stable over
+     * time, typically constrained in the range {@code 0-10}.</p>
      *
      * @param request the suspended request to compute the priority for
-     * @return the priority of the given suspended request
-     * @see #setMaxPriority(int)
+     * @return the priority of the given suspended request, a value {@code >= 0}
      */
     protected int getPriority(Request request)
     {
         return 0;
     }
 
-    private void processAndComplete(Request request, Response response, Callback callback)
+    /**
+     * <p>Fails the given suspended request/response with the given error code and failure.</p>
+     * <p>This method is called only for suspended requests, in case of timeout while suspended,
+     * or in case of failure when trying to handle a resumed request.</p>
+     *
+     * @param request the request to fail
+     * @param response the response to fail
+     * @param callback the callback to complete
+     * @param status the failure status code
+     * @param failure the failure
+     */
+    protected void fail(Request request, Response response, Callback callback, int status, Throwable failure)
     {
-        try
+        Response.writeError(request, response, callback, status, null, failure);
+    }
+
+    private boolean forward(Request request, Response response, Callback callback) throws Exception
+    {
+        if (LOG.isDebugEnabled())
+            LOG.debug("{} forwarding {}", this, request);
+        request.addHttpStreamWrapper(stream -> new Resumer(stream, request));
+        return super.handle(request, response, callback);
+    }
+
+    private void suspend(Request request, Response response, Callback callback)
+    {
+        if (LOG.isDebugEnabled())
+            LOG.debug("{} suspending {}", this, request);
+        int priority = Math.max(0, getPriority(request));
+        Entry entry = new Entry(request, response, callback, priority);
+        queues.compute(priority, (k, v) ->
         {
-            boolean handled = process(request, response, callback);
-            if (LOG.isDebugEnabled())
-                LOG.debug("{} handled={} {}", this, handled, request);
-            if (!handled)
-                Response.writeError(request, response, callback, HttpStatus.NOT_FOUND_404);
-        }
-        catch (Throwable x)
-        {
-            if (LOG.isDebugEnabled())
-                LOG.debug("{} failed {}", this, request, x);
-            Response.writeError(request, response, callback, x);
-        }
+            if (v != null)
+                return v;
+            priorities.add(priority);
+            return new ConcurrentLinkedQueue<>();
+        }).offer(entry);
+        timeouts.schedule(entry);
     }
 
     private void resume()
     {
-        semaphore.release();
-        ListIterator<Queue<Entry>> iterator = queues.listIterator(queues.size());
-        while (iterator.hasPrevious())
+        // Only increment the permits if there are no suspended requests.
+        // In this way, new requests will not steal the permits,
+        // so that already suspended requests will not starve.
+        while (true)
         {
-            Queue<Entry> queue = iterator.previous();
-            Entry entry = queue.poll();
-            if (entry != null)
+            for (Integer priority : priorities)
+            {
+                Queue<Entry> queue = queues.get(priority);
+                Entry entry = queue.poll();
+                if (entry != null)
+                {
+                    if (LOG.isDebugEnabled())
+                        LOG.debug("{} resuming {}", this, entry.request);
+                    // Use an IteratingCallback to avoid StackOverflowError when resuming requests.
+                    forwarder.offer(entry);
+                    return;
+                }
+            }
+
+            // Here there are no suspended requests, so increment the permits.
+            // See correspondent code in handle().
+            long encoded = state.get();
+            int permits = AtomicBiInteger.getHi(encoded);
+            if (state.compareAndSet(encoded, permits + 1, 0))
             {
                 if (LOG.isDebugEnabled())
-                    LOG.debug("{} resuming {}", this, entry.request);
-                // Try again to acquire a semaphore pass.
-                // If it cannot be acquired, the request may
-                // be re-prioritized with a higher priority.
-                processAndComplete(entry.request, entry.response, entry.callback);
+                    LOG.debug("{} no suspended requests to resume", this);
                 return;
             }
         }
-        if (LOG.isDebugEnabled())
-            LOG.debug("{} no suspended requests to resume", this);
     }
 
     private class Entry implements CyclicTimeouts.Expirable
@@ -306,14 +318,75 @@ public class QoSHandler extends Handler.Wrapper
 
         private void expire()
         {
-            // The request timed out, therefore it never acquired a semaphore pass.
+            // The request timed out, therefore it never acquired a permit.
             boolean removed = queues.get(priority).remove(this);
             if (removed)
             {
-                if (LOG.isDebugEnabled())
-                    LOG.debug("{} timeout {}", QoSHandler.this, request);
-                Response.writeError(request, response, callback, HttpStatus.SERVICE_UNAVAILABLE_503);
+                while (true)
+                {
+                    int suspended = state.getLo();
+                    if (!state.compareAndSetLo(suspended, suspended - 1))
+                        continue;
+                    if (LOG.isDebugEnabled())
+                        LOG.debug("{} timeout {}", QoSHandler.this, request);
+                    fail(request, response, callback, HttpStatus.SERVICE_UNAVAILABLE_503, new TimeoutException());
+                }
             }
+        }
+
+        private void resume(Callback callback)
+        {
+            try
+            {
+                boolean handled = forward(request, response, callback);
+                if (LOG.isDebugEnabled())
+                    LOG.debug("{} handled={} {}", QoSHandler.this, handled, request);
+                if (!handled)
+                    fail(request, response, callback, HttpStatus.NOT_FOUND_404, null);
+            }
+            catch (Throwable x)
+            {
+                if (LOG.isDebugEnabled())
+                    LOG.debug("{} failed {}", QoSHandler.this, request, x);
+                fail(request, response, callback, HttpStatus.INTERNAL_SERVER_ERROR_500, x);
+            }
+        }
+    }
+
+    private class Forwarder extends IteratingCallback
+    {
+        private final Queue<Entry> queue = new ConcurrentLinkedQueue<>();
+        private Entry entry;
+
+        private void offer(Entry entry)
+        {
+            queue.offer(entry);
+            iterate();
+        }
+
+        @Override
+        protected Action process()
+        {
+            entry = queue.poll();
+            if (entry == null)
+                return Action.IDLE;
+
+            entry.resume(this);
+            return Action.SCHEDULED;
+        }
+
+        @Override
+        public void succeeded()
+        {
+            entry.callback.succeeded();
+            super.succeeded();
+        }
+
+        @Override
+        public void failed(Throwable x)
+        {
+            entry.callback.failed(x);
+            super.succeeded();
         }
     }
 
@@ -354,7 +427,7 @@ public class QoSHandler extends Handler.Wrapper
         @Override
         protected Iterator<Entry> iterator()
         {
-            return queues.stream()
+            return queues.values().stream()
                 .flatMap(Queue::stream)
                 .iterator();
         }
