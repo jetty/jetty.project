@@ -14,8 +14,6 @@
 package org.eclipse.jetty.server;
 
 import java.time.Instant;
-import java.util.Collections;
-import java.util.HashMap;
 import java.util.List;
 import java.util.Locale;
 import java.util.Map;
@@ -71,35 +69,6 @@ public final class HttpCookieUtils
             return cookie; //no default set
 
         return HttpCookie.from(cookie, HttpCookie.SAME_SITE_ATTRIBUTE, contextDefault.getAttributeValue());
-    }
-
-    /**
-     * Extract the bare minimum of info from a Set-Cookie header string.
-     *
-     * <p>
-     * Ideally this method should not be necessary, however as java.net.HttpCookie
-     * does not yet support generic attributes, we have to use it in a minimal
-     * fashion. When it supports attributes, we could look at reverting to a
-     * constructor on o.e.j.h.HttpCookie to take the set-cookie header string.
-     * </p>
-     *
-     * @param setCookieHeader the header as a string
-     * @return a map containing the name, value, domain, path. max-age of the set cookie header
-     */
-    public static Map<String, String> extractBasics(String setCookieHeader)
-    {
-        //Parse the bare minimum
-        List<java.net.HttpCookie> cookies = java.net.HttpCookie.parse(setCookieHeader);
-        if (cookies.size() != 1)
-            return Collections.emptyMap();
-        java.net.HttpCookie cookie = cookies.get(0);
-        Map<String, String> fields = new HashMap<>();
-        fields.put("name", cookie.getName());
-        fields.put("value", cookie.getValue());
-        fields.put("domain", cookie.getDomain());
-        fields.put("path",  cookie.getPath());
-        fields.put("max-age", Long.toString(cookie.getMaxAge()));
-        return fields;
     }
 
     /**

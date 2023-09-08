@@ -22,7 +22,6 @@ import java.nio.charset.Charset;
 import java.nio.charset.StandardCharsets;
 import java.security.Principal;
 import java.util.AbstractList;
-import java.util.ArrayList;
 import java.util.Collection;
 import java.util.Collections;
 import java.util.EnumSet;
@@ -69,6 +68,7 @@ import org.eclipse.jetty.http.HttpStatus;
 import org.eclipse.jetty.http.HttpURI;
 import org.eclipse.jetty.http.HttpVersion;
 import org.eclipse.jetty.http.MimeTypes;
+import org.eclipse.jetty.http.SetCookieParser;
 import org.eclipse.jetty.io.QuietException;
 import org.eclipse.jetty.io.RuntimeIOException;
 import org.eclipse.jetty.security.AuthenticationState;
@@ -98,6 +98,8 @@ import org.slf4j.LoggerFactory;
 public class ServletApiRequest implements HttpServletRequest
 {
     private static final Logger LOG = LoggerFactory.getLogger(ServletApiRequest.class);
+    private static final SetCookieParser SET_COOKIE_PARSER = SetCookieParser.newInstance();
+
     private final ServletContextRequest _servletContextRequest;
     private final ServletChannel _servletChannel;
     private AsyncContextState _async;
@@ -615,32 +617,30 @@ public class ServletApiRequest implements HttpServletRequest
             referrer += "?" + query;
         pushHeaders.put(HttpHeader.REFERER, referrer);
 
+        StringBuilder cookieBuilder = new StringBuilder();
+        String cookies = _servletContextRequest.getHeaders().get(HttpHeader.COOKIE);
+        if (cookies != null)
+            cookieBuilder.append(cookies);
         // Any Set-Cookie in the response should be present in the push.
-        HttpFields.Mutable responseHeaders = _servletChannel.getResponse().getHeaders();
-        List<String> setCookies = new ArrayList<>(responseHeaders.getValuesList(HttpHeader.SET_COOKIE));
-        setCookies.addAll(responseHeaders.getValuesList(HttpHeader.SET_COOKIE2));
-        String cookies = pushHeaders.get(HttpHeader.COOKIE);
-        if (!setCookies.isEmpty())
+        for (HttpField field : _servletContextRequest.getServletContextResponse().getHeaders())
         {
-            StringBuilder pushCookies = new StringBuilder();
-            if (cookies != null)
-                pushCookies.append(cookies);
-            for (String setCookie : setCookies)
+            HttpHeader header = field.getHeader();
+            if (header == HttpHeader.SET_COOKIE || header == HttpHeader.SET_COOKIE2)
             {
-                Map<String, String> cookieFields = HttpCookieUtils.extractBasics(setCookie);
-                String cookieName = cookieFields.get("name");
-                String cookieValue = cookieFields.get("value");
-                String cookieMaxAge = cookieFields.get("max-age");
-                long maxAge = cookieMaxAge != null ? Long.parseLong(cookieMaxAge) : -1;
-                if (maxAge > 0)
-                {
-                    if (pushCookies.length() > 0)
-                        pushCookies.append("; ");
-                    pushCookies.append(cookieName).append("=").append(cookieValue);
-                }
+                HttpCookie httpCookie;
+                if (field instanceof HttpCookieUtils.SetCookieHttpField set)
+                    httpCookie = set.getHttpCookie();
+                else
+                    httpCookie = SET_COOKIE_PARSER.parse(field.getValue());
+                if (httpCookie == null || httpCookie.isExpired())
+                    continue;
+                if (!cookieBuilder.isEmpty())
+                    cookieBuilder.append("; ");
+                cookieBuilder.append(httpCookie.getName()).append("=").append(httpCookie.getValue());
             }
-            pushHeaders.put(HttpHeader.COOKIE, pushCookies.toString());
         }
+        if (!cookieBuilder.isEmpty())
+            pushHeaders.put(HttpHeader.COOKIE, cookieBuilder.toString());
 
         String sessionId;
         HttpSession httpSession = getSession(false);

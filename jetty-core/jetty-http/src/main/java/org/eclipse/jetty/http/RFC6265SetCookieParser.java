@@ -13,6 +13,9 @@
 
 package org.eclipse.jetty.http;
 
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+
 /**
  * <p>A parser for {@code Set-Cookie} header values following
  * <a href="https://datatracker.ietf.org/doc/html/rfc6265">RFC 6265</a>.</p>
@@ -22,6 +25,8 @@ package org.eclipse.jetty.http;
  */
 public class RFC6265SetCookieParser implements SetCookieParser
 {
+    private static final Logger LOG = LoggerFactory.getLogger(RFC6265SetCookieParser.class);
+
     @Override
     public HttpCookie parse(String setCookieValue)
     {
@@ -45,12 +50,20 @@ public class RFC6265SetCookieParser implements SetCookieParser
                 {
                     HttpTokens.Token token = HttpTokens.getToken(ch);
                     if (token == null)
+                    {
+                        if (LOG.isDebugEnabled())
+                            LOG.debug("invalid character {} at index {} of {}", ch, i, setCookieValue);
                         return null;
+                    }
                     if (ch == '=')
                     {
                         name = setCookieValue.substring(offset, i).trim();
                         if (name.isEmpty())
+                        {
+                            if (LOG.isDebugEnabled())
+                                LOG.debug("invalid empty cookie name at index {} of {}", i, setCookieValue);
                             return null;
+                        }
                         offset = i + 1;
                         state = State.VALUE_START;
                     }
@@ -92,7 +105,11 @@ public class RFC6265SetCookieParser implements SetCookieParser
                     if (Character.isWhitespace(ch))
                         continue;
                     if (ch != ';')
+                    {
+                        if (LOG.isDebugEnabled())
+                            LOG.debug("invalid character {} at index {} of {}", ch, i, setCookieValue);
                         return null;
+                    }
                     offset = i + 1;
                     state = State.ATTRIBUTE_NAME;
                 }
@@ -100,7 +117,11 @@ public class RFC6265SetCookieParser implements SetCookieParser
                 {
                     HttpTokens.Token token = HttpTokens.getToken(ch);
                     if (token == null || token.getType() == HttpTokens.Type.CNTL)
+                    {
+                        if (LOG.isDebugEnabled())
+                            LOG.debug("invalid character {} at index {} of {}", ch, i, setCookieValue);
                         return null;
+                    }
                     if (ch == '=')
                     {
                         name = setCookieValue.substring(offset, i).trim();
@@ -175,6 +196,8 @@ public class RFC6265SetCookieParser implements SetCookieParser
         }
         catch (Throwable x)
         {
+            if (LOG.isDebugEnabled())
+                LOG.debug("could not set attribute {}={}", name, value, x);
             return false;
         }
     }

@@ -850,26 +850,19 @@ public interface HttpCookie
         return obj1.equalsIgnoreCase(obj2);
     }
 
-    /**
-     * <p>Formats this cookie into a string suitable to be used
-     * in {@code Cookie} or {@code Set-Cookie} headers.</p>
-     *
-     * @param httpCookie the cookie to format
-     * @return a header string representation of the cookie
-     */
     private static String asString(HttpCookie httpCookie)
     {
         StringBuilder builder = new StringBuilder();
         builder.append(httpCookie.getName()).append("=").append(httpCookie.getValue());
-        int version = httpCookie.getVersion();
-        if (version > 0)
-            builder.append(";Version=").append(version);
-        String domain = httpCookie.getDomain();
-        if (domain != null)
-            builder.append(";Domain=").append(domain);
-        String path = httpCookie.getPath();
-        if (path != null)
-            builder.append(";Path=").append(path);
+        Map<String, String> attributes = httpCookie.getAttributes();
+        if (!attributes.isEmpty())
+        {
+            for (Map.Entry<String, String> entry : attributes.entrySet())
+            {
+                builder.append("; ");
+                builder.append(entry.getKey()).append("=").append(entry.getValue());
+            }
+        }
         return builder.toString();
     }
 
