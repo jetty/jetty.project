@@ -244,9 +244,9 @@ public class QoSHandler extends Handler.Wrapper
 
     private void suspend(Request request, Response response, Callback callback)
     {
-        if (LOG.isDebugEnabled())
-            LOG.debug("{} suspending {}", this, request);
         int priority = Math.max(0, getPriority(request));
+        if (LOG.isDebugEnabled())
+            LOG.debug("{} suspending priority={} {}", this, priority, request);
         Entry entry = new Entry(request, response, callback, priority);
         queues.compute(priority, (k, v) ->
         {
@@ -330,6 +330,7 @@ public class QoSHandler extends Handler.Wrapper
                     if (LOG.isDebugEnabled())
                         LOG.debug("{} timeout {}", QoSHandler.this, request);
                     fail(request, response, callback, HttpStatus.SERVICE_UNAVAILABLE_503, new TimeoutException());
+                    return;
                 }
             }
         }
