@@ -1286,29 +1286,25 @@ public class HTTPServerDocs
         // Create and configure QoSHandler.
         QoSHandler qosHandler = new QoSHandler();
         // Set the max number of concurrent requests,
-        // for example in relation with the thread pool.
+        // for example in relation to the thread pool.
         qosHandler.setMaxRequests(maxThreads / 2);
         // A suspended request may stay suspended for at most 15 seconds.
         qosHandler.setMaxSuspend(Duration.ofSeconds(15));
         server.setHandler(qosHandler);
 
-        // Provide quality of service to the shop application.
+        // Provide quality of service to the shop
+        // application by wrapping ShopHandler with QoSHandler.
         qosHandler.setHandler(new ShopHandler());
 
         server.start();
         // end::simpleQoSHandler[]
     }
 
-    public void advancedQoSHandler() throws Exception
+    public void advancedQoSHandler()
     {
         // tag::advancedQoSHandler[]
         class PriorityQoSHandler extends QoSHandler
         {
-            public PriorityQoSHandler()
-            {
-                setMaxPriority(3);
-            }
-
             @Override
             protected int getPriority(Request request)
             {
