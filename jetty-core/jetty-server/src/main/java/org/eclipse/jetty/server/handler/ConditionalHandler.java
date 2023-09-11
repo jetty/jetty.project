@@ -13,6 +13,7 @@
 
 package org.eclipse.jetty.server.handler;
 
+import java.io.IOException;
 import java.lang.invoke.MethodHandle;
 import java.lang.invoke.MethodHandles;
 import java.lang.invoke.MethodType;
@@ -26,6 +27,7 @@ import java.util.Iterator;
 import java.util.Set;
 import java.util.function.Predicate;
 
+import org.eclipse.jetty.http.HttpStatus;
 import org.eclipse.jetty.http.pathmap.PathSpec;
 import org.eclipse.jetty.http.pathmap.PathSpecSet;
 import org.eclipse.jetty.server.Handler;
@@ -35,67 +37,127 @@ import org.eclipse.jetty.util.Callback;
 import org.eclipse.jetty.util.IncludeExclude;
 import org.eclipse.jetty.util.IncludeExcludeSet;
 import org.eclipse.jetty.util.InetAddressPattern;
+import org.eclipse.jetty.util.component.DumpableCollection;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import static java.lang.invoke.MethodType.methodType;
 
-public class ConditionalHandler4 extends Handler.Wrapper
+public class ConditionalHandler extends Handler.Wrapper
 {
-    private static final Logger LOG = LoggerFactory.getLogger(ConditionalHandler4.class);
+    private static final Logger LOG = LoggerFactory.getLogger(ConditionalHandler.class);
 
-    private final boolean _skip;
+    public enum NotMetAction
+    {
+        REJECT,     // The handle method will return false if the conditions are not met
+        FORBIDDEN,       // The request will be failed with a 403 response
+        SKIP_THIS,       // The doHandle method of this handler will be skipped the handleNext method called instead
+        SKIP_NEXT,  // The handle method of the next Handler will be skipped by calling the skipNext method
+    }
+
+    private final NotMetAction _notMetAction;
     private final IncludeExclude<String> _methods = new IncludeExclude<>();
     private final IncludeExclude<String> _paths = new IncludeExclude<>(PathSpecSet.class);
     private final IncludeExcludeSet<Predicate<Request>, Request> _predicates = new IncludeExcludeSet<>(PredicateSet.class);
     private MethodHandle _doHandle;
 
-    public ConditionalHandler4()
+    public ConditionalHandler()
     {
-        this(false);
+        this(NotMetAction.REJECT);
     }
 
-    public ConditionalHandler4(boolean skip)
+    public ConditionalHandler(Handler.Singleton nextHandlerWrapper)
     {
-        _skip = skip;
+        this(NotMetAction.SKIP_NEXT);
+        setHandler(nextHandlerWrapper);
+    }
+
+    public ConditionalHandler(NotMetAction notMetAction)
+    {
+        _notMetAction = notMetAction;
+    }
+
+    public void clear()
+    {
+        if (isStarted())
+            throw new IllegalStateException(getState());
+        _methods.clear();
+        _paths.clear();
+        _predicates.clear();
     }
 
     @Override
     protected void doStart() throws Exception
     {
+        Handler next = getHandler();
+
         MethodHandles.Lookup lookup = MethodHandles.lookup();
         MethodType handleType = methodType(boolean.class, Request.class, Response.class, Callback.class);
 
-        _doHandle = lookup.findVirtual(ConditionalHandler4.class, "doHandle", handleType);
-        MethodHandle nextHandle = !_skip || getHandler() == null
-            ? MethodHandles.dropArguments(MethodHandles.constant(boolean.class, false), 0, ConditionalHandler4.class, Request.class, Response.class, Callback.class)
-            : lookup.findVirtual(ConditionalHandler4.class, "nextHandle", handleType);
+        boolean doHandleExtended;
+        try
+        {
+            doHandleExtended = getClass().getDeclaredMethod("doHandle", Request.class, Response.class, Callback.class).getDeclaringClass() != ConditionalHandler.class;
+        }
+        catch (NoSuchMethodException e)
+        {
+            doHandleExtended = false;
+        }
+
+        _doHandle = doHandleExtended || next == null
+            ? lookup.findVirtual(ConditionalHandler.class, "doHandle", handleType).bindTo(this)
+            : lookup.findVirtual(next.getClass(), "handle", handleType).bindTo(next);
+
+        MethodHandle notMetHandle = switch (_notMetAction)
+        {
+            case REJECT -> MethodHandles.dropArguments(MethodHandles.constant(boolean.class, false), 0, Request.class, Response.class, Callback.class);
+            case FORBIDDEN -> lookup.findVirtual(ConditionalHandler.class, "forbidden", handleType).bindTo(this);
+            case SKIP_THIS ->
+            {
+                if (next != null)
+                {
+                    MethodHandle nextHandle = lookup.findVirtual(next.getClass(), "handle", handleType);
+                    yield nextHandle.bindTo(next);
+                }
+                throw new IllegalStateException("No next Handler");
+            }
+            case SKIP_NEXT ->
+            {
+                if (getHandler() instanceof Handler.Singleton nextWrapper && nextWrapper.getHandler() != null)
+                {
+                    Handler nextNextHandler = nextWrapper.getHandler();
+                    MethodHandle nextHandle = lookup.findVirtual(nextNextHandler.getClass(), "handle", handleType);
+                    yield nextHandle.bindTo(nextNextHandler);
+                }
+                throw new IllegalStateException("No next Handler.Wrapper next");
+            }
+        };
 
         if (!_methods.isEmpty())
         {
-            MethodHandle checkMethod = lookup.findVirtual(ConditionalHandler4.class, "checkMethod", methodType(boolean.class, Request.class));
+            MethodHandle checkMethod = lookup.findVirtual(ConditionalHandler.class, "checkMethod", methodType(boolean.class, Request.class)).bindTo(this);
             _doHandle = MethodHandles.guardWithTest(
-                MethodHandles.dropArguments(checkMethod, 2, Response.class, Callback.class),
+                MethodHandles.dropArguments(checkMethod, 1, Response.class, Callback.class),
                 _doHandle,
-                nextHandle);
+                notMetHandle);
         }
 
         if (!_paths.isEmpty())
         {
-            MethodHandle checkPath = lookup.findVirtual(ConditionalHandler4.class, "checkPath", methodType(boolean.class, Request.class));
+            MethodHandle checkPath = lookup.findVirtual(ConditionalHandler.class, "checkPath", methodType(boolean.class, Request.class)).bindTo(this);
             _doHandle = MethodHandles.guardWithTest(
-                MethodHandles.dropArguments(checkPath, 2, Response.class, Callback.class),
+                MethodHandles.dropArguments(checkPath, 1, Response.class, Callback.class),
                 _doHandle,
-                nextHandle);
+                notMetHandle);
         }
 
         if (!_predicates.isEmpty())
         {
-            MethodHandle checkPredicates = lookup.findVirtual(ConditionalHandler4.class, "checkPredicates", methodType(boolean.class, Request.class));
+            MethodHandle checkPredicates = lookup.findVirtual(ConditionalHandler.class, "checkPredicates", methodType(boolean.class, Request.class)).bindTo(this);
             _doHandle = MethodHandles.guardWithTest(
-                MethodHandles.dropArguments(checkPredicates, 2, Response.class, Callback.class),
+                MethodHandles.dropArguments(checkPredicates, 1, Response.class, Callback.class),
                 _doHandle,
-                nextHandle);
+                notMetHandle);
         }
 
         super.doStart();
@@ -153,7 +215,9 @@ public class ConditionalHandler4 extends Handler.Wrapper
      */
     public void include(String connectorName, String addressPattern, String method, PathSpec pathSpec)
     {
-        include(new PredicateTuple(connectorName, InetAddressPattern.from(addressPattern), method, pathSpec));
+        if (isStarted())
+            throw new IllegalStateException(getState());
+        include(new ConnectorAddrMethodPathPredicate(connectorName, InetAddressPattern.from(addressPattern), method, pathSpec));
     }
 
     /**
@@ -166,7 +230,9 @@ public class ConditionalHandler4 extends Handler.Wrapper
      */
     public void exclude(String connectorName, String addressPattern, String method, PathSpec pathSpec)
     {
-        exclude(new PredicateTuple(connectorName, InetAddressPattern.from(addressPattern), method, pathSpec));
+        if (isStarted())
+            throw new IllegalStateException(getState());
+        exclude(new ConnectorAddrMethodPathPredicate(connectorName, InetAddressPattern.from(addressPattern), method, pathSpec));
     }
 
     @SafeVarargs
@@ -205,7 +271,7 @@ public class ConditionalHandler4 extends Handler.Wrapper
     {
         try
         {
-            return (boolean)_doHandle.invokeExact(this, request, response, callback);
+            return (boolean)_doHandle.invokeExact(request, response, callback);
         }
         catch (Exception e)
         {
@@ -220,13 +286,27 @@ public class ConditionalHandler4 extends Handler.Wrapper
 
     protected boolean doHandle(Request request, Response response, Callback callback) throws Exception
     {
-        return nextHandle(request, response, callback);
-    }
-
-    private boolean nextHandle(Request request, Response response, Callback callback) throws Exception
-    {
         Handler next = getHandler();
         return next != null && next.handle(request, response, callback);
+    }
+
+    private boolean forbidden(Request request, Response response, Callback callback) throws Exception
+    {
+        Response.writeError(request, response, callback, HttpStatus.FORBIDDEN_403);
+        return true;
+    }
+
+    @Override
+    public void dump(Appendable out, String indent) throws IOException
+    {
+        dumpObjects(out, indent,
+            new DumpableCollection("included methods", _methods.getIncluded()),
+            new DumpableCollection("excluded methods", _methods.getExcluded()),
+            new DumpableCollection("included paths", _paths.getIncluded()),
+            new DumpableCollection("excluded paths", _paths.getExcluded()),
+            new DumpableCollection("included predicates", _predicates.getIncluded()),
+            new DumpableCollection("excluded predicates", _predicates.getExcluded())
+        );
     }
 
     public static class PredicateSet extends AbstractSet<Predicate<Request>> implements Set<Predicate<Request>>, Predicate<Request>
@@ -329,14 +409,14 @@ public class ConditionalHandler4 extends Handler.Wrapper
         }
     }
 
-    public static class PredicateTuple implements Predicate<Request>
+    public static class ConnectorAddrMethodPathPredicate implements Predicate<Request>
     {
         private final String connector;
         private final InetAddressPattern address;
         private final String method;
         private final PathSpec pathSpec;
 
-        public PredicateTuple(String connector, InetAddressPattern address, String method, PathSpec pathSpec)
+        public ConnectorAddrMethodPathPredicate(String connector, InetAddressPattern address, String method, PathSpec pathSpec)
         {
             this.connector = connector;
             this.address = address;

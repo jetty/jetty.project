@@ -13,19 +13,16 @@
 
 package org.eclipse.jetty.server.handler;
 
-import java.io.IOException;
+import java.util.function.Predicate;
 
 import org.eclipse.jetty.http.pathmap.PathSpec;
+import org.eclipse.jetty.http.pathmap.ServletPathSpec;
 import org.eclipse.jetty.server.Handler;
 import org.eclipse.jetty.server.Request;
-import org.eclipse.jetty.server.Response;
-import org.eclipse.jetty.util.Callback;
 import org.eclipse.jetty.util.IncludeExcludeSet;
 import org.eclipse.jetty.util.InetAddressPattern;
 import org.eclipse.jetty.util.InetAddressSet;
-import org.eclipse.jetty.util.component.DumpableCollection;
-
-import static org.eclipse.jetty.server.handler.InetAccessSet.PatternTuple;
+import org.eclipse.jetty.util.StringUtil;
 
 /**
  * InetAddress Access Handler
@@ -36,12 +33,8 @@ import static org.eclipse.jetty.server.handler.InetAccessSet.PatternTuple;
  * the forwarded for headers, as this cannot be as easily forged.
  * </p>
  */
-public class InetAccessHandler extends Handler.Wrapper
+public class InetAccessHandler extends ConditionalHandler
 {
-    // TODO replace this handler with a general conditional handler wrapper.
-
-    private final IncludeExcludeSet<PatternTuple, Request> _set = new IncludeExcludeSet<>(InetAccessSet.class);
-
     public InetAccessHandler()
     {
         this(null);
@@ -49,16 +42,8 @@ public class InetAccessHandler extends Handler.Wrapper
 
     public InetAccessHandler(Handler handler)
     {
-        super(handler);
-    }
-
-    /**
-     * Clears all the includes, excludes, included connector names and excluded
-     * connector names.
-     */
-    public void clear()
-    {
-        _set.clear();
+        super(NotMetAction.FORBIDDEN);
+        setHandler(handler);
     }
 
     /**
@@ -82,7 +67,7 @@ public class InetAccessHandler extends Handler.Wrapper
      */
     public void include(String pattern)
     {
-        _set.include(PatternTuple.from(pattern));
+        include(predicateFrom(pattern));
     }
 
     /**
@@ -112,19 +97,6 @@ public class InetAccessHandler extends Handler.Wrapper
     }
 
     /**
-     * Includes an InetAccess entry.
-     *
-     * @param connectorName optional name of a connector to include or {@code null}.
-     * @param addressPattern optional InetAddress pattern to include or {@code null}.
-     * @param method optional method to include or {@code null}.
-     * @param pathSpec optional pathSpec to include or {@code null}.
-     */
-    public void include(String connectorName, String addressPattern, String method, PathSpec pathSpec)
-    {
-        _set.include(new PatternTuple(connectorName, InetAddressPattern.from(addressPattern), method, pathSpec));
-    }
-
-    /**
      * Excludes an InetAccess entry pattern with an optional connector name, address and URI mapping.
      *
      * <p>The connector name is separated from the InetAddress pattern with an '@' character,
@@ -148,7 +120,7 @@ public class InetAccessHandler extends Handler.Wrapper
      */
     public void exclude(String pattern)
     {
-        _set.exclude(PatternTuple.from(pattern));
+        exclude(predicateFrom(pattern));
     }
 
     /**
@@ -177,43 +149,40 @@ public class InetAccessHandler extends Handler.Wrapper
         exclude(connectorName, addressPattern, null, pathSpec);
     }
 
-    /**
-     * Excludes an InetAccess entry.
-     *
-     * @param connectorName optional name of a connector to exclude or {@code null}.
-     * @param addressPattern optional InetAddress pattern to exclude or {@code null}.
-     * @param method optional method to exclude or {@code null}.
-     * @param pathSpec optional pathSpec to exclude or {@code null}.
-     */
-    public void exclude(String connectorName, String addressPattern, String method, PathSpec pathSpec)
+    public static Predicate<Request> predicateFrom(String pattern)
     {
-        _set.exclude(new PatternTuple(connectorName, InetAddressPattern.from(addressPattern), method, pathSpec));
+        String path = null;
+        int pathIndex = pattern.indexOf('|');
+        if (pathIndex >= 0)
+        {
+            path = pattern.substring(pathIndex + 1);
+            pattern = pattern.substring(0, pathIndex);
+        }
+
+        String method = null;
+        int methodIndex = pattern.indexOf('>');
+        if (methodIndex >= 0)
+        {
+            method = pattern.substring(methodIndex + 1);
+            pattern = pattern.substring(0, methodIndex);
+        }
+
+        String connector = null;
+        int connectorIndex = pattern.indexOf('@');
+        if (connectorIndex >= 0)
+            connector = pattern.substring(0, connectorIndex);
+
+        String addr = null;
+        int addrStart = (connectorIndex < 0) ? 0 : connectorIndex + 1;
+        int addrEnd = (pathIndex < 0) ? pattern.length() : pathIndex;
+        if (addrStart != addrEnd)
+            addr = pattern.substring(addrStart, addrEnd);
+
+        return new ConnectorAddrMethodPathPredicate(
+            connector,
+            InetAddressPattern.from(addr),
+            method,
+            StringUtil.isEmpty(path) ? null : new ServletPathSpec(path));
     }
 
-    @Override
-    public boolean handle(Request request, Response response, Callback callback) throws Exception
-    {
-        if (!isAllowed(request))
-            return false;
-        return super.handle(request, response, callback);
-    }
-
-    /**
-     * Checks if specified address and request are allowed by current InetAddress rules.
-     *
-     * @param request the HttpServletRequest request to check
-     * @return true if inetAddress and request are allowed
-     */
-    protected boolean isAllowed(Request request)
-    {
-        return _set.test(request);
-    }
-
-    @Override
-    public void dump(Appendable out, String indent) throws IOException
-    {
-        dumpObjects(out, indent,
-            new DumpableCollection("included", _set.getIncluded()),
-            new DumpableCollection("excluded", _set.getExcluded()));
-    }
 }
