@@ -131,7 +131,14 @@ public class BufferedContentSink implements Content.Sink
         boolean complete = last && !currentBuffer.hasRemaining();
         if (LOG.isDebugEnabled())
             LOG.debug("aggregated current buffer, write={}, complete={}, bytes left={}, aggregator={}", write, complete, currentBuffer.remaining(), _aggregator);
-        if (write)
+        if (complete)
+        {
+            RetainableByteBuffer aggregatedBuffer = _aggregator.takeRetainableByteBuffer();
+            if (LOG.isDebugEnabled())
+                LOG.debug("complete; writing aggregated buffer: {} bytes", aggregatedBuffer.remaining());
+            _delegate.write(true, aggregatedBuffer.getByteBuffer(), Callback.from(callback, aggregatedBuffer::release));
+        }
+        else if (write)
         {
             RetainableByteBuffer aggregatedBuffer = _aggregator.takeRetainableByteBuffer();
             if (LOG.isDebugEnabled())
@@ -145,13 +152,6 @@ public class BufferedContentSink implements Content.Sink
                 else
                     aggregateAndWrite(false, currentBuffer, callback);
             }));
-        }
-        else if (complete)
-        {
-            RetainableByteBuffer aggregatedBuffer = _aggregator.takeRetainableByteBuffer();
-            if (LOG.isDebugEnabled())
-                LOG.debug("complete; writing aggregated buffer: {} bytes", aggregatedBuffer.remaining());
-            _delegate.write(true, aggregatedBuffer.getByteBuffer(), Callback.from(callback, aggregatedBuffer::release));
         }
         else
         {
