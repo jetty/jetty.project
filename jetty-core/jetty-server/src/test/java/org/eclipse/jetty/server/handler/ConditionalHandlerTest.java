@@ -54,8 +54,8 @@ public class ConditionalHandlerTest
     @Test
     public void testMethodOnly() throws Exception
     {
-        _testHandler.getMethods().include("GET");
-        _testHandler.getMethods().exclude("POST");
+        _testHandler.includeMethod("GET");
+        _testHandler.excludeMethod("POST");
         _server.start();
         String response = _connector.getResponse("GET / HTTP/1.0\n\n");
         assertThat(response, containsString("Test: applied"));
@@ -67,8 +67,8 @@ public class ConditionalHandlerTest
     @Test
     public void testPathOnly() throws Exception
     {
-        _testHandler.getPaths().include("/foo/*");
-        _testHandler.getPaths().exclude("/foo/bar");
+        _testHandler.includePath("/foo/*");
+        _testHandler.excludePath("/foo/bar");
         _server.start();
         String response = _connector.getResponse("GET /foo HTTP/1.0\n\n");
         assertThat(response, containsString("Test: applied"));
@@ -80,10 +80,10 @@ public class ConditionalHandlerTest
     @Test
     public void testMethodPath() throws Exception
     {
-        _testHandler.getMethods().include("GET");
-        _testHandler.getMethods().exclude("POST");
-        _testHandler.getPaths().include("/foo/*");
-        _testHandler.getPaths().exclude("/foo/bar");
+        _testHandler.includeMethod("GET");
+        _testHandler.excludeMethod("POST");
+        _testHandler.includePath("/foo/*");
+        _testHandler.excludePath("/foo/bar");
         _server.start();
         String response = _connector.getResponse("GET /foo HTTP/1.0\n\n");
         assertThat(response, containsString("Test: applied"));

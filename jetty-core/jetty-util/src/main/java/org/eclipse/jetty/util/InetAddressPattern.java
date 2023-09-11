@@ -80,6 +80,18 @@ public abstract class InetAddressPattern implements Predicate<InetAddress>
     }
 
     @Override
+    public int hashCode()
+    {
+        return _pattern.hashCode();
+    }
+
+    @Override
+    public boolean equals(Object obj)
+    {
+        return obj instanceof InetAddressPattern inetAddressPattern && _pattern.equals(inetAddressPattern._pattern);
+    }
+
+    @Override
     public String toString()
     {
         return _pattern;

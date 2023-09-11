@@ -77,7 +77,6 @@ public class InetAccessSet extends AbstractSet<InetAccessSet.PatternTuple> imple
 
         public static PatternTuple from(String pattern)
         {
-
             String path = null;
             int pathIndex = pattern.indexOf('|');
             if (pathIndex >= 0)
