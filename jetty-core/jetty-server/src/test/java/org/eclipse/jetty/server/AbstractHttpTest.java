@@ -60,16 +60,10 @@ public abstract class AbstractHttpTest
     @AfterEach
     public void tearDown() throws Exception
     {
-        try
-        {
-            Set<ArrayByteBufferPool.Tracking.Buffer> serverLeaks = bufferPool.getLeaks();
-            assertEquals(0, serverLeaks.size(), bufferPool.dumpLeaks());
-        }
-        finally
-        {
-            server.stop();
-            stacklessChannelLogging.close();
-        }
+        Set<ArrayByteBufferPool.Tracking.Buffer> serverLeaks = bufferPool.getLeaks();
+        server.stop();
+        stacklessChannelLogging.close();
+        assertEquals(0, serverLeaks.size(), bufferPool.dumpLeaks());
     }
 
     protected HttpTester.Response executeRequest(HttpVersion httpVersion) throws URISyntaxException, IOException
