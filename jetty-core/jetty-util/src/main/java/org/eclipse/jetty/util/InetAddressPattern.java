@@ -162,6 +162,8 @@ public abstract class InetAddressPattern implements Predicate<InetAddress>
         @Override
         public boolean test(InetAddress address)
         {
+            if (address == null)
+                return false;
             byte[] raw = address.getAddress();
             if (raw.length != _min.length)
                 return false;
@@ -226,6 +228,8 @@ public abstract class InetAddressPattern implements Predicate<InetAddress>
         @Override
         public boolean test(InetAddress address)
         {
+            if (address == null)
+                return false;
             byte[] raw = address.getAddress();
             if (raw.length != _raw.length)
                 return false;

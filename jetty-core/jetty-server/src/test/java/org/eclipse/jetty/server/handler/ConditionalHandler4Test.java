@@ -13,6 +13,8 @@
 
 package org.eclipse.jetty.server.handler;
 
+import org.eclipse.jetty.server.ForwardedRequestCustomizer;
+import org.eclipse.jetty.server.HttpConnectionFactory;
 import org.eclipse.jetty.server.LocalConnector;
 import org.eclipse.jetty.server.Request;
 import org.eclipse.jetty.server.Response;
@@ -26,7 +28,7 @@ import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.Matchers.containsString;
 import static org.hamcrest.Matchers.not;
 
-public class ConditionalHandlerTest
+public class ConditionalHandler4Test
 {
     private Server _server;
     private LocalConnector _connector;
@@ -38,6 +40,7 @@ public class ConditionalHandlerTest
     {
         _server = new Server();
         _connector = new LocalConnector(_server);
+        _connector.getConnectionFactory(HttpConnectionFactory.class).getHttpConfiguration().addCustomizer(new ForwardedRequestCustomizer());
         _server.addConnector(_connector);
         _testHandler = new TestHandler();
         _helloHandler = new HelloHandler();
@@ -52,28 +55,54 @@ public class ConditionalHandlerTest
     }
 
     @Test
-    public void testMethodOnly() throws Exception
+    public void testMethod() throws Exception
     {
         _testHandler.includeMethod("GET");
         _testHandler.excludeMethod("POST");
         _server.start();
         String response = _connector.getResponse("GET / HTTP/1.0\n\n");
+        assertThat(response, containsString("200 OK"));
         assertThat(response, containsString("Test: applied"));
 
         response = _connector.getResponse("POST /foo HTTP/1.0\n\n");
+        assertThat(response, containsString("200 OK"));
         assertThat(response, not(containsString("Test: applied")));
     }
 
     @Test
-    public void testPathOnly() throws Exception
+    public void testPath() throws Exception
     {
         _testHandler.includePath("/foo/*");
         _testHandler.excludePath("/foo/bar");
         _server.start();
         String response = _connector.getResponse("GET /foo HTTP/1.0\n\n");
+        assertThat(response, containsString("200 OK"));
         assertThat(response, containsString("Test: applied"));
 
         response = _connector.getResponse("POST /foo/bar HTTP/1.0\n\n");
+        assertThat(response, containsString("200 OK"));
+        assertThat(response, not(containsString("Test: applied")));
+    }
+
+    @Test
+    public void testInet() throws Exception
+    {
+        _testHandler.includeInetAddress("192.168.128.0-192.168.128.128");
+        _testHandler.excludeInetAddress("192.168.128.30-192.168.128.39");
+        _server.start();
+        String response = _connector.getResponse("""
+            GET /foo HTTP/1.0
+            Forwarded: for=192.168.128.1
+            
+            """);
+        assertThat(response, containsString("200 OK"));
+        assertThat(response, containsString("Test: applied"));
+        response = _connector.getResponse("""
+            GET /foo HTTP/1.0
+            Forwarded: for=192.168.128.31
+            
+            """);
+        assertThat(response, containsString("200 OK"));
         assertThat(response, not(containsString("Test: applied")));
     }
 
@@ -86,20 +115,29 @@ public class ConditionalHandlerTest
         _testHandler.excludePath("/foo/bar");
         _server.start();
         String response = _connector.getResponse("GET /foo HTTP/1.0\n\n");
+        assertThat(response, containsString("200 OK"));
         assertThat(response, containsString("Test: applied"));
 
         response = _connector.getResponse("GET /foo/bar HTTP/1.0\n\n");
+        assertThat(response, containsString("200 OK"));
         assertThat(response, not(containsString("Test: applied")));
 
         response = _connector.getResponse("POST /foo HTTP/1.0\n\n");
+        assertThat(response, containsString("200 OK"));
         assertThat(response, not(containsString("Test: applied")));
 
         response = _connector.getResponse("POST /foo/bar HTTP/1.0\n\n");
+        assertThat(response, containsString("200 OK"));
         assertThat(response, not(containsString("Test: applied")));
     }
 
     public static class TestHandler extends ConditionalHandler4
     {
+        TestHandler()
+        {
+            super(true);
+        }
+
         @Override
         public boolean doHandle(Request request, Response response, Callback callback) throws Exception
         {
