@@ -65,10 +65,10 @@ public class QoSHandlerTest
     {
         QoSHandler qosHandler = new QoSHandler();
         // Use heuristics for maxRequests.
-        qosHandler.setMaxRequests(0);
+        qosHandler.setMaxRequestCount(0);
         start(qosHandler);
 
-        assertThat(qosHandler.getMaxRequests(), greaterThan(0));
+        assertThat(qosHandler.getMaxRequestCount(), greaterThan(0));
     }
 
     @Test
@@ -76,7 +76,7 @@ public class QoSHandlerTest
     {
         int maxRequests = 2;
         QoSHandler qosHandler = new QoSHandler();
-        qosHandler.setMaxRequests(maxRequests);
+        qosHandler.setMaxRequestCount(maxRequests);
         List<Callback> callbacks = new ArrayList<>();
         qosHandler.setHandler(new Handler.Abstract()
         {
@@ -112,7 +112,7 @@ public class QoSHandlerTest
         endPoints.add(endPoint);
 
         assertEquals(maxRequests, callbacks.size());
-        await().atMost(5, TimeUnit.SECONDS).until(qosHandler::getSuspendedRequests, is(1L));
+        await().atMost(5, TimeUnit.SECONDS).until(qosHandler::getSuspendedRequestCount, is(1L));
 
         // Finish and verify the waiting requests.
         List<Callback> copy = List.copyOf(callbacks);
@@ -127,7 +127,7 @@ public class QoSHandlerTest
         }
 
         // The suspended request should have been resumed.
-        await().atMost(5, TimeUnit.SECONDS).until(qosHandler::getSuspendedRequests, is(0L));
+        await().atMost(5, TimeUnit.SECONDS).until(qosHandler::getSuspendedRequestCount, is(0L));
         await().atMost(5, TimeUnit.SECONDS).until(callbacks::size, is(1));
 
         // Finish the resumed request that is now waiting.
@@ -143,7 +143,7 @@ public class QoSHandlerTest
     {
         int maxRequests = 1;
         QoSHandler qosHandler = new QoSHandler();
-        qosHandler.setMaxRequests(maxRequests);
+        qosHandler.setMaxRequestCount(maxRequests);
         long timeout = 1000;
         qosHandler.setMaxSuspend(Duration.ofMillis(timeout));
         List<Callback> callbacks = new ArrayList<>();
@@ -172,11 +172,11 @@ public class QoSHandlerTest
             Host: localhost
                             
             """);
-        await().atMost(5, TimeUnit.SECONDS).until(qosHandler::getSuspendedRequests, is(1L));
+        await().atMost(5, TimeUnit.SECONDS).until(qosHandler::getSuspendedRequestCount, is(1L));
 
         // Do not succeed the callback of the first request.
         // Wait for the second request to time out.
-        await().atMost(2 * timeout, TimeUnit.MILLISECONDS).until(qosHandler::getSuspendedRequests, is(0L));
+        await().atMost(2 * timeout, TimeUnit.MILLISECONDS).until(qosHandler::getSuspendedRequestCount, is(0L));
 
         String text = endPoint1.getResponse(false, 5, TimeUnit.SECONDS);
         HttpTester.Response response = HttpTester.parseResponse(text);
@@ -212,7 +212,7 @@ public class QoSHandlerTest
                 return (int)request.getHeaders().getLongField("Priority");
             }
         };
-        qosHandler.setMaxRequests(1);
+        qosHandler.setMaxRequestCount(1);
         qosHandler.setMaxSuspend(Duration.ofSeconds(5));
         List<Callback> callbacks = new ArrayList<>();
         qosHandler.setHandler(new Handler.Abstract()
@@ -282,7 +282,7 @@ public class QoSHandlerTest
     {
         int delay = 100;
         QoSHandler qosHandler = new QoSHandler();
-        qosHandler.setMaxRequests(2);
+        qosHandler.setMaxRequestCount(2);
         qosHandler.setHandler(new Handler.Abstract()
         {
             @Override

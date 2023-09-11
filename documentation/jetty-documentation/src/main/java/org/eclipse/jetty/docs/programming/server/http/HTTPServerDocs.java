@@ -1287,7 +1287,7 @@ public class HTTPServerDocs
         QoSHandler qosHandler = new QoSHandler();
         // Set the max number of concurrent requests,
         // for example in relation to the thread pool.
-        qosHandler.setMaxRequests(maxThreads / 2);
+        qosHandler.setMaxRequestCount(maxThreads / 2);
         // A suspended request may stay suspended for at most 15 seconds.
         qosHandler.setMaxSuspend(Duration.ofSeconds(15));
         server.setHandler(qosHandler);
