@@ -13,7 +13,7 @@
 
 package org.eclipse.jetty.server.handler;
 
-import java.net.InetAddress;
+import java.net.InetSocketAddress;
 import java.util.AbstractSet;
 import java.util.ArrayList;
 import java.util.Iterator;
@@ -22,10 +22,11 @@ import java.util.function.Predicate;
 
 import org.eclipse.jetty.http.pathmap.PathSpec;
 import org.eclipse.jetty.http.pathmap.ServletPathSpec;
+import org.eclipse.jetty.server.Request;
 import org.eclipse.jetty.util.InetAddressPattern;
 import org.eclipse.jetty.util.StringUtil;
 
-public class InetAccessSet extends AbstractSet<InetAccessSet.PatternTuple> implements Set<InetAccessSet.PatternTuple>, Predicate<InetAccessSet.AccessTuple>
+public class InetAccessSet extends AbstractSet<InetAccessSet.PatternTuple> implements Set<InetAccessSet.PatternTuple>, Predicate<Request>
 {
     private final ArrayList<PatternTuple> tuples = new ArrayList<>();
 
@@ -54,7 +55,7 @@ public class InetAccessSet extends AbstractSet<InetAccessSet.PatternTuple> imple
     }
 
     @Override
-    public boolean test(AccessTuple entry)
+    public boolean test(Request entry)
     {
         if (entry == null)
             return false;
@@ -67,10 +68,11 @@ public class InetAccessSet extends AbstractSet<InetAccessSet.PatternTuple> imple
         return false;
     }
 
-    public static class PatternTuple implements Predicate<AccessTuple>
+    public static class PatternTuple implements Predicate<Request>
     {
         private final String connector;
         private final InetAddressPattern address;
+        private final String method;
         private final PathSpec pathSpec;
 
         public static PatternTuple from(String pattern)
@@ -79,7 +81,18 @@ public class InetAccessSet extends AbstractSet<InetAccessSet.PatternTuple> imple
             String path = null;
             int pathIndex = pattern.indexOf('|');
             if (pathIndex >= 0)
+            {
                 path = pattern.substring(pathIndex + 1);
+                pattern = pattern.substring(0, pathIndex);
+            }
+
+            String method = null;
+            int methodIndex = pattern.indexOf('>');
+            if (methodIndex >= 0)
+            {
+                method = pattern.substring(methodIndex + 1);
+                pattern = pattern.substring(0, methodIndex);
+            }
 
             String connector = null;
             int connectorIndex = pattern.indexOf('@');
@@ -92,65 +105,45 @@ public class InetAccessSet extends AbstractSet<InetAccessSet.PatternTuple> imple
             if (addrStart != addrEnd)
                 addr = pattern.substring(addrStart, addrEnd);
 
-            return new PatternTuple(connector, InetAddressPattern.from(addr),
+            return new PatternTuple(
+                connector,
+                InetAddressPattern.from(addr),
+                method,
                 StringUtil.isEmpty(path) ? null : new ServletPathSpec(path));
         }
 
-        public PatternTuple(String connector, InetAddressPattern address, PathSpec pathSpec)
+        public PatternTuple(String connector, InetAddressPattern address, String method, PathSpec pathSpec)
         {
             this.connector = connector;
             this.address = address;
+            this.method = method;
             this.pathSpec = pathSpec;
         }
 
         @Override
-        public boolean test(AccessTuple entry)
+        public boolean test(Request request)
         {
             // Match for connector.
-            if ((connector != null) && !connector.equals(entry.getConnector()))
+            if ((connector != null) && !connector.equals(request.getConnectionMetaData().getConnector().getName()))
+                return false;
+
+            // If we have a method we must match
+            if ((method != null) && !method.equals(request.getMethod()))
                 return false;
 
             // If we have a path we must be at this path to match for an address.
-            if ((pathSpec != null) && !pathSpec.matches(entry.getPath()))
+            if ((pathSpec != null) && !pathSpec.matches(Request.getPathInContext(request)))
                 return false;
 
             // Match for InetAddress.
-            return (address == null) || address.test(entry.getAddress());
+            return address == null ||
+                request.getConnectionMetaData().getRemoteSocketAddress() instanceof InetSocketAddress inet && address.test(inet.getAddress());
         }
 
         @Override
         public String toString()
         {
-            return String.format("%s@%x{connector=%s, addressPattern=%s, pathSpec=%s}", getClass().getSimpleName(), hashCode(), connector, address, pathSpec);
-        }
-    }
-
-    public static class AccessTuple
-    {
-        private final String connector;
-        private final InetAddress address;
-        private final String path;
-
-        public AccessTuple(String connector, InetAddress address, String path)
-        {
-            this.connector = connector;
-            this.address = address;
-            this.path = path;
-        }
-
-        public String getConnector()
-        {
-            return connector;
-        }
-
-        public InetAddress getAddress()
-        {
-            return address;
-        }
-
-        public String getPath()
-        {
-            return path;
+            return String.format("%s@%x{connector=%s, addressPattern=%s, method=%s, pathSpec=%s}", getClass().getSimpleName(), hashCode(), connector, address, method, pathSpec);
         }
     }
 }

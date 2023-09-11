@@ -14,11 +14,7 @@
 package org.eclipse.jetty.server.handler;
 
 import java.io.IOException;
-import java.net.InetAddress;
-import java.net.InetSocketAddress;
-import java.net.SocketAddress;
 
-import org.eclipse.jetty.http.HttpStatus;
 import org.eclipse.jetty.http.pathmap.PathSpec;
 import org.eclipse.jetty.server.Handler;
 import org.eclipse.jetty.server.Request;
@@ -29,7 +25,6 @@ import org.eclipse.jetty.util.InetAddressPattern;
 import org.eclipse.jetty.util.InetAddressSet;
 import org.eclipse.jetty.util.component.DumpableCollection;
 
-import static org.eclipse.jetty.server.handler.InetAccessSet.AccessTuple;
 import static org.eclipse.jetty.server.handler.InetAccessSet.PatternTuple;
 
 /**
@@ -45,7 +40,7 @@ public class InetAccessHandler extends Handler.Wrapper
 {
     // TODO replace this handler with a general conditional handler wrapper.
 
-    private final IncludeExcludeSet<PatternTuple, AccessTuple> _set = new IncludeExcludeSet<>(InetAccessSet.class);
+    private final IncludeExcludeSet<PatternTuple, Request> _set = new IncludeExcludeSet<>(InetAccessSet.class);
 
     public InetAccessHandler()
     {
@@ -113,7 +108,20 @@ public class InetAccessHandler extends Handler.Wrapper
      */
     public void include(String connectorName, String addressPattern, PathSpec pathSpec)
     {
-        _set.include(new PatternTuple(connectorName, InetAddressPattern.from(addressPattern), pathSpec));
+        include(connectorName, addressPattern, null, pathSpec);
+    }
+
+    /**
+     * Includes an InetAccess entry.
+     *
+     * @param connectorName optional name of a connector to include or {@code null}.
+     * @param addressPattern optional InetAddress pattern to include or {@code null}.
+     * @param method optional method to include or {@code null}.
+     * @param pathSpec optional pathSpec to include or {@code null}.
+     */
+    public void include(String connectorName, String addressPattern, String method, PathSpec pathSpec)
+    {
+        _set.include(new PatternTuple(connectorName, InetAddressPattern.from(addressPattern), method, pathSpec));
     }
 
     /**
@@ -121,13 +129,16 @@ public class InetAccessHandler extends Handler.Wrapper
      *
      * <p>The connector name is separated from the InetAddress pattern with an '@' character,
      * and the InetAddress pattern is separated from the URI pattern using the "|" (pipe)
-     * character. URI patterns follow the servlet specification for simple * prefix and
+     * character. A method name is separated from the URI pattern using the ">" character.
+     * URI patterns follow the servlet specification for simple * prefix and
      * suffix wild cards (e.g. /, /foo, /foo/bar, /foo/bar/*, *.baz).</p>
      *
      * <br>Examples:
      * <ul>
      * <li>"connector1@127.0.0.1|/foo"</li>
      * <li>"127.0.0.1|/foo"</li>
+     * <li>"127.0.0.1>GET|/foo"</li>
+     * <li>"127.0.0.1>GET"</li>
      * <li>"connector1@127.0.0.1"</li>
      * <li>"127.0.0.1"</li>
      * </ul>
@@ -163,34 +174,39 @@ public class InetAccessHandler extends Handler.Wrapper
      */
     public void exclude(String connectorName, String addressPattern, PathSpec pathSpec)
     {
-        _set.exclude(new PatternTuple(connectorName, InetAddressPattern.from(addressPattern), pathSpec));
+        exclude(connectorName, addressPattern, null, pathSpec);
+    }
+
+    /**
+     * Excludes an InetAccess entry.
+     *
+     * @param connectorName optional name of a connector to exclude or {@code null}.
+     * @param addressPattern optional InetAddress pattern to exclude or {@code null}.
+     * @param method optional method to exclude or {@code null}.
+     * @param pathSpec optional pathSpec to exclude or {@code null}.
+     */
+    public void exclude(String connectorName, String addressPattern, String method, PathSpec pathSpec)
+    {
+        _set.exclude(new PatternTuple(connectorName, InetAddressPattern.from(addressPattern), method, pathSpec));
     }
 
     @Override
     public boolean handle(Request request, Response response, Callback callback) throws Exception
     {
-        SocketAddress socketAddress = request.getConnectionMetaData().getRemoteSocketAddress();
-        if (socketAddress instanceof InetSocketAddress inetSocketAddress && !isAllowed(inetSocketAddress.getAddress(), request))
-        {
-            // TODO a false return may be better here.
-            Response.writeError(request, response, callback, HttpStatus.FORBIDDEN_403);
-            return true;
-        }
+        if (!isAllowed(request))
+            return false;
         return super.handle(request, response, callback);
     }
 
     /**
      * Checks if specified address and request are allowed by current InetAddress rules.
      *
-     * @param addr the inetAddress to check
      * @param request the HttpServletRequest request to check
      * @return true if inetAddress and request are allowed
      */
-    protected boolean isAllowed(InetAddress addr, Request request)
+    protected boolean isAllowed(Request request)
     {
-        String connectorName = request.getConnectionMetaData().getConnector().getName();
-        String path = Request.getPathInContext(request);
-        return _set.test(new AccessTuple(connectorName, addr, path));
+        return _set.test(request);
     }
 
     @Override

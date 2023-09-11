@@ -13,8 +13,6 @@
 
 package org.eclipse.jetty.server.handler;
 
-import java.net.InetSocketAddress;
-
 import org.eclipse.jetty.http.pathmap.PathSpecSet;
 import org.eclipse.jetty.server.Handler;
 import org.eclipse.jetty.server.Request;
@@ -30,7 +28,7 @@ public class ConditionalHandler0 extends Handler.Wrapper
     private final boolean _skip;
     private final IncludeExclude<String> _methods = new IncludeExclude<>();
     private final IncludeExclude<String> _paths = new IncludeExclude<>(PathSpecSet.class);
-    private final IncludeExcludeSet<InetAccessSet.PatternTuple, InetAccessSet.AccessTuple> _inet = new IncludeExcludeSet<>(InetAccessSet.class);
+    private final IncludeExcludeSet<InetAccessSet.PatternTuple, Request> _inet = new IncludeExcludeSet<>(InetAccessSet.class);
 
     public ConditionalHandler0()
     {
@@ -52,7 +50,7 @@ public class ConditionalHandler0 extends Handler.Wrapper
         return _methods;
     }
 
-    public IncludeExcludeSet<InetAccessSet.PatternTuple, InetAccessSet.AccessTuple> getInet()
+    public IncludeExcludeSet<InetAccessSet.PatternTuple, Request> getInet()
     {
         return _inet;
     }
@@ -63,8 +61,7 @@ public class ConditionalHandler0 extends Handler.Wrapper
         String pathInContext = Request.getPathInContext(request);
         if (_methods.test(request.getMethod()) &&
             !_paths.isEmpty() && _paths.test(pathInContext) &&
-            !_inet.isEmpty() && request.getConnectionMetaData().getRemoteSocketAddress() instanceof InetSocketAddress inet &&
-            _inet.test(new InetAccessSet.AccessTuple(request.getConnectionMetaData().getConnector().getName(), inet.getAddress(), pathInContext)))
+            !_inet.isEmpty() && _inet.test(request))
             return super.handle(request, response, callback);
 
         if (_skip && getHandler() instanceof Singleton wrapper && wrapper.getHandler() != null)
