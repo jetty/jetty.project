@@ -35,6 +35,8 @@ public class BufferedContentSink implements Content.Sink
 {
     private static final Logger LOG = LoggerFactory.getLogger(BufferedContentSink.class);
 
+    private static final int START_BUFFER_SIZE = 1024;
+
     private final Content.Sink _delegate;
     private final ByteBufferPool _bufferPool;
     private final boolean _direct;
@@ -74,109 +76,107 @@ public class BufferedContentSink implements Content.Sink
                 _delegate.write(true, byteBuffer, callback);
                 return;
             }
-            _aggregator = new ByteBufferAggregator(_bufferPool, _direct, Math.min(1024, _maxBufferSize), _maxBufferSize);
+            _aggregator = new ByteBufferAggregator(_bufferPool, _direct, Math.min(START_BUFFER_SIZE, _maxBufferSize), _maxBufferSize);
         }
         _lastWritten |= last;
 
         ByteBuffer current = byteBuffer != null ? byteBuffer : BufferUtil.EMPTY_BUFFER;
-
-        if (current.remaining() > _maxBufferSize)
-        {
-            // given buffer is greater than aggregate's max buffer size
-            directWrite(last, current, callback);
-        }
-        else
+        if (current.remaining() <= _maxBufferSize)
         {
             // given buffer can be aggregated
             aggregateAndWrite(last, current, callback);
         }
+        else
+        {
+            // given buffer is greater than aggregate's max buffer size
+            directWrite(last, current, callback);
+        }
     }
 
-    private void directWrite(boolean last, ByteBuffer current, Callback callback)
+    /**
+     * Flushes the aggregated buffer if something was aggregated, then write the
+     * given buffer directly, bypassing the aggregator.
+     */
+    private void directWrite(boolean last, ByteBuffer currentBuffer, Callback callback)
     {
         if (LOG.isDebugEnabled())
             LOG.debug("given buffer is greater than _maxBufferSize");
 
-        RetainableByteBuffer buffer = _aggregator.takeRetainableByteBuffer();
-        if (buffer == null)
+        RetainableByteBuffer aggregatedBuffer = _aggregator.takeRetainableByteBuffer();
+        if (aggregatedBuffer == null)
         {
             if (LOG.isDebugEnabled())
-                LOG.debug("nothing aggregated, flushing current buffer {}", current);
-            _delegate.write(last, current, callback);
+                LOG.debug("nothing aggregated, flushing current buffer {}", currentBuffer);
+            _delegate.write(last, currentBuffer, callback);
         }
         else
         {
             if (LOG.isDebugEnabled())
-                LOG.debug("flushing aggregated buffer {}", buffer);
-            _delegate.write(false, buffer.getByteBuffer(), new Callback()
+                LOG.debug("flushing aggregated buffer {}", aggregatedBuffer);
+            _delegate.write(false, aggregatedBuffer.getByteBuffer(), new WriteCallback(aggregatedBuffer, callback, () ->
             {
-                @Override
-                public void succeeded()
-                {
-                    buffer.release();
-                    if (LOG.isDebugEnabled())
-                        LOG.debug("flushing current buffer {}", current);
-                    _delegate.write(last, current, callback);
-                }
-
-                @Override
-                public void failed(Throwable x)
-                {
-                    buffer.release();
-                    callback.failed(x);
-                }
-            });
+                if (LOG.isDebugEnabled())
+                    LOG.debug("flushing current buffer {}", currentBuffer);
+                _delegate.write(last, currentBuffer, callback);
+            }));
         }
     }
 
-    private void aggregateAndWrite(boolean last, ByteBuffer current, Callback callback)
+    /**
+     * Copies the given buffer to the aggregator, eventually
+     */
+    private void aggregateAndWrite(boolean last, ByteBuffer currentBuffer, Callback callback)
     {
-        boolean write = _aggregator.copyBuffer(current);
-        boolean complete = last && !current.hasRemaining();
+        boolean write = _aggregator.copyBuffer(currentBuffer);
+        boolean complete = last && !currentBuffer.hasRemaining();
         if (LOG.isDebugEnabled())
-            LOG.debug("aggregated current buffer, write={}, complete={}, bytes left={}, aggregator={}", write, complete, current.remaining(), _aggregator);
-        if (write || complete)
+            LOG.debug("aggregated current buffer, write={}, complete={}, bytes left={}, aggregator={}", write, complete, currentBuffer.remaining(), _aggregator);
+        if (write)
         {
-            RetainableByteBuffer buffer = _aggregator.takeRetainableByteBuffer();
+            RetainableByteBuffer aggregatedBuffer = _aggregator.takeRetainableByteBuffer();
             if (LOG.isDebugEnabled())
-                LOG.debug("writing aggregated buffer: {} bytes", buffer.remaining());
-            _delegate.write(complete, buffer.getByteBuffer(), new Callback() {
-                @Override
-                public void succeeded()
-                {
-                    buffer.release();
-                    if (complete)
-                    {
-                        if (LOG.isDebugEnabled())
-                            LOG.debug("write complete");
-                        callback.succeeded();
-                    }
-                    else
-                    {
-                        if (LOG.isDebugEnabled())
-                            LOG.debug("written aggregated buffer, writing remaining of current: {} bytes{}", current.remaining(), (last ? " (last write)" : ""));
-                        if (last)
-                            _delegate.write(last, current, callback);
-                        else
-                            aggregateAndWrite(last, current, callback);
-                    }
-                }
-
-                @Override
-                public void failed(Throwable x)
-                {
-                    if (LOG.isDebugEnabled())
-                        LOG.debug("failed to write buffer", x);
-                    buffer.release();
-                    callback.failed(x);
-                }
-            });
+                LOG.debug("writing aggregated buffer: {} bytes", aggregatedBuffer.remaining());
+            _delegate.write(false, aggregatedBuffer.getByteBuffer(), new WriteCallback(aggregatedBuffer, callback, () ->
+            {
+                if (LOG.isDebugEnabled())
+                    LOG.debug("written aggregated buffer, writing remaining of current: {} bytes{}", currentBuffer.remaining(), (last ? " (last write)" : ""));
+                if (last)
+                    _delegate.write(true, currentBuffer, callback);
+                else
+                    aggregateAndWrite(false, currentBuffer, callback);
+            }));
+        }
+        else if (complete)
+        {
+            RetainableByteBuffer aggregatedBuffer = _aggregator.takeRetainableByteBuffer();
+            if (LOG.isDebugEnabled())
+                LOG.debug("complete; writing aggregated buffer: {} bytes", aggregatedBuffer.remaining());
+            _delegate.write(true, aggregatedBuffer.getByteBuffer(), Callback.from(callback, aggregatedBuffer::release));
         }
         else
         {
             if (LOG.isDebugEnabled())
                 LOG.debug("buffer fully aggregated, delaying writing - aggregator: {}", _aggregator);
             callback.succeeded();
+        }
+    }
+
+    private record WriteCallback(RetainableByteBuffer aggregatedBuffer, Callback delegate, Runnable onSuccess) implements Callback
+    {
+        @Override
+        public void succeeded()
+        {
+            aggregatedBuffer.release();
+            onSuccess.run();
+        }
+
+        @Override
+        public void failed(Throwable x)
+        {
+            if (LOG.isDebugEnabled())
+                LOG.debug("failed to write buffer", x);
+            aggregatedBuffer.release();
+            delegate.failed(x);
         }
     }
 }
