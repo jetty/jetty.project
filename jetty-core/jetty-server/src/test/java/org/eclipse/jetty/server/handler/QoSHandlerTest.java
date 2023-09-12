@@ -31,6 +31,8 @@ import org.eclipse.jetty.util.Callback;
 import org.eclipse.jetty.util.component.LifeCycle;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.Test;
+import org.junit.jupiter.params.ParameterizedTest;
+import org.junit.jupiter.params.provider.ValueSource;
 
 import static org.awaitility.Awaitility.await;
 import static org.hamcrest.MatcherAssert.assertThat;
@@ -277,8 +279,9 @@ public class QoSHandlerTest
         assertEquals(HttpStatus.OK_200, response.getStatus());
     }
 
-    @Test
-    public void testConcurrentRequests() throws Exception
+    @ParameterizedTest
+    @ValueSource(booleans = {true, false})
+    public void testConcurrentRequests(boolean async) throws Exception
     {
         int delay = 100;
         QoSHandler qosHandler = new QoSHandler();
@@ -286,10 +289,24 @@ public class QoSHandlerTest
         qosHandler.setHandler(new Handler.Abstract()
         {
             @Override
-            public boolean handle(Request request, Response response, Callback callback) throws Exception
+            public boolean handle(Request request, Response response, Callback callback)
             {
-                Thread.sleep(delay);
-                callback.succeeded();
+                Runnable task = () ->
+                {
+                    try
+                    {
+                        Thread.sleep(delay);
+                        callback.succeeded();
+                    }
+                    catch (Throwable x)
+                    {
+                        callback.failed(x);
+                    }
+                };
+                if (async)
+                    new Thread(task).start();
+                else
+                    task.run();
                 return true;
             }
         });

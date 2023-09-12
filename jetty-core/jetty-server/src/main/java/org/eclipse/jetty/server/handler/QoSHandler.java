@@ -138,7 +138,7 @@ public class QoSHandler extends Handler.Wrapper
     public void setMaxSuspend(Duration maxSuspend)
     {
         if (maxSuspend.isNegative())
-            throw new IllegalArgumentException("invalid maxSuspend duration");
+            throw new IllegalArgumentException("Invalid maxSuspend duration");
         this.maxSuspend = maxSuspend;
     }
 
@@ -216,7 +216,6 @@ public class QoSHandler extends Handler.Wrapper
 
     private static void notAvailable(Response response, Callback callback)
     {
-        // Do not suspend again an attempt to handle the expired request/response.
         response.setStatus(HttpStatus.SERVICE_UNAVAILABLE_503);
         if (response.isCommitted())
             callback.failed(new IllegalStateException("Response already committed"));
@@ -279,7 +278,7 @@ public class QoSHandler extends Handler.Wrapper
         timeouts.schedule(entry);
     }
 
-    private void resume()
+    private void resume(boolean async)
     {
         // See correspondent state machine logic in handle() and expire().
         int permits = state.getAndIncrement();
@@ -292,7 +291,7 @@ public class QoSHandler extends Handler.Wrapper
 
         while (true)
         {
-            if (resumeSuspended())
+            if (resumeSuspended(async))
                 return;
 
             // Found no suspended requests yet, but there will be.
@@ -302,7 +301,7 @@ public class QoSHandler extends Handler.Wrapper
         }
     }
 
-    private boolean resumeSuspended()
+    private boolean resumeSuspended(boolean async)
     {
         for (Integer priority : priorities)
         {
@@ -311,9 +310,12 @@ public class QoSHandler extends Handler.Wrapper
             if (entry != null)
             {
                 if (LOG.isDebugEnabled())
-                    LOG.debug("{} resuming {}", this, entry.request);
-                // Use an IteratingCallback to avoid StackOverflowError when resuming requests.
-                forwarder.offer(entry);
+                    LOG.debug("{} resuming async={} {}", this, async, entry.request);
+                // TODO: the forwarder is too coarse, just dispatch to a thread?
+                if (async)
+                    entry.resume(entry.callback);
+                else
+                    forwarder.offer(entry);
                 return true;
             }
         }
@@ -423,11 +425,13 @@ public class QoSHandler extends Handler.Wrapper
     private class Resumer extends HttpStream.Wrapper
     {
         private final Request request;
+        private final Thread thread;
 
         private Resumer(HttpStream wrapped, Request request)
         {
             super(wrapped);
             this.request = request;
+            this.thread = Thread.currentThread();
         }
 
         @Override
@@ -435,7 +439,7 @@ public class QoSHandler extends Handler.Wrapper
         {
             if (LOG.isDebugEnabled())
                 LOG.debug("{} succeeded {}", QoSHandler.this, request);
-            resume();
+            resume(thread != Thread.currentThread());
         }
 
         @Override
@@ -443,7 +447,7 @@ public class QoSHandler extends Handler.Wrapper
         {
             if (LOG.isDebugEnabled())
                 LOG.debug("{} failed {}", QoSHandler.this, request, x);
-            resume();
+            resume(thread != Thread.currentThread());
         }
     }
 
