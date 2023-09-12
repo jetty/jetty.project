@@ -101,7 +101,7 @@ public class SPIServerTest
             "start=\"<a*b-c-d-e-f@example.com>\";" +
             "type=\"application/xop+xml\";" +
             "boundary=\"uuid:aa-bb-cc-dd-ee\";" +
-            "start-info=\"application/soap+xml;action=\"urn:xyz\"";
+            "start-info=\"application/soap+xml;action=\\\"urn:xyz\\\"\"";
 
         server.createContext("/", new HttpHandler()
         {
@@ -132,7 +132,7 @@ public class SPIServerTest
             "start=\"<a*b-c-d-e-f@example.com>\";" +
             "type=\"application/xop+xml\";" +
             "boundary=\"uuid:aa-bb-cc-dd-ee\";" +
-            "start-info=\"application/soap+xml;action=\"urn:xyz\"";
+            "start-info=\"application/soap+xml;action=\\\"urn:xyz\\\"\"";
 
         server.createContext("/", new HttpHandler()
         {
