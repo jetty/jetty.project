@@ -72,6 +72,8 @@ public class BufferedResponseHandler extends ConditionalHandler
 
         includeMethod(HttpMethod.GET.asString());
 
+        // Mimetypes are not a condition on the ConditionalHandler as they
+        // are also check during response generation, once the type is known.
         for (String type : MimeTypes.DEFAULTS.getMimeMap().values())
         {
             if (type.startsWith("image/") ||
@@ -84,9 +86,18 @@ public class BufferedResponseHandler extends ConditionalHandler
             LOG.debug("{} mime types {}", this, _mimeTypes);
     }
 
-    public IncludeExclude<String> getMimeIncludeExclude()
+    public void includeMimeType(String... mimeTypes)
     {
-        return _mimeTypes;
+        if (isStarted())
+            throw new IllegalStateException(getState());
+        _mimeTypes.include(mimeTypes);
+    }
+
+    public void excludeMimeType(String... mimeTypes)
+    {
+        if (isStarted())
+            throw new IllegalStateException(getState());
+        _mimeTypes.exclude(mimeTypes);
     }
 
     protected boolean isMimeTypeBufferable(String mimetype)

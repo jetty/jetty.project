@@ -53,7 +53,7 @@ public class BufferedResponseHandlerTest
         BufferedResponseHandler bufferedHandler = new BufferedResponseHandler();
         bufferedHandler.includePath("/include/*");
         bufferedHandler.excludePath("*.exclude");
-        bufferedHandler.getMimeIncludeExclude().exclude("text/excluded");
+        bufferedHandler.excludeMimeType("text/excluded");
         bufferedHandler.setHandler(_test = new TestHandler());
 
 
