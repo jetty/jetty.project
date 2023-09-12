@@ -47,7 +47,7 @@ Putting all of the above together as an example, a session with an id of `node0e
 
 ====== Configuration
 
-You can configure either a link:{javadoc-url}/org/eclipse/jetty/server/session/FileSessionDataStore.html[FileSessionDataStore] individually, or a `FileSessionDataStoreFactory` if you want multiple ``SessionHandler``s to use ``FileSessionDataStore``s that are identically configured.
+You can configure either a link:{javadoc-url}/org/eclipse/jetty/session/FileSessionDataStore.html[FileSessionDataStore] individually, or a `FileSessionDataStoreFactory` if you want multiple ``SessionHandler``s to use ``FileSessionDataStore``s that are identically configured.
 The configuration methods are:
 
 storeDir::

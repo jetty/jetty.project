@@ -56,7 +56,7 @@ Many databases use different keywords for the `long`, `blob` and `varchar` types
 
 ====== Configuration
 
-The link:{javadoc-url}/org/eclipse/jetty/server/session/JDBCSessionDataStore.html[JDBCSessionDataStore] and corresponding link:{javadoc-url}/org/eclipse/jetty/server/session/JDBCSessionDataStoreFactory.html[JDBCSessionDataStoreFactory] supports the following configuration:
+The link:{javadoc-url}/org/eclipse/jetty/session/JDBCSessionDataStore.html[JDBCSessionDataStore] and corresponding link:{javadoc-url}/org/eclipse/jetty/session/JDBCSessionDataStoreFactory.html[JDBCSessionDataStoreFactory] supports the following configuration:
 
 include::session-sessiondatastore.adoc[tag=common-datastore-config]
 

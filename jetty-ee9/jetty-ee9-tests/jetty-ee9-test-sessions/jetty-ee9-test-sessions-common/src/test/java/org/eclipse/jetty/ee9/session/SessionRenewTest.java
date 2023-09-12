@@ -36,6 +36,7 @@ import org.eclipse.jetty.session.ManagedSession;
 import org.eclipse.jetty.session.NullSessionCacheFactory;
 import org.eclipse.jetty.session.SessionCache;
 import org.eclipse.jetty.session.SessionCacheFactory;
+import org.eclipse.jetty.session.SessionConfig;
 import org.eclipse.jetty.session.SessionData;
 import org.eclipse.jetty.session.SessionDataStoreFactory;
 import org.eclipse.jetty.session.SessionManager;
@@ -176,7 +177,7 @@ public class SessionRenewTest
 
             //make a request to change the sessionid
             Request request = client.newRequest("http://localhost:" + port + contextPathA + servletMapping + "?action=renew");
-            request.cookie(HttpCookie.from(SessionManager.__DefaultSessionCookie, "1234"));
+            request.cookie(HttpCookie.from(SessionConfig.__DefaultSessionCookie, "1234"));
             ContentResponse renewResponse = request.send();
             assertEquals(HttpServletResponse.SC_OK, renewResponse.getStatus());
             String newSessionCookie = renewResponse.getHeaders().get("Set-Cookie");

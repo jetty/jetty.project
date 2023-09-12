@@ -92,11 +92,3 @@ Let's look at an example of configuring a `MongoSessionDataStoreFactory`:
 ----
 include::../../{doc_code}/org/eclipse/jetty/docs/programming/server/session/SessionDocs.java[tags=mongosdfactory]
 ----
-
-// TODO: the code example is missing.
-// Here's an alternate example, configuring a `MongoSessionDataStore` directly:
-
-//[source,java,indent=0]
-//----
-//include::../../{doc_code}/org/eclipse/jetty/docs/programming/server/session/SessionDocs.java[tags=mongosessiondatastore]
-//----

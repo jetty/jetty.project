@@ -16,12 +16,14 @@ package org.eclipse.jetty.docs.programming.server.session;
 import java.io.File;
 import java.net.InetSocketAddress;
 
-import org.eclipse.jetty.ee10.servlet.ServletContextHandler;
-import org.eclipse.jetty.ee10.servlet.SessionHandler;
-import org.eclipse.jetty.ee10.webapp.WebAppContext;
+import org.eclipse.jetty.io.Content;
 import org.eclipse.jetty.memcached.session.MemcachedSessionDataMapFactory;
 import org.eclipse.jetty.nosql.mongodb.MongoSessionDataStoreFactory;
+import org.eclipse.jetty.server.Handler;
+import org.eclipse.jetty.server.Request;
+import org.eclipse.jetty.server.Response;
 import org.eclipse.jetty.server.Server;
+import org.eclipse.jetty.server.Session;
 import org.eclipse.jetty.server.handler.ContextHandlerCollection;
 import org.eclipse.jetty.session.CachingSessionDataStoreFactory;
 import org.eclipse.jetty.session.DatabaseAdaptor;
@@ -35,6 +37,7 @@ import org.eclipse.jetty.session.NullSessionCache;
 import org.eclipse.jetty.session.NullSessionCacheFactory;
 import org.eclipse.jetty.session.NullSessionDataStore;
 import org.eclipse.jetty.session.SessionCache;
+import org.eclipse.jetty.util.Callback;
 
 @SuppressWarnings("unused")
 public class SessionDocs
@@ -72,14 +75,44 @@ public class SessionDocs
             e.printStackTrace();
         }
     }
+
+    public void coreSessionHandler()
+    {
+        try
+        {
+            //tag:coresession[]
+            Server server = new Server();
+            org.eclipse.jetty.session.SessionHandler sessionHandler = new org.eclipse.jetty.session.SessionHandler();
+            sessionHandler.setSessionCookie("SIMPLE");
+            sessionHandler.setUsingCookies(true);
+            sessionHandler.setUsingURLs(false);
+            sessionHandler.setSessionPath("/");
+            server.setHandler(sessionHandler);
+            sessionHandler.setHandler(new Handler.Abstract()
+            {
+                @Override
+                public boolean handle(Request request, Response response, Callback callback)
+                {
+                    Session session = request.getSession(false);
+                    Content.Sink.write(response, true, "Session=" + session.getId(), callback);
+                    return true;
+                }
+            });
+            //end::coresession[]
+        }
+        catch (Exception e)
+        {
+            e.printStackTrace();
+        }
+    }
     
-    public void servletContextWithSessionHandler()
+    public void ee10ServletContextWithSessionHandler()
     {
         //tag:schsession[]
         Server server = new Server();
         
-        ServletContextHandler context = new ServletContextHandler("/foo", ServletContextHandler.SESSIONS);
-        SessionHandler sessions = context.getSessionHandler();
+        org.eclipse.jetty.ee10.servlet.ServletContextHandler context = new org.eclipse.jetty.ee10.servlet.ServletContextHandler("/foo", org.eclipse.jetty.ee10.servlet.ServletContextHandler.SESSIONS);
+        org.eclipse.jetty.ee10.servlet.SessionHandler sessions = context.getSessionHandler();
         //make idle sessions valid for only 5mins
         sessions.setMaxInactiveInterval(300);
         //turn off use of cookies
@@ -89,13 +122,13 @@ public class SessionDocs
         //end::schsession[]
     }
     
-    public void webAppWithSessionHandler()
+    public void ee10WebAppWithSessionHandler()
     {
         //tag:wacsession[]
         Server server = new Server();
-        
-        WebAppContext context = new WebAppContext();
-        SessionHandler sessions = context.getSessionHandler();
+
+        org.eclipse.jetty.ee10.webapp.WebAppContext context = new org.eclipse.jetty.ee10.webapp.WebAppContext();
+        org.eclipse.jetty.ee10.servlet.SessionHandler sessions = context.getSessionHandler();
         //make idle sessions valid for only 5mins
         sessions.setMaxInactiveInterval(300);
         //turn off use of cookies
@@ -121,7 +154,7 @@ public class SessionDocs
         cacheFactory.setSaveOnCreate(true);
 
         //Add the factory as a bean to the server, now whenever a 
-        //SessionHandler starts it will consult the bean to create a new DefaultSessionCache
+        //SessionManager starts it will consult the bean to create a new DefaultSessionCache
         server.addBean(cacheFactory);
         //end::defaultsessioncache[]
     }
@@ -136,12 +169,12 @@ public class SessionDocs
         cacheFactory.setSaveOnCreate(true);
 
         //Add the factory as a bean to the server, now whenever a 
-        //SessionHandler starts it will consult the bean to create a new NullSessionCache
+        //SessionManager starts it will consult the bean to create a new NullSessionCache
         server.addBean(cacheFactory);
         //end::nullsessioncache[]
     }
 
-    public void mixedSessionCache()
+    public void ee10MixedSessionCache()
     {
         //tag::mixedsessioncache[]
         Server server = new Server();
@@ -155,23 +188,21 @@ public class SessionDocs
         cacheFactory.setSaveOnCreate(true);
 
         //Add the factory as a bean to the server, now whenever a 
-        //SessionHandler starts it will consult the bean to create a new DefaultSessionCache
+        //SessionManager starts it will consult the bean to create a new DefaultSessionCache
         server.addBean(cacheFactory);
         
         ContextHandlerCollection contexts = new ContextHandlerCollection();
         server.setHandler(contexts);
         
         //Add a webapp that will use a DefaultSessionCache via the DefaultSessionCacheFactory
-        WebAppContext app1 = new WebAppContext();
+        org.eclipse.jetty.ee10.webapp.WebAppContext app1 = new org.eclipse.jetty.ee10.webapp.WebAppContext();
         app1.setContextPath("/app1");
         contexts.addHandler(app1);
         
         //Add a webapp that uses an explicit NullSessionCache instead
-        WebAppContext app2 = new WebAppContext();
+        org.eclipse.jetty.ee10.webapp.WebAppContext app2 = new org.eclipse.jetty.ee10.webapp.WebAppContext();
         app2.setContextPath("/app2");
-        // TODO
-//        NullSessionCache nullSessionCache = new NullSessionCache(app2.getSessionHandler());
-        NullSessionCache nullSessionCache = null;
+        NullSessionCache nullSessionCache = new NullSessionCache(app2.getSessionHandler());
         nullSessionCache.setFlushOnResponseCommit(true);
         nullSessionCache.setRemoveUnloadableSessions(true);
         nullSessionCache.setSaveOnCreate(true);
@@ -197,7 +228,7 @@ public class SessionDocs
         cacheFactory.setSaveOnCreate(true);
 
         //Add the factory as a bean to the server, now whenever a 
-        //SessionHandler starts it will consult the bean to create a new DefaultSessionCache
+        //SessionManager starts it will consult the bean to create a new DefaultSessionCache
         server.addBean(cacheFactory);
         
         //Now, lets configure a FileSessionDataStoreFactory
@@ -207,7 +238,7 @@ public class SessionDocs
         storeFactory.setSavePeriodSec(0);
         
         //Add the factory as a bean on the server, now whenever a
-        //SessionHandler starts, it will consult the bean to create a new FileSessionDataStore
+        //SessionManager starts, it will consult the bean to create a new FileSessionDataStore
         //for use by the DefaultSessionCache
         server.addBean(storeFactory);
       //end::filesessiondatastorefactory[]  
@@ -218,13 +249,11 @@ public class SessionDocs
       //tag::filesessiondatastore[]
 
         //create a context
-        WebAppContext app1 = new WebAppContext();
+        org.eclipse.jetty.ee10.webapp.WebAppContext app1 = new org.eclipse.jetty.ee10.webapp.WebAppContext();
         app1.setContextPath("/app1");
         
         //First, we create a DefaultSessionCache
-        // TODO
-//        DefaultSessionCache cache = new DefaultSessionCache(app1.getSessionHandler());
-        DefaultSessionCache cache = null;
+        DefaultSessionCache cache = new DefaultSessionCache(app1.getSessionHandler());
         cache.setEvictionPolicy(SessionCache.NEVER_EVICT);
         cache.setFlushOnResponseCommit(true);
         cache.setInvalidateOnShutdown(false);
@@ -240,7 +269,7 @@ public class SessionDocs
         //Tell the cache to use the store
         cache.setSessionDataStore(store);
         
-        //Tell the contex to use the cache/store combination
+        //Tell the context to use the cache/store combination
         app1.getSessionHandler().setSessionCache(cache);
         
       //end::filesessiondatastore[]  
@@ -271,7 +300,7 @@ public class SessionDocs
         cachingSessionDataStoreFactory.setSessionDataMapFactory(mapFactory);
         cachingSessionDataStoreFactory.setSessionStoreFactory(storeFactory);
         
-        //Register it as a bean so that all SessionHandlers will use it
+        //Register it as a bean so that all SessionManagers will use it
         //to make FileSessionDataStores that use memcached as an L2 SessionData cache.
         server.addBean(cachingSessionDataStoreFactory);
         //end::cachingsds[]

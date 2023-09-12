@@ -14,72 +14,73 @@
 [[pg-server-session-handler]]
 ==== The SessionHandler
 
-Each context can have a single `SessionHandler`.
-The purpose of the `SessionHandler` is to interact with the `Request` and `Response` to create, maintain and propagate sessions.
-It also calls the context-level session listeners at appropriate points in the session lifecycle.
+A `SessionHandler` is a `Handler` that implements the `SessionManager`, and is thus responsible for the creation, maintenance and propagation of sessions.
+There are `SessionHandlers` for both the core and the various servlet environments.
+
+Note that in the servlet environments, each `ServletContextHandler` or `WebAppContext` has at most a single `SessionHandler`.
 
 ===== Configuration
 
-The majority of configuration for the link:{javadoc-url}/org/eclipse/jetty/server/session/SessionHandler.html[SessionHandler] can be done via `web.xml` `<session-config>` declarations, or the `javax.servlet.SessionCookieConfig` api.
-There are also a few jetty-specific configuration options that we will cover here:
+The majority of configuration for the `SessionHandler` can be done via `web.xml` `<session-config>` declarations, or the `javax.servlet.SessionCookieConfig` api.
+There are also a few jetty-specific configuration methods that we will cover here:
 
-checkingRemoteSessionIdEncoding::
+setCheckingRemoteSessionIdEncoding::
 Boolean, default `false`.
-This controls whether or not the `javax.servlet.http.Response.encodeURL(String)` method will include the session id as a path parameter when the URL is destined for a remote node.
-This can also be configured by:
-* setting the `org.eclipse.jetty.ee9.servlet.CheckingRemoteSessionIdEncoding` context init paramter
+This controls whether response urls will be encoded with the session id as a path parameter when the URL is destined for a remote node.
+In servlet environments, this can also be configured by:
+* setting the `org.eclipse.jetty.session.CheckingRemoteSessionIdEncoding` context init parameter
 
 setMaxInactiveInterval::
 Integer, seconds.
 This is the amount of time after which an unused session may be scavenged.
-This can also be configured by:
+In servlet environments this can also be configured by:
 
 * defining the `<session-config><session-timeout/></session-config>` element in `web.xml`, although take note that this element is specified in _minutes_ but this method uses _seconds_.
-* calling the `javax.servlet.ServletContext.setSessionTimeout(int)` method, where the timeout is configured in _minutes_.
+* calling the `ServletContext.setSessionTimeout(int)` method, where the timeout is configured in _minutes_.
 
 setHttpOnly::
 Boolean, default `false`.
 If `true`, the session cookie will not be exposed to client-side scripting code.
-This can also be configured by:
+In servlet environments this can also be configured by:
 
-* using `javax.servlet.SessionCookieConfig.setHttpOnly(boolean)` method
+* using `SessionCookieConfig.setHttpOnly(boolean)` method
 * defining the `<session-config><cookie-config><http-only/></cookie-config></session-config>` element in `web.xml`
 
 [[pg-server-session-handler-refreshcookie]]
-refreshCookieAge::
+setRefreshCookieAge::
 Integer, seconds, default is `-1`.
 This controls resetting the session cookie when `SessionCookieConfig.setMaxAge(int)` is non-zero.
 See also xref:pg-server-session-handler-maxAge[setting the max session cookie age with an init parameter].
 If the amount of time since the session cookie was last set exceeds this time, the session cookie is regenerated to keep the session cookie valid.
 
-sameSite::
+setSameSite::
 `HttpCookie.SameSite`, default `null`.
 The values are `HttpCookie.SameSite.NONE`, `HttpCookie.SameSite.STRICT`, `HttpCookie.SameSite.LAX`.
 
-secureRequestOnly::
+setSecureRequestOnly::
 Boolean, default `true`.
 If `true` and the request is HTTPS, the set session cookie will be marked as `secure`, meaning the client will only send the session cookie to the server on subsequent requests over HTTPS.
-This can also be configured by:
+In servlet environments this can also be configured by:
 
-* using the `javax.servlet.SessionCookieConfig.setSecure(true)` method, in which case the set session cookie will _always_ be marked as `secure`, even if the request triggering the creation of the cookie was not over HTTPS.
+* using the `SessionCookieConfig.setSecure(true)` method, in which case the set session cookie will _always_ be marked as `secure`, even if the request triggering the creation of the cookie was not over HTTPS.
 
-sessionCookie::
+setSessionCookie::
 String, default is `JSESSIONID`.
 This is the name of the session cookie.
-It can alternatively be configured by:
+In servlet environments, this can alternatively be configured by:
 
-* using `javax.servlet.SessionCookieConfig.setName(String)` method
-* setting the `org.eclipse.jetty.ee9.servlet.SessionCookie` context init parameter.
+* using `SessionCookieConfig.setName(String)` method
+* setting the `org.eclipse.jetty.session.SessionCookie` context init parameter.
 
-sessionIdPathParameterName::
+setSessionIdPathParameterName::
 String, default is `jsessionid`.
 This is the name of the path parameter used to transmit the session id on request URLs, and on encoded URLS in responses.
-It can alternatively be configured by:
+In servlet environments, this can alternatively be configured by:
 
-* setting the `org.eclipse.jetty.ee9.servlet.SessionIdPathParameterName` context init parameter
+* setting the `org.eclipse.jetty.session.SessionIdPathParameterName` context init parameter
 
-sessionTrackingModes::
-`Set<javax.servlet.SessionTrackingMode>`.
+setSessionTrackingModes::
+`Set<SessionTrackingMode>`.
 Default is `SessionTrackingMode.COOKIE`, `SessionTrackingMode.URL`.
 This can also be configured by:
 
@@ -87,42 +88,39 @@ This can also be configured by:
 * using the `javax.servlet.ServletContext.setSessionTrackingModes<Set<javax.servlet.SessionTrackingMode>)` method
 * defining up to three ``<tracking-mode>``s for the `<session-config>` element in `web.xml`
 
-usingCookies::
+setUsingCookies::
 Boolean, default `true`.
 Determines whether or not the `SessionHandler` will look for session cookies on requests, and will set session cookies on responses.
 If `false` session ids must be transmitted as path params on URLs.
-This can also be configured by:
-
-* using the `setSessionTrackingModes(Set<javax.servlet.SessionTrackingMode>)` method
-* using the `javax.servlet.ServletContext.setSessionTrackingModes<Set<javax.servlet.SessionTrackingMode>)` method
-
-There are also a few session settings that do not have SessionHandler setters, but can be configured with context init parameters:
 
 [[pg-server-session-handler-maxAge]]
-org.eclipse.jetty.ee9.servlet.MaxAge::
+setMaxAge::
 This is the maximum number of seconds that the session cookie will be considered to be valid.
 By default, the cookie has no maximum validity time.
 See also xref:pg-server-session-handler-refreshcookie[refreshing the session cookie].
-The value can also be configured by:
+In servlet environments, this can also be configured by:
 
-* calling the `SessionCookieConfig.setMaxAge(int)` method.
+* calling the `ServletContext.getSessionCookieConfig().setMaxAge(int)` method.
+* setting the `org.eclipse.jetty.session.MaxAge` context init parameter
 
-org.eclipse.jetty.ee9.servlet.SessionDomain::
+setSessionDomain::
 String, default `null`.
 This is the domain of the session cookie.
-This can also be configured by:
+In servlet environments, this can also be configured by:
 
-* using the `javax.servlet.SessionCookieConfig.setDomain(String)` method
+* calling the `ServletContext.getSessionCookieConfig().setDomain(String)` method
 * defining the `<session-config><cookie-config><domain/></cookie-config></session-config>` element in `web.xml`
+* setting the `org.eclipse.jetty.session.SessionDomain` context init parameter
 
-org.eclipse.jetty.ee9.servlet.SessionPath::
+setSessionPath::
 String, default `null`.
 This is used when creating a new session cookie.
 If nothing is configured, the context path is used instead, defaulting to `/`.
-This can also be configured by:
+In servlet environments, this can also be configured by:
 
-* using the `javax.servlet.SessionCookieConfig.setPath(String)` method
+* calling the `ServletContext.getSessionCookieConfig().setPath(String)` method
 * defining the `<session-config><cookie-config><path/></cookie-config></session-config>` element in `web.xml`
+* setting the `org.eclipse.jetty.session.SessionPath` context init parameter
 
 ===== Statistics
 
@@ -142,9 +140,4 @@ The standard deviation of the session validity times for this context.
 
 sessionTimeTotal::
 The total time that all sessions in this context have remained valid.
-
-You can reset the statistics counters by either calling the following method directly on the the `SessionHandler`, or using `jmx`:
-
-statsReset::
-Resets the `SessionHandler` statistics counters.
 
