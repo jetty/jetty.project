@@ -45,7 +45,7 @@ public class InetAccessHandler extends ConditionalHandler
 
     public InetAccessHandler(Handler handler)
     {
-        super(NotApplyAction.DO_NOT_HANDLE);
+        super(NotHandled.DO_NOT_HANDLE);
         setHandler(handler);
     }
 

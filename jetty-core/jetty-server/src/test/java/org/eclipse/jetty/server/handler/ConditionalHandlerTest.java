@@ -74,8 +74,8 @@ public class ConditionalHandlerTest
     public static Stream<ConditionalHandler> conditionalHandlers()
     {
         return Stream.of(
-            new TestNextHandler(ConditionalHandler.NotApplyAction.DO_NOT_HANDLE),
-            new TestNextHandler(ConditionalHandler.NotApplyAction.DO_NOT_HANDLE)
+            new TestNextHandler(ConditionalHandler.NotHandled.DO_NOT_HANDLE),
+            new TestNextHandler(ConditionalHandler.NotHandled.DO_NOT_HANDLE)
             {
                 @Override
                 protected boolean doNotHandle(Request request, Response response, Callback callback) throws Exception
@@ -91,7 +91,7 @@ public class ConditionalHandlerTest
                 }
             },
             new TestSkipThisHandler(),
-            new TestNextHandler(ConditionalHandler.NotApplyAction.SKIP_NEXT)
+            new TestNextHandler(ConditionalHandler.NotHandled.SKIP_NEXT)
         );
     }
 
@@ -180,11 +180,11 @@ public class ConditionalHandlerTest
     {
         final String _expectedWhenNotApplied;
 
-        public TestConditionalHandler(NotApplyAction notApplyAction)
+        public TestConditionalHandler(NotHandled notHandled)
         {
-            super(notApplyAction);
+            super(notHandled);
 
-            _expectedWhenNotApplied = switch (notApplyAction)
+            _expectedWhenNotApplied = switch (notHandled)
             {
                 case DO_NOT_HANDLE -> "404 Not Found";
                 case SKIP_THIS, SKIP_NEXT -> "200 OK";
@@ -201,7 +201,7 @@ public class ConditionalHandlerTest
     {
         TestSkipThisHandler()
         {
-            super(NotApplyAction.SKIP_THIS);
+            super(NotHandled.SKIP_THIS);
         }
 
         @Override
@@ -214,9 +214,9 @@ public class ConditionalHandlerTest
 
     public static class TestNextHandler extends TestConditionalHandler
     {
-        public TestNextHandler(NotApplyAction notApplyAction)
+        public TestNextHandler(NotHandled notHandled)
         {
-            super(notApplyAction);
+            super(notHandled);
             setHandler(new Handler.Wrapper()
             {
                 @Override

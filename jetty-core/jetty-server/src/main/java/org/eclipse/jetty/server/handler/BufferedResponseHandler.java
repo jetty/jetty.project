@@ -19,7 +19,6 @@ import org.eclipse.jetty.http.HttpHeader;
 import org.eclipse.jetty.http.HttpMethod;
 import org.eclipse.jetty.http.HttpStatus;
 import org.eclipse.jetty.http.MimeTypes;
-import org.eclipse.jetty.http.pathmap.PathSpecSet;
 import org.eclipse.jetty.io.ByteBufferAccumulator;
 import org.eclipse.jetty.io.ByteBufferPool;
 import org.eclipse.jetty.io.RetainableByteBuffer;
@@ -53,14 +52,12 @@ import org.slf4j.LoggerFactory;
  * generated can also be unbounded.
  * </p>
  */
-public class BufferedResponseHandler extends Handler.Wrapper
+public class BufferedResponseHandler extends ConditionalHandler
 {
     public static final String BUFFER_SIZE_ATTRIBUTE_NAME = BufferedResponseHandler.class.getName() + ".buffer-size";
 
     private static final Logger LOG = LoggerFactory.getLogger(BufferedResponseHandler.class);
 
-    private final IncludeExclude<String> _methods = new IncludeExclude<>();
-    private final IncludeExclude<String> _paths = new IncludeExclude<>(PathSpecSet.class);
     private final IncludeExclude<String> _mimeTypes = new IncludeExclude<>();
 
     public BufferedResponseHandler()
@@ -70,8 +67,11 @@ public class BufferedResponseHandler extends Handler.Wrapper
 
     public BufferedResponseHandler(Handler handler)
     {
-        super(handler);
-        _methods.include(HttpMethod.GET.asString());
+        super(NotHandled.SKIP_THIS);
+        setHandler(handler);
+
+        includeMethod(HttpMethod.GET.asString());
+
         for (String type : MimeTypes.DEFAULTS.getMimeMap().values())
         {
             if (type.startsWith("image/") ||
@@ -84,16 +84,6 @@ public class BufferedResponseHandler extends Handler.Wrapper
             LOG.debug("{} mime types {}", this, _mimeTypes);
     }
 
-    public IncludeExclude<String> getMethodIncludeExclude()
-    {
-        return _methods;
-    }
-
-    public IncludeExclude<String> getPathIncludeExclude()
-    {
-        return _paths;
-    }
-
     public IncludeExclude<String> getMimeIncludeExclude()
     {
         return _mimeTypes;
@@ -102,14 +92,6 @@ public class BufferedResponseHandler extends Handler.Wrapper
     protected boolean isMimeTypeBufferable(String mimetype)
     {
         return _mimeTypes.test(mimetype);
-    }
-
-    protected boolean isPathBufferable(String requestURI)
-    {
-        if (requestURI == null)
-            return true;
-
-        return _paths.test(requestURI);
     }
 
     protected boolean shouldBuffer(Response response, boolean last)
@@ -130,34 +112,17 @@ public class BufferedResponseHandler extends Handler.Wrapper
     }
 
     @Override
-    public boolean handle(Request request, Response response, Callback callback) throws Exception
+    public boolean doHandle(Request request, Response response, Callback callback) throws Exception
     {
         Handler next = getHandler();
         if (next == null)
             return false;
 
         if (LOG.isDebugEnabled())
-            LOG.debug("{} handle {} in {}", this, request, request.getContext());
-
-        // If not a supported method this URI is always excluded.
-        if (!_methods.test(request.getMethod()))
-        {
-            if (LOG.isDebugEnabled())
-                LOG.debug("{} excluded by method {}", this, request);
-            return super.handle(request, response, callback);
-        }
-
-        // If not a supported path this URI is always excluded.
-        String path = Request.getPathInContext(request);
-        if (!isPathBufferable(path))
-        {
-            if (LOG.isDebugEnabled())
-                LOG.debug("{} excluded by path {}", this, request);
-            return super.handle(request, response, callback);
-        }
+            LOG.debug("{} doHandle {} in {}", this, request, request.getContext());
 
         // If the mime type is known from the path then apply mime type filtering.
-        String mimeType = request.getContext().getMimeTypes().getMimeByExtension(path);
+        String mimeType = request.getContext().getMimeTypes().getMimeByExtension(request.getHttpURI().getCanonicalPath());
         if (mimeType != null)
         {
             mimeType = MimeTypes.getContentTypeWithoutCharset(mimeType);

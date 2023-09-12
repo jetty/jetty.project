@@ -60,7 +60,7 @@ import static java.lang.invoke.MethodType.methodType;
  * directly call the next {@code Handler} if {@code doHandler} has not been extended.
  * </p>
  * <p>
- * If the conditions are not met, then the behaviour will be determined by the {@link NotApplyAction} passed to the
+ * If the conditions are not met, then the behaviour will be determined by the {@link NotHandled} passed to the
  * constructor.
  * </p>
  *
@@ -69,7 +69,11 @@ public class ConditionalHandler extends Handler.Wrapper
 {
     private static final Logger LOG = LoggerFactory.getLogger(ConditionalHandler.class);
 
-    public enum NotApplyAction
+    /**
+     * Enumeration of the actions that can be taken if the request is to not be handled due to failing to
+     * meet the conditions.
+     */
+    public enum NotHandled
     {
         /**
          * If the conditions are not met, then the {@link #doNotHandle(Request, Response, Callback)} method is invoked,
@@ -77,6 +81,7 @@ public class ConditionalHandler extends Handler.Wrapper
          * to be bypassed.
          */
         DO_NOT_HANDLE,
+
         /**
          * If the conditions are not met, then bypass the {@link #doHandle(Request, Response, Callback)} method by
          * invoking the {@link Handler#handle(Request, Response, Callback)} method of the {@link #getHandler() next Handler}.
@@ -84,6 +89,7 @@ public class ConditionalHandler extends Handler.Wrapper
          * method.
          */
         SKIP_THIS,
+
         /**
          * If the conditions are not met, then bypass the {@link Handler#handle(Request, Response, Callback)} method
          * of the {@link #getHandler() next Handler} invoking the {@link Handler#handle(Request, Response, Callback)}
@@ -94,7 +100,7 @@ public class ConditionalHandler extends Handler.Wrapper
         SKIP_NEXT,
     }
 
-    private final NotApplyAction _notApplyAction;
+    private final NotHandled _notHandled;
     private final IncludeExclude<String> _methods = new IncludeExclude<>();
     private final IncludeExclude<String> _paths = new IncludeExclude<>(PathSpecSet.class);
     private final IncludeExcludeSet<Predicate<Request>, Request> _predicates = new IncludeExcludeSet<>(PredicateSet.class);
@@ -102,12 +108,18 @@ public class ConditionalHandler extends Handler.Wrapper
 
     public ConditionalHandler()
     {
-        this(NotApplyAction.DO_NOT_HANDLE);
+        this(NotHandled.DO_NOT_HANDLE);
     }
 
-    public ConditionalHandler(NotApplyAction notApplyAction)
+    public ConditionalHandler(Handler nextHandler)
     {
-        _notApplyAction = notApplyAction;
+        this(NotHandled.DO_NOT_HANDLE);
+        setHandler(nextHandler);
+    }
+
+    public ConditionalHandler(NotHandled notHandled)
+    {
+        _notHandled = notHandled;
     }
 
     /**
@@ -357,7 +369,7 @@ public class ConditionalHandler extends Handler.Wrapper
             : lookup.findVirtual(next.getClass(), "handle", handleType).bindTo(next);
 
         // Determine the handling if the conditions are not met
-        MethodHandle doNotHandle = switch (_notApplyAction)
+        MethodHandle doNotHandle = switch (_notHandled)
         {
             case DO_NOT_HANDLE ->
                 // Invoke the doNotHandle method
@@ -441,6 +453,8 @@ public class ConditionalHandler extends Handler.Wrapper
 
     /**
      * Handle a request that has met the conditions.
+     * The default implementation calls the {@link Handler#handle(Request, Response, Callback)} method
+     * on the {@link #getHandler() next Handler}.
      * @param request The request to handle
      * @param response The response to generate
      * @param callback The callback for completion
@@ -455,8 +469,9 @@ public class ConditionalHandler extends Handler.Wrapper
     }
 
     /**
-     * Handle a request that has not met the conditions.
-     * By default, this method simple returns {@code false}.
+     * This method is called when the request has not met the conditions and is not to
+     * be handled by this handler.  The default implementation returns {@code false}.
+     * Derived implementations may send an error response or handle the request differently.
      * @param request The request to handle
      * @param response The response to generate
      * @param callback The callback for completion
