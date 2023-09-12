@@ -27,6 +27,7 @@ import com.sun.net.httpserver.HttpContext;
 import com.sun.net.httpserver.HttpExchange;
 import com.sun.net.httpserver.HttpPrincipal;
 import org.eclipse.jetty.http.HttpField;
+import org.eclipse.jetty.http.QuotedCSV;
 import org.eclipse.jetty.io.Content;
 import org.eclipse.jetty.server.Request;
 import org.eclipse.jetty.server.Response;
@@ -68,9 +69,12 @@ public class JettyHttpExchangeDelegate extends HttpExchange
 
         for (HttpField field : _request.getHeaders())
         {
-            if (field.getValue() == null)
+            String rawValue = field.getValue();
+            if (rawValue == null)
                 continue;
-            for (String value : field.getValues())
+            // Using raw QuotedCSV here to preserve quotes (which HttpField.getValues() doesn't do)
+            QuotedCSV quotedCSV = new QuotedCSV(true, rawValue);
+            for (String value : quotedCSV.getValues())
                 headers.add(field.getName(), value);
         }
         return headers;
