@@ -23,6 +23,7 @@ import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ConcurrentLinkedQueue;
 import java.util.concurrent.ConcurrentSkipListSet;
 import java.util.concurrent.TimeoutException;
+import java.util.concurrent.atomic.AtomicInteger;
 
 import org.eclipse.jetty.http.HttpStatus;
 import org.eclipse.jetty.io.CyclicTimeouts;
@@ -30,7 +31,6 @@ import org.eclipse.jetty.server.Handler;
 import org.eclipse.jetty.server.HttpStream;
 import org.eclipse.jetty.server.Request;
 import org.eclipse.jetty.server.Response;
-import org.eclipse.jetty.util.AtomicBiInteger;
 import org.eclipse.jetty.util.Callback;
 import org.eclipse.jetty.util.IteratingCallback;
 import org.eclipse.jetty.util.NanoTime;
@@ -76,8 +76,7 @@ public class QoSHandler extends Handler.Wrapper
     private static final Logger LOG = LoggerFactory.getLogger(QoSHandler.class);
     private static final String EXPIRED_ATTRIBUTE_NAME = QoSHandler.class.getName() + ".expired";
 
-    // hi=permits, lo=suspended.
-    private final AtomicBiInteger state = new AtomicBiInteger();
+    private final AtomicInteger state = new AtomicInteger();
     private final Forwarder forwarder = new Forwarder();
     private final Map<Integer, Queue<Entry>> queues = new ConcurrentHashMap<>();
     private final Set<Integer> priorities = new ConcurrentSkipListSet<>(Comparator.reverseOrder());
@@ -146,7 +145,8 @@ public class QoSHandler extends Handler.Wrapper
     @ManagedAttribute("The number of suspended requests")
     public long getSuspendedRequestCount()
     {
-        return state.getLo();
+        int permits = state.get();
+        return Math.max(0, -permits);
     }
 
     @Override
@@ -165,7 +165,7 @@ public class QoSHandler extends Handler.Wrapper
                 maxRequests = ProcessorUtils.availableProcessors();
             setMaxRequestCount(maxRequests);
         }
-        state.set(maxRequests, 0);
+        state.set(maxRequests);
 
         if (LOG.isDebugEnabled())
             LOG.debug("{} initialized maxRequests={}", this, maxRequests);
@@ -187,37 +187,30 @@ public class QoSHandler extends Handler.Wrapper
         if (LOG.isDebugEnabled())
             LOG.debug("{} handling {}", this, request);
 
-        while (true)
+        int permits = state.getAndDecrement();
+        if (permits > 0)
         {
-            long encoded = state.get();
-            int permits = AtomicBiInteger.getHi(encoded);
-            if (permits > 0)
+            return forward(request, response, callback);
+        }
+        else
+        {
+            if (request.getAttribute(EXPIRED_ATTRIBUTE_NAME) != null)
             {
-                if (!state.compareAndSet(encoded, permits - 1, 0))
-                    continue;
-                return forward(request, response, callback);
+                // This is a request that was suspended, and it expired.
+                // Do not suspend it again, just complete it with 503.
+                state.getAndIncrement();
+                notAvailable(response, callback);
             }
             else
             {
-                if (request.getAttribute(EXPIRED_ATTRIBUTE_NAME) != null)
-                {
-                    notAvailable(response, callback);
-                }
-                else
-                {
-                    // Avoid this race condition:
-                    // T1 in handle() may find no permits, so it will suspend the request.
-                    // T2 in resume() finds no suspended requests and increments the permits.
-                    // T1 suspends the request, which will remain suspended despite permits are available.
-                    // Below, the suspended request count is only incremented if there are no permits.
-                    // See correspondent code in resume() and expire().
-                    int suspended = AtomicBiInteger.getLo(encoded);
-                    if (!state.compareAndSet(encoded, 0, suspended + 1))
-                        continue;
-                    suspend(request, response, callback);
-                }
-                return true;
+                // Avoid this race condition:
+                // T1 in handle() may find no permits, so it will suspend the request.
+                // T2 in resume() finds no suspended requests and increments the permits.
+                // T1 suspends the request, which will remain suspended despite permits are available.
+                // See correspondent state machine logic in resume() and expire().
+                suspend(request, response, callback);
             }
+            return true;
         }
     }
 
@@ -288,28 +281,28 @@ public class QoSHandler extends Handler.Wrapper
 
     private void resume()
     {
-        // Only increment the permits if there are no suspended requests.
-        // In this way, new requests will not steal the permits,
-        // so that already suspended requests will not starve.
+        // See correspondent state machine logic in handle() and expire().
+        int permits = state.getAndIncrement();
+        if (permits >= 0)
+        {
+            if (LOG.isDebugEnabled())
+                LOG.debug("{} no suspended requests to resume", this);
+            return;
+        }
+
         while (true)
         {
-            if (tryResumeSuspended())
+            if (resumeSuspended())
                 return;
 
-            // Here there are no suspended requests, so increment the permits.
-            // See correspondent code in handle() and expire().
-            long encoded = state.get();
-            int permits = AtomicBiInteger.getHi(encoded);
-            if (state.compareAndSet(encoded, permits + 1, 0))
-            {
-                if (LOG.isDebugEnabled())
-                    LOG.debug("{} no suspended requests to resume", this);
-                return;
-            }
+            // Found no suspended requests yet, but there will be.
+            // This covers the small race window in handle(), where
+            // the state is updated and then the request suspended.
+            Thread.onSpinWait();
         }
     }
 
-    private boolean tryResumeSuspended()
+    private boolean resumeSuspended()
     {
         for (Integer priority : priorities)
         {
@@ -360,18 +353,12 @@ public class QoSHandler extends Handler.Wrapper
             boolean removed = queues.get(priority).remove(this);
             if (removed)
             {
-                while (true)
-                {
-                    // See state machine logic in handle() and resume().
-                    int suspended = state.getLo();
-                    if (!state.compareAndSetLo(suspended, suspended - 1))
-                        continue;
-                    if (LOG.isDebugEnabled())
-                        LOG.debug("{} timeout {}", QoSHandler.this, request);
-                    request.setAttribute(EXPIRED_ATTRIBUTE_NAME, true);
-                    failSuspended(request, response, callback, HttpStatus.SERVICE_UNAVAILABLE_503, new TimeoutException());
-                    return;
-                }
+                // See correspondent state machine logic in handle() and resume().
+                state.getAndIncrement();
+                if (LOG.isDebugEnabled())
+                    LOG.debug("{} timeout {}", QoSHandler.this, request);
+                request.setAttribute(EXPIRED_ATTRIBUTE_NAME, true);
+                failSuspended(request, response, callback, HttpStatus.SERVICE_UNAVAILABLE_503, new TimeoutException());
             }
         }
 
