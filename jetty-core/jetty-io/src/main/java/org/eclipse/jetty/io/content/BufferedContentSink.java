@@ -72,24 +72,24 @@ public class BufferedContentSink implements Content.Sink
             callback.failed(new IOException("complete"));
             return;
         }
+        _lastWritten = last;
         if (_firstWrite)
         {
             _firstWrite = false;
             if (last)
             {
                 // No need to buffer if this is both the first and the last write.
-                _lastWritten = true;
                 _delegate.write(true, byteBuffer, callback);
                 return;
             }
-            _aggregator = new ByteBufferAggregator(_bufferPool, _direct, Math.min(START_BUFFER_SIZE, _maxBufferSize), _maxBufferSize);
         }
-        _lastWritten |= last;
 
         ByteBuffer current = byteBuffer != null ? byteBuffer : BufferUtil.EMPTY_BUFFER;
         if (current.remaining() <= _maxAggregationSize)
         {
             // current buffer can be aggregated
+            if (_aggregator == null)
+                _aggregator = new ByteBufferAggregator(_bufferPool, _direct, Math.min(START_BUFFER_SIZE, _maxBufferSize), _maxBufferSize);
             aggregateAndWrite(last, current, callback);
         }
         else
@@ -108,7 +108,7 @@ public class BufferedContentSink implements Content.Sink
         if (LOG.isDebugEnabled())
             LOG.debug("given buffer is greater than _maxBufferSize");
 
-        RetainableByteBuffer aggregatedBuffer = _aggregator.takeRetainableByteBuffer();
+        RetainableByteBuffer aggregatedBuffer = _aggregator == null ? null : _aggregator.takeRetainableByteBuffer();
         if (aggregatedBuffer == null)
         {
             if (LOG.isDebugEnabled())
