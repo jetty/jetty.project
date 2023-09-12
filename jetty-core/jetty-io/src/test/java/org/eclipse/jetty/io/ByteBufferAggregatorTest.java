@@ -56,11 +56,11 @@ public class ByteBufferAggregatorTest
         ByteBufferAggregator aggregator = new ByteBufferAggregator(bufferPool, true, 1, 16);
 
         ByteBuffer byteBuffer1 = ByteBuffer.wrap(new byte[16]);
-        assertThat(aggregator.copyBuffer(byteBuffer1), is(true));
+        assertThat(aggregator.aggregate(byteBuffer1), is(true));
         assertThat(byteBuffer1.remaining(), is(0));
 
         ByteBuffer byteBuffer2 = ByteBuffer.wrap(new byte[16]);
-        assertThat(aggregator.copyBuffer(byteBuffer2), is(true));
+        assertThat(aggregator.aggregate(byteBuffer2), is(true));
         assertThat(byteBuffer2.remaining(), is(16));
 
         RetainableByteBuffer retainableByteBuffer = aggregator.takeRetainableByteBuffer();
@@ -74,11 +74,11 @@ public class ByteBufferAggregatorTest
         ByteBufferAggregator aggregator = new ByteBufferAggregator(bufferPool, true, 1, 16);
 
         ByteBuffer byteBuffer1 = ByteBuffer.wrap(new byte[15]);
-        assertThat(aggregator.copyBuffer(byteBuffer1), is(false));
+        assertThat(aggregator.aggregate(byteBuffer1), is(false));
         assertThat(byteBuffer1.remaining(), is(0));
 
         ByteBuffer byteBuffer2 = ByteBuffer.wrap(new byte[16]);
-        assertThat(aggregator.copyBuffer(byteBuffer2), is(true));
+        assertThat(aggregator.aggregate(byteBuffer2), is(true));
         assertThat(byteBuffer2.remaining(), is(15));
 
         RetainableByteBuffer retainableByteBuffer = aggregator.takeRetainableByteBuffer();

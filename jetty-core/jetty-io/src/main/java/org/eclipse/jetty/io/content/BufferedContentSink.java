@@ -127,7 +127,7 @@ public class BufferedContentSink implements Content.Sink
      */
     private void aggregateAndWrite(boolean last, ByteBuffer currentBuffer, Callback callback)
     {
-        boolean write = _aggregator.copyBuffer(currentBuffer);
+        boolean write = _aggregator.aggregate(currentBuffer);
         boolean complete = last && !currentBuffer.hasRemaining();
         if (LOG.isDebugEnabled())
             LOG.debug("aggregated current buffer, write={}, complete={}, bytes left={}, aggregator={}", write, complete, currentBuffer.remaining(), _aggregator);

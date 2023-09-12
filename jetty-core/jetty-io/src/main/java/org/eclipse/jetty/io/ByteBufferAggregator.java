@@ -59,13 +59,14 @@ public class ByteBufferAggregator
     }
 
     /**
-     * Copies the given ByteBuffer into this aggregator. The buffer will aggregate bytes up to
-     * the specified maximum size, at which time this method returns false and
-     * {@link #takeRetainableByteBuffer()} must be called for this method to accept copying again.
-     * @param buffer the buffer to copy into this aggregator
+     * Copies the given ByteBuffer into this aggregator. This will aggregate bytes up to the
+     * specified maximum size, at which time this method returns false and
+     * {@link #takeRetainableByteBuffer()} must be called for this method to accept aggregating again.
+     * @param buffer the buffer to copy into this aggregator; its position is updated according to
+     * the number of aggregated bytes
      * @return true if the aggregator's buffer is full and should be taken, false otherwise
      */
-    public boolean copyBuffer(ByteBuffer buffer)
+    public boolean aggregate(ByteBuffer buffer)
     {
         ensureBufferCapacity(buffer.remaining());
         if (_retainableByteBuffer == null)
@@ -115,7 +116,7 @@ public class ByteBufferAggregator
     /**
      * Takes the buffer out of the aggregator. Once the buffer has been taken out,
      * the aggregator resets itself and a new buffer will be acquired from the pool
-     * during the next {@link #copyBuffer(ByteBuffer)} call.
+     * during the next {@link #aggregate(ByteBuffer)} call.
      * @return the aggregated buffer, or null if nothing has been buffered yet
      */
     public RetainableByteBuffer takeRetainableByteBuffer()
