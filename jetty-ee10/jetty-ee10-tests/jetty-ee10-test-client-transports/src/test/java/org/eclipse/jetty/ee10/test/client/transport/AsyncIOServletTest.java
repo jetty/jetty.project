@@ -44,9 +44,9 @@ import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletResponse;
 import org.eclipse.jetty.client.AsyncRequestContent;
 import org.eclipse.jetty.client.BufferingResponseListener;
+import org.eclipse.jetty.client.CompletableResponseListener;
 import org.eclipse.jetty.client.ContentResponse;
 import org.eclipse.jetty.client.Destination;
-import org.eclipse.jetty.client.FutureResponseListener;
 import org.eclipse.jetty.client.InputStreamRequestContent;
 import org.eclipse.jetty.client.OutputStreamRequestContent;
 import org.eclipse.jetty.client.Response;
@@ -1523,8 +1523,7 @@ public class AsyncIOServletTest extends AbstractTest
             .method(HttpMethod.POST)
             .body(body)
             .timeout(15, TimeUnit.SECONDS);
-        FutureResponseListener listener = new FutureResponseListener(request);
-        request.send(listener);
+        CompletableFuture<ContentResponse> completable = new CompletableResponseListener(request).send();
 
         assertTrue(bodyLatch.await(5, TimeUnit.SECONDS));
 
@@ -1536,7 +1535,7 @@ public class AsyncIOServletTest extends AbstractTest
         // Complete the body.
         body.close();
 
-        ContentResponse response = listener.get(5, TimeUnit.SECONDS);
+        ContentResponse response = completable.get(5, TimeUnit.SECONDS);
         assertEquals(HttpStatus.NO_CONTENT_204, response.getStatus());
     }
 

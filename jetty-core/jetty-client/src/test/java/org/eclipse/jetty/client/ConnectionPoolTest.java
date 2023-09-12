@@ -16,6 +16,7 @@ package org.eclipse.jetty.client;
 import java.net.InetSocketAddress;
 import java.nio.ByteBuffer;
 import java.util.List;
+import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.CopyOnWriteArrayList;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.CyclicBarrier;
@@ -263,12 +264,10 @@ public class ConnectionPoolTest
             default -> throw new IllegalStateException();
         }
 
-        FutureResponseListener listener = new FutureResponseListener(request, contentLength);
-        request.send(listener);
-
         try
         {
-            ContentResponse response = listener.get(5, TimeUnit.SECONDS);
+            CompletableFuture<ContentResponse> completable = new CompletableResponseListener(request).send();
+            ContentResponse response = completable.get(5, TimeUnit.SECONDS);
             assertEquals(HttpStatus.OK_200, response.getStatus());
         }
         catch (Throwable x)

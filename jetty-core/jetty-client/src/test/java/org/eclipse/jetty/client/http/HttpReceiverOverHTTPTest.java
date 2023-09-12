@@ -14,17 +14,19 @@
 package org.eclipse.jetty.client.http;
 
 import java.io.EOFException;
-import java.nio.charset.StandardCharsets;
+import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.ExecutionException;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.TimeoutException;
 import java.util.stream.Stream;
 
-import org.eclipse.jetty.client.FutureResponseListener;
+import org.eclipse.jetty.client.CompletableResponseListener;
+import org.eclipse.jetty.client.ContentResponse;
 import org.eclipse.jetty.client.HttpClient;
 import org.eclipse.jetty.client.HttpResponseException;
 import org.eclipse.jetty.client.Origin;
 import org.eclipse.jetty.client.Response;
+import org.eclipse.jetty.client.Result;
 import org.eclipse.jetty.client.transport.HttpDestination;
 import org.eclipse.jetty.client.transport.HttpExchange;
 import org.eclipse.jetty.client.transport.HttpRequest;
@@ -89,17 +91,25 @@ public class HttpReceiverOverHTTPTest
         client.stop();
     }
 
-    protected FutureResponseListener startExchange()
+    protected CompletableFuture<ContentResponse> startExchange()
     {
         HttpRequest request = (HttpRequest)client.newRequest("http://localhost");
-        FutureResponseListener listener = new FutureResponseListener(request);
+        CompletableFuture<ContentResponse> responseCompletable = new CompletableFuture<>();
+        CompletableResponseListener listener = new CompletableResponseListener(request)
+        {
+            @Override
+            protected void onComplete(CompletableFuture<ContentResponse> completable, Result result)
+            {
+                super.onComplete(responseCompletable, result);
+            }
+        };
         request.getResponseListeners().addListener(listener);
         HttpExchange exchange = new HttpExchange(destination, request);
         boolean associated = connection.getHttpChannel().associate(exchange);
         assertTrue(associated);
         exchange.requestComplete(null);
         exchange.terminateRequest();
-        return listener;
+        return responseCompletable;
     }
 
     @ParameterizedTest
@@ -111,10 +121,10 @@ public class HttpReceiverOverHTTPTest
             "HTTP/1.1 200 OK\r\n" +
                 "Content-length: 0\r\n" +
                 "\r\n");
-        FutureResponseListener listener = startExchange();
+        CompletableFuture<ContentResponse> completable = startExchange();
         connection.getHttpChannel().receive();
 
-        Response response = listener.get(5, TimeUnit.SECONDS);
+        Response response = completable.get(5, TimeUnit.SECONDS);
         assertNotNull(response);
         assertEquals(200, response.getStatus());
         assertEquals("OK", response.getReason());
@@ -136,10 +146,10 @@ public class HttpReceiverOverHTTPTest
                 "Content-length: " + content.length() + "\r\n" +
                 "\r\n" +
                 content);
-        FutureResponseListener listener = startExchange();
+        CompletableFuture<ContentResponse> completable = startExchange();
         connection.getHttpChannel().receive();
 
-        Response response = listener.get(5, TimeUnit.SECONDS);
+        ContentResponse response = completable.get(5, TimeUnit.SECONDS);
         assertNotNull(response);
         assertEquals(200, response.getStatus());
         assertEquals("OK", response.getReason());
@@ -148,7 +158,7 @@ public class HttpReceiverOverHTTPTest
         assertNotNull(headers);
         assertEquals(1, headers.size());
         assertEquals(String.valueOf(content.length()), headers.get(HttpHeader.CONTENT_LENGTH));
-        String received = listener.getContentAsString(StandardCharsets.UTF_8);
+        String received = response.getContentAsString();
         assertEquals(content, received);
     }
 
@@ -164,12 +174,12 @@ public class HttpReceiverOverHTTPTest
                 "Content-length: " + (content1.length() + content2.length()) + "\r\n" +
                 "\r\n" +
                 content1);
-        FutureResponseListener listener = startExchange();
+        CompletableFuture<ContentResponse> completable = startExchange();
         connection.getHttpChannel().receive();
         endPoint.addInputEOF();
         connection.getHttpChannel().receive();
 
-        ExecutionException e = assertThrows(ExecutionException.class, () -> listener.get(5, TimeUnit.SECONDS));
+        ExecutionException e = assertThrows(ExecutionException.class, () -> completable.get(5, TimeUnit.SECONDS));
         assertThat(e.getCause(), instanceOf(EOFException.class));
     }
 
@@ -182,7 +192,7 @@ public class HttpReceiverOverHTTPTest
             "HTTP/1.1 200 OK\r\n" +
                 "Content-length: 1\r\n" +
                 "\r\n");
-        FutureResponseListener listener = startExchange();
+        CompletableFuture<ContentResponse> completable = startExchange();
         connection.getHttpChannel().receive();
         // ByteArrayEndPoint has an idle timeout of 0 by default,
         // so to simulate an idle timeout is enough to wait a bit.
@@ -190,7 +200,7 @@ public class HttpReceiverOverHTTPTest
         TimeoutException timeoutException = new TimeoutException();
         connection.onIdleExpired(timeoutException);
 
-        ExecutionException e = assertThrows(ExecutionException.class, () -> listener.get(5, TimeUnit.SECONDS));
+        ExecutionException e = assertThrows(ExecutionException.class, () -> completable.get(5, TimeUnit.SECONDS));
         assertThat(e.getCause(), instanceOf(TimeoutException.class));
         assertThat(e.getCause(), sameInstance(timeoutException));
     }
@@ -204,10 +214,10 @@ public class HttpReceiverOverHTTPTest
             "HTTP/1.1 200 OK\r\n" +
                 "Content-length: A\r\n" +
                 "\r\n");
-        FutureResponseListener listener = startExchange();
+        CompletableFuture<ContentResponse> completable = startExchange();
         connection.getHttpChannel().receive();
 
-        ExecutionException e = assertThrows(ExecutionException.class, () -> listener.get(5, TimeUnit.SECONDS));
+        ExecutionException e = assertThrows(ExecutionException.class, () -> completable.get(5, TimeUnit.SECONDS));
         assertThat(e.getCause(), instanceOf(HttpResponseException.class));
         assertThat(e.getCause().getCause(), instanceOf(BadMessageException.class));
         assertThat(e.getCause().getCause().getCause(), instanceOf(NumberFormatException.class));
@@ -253,10 +263,10 @@ public class HttpReceiverOverHTTPTest
                 "Content-Length: 1\r\n" +
                 "\r\n");
 
-        FutureResponseListener listener = startExchange();
+        CompletableFuture<ContentResponse> completable = startExchange();
         connection.getHttpChannel().receive();
 
-        Response response = listener.get(5, TimeUnit.SECONDS);
+        Response response = completable.get(5, TimeUnit.SECONDS);
         assertNotNull(response);
         assertEquals(200, response.getStatus());
     }

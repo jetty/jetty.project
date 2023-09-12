@@ -22,6 +22,7 @@ import java.nio.ByteBuffer;
 import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.util.List;
+import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.TimeUnit;
 
 import org.eclipse.jetty.client.AsyncRequestContent;
@@ -30,11 +31,11 @@ import org.eclipse.jetty.client.AuthenticationStore;
 import org.eclipse.jetty.client.BasicAuthentication;
 import org.eclipse.jetty.client.BufferingResponseListener;
 import org.eclipse.jetty.client.BytesRequestContent;
+import org.eclipse.jetty.client.CompletableResponseListener;
 import org.eclipse.jetty.client.ConnectionPool;
 import org.eclipse.jetty.client.ContentResponse;
 import org.eclipse.jetty.client.Destination;
 import org.eclipse.jetty.client.DigestAuthentication;
-import org.eclipse.jetty.client.FutureResponseListener;
 import org.eclipse.jetty.client.HttpClient;
 import org.eclipse.jetty.client.HttpClientTransport;
 import org.eclipse.jetty.client.HttpProxy;
@@ -384,17 +385,19 @@ public class HTTPClientDocs
         HttpClient httpClient = new HttpClient();
         httpClient.start();
 
-        // tag::futureResponseListener[]
+        // tag::completableResponseListener[]
         Request request = httpClient.newRequest("http://domain.com/path");
 
         // Limit response content buffer to 512 KiB.
-        FutureResponseListener listener = new FutureResponseListener(request, 512 * 1024);
+        CompletableFuture<ContentResponse> completable = new CompletableResponseListener(request, 512 * 1024)
+            .send();
 
-        request.send(listener);
+        // You can attach actions to the CompletableFuture,
+        // to be performed when the request+response completes.
 
         // Wait at most 5 seconds for request+response to complete.
-        ContentResponse response = listener.get(5, TimeUnit.SECONDS);
-        // end::futureResponseListener[]
+        ContentResponse response = completable.get(5, TimeUnit.SECONDS);
+        // end::completableResponseListener[]
     }
 
     public void bufferingResponseListener() throws Exception
