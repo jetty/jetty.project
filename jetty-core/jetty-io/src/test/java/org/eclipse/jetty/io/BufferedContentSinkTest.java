@@ -27,7 +27,6 @@ import org.eclipse.jetty.util.BufferUtil;
 import org.eclipse.jetty.util.Callback;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
-import org.junit.jupiter.api.Disabled;
 import org.junit.jupiter.api.Test;
 
 import static java.nio.charset.StandardCharsets.UTF_8;
@@ -423,7 +422,6 @@ public class BufferedContentSinkTest
     }
 
     @Test
-    @Disabled
     public void testByteByByteRecursion() throws Exception
     {
         try (AsyncContent async = new AsyncContent())
@@ -437,19 +435,28 @@ public class BufferedContentSinkTest
                 public void succeeded()
                 {
                     int c = count.decrementAndGet();
-                    if (c > 0)
-                        buffered.write(false, ByteBuffer.wrap(new byte[1]), this);
-                    else if (c == 0)
-                        buffered.write(true, ByteBuffer.wrap(new byte[1]), this);
+                    ByteBuffer byteBuffer = ByteBuffer.wrap(new byte[]{(byte)c});
+                    if (c >= 0)
+                        buffered.write(c == 0, byteBuffer, this);
                     else
                         complete.countDown();
                 }
             };
 
             callback.succeeded();
-            assertTrue(complete.await(10, TimeUnit.SECONDS));
-            assertThat(count.get(), is(0));
-            // TODO more checks
+
+            Content.Chunk read = async.read();
+            assertThat(read.isLast(), is(false));
+            assertThat(read.remaining(), is(4096));
+            assertThat(read.release(), is(true));
+
+            read = async.read();
+            assertThat(read.isLast(), is(true));
+            assertThat(read.remaining(), is(4096));
+            assertThat(read.release(), is(true));
+
+            assertTrue(complete.await(5, TimeUnit.SECONDS));
+            assertThat(count.get(), is(-1));
         }
     }
 }

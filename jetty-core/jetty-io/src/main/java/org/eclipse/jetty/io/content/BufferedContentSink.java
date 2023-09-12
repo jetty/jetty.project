@@ -22,6 +22,7 @@ import org.eclipse.jetty.io.Content;
 import org.eclipse.jetty.io.RetainableByteBuffer;
 import org.eclipse.jetty.util.BufferUtil;
 import org.eclipse.jetty.util.Callback;
+import org.eclipse.jetty.util.CountingCallback;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -45,6 +46,8 @@ public class BufferedContentSink implements Content.Sink
     private ByteBufferAggregator _aggregator;
     private boolean _firstWrite = true;
     private boolean _lastWritten;
+    private int _recursionCounter;
+    private CountingCallback _countingCallback;
 
     public BufferedContentSink(Content.Sink delegate, ByteBufferPool bufferPool, boolean direct, int maxBufferSize, int maxAggregationSize)
     {
@@ -64,38 +67,76 @@ public class BufferedContentSink implements Content.Sink
     @Override
     public void write(boolean last, ByteBuffer byteBuffer, Callback callback)
     {
-        if (LOG.isDebugEnabled())
-            LOG.debug("writing last={} {}", last, BufferUtil.toDetailString(byteBuffer));
+        /*
+         * The given callback might call write() again, which could stack overflow.
+         * To avoid this, the callback is succeeded only when we are not recursing
+         * write(); this means we must keep a recursion counter, give a counting
+         * callback with a count of 2 to recursive write() calls and
+         * succeed that counting callback a second time when recursion counter
+         * reaches 1 so that the original callback is then succeeded.
+         */
+        _recursionCounter++;
+        try
+        {
+            if (LOG.isDebugEnabled())
+                LOG.debug("writing last={} {}", last, BufferUtil.toDetailString(byteBuffer));
 
-        if (_lastWritten)
-        {
-            callback.failed(new IOException("complete"));
-            return;
-        }
-        _lastWritten = last;
-        if (_firstWrite)
-        {
-            _firstWrite = false;
-            if (last)
+            if (_lastWritten)
             {
-                // No need to buffer if this is both the first and the last write.
-                _delegate.write(true, byteBuffer, callback);
+                callback.failed(new IOException("complete"));
                 return;
             }
-        }
+            _lastWritten = last;
+            if (_firstWrite)
+            {
+                _firstWrite = false;
+                if (last)
+                {
+                    // No need to buffer if this is both the first and the last write.
+                    _delegate.write(true, byteBuffer, callback);
+                    return;
+                }
+            }
 
-        ByteBuffer current = byteBuffer != null ? byteBuffer : BufferUtil.EMPTY_BUFFER;
-        if (current.remaining() <= _maxAggregationSize)
-        {
-            // current buffer can be aggregated
-            if (_aggregator == null)
-                _aggregator = new ByteBufferAggregator(_bufferPool, _direct, Math.min(START_BUFFER_SIZE, _maxBufferSize), _maxBufferSize);
-            aggregateAndWrite(last, current, callback);
+            ByteBuffer current = byteBuffer != null ? byteBuffer : BufferUtil.EMPTY_BUFFER;
+            if (current.remaining() <= _maxAggregationSize)
+            {
+                // current buffer can be aggregated
+                if (_aggregator == null)
+                    _aggregator = new ByteBufferAggregator(_bufferPool, _direct, Math.min(START_BUFFER_SIZE, _maxBufferSize), _maxBufferSize);
+                Callback cb;
+                if (_recursionCounter == 2)
+                {
+                    if (_countingCallback != null)
+                        throw new AssertionError();
+                    cb = _countingCallback = new CountingCallback(callback, 2);
+                }
+                else
+                {
+                    cb = callback;
+                }
+                aggregateAndWrite(last, current, cb);
+            }
+            else
+            {
+                // current buffer is greater than the max aggregation size
+                directWrite(last, current, callback);
+            }
         }
-        else
+        finally
         {
-            // current buffer is greater than the max aggregation size
-            directWrite(last, current, callback);
+            if (_recursionCounter == 1)
+            {
+                while (true)
+                {
+                    Callback cb = _countingCallback;
+                    _countingCallback = null;
+                    if (cb == null)
+                        break;
+                    cb.succeeded();
+                }
+            }
+            _recursionCounter--;
         }
     }
 
