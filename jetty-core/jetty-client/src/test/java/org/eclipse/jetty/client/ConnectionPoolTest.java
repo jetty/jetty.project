@@ -266,7 +266,7 @@ public class ConnectionPoolTest
 
         try
         {
-            CompletableFuture<ContentResponse> completable = new CompletableResponseListener(request).send();
+            CompletableFuture<ContentResponse> completable = new CompletableResponseListener(request, contentLength).send();
             ContentResponse response = completable.get(5, TimeUnit.SECONDS);
             assertEquals(HttpStatus.OK_200, response.getStatus());
         }

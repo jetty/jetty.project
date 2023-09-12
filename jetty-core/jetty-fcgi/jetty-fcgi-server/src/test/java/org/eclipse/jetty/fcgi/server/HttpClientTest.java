@@ -214,7 +214,7 @@ public class HttpClientTest extends AbstractHttpClientServerTest
         });
 
         Request request = client.newRequest(scheme + "://localhost:" + connector.getLocalPort());
-        CompletableFuture<ContentResponse> completable = new CompletableResponseListener(request).send();
+        CompletableFuture<ContentResponse> completable = new CompletableResponseListener(request, data.length).send();
         ContentResponse response = completable.get(15, TimeUnit.SECONDS);
         assertNotNull(response);
         assertEquals(200, response.getStatus());
