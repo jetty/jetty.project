@@ -497,11 +497,11 @@ case "$ACTION" in
         su - "$JETTY_USER" $SU_SHELL -c "
           cd \"$JETTY_BASE\"
           echo ${RUN_ARGS[*]} start-log-file=\"$JETTY_START_LOG\" | xargs ${JAVA} > /dev/null &
-          disown $(pgrep -P $!)"
+          disown \$!"
       else
         # Startup if not switching users
         echo ${RUN_ARGS[*]} | xargs ${JAVA} > /dev/null &
-        disown $(pgrep -P $!)
+        disown $!
       fi
 
     fi
