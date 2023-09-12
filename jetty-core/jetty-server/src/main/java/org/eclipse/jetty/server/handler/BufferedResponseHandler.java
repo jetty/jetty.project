@@ -56,6 +56,10 @@ public class BufferedResponseHandler extends Handler.Wrapper
      * The name of the request attribute used to control the buffer size of a particular request.
      */
     public static final String BUFFER_SIZE_ATTRIBUTE_NAME = BufferedResponseHandler.class.getName() + ".buffer-size";
+    /**
+     * The name of the request attribute used to control the max aggregation size of a particular request.
+     */
+    public static final String MAX_AGGREGATION_SIZE_ATTRIBUTE_NAME = BufferedResponseHandler.class.getName() + ".max-aggregation-size";
 
     private static final Logger LOG = LoggerFactory.getLogger(BufferedResponseHandler.class);
 
@@ -193,27 +197,25 @@ public class BufferedResponseHandler extends Handler.Wrapper
         {
             if (_firstWrite)
             {
-                if (shouldBuffer(this, last))
-                {
-                    Request request = getRequest();
-                    _bufferedContentSink = Response.asBufferedSink(request, getWrapped(), getBufferSize(request), useDirectBuffers(request));
-                }
                 _firstWrite = false;
+                if (shouldBuffer(this, last))
+                    _bufferedContentSink = createBufferedSink();
             }
             _lastWritten |= last;
             Content.Sink destSink = _bufferedContentSink != null ? _bufferedContentSink : getWrapped();
             destSink.write(last, byteBuffer, callback);
         }
 
-        private static boolean useDirectBuffers(Request request)
+        private Content.Sink createBufferedSink()
         {
-            return request.getConnectionMetaData().getHttpConfiguration().isUseOutputDirectByteBuffers();
-        }
-
-        private static int getBufferSize(Request request)
-        {
+            Request request = getRequest();
+            HttpConfiguration httpConfiguration = request.getConnectionMetaData().getHttpConfiguration();
             Object attribute = request.getAttribute(BufferedResponseHandler.BUFFER_SIZE_ATTRIBUTE_NAME);
-            return attribute instanceof Integer ? (int)attribute : request.getConnectionMetaData().getHttpConfiguration().getOutputBufferSize();
+            int bufferSize = attribute instanceof Integer ? (int)attribute : httpConfiguration.getOutputBufferSize();
+            attribute = request.getAttribute(BufferedResponseHandler.MAX_AGGREGATION_SIZE_ATTRIBUTE_NAME);
+            int maxAggregationSize = attribute instanceof Integer ? (int)attribute : httpConfiguration.getOutputAggregationSize();
+            boolean direct = httpConfiguration.isUseOutputDirectByteBuffers();
+            return Response.asBufferedSink(request, getWrapped(), bufferSize, direct, maxAggregationSize);
         }
 
         @Override

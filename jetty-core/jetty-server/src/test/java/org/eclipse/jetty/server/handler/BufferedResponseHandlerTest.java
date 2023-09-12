@@ -46,6 +46,7 @@ public class BufferedResponseHandlerTest
         _server = new Server();
         HttpConfiguration config = new HttpConfiguration();
         config.setOutputBufferSize(1024);
+        config.setOutputAggregationSize(256);
         _local = new LocalConnector(_server, new HttpConnectionFactory(config));
         _server.addConnector(_local);
 
@@ -136,6 +137,7 @@ public class BufferedResponseHandlerTest
     @Test
     public void testBufferSizeSmall() throws Exception
     {
+        _test._aggregationSize = 16;
         _test._bufferSize = 16;
         String response = _local.getResponse("GET /ctx/include/path HTTP/1.1\r\nHost: localhost\r\n\r\n");
         assertThat(response, containsString(" 200 OK"));
@@ -200,6 +202,7 @@ public class BufferedResponseHandlerTest
 
     public static class TestHandler extends Handler.Abstract
     {
+        int _aggregationSize = -1;
         int _bufferSize = -1;
         String _mimeType;
         byte[] _content = new byte[128];
@@ -220,6 +223,8 @@ public class BufferedResponseHandlerTest
 
             if (_bufferSize > 0)
                 request.setAttribute(BufferedResponseHandler.BUFFER_SIZE_ATTRIBUTE_NAME, _bufferSize);
+            if (_aggregationSize > 0)
+                request.setAttribute(BufferedResponseHandler.MAX_AGGREGATION_SIZE_ATTRIBUTE_NAME, _aggregationSize);
             if (_mimeType != null)
                 response.getHeaders().put(HttpHeader.CONTENT_TYPE, _mimeType);
 

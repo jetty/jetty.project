@@ -406,11 +406,13 @@ public class Content
          * @param bufferPool the {@link org.eclipse.jetty.io.ByteBufferPool} to use
          * @param direct true to use direct buffers, false to use heap buffers
          * @param maxBufferSize the maximum size of the buffer
+         * @param maxAggregationSize the maximum size that can be buffered in a single write;
+         * any size above this threshold triggers a buffer flush
          * @return a Sink that writes to the given content sink
          */
-        static Sink asBuffered(Sink sink, ByteBufferPool bufferPool, boolean direct, int maxBufferSize)
+        static Sink asBuffered(Sink sink, ByteBufferPool bufferPool, boolean direct, int maxBufferSize, int maxAggregationSize)
         {
-            return new BufferedContentSink(sink, bufferPool, direct, maxBufferSize);
+            return new BufferedContentSink(sink, bufferPool, direct, maxBufferSize, maxAggregationSize);
         }
 
         /**
