@@ -536,9 +536,8 @@ public interface Response extends Content.Sink
      * <p>Wraps a {@link Response} as a {@link OutputStream} that performs buffering. The necessary
      * {@link ByteBufferPool} is taken from the request's connector while the size and direction of the buffer
      * is read from the request's {@link HttpConfiguration}.</p>
-     * <p>This is equivalent to:<pre>
-     * Content.Sink.asOutputStream(Response.asBufferedSink(request, response))
-     * </pre></p>
+     * <p>This is equivalent to:</p>
+     * <p>{@code Content.Sink.asOutputStream(Response.asBufferedSink(request, response))}</p>
      * @param request the request from which to get the buffering sink's settings
      * @param response the response to wrap
      * @return a buffering {@link OutputStream}
