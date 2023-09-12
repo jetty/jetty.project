@@ -15,6 +15,7 @@ package org.eclipse.jetty.server.handler;
 
 import java.util.stream.Stream;
 
+import org.eclipse.jetty.http.HttpStatus;
 import org.eclipse.jetty.server.ForwardedRequestCustomizer;
 import org.eclipse.jetty.server.Handler;
 import org.eclipse.jetty.server.HttpConnectionFactory;
@@ -73,10 +74,24 @@ public class ConditionalHandlerTest
     public static Stream<ConditionalHandler> conditionalHandlers()
     {
         return Stream.of(
-            new TestNextHandler(ConditionalHandler.NotMetAction.REJECT),
-            new TestNextHandler(ConditionalHandler.NotMetAction.FORBIDDEN),
+            new TestNextHandler(ConditionalHandler.NotApplyAction.DO_NOT_HANDLE),
+            new TestNextHandler(ConditionalHandler.NotApplyAction.DO_NOT_HANDLE)
+            {
+                @Override
+                protected boolean doNotHandle(Request request, Response response, Callback callback) throws Exception
+                {
+                    Response.writeError(request, response, callback, HttpStatus.FORBIDDEN_403);
+                    return true;
+                }
+
+                @Override
+                public String getExpectedWhenNotApplied()
+                {
+                    return "403 Forbidden";
+                }
+            },
             new TestSkipThisHandler(),
-            new TestNextHandler(ConditionalHandler.NotMetAction.SKIP_NEXT)
+            new TestNextHandler(ConditionalHandler.NotApplyAction.SKIP_NEXT)
         );
     }
 
@@ -165,14 +180,13 @@ public class ConditionalHandlerTest
     {
         final String _expectedWhenNotApplied;
 
-        public TestConditionalHandler(ConditionalHandler.NotMetAction notMetAction)
+        public TestConditionalHandler(NotApplyAction notApplyAction)
         {
-            super(notMetAction);
+            super(notApplyAction);
 
-            _expectedWhenNotApplied = switch (notMetAction)
+            _expectedWhenNotApplied = switch (notApplyAction)
             {
-                case REJECT -> "404 Not Found";
-                case FORBIDDEN -> "403 Forbidden";
+                case DO_NOT_HANDLE -> "404 Not Found";
                 case SKIP_THIS, SKIP_NEXT -> "200 OK";
             };
         }
@@ -187,7 +201,7 @@ public class ConditionalHandlerTest
     {
         TestSkipThisHandler()
         {
-            super(NotMetAction.SKIP_THIS);
+            super(NotApplyAction.SKIP_THIS);
         }
 
         @Override
@@ -200,9 +214,9 @@ public class ConditionalHandlerTest
 
     public static class TestNextHandler extends TestConditionalHandler
     {
-        public TestNextHandler(ConditionalHandler.NotMetAction notMetAction)
+        public TestNextHandler(NotApplyAction notApplyAction)
         {
-            super(notMetAction);
+            super(notApplyAction);
             setHandler(new Handler.Wrapper()
             {
                 @Override

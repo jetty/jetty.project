@@ -27,9 +27,10 @@ import java.util.Iterator;
 import java.util.Set;
 import java.util.function.Predicate;
 
-import org.eclipse.jetty.http.HttpStatus;
 import org.eclipse.jetty.http.pathmap.PathSpec;
 import org.eclipse.jetty.http.pathmap.PathSpecSet;
+import org.eclipse.jetty.server.ConnectionMetaData;
+import org.eclipse.jetty.server.Connector;
 import org.eclipse.jetty.server.Handler;
 import org.eclipse.jetty.server.Request;
 import org.eclipse.jetty.server.Response;
@@ -37,25 +38,63 @@ import org.eclipse.jetty.util.Callback;
 import org.eclipse.jetty.util.IncludeExclude;
 import org.eclipse.jetty.util.IncludeExcludeSet;
 import org.eclipse.jetty.util.InetAddressPattern;
+import org.eclipse.jetty.util.StringUtil;
 import org.eclipse.jetty.util.component.DumpableCollection;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import static java.lang.invoke.MethodType.methodType;
 
+/**
+ * A {@link Handler.Wrapper} that may conditionally apply an action to a request.
+ * The conditions are implemented by an {@link IncludeExclude} of:
+ * <ul>
+ *     <li>A method name</li>
+ *     <li>A {@link PathSpec} or sting representation</li>
+ *     <li>A combination of {@link #include(String, String, String, PathSpec) multiple attributes}</li>
+ *     <li>An arbitrary {@link Predicate} taking the {@link Request}</li>
+ * </ul>
+ * <p>
+ * If the conditions are met, the {@link #doHandle(Request, Response, Callback)} method will be invoked.
+ * However, as the default implementation to to call the {@link #getHandler() next Handler}, an optimization is applied to
+ * directly call the next {@code Handler} if {@code doHandler} has not been extended.
+ * </p>
+ * <p>
+ * If the conditions are not met, then the behaviour will be determined by the {@link NotApplyAction} passed to the
+ * constructor.
+ * </p>
+ *
+ */
 public class ConditionalHandler extends Handler.Wrapper
 {
     private static final Logger LOG = LoggerFactory.getLogger(ConditionalHandler.class);
 
-    public enum NotMetAction
+    public enum NotApplyAction
     {
-        REJECT,     // The handle method will return false if the conditions are not met
-        FORBIDDEN,       // The request will be failed with a 403 response
-        SKIP_THIS,       // The doHandle method of this handler will be skipped the handleNext method called instead
-        SKIP_NEXT,  // The handle method of the next Handler will be skipped by calling the skipNext method
+        /**
+         * If the conditions are not met, then the {@link #doNotHandle(Request, Response, Callback)} method is invoked,
+         * which by default will return {@code false}.  This action is used when the entire {@code Handler} branch is
+         * to be bypassed.
+         */
+        DO_NOT_HANDLE,
+        /**
+         * If the conditions are not met, then bypass the {@link #doHandle(Request, Response, Callback)} method by
+         * invoking the {@link Handler#handle(Request, Response, Callback)} method of the {@link #getHandler() next Handler}.
+         * This action is used if this class has been extended to provided specific optional behavior in the {@code doHandle}
+         * method.
+         */
+        SKIP_THIS,
+        /**
+         * If the conditions are not met, then bypass the {@link Handler#handle(Request, Response, Callback)} method
+         * of the {@link #getHandler() next Handler} invoking the {@link Handler#handle(Request, Response, Callback)}
+         * method of the {@link Handler} {@link Singleton#getHandler() after} the {@link #getHandler() nextHandler}.
+         * This action is used to make the specific behavior of the {@link #getHandler() following}
+         * {@link Handler.Wrapper Wrapper} class optional.
+         */
+        SKIP_NEXT,
     }
 
-    private final NotMetAction _notMetAction;
+    private final NotApplyAction _notApplyAction;
     private final IncludeExclude<String> _methods = new IncludeExclude<>();
     private final IncludeExclude<String> _paths = new IncludeExclude<>(PathSpecSet.class);
     private final IncludeExcludeSet<Predicate<Request>, Request> _predicates = new IncludeExcludeSet<>(PredicateSet.class);
@@ -63,20 +102,17 @@ public class ConditionalHandler extends Handler.Wrapper
 
     public ConditionalHandler()
     {
-        this(NotMetAction.REJECT);
+        this(NotApplyAction.DO_NOT_HANDLE);
     }
 
-    public ConditionalHandler(Handler.Singleton nextHandlerWrapper)
+    public ConditionalHandler(NotApplyAction notApplyAction)
     {
-        this(NotMetAction.SKIP_NEXT);
-        setHandler(nextHandlerWrapper);
+        _notApplyAction = notApplyAction;
     }
 
-    public ConditionalHandler(NotMetAction notMetAction)
-    {
-        _notMetAction = notMetAction;
-    }
-
+    /**
+     * Clear all inclusions and exclusions.
+     */
     public void clear()
     {
         if (isStarted())
@@ -86,83 +122,10 @@ public class ConditionalHandler extends Handler.Wrapper
         _predicates.clear();
     }
 
-    @Override
-    protected void doStart() throws Exception
-    {
-        Handler next = getHandler();
-
-        MethodHandles.Lookup lookup = MethodHandles.lookup();
-        MethodType handleType = methodType(boolean.class, Request.class, Response.class, Callback.class);
-
-        boolean doHandleExtended;
-        try
-        {
-            doHandleExtended = getClass().getDeclaredMethod("doHandle", Request.class, Response.class, Callback.class).getDeclaringClass() != ConditionalHandler.class;
-        }
-        catch (NoSuchMethodException e)
-        {
-            doHandleExtended = false;
-        }
-
-        _doHandle = doHandleExtended || next == null
-            ? lookup.findVirtual(ConditionalHandler.class, "doHandle", handleType).bindTo(this)
-            : lookup.findVirtual(next.getClass(), "handle", handleType).bindTo(next);
-
-        MethodHandle notMetHandle = switch (_notMetAction)
-        {
-            case REJECT -> MethodHandles.dropArguments(MethodHandles.constant(boolean.class, false), 0, Request.class, Response.class, Callback.class);
-            case FORBIDDEN -> lookup.findVirtual(ConditionalHandler.class, "forbidden", handleType).bindTo(this);
-            case SKIP_THIS ->
-            {
-                if (next != null)
-                {
-                    MethodHandle nextHandle = lookup.findVirtual(next.getClass(), "handle", handleType);
-                    yield nextHandle.bindTo(next);
-                }
-                throw new IllegalStateException("No next Handler");
-            }
-            case SKIP_NEXT ->
-            {
-                if (getHandler() instanceof Handler.Singleton nextWrapper && nextWrapper.getHandler() != null)
-                {
-                    Handler nextNextHandler = nextWrapper.getHandler();
-                    MethodHandle nextHandle = lookup.findVirtual(nextNextHandler.getClass(), "handle", handleType);
-                    yield nextHandle.bindTo(nextNextHandler);
-                }
-                throw new IllegalStateException("No next Handler.Wrapper next");
-            }
-        };
-
-        if (!_methods.isEmpty())
-        {
-            MethodHandle checkMethod = lookup.findVirtual(ConditionalHandler.class, "checkMethod", methodType(boolean.class, Request.class)).bindTo(this);
-            _doHandle = MethodHandles.guardWithTest(
-                MethodHandles.dropArguments(checkMethod, 1, Response.class, Callback.class),
-                _doHandle,
-                notMetHandle);
-        }
-
-        if (!_paths.isEmpty())
-        {
-            MethodHandle checkPath = lookup.findVirtual(ConditionalHandler.class, "checkPath", methodType(boolean.class, Request.class)).bindTo(this);
-            _doHandle = MethodHandles.guardWithTest(
-                MethodHandles.dropArguments(checkPath, 1, Response.class, Callback.class),
-                _doHandle,
-                notMetHandle);
-        }
-
-        if (!_predicates.isEmpty())
-        {
-            MethodHandle checkPredicates = lookup.findVirtual(ConditionalHandler.class, "checkPredicates", methodType(boolean.class, Request.class)).bindTo(this);
-            _doHandle = MethodHandles.guardWithTest(
-                MethodHandles.dropArguments(checkPredicates, 1, Response.class, Callback.class),
-                _doHandle,
-                notMetHandle);
-        }
-
-        super.doStart();
-    }
-
+    /**
+     * Include {@link Request#getMethod() method}s in the conditions to be met
+     * @param methods The exact case-sensitive method name
+     */
     public void includeMethod(String... methods)
     {
         if (isStarted())
@@ -170,6 +133,10 @@ public class ConditionalHandler extends Handler.Wrapper
         _methods.include(methods);
     }
 
+    /**
+     * Exclude {@link Request#getMethod() method}s in the conditions to be met
+     * @param methods The exact case-sensitive method name
+     */
     public void excludeMethod(String... methods)
     {
         if (isStarted())
@@ -177,6 +144,36 @@ public class ConditionalHandler extends Handler.Wrapper
         _methods.exclude(methods);
     }
 
+    /**
+     * Include {@link PathSpec}s in the conditions to be met
+     * @param paths The {@link PathSpec}s that are tested against the {@link Request#getPathInContext(Request) pathInContext}.
+     */
+    public void include(PathSpec... paths)
+    {
+        if (isStarted())
+            throw new IllegalStateException(getState());
+
+        for (PathSpec p : paths)
+            ((PathSpecSet)_paths.getIncluded()).add(p);
+    }
+
+    /**
+     * Exclude {@link PathSpec}s in the conditions to be met
+     * @param paths The {@link PathSpec}s that are tested against the {@link Request#getPathInContext(Request) pathInContext}.
+     */
+    public void exclude(PathSpec... paths)
+    {
+        if (isStarted())
+            throw new IllegalStateException(getState());
+        for (PathSpec p : paths)
+            ((PathSpecSet)_paths.getExcluded()).add(p);
+    }
+
+    /**
+     * Include {@link PathSpec}s in the conditions to be met
+     * @param paths String representations of {@link PathSpec}s that are
+     *              tested against the {@link Request#getPathInContext(Request) pathInContext}.
+     */
     public void includePath(String... paths)
     {
         if (isStarted())
@@ -184,6 +181,11 @@ public class ConditionalHandler extends Handler.Wrapper
         _paths.include(paths);
     }
 
+    /**
+     * Exclude {@link PathSpec} in the conditions to be met
+     * @param paths String representations of {@link PathSpec}s that are
+     *              tested against the {@link Request#getPathInContext(Request) pathInContext}.
+     */
     public void excludePath(String... paths)
     {
         if (isStarted())
@@ -191,42 +193,96 @@ public class ConditionalHandler extends Handler.Wrapper
         _paths.exclude(paths);
     }
 
-    public void includeInetAddress(String addressPattern)
+    /**
+     * Include {@link InetAddressPattern}s in the conditions to be met
+     * @param patterns {@link InetAddressPattern}s that are
+     *              tested against the {@link ConnectionMetaData#getRemoteSocketAddress() getRemoteSocketAddress()} of
+     *              {@link Request#getConnectionMetaData()}.
+     */
+    public void include(InetAddressPattern... patterns)
     {
         if (isStarted())
             throw new IllegalStateException(getState());
-        _predicates.include(new InetAddressPredicate(addressPattern));
-    }
-
-    public void excludeInetAddress(String addressPattern)
-    {
-        if (isStarted())
-            throw new IllegalStateException(getState());
-        _predicates.exclude(new InetAddressPredicate(addressPattern));
+        for (InetAddressPattern p : patterns)
+            _predicates.include(new InetAddressPredicate(p));
     }
 
     /**
-     * Includes a combination predicate.
+     * Include {@link InetAddressPattern}s in the conditions to be met
+     * @param patterns String representations of {@link InetAddressPattern}s that are
+     *              tested against the {@link ConnectionMetaData#getRemoteSocketAddress() getRemoteSocketAddress()} of
+     *              {@link Request#getConnectionMetaData()}.
+     */
+    public void includeInetAddress(String... patterns)
+    {
+        for (String p : patterns)
+            include(InetAddressPattern.from(p));
+    }
+
+    /**
+     * Exclude {@link InetAddressPattern}s in the conditions to be met
+     * @param patterns {@link InetAddressPattern}s that are
+     *              tested against the {@link ConnectionMetaData#getRemoteSocketAddress() getRemoteSocketAddress()} of
+     *              {@link Request#getConnectionMetaData()}.
+     */
+    public void exclude(InetAddressPattern... patterns)
+    {
+        if (isStarted())
+            throw new IllegalStateException(getState());
+        for (InetAddressPattern p : patterns)
+            _predicates.exclude(new InetAddressPredicate(p));
+    }
+
+    /**
+     * Exclude {@link InetAddressPattern} in the conditions to be met
+     * @param patterns String representations of {@link InetAddressPattern}s that are
+     *              tested against the {@link ConnectionMetaData#getRemoteSocketAddress() getRemoteSocketAddress()} of
+     *              {@link Request#getConnectionMetaData()}.
+     */
+    public void excludeInetAddress(String... patterns)
+    {
+        for (String p : patterns)
+            exclude(InetAddressPattern.from(p));
+    }
+
+    /**
+     * {@link IncludeExclude#include(Object) Include} a {@link ConnectorAddrMethodPathPredicate}.
+     * If only a method or pathSpec is passed, then this method optimizes by converting this
+     * call to {@link #includeMethod(String...)} or {@link #include(PathSpec...)}.
      *
-     * @param connectorName optional name of a connector to include or {@code null}.
-     * @param addressPattern optional InetAddress pattern to include or {@code null}.
-     * @param method optional method to include or {@code null}.
-     * @param pathSpec optional pathSpec to include or {@code null}.
+     * @param connectorName optional name of a connector or {@code null}.
+     * @param addressPattern optional InetAddress pattern to test against the remote address or {@code null}.
+     * @param method optional method or {@code null}.
+     * @param pathSpec optional pathSpec to test against the {@link Request#getPathInContext(Request) pathInContext} or {@code null}.
      */
     public void include(String connectorName, String addressPattern, String method, PathSpec pathSpec)
     {
         if (isStarted())
             throw new IllegalStateException(getState());
-        include(new ConnectorAddrMethodPathPredicate(connectorName, InetAddressPattern.from(addressPattern), method, pathSpec));
+
+        if (connectorName == null && addressPattern == null)
+        {
+            if (StringUtil.isNotBlank(method) && pathSpec == null)
+                includeMethod(method);
+            else if (StringUtil.isBlank(method) && pathSpec != null)
+                include(pathSpec);
+            include(new ConnectorAddrMethodPathPredicate(connectorName, InetAddressPattern.from(addressPattern), method, pathSpec));
+        }
+        else
+        {
+            include(new ConnectorAddrMethodPathPredicate(connectorName, InetAddressPattern.from(addressPattern), method, pathSpec));
+        }
     }
 
     /**
-     * Excludes a combination predicate.
+     * {@link IncludeExclude#exclude(Object) Exclude} a {@link ConnectorAddrMethodPathPredicate}.
+     * If only a method or pathSpec is passed, then this method optimizes by converting this
+     * call to {@link #excludeMethod(String...)} or {@link #exclude(PathSpec...)}.
      *
-     * @param connectorName optional name of a connector to include or {@code null}.
-     * @param addressPattern optional InetAddress pattern to include or {@code null}.
-     * @param method optional method to include or {@code null}.
-     * @param pathSpec optional pathSpec to include or {@code null}.
+     * @param connectorName optional name of a connector or {@code null}.
+     * @param addressPattern optional InetAddress pattern to test against the remote address or {@code null}.
+     * @param method optional method or {@code null}.
+     * @param pathSpec optional pathSpec to test against the {@link Request#getPathInContext(Request) pathInContext} or {@code null}.
      */
     public void exclude(String connectorName, String addressPattern, String method, PathSpec pathSpec)
     {
@@ -235,6 +291,10 @@ public class ConditionalHandler extends Handler.Wrapper
         exclude(new ConnectorAddrMethodPathPredicate(connectorName, InetAddressPattern.from(addressPattern), method, pathSpec));
     }
 
+    /**
+     * {@link IncludeExclude#include(Object) Include} arbitrary {@link Predicate}s in the conditions.
+     * @param predicates {@link Predicate}s that are tested against the {@link Request}.
+     */
     @SafeVarargs
     public final void include(Predicate<Request>... predicates)
     {
@@ -243,6 +303,10 @@ public class ConditionalHandler extends Handler.Wrapper
         _predicates.include(predicates);
     }
 
+    /**
+     * {@link IncludeExclude#exclude(Object) Exclude} arbitrary {@link Predicate}s in the conditions.
+     * @param predicates {@link Predicate}s that are tested against the {@link Request}.
+     */
     @SafeVarargs
     public final void exclude(Predicate<Request>... predicates)
     {
@@ -267,10 +331,101 @@ public class ConditionalHandler extends Handler.Wrapper
     }
 
     @Override
+    protected void doStart() throws Exception
+    {
+        Handler next = getHandler();
+
+        MethodHandles.Lookup lookup = MethodHandles.lookup();
+        MethodType handleType = methodType(boolean.class, Request.class, Response.class, Callback.class);
+
+        // Determine if this classes doHandle method has been extended
+        boolean doHandleExtended;
+        try
+        {
+            doHandleExtended = getClass().getDeclaredMethod("doHandle", Request.class, Response.class, Callback.class).getDeclaringClass() != ConditionalHandler.class;
+        }
+        catch (NoSuchMethodException e)
+        {
+            doHandleExtended = false;
+        }
+
+        // Determine the handling if the conditions are met.
+        // If doHandle has been extended (or there is no next handler), then we invoke the method on this class,
+        // otherwise we can directly invoke the handle method on the next class
+        _doHandle = doHandleExtended || next == null
+            ? lookup.findVirtual(ConditionalHandler.class, "doHandle", handleType).bindTo(this)
+            : lookup.findVirtual(next.getClass(), "handle", handleType).bindTo(next);
+
+        // Determine the handling if the conditions are not met
+        MethodHandle doNotHandle = switch (_notApplyAction)
+        {
+            case DO_NOT_HANDLE ->
+                // Invoke the doNotHandle method
+                lookup.findVirtual(ConditionalHandler.class, "doNotHandle", handleType).bindTo(this);
+            case SKIP_THIS ->
+            {
+                // Skip the doNotHandle method of this handler and call handle of the next handler
+                if (next != null)
+                {
+                    MethodHandle nextHandle = lookup.findVirtual(next.getClass(), "handle", handleType);
+                    yield nextHandle.bindTo(next);
+                }
+                throw new IllegalStateException("No next Handler");
+            }
+            case SKIP_NEXT ->
+            {
+                // Skip the handle method of the next handler and call its next handler.
+                if (doHandleExtended)
+                    throw new IllegalStateException("doHandle method is extended in SKIP_NEXT mode");
+                if (getHandler() instanceof Handler.Singleton nextWrapper && nextWrapper.getHandler() != null)
+                {
+                    Handler nextNextHandler = nextWrapper.getHandler();
+                    MethodHandle nextHandle = lookup.findVirtual(nextNextHandler.getClass(), "handle", handleType);
+                    yield nextHandle.bindTo(nextNextHandler);
+                }
+                throw new IllegalStateException("No next Handler.Wrapper next");
+            }
+        };
+
+        // If we have method conditions, guard the doHandle method with checkMethod
+        if (!_methods.isEmpty())
+        {
+            MethodHandle checkMethod = lookup.findVirtual(ConditionalHandler.class, "checkMethod", methodType(boolean.class, Request.class)).bindTo(this);
+            _doHandle = MethodHandles.guardWithTest(
+                MethodHandles.dropArguments(checkMethod, 1, Response.class, Callback.class),
+                _doHandle,
+                doNotHandle);
+        }
+
+        // If we have path conditions, guard the doHandle method with checkPaths
+        if (!_paths.isEmpty())
+        {
+            MethodHandle checkPath = lookup.findVirtual(ConditionalHandler.class, "checkPath", methodType(boolean.class, Request.class)).bindTo(this);
+            _doHandle = MethodHandles.guardWithTest(
+                MethodHandles.dropArguments(checkPath, 1, Response.class, Callback.class),
+                _doHandle,
+                doNotHandle);
+        }
+
+        // If we have predicate conditions, guard the doHandle method with checkPredicates
+        if (!_predicates.isEmpty())
+        {
+            MethodHandle checkPredicates = lookup.findVirtual(ConditionalHandler.class, "checkPredicates", methodType(boolean.class, Request.class)).bindTo(this);
+            _doHandle = MethodHandles.guardWithTest(
+                MethodHandles.dropArguments(checkPredicates, 1, Response.class, Callback.class),
+                _doHandle,
+                doNotHandle);
+        }
+
+        super.doStart();
+    }
+
+    @Override
     public boolean handle(Request request, Response response, Callback callback) throws Exception
     {
         try
         {
+            // Invoke the _doHandle MethodHandle which will include checking any conditions in its guards.
             return (boolean)_doHandle.invokeExact(request, response, callback);
         }
         catch (Exception e)
@@ -284,16 +439,34 @@ public class ConditionalHandler extends Handler.Wrapper
         }
     }
 
+    /**
+     * Handle a request that has met the conditions.
+     * @param request The request to handle
+     * @param response The response to generate
+     * @param callback The callback for completion
+     * @return True if this handler will complete the callback
+     * @throws Exception If there is a problem handling
+     * @see Handler#handle(Request, Response, Callback)
+     */
     protected boolean doHandle(Request request, Response response, Callback callback) throws Exception
     {
         Handler next = getHandler();
         return next != null && next.handle(request, response, callback);
     }
 
-    private boolean forbidden(Request request, Response response, Callback callback) throws Exception
+    /**
+     * Handle a request that has not met the conditions.
+     * By default, this method simple returns {@code false}.
+     * @param request The request to handle
+     * @param response The response to generate
+     * @param callback The callback for completion
+     * @return True if this handler will complete the callback
+     * @throws Exception If there is a problem handling
+     * @see Handler#handle(Request, Response, Callback)
+     */
+    protected boolean doNotHandle(Request request, Response response, Callback callback) throws Exception
     {
-        Response.writeError(request, response, callback, HttpStatus.FORBIDDEN_403);
-        return true;
+        return false;
     }
 
     @Override
@@ -352,6 +525,11 @@ public class ConditionalHandler extends Handler.Wrapper
         }
     }
 
+    /**
+     * A {@link Predicate} over {@link Request} that tests an {@link InetAddressPattern}
+     * against the {@link ConnectionMetaData#getRemoteSocketAddress() getRemoteSocketAddress()} of
+     * {@link Request#getConnectionMetaData()}.
+     */
     public static class InetAddressPredicate implements Predicate<Request>
     {
         public static InetAddress getInetAddress(SocketAddress socketAddress)
@@ -379,9 +557,9 @@ public class ConditionalHandler extends Handler.Wrapper
 
         private final InetAddressPattern _pattern;
 
-        public InetAddressPredicate(String pattern)
+        public InetAddressPredicate(InetAddressPattern pattern)
         {
-            _pattern = InetAddressPattern.from(pattern);
+            _pattern = pattern;
         }
 
         @Override
@@ -409,6 +587,20 @@ public class ConditionalHandler extends Handler.Wrapper
         }
     }
 
+    /**
+     * A {@link Predicate} over {@link Request} that tests on or more of:
+     * <ul>
+     *     <li>The {@link Connector#getName() name} of the
+     *     {@link ConnectionMetaData#getConnector() connector}
+     *     obtained from {@link Request#getConnectionMetaData()}</li>
+     *     <li>An {@link InetAddressPattern} tested against the
+     *     {@link ConnectionMetaData#getRemoteSocketAddress() getRemoteSocketAddress()} of
+     *     {@link Request#getConnectionMetaData()}.
+     *     </li>
+     *     <li>A {@link Request#getMethod() method} name</li>
+     *     <li>A {@link PathSpec} tested against the {@link Request#getPathInContext(Request) pathInContext}.</li>
+     * </ul>
+     */
     public static class ConnectorAddrMethodPathPredicate implements Predicate<Request>
     {
         private final String connector;

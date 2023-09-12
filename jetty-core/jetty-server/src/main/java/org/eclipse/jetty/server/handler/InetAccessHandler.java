@@ -15,10 +15,13 @@ package org.eclipse.jetty.server.handler;
 
 import java.util.function.Predicate;
 
+import org.eclipse.jetty.http.HttpStatus;
 import org.eclipse.jetty.http.pathmap.PathSpec;
 import org.eclipse.jetty.http.pathmap.ServletPathSpec;
 import org.eclipse.jetty.server.Handler;
 import org.eclipse.jetty.server.Request;
+import org.eclipse.jetty.server.Response;
+import org.eclipse.jetty.util.Callback;
 import org.eclipse.jetty.util.IncludeExcludeSet;
 import org.eclipse.jetty.util.InetAddressPattern;
 import org.eclipse.jetty.util.InetAddressSet;
@@ -42,8 +45,15 @@ public class InetAccessHandler extends ConditionalHandler
 
     public InetAccessHandler(Handler handler)
     {
-        super(NotMetAction.FORBIDDEN);
+        super(NotApplyAction.DO_NOT_HANDLE);
         setHandler(handler);
+    }
+
+    @Override
+    protected boolean doNotHandle(Request request, Response response, Callback callback) throws Exception
+    {
+        Response.writeError(request, response, callback, HttpStatus.FORBIDDEN_403);
+        return true;
     }
 
     /**
