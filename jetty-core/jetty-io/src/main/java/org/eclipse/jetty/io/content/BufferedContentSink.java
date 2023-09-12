@@ -41,18 +41,24 @@ public class BufferedContentSink implements Content.Sink
     private final ByteBufferPool _bufferPool;
     private final boolean _direct;
     private final int _maxBufferSize;
+    private final int _maxAggregationSize;
     private ByteBufferAggregator _aggregator;
     private boolean _firstWrite = true;
     private boolean _lastWritten;
 
-    public BufferedContentSink(Content.Sink delegate, ByteBufferPool bufferPool, boolean direct, int maxBufferSize)
+    public BufferedContentSink(Content.Sink delegate, ByteBufferPool bufferPool, boolean direct, int maxBufferSize, int maxAggregationSize)
     {
         if (maxBufferSize <= 0)
             throw new IllegalArgumentException("maxBufferSize must be > 0, was: " + maxBufferSize);
+        if (maxAggregationSize <= 0)
+            throw new IllegalArgumentException("maxAggregationSize must be > 0, was: " + maxAggregationSize);
+        if (maxBufferSize < maxAggregationSize)
+            throw new IllegalArgumentException("maxBufferSize (" + maxBufferSize + ") must be >= maxAggregationSize (" + maxAggregationSize + ")");
         _delegate = delegate;
         _bufferPool = (bufferPool == null) ? new ByteBufferPool.NonPooling() : bufferPool;
         _direct = direct;
         _maxBufferSize = maxBufferSize;
+        _maxAggregationSize = maxAggregationSize;
     }
 
     @Override
@@ -81,14 +87,14 @@ public class BufferedContentSink implements Content.Sink
         _lastWritten |= last;
 
         ByteBuffer current = byteBuffer != null ? byteBuffer : BufferUtil.EMPTY_BUFFER;
-        if (current.remaining() <= _maxBufferSize)
+        if (current.remaining() <= _maxAggregationSize)
         {
-            // given buffer can be aggregated
+            // current buffer can be aggregated
             aggregateAndWrite(last, current, callback);
         }
         else
         {
-            // given buffer is greater than aggregate's max buffer size
+            // current buffer is greater than the max aggregation size
             directWrite(last, current, callback);
         }
     }

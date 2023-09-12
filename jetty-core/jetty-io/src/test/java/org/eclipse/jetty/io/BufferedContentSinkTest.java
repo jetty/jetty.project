@@ -58,10 +58,15 @@ public class BufferedContentSinkTest
     }
 
     @Test
-    public void testWrongMaxBufferSize()
+    public void testConstructor()
     {
-        assertThrows(IllegalArgumentException.class, () -> new BufferedContentSink(new AsyncContent(), _bufferPool, true, 0));
-        assertThrows(IllegalArgumentException.class, () -> new BufferedContentSink(new AsyncContent(), _bufferPool, true, -1));
+        assertThrows(IllegalArgumentException.class, () -> new BufferedContentSink(new AsyncContent(), _bufferPool, true, 0, 1));
+        assertThrows(IllegalArgumentException.class, () -> new BufferedContentSink(new AsyncContent(), _bufferPool, true, -1, 1));
+        assertThrows(IllegalArgumentException.class, () -> new BufferedContentSink(new AsyncContent(), _bufferPool, true, 1, 0));
+        assertThrows(IllegalArgumentException.class, () -> new BufferedContentSink(new AsyncContent(), _bufferPool, true, 1, -1));
+        assertThrows(IllegalArgumentException.class, () -> new BufferedContentSink(new AsyncContent(), _bufferPool, true, 0, 0));
+        assertThrows(IllegalArgumentException.class, () -> new BufferedContentSink(new AsyncContent(), _bufferPool, true, -1, -1));
+        assertThrows(IllegalArgumentException.class, () -> new BufferedContentSink(new AsyncContent(), _bufferPool, true, 1, 2));
     }
 
     @Test
@@ -69,7 +74,7 @@ public class BufferedContentSinkTest
     {
         try (AsyncContent async = new AsyncContent())
         {
-            BufferedContentSink buffered = new BufferedContentSink(async, _bufferPool, true, 4096);
+            BufferedContentSink buffered = new BufferedContentSink(async, _bufferPool, true, 4096, 4096);
 
             CountDownLatch latch = new CountDownLatch(1);
             async.demand(latch::countDown);
@@ -90,7 +95,7 @@ public class BufferedContentSinkTest
     {
         try (AsyncContent async = new AsyncContent())
         {
-            BufferedContentSink buffered = new BufferedContentSink(async, _bufferPool, true, 4096);
+            BufferedContentSink buffered = new BufferedContentSink(async, _bufferPool, true, 4096, 4096);
 
             AtomicInteger successCounter = new AtomicInteger();
             AtomicReference<Throwable> failureRef = new AtomicReference<>();
@@ -113,7 +118,7 @@ public class BufferedContentSinkTest
     {
         try (AsyncContent async = new AsyncContent())
         {
-            BufferedContentSink buffered = new BufferedContentSink(async, _bufferPool, true, 4096);
+            BufferedContentSink buffered = new BufferedContentSink(async, _bufferPool, true, 4096, 4096);
 
             AtomicInteger successCounter = new AtomicInteger();
             AtomicReference<Throwable> failureRef = new AtomicReference<>();
@@ -135,7 +140,7 @@ public class BufferedContentSinkTest
     {
         try (AsyncContent async = new AsyncContent())
         {
-            BufferedContentSink buffered = new BufferedContentSink(async, _bufferPool, true, 4096);
+            BufferedContentSink buffered = new BufferedContentSink(async, _bufferPool, true, 4096, 4096);
 
             AtomicInteger successCounter = new AtomicInteger();
             AtomicReference<Throwable> failureRef = new AtomicReference<>();
@@ -160,7 +165,7 @@ public class BufferedContentSinkTest
     {
         try (AsyncContent async = new AsyncContent())
         {
-            BufferedContentSink buffered = new BufferedContentSink(async, _bufferPool, true, 4096);
+            BufferedContentSink buffered = new BufferedContentSink(async, _bufferPool, true, 4096, 4096);
 
             buffered.write(false, ByteBuffer.wrap("one ".getBytes(UTF_8)), Callback.NOOP);
             Content.Chunk chunk = async.read();
@@ -192,7 +197,7 @@ public class BufferedContentSinkTest
 
         try (AsyncContent async = new AsyncContent())
         {
-            BufferedContentSink buffered = new BufferedContentSink(async, _bufferPool, true, maxBufferSize);
+            BufferedContentSink buffered = new BufferedContentSink(async, _bufferPool, true, maxBufferSize, maxBufferSize);
 
             buffered.write(false, ByteBuffer.wrap(input1), Callback.from(() ->
                 buffered.write(true, ByteBuffer.wrap(input2), Callback.NOOP)));
@@ -224,6 +229,140 @@ public class BufferedContentSinkTest
     }
 
     @Test
+    public void testMaxAggregationSizeExceeded()
+    {
+        int maxBufferSize = 1024;
+        int maxAggregationSize = 128;
+        byte[] input1 = new byte[512];
+        Arrays.fill(input1, (byte)'1');
+        byte[] input2 = new byte[128];
+        Arrays.fill(input2, (byte)'2');
+
+        ByteBuffer accumulatingBuffer = BufferUtil.allocate(4096);
+        BufferUtil.flipToFill(accumulatingBuffer);
+
+        try (AsyncContent async = new AsyncContent())
+        {
+            BufferedContentSink buffered = new BufferedContentSink(async, _bufferPool, true, maxBufferSize, maxAggregationSize);
+
+            buffered.write(false, ByteBuffer.wrap(input1), Callback.from(() ->
+                buffered.write(true, ByteBuffer.wrap(input2), Callback.NOOP)));
+
+            Content.Chunk chunk = async.read();
+            assertThat(chunk, notNullValue());
+            assertThat(chunk.remaining(), is(512));
+            accumulatingBuffer.put(chunk.getByteBuffer());
+            assertThat(chunk.release(), is(true));
+            assertThat(chunk.isLast(), is(false));
+
+            chunk = async.read();
+            assertThat(chunk, notNullValue());
+            assertThat(chunk.remaining(), is(128));
+            accumulatingBuffer.put(chunk.getByteBuffer());
+            assertThat(chunk.release(), is(true));
+            assertThat(chunk.isLast(), is(true));
+
+            BufferUtil.flipToFlush(accumulatingBuffer, 0);
+            assertThat(accumulatingBuffer.remaining(), is(input1.length + input2.length));
+            for (byte b : input1)
+            {
+                assertThat(accumulatingBuffer.get(), is(b));
+            }
+            for (byte b : input2)
+            {
+                assertThat(accumulatingBuffer.get(), is(b));
+            }
+        }
+    }
+
+    @Test
+    public void testMaxAggregationSizeExceededAfterBuffering()
+    {
+        int maxBufferSize = 1024;
+        int maxAggregationSize = 128;
+        byte[] input1 = new byte[128];
+        Arrays.fill(input1, (byte)'1');
+        byte[] input2 = new byte[512];
+        Arrays.fill(input2, (byte)'2');
+
+        ByteBuffer accumulatingBuffer = BufferUtil.allocate(4096);
+        BufferUtil.flipToFill(accumulatingBuffer);
+
+        try (AsyncContent async = new AsyncContent())
+        {
+            BufferedContentSink buffered = new BufferedContentSink(async, _bufferPool, true, maxBufferSize, maxAggregationSize);
+
+            buffered.write(false, ByteBuffer.wrap(input1), Callback.from(() ->
+                buffered.write(true, ByteBuffer.wrap(input2), Callback.NOOP)));
+
+            Content.Chunk chunk = async.read();
+            assertThat(chunk, notNullValue());
+            assertThat(chunk.remaining(), is(128));
+            accumulatingBuffer.put(chunk.getByteBuffer());
+            assertThat(chunk.release(), is(true));
+            assertThat(chunk.isLast(), is(false));
+
+            chunk = async.read();
+            assertThat(chunk, notNullValue());
+            assertThat(chunk.remaining(), is(512));
+            accumulatingBuffer.put(chunk.getByteBuffer());
+            assertThat(chunk.release(), is(true));
+            assertThat(chunk.isLast(), is(true));
+
+            BufferUtil.flipToFlush(accumulatingBuffer, 0);
+            assertThat(accumulatingBuffer.remaining(), is(input1.length + input2.length));
+            for (byte b : input1)
+            {
+                assertThat(accumulatingBuffer.get(), is(b));
+            }
+            for (byte b : input2)
+            {
+                assertThat(accumulatingBuffer.get(), is(b));
+            }
+        }
+    }
+
+    @Test
+    public void testMaxAggregationSizeRespected()
+    {
+        int maxBufferSize = 1024;
+        int maxAggregationSize = 128;
+        byte[] input1 = new byte[128];
+        Arrays.fill(input1, (byte)'1');
+        byte[] input2 = new byte[128];
+        Arrays.fill(input2, (byte)'2');
+
+        ByteBuffer accumulatingBuffer = BufferUtil.allocate(4096);
+        BufferUtil.flipToFill(accumulatingBuffer);
+
+        try (AsyncContent async = new AsyncContent())
+        {
+            BufferedContentSink buffered = new BufferedContentSink(async, _bufferPool, true, maxBufferSize, maxAggregationSize);
+
+            buffered.write(false, ByteBuffer.wrap(input1), Callback.from(() ->
+                buffered.write(true, ByteBuffer.wrap(input2), Callback.NOOP)));
+
+            Content.Chunk chunk = async.read();
+            assertThat(chunk, notNullValue());
+            assertThat(chunk.remaining(), is(256));
+            accumulatingBuffer.put(chunk.getByteBuffer());
+            assertThat(chunk.release(), is(true));
+            assertThat(chunk.isLast(), is(true));
+
+            BufferUtil.flipToFlush(accumulatingBuffer, 0);
+            assertThat(accumulatingBuffer.remaining(), is(input1.length + input2.length));
+            for (byte b : input1)
+            {
+                assertThat(accumulatingBuffer.get(), is(b));
+            }
+            for (byte b : input2)
+            {
+                assertThat(accumulatingBuffer.get(), is(b));
+            }
+        }
+    }
+
+    @Test
     public void testBufferGrowth()
     {
         byte[] input1 = new byte[4000];
@@ -238,7 +377,7 @@ public class BufferedContentSinkTest
 
         try (AsyncContent async = new AsyncContent())
         {
-            BufferedContentSink buffered = new BufferedContentSink(async, _bufferPool, true, 4096);
+            BufferedContentSink buffered = new BufferedContentSink(async, _bufferPool, true, 4096, 4096);
 
             buffered.write(false, ByteBuffer.wrap(input1), Callback.from(() ->
                 buffered.write(false, ByteBuffer.wrap(input2), Callback.from(() ->
@@ -289,7 +428,7 @@ public class BufferedContentSinkTest
     {
         try (AsyncContent async = new AsyncContent())
         {
-            BufferedContentSink buffered = new BufferedContentSink(async, _bufferPool, true, 4096);
+            BufferedContentSink buffered = new BufferedContentSink(async, _bufferPool, true, 4096, 4096);
             AtomicInteger count = new AtomicInteger(8192);
             CountDownLatch complete = new CountDownLatch(1);
             Callback callback = new Callback()
