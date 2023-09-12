@@ -24,6 +24,7 @@ import java.nio.file.Paths;
 import java.nio.file.StandardCopyOption;
 import java.nio.file.StandardOpenOption;
 import java.time.Duration;
+import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
 import java.util.Queue;
@@ -49,6 +50,7 @@ import org.eclipse.jetty.unixsocket.client.HttpClientTransportOverUnixSockets;
 import org.eclipse.jetty.unixsocket.server.UnixSocketConnector;
 import org.eclipse.jetty.util.BlockingArrayQueue;
 import org.eclipse.jetty.util.IO;
+import org.eclipse.jetty.util.StringUtil;
 import org.eclipse.jetty.util.ssl.SslContextFactory;
 import org.eclipse.jetty.websocket.api.Session;
 import org.eclipse.jetty.websocket.api.StatusCode;
@@ -106,6 +108,54 @@ public class DistributionTests extends AbstractJettyHomeTest
                 run2.stop();
                 assertTrue(run2.awaitFor(10, TimeUnit.SECONDS));
             }
+        }
+    }
+
+    @Test
+    public void testJettyConf() throws Exception
+    {
+        String jettyVersion = System.getProperty("jettyVersion");
+        JettyHomeTester distribution = JettyHomeTester.Builder.newInstance()
+            .jettyVersion(jettyVersion)
+            .mavenLocalRepository(System.getProperty("mavenRepoPath"))
+            .build();
+
+        try (JettyHomeTester.Run run1 = distribution.start("--add-modules=http"))
+        {
+            assertTrue(run1.awaitFor(10, TimeUnit.SECONDS));
+            assertEquals(0, run1.getExitValue());
+
+            Path pidfile = run1.getConfig().getJettyBase().resolve("jetty.pid");
+            Path statefile = run1.getConfig().getJettyBase().resolve("jetty.state");
+
+            int port = distribution.freePort();
+
+            List<String> args = new ArrayList<>();
+            args.add("jetty.http.port=" + port);
+            args.add("jetty.state=" + statefile);
+            args.add("jetty.pid=" + pidfile);
+
+            Path confFile = run1.getConfig().getJettyHome().resolve("etc/jetty.conf");
+            for (String line: Files.readAllLines(confFile, StandardCharsets.UTF_8))
+            {
+                if (line.startsWith("#") || StringUtil.isBlank(line))
+                    continue; // skip
+                args.add(line);
+            }
+
+            try (JettyHomeTester.Run run2 = distribution.start(args))
+            {
+                assertTrue(run2.awaitConsoleLogsFor("Started Server@", 10, TimeUnit.SECONDS));
+
+                assertTrue(Files.isRegularFile(pidfile), "PID file should exist");
+                assertTrue(Files.isRegularFile(statefile), "State file should exist");
+
+                startHttpClient();
+                ContentResponse response = client.GET("http://localhost:" + port);
+                assertEquals(HttpStatus.NOT_FOUND_404, response.getStatus());
+            }
+
+            await().atMost(Duration.ofSeconds(10)).until(() -> !Files.exists(pidfile));
         }
     }
 
