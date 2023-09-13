@@ -117,6 +117,9 @@
                       </config>
                   </loginService>
               </loginServices>
+              <webApp>
+                <jettyEnvXml>${basedir}/src/config/jetty-env.xml</jettyEnvXml>
+              </webApp>
             </configuration>
           </execution>
         </executions>
