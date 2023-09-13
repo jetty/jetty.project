@@ -146,7 +146,7 @@ public class SPIServerTest
                 List<String> mediaTypeValue = requestHeaders.get("Content-Type");
 
                 try (OutputStream responseBody = exchange.getResponseBody();
-                    PrintStream out = new PrintStream(responseBody, true, StandardCharsets.UTF_8))
+                     PrintStream out = new PrintStream(responseBody, true, StandardCharsets.UTF_8))
                 {
                     // should only have 1 entry, but joining together multiple in case of bad impl
                     out.print(String.join(",", mediaTypeValue));
@@ -198,7 +198,7 @@ public class SPIServerTest
                     X-Action: Begin
                     X-Action: "Ongoing Behavior"
                     X-Action: Final
-                    
+                                        
                     """;
 
                 output.write(request.getBytes(StandardCharsets.UTF_8));
@@ -208,6 +208,121 @@ public class SPIServerTest
                 HttpTester.Response response = HttpTester.parseResponse(input);
                 assertThat(response.getStatus(), is(200));
                 assertThat(response.getContent(), containsString("X-action: Begin,\"Ongoing Behavior\",Final"));
+            }
+        }
+    }
+
+    @Test
+    public void testRequestUserAgentHeader() throws Exception
+    {
+        // The `User-Agent` header that should ignore value list behaviors
+        final String ua = "Mozilla/5.0 (X11; Linux x86_64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/116.0.0.0 Safari/537.36";
+        // The `Sec-Ch-Ua` header that should participate in value list behaviors
+        final String secua = "\"Chromium\";v=\"116\", \"Not)A;Brand\";v=\"24\", \"Google Chrome\";v=\"116\"\n";
+
+        server.createContext("/", new HttpHandler()
+        {
+            public void handle(HttpExchange exchange) throws IOException
+            {
+                Headers responseHeaders = exchange.getResponseHeaders();
+                responseHeaders.set("Content-Type", "text/plain");
+                exchange.sendResponseHeaders(200, 0);
+
+                Headers requestheaders = exchange.getRequestHeaders();
+
+                try (OutputStream responseBody = exchange.getResponseBody();
+                     PrintStream out = new PrintStream(responseBody, true, StandardCharsets.UTF_8))
+                {
+                    // A `User-Agent` header, that should skip value list behaviors
+                    String useragent = requestheaders.getFirst("User-Agent");
+                    out.printf("User-Agent: %s%n", useragent);
+
+                    // A `Sec-Ch-Ua` header, that should result in a value list
+                    List<String> secuseragent = requestheaders.get("Sec-Ch-Ua");
+                    int i = 0;
+                    for (String value : secuseragent)
+                    {
+                        out.printf("Sec-Ch-Ua[%d]: %s%n", i++, value);
+                    }
+                }
+            }
+        });
+
+        // Sending this in the raw, as HttpURLConnection will not send multiple request headers with the same name
+        try (Socket socket = new Socket("localhost", port))
+        {
+            try (OutputStream output = socket.getOutputStream())
+            {
+                String request = """
+                    GET / HTTP/1.1
+                    Host: localhost
+                    Connection: close
+                    User-Agent: %s
+                    Sec-Ch-Ua: %s
+                                        
+                    """.formatted(ua, secua);
+
+                output.write(request.getBytes(StandardCharsets.UTF_8));
+                output.flush();
+
+                HttpTester.Input input = HttpTester.from(socket.getInputStream());
+                HttpTester.Response response = HttpTester.parseResponse(input);
+                assertThat(response.getStatus(), is(200));
+                String body = response.getContent();
+                assertThat(body, containsString("User-Agent: " + ua));
+                assertThat(body, containsString("Sec-Ch-Ua[0]: \"Chromium\";v=\"116\""));
+                assertThat(body, containsString("Sec-Ch-Ua[1]: \"Not)A;Brand\";v=\"24\""));
+                assertThat(body, containsString("Sec-Ch-Ua[2]: \"Google Chrome\";v=\"116\""));
+            }
+        }
+    }
+
+    @Test
+    public void testIfModifiedSinceHeader() throws Exception
+    {
+        final String since = "Sat, 29 Oct 1994 19:43:31 GMT";
+
+        server.createContext("/", new HttpHandler()
+        {
+            public void handle(HttpExchange exchange) throws IOException
+            {
+                Headers responseHeaders = exchange.getResponseHeaders();
+                responseHeaders.set("Content-Type", "text/plain");
+                exchange.sendResponseHeaders(200, 0);
+
+                Headers requestheaders = exchange.getRequestHeaders();
+
+                try (OutputStream responseBody = exchange.getResponseBody();
+                     PrintStream out = new PrintStream(responseBody, true, StandardCharsets.UTF_8))
+                {
+                    // A `If-Modified-Since` header, that should skip value list behaviors
+                    String ifmodified = requestheaders.getFirst("If-Modified-Since");
+                    out.printf("If-Modified-Since: %s%n", ifmodified);
+                }
+            }
+        });
+
+        // Sending this in the raw, as HttpURLConnection will not send multiple request headers with the same name
+        try (Socket socket = new Socket("localhost", port))
+        {
+            try (OutputStream output = socket.getOutputStream())
+            {
+                String request = """
+                    GET / HTTP/1.1
+                    Host: localhost
+                    Connection: close
+                    If-Modified-Since: %s
+                                        
+                    """.formatted(since);
+
+                output.write(request.getBytes(StandardCharsets.UTF_8));
+                output.flush();
+
+                HttpTester.Input input = HttpTester.from(socket.getInputStream());
+                HttpTester.Response response = HttpTester.parseResponse(input);
+                assertThat(response.getStatus(), is(200));
+                String body = response.getContent();
+                assertThat(body, containsString("If-Modified-Since: " + since));
             }
         }
     }

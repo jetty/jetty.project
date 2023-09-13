@@ -72,10 +72,37 @@ public class JettyHttpExchangeDelegate extends HttpExchange
             String rawValue = field.getValue();
             if (rawValue == null)
                 continue;
-            // Using raw QuotedCSV here to preserve quotes (which HttpField.getValues() doesn't do)
-            QuotedCSV quotedCSV = new QuotedCSV(true, rawValue);
-            for (String value : quotedCSV.getValues())
-                headers.add(field.getName(), value);
+
+            String headerName = field.getLowerCaseName();
+
+            switch (headerName)
+            {
+                // Headers that are known to not support a list of values (taken from RFC9110)
+                // are treated special and will copy the entire value as-is
+                case "authorization",
+                    "content-length",
+                    "date",
+                    "expires",
+                    "host",
+                    "if-modified-since",
+                    "if-unmodified-since",
+                    "if-range",
+                    "last-modified",
+                    "location",
+                    "referer",
+                    "retry-after",
+                    "user-agent" ->
+                {
+                    headers.add(field.getName(), rawValue);
+                }
+                default ->
+                {
+                    // Using raw QuotedCSV here to preserve quotes (which HttpField.getValues() doesn't do)
+                    QuotedCSV quotedCSV = new QuotedCSV(true, rawValue);
+                    for (String value : quotedCSV.getValues())
+                        headers.add(field.getName(), value);
+                }
+            }
         }
         return headers;
     }
