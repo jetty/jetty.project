@@ -19,6 +19,8 @@ import java.util.List;
 import java.util.concurrent.TimeUnit;
 
 import org.junit.jupiter.api.Test;
+import org.junit.jupiter.params.ParameterizedTest;
+import org.junit.jupiter.params.provider.ValueSource;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
@@ -26,6 +28,14 @@ import static org.junit.jupiter.api.Assertions.assertTrue;
 
 public class HttpCookieStoreTest
 {
+    @Test
+    public void testRejectCookieForNoDomain()
+    {
+        HttpCookieStore store = new HttpCookieStore.Default();
+        URI uri = URI.create("/path");
+        assertFalse(store.add(uri, HttpCookie.from("n", "v")));
+    }
+
     @Test
     public void testRejectCookieForTopDomain()
     {
@@ -116,6 +126,19 @@ public class HttpCookieStoreTest
         // Same path but different case should generate another cookie.
         assertTrue(store.add(uri, HttpCookie.build("n", "v3").path("/PATH").build()));
         assertEquals(2, store.all().size());
+    }
+
+    @Test
+    public void testMatchNoDomain()
+    {
+        HttpCookieStore store = new HttpCookieStore.Default();
+        URI cookieURI = URI.create("http://example.com");
+        assertTrue(store.add(cookieURI, HttpCookie.from("n", "v1")));
+
+        // No domain, no match.
+        URI uri = URI.create("/path");
+        List<HttpCookie> matches = store.match(uri);
+        assertEquals(0, matches.size());
     }
 
     @Test
@@ -374,5 +397,17 @@ public class HttpCookieStoreTest
         matchURI = URI.create("https://example.com");
         matches = store.match(matchURI);
         assertEquals(2, matches.size());
+    }
+
+    @ParameterizedTest
+    @ValueSource(strings = {"localhost.", "domain.com."})
+    public void testCookieDomainEndingWithDotIsIgnored(String cookieDomain)
+    {
+        HttpCookieStore store = new HttpCookieStore.Default();
+        URI cookieURI = URI.create("http://example.com");
+        assertTrue(store.add(cookieURI, HttpCookie.build("n1", "v1").domain(cookieDomain).build()));
+
+        List<HttpCookie> matches = store.match(cookieURI);
+        assertEquals(1, matches.size());
     }
 }

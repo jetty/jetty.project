@@ -304,8 +304,8 @@ public interface HttpCookieStore
 
         private static boolean domainMatches(String uriDomain, String domain, String cookieDomain)
         {
-            // If the cookie has no domain, it must only be sent to the origin domain.
-            if (cookieDomain == null)
+            // If the cookie has no domain, or ends with ".", it must only be sent to the origin domain.
+            if (cookieDomain == null || cookieDomain.endsWith("."))
                 return uriDomain.equalsIgnoreCase(domain);
             return isSameOrSubDomain(uriDomain, cookieDomain);
         }
