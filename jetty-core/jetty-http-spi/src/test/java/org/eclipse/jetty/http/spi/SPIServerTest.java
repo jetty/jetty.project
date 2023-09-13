@@ -16,14 +16,10 @@ package org.eclipse.jetty.http.spi;
 import java.io.IOException;
 import java.io.OutputStream;
 import java.io.PrintStream;
-import java.net.Authenticator;
-import java.net.HttpURLConnection;
 import java.net.InetSocketAddress;
-import java.net.PasswordAuthentication;
 import java.net.Socket;
-import java.net.URL;
+import java.net.URI;
 import java.nio.charset.StandardCharsets;
-import java.util.Base64;
 import java.util.List;
 
 import com.sun.net.httpserver.BasicAuthenticator;
@@ -32,8 +28,14 @@ import com.sun.net.httpserver.HttpContext;
 import com.sun.net.httpserver.HttpExchange;
 import com.sun.net.httpserver.HttpHandler;
 import com.sun.net.httpserver.HttpServer;
+import org.eclipse.jetty.client.AuthenticationStore;
+import org.eclipse.jetty.client.BasicAuthentication;
+import org.eclipse.jetty.client.ContentResponse;
+import org.eclipse.jetty.client.HttpClient;
+import org.eclipse.jetty.client.Request;
+import org.eclipse.jetty.http.HttpMethod;
 import org.eclipse.jetty.http.HttpTester;
-import org.eclipse.jetty.util.IO;
+import org.eclipse.jetty.util.component.LifeCycle;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
@@ -86,12 +88,27 @@ public class SPIServerTest
             }
         });
 
-        URL url = new URL("http://localhost:" + port + "/");
-        HttpURLConnection http = (HttpURLConnection)url.openConnection();
-        assertThat(http.getResponseCode(), is(200));
-        assertThat(http.getHeaderField("Content-Type"), is("text/plain"));
-        String body = IO.toString(http.getInputStream());
-        assertThat(body, is("Hello"));
+        HttpClient client = new HttpClient();
+        try
+        {
+            client.start();
+
+            Request request = client.newRequest("localhost", port)
+                .scheme("http")
+                .method(HttpMethod.GET)
+                .path("/");
+
+            ContentResponse response = request.send();
+
+            assertThat(response.getStatus(), is(200));
+            assertThat(response.getHeaders().get("Content-Type"), is("text/plain"));
+            String body = response.getContentAsString();
+            assertThat(body, is("Hello"));
+        }
+        finally
+        {
+            LifeCycle.stop(client);
+        }
     }
 
     @Test
@@ -117,12 +134,27 @@ public class SPIServerTest
             }
         });
 
-        URL url = new URL("http://localhost:" + port + "/");
-        HttpURLConnection http = (HttpURLConnection)url.openConnection();
-        assertThat(http.getResponseCode(), is(200));
-        assertThat(http.getHeaderField("Content-Type"), is(mediaType));
-        String body = IO.toString(http.getInputStream());
-        assertThat(body, is("Hello"));
+        HttpClient client = new HttpClient();
+        try
+        {
+            client.start();
+
+            Request request = client.newRequest("localhost", port)
+                .scheme("http")
+                .method(HttpMethod.GET)
+                .path("/");
+
+            ContentResponse response = request.send();
+
+            assertThat(response.getStatus(), is(200));
+            assertThat(response.getHeaders().get("Content-Type"), is(mediaType));
+            String body = response.getContentAsString();
+            assertThat(body, is("Hello"));
+        }
+        finally
+        {
+            LifeCycle.stop(client);
+        }
     }
 
     @Test
@@ -154,12 +186,28 @@ public class SPIServerTest
             }
         });
 
-        URL url = new URL("http://localhost:" + port + "/");
-        HttpURLConnection http = (HttpURLConnection)url.openConnection();
-        http.setRequestProperty("Content-Type", mediaType);
-        assertThat(http.getResponseCode(), is(200));
-        String body = IO.toString(http.getInputStream());
-        assertThat(body, is(mediaType));
+        HttpClient client = new HttpClient();
+        try
+        {
+            client.start();
+
+            Request request = client.newRequest("localhost", port)
+                .scheme("http")
+                .method(HttpMethod.GET)
+                .headers((headers) ->
+                    headers.put("Content-Type", mediaType))
+                .path("/");
+
+            ContentResponse response = request.send();
+
+            assertThat(response.getStatus(), is(200));
+            String body = response.getContentAsString();
+            assertThat(body, is(mediaType));
+        }
+        finally
+        {
+            LifeCycle.stop(client);
+        }
     }
 
     @Test
@@ -330,6 +378,10 @@ public class SPIServerTest
     @Test
     public void testAuth() throws Exception
     {
+        final String testRealm = "Test";
+        final String testUsername = "username";
+        final String testPassword = "password";
+
         final HttpContext httpContext = server.createContext("/", new HttpHandler()
         {
             public void handle(HttpExchange exchange) throws IOException
@@ -344,37 +396,48 @@ public class SPIServerTest
             }
         });
 
-        httpContext.setAuthenticator(new BasicAuthenticator("Test")
+        httpContext.setAuthenticator(new BasicAuthenticator(testRealm)
         {
             @Override
             public boolean checkCredentials(String username, String password)
             {
-                if ("username".equals(username) && password.equals("password"))
+                if (testUsername.equals(username) && testPassword.equals(password))
                     return true;
                 return false;
             }
         });
 
-        URL url = new URL("http://localhost:" + port + "/");
-        HttpURLConnection client = (HttpURLConnection)url.openConnection();
-        client.connect();
-        assertThat(client.getResponseCode(), is(401));
-
-        Authenticator.setDefault(new Authenticator()
+        HttpClient client = new HttpClient();
+        try
         {
-            protected PasswordAuthentication getPasswordAuthentication()
-            {
-                return new PasswordAuthentication("username", "password".toCharArray());
-            }
-        });
+            client.start();
 
-        client = (HttpURLConnection)url.openConnection();
-        String userpass = "username:password";
-        String basicAuth = "Basic " + Base64.getEncoder().encodeToString(userpass.getBytes(StandardCharsets.ISO_8859_1));
-        client.setRequestProperty("Authorization", basicAuth);
+            Request request = client.newRequest("localhost", port)
+                .scheme("http")
+                .method(HttpMethod.GET)
+                .path("/");
 
-        client.connect();
-        assertThat(client.getResponseCode(), is(200));
-        assertThat(IO.toString(client.getInputStream()), is("Hello"));
+            ContentResponse response = request.send();
+            assertThat(response.getStatus(), is(401));
+
+            request = client.newRequest("localhost", port)
+                .scheme("http")
+                .method(HttpMethod.GET)
+                .path("/");
+
+            AuthenticationStore store = client.getAuthenticationStore();
+
+            URI uri = URI.create("http://localhost:" + port + "/");
+            store.addAuthentication(new BasicAuthentication(uri, testRealm, testUsername, testPassword));
+
+            response = request.send();
+            assertThat(response.getStatus(), is(200));
+            String body = response.getContentAsString();
+            assertThat(body, is("Hello"));
+        }
+        finally
+        {
+            LifeCycle.stop(client);
+        }
     }
 }
