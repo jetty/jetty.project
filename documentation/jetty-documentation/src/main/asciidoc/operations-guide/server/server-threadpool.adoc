@@ -32,7 +32,7 @@ $ java -jar $JETTY_HOME/start.jar --add-modules=threadpool,http
 
 After the command above, the `$JETTY_BASE` directory looks like this:
 
-[source,subs=verbatim]
+[source]
 ----
 $JETTY_BASE
 ├── resources
@@ -63,7 +63,7 @@ $ java -jar $JETTY_HOME/start.jar --add-modules=threadpool-virtual,http
 
 After the command above, the `$JETTY_BASE` directory looks like this:
 
-[source,subs=verbatim]
+[source]
 ----
 $JETTY_BASE
 ├── resources
@@ -75,7 +75,7 @@ $JETTY_BASE
 
 Now you can customize the `threadpool-virtual.ini` file to explicitly configure the thread pool and the virtual threads and then start Jetty:
 
-[source,subs=quotes,options=nowrap]
+[source,options=nowrap]
 ----
 include::jetty[setupArgs="--add-modules=threadpool-virtual,http"]
 ----

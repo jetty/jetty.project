@@ -69,7 +69,7 @@ public class RemoteInfinispanTestSupport
                 .withEnv("MGMT_USER", "admin")
                 .withEnv("MGMT_PASS", "admin")
                 .withEnv("CONFIG_PATH", "/user-config/config.yaml")
-                .waitingFor(Wait.forLogMessage(".*Infinispan Server.*started in.*\\s", 1))
+                .waitingFor(Wait.forListeningPorts(11222))
                 .withExposedPorts(4712, 4713, 8088, 8089, 8443, 9990, 9993, 11211, 11222, 11223, 11224)
                 .withLogConsumer(new Slf4jLogConsumer(INFINISPAN_LOG))
                 .withClasspathResourceMapping("/config.yaml", "/user-config/config.yaml", BindMode.READ_ONLY)

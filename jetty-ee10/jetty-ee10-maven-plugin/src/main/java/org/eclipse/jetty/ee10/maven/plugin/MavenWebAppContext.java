@@ -41,6 +41,7 @@ import org.eclipse.jetty.util.StringUtil;
 import org.eclipse.jetty.util.URIUtil;
 import org.eclipse.jetty.util.resource.CombinedResource;
 import org.eclipse.jetty.util.resource.Resource;
+import org.eclipse.jetty.util.resource.ResourceFactory;
 import org.eclipse.jetty.util.resource.Resources;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -313,13 +314,14 @@ public class MavenWebAppContext extends WebAppContext
     protected Configurations newConfigurations()
     {
         Configurations configurations = super.newConfigurations();
+
         if (getJettyEnvXml() != null)
         {
             // inject configurations with config from maven plugin
             for (Configuration c : configurations)
             {
                 if (c instanceof EnvConfiguration envConfiguration)
-                    setAttribute(EnvConfiguration.JETTY_ENV_XML, getJettyEnvXml());
+                    setAttribute(EnvConfiguration.JETTY_ENV_XML, this.getResourceFactory().newResource(getJettyEnvXml()));
             }
         }
 

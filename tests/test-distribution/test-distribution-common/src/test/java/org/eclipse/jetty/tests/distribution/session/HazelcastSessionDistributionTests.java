@@ -52,7 +52,7 @@ public class HazelcastSessionDistributionTests extends AbstractSessionDistributi
 
     private GenericContainer<?> hazelcast = new GenericContainer<>("hazelcast/hazelcast:" + System.getProperty("hazelcast.version", "4.2.2"))
             .withExposedPorts(5701)
-            .waitingFor(Wait.forLogMessage(".*is STARTED.*", 1))
+            .waitingFor(Wait.forListeningPorts(5701))
             .withLogConsumer(new Slf4jLogConsumer(HAZELCAST_LOG));
 
     private Path hazelcastJettyPath;
@@ -64,7 +64,7 @@ public class HazelcastSessionDistributionTests extends AbstractSessionDistributi
         {
             hazelcast.start();
         }
-        String hazelcastHost = hazelcast.getContainerIpAddress();
+        String hazelcastHost = hazelcast.getHost();
         int hazelcastPort = hazelcast.getMappedPort(5701);
 
         LOGGER.info("hazelcast started on {}:{}", hazelcastHost, hazelcastPort);
@@ -124,27 +124,23 @@ public class HazelcastSessionDistributionTests extends AbstractSessionDistributi
         env.put("JAVA_OPTS", "-Dhazelcast.config=/opt/hazelcast/config_ext/hazelcast.xml");
         try (GenericContainer<?> hazelcast =
                  new GenericContainer<>("hazelcast/hazelcast:" + System.getProperty("hazelcast.version", "4.1"))
-                     .withExposedPorts(5701, 5705)
+                     .withExposedPorts(5701)
                      .withEnv(env)
-                     .waitingFor(Wait.forLogMessage(".*is STARTED.*", 1))
-                     //.withNetworkMode("host")
-                     //.waitingFor(Wait.forListeningPort())
+                     .waitingFor(Wait.forListeningPorts(5701))
                      .withClasspathResourceMapping("hazelcast-server.xml",
                          "/opt/hazelcast/config_ext/hazelcast.xml",
                          BindMode.READ_ONLY)
                      .withLogConsumer(new Slf4jLogConsumer(HAZELCAST_LOG)))
         {
             hazelcast.start();
-            String hazelcastHost = InetAddress.getByName(hazelcast.getContainerIpAddress()).getHostAddress(); // hazelcast.getContainerIpAddress();
+            String hazelcastHost = InetAddress.getByName(hazelcast.getHost()).getHostAddress();
             int hazelcastPort = hazelcast.getMappedPort(5701);
-//            int hazelcastMultiCastPort = hazelcast.getMappedPort(54327);
 
             LOGGER.info("hazelcast started on {}:{}", hazelcastHost, hazelcastPort);
 
             Map<String, String> tokenValues = new HashMap<>();
             tokenValues.put("hazelcast_ip", hazelcastHost);
             tokenValues.put("hazelcast_port", Integer.toString(hazelcastPort));
-//            tokenValues.put("hazelcast_multicast_port", Integer.toString(hazelcastMultiCastPort));
             Path hazelcastJettyPath = Paths.get("target/hazelcast-jetty.xml");
             transformFileWithHostAndPort(Paths.get("src/test/resources/hazelcast-jetty.xml"),
                 hazelcastJettyPath,

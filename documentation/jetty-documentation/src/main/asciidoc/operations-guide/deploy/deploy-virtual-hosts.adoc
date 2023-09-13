@@ -143,7 +143,7 @@ This configuration may be useful when Jetty sits behind a load balancer.
 In this case, you want to xref:og-protocols[configure multiple connectors], each with a different name, and then reference the connector name in the web application virtual host configuration:
 
 .domain.xml
-[source,xml,highlight=10,subs="verbatim,attributes"]
+[source,xml,subs="verbatim,attributes,quotes"]
 ----
 <?xml version="1.0" encoding="UTF-8"?>
 <!DOCTYPE Configure PUBLIC "-//Jetty//Configure//EN" "https://eclipse.dev/jetty/configure_10_0.dtd">
@@ -153,14 +153,14 @@ In this case, you want to xref:og-protocols[configure multiple connectors], each
   <Set name="war">/opt/webapps/domain.war</Set>
   <Set name="virtualHosts">
     <Array type="java.lang.String">
-      <Item>@port8080</Item>
+      #<Item>@port8080</Item>#
     </Array>
   </Set>
 </Configure>
 ----
 
 .hobby.xml
-[source,xml,highlight=10,subs="verbatim,attributes"]
+[source,xml,subs="verbatim,attributes,quotes"]
 ----
 <?xml version="1.0" encoding="UTF-8"?>
 <!DOCTYPE Configure PUBLIC "-//Jetty//Configure//EN" "https://eclipse.dev/jetty/configure_10_0.dtd">
@@ -170,7 +170,7 @@ In this case, you want to xref:og-protocols[configure multiple connectors], each
   <Set name="war">/opt/webapps/hobby.war</Set>
   <Set name="virtualHosts">
     <Array type="java.lang.String">
-      <Item>@port9090</Item>
+      #<Item>@port9090</Item>#
     </Array>
   </Set>
 </Configure>

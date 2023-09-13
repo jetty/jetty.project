@@ -19,7 +19,7 @@ However, at runtime you need to have the _implementation_ of the Jetty WebSocket
 
 Jetty's WebSocket APIs are provided by the following Maven artifact:
 
-[source,xml,subs=normal]
+[source,xml,subs="verbatim,attributes"]
 ----
 <dependency>
   <groupId>org.eclipse.jetty.websocket</groupId>
@@ -30,7 +30,7 @@ Jetty's WebSocket APIs are provided by the following Maven artifact:
 
 Jetty's implementation of the Jetty WebSocket APIs is provided by the following Maven artifact (and its transitive dependencies):
 
-[source,xml,subs=normal]
+[source,xml,subs="verbatim,attributes"]
 ----
 <dependency>
   <groupId>org.eclipse.jetty.websocket</groupId>

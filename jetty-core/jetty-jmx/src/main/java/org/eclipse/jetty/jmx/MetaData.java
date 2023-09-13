@@ -445,24 +445,23 @@ class MetaData
                 setterName = "set" + name.substring(0, 1).toUpperCase(Locale.ENGLISH) + name.substring(1);
 
             Method setter = null;
+            Method candidate = null;
             Class<?> klass = getter.getDeclaringClass();
             for (Method method : klass.getMethods())
             {
                 if (method.getName().equals(setterName) && method.getParameterCount() == 1)
                 {
-                    if (setter != null)
+                    candidate = method;
+                    if (getter.getReturnType().equals(method.getParameterTypes()[0]))
                     {
-                        LOG.info("Multiple setters for mbean attribute {} in {}", name, klass);
-                        continue;
+                        setter = method;
+                        break;
                     }
-                    if (!getter.getReturnType().equals(method.getParameterTypes()[0]))
-                    {
-                        LOG.info("Getter/setter type mismatch for mbean attribute {} in {}", name, klass);
-                        continue;
-                    }
-                    setter = method;
                 }
             }
+
+            if (candidate != null && setter == null)
+                LOG.info("Getter/setter type mismatch for mbean attribute {} in {}, attribute will be read-only", name, klass);
 
             return setter;
         }

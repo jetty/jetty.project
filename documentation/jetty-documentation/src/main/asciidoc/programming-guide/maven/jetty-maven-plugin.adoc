@@ -59,12 +59,12 @@ We recommend either the traditional link:{DISTGUIDE}[distribution] deployment ap
 
 First, add `jetty-maven-plugin` to your `pom.xml` definition:
 
-[source,xml]
+[source,xml,subs="verbatim,attributes"]
 ----
 <plugin>
   <groupId>org.eclipse.jetty</groupId>
   <artifactId>jetty-maven-plugin</artifactId>
-  <version>{VERSION}</version>
+  <version>{version}</version>
 </plugin>
 ----
 
@@ -74,7 +74,7 @@ Then, from the same directory as your root `pom.xml`, type:
 mvn jetty:run
 ----
 
-This starts Jetty and serves up your project on http://localhost:8080/.
+This starts Jetty and serves up your project on `+http://localhost:8080/+`.
 
 Jetty will continue to run until you stop it.
 By default, it will not automatically restart your webapp.
@@ -112,7 +112,7 @@ mvn jetty:help
 To see the detailed list of parameters that can be configured for a particular goal, in addition to its description, do:
 
 ----
-mvn jetty:help -Ddetail=true -Dgoal= <goal name>
+mvn jetty:help -Ddetail=true -Dgoal=<goalName>
 ----
 
 [[deployment-modes]]
@@ -320,12 +320,12 @@ Output from jetty will be logged to the console.
 
 Here is an example, which turns on scanning for changes every ten seconds, and sets the webapp context path to `/test`:
 
-[source,xml]
+[source,xml,subs="verbatim,attributes"]
 ----
 <plugin>
   <groupId>org.eclipse.jetty</groupId>
   <artifactId>jetty-maven-plugin</artifactId>
-  <version>{VERSION}</version>
+  <version>{version}</version>
   <configuration>
     <scan>10</scan>
     <webApp>
@@ -412,18 +412,18 @@ Patterns are specified as a relative path using a glob-like syntax as described 
 
 See xref:deployment-modes[Deployment Modes] for other configuration parameters available when using the `run` goal in EMBED, FORK or EXTERNAL modes.
 
-Here's an example of a pom configuration for the plugin with the `run` goal:
+Here is an example of a pom configuration for the plugin with the `run` goal:
 
-[source,xml]
+[source,xml,subs="verbatim,attributes"]
 ----
 <project>
-...
+  ...
   <plugins>
-...
+    ...
     <plugin>
       <groupId>org.eclipse.jetty</groupId>
       <artifactId>jetty-maven-plugin</artifactId>
-      <version>{VERSION}</version>
+      <version>{version}</version>
       <configuration>
         <webApp>
           <contextPath>/</contextPath>
@@ -453,7 +453,7 @@ Here's an example of a pom configuration for the plugin with the `run` goal:
       </configuration>
     </plugin>
   </plugins>
-...
+  ...
 </project>
 ----
 
@@ -529,12 +529,12 @@ Prior to jetty-9.4.7 any dependencies needed to be built first.
 
 Here's an example of using the `pre-integration-test` and `post-integration-test` Maven build phases to trigger the execution and termination of Jetty:
 
-[source,xml]
+[source,xml,subs="verbatim,attributes"]
 ----
 <plugin>
   <groupId>org.eclipse.jetty</groupId>
   <artifactId>jetty-maven-plugin</artifactId>
-  <version>{VERSION}</version>
+  <version>{version}</version>
   <configuration>
     <stopKey>foo</stopKey>
     <stopPort>9999</stopPort>
@@ -721,12 +721,12 @@ If false or not specified, the plugin does not wait for confirmation but exits a
 
 Here's a configuration example:
 
-[source,xml]
+[source,xml,subs="verbatim,attributes"]
 ----
 <plugin>
   <groupId>org.eclipse.jetty</groupId>
   <artifactId>jetty-maven-plugin</artifactId>
-  <version>{VERSION}</version>
+  <version>{version}</version>
   <configuration>
     <stopPort>9966</stopPort>
     <stopKey>foo</stopKey>
@@ -859,12 +859,12 @@ WebAppY:
 
 They are configured for the http://maven.apache.org/plugins/maven-war-plugin/overlays.html[maven-war-plugin]:
 
-[source,xml]
+[source,xml,subs="verbatim,attributes"]
 ----
 <plugin>
   <groupId>org.apache.maven.plugins</groupId>
   <artifactId>maven-war-plugin</artifactId>
-  <version>{VERSION}</version>
+  <version>{version}</version>
   <configuration>
     <overlays>
       <overlay>
@@ -950,12 +950,12 @@ Then our webapp has available these additional resources:
 You can configure LoginServices in the plugin.
 Here's an example of setting up the HashLoginService for a webapp:
 
-[source,xml]
+[source,xml,subs="verbatim,attributes"]
 ----
 <plugin>
   <groupId>org.eclipse.jetty</groupId>
   <artifactId>jetty-maven-plugin</artifactId>
-  <version>{VERSION}</version>
+  <version>{version}</version>
   <configuration>
     <scan>10</scan>
     <webApp>
@@ -969,7 +969,6 @@ Here's an example of setting up the HashLoginService for a webapp:
     </loginServices>
   </configuration>
 </plugin>
-
 ----
 
 [[using-multiple-webapp-root-directories]]
@@ -1005,12 +1004,12 @@ If you want to deploy webapp A, and webapps B and C in the same Jetty instance:
 
 Putting the configuration in webapp A's `pom.xml`:
 
-[source,xml]
+[source,xml,subs="verbatim,attributes"]
 ----
 <plugin>
   <groupId>org.eclipse.jetty</groupId>
   <artifactId>jetty-maven-plugin</artifactId>
-  <version>{VERSION}</version>
+  <version>{version}</version>
   <configuration>
     <scan>10</scan>
     <webApp>
@@ -1063,12 +1062,12 @@ Copy the `jetty.xml` file from the Jetty distribution, and then add WebAppContex
 
 Then configure the location of this `jetty.xml` file into webapp A's jetty plugin:
 
-[source,xml]
+[source,xml,subs="verbatim,attributes"]
 ----
 <plugin>
   <groupId>org.eclipse.jetty</groupId>
   <artifactId>jetty-maven-plugin</artifactId>
-  <version>{VERSION}</version>
+  <version>{version}</version>
   <configuration>
     <scan>10</scan>
     <webApp>
@@ -1096,7 +1095,6 @@ In the latter case, you can use the link:http://www.mojohaus.org/[maven properti
 <plugin>
   <groupId>org.codehaus.mojo</groupId>
   <artifactId>properties-maven-plugin</artifactId>
-  <version>1.0-alpha-2</version>
   <executions>
     <execution>
       <goals>
@@ -1140,7 +1138,6 @@ Here's an example of how to specify System properties in the POM:
     </webApp>
   </configuration>
 </plugin>
-
 ----
 
 [[specifying-properties-in-file]]

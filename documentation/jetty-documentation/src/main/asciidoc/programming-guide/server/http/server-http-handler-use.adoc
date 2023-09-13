@@ -190,7 +190,7 @@ Server
 
 The Maven artifact coordinates are:
 
-[source,xml,subs=normal]
+[source,xml,subs="verbatim,attributes"]
 ----
 <dependency>
   <groupId>org.eclipse.jetty</groupId>
@@ -404,7 +404,7 @@ With `ServletContextHandler` you can just put all your Servlet components in a `
 
 The Maven artifact coordinates depend on the version of Jakarta EE you want to use, and they are:
 
-[source,xml,subs=normal]
+[source,xml,subs="verbatim,attributes"]
 ----
 <dependency>
   <groupId>org.eclipse.jetty.{ee-all}</groupId>
@@ -428,7 +428,7 @@ include::../../{doc_code}/org/eclipse/jetty/docs/programming/server/http/HTTPSer
 
 The `Handler` and Servlet components tree structure looks like the following:
 
-[source,screen,subs=normal]
+[source,screen,subs="verbatim,quotes"]
 ----
 Server
 └── ServletContextHandler /shop
@@ -455,7 +455,7 @@ Server applications must be careful when creating the `Handler` tree to put ``Se
 
 The Maven artifact coordinates depend on the version of Jakarta EE you want to use, and they are:
 
-[source,xml,subs=normal]
+[source,xml,subs="verbatim,attributes"]
 ----
 <dependency>
   <groupId>org.eclipse.jetty.{ee-all}</groupId>
@@ -510,7 +510,7 @@ The features are similar, but `DefaultServlet` is more commonly used to serve st
 
 The Maven artifact coordinates depend on the version of Jakarta EE you want to use, and they are:
 
-[source,xml,subs=normal]
+[source,xml,subs="verbatim,attributes"]
 ----
 <dependency>
   <groupId>org.eclipse.jetty.{ee-all}</groupId>

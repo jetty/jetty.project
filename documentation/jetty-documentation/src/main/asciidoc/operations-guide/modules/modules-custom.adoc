@@ -68,7 +68,7 @@ CAUTION: The cipher list used above may not be secure -- it's just an example.
 Then write your custom module in the `$JETTY_BASE/modules/custom-ssl.mod` file:
 
 .custom-ssl.mod
-[source,subs=verbatim]
+[source]
 ----
 [description]
 Customizes the standard ssl module.
@@ -104,7 +104,7 @@ $ java -jar $JETTY_HOME/start.jar --add-modules=https,custom-ssl
 
 The command above will produce the following `$JETTY_BASE` directory structure:
 
-[source,subs=normal]
+[source,subs="verbatim,quotes"]
 ----
 $JETTY_BASE
 ├── etc
@@ -156,7 +156,7 @@ Both `+*.jar+` files will be put in the `$JETTY_BASE/lib/` directory.
 Next, let's write the Jetty XML file that wires the auditing component to the `ServerConnector`, `$JETTY_BASE/etc/acme-audit.xml`:
 
 .acme-audit.xml
-[source,xml,subs=verbatim,options=nowrap]
+[source,xml,options=nowrap]
 ----
 <?xml version="1.0" encoding="UTF-8"?>
 <!DOCTYPE Configure PUBLIC "-//Jetty//Configure//EN" "https://eclipse.dev/jetty/configure_10_0.dtd">
@@ -213,13 +213,14 @@ etc/acme-audit.xml
 
 Now you can xref:og-start-configure-enable[enable] the custom auditing module with the following command issued from the `$JETTY_BASE` directory:
 
+[source]
 ----
 $ java -jar $JETTY_HOME/start.jar --add-modules=http,acme-audit
 ----
 
 The command above will produce the following `$JETTY_BASE` directory structure:
 
-[source,subs=normal]
+[source,subs="verbatim,quotes"]
 ----
 $JETTY_BASE
 ├── etc

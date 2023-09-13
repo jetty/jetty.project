@@ -43,7 +43,7 @@ For more advanced configuration you may want to configure the TLS protocol versi
 The correct way of doing this is to create a custom xref:og-xml[Jetty XML file] and reference it in `$JETTY_BASE/start.d/ssl.ini`:
 
 .ssl.ini
-[source,subs=verbatim]
+[source]
 ----
 jetty.sslContext.keyStorePassword=my_passwd! <1>
 etc/tls-config.xml <2>
@@ -56,7 +56,7 @@ The `ssl.ini` file above only shows the lines that are not commented out (you ca
 You want to create the `$JETTY_BASE/etc/tls-config.xml` with the following template content:
 
 .tls-config.xml
-[source,xml,subs=verbatim]
+[source,xml]
 ----
 <?xml version="1.0"?>
 <!DOCTYPE Configure PUBLIC "-//Jetty//Configure//EN" "http://eclipse.dev/jetty/configure_10_0.dtd">

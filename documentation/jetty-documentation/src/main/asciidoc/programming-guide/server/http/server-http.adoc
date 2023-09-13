@@ -22,7 +22,7 @@ This result in your web applications to be available to HTTP clients as if you d
 
 The Maven artifact coordinates are:
 
-[source,xml,subs=normal]
+[source,xml,subs="verbatim,attributes"]
 ----
 <dependency>
   <groupId>org.eclipse.jetty</groupId>
@@ -162,5 +162,6 @@ You can implement your own `RequestLog` if you want to have functionalities that
 
 include::server-http-connector.adoc[]
 include::server-http-handler.adoc[]
+include::server-http-session.adoc[]
 include::server-http-security.adoc[]
 include::server-http-application.adoc[]
