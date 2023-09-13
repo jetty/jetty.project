@@ -94,7 +94,7 @@ public class HelloWorld extends AbstractHandler
 The `pom.xml` file declares the project name and its dependencies.
 Use an editor to create the file `pom.xml` in the `JettyMavenHelloWorld` directory with the following contents:
 
-[source,xml]
+[source,xml,subs="verbatim,attributes"]
 ----
 <project xmlns="http://maven.apache.org/POM/4.0.0"
          xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
@@ -108,10 +108,7 @@ Use an editor to create the file `pom.xml` in the `JettyMavenHelloWorld` directo
   <name>Jetty HelloWorld</name>
 
   <properties>
-      <!-- Adapt this to a version found on
-           https://repo1.maven.org/maven2/org/eclipse/jetty/jetty-maven-plugin/
-        -->
-      <jettyVersion>{VERSION}</jettyVersion>
+      <jettyVersion>{version}</jettyVersion>
   </properties>
 
   <dependencies>
@@ -149,7 +146,7 @@ You can now compile and execute the HelloWorld class by using these commands:
 > mvn clean compile exec:java
 ----
 
-You can point your browser to `http://localhost:8080` to see the _Hello World_ page.
+You can point your browser to `+http://localhost:8080+` to see the _Hello World_ page.
 You can observe what Maven is doing for you behind the scenes by using the `mvn dependency:tree` command, which reveals the transitive dependency resolved and downloaded as:
 
 ----
@@ -249,7 +246,7 @@ You need to declare this servlet in the deployment descriptor, so create the fil
 The `pom.xml` file declares the project name and its dependencies.
 Use an editor to create the file `pom.xml` with the following contents in the `JettyMavenHelloWarApp` directory, noting particularly the declaration of the xref:jetty-maven-plugin[jetty-maven-plugin]:
 
-[source,xml]
+[source,xml,subs="verbatim,attributes"]
 ----
 <project xmlns="http://maven.apache.org/POM/4.0.0"
          xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
@@ -263,7 +260,7 @@ Use an editor to create the file `pom.xml` with the following contents in the `J
   <name>Jetty HelloWorld WebApp</name>
 
   <properties>
-      <jettyVersion>{VERSION}</jettyVersion>
+      <jettyVersion>{version}</jettyVersion>
   </properties>
 
   <dependencies>
@@ -297,7 +294,7 @@ Now you can both build and run the web application without needing to assemble i
 > mvn jetty:run
 ----
 
-You can see the static and dynamic content at `http://localhost:8080/hello`
+You can see the static and dynamic content at `+http://localhost:8080/hello+`
 
 There are a great deal of configuration options available for the jetty-maven-plugin to help you build and run your webapp.
 The full reference is at xref:jetty-maven-plugin[Configuring the Jetty Maven Plugin].

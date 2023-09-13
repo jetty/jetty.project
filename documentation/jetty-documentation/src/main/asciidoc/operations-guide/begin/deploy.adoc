@@ -38,7 +38,7 @@ A standard Servlet web application is packaged in either a `+*.war+` file or in 
 ====
 Recall that the structure of a `+*.war+` file is as follows:
 
-[source,subs=verbatim]
+[source]
 ----
 mywebapp.war
 ├── index.html <1>
@@ -63,12 +63,12 @@ The following examples assume you're deploying a Jakarta {ee-current-caps} appli
 Refer to the section about xref:og-deploy[deployment] for further information about how to deploy to different environments.
 ====
 
-[subs=attributes]
+[source,subs="verbatim,attributes"]
 ----
 $ java -jar $JETTY_HOME/start.jar --add-modules={ee-current}-deploy
 ----
 
-[source,options=nowrap,subs=attributes]
+[source,options=nowrap,subs="verbatim,attributes"]
 ----
 include::jetty[setupArgs="--add-modules=http",args="--add-modules={ee-current}-deploy"]
 ----
@@ -82,14 +82,14 @@ Refer to the xref:og-protocols[section about protocols] for further information.
 Now you're ready to copy a web application to the `$JETTY_BASE/webapps` directory.
 You can use one of the demos shipped with Jetty:
 
-[subs=attributes]
+[source,subs="verbatim,attributes"]
 ----
 $ java -jar $JETTY_HOME/start.jar --add-modules={ee-current}-demo-simple
 ----
 
 The `$JETTY_BASE` directory is now:
 
-[subs=attributes]
+[source,subs="verbatim,attributes"]
 ----
 $JETTY_BASE
 ├── resources
@@ -108,7 +108,7 @@ Now start Jetty:
 $ java -jar $JETTY_HOME/start.jar
 ----
 
-[source,subs=quotes,options=nowrap]
+[source,options=nowrap,subs="verbatim,attributes,quotes"]
 ----
 include::jetty[setupArgs="--add-modules=http,deploy,{ee-current}-demo-simple",highlight="WebAppContext"]
 ----

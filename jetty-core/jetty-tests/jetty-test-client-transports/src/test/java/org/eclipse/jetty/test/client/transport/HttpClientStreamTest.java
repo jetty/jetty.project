@@ -469,6 +469,9 @@ public class HttpClientStreamTest extends AbstractTest
 
     @ParameterizedTest
     @MethodSource("transports")
+    @Tag("DisableLeakTracking:client:HTTP")
+    @Tag("DisableLeakTracking:client:HTTPS")
+    @Tag("DisableLeakTracking:client:UNIX_DOMAIN")
     public void testInputStreamContentProviderThrowingWhileReading(Transport transport) throws Exception
     {
         start(transport, new Handler.Abstract()

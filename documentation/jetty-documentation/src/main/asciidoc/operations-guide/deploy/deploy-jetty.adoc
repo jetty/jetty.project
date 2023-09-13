@@ -28,9 +28,9 @@ A simple Jetty context XML file, for example named `wiki.xml` is the following:
 <?xml version="1.0" encoding="UTF-8"?>
 <!DOCTYPE Configure PUBLIC "-//Jetty//Configure//EN" "https://eclipse.dev/jetty/configure_10_0.dtd">
 
-<Configure class="org.eclipse.jetty.{ee-current}.webapp.WebAppContext"> <1>
-  <Set name="contextPath">/wiki</Set> <2>
-  <Set name="war">/opt/myapps/myapp.war</Set> <3>
+<Configure class="org.eclipse.jetty.{ee-current}.webapp.WebAppContext"> <!--1-->
+  <Set name="contextPath">/wiki</Set> <!--2-->
+  <Set name="war">/opt/myapps/myapp.war</Set> <!--3-->
 </Configure>
 ----
 <1> Configures a link:{javadoc-url}/org/eclipse/jetty/{ee-current}/webapp/WebAppContext.html[`WebAppContext`], which is the Jetty component that represents a standard Servlet web application.
@@ -40,7 +40,7 @@ A simple Jetty context XML file, for example named `wiki.xml` is the following:
 The Jetty content XML file may be accompanied by a `+*.properties+` file that specifies the xref:og-deploy[environment] to use for the deployment:
 
 .wiki.properties
-[source,properties,subs=attributes]
+[source,properties,subs="verbatim,attributes"]
 ----
 environment={ee-current}
 ----

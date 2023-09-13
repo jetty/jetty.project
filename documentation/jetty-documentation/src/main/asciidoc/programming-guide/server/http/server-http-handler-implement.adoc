@@ -110,6 +110,7 @@ If you are only interested in the request content parameters received via form u
 
 `Request` HTTP session::
 The `Request` HTTP session is accessed via `Request.getSession(boolean)` and the link:{javadoc-url}/org/eclipse/jetty/server/Session.html[`Session`] APIs.
+For more information about how to set up support for HTTP sessions, see xref:pg-server-http-session[this section].
 
 [[pg-server-http-handler-impl-request-content]]
 ====== Reading the `Request` Content

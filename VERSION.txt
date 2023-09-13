@@ -1,4 +1,94 @@
-jetty-12.0.1-SNAPSHOT
+jetty-12.0.2-SNAPSHOT
+
+jetty-12.0.1 - 29 August 2023
+ + 8926 HttpClient GZIPContentDecoder should remove Content-Length and
+   Content-Encoding: gzip
+ + 9169 Idle timeout is ignored if callback is not completed
+ + 9900 Improve `Request.getBeginNanoTime()` accuracy
+ + 10158 Deploying on Jetty 12 using context XML files will only work
+   when a .properties file with the EE details is also present
+ + 10207 Update failed JSP deployment message
+ + 10213 UnknownFormatConversionException in `start.jar --debug` if path has
+   `%` sign
+ + 10217 Review ProxyConnectionFactory buffer management
+ + 10218 NPE in HttpChannelOverFCGI.receive()
+ + 10274 java.nio.file.FileSystemNotFoundException when creating a resource
+   from a JAR URL
+ + 10294 Request.getContext().getContextPath()
+ + 10295 FormAuthenticator does not dispatch to an error page but
+   redirect
+ + 10306 Jetty 12 generates wrong Host header
+ + 10309 Jetty 12: X-Powered-By header is added 2 times (if enabled)
+ + 10312 Remove jetty-home-with-docs to eliminate build time cyclic
+   dependencies
+ + 10315 ServletInputStream::isReady results in IllegalArgumentException
+ + 10323 Jetty 12.0.0 return wrong value for
+   HttpServletRequest.isRequestedSessionIdValid
+ + 10327 Jetty (embedded) rejected warning logs
+ + 10330 Jetty 12: ResourceService throws NPE when resource has no filesystem
+   path
+ + 10337 SizeLimitHandler does not enforce 0 responseLimit
+ + 10338 ErorrHandler#writeErrorJson is private
+ + 10349 Character encoding is reset when setting Content-Type
+ + 10350 Support Java 21 virtual threads
+ + 10352 Various cleanups in `HttpParser`
+ + 10353 Questions about porting WebSocket APIs to jetty-core 12
+ + 10356 Deploying WAR with `ee10-cdi-spi` fails with Weld 5/CDI 4
+ + 10383 Unsuppressed exceptions from  EE10 ServletTest
+ + 10397 Iso88591StringBuilder.append seems to have a logic error
+ + 10402 Investigate NPE from EE10 AsyncServletIOTest
+ + 10411 Review deployment of Jetty Context XML files
+ + 10416 EE9 Copies HttpFields in response
+
+jetty-11.0.16 - 25 August 2023
+ + 6140 Report total number of keys in SelectorManager
+ + 7091 Add SOCKS5 support
+ + 8405 Servlet 3.1 ReadListener.onAllDataRead() is called twice under h2 or
+   h2c if the server doesn't respond within 30s
+ + 8556 ServletContext.getSessionTimeout() incorrectly throws
+   IllegalStateException
+ + 8694 Make QuicServerConnector respect configured key store instances
+ + 8926 HttpClient GZIPContentDecoder should remove Content-Length and
+   Content-Encoding: gzip
+ + 9150 jetty-http-spi: Jetty's implementation of HttpExchange.setStreams
+   method faulty
+ + 9386 SSL reports deprecated setting, but ssl.ini still uses it
+ + 9397 HTTP/3 encryption configuration
+ + 9476 onCompleteFailure called multiple times
+ + 9524 InputStreamResponseListener's InputStream creates an exception on
+   close()
+ + 9554 Move (qpack/hpack) HuffmanDecoder / HuffmanEncoder / NBitInteger* to
+   common location
+ + 9682 RetainableByteBuffer buffer release bug in WebSocket
+ + 9685 Jetty doesn't set the date header on error responses
+ + 9720 Http2Session.streamIdleTimeout should permit being disabled from
+   AbstractHTTP2ServerConnectionFactory
+ + 9772 Improve Quiche certificates deployment
+ + 9777 CrossOriginFilter does not return Vary header on no-cors mode
+ + 9795 http3-server is leaking the Jetty logging service to web applications
+ + 9887 Deprecate CGI Servlet
+ + 9895 A MessageTooLargeException doesn't close a WebSocket connection
+ + 9947 Cannot invoke "org.eclipse.jetty.io.ManagedSelector.getTotalKeys()"
+   because "selector" is null
+ + 9990 Server rejects certain sizes of streamed request bodies
+ + 10066 Allow `SAXParserFactory` or `SAXParser` to be configured in Jetty's
+   `XmlParser` class
+ + 10086 Revisiting ProxyConfiguration.getProxies()
+ + 10105 Document that Request objects are not reusable
+ + 10120 OutOfMemoryError caused by CyclicTimeouts
+ + 10135 Websocket: Using PerMessageDeflateExtension and flush in batchMode
+   send FLUSH_FRAME to client.
+ + 10143 Startup fails due to IllegalArgumentException: Comparison method
+   violates its general contract
+ + 10145 WritePendingException over HTTP/2 tunnel
+ + 10160 Verify PROXY_AUTHENTICATION is sent to forward proxies
+ + 10211 NPE in ArrayByteBufferPool.findOldestEntry()
+ + 10312 Remove jetty-home-with-docs to eliminate build time cyclic
+   dependencies
+ + 10350 Support Java 21 virtual threads
+ + 10352 various cleanups in `HttpParser`
+ + 10388 Jetty10 inetaccess mod started error
+ + 10397 Iso88591StringBuilder.append seems to have a logic error
 
 jetty-12.0.0 - 07 August 2023
  + 8405 Servlet 3.1 ReadListener.onAllDataRead() is called twice under h2 or
@@ -8,7 +98,7 @@ jetty-12.0.0 - 07 August 2023
    AbstractHTTP2ServerConnectionFactory
  + 10121 ee9 to ee8 conversion not working for JSP files with jakarta imports
  + 10135 Websocket: Using PerMessageDeflateExtension and flush in batchMode
-   send FLUSH_FRAME to client. 
+   send FLUSH_FRAME to client.
  + 10155 EE10 Servlet include after `HttpServletResponse.getWriter().println()`
    omits `Content-Length` from the response
  + 10160 Verify PROXY_AUTHENTICATION is sent to forward proxies
@@ -18,7 +108,7 @@ jetty-12.0.0 - 07 August 2023
    `HttpServletResponse.addCookie(jakarta.servlet.http.Cookie)`
  + 10229 HttpConfiguration.setIdleTimeout() breaks long running requests
  + 10231 DefaultServlet no longer supports POST and OPTIONS and returns a 405
-   instead 
+   instead
 
 jetty-12.0.0.beta4 - 26 July 2023
  + 8556 ServletContext.getSessionTimeout() incorrectly throws
@@ -302,6 +392,58 @@ jetty-11.0.15 - 11 April 2023
  + 9501 jetty client with proxy - ssl traffic between both proxy and servers
  + 9517 Jetty 10.0.14 uses wrong pathSpec for request
  + 9556 Password Util does not ask for password
+
+jetty-10.0.16 - 25 August 2023
+ + 6140 Report total number of keys in SelectorManager
+ + 7091 Add SOCKS5 support
+ + 8405 Servlet 3.1 ReadListener.onAllDataRead() is called twice under h2 or
+   h2c if the server doesn't respond within 30s
+ + 8556 ServletContext.getSessionTimeout() incorrectly throws
+   IllegalStateException
+ + 8694 Make QuicServerConnector respect configured key store instances
+ + 8926 HttpClient GZIPContentDecoder should remove Content-Length and
+   Content-Encoding: gzip
+ + 9150 jetty-http-spi: Jetty's implementation of HttpExchange.setStreams
+   method faulty
+ + 9386 SSL reports deprecated setting, but ssl.ini still uses it
+ + 9397 HTTP/3 encryption configuration
+ + 9476 onCompleteFailure called multiple times
+ + 9524 InputStreamResponseListener's InputStream creates an exception on
+   close()
+ + 9554 Move (qpack/hpack) HuffmanDecoder / HuffmanEncoder / NBitInteger* to
+   common location
+ + 9682 RetainableByteBuffer buffer release bug in WebSocket
+ + 9685 Jetty doesn't set the date header on error responses
+ + 9720 Http2Session.streamIdleTimeout should permit being disabled from
+   AbstractHTTP2ServerConnectionFactory
+ + 9772 Improve Quiche certificates deployment
+ + 9777 CrossOriginFilter does not return Vary header on no-cors mode
+ + 9795 http3-server is leaking the Jetty logging service to web applications
+ + 9887 Deprecate CGI Servlet
+ + 9895 A MessageTooLargeException doesn't close a WebSocket connection
+ + 9947 Cannot invoke "org.eclipse.jetty.io.ManagedSelector.getTotalKeys()"
+   because "selector" is null
+ + 9990 Server rejects certain sizes of streamed request bodies
+ + 10055 Deployment of static files does not work with --dry-run Jetty-12
+ + 10066 Allow `SAXParserFactory` or `SAXParser` to be configured in Jetty's
+   `XmlParser` class
+ + 10086 Revisiting ProxyConfiguration.getProxies()
+ + 10105 Document that Request objects are not reusable
+ + 10120 OutOfMemoryError caused by CyclicTimeouts
+ + 10135 Websocket: Using PerMessageDeflateExtension and flush in batchMode
+   send FLUSH_FRAME to client.
+ + 10143 Startup fails due to IllegalArgumentException: Comparison method
+   violates its general contract
+ + 10145 WritePendingException over HTTP/2 tunnel
+ + 10160 Verify PROXY_AUTHENTICATION is sent to forward proxies
+ + 10211 NPE in ArrayByteBufferPool.findOldestEntry()
+ + 10271 jetty.sh does not stop jetty anymore
+ + 10312 Remove jetty-home-with-docs to eliminate build time cyclic
+   dependencies
+ + 10350 Support Java 21 virtual threads
+ + 10352 various cleanups in `HttpParser`
+ + 10388 Jetty10 inetaccess mod started error
+ + 10397 Iso88591StringBuilder.append seems to have a logic error
 
 jetty-10.0.15 - 11 April 2023
  + 6184 JEP-411 will deprecate/remove the SecurityManager from the JVM
@@ -1405,7 +1547,7 @@ jetty-11.0.0.beta1 - 10 July 2020
    SETTINGS Frame.
  + 4903 Give better errors for non public Websocket Endpoints
  + 4904 WebsocketClient creates more connections than needed
- + 4907 
+ + 4907
    org.eclipse.jetty.websocket.tests.SuspendResumeTest#testSuspendAfterClose
  + 4920 Restore ability to delete sessions on stop
  + 4921 Quickstart run improperly runs dynamically added context initializers
