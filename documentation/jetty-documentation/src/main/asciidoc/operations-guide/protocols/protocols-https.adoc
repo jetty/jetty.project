@@ -59,7 +59,7 @@ include::jetty[setupArgs="--add-modules=ssl,https",args="--add-modules=test-keys
 
 The `$JETTY_BASE` directory is now:
 
-[source,subs=quotes]
+[source,subs="verbatim,quotes"]
 ----
 ├── etc
 │   └── #test-keystore.p12#
@@ -77,7 +77,7 @@ Starting Jetty yields:
 $ java -jar $JETTY_HOME/start.jar
 ----
 
-[source,subs=quotes,options=nowrap]
+[source,options=nowrap,subs="verbatim,quotes"]
 ----
 include::jetty[setupArgs="--add-modules=ssl,https,test-keystore",highlight="(\{.*:8443})"]
 ----

@@ -152,7 +152,7 @@ Consolidating parallel references saves readers from having to sift through repe
 
 Instead of referencing multiple versions in your code and command-line examples, it's generally better to target one specific version, typically the latest (currently `{ee-current}`):
 
-[source,subs=attributes]
+[source,subs="verbatim,attributes"]
 ----
 $ java -jar $JETTY_HOME/start.jar --add-modules={ee-current}-deploy
 ----

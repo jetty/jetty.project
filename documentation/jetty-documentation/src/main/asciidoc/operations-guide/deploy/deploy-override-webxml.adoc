@@ -19,7 +19,7 @@ This additional `web.xml` is processed _after_ the `+*.war+` file `web.xml`.
 This allows you to add host specific configuration or server specific configuration without having to extract the web application `web.xml`, modify it, and repackage it in the `+*.war+` file.
 
 .mywebapp.xml
-[source,xml,highlight=8,subs="verbatim,attributes"]
+[source,xml,subs="verbatim,attributes,quotes"]
 ----
 <?xml version="1.0" encoding="UTF-8"?>
 <!DOCTYPE Configure PUBLIC "-//Jetty//Configure//EN" "https://eclipse.dev/jetty/configure_10_0.dtd">
@@ -27,7 +27,7 @@ This allows you to add host specific configuration or server specific configurat
 <Configure class="org.eclipse.jetty.{ee-current}.webapp.WebAppContext">
   <Set name="contextPath">/mywebapp</Set>
   <Set name="war">/opt/webapps/mywebapp.war</Set>
-  <Set name="overrideDescriptor">/opt/webapps/mywebapp-web.xml</Set>
+  #<Set name="overrideDescriptor">/opt/webapps/mywebapp-web.xml</Set>#
 </Configure>
 ----
 
