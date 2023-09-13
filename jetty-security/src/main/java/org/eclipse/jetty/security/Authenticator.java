@@ -117,7 +117,20 @@ public interface Authenticator
 
         IdentityService getIdentityService();
 
+        /**
+         * Should session ID be renewed on authentication.
+         * @return true if the session ID should be renewed on authentication
+         */
         boolean isSessionRenewedOnAuthentication();
+
+        /**
+         * Get the interval in seconds to set with {@link javax.servlet.http.HttpSession#setMaxInactiveInterval(int)}
+         * when a session is newly authenticated.
+         * @return An interval in seconds, which if greater than zero will be set as the
+         *        {@link javax.servlet.http.HttpSession#setMaxInactiveInterval(int) maxInactiveInterval}
+         *        on newly authenticated sessions.
+         */
+        int getSessionMaxInactiveIntervalOnAuthentication();
     }
 
     /**

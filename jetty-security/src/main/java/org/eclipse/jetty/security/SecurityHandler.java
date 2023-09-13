@@ -68,7 +68,8 @@ public abstract class SecurityHandler extends HandlerWrapper implements Authenti
     private final Map<String, String> _initParameters = new HashMap<>();
     private LoginService _loginService;
     private IdentityService _identityService;
-    private boolean _renewSession = true;
+    private boolean _renewSessionOnAuthentication = true;
+    private int _sessionMaxInactiveIntervalOnAuthentication = 0;
 
     static
     {
@@ -433,7 +434,7 @@ public abstract class SecurityHandler extends HandlerWrapper implements Authenti
     @Override
     public boolean isSessionRenewedOnAuthentication()
     {
-        return _renewSession;
+        return _renewSessionOnAuthentication;
     }
 
     /**
@@ -446,7 +447,25 @@ public abstract class SecurityHandler extends HandlerWrapper implements Authenti
      */
     public void setSessionRenewedOnAuthentication(boolean renew)
     {
-        _renewSession = renew;
+        _renewSessionOnAuthentication = renew;
+    }
+
+    @Override
+    public int getSessionMaxInactiveIntervalOnAuthentication()
+    {
+        return _sessionMaxInactiveIntervalOnAuthentication;
+    }
+
+    /**
+     * Set the interval in seconds to set with {@link javax.servlet.http.HttpSession#setMaxInactiveInterval(int)}
+     * when a session is newly authenticated.
+     * @param seconds An interval in seconds, which if greater than zero will be set as the
+     *        {@link javax.servlet.http.HttpSession#setMaxInactiveInterval(int) maxInactiveInterval}
+     *        on newly authenticated sessions.
+     */
+    public void setSessionMaxInactiveIntervalOnAuthentication(int seconds)
+    {
+        _sessionMaxInactiveIntervalOnAuthentication = seconds;
     }
 
     /*
