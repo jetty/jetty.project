@@ -1145,7 +1145,18 @@ public class HttpConnection extends AbstractConnection implements Runnable, Writ
         {
             Throwable result = HttpStream.consumeAvailable(this, getHttpConfiguration());
             if (result != null)
+            {
                 _generator.setPersistent(false);
+                // If HttpStream.consumeAvailable() returns an error, there may be unconsumed content left,
+                // so we must make sure the buffer is released and that the next chunk indicates the end of the stream.
+                if (_retainableByteBuffer != null)
+                {
+                    _retainableByteBuffer.release();
+                    _retainableByteBuffer = null;
+                }
+                if (_chunk == null)
+                    _chunk = Content.Chunk.from(result, true);
+            }
             return result;
         }
 
