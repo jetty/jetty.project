@@ -290,9 +290,16 @@ public class Request implements HttpServletRequest
         }
 
         StringBuilder cookieBuilder = new StringBuilder();
-        String cookies = getCoreRequest().getHeaders().get(HttpHeader.COOKIE);
+        Cookie[] cookies = getCookies();
         if (cookies != null)
-            cookieBuilder.append(cookies);
+        {
+            for (Cookie cookie : cookies)
+            {
+                if (!cookieBuilder.isEmpty())
+                    cookieBuilder.append("; ");
+                cookieBuilder.append(cookie.getName()).append("=").append(cookie.getValue());
+            }
+        }
         // Any Set-Cookie in the response should be present in the push.
         for (HttpField field : getResponse().getHttpFields())
         {
