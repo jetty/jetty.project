@@ -32,7 +32,6 @@ import org.eclipse.jetty.server.HttpStream;
 import org.eclipse.jetty.server.Request;
 import org.eclipse.jetty.server.Response;
 import org.eclipse.jetty.util.Callback;
-import org.eclipse.jetty.util.IteratingCallback;
 import org.eclipse.jetty.util.NanoTime;
 import org.eclipse.jetty.util.ProcessorUtils;
 import org.eclipse.jetty.util.annotation.ManagedAttribute;
@@ -77,7 +76,6 @@ public class QoSHandler extends Handler.Wrapper
     private static final String EXPIRED_ATTRIBUTE_NAME = QoSHandler.class.getName() + ".expired";
 
     private final AtomicInteger state = new AtomicInteger();
-    private final Forwarder forwarder = new Forwarder();
     private final Map<Integer, Queue<Entry>> queues = new ConcurrentHashMap<>();
     private final Set<Integer> priorities = new ConcurrentSkipListSet<>(Comparator.reverseOrder());
     private CyclicTimeouts<Entry> timeouts;
@@ -278,7 +276,7 @@ public class QoSHandler extends Handler.Wrapper
         timeouts.schedule(entry);
     }
 
-    private void resume(boolean async)
+    private void resume()
     {
         // See correspondent state machine logic in handle() and expire().
         int permits = state.getAndIncrement();
@@ -291,7 +289,7 @@ public class QoSHandler extends Handler.Wrapper
 
         while (true)
         {
-            if (resumeSuspended(async))
+            if (resumeSuspended())
                 return;
 
             // Found no suspended requests yet, but there will be.
@@ -301,7 +299,7 @@ public class QoSHandler extends Handler.Wrapper
         }
     }
 
-    private boolean resumeSuspended(boolean async)
+    private boolean resumeSuspended()
     {
         for (Integer priority : priorities)
         {
@@ -310,19 +308,16 @@ public class QoSHandler extends Handler.Wrapper
             if (entry != null)
             {
                 if (LOG.isDebugEnabled())
-                    LOG.debug("{} resuming async={} {}", this, async, entry.request);
-                // TODO: the forwarder is too coarse, just dispatch to a thread?
-                if (async)
-                    entry.resume(entry.callback);
-                else
-                    forwarder.offer(entry);
+                    LOG.debug("{} resuming {}", this, entry.request);
+                // Always dispatch to avoid StackOverflowError.
+                getServer().getThreadPool().execute(entry);
                 return true;
             }
         }
         return false;
     }
 
-    private class Entry implements CyclicTimeouts.Expirable
+    private class Entry implements CyclicTimeouts.Expirable, Runnable
     {
         private final Request request;
         private final Response response;
@@ -364,7 +359,8 @@ public class QoSHandler extends Handler.Wrapper
             }
         }
 
-        private void resume(Callback callback)
+        @Override
+        public void run()
         {
             try
             {
@@ -383,55 +379,14 @@ public class QoSHandler extends Handler.Wrapper
         }
     }
 
-    private class Forwarder extends IteratingCallback
-    {
-        private final Queue<Entry> queue = new ConcurrentLinkedQueue<>();
-        private Entry entry;
-
-        private void offer(Entry entry)
-        {
-            queue.offer(entry);
-            iterate();
-        }
-
-        @Override
-        protected Action process()
-        {
-            entry = queue.poll();
-            if (entry == null)
-                return Action.IDLE;
-
-            entry.resume(this);
-            return Action.SCHEDULED;
-        }
-
-        @Override
-        public void succeeded()
-        {
-            entry.callback.succeeded();
-            super.succeeded();
-        }
-
-        @Override
-        public void failed(Throwable x)
-        {
-            entry.callback.failed(x);
-            // Do not call super.failed(), because we want to
-            // iterate more, not fail this IteratingCallback.
-            super.succeeded();
-        }
-    }
-
     private class Resumer extends HttpStream.Wrapper
     {
         private final Request request;
-        private final Thread thread;
 
         private Resumer(HttpStream wrapped, Request request)
         {
             super(wrapped);
             this.request = request;
-            this.thread = Thread.currentThread();
         }
 
         @Override
@@ -439,7 +394,7 @@ public class QoSHandler extends Handler.Wrapper
         {
             if (LOG.isDebugEnabled())
                 LOG.debug("{} succeeded {}", QoSHandler.this, request);
-            resume(thread != Thread.currentThread());
+            resume();
         }
 
         @Override
@@ -447,7 +402,7 @@ public class QoSHandler extends Handler.Wrapper
         {
             if (LOG.isDebugEnabled())
                 LOG.debug("{} failed {}", QoSHandler.this, request, x);
-            resume(thread != Thread.currentThread());
+            resume();
         }
     }
 
