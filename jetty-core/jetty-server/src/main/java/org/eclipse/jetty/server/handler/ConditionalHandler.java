@@ -24,6 +24,7 @@ import java.net.UnknownHostException;
 import java.util.AbstractSet;
 import java.util.ArrayList;
 import java.util.Iterator;
+import java.util.Objects;
 import java.util.Set;
 import java.util.function.Predicate;
 
@@ -38,7 +39,6 @@ import org.eclipse.jetty.util.Callback;
 import org.eclipse.jetty.util.IncludeExclude;
 import org.eclipse.jetty.util.IncludeExcludeSet;
 import org.eclipse.jetty.util.InetAddressPattern;
-import org.eclipse.jetty.util.StringUtil;
 import org.eclipse.jetty.util.component.DumpableCollection;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -49,10 +49,9 @@ import static java.lang.invoke.MethodType.methodType;
  * A {@link Handler.Wrapper} that may conditionally apply an action to a request.
  * The conditions are implemented by an {@link IncludeExclude} of:
  * <ul>
- *     <li>A method name</li>
- *     <li>A {@link PathSpec} or sting representation</li>
- *     <li>A combination of {@link #include(String, String, String, PathSpec) multiple attributes}</li>
- *     <li>An arbitrary {@link Predicate} taking the {@link Request}</li>
+ *     <li>A method name, which can be efficiently matched</li>
+ *     <li>A {@link PathSpec} or sting representation, which can be efficient matched.</li>
+ *     <li>An arbitrary {@link Predicate} taking the {@link Request}, which is matched in a linear test of all predicates.</li>
  * </ul>
  * <p>
  * If the conditions are met, the {@link #doHandle(Request, Response, Callback)} method will be invoked.
@@ -132,6 +131,24 @@ public class ConditionalHandler extends Handler.Wrapper
         _methods.clear();
         _paths.clear();
         _predicates.clear();
+    }
+
+    IncludeExclude<String> getMethods()
+    {
+        // Used only for testing
+        return _methods;
+    }
+
+    IncludeExclude<String> getPaths()
+    {
+        // Used only for testing
+        return _paths;
+    }
+
+    IncludeExcludeSet<Predicate<Request>, Request> getPredicates()
+    {
+        // Used only for testing
+        return _predicates;
     }
 
     /**
@@ -216,7 +233,7 @@ public class ConditionalHandler extends Handler.Wrapper
         if (isStarted())
             throw new IllegalStateException(getState());
         for (InetAddressPattern p : patterns)
-            _predicates.include(new InetAddressPredicate(p));
+            _predicates.include(new InetAddressPatternPredicate(p));
     }
 
     /**
@@ -242,7 +259,7 @@ public class ConditionalHandler extends Handler.Wrapper
         if (isStarted())
             throw new IllegalStateException(getState());
         for (InetAddressPattern p : patterns)
-            _predicates.exclude(new InetAddressPredicate(p));
+            _predicates.exclude(new InetAddressPatternPredicate(p));
     }
 
     /**
@@ -258,73 +275,47 @@ public class ConditionalHandler extends Handler.Wrapper
     }
 
     /**
-     * {@link IncludeExclude#include(Object) Include} a {@link ConnectorAddrMethodPathPredicate}.
-     * If only a method or pathSpec is passed, then this method optimizes by converting this
-     * call to {@link #includeMethod(String...)} or {@link #include(PathSpec...)}.
-     *
-     * @param connectorName optional name of a connector or {@code null}.
-     * @param addressPattern optional InetAddress pattern to test against the remote address or {@code null}.
-     * @param method optional method or {@code null}.
-     * @param pathSpec optional pathSpec to test against the {@link Request#getPathInContext(Request) pathInContext} or {@code null}.
-     */
-    public void include(String connectorName, String addressPattern, String method, PathSpec pathSpec)
-    {
-        if (isStarted())
-            throw new IllegalStateException(getState());
-
-        if (connectorName == null && addressPattern == null)
-        {
-            if (StringUtil.isNotBlank(method) && pathSpec == null)
-                includeMethod(method);
-            else if (StringUtil.isBlank(method) && pathSpec != null)
-                include(pathSpec);
-            include(new ConnectorAddrMethodPathPredicate(connectorName, InetAddressPattern.from(addressPattern), method, pathSpec));
-        }
-        else
-        {
-            include(new ConnectorAddrMethodPathPredicate(connectorName, InetAddressPattern.from(addressPattern), method, pathSpec));
-        }
-    }
-
-    /**
-     * {@link IncludeExclude#exclude(Object) Exclude} a {@link ConnectorAddrMethodPathPredicate}.
-     * If only a method or pathSpec is passed, then this method optimizes by converting this
-     * call to {@link #excludeMethod(String...)} or {@link #exclude(PathSpec...)}.
-     *
-     * @param connectorName optional name of a connector or {@code null}.
-     * @param addressPattern optional InetAddress pattern to test against the remote address or {@code null}.
-     * @param method optional method or {@code null}.
-     * @param pathSpec optional pathSpec to test against the {@link Request#getPathInContext(Request) pathInContext} or {@code null}.
-     */
-    public void exclude(String connectorName, String addressPattern, String method, PathSpec pathSpec)
-    {
-        if (isStarted())
-            throw new IllegalStateException(getState());
-        exclude(new ConnectorAddrMethodPathPredicate(connectorName, InetAddressPattern.from(addressPattern), method, pathSpec));
-    }
-
-    /**
      * {@link IncludeExclude#include(Object) Include} arbitrary {@link Predicate}s in the conditions.
      * @param predicates {@link Predicate}s that are tested against the {@link Request}.
+     * This method is optimized so that a passed {@link MethodPredicate} or {@link PathSpecPredicate} is
+     * converted to a more efficient {@link #includeMethod(String...)} or {@link #include(PathSpec...)} respectively.
      */
     @SafeVarargs
     public final void include(Predicate<Request>... predicates)
     {
         if (isStarted())
             throw new IllegalStateException(getState());
-        _predicates.include(predicates);
+        for (Predicate<Request> p : predicates)
+        {
+            if (p instanceof MethodPredicate methodPredicate)
+                includeMethod(methodPredicate._method);
+            else if (p instanceof PathSpecPredicate pathSpecPredicate)
+                include(pathSpecPredicate._pathSpec);
+            else
+                _predicates.include(p);
+        }
     }
 
     /**
      * {@link IncludeExclude#exclude(Object) Exclude} arbitrary {@link Predicate}s in the conditions.
      * @param predicates {@link Predicate}s that are tested against the {@link Request}.
+     * This method is optimized so that a passed {@link MethodPredicate} or {@link PathSpecPredicate} is
+     * converted to a more efficient {@link #excludeMethod(String...)} or {@link #exclude(PathSpec...)} respectively.
      */
     @SafeVarargs
     public final void exclude(Predicate<Request>... predicates)
     {
         if (isStarted())
             throw new IllegalStateException(getState());
-        _predicates.exclude(predicates);
+        for (Predicate<Request> p : predicates)
+        {
+            if (p instanceof MethodPredicate methodPredicate)
+                excludeMethod(methodPredicate._method);
+            else if (p instanceof PathSpecPredicate pathSpecPredicate)
+                exclude(pathSpecPredicate._pathSpec);
+            else
+                _predicates.exclude(p);
+        }
     }
 
     private boolean checkMethod(Request request)
@@ -497,6 +488,65 @@ public class ConditionalHandler extends Handler.Wrapper
         );
     }
 
+    /**
+     * Create a {@link Predicate} over {@link Request} built from the {@link Predicate#and(Predicate) and} of one or more of: <ul>
+     *     <li>{@link ConnectorPredicate}</li>
+     *     <li>{@link InetAddressPatternPredicate}</li>
+     *     <li>{@link MethodPredicate}</li>
+     *     <li>{@link PathSpecPredicate}</li>
+     * </ul>
+     * @param connectorName The connector name or {@code null}
+     * @param inetAddressPattern An {@link InetAddressPattern} string or {@code null}
+     * @param method A {@link org.eclipse.jetty.http.HttpMethod} name or {@code null}
+     * @param pathSpec A {@link PathSpec} string or {@code null}
+     * @return the combined {@link Predicate} over {@link Request}
+     */
+    public static Predicate<Request> from(String connectorName, String inetAddressPattern, String method, String pathSpec)
+    {
+        return from(connectorName, InetAddressPattern.from(inetAddressPattern), method, pathSpec == null ? null : PathSpec.from(pathSpec));
+    }
+
+    /**
+     * Create a {@link Predicate} over {@link Request} built from the {@link Predicate#and(Predicate) and} of one or more of: <ul>
+     *     <li>{@link ConnectorPredicate}</li>
+     *     <li>{@link InetAddressPatternPredicate}</li>
+     *     <li>{@link MethodPredicate}</li>
+     *     <li>{@link PathSpecPredicate}</li>
+     * </ul>
+     * @param connectorName The connector name or {@code null}
+     * @param addressPattern An {@link InetAddressPattern} or {@code null}
+     * @param method A {@link org.eclipse.jetty.http.HttpMethod} name or {@code null}
+     * @param pathSpec A {@link PathSpec} or {@code null}
+     * @return the combined {@link Predicate} over {@link Request}
+     */
+    public static Predicate<Request> from(String connectorName, InetAddressPattern addressPattern, String method, PathSpec pathSpec)
+    {
+        Predicate<Request> predicate = connectorName == null ? null : new ConnectorPredicate(connectorName);
+
+        if (addressPattern != null)
+        {
+            InetAddressPatternPredicate inetAddressPatternPredicate = new InetAddressPatternPredicate(addressPattern);
+            predicate = predicate == null ? inetAddressPatternPredicate : predicate.and(inetAddressPatternPredicate);
+        }
+
+        if (method != null)
+        {
+            MethodPredicate methodPredicate = new MethodPredicate(method);
+            predicate = predicate == null ? methodPredicate : predicate.and(methodPredicate);
+        }
+
+        if (pathSpec != null)
+        {
+            PathSpecPredicate pathSpecPredicate = new PathSpecPredicate(pathSpec);
+            predicate = predicate == null ? pathSpecPredicate : predicate.and(pathSpecPredicate);
+        }
+        
+        return predicate;
+    }
+
+    /**
+     * A Set of {@link Predicate} over {@link Request} optimized for use by {@link IncludeExclude}.
+     */
     public static class PredicateSet extends AbstractSet<Predicate<Request>> implements Set<Predicate<Request>>, Predicate<Request>
     {
         private final ArrayList<Predicate<Request>> _predicates = new ArrayList<>();
@@ -541,11 +591,37 @@ public class ConditionalHandler extends Handler.Wrapper
     }
 
     /**
+     * A {@link Predicate} over {@link Request} that tests the {@link Connector#getName() name} of the
+     * {@link ConnectionMetaData#getConnector() connector} obtained from {@link Request#getConnectionMetaData()}
+     */
+    public static class ConnectorPredicate implements Predicate<Request>
+    {
+        private final String _connector;
+
+        public ConnectorPredicate(String connector)
+        {
+            this._connector = Objects.requireNonNull(connector);
+        }
+
+        @Override
+        public boolean test(Request request)
+        {
+            return _connector.equals(request.getConnectionMetaData().getConnector().getName());
+        }
+
+        @Override
+        public String toString()
+        {
+            return String.format("%s@%x{%s}", getClass().getSimpleName(), hashCode(), _connector);
+        }
+    }
+
+    /**
      * A {@link Predicate} over {@link Request} that tests an {@link InetAddressPattern}
      * against the {@link ConnectionMetaData#getRemoteSocketAddress() getRemoteSocketAddress()} of
      * {@link Request#getConnectionMetaData()}.
      */
-    public static class InetAddressPredicate implements Predicate<Request>
+    public static class InetAddressPatternPredicate implements Predicate<Request>
     {
         public static InetAddress getInetAddress(SocketAddress socketAddress)
         {
@@ -572,7 +648,7 @@ public class ConditionalHandler extends Handler.Wrapper
 
         private final InetAddressPattern _pattern;
 
-        public InetAddressPredicate(InetAddressPattern pattern)
+        public InetAddressPatternPredicate(InetAddressPattern pattern)
         {
             _pattern = pattern;
         }
@@ -592,7 +668,7 @@ public class ConditionalHandler extends Handler.Wrapper
         @Override
         public boolean equals(Object obj)
         {
-            return obj instanceof InetAddressPredicate inetAddressPredicate && _pattern.equals(inetAddressPredicate._pattern);
+            return obj instanceof InetAddressPatternPredicate inetAddressPatternPredicate && _pattern.equals(inetAddressPatternPredicate._pattern);
         }
 
         @Override
@@ -603,57 +679,60 @@ public class ConditionalHandler extends Handler.Wrapper
     }
 
     /**
-     * A {@link Predicate} over {@link Request} that tests on or more of:
-     * <ul>
-     *     <li>The {@link Connector#getName() name} of the
-     *     {@link ConnectionMetaData#getConnector() connector}
-     *     obtained from {@link Request#getConnectionMetaData()}</li>
-     *     <li>An {@link InetAddressPattern} tested against the
-     *     {@link ConnectionMetaData#getRemoteSocketAddress() getRemoteSocketAddress()} of
-     *     {@link Request#getConnectionMetaData()}.
-     *     </li>
-     *     <li>A {@link Request#getMethod() method} name</li>
-     *     <li>A {@link PathSpec} tested against the {@link Request#getPathInContext(Request) pathInContext}.</li>
-     * </ul>
+     * A {@link Predicate} over {@link Request} that tests {@link Request#getMethod() method} name.
+     * Using predicates in less efficient than using {@link ConditionalHandler#includeMethod(String...)}
+     * and {@link ConditionalHandler#excludeMethod(String...)}, so this predicate should only be used
+     * if necessary to combine with other predicates.
      */
-    public static class ConnectorAddrMethodPathPredicate implements Predicate<Request>
+    public static class MethodPredicate implements Predicate<Request>
     {
-        private final String connector;
-        private final InetAddressPattern address;
-        private final String method;
-        private final PathSpec pathSpec;
+        private final String _method;
 
-        public ConnectorAddrMethodPathPredicate(String connector, InetAddressPattern address, String method, PathSpec pathSpec)
+        public MethodPredicate(String method)
         {
-            this.connector = connector;
-            this.address = address;
-            this.method = method;
-            this.pathSpec = pathSpec;
+            _method = Objects.requireNonNull(method);
         }
 
         @Override
         public boolean test(Request request)
         {
-            // Match for connector.
-            if ((connector != null) && !connector.equals(request.getConnectionMetaData().getConnector().getName()))
-                return false;
-
-            // If we have a method we must match
-            if ((method != null) && !method.equals(request.getMethod()))
-                return false;
-
-            // If we have a path we must be at this path to match for an address.
-            if ((pathSpec != null) && !pathSpec.matches(Request.getPathInContext(request)))
-                return false;
-
-            // Match for InetAddress.
-            return address == null || address.test(InetAddressPredicate.getInetAddress(request.getConnectionMetaData().getRemoteSocketAddress()));
+            return _method.equals(request.getMethod());
         }
 
         @Override
         public String toString()
         {
-            return String.format("%s@%x{connector=%s, addressPattern=%s, method=%s, pathSpec=%s}", getClass().getSimpleName(), hashCode(), connector, address, method, pathSpec);
+            return String.format("%s@%x{%s}", getClass().getSimpleName(), hashCode(), _method);
+        }
+    }
+
+    /**
+     * A {@link Predicate} over {@link Request} that tests a {@link PathSpec} against
+     * the {@link Request#getPathInContext(Request) pathInContext}.
+     * Using predicates in less efficient than using {@link ConditionalHandler#include(PathSpec...)}
+     * and {@link ConditionalHandler#exclude(PathSpec...)}, so this predicate should only be used
+     * if necessary to combine with other predicates.
+     *
+     */
+    public static class PathSpecPredicate implements Predicate<Request>
+    {
+        private final PathSpec _pathSpec;
+
+        public PathSpecPredicate(PathSpec pathSpec)
+        {
+            _pathSpec = Objects.requireNonNull(pathSpec);
+        }
+
+        @Override
+        public boolean test(Request request)
+        {
+            return _pathSpec.matches(Request.getPathInContext(request));
+        }
+
+        @Override
+        public String toString()
+        {
+            return String.format("%s@%x{%s}", getClass().getSimpleName(), hashCode(), _pathSpec);
         }
     }
 }

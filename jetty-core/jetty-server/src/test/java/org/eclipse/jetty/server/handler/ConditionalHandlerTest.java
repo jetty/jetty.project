@@ -13,9 +13,11 @@
 
 package org.eclipse.jetty.server.handler;
 
+import java.util.function.Predicate;
 import java.util.stream.Stream;
 
 import org.eclipse.jetty.http.HttpStatus;
+import org.eclipse.jetty.http.pathmap.PathSpec;
 import org.eclipse.jetty.server.ForwardedRequestCustomizer;
 import org.eclipse.jetty.server.Handler;
 import org.eclipse.jetty.server.HttpConnectionFactory;
@@ -26,11 +28,14 @@ import org.eclipse.jetty.server.Server;
 import org.eclipse.jetty.util.Callback;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.Test;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.MethodSource;
 
 import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.Matchers.containsString;
+import static org.hamcrest.Matchers.hasSize;
+import static org.hamcrest.Matchers.instanceOf;
 import static org.hamcrest.Matchers.not;
 
 public class ConditionalHandlerTest
@@ -174,6 +179,28 @@ public class ConditionalHandlerTest
         response = _connector.getResponse("POST /foo/bar HTTP/1.0\n\n");
         assertThat(response, containsString(testHandler.getExpectedWhenNotApplied()));
         assertThat(response, not(containsString("Test: applied")));
+    }
+
+    @Test
+    public void testMethodPredicateOptimization()
+    {
+        Predicate<Request> predicate = ConditionalHandler.from(null, null, "GET", (String)null);
+        assertThat(predicate, instanceOf(ConditionalHandler.MethodPredicate.class));
+        ConditionalHandler conditionalHandler = new ConditionalHandler();
+        conditionalHandler.include(predicate);
+        assertThat(conditionalHandler.getMethods().getIncluded(), hasSize(1));
+        assertThat(conditionalHandler.getPredicates().getIncluded(), hasSize(0));
+    }
+
+    @Test
+    public void testPathSpecPredicateOptimization()
+    {
+        Predicate<Request> predicate = ConditionalHandler.from(null, null, null, PathSpec.from("/*"));
+        assertThat(predicate, instanceOf(ConditionalHandler.PathSpecPredicate.class));
+        ConditionalHandler conditionalHandler = new ConditionalHandler();
+        conditionalHandler.include(predicate);
+        assertThat(conditionalHandler.getPaths().getIncluded(), hasSize(1));
+        assertThat(conditionalHandler.getPredicates().getIncluded(), hasSize(0));
     }
 
     public static class TestConditionalHandler extends ConditionalHandler

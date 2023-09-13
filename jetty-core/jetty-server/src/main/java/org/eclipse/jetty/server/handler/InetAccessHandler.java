@@ -13,11 +13,8 @@
 
 package org.eclipse.jetty.server.handler;
 
-import java.util.function.Predicate;
-
 import org.eclipse.jetty.http.HttpStatus;
 import org.eclipse.jetty.http.pathmap.PathSpec;
-import org.eclipse.jetty.http.pathmap.ServletPathSpec;
 import org.eclipse.jetty.server.Handler;
 import org.eclipse.jetty.server.Request;
 import org.eclipse.jetty.server.Response;
@@ -25,7 +22,6 @@ import org.eclipse.jetty.util.Callback;
 import org.eclipse.jetty.util.IncludeExcludeSet;
 import org.eclipse.jetty.util.InetAddressPattern;
 import org.eclipse.jetty.util.InetAddressSet;
-import org.eclipse.jetty.util.StringUtil;
 
 /**
  * InetAddress Access Handler
@@ -77,7 +73,7 @@ public class InetAccessHandler extends ConditionalHandler
      */
     public void include(String pattern)
     {
-        include(predicateFrom(pattern));
+        includeExclude(true, pattern);
     }
 
     /**
@@ -103,7 +99,7 @@ public class InetAccessHandler extends ConditionalHandler
      */
     public void include(String connectorName, String addressPattern, PathSpec pathSpec)
     {
-        include(connectorName, addressPattern, null, pathSpec);
+        include(from(connectorName, InetAddressPattern.from(addressPattern), null, pathSpec));
     }
 
     /**
@@ -130,7 +126,7 @@ public class InetAccessHandler extends ConditionalHandler
      */
     public void exclude(String pattern)
     {
-        exclude(predicateFrom(pattern));
+        includeExclude(false, pattern);
     }
 
     /**
@@ -156,10 +152,10 @@ public class InetAccessHandler extends ConditionalHandler
      */
     public void exclude(String connectorName, String addressPattern, PathSpec pathSpec)
     {
-        exclude(connectorName, addressPattern, null, pathSpec);
+        exclude(from(connectorName, InetAddressPattern.from(addressPattern), null, pathSpec));
     }
 
-    public static Predicate<Request> predicateFrom(String pattern)
+    private void includeExclude(boolean include, String pattern)
     {
         String path = null;
         int pathIndex = pattern.indexOf('|');
@@ -188,11 +184,9 @@ public class InetAccessHandler extends ConditionalHandler
         if (addrStart != addrEnd)
             addr = pattern.substring(addrStart, addrEnd);
 
-        return new ConnectorAddrMethodPathPredicate(
-            connector,
-            InetAddressPattern.from(addr),
-            method,
-            StringUtil.isEmpty(path) ? null : new ServletPathSpec(path));
+        if (include)
+            include(from(connector, addr, method, path));
+        else
+            exclude(from(connector, addr, method, path));
     }
-
 }
