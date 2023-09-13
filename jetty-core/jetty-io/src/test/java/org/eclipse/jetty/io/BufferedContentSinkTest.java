@@ -16,6 +16,7 @@ package org.eclipse.jetty.io;
 import java.io.IOException;
 import java.nio.ByteBuffer;
 import java.util.Arrays;
+import java.util.Random;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicInteger;
@@ -25,6 +26,7 @@ import org.eclipse.jetty.io.content.AsyncContent;
 import org.eclipse.jetty.io.content.BufferedContentSink;
 import org.eclipse.jetty.util.BufferUtil;
 import org.eclipse.jetty.util.Callback;
+import org.eclipse.jetty.util.NanoTime;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
@@ -453,6 +455,88 @@ public class BufferedContentSinkTest
             read = async.read();
             assertThat(read.isLast(), is(true));
             assertThat(read.remaining(), is(4096));
+            assertThat(read.release(), is(true));
+
+            assertTrue(complete.await(5, TimeUnit.SECONDS));
+            assertThat(count.get(), is(-1));
+        }
+    }
+
+    private static final Random random = new Random();
+
+    private static void delay()
+    {
+        try
+        {
+            if (random.nextBoolean())
+                Thread.sleep(2);
+        }
+        catch (Exception e)
+        {
+            throw new RuntimeException(e);
+        }
+    }
+
+    @Test
+    public void testByteByByteAsync() throws Exception
+    {
+        try (AsyncContent async = new AsyncContent())
+        {
+            BufferedContentSink buffered = new BufferedContentSink(async, _bufferPool, true, 1024, 1024);
+            AtomicInteger count = new AtomicInteger(2048);
+            CountDownLatch complete = new CountDownLatch(1);
+            Callback callback = new Callback()
+            {
+                @Override
+                public void succeeded()
+                {
+                    int c = count.decrementAndGet();
+                    if (c >= 0)
+                    {
+                        Callback cb = this;
+                        new Thread(() ->
+                        {
+                            ByteBuffer byteBuffer = ByteBuffer.wrap(new byte[]{(byte)c});
+                            buffered.write(c == 0, byteBuffer, cb);
+                        }).start();
+                    }
+                    else
+                    {
+                        complete.countDown();
+                    }
+                    delay();
+                }
+            };
+
+            callback.succeeded();
+
+
+            Content.Chunk read;
+            long start = NanoTime.now();
+
+            read = async.read();
+            while (read == null)
+            {
+                if (NanoTime.secondsSince(start) > 5)
+                    throw new IllegalStateException();
+                Thread.onSpinWait();
+                read = async.read();
+            }
+
+            assertThat(read.isLast(), is(false));
+            assertThat(read.remaining(), is(1024));
+            assertThat(read.release(), is(true));
+
+            read = async.read();
+            while (read == null)
+            {
+                if (NanoTime.secondsSince(start) > 5)
+                    throw new IllegalStateException();
+                Thread.onSpinWait();
+                read = async.read();
+            }
+            assertThat(read.isLast(), is(true));
+            assertThat(read.remaining(), is(1024));
             assertThat(read.release(), is(true));
 
             assertTrue(complete.await(5, TimeUnit.SECONDS));
