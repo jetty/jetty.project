@@ -15,6 +15,8 @@ package org.eclipse.jetty.io.content;
 
 import java.io.IOException;
 import java.nio.ByteBuffer;
+import java.nio.channels.WritePendingException;
+import java.util.concurrent.atomic.AtomicReference;
 
 import org.eclipse.jetty.io.ByteBufferAggregator;
 import org.eclipse.jetty.io.ByteBufferPool;
@@ -43,11 +45,19 @@ public class BufferedContentSink implements Content.Sink
     private final boolean _direct;
     private final int _maxBufferSize;
     private final int _maxAggregationSize;
+    private final AtomicReference<AggregateState> _aggregateState = new AtomicReference<>(AggregateState.IDLE);
     private ByteBufferAggregator _aggregator;
     private boolean _firstWrite = true;
     private boolean _lastWritten;
-    private int _recursionCounter;
-    private CountingCallback _countingCallback;
+    private volatile CountingCallback _countingCallback;
+
+    private enum AggregateState
+    {
+        IDLE,
+        WRITING,
+        ITERATING,
+        PENDING
+    }
 
     public BufferedContentSink(Content.Sink delegate, ByteBufferPool bufferPool, boolean direct, int maxBufferSize, int maxAggregationSize)
     {
@@ -67,77 +77,135 @@ public class BufferedContentSink implements Content.Sink
     @Override
     public void write(boolean last, ByteBuffer byteBuffer, Callback callback)
     {
-        /*
-         * The given callback might call write() again, which could stack overflow.
-         * To avoid this, the callback is succeeded only when we are not recursing
-         * write(); this means we must keep a recursion counter, give a counting
-         * callback with a count of 2 to recursive write() calls and
-         * succeed that counting callback a second time when recursion counter
-         * reaches 1 so that the original callback is then succeeded.
-         */
-        _recursionCounter++;
-        try
-        {
-            if (LOG.isDebugEnabled())
-                LOG.debug("writing last={} {}", last, BufferUtil.toDetailString(byteBuffer));
+        if (LOG.isDebugEnabled())
+            LOG.debug("writing last={} {}", last, BufferUtil.toDetailString(byteBuffer));
 
-            if (_lastWritten)
+        if (_lastWritten)
+        {
+            callback.failed(new IOException("complete"));
+            return;
+        }
+        _lastWritten = last;
+        if (_firstWrite)
+        {
+            _firstWrite = false;
+            if (last)
             {
-                callback.failed(new IOException("complete"));
+                // No need to buffer if this is both the first and the last write.
+                _delegate.write(true, byteBuffer, callback);
                 return;
             }
-            _lastWritten = last;
-            if (_firstWrite)
+        }
+
+        ByteBuffer current = byteBuffer != null ? byteBuffer : BufferUtil.EMPTY_BUFFER;
+        if (current.remaining() > _maxAggregationSize)
+        {
+            // current buffer is greater than the max aggregation size
+            directWrite(last, current, callback);
+            return;
+        }
+
+        // current buffer can be aggregated
+        if (_aggregator == null)
+            _aggregator = new ByteBufferAggregator(_bufferPool, _direct, Math.min(START_BUFFER_SIZE, _maxBufferSize), _maxBufferSize);
+
+        /*
+         * The given callback might call write() again, which could stack overflow.
+         * To avoid this, we must keep a state to avoid re-entering write() when the
+         * callback is succeeded by the delegate's write() call and delay the given
+         * callback's success to when we're exiting the original write() call.
+         */
+        AggregateState state = _aggregateState.updateAndGet(s -> switch (s)
+        {
+            case IDLE -> AggregateState.WRITING;
+            case ITERATING -> AggregateState.ITERATING;
+            case WRITING, PENDING -> throw new WritePendingException();
+        });
+        Callback cb = null;
+
+        // while the state is iterating, that means another thread will change to idle unless we change to PENDING first
+        while (state == AggregateState.ITERATING)
+        {
+            // If we can change to PENDING...
+            if (_aggregateState.compareAndSet(AggregateState.ITERATING, AggregateState.PENDING))
             {
-                _firstWrite = false;
-                if (last)
-                {
-                    // No need to buffer if this is both the first and the last write.
-                    _delegate.write(true, byteBuffer, callback);
-                    return;
-                }
+                // then the other thread will spin waiting for our counting callback
+                state = AggregateState.PENDING;
+                assert _countingCallback == null;
+                cb = _countingCallback = new CountingCallback(callback, 2);
+                break;
             }
 
-            ByteBuffer current = byteBuffer != null ? byteBuffer : BufferUtil.EMPTY_BUFFER;
-            if (current.remaining() <= _maxAggregationSize)
+            // If we couldn't change to PENDING, somebody else changed the state.  Maybe we are idle now...
+            if (_aggregateState.compareAndSet(AggregateState.IDLE, AggregateState.WRITING))
             {
-                // current buffer can be aggregated
-                if (_aggregator == null)
-                    _aggregator = new ByteBufferAggregator(_bufferPool, _direct, Math.min(START_BUFFER_SIZE, _maxBufferSize), _maxBufferSize);
-                Callback cb;
-                if (_recursionCounter == 2)
-                {
-                    if (_countingCallback != null)
-                        throw new AssertionError();
-                    cb = _countingCallback = new CountingCallback(callback, 2);
-                }
-                else
-                {
-                    cb = callback;
-                }
-                aggregateAndWrite(last, current, cb);
+                // The WRITING thread changed to IDLE and is exiting, so we are now the WRITING thread
+                state = AggregateState.WRITING;
+                break;
             }
-            else
-            {
-                // current buffer is greater than the max aggregation size
-                directWrite(last, current, callback);
-            }
+
+            // Not ITERATING nor IDLE, so some other thread must have got in with PENDING first. This is
+            // probably a concurrent write situation, but let's spin waiting on them for now.
+            Thread.onSpinWait();
         }
-        finally
+
+        // We are not ITERATING, so we are either PENDING or WRITING, if we are the later...
+        if (state == AggregateState.WRITING)
         {
-            if (_recursionCounter == 1)
+            // Wrap the callback so that it will enter ITERATING state before calling the callback,
+            // (to allows a concurrent call to write), then iterate after calling the callback.
+            cb = new Callback.Nested(callback)
             {
-                while (true)
+                @Override
+                public void succeeded()
                 {
-                    Callback cb = _countingCallback;
-                    _countingCallback = null;
-                    if (cb == null)
-                        break;
-                    cb.succeeded();
+                    if (!_aggregateState.compareAndSet(AggregateState.WRITING, AggregateState.ITERATING))
+                        throw new AssertionError();
+                    super.succeeded();
+                    iterate();
                 }
-            }
-            _recursionCounter--;
+
+                @Override
+                public void failed(Throwable x)
+                {
+                    if (!_aggregateState.compareAndSet(AggregateState.WRITING, AggregateState.ITERATING))
+                        throw new AssertionError();
+                    super.failed(x);
+                    iterate();
+                }
+
+                private void iterate()
+                {
+                    // we are ITERATING after completing our write
+                    while (true)
+                    {
+                        // If we can change to IDLE, then we can exit
+                        if (_aggregateState.compareAndSet(AggregateState.ITERATING, AggregateState.IDLE))
+                            return;
+
+                        // We couldn't change to IDLE, so some other thread must have changed us to PENDING
+                        assert _aggregateState.get() == AggregateState.PENDING;
+
+                        // Spin waiting for the counting callback
+                        while (_countingCallback == null)
+                            Thread.onSpinWait();
+
+                        // Take the counting callback
+                        Callback countingCallback = _countingCallback;
+                        _countingCallback = null;
+
+                        // If we can't switch back to ITERATING, then something has gone wrong
+                        if (!_aggregateState.compareAndSet(AggregateState.PENDING, AggregateState.ITERATING))
+                            throw new IllegalArgumentException();
+
+                        // succeed the counting callback
+                        countingCallback.succeeded();
+                    }
+                }
+            };
         }
+
+        aggregateAndWrite(last, current, cb);
     }
 
     /**

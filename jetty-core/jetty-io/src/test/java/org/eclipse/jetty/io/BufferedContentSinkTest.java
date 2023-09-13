@@ -16,6 +16,7 @@ package org.eclipse.jetty.io;
 import java.io.IOException;
 import java.nio.ByteBuffer;
 import java.util.Arrays;
+import java.util.Objects;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicInteger;
@@ -30,6 +31,7 @@ import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 
 import static java.nio.charset.StandardCharsets.UTF_8;
+import static org.awaitility.Awaitility.await;
 import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.Matchers.instanceOf;
 import static org.hamcrest.Matchers.is;
@@ -453,6 +455,53 @@ public class BufferedContentSinkTest
             read = async.read();
             assertThat(read.isLast(), is(true));
             assertThat(read.remaining(), is(4096));
+            assertThat(read.release(), is(true));
+
+            assertTrue(complete.await(5, TimeUnit.SECONDS));
+            assertThat(count.get(), is(-1));
+        }
+    }
+
+    @Test
+    public void testByteByByteAsync() throws Exception
+    {
+        try (AsyncContent async = new AsyncContent())
+        {
+            BufferedContentSink buffered = new BufferedContentSink(async, _bufferPool, true, 1024, 1024);
+            AtomicInteger count = new AtomicInteger(2048);
+            CountDownLatch complete = new CountDownLatch(1);
+            Callback callback = new Callback()
+            {
+                @Override
+                public void succeeded()
+                {
+                    int c = count.decrementAndGet();
+                    if (c >= 0)
+                    {
+                        Callback cb = this;
+                        new Thread(() ->
+                        {
+                            ByteBuffer byteBuffer = ByteBuffer.wrap(new byte[]{(byte)c});
+                            buffered.write(c == 0, byteBuffer, cb);
+                        }).start();
+                    }
+                    else
+                    {
+                        complete.countDown();
+                    }
+                }
+            };
+
+            callback.succeeded();
+
+            Content.Chunk read = await().atMost(5, TimeUnit.SECONDS).until(async::read, Objects::nonNull);
+            assertThat(read.isLast(), is(false));
+            assertThat(read.remaining(), is(1024));
+            assertThat(read.release(), is(true));
+
+            read = await().atMost(5, TimeUnit.SECONDS).until(async::read, Objects::nonNull);
+            assertThat(read.isLast(), is(true));
+            assertThat(read.remaining(), is(1024));
             assertThat(read.release(), is(true));
 
             assertTrue(complete.await(5, TimeUnit.SECONDS));
