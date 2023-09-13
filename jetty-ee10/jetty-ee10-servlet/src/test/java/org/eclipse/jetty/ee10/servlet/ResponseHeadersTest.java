@@ -34,8 +34,10 @@ import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.Test;
 
 import static org.hamcrest.MatcherAssert.assertThat;
+import static org.hamcrest.Matchers.endsWith;
 import static org.hamcrest.Matchers.equalTo;
 import static org.hamcrest.Matchers.is;
+import static org.hamcrest.Matchers.nullValue;
 
 public class ResponseHeadersTest
 {
@@ -246,7 +248,6 @@ public class ResponseHeadersTest
             protected void doGet(HttpServletRequest request, HttpServletResponse response) throws ServletException, IOException
             {
                 // We set an initial desired behavior.
-
                 response.setContentType("text/html; charset=us-ascii");
                 PrintWriter writer = response.getWriter();
 
@@ -279,6 +280,168 @@ public class ResponseHeadersTest
         assertThat("Response Code", response.getStatus(), is(200));
         // The Content-Type should not have a charset= portion
         assertThat("Response Header Content-Type", response.get("Content-Type"), is("application/json"));
+    }
+
+    @Test
+    public void testAddSetHeaderNulls() throws Exception
+    {
+        ServletContextHandler contextHandler = new ServletContextHandler();
+        contextHandler.setContextPath("/");
+        HttpServlet addHeaderNullServlet = new HttpServlet()
+        {
+            @Override
+            protected void doGet(HttpServletRequest request, HttpServletResponse response) throws ServletException, IOException
+            {
+                // Add the header
+                response.addHeader("X-Foo", "foo-value");
+
+                // Add a null header value (should result in no change, and no exception)
+                response.addHeader("X-Foo", null);
+
+                // Add a null name (should result in no change, and no exception)
+                response.addHeader(null, "bogus");
+
+                // Add a null name and null value (should result in no change, and no exception)
+                response.addHeader(null, null);
+
+                // Set a new header
+                response.setHeader("X-Bar", "bar-value");
+
+                // Set same header with null (should remove header)
+                response.setHeader("X-Bar", null);
+
+                // Set a header with null name (should result in no change, and no exception)
+                response.setHeader(null, "bogus");
+
+                // Set a header with null name and null value (should result in no change, and no exception)
+                response.setHeader(null, null);
+
+                response.setCharacterEncoding("utf-8");
+                response.setContentType("text/plain");
+
+                PrintWriter writer = response.getWriter();
+                writer.println("Done");
+            }
+        };
+
+        contextHandler.addServlet(addHeaderNullServlet, "/add-header-nulls/*");
+        startServer(contextHandler);
+
+        HttpTester.Request request = new HttpTester.Request();
+        request.setMethod("GET");
+        request.setURI("/add-header-nulls/");
+        request.setVersion(HttpVersion.HTTP_1_1);
+        request.setHeader("Connection", "close");
+        request.setHeader("Host", "test");
+
+        ByteBuffer responseBuffer = connector.getResponse(request.generate());
+        // System.err.println(BufferUtil.toUTF8String(responseBuffer));
+        HttpTester.Response response = HttpTester.parseResponse(responseBuffer);
+
+        // Now test for properly formatted HTTP Response Headers.
+        assertThat("Response Code", response.getStatus(), is(200));
+        // The X-Foo header should be present an unchanged
+        assertThat("Response Header X-Foo", response.get("X-Foo"), is("foo-value"));
+        assertThat("Response Header X-Bar should not exist", response.getField("X-Bar"), nullValue());
+    }
+
+    @Test
+    public void testAddSetDateHeaderNulls() throws Exception
+    {
+        ServletContextHandler contextHandler = new ServletContextHandler();
+        contextHandler.setContextPath("/");
+        final long date = System.currentTimeMillis();
+        HttpServlet addHeaderNullServlet = new HttpServlet()
+        {
+            @Override
+            protected void doGet(HttpServletRequest request, HttpServletResponse response) throws ServletException, IOException
+            {
+                // Add the header
+                response.addDateHeader("X-Foo", date);
+                String dateStr = response.getHeader("X-Foo"); // get the formatted Date as a String
+
+                // Add a null name (should result in no change, and no exception)
+                response.addDateHeader(null, 123456);
+
+                // Set a null name (should result in no change, and no exception)
+                response.setDateHeader(null, 987654);
+
+                response.setCharacterEncoding("utf-8");
+                response.setContentType("text/plain");
+
+                PrintWriter writer = response.getWriter();
+                writer.println(dateStr);
+            }
+        };
+
+        contextHandler.addServlet(addHeaderNullServlet, "/add-dateheader-nulls/*");
+        startServer(contextHandler);
+
+        HttpTester.Request request = new HttpTester.Request();
+        request.setMethod("GET");
+        request.setURI("/add-dateheader-nulls/");
+        request.setVersion(HttpVersion.HTTP_1_1);
+        request.setHeader("Connection", "close");
+        request.setHeader("Host", "test");
+
+        ByteBuffer responseBuffer = connector.getResponse(request.generate());
+        // System.err.println(BufferUtil.toUTF8String(responseBuffer));
+        HttpTester.Response response = HttpTester.parseResponse(responseBuffer);
+
+        // Now test for properly formatted HTTP Response Headers.
+        assertThat("Response Code", response.getStatus(), is(200));
+        String dateStr = response.getContent().trim();
+        assertThat("Should have seen a Date String", dateStr, endsWith(" GMT"));
+        // The X-Foo header should be present an unchanged
+        assertThat("Response Header X-Foo", response.get("X-Foo"), is(dateStr));
+    }
+
+    @Test
+    public void testAddSetIntHeaderNulls() throws Exception
+    {
+        ServletContextHandler contextHandler = new ServletContextHandler();
+        contextHandler.setContextPath("/");
+        final int foovalue = 22222222;
+        HttpServlet addHeaderNullServlet = new HttpServlet()
+        {
+            @Override
+            protected void doGet(HttpServletRequest request, HttpServletResponse response) throws ServletException, IOException
+            {
+                // Add the header
+                response.addIntHeader("X-Foo", foovalue);
+
+                // Add a null name (should result in no change, and no exception)
+                response.addIntHeader(null, 123456);
+
+                // Set a null name (should result in no change, and no exception)
+                response.setIntHeader(null, 987654);
+
+                response.setCharacterEncoding("utf-8");
+                response.setContentType("text/plain");
+
+                PrintWriter writer = response.getWriter();
+                writer.println("Done");
+            }
+        };
+
+        contextHandler.addServlet(addHeaderNullServlet, "/add-intheader-nulls/*");
+        startServer(contextHandler);
+
+        HttpTester.Request request = new HttpTester.Request();
+        request.setMethod("GET");
+        request.setURI("/add-intheader-nulls/");
+        request.setVersion(HttpVersion.HTTP_1_1);
+        request.setHeader("Connection", "close");
+        request.setHeader("Host", "test");
+
+        ByteBuffer responseBuffer = connector.getResponse(request.generate());
+        // System.err.println(BufferUtil.toUTF8String(responseBuffer));
+        HttpTester.Response response = HttpTester.parseResponse(responseBuffer);
+
+        // Now test for properly formatted HTTP Response Headers.
+        assertThat("Response Code", response.getStatus(), is(200));
+        // The X-Foo header should be present an unchanged
+        assertThat("Response Header X-Foo", response.getField("X-Foo").getIntValue(), is(foovalue));
     }
 
     @Test
