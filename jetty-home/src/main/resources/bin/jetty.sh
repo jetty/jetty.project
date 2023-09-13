@@ -132,7 +132,7 @@ running()
 
 started()
 {
-  # wait for 60s to see "STARTED" in PID file, needs jetty-started.xml as argument
+  # wait for 60s to see "STARTED" in PID file, needs jetty-state.xml as argument
   for ((T = 0; T < $(($3 / 4)); T++))
   do
     sleep 4
@@ -506,7 +506,7 @@ case "$ACTION" in
 
     fi
 
-    if expr "${JETTY_ARGS[*]}" : '.*jetty-started.xml.*' >/dev/null
+    if expr "${JETTY_ARGS[*]}" : '.*jetty-state.xml.*' >/dev/null
     then
       if started "$JETTY_STATE" "$JETTY_PID" "$JETTY_START_TIMEOUT"
       then
