@@ -36,6 +36,7 @@ import org.eclipse.jetty.util.Callback;
 import org.eclipse.jetty.util.IncludeExclude;
 import org.eclipse.jetty.util.IncludeExcludeSet;
 import org.eclipse.jetty.util.InetAddressPattern;
+import org.eclipse.jetty.util.TypeUtil;
 import org.eclipse.jetty.util.component.DumpableCollection;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -351,20 +352,7 @@ public class ConditionalHandler extends Handler.Wrapper
             }
         }
 
-        _handlePredicate = new Predicate<>()
-        {
-            @Override
-            public boolean test(Request request)
-            {
-                return true;
-            }
-
-            @Override
-            public Predicate<Request> and(Predicate<? super Request> other)
-            {
-                return (Predicate<Request>)other;
-            }
-        };
+        _handlePredicate = TypeUtil.truePredicate();
 
         if (!_methods.isEmpty())
             _handlePredicate = _handlePredicate.and(this::testMethods);
