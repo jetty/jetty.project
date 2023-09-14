@@ -31,7 +31,7 @@ jetty-12.0.1 - 29 August 2023
  + 10338 ErorrHandler#writeErrorJson is private
  + 10349 Character encoding is reset when setting Content-Type
  + 10350 Support Java 21 virtual threads
- + 10352 Various cleanups in `HttpParser`
+ + 10352 Jetty accepts "+" prefixed value in Content-Length (CVE-2023-40167)
  + 10353 Questions about porting WebSocket APIs to jetty-core 12
  + 10356 Deploying WAR with `ee10-cdi-spi` fails with Weld 5/CDI 4
  + 10383 Unsuppressed exceptions from  EE10 ServletTest
@@ -66,7 +66,7 @@ jetty-11.0.16 - 25 August 2023
  + 9772 Improve Quiche certificates deployment
  + 9777 CrossOriginFilter does not return Vary header on no-cors mode
  + 9795 http3-server is leaking the Jetty logging service to web applications
- + 9887 Deprecate CGI Servlet
+ + 9887 Deprecate CGI Servlet (CVE-2023-40167)
  + 9895 A MessageTooLargeException doesn't close a WebSocket connection
  + 9947 Cannot invoke "org.eclipse.jetty.io.ManagedSelector.getTotalKeys()"
    because "selector" is null
@@ -208,7 +208,7 @@ jetty-12.0.0.beta2 - 16 June 2023
  + 9879 Jetty-12 rewrite demo not working
  + 9880 Jetty 12 - jetty.sh does not work on Ubuntu
  + 9881 H2 perf can be pathologically bad
- + 9887 Deprecate CGI Servlet
+ + 9887 Deprecate CGI Servlet (CVE-2023-40167)
  + 9895 A MessageTooLargeException doesn't close a WebSocket connection
  + 9906 Inconsistent handling of empty "path info" between Jetty 10 and 12
  + Jan (@janbartel) is now using IntelliJ!
@@ -245,6 +245,7 @@ jetty-12.0.0.beta1 - 02 May 2023
  + 9468 Jetty 11.0.14 is less tolerant of non-compliant cookies than 11.0.13
  + 9497 Maven plugin add support for jar projects in `:effective-web-xml`
  + 9501 jetty client with proxy - ssl traffic between both proxy and servers
+ + 9516 Remove CGI Servlet (CVE-2023-40167)
  + 9537 "error-on-el-not-found" behavior is not as specified
  + 9552 Jetty 12 - Rewrite of the Jetty WebSocket APIs
  + 9554 Move (qpack/hpack) HuffmanDecoder / HuffmanEncoder / NBitInteger* to
@@ -419,7 +420,7 @@ jetty-10.0.16 - 25 August 2023
  + 9772 Improve Quiche certificates deployment
  + 9777 CrossOriginFilter does not return Vary header on no-cors mode
  + 9795 http3-server is leaking the Jetty logging service to web applications
- + 9887 Deprecate CGI Servlet
+ + 9887 Deprecate CGI Servlet (CVE-2023-40167)
  + 9895 A MessageTooLargeException doesn't close a WebSocket connection
  + 9947 Cannot invoke "org.eclipse.jetty.io.ManagedSelector.getTotalKeys()"
    because "selector" is null
