@@ -34,8 +34,8 @@ public abstract class LoginAuthenticator implements Authenticator
 
     protected LoginService _loginService;
     protected IdentityService _identityService;
-    private boolean _renewSession;
-    private int _maxInactiveInterval;
+    private boolean _sessionRenew;
+    private int _sessionMaxInactiveInterval;
 
     protected LoginAuthenticator()
     {
@@ -89,8 +89,8 @@ public abstract class LoginAuthenticator implements Authenticator
         _identityService = configuration.getIdentityService();
         if (_identityService == null)
             throw new IllegalStateException("No IdentityService for " + this + " in " + configuration);
-        _renewSession = configuration.isSessionRenewedOnAuthentication();
-        _maxInactiveInterval = configuration.getSessionMaxInactiveIntervalOnAuthentication();
+        _sessionRenew = configuration.isSessionRenewedOnAuthentication();
+        _sessionMaxInactiveInterval = configuration.getSessionMaxInactiveIntervalOnAuthentication();
     }
 
     public LoginService getLoginService()
@@ -114,13 +114,13 @@ public abstract class LoginAuthenticator implements Authenticator
     {
         HttpSession session = request.getSession(false);
 
-        if (session != null && (_renewSession || _maxInactiveInterval > 0))
+        if (session != null && (_sessionRenew || _sessionMaxInactiveInterval != 0))
         {
             synchronized (session)
             {
-                if (_maxInactiveInterval > 0)
-                    session.setMaxInactiveInterval(_maxInactiveInterval);
-                if (_renewSession)
+                if (_sessionMaxInactiveInterval != 0)
+                    session.setMaxInactiveInterval(_sessionMaxInactiveInterval < 0 ? -1 : _sessionMaxInactiveInterval);
+                if (_sessionRenew)
                 {
                     //if we should renew sessions, and there is an existing session that may have been seen by non-authenticated users
                     //(indicated by SESSION_SECURED not being set on the session) then we should change id

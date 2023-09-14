@@ -457,11 +457,12 @@ public abstract class SecurityHandler extends HandlerWrapper implements Authenti
     }
 
     /**
-     * Set the interval in seconds to set with {@link javax.servlet.http.HttpSession#setMaxInactiveInterval(int)}
+     * Set the interval in seconds, which if non-zero, will be set with
+     * {@link javax.servlet.http.HttpSession#setMaxInactiveInterval(int)}
      * when a session is newly authenticated.
-     * @param seconds An interval in seconds, which if greater than zero will be set as the
-     *        {@link javax.servlet.http.HttpSession#setMaxInactiveInterval(int) maxInactiveInterval}
-     *        on newly authenticated sessions.
+     * @param seconds An interval in seconds; or 0 to not set the interval
+     *                on authentication; or a negative number to make the
+     *                session never timeout after authentication.
      */
     public void setSessionMaxInactiveIntervalOnAuthentication(int seconds)
     {
