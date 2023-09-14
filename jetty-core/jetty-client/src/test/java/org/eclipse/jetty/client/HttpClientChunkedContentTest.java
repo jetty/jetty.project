@@ -20,6 +20,7 @@ import java.net.InetSocketAddress;
 import java.net.ServerSocket;
 import java.net.Socket;
 import java.nio.charset.StandardCharsets;
+import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicReference;
@@ -159,14 +160,13 @@ public class HttpClientChunkedContentTest
                 // Issue another request to be sure the connection is sane.
                 Request request = client.newRequest("localhost", server.getLocalPort())
                     .timeout(5, TimeUnit.SECONDS);
-                FutureResponseListener listener = new FutureResponseListener(request);
-                request.send(listener);
+                CompletableFuture<ContentResponse> completable = new CompletableResponseListener(request).send();
 
                 consumeRequestHeaders(socket);
                 output.write(response.getBytes(StandardCharsets.UTF_8));
                 output.flush();
 
-                assertEquals(200, listener.get(5, TimeUnit.SECONDS).getStatus());
+                assertEquals(200, completable.get(5, TimeUnit.SECONDS).getStatus());
             }
         }
     }
