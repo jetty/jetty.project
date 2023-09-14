@@ -15,14 +15,13 @@
 === HTTP Session Management
 
 Sessions are a concept within the Servlet API which allow requests to store and retrieve information across the time a user spends in an application.
-Jetty provides a number of pluggable options for managing sessions.
-In this section we'll look at the architecture of session support in Jetty, review the various pluggable options available and indicate what and how to customize should none of the existing options suit your usecase.
 
 include::session-architecture.adoc[]
 include::session-sessionidmgr.adoc[]
 include::session-sessionhandler.adoc[]
 include::session-sessioncache.adoc[]
 include::session-sessiondatastore.adoc[]
+include::session-sessiondatastore-null.adoc[]
 include::session-sessiondatastore-file.adoc[]
 include::session-sessiondatastore-jdbc.adoc[]
 include::session-sessiondatastore-mongo.adoc[]

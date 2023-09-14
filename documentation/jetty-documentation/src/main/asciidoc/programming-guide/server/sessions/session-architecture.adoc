@@ -13,29 +13,36 @@
 
 [[pg-server-session-architecture]]
 ==== Session Architecture
-==== Introduction
-Jetty session support has been architected to provide a core implementation that is independent of the servlet specification.
-This allows programmers who use core Jetty - without the servlet api - to still have classic servlet session-like support for their `Requests` and `Handlers`.
 
-Jetty also adapts these core classes to each of the various servlet specification environments to deliver classic `HttpSessions` for `Servlets`, `Filters` etc.
+Jetty session support has been architected to provide a core implementation that is independent of the Servlet specification.
+This allows programmers who use core Jetty - without the Servlet API - to still have classic Servlet session-like support for their ``Request``s and ``Handler``s.
 
-We provide full support for the session lifecycle, in addition to L1 and L2 caching, and a number of options for persisting session data.
-These features are all available to both core and servlet environments.
+These core classes are adapted to each of the various Servlet specification environments to deliver classic ``HttpSession``s for ``Servlet``s,`Filter``s, etc
 
-==== Terminology
+Full support for the session lifecycle is supported, in addition to L1 and L2 caching, and a number of pluggable options for persisting session data.
 
-In order to set the scene for our discussion of sessions in Jetty, here are some of the most important concepts that we  will refer to throughout the documentation.
+Here are some of the most important concepts that will be referred to throughout the documentation:
 
-SessionIdManager::: responsible for allocation of unique session ids. A `Server` can have at most 1 `SessionIdManager`.
-HouseKeeper:::  responsible for orchestrating the detection and removal of expired sessions.  A `SessionIdManager` can have at most `HouseKeeper`.
-SessionManager::: responsible for managing the lifecycle of sessions.
-SessionHandler::: an implementation of `SessionManager` that adapts sessions to either the core or servlet specification environment. Each context has at most 1 `SessionHandler`.
-SessionCache::: an L1 cache of in-use `ManagedSession` objects
-Session::: a session that can be associated with a request
-ManagedSession::: a `Session` that supports caching and lifecycle management
-SessionData::: encapsulates the attributes and metadata associated with a `Session`
-SessionDataStore::: responsible for creating, persisting and reading `SessionData`
-CachingSessionDataStore::: an L2 cache of `SessionData`
+SessionIdManager::
+responsible for allocation of unique session ids.
+HouseKeeper::
+responsible for orchestrating the detection and removal of expired sessions.
+SessionManager::
+responsible for managing the lifecycle of sessions.
+SessionHandler::
+an implementation of `SessionManager` that adapts sessions to either the core or Servlet specification environment.
+SessionCache::
+an L1 cache of in-use `ManagedSession` objects
+Session::
+a session consisting of `SessionData` that can be associated with a `Request`
+ManagedSession::
+a `Session` that supports caching and lifecycle management
+SessionData::
+encapsulates the attributes and metadata associated with a `Session`
+SessionDataStore::
+responsible for creating, persisting and reading `SessionData`
+CachingSessionDataStore::
+an L2 cache of `SessionData`
 
 Diagrammatically, these concepts can be represented as:
 

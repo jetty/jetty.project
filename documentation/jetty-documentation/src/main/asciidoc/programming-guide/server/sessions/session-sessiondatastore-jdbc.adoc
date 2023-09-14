@@ -14,7 +14,7 @@
 [[pg-server-session-datastore-jdbc]]
 ===== The JDBCSessionDataStore
 
-The `JDBCSessionDataStore` supports persistent storage of session data in a relational database.
+The link:{javadoc-url}/org/eclipse/jetty/session/JDBCSessionDataStore.html[JDBCSessionDataStore] supports persistent storage of session data in a relational database.
 To do that, it requires a `DatabaseAdaptor` that handles the differences between databases (eg Oracle, Postgres etc), and a `SessionTableSchema` that allows for the customization of table and column names.
 
 [plantuml]
@@ -27,9 +27,57 @@ JDBCSessionDataStore "1" *-- "1" DatabaseAdaptor
 JDBCSessionDataStore "1" *-- "1" SessionTableSchema
 ----
 
-`SessionData` is stored in a table with one row per session.
-This is the table, with the table name, column names and type keywords at their default settings:
 
+The link:{javadoc-url}/org/eclipse/jetty/session/JDBCSessionDataStore.html[JDBCSessionDataStore] and corresponding link:{javadoc-url}/org/eclipse/jetty/session/JDBCSessionDataStoreFactory.html[JDBCSessionDataStoreFactory] support the following configuration:
+
+include::session-sessiondatastore.adoc[tag=common-datastore-config]
+
+setDatabaseAdaptor(DatabaseAdaptor)::
+A `JDBCSessionDataStore` requires a `DatabaseAdapter`, otherwise an `Exception`  is thrown  at start time.
+
+setSessionTableSchema(SessionTableSchema)::
+If a `SessionTableSchema` has not been explicitly set, one with all values defaulted is created at start time.
+
+====== The DatabaseAdaptor
+
+Many databases use different keywords for types such as `long`, `blob` and `varchar`.
+Jetty will detect the type of the database at runtime by interrogating the metadata associated with a database connection.
+Based on that metadata Jetty will try to select that database's preferred keywords.
+However, you may need to instead explicitly configure these as described below.
+
+setDatasource(String)::
+setDatasource(Datasource)::
+Either the JNDI name of a `Datasource` to look up, or the `Datasource` itself.
+Alternatively you can set the *driverInfo*, see  below.
+
+[source,java,indent=0]
+----
+include::../../{doc_code}/org/eclipse/jetty/docs/programming/server/session/SessionDocs.java[tags=dbaDatasource]
+----
+
+setDriverInfo(String, String)::
+setDriverInfo(Driver, String)::
+This is the name or instance of a `Driver` class and a connection URL.
+Alternatively you can set the *datasource*, see above.
+[source,java,indent=0]
+----
+include::../../{doc_code}/org/eclipse/jetty/docs/programming/server/session/SessionDocs.java[tags=dbaDriver]
+----
+
+setBlobType(String) _[Default: "blob" or "bytea" for Postgres]_ ::
+The type name used to represent "blobs" by the database.
+
+setLongType(String) _[Default: "bigint" or "number(20)" for Oracle]_ ::
+The type name  used to represent large integers by the database.
+
+setStringType(String) _[Default: "varchar"]_::
+The type name used to represent character data by the database.
+
+
+====== The SessionTableSchema
+
+`SessionData` is stored in a table with one row per session.
+This is the definition of the table with the table name, column names, and type keywords all at their default settings:
 
 [caption="Table:"]
 .JettySessions
@@ -51,103 +99,52 @@ This is the table, with the table name, column names and type keywords at their 
 |120 varchar|60 varchar|60 varchar|60 varchar|long|long|long|long|long|long|long|blob
 |===
 
-The name of the table and all columns can be configured using the `SessionTableSchema` class described below.
-Many databases use different keywords for the `long`, `blob` and `varchar` types, so you can explicitly configure these if jetty cannot determine what they should be at runtime based on the metadata available from a db connection using the `DatabaseAdaptor` class described below.
+Use the `SessionTableSchema` class to customize these names.
 
-====== Configuration
-
-The link:{javadoc-url}/org/eclipse/jetty/session/JDBCSessionDataStore.html[JDBCSessionDataStore] and corresponding link:{javadoc-url}/org/eclipse/jetty/session/JDBCSessionDataStoreFactory.html[JDBCSessionDataStoreFactory] supports the following configuration:
-
-include::session-sessiondatastore.adoc[tag=common-datastore-config]
-
-DatabaseAdaptor::
-The `DatabaseAdaptor` can connect to a database either via a `javax.sql.Datasource` or a `java.sql.Driver`.
-Additionally, a database-specific keyword can be configured for the `blob`, `varchar` and `long` types.
-Note that the `DatabaseAdaptor` tries to automatically detect the type of the database from the first connection and select the appropriate type keywords, however you may need to explicitly configure them if you're not using `Postgres` or `Oracle`.
-
-  datasource:::
-  This can either be a `Datasource` instance or the jndi name of a `Datasource` to look up.
-[source,java,indent=0]
-----
-include::../../{doc_code}/org/eclipse/jetty/docs/programming/server/session/SessionDocs.java[tags=dbaDatasource]
-----
-
-  driverInfo:::
-  This is the name or instance of a jdbc `Driver` class and a connection url.
-[source,java,indent=0]
-----
-include::../../{doc_code}/org/eclipse/jetty/docs/programming/server/session/SessionDocs.java[tags=dbaDriver]
-----
-
-  blobType:::
-  Default `blob` or `bytea` for Postgres.
-
-  longType:::
-  Default `bigint` or `number(20)` for Oracle.
-
-  stringType:::
-  Default `varchar`.
-  
-
-SessionTableSchema::
-  schemaName:::
-  catalogName:::
+setSchemaName(String), setCatalogName(String) _[Default: null]_ ::
 The exact meaning of these two are dependent on your database vendor, but can broadly be described as further scoping for the session table name.
 See https://en.wikipedia.org/wiki/Database_schema and https://en.wikipedia.org/wiki/Database_catalog.
-These extra scoping names can come into play at startup time when Jetty determines if the session table already exists, or otherwise creates it on-the-fly.
-If you have employed either of these concepts when you pre-created the session table, or you want to ensure that Jetty uses them when it auto-creates the session table, then you have two options: either set them explicitly, or let Jetty infer them from a database connection.
-If you leave them unset, then no scoping will be done.
-If you use the special value `INFERRED`, Jetty will determine them from a database connection.
+These extra scoping names come into play at startup time when Jetty determines if the session table already exists, or creates it on-the-fly.
+If your database is not using schema or catalog name scoping, leave these unset.
+If your database is configured with a schema or catalog name, use the special value "INFERRED" and Jetty will extract them from the database metadata.
+Alternatively, set them explicitly using these methods.
 
-  tableName:::
-Default `JettySessions`.
+setTableName(String) _[Default:"JettySessions"]_ ::
 This is the name of the table in which session data is stored.
 
-  accessTimeColumn:::
-Default `accessTime`.
+setAccessTimeColumn(String) _[Default: "accessTime"]_ ::
 This is the name of the column that stores the time - in ms since the epoch - at which a session was last accessed
 
-  contextPathColumn:::
-Default `contextPath`.
+setContextPathColumn(String) _[Default: "contextPath"]_ ::
 This is the name of the column that stores the `contextPath` of a session.
 
-  cookieTimeColumn:::
-Default `cookieTime`.
+setCookieTimeColumn(String) _[Default: "cookieTime"]_::
 This is the name of the column that stores the time - in ms since the epoch - that the cookie was last set for a session.
 
-  createTimeColumn:::
-Default `createTime`.
+setCreateTimeColumn(String) _[Default: "createTime"]_ ::
 This is the name of the column that stores the time - in ms since the epoch - at which a session was created.
 
-  expiryTimeColumn:::
-Default `expiryTime`.
+setExpiryTimeColumn(String) _[Default: "expiryTime"]_ ::
 This is name of the column that stores - in ms since the epoch - the time at which a session will expire.
 
-  lastAccessTimeColumn:::
-Default `lastAccessTime`.
+setLastAccessTimeColumn(String) _[Default: "lastAccessTime"]_ ::
 This is the name of the column that stores the time - in ms since the epoch - that a session was previously accessed.
 
-  lastSavedTimeColumn:::
-Default `lastSavedTime`.
+setLastSavedTimeColumn(String) _[Default: "lastSavedTime"]_ ::
 This is the name of the column that stores the time - in ms since the epoch - at which a session was last written.
 
-  idColumn:::
-Default `sessionId`.
+setIdColumn(String) _[Default: "sessionId"]_ ::
 This is the name of the column that stores the id of a session.
 
-  lastNodeColumn:::
-Default `lastNode`.
+setLastNodeColumn(String) _[Default: "lastNode"]_ ::
 This is the name of the column that stores the `workerName` of the last node to write a session.
 
-  virtualHostColumn:::
-Default `virtualHost`.
+setVirtualHostColumn(String) _[Default: "virtualHost"]_ ::
 This is the name of the column that stores the first virtual host of the context of a session.
 
-  maxIntervalColumn:::
-Default `maxInterval`.
+setMaxIntervalColumn(String) _[Default: "maxInterval"]_ ::
 This is the name of the column that stores the interval - in ms - during which a session can be idle before being considered expired.
 
-  mapColumn:::
-Default `map`.
+setMapColumn(String) _[Default: "map"]_ ::
 This is the name of the column that stores the serialized attributes of a session.
 

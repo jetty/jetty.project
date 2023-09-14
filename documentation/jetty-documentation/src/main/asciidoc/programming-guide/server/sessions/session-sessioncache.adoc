@@ -17,27 +17,29 @@
 There is one `SessionCache` per `SessionManager`, and thus one per context.
 Its purpose is to provide an L1 cache of `ManagedSession` objects.
 Having a working set of `ManagedSession` objects in memory allows multiple simultaneous requests for the same session (ie the _same_ session id in the _same_ context) to share the same `ManagedSession` object.
-A `SessionCache` uses a `SessionDataStore` to create, read, store and delete the `SessionData` associated with the `Session`.
+A `SessionCache` uses a `SessionDataStore` to create, read, store, and delete the `SessionData` associated with the `ManagedSession`.
 
 There are two ways to create a `SessionCache` for a `SessionManager`:
 
 . allow the `SessionManager` to create one lazily at startup.
 The `SessionManager` looks for a `SessionCacheFactory` bean on the `Server` to produce the `SessionCache` instance.
 It then looks for a `SessionDataStoreFactory` bean on the `Server` to produce a `SessionDataStore` instance to use with the `SessionCache`.
+If no `SessionCacheFactory`  is present, it defaults to creating a `DefaultSessionCache`.
+If no `SessionDataStoreFactory` is present, it defaults to creating a `NullSessionDataStore`.
 
 . pass a fully configured `SessionCache` instance to the `SessionManager`.
 You are responsible for configuring both the `SessionCache` instance and its `SessionDataStore` 
 
-More on ``SessionDataStore``s xref:pg-server-session-datastore[later], in this section we will concentrate on the `SessionCache` and `SessionCacheFactory`.
+More on ``SessionDataStore``s xref:pg-server-session-datastore[later], this section concentrates on the `SessionCache` and `SessionCacheFactory`.
 
 
 The link:{javadoc-url}/org/eclipse/jetty/session/AbstractSessionCache.html[AbstractSessionCache] provides most of the behaviour of ``SessionCache``s.
-If you are implementing a custom `SessionCache` we strongly recommend you extend this base class, as the Servlet Specification has many subtleties and extending the base class ensures that your implementation will take account of them.
+If you are implementing a custom `SessionCache` it is strongly recommended that you extend this class because it implements the numerous subtleties  of the Servlet specification.
 
 Some of the important behaviours of ``SessionCache``s are:
 
 eviction::
-By default, `ManagedSessions` remain in a cache until they are expired or invalidated.
+By default, ``ManagedSession``s remain in a cache until they are expired or invalidated.
 If you have many or large sessions that are infrequently referenced you can use eviction to reduce the memory consumed by the cache.
 When a session is evicted, it is removed from the cache but it is _not_ invalidated.
 If you have configured a `SessionDataStore` that persists or distributes the session in some way, it will continue to exist, and can be read back in when it needs to be referenced again.
@@ -52,7 +54,7 @@ The eviction strategies are:
 saveOnInactiveEviction::
 This controls whether a session will be persisted to the `SessionDataStore` if it is being evicted due to the EVICT_ON_INACTIVITY policy.
 Usually sessions are written to the `SessionDataStore` whenever the last simultaneous request exits the session.
-However, as `SessionDataStores` can be configured to xref:pg-server-session-datastore-skip[skip some writes], this option ensures that the session will be written out.
+However, as ``SessionDataStore``s` can be configured to xref:pg-server-session-datastore-skip[skip some writes], this option ensures that the session will be written out.
 
 saveOnCreate::
 Usually a session will be written through to the configured `SessionDataStore` when the last request for it finishes.
@@ -86,20 +88,16 @@ For clustered deployments, a sticky load balancer is *strongly* recommended, oth
 
 It implements the link:{javadoc-url}/org/eclipse/jetty/session/SessionCache.html#shutdown()[SessionCache.shutdown()] method.
 
-It also provides some statistics on sessions, which are convenient to access either directly in code or remotely via jmx:
+It also provides some statistics on sessions, which are convenient to access either directly in code or remotely via JMX:
 
 current sessions::
-The link:{javadoc-url}/org/eclipse/jetty/session/DefaultSessionCache.html#getSessionsCurrent()[DefaultSessionCache.getSessionsCurrent()] reports the number of sessions in the cache at the time of the method call.
+The link:{javadoc-url}/org/eclipse/jetty/session/DefaultSessionCache.html#getSessionsCurrent()[DefaultSessionCache.getSessionsCurrent()] method reports the number of sessions in the cache at the time of the method call.
 
 max sessions::
-The link:{javadoc-url}/org/eclipse/jetty/session/DefaultSessionCache.html#getSessionsCurrent()[DefaultSessionCache.getSessionsMax()] reports the highest number of sessions in the cache at the time of the method call.
-
+The link:{javadoc-url}/org/eclipse/jetty/session/DefaultSessionCache.html#getSessionsCurrent()[DefaultSessionCache.getSessionsMax()] method reports the highest number of sessions in the cache at the time of the method call.
 
 total sessions::
-The link:{javadoc-url}/org/eclipse/jetty/session/DefaultSessionCache.html#getSessionsTotal()[DefaultSessionCache.getSessionsTotal()] reports the cumulative total of the number of sessions in the cache at the time of the method call.
-
-reset::
-The link:{javadoc-url}/org/eclipse/jetty/session/DefaultSessionCache.html#resetStats()[DefaultSessionCache.resetStats()] zeros out the statistics counters.
+The link:{javadoc-url}/org/eclipse/jetty/session/DefaultSessionCache.html#getSessionsTotal()[DefaultSessionCache.getSessionsTotal()] method reports the cumulative total of the number of sessions in the cache at the time of the method call.
 
 If you create a link:{javadoc-url}/org/eclipse/jetty/session/DefaultSessionCacheFactory.html[DefaultSessionFactory] and register it as a `Server` bean, a `SessionManger` will be able to lazily create a `DefaultSessionCache`.
 The `DefaultSessionCacheFactory` has all of the same configuration setters as a `DefaultSessionCache`.
@@ -131,11 +129,11 @@ include::../../{doc_code}/org/eclipse/jetty/docs/programming/server/session/Sess
 ----
 
 [[pg-server-session-customcache]]
-===== Implementing a Custom SessionCache
+===== Implementing a custom SessionCache
 
-As previously mentioned, we highly recommend that you extend the link:{javadoc-url}/org/eclipse/jetty/session/AbstractSessionCache.html[AbstractSessionCache].
+As previously mentioned, it is strongly recommended that you extend the link:{javadoc-url}/org/eclipse/jetty/session/AbstractSessionCache.html[AbstractSessionCache].
 
-===== Heterogeneous Caching
+===== Heterogeneous caching
 
 Using one of the ``SessionCacheFactory``s will ensure that every time a `SessionManager` starts it will create a new instance of the corresponding type of `SessionCache`.
 

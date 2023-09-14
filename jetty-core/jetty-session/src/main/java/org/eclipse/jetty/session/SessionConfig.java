@@ -51,7 +51,7 @@ public interface SessionConfig
      * used as the path for the session cookie.  If it is not set, then
      * the context path is used as the path for the cookie.
      */
-    String __SessionPathProperty = "org.eclipse.jetty.servlet.SessionPath";
+    String __SessionPathProperty = "org.eclipse.jetty.session.SessionPath";
     /**
      * Session Max Age.
      * If this property is set as a ServletContext InitParam, then it is

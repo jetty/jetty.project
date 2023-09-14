@@ -31,9 +31,7 @@ This can improve the performance of slow stores.
 The L2 cache is an instance of a link:{javadoc-url}/org/eclipse/jetty/session/SessionDataMap.html[SessionDataMap].
 Jetty provides one implementation of this L2 cache based on `memcached`, link:{javadoc-url}/org/eclipse/jetty/memcached/session/MemcachedSessionDataMap.html[MemcachedSessionDataMap].
 
-====== Configuration
-
-Here's an example of how to programmatically configure ``CachingSessionDataStore``s, using a xref:pg-server-session-datastore-file[FileSessionDataStore] as a delegate, and `memcached` as the L2 cache:
+This is an example of how to programmatically configure ``CachingSessionDataStore``s, using a xref:pg-server-session-datastore-file[FileSessionDataStore] as a delegate, and `memcached` as the L2 cache:
 
 [source,java,indent=0]
 ----
