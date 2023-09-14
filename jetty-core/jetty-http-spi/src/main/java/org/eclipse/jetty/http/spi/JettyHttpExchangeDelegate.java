@@ -19,6 +19,7 @@ import java.io.OutputStream;
 import java.net.InetSocketAddress;
 import java.net.SocketAddress;
 import java.net.URI;
+import java.util.EnumSet;
 import java.util.List;
 import java.util.Map;
 
@@ -27,6 +28,7 @@ import com.sun.net.httpserver.HttpContext;
 import com.sun.net.httpserver.HttpExchange;
 import com.sun.net.httpserver.HttpPrincipal;
 import org.eclipse.jetty.http.HttpField;
+import org.eclipse.jetty.http.HttpHeader;
 import org.eclipse.jetty.http.QuotedCSV;
 import org.eclipse.jetty.io.Content;
 import org.eclipse.jetty.server.Request;
@@ -37,6 +39,24 @@ import org.eclipse.jetty.server.Response;
  */
 public class JettyHttpExchangeDelegate extends HttpExchange
 {
+    /**
+     * Set of headers that RFC9110 says will not have a value list
+     */
+    private static final EnumSet<HttpHeader> RAW_HEADERS =
+        EnumSet.of(
+            HttpHeader.AUTHORIZATION,
+            HttpHeader.CONTENT_LENGTH,
+            HttpHeader.DATE,
+            HttpHeader.EXPIRES,
+            HttpHeader.HOST,
+            HttpHeader.IF_MODIFIED_SINCE,
+            HttpHeader.IF_UNMODIFIED_SINCE,
+            HttpHeader.IF_RANGE,
+            HttpHeader.LAST_MODIFIED,
+            HttpHeader.LOCATION,
+            HttpHeader.REFERER,
+            HttpHeader.RETRY_AFTER,
+            HttpHeader.USER_AGENT);
     private final HttpContext _httpContext;
 
     private final Request _request;
@@ -73,35 +93,18 @@ public class JettyHttpExchangeDelegate extends HttpExchange
             if (rawValue == null)
                 continue;
 
-            String headerName = field.getLowerCaseName();
+            HttpHeader header = field.getHeader();
 
-            switch (headerName)
+            if (header == null || !RAW_HEADERS.contains(header))
             {
-                // Headers that are known to not support a list of values (taken from RFC9110)
-                // are treated special and will copy the entire value as-is
-                case "authorization",
-                    "content-length",
-                    "date",
-                    "expires",
-                    "host",
-                    "if-modified-since",
-                    "if-unmodified-since",
-                    "if-range",
-                    "last-modified",
-                    "location",
-                    "referer",
-                    "retry-after",
-                    "user-agent" ->
-                {
-                    headers.add(field.getName(), rawValue);
-                }
-                default ->
-                {
-                    // Using raw QuotedCSV here to preserve quotes (which HttpField.getValues() doesn't do)
-                    QuotedCSV quotedCSV = new QuotedCSV(true, rawValue);
-                    for (String value : quotedCSV.getValues())
-                        headers.add(field.getName(), value);
-                }
+                // Using raw QuotedCSV here to preserve quotes (which HttpField.getValues() doesn't do)
+                QuotedCSV quotedCSV = new QuotedCSV(true, rawValue);
+                for (String value : quotedCSV.getValues())
+                    headers.add(field.getName(), value);
+            }
+            else
+            {
+                headers.add(field.getName(), rawValue);
             }
         }
         return headers;

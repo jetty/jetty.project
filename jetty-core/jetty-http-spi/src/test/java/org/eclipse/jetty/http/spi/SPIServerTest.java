@@ -51,9 +51,10 @@ public class SPIServerTest
         LoggingUtil.init();
     }
 
-    String host = "localhost";
-    HttpServer server;
-    int port;
+    private String host = "localhost";
+    private HttpServer server;
+    private int port;
+    private HttpClient client;
 
     @BeforeEach
     public void before() throws Exception
@@ -62,13 +63,16 @@ public class SPIServerTest
 
         server.start();
         port = server.getAddress().getPort();
-        System.err.println(port);
+
+        client = new HttpClient();
+        client.start();
     }
 
     @AfterEach
     public void after() throws Exception
     {
         server.stop(0);
+        LifeCycle.stop(client);
     }
 
     @Test
@@ -88,27 +92,17 @@ public class SPIServerTest
             }
         });
 
-        HttpClient client = new HttpClient();
-        try
-        {
-            client.start();
+        Request request = client.newRequest("localhost", port)
+            .scheme("http")
+            .method(HttpMethod.GET)
+            .path("/");
 
-            Request request = client.newRequest("localhost", port)
-                .scheme("http")
-                .method(HttpMethod.GET)
-                .path("/");
+        ContentResponse response = request.send();
 
-            ContentResponse response = request.send();
-
-            assertThat(response.getStatus(), is(200));
-            assertThat(response.getHeaders().get("Content-Type"), is("text/plain"));
-            String body = response.getContentAsString();
-            assertThat(body, is("Hello"));
-        }
-        finally
-        {
-            LifeCycle.stop(client);
-        }
+        assertThat(response.getStatus(), is(200));
+        assertThat(response.getHeaders().get("Content-Type"), is("text/plain"));
+        String body = response.getContentAsString();
+        assertThat(body, is("Hello"));
     }
 
     @Test
@@ -134,27 +128,17 @@ public class SPIServerTest
             }
         });
 
-        HttpClient client = new HttpClient();
-        try
-        {
-            client.start();
+        Request request = client.newRequest("localhost", port)
+            .scheme("http")
+            .method(HttpMethod.GET)
+            .path("/");
 
-            Request request = client.newRequest("localhost", port)
-                .scheme("http")
-                .method(HttpMethod.GET)
-                .path("/");
+        ContentResponse response = request.send();
 
-            ContentResponse response = request.send();
-
-            assertThat(response.getStatus(), is(200));
-            assertThat(response.getHeaders().get("Content-Type"), is(mediaType));
-            String body = response.getContentAsString();
-            assertThat(body, is("Hello"));
-        }
-        finally
-        {
-            LifeCycle.stop(client);
-        }
+        assertThat(response.getStatus(), is(200));
+        assertThat(response.getHeaders().get("Content-Type"), is(mediaType));
+        String body = response.getContentAsString();
+        assertThat(body, is("Hello"));
     }
 
     @Test
@@ -186,28 +170,18 @@ public class SPIServerTest
             }
         });
 
-        HttpClient client = new HttpClient();
-        try
-        {
-            client.start();
+        Request request = client.newRequest("localhost", port)
+            .scheme("http")
+            .method(HttpMethod.GET)
+            .headers((headers) ->
+                headers.put("Content-Type", mediaType))
+            .path("/");
 
-            Request request = client.newRequest("localhost", port)
-                .scheme("http")
-                .method(HttpMethod.GET)
-                .headers((headers) ->
-                    headers.put("Content-Type", mediaType))
-                .path("/");
+        ContentResponse response = request.send();
 
-            ContentResponse response = request.send();
-
-            assertThat(response.getStatus(), is(200));
-            String body = response.getContentAsString();
-            assertThat(body, is(mediaType));
-        }
-        finally
-        {
-            LifeCycle.stop(client);
-        }
+        assertThat(response.getStatus(), is(200));
+        String body = response.getContentAsString();
+        assertThat(body, is(mediaType));
     }
 
     @Test
@@ -407,37 +381,27 @@ public class SPIServerTest
             }
         });
 
-        HttpClient client = new HttpClient();
-        try
-        {
-            client.start();
+        Request request = client.newRequest("localhost", port)
+            .scheme("http")
+            .method(HttpMethod.GET)
+            .path("/");
 
-            Request request = client.newRequest("localhost", port)
-                .scheme("http")
-                .method(HttpMethod.GET)
-                .path("/");
+        ContentResponse response = request.send();
+        assertThat(response.getStatus(), is(401));
 
-            ContentResponse response = request.send();
-            assertThat(response.getStatus(), is(401));
+        request = client.newRequest("localhost", port)
+            .scheme("http")
+            .method(HttpMethod.GET)
+            .path("/");
 
-            request = client.newRequest("localhost", port)
-                .scheme("http")
-                .method(HttpMethod.GET)
-                .path("/");
+        AuthenticationStore store = client.getAuthenticationStore();
 
-            AuthenticationStore store = client.getAuthenticationStore();
+        URI uri = URI.create("http://localhost:" + port + "/");
+        store.addAuthentication(new BasicAuthentication(uri, testRealm, testUsername, testPassword));
 
-            URI uri = URI.create("http://localhost:" + port + "/");
-            store.addAuthentication(new BasicAuthentication(uri, testRealm, testUsername, testPassword));
-
-            response = request.send();
-            assertThat(response.getStatus(), is(200));
-            String body = response.getContentAsString();
-            assertThat(body, is("Hello"));
-        }
-        finally
-        {
-            LifeCycle.stop(client);
-        }
+        response = request.send();
+        assertThat(response.getStatus(), is(200));
+        String body = response.getContentAsString();
+        assertThat(body, is("Hello"));
     }
 }
