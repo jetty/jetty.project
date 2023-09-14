@@ -96,8 +96,9 @@ public class ConditionalHandler extends Handler.Wrapper
 
     private final ConditionNotMetAction _conditionNotMetAction;
     private final IncludeExclude<String> _methods = new IncludeExclude<>();
-    private final IncludeExclude<String> _paths = new IncludeExclude<>(PathSpecSet.class);
+    private final IncludeExclude<String> _pathSpecs = new IncludeExclude<>(PathSpecSet.class);
     private final IncludeExcludeSet<Predicate<Request>, Request> _predicates = new IncludeExcludeSet<>(PredicateSet.class);
+    private Predicate<Request> _handlePredicate;
 
     public ConditionalHandler()
     {
@@ -129,7 +130,7 @@ public class ConditionalHandler extends Handler.Wrapper
         if (isStarted())
             throw new IllegalStateException(getState());
         _methods.clear();
-        _paths.clear();
+        _pathSpecs.clear();
         _predicates.clear();
     }
 
@@ -139,10 +140,10 @@ public class ConditionalHandler extends Handler.Wrapper
         return _methods;
     }
 
-    IncludeExclude<String> getPaths()
+    IncludeExclude<String> getPathSpecs()
     {
         // Used only for testing
-        return _paths;
+        return _pathSpecs;
     }
 
     IncludeExcludeSet<Predicate<Request>, Request> getPredicates()
@@ -183,7 +184,7 @@ public class ConditionalHandler extends Handler.Wrapper
             throw new IllegalStateException(getState());
 
         for (PathSpec p : paths)
-            ((PathSpecSet)_paths.getIncluded()).add(p);
+            ((PathSpecSet)_pathSpecs.getIncluded()).add(p);
     }
 
     /**
@@ -195,7 +196,7 @@ public class ConditionalHandler extends Handler.Wrapper
         if (isStarted())
             throw new IllegalStateException(getState());
         for (PathSpec p : paths)
-            ((PathSpecSet)_paths.getExcluded()).add(p);
+            ((PathSpecSet)_pathSpecs.getExcluded()).add(p);
     }
 
     /**
@@ -207,7 +208,7 @@ public class ConditionalHandler extends Handler.Wrapper
     {
         if (isStarted())
             throw new IllegalStateException(getState());
-        _paths.include(paths);
+        _pathSpecs.include(paths);
     }
 
     /**
@@ -219,7 +220,7 @@ public class ConditionalHandler extends Handler.Wrapper
     {
         if (isStarted())
             throw new IllegalStateException(getState());
-        _paths.exclude(paths);
+        _pathSpecs.exclude(paths);
     }
 
     /**
@@ -323,9 +324,9 @@ public class ConditionalHandler extends Handler.Wrapper
         return _methods.test(request.getMethod());
     }
 
-    private boolean testPaths(Request request)
+    private boolean testPathSpecs(Request request)
     {
-        return _paths.test(Request.getPathInContext(request));
+        return _pathSpecs.test(Request.getPathInContext(request));
     }
 
     private boolean testPredicates(Request request)
@@ -350,13 +351,35 @@ public class ConditionalHandler extends Handler.Wrapper
             }
         }
 
+        _handlePredicate = new Predicate<>()
+        {
+            @Override
+            public boolean test(Request request)
+            {
+                return true;
+            }
+
+            @Override
+            public Predicate<Request> and(Predicate<? super Request> other)
+            {
+                return (Predicate<Request>)other;
+            }
+        };
+
+        if (!_methods.isEmpty())
+            _handlePredicate = _handlePredicate.and(this::testMethods);
+        if (!_pathSpecs.isEmpty())
+            _handlePredicate = _handlePredicate.and(this::testPathSpecs);
+        if (!_predicates.isEmpty())
+            _handlePredicate = _handlePredicate.and(this::testPredicates);
+
         super.doStart();
     }
 
     public boolean handle(Request request, Response response, Callback callback) throws Exception
     {
         // This is the code we would have in handle if MethodHandlers were not used
-        if (testMethods(request) && testPaths(request) && testPredicates(request))
+        if (_handlePredicate.test(request))
             return doHandle(request, response, callback);
 
         return switch (_conditionNotMetAction)
@@ -408,8 +431,8 @@ public class ConditionalHandler extends Handler.Wrapper
         dumpObjects(out, indent,
             new DumpableCollection("included methods", _methods.getIncluded()),
             new DumpableCollection("excluded methods", _methods.getExcluded()),
-            new DumpableCollection("included paths", _paths.getIncluded()),
-            new DumpableCollection("excluded paths", _paths.getExcluded()),
+            new DumpableCollection("included paths", _pathSpecs.getIncluded()),
+            new DumpableCollection("excluded paths", _pathSpecs.getExcluded()),
             new DumpableCollection("included predicates", _predicates.getIncluded()),
             new DumpableCollection("excluded predicates", _predicates.getExcluded())
         );

@@ -199,7 +199,7 @@ public class ConditionalHandlerTest
         assertThat(predicate, instanceOf(ConditionalHandler.PathSpecPredicate.class));
         ConditionalHandler conditionalHandler = new ConditionalHandler();
         conditionalHandler.include(predicate);
-        assertThat(conditionalHandler.getPaths().getIncluded(), hasSize(1));
+        assertThat(conditionalHandler.getPathSpecs().getIncluded(), hasSize(1));
         assertThat(conditionalHandler.getPredicates().getIncluded(), hasSize(0));
     }
 
