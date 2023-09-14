@@ -26,7 +26,7 @@ jetty-10.0.16 - 25 August 2023
  + 9772 Improve Quiche certificates deployment
  + 9777 CrossOriginFilter does not return Vary header on no-cors mode
  + 9795 http3-server is leaking the Jetty logging service to web applications
- + 9887 Deprecate CGI Servlet (CVE-2023-40167)
+ + 9887 Deprecate CGI Servlet (CVE-2023-36479)
  + 9895 A MessageTooLargeException doesn't close a WebSocket connection
  + 9947 Cannot invoke "org.eclipse.jetty.io.ManagedSelector.getTotalKeys()"
    because "selector" is null
@@ -55,7 +55,7 @@ jetty-10.0.16 - 25 August 2023
 jetty-9.4.52.v20230823 - 23 August 2023
  + 9476 onCompleteFailure called multiple times
  + 9660 OpenId Revoked authentication allows one request (CVE-2023-41900)
- + 9887 Deprecate CGI Servlet (CVE-2023-40167)
+ + 9887 Deprecate CGI Servlet (CVE-2023-36479)
  + 10066 Allow `SAXParserFactory` or `SAXParser` to be configured in Jetty's
    `XmlParser` class
  + 10168 NPE in websocket extension startup
