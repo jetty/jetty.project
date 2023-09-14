@@ -14,6 +14,7 @@
 package org.eclipse.jetty.session;
 
 import java.nio.ByteBuffer;
+import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collections;
 import java.util.HashSet;
@@ -67,7 +68,7 @@ public abstract class AbstractSessionManager extends ContainerLifeCycle implemen
      * -1 means no timeout
      */
     private int _dftMaxIdleSecs = -1;
-    private boolean _usingURLs;
+    private boolean _usingUriParameters;
     private boolean _usingCookies = true;
     private SessionIdManager _sessionIdManager;
     private ClassLoader _loader;
@@ -673,8 +674,9 @@ public abstract class AbstractSessionManager extends ContainerLifeCycle implemen
             return null;
 
         // should not encode if cookies in evidence
-        if ((isUsingCookies() && cookiesInUse) || !isUsingURLs())
+        if ((isUsingCookies() && cookiesInUse) || !isUsingUriParameters())
         {
+            // strip session param from URI
             int prefix = uri.indexOf(sessionURLPrefix);
             if (prefix != -1)
             {
@@ -933,16 +935,28 @@ public abstract class AbstractSessionManager extends ContainerLifeCycle implemen
      * @return whether the session management is handled via URLs.
      */
     @Override
-    public boolean isUsingURLs()
+    public boolean isUsingUriParameters()
     {
-        return _usingURLs;
+        return _usingUriParameters;
     }
 
+    public void setUsingUriParameters(boolean usingUriParameters)
+    {
+        _usingUriParameters = usingUriParameters;
+    }
+
+    @Deprecated
+    public boolean isUsingURLs()
+    {
+        return isUsingUriParameters();
+    }
+
+    @Deprecated
     public void setUsingURLs(boolean usingURLs)
     {
-        _usingURLs = usingURLs;
+        setUsingUriParameters(usingURLs);
     }
-    
+
     /**
      * Create a new Session, using the requested session id if possible.
      * @param request the inbound request
@@ -1166,7 +1180,9 @@ public abstract class AbstractSessionManager extends ContainerLifeCycle implemen
         boolean requestedSessionIdFromCookie = false;
         ManagedSession session = null;
 
-        //first try getting id from a cookie
+        List<String> ids = null;
+
+        //first try getting list of id from cookies
         if (isUsingCookies())
         {
             //Cookie[] cookies = request.getCookies();
@@ -1178,103 +1194,106 @@ public abstract class AbstractSessionManager extends ContainerLifeCycle implemen
                 {
                     if (sessionCookie.equalsIgnoreCase(cookie.getName()))
                     {
-                        String id = cookie.getValue();
-                        requestedSessionIdFromCookie = true;
-                        if (LOG.isDebugEnabled())
-                            LOG.debug("Got Session ID {} from cookie {}", id, sessionCookie);
-
-                        if (session == null)
-                        {
-                            //we currently do not have a session selected, use this one if it is valid
-                            ManagedSession s = getManagedSession(id);
-                            if (s != null && s.isValid())
-                            {
-                                //associate it with the request so its reference count is decremented as the
-                                //request exits
-                                requestedSessionId = id;
-                                session = s;
-
-                                if (LOG.isDebugEnabled())
-                                    LOG.debug("Selected session {}", session);
-                            }
-                            else
-                            {
-                                if (LOG.isDebugEnabled())
-                                    LOG.debug("No session found for session cookie id {}", id);
-
-                                //if we don't have a valid session id yet, just choose the current id
-                                if (requestedSessionId == null)
-                                    requestedSessionId = id;
-                            }
-                        }
-                        else
-                        {
-                            //we currently have a valid session selected. We will throw an error
-                            //if there is a _different_ valid session id cookie. Duplicate ids, or
-                            //invalid session ids are ignored
-                            if (!session.getId().equals(getSessionIdManager().getId(id)))
-                            {
-                                if (LOG.isDebugEnabled())
-                                    LOG.debug("Multiple different valid session ids: {}, {}", requestedSessionId, id);
-
-                                //load the session to see if it is valid or not
-                                ManagedSession s = getManagedSession(id);
-                                if (s != null && s.isValid())
-                                {
-                                    //release both sessions straight away??
-                                    try
-                                    {
-                                        _sessionCache.release(session);
-                                        _sessionCache.release(s);
-                                    }
-                                    catch (Exception x)
-                                    {
-                                        if (LOG.isDebugEnabled())
-                                            LOG.debug("Error releasing duplicate valid session: {}", id);
-                                    }
-
-                                    throw new BadMessageException("Duplicate valid session cookies: " + requestedSessionId + " ," + id);
-                                }
-                            }
-                            else
-                            {
-                                if (LOG.isDebugEnabled())
-                                    LOG.debug("Duplicate valid session cookie id: {}", id);
-                            }
-                        }
+                        if (ids == null)
+                            ids = new ArrayList<>();
+                        ids.add(cookie.getValue());
                     }
                 }
             }
         }
+        int cookieIds = ids == null ? 0 : ids.size();
 
         //try getting id from a url
-        if (isUsingURLs() && (requestedSessionId == null))
+        if (isUsingUriParameters())
         {
             HttpURI uri = request.getHttpURI();
             String param = uri.getParam();
-            param = (param == null ? "" : param.trim());
-            String parameterName = getSessionIdPathParameterName();
-            int start = param.indexOf(parameterName);
-            if (start >= 0)
+            if (StringUtil.isNotBlank(param))
             {
-                start += parameterName.length();
-                if (param.length() > start && param.charAt(start++) == '=')
+                String name = getSessionIdPathParameterName();
+                String[] params = param.split(";");
+                for (String p : params)
                 {
-                    int i = start;
-                    while (i < param.length())
-                    {
-                        char c = param.charAt(i);
-                        if (c == ';' || c == '#' || c == '?' || c == '/')
-                            break;
-                        i++;
-                    }
-                    requestedSessionId = param.substring(start, i);
-                    requestedSessionIdFromCookie = false;
+                    if (!p.startsWith(name) || p.length() <= name.length() || p.charAt(name.length()) != '=')
+                        continue;
+
+                    if (ids == null)
+                        ids = new ArrayList<>();
+                    ids.add(p.substring(name.length() + 1).trim());
+                }
+            }
+        }
+
+        if (ids == null)
+            return NO_REQUESTED_SESSION;
+
+        if (LOG.isDebugEnabled())
+            LOG.debug("Got Session IDs {} {}", ids, cookieIds);
+
+        for (int i = 0; i < ids.size(); i++)
+        {
+            String id = ids.get(i);
+            if (session == null)
+            {
+                //we currently do not have a session selected, use this one if it is valid
+                ManagedSession s = getManagedSession(id);
+                if (s != null && s.isValid())
+                {
+                    //associate it with the request so its reference count is decremented as the
+                    //request exits
+                    requestedSessionId = id;
+                    requestedSessionIdFromCookie = i < cookieIds;
+                    session = s;
 
                     if (LOG.isDebugEnabled())
-                        LOG.debug("Got Session ID {} from URL", requestedSessionId);
+                        LOG.debug("Selected session {}", session);
+                }
+                else
+                {
+                    if (LOG.isDebugEnabled())
+                        LOG.debug("No session found for session cookie id {}", id);
 
-                    session = getManagedSession(requestedSessionId);
+                    //if we don't have a valid session id yet, just choose the first one
+                    if (requestedSessionId == null)
+                    {
+                        requestedSessionId = id;
+                        requestedSessionIdFromCookie = i < cookieIds;
+                    }
+                }
+            }
+            else
+            {
+                //we currently have a valid session selected. We will throw an error
+                //if there is a _different_ valid session id cookie. Duplicate ids, or
+                //invalid session ids are ignored
+                if (!session.getId().equals(getSessionIdManager().getId(id)))
+                {
+                    if (LOG.isDebugEnabled())
+                        LOG.debug("Multiple different valid session ids: {}, {}", requestedSessionId, id);
+
+                    //load the session to see if it is valid or not
+                    ManagedSession s = getManagedSession(id);
+                    if (s != null && s.isValid())
+                    {
+                        //release both sessions straight away??
+                        try
+                        {
+                            _sessionCache.release(session);
+                            _sessionCache.release(s);
+                        }
+                        catch (Exception x)
+                        {
+                            if (LOG.isDebugEnabled())
+                                LOG.debug("Error releasing duplicate valid session: {}", id);
+                        }
+
+                        throw new BadMessageException("Duplicate valid session cookies: " + requestedSessionId + " ," + id);
+                    }
+                }
+                else
+                {
+                    if (LOG.isDebugEnabled())
+                        LOG.debug("Duplicate valid session cookie id: {}", id);
                 }
             }
         }
@@ -1293,6 +1312,8 @@ public abstract class AbstractSessionManager extends ContainerLifeCycle implemen
     public record RequestedSession(ManagedSession session, String sessionId, boolean sessionIdFromCookie)
     {
     }
+
+    private static final  RequestedSession NO_REQUESTED_SESSION = new RequestedSession(null, null, false);
 
     /**
      * A session cookie is marked as secure IFF any of the following conditions are true:
