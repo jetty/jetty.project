@@ -14,9 +14,6 @@
 package org.eclipse.jetty.server.handler;
 
 import java.io.IOException;
-import java.lang.invoke.MethodHandle;
-import java.lang.invoke.MethodHandles;
-import java.lang.invoke.MethodType;
 import java.net.InetAddress;
 import java.net.InetSocketAddress;
 import java.net.SocketAddress;
@@ -42,8 +39,6 @@ import org.eclipse.jetty.util.InetAddressPattern;
 import org.eclipse.jetty.util.component.DumpableCollection;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
-
-import static java.lang.invoke.MethodType.methodType;
 
 /**
  * A {@link Handler.Wrapper} that may conditionally apply an action to a request.
@@ -103,7 +98,6 @@ public class ConditionalHandler extends Handler.Wrapper
     private final IncludeExclude<String> _methods = new IncludeExclude<>();
     private final IncludeExclude<String> _paths = new IncludeExclude<>(PathSpecSet.class);
     private final IncludeExcludeSet<Predicate<Request>, Request> _predicates = new IncludeExcludeSet<>(PredicateSet.class);
-    private MethodHandle _doHandle;
 
     public ConditionalHandler()
     {
@@ -112,13 +106,19 @@ public class ConditionalHandler extends Handler.Wrapper
 
     public ConditionalHandler(Handler nextHandler)
     {
-        this(ConditionNotMetAction.DO_NOT_HANDLE);
-        setHandler(nextHandler);
+        this(ConditionNotMetAction.SKIP_NEXT, nextHandler);
     }
 
     public ConditionalHandler(ConditionNotMetAction conditionNotMetAction)
     {
+        this(conditionNotMetAction, null);
+    }
+
+    public ConditionalHandler(ConditionNotMetAction conditionNotMetAction, Handler nextHandler)
+    {
         _conditionNotMetAction = conditionNotMetAction;
+        if (nextHandler != null)
+            setHandler(nextHandler);
     }
 
     /**
@@ -336,95 +336,24 @@ public class ConditionalHandler extends Handler.Wrapper
     @Override
     protected void doStart() throws Exception
     {
-        Handler next = getHandler();
-
-        MethodHandles.Lookup lookup = MethodHandles.lookup();
-        MethodType handleType = methodType(boolean.class, Request.class, Response.class, Callback.class);
-
-        // Determine if this classes doHandle method has been extended
-        boolean doHandleExtended;
-        try
+        switch (_conditionNotMetAction)
         {
-            doHandleExtended = getClass().getDeclaredMethod("doHandle", Request.class, Response.class, Callback.class).getDeclaringClass() != ConditionalHandler.class;
-        }
-        catch (NoSuchMethodException e)
-        {
-            doHandleExtended = false;
-        }
-
-        // Determine the handling if the conditions are met.
-        // If doHandle has been extended (or there is no next handler), then we invoke the method on this class,
-        // otherwise we can directly invoke the handle method on the next class
-        _doHandle = doHandleExtended || next == null
-            ? lookup.findVirtual(ConditionalHandler.class, "doHandle", handleType).bindTo(this)
-            : lookup.findVirtual(next.getClass(), "handle", handleType).bindTo(next);
-
-        // Determine the handling if the conditions are not met
-        MethodHandle doNotHandle = switch (_conditionNotMetAction)
-        {
-            case DO_NOT_HANDLE ->
-                // Invoke the doNotHandle method
-                lookup.findVirtual(ConditionalHandler.class, "doNotHandle", handleType).bindTo(this);
-
             case SKIP_THIS ->
             {
-                // Skip the doNotHandle method of this handler and call handle of the next handler
-                if (next != null)
-                {
-                    MethodHandle nextHandle = lookup.findVirtual(next.getClass(), "handle", handleType);
-                    yield nextHandle.bindTo(next);
-                }
-                throw new IllegalStateException("No next Handler");
+                if (getHandler() == null)
+                    throw new IllegalStateException("No next Handler");
             }
             case SKIP_NEXT ->
             {
-                // Skip the handle method of the next handler and call its next handler.
-                if (doHandleExtended)
-                    throw new IllegalStateException("doHandle method is extended in SKIP_NEXT mode");
-                if (getHandler() instanceof Handler.Singleton nextWrapper && nextWrapper.getHandler() != null)
-                {
-                    Handler nextNextHandler = nextWrapper.getHandler();
-                    MethodHandle nextHandle = lookup.findVirtual(nextNextHandler.getClass(), "handle", handleType);
-                    yield nextHandle.bindTo(nextNextHandler);
-                }
-                throw new IllegalStateException("No next Handler.Wrapper next");
+                if (!(getHandler() instanceof Handler.Singleton nextWrapper) || nextWrapper.getHandler() == null)
+                   throw new IllegalStateException("No next Handler.Wrapper next");
             }
-        };
-
-        // If we have method conditions, guard the doHandle method with checkMethod
-        if (!_methods.isEmpty())
-        {
-            MethodHandle checkMethod = lookup.findVirtual(ConditionalHandler.class, "testMethods", methodType(boolean.class, Request.class)).bindTo(this);
-            _doHandle = MethodHandles.guardWithTest(
-                MethodHandles.dropArguments(checkMethod, 1, Response.class, Callback.class),
-                _doHandle,
-                doNotHandle);
-        }
-
-        // If we have path conditions, guard the doHandle method with checkPaths
-        if (!_paths.isEmpty())
-        {
-            MethodHandle checkPath = lookup.findVirtual(ConditionalHandler.class, "testPaths", methodType(boolean.class, Request.class)).bindTo(this);
-            _doHandle = MethodHandles.guardWithTest(
-                MethodHandles.dropArguments(checkPath, 1, Response.class, Callback.class),
-                _doHandle,
-                doNotHandle);
-        }
-
-        // If we have predicate conditions, guard the doHandle method with checkPredicates
-        if (!_predicates.isEmpty())
-        {
-            MethodHandle checkPredicates = lookup.findVirtual(ConditionalHandler.class, "testPredicates", methodType(boolean.class, Request.class)).bindTo(this);
-            _doHandle = MethodHandles.guardWithTest(
-                MethodHandles.dropArguments(checkPredicates, 1, Response.class, Callback.class),
-                _doHandle,
-                doNotHandle);
         }
 
         super.doStart();
     }
 
-    public boolean nonMethodHandle(Request request, Response response, Callback callback) throws Exception
+    public boolean handle(Request request, Response response, Callback callback) throws Exception
     {
         // This is the code we would have in handle if MethodHandlers were not used
         if (testMethods(request) && testPaths(request) && testPredicates(request))
@@ -434,27 +363,10 @@ public class ConditionalHandler extends Handler.Wrapper
         {
             case DO_NOT_HANDLE -> doNotHandle(request, response, callback);
             case SKIP_THIS -> getHandler().handle(request, response, callback);
-            case SKIP_NEXT -> getHandler() instanceof Singleton singleton && singleton.handle(request, response, callback);
+            case SKIP_NEXT -> getHandler() instanceof Singleton singleton &&
+                singleton.getHandler() != null &&
+                singleton.getHandler().handle(request, response, callback);
         };
-    }
-
-    @Override
-    public boolean handle(Request request, Response response, Callback callback) throws Exception
-    {
-        try
-        {
-            // Invoke the _doHandle MethodHandle which will include checking any conditions in its guards.
-            return (boolean)_doHandle.invokeExact(request, response, callback);
-        }
-        catch (Exception e)
-        {
-            throw e;
-        }
-        catch (Throwable t)
-        {
-            Response.writeError(request, response, callback, t);
-            return true;
-        }
     }
 
     /**
