@@ -26,7 +26,7 @@ jetty-10.0.16 - 25 August 2023
  + 9772 Improve Quiche certificates deployment
  + 9777 CrossOriginFilter does not return Vary header on no-cors mode
  + 9795 http3-server is leaking the Jetty logging service to web applications 
- + 9887 Deprecate CGI Servlet
+ + 9887 Deprecate CGI Servlet (CVE-2023-40167)
  + 9895 A MessageTooLargeException doesn't close a WebSocket connection
  + 9947 Cannot invoke "org.eclipse.jetty.io.ManagedSelector.getTotalKeys()"
    because "selector" is null
@@ -38,7 +38,7 @@ jetty-10.0.16 - 25 August 2023
  + 10105 Document that Request objects are not reusable
  + 10120 OutOfMemoryError caused by CyclicTimeouts
  + 10135 Websocket: Using PerMessageDeflateExtension and flush in batchMode
-   send FLUSH_FRAME to client. 
+   send FLUSH_FRAME to client.
  + 10143 Startup fails due to IllegalArgumentException: Comparison method
    violates its general contract
  + 10145 WritePendingException over HTTP/2 tunnel
@@ -48,7 +48,7 @@ jetty-10.0.16 - 25 August 2023
  + 10312 Remove jetty-home-with-docs to eliminate build time cyclic
    dependencies
  + 10350 Support Java 21 virtual threads
- + 10352 various cleanups in `HttpParser`
+ + 10352 Jetty accepts "+" prefixed value in Content-Length (CVE-2023-40167)
  + 10388 Jetty10 inetaccess mod started error
  + 10397 Iso88591StringBuilder.append seems to have a logic error
 
@@ -59,13 +59,12 @@ jetty-10.0.15 - 11 April 2023
  + 9309 `jetty.sh` cannot handle complex Jetty properties from `start.d/*.ini`
  + 9400 Jetty logs warning with stacktrace when annotation parser encounters
    module-info.class file inside elasticsearch-x-content jar
- + 9464 Respect expiry time of ID token
+ + 9464 Add optional configuration to log user out after OpenID idToken expires (CVE-2023-41900)
  + 9468 Jetty 11.0.14 is less tolerant of non-compliant cookies than 11.0.13
  + 9497 Maven plugin effective web xml: add support for jar projects
  + 9501 jetty client with proxy - ssl traffic between both proxy and servers
  + 9517 Jetty 10.0.14 uses wrong pathSpec for request
  + 9556 Password Util does not ask for password
- + Jetty-10 null
 
 jetty-10.0.14 - 22 February 2023
  + 7650 QueuedThreadPool: Stopped without executing or closing null
