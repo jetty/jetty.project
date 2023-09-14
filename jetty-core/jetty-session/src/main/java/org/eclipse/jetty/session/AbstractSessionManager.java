@@ -945,13 +945,19 @@ public abstract class AbstractSessionManager extends ContainerLifeCycle implemen
         _usingUriParameters = usingUriParameters;
     }
 
-    @Deprecated
+    /**
+     * @deprecated use {@link #isUsingUriParameters()} instead, will be removed in Jetty 12.1.0
+     */
+    @Deprecated(since = "12.0.1", forRemoval=true)
     public boolean isUsingURLs()
     {
         return isUsingUriParameters();
     }
 
-    @Deprecated
+    /**
+     * @deprecated use {@link #setUsingUriParameters(boolean)} instead, will be removed in Jetty 12.1.0
+     */
+    @Deprecated(since = "12.0.1", forRemoval=true)
     public void setUsingURLs(boolean usingURLs)
     {
         setUsingUriParameters(usingURLs);
