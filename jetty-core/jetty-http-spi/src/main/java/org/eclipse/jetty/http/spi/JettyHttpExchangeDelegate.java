@@ -42,7 +42,7 @@ public class JettyHttpExchangeDelegate extends HttpExchange
     /**
      * Set of headers that RFC9110 says will not have a value list
      */
-    private static final EnumSet<HttpHeader> RAW_HEADERS =
+    private static final EnumSet<HttpHeader> SINGLE_VALUE_HEADERS =
         EnumSet.of(
             HttpHeader.AUTHORIZATION,
             HttpHeader.CONTENT_LENGTH,
@@ -95,7 +95,7 @@ public class JettyHttpExchangeDelegate extends HttpExchange
 
             HttpHeader header = field.getHeader();
 
-            if (header == null || !RAW_HEADERS.contains(header))
+            if (header == null || !SINGLE_VALUE_HEADERS.contains(header))
             {
                 // Using raw QuotedCSV here to preserve quotes (which HttpField.getValues() doesn't do)
                 QuotedCSV quotedCSV = new QuotedCSV(true, rawValue);
