@@ -18,9 +18,9 @@ import java.util.concurrent.CompletableFuture;
 import org.eclipse.jetty.client.internal.HttpContentResponse;
 
 /**
- * <p>A {@link BufferingResponseListener} that takes care of sending
- * the request, returning a {@link CompletableFuture} that is completed
- * when the request/response is completed.</p>
+ * <p>A {@link BufferingResponseListener} that sends a {@link Request}
+ * and returns a {@link CompletableFuture} that is completed when
+ * {@link #onComplete(Result)} is called.</p>
  * <p>Typical usage:</p>
  * <pre>{@code
  * var request = client.newRequest(...)...;
@@ -64,6 +64,7 @@ public class CompletableResponseListener extends BufferingResponseListener
      * that is completed when the request/response completes.</p>
      *
      * @return a {@link CompletableFuture} that is completed when the request/response completes
+     * @see Request#send(Response.CompleteListener)
      */
     public CompletableFuture<ContentResponse> send()
     {
@@ -77,6 +78,7 @@ public class CompletableResponseListener extends BufferingResponseListener
      *
      * @param destination the destination to send the request to
      * @return a {@link CompletableFuture} that is completed when the request/response completes
+     * @see Destination#send(Request, Response.CompleteListener)
      */
     public CompletableFuture<ContentResponse> send(Destination destination)
     {
@@ -90,6 +92,7 @@ public class CompletableResponseListener extends BufferingResponseListener
      *
      * @param connection the connection to send the request to
      * @return a {@link CompletableFuture} that is completed when the request/response completes
+     * @see Connection#send(Request, Response.CompleteListener)
      */
     public CompletableFuture<ContentResponse> send(Connection connection)
     {
@@ -99,11 +102,6 @@ public class CompletableResponseListener extends BufferingResponseListener
 
     @Override
     public void onComplete(Result result)
-    {
-        onComplete(completable, result);
-    }
-
-    protected void onComplete(CompletableFuture<ContentResponse> completable, Result result)
     {
         if (result.isFailed())
             completable.completeExceptionally(result.getFailure());

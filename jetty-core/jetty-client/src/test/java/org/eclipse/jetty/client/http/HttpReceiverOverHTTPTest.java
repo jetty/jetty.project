@@ -20,13 +20,14 @@ import java.util.concurrent.TimeUnit;
 import java.util.concurrent.TimeoutException;
 import java.util.stream.Stream;
 
-import org.eclipse.jetty.client.CompletableResponseListener;
+import org.eclipse.jetty.client.BufferingResponseListener;
 import org.eclipse.jetty.client.ContentResponse;
 import org.eclipse.jetty.client.HttpClient;
 import org.eclipse.jetty.client.HttpResponseException;
 import org.eclipse.jetty.client.Origin;
 import org.eclipse.jetty.client.Response;
 import org.eclipse.jetty.client.Result;
+import org.eclipse.jetty.client.internal.HttpContentResponse;
 import org.eclipse.jetty.client.transport.HttpDestination;
 import org.eclipse.jetty.client.transport.HttpExchange;
 import org.eclipse.jetty.client.transport.HttpRequest;
@@ -94,13 +95,16 @@ public class HttpReceiverOverHTTPTest
     protected CompletableFuture<ContentResponse> startExchange()
     {
         HttpRequest request = (HttpRequest)client.newRequest("http://localhost");
-        CompletableFuture<ContentResponse> responseCompletable = new CompletableFuture<>();
-        CompletableResponseListener listener = new CompletableResponseListener(request)
+        CompletableFuture<ContentResponse> completable = new CompletableFuture<>();
+        BufferingResponseListener listener = new BufferingResponseListener()
         {
             @Override
-            protected void onComplete(CompletableFuture<ContentResponse> completable, Result result)
+            public void onComplete(Result result)
             {
-                super.onComplete(responseCompletable, result);
+                if (result.isFailed())
+                    completable.completeExceptionally(result.getFailure());
+                else
+                    completable.complete(new HttpContentResponse(result.getResponse(), getContent(), getMediaType(), getEncoding()));
             }
         };
         request.getResponseListeners().addListener(listener);
@@ -109,7 +113,7 @@ public class HttpReceiverOverHTTPTest
         assertTrue(associated);
         exchange.requestComplete(null);
         exchange.terminateRequest();
-        return responseCompletable;
+        return completable;
     }
 
     @ParameterizedTest
@@ -117,10 +121,11 @@ public class HttpReceiverOverHTTPTest
     public void testReceiveNoResponseContent(HttpCompliance compliance) throws Exception
     {
         init(compliance);
-        endPoint.addInput(
-            "HTTP/1.1 200 OK\r\n" +
-                "Content-length: 0\r\n" +
-                "\r\n");
+        endPoint.addInput("""
+            HTTP/1.1 200 OK
+            Content-length: 0
+                                
+            """);
         CompletableFuture<ContentResponse> completable = startExchange();
         connection.getHttpChannel().receive();
 
@@ -143,9 +148,9 @@ public class HttpReceiverOverHTTPTest
         String content = "0123456789ABCDEF";
         endPoint.addInput(
             "HTTP/1.1 200 OK\r\n" +
-                "Content-length: " + content.length() + "\r\n" +
-                "\r\n" +
-                content);
+            "Content-length: " + content.length() + "\r\n" +
+            "\r\n" +
+            content);
         CompletableFuture<ContentResponse> completable = startExchange();
         connection.getHttpChannel().receive();
 
@@ -171,9 +176,9 @@ public class HttpReceiverOverHTTPTest
         String content2 = "ABCDEF";
         endPoint.addInput(
             "HTTP/1.1 200 OK\r\n" +
-                "Content-length: " + (content1.length() + content2.length()) + "\r\n" +
-                "\r\n" +
-                content1);
+            "Content-length: " + (content1.length() + content2.length()) + "\r\n" +
+            "\r\n" +
+            content1);
         CompletableFuture<ContentResponse> completable = startExchange();
         connection.getHttpChannel().receive();
         endPoint.addInputEOF();
@@ -188,10 +193,11 @@ public class HttpReceiverOverHTTPTest
     public void testReceiveResponseContentIdleTimeout(HttpCompliance compliance) throws Exception
     {
         init(compliance);
-        endPoint.addInput(
-            "HTTP/1.1 200 OK\r\n" +
-                "Content-length: 1\r\n" +
-                "\r\n");
+        endPoint.addInput("""
+            HTTP/1.1 200 OK
+            Content-length: 1
+                            
+            """);
         CompletableFuture<ContentResponse> completable = startExchange();
         connection.getHttpChannel().receive();
         // ByteArrayEndPoint has an idle timeout of 0 by default,
@@ -210,10 +216,11 @@ public class HttpReceiverOverHTTPTest
     public void testReceiveBadResponse(HttpCompliance compliance) throws Exception
     {
         init(compliance);
-        endPoint.addInput(
-            "HTTP/1.1 200 OK\r\n" +
-                "Content-length: A\r\n" +
-                "\r\n");
+        endPoint.addInput("""
+            HTTP/1.1 200 OK
+            Content-length: A
+                            
+            """);
         CompletableFuture<ContentResponse> completable = startExchange();
         connection.getHttpChannel().receive();
 
@@ -258,10 +265,11 @@ public class HttpReceiverOverHTTPTest
         endPoint.setConnection(connection);
 
         // Partial response to trigger the call to fillInterested().
-        endPoint.addInput(
-            "HTTP/1.1 200 OK\r\n" +
-                "Content-Length: 1\r\n" +
-                "\r\n");
+        endPoint.addInput("""
+            HTTP/1.1 200 OK
+            Content-Length: 1
+                                
+            """);
 
         CompletableFuture<ContentResponse> completable = startExchange();
         connection.getHttpChannel().receive();
