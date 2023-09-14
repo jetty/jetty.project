@@ -410,4 +410,33 @@ public class HttpCookieStoreTest
         List<HttpCookie> matches = store.match(cookieURI);
         assertEquals(1, matches.size());
     }
+
+    @ParameterizedTest
+    @ValueSource(strings = {"localhost.", "domain.com."})
+    public void testAddWithURIDomainEndingWithDot(String uriDomain)
+    {
+        HttpCookieStore store = new HttpCookieStore.Default();
+        URI cookieURI = URI.create("http://" + uriDomain);
+        assertTrue(store.add(cookieURI, HttpCookie.from("n1", "v1")));
+
+        List<HttpCookie> matches = store.match(cookieURI);
+        assertEquals(1, matches.size());
+
+        cookieURI = URI.create("http://" + uriDomain.substring(0, uriDomain.length() - 1));
+        matches = store.match(cookieURI);
+        assertEquals(0, matches.size());
+    }
+
+    @ParameterizedTest
+    @ValueSource(strings = {"localhost.", "domain.com."})
+    public void testMatchWithURIDomainEndingWithDot(String uriDomain)
+    {
+        HttpCookieStore store = new HttpCookieStore.Default();
+        URI cookieURI = URI.create("http://" + uriDomain.substring(0, uriDomain.length() - 1));
+        assertTrue(store.add(cookieURI, HttpCookie.from("n1", "v1")));
+
+        cookieURI = URI.create("http://" + uriDomain);
+        List<HttpCookie> matches = store.match(cookieURI);
+        assertEquals(0, matches.size());
+    }
 }
