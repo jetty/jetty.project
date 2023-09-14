@@ -70,7 +70,7 @@ public class RFC6265SetCookieParser implements SetCookieParser
                 }
                 case VALUE_START ->
                 {
-                    if (Character.isWhitespace(ch))
+                    if (isWhitespace(ch))
                         continue;
                     if (ch == '"')
                         quoted = true;
@@ -102,7 +102,7 @@ public class RFC6265SetCookieParser implements SetCookieParser
                 }
                 case ATTRIBUTE ->
                 {
-                    if (Character.isWhitespace(ch))
+                    if (isWhitespace(ch))
                         continue;
                     if (ch != ';')
                     {
@@ -139,7 +139,7 @@ public class RFC6265SetCookieParser implements SetCookieParser
                 }
                 case ATTRIBUTE_VALUE_START ->
                 {
-                    if (Character.isWhitespace(ch))
+                    if (isWhitespace(ch))
                         continue;
                     if (ch == '"')
                         quoted = true;
@@ -185,6 +185,12 @@ public class RFC6265SetCookieParser implements SetCookieParser
             case ATTRIBUTE_VALUE_START -> setAttribute(cookie, name, "") ? cookie.build() : null;
             case ATTRIBUTE_VALUE -> setAttribute(cookie, name, setCookieValue.substring(offset, length).trim()) ? cookie.build() : null;
         };
+    }
+
+    private static boolean isWhitespace(char ch)
+    {
+        // A little more forgiving than RFC 6265.
+        return ch == ' ' || ch == '\t';
     }
 
     private boolean setAttribute(HttpCookie.Builder cookie, String name, String value)
