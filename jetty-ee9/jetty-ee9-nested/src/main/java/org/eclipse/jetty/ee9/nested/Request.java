@@ -79,11 +79,11 @@ import org.eclipse.jetty.http.HttpURI;
 import org.eclipse.jetty.http.HttpVersion;
 import org.eclipse.jetty.http.MetaData;
 import org.eclipse.jetty.http.MimeTypes;
+import org.eclipse.jetty.http.SetCookieParser;
 import org.eclipse.jetty.io.Connection;
 import org.eclipse.jetty.io.RuntimeIOException;
 import org.eclipse.jetty.security.UserIdentity;
 import org.eclipse.jetty.server.HttpCookieUtils;
-import org.eclipse.jetty.server.HttpCookieUtils.SetCookieHttpField;
 import org.eclipse.jetty.server.Server;
 import org.eclipse.jetty.server.Session;
 import org.eclipse.jetty.session.AbstractSessionManager;
@@ -107,11 +107,11 @@ public class Request implements HttpServletRequest
     public static final String __MULTIPART_CONFIG_ELEMENT = "org.eclipse.jetty.multipartConfig";
 
     private static final Logger LOG = LoggerFactory.getLogger(Request.class);
+    private static final SetCookieParser SET_COOKIE_PARSER = SetCookieParser.newInstance();
     private static final Collection<Locale> __defaultLocale = Collections.singleton(Locale.getDefault());
     private static final int INPUT_NONE = 0;
     private static final int INPUT_STREAM = 1;
     private static final int INPUT_READER = 2;
-
     private static final MultiMap<String> NO_PARAMS = new MultiMap<>();
     private static final MultiMap<String> BAD_PARAMS = new MultiMap<>();
 
@@ -289,60 +289,37 @@ public class Request implements HttpServletRequest
             id = getRequestedSessionId();
         }
 
-        Map<String, String> cookies = new HashMap<>();
-        Cookie[] existingCookies = getCookies();
-        if (existingCookies != null)
+        StringBuilder cookieBuilder = new StringBuilder();
+        Cookie[] cookies = getCookies();
+        if (cookies != null)
         {
-            for (Cookie c : getCookies())
+            for (Cookie cookie : cookies)
             {
-                cookies.put(c.getName(), c.getValue());
+                if (!cookieBuilder.isEmpty())
+                    cookieBuilder.append("; ");
+                cookieBuilder.append(cookie.getName()).append("=").append(cookie.getValue());
             }
         }
-
-        //Any Set-Cookies that were set on the response must be set as Cookies on the
-        //PushBuilder, unless the max-age of the cookie is <= 0
-        HttpFields responseFields = getResponse().getHttpFields();
-        for (HttpField field : responseFields)
+        // Any Set-Cookie in the response should be present in the push.
+        for (HttpField field : getResponse().getHttpFields())
         {
             HttpHeader header = field.getHeader();
-            if (header == HttpHeader.SET_COOKIE)
+            if (header == HttpHeader.SET_COOKIE || header == HttpHeader.SET_COOKIE2)
             {
-                String cookieName;
-                String cookieValue;
-                long cookieMaxAge;
-                if (field instanceof SetCookieHttpField)
-                {
-                    HttpCookie cookie =  ((SetCookieHttpField)field).getHttpCookie();
-                    cookieName = cookie.getName();
-                    cookieValue = cookie.getValue();
-                    cookieMaxAge = cookie.getMaxAge();
-                }
+                HttpCookie httpCookie;
+                if (field instanceof HttpCookieUtils.SetCookieHttpField set)
+                    httpCookie = set.getHttpCookie();
                 else
-                {
-                    Map<String, String> cookieFields = HttpCookieUtils.extractBasics(field.getValue());
-                    cookieName = cookieFields.get("name");
-                    cookieValue = cookieFields.get("value");
-                    cookieMaxAge = cookieFields.get("max-age") != null ? Long.parseLong(cookieFields.get("max-age")) : -1;
-                }
-
-                if (cookieMaxAge > 0)
-                    cookies.put(cookieName, cookieValue);
-                else
-                    cookies.remove(cookieName);
+                    httpCookie = SET_COOKIE_PARSER.parse(field.getValue());
+                if (httpCookie == null || httpCookie.isExpired())
+                    continue;
+                if (!cookieBuilder.isEmpty())
+                    cookieBuilder.append("; ");
+                cookieBuilder.append(httpCookie.getName()).append("=").append(httpCookie.getValue());
             }
         }
-
-        if (!cookies.isEmpty())
-        {
-            StringBuilder buff = new StringBuilder();
-            for (Map.Entry<String, String> entry : cookies.entrySet())
-            {
-                if (buff.length() > 0)
-                    buff.append("; ");
-                buff.append(entry.getKey()).append('=').append(entry.getValue());
-            }
-            fields.add(new HttpField(HttpHeader.COOKIE, buff.toString()));
-        }
+        if (!cookieBuilder.isEmpty())
+            fields.put(HttpHeader.COOKIE, cookieBuilder.toString());
 
         String query = getQueryString();
         PushBuilder builder = new PushBuilderImpl(this, fields, getMethod(), query, id);

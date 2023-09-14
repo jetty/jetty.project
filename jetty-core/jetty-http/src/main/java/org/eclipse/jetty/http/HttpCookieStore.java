@@ -23,8 +23,11 @@ import java.util.Iterator;
 import java.util.List;
 import java.util.Locale;
 import java.util.Map;
+import java.util.Objects;
+import java.util.function.Predicate;
 
 import org.eclipse.jetty.util.NanoTime;
+import org.eclipse.jetty.util.StringUtil;
 import org.eclipse.jetty.util.thread.AutoLock;
 
 /**
@@ -121,85 +124,106 @@ public interface HttpCookieStore
     public static class Default implements HttpCookieStore
     {
         private final AutoLock lock = new AutoLock();
-        private final Map<Key, List<HttpCookie>> cookies = new HashMap<>();
+        private final Map<String, List<StoredHttpCookie>> cookies = new HashMap<>();
 
         @Override
         public boolean add(URI uri, HttpCookie cookie)
         {
             // TODO: reject if cookie size is too big?
 
-            boolean secure = HttpScheme.isSecure(uri.getScheme());
-            // Do not accept a secure cookie sent over an insecure channel.
-            if (cookie.isSecure() && !secure)
+            String resolvedDomain = resolveDomain(uri, cookie);
+            if (resolvedDomain == null)
                 return false;
 
-            String cookieDomain = cookie.getDomain();
-            if (cookieDomain != null)
-            {
-                cookieDomain = cookieDomain.toLowerCase(Locale.ENGLISH);
-                if (cookieDomain.startsWith("."))
-                    cookieDomain = cookieDomain.substring(1);
-                // RFC 6265 section 4.1.2.3, ignore Domain if ends with ".".
-                if (cookieDomain.endsWith("."))
-                    cookieDomain = uri.getHost();
-                // Reject top-level domains.
-                // TODO: should also reject "top" domain such as co.uk, gov.au, etc.
-                if (!cookieDomain.contains("."))
-                {
-                    if (!cookieDomain.equals("localhost"))
-                        return false;
-                }
+            String resolvedPath = resolvePath(uri, cookie);
 
-                String domain = uri.getHost();
-                if (domain != null)
-                {
-                    domain = domain.toLowerCase(Locale.ENGLISH);
-                    // If uri.host==foo.example.com, only accept
-                    // cookie.domain==(foo.example.com|example.com).
-                    if (!domain.endsWith(cookieDomain))
-                        return false;
-                    int beforeMatch = domain.length() - cookieDomain.length() - 1;
-                    if (beforeMatch >= 0 && domain.charAt(beforeMatch) != '.')
-                        return false;
-                }
-            }
-            else
-            {
-                // No explicit cookie domain, use the origin domain.
-                cookieDomain = uri.getHost();
-            }
-
-            // Cookies are stored under their domain, so that:
-            // - add(sub.example.com, cookie[Domain]=null) => Key[domain=sub.example.com]
-            // - add(sub.example.com, cookie[Domain]=example.com) => Key[domain=example.com]
+            // Cookies are stored under their resolved domain, so that:
+            // - add(sub.example.com, cookie[Domain]=null) => key=sub.example.com
+            // - add(sub.example.com, cookie[Domain]=example.com) => key=example.com
             // This facilitates the matching algorithm.
-            Key key = new Key(secure, cookieDomain);
-            boolean[] result = new boolean[]{true};
+            boolean[] added = new boolean[1];
+            StoredHttpCookie storedCookie = new StoredHttpCookie(cookie, uri, resolvedDomain, resolvedPath);
             try (AutoLock ignored = lock.lock())
             {
+                String key = resolvedDomain.toLowerCase(Locale.ENGLISH);
                 cookies.compute(key, (k, v) ->
                 {
                     // RFC 6265, section 4.1.2.
                     // Evict an existing cookie with
                     // same name, domain and path.
                     if (v != null)
-                        v.remove(cookie);
+                        v.remove(storedCookie);
 
                     // Add only non-expired cookies.
                     if (cookie.isExpired())
-                    {
-                        result[0] = false;
                         return v == null || v.isEmpty() ? null : v;
-                    }
 
+                    added[0] = true;
                     if (v == null)
                         v = new ArrayList<>();
-                    v.add(new Cookie(cookie));
+                    v.add(storedCookie);
                     return v;
                 });
             }
 
-            return result[0];
+            return added[0];
+        }
+
+        private String resolveDomain(URI uri, HttpCookie cookie)
+        {
+            String uriDomain = uri.getHost();
+            if (uriDomain == null)
+                return null;
+
+            String cookieDomain = cookie.getDomain();
+            // No explicit cookie domain, use the origin domain.
+            if (cookieDomain == null)
+                return uriDomain;
+
+            String resolvedDomain = cookieDomain;
+            if (resolvedDomain.startsWith("."))
+                resolvedDomain = cookieDomain.substring(1);
+            // RFC 6265 section 4.1.2.3, ignore Domain if ends with ".".
+            if (resolvedDomain.endsWith("."))
+                resolvedDomain = uriDomain;
+            // Reject top-level domains.
+            // TODO: should also reject "top" domain such as co.uk, gov.au, etc.
+            if (!resolvedDomain.contains("."))
+            {
+                if (!resolvedDomain.equalsIgnoreCase("localhost"))
+                    return null;
+            }
+
+            // Reject if the resolved domain is not either
+            // the same or a parent domain of the URI domain.
+            if (!isSameOrSubDomain(uriDomain, resolvedDomain))
+                return null;
+
+            return resolvedDomain;
+        }
+
+        private String resolvePath(URI uri, HttpCookie cookie)
+        {
+            // RFC 6265, section 5.1.4 and 5.2.4.
+            // Note that cookies with the Path attribute different from the
+            // URI path are accepted, as specified in sections 8.5 and 8.6.
+            String resolvedPath = cookie.getPath();
+            if (resolvedPath == null || !resolvedPath.startsWith("/"))
+            {
+                String uriPath = uri.getRawPath();
+                if (StringUtil.isBlank(uriPath) || !uriPath.startsWith("/"))
+                {
+                    resolvedPath = "/";
+                }
+                else
+                {
+                    int lastSlash = uriPath.lastIndexOf('/');
+                    resolvedPath = uriPath.substring(0, lastSlash);
+                    if (resolvedPath.isEmpty())
+                        resolvedPath = "/";
+                }
+            }
+            return resolvedPath;
         }
 
         @Override
@@ -209,6 +233,8 @@ public interface HttpCookieStore
             {
                 return cookies.values().stream()
                     .flatMap(Collection::stream)
+                    .filter(Predicate.not(StoredHttpCookie::isExpired))
+                    .map(HttpCookie.class::cast)
                     .toList();
             }
         }
@@ -216,13 +242,17 @@ public interface HttpCookieStore
         @Override
         public List<HttpCookie> match(URI uri)
         {
-            List<HttpCookie> result = new ArrayList<>();
-            boolean secure = HttpScheme.isSecure(uri.getScheme());
             String uriDomain = uri.getHost();
-            String path = uri.getPath();
-            if (path == null || path.trim().isEmpty())
+            if (uriDomain == null)
+                return List.of();
+
+            String path = uri.getRawPath();
+            if (path == null || path.isBlank())
                 path = "/";
 
+            boolean secure = HttpScheme.isSecure(uri.getScheme());
+
+            List<HttpCookie> result = new ArrayList<>();
             try (AutoLock ignored = lock.lock())
             {
                 // Given the way cookies are stored in the Map, the matching
@@ -235,15 +265,14 @@ public interface HttpCookieStore
                 // - Key[domain=example.com]
                 // - chop domain to com
                 //   invalid domain, exit iteration.
-                String domain = uriDomain;
-                while (true)
+                String domain = uriDomain.toLowerCase(Locale.ENGLISH);
+                while (domain != null)
                 {
-                    Key key = new Key(secure, domain);
-                    List<HttpCookie> stored = cookies.get(key);
-                    Iterator<HttpCookie> iterator = stored == null ? Collections.emptyIterator() : stored.iterator();
+                    List<StoredHttpCookie> stored = cookies.get(domain);
+                    Iterator<StoredHttpCookie> iterator = stored == null ? Collections.emptyIterator() : stored.iterator();
                     while (iterator.hasNext())
                     {
-                        HttpCookie cookie = iterator.next();
+                        StoredHttpCookie cookie = iterator.next();
 
                         // Check and remove expired cookies.
                         if (cookie.isExpired())
@@ -257,24 +286,16 @@ public interface HttpCookieStore
                             continue;
 
                         // Match the domain.
-                        if (!domainMatches(uriDomain, key.domain, cookie.getDomain()))
+                        if (!domainMatches(uriDomain, cookie.domain, cookie.getWrapped().getDomain()))
                             continue;
 
                         // Match the path.
-                        if (!pathMatches(path, cookie.getPath()))
+                        if (!pathMatches(path, cookie.path))
                             continue;
 
                         result.add(cookie);
                     }
-
-                    int dot = domain.indexOf('.');
-                    if (dot < 0)
-                        break;
-                    // Remove one subdomain.
-                    domain = domain.substring(dot + 1);
-                    // Exit if the top-level domain was reached.
-                    if (domain.indexOf('.') < 0)
-                        break;
+                    domain = parentDomain(domain);
                 }
             }
 
@@ -283,64 +304,97 @@ public interface HttpCookieStore
 
         private static boolean domainMatches(String uriDomain, String domain, String cookieDomain)
         {
-            if (uriDomain == null)
-                return true;
-            if (domain != null)
-                domain = domain.toLowerCase(Locale.ENGLISH);
-            uriDomain = uriDomain.toLowerCase(Locale.ENGLISH);
-            if (cookieDomain != null)
-                cookieDomain = cookieDomain.toLowerCase(Locale.ENGLISH);
+            // If the cookie has no domain, or ends with ".", it must only be sent to the origin domain.
             if (cookieDomain == null || cookieDomain.endsWith("."))
-            {
-                // RFC 6265, section 4.1.2.3.
-                // No cookie domain -> cookie sent only to origin server.
-                return uriDomain.equals(domain);
-            }
-            if (cookieDomain.startsWith("."))
-                cookieDomain = cookieDomain.substring(1);
-            if (uriDomain.endsWith(cookieDomain))
-            {
-                // The domain is the same as, or a subdomain of, the cookie domain.
-                int beforeMatch = uriDomain.length() - cookieDomain.length() - 1;
-                // Domains are the same.
-                if (beforeMatch == -1)
-                    return true;
-                // Verify it is a proper subdomain such as bar.foo.com,
-                // not just a suffix of a domain such as bazfoo.com.
-                return uriDomain.charAt(beforeMatch) == '.';
-            }
-            return false;
+                return uriDomain.equalsIgnoreCase(domain);
+            return isSameOrSubDomain(uriDomain, cookieDomain);
         }
 
-        private static boolean pathMatches(String path, String cookiePath)
+        private static boolean isSameOrSubDomain(String subDomain, String domain)
+        {
+            int subDomainLength = subDomain.length();
+            int domainLength = domain.length();
+            // Case-insensitive version of subDomain.endsWith(domain).
+            if (!subDomain.regionMatches(true, subDomainLength - domainLength, domain, 0, domainLength))
+                return false;
+            // Make sure it is a subdomain.
+            int beforeMatch = subDomainLength - domainLength - 1;
+            // Domains are the same.
+            if (beforeMatch < 0)
+                return true;
+            // Verify it is a proper subdomain such as bar.foo.com,
+            // not just a suffix of a domain such as bazfoo.com.
+            return subDomain.charAt(beforeMatch) == '.';
+        }
+
+        private static boolean pathMatches(String uriPath, String cookiePath)
         {
             if (cookiePath == null)
                 return true;
             // RFC 6265, section 5.1.4, path matching algorithm.
-            if (path.equals(cookiePath))
+            if (uriPath.equals(cookiePath))
                 return true;
-            if (path.startsWith(cookiePath))
-                return cookiePath.endsWith("/") || path.charAt(cookiePath.length()) == '/';
+            if (uriPath.startsWith(cookiePath))
+                return cookiePath.endsWith("/") || uriPath.charAt(cookiePath.length()) == '/';
             return false;
         }
 
         @Override
         public boolean remove(URI uri, HttpCookie cookie)
         {
-            Key key = new Key(HttpScheme.isSecure(uri.getScheme()), uri.getHost());
+            String uriDomain = uri.getHost();
+            if (uriDomain == null)
+                return false;
+
+            String resolvedPath = resolvePath(uri, cookie);
+
+            boolean[] removed = new boolean[1];
             try (AutoLock ignored = lock.lock())
             {
-                boolean[] result = new boolean[1];
-                cookies.compute(key, (k, v) ->
+                String domain = uriDomain.toLowerCase(Locale.ENGLISH);
+                while (domain != null)
                 {
-                    if (v == null)
-                        return null;
-                    boolean removed = v.remove(cookie);
-                    result[0] = removed;
-                    return v.isEmpty() ? null : v;
-                });
-                return result[0];
+                    cookies.compute(domain, (k, v) ->
+                    {
+                        if (v == null)
+                            return null;
+
+                        Iterator<StoredHttpCookie> iterator = v.iterator();
+                        while (iterator.hasNext())
+                        {
+                            StoredHttpCookie storedCookie = iterator.next();
+                            if (uriDomain.equalsIgnoreCase(storedCookie.uri.getHost()))
+                            {
+                                if (storedCookie.path.equals(resolvedPath))
+                                {
+                                    if (storedCookie.getWrapped().getName().equals(cookie.getName()))
+                                    {
+                                        iterator.remove();
+                                        removed[0] = true;
+                                    }
+                                }
+                            }
+                        }
+
+                        return v.isEmpty() ? null : v;
+                    });
+                    domain = parentDomain(domain);
+                }
             }
+            return removed[0];
+        }
+
+        private String parentDomain(String domain)
+        {
+            int dot = domain.indexOf('.');
+            if (dot < 0)
+                return null;
+            // Remove one subdomain.
+            domain = domain.substring(dot + 1);
+            // Exit if the top-level domain was reached.
+            if (domain.indexOf('.') < 0)
+                return null;
+            return domain;
         }
 
         @Override
@@ -355,22 +409,19 @@ public interface HttpCookieStore
             }
         }
 
-        private record Key(boolean secure, String domain)
-        {
-            private Key(boolean secure, String domain)
-            {
-                this.secure = secure;
-                this.domain = domain.toLowerCase(Locale.ENGLISH);
-            }
-        }
-
-        private static class Cookie extends HttpCookie.Wrapper
+        private static class StoredHttpCookie extends HttpCookie.Wrapper
         {
             private final long creationNanoTime = NanoTime.now();
+            private final URI uri;
+            private final String domain;
+            private final String path;
 
-            public Cookie(HttpCookie wrapped)
+            private StoredHttpCookie(HttpCookie wrapped, URI uri, String domain, String path)
             {
                 super(wrapped);
+                this.uri = Objects.requireNonNull(uri);
+                this.domain = Objects.requireNonNull(domain);
+                this.path = Objects.requireNonNull(path);
             }
 
             @Override
@@ -381,6 +432,24 @@ public interface HttpCookieStore
                     return true;
                 Instant expires = getExpires();
                 return expires != null && Instant.now().isAfter(expires);
+            }
+
+            @Override
+            public int hashCode()
+            {
+                return Objects.hash(getWrapped().getName(), domain.toLowerCase(Locale.ENGLISH), path);
+            }
+
+            @Override
+            public boolean equals(Object obj)
+            {
+                if (this == obj)
+                    return true;
+                if (!(obj instanceof StoredHttpCookie that))
+                    return false;
+                return getName().equals(that.getName()) &&
+                       domain.equalsIgnoreCase(that.domain) &&
+                       path.equals(that.path);
             }
         }
     }

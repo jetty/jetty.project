@@ -56,9 +56,12 @@ public class CookieCache implements CookieParser.Handler
         else
         {
             Map<String, String> attributes = new HashMap<>();
-            attributes.put(HttpCookie.DOMAIN_ATTRIBUTE, cookieDomain);
-            attributes.put(HttpCookie.PATH_ATTRIBUTE, cookiePath);
-            attributes.put(HttpCookie.COMMENT_ATTRIBUTE, cookieComment);
+            if (!StringUtil.isEmpty(cookieDomain))
+                attributes.put(HttpCookie.DOMAIN_ATTRIBUTE, cookieDomain);
+            if (!StringUtil.isEmpty(cookiePath))
+                attributes.put(HttpCookie.PATH_ATTRIBUTE, cookiePath);
+            if (!StringUtil.isEmpty(cookieComment))
+                attributes.put(HttpCookie.COMMENT_ATTRIBUTE, cookieComment);
             _cookieList.add(HttpCookie.from(cookieName, cookieValue, cookieVersion, attributes));
         }
     }

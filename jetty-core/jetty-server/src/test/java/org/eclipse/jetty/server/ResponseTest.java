@@ -23,6 +23,7 @@ import org.eclipse.jetty.http.HttpFields;
 import org.eclipse.jetty.http.HttpHeader;
 import org.eclipse.jetty.http.HttpStatus;
 import org.eclipse.jetty.http.HttpTester;
+import org.eclipse.jetty.http.SetCookieParser;
 import org.eclipse.jetty.io.Content;
 import org.eclipse.jetty.util.Callback;
 import org.eclipse.jetty.util.component.LifeCycle;
@@ -396,9 +397,7 @@ public class ResponseTest
                             if (field.getHeader() != HttpHeader.SET_COOKIE)
                                 continue;
 
-                            HttpCookie cookie = HttpCookieUtils.getSetCookie(field);
-                            if (cookie == null)
-                                continue;
+                            HttpCookie cookie = SetCookieParser.newInstance().parse(field.getValue());
 
                             i.set(new HttpCookieUtils.SetCookieHttpField(
                                 HttpCookie.build(cookie)
@@ -411,7 +410,7 @@ public class ResponseTest
                 });
                 response.setStatus(200);
                 Response.addCookie(response, HttpCookie.from("name", "test1"));
-                response.getHeaders().add(HttpHeader.SET_COOKIE, "other=test2; Domain=wrong; SameSite=wrong; Attr=x");
+                response.getHeaders().add(HttpHeader.SET_COOKIE, "other=test2; Domain=original; SameSite=None; Attr=x");
                 Content.Sink.write(response, true, "OK", callback);
                 return true;
             }
