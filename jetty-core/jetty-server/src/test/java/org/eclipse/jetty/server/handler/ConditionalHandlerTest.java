@@ -79,8 +79,8 @@ public class ConditionalHandlerTest
     public static Stream<ConditionalHandler> conditionalHandlers()
     {
         return Stream.of(
-            new TestNextHandler(ConditionalHandler.NotHandled.DO_NOT_HANDLE),
-            new TestNextHandler(ConditionalHandler.NotHandled.DO_NOT_HANDLE)
+            new TestNextHandler(ConditionalHandler.ConditionNotMetAction.DO_NOT_HANDLE),
+            new TestNextHandler(ConditionalHandler.ConditionNotMetAction.DO_NOT_HANDLE)
             {
                 @Override
                 protected boolean doNotHandle(Request request, Response response, Callback callback) throws Exception
@@ -96,7 +96,7 @@ public class ConditionalHandlerTest
                 }
             },
             new TestSkipThisHandler(),
-            new TestNextHandler(ConditionalHandler.NotHandled.SKIP_NEXT)
+            new TestNextHandler(ConditionalHandler.ConditionNotMetAction.SKIP_NEXT)
         );
     }
 
@@ -136,8 +136,8 @@ public class ConditionalHandlerTest
     @MethodSource("conditionalHandlers")
     public void testInet(TestConditionalHandler testHandler) throws Exception
     {
-        testHandler.includeInetAddress("192.168.128.0-192.168.128.128");
-        testHandler.excludeInetAddress("192.168.128.30-192.168.128.39");
+        testHandler.includeInetAddressPattern("192.168.128.0-192.168.128.128");
+        testHandler.excludeInetAddressPattern("192.168.128.30-192.168.128.39");
         startServer(testHandler);
         String response = _connector.getResponse("""
             GET /foo HTTP/1.0
@@ -207,11 +207,11 @@ public class ConditionalHandlerTest
     {
         final String _expectedWhenNotApplied;
 
-        public TestConditionalHandler(NotHandled notHandled)
+        public TestConditionalHandler(ConditionNotMetAction conditionNotMetAction)
         {
-            super(notHandled);
+            super(conditionNotMetAction);
 
-            _expectedWhenNotApplied = switch (notHandled)
+            _expectedWhenNotApplied = switch (conditionNotMetAction)
             {
                 case DO_NOT_HANDLE -> "404 Not Found";
                 case SKIP_THIS, SKIP_NEXT -> "200 OK";
@@ -228,7 +228,7 @@ public class ConditionalHandlerTest
     {
         TestSkipThisHandler()
         {
-            super(NotHandled.SKIP_THIS);
+            super(ConditionNotMetAction.SKIP_THIS);
         }
 
         @Override
@@ -241,9 +241,9 @@ public class ConditionalHandlerTest
 
     public static class TestNextHandler extends TestConditionalHandler
     {
-        public TestNextHandler(NotHandled notHandled)
+        public TestNextHandler(ConditionNotMetAction conditionNotMetAction)
         {
-            super(notHandled);
+            super(conditionNotMetAction);
             setHandler(new Handler.Wrapper()
             {
                 @Override

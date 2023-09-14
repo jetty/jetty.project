@@ -59,7 +59,7 @@ import static java.lang.invoke.MethodType.methodType;
  * directly call the next {@code Handler} if {@code doHandler} has not been extended.
  * </p>
  * <p>
- * If the conditions are not met, then the behaviour will be determined by the {@link NotHandled} passed to the
+ * If the conditions are not met, then the behaviour will be determined by the {@link ConditionNotMetAction} passed to the
  * constructor.
  * </p>
  *
@@ -72,7 +72,7 @@ public class ConditionalHandler extends Handler.Wrapper
      * Enumeration of the actions that can be taken if the request is to not be handled due to failing to
      * meet the conditions.
      */
-    public enum NotHandled
+    public enum ConditionNotMetAction
     {
         /**
          * If the conditions are not met, then the {@link #doNotHandle(Request, Response, Callback)} method is invoked,
@@ -99,7 +99,7 @@ public class ConditionalHandler extends Handler.Wrapper
         SKIP_NEXT,
     }
 
-    private final NotHandled _notHandled;
+    private final ConditionNotMetAction _conditionNotMetAction;
     private final IncludeExclude<String> _methods = new IncludeExclude<>();
     private final IncludeExclude<String> _paths = new IncludeExclude<>(PathSpecSet.class);
     private final IncludeExcludeSet<Predicate<Request>, Request> _predicates = new IncludeExcludeSet<>(PredicateSet.class);
@@ -107,18 +107,18 @@ public class ConditionalHandler extends Handler.Wrapper
 
     public ConditionalHandler()
     {
-        this(NotHandled.DO_NOT_HANDLE);
+        this(ConditionNotMetAction.DO_NOT_HANDLE);
     }
 
     public ConditionalHandler(Handler nextHandler)
     {
-        this(NotHandled.DO_NOT_HANDLE);
+        this(ConditionNotMetAction.DO_NOT_HANDLE);
         setHandler(nextHandler);
     }
 
-    public ConditionalHandler(NotHandled notHandled)
+    public ConditionalHandler(ConditionNotMetAction conditionNotMetAction)
     {
-        _notHandled = notHandled;
+        _conditionNotMetAction = conditionNotMetAction;
     }
 
     /**
@@ -242,7 +242,7 @@ public class ConditionalHandler extends Handler.Wrapper
      *              tested against the {@link ConnectionMetaData#getRemoteSocketAddress() getRemoteSocketAddress()} of
      *              {@link Request#getConnectionMetaData()}.
      */
-    public void includeInetAddress(String... patterns)
+    public void includeInetAddressPattern(String... patterns)
     {
         for (String p : patterns)
             include(InetAddressPattern.from(p));
@@ -268,7 +268,7 @@ public class ConditionalHandler extends Handler.Wrapper
      *              tested against the {@link ConnectionMetaData#getRemoteSocketAddress() getRemoteSocketAddress()} of
      *              {@link Request#getConnectionMetaData()}.
      */
-    public void excludeInetAddress(String... patterns)
+    public void excludeInetAddressPattern(String... patterns)
     {
         for (String p : patterns)
             exclude(InetAddressPattern.from(p));
@@ -318,17 +318,17 @@ public class ConditionalHandler extends Handler.Wrapper
         }
     }
 
-    private boolean checkMethod(Request request)
+    private boolean testMethods(Request request)
     {
         return _methods.test(request.getMethod());
     }
 
-    private boolean checkPath(Request request)
+    private boolean testPaths(Request request)
     {
         return _paths.test(Request.getPathInContext(request));
     }
 
-    private boolean checkPredicates(Request request)
+    private boolean testPredicates(Request request)
     {
         return _predicates.test(request);
     }
@@ -360,11 +360,12 @@ public class ConditionalHandler extends Handler.Wrapper
             : lookup.findVirtual(next.getClass(), "handle", handleType).bindTo(next);
 
         // Determine the handling if the conditions are not met
-        MethodHandle doNotHandle = switch (_notHandled)
+        MethodHandle doNotHandle = switch (_conditionNotMetAction)
         {
             case DO_NOT_HANDLE ->
                 // Invoke the doNotHandle method
                 lookup.findVirtual(ConditionalHandler.class, "doNotHandle", handleType).bindTo(this);
+
             case SKIP_THIS ->
             {
                 // Skip the doNotHandle method of this handler and call handle of the next handler
@@ -393,7 +394,7 @@ public class ConditionalHandler extends Handler.Wrapper
         // If we have method conditions, guard the doHandle method with checkMethod
         if (!_methods.isEmpty())
         {
-            MethodHandle checkMethod = lookup.findVirtual(ConditionalHandler.class, "checkMethod", methodType(boolean.class, Request.class)).bindTo(this);
+            MethodHandle checkMethod = lookup.findVirtual(ConditionalHandler.class, "testMethods", methodType(boolean.class, Request.class)).bindTo(this);
             _doHandle = MethodHandles.guardWithTest(
                 MethodHandles.dropArguments(checkMethod, 1, Response.class, Callback.class),
                 _doHandle,
@@ -403,7 +404,7 @@ public class ConditionalHandler extends Handler.Wrapper
         // If we have path conditions, guard the doHandle method with checkPaths
         if (!_paths.isEmpty())
         {
-            MethodHandle checkPath = lookup.findVirtual(ConditionalHandler.class, "checkPath", methodType(boolean.class, Request.class)).bindTo(this);
+            MethodHandle checkPath = lookup.findVirtual(ConditionalHandler.class, "testPaths", methodType(boolean.class, Request.class)).bindTo(this);
             _doHandle = MethodHandles.guardWithTest(
                 MethodHandles.dropArguments(checkPath, 1, Response.class, Callback.class),
                 _doHandle,
@@ -413,7 +414,7 @@ public class ConditionalHandler extends Handler.Wrapper
         // If we have predicate conditions, guard the doHandle method with checkPredicates
         if (!_predicates.isEmpty())
         {
-            MethodHandle checkPredicates = lookup.findVirtual(ConditionalHandler.class, "checkPredicates", methodType(boolean.class, Request.class)).bindTo(this);
+            MethodHandle checkPredicates = lookup.findVirtual(ConditionalHandler.class, "testPredicates", methodType(boolean.class, Request.class)).bindTo(this);
             _doHandle = MethodHandles.guardWithTest(
                 MethodHandles.dropArguments(checkPredicates, 1, Response.class, Callback.class),
                 _doHandle,
@@ -421,6 +422,20 @@ public class ConditionalHandler extends Handler.Wrapper
         }
 
         super.doStart();
+    }
+
+    public boolean nonMethodHandle(Request request, Response response, Callback callback) throws Exception
+    {
+        // This is the code we would have in handle if MethodHandlers were not used
+        if (testMethods(request) && testPaths(request) && testPredicates(request))
+            return doHandle(request, response, callback);
+
+        return switch (_conditionNotMetAction)
+        {
+            case DO_NOT_HANDLE -> doNotHandle(request, response, callback);
+            case SKIP_THIS -> getHandler().handle(request, response, callback);
+            case SKIP_NEXT -> getHandler() instanceof Singleton singleton && singleton.handle(request, response, callback);
+        };
     }
 
     @Override
