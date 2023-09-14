@@ -727,6 +727,11 @@ public class TypeUtil
         return StreamSupport.stream(new ServiceLoaderSpliterator<>(serviceLoader), false);
     }
 
+    /**
+     * A Predicate that is always true, with optimized {@code and}/{@code or}/{@code not} methods.
+     * @param <T> The type of the predicate test
+     * @return true
+     */
     public static <T> Predicate<T> truePredicate()
     {
         return new Predicate<T>()
@@ -758,6 +763,11 @@ public class TypeUtil
         };
     }
 
+    /**
+     * A {@link Predicate} that is always false, with optimized {@code and}/{@code or}/{@code not} methods.
+     * @param <T> The type of the predicate test
+     * @return true
+     */
     public static <T> Predicate<T> falsePredicate()
     {
         return new Predicate<T>()

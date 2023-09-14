@@ -42,8 +42,8 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 /**
- * A {@link Handler.Wrapper} that may conditionally apply an action to a request.
- * The conditions are implemented by an {@link IncludeExclude} of:
+ * A {@link Handler.Wrapper} that may conditionally handle a {@link Request}.
+ * The conditions are implemented by {@link IncludeExclude}s of:
  * <ul>
  *     <li>A method name, which can be efficiently matched</li>
  *     <li>A {@link PathSpec} or sting representation, which can be efficient matched.</li>
@@ -418,10 +418,10 @@ public class ConditionalHandler extends Handler.Wrapper
     {
         dumpObjects(out, indent,
             new DumpableCollection("included methods", _methods.getIncluded()),
-            new DumpableCollection("excluded methods", _methods.getExcluded()),
             new DumpableCollection("included paths", _pathSpecs.getIncluded()),
-            new DumpableCollection("excluded paths", _pathSpecs.getExcluded()),
             new DumpableCollection("included predicates", _predicates.getIncluded()),
+            new DumpableCollection("excluded methods", _methods.getExcluded()),
+            new DumpableCollection("excluded paths", _pathSpecs.getExcluded()),
             new DumpableCollection("excluded predicates", _predicates.getExcluded())
         );
     }
@@ -446,38 +446,33 @@ public class ConditionalHandler extends Handler.Wrapper
 
     /**
      * Create a {@link Predicate} over {@link Request} built from the {@link Predicate#and(Predicate) and} of one or more of: <ul>
+     *     <li>{@link TypeUtil#truePredicate()}</li>
      *     <li>{@link ConnectorPredicate}</li>
      *     <li>{@link InetAddressPatternPredicate}</li>
      *     <li>{@link MethodPredicate}</li>
      *     <li>{@link PathSpecPredicate}</li>
      * </ul>
      * @param connectorName The connector name or {@code null}
-     * @param addressPattern An {@link InetAddressPattern} or {@code null}
+     * @param inetAddressPattern An {@link InetAddressPattern} or {@code null}
      * @param method A {@link org.eclipse.jetty.http.HttpMethod} name or {@code null}
      * @param pathSpec A {@link PathSpec} or {@code null}
      * @return the combined {@link Predicate} over {@link Request}
      */
-    public static Predicate<Request> from(String connectorName, InetAddressPattern addressPattern, String method, PathSpec pathSpec)
+    public static Predicate<Request> from(String connectorName, InetAddressPattern inetAddressPattern, String method, PathSpec pathSpec)
     {
-        Predicate<Request> predicate = connectorName == null ? null : new ConnectorPredicate(connectorName);
+        Predicate<Request> predicate = TypeUtil.truePredicate();
 
-        if (addressPattern != null)
-        {
-            InetAddressPatternPredicate inetAddressPatternPredicate = new InetAddressPatternPredicate(addressPattern);
-            predicate = predicate == null ? inetAddressPatternPredicate : predicate.and(inetAddressPatternPredicate);
-        }
+        if (connectorName != null)
+            predicate = predicate.and(new ConnectorPredicate(connectorName));
+
+        if (inetAddressPattern != null)
+            predicate = predicate.and(new InetAddressPatternPredicate(inetAddressPattern));
 
         if (method != null)
-        {
-            MethodPredicate methodPredicate = new MethodPredicate(method);
-            predicate = predicate == null ? methodPredicate : predicate.and(methodPredicate);
-        }
+            predicate = predicate.and(new MethodPredicate(method));
 
         if (pathSpec != null)
-        {
-            PathSpecPredicate pathSpecPredicate = new PathSpecPredicate(pathSpec);
-            predicate = predicate == null ? pathSpecPredicate : predicate.and(pathSpecPredicate);
-        }
+            predicate = predicate.and(new PathSpecPredicate(pathSpec));
         
         return predicate;
     }
