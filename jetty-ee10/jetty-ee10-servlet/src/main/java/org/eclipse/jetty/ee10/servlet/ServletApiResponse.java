@@ -196,30 +196,45 @@ public class ServletApiResponse implements HttpServletResponse
     @Override
     public void setDateHeader(String name, long date)
     {
+        if (name == null)
+            return; // Spec is to do nothing
+
         getResponse().getHeaders().putDate(name, date);
     }
 
     @Override
     public void addDateHeader(String name, long date)
     {
+        if (name == null)
+            return; // Spec is to do nothing
+
         getResponse().getHeaders().addDateField(name, date);
     }
 
     @Override
     public void setHeader(String name, String value)
     {
+        if (name == null)
+            return; // Spec is to do nothing
+
         getResponse().getHeaders().put(name, value);
     }
 
     @Override
     public void addHeader(String name, String value)
     {
+        if (name == null || value == null)
+            return; // Spec is to do nothing
+
         getResponse().getHeaders().add(name, value);
     }
 
     @Override
     public void setIntHeader(String name, int value)
     {
+        if (name == null)
+            return; // Spec is to do nothing
+
         // TODO do we need int versions?
         if (!isCommitted())
             getResponse().getHeaders().put(name, value);
@@ -228,6 +243,9 @@ public class ServletApiResponse implements HttpServletResponse
     @Override
     public void addIntHeader(String name, int value)
     {
+        if (name == null)
+            return; // Spec is to do nothing
+
         // TODO do we need a native version?
         if (!isCommitted())
             getResponse().getHeaders().add(name, Integer.toString(value));
