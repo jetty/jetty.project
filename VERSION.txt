@@ -854,7 +854,7 @@ jetty-9.4.39.v20210325 - 25 March 2021
    CVE-2021-28165
  + 6085 Jetty keeps Sessions in use after "Duplicate valid session cookies"
    Message
- + 6101 Normalise ambiguous URIs - Resolves CVE-2021-28164
+ + 6101 Normalize ambiguous URIs - Resolves CVE-2021-28164
  + 6102 Exclude webapps directory from deployment scan - Resolves
    CVE-2021-28163
 
