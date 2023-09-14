@@ -188,7 +188,7 @@ public class QoSHandler extends Handler.Wrapper
         int permits = state.getAndDecrement();
         if (permits > 0)
         {
-            return forward(request, response, callback);
+            return handleWithPermit(request, response, callback);
         }
         else
         {
@@ -252,7 +252,7 @@ public class QoSHandler extends Handler.Wrapper
         Response.writeError(request, response, callback, status, null, failure);
     }
 
-    private boolean forward(Request request, Response response, Callback callback) throws Exception
+    private boolean handleWithPermit(Request request, Response response, Callback callback) throws Exception
     {
         if (LOG.isDebugEnabled())
             LOG.debug("{} forwarding {}", this, request);
@@ -268,11 +268,14 @@ public class QoSHandler extends Handler.Wrapper
         Entry entry = new Entry(request, response, callback, priority);
         queues.compute(priority, (k, v) ->
         {
-            if (v != null)
-                return v;
-            priorities.add(priority);
-            return new ConcurrentLinkedQueue<>();
-        }).offer(entry);
+            if (v == null)
+            {
+                priorities.add(priority);
+                v = new ConcurrentLinkedQueue<>();
+            }
+            v.offer(entry);
+            return v;
+        });
         timeouts.schedule(entry);
     }
 
@@ -304,6 +307,8 @@ public class QoSHandler extends Handler.Wrapper
         for (Integer priority : priorities)
         {
             Queue<Entry> queue = queues.get(priority);
+            if (queue == null)
+                return false;
             Entry entry = queue.poll();
             if (entry != null)
             {
@@ -364,7 +369,7 @@ public class QoSHandler extends Handler.Wrapper
         {
             try
             {
-                boolean handled = forward(request, response, callback);
+                boolean handled = handleWithPermit(request, response, callback);
                 if (LOG.isDebugEnabled())
                     LOG.debug("{} handled={} {}", QoSHandler.this, handled, request);
                 if (!handled)
