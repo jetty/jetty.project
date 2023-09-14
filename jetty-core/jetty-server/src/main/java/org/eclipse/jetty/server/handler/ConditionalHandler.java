@@ -58,7 +58,33 @@ import org.slf4j.LoggerFactory;
  * If the conditions are not met, then the behaviour will be determined by the {@link ConditionNotMetAction} passed to the
  * constructor.
  * </p>
+ * <p>
+ * This class may be used as the base class of handler providing optional behavior: <pre>{@code
+ * public class MyOptionalHandler extends ConditionalHandler
+ * {
+ *     MyOptionalHandler()
+ *     {
+ *         super(ConditionNotMetAction.SKIP_THIS);
+ *     }
  *
+ *     @Override
+ *     public boolean doHandle(Request request, Response response, Callback callback)
+ *     {
+ *         response.getHeaders().add("Test", "My Optional Handling");
+ *         return getHandler().handle(request, response, callback);
+ *     }
+ * }
+ * }</pre>
+ * If the conditions added to {@code MyOptionalHandler} are met, then the {@code doHandle} method is called
+ * and a response header added before invoking the next handler, otherwise the next handler is directly invoked.
+ * </p>
+ * <p>
+ * Alternately, this class may be used directly to make a following {@link Handler.Wrapper} optional: <pre>{@code
+ *     new ConditionalHandler(ConditionNotMetAction.SKIP_NEXT, new MyHandlerWrapper());
+ * }</pre>
+ * If the conditions added to {@code MyOptionalHandler} are met, then the {@code MyHandlerWrapper} is invoked normally,
+ * otherwise the next handler after the {@code MyHandlerWrapper} is directly invoked.
+ * </p>
  */
 public class ConditionalHandler extends Handler.Wrapper
 {
