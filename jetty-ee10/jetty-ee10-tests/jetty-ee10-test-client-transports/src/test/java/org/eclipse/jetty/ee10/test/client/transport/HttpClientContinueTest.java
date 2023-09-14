@@ -24,6 +24,7 @@ import java.net.Socket;
 import java.nio.ByteBuffer;
 import java.nio.charset.StandardCharsets;
 import java.util.Random;
+import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicReference;
@@ -37,9 +38,9 @@ import jakarta.servlet.http.HttpServletResponse;
 import org.eclipse.jetty.client.AsyncRequestContent;
 import org.eclipse.jetty.client.BufferingResponseListener;
 import org.eclipse.jetty.client.BytesRequestContent;
+import org.eclipse.jetty.client.CompletableResponseListener;
 import org.eclipse.jetty.client.ContentResponse;
 import org.eclipse.jetty.client.ContinueProtocolHandler;
-import org.eclipse.jetty.client.FutureResponseListener;
 import org.eclipse.jetty.client.Request;
 import org.eclipse.jetty.client.Response;
 import org.eclipse.jetty.client.Result;
@@ -749,8 +750,7 @@ public class HttpClientContinueTest extends AbstractTest
             Request clientRequest = client.newRequest("localhost", server.getLocalPort())
                 .body(new BytesRequestContent(bytes))
                 .timeout(5, TimeUnit.SECONDS);
-            FutureResponseListener listener = new FutureResponseListener(clientRequest);
-            clientRequest.send(listener);
+            CompletableFuture<ContentResponse> completable = new CompletableResponseListener(clientRequest).send();
 
             try (Socket socket = server.accept())
             {
@@ -773,7 +773,7 @@ public class HttpClientContinueTest extends AbstractTest
                 output.flush();
             }
 
-            ContentResponse response = listener.get(5, TimeUnit.SECONDS);
+            ContentResponse response = completable.get(5, TimeUnit.SECONDS);
             assertEquals(HttpStatus.OK_200, response.getStatus());
             assertArrayEquals(bytes, response.getContent());
         }

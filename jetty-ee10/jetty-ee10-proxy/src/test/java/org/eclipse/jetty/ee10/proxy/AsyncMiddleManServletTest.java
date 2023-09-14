@@ -35,6 +35,7 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Random;
+import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.ThreadLocalRandom;
 import java.util.concurrent.TimeUnit;
@@ -54,8 +55,8 @@ import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletResponse;
 import org.eclipse.jetty.client.AsyncRequestContent;
 import org.eclipse.jetty.client.BytesRequestContent;
+import org.eclipse.jetty.client.CompletableResponseListener;
 import org.eclipse.jetty.client.ContentResponse;
-import org.eclipse.jetty.client.FutureResponseListener;
 import org.eclipse.jetty.client.HttpClient;
 import org.eclipse.jetty.client.HttpProxy;
 import org.eclipse.jetty.client.Request;
@@ -396,17 +397,16 @@ public class AsyncMiddleManServletTest
         startClient();
 
         AsyncRequestContent content = new AsyncRequestContent();
-        Request request = client.newRequest("localhost", serverConnector.getLocalPort());
-        FutureResponseListener listener = new FutureResponseListener(request);
-        request.headers(headers -> headers.put(HttpHeader.CONTENT_ENCODING, HttpHeaderValue.GZIP))
-            .body(content)
-            .send(listener);
+        Request request = client.newRequest("localhost", serverConnector.getLocalPort())
+            .headers(headers -> headers.put(HttpHeader.CONTENT_ENCODING, HttpHeaderValue.GZIP))
+            .body(content);
+        CompletableFuture<ContentResponse> completable = new CompletableResponseListener(request).send();
         byte[] bytes = "ABCDEFGHIJKLMNOPQRSTUVWXYZ".getBytes(StandardCharsets.UTF_8);
         content.write(ByteBuffer.wrap(gzip(bytes)), Callback.NOOP);
         sleep(1000);
         content.close();
 
-        ContentResponse response = listener.get(5, TimeUnit.SECONDS);
+        ContentResponse response = completable.get(5, TimeUnit.SECONDS);
         assertEquals(200, response.getStatus());
         assertArrayEquals(bytes, response.getContent());
     }
@@ -1367,8 +1367,7 @@ public class AsyncMiddleManServletTest
         Request request = client.newRequest("localhost", serverConnector.getLocalPort())
             .timeout(5, TimeUnit.SECONDS)
             .body(content);
-        FutureResponseListener listener = new FutureResponseListener(request);
-        request.send(listener);
+        CompletableFuture<ContentResponse> completable = new CompletableResponseListener(request).send();
 
         // Send one chunk of content, the proxy request must not be sent.
         ByteBuffer chunk1 = ByteBuffer.allocate(1024);
@@ -1384,7 +1383,7 @@ public class AsyncMiddleManServletTest
         content.close();
         assertTrue(proxyRequestLatch.await(1, TimeUnit.SECONDS));
 
-        ContentResponse response = listener.get(5, TimeUnit.SECONDS);
+        ContentResponse response = completable.get(5, TimeUnit.SECONDS);
         assertEquals(HttpStatus.OK_200, response.getStatus());
         assertEquals(0, response.getContent().length);
     }
@@ -1415,8 +1414,7 @@ public class AsyncMiddleManServletTest
         Request request = client.newRequest("localhost", serverConnector.getLocalPort())
             .timeout(5, TimeUnit.SECONDS)
             .body(content);
-        FutureResponseListener listener = new FutureResponseListener(request);
-        request.send(listener);
+        CompletableFuture<ContentResponse> completable = new CompletableResponseListener(request).send();
 
         // Send one chunk of content, the proxy request must not be sent.
         ByteBuffer chunk1 = ByteBuffer.allocate(1024);
@@ -1432,7 +1430,7 @@ public class AsyncMiddleManServletTest
         content.close();
         assertTrue(proxyRequestLatch.await(1, TimeUnit.SECONDS));
 
-        ContentResponse response = listener.get(5, TimeUnit.SECONDS);
+        ContentResponse response = completable.get(5, TimeUnit.SECONDS);
         assertEquals(HttpStatus.OK_200, response.getStatus());
         assertEquals(chunk1.capacity() + chunk2.capacity(), response.getContent().length);
     }
@@ -1486,8 +1484,7 @@ public class AsyncMiddleManServletTest
         Request request = client.newRequest("localhost", serverConnector.getLocalPort())
             .timeout(5, TimeUnit.SECONDS)
             .body(content);
-        FutureResponseListener listener = new FutureResponseListener(request);
-        request.send(listener);
+        CompletableFuture<ContentResponse> completable = new CompletableResponseListener(request).send();
 
         // Send one chunk of content, the proxy request must not be sent.
         ByteBuffer chunk1 = ByteBuffer.allocate(1024);
@@ -1502,7 +1499,7 @@ public class AsyncMiddleManServletTest
         // Finish the content.
         content.close();
 
-        ContentResponse response = listener.get(5, TimeUnit.SECONDS);
+        ContentResponse response = completable.get(5, TimeUnit.SECONDS);
         assertEquals(HttpStatus.OK_200, response.getStatus());
         assertEquals(chunk1.capacity() + chunk2.capacity(), response.getContent().length);
     }
