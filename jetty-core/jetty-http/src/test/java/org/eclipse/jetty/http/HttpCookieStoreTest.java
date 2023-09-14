@@ -81,6 +81,20 @@ public class HttpCookieStoreTest
         assertTrue(store.add(uri, HttpCookie.build("n", "v").domain("localhost").build()));
     }
 
+    @ParameterizedTest
+    @ValueSource(strings = {
+        "1.2.3.4",
+        "127.0.0.1",
+        "[2001:db8::1:0]",
+        "[::1]"
+    })
+    public void testAcceptCookieForIPAddress(String address)
+    {
+        HttpCookieStore store = new HttpCookieStore.Default();
+        URI uri = URI.create("http://" + address);
+        assertTrue(store.add(uri, HttpCookie.build("n", "v").domain(address).build()));
+    }
+
     @Test
     public void testReplaceCookie()
     {

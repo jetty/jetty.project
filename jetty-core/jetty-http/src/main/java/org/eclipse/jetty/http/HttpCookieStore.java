@@ -186,13 +186,8 @@ public interface HttpCookieStore
             // RFC 6265 section 4.1.2.3, ignore Domain if ends with ".".
             if (resolvedDomain.endsWith("."))
                 resolvedDomain = uriDomain;
-            // Reject top-level domains.
-            // TODO: should also reject "top" domain such as co.uk, gov.au, etc.
-            if (!resolvedDomain.contains("."))
-            {
-                if (!resolvedDomain.equalsIgnoreCase("localhost"))
-                    return null;
-            }
+            if (!allowDomain(resolvedDomain))
+                return null;
 
             // Reject if the resolved domain is not either
             // the same or a parent domain of the URI domain.
@@ -224,6 +219,42 @@ public interface HttpCookieStore
                 }
             }
             return resolvedPath;
+        }
+
+        /**
+         * <p>Returns whether the given domain should be allowed to associate cookies to.</p>
+         * <p>Currently rejects "top-level" domains such as "com" or "org", so that it will not be
+         * possible to associate cookies to those domains.</p>
+         * <p>Unfortunately, it allows for "top-level" domains that have multiple labels such as
+         * "co.uk" or "gov.au".</p>
+         * <p>RFC 6265 prohibits domains that are IP addresses, but this method supports them
+         * (both IPv4 and IPv6, the latter must be bracketed) for testing purposes.</p>
+         *
+         * @param domain the domain to test
+         * @return whether the domain should be allowed to associate cookies to
+         */
+        protected boolean allowDomain(String domain)
+        {
+            // Reject top-level domains such as "com", "net", etc. to
+            // disallow "super-cookies" that would apply to all domains.
+            // A precise rejection is really complicated because there are "top"
+            // level domains that look like subdomains, such as co.uk, gov.au, etc.
+            // See https://publicsuffix.org/.
+
+            if (domain.endsWith("."))
+                domain = domain.substring(0, domain.length() - 1);
+
+            // Allow normal domains such as example.com, IPv4 addresses,
+            // but unfortunately also "top" level domains such as co.uk.
+            if (domain.contains("."))
+                return true;
+
+            // Support localhost for testing.
+            if (domain.equals("localhost"))
+                return true;
+
+            // Support IPv6 for testing.
+            return domain.startsWith("[") && domain.endsWith("]");
         }
 
         @Override
