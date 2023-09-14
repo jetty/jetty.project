@@ -23,6 +23,7 @@ import java.nio.channels.SocketChannel;
 import java.util.Arrays;
 import java.util.List;
 import java.util.Random;
+import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.ExecutionException;
 import java.util.concurrent.TimeUnit;
@@ -32,10 +33,10 @@ import java.util.zip.GZIPOutputStream;
 
 import org.eclipse.jetty.client.AsyncRequestContent;
 import org.eclipse.jetty.client.BytesRequestContent;
+import org.eclipse.jetty.client.CompletableResponseListener;
 import org.eclipse.jetty.client.ConnectionPool;
 import org.eclipse.jetty.client.ContentResponse;
 import org.eclipse.jetty.client.Destination;
-import org.eclipse.jetty.client.FutureResponseListener;
 import org.eclipse.jetty.client.HttpClient;
 import org.eclipse.jetty.client.Request;
 import org.eclipse.jetty.client.Response;
@@ -157,8 +158,7 @@ public class HttpClientTest extends AbstractHttpClientServerTest
             client.start();
 
             Request request = client.newRequest("localhost", serverChannel.socket().getLocalPort());
-            FutureResponseListener listener = new FutureResponseListener(request);
-            request.send(listener);
+            CompletableFuture<ContentResponse> completable = new CompletableResponseListener(request).send();
 
             try (SocketChannel channel = serverChannel.accept())
             {
@@ -186,7 +186,7 @@ public class HttpClientTest extends AbstractHttpClientServerTest
                     .flip();
                 channel.write(responseByteBuffer);
 
-                ContentResponse response = listener.get(5, TimeUnit.SECONDS);
+                ContentResponse response = completable.get(5, TimeUnit.SECONDS);
                 assertEquals(200, response.getStatus());
                 String content = response.getContentAsString();
                 assertEquals("hello world\n", content);
@@ -214,9 +214,8 @@ public class HttpClientTest extends AbstractHttpClientServerTest
         });
 
         Request request = client.newRequest(scheme + "://localhost:" + connector.getLocalPort());
-        FutureResponseListener listener = new FutureResponseListener(request, data.length);
-        request.send(listener);
-        ContentResponse response = listener.get(15, TimeUnit.SECONDS);
+        CompletableFuture<ContentResponse> completable = new CompletableResponseListener(request, data.length).send();
+        ContentResponse response = completable.get(15, TimeUnit.SECONDS);
         assertNotNull(response);
         assertEquals(200, response.getStatus());
         byte[] content = response.getContent();
@@ -748,13 +747,12 @@ public class HttpClientTest extends AbstractHttpClientServerTest
         Request request = client.newRequest("localhost", connector.getLocalPort())
             .scheme(scheme)
             .body(content);
-        FutureResponseListener listener = new FutureResponseListener(request);
-        request.send(listener);
+        CompletableFuture<ContentResponse> completable = new CompletableResponseListener(request).send();
         // Wait some time to simulate a slow request.
         Thread.sleep(1000);
         content.close();
 
-        ContentResponse response = listener.get(5, TimeUnit.SECONDS);
+        ContentResponse response = completable.get(5, TimeUnit.SECONDS);
 
         assertEquals(200, response.getStatus());
         assertArrayEquals(data, response.getContent());

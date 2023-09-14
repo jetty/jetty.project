@@ -13,10 +13,6 @@
 
 package org.eclipse.jetty.client;
 
-import java.io.IOException;
-import java.net.CookieManager;
-import java.net.CookiePolicy;
-import java.net.CookieStore;
 import java.net.InetSocketAddress;
 import java.net.Socket;
 import java.net.SocketAddress;
@@ -25,7 +21,6 @@ import java.nio.channels.SelectionKey;
 import java.nio.channels.SocketChannel;
 import java.time.Duration;
 import java.util.ArrayList;
-import java.util.HashMap;
 import java.util.List;
 import java.util.Locale;
 import java.util.Map;
@@ -50,6 +45,7 @@ import org.eclipse.jetty.http.HttpHeader;
 import org.eclipse.jetty.http.HttpMethod;
 import org.eclipse.jetty.http.HttpParser;
 import org.eclipse.jetty.http.HttpScheme;
+import org.eclipse.jetty.http.SetCookieParser;
 import org.eclipse.jetty.io.ArrayByteBufferPool;
 import org.eclipse.jetty.io.ByteBufferPool;
 import org.eclipse.jetty.io.ClientConnectionFactory;
@@ -113,6 +109,7 @@ public class HttpClient extends ContainerLifeCycle
 {
     public static final String USER_AGENT = "Jetty/" + Jetty.VERSION;
     private static final Logger LOG = LoggerFactory.getLogger(HttpClient.class);
+    private static final SetCookieParser COOKIE_PARSER = SetCookieParser.newInstance();
 
     private final ConcurrentMap<Origin, HttpDestination> destinations = new ConcurrentHashMap<>();
     private final ProtocolHandlers handlers = new ProtocolHandlers();
@@ -123,7 +120,6 @@ public class HttpClient extends ContainerLifeCycle
     private final ClientConnector connector;
     private AuthenticationStore authenticationStore = new HttpAuthenticationStore();
     private HttpCookieStore cookieStore;
-    private HttpCookieParser cookieParser;
     private SocketAddressResolver resolver;
     private HttpField agentField = new HttpField(HttpHeader.USER_AGENT, USER_AGENT);
     private boolean followRedirects = true;
@@ -221,7 +217,6 @@ public class HttpClient extends ContainerLifeCycle
 
         if (cookieStore == null)
             cookieStore = new HttpCookieStore.Default();
-        cookieParser = new HttpCookieParser();
 
         transport.setHttpClient(this);
 
@@ -284,17 +279,9 @@ public class HttpClient extends ContainerLifeCycle
 
     public void putCookie(URI uri, HttpField field)
     {
-        try
-        {
-            HttpCookie cookie = cookieParser.parse(uri, field);
-            if (cookie != null)
-                cookieStore.add(uri, cookie);
-        }
-        catch (IOException x)
-        {
-            if (LOG.isDebugEnabled())
-                LOG.debug("Unable to store cookies {} from {}", field, uri, x);
-        }
+        HttpCookie cookie = COOKIE_PARSER.parse(field.getValue());
+        if (cookie != null)
+            cookieStore.add(uri, cookie);
     }
 
     /**
@@ -1101,72 +1088,5 @@ public class HttpClient extends ContainerLifeCycle
         if (sslContextFactory == null)
             sslContextFactory = getSslContextFactory();
         return new SslClientConnectionFactory(sslContextFactory, getByteBufferPool(), getExecutor(), connectionFactory);
-    }
-
-    private static class HttpCookieParser extends CookieManager
-    {
-        public HttpCookieParser()
-        {
-            super(new Store(), CookiePolicy.ACCEPT_ALL);
-        }
-
-        public HttpCookie parse(URI uri, HttpField field) throws IOException
-        {
-            // TODO: hacky implementation waiting for a real HttpCookie parser.
-            String value = field.getValue();
-            if (value == null)
-                return null;
-            Map<String, List<String>> header = new HashMap<>(1);
-            header.put(field.getHeader().asString(), List.of(value));
-            put(uri, header);
-            Store store = (Store)getCookieStore();
-            HttpCookie cookie = store.cookie;
-            store.cookie = null;
-            return cookie;
-        }
-
-        private static class Store implements CookieStore
-        {
-            private HttpCookie cookie;
-
-            @Override
-            public void add(URI uri, java.net.HttpCookie cookie)
-            {
-                String domain = cookie.getDomain();
-                if ("localhost.local".equals(domain))
-                    cookie.setDomain("localhost");
-                this.cookie = HttpCookie.from(cookie);
-            }
-
-            @Override
-            public List<java.net.HttpCookie> get(URI uri)
-            {
-                throw new UnsupportedOperationException();
-            }
-
-            @Override
-            public List<java.net.HttpCookie> getCookies()
-            {
-                throw new UnsupportedOperationException();
-            }
-
-            @Override
-            public List<URI> getURIs()
-            {
-                throw new UnsupportedOperationException();
-            }
-
-            @Override
-            public boolean remove(URI uri, java.net.HttpCookie cookie)
-            {
-                throw new UnsupportedOperationException();
-            }
-
-            @Override
-            public boolean removeAll()
-            {
-                throw new UnsupportedOperationException();
-            }
-        }
     }
 }

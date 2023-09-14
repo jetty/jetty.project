@@ -31,7 +31,7 @@ jetty-12.0.1 - 29 August 2023
  + 10338 ErorrHandler#writeErrorJson is private
  + 10349 Character encoding is reset when setting Content-Type
  + 10350 Support Java 21 virtual threads
- + 10352 Various cleanups in `HttpParser`
+ + 10352 Jetty accepts "+" prefixed value in Content-Length (CVE-2023-40167)
  + 10353 Questions about porting WebSocket APIs to jetty-core 12
  + 10356 Deploying WAR with `ee10-cdi-spi` fails with Weld 5/CDI 4
  + 10383 Unsuppressed exceptions from  EE10 ServletTest
@@ -66,7 +66,7 @@ jetty-11.0.16 - 25 August 2023
  + 9772 Improve Quiche certificates deployment
  + 9777 CrossOriginFilter does not return Vary header on no-cors mode
  + 9795 http3-server is leaking the Jetty logging service to web applications
- + 9887 Deprecate CGI Servlet
+ + 9887 Deprecate CGI Servlet (CVE-2023-40167)
  + 9895 A MessageTooLargeException doesn't close a WebSocket connection
  + 9947 Cannot invoke "org.eclipse.jetty.io.ManagedSelector.getTotalKeys()"
    because "selector" is null
@@ -86,7 +86,7 @@ jetty-11.0.16 - 25 August 2023
  + 10312 Remove jetty-home-with-docs to eliminate build time cyclic
    dependencies
  + 10350 Support Java 21 virtual threads
- + 10352 various cleanups in `HttpParser`
+ + 10352 Jetty accepts "+" prefixed value in Content-Length (CVE-2023-40167)
  + 10388 Jetty10 inetaccess mod started error
  + 10397 Iso88591StringBuilder.append seems to have a logic error
 
@@ -208,7 +208,7 @@ jetty-12.0.0.beta2 - 16 June 2023
  + 9879 Jetty-12 rewrite demo not working
  + 9880 Jetty 12 - jetty.sh does not work on Ubuntu
  + 9881 H2 perf can be pathologically bad
- + 9887 Deprecate CGI Servlet
+ + 9887 Deprecate CGI Servlet (CVE-2023-40167)
  + 9895 A MessageTooLargeException doesn't close a WebSocket connection
  + 9906 Inconsistent handling of empty "path info" between Jetty 10 and 12
  + Jan (@janbartel) is now using IntelliJ!
@@ -239,12 +239,13 @@ jetty-12.0.0.beta1 - 02 May 2023
  + 9444 Unexpected encoding in request.getPathInfo() with Jetty 12 beta 0
  + 9459 Path is missing from JSESSIONID cookie in 12 beta 0
  + 9463 NPE when starting jetty-ee10-maven-plugin
- + 9464 Respect expiry time of ID token
+ + 9464 Add optional configuration to log user out after OpenID idToken expires (CVE-2023-41900)
  + 9466 WebSocket `DeploymentException` is not thrown by client nor server
  + 9467 Jetty 12 - Review BOMs
  + 9468 Jetty 11.0.14 is less tolerant of non-compliant cookies than 11.0.13
  + 9497 Maven plugin add support for jar projects in `:effective-web-xml`
  + 9501 jetty client with proxy - ssl traffic between both proxy and servers
+ + 9516 Remove CGI Servlet (CVE-2023-40167)
  + 9537 "error-on-el-not-found" behavior is not as specified
  + 9552 Jetty 12 - Rewrite of the Jetty WebSocket APIs
  + 9554 Move (qpack/hpack) HuffmanDecoder / HuffmanEncoder / NBitInteger* to
@@ -378,21 +379,6 @@ jetty-12.0.0.alpha3 - 07 December 2022
  + 9006 WebSocket Message InputStream read() returns signed byte
  + 8695 Update quiche to 0.16.0
 
-jetty-11.0.15 - 11 April 2023
- + 6184 Remove usages of classes associated with JEP-411 that deprecate/remove
-   the SecurityManager from the JVM
- + 6483 Jetty http client SSL connectivity over CNTLM proxy fails
- + 9237 Decouple QTP `idleTimeout` from pool shrink rate
- + 9309 `jetty.sh` cannot handle complex Jetty properties from `start.d/*.ini`
- + 9400 Jetty logs warning with stacktrace when annotation parser encounters
-   module-info.class file inside elasticsearch-x-content jar
- + 9464 Respect expiry time of ID token
- + 9468 Jetty 11.0.14 is less tolerant of non-compliant cookies than 11.0.13
- + 9497 Maven plugin effective web xml: add support for jar projects
- + 9501 jetty client with proxy - ssl traffic between both proxy and servers
- + 9517 Jetty 10.0.14 uses wrong pathSpec for request
- + 9556 Password Util does not ask for password
-
 jetty-10.0.16 - 25 August 2023
  + 6140 Report total number of keys in SelectorManager
  + 7091 Add SOCKS5 support
@@ -419,7 +405,7 @@ jetty-10.0.16 - 25 August 2023
  + 9772 Improve Quiche certificates deployment
  + 9777 CrossOriginFilter does not return Vary header on no-cors mode
  + 9795 http3-server is leaking the Jetty logging service to web applications
- + 9887 Deprecate CGI Servlet
+ + 9887 Deprecate CGI Servlet (CVE-2023-40167)
  + 9895 A MessageTooLargeException doesn't close a WebSocket connection
  + 9947 Cannot invoke "org.eclipse.jetty.io.ManagedSelector.getTotalKeys()"
    because "selector" is null
@@ -441,9 +427,34 @@ jetty-10.0.16 - 25 August 2023
  + 10312 Remove jetty-home-with-docs to eliminate build time cyclic
    dependencies
  + 10350 Support Java 21 virtual threads
- + 10352 various cleanups in `HttpParser`
+ + 10352 Jetty accepts "+" prefixed value in Content-Length (CVE-2023-40167)
  + 10388 Jetty10 inetaccess mod started error
  + 10397 Iso88591StringBuilder.append seems to have a logic error
+
+jetty-9.4.52.v20230823 - 23 August 2023
+ + 9476 onCompleteFailure called multiple times
+ + 9660 OpenId Revoked authentication allows one request (CVE-2023-41900)
+ + 9887 Deprecate CGI Servlet (CVE-2023-40167)
+ + 10066 Allow `SAXParserFactory` or `SAXParser` to be configured in Jetty's
+   `XmlParser` class
+ + 10168 NPE in websocket extension startup
+ + 10352 Jetty accepts "+" prefixed value in Content-Length (CVE-2023-40167)
+ + 10337 SizeLimitHandler does not enforce 0 responseLimit
+
+jetty-11.0.15 - 11 April 2023
+ + 6184 Remove usages of classes associated with JEP-411 that deprecate/remove
+   the SecurityManager from the JVM
+ + 6483 Jetty http client SSL connectivity over CNTLM proxy fails
+ + 9237 Decouple QTP `idleTimeout` from pool shrink rate
+ + 9309 `jetty.sh` cannot handle complex Jetty properties from `start.d/*.ini`
+ + 9400 Jetty logs warning with stacktrace when annotation parser encounters
+   module-info.class file inside elasticsearch-x-content jar
+ + 9464 Add optional configuration to log user out after OpenID idToken expires (CVE-2023-41900)
+ + 9468 Jetty 11.0.14 is less tolerant of non-compliant cookies than 11.0.13
+ + 9497 Maven plugin effective web xml: add support for jar projects
+ + 9501 jetty client with proxy - ssl traffic between both proxy and servers
+ + 9517 Jetty 10.0.14 uses wrong pathSpec for request
+ + 9556 Password Util does not ask for password
 
 jetty-10.0.15 - 11 April 2023
  + 6184 JEP-411 will deprecate/remove the SecurityManager from the JVM
@@ -452,7 +463,7 @@ jetty-10.0.15 - 11 April 2023
  + 9309 `jetty.sh` cannot handle complex Jetty properties from `start.d/*.ini`
  + 9400 Jetty logs warning with stacktrace when annotation parser encounters
    module-info.class file inside elasticsearch-x-content jar
- + 9464 Respect expiry time of ID token
+ + 9464 Add optional configuration to log user out after OpenID idToken expires (CVE-2023-41900)
  + 9468 Jetty 11.0.14 is less tolerant of non-compliant cookies than 11.0.13
  + 9497 Maven plugin effective web xml: add support for jar projects
  + 9501 jetty client with proxy - ssl traffic between both proxy and servers
@@ -526,6 +537,12 @@ jetty-10.0.14 - 22 February 2023
  + 9334 Better support for Cookie RFC 2965 compliance
  + 9337 LowResourceMonitor.getReasons should include detailed reason instead of
    hard-coded message
+
+jetty-9.4.51.v20230217 - 17 February 2023
+ + 9059 IteratingCallback not serializing close() and failed()
+ + 9181 NPE in SessionHandler.checkRequestedSessionId()
+ + 9345 Backport Fix for CVE-2023-26048
+ + 9352 Backport Fix for CVE-2023-26049
 
 jetty-11.0.13 - 07 December 2022
  + 7117 Timeout with Expect 100 continue when using ProxyServlet
@@ -903,6 +920,108 @@ jetty-11.0.8 - 07 February 2022
  + 7524 Missing package in JmxConfiguration
  + 7529 Upgrade quiche to version 0.11.0
 
+jetty-10.0.11 - 21 June 2022
+ + 8184 All suffix globs except first fail to match if path has `.` character
+   in prefix section
+
+jetty-9.4.48.v20220622 - 21 June 2022
+ + 8184 All suffix globs except first fail to match if path has . character in
+   prefix
+
+jetty-10.0.10 - 16 June 2022
+ + 1771 Add module for SecuredRedirect support
+ + 4414 GZipHandler not excluding inflation for specified paths
+ + 7635 QPACK decoder should fail connection if the encoder blocks more than
+   SETTINGS_QPACK_BLOCKED_STREAMS
+ + 7748 Allow overriding of url-pattern mapping in ServletContextHandler to
+   allow for regex or uri-template matching
+ + 7754 jetty.sh ignores JAVA_OPTIONS environment variable
+ + 7801 Session cookie can be set twice after session id changed
+ + 7818 Modifying of HTTP headers in HttpChannel.Listener#onResponseBegin is no
+   longer possible with Jetty 10
+ + 7855 Remove accidentally included package-info.class in all packages
+ + 7858 GZipHandler does not play nice with other handlers in HandlerCollection
+ + 7863 Default servlet drops first accept-encoding header if there is more
+   than one.
+ + 7880 DefaultServlet should not overwrite programmatically configured
+   precompressed formats with defaults
+ + 7891 Better Servlet PathMappings for Regex
+ + 7918 PathMappings.asPathSpec does not allow root ServletPathSpec
+ + 7935 Review HTTP/2 error handling (CVE-2022-2048)
+ + 7975 `ForwardedRequestCustomizer` setters do not clear existing handlers
+ + 7977 UpgradeHttpServletRequest.setAttribute &
+   UpgradeHttpServletRequest.removeAttribute can throw NullPointerException
+ + 7994 Ability to construct a detached client Request
+ + 8014 Review HttpRequest URI construction (CVE-2022-2047)
+ + 8057 Support Http Response 103 (Early Hints)
+ + 8067 Wall time usage in DoSFilter RateTracker results in false positive
+   alert
+ + 8088 Add option to configure exitVm on ShutdownMonitor from System
+   properties
+ + 8161 Improve SSLConnection buffers handling (CVE-2022-2191)
+
+jetty-9.4.47.v20220610 - 10 June 2022
+ + 4717 High CPU spikes with jetty winstone threads
+ + 7748 Allow overriding of url-pattern mapping in ServletContextHandler to
+   allow for regex or uri-template matching
+ + 7801 Session cookie can be set twice after session id changed
+ + 7855 Remove accidentally included package-info.class in all packages
+ + 7858 GZipHandler does not play nice with other handlers in HandlerCollection
+ + 7863 Default servlet drops first accept-encoding header if there is more
+   than one.
+ + 7918 PathMappings.asPathSpec does not allow root ServletPathSpec
+ + 7935 Review HTTP/2 error handling (CVE-2022-2048)
+ + 8014 Review HttpRequest URI construction (CVE-2022-2047)
+ + 8067 Wall time usage in DoSFilter RateTracker results in false positive
+   alert
+ + 8088 Add option to configure exitVm on ShutdownMonitor from System
+   properties
+
+jetty-9.4.46.v20220331 - 31 March 2022
+ + 5965 Option --write-module-graph produces wrong .dot file
+ + 6756 Deprecate `/jetty-spring/` artifact in `jetty-9.4.x` releases
+ + 7518 ArrayTrie getBest fails to match the empty string entry in certain
+   cases
+ + 7548 Interrupt flag is not always cleared in between requests
+ + 7567 Gzip compression not working for multipart/form-data when added to the
+   allowed list using addIncludedMimeTypes.
+ + 7569 Miconfigured headerCacheSize in can result in IllegalArgumentException
+ + 7615 HttpServletResponse.encodeURL not working for URLs starting with ../
+
+jetty-10.0.9 - 30 March 2022
+ + 5681 Unrecognized jetty-home/start.jar command line option not reported
+   clearly
+ + 5965 Option --write-module-graph produces wrong .dot file
+ + 6879 Remove jminix (not maintained) module as hawtio provide same features
+ + 7182 jetty.sh start process should remove jetty_state whenever deleting the
+   pid
+ + 7344 Incompatible with jacoco due to shutdown race condition
+ + 7414 QoSFilter.setMaxRequests throws NullPointerException
+ + 7513 Getter/setter type mismatch for mbean attribute file in class
+   org.eclipse.jetty.deploy.PropertiesConfigurationManager
+ + 7517 Some ArrayTrie methods throw StackOverflowError when cointaining a very
+   large entry
+ + 7518 ArrayTrie getBest fails to match the empty string entry in certain
+   cases
+ + 7545 Named arguments do not work in jetty-openid.xml
+ + 7548 Interrupt flag is not always cleared in between requests
+ + 7567 Gzip compression not working for multipart/form-data when added to the
+   allowed list using addIncludedMimeTypes.
+ + 7573 WebSockets - "Unsupported PathParam Type: java.lang.Integer"
+ + 7575 Misleading docs for `HttpClientTransportDynamic`
+ + 7613 Configurations.add(Configuration) results in
+   UnsupportedOperationException
+ + 7615 HttpServletResponse.encodeURL not working for URLs starting with ../
+ + 7617 Logback-access RequestLog not working
+ + 7625 HTTP/3 error against www.google.com
+ + 7677 jetty-maven-plugin - maven internal dependencies included on webapp
+   classloader
+ + 7683 GZIPContentDecoder ignores setUseInputDirectByteBuffers setting and
+   always uses non-direct buffers (causing GC locking)
+ + 7688 Read data to native memory from HttpInput
+ + 7748 Allow overriding of url-pattern mapping in ServletContextHandler to
+   allow for regex or uri-template matching
+
 jetty-10.0.8 - 07 February 2022
  + 2504 Expose more WebSocket details in JMX and Server Dump
  + 4275 Path Normalization/Traversal - Context Matching
@@ -965,38 +1084,6 @@ jetty-10.0.8 - 07 February 2022
  + 7523 Typo in AnnotationConfiguration
  + 7524 Missing package in JmxConfiguration
  + 7529 Upgrade quiche to version 0.11.0
-
-jetty-9.4.48.v20220622 - 21 June 2022
- + 8184 All suffix globs except first fail to match if path has . character in
-   prefix
-
-jetty-9.4.47.v20220610 - 10 June 2022
- + 4717 High CPU spikes with jetty winstone threads
- + 7748 Allow overriding of url-pattern mapping in ServletContextHandler to
-   allow for regex or uri-template matching
- + 7801 Session cookie can be set twice after session id changed
- + 7855 Remove accidentally included package-info.class in all packages
- + 7858 GZipHandler does not play nice with other handlers in HandlerCollection
- + 7863 Default servlet drops first accept-encoding header if there is more
-   than one.
- + 7918 PathMappings.asPathSpec does not allow root ServletPathSpec
- + 7935 Review HTTP/2 error handling (Resolves CVE-2022-2048)
- + 8014 Review HttpRequest URI construction (Resolves CVE-2022-2047)
- + 8067 Wall time usage in DoSFilter RateTracker results in false positive
-   alert
- + 8088 Add option to configure exitVm on ShutdownMonitor from System
-   properties
-
-jetty-9.4.46.v20220331 - 31 March 2022
- + 5965 Option --write-module-graph produces wrong .dot file
- + 6756 Deprecate `/jetty-spring/` artifact in `jetty-9.4.x` releases
- + 7518 ArrayTrie getBest fails to match the empty string entry in certain
-   cases
- + 7548 Interrupt flag is not always cleared in between requests
- + 7567 Gzip compression not working for multipart/form-data when added to the
-   allowed list using addIncludedMimeTypes.
- + 7569 Miconfigured headerCacheSize in can result in IllegalArgumentException
- + 7615 HttpServletResponse.encodeURL not working for URLs starting with ../
 
 jetty-9.4.45.v20220203 - 03 February 2022
  + 4275 Path Normalization/Traversal - Context Matching
@@ -1166,7 +1253,7 @@ jetty-10.0.6 - 29 June 2021
  + 6410 Ensure Jetty IO uses SocketAddress instead of InetSocketAddress
  + 6418 Bad and/or missing Require-Capability for osgi.serviceloader
  + 6425 Update to asm 9.1
- + 6447 Deprecate support for UTF16 encoding in URIs (Resolves CVE-2021-34429)
+ + 6447 Deprecate support for UTF16 encoding in URIs (CVE-2021-34429)
  + 6451 Request#getServletPath() returns null for ROOT mapping
  + 6464 Wrong files/lib definitions in certain *-capture.mod files?
  + 6473 Improve alias checking in PathResource
@@ -1289,11 +1376,9 @@ jetty-10.0.3 - 20 May 2021
  + 6250 Lazily allocate HTTP2Stream data queue
  + 6251 Use CyclicTimeout for HTTP2Streams
  + 6254 Total timeout not enforced for queued requests
- + 6263 Review URI encoding in ConcatServlet & WelcomeFilter (Resolved
-   CVE-2021-28169)
+ + 6263 Review URI encoding in ConcatServlet & WelcomeFilter (CVE-2021-28169)
  + 6272 Reduce allocation in HttpClient when notifying content listeners
- + 6277 Better handle exceptions thrown from session destroy listener (Resolved
-   CVE-2021-34428)
+ + 6277 Better handle exceptions thrown from session destroy listener (CVE-2021-34428)
  + 6280 Copy ServletHolder class/instance properly during startWebapp
  + 6287 Class loading broken for WebSocketClient used inside webapp
 
@@ -1597,15 +1682,13 @@ jetty-10.0.2 - 26 March 2021
  + 6037 Review logging modules for j.u.l
  + 6050 Websocket: NotUtf8Exception after upgrade 9.4.35 -> 9.4.36 or newer
  + 6063 Allow override of hazelcast version when using module
- + 6072 jetty server high CPU when client send data length > 17408 - Resolves
-   CVE-2021-28165
+ + 6072 jetty server high CPU when client send data length > 17408 (CVE-2021-28165)
  + 6076 Embedded Jetty throws null pointer exception
  + 6082 SslConnection compacting
  + 6085 Jetty keeps Sessions in use after "Duplicate valid session cookies"
    Message
- + 6101 Normalize ambiguous URIs - Resolves CVE-2021-28164
- + 6102 Exclude webapps directory from deployment scan - Resolves
-   CVE-2021-28163
+ + 6101 Normalize ambiguous URIs (CVE-2021-28164)
+ + 6102 Exclude webapps directory from deployment scan (CVE-2021-28163)
 
 jetty-10.0.1 - 19 February 2021
  + 1673 jetty-demo/etc/keystore should not be distributed
@@ -1649,7 +1732,7 @@ jetty-10.0.1 - 19 February 2021
  + 5937 Unnecessary blocking in ResourceService
  + 5939 Use unwrapped exception as exception type for error handling
  + 5950 Deadlock due to logging inside classloaders
- + 5963 Improve QuotedQualityCSV - Resolves CVE-2020-27223
+ + 5963 Improve QuotedQualityCSV (CVE-2020-27223)
  + 5966 jetty-home should not have a webapps/ directory
  + 5973 Proxy client TLS authentication example
  + 5977 Cache-Control header set by a filter is override by the value from
@@ -1675,8 +1758,7 @@ jetty-10.0.0 - 02 December 2020
  + 5555 NPE for servlet with no mapping
  + 5562 ArrayTernaryTrie consumes too much memory
  + 5575 Add SEARCH as a known HttpMethod
- + 5605 java.io.IOException: unconsumed input during http request parsing -
-   Resolves CVE-2020-27218
+ + 5605 java.io.IOException: unconsumed input during http request parsing (CVE-2020-27218)
  + 5633 Allow to configure HttpClient request authority
  + 5679 Distro argument --list-all-modules does not work
  + 5680 No way to see which modules are enabled for the distro
@@ -1700,7 +1782,7 @@ jetty-10.0.0.beta3 - 21 October 2020
  + 5443 Request without Host header fails with NullPointerException in
    ForwardedRequestCustomizer
  + 5448 Request.isSecure() returns false for `https` schemes in Jetty 10
- + 5451 Improve Working Directory creation - Resolves CVE-2020-27216
+ + 5451 Improve Working Directory creation (CVE-2020-27216)
  + 5454 Request error context is not reset
  + 5475 Update to spifly 1.3.2 and asm 9
  + 5480 NPE from WebInfConfiguration.deconfigure during WebAppContext shutdown
@@ -1939,7 +2021,7 @@ jetty-9.4.43.v20210629 - 30 June 2021
  + 6382 HttpClient TimeoutException message reports transient values
  + 6400 QueuedThreadPool interrupts pool threads when stopped with zero timeout
  + 6425 Update to asm 9.1
- + 6447 Deprecate support for UTF16 encoding in URIs
+ + 6447 Deprecate support for UTF16 encoding in URIs (CVE-2021-34429)
  + 6470 java.nio.ReadOnlyBufferException
  + 6473 Improve alias checking in PathResource
 
@@ -1962,9 +2044,8 @@ jetty-9.4.41.v20210516 - 16 May 2021
  + 6227 Better resolve race between `AsyncListener.onTimeout` and
    `AsyncContext.dispatch`
  + 6254 Total timeout not enforced for queued requests
- + 6263 Review URI encoding in ConcatServlet & WelcomeFilter (Resolved
-   CVE-2021-28169)
- + 6277 Better handle exceptions thrown from session destroy listener
+ + 6263 Review URI encoding in ConcatServlet & WelcomeFilter (CVE-2021-28169)
+ + 6277 Better handle exceptions thrown from session destroy listener (CVE-2021-34428)
  + 6280 Copy ServletHolder class/instance properly during startWebapp
 
 jetty-9.4.40.v20210413 - 13 April 2021
@@ -1980,17 +2061,15 @@ jetty-9.4.39.v20210325 - 25 March 2021
  + 6052 Cleanup TypeUtil and ModuleLocation to allow jetty-client/hybrid to
    work on Android
  + 6063 Allow override of hazelcast version when using module
- + 6072 jetty server high CPU when client send data length > 17408 - Resolves
-   CVE-2021-28165
+ + 6072 jetty server high CPU when client send data length > 17408 (CVE-2021-28165)
  + 6085 Jetty keeps Sessions in use after "Duplicate valid session cookies"
    Message
- + 6101 Normalize ambiguous URIs - Resolves CVE-2021-28164
- + 6102 Exclude webapps directory from deployment scan - Resolves
-   CVE-2021-28163
+ + 6101 Normalize ambiguous URIs (CVE-2021-28164)
+ + 6102 Exclude webapps directory from deployment scan (CVE-2021-28163)
 
 jetty-9.4.38.v20210224 - 24 February 2021
  + 4275 Path Normalization/Traversal - Context Matching
- + 5963 Improve QuotedQualityCSV for CVE-2020-27223
+ + 5963 Improve QuotedQualityCSV (CVE-2020-27223)
  + 5977 Cache-Control header set by a filter is override by the value from
    DefaultServlet configuration
  + 5994 QueuedThreadPool "free" threads
@@ -2007,7 +2086,7 @@ jetty-9.4.37.v20210219 - 19 February 2021
  + 5909 Cannot disable HTTP OPTIONS Method
  + 5937 Unnecessary blocking in ResourceService
  + 5950 Deadlock due to logging inside classloaders
- + 5963 Improve QuotedQualityCSV - Resolves CVE-2020-27223
+ + 5963 Improve QuotedQualityCSV (CVE-2020-27223)
  + 5973 Proxy client TLS authentication example
  + 5977 Cache-Control header set by a filter is override by the value from
    DefaultServlet configuration
@@ -2038,8 +2117,7 @@ jetty-9.4.35.v20201120 - 20 November 2020
  + 5539 StatisticsServlet output is not valid
  + 5562 ArrayTernaryTrie consumes too much memory
  + 5575 Add SEARCH as a known HttpMethod
- + 5605 java.io.IOException: unconsumed input during http request parsing -
-   Resolves CVE-2020-27218
+ + 5605 java.io.IOException: unconsumed input during http request parsing (CVE-2020-27218)
  + 5633 Allow to configure HttpClient request authority
 
 jetty-9.4.34.v20201102 - 02 November 2020
@@ -2063,7 +2141,7 @@ jetty-9.4.33.v20201020 - 20 October 2020
    produced by ForwardedHeader
  + 5443 Request without Host header fails with NullPointerException in
    ForwardedRequestCustomizer
- + 5451 Improve Working Directory creation - Resolves CVE-2020-27216
+ + 5451 Improve Working Directory creation (CVE-2020-27216)
  + 5454 Request error context is not reset
  + 5475 Update to spifly 1.3.2 and asm 9
  + 5480 NPE from WebInfConfiguration.deconfigure during WebAppContext shutdown
@@ -2161,8 +2239,7 @@ jetty-9.4.30.v20200611 - 11 June 2020
  + 4923 SecureRequestCustomizer.SslAttributes does not cache cert chain like
    before
  + 4929 HttpClient: HttpCookieStore.Empty prevents sending cookies
- + 4936 Response header overflow leads to buffer corruptions - Resolves
-   CVE-2019-17638
+ + 4936 Response header overflow leads to buffer corruptions (CVE-2019-17638)
 
 jetty-9.4.29.v20200521 - 21 May 2020
  + 2188 Lock contention creating HTTP/2 streams
@@ -2299,7 +2376,7 @@ jetty-9.4.24.v20191120 - 20 November 2019
  + 3083 The ini-template for jetty.console-capture.dir does not match the
    default value
  + 4128 OpenIdCredetials can't decode JWT ID token
- + 4334 Better test ErrorHandler changes - Resolves CVE-2019-17632
+ + 4334 Better test ErrorHandler changes (CVE-2019-17632)
 
 jetty-9.4.23.v20191118 - 18 November 2019
  + 1485 Add systemd service file
@@ -2534,10 +2611,8 @@ jetty-9.4.18.v20190429 - 29 April 2019
 jetty-9.4.17.v20190418 - 18 April 2019
  + 2140 Infinispan and hazelcast changes to scavenge zombie expired sessions
  + 3464 Split SslContextFactory into Client and Server
- + 3549 Directory Listing on Windows reveals Resource Base path - Resolves
-   CVE-2019-10246
- + 3555 DefaultHandler Reveals Base Resource Path of each Context - Resolves
-   CVE-2019-10247
+ + 3549 Directory Listing on Windows reveals Resource Base path (CVE-2019-10246)
+ + 3555 DefaultHandler Reveals Base Resource Path of each Context (CVE-2019-10247)
 
 jetty-9.4.16.v20190411 - 11 April 2019
  + 1861 Limit total bytes pooled by ByteBufferPools
@@ -2545,8 +2620,7 @@ jetty-9.4.16.v20190411 - 11 April 2019
  + 3159 WebSocket permessage-deflate RSV1 validity check
  + 3274 OSGi versions of java.base classes in
    org.apache.felix:org.osgi.foundation:jar conflicts with new rules on Java 9+
- + 3319 Modernize Directory Listing: HTML5 and Sorting - Resolves
-   CVE-2019-10241
+ + 3319 Modernize Directory Listing: HTML5 and Sorting (CVE-2019-10241)
  + 3361 HandlerCollection.addHandler is lacking synchronization
  + 3373 OutOfMemoryError: Java heap space in GZIPContentDecoder
  + 3389 Websockets jsr356 willDecode not invoked during decoding
@@ -2619,10 +2693,8 @@ jetty-9.3.28.v20191105 - 05 November 2019
  + 4217 SslConnection.DecryptedEnpoint.flush eternal busy loop
 
 jetty-9.3.27.v20190418 - 18 April 2019
- + 3549 Directory Listing on Windows reveals Resource Base path - Resolves
-   CVE-2019-10246
- + 3555 DefaultHandler Reveals Base Resource Path of each Context - Resolves
-   CVE-2019-10247
+ + 3549 Directory Listing on Windows reveals Resource Base path (CVE-2019-10246)
+ + 3555 DefaultHandler Reveals Base Resource Path of each Context (CVE-2019-10247)
 
 jetty-9.3.26.v20190403 - 03 April 2019
  + 2954 Improve cause reporting for HttpClient failures
@@ -2630,20 +2702,17 @@ jetty-9.3.26.v20190403 - 03 April 2019
    org.apache.felix:org.osgi.foundation:jar conflicts with new rules on Java 9+
  + 3302 Support host:port in X-Forwarded-For header in
    ForwardedRequestCustomizer
- + 3319 Allow reverse sort for directory listed files - Resolves CVE-2019-10241
+ + 3319 Allow reverse sort for directory listed files (CVE-2019-10241)
 
 jetty-9.2.29.v20191105 - 05 November 2019
  + 4217 SslConnection.DecryptedEnpoint.flush eternal busy loop
 
 jetty-9.2.28.v20190418 - 18 April 2019
- + 3549 Directory Listing on Windows reveals Resource Base path - Resolves
-   CVE-2019-10246
- + 3555 DefaultHandler Reveals Base Resource Path of each Context - Resolves
-   CVE-2019-10247
+ + 3549 Directory Listing on Windows reveals Resource Base path (CVE-2019-10246)
+ + 3555 DefaultHandler Reveals Base Resource Path of each Context (CVE-2019-10247)
 
 jetty-9.2.27.v20190403 - 03 April 2019
- + 3319 Refactored Directory Listing to modernize and avoid XSS - Resolves
-   CVE-2019-10241
+ + 3319 Refactored Directory Listing to modernize and avoid XSS (CVE-2019-10241)
 
 jetty-9.4.14.v20181114 - 14 November 2018
  + 3097 Duplicated programmatic Servlet Listeners causing duplicate calls
@@ -8967,7 +9036,7 @@ jetty-7.0.1.v20091125 - 25 November 2009
  + JETTY-1148 Reset partially read request reader
  + COMETD-34 Support Baeyux MBean
  + CQ-3581 jetty OSGi contribution
- + CVE-2009-3555 Prevent SSL renegotiate for SSL vulnerability
+ + Prevent SSL renegotiate for SSL vulnerability (CVE-2009-3555)
  + Fixed client abort asocciation
  + Fixed XSS issue in CookieDump demo servlet.
  + Improved start.jar usage text for properties
@@ -10036,7 +10105,7 @@ jetty-6.1.6rc0 - 03 October 2007
  + Allow scan interval to be set after Scanner started
  + Avoid FULL exception in window between blockForOutput and remote close
  + Cached user agents strings in the /org/mortbay/jetty/useragents resource
- + CVE-2007-5615 Added protection for response splitting with bad headers.
+ + Added protection for response splitting with bad headers (CVE-2007-5615)
  + Ensure session is completed only when leaving context.
  + Fix cached header optimization for extra characters
  + Fix Host header for async client
@@ -10393,7 +10462,7 @@ jetty-6.1.0rc0 - 08 December 2006
 jetty-6.1.0pre3 - 22 November 2006
  + JETTY-154 Cookies are double quotes only
  + JETTY-180 XBean support for context deploy
- + CVE-2006-6969 Upgraded session ID generation to use SecureRandom
+ + Upgraded session ID generation to use SecureRandom (CVE-2006-6969)
  + Expose isResumed on Continuations
  + fixed NIO endpoint flush. Avoid duplicate sends
  + Refactored AJP generator
@@ -10840,7 +10909,7 @@ jetty-6.0.0Beta5
  + Moved to SVN
 
 jetty-6.0.0Beta4
- + CVE-2006-2758 Fixed JSP visibility security issue.
+ + Fixed JSP visibility security issue (CVE-2006-2758)
  + Improved jetty-web.xml access to org.mortbay classes.
  + Jasper 5.5.12
  + System property support in plugin
@@ -10951,7 +11020,7 @@ jetty-5.1.7rc0 - 06 December 2005
  + use commons logging jar instead of api jar.
 
 jetty-5.1.6 - 18 November 2005
- + CVE-2006-2758 Fixed JSP visibility security issue.
+ + Fixed JSP visibility security issue (CVE-2006-2758)
  + Improved jetty-web.xml access to org.mortbay classes.
 
 jetty-5.1.5 - 10 November 2005

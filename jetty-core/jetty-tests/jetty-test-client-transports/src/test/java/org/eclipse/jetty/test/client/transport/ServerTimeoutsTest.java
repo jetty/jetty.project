@@ -23,8 +23,8 @@ import java.util.concurrent.atomic.AtomicReference;
 import java.util.stream.Stream;
 
 import org.eclipse.jetty.client.AsyncRequestContent;
+import org.eclipse.jetty.client.CompletableResponseListener;
 import org.eclipse.jetty.client.ContentResponse;
-import org.eclipse.jetty.client.FutureResponseListener;
 import org.eclipse.jetty.http.HttpHeader;
 import org.eclipse.jetty.http.HttpStatus;
 import org.eclipse.jetty.io.Content;
@@ -32,7 +32,6 @@ import org.eclipse.jetty.server.Handler;
 import org.eclipse.jetty.server.Request;
 import org.eclipse.jetty.server.Response;
 import org.eclipse.jetty.util.Callback;
-import org.junit.jupiter.api.Tag;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.Arguments;
 import org.junit.jupiter.params.provider.MethodSource;
@@ -95,9 +94,6 @@ public class ServerTimeoutsTest extends AbstractTest
 
     @ParameterizedTest
     @MethodSource("transportsAndTrueIdleTimeoutListeners")
-    @Tag("DisableLeakTracking:server:HTTP")
-    @Tag("DisableLeakTracking:server:HTTPS")
-    @Tag("DisableLeakTracking:server:UNIX_DOMAIN")
     public void testIdleTimeoutWithDemand(Transport transport, boolean listener) throws Exception
     {
         AtomicBoolean listenerCalled = new AtomicBoolean();
@@ -127,8 +123,7 @@ public class ServerTimeoutsTest extends AbstractTest
             .onResponseSuccess(s ->
                 content.close())
             .body(content);
-        FutureResponseListener futureResponse = new FutureResponseListener(request);
-        request.send(futureResponse);
+        CompletableFuture<ContentResponse> completable = new CompletableResponseListener(request).send();
 
         // Demand is invoked by the idle timeout
         assertTrue(demanded.await(2 * IDLE_TIMEOUT, TimeUnit.MILLISECONDS));
@@ -148,7 +143,7 @@ public class ServerTimeoutsTest extends AbstractTest
         // Complete the callback as the error listener promised.
         callbackRef.get().failed(cause);
 
-        ContentResponse response = futureResponse.get(IDLE_TIMEOUT / 2, TimeUnit.MILLISECONDS);
+        ContentResponse response = completable.get(IDLE_TIMEOUT / 2, TimeUnit.MILLISECONDS);
         assertThat(response.getStatus(), is(HttpStatus.INTERNAL_SERVER_ERROR_500));
         assertThat(response.getContentAsString(), containsStringIgnoringCase("HTTP ERROR 500 java.util.concurrent.TimeoutException: Idle timeout"));
 
@@ -179,15 +174,14 @@ public class ServerTimeoutsTest extends AbstractTest
 
         org.eclipse.jetty.client.Request request = client.newRequest(newURI(transport))
             .timeout(IDLE_TIMEOUT * 5, TimeUnit.MILLISECONDS);
-        FutureResponseListener futureResponse = new FutureResponseListener(request);
-        request.send(futureResponse);
+        CompletableFuture<ContentResponse> completable = new CompletableResponseListener(request).send();
 
         // Get the callback as promised by the error listener.
         Callback callback = callbackOnTimeout.get(3 * IDLE_TIMEOUT, TimeUnit.MILLISECONDS);
         assertNotNull(callback);
         Content.Sink.write(responseRef.get(), true, "OK", callback);
 
-        ContentResponse response = futureResponse.get(IDLE_TIMEOUT / 2, TimeUnit.MILLISECONDS);
+        ContentResponse response = completable.get(IDLE_TIMEOUT / 2, TimeUnit.MILLISECONDS);
         assertThat(response.getStatus(), is(HttpStatus.OK_200));
         assertThat(response.getContentAsString(), is("OK"));
     }
