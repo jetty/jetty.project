@@ -14,7 +14,9 @@
 package org.eclipse.jetty.docs.programming.server.session;
 
 import java.io.File;
+import java.io.FileInputStream;
 import java.net.InetSocketAddress;
+import java.util.Properties;
 
 import org.eclipse.jetty.ee10.servlet.ServletContextHandler;
 import org.eclipse.jetty.ee10.webapp.WebAppContext;
@@ -40,7 +42,15 @@ import org.eclipse.jetty.session.NullSessionCacheFactory;
 import org.eclipse.jetty.session.NullSessionDataStore;
 import org.eclipse.jetty.session.SessionCache;
 import org.eclipse.jetty.session.SessionHandler;
+import org.eclipse.jetty.session.infinispan.InfinispanSessionData;
+import org.eclipse.jetty.session.infinispan.InfinispanSessionDataStore;
 import org.eclipse.jetty.util.Callback;
+import org.infinispan.Cache;
+import org.infinispan.client.hotrod.RemoteCache;
+import org.infinispan.client.hotrod.RemoteCacheManager;
+import org.infinispan.client.hotrod.configuration.ConfigurationBuilder;
+import org.infinispan.commons.marshall.ProtoStreamMarshaller;
+import org.infinispan.manager.DefaultCacheManager;
 
 @SuppressWarnings("unused")
 public class SessionDocs
@@ -154,7 +164,7 @@ public class SessionDocs
         //tag::filesessiondatastore[]
 
         //create a context
-        org.eclipse.jetty.ee10.webapp.WebAppContext app1 = new org.eclipse.jetty.ee10.webapp.WebAppContext();
+        WebAppContext app1 = new WebAppContext();
         app1.setContextPath("/app1");
 
         //First, we create a DefaultSessionCache
@@ -291,6 +301,87 @@ public class SessionDocs
         mongoSessionDataStoreFactory.setHost("localhost");
         mongoSessionDataStoreFactory.setPort(27017);
         //end::mongosdfactory[]
+    }
+
+    public void infinispanEmbedded()
+    {
+        try
+        {
+            //tag::infinispanembed[]
+            /* Create a core SessionHandler
+             * Alternatively in a Servlet Environment do:
+             * WebAppContext webapp = new WebAppContext();
+             * SessionHandler sessionHandler = webapp.getSessionHandler();
+             */
+            SessionHandler sessionHandler = new SessionHandler();
+
+            //Use an Infinispan local cache configured via an infinispan xml file
+            DefaultCacheManager defaultCacheManager = new DefaultCacheManager("path/to/infinispan.xml");
+            Cache<String, InfinispanSessionData> localCache = defaultCacheManager.getCache();
+
+            //Configure the Jetty session datastore with Infinispan
+            InfinispanSessionDataStore infinispanSessionDataStore = new InfinispanSessionDataStore();
+            infinispanSessionDataStore.setCache(localCache);
+            infinispanSessionDataStore.setSerialization(false); //local cache does not serialize session data
+            infinispanSessionDataStore.setInfinispanIdleTimeoutSec(0); //do not use infinispan auto delete of unused sessions
+            infinispanSessionDataStore.setQueryManager(new org.eclipse.jetty.session.infinispan.EmbeddedQueryManager(localCache)); //enable Jetty session scavenging
+            infinispanSessionDataStore.setGracePeriodSec(3600);
+            infinispanSessionDataStore.setSavePeriodSec(0);
+
+            //Configure a SessionHandler to use the local Infinispan cache as a store of SessionData
+            DefaultSessionCache sessionCache = new DefaultSessionCache(sessionHandler);
+            sessionCache.setSessionDataStore(infinispanSessionDataStore);
+            sessionHandler.setSessionCache(sessionCache);
+
+            //end::infinispanembed[]
+        }
+        catch (Exception e)
+        {
+            e.printStackTrace();
+        }
+    }
+
+    public void infinispanRemote()
+    {
+        try
+        {
+            //tag::infinispanremote[]
+            /* Create a core SessionHandler
+             * Alternatively in a Servlet Environment do:
+             * WebAppContext webapp = new WebAppContext();
+             * SessionHandler sessionHandler = webapp.getSessionHandler();
+             */
+            SessionHandler sessionHandler = new SessionHandler();
+
+            //Configure Infinispan to provide a remote cache called "JettySessions"
+            Properties hotrodProperties = new Properties();
+            hotrodProperties.load(new FileInputStream("/path/to/hotrod-client.properties"));
+            org.infinispan.client.hotrod.configuration.ConfigurationBuilder configurationBuilder = new ConfigurationBuilder();
+            configurationBuilder.withProperties(hotrodProperties);
+            configurationBuilder.marshaller(new ProtoStreamMarshaller());
+            configurationBuilder.addContextInitializer(new org.eclipse.jetty.session.infinispan.InfinispanSerializationContextInitializer());
+            org.infinispan.client.hotrod.RemoteCacheManager remoteCacheManager = new RemoteCacheManager(configurationBuilder.build());
+            RemoteCache<String, InfinispanSessionData> remoteCache = remoteCacheManager.getCache("JettySessions");
+
+            //Configure the Jetty session datastore with Infinispan
+            InfinispanSessionDataStore infinispanSessionDataStore = new InfinispanSessionDataStore();
+            infinispanSessionDataStore.setCache(remoteCache);
+            infinispanSessionDataStore.setSerialization(true); //remote cache serializes session data
+            infinispanSessionDataStore.setInfinispanIdleTimeoutSec(0); //do not use infinispan auto delete of unused sessions
+            infinispanSessionDataStore.setQueryManager(new org.eclipse.jetty.session.infinispan.RemoteQueryManager(remoteCache)); //enable Jetty session scavenging
+            infinispanSessionDataStore.setGracePeriodSec(3600);
+            infinispanSessionDataStore.setSavePeriodSec(0);
+
+            //Configure a SessionHandler to use a remote Infinispan cache as a store of SessionData
+            DefaultSessionCache sessionCache = new DefaultSessionCache(sessionHandler);
+            sessionCache.setSessionDataStore(infinispanSessionDataStore);
+            sessionHandler.setSessionCache(sessionCache);
+            //end::infinispanremote[]
+        }
+        catch (Exception e)
+        {
+            e.printStackTrace();
+        }
     }
 
     public void nullSessionCache()

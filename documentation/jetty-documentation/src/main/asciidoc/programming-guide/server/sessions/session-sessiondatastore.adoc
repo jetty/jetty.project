@@ -60,15 +60,20 @@ HazelcastSessionDataStore::
 Uses Hazelcast for persisting `SessionData`.
 
 InfinispanSessionDataStore::
-Uses Infinispan for persisting `SessionData`.
+Uses http://infinispan.org[Infinispan] for persisting `SessionData`.
+See xref:pg-server-session-datastore-infinispan[InfinispanSessionDataStore] for more information.
 
 JDBCSessionDataStore::
 Uses a relational database via JDBC API to persist `SessionData`.
 See xref:pg-server-session-datastore-jdbc[JDBCSessionDataStore] for more information.
 
 MongoSessionDataStore::
-Uses MongoDB document database to persist `SessionData`.
+Uses http://www.mongodb.com[MongoDB] document database to persist `SessionData`.
 See xref:pg-server-session-datastore-mongo[MongoSessionDataStore] for more information.
+
+CachingSessionDataStore::
+Uses http://memcached.org[memcached] to provide an L2 cache of `SessionData` while delegating to another `SessionDataStore` for persistence of `SessionData`.
+See xref:pg-server-session-cachingsessiondatastore[CachingSessionDataStore] for more information.
 
 Most of the behaviour common to ``SessionDataStore``s is provided by the link:{javadoc-url}/org/eclipse/jetty/session/AbstractSessionDataStore.html[AbstractSessionDataStore] class.
 You are strongly encouraged to use this as the base class for implementing your custom `SessionDataStore`.

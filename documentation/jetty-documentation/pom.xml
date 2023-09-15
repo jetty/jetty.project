@@ -359,5 +359,9 @@
       <type>zip</type>
       <optional>true</optional>
     </dependency>
+    <dependency>
+      <groupId>org.eclipse.jetty</groupId>
+      <artifactId>jetty-infinispan-embedded-query</artifactId>
+    </dependency>
   </dependencies>
 </project>

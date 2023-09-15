@@ -66,7 +66,7 @@ The xref:pg-server-session-workername[workerName] of the last server that saved 
 version::
 An object that is updated every time a session is written for a context.
 
-You can configure either a link:{javadoc-url}/org/eclipse/jetty/nosql/mongodb/MongoSessionDataStore.html[MongoSessionDataStore] individually, or a link:{javadoc-url}/org/eclipse/jetty/nosql/mongodb/MongoSessionDataStore.html[MongoSessionDataStoreFactory] if you want multiple ``SessionHandler``s to use ``MongoSessionDataStore``s that are identically configured.
+You can configure either a link:{javadoc-url}/org/eclipse/jetty/nosql/mongodb/MongoSessionDataStore.html[MongoSessionDataStore] individually, or a link:{javadoc-url}/org/eclipse/jetty/nosql/mongodb/MongoSessionDataStoreFactory.html[MongoSessionDataStoreFactory] if you want multiple ``SessionHandler``s to use ``MongoSessionDataStore``s that are identically configured.
 The configuration methods for the `MongoSessionDataStoreFactory` are:
 
 include::session-sessiondatastore.adoc[tag=common-datastore-config]
