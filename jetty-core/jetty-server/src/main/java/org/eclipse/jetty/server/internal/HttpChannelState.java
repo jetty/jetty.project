@@ -1403,6 +1403,8 @@ public class HttpChannelState implements HttpChannel, Components
 
         MetaData.Response lockedPrepareResponse(HttpChannelState httpChannel, boolean last)
         {
+            assert _request._lock.isHeldByCurrentThread();
+
             // Assume 200 unless told otherwise.
             if (_status == 0)
                 _status = HttpStatus.OK_200;
@@ -1537,6 +1539,9 @@ public class HttpChannelState implements HttpChannel, Components
             try (AutoLock ignored = _request._lock.lock())
             {
                 httpChannelState = _request._httpChannelState;
+                if (httpChannelState == null)
+                    return; // channel already completed
+
                 stream = httpChannelState._stream;
                 request = _request;
 
@@ -1639,6 +1644,7 @@ public class HttpChannelState implements HttpChannel, Components
         @Override
         MetaData.Response lockedPrepareResponse(HttpChannelState httpChannelState, boolean last)
         {
+            assert httpChannelState._request._lock.isHeldByCurrentThread();
             MetaData.Response httpFields = super.lockedPrepareResponse(httpChannelState, last);
             httpChannelState._response._status = _status;
             HttpFields.Mutable originalResponseFields = httpChannelState._responseHeaders.getMutableHttpFields();
