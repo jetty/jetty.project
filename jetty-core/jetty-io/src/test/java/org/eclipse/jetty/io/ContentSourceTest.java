@@ -49,6 +49,7 @@ import org.eclipse.jetty.util.IO;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.MethodSource;
+import org.junit.jupiter.params.provider.ValueSource;
 
 import static java.nio.charset.StandardCharsets.UTF_8;
 import static org.hamcrest.MatcherAssert.assertThat;
@@ -509,6 +510,56 @@ public class ContentSourceTest
 
         assertNotNull(throwable.get());
         assertThat(out.toString(UTF_8), equalTo("hello"));
+    }
+
+    @ParameterizedTest
+    @ValueSource(booleans = {true, false})
+    public void testInputStreamCloseWithAvailableEOF(boolean eofAvailable) throws Exception
+    {
+        AtomicReference<Throwable> failed = new AtomicReference<>();
+        TestContentSource source = new TestContentSource()
+        {
+            @Override
+            public void fail(Throwable failure)
+            {
+                failed.set(failure);
+            }
+        };
+
+        InputStream in = Content.Source.asInputStream(source);
+        source.add("hello", false);
+        AtomicReference<Throwable> throwable = new AtomicReference<>();
+        CountDownLatch complete = new CountDownLatch(1);
+        new Thread(() ->
+        {
+            try
+            {
+                byte[] buffer = new byte[5];
+                assertThat(in.read(buffer), is(5));
+                String input = new String(buffer, StandardCharsets.ISO_8859_1);
+                assertThat(input, is("hello"));
+                if (eofAvailable)
+                    source.add(Content.Chunk.EOF);
+                in.close();
+            }
+            catch (Throwable t)
+            {
+                throwable.set(t);
+            }
+            finally
+            {
+                complete.countDown();
+            }
+        }).start();
+
+        Runnable todo = source.takeDemand();
+        assertNull(todo);
+        assertTrue(complete.await(10, TimeUnit.SECONDS));
+        assertNull(throwable.get());
+        if (eofAvailable)
+            assertNull(failed.get());
+        else
+            assertThat(failed.get(), instanceOf(IOException.class));
     }
 
     private static class TestContentSource implements Content.Source
