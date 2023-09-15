@@ -130,16 +130,20 @@ running()
   return 1
 }
 
+# Test state file (after timeout) for started state
 started()
 {
-  # wait for 60s to see "STARTED" in PID file, needs jetty-state.xml as argument
-  for ((T = 0; T < $(($3 / 4)); T++))
+  STATEFILE=$1
+  PIDFILE=$2
+  STARTTIMEOUT=$3
+  # wait for 60s to see "STARTED" in state file, needs --module=state as argument
+  for ((T = 0; T < $(($STARTTIMEOUT / 4)); T++))
   do
     sleep 4
-    [ -z "$(tail -1 $1 | grep STARTED 2>/dev/null)" ] || return 0
-    [ -z "$(tail -1 $1 | grep STOPPED 2>/dev/null)" ] || return 1
-    [ -z "$(tail -1 $1 | grep FAILED 2>/dev/null)" ] || return 1
-    local PID=$(cat "$2" 2>/dev/null) || return 1
+    [ -z "$(tail -1 $STATEFILE | grep STARTED 2>/dev/null)" ] || return 0
+    [ -z "$(tail -1 $STATEFILE | grep STOPPED 2>/dev/null)" ] || return 1
+    [ -z "$(tail -1 $STATEFILE | grep FAILED 2>/dev/null)" ] || return 1
+    local PID=$(cat "$PIDFILE" 2>/dev/null) || return 1
     kill -0 "$PID" 2>/dev/null || return 1
     echo -n ". "
   done
@@ -506,7 +510,7 @@ case "$ACTION" in
 
     fi
 
-    if expr "${JETTY_ARGS[*]}" : '.*jetty-state.xml.*' >/dev/null
+    if expr "${JETTY_ARGS[*]}" : '.*jetty\.state=.*' >/dev/null
     then
       if started "$JETTY_STATE" "$JETTY_PID" "$JETTY_START_TIMEOUT"
       then
