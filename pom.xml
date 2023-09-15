@@ -829,7 +829,7 @@
               <Bundle-DocURL>${jetty.url}</Bundle-DocURL>
               <Bundle-Vendor>Eclipse Jetty Project</Bundle-Vendor>
               <Bundle-Classpath>.</Bundle-Classpath>
-              <Bundle-Copyright>Copyright (c) 2008-2021 Mort Bay Consulting Pty Ltd and others.</Bundle-Copyright>
+              <Bundle-Copyright>Copyright (c) 1995 Mort Bay Consulting Pty Ltd and others.</Bundle-Copyright>
               <Import-Package>
                 ${osgi.slf4j.import.packages},
                 *
