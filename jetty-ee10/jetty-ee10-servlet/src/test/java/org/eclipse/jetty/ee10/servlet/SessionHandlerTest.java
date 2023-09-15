@@ -25,7 +25,6 @@ import java.nio.file.Path;
 import java.util.Arrays;
 import java.util.Collections;
 import java.util.HashSet;
-import java.util.Map;
 import java.util.function.Consumer;
 import java.util.function.Function;
 
@@ -470,6 +469,7 @@ public class SessionHandlerTest
         server.setHandler(context);
         SessionHandler sessionHandler = new SessionHandler();
         sessionHandler.setUsingCookies(false);
+        sessionHandler.setUsingUriParameters(true);
         sessionHandler.setSessionIdManager(sessionIdManager);
         sessionHandler.setMaxInactiveInterval(-1); //immortal session
         context.setSessionHandler(sessionHandler);
