@@ -109,7 +109,7 @@ public class QuickStartGenerator
     /**
      * Configure the webapp in preparation for quickstart generation.
      * 
-     * @throws Exception
+     * @throws Exception if there is an unspecified problem
      */
     private void prepareWebApp()
         throws Exception
@@ -127,7 +127,7 @@ public class QuickStartGenerator
      * Run enough of jetty to generate a full quickstart xml file for the 
      * webapp. The tmp directory is persisted.
      * 
-     * @throws Exception
+     * @throws Exception if there is an unspecified problem
      */
     public void generate()
         throws Exception

@@ -60,7 +60,6 @@ public class SessionRenewTest
 {
     public class TestSessionCache extends DefaultSessionCache
     {
-
         public TestSessionCache(SessionManager manager)
         {
             super(manager);
@@ -68,9 +67,9 @@ public class SessionRenewTest
         
         /**
          * For testing to access protected method
-         * @param sessionId
+         * @param sessionId The session ID
          * @return previous existing session
-         * @throws Exception
+         * @throws Exception if there is an unspecified problem
          */
         public ManagedSession getWithoutReferenceCount(String sessionId) throws Exception
         {
