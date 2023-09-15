@@ -60,7 +60,7 @@ public class ByteBufferAggregator
 
     /**
      * Copies the given ByteBuffer into this aggregator. This will aggregate bytes up to the
-     * specified maximum size, at which time this method returns false and
+     * specified maximum size, at which time this method returns true and
      * {@link #takeRetainableByteBuffer()} must be called for this method to accept aggregating again.
      * @param buffer the buffer to copy into this aggregator; its position is updated according to
      * the number of aggregated bytes
@@ -74,13 +74,13 @@ public class ByteBufferAggregator
             _retainableByteBuffer = _bufferPool.acquire(_currentSize, _direct);
             BufferUtil.flipToFill(_retainableByteBuffer.getByteBuffer());
         }
-        int prevPos = buffer.position();
         int copySize = Math.min(_currentSize - _aggregatedSize, buffer.remaining());
 
-        _retainableByteBuffer.getByteBuffer().put(_retainableByteBuffer.getByteBuffer().position(), buffer, buffer.position(), copySize);
-        _retainableByteBuffer.getByteBuffer().position(_retainableByteBuffer.getByteBuffer().position() + copySize);
+        ByteBuffer byteBuffer = _retainableByteBuffer.getByteBuffer();
+        byteBuffer.put(byteBuffer.position(), buffer, buffer.position(), copySize);
+        byteBuffer.position(byteBuffer.position() + copySize);
         buffer.position(buffer.position() + copySize);
-        _aggregatedSize += buffer.position() - prevPos;
+        _aggregatedSize += copySize;
         return _aggregatedSize == _maxSize;
     }
 
