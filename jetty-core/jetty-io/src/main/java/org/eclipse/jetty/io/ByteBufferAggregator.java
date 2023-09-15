@@ -68,7 +68,7 @@ public class ByteBufferAggregator
      */
     public boolean aggregate(ByteBuffer buffer)
     {
-        ensureBufferCapacity(buffer.remaining());
+        tryExpandBufferCapacity(buffer.remaining());
         if (_retainableByteBuffer == null)
         {
             _retainableByteBuffer = _bufferPool.acquire(_currentSize, _direct);
@@ -84,10 +84,10 @@ public class ByteBufferAggregator
         return _aggregatedSize == _maxSize;
     }
 
-    private void ensureBufferCapacity(int remaining)
+    private void tryExpandBufferCapacity(int remaining)
     {
         if (LOG.isDebugEnabled())
-            LOG.debug("ensureBufferCapacity remaining: {} _currentSize: {} _accumulatedSize={}", remaining, _currentSize, _aggregatedSize);
+            LOG.debug("tryExpandBufferCapacity remaining: {} _currentSize: {} _accumulatedSize={}", remaining, _currentSize, _aggregatedSize);
         if (_currentSize == _maxSize)
             return;
         int capacityLeft = _currentSize - _aggregatedSize;
