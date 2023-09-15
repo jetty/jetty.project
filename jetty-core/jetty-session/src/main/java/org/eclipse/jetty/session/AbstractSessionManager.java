@@ -1234,7 +1234,7 @@ public abstract class AbstractSessionManager extends ContainerLifeCycle implemen
             return NO_REQUESTED_SESSION;
 
         if (LOG.isDebugEnabled())
-            LOG.debug("Got Session IDs {} {}", ids, cookieIds);
+            LOG.debug("Got Session IDs {} from cookies {}", ids, cookieIds);
 
         for (int i = 0; i < ids.size(); i++)
         {
@@ -1257,7 +1257,7 @@ public abstract class AbstractSessionManager extends ContainerLifeCycle implemen
                 else
                 {
                     if (LOG.isDebugEnabled())
-                        LOG.debug("No session found for session cookie id {}", id);
+                        LOG.debug("No session found for session id {}", id);
 
                     //if we don't have a valid session id yet, just choose the first one
                     if (requestedSessionId == null)
@@ -1270,7 +1270,7 @@ public abstract class AbstractSessionManager extends ContainerLifeCycle implemen
             else
             {
                 //we currently have a valid session selected. We will throw an error
-                //if there is a _different_ valid session id cookie. Duplicate ids, or
+                //if there is a _different_ valid session id. Duplicate ids, or
                 //invalid session ids are ignored
                 if (!session.getId().equals(getSessionIdManager().getId(id)))
                 {
@@ -1293,13 +1293,13 @@ public abstract class AbstractSessionManager extends ContainerLifeCycle implemen
                                 LOG.debug("Error releasing duplicate valid session: {}", id);
                         }
 
-                        throw new BadMessageException("Duplicate valid session cookies: " + requestedSessionId + " ," + id);
+                        throw new BadMessageException("Duplicate valid sessions: " + requestedSessionId + " ," + id);
                     }
                 }
                 else
                 {
                     if (LOG.isDebugEnabled())
-                        LOG.debug("Duplicate valid session cookie id: {}", id);
+                        LOG.debug("Duplicate valid session id {}", id);
                 }
             }
         }
