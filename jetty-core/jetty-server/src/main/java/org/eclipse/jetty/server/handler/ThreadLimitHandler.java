@@ -13,7 +13,6 @@
 
 package org.eclipse.jetty.server.handler;
 
-import java.net.InetAddress;
 import java.net.InetSocketAddress;
 import java.nio.ByteBuffer;
 import java.nio.channels.WritePendingException;
@@ -37,8 +36,6 @@ import org.eclipse.jetty.server.Handler;
 import org.eclipse.jetty.server.Request;
 import org.eclipse.jetty.server.Response;
 import org.eclipse.jetty.util.Callback;
-import org.eclipse.jetty.util.IncludeExcludeSet;
-import org.eclipse.jetty.util.InetAddressSet;
 import org.eclipse.jetty.util.StringUtil;
 import org.eclipse.jetty.util.annotation.ManagedAttribute;
 import org.eclipse.jetty.util.annotation.ManagedOperation;
@@ -67,13 +64,12 @@ import org.slf4j.LoggerFactory;
  * a thread is available.
  * <p>This is a simpler alternative to DosFilter</p>
  */
-public class ThreadLimitHandler extends Handler.Wrapper
+public class ThreadLimitHandler extends ConditionalHandler
 {
     private static final Logger LOG = LoggerFactory.getLogger(ThreadLimitHandler.class);
 
     private final boolean _rfc7239;
     private final String _forwardedHeader;
-    private final IncludeExcludeSet<String, InetAddress> _includeExcludeSet = new IncludeExcludeSet<>(InetAddressSet.class);
     private final ConcurrentMap<String, Remote> _remotes = new ConcurrentHashMap<>();
     private volatile boolean _enabled;
     private int _threadLimit = 10;
@@ -105,7 +101,7 @@ public class ThreadLimitHandler extends Handler.Wrapper
     protected void doStart() throws Exception
     {
         super.doStart();
-        LOG.info(String.format("ThreadLimitHandler enable=%b limit=%d include=%s", _enabled, _threadLimit, _includeExcludeSet));
+        LOG.info(String.format("ThreadLimitHandler enable=%b limit=%d", _enabled, _threadLimit));
     }
 
     @ManagedAttribute("true if this handler is enabled")
@@ -117,7 +113,7 @@ public class ThreadLimitHandler extends Handler.Wrapper
     public void setEnabled(boolean enabled)
     {
         _enabled = enabled;
-        LOG.info(String.format("ThreadLimitHandler enable=%b limit=%d include=%s", _enabled, _threadLimit, _includeExcludeSet));
+        LOG.info(String.format("ThreadLimitHandler enable=%b limit=%d", _enabled, _threadLimit));
     }
 
     @ManagedAttribute("The maximum threads that can be dispatched per remote IP")
@@ -128,21 +124,6 @@ public class ThreadLimitHandler extends Handler.Wrapper
 
     protected int getThreadLimit(String ip)
     {
-        if (!_includeExcludeSet.isEmpty())
-        {
-            try
-            {
-                if (!_includeExcludeSet.test(InetAddress.getByName(ip)))
-                {
-                    LOG.debug("excluded {}", ip);
-                    return 0;
-                }
-            }
-            catch (Exception e)
-            {
-                LOG.trace("IGNORED", e);
-            }
-        }
         return _threadLimit;
     }
 
@@ -156,17 +137,17 @@ public class ThreadLimitHandler extends Handler.Wrapper
     @ManagedOperation("Include IP in thread limits")
     public void include(String inetAddressPattern)
     {
-        _includeExcludeSet.include(inetAddressPattern);
+        includeInetAddressPattern(inetAddressPattern);
     }
 
     @ManagedOperation("Exclude IP from thread limits")
     public void exclude(String inetAddressPattern)
     {
-        _includeExcludeSet.exclude(inetAddressPattern);
+        excludeInetAddressPattern(inetAddressPattern);
     }
 
     @Override
-    public boolean handle(Request request, Response response, Callback callback) throws Exception
+    public boolean doHandle(Request request, Response response, Callback callback) throws Exception
     {
         Handler next = getHandler();
         if (next == null)
