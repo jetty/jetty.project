@@ -401,6 +401,7 @@
       <artifactId>javadoc</artifactId>
       <version>${project.version}</version>
       <classifier>javadoc</classifier>
+      <type>jar</type>
       <optional>true</optional>
     </dependency>
   </dependencies>
