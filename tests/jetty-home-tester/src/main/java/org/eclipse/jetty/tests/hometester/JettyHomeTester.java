@@ -42,6 +42,7 @@ import java.util.concurrent.ConcurrentLinkedQueue;
 import java.util.concurrent.TimeUnit;
 import java.util.stream.Stream;
 
+import org.apache.maven.model.building.ModelBuilder;
 import org.apache.maven.repository.internal.MavenRepositorySystemUtils;
 import org.awaitility.core.ConditionTimeoutException;
 import org.codehaus.plexus.util.StringUtils;
@@ -52,18 +53,16 @@ import org.eclipse.aether.RepositorySystem;
 import org.eclipse.aether.RepositorySystemSession;
 import org.eclipse.aether.artifact.Artifact;
 import org.eclipse.aether.artifact.DefaultArtifact;
-import org.eclipse.aether.connector.basic.BasicRepositoryConnectorFactory;
-import org.eclipse.aether.impl.DefaultServiceLocator;
+import org.eclipse.aether.impl.RemoteRepositoryManager;
+import org.eclipse.aether.impl.UpdatePolicyAnalyzer;
 import org.eclipse.aether.repository.LocalRepository;
 import org.eclipse.aether.repository.RemoteRepository;
 import org.eclipse.aether.resolution.ArtifactRequest;
 import org.eclipse.aether.resolution.ArtifactResolutionException;
 import org.eclipse.aether.resolution.ArtifactResult;
-import org.eclipse.aether.spi.connector.RepositoryConnectorFactory;
-import org.eclipse.aether.spi.connector.transport.TransporterFactory;
+import org.eclipse.aether.spi.connector.checksum.ChecksumPolicyProvider;
+import org.eclipse.aether.supplier.RepositorySystemSupplier;
 import org.eclipse.aether.transfer.AbstractTransferListener;
-import org.eclipse.aether.transport.file.FileTransporterFactory;
-import org.eclipse.aether.transport.http.HttpTransporterFactory;
 import org.eclipse.jetty.toolchain.test.FS;
 import org.eclipse.jetty.toolchain.test.IO;
 import org.eclipse.jetty.toolchain.test.MavenTestingUtils;
@@ -117,6 +116,8 @@ public class JettyHomeTester
     private static final CopyOption[] EMPTY_OPTIONS = new CopyOption[]{};
 
     private final Config config;
+
+    private JettyHomeTestsRepositorySystemSupplier jettyHomeTestsRepositorySystemSupplier = new JettyHomeTestsRepositorySystemSupplier();
 
     private JettyHomeTester(Config config)
     {
@@ -254,7 +255,7 @@ public class JettyHomeTester
      */
     public File resolveArtifact(String coordinates) throws ArtifactResolutionException
     {
-        RepositorySystem repositorySystem = newRepositorySystem();
+        RepositorySystem repositorySystem = this.jettyHomeTestsRepositorySystemSupplier.get();
 
         Artifact artifact = new DefaultArtifact(coordinates);
 
@@ -366,26 +367,6 @@ public class JettyHomeTester
         }
 
         return home;
-    }
-
-    private RepositorySystem newRepositorySystem()
-    {
-        DefaultServiceLocator locator = MavenRepositorySystemUtils.newServiceLocator();
-        locator.addService(RepositoryConnectorFactory.class, BasicRepositoryConnectorFactory.class);
-        locator.addService(TransporterFactory.class, FileTransporterFactory.class);
-        locator.addService(TransporterFactory.class, HttpTransporterFactory.class);
-
-        locator.setErrorHandler(new DefaultServiceLocator.ErrorHandler()
-        {
-            @Override
-            public void serviceCreationFailed(Class<?> type, Class<?> impl, Throwable exception)
-            {
-                LOGGER.warn("Service creation failed for {} implementation {}: {}",
-                    type, impl, exception.getMessage(), exception);
-            }
-        });
-
-        return locator.getService(RepositorySystem.class);
     }
 
     private List<RemoteRepository> newRepositories()
@@ -829,6 +810,29 @@ public class JettyHomeTester
             JettyHomeTester tester = new JettyHomeTester(config);
             tester.init();
             return tester;
+        }
+    }
+
+    private static class JettyHomeTestsRepositorySystemSupplier extends RepositorySystemSupplier
+    {
+
+        ModelBuilder modelBuilder;
+
+        RemoteRepositoryManager remoteRepositoryManager;
+
+        @Override
+        protected ModelBuilder getModelBuilder()
+        {
+            modelBuilder = super.getModelBuilder();
+            return modelBuilder;
+        }
+
+        @Override
+        protected RemoteRepositoryManager getRemoteRepositoryManager(
+                UpdatePolicyAnalyzer updatePolicyAnalyzer, ChecksumPolicyProvider checksumPolicyProvider)
+        {
+            remoteRepositoryManager = super.getRemoteRepositoryManager(updatePolicyAnalyzer, checksumPolicyProvider);
+            return remoteRepositoryManager;
         }
     }
 }
