@@ -50,7 +50,7 @@ import org.slf4j.LoggerFactory;
  *     <li>An arbitrary {@link Predicate} taking the {@link Request}, which is matched in a linear test of all predicates.</li>
  * </ul>
  * <p>If the conditions are met, the {@link #doHandle(Request, Response, Callback)} method will be invoked.
- * However, as the default implementation to to call the {@link #getHandler() next Handler}, an optimization is applied to
+ * However, as the default implementation is to call the {@link #getHandler() next Handler}, an optimization is applied to
  * directly call the next {@code Handler} if {@code doHandler} has not been extended.</p>
  * <p>If the conditions are not met, then the behaviour will be determined by the {@link ConditionNotMetAction} passed to the
  * constructor.</p>
@@ -77,7 +77,7 @@ import org.slf4j.LoggerFactory;
  * <pre>{@code
  *     new ConditionalHandler(ConditionNotMetAction.SKIP_NEXT, new MyHandlerWrapper());
  * }</pre>
- * <p>If the conditions added to {@code MyOptionalHandler} are met, then the {@code MyHandlerWrapper} is invoked normally,
+ * <p>If the conditions added to {@code ConditionalHandler} are met, then the {@code MyHandlerWrapper} is invoked normally,
  * otherwise the next handler after the {@code MyHandlerWrapper} is directly invoked.</p>
  */
 public class ConditionalHandler extends Handler.Wrapper
