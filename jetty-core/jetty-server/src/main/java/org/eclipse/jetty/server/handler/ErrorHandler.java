@@ -223,7 +223,7 @@ public class ErrorHandler implements Request.Handler
                     switch (type)
                     {
                         case TEXT_HTML -> writeErrorHtml(request, writer, charset, code, message, cause, showStacks);
-                        case TEXT_JSON -> writeErrorJson(request, writer, code, message, cause, showStacks);
+                        case TEXT_JSON, APPLICATION_JSON -> writeErrorJson(request, writer, code, message, cause, showStacks);
                         case TEXT_PLAIN -> writeErrorPlain(request, writer, code, message, cause, showStacks);
                         default -> throw new IllegalStateException();
                     }
