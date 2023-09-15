@@ -20,7 +20,6 @@ import java.nio.file.Path;
 import java.util.List;
 import java.util.Objects;
 
-import org.eclipse.jetty.util.Loader;
 import org.eclipse.jetty.util.StringUtil;
 import org.eclipse.jetty.util.URIUtil;
 import org.eclipse.jetty.util.component.Container;
@@ -150,32 +149,54 @@ public interface ResourceFactory
     Resource newResource(URI uri);
 
     /**
-     * <p>Construct a system resource from a string.</p>
-     *
-     * <p>
-     * The resource is first attempted to be accessed via the {@link Thread#getContextClassLoader()}
-     * before being treated as a normal resource.
-     * </p>
+     * <p>Construct a Resource from a string reference into classloaders.</p>
      *
      * @param resource Resource as string representation
      * @return The new Resource, or null if string points to a location that does not exist
      * @throws IllegalArgumentException if string is blank
+     * @see #newClassLoaderResource(String)
+     * @deprecated use {@link #newClassLoaderResource(String)} or {@link #newClassLoaderResource(String, boolean)} instead, will be removed in Jetty 12.1.0
      */
+    @Deprecated(since = "12.0.1", forRemoval = true)
     default Resource newSystemResource(String resource)
+    {
+        return newClassLoaderResource(resource);
+    }
+
+    /**
+     * <p>Construct a Resource from a search of ClassLoaders.</p>
+     *
+     * <p>
+     *     Search order is:
+     * </p>
+     * <ol>
+     *   <li>{@link ClassLoader#getResource(String) java.lang.Thread.currentThread().getContextClassLoader().getResource(String)}</li>
+     *   <li>{@link ClassLoader#getResource(String) ResourceFactory.class.getClassLoader().getResource(String)}</li>
+     *   <li>{@link ClassLoader#getSystemResource(String) java.lang.ClassLoader.getSystemResource(String)}</li>
+     * </ol>
+     *
+     *
+     * @param resource string representation of resource to find in a classloader
+     * @param searchSystemClassLoader true to search {@link ClassLoader#getSystemResource(String)}, false to skip
+     * @return The new Resource, or null if string points to a location that does not exist
+     * @throws IllegalArgumentException if string is blank
+     */
+    default Resource newClassLoaderResource(String resource, boolean searchSystemClassLoader)
     {
         if (StringUtil.isBlank(resource))
             throw new IllegalArgumentException("Resource String is invalid: " + resource);
 
         URL url = null;
-        // Try to format as a URL?
-        ClassLoader loader = Thread.currentThread().getContextClassLoader();
-        if (loader != null)
+
+        List<ClassLoader> classLoaderList = List.of(Thread.currentThread().getContextClassLoader(), ResourceFactory.class.getClassLoader());
+
+        for (ClassLoader classLoader: classLoaderList)
         {
             try
             {
-                url = loader.getResource(resource);
+                url = classLoader.getResource(resource);
                 if (url == null && resource.startsWith("/"))
-                    url = loader.getResource(resource.substring(1));
+                    url = classLoader.getResource(resource.substring(1));
             }
             catch (IllegalArgumentException e)
             {
@@ -185,18 +206,7 @@ public interface ResourceFactory
             }
         }
 
-        if (url == null)
-        {
-            loader = ResourceFactory.class.getClassLoader();
-            if (loader != null)
-            {
-                url = loader.getResource(resource);
-                if (url == null && resource.startsWith("/"))
-                    url = loader.getResource(resource.substring(1));
-            }
-        }
-
-        if (url == null)
+        if (url == null && searchSystemClassLoader)
         {
             url = ClassLoader.getSystemResource(resource);
             if (url == null && resource.startsWith("/"))
@@ -218,37 +228,37 @@ public interface ResourceFactory
     }
 
     /**
-     * <p>Find a classpath resource.</p>
+     * <p>Construct a Resource from a search of ClassLoaders.</p>
      *
      * <p>
-     * The {@link Class#getResource(String)} method is used to lookup the resource. If it is not
-     * found, then the {@link Loader#getResource(String)} method is used.
+     * Convenience method {@code .newClassLoaderResource(resource, true)}
+     * </p>
+     *
+     * @param resource string representation of resource to find in a classloader
+     * @return The new Resource, or null if string points to a location that does not exist
+     * @throws IllegalArgumentException if string is blank
+     */
+    default Resource newClassLoaderResource(String resource)
+    {
+        return newClassLoaderResource(resource, true);
+    }
+
+    /**
+     * <p>Construct a Resource from a search of ClassLoaders.</p>
+     *
+     * <p>
+     * Convenience method {@code .newClassLoaderResource(resource, false)}
      * </p>
      *
      * @param resource the relative name of the resource
      * @return Resource, or null if string points to a location that does not exist
      * @throws IllegalArgumentException if string is blank
+     * @deprecated use {@link #newClassLoaderResource(String, boolean)} instead, will be removed in Jetty 12.1.0
      */
+    @Deprecated
     default Resource newClassPathResource(String resource)
     {
-        if (StringUtil.isBlank(resource))
-            throw new IllegalArgumentException("Resource String is invalid: " + resource);
-
-        URL url = ResourceFactory.class.getResource(resource);
-
-        if (url == null)
-            url = Loader.getResource(resource);
-        if (url == null)
-            return null;
-        try
-        {
-            URI uri = url.toURI();
-            return newResource(uri);
-        }
-        catch (URISyntaxException e)
-        {
-            throw new IllegalArgumentException(e);
-        }
+        return newClassLoaderResource(resource, false);
     }
 
     /**
@@ -266,7 +276,7 @@ public interface ResourceFactory
      * @param url the URL to load into memory
      * @return Resource, or null if url points to a location that does not exist
      * @throws IllegalArgumentException if URL is null
-     * @see #newClassPathResource(String)
+     * @see #newClassLoaderResource(String, boolean)
      */
     default Resource newMemoryResource(URL url)
     {
