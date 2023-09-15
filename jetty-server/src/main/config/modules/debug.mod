@@ -23,6 +23,12 @@ etc/jetty-debug.xml
 ## How many days to retain old log files
 # jetty.debug.retainDays=14
 
+## Should existing log be appended to
+# jetty.debug.append=true
+
+## Log directory for jetty debug logs
+# jetty.debug.logs=./logs
+
 ## Timezone of the log entries
 # jetty.debug.timezone=GMT
 
