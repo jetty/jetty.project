@@ -73,6 +73,7 @@ public class ServerConnectorListener extends AbstractLifeCycleListener
     }
 
     /**
+     * Get the file name.
      * @return the file name
      */
     public String getFileName()
@@ -81,6 +82,7 @@ public class ServerConnectorListener extends AbstractLifeCycleListener
     }
 
     /**
+     * Set the file name to set.
      * @param name the file name to set
      */
     public void setFileName(String name)
@@ -90,6 +92,7 @@ public class ServerConnectorListener extends AbstractLifeCycleListener
     }
 
     /**
+     * Get the sysPropertyName.
      * @return the sysPropertyName
      */
     public String getSysPropertyName()
@@ -98,6 +101,7 @@ public class ServerConnectorListener extends AbstractLifeCycleListener
     }
 
     /**
+     * Set the sysPropertyName to set.
      * @param sysPropertyName the sysPropertyName to set
      */
     public void setSysPropertyName(String sysPropertyName)

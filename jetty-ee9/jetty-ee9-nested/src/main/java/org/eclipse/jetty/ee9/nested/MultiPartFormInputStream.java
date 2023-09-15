@@ -917,6 +917,7 @@ public class MultiPartFormInputStream
     }
 
     /**
+     * Get the size of buffer used to read data from the input stream.
      * @return the size of buffer used to read data from the input stream
      */
     public int getBufferSize()
@@ -925,6 +926,7 @@ public class MultiPartFormInputStream
     }
 
     /**
+     * Set the size of buffer used to read data from the input stream.
      * @param bufferSize the size of buffer used to read data from the input stream
      */
     public void setBufferSize(int bufferSize)

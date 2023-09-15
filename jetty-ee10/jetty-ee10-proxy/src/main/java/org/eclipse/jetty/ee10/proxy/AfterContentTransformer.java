@@ -161,6 +161,7 @@ public abstract class AfterContentTransformer implements AsyncMiddleManServlet.C
     }
 
     /**
+     * Set the max output buffer size.
      * @param maxOutputBufferSize the max output buffer size
      */
     public void setMaxOutputBufferSize(long maxOutputBufferSize)

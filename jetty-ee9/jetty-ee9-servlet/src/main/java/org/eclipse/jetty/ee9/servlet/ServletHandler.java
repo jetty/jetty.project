@@ -689,6 +689,7 @@ public class ServletHandler extends ScopedHandler
     }
 
     /**
+     * Set the allowDuplicateMappings to set.
      * @param allowDuplicateMappings the allowDuplicateMappings to set
      */
     public void setAllowDuplicateMappings(boolean allowDuplicateMappings)

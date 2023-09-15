@@ -78,6 +78,7 @@ public class ServletContainerInitializerHolder extends BaseHolder<ServletContain
     }
 
     /**
+     * Add the names of classes which should be passed to the SCI onStartup method.
      * @param names the names of classes which should be passed to the SCI onStartup method
      */
     public void addStartupClasses(String... names)
@@ -86,6 +87,7 @@ public class ServletContainerInitializerHolder extends BaseHolder<ServletContain
     }
 
     /**
+     * Add classes that should be passed to the SCI onStartup method.
      * @param clazzes classes that should be passed to the SCI onStartup method
      */
     public void addStartupClasses(Class<?>... clazzes)

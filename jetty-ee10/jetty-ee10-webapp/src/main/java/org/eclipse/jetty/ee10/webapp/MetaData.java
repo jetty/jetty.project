@@ -215,6 +215,7 @@ public class MetaData
     }
 
     /**
+     * Set the web.xml descriptor.
      * @param descriptor the web.xml descriptor
      */
     public void setWebDescriptor(WebDescriptor descriptor)
@@ -751,6 +752,7 @@ public class MetaData
     }
 
     /**
+     * Set if true xml syntax is validated by the parser, false otherwise.
      * @param validateXml if true xml syntax is validated by the parser, false otherwise
      */
     public void setValidateXml(boolean validateXml)

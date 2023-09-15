@@ -35,6 +35,7 @@ public class Transaction extends NamingEntry
     public static final String USER_TRANSACTION = "UserTransaction";
 
     /**
+     * Bind the transaction to a scope.
      * @param scope the scope level, usually an environment eg ee9 or ee10
      * @throws NamingException if there is a naming problem
      */
