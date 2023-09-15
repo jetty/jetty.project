@@ -99,6 +99,7 @@
 
 Web applications written using the Servlet APIs may be re-written using the Jetty `Handler` APIs.
 The sections below outline the Jetty `Handler` APIs that correspond to the Servlet APIs.
+For more information about why using the Jetty `Handler` APIs instead of the Servlet APIs, refer to xref:pg-server-http[this section].
 
 To replace the functionalities of Servlet Filters, refer to xref:pg-server-http-handler[this section].
 
