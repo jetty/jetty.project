@@ -134,19 +134,23 @@ public class ConditionalHandler extends Handler.Wrapper
 
     public ConditionalHandler(Handler nextHandler)
     {
-        this(ConditionNotMetAction.SKIP_NEXT, nextHandler);
+        this(ConditionNotMetAction.SKIP_NEXT, false, nextHandler);
     }
 
     public ConditionalHandler(ConditionNotMetAction conditionNotMetAction)
     {
-        this(conditionNotMetAction, null);
+        this(conditionNotMetAction, false, null);
     }
 
     public ConditionalHandler(ConditionNotMetAction conditionNotMetAction, Handler nextHandler)
     {
+        this(conditionNotMetAction, false, nextHandler);
+    }
+
+    public ConditionalHandler(ConditionNotMetAction conditionNotMetAction, boolean dynamic, Handler nextHandler)
+    {
+        super(dynamic, nextHandler);
         _conditionNotMetAction = conditionNotMetAction;
-        if (nextHandler != null)
-            setHandler(nextHandler);
     }
 
     /**
@@ -364,20 +368,6 @@ public class ConditionalHandler extends Handler.Wrapper
     @Override
     protected void doStart() throws Exception
     {
-        switch (_conditionNotMetAction)
-        {
-            case SKIP_THIS ->
-            {
-                if (getHandler() == null)
-                    throw new IllegalStateException("No next Handler");
-            }
-            case SKIP_NEXT ->
-            {
-                if (!(getHandler() instanceof Handler.Singleton nextWrapper) || nextWrapper.getHandler() == null)
-                   throw new IllegalStateException("No next Handler.Wrapper next");
-            }
-        }
-
         _handlePredicate = TypeUtil.truePredicate();
 
         if (!_methods.isEmpty())
@@ -390,7 +380,7 @@ public class ConditionalHandler extends Handler.Wrapper
         super.doStart();
     }
 
-    public boolean handle(Request request, Response response, Callback callback) throws Exception
+    public final boolean handle(Request request, Response response, Callback callback) throws Exception
     {
         // This is the code we would have in handle if MethodHandlers were not used
         if (_handlePredicate.test(request))
@@ -399,7 +389,7 @@ public class ConditionalHandler extends Handler.Wrapper
         return switch (_conditionNotMetAction)
         {
             case DO_NOT_HANDLE -> doNotHandle(request, response, callback);
-            case SKIP_THIS -> getHandler().handle(request, response, callback);
+            case SKIP_THIS -> getHandler() != null && getHandler().handle(request, response, callback);
             case SKIP_NEXT -> getHandler() instanceof Singleton singleton &&
                 singleton.getHandler() != null &&
                 singleton.getHandler().handle(request, response, callback);

@@ -42,9 +42,9 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 /**
- * <p>A quality of service {@link Handler} that limits the number
- * of concurrent requests, to provide more predictable end-user
- * experience in case descendant {@link Handler}s have limited
+ * <p>A quality of service {@link Handler} that {@link ConditionalHandler conditionally}
+ * limits the number of concurrent requests, to provide more predictable
+ * end-user experience in case descendant {@link Handler}s have limited
  * capacity.</p>
  * <p>This {@code Handler} limits the number of concurrent requests
  * to the number configured via {@link #setMaxRequestCount(int)}.
@@ -70,7 +70,7 @@ import org.slf4j.LoggerFactory;
  * always be able to access the web application.</p>
  */
 @ManagedObject
-public class QoSHandler extends Handler.Wrapper
+public class QoSHandler extends ConditionalHandler
 {
     private static final Logger LOG = LoggerFactory.getLogger(QoSHandler.class);
     private static final String EXPIRED_ATTRIBUTE_NAME = QoSHandler.class.getName() + ".expired";
@@ -89,7 +89,7 @@ public class QoSHandler extends Handler.Wrapper
 
     public QoSHandler(Handler handler)
     {
-        super(false, handler);
+        super(ConditionNotMetAction.SKIP_THIS, false, handler);
     }
 
     /**
@@ -180,7 +180,7 @@ public class QoSHandler extends Handler.Wrapper
     }
 
     @Override
-    public boolean handle(Request request, Response response, Callback callback) throws Exception
+    public boolean doHandle(Request request, Response response, Callback callback) throws Exception
     {
         if (LOG.isDebugEnabled())
             LOG.debug("{} handling {}", this, request);
@@ -257,7 +257,7 @@ public class QoSHandler extends Handler.Wrapper
         if (LOG.isDebugEnabled())
             LOG.debug("{} forwarding {}", this, request);
         request.addHttpStreamWrapper(stream -> new Resumer(stream, request));
-        return super.handle(request, response, callback);
+        return super.doHandle(request, response, callback);
     }
 
     private void suspend(Request request, Response response, Callback callback)

@@ -334,4 +334,78 @@ public class QoSHandlerTest
             })
         );
     }
+
+    @Test
+    public void testConditional() throws Exception
+    {
+        int maxRequests = 1;
+        QoSHandler qosHandler = new QoSHandler();
+        qosHandler.excludePath("/special/*");
+        qosHandler.setMaxRequestCount(maxRequests);
+        List<Callback> callbacks = new ArrayList<>();
+        qosHandler.setHandler(new Handler.Abstract()
+        {
+            @Override
+            public boolean handle(Request request, Response response, Callback callback)
+            {
+                // Save the callback but do not succeed it yet.
+                callbacks.add(callback);
+                return true;
+            }
+        });
+        start(qosHandler);
+
+
+        // Wait until a normal request arrives at the handler.
+        LocalConnector.LocalEndPoint normalEndPoint = connector.executeRequest("""
+            GET /normal/request HTTP/1.1
+            Host: localhost
+                            
+            """);
+        await().atMost(5, TimeUnit.SECONDS).until(callbacks::size, is(1));
+
+        // Check that another normal request does not arrive at the handler
+        LocalConnector.LocalEndPoint anotherEndPoint = connector.executeRequest("""
+            GET /another/normal/request HTTP/1.1
+            Host: localhost
+                            
+            """);
+        await().atLeast(100, TimeUnit.MILLISECONDS).until(callbacks::size, is(1));
+
+        // Wait until special request arrives at the handler
+        LocalConnector.LocalEndPoint specialEndPoint = connector.executeRequest("""
+            GET /special/info HTTP/1.1
+            Host: localhost
+                            
+            """);
+
+        // Wait that the request arrives at the server.
+        await().atMost(5, TimeUnit.SECONDS).until(callbacks::size, is(2));
+
+        // Finish the special request
+        callbacks.get(1).succeeded();
+        String text = specialEndPoint.getResponse(false, 5, TimeUnit.SECONDS);
+        HttpTester.Response response = HttpTester.parseResponse(text);
+        assertEquals(HttpStatus.OK_200, response.getStatus());
+
+        // Check that other normal request is still waiting
+        await().atLeast(100, TimeUnit.MILLISECONDS).until(callbacks::size, is(2));
+
+        // Finish the first normal request
+        callbacks.get(0).succeeded();
+        text = normalEndPoint.getResponse(false, 5, TimeUnit.SECONDS);
+        response = HttpTester.parseResponse(text);
+        assertEquals(HttpStatus.OK_200, response.getStatus());
+
+        // wait for the second normal request to arrive at the handler
+        await().atMost(5, TimeUnit.SECONDS).until(callbacks::size, is(3));
+
+        // Finish the second normal request
+        callbacks.get(2).succeeded();
+        text = anotherEndPoint.getResponse(false, 5, TimeUnit.SECONDS);
+        response = HttpTester.parseResponse(text);
+        assertEquals(HttpStatus.OK_200, response.getStatus());
+
+    }
+
 }

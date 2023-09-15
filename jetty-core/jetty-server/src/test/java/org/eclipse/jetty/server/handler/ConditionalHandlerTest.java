@@ -102,6 +102,20 @@ public class ConditionalHandlerTest
 
     @ParameterizedTest
     @MethodSource("conditionalHandlers")
+    public void testNoConditions(TestConditionalHandler testHandler) throws Exception
+    {
+        startServer(testHandler);
+        String response = _connector.getResponse("GET / HTTP/1.0\n\n");
+        assertThat(response, containsString("200 OK"));
+        assertThat(response, containsString("Test: applied"));
+
+        response = _connector.getResponse("POST /foo HTTP/1.0\n\n");
+        assertThat(response, containsString("200 OK"));
+        assertThat(response, containsString("Test: applied"));
+    }
+
+    @ParameterizedTest
+    @MethodSource("conditionalHandlers")
     public void testMethod(TestConditionalHandler testHandler) throws Exception
     {
         testHandler.includeMethod("GET");
