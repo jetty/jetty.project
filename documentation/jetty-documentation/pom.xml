@@ -9,12 +9,14 @@
   <modelVersion>4.0.0</modelVersion>
   <artifactId>jetty-documentation</artifactId>
   <name>Documentation :: Guides</name>
-  <packaging>jar</packaging>
+  <packaging>pom</packaging>
 
   <properties>
     <bundle-symbolic-name>${project.groupId}</bundle-symbolic-name>
     <asciidoctor.skip>${skipTests}</asciidoctor.skip>
     <jacoco.skip>true</jacoco.skip>
+    <javadoc.skip>true</javadoc.skip>
+    <sources.skip>true</sources.skip>
   </properties>
 
   <profiles>
@@ -88,6 +90,7 @@
     </resources>
     <plugins>
       <plugin>
+        <groupId>org.apache.maven.plugins</groupId>
         <artifactId>maven-enforcer-plugin</artifactId>
         <configuration>
           <fail>false</fail>
@@ -140,11 +143,9 @@
             <project-version>${project.version}</project-version>
             <maven-local-repo>${session.repositorySession.localRepository.basedir.absolutePath}</maven-local-repo>
             <version>${project.version}</version>
-<!--            <SRCDIR>./src/main/asciidoc</SRCDIR>-->
             <prog-guide>../programming-guide/index.html</prog-guide>
             <op-guide>../operations-guide/index.html</op-guide>
             <javadoc-url>https://eclipse.dev/jetty/javadoc/jetty-12</javadoc-url>
-<!--            <TIMESTAMP>2023-07-31T06:06:52Z</TIMESTAMP>-->
           </attributes>
         </configuration>
         <executions>
@@ -232,9 +233,23 @@
               <outputDirectory>${project.build.directory}/</outputDirectory>
             </configuration>
           </execution>
+          <execution>
+            <id>copy-javadoc-jar</id>
+            <phase>generate-resources</phase>
+            <goals>
+              <goal>copy-dependencies</goal>
+            </goals>
+            <configuration>
+              <includeGroupIds>org.eclipse.jetty</includeGroupIds>
+              <includeArtifactIds>javadoc</includeArtifactIds>
+              <classifier>javadoc</classifier>
+              <outputDirectory>${project.build.directory}/other-artifacts/</outputDirectory>
+            </configuration>
+          </execution>
         </executions>
       </plugin>
       <plugin>
+        <groupId>org.apache.maven.plugins</groupId>
         <artifactId>maven-assembly-plugin</artifactId>
         <configuration>
           <descriptors>
@@ -248,6 +263,28 @@
             <goals>
               <goal>single</goal>
             </goals>
+          </execution>
+        </executions>
+      </plugin>
+      <plugin>
+        <groupId>org.codehaus.mojo</groupId>
+        <artifactId>build-helper-maven-plugin</artifactId>
+        <executions>
+          <execution>
+            <id>attach-javadoc</id>
+            <phase>package</phase>
+            <goals>
+              <goal>attach-artifact</goal>
+            </goals>
+            <configuration>
+              <artifacts>
+                <artifact>
+                  <file>${project.build.directory}/other-artifacts/javadoc-${project.version}-javadoc.jar</file>
+                  <type>jar</type>
+                  <classifier>javadoc</classifier>
+                </artifact>
+              </artifacts>
+            </configuration>
           </execution>
         </executions>
       </plugin>
@@ -357,6 +394,13 @@
       <artifactId>jetty-home</artifactId>
       <version>${project.version}</version>
       <type>zip</type>
+      <optional>true</optional>
+    </dependency>
+    <dependency>
+      <groupId>org.eclipse.jetty</groupId>
+      <artifactId>javadoc</artifactId>
+      <version>${project.version}</version>
+      <classifier>javadoc</classifier>
       <optional>true</optional>
     </dependency>
   </dependencies>
