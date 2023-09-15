@@ -16,7 +16,6 @@ package org.eclipse.jetty.io.content;
 import java.io.IOException;
 import java.nio.ByteBuffer;
 import java.nio.channels.WritePendingException;
-import java.util.concurrent.atomic.AtomicReference;
 
 import org.eclipse.jetty.io.ByteBufferAggregator;
 import org.eclipse.jetty.io.ByteBufferPool;
@@ -24,7 +23,7 @@ import org.eclipse.jetty.io.Content;
 import org.eclipse.jetty.io.RetainableByteBuffer;
 import org.eclipse.jetty.util.BufferUtil;
 import org.eclipse.jetty.util.Callback;
-import org.eclipse.jetty.util.CountingCallback;
+import org.eclipse.jetty.util.IteratingCallback;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -45,19 +44,10 @@ public class BufferedContentSink implements Content.Sink
     private final boolean _direct;
     private final int _maxBufferSize;
     private final int _maxAggregationSize;
-    private final AtomicReference<AggregateState> _aggregateState = new AtomicReference<>(AggregateState.IDLE);
+    private final IteratingWriteCallback _iteratingWriteCallback;
     private ByteBufferAggregator _aggregator;
     private boolean _firstWrite = true;
     private boolean _lastWritten;
-    private volatile CountingCallback _countingCallback;
-
-    private enum AggregateState
-    {
-        IDLE,
-        WRITING,
-        ITERATING,
-        PENDING
-    }
 
     public BufferedContentSink(Content.Sink delegate, ByteBufferPool bufferPool, boolean direct, int maxBufferSize, int maxAggregationSize)
     {
@@ -72,6 +62,7 @@ public class BufferedContentSink implements Content.Sink
         _direct = direct;
         _maxBufferSize = maxBufferSize;
         _maxAggregationSize = maxAggregationSize;
+        _iteratingWriteCallback = new IteratingWriteCallback(delegate);
     }
 
     @Override
@@ -98,114 +89,18 @@ public class BufferedContentSink implements Content.Sink
         }
 
         ByteBuffer current = byteBuffer != null ? byteBuffer : BufferUtil.EMPTY_BUFFER;
-        if (current.remaining() > _maxAggregationSize)
+        if (current.remaining() <= _maxAggregationSize)
+        {
+            // current buffer can be aggregated
+            if (_aggregator == null)
+                _aggregator = new ByteBufferAggregator(_bufferPool, _direct, Math.min(START_BUFFER_SIZE, _maxBufferSize), _maxBufferSize);
+            aggregateAndWrite(last, current, callback);
+        }
+        else
         {
             // current buffer is greater than the max aggregation size
             directWrite(last, current, callback);
-            return;
         }
-
-        // current buffer can be aggregated
-        if (_aggregator == null)
-            _aggregator = new ByteBufferAggregator(_bufferPool, _direct, Math.min(START_BUFFER_SIZE, _maxBufferSize), _maxBufferSize);
-
-        /*
-         * The given callback might call write() again, which could stack overflow.
-         * To avoid this, we must keep a state to avoid re-entering write() when the
-         * callback is succeeded by the delegate's write() call and delay the given
-         * callback's success to when we're exiting the original write() call.
-         */
-        AggregateState state = _aggregateState.updateAndGet(s -> switch (s)
-        {
-            case IDLE -> AggregateState.WRITING;
-            case ITERATING -> AggregateState.ITERATING;
-            case WRITING, PENDING -> throw new WritePendingException();
-        });
-        Callback cb = null;
-
-        // while the state is iterating, that means another thread will change to idle unless we change to PENDING first
-        while (state == AggregateState.ITERATING)
-        {
-            // If we can change to PENDING...
-            if (_aggregateState.compareAndSet(AggregateState.ITERATING, AggregateState.PENDING))
-            {
-                // then the other thread will spin waiting for our counting callback
-                state = AggregateState.PENDING;
-                assert _countingCallback == null;
-                cb = _countingCallback = new CountingCallback(callback, 2);
-                break;
-            }
-
-            // If we couldn't change to PENDING, somebody else changed the state.  Maybe we are idle now...
-            if (_aggregateState.compareAndSet(AggregateState.IDLE, AggregateState.WRITING))
-            {
-                // The WRITING thread changed to IDLE and is exiting, so we are now the WRITING thread
-                state = AggregateState.WRITING;
-                break;
-            }
-
-            // Not ITERATING nor IDLE, so some other thread must have got in with PENDING first. This is
-            // probably a concurrent write situation, but let's spin waiting on them for now.
-            Thread.onSpinWait();
-        }
-
-        // We are not ITERATING, so we are either PENDING or WRITING, if we are the later...
-        if (state == AggregateState.WRITING)
-        {
-            // Wrap the callback so that it will enter ITERATING state before calling the callback,
-            // (to allows a concurrent call to write), then iterate after calling the callback.
-            cb = new Callback.Nested(callback)
-            {
-                @Override
-                public void succeeded()
-                {
-                    if (!_aggregateState.compareAndSet(AggregateState.WRITING, AggregateState.ITERATING))
-                        throw new AssertionError();
-                    super.succeeded();
-                    iterate();
-                }
-
-                @Override
-                public void failed(Throwable x)
-                {
-                    if (!_aggregateState.compareAndSet(AggregateState.WRITING, AggregateState.ITERATING))
-                        throw new AssertionError();
-                    super.failed(x);
-                    iterate();
-                }
-
-                private void iterate()
-                {
-                    // we are ITERATING after completing our write
-                    while (true)
-                    {
-                        // If we can change to IDLE, then we can exit
-                        if (_aggregateState.compareAndSet(AggregateState.ITERATING, AggregateState.IDLE))
-                            return;
-
-                        // We couldn't change to IDLE, so some other thread must have changed us to PENDING
-                        assert _aggregateState.get() == AggregateState.PENDING;
-
-                        // Spin waiting for the counting callback
-                        while (_countingCallback == null)
-                            Thread.onSpinWait();
-
-                        // Take the counting callback
-                        Callback countingCallback = _countingCallback;
-                        _countingCallback = null;
-
-                        // If we can't switch back to ITERATING, then something has gone wrong
-                        if (!_aggregateState.compareAndSet(AggregateState.PENDING, AggregateState.ITERATING))
-                            throw new IllegalArgumentException();
-
-                        // succeed the counting callback
-                        countingCallback.succeeded();
-                    }
-                }
-            };
-        }
-
-        aggregateAndWrite(last, current, cb);
     }
 
     /**
@@ -222,17 +117,17 @@ public class BufferedContentSink implements Content.Sink
         {
             if (LOG.isDebugEnabled())
                 LOG.debug("nothing aggregated, flushing current buffer {}", currentBuffer);
-            _delegate.write(last, currentBuffer, callback);
+            _iteratingWriteCallback.write(last, currentBuffer, callback);
         }
         else
         {
             if (LOG.isDebugEnabled())
                 LOG.debug("flushing aggregated buffer {}", aggregatedBuffer);
-            _delegate.write(false, aggregatedBuffer.getByteBuffer(), new WriteCallback(aggregatedBuffer, callback, () ->
+            _iteratingWriteCallback.write(false, aggregatedBuffer.getByteBuffer(), new ChainingWriteCallback(aggregatedBuffer, callback, () ->
             {
                 if (LOG.isDebugEnabled())
                     LOG.debug("flushing current buffer {}", currentBuffer);
-                _delegate.write(last, currentBuffer, callback);
+                _iteratingWriteCallback.write(last, currentBuffer, callback);
             }));
         }
     }
@@ -251,19 +146,19 @@ public class BufferedContentSink implements Content.Sink
             RetainableByteBuffer aggregatedBuffer = _aggregator.takeRetainableByteBuffer();
             if (LOG.isDebugEnabled())
                 LOG.debug("complete; writing aggregated buffer: {} bytes", aggregatedBuffer.remaining());
-            _delegate.write(true, aggregatedBuffer.getByteBuffer(), Callback.from(callback, aggregatedBuffer::release));
+            _iteratingWriteCallback.write(true, aggregatedBuffer.getByteBuffer(), Callback.from(callback, aggregatedBuffer::release));
         }
         else if (write)
         {
             RetainableByteBuffer aggregatedBuffer = _aggregator.takeRetainableByteBuffer();
             if (LOG.isDebugEnabled())
                 LOG.debug("writing aggregated buffer: {} bytes", aggregatedBuffer.remaining());
-            _delegate.write(false, aggregatedBuffer.getByteBuffer(), new WriteCallback(aggregatedBuffer, callback, () ->
+            _iteratingWriteCallback.write(false, aggregatedBuffer.getByteBuffer(), new ChainingWriteCallback(aggregatedBuffer, callback, () ->
             {
                 if (LOG.isDebugEnabled())
                     LOG.debug("written aggregated buffer, writing remaining of current: {} bytes{}", currentBuffer.remaining(), (last ? " (last write)" : ""));
                 if (last)
-                    _delegate.write(true, currentBuffer, callback);
+                    _iteratingWriteCallback.write(true, currentBuffer, callback);
                 else
                     aggregateAndWrite(false, currentBuffer, callback);
             }));
@@ -272,11 +167,12 @@ public class BufferedContentSink implements Content.Sink
         {
             if (LOG.isDebugEnabled())
                 LOG.debug("buffer fully aggregated, delaying writing - aggregator: {}", _aggregator);
-            callback.succeeded();
+            // Delegate callback.succeeded() to the iterating callback to avoid StackOverflowError.
+            _iteratingWriteCallback.write(false, null, callback);
         }
     }
 
-    private record WriteCallback(RetainableByteBuffer aggregatedBuffer, Callback delegate, Runnable onSuccess) implements Callback
+    private record ChainingWriteCallback(RetainableByteBuffer aggregatedBuffer, Callback delegate, Runnable onSuccess) implements Callback
     {
         @Override
         public void succeeded()
@@ -292,6 +188,61 @@ public class BufferedContentSink implements Content.Sink
                 LOG.debug("failed to write buffer", x);
             aggregatedBuffer.release();
             delegate.failed(x);
+        }
+    }
+
+    private static class IteratingWriteCallback extends IteratingCallback
+    {
+        private final Content.Sink _sink;
+        private boolean _last;
+        private ByteBuffer _buffer;
+        private Callback _callback;
+        private boolean _lastWritten;
+
+        IteratingWriteCallback(Content.Sink sink)
+        {
+            _sink = sink;
+        }
+
+        void write(boolean last, ByteBuffer byteBuffer, Callback callback)
+        {
+            if (_callback != null)
+                throw new WritePendingException();
+            _last = last;
+            _buffer = byteBuffer;
+            _callback = callback;
+            iterate();
+        }
+
+        @Override
+        protected Action process()
+        {
+            if (_lastWritten)
+                return Action.SUCCEEDED;
+            if (_callback == null)
+                return Action.IDLE;
+            _lastWritten = _last;
+            if (_buffer != null)
+                _sink.write(_last, _buffer, this);
+            else
+                succeeded();
+            return Action.SCHEDULED;
+        }
+
+        @Override
+        public void succeeded()
+        {
+            _buffer = null;
+            Callback callback = _callback;
+            _callback = null;
+            callback.succeeded();
+            super.succeeded();
+        }
+
+        @Override
+        protected void onCompleteFailure(Throwable cause)
+        {
+            _callback.failed(cause);
         }
     }
 }
