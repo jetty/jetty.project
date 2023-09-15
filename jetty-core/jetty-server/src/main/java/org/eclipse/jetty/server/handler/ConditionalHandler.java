@@ -49,17 +49,13 @@ import org.slf4j.LoggerFactory;
  *     <li>A {@link PathSpec} or sting representation, which can be efficient matched.</li>
  *     <li>An arbitrary {@link Predicate} taking the {@link Request}, which is matched in a linear test of all predicates.</li>
  * </ul>
- * <p>
- * If the conditions are met, the {@link #doHandle(Request, Response, Callback)} method will be invoked.
+ * <p>If the conditions are met, the {@link #doHandle(Request, Response, Callback)} method will be invoked.
  * However, as the default implementation to to call the {@link #getHandler() next Handler}, an optimization is applied to
- * directly call the next {@code Handler} if {@code doHandler} has not been extended.
- * </p>
- * <p>
- * If the conditions are not met, then the behaviour will be determined by the {@link ConditionNotMetAction} passed to the
- * constructor.
- * </p>
- * <p>
- * This class may be used as the base class of handler providing optional behavior: <pre>{@code
+ * directly call the next {@code Handler} if {@code doHandler} has not been extended.</p>
+ * <p>If the conditions are not met, then the behaviour will be determined by the {@link ConditionNotMetAction} passed to the
+ * constructor.</p>
+ * <p>This class may be used as the base class of handler providing optional behavior:</p>
+ * <pre>{@code
  * public class MyOptionalHandler extends ConditionalHandler
  * {
  *     MyOptionalHandler()
@@ -75,16 +71,14 @@ import org.slf4j.LoggerFactory;
  *     }
  * }
  * }</pre>
- * If the conditions added to {@code MyOptionalHandler} are met, then the {@code doHandle} method is called
- * and a response header added before invoking the next handler, otherwise the next handler is directly invoked.
- * </p>
- * <p>
- * Alternately, this class may be used directly to make a following {@link Handler.Wrapper} optional: <pre>{@code
+ * <p>If the conditions added to {@code MyOptionalHandler} are met, then the {@code doHandle} method is called
+ * and a response header added before invoking the next handler, otherwise the next handler is directly invoked.</p>
+ * <p>Alternately, this class may be used directly to make a following {@link Handler.Wrapper} optional:</p>
+ * <pre>{@code
  *     new ConditionalHandler(ConditionNotMetAction.SKIP_NEXT, new MyHandlerWrapper());
  * }</pre>
- * If the conditions added to {@code MyOptionalHandler} are met, then the {@code MyHandlerWrapper} is invoked normally,
- * otherwise the next handler after the {@code MyHandlerWrapper} is directly invoked.
- * </p>
+ * <p>If the conditions added to {@code MyOptionalHandler} are met, then the {@code MyHandlerWrapper} is invoked normally,
+ * otherwise the next handler after the {@code MyHandlerWrapper} is directly invoked.</p>
  */
 public class ConditionalHandler extends Handler.Wrapper
 {
