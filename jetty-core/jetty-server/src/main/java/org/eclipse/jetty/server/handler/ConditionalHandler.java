@@ -25,6 +25,7 @@ import java.util.Objects;
 import java.util.Set;
 import java.util.function.Predicate;
 
+import org.eclipse.jetty.http.HttpStatus;
 import org.eclipse.jetty.http.pathmap.PathSpec;
 import org.eclipse.jetty.http.pathmap.PathSpecSet;
 import org.eclipse.jetty.server.ConnectionMetaData;
@@ -42,80 +43,46 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 /**
- * A {@link Handler.Wrapper} that may conditionally handle a {@link Request}.
+ * An abstract {@link Handler.Wrapper} that may conditionally handle a {@link Request}.
  * The conditions are implemented by {@link IncludeExclude}s of:
  * <ul>
  *     <li>A method name, which can be efficiently matched</li>
  *     <li>A {@link PathSpec} or sting representation, which can be efficient matched.</li>
  *     <li>An arbitrary {@link Predicate} taking the {@link Request}, which is matched in a linear test of all predicates.</li>
  * </ul>
- * <p>If the conditions are met, the {@link #doHandle(Request, Response, Callback)} method will be invoked.
- * However, as the default implementation is to call the {@link #getHandler() next Handler}, an optimization is applied to
- * directly call the next {@code Handler} if {@code doHandler} has not been extended.</p>
- * <p>If the conditions are not met, then the behaviour will be determined by the {@link ConditionNotMetAction} passed to the
- * constructor.</p>
- * <p>This class may be used as the base class of handler providing optional behavior:</p>
+ * <p>If the conditions are met, the abstract {@link #doHandle(Request, Response, Callback)} method will be invoked,
+ * otherwise the {@link #doNotHandle(Request, Response, Callback)} method will be invoked, which by default calls
+ * the {@link #nextHandle(Request, Response, Callback)} method.</p>
+ * <p>A typical usage is to extend the class and provide an implementation of {@link #doHandle(Request, Response, Callback)}:</p>
  * <pre>{@code
  * public class MyOptionalHandler extends ConditionalHandler
  * {
- *     MyOptionalHandler()
- *     {
- *         super(ConditionNotMetAction.SKIP_THIS);
- *     }
- *
  *     @Override
  *     public boolean doHandle(Request request, Response response, Callback callback)
  *     {
  *         response.getHeaders().add("Test", "My Optional Handling");
- *         return getHandler().handle(request, response, callback);
+ *         return nextHandle(request, response, callback);
  *     }
  * }
  * }</pre>
  * <p>If the conditions added to {@code MyOptionalHandler} are met, then the {@code doHandle} method is called
- * and a response header added before invoking the next handler, otherwise the next handler is directly invoked.</p>
- * <p>Alternately, this class may be used directly to make a following {@link Handler.Wrapper} optional:</p>
- * <pre>{@code
- *     new ConditionalHandler(ConditionNotMetAction.SKIP_NEXT, new MyHandlerWrapper());
- * }</pre>
- * <p>If the conditions added to {@code ConditionalHandler} are met, then the {@code MyHandlerWrapper} is invoked normally,
- * otherwise the next handler after the {@code MyHandlerWrapper} is directly invoked.</p>
+ * and a response header added before invoking {@link #nextHandle(Request, Response, Callback)}, otherwise
+ * the {@link #nextHandle(Request, Response, Callback)} is directly invoked.</p>
+ *
+ * <p>Alternately, one of the concrete subclasses may be used with the optional behaviour in the following {@link Handler}(s).
+ * These implementations all call {@link #nextHandle(Request, Response, Callback)} if the conditions are met, otherwise
+ * they vary in how they behave in {@link #doNotHandle(Request, Response, Callback)} when the conditions are not met:</p>
+ * <ul>
+ *     <li>{@link Terminate} - {@code false} is returned</li>
+ *     <li>{@link Forbidden} - a {@link HttpStatus#FORBIDDEN_403} response is sent</li>
+ *     <li>{@link SkipNext} - the {@link #getHandler() next handler} is skipped and instead, if the next handler is a
+ *     {@link org.eclipse.jetty.server.Handler.Singleton}, then its next handler is invoked</li>
+ * </ul>
  */
-public class ConditionalHandler extends Handler.Wrapper
+public abstract class ConditionalHandler extends Handler.Wrapper
 {
     private static final Logger LOG = LoggerFactory.getLogger(ConditionalHandler.class);
 
-    /**
-     * Enumeration of the actions that can be taken if the request is to not be handled due to failing to
-     * meet the conditions.
-     */
-    public enum ConditionNotMetAction
-    {
-        /**
-         * If the conditions are not met, then the {@link #doNotHandle(Request, Response, Callback)} method is invoked,
-         * which by default will return {@code false}.  This action is used when the entire {@code Handler} branch is
-         * to be bypassed.
-         */
-        DO_NOT_HANDLE,
-
-        /**
-         * If the conditions are not met, then bypass the {@link #doHandle(Request, Response, Callback)} method by
-         * invoking the {@link Handler#handle(Request, Response, Callback)} method of the {@link #getHandler() next Handler}.
-         * This action is used if this class has been extended to provided specific optional behavior in the {@code doHandle}
-         * method.
-         */
-        SKIP_THIS,
-
-        /**
-         * If the conditions are not met, then bypass the {@link Handler#handle(Request, Response, Callback)} method
-         * of the {@link #getHandler() next Handler} invoking the {@link Handler#handle(Request, Response, Callback)}
-         * method of the {@link Handler} {@link Singleton#getHandler() after} the {@link #getHandler() nextHandler}.
-         * This action is used to make the specific behavior of the {@link #getHandler() following}
-         * {@link Handler.Wrapper Wrapper} class optional.
-         */
-        SKIP_NEXT,
-    }
-
-    private final ConditionNotMetAction _conditionNotMetAction;
     private final IncludeExclude<String> _methods = new IncludeExclude<>();
     private final IncludeExclude<String> _pathSpecs = new IncludeExclude<>(PathSpecSet.class);
     private final IncludeExcludeSet<Predicate<Request>, Request> _predicates = new IncludeExcludeSet<>(PredicateSet.class);
@@ -123,28 +90,17 @@ public class ConditionalHandler extends Handler.Wrapper
 
     public ConditionalHandler()
     {
-        this(ConditionNotMetAction.DO_NOT_HANDLE);
+        this(false, null);
     }
 
     public ConditionalHandler(Handler nextHandler)
     {
-        this(ConditionNotMetAction.SKIP_NEXT, false, nextHandler);
+        this(false, nextHandler);
     }
 
-    public ConditionalHandler(ConditionNotMetAction conditionNotMetAction)
-    {
-        this(conditionNotMetAction, false, null);
-    }
-
-    public ConditionalHandler(ConditionNotMetAction conditionNotMetAction, Handler nextHandler)
-    {
-        this(conditionNotMetAction, false, nextHandler);
-    }
-
-    public ConditionalHandler(ConditionNotMetAction conditionNotMetAction, boolean dynamic, Handler nextHandler)
+    public ConditionalHandler(boolean dynamic, Handler nextHandler)
     {
         super(dynamic, nextHandler);
-        _conditionNotMetAction = conditionNotMetAction;
     }
 
     /**
@@ -380,20 +336,13 @@ public class ConditionalHandler extends Handler.Wrapper
         if (_handlePredicate.test(request))
             return doHandle(request, response, callback);
 
-        return switch (_conditionNotMetAction)
-        {
-            case DO_NOT_HANDLE -> doNotHandle(request, response, callback);
-            case SKIP_THIS -> getHandler() != null && getHandler().handle(request, response, callback);
-            case SKIP_NEXT -> getHandler() instanceof Singleton singleton &&
-                singleton.getHandler() != null &&
-                singleton.getHandler().handle(request, response, callback);
-        };
+        return doNotHandle(request, response, callback);
     }
 
     /**
      * Handle a request that has met the conditions.
-     * The default implementation calls the {@link Handler#handle(Request, Response, Callback)} method
-     * on the {@link #getHandler() next Handler}.
+     * Typically, the implementation will provide optional handling and then call the
+     * {@link #nextHandle(Request, Response, Callback)} method to continue handling.
      * @param request The request to handle
      * @param response The response to generate
      * @param callback The callback for completion
@@ -401,7 +350,19 @@ public class ConditionalHandler extends Handler.Wrapper
      * @throws Exception If there is a problem handling
      * @see Handler#handle(Request, Response, Callback)
      */
-    protected boolean doHandle(Request request, Response response, Callback callback) throws Exception
+    protected abstract boolean doHandle(Request request, Response response, Callback callback) throws Exception;
+
+    /**
+     * Handle a request by invoking the {@link #handle(Request, Response, Callback)} method of the
+     * {@link #getHandler() next Handler}.
+     * @param request The request to handle
+     * @param response The response to generate
+     * @param callback The callback for completion
+     * @return True if this handler will complete the callback
+     * @throws Exception If there is a problem handling
+     * @see Handler#handle(Request, Response, Callback)
+     */
+    protected boolean nextHandle(Request request, Response response, Callback callback) throws Exception
     {
         Handler next = getHandler();
         return next != null && next.handle(request, response, callback);
@@ -420,7 +381,7 @@ public class ConditionalHandler extends Handler.Wrapper
      */
     protected boolean doNotHandle(Request request, Response response, Callback callback) throws Exception
     {
-        return false;
+        return nextHandle(request, response, callback);
     }
 
     @Override
@@ -676,6 +637,99 @@ public class ConditionalHandler extends Handler.Wrapper
         public String toString()
         {
             return String.format("%s@%x{%s}", getClass().getSimpleName(), hashCode(), _pathSpec);
+        }
+    }
+
+    /**
+     * An implementation of {@link ConditionalHandler} that will invoke {@link #nextHandle(Request, Response, Callback)} if
+     * the conditions are met, otherwise {@code false} is returned from {@link #doNotHandle(Request, Response, Callback)} and
+     * no further handling is done.
+     */
+    public static class Terminate extends ConditionalHandler
+    {
+        public Terminate()
+        {
+            super();
+        }
+
+        public Terminate(Handler handler)
+        {
+            super(handler);
+        }
+
+        @Override
+        protected boolean doHandle(Request request, Response response, Callback callback) throws Exception
+        {
+            return nextHandle(request, response, callback);
+        }
+
+        @Override
+        protected boolean doNotHandle(Request request, Response response, Callback callback) throws Exception
+        {
+            return false;
+        }
+    }
+
+    /**
+     * An implementation of {@link ConditionalHandler} that will invoke {@link #nextHandle(Request, Response, Callback)} if
+     * the conditions are met, otherwise {@link #doNotHandle(Request, Response, Callback)} sends a
+     * {@link HttpStatus#FORBIDDEN_403} response.
+     */
+    public static class Forbidden extends ConditionalHandler
+    {
+        public Forbidden()
+        {
+            super();
+        }
+
+        public Forbidden(Handler handler)
+        {
+            super(handler);
+        }
+
+        @Override
+        protected boolean doHandle(Request request, Response response, Callback callback) throws Exception
+        {
+            return nextHandle(request, response, callback);
+        }
+
+        @Override
+        protected boolean doNotHandle(Request request, Response response, Callback callback) throws Exception
+        {
+            Response.writeError(request, response, callback, HttpStatus.FORBIDDEN_403);
+            return true;
+        }
+    }
+
+    /**
+     * An implementation of {@link ConditionalHandler} that will invoke {@link #nextHandle(Request, Response, Callback)} if
+     * the conditions are met, otherwise {@link #doNotHandle(Request, Response, Callback)} will skip the next {@link Handler}
+     * by its {@link Singleton#getHandler() next Handler}.
+     */
+    public static class SkipNext extends ConditionalHandler
+    {
+        public SkipNext()
+        {
+            super();
+        }
+
+        public SkipNext(Handler handler)
+        {
+            super(handler);
+        }
+
+        @Override
+        protected boolean doHandle(Request request, Response response, Callback callback) throws Exception
+        {
+            Handler next = getHandler();
+            return next != null && next.handle(request, response, callback);
+        }
+
+        @Override
+        protected boolean doNotHandle(Request request, Response response, Callback callback) throws Exception
+        {
+            Handler next = getHandler();
+            return next instanceof Singleton wrapper && wrapper.getHandler() != null && wrapper.getHandler().handle(request, response, callback);
         }
     }
 }

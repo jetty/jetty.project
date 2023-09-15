@@ -89,7 +89,7 @@ public class QoSHandler extends ConditionalHandler
 
     public QoSHandler(Handler handler)
     {
-        super(ConditionNotMetAction.SKIP_THIS, false, handler);
+        super(false, handler);
     }
 
     /**
@@ -257,7 +257,7 @@ public class QoSHandler extends ConditionalHandler
         if (LOG.isDebugEnabled())
             LOG.debug("{} forwarding {}", this, request);
         request.addHttpStreamWrapper(stream -> new Resumer(stream, request));
-        return super.doHandle(request, response, callback);
+        return nextHandle(request, response, callback);
     }
 
     private void suspend(Request request, Response response, Callback callback)

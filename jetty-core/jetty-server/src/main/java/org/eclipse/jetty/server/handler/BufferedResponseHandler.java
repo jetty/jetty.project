@@ -67,8 +67,7 @@ public class BufferedResponseHandler extends ConditionalHandler
 
     public BufferedResponseHandler(Handler handler)
     {
-        super(ConditionNotMetAction.SKIP_THIS);
-        setHandler(handler);
+        super(handler);
 
         includeMethod(HttpMethod.GET.asString());
 
