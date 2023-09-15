@@ -55,6 +55,7 @@ import org.eclipse.jetty.server.UserIdentity;
 import org.eclipse.jetty.server.handler.AbstractHandler;
 import org.eclipse.jetty.server.handler.ContextHandler;
 import org.eclipse.jetty.server.handler.HandlerWrapper;
+import org.eclipse.jetty.server.session.Session;
 import org.eclipse.jetty.server.session.SessionHandler;
 import org.eclipse.jetty.util.StringUtil;
 import org.eclipse.jetty.util.TypeUtil;
@@ -80,6 +81,7 @@ import static org.hamcrest.Matchers.startsWith;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertNotNull;
+import static org.junit.jupiter.api.Assertions.assertNull;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
 public class ConstraintTest
@@ -1191,18 +1193,30 @@ public class ConstraintTest
         assertThat(response, not(containsString("JSESSIONID=" + session)));
     }
 
-    @Test
-    public void testSessionOnAuthentication() throws Exception
+    public static Stream<Arguments> onAuthenticationTests()
+    {
+        return Stream.of(
+            Arguments.of(false, 0),
+            Arguments.of(false, -1),
+            Arguments.of(false, 2400),
+            Arguments.of(true, 0),
+            Arguments.of(true, -1),
+            Arguments.of(true, 2400)
+        );
+    }
+
+    @ParameterizedTest
+    @MethodSource("onAuthenticationTests")
+    public void testSessionOnAuthentication(boolean sessionRenewOnAuthentication, int sessionMaxInactiveIntervalOnAuthentication) throws Exception
     {
         final int UNAUTH_SECONDS = 1200;
-        final int AUTH_SECONDS = 2400;
+
         // Use a FormAuthenticator as an example of session authentication
         _security.setAuthenticator(new FormAuthenticator("/testLoginPage", "/testErrorPage", false));
 
-        // First test no changes to the session
         _sessionhandler.setMaxInactiveInterval(UNAUTH_SECONDS);
-        _security.setSessionMaxInactiveIntervalOnAuthentication(0);
-        _security.setSessionRenewedOnAuthentication(false);
+        _security.setSessionRenewedOnAuthentication(sessionRenewOnAuthentication);
+        _security.setSessionMaxInactiveIntervalOnAuthentication(sessionMaxInactiveIntervalOnAuthentication);
         _server.start();
 
         String response;
@@ -1229,67 +1243,41 @@ public class ConstraintTest
         assertThat(response, startsWith("HTTP/1.1 302 "));
         assertThat(response, containsString("Location"));
         assertThat(response, containsString("/ctx/auth/info"));
-        assertThat(response, not(containsString("JSESSIONID=")));
-        // assertThat(response, not(containsString("JSESSIONID=" + session)));
-        // session = response.substring(response.indexOf("JSESSIONID=") + 11, response.indexOf("; Path=/ctx"));
 
-        // check session ID has not changed.
+        if (sessionRenewOnAuthentication)
+        {
+            // check session ID has changed.
+            assertNull(_sessionhandler.getSession(sessionId));
+            assertThat(response, containsString("Set-Cookie:"));
+            assertThat(response, containsString("JSESSIONID="));
+            assertThat(response, not(containsString("JSESSIONID=" + sessionId)));
+            sessionId = response.substring(response.indexOf("JSESSIONID=") + 11, response.indexOf("; Path=/ctx"));
+        }
+        else
+        {
+            // check session ID has not changed.
+            assertThat(response, not(containsString("Set-Cookie:")));
+            assertThat(response, not(containsString("JSESSIONID=")));
+        }
+
+        if (sessionMaxInactiveIntervalOnAuthentication == 0)
+        {
+            // check max interval has not been updated
+            Session session = _sessionhandler.getSession(_sessionhandler.getSessionIdManager().getId(sessionId));
+            assertThat(session.getMaxInactiveInterval(), is(UNAUTH_SECONDS));
+        }
+        else
+        {
+            // check max interval has not been updated
+            Session session = _sessionhandler.getSession(_sessionhandler.getSessionIdManager().getId(sessionId));
+            assertThat(session.getMaxInactiveInterval(), is(sessionMaxInactiveIntervalOnAuthentication));
+        }
+
+        // check session still there.
         response = _connector.getResponse("GET /ctx/auth/info HTTP/1.0\r\n" +
             "Cookie: JSESSIONID=" + sessionId + "\r\n" +
             "\r\n");
         assertThat(response, startsWith("HTTP/1.1 200 OK"));
-
-        // check max interval has not been updated
-        assertThat(_sessionhandler.getSession(_sessionhandler.getSessionIdManager().getId(sessionId)).getMaxInactiveInterval(), is(UNAUTH_SECONDS));
-
-        // Now test with changes to the session
-        _server.stop();
-        _sessionhandler.setMaxInactiveInterval(UNAUTH_SECONDS);
-        _security.setSessionMaxInactiveIntervalOnAuthentication(AUTH_SECONDS);
-        _security.setSessionRenewedOnAuthentication(true);
-        _server.start();
-
-        response = _connector.getResponse("GET /ctx/auth/info HTTP/1.0\r\n\r\n");
-        assertThat(response, containsString(" 302 Found"));
-        assertThat(response, containsString("/ctx/testLoginPage"));
-        assertThat(response, containsString("JSESSIONID="));
-        sessionId = response.substring(response.indexOf("JSESSIONID=") + 11, response.indexOf("; Path=/ctx"));
-
-        response = _connector.getResponse("GET /ctx/testLoginPage HTTP/1.0\r\n" +
-            "Cookie: JSESSIONID=" + sessionId + "\r\n" +
-            "\r\n");
-        assertThat(response, containsString(" 200 OK"));
-        assertThat(response, containsString("URI=/ctx/testLoginPage"));
-        assertThat(response, not(containsString("JSESSIONID=" + sessionId)));
-
-        response = _connector.getResponse("POST /ctx/j_security_check HTTP/1.0\r\n" +
-            "Cookie: JSESSIONID=" + sessionId + "\r\n" +
-            "Content-Type: application/x-www-form-urlencoded\r\n" +
-            "Content-Length: 35\r\n" +
-            "\r\n" +
-            "j_username=user&j_password=password");
-        assertThat(response, startsWith("HTTP/1.1 302 "));
-        assertThat(response, containsString("Location"));
-        assertThat(response, containsString("/ctx/auth/info"));
-        assertThat(response, containsString("JSESSIONID="));
-        assertThat(response, not(containsString("JSESSIONID=" + sessionId)));
-        String oldId = sessionId;
-        sessionId = response.substring(response.indexOf("JSESSIONID=") + 11, response.indexOf("; Path=/ctx"));
-
-        // check old session ID no longer works changed.
-        response = _connector.getResponse("GET /ctx/auth/info HTTP/1.0\r\n" +
-            "Cookie: JSESSIONID=" + oldId + "\r\n" +
-            "\r\n");
-        assertThat(response, startsWith("HTTP/1.1 302 Found"));
-
-        // check new session ID is authenticated.
-        response = _connector.getResponse("GET /ctx/auth/info HTTP/1.0\r\n" +
-            "Cookie: JSESSIONID=" + sessionId + "\r\n" +
-            "\r\n");
-        assertThat(response, startsWith("HTTP/1.1 200 OK"));
-
-        // Check max interval has been updated
-        assertThat(_sessionhandler.getSession(_sessionhandler.getSessionIdManager().getId(sessionId)).getMaxInactiveInterval(), is(AUTH_SECONDS));
     }
 
     @Test

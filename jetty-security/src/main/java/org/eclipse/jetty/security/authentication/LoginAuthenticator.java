@@ -34,8 +34,8 @@ public abstract class LoginAuthenticator implements Authenticator
 
     protected LoginService _loginService;
     protected IdentityService _identityService;
-    private boolean _sessionRenew;
-    private int _sessionMaxInactiveInterval;
+    private boolean _sessionRenewedOnAuthentication;
+    private int _sessionMaxInactiveIntervalOnAuthentication;
 
     protected LoginAuthenticator()
     {
@@ -89,8 +89,8 @@ public abstract class LoginAuthenticator implements Authenticator
         _identityService = configuration.getIdentityService();
         if (_identityService == null)
             throw new IllegalStateException("No IdentityService for " + this + " in " + configuration);
-        _sessionRenew = configuration.isSessionRenewedOnAuthentication();
-        _sessionMaxInactiveInterval = configuration.getSessionMaxInactiveIntervalOnAuthentication();
+        _sessionRenewedOnAuthentication = configuration.isSessionRenewedOnAuthentication();
+        _sessionMaxInactiveIntervalOnAuthentication = configuration.getSessionMaxInactiveIntervalOnAuthentication();
     }
 
     public LoginService getLoginService()
@@ -114,13 +114,13 @@ public abstract class LoginAuthenticator implements Authenticator
     {
         HttpSession session = request.getSession(false);
 
-        if (session != null && (_sessionRenew || _sessionMaxInactiveInterval != 0))
+        if (session != null && (_sessionRenewedOnAuthentication || _sessionMaxInactiveIntervalOnAuthentication != 0))
         {
             synchronized (session)
             {
-                if (_sessionMaxInactiveInterval != 0)
-                    session.setMaxInactiveInterval(_sessionMaxInactiveInterval < 0 ? -1 : _sessionMaxInactiveInterval);
-                if (_sessionRenew)
+                if (_sessionMaxInactiveIntervalOnAuthentication != 0)
+                    session.setMaxInactiveInterval(_sessionMaxInactiveIntervalOnAuthentication < 0 ? -1 : _sessionMaxInactiveIntervalOnAuthentication);
+                if (_sessionRenewedOnAuthentication)
                 {
                     //if we should renew sessions, and there is an existing session that may have been seen by non-authenticated users
                     //(indicated by SESSION_SECURED not being set on the session) then we should change id
