@@ -1267,46 +1267,63 @@ public abstract class AbstractSessionManager extends ContainerLifeCycle implemen
                     }
                 }
             }
+            else if (session.getId().equals(getSessionIdManager().getId(id)))
+            {
+                //we already have a valid session and now have a duplicate ID for it
+                if (LOG.isDebugEnabled())
+                    LOG.debug(duplicateSession(
+                        requestedSessionId, true, requestedSessionIdFromCookie,
+                        id, false, i < cookieIds));
+            }
             else
             {
-                //we currently have a valid session selected. We will throw an error
-                //if there is a _different_ valid session id. Duplicate ids, or
-                //invalid session ids are ignored
-                if (!session.getId().equals(getSessionIdManager().getId(id)))
+                //we already have a valid session and now have an ID for a different session
+                //load the session to see if it is valid or not
+                ManagedSession s = getManagedSession(id);
+                if (s != null && s.isValid())
                 {
-                    if (LOG.isDebugEnabled())
-                        LOG.debug("Multiple different valid session ids: {}, {}", requestedSessionId, id);
-
-                    //load the session to see if it is valid or not
-                    ManagedSession s = getManagedSession(id);
-                    if (s != null && s.isValid())
+                    try
                     {
-                        //release both sessions straight away??
-                        try
-                        {
-                            _sessionCache.release(session);
-                            _sessionCache.release(s);
-                        }
-                        catch (Exception x)
-                        {
-                            if (LOG.isDebugEnabled())
-                                LOG.debug("Error releasing duplicate valid session: {}", id);
-                        }
-
-                        throw new BadMessageException("Duplicate valid sessions: " + requestedSessionId + " ," + id);
+                        _sessionCache.release(session);
                     }
+                    catch (Exception x)
+                    {
+                        if (LOG.isDebugEnabled())
+                            LOG.debug("Error releasing duplicate valid session: {}", requestedSessionId);
+                    }
+                    try
+                    {
+                        _sessionCache.release(s);
+                    }
+                    catch (Exception x)
+                    {
+                        if (LOG.isDebugEnabled())
+                            LOG.debug("Error releasing duplicate valid session: {}", id);
+                    }
+
+                    throw new BadMessageException(duplicateSession(
+                        requestedSessionId, true, requestedSessionIdFromCookie,
+                        id, true, i < cookieIds));
                 }
-                else
+                else if (LOG.isDebugEnabled())
                 {
-                    if (LOG.isDebugEnabled())
-                        LOG.debug("Duplicate valid session id {}", id);
+                    LOG.debug(duplicateSession(
+                        requestedSessionId, true, requestedSessionIdFromCookie,
+                        id, false, i < cookieIds));
                 }
             }
         }
 
         return new RequestedSession((session != null && session.isValid()) ? session : null, requestedSessionId, requestedSessionIdFromCookie);
     }
-    
+
+    private static String duplicateSession(String id0, boolean valid0, boolean cookie0, String id1, boolean valid1, boolean cookie1)
+    {
+        return "Duplicate sessions: %s[%s,%s] & %s[%s,%s]".formatted(
+            id0, valid0 ? "valid" : "unknown", cookie0 ? "cookie" : "param",
+            id1, valid1 ? "valid" : "unknown", cookie1 ? "cookie" : "param");
+    }
+
     /**
      * Prepare sessions for session manager shutdown
      */
