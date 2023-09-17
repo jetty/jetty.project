@@ -75,4 +75,56 @@ public class ProxyConfigurationTest
         assertTrue(proxy.matches(new Origin("http", "[1::2:3:4]", 0)));
         assertFalse(proxy.matches(new Origin("http", "[1::2:3:4]", 5)));
     }
+
+    @Test
+    public void testProxyMatchesWithExclusionsWithWildcardAtEnd()
+    {
+        HttpProxy proxy = new HttpProxy("host", 0);
+        proxy.getExcludedAddresses().add("1.2.*");
+
+        assertFalse(proxy.matches(new Origin("http", "1.2.3.4", 0)));
+        assertFalse(proxy.matches(new Origin("http", "1.2.3.5", 0)));
+        assertFalse(proxy.matches(new Origin("http", "1.2.4.4", 0)));
+        assertFalse(proxy.matches(new Origin("http", "1.2.4.5", 0)));
+    }
+
+    @Test
+    public void testProxyMatchesWithExclusionsWithWildcardAtStart()
+    {
+        HttpProxy proxy = new HttpProxy("host", 0);
+        proxy.getExcludedAddresses().add("*.localhost");
+
+        assertFalse(proxy.matches(new Origin("http", "local.localhost", 0)));
+        assertFalse(proxy.matches(new Origin("http", "local.test.localhost", 0)));
+        assertTrue(proxy.matches(new Origin("http", "1.2.4.5", 0)));
+    }
+
+    @Test
+    public void testProxyMatchesWithExclusionsWithWildcardAtStartAndEnd()
+    {
+        HttpProxy proxy = new HttpProxy("host", 0);
+        proxy.getExcludedAddresses().add("*.local*");
+
+        assertFalse(proxy.matches(new Origin("http", "local.localhost", 0)));
+        assertFalse(proxy.matches(new Origin("http", "local.test.localhost.test", 0)));
+        assertTrue(proxy.matches(new Origin("http", "1.2.4.5", 0)));
+    }
+
+    @Test
+    public void testProxyMatchesWithExclusionsWithWildcardAndPort()
+    {
+        HttpProxy proxy = new HttpProxy("host", 0);
+        proxy.getExcludedAddresses().add("1.2.3.*:5");
+
+        assertFalse(proxy.matches(new Origin("http", "1.2.3.4", 5)));
+    }
+
+    @Test
+    public void testProxyMatchesWithExclusionWithWildcardOnly()
+    {
+        HttpProxy proxy = new HttpProxy("host", 0);
+        proxy.getExcludedAddresses().add("*");
+
+        assertFalse(proxy.matches(new Origin("http", "1.2.3.4", 0)));
+    }
 }

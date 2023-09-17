@@ -18,6 +18,7 @@ import java.util.HashSet;
 import java.util.List;
 import java.util.Objects;
 import java.util.Set;
+import java.util.regex.Pattern;
 
 import org.eclipse.jetty.http.HttpScheme;
 import org.eclipse.jetty.io.ClientConnectionFactory;
@@ -198,7 +199,7 @@ public class ProxyConfiguration
             }
             for (String excluded : this.excluded)
             {
-                if (matches(address, excluded))
+                if (matchesWithWildcards(address, excluded))
                 {
                     result = false;
                     break;
@@ -214,6 +215,36 @@ public class ProxyConfiguration
             String host = hostPort.getHost();
             int port = hostPort.getPort();
             return host.equals(address.getHost()) && (port <= 0 || port == address.getPort());
+        }
+
+        private boolean matchesWithWildcards(Origin.Address address, String pattern)
+        {
+            HostPort hostPort = new HostPort(pattern);
+            String host = hostPort.getHost();
+            int port = hostPort.getPort();
+            String hostRegex = extractHostRegex(host);
+            return Pattern.matches(hostRegex, address.getHost()) && (port <= 0 || port == address.getPort());
+        }
+
+        private String extractHostRegex(String host)
+        {
+            if (host.equals("*"))
+            {
+                return ".*";
+            }
+            if (host.startsWith("*") && host.endsWith("*"))
+            {
+                return ".*" + Pattern.quote(host.substring(1, host.length() - 1)) + ".*";
+            }
+            if (host.startsWith("*"))
+            {
+                return ".*" + Pattern.quote(host.substring(1));
+            }
+            if (host.endsWith("*"))
+            {
+                return Pattern.quote(host.substring(0, host.length() - 1)) + ".*";
+            }
+            return Pattern.quote(host);
         }
 
         /**

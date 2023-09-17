@@ -658,6 +658,8 @@ public class HTTPClientDocs
 
         // Do not proxy requests for localhost:8080.
         proxy.getExcludedAddresses().add("localhost:8080");
+        // Do not proxy requests for any address starting with "127.".
+        proxy.getExcludedAddresses().add("127.*");
 
         // Add the new proxy to the list of proxies already registered.
         ProxyConfiguration proxyConfig = httpClient.getProxyConfiguration();
