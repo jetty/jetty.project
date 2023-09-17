@@ -110,9 +110,10 @@ public class ContentSourceInputStream extends InputStream
             if (chunk != null)
             {
                 chunk.release();
+                chunk = Content.Chunk.next(chunk);
 
                 // if the chunk was a last chunk (but not an instanceof EOF), then nothing more to do
-                if (chunk.isLast())
+                if (chunk != null && chunk.isLast())
                     return;
             }
 
