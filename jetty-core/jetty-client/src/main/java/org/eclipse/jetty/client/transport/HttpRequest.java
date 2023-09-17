@@ -39,9 +39,9 @@ import java.util.function.BiFunction;
 import java.util.function.Consumer;
 import java.util.function.Supplier;
 
+import org.eclipse.jetty.client.CompletableResponseListener;
 import org.eclipse.jetty.client.ContentResponse;
 import org.eclipse.jetty.client.Destination;
-import org.eclipse.jetty.client.FutureResponseListener;
 import org.eclipse.jetty.client.HttpClient;
 import org.eclipse.jetty.client.Origin;
 import org.eclipse.jetty.client.PathRequestContent;
@@ -674,27 +674,26 @@ public class HttpRequest implements Request
     @Override
     public ContentResponse send() throws InterruptedException, TimeoutException, ExecutionException
     {
-        FutureResponseListener listener = new FutureResponseListener(this);
-        send(listener);
-
         try
         {
-            return listener.get();
+            CompletableResponseListener listener = new CompletableResponseListener(this);
+            return listener.send().get();
         }
         catch (ExecutionException x)
         {
-            // Previously this method used a timed get on the future, which was in a race
-            // with the timeouts implemented in HttpDestination and HttpConnection. The change to
-            // make those timeouts relative to the timestamp taken in sent() has made that race
-            // less certain, so a timeout could be either a TimeoutException from the get() or
-            // a ExecutionException(TimeoutException) from the HttpDestination/HttpConnection.
+            // Previously this method used a timed get on the future, which was in a
+            // race with the timeouts implemented in HttpDestination and HttpConnection.
+            // The change to make those timeouts relative to the timestamp taken in sent()
+            // has made that race less certain, so a timeout could be either a TimeoutException
+            // from the get() or a ExecutionException(TimeoutException) from the HttpDestination
+            // or HttpConnection.
             // We now do not do a timed get and just rely on the HttpDestination/HttpConnection
-            // timeouts.   This has the affect of changing this method from mostly throwing a
-            // TimeoutException to always throwing a ExecutionException(TimeoutException).
-            // Thus for backwards compatibility we unwrap the timeout exception here
-            if (x.getCause() instanceof TimeoutException)
+            // timeouts.
+            // This has the affect of changing this method from mostly throwing a TimeoutException
+            // to always throwing an ExecutionException(TimeoutException).
+            // Thus, for backwards compatibility we unwrap the TimeoutException here.
+            if (x.getCause() instanceof TimeoutException t)
             {
-                TimeoutException t = (TimeoutException)(x.getCause());
                 abort(t);
                 throw t;
             }
@@ -704,8 +703,8 @@ public class HttpRequest implements Request
         }
         catch (Throwable x)
         {
-            // Differently from the Future, the semantic of this method is that if
-            // the send() is interrupted or times out, we abort the request.
+            // Differently from the Future, the semantic of this method is that
+            // if the send() is interrupted or times out, we abort the request.
             abort(x);
             throw x;
         }

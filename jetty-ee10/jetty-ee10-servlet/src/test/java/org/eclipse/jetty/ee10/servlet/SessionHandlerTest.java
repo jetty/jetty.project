@@ -59,7 +59,6 @@ import org.eclipse.jetty.session.SessionDataStoreFactory;
 import org.eclipse.jetty.toolchain.test.IO;
 import org.eclipse.jetty.toolchain.test.jupiter.WorkDir;
 import org.eclipse.jetty.toolchain.test.jupiter.WorkDirExtension;
-import org.eclipse.jetty.util.URIUtil;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 
@@ -412,7 +411,7 @@ public class SessionHandlerTest
             assertThat(response.getContentAsString(), containsString("valid=false"));
 
             //test with a cookie for non-existant session
-            URI uri = URIUtil.toURI(URIUtil.newURI("http", "localhost", port, path, ""));
+            URI uri = URI.create(url);
             HttpCookie cookie = HttpCookie.build(SessionHandler.__DefaultSessionCookie, "123456789").path("/").domain("localhost").build();
             client.getHttpCookieStore().add(uri, cookie);
             response = client.GET(url);
