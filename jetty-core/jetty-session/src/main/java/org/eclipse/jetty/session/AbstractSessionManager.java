@@ -339,6 +339,7 @@ public abstract class AbstractSessionManager extends ContainerLifeCycle implemen
 
     /**
      * @return the max period of inactivity, after which the session is invalidated, in seconds.
+     *         If less than or equal to zero, then the session is immortal
      * @see #setMaxInactiveInterval(int)
      */
     @Override
@@ -350,7 +351,7 @@ public abstract class AbstractSessionManager extends ContainerLifeCycle implemen
     /**
      * Sets the max period of inactivity, after which the session is invalidated, in seconds.
      *
-     * @param seconds the max inactivity period, in seconds.
+     * @param seconds the max inactivity period, in seconds. If less than or equal to zero, then the session is immortal
      * @see #getMaxInactiveInterval()
      */
     public void setMaxInactiveInterval(int seconds)

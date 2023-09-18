@@ -36,9 +36,6 @@
         <Set name="acceptedTcpNoDelay"><Property name="jetty.ssl.acceptedTcpNoDelay" default="true"/></Set>
         <Set name="acceptedReceiveBufferSize" property="jetty.ssl.acceptedReceiveBufferSize" />
         <Set name="acceptedSendBufferSize" property="jetty.ssl.acceptedSendBufferSize" />
-        <Get name="SelectorManager">
-          <Set name="connectTimeout" property="jetty.ssl.connectTimeout"/>
-        </Get>
       </New>
     </Arg>
   </Call>
