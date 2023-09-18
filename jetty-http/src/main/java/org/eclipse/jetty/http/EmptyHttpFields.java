@@ -14,13 +14,32 @@
 package org.eclipse.jetty.http;
 
 import java.util.Collections;
-import java.util.ListIterator;
+import java.util.Iterator;
+import java.util.function.Consumer;
+import java.util.stream.Stream;
 
-class EmptyHttpFields implements HttpFields
+class EmptyHttpFields extends HttpFields.Immutable
 {
-    @Override
-    public ListIterator<HttpField> listIterator(int index)
+    public EmptyHttpFields()
     {
-        return Collections.emptyListIterator();
+        super(new HttpField[0]);
+    }
+
+    @Override
+    public Iterator<HttpField> iterator()
+    {
+        return Collections.emptyIterator();
+    }
+
+    @Override
+    public void forEach(Consumer<? super HttpField> action)
+    {
+        // no-op
+    }
+
+    @Override
+    public Stream<HttpField> stream()
+    {
+        return Stream.empty();
     }
 }
