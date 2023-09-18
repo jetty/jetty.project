@@ -562,6 +562,52 @@ public class ContentSourceTest
             assertThat(failed.get(), instanceOf(IOException.class));
     }
 
+    @Test
+    public void testInputStreamCloseWithContentAvailable() throws Exception
+    {
+        AtomicReference<Throwable> failed = new AtomicReference<>();
+        TestContentSource source = new TestContentSource()
+        {
+            @Override
+            public void fail(Throwable failure)
+            {
+                failed.set(failure);
+            }
+        };
+
+        InputStream in = Content.Source.asInputStream(source);
+        source.add("hello", false);
+        AtomicReference<Throwable> throwable = new AtomicReference<>();
+        CountDownLatch complete = new CountDownLatch(1);
+        new Thread(() ->
+        {
+            try
+            {
+                byte[] buffer = new byte[5];
+                assertThat(in.read(buffer), is(5));
+                String input = new String(buffer, StandardCharsets.ISO_8859_1);
+                assertThat(input, is("hello"));
+                source.add("extra", false);
+                source.add(Content.Chunk.EOF);
+                in.close();
+            }
+            catch (Throwable t)
+            {
+                throwable.set(t);
+            }
+            finally
+            {
+                complete.countDown();
+            }
+        }).start();
+
+        Runnable todo = source.takeDemand();
+        assertNull(todo);
+        assertTrue(complete.await(10, TimeUnit.SECONDS));
+        assertNull(throwable.get());
+        assertThat(failed.get(), instanceOf(IOException.class));
+    }
+
     private static class TestContentSource implements Content.Source
     {
         private final AtomicReference<Runnable> _demand = new AtomicReference<>();

@@ -100,33 +100,36 @@ public class ContentSourceInputStream extends InputStream
     @Override
     public void close()
     {
-        while (true)
+        // If we have already reached a real EOF or a persistent failure, close is a noop.
+        if (chunk == Content.Chunk.EOF || Content.Chunk.isFailure(chunk, true))
+            return;
+
+        // If we have a chunk here, then it needs to be released
+        if (chunk != null)
         {
-            // If we have already reached a real EOF or a persistent failure, close is a noop.
-            if (chunk == Content.Chunk.EOF || Content.Chunk.isFailure(chunk, true))
+            chunk.release();
+            chunk = Content.Chunk.next(chunk);
+
+            // if the chunk was a last chunk (but not an instanceof EOF), then nothing more to do
+            if (chunk != null && chunk.isLast())
                 return;
-
-            // If we have a chunk here, then it needs to be released
-            if (chunk != null)
-            {
-                chunk.release();
-                chunk = Content.Chunk.next(chunk);
-
-                // if the chunk was a last chunk (but not an instanceof EOF), then nothing more to do
-                if (chunk != null && chunk.isLast())
-                    return;
-            }
-
-            // read any available chunks
-            chunk = content.read();
-            if (chunk == null)
-            {
-                // This is an abnormal close before EOF
-                Throwable closed = new IOException("closed before EOF");
-                chunk = Content.Chunk.from(closed);
-                content.fail(closed);
-                return;
-            }
         }
+
+        // Try a read of one more available chunk
+        chunk = content.read();
+        if (chunk != null)
+        {
+            chunk.release();
+            chunk = Content.Chunk.next(chunk);
+        }
+
+        // If we are now at a real EOF or a persistent failure, we are closed
+        if (chunk == Content.Chunk.EOF || Content.Chunk.isFailure(chunk, true))
+            return;
+
+        // Otherwise this is an abnormal close before EOF
+        Throwable closed = new IOException("closed before EOF");
+        chunk = Content.Chunk.from(closed);
+        content.fail(closed);
     }
 }
