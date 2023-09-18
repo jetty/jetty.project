@@ -558,28 +558,12 @@ public interface Response extends Content.Sink
     static Content.Sink asBufferedSink(Request request, Response response)
     {
         ConnectionMetaData connectionMetaData = request.getConnectionMetaData();
+        ByteBufferPool bufferPool = connectionMetaData.getConnector().getByteBufferPool();
         HttpConfiguration httpConfiguration = connectionMetaData.getHttpConfiguration();
         int bufferSize = httpConfiguration.getOutputBufferSize();
         boolean useOutputDirectByteBuffers = httpConfiguration.isUseOutputDirectByteBuffers();
         int outputAggregationSize = httpConfiguration.getOutputAggregationSize();
-        return asBufferedSink(request, response, bufferSize, useOutputDirectByteBuffers, outputAggregationSize);
-    }
-
-    /**
-     * Wraps a {@link Response} as a {@link Content.Sink} that performs buffering.
-     * @param request the request from which to get the connector's {@link ByteBufferPool} used to get the buffer
-     * @param response the response to wrap
-     * @param bufferSize the size of the buffer
-     * @param direct whether to use direct buffers or not
-     * @param maxAggregationSize the maximum size that can be buffered in a single write;
-     * any size above this threshold triggers a buffer flush
-     * @return a buffering {@link Content.Sink}
-     */
-    static Content.Sink asBufferedSink(Request request, Response response, int bufferSize, boolean direct, int maxAggregationSize)
-    {
-        ConnectionMetaData connectionMetaData = request.getConnectionMetaData();
-        ByteBufferPool bufferPool = connectionMetaData.getConnector().getByteBufferPool();
-        return Content.Sink.asBuffered(response, bufferPool, direct, bufferSize, maxAggregationSize);
+        return Content.Sink.asBuffered(response, bufferPool, useOutputDirectByteBuffers, bufferSize, outputAggregationSize);
     }
 
     class Wrapper implements Response

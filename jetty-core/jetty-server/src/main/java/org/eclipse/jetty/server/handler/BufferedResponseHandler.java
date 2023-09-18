@@ -19,7 +19,9 @@ import org.eclipse.jetty.http.HttpHeader;
 import org.eclipse.jetty.http.HttpMethod;
 import org.eclipse.jetty.http.HttpStatus;
 import org.eclipse.jetty.http.MimeTypes;
+import org.eclipse.jetty.io.ByteBufferPool;
 import org.eclipse.jetty.io.Content;
+import org.eclipse.jetty.server.ConnectionMetaData;
 import org.eclipse.jetty.server.Handler;
 import org.eclipse.jetty.server.HttpConfiguration;
 import org.eclipse.jetty.server.Request;
@@ -190,13 +192,15 @@ public class BufferedResponseHandler extends ConditionalHandler.Abstract
         private Content.Sink createBufferedSink()
         {
             Request request = getRequest();
-            HttpConfiguration httpConfiguration = request.getConnectionMetaData().getHttpConfiguration();
+            ConnectionMetaData connectionMetaData = request.getConnectionMetaData();
+            ByteBufferPool bufferPool = connectionMetaData.getConnector().getByteBufferPool();
+            HttpConfiguration httpConfiguration = connectionMetaData.getHttpConfiguration();
             Object attribute = request.getAttribute(BufferedResponseHandler.BUFFER_SIZE_ATTRIBUTE_NAME);
             int bufferSize = attribute instanceof Integer ? (int)attribute : httpConfiguration.getOutputBufferSize();
             attribute = request.getAttribute(BufferedResponseHandler.MAX_AGGREGATION_SIZE_ATTRIBUTE_NAME);
             int maxAggregationSize = attribute instanceof Integer ? (int)attribute : httpConfiguration.getOutputAggregationSize();
             boolean direct = httpConfiguration.isUseOutputDirectByteBuffers();
-            return Response.asBufferedSink(request, getWrapped(), bufferSize, direct, maxAggregationSize);
+            return Content.Sink.asBuffered(getWrapped(), bufferPool, direct, bufferSize, maxAggregationSize);
         }
 
         @Override
