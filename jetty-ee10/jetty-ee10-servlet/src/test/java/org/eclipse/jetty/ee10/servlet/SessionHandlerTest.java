@@ -468,6 +468,7 @@ public class SessionHandlerTest
         server.setHandler(context);
         SessionHandler sessionHandler = new SessionHandler();
         sessionHandler.setUsingCookies(false);
+        sessionHandler.setUsingUriParameters(true);
         sessionHandler.setSessionIdManager(sessionIdManager);
         sessionHandler.setMaxInactiveInterval(-1); //immortal session
         context.setSessionHandler(sessionHandler);

@@ -358,7 +358,7 @@ public class Response implements HttpServletResponse
             return null;
 
         // should not encode if cookies in evidence
-        if ((sessionManager.isUsingCookies() && request.isRequestedSessionIdFromCookie()) || !sessionManager.isUsingURLs())
+        if ((sessionManager.isUsingCookies() && request.isRequestedSessionIdFromCookie()) || !sessionManager.isUsingUriParameters())
         {
             int prefix = url.indexOf(sessionURLPrefix);
             if (prefix != -1)
