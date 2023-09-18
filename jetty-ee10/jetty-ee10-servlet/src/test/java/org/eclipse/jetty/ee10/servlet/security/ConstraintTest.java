@@ -42,7 +42,6 @@ import org.eclipse.jetty.ee10.servlet.ServletContextHandler;
 import org.eclipse.jetty.ee10.servlet.ServletHandler;
 import org.eclipse.jetty.ee10.servlet.ServletHolder;
 import org.eclipse.jetty.ee10.servlet.SessionHandler;
-import org.eclipse.jetty.ee10.servlet.security.ConstraintMapping;
 import org.eclipse.jetty.http.HttpHeader;
 import org.eclipse.jetty.http.HttpStatus;
 import org.eclipse.jetty.http.HttpTester;
@@ -1168,7 +1167,6 @@ public class ConstraintTest
         assertThat(response, containsString("!authorized"));
         assertThat(response, not(containsString("JSESSIONID=" + session)));
     }
-
 
     public static Stream<Arguments> onAuthenticationTests()
     {
