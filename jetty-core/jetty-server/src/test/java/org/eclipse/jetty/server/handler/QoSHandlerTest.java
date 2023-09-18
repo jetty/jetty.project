@@ -405,7 +405,6 @@ public class QoSHandlerTest
         text = anotherEndPoint.getResponse(false, 5, TimeUnit.SECONDS);
         response = HttpTester.parseResponse(text);
         assertEquals(HttpStatus.OK_200, response.getStatus());
-
     }
 
 }

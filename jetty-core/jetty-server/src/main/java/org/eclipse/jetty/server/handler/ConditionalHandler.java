@@ -73,7 +73,7 @@ import org.slf4j.LoggerFactory;
  * These implementations all call {@link #nextHandle(Request, Response, Callback)} if the conditions are met, otherwise
  * they vary in how they behave in {@link #doNotHandle(Request, Response, Callback)} when the conditions are not met:</p>
  * <ul>
- *     <li>{@link Terminate} - {@code false} is returned</li>
+ *     <li>{@link DontHandle} - {@code false} is returned</li>
  *     <li>{@link Forbidden} - a {@link HttpStatus#FORBIDDEN_403} response is sent</li>
  *     <li>{@link SkipNext} - the {@link #getHandler() next handler} is skipped and instead, if the next handler is a
  *     {@link org.eclipse.jetty.server.Handler.Singleton}, then its next handler is invoked</li>
@@ -332,7 +332,6 @@ public abstract class ConditionalHandler extends Handler.Wrapper
 
     public final boolean handle(Request request, Response response, Callback callback) throws Exception
     {
-        // This is the code we would have in handle if MethodHandlers were not used
         if (_handlePredicate.test(request))
             return doHandle(request, response, callback);
 
@@ -364,8 +363,7 @@ public abstract class ConditionalHandler extends Handler.Wrapper
      */
     protected boolean nextHandle(Request request, Response response, Callback callback) throws Exception
     {
-        Handler next = getHandler();
-        return next != null && next.handle(request, response, callback);
+        return super.handle(request, response, callback);
     }
 
     /**
@@ -514,6 +512,18 @@ public abstract class ConditionalHandler extends Handler.Wrapper
         }
 
         @Override
+        public int hashCode()
+        {
+            return _connector.hashCode();
+        }
+
+        @Override
+        public boolean equals(Object obj)
+        {
+            return obj instanceof ConnectorPredicate other && _connector.equals(other._connector);
+        }
+
+        @Override
         public String toString()
         {
             return String.format("%s@%x{%s}", getClass().getSimpleName(), hashCode(), _connector);
@@ -578,7 +588,7 @@ public abstract class ConditionalHandler extends Handler.Wrapper
         @Override
         public String toString()
         {
-            return super.toString();
+            return "%s@%x{%s}".formatted(getClass().getSimpleName(), hashCode(), _pattern);
         }
     }
 
@@ -601,6 +611,18 @@ public abstract class ConditionalHandler extends Handler.Wrapper
         public boolean test(Request request)
         {
             return _method.equals(request.getMethod());
+        }
+
+        @Override
+        public int hashCode()
+        {
+            return _method.hashCode();
+        }
+
+        @Override
+        public boolean equals(Object obj)
+        {
+            return obj instanceof MethodPredicate other && _method.equals(other._method);
         }
 
         @Override
@@ -634,6 +656,18 @@ public abstract class ConditionalHandler extends Handler.Wrapper
         }
 
         @Override
+        public int hashCode()
+        {
+            return _pathSpec.hashCode();
+        }
+
+        @Override
+        public boolean equals(Object obj)
+        {
+            return obj instanceof PathSpecPredicate other && _pathSpec.equals(other._pathSpec);
+        }
+
+        @Override
         public String toString()
         {
             return String.format("%s@%x{%s}", getClass().getSimpleName(), hashCode(), _pathSpec);
@@ -645,14 +679,14 @@ public abstract class ConditionalHandler extends Handler.Wrapper
      * the conditions are met, otherwise {@code false} is returned from {@link #doNotHandle(Request, Response, Callback)} and
      * no further handling is done.
      */
-    public static class Terminate extends ConditionalHandler
+    public static class DontHandle extends ConditionalHandler
     {
-        public Terminate()
+        public DontHandle()
         {
             super();
         }
 
-        public Terminate(Handler handler)
+        public DontHandle(Handler handler)
         {
             super(handler);
         }
@@ -721,15 +755,16 @@ public abstract class ConditionalHandler extends Handler.Wrapper
         @Override
         protected boolean doHandle(Request request, Response response, Callback callback) throws Exception
         {
-            Handler next = getHandler();
-            return next != null && next.handle(request, response, callback);
+            return nextHandle(request, response, callback);
         }
 
         @Override
         protected boolean doNotHandle(Request request, Response response, Callback callback) throws Exception
         {
-            Handler next = getHandler();
-            return next instanceof Singleton wrapper && wrapper.getHandler() != null && wrapper.getHandler().handle(request, response, callback);
+            if (!(getHandler() instanceof Singleton nextHandler))
+                return false;
+            Handler nextNext = nextHandler.getHandler();
+            return nextNext != null && nextNext.handle(request, response, callback);
         }
     }
 }

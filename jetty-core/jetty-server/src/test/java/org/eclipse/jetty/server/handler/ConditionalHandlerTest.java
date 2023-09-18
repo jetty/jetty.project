@@ -71,7 +71,7 @@ public class ConditionalHandlerTest
         return Stream.of(
             new TestConditionalHandler(),
             new TestConditionalHandlerSkipNext(new TestHandler()),
-            new TestConditionalHandlerTerminate(new TestHandler()),
+            new TestConditionalHandlerDontHandle(new TestHandler()),
             new TestConditionalHandlerForbidden(new TestHandler())
         );
     }
@@ -176,7 +176,7 @@ public class ConditionalHandlerTest
     {
         Predicate<Request> predicate = ConditionalHandler.from(null, null, "GET", (String)null);
         assertThat(predicate, instanceOf(ConditionalHandler.MethodPredicate.class));
-        ConditionalHandler conditionalHandler = new ConditionalHandler.Terminate();
+        ConditionalHandler conditionalHandler = new ConditionalHandler.DontHandle();
         conditionalHandler.include(predicate);
         assertThat(conditionalHandler.getMethods().getIncluded(), hasSize(1));
         assertThat(conditionalHandler.getPredicates().getIncluded(), hasSize(0));
@@ -187,7 +187,7 @@ public class ConditionalHandlerTest
     {
         Predicate<Request> predicate = ConditionalHandler.from(null, null, null, PathSpec.from("/*"));
         assertThat(predicate, instanceOf(ConditionalHandler.PathSpecPredicate.class));
-        ConditionalHandler conditionalHandler = new ConditionalHandler.Terminate();
+        ConditionalHandler conditionalHandler = new ConditionalHandler.DontHandle();
         conditionalHandler.include(predicate);
         assertThat(conditionalHandler.getPathSpecs().getIncluded(), hasSize(1));
         assertThat(conditionalHandler.getPredicates().getIncluded(), hasSize(0));
@@ -219,9 +219,9 @@ public class ConditionalHandlerTest
         }
     }
 
-    public static class TestConditionalHandlerTerminate extends ConditionalHandler.Terminate implements ExpectedWhenNotApplied
+    public static class TestConditionalHandlerDontHandle extends ConditionalHandler.DontHandle implements ExpectedWhenNotApplied
     {
-        TestConditionalHandlerTerminate(Handler handler)
+        TestConditionalHandlerDontHandle(Handler handler)
         {
             super(handler);
         }
