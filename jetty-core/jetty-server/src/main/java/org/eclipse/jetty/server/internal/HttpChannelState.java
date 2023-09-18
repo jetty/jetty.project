@@ -1538,15 +1538,12 @@ public class HttpChannelState implements HttpChannel, Components
             ErrorResponse errorResponse = null;
             try (AutoLock ignored = _request._lock.lock())
             {
+                if (lockedCompleteCallback())
+                    return;
                 httpChannelState = _request._httpChannelState;
-                if (httpChannelState == null)
-                    return; // channel already completed
-
                 stream = httpChannelState._stream;
                 request = _request;
 
-                if (lockedCompleteCallback())
-                    return;
                 assert httpChannelState._callbackFailure == null;
 
                 httpChannelState._callbackFailure = failure;
