@@ -46,6 +46,7 @@ public class RuleContainer extends Rule implements Iterable<Rule>, Dumpable
     }
 
     /**
+     * Set the list of {@link Rule}..
      * @param rules the list of {@link Rule}.
      */
     public void setRules(List<Rule> rules)

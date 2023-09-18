@@ -96,6 +96,7 @@ public interface HttpClientTransport extends ClientConnectionFactory
     public ConnectionPool.Factory getConnectionPoolFactory();
 
     /**
+     * Set the factory for ConnectionPool instances.
      * @param factory the factory for ConnectionPool instances
      */
     public void setConnectionPoolFactory(ConnectionPool.Factory factory);

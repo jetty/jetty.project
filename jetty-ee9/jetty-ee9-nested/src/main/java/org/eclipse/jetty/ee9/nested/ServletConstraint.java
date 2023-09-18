@@ -70,6 +70,7 @@ public class ServletConstraint implements Cloneable, Serializable
     }
 
     /**
+     * Set the name.
      * @param name the name
      */
     public void setName(String name)

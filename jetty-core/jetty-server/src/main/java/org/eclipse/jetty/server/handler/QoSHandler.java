@@ -118,6 +118,7 @@ public class QoSHandler extends ConditionalHandler
     }
 
     /**
+     * Get the max duration of time a request may stay suspended.
      * @return the max duration of time a request may stay suspended
      */
     public Duration getMaxSuspend()

@@ -669,6 +669,7 @@ public class ClassMatcher extends AbstractSet<String>
     }
 
     /**
+     * Add array of classpath patterns.
      * @param classes array of classpath patterns
      */
     private void addAll(String[] classes)

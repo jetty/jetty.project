@@ -761,6 +761,7 @@ public class BlockingArrayQueue<E> extends AbstractList<E> implements BlockingQu
     }
 
     /**
+     * Get the current capacity of this queue.
      * @return the current capacity of this queue
      */
     public int getCapacity()
@@ -777,6 +778,7 @@ public class BlockingArrayQueue<E> extends AbstractList<E> implements BlockingQu
     }
 
     /**
+     * Get the max capacity of this queue, or -1 if this queue is unbounded.
      * @return the max capacity of this queue, or -1 if this queue is unbounded
      */
     public int getMaxCapacity()

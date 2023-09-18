@@ -306,6 +306,7 @@ public class ContextHandler extends ScopedHandler implements Attributes, Supplie
     }
 
     /**
+     * Set true if /context is not redirected to /context/.
      * @param allowNullPathInfo true if /context is not redirected to /context/
      */
     public void setAllowNullPathInfo(boolean allowNullPathInfo)
@@ -1628,6 +1629,7 @@ public class ContextHandler extends ScopedHandler implements Attributes, Supplie
     }
 
     /**
+     * Set list of AliasCheck instances.
      * @param checks list of AliasCheck instances
      */
     public void setAliasChecks(List<AliasCheck> checks)

@@ -777,6 +777,7 @@ public abstract class SslContextFactory extends ContainerLifeCycle implements Du
     }
 
     /**
+     * Set true if SSL certificates have to be validated.
      * @param validateCerts true if SSL certificates have to be validated
      */
     public void setValidateCerts(boolean validateCerts)
@@ -794,6 +795,7 @@ public abstract class SslContextFactory extends ContainerLifeCycle implements Du
     }
 
     /**
+     * Set true if SSL certificates of the peer have to be validated.
      * @param validatePeerCerts true if SSL certificates of the peer have to be validated
      */
     public void setValidatePeerCerts(boolean validatePeerCerts)
@@ -996,6 +998,7 @@ public abstract class SslContextFactory extends ContainerLifeCycle implements Du
     }
 
     /**
+     * Set whether TLS renegotiation is allowed.
      * @param renegotiationAllowed whether TLS renegotiation is allowed
      */
     public void setRenegotiationAllowed(boolean renegotiationAllowed)
@@ -1576,6 +1579,7 @@ public abstract class SslContextFactory extends ContainerLifeCycle implements Du
     }
 
     /**
+     * Get the HostnameVerifier used by a client to verify host names in the server certificate.
      * @return the HostnameVerifier used by a client to verify host names in the server certificate
      */
     public HostnameVerifier getHostnameVerifier()
