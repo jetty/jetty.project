@@ -828,7 +828,7 @@ public class SessionHandler extends ScopedHandler
     /**
      * Sets the max period of inactivity, after which the session is invalidated, in seconds.
      *
-     * @param seconds the max inactivity period, in seconds.
+     * @param seconds the max inactivity period, in seconds. If less than or equal to zero, then the session is immortal
      * @see #getMaxInactiveInterval()
      */
     public void setMaxInactiveInterval(int seconds)

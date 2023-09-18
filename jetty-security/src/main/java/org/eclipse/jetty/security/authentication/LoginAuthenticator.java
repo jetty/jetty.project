@@ -33,7 +33,8 @@ public abstract class LoginAuthenticator implements Authenticator
 
     protected LoginService _loginService;
     protected IdentityService _identityService;
-    private boolean _renewSession;
+    private boolean _sessionRenewedOnAuthentication;
+    private int _sessionMaxInactiveIntervalOnAuthentication;
 
     protected LoginAuthenticator()
     {
@@ -87,7 +88,8 @@ public abstract class LoginAuthenticator implements Authenticator
         _identityService = configuration.getIdentityService();
         if (_identityService == null)
             throw new IllegalStateException("No IdentityService for " + this + " in " + configuration);
-        _renewSession = configuration.isSessionRenewedOnAuthentication();
+        _sessionRenewedOnAuthentication = configuration.isSessionRenewedOnAuthentication();
+        _sessionMaxInactiveIntervalOnAuthentication = configuration.getSessionMaxInactiveIntervalOnAuthentication();
     }
 
     public LoginService getLoginService()
@@ -109,35 +111,41 @@ public abstract class LoginAuthenticator implements Authenticator
      */
     protected HttpSession renewSession(HttpServletRequest request, HttpServletResponse response)
     {
-        HttpSession httpSession = request.getSession(false);
+        HttpSession session = request.getSession(false);
 
-        if (_renewSession && httpSession != null)
+        if (session != null && (_sessionRenewedOnAuthentication || _sessionMaxInactiveIntervalOnAuthentication != 0))
         {
-            synchronized (httpSession)
+            synchronized (session)
             {
-                //if we should renew sessions, and there is an existing session that may have been seen by non-authenticated users
-                //(indicated by SESSION_SECURED not being set on the session) then we should change id
-                if (httpSession.getAttribute(Session.SESSION_CREATED_SECURE) != Boolean.TRUE)
+                if (_sessionMaxInactiveIntervalOnAuthentication != 0)
+                    session.setMaxInactiveInterval(_sessionMaxInactiveIntervalOnAuthentication < 0 ? -1 : _sessionMaxInactiveIntervalOnAuthentication);
+                if (_sessionRenewedOnAuthentication)
                 {
-                    if (httpSession instanceof Session)
+                    //if we should renew sessions, and there is an existing session that may have been seen by non-authenticated users
+                    //(indicated by SESSION_SECURED not being set on the session) then we should change id
+                    if (session.getAttribute(Session.SESSION_CREATED_SECURE) != Boolean.TRUE)
                     {
-                        Session s = (Session)httpSession;
-                        String oldId = s.getId();
-                        s.renewId(request);
-                        s.setAttribute(Session.SESSION_CREATED_SECURE, Boolean.TRUE);
-                        if (s.isIdChanged() && (response instanceof Response))
-                            ((Response)response).replaceCookie(s.getSessionHandler().getSessionCookie(s, request.getContextPath(), request.isSecure()));
-                        if (LOG.isDebugEnabled())
-                            LOG.debug("renew {}->{}", oldId, s.getId());
+                        if (session instanceof Session)
+                        {
+                            Session s = (Session)session;
+                            String oldId = s.getId();
+                            s.renewId(request);
+                            s.setAttribute(Session.SESSION_CREATED_SECURE, Boolean.TRUE);
+                            if (s.isIdChanged() && (response instanceof Response))
+                                ((Response)response).replaceCookie(s.getSessionHandler().getSessionCookie(s, request.getContextPath(), request.isSecure()));
+                            if (LOG.isDebugEnabled())
+                                LOG.debug("renew {}->{}", oldId, s.getId());
+                        }
+                        else
+                        {
+                            LOG.warn("Unable to renew session {}", session);
+                        }
+                        return session;
                     }
-                    else
-                    {
-                        LOG.warn("Unable to renew session {}", httpSession);
-                    }
-                    return httpSession;
                 }
             }
         }
-        return httpSession;
+
+        return session;
     }
 }

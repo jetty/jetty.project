@@ -71,4 +71,10 @@ public class WrappedAuthConfiguration implements AuthConfiguration
     {
         return _configuration.isSessionRenewedOnAuthentication();
     }
+
+    @Override
+    public int getSessionMaxInactiveIntervalOnAuthentication()
+    {
+        return _configuration.getSessionMaxInactiveIntervalOnAuthentication();
+    }
 }
