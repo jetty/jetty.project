@@ -450,6 +450,7 @@ public class Server extends Handler.Wrapper implements Attributes
     }
 
     /**
+     * Set true if {@link #dumpStdErr()} is called after starting.
      * @param dumpAfterStart true if {@link #dumpStdErr()} is called after starting
      */
     public void setDumpAfterStart(boolean dumpAfterStart)
@@ -467,6 +468,7 @@ public class Server extends Handler.Wrapper implements Attributes
     }
 
     /**
+     * Set true if {@link #dumpStdErr()} is called before stopping.
      * @param dumpBeforeStop true if {@link #dumpStdErr()} is called before stopping
      */
     public void setDumpBeforeStop(boolean dumpBeforeStop)

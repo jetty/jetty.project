@@ -21,11 +21,13 @@ import java.net.URI;
 public interface AuthenticationStore
 {
     /**
+     * Add the {@link Authentication} to add.
      * @param authentication the {@link Authentication} to add
      */
     public void addAuthentication(Authentication authentication);
 
     /**
+     * Remove an Authentication.
      * @param authentication the {@link Authentication} to remove
      */
     public void removeAuthentication(Authentication authentication);
@@ -48,11 +50,13 @@ public interface AuthenticationStore
     public Authentication findAuthentication(String type, URI uri, String realm);
 
     /**
+     * Add the {@link Authentication.Result} to add.
      * @param result the {@link Authentication.Result} to add
      */
     public void addAuthenticationResult(Authentication.Result result);
 
     /**
+     * Remove and Authentication Result
      * @param result the {@link Authentication.Result} to remove
      */
     public void removeAuthenticationResult(Authentication.Result result);

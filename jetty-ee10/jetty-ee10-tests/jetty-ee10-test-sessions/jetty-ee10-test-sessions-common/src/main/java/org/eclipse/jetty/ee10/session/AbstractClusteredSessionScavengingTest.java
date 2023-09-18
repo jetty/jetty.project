@@ -66,7 +66,7 @@ public abstract class AbstractClusteredSessionScavengingTest extends AbstractSes
         /**
          * Test method: return a session in the cache without loading it
          * from the store
-         * @param id
+         * @param id session ID
          * @return session already in the cache
          */
         public ManagedSession peek(String id)

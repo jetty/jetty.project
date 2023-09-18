@@ -72,6 +72,7 @@ public class JavaVersion
     }
 
     /**
+     * Get the string from which this JavaVersion was created.
      * @return the string from which this JavaVersion was created
      */
     public String getVersion()

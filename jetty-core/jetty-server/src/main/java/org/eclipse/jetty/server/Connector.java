@@ -36,21 +36,25 @@ import org.eclipse.jetty.util.thread.Scheduler;
 public interface Connector extends LifeCycle, Container, Graceful
 {
     /**
+     * Get the {@link Server} instance associated with this {@link Connector}.
      * @return the {@link Server} instance associated with this {@link Connector}
      */
     public Server getServer();
 
     /**
+     * Get the {@link Executor} used to submit tasks.
      * @return the {@link Executor} used to submit tasks
      */
     public Executor getExecutor();
 
     /**
+     * Get the {@link Scheduler} used to schedule tasks.
      * @return the {@link Scheduler} used to schedule tasks
      */
     public Scheduler getScheduler();
 
     /**
+     * Get the {@link ByteBufferPool} to acquire buffers from and release buffers to.
      * @return the {@link ByteBufferPool} to acquire buffers from and release buffers to
      */
     public ByteBufferPool getByteBufferPool();
@@ -64,6 +68,7 @@ public interface Connector extends LifeCycle, Container, Graceful
     public <T> T getConnectionFactory(Class<T> factoryType);
 
     /**
+     * Get the default {@link ConnectionFactory} associated with the default protocol name.
      * @return the default {@link ConnectionFactory} associated with the default protocol name
      */
     public ConnectionFactory getDefaultConnectionFactory();
@@ -79,6 +84,7 @@ public interface Connector extends LifeCycle, Container, Graceful
     public long getIdleTimeout();
 
     /**
+     * Get the underlying socket, channel, buffer etc. for the connector..
      * @return the underlying socket, channel, buffer etc. for the connector.
      */
     public Object getTransport();

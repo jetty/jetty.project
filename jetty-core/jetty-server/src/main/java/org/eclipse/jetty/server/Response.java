@@ -55,6 +55,7 @@ public interface Response extends Content.Sink
     int getStatus();
 
     /**
+     * Set the response HTTP status code.
      * @param code the response HTTP status code
      */
     void setStatus(int code);

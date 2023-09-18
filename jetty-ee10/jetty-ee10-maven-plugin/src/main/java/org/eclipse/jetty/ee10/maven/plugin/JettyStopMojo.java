@@ -198,7 +198,7 @@ public class JettyStopMojo extends AbstractWebAppMojo
      * @param command the command to send
      * @param wait length of time in sec to wait for a response
      * @return the response, if any, to the command
-     * @throws Exception
+     * @throws Exception if there is an unspecified problem
      */
     private String send(String command, int wait)
         throws Exception

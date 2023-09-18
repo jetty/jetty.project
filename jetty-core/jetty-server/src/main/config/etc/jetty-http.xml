@@ -43,9 +43,6 @@
         <Set name="acceptedTcpNoDelay"><Property name="jetty.http.acceptedTcpNoDelay" default="true"/></Set>
         <Set name="acceptedReceiveBufferSize" property="jetty.http.acceptedReceiveBufferSize" />
         <Set name="acceptedSendBufferSize" property="jetty.http.acceptedSendBufferSize" />
-        <Get name="SelectorManager">
-          <Set name="connectTimeout"><Property name="jetty.http.connectTimeout" default="15000"/></Set>
-        </Get>
       </New>
     </Arg>
   </Call>

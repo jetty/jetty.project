@@ -82,7 +82,7 @@ public class AbstractHandlerContainerTest
      * It cannot be done with a ServletContextHandler as the parent, because
      * the parent of a ServletContextHandler can only be org.eclipse.jetty.server containers,
      * whereas this test needs an org.eclipse.jetty.ee9.nested container.
-     * @throws Exception
+     * @throws Exception if there is an unspecified problem
      */
     @Test
     public void testFindContainer() throws Exception

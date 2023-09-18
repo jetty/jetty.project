@@ -172,7 +172,7 @@ public class JettyForkedChild extends ContainerLifeCycle
      * present.
      * 
      * @return file contents as properties
-     * @throws IOException
+     * @throws IOException if there is an IO problem
      */
     private Properties loadWebAppProps() throws IOException
     {

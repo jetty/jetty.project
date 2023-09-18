@@ -34,6 +34,7 @@ public abstract class RegexRule extends Rule
     }
 
     /**
+     * Get the regular expression.
      * @return the regular expression
      */
     public String getRegex()

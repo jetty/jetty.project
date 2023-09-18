@@ -21,9 +21,6 @@ contextHandlerClass?=org.eclipse.jetty.server.handler.ResourceHandler$ResourceCo
 [ini-template]
 ## Monitored directory name (relative to $jetty.base)
 # jetty.deploy.monitoredDir=webapps
-## - OR -
-## Monitored directory path (fully qualified)
-# jetty.deploy.monitoredPath=/var/www/webapps
 
 ## Monitored directory scan period (seconds)
 # jetty.deploy.scanInterval=1

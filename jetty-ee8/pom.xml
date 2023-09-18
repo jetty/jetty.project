@@ -37,6 +37,7 @@
     <module>jetty-ee8-plus</module>
     <module>jetty-ee8-jndi</module>
     <module>jetty-ee8-maven-plugin</module>
+    <module>jetty-ee8-jaspi</module>
     <module>jetty-ee8-jspc-maven-plugin</module>
     <module>jetty-ee8-proxy</module>
     <module>jetty-ee8-annotations</module>
@@ -242,6 +243,11 @@
           <version>${jsp.impl.version}</version>
         </dependency>
         <dependency>
+          <groupId>jakarta.activation</groupId>
+          <artifactId>jakarta.activation-api</artifactId>
+          <version>1.2.2</version>
+        </dependency>
+        <dependency>
           <groupId>jakarta.servlet.jsp.jstl</groupId>
           <artifactId>jakarta.servlet.jsp.jstl-api</artifactId>
           <version>1.2.7</version>
@@ -250,6 +256,11 @@
           <groupId>jakarta.servlet.jsp</groupId>
           <artifactId>jakarta.servlet.jsp-api</artifactId>
           <version>2.3.6</version>
+        </dependency>
+        <dependency>
+          <groupId>org.eclipse.jetty.orbit</groupId>
+          <artifactId>javax.security.auth.message</artifactId>
+          <version>1.0.0.v201108011116</version>
         </dependency>
         <dependency>
           <groupId>org.glassfish.web</groupId>

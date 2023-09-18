@@ -49,6 +49,7 @@ public abstract class AbstractSessionCacheFactory implements SessionCacheFactory
     }
 
     /**
+     * Set the flushOnResponseCommit to set.
      * @param flushOnResponseCommit the flushOnResponseCommit to set
      */
     public void setFlushOnResponseCommit(boolean flushOnResponseCommit)
@@ -65,6 +66,7 @@ public abstract class AbstractSessionCacheFactory implements SessionCacheFactory
     }
 
     /**
+     * Set the saveOnCreate to set.
      * @param saveOnCreate the saveOnCreate to set
      */
     public void setSaveOnCreate(boolean saveOnCreate)
@@ -81,6 +83,7 @@ public abstract class AbstractSessionCacheFactory implements SessionCacheFactory
     }
 
     /**
+     * Set the removeUnloadableSessions to set.
      * @param removeUnloadableSessions the removeUnloadableSessions to set
      */
     public void setRemoveUnloadableSessions(boolean removeUnloadableSessions)
@@ -89,6 +92,7 @@ public abstract class AbstractSessionCacheFactory implements SessionCacheFactory
     }
 
     /**
+     * Get the evictionPolicy.
      * @return the evictionPolicy
      */
     public int getEvictionPolicy()
@@ -97,6 +101,7 @@ public abstract class AbstractSessionCacheFactory implements SessionCacheFactory
     }
 
     /**
+     * Set the evictionPolicy to set.
      * @param evictionPolicy the evictionPolicy to set
      */
     public void setEvictionPolicy(int evictionPolicy)
@@ -113,6 +118,7 @@ public abstract class AbstractSessionCacheFactory implements SessionCacheFactory
     }
 
     /**
+     * Set the saveOnInactiveEvict to set.
      * @param saveOnInactiveEvict the saveOnInactiveEvict to set
      */
     public void setSaveOnInactiveEviction(boolean saveOnInactiveEvict)

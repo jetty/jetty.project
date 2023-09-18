@@ -171,6 +171,7 @@ public class HttpClient extends ContainerLifeCycle
     }
 
     /**
+     * Set the {@link SslContextFactory.Client} that manages TLS encryption.
      * @param sslContextFactory the {@link SslContextFactory.Client} that manages TLS encryption
      */
     public void setSslContextFactory(SslContextFactory.Client sslContextFactory)
@@ -260,6 +261,7 @@ public class HttpClient extends ContainerLifeCycle
     }
 
     /**
+     * Get the cookie store associated with this instance.
      * @return the cookie store associated with this instance
      */
     public HttpCookieStore getHttpCookieStore()
@@ -268,6 +270,7 @@ public class HttpClient extends ContainerLifeCycle
     }
 
     /**
+     * Set the cookie store associated with this instance.
      * @param cookieStore the cookie store associated with this instance
      */
     public void setHttpCookieStore(HttpCookieStore cookieStore)
@@ -285,6 +288,7 @@ public class HttpClient extends ContainerLifeCycle
     }
 
     /**
+     * Get the authentication store associated with this instance.
      * @return the authentication store associated with this instance
      */
     public AuthenticationStore getAuthenticationStore()
@@ -293,6 +297,7 @@ public class HttpClient extends ContainerLifeCycle
     }
 
     /**
+     * Set the authentication store associated with this instance.
      * @param authenticationStore the authentication store associated with this instance
      */
     public void setAuthenticationStore(AuthenticationStore authenticationStore)
@@ -574,6 +579,7 @@ public class HttpClient extends ContainerLifeCycle
     }
 
     /**
+     * Get the {@link ByteBufferPool} of this HttpClient.
      * @return the {@link ByteBufferPool} of this HttpClient
      */
     public ByteBufferPool getByteBufferPool()
@@ -582,6 +588,7 @@ public class HttpClient extends ContainerLifeCycle
     }
 
     /**
+     * Set the {@link ByteBufferPool} of this HttpClient.
      * @param byteBufferPool the {@link ByteBufferPool} of this HttpClient
      */
     public void setByteBufferPool(ByteBufferPool byteBufferPool)
@@ -661,6 +668,7 @@ public class HttpClient extends ContainerLifeCycle
     }
 
     /**
+     * Set the max time, in milliseconds, a connection can be idle (that is, without traffic of bytes in either direction).
      * @param idleTimeout the max time, in milliseconds, a connection can be idle (that is, without traffic of bytes in either direction)
      */
     public void setIdleTimeout(long idleTimeout)
@@ -688,6 +696,7 @@ public class HttpClient extends ContainerLifeCycle
     }
 
     /**
+     * Get the "User-Agent" HTTP field of this HttpClient.
      * @return the "User-Agent" HTTP field of this HttpClient
      */
     public HttpField getUserAgentField()
@@ -696,6 +705,7 @@ public class HttpClient extends ContainerLifeCycle
     }
 
     /**
+     * Set the "User-Agent" HTTP header string of this HttpClient.
      * @param agent the "User-Agent" HTTP header string of this HttpClient
      */
     public void setUserAgentField(HttpField agent)
@@ -725,6 +735,7 @@ public class HttpClient extends ContainerLifeCycle
     }
 
     /**
+     * Get the {@link Executor} of this HttpClient.
      * @return the {@link Executor} of this HttpClient
      */
     public Executor getExecutor()
@@ -733,6 +744,7 @@ public class HttpClient extends ContainerLifeCycle
     }
 
     /**
+     * Set the {@link Executor} of this HttpClient.
      * @param executor the {@link Executor} of this HttpClient
      */
     public void setExecutor(Executor executor)
@@ -741,6 +753,7 @@ public class HttpClient extends ContainerLifeCycle
     }
 
     /**
+     * Get the {@link Scheduler} of this HttpClient.
      * @return the {@link Scheduler} of this HttpClient
      */
     public Scheduler getScheduler()
@@ -749,6 +762,7 @@ public class HttpClient extends ContainerLifeCycle
     }
 
     /**
+     * Set the {@link Scheduler} of this HttpClient.
      * @param scheduler the {@link Scheduler} of this HttpClient
      */
     public void setScheduler(Scheduler scheduler)
@@ -757,6 +771,7 @@ public class HttpClient extends ContainerLifeCycle
     }
 
     /**
+     * Get the {@link SocketAddressResolver} of this HttpClient.
      * @return the {@link SocketAddressResolver} of this HttpClient
      */
     public SocketAddressResolver getSocketAddressResolver()
@@ -765,6 +780,7 @@ public class HttpClient extends ContainerLifeCycle
     }
 
     /**
+     * Set the {@link SocketAddressResolver} of this HttpClient.
      * @param resolver the {@link SocketAddressResolver} of this HttpClient
      */
     public void setSocketAddressResolver(SocketAddressResolver resolver)
@@ -837,6 +853,7 @@ public class HttpClient extends ContainerLifeCycle
     }
 
     /**
+     * Set the size of the buffer (in bytes) used to write requests.
      * @param requestBufferSize the size of the buffer (in bytes) used to write requests
      */
     public void setRequestBufferSize(int requestBufferSize)
@@ -854,6 +871,7 @@ public class HttpClient extends ContainerLifeCycle
     }
 
     /**
+     * Set the size of the buffer used to read responses.
      * @param responseBufferSize the size of the buffer used to read responses
      */
     public void setResponseBufferSize(int responseBufferSize)
@@ -1010,6 +1028,7 @@ public class HttpClient extends ContainerLifeCycle
     }
 
     /**
+     * Set the default content type for request content.
      * @param contentType the default content type for request content
      */
     public void setDefaultRequestContentType(String contentType)
@@ -1027,6 +1046,7 @@ public class HttpClient extends ContainerLifeCycle
     }
 
     /**
+     * Set whether to use direct ByteBuffers for reading.
      * @param useInputDirectByteBuffers whether to use direct ByteBuffers for reading
      */
     public void setUseInputDirectByteBuffers(boolean useInputDirectByteBuffers)
@@ -1044,6 +1064,7 @@ public class HttpClient extends ContainerLifeCycle
     }
 
     /**
+     * Set whether to use direct ByteBuffers for writing.
      * @param useOutputDirectByteBuffers whether to use direct ByteBuffers for writing
      */
     public void setUseOutputDirectByteBuffers(boolean useOutputDirectByteBuffers)
@@ -1061,6 +1082,7 @@ public class HttpClient extends ContainerLifeCycle
     }
 
     /**
+     * Set the max size in bytes of the response headers.
      * @param maxResponseHeadersSize the max size in bytes of the response headers
      */
     public void setMaxResponseHeadersSize(int maxResponseHeadersSize)
@@ -1069,6 +1091,7 @@ public class HttpClient extends ContainerLifeCycle
     }
 
     /**
+     * Get the forward proxy configuration.
      * @return the forward proxy configuration
      */
     public ProxyConfiguration getProxyConfiguration()
