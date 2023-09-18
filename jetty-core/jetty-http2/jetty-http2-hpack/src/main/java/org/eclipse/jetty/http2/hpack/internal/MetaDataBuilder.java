@@ -50,6 +50,7 @@ public class MetaDataBuilder
     }
 
     /**
+     * Get the maxSize.
      * @return the maxSize
      */
     public int getMaxSize()

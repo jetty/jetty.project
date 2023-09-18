@@ -263,6 +263,7 @@ public class Fields implements Iterable<Fields.Field>
     }
 
     /**
+     * Get the number of fields.
      * @return the number of fields
      */
     public int getSize()

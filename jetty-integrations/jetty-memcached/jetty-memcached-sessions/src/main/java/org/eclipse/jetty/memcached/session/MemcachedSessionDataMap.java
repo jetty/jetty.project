@@ -102,6 +102,7 @@ public class MemcachedSessionDataMap extends AbstractLifeCycle implements Sessio
     }
 
     /**
+     * Get the builder.
      * @return the builder
      */
     public XMemcachedClientBuilder getBuilder()
@@ -110,6 +111,7 @@ public class MemcachedSessionDataMap extends AbstractLifeCycle implements Sessio
     }
 
     /**
+     * Set the expiry to use in seconds.
      * @param sec the expiry to use in seconds
      */
     public void setExpirySec(int sec)

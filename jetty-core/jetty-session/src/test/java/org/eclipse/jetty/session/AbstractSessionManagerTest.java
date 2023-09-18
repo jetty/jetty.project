@@ -203,7 +203,7 @@ public class AbstractSessionManagerTest
      * Test that an immortal session is never scavenged, regardless of whether it
      * is evicted from the cache or not.
      * 
-     * @throws Exception
+     * @throws Exception if there is an unspecified problem
      */
     @Test
     public void testImmortalScavenge() throws Exception
@@ -256,7 +256,7 @@ public class AbstractSessionManagerTest
     /**
      * Test that a session that has a max valid time is always scavenged,
      * regardless of whether it is evicted from the cache or not.
-     * @throws Exception
+     * @throws Exception if there is an unspecified problem
      */
     @Test
     public void testNonImmortalScavenge() throws Exception

@@ -240,7 +240,7 @@ public class JettyEmbedder extends AbstractLifeCycle
 
     /**
      * Configure the server and the webapp
-     * @throws Exception
+     * @throws Exception if there is an unspecified problem
      */
     private void configure() throws Exception
     {

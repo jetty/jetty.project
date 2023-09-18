@@ -121,6 +121,7 @@ public interface Handler extends LifeCycle, Destroyable, Request.Handler
     Server getServer();
 
     /**
+     * Set the {@code Server} to associate to this {@code Handler}.
      * @param server the {@code Server} to associate to this {@code Handler}
      */
     void setServer(Server server);

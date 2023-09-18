@@ -326,7 +326,7 @@ public class JettyRunMojo extends AbstractUnassembledWebAppMojo
      * be reconfigured after changes to the pom. If false, only
      * the webapp will be reconfigured.
      *
-     * @throws Exception
+     * @throws Exception if there is an unspecified problem
      */
     public void restartWebApp(boolean reconfigure) throws Exception
     {

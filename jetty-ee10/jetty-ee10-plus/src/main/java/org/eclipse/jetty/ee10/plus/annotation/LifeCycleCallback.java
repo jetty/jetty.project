@@ -79,6 +79,7 @@ public abstract class LifeCycleCallback
     }
 
     /**
+     * Get the target.
      * @return the target
      */
     public Method getTarget()

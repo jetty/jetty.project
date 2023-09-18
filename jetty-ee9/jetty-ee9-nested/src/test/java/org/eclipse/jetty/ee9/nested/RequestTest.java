@@ -1776,7 +1776,7 @@ public class RequestTest
      * Test that multiple requests on the same connection with different cookies
      * do not bleed cookies.
      *
-     * @throws Exception
+     * @throws Exception if there is an unspecified problem
      */
     @Test
     public void testDifferentCookies() throws Exception

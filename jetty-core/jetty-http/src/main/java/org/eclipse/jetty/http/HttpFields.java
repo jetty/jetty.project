@@ -64,7 +64,7 @@ public interface HttpFields extends Iterable<HttpField>, Supplier<HttpFields>
     /**
      * <p>A constant for an immutable and empty {@link HttpFields}.</p>
      */
-    HttpFields EMPTY = build().asImmutable();
+    HttpFields EMPTY = new EmptyHttpFields();
 
     /**
      * <p>Returns an empty {@link Mutable} instance.</p>

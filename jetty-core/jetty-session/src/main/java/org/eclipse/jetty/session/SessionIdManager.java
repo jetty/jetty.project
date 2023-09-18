@@ -92,6 +92,7 @@ public interface SessionIdManager extends LifeCycle
     void scavenge();
 
     /**
+     * Set the housekeeper for doing scavenging.
      * @param houseKeeper the housekeeper for doing scavenging
      */
     void setSessionHouseKeeper(HouseKeeper houseKeeper);

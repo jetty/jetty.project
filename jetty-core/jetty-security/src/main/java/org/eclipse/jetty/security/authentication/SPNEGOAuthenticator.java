@@ -71,6 +71,7 @@ public class SPNEGOAuthenticator extends LoginAuthenticator
     }
 
     /**
+     * Get the authentication duration.
      * @return the authentication duration
      */
     public Duration getAuthenticationDuration()
@@ -101,7 +102,7 @@ public class SPNEGOAuthenticator extends LoginAuthenticator
         RoleDelegateUserIdentity user = (RoleDelegateUserIdentity)_loginService.login(username, password, request, request::getSession);
         if (user != null && user.isEstablished())
         {
-            renewSession(request, response);
+            updateSession(request, response);
         }
         return user;
     }

@@ -35,8 +35,9 @@ public class Transaction extends NamingEntry
     public static final String USER_TRANSACTION = "UserTransaction";
 
     /**
+     * Bind the transaction to a scope.
      * @param scope the scope level, usually an environment eg ee9 or ee10
-     * @throws NamingException
+     * @throws NamingException if there is a naming problem
      */
     public static void bindTransactionToENC(String scope)
         throws NamingException
@@ -55,8 +56,8 @@ public class Transaction extends NamingEntry
 
     /**
      * @param scope the scope, usually an environment like ee9, ee10
-     * @param userTransaction
-     * @throws NamingException
+     * @param userTransaction the UserTransaction
+     * @throws NamingException if there was a problem registering the transaction
      */
     public Transaction(String scope, UserTransaction userTransaction)
         throws NamingException
