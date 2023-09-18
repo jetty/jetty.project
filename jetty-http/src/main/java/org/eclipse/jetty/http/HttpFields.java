@@ -38,7 +38,10 @@ import java.util.stream.Stream;
  */
 public interface HttpFields extends Iterable<HttpField>
 {
-    HttpFields EMPTY = build().asImmutable();
+    /**
+     * <p>A constant for an immutable and empty {@link HttpFields}.</p>
+     */
+    HttpFields EMPTY = new EmptyHttpFields();
 
     static Mutable build()
     {
