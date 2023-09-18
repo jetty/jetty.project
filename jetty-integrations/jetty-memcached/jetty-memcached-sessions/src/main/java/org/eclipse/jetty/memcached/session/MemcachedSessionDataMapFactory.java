@@ -31,6 +31,7 @@ public class MemcachedSessionDataMapFactory implements SessionDataMapFactory
     protected List<InetSocketAddress> _addresses;
 
     /**
+     * Set host and port address of memcached servers.
      * @param addresses host and port address of memcached servers
      */
     public void setAddresses(InetSocketAddress... addresses)
@@ -48,6 +49,7 @@ public class MemcachedSessionDataMapFactory implements SessionDataMapFactory
     }
 
     /**
+     * Set the relative weight to give each server in the list of addresses.
      * @param weights the relative weight to give each server in the list of addresses
      */
     public void setWeights(int[] weights)
@@ -61,6 +63,7 @@ public class MemcachedSessionDataMapFactory implements SessionDataMapFactory
     }
 
     /**
+     * Set time in secs that memcached item remains valid.
      * @param expiry time in secs that memcached item remains valid
      */
     public void setExpirySec(int expiry)

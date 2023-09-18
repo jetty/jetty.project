@@ -37,6 +37,7 @@ public interface HttpChannel extends Invocable
     ConnectionMetaData getConnectionMetaData();
 
     /**
+     * Set the {@link HttpStream} to associate to this channel..
      * @param httpStream the {@link HttpStream} to associate to this channel.
      */
     void setHttpStream(HttpStream httpStream);

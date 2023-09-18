@@ -60,6 +60,7 @@ public class GCloudSessionDataStoreFactory extends AbstractSessionDataStoreFacto
     }
 
     /**
+     * Get the namespace.
      * @return the namespace
      */
     public String getNamespace()
@@ -68,6 +69,7 @@ public class GCloudSessionDataStoreFactory extends AbstractSessionDataStoreFacto
     }
 
     /**
+     * Set the namespace to set.
      * @param namespace the namespace to set
      */
     public void setNamespace(String namespace)

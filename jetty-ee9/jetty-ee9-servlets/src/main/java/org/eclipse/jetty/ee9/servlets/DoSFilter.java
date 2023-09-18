@@ -540,6 +540,7 @@ public class DoSFilter implements Filter
     }
 
     /**
+     * Get the maximum priority that we can assign to a request.
      * @return the maximum priority that we can assign to a request
      */
     protected RateType getMaxPriority()
@@ -964,6 +965,7 @@ public class DoSFilter implements Filter
     }
 
     /**
+     * Set the name to set.
      * @param name the name to set
      */
     public void setName(String name)
@@ -1046,6 +1048,7 @@ public class DoSFilter implements Filter
     }
 
     /**
+     * Set whether this filter is enabled.
      * @param enabled whether this filter is enabled
      */
     public void setEnabled(boolean enabled)

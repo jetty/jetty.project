@@ -63,6 +63,7 @@ public class CachingSessionDataStore extends ContainerLifeCycle implements Sessi
     }
 
     /**
+     * Get the delegate session store.
      * @return the delegate session store
      */
     public SessionDataStore getSessionStore()
@@ -71,6 +72,7 @@ public class CachingSessionDataStore extends ContainerLifeCycle implements Sessi
     }
 
     /**
+     * Get the fronting cache for session data.
      * @return the fronting cache for session data
      */
     public SessionDataMap getSessionDataMap()

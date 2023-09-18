@@ -44,6 +44,7 @@ public class CookiePatternRule extends PatternRule
     }
 
     /**
+     * Get the response cookie name.
      * @return the response cookie name
      */
     public String getName()
@@ -52,6 +53,7 @@ public class CookiePatternRule extends PatternRule
     }
 
     /**
+     * Set the response cookie name.
      * @param name the response cookie name
      */
     public void setName(String name)
@@ -60,6 +62,7 @@ public class CookiePatternRule extends PatternRule
     }
 
     /**
+     * Get the response cookie value.
      * @return the response cookie value
      */
     public String getValue()
@@ -68,6 +71,7 @@ public class CookiePatternRule extends PatternRule
     }
 
     /**
+     * Set the response cookie value.
      * @param value the response cookie value
      */
     public void setValue(String value)

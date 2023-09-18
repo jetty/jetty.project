@@ -101,6 +101,7 @@ public class JAASLoginService extends ContainerLifeCycle implements LoginService
     }
 
     /**
+     * Get the configuration.
      * @return the configuration
      */
     public Configuration getConfiguration()
@@ -109,6 +110,7 @@ public class JAASLoginService extends ContainerLifeCycle implements LoginService
     }
 
     /**
+     * Set the configuration to set.
      * @param configuration the configuration to set
      */
     public void setConfiguration(Configuration configuration)

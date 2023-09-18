@@ -71,6 +71,7 @@ public class SPNEGOAuthenticator extends LoginAuthenticator
     }
 
     /**
+     * Get the authentication duration.
      * @return the authentication duration
      */
     public Duration getAuthenticationDuration()

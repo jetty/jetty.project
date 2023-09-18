@@ -45,6 +45,7 @@ public class JettyForker extends AbstractForker
     }
 
     /**
+     * Set if true, the forked child will scan for changes at 1 second intervals.
      * @param scan if true, the forked child will scan for changes at 1 second intervals
      */
     public void setScan(boolean scan)
@@ -235,6 +236,7 @@ public class JettyForker extends AbstractForker
     }
 
     /**
+     * Get the location of the java binary.
      * @return the location of the java binary
      */
     private String getJavaBin()

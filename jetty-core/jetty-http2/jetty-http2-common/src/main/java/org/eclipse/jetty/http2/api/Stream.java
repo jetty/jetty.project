@@ -41,16 +41,19 @@ import org.eclipse.jetty.util.Promise;
 public interface Stream
 {
     /**
+     * Get the stream unique id.
      * @return the stream unique id
      */
     public int getId();
 
     /**
+     * Get the {@link org.eclipse.jetty.http2.api.Stream.Listener} associated with this stream.
      * @return the {@link org.eclipse.jetty.http2.api.Stream.Listener} associated with this stream
      */
     public Listener getListener();
 
     /**
+     * Get the session this stream is associated to.
      * @return the session this stream is associated to
      */
     public Session getSession();

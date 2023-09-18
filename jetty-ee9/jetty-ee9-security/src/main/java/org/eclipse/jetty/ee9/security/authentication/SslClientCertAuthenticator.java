@@ -126,6 +126,7 @@ public class SslClientCertAuthenticator extends LoginAuthenticator
     }
 
     /**
+     * Set true if SSL certificates have to be validated..
      * @param validateCerts true if SSL certificates have to be validated.
      */
     public void setValidateCerts(boolean validateCerts)

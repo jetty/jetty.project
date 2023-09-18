@@ -1061,6 +1061,7 @@ public class WebAppContext extends ServletContextHandler implements WebAppClassL
     }
 
     /**
+     * Set the web.xml descriptor to use. If set to null, WEB-INF/web.xml is used if it exists..
      * @param descriptor the web.xml descriptor to use. If set to null, WEB-INF/web.xml is used if it exists.
      */
     public void setDescriptor(String descriptor)

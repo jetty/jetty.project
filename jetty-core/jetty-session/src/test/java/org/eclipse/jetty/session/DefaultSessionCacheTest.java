@@ -321,7 +321,7 @@ public class DefaultSessionCacheTest extends AbstractSessionCacheTest
      * Test that the DefaultSessionCache shares the session object amongst
      * requests.
      * 
-     * @throws Exception
+     * @throws Exception if there is an unspecified problem
      */
     @Test
     public void testSessionShared() throws Exception
@@ -352,7 +352,7 @@ public class DefaultSessionCacheTest extends AbstractSessionCacheTest
     
     /**
      * Test adding a session to the cache
-     * @throws Exception
+     * @throws Exception if there is an unspecified problem
      */
     @Test
     public void testAdd()
@@ -389,7 +389,7 @@ public class DefaultSessionCacheTest extends AbstractSessionCacheTest
 
     /**
      * Test releasing use of a session 
-     * @throws Exception
+     * @throws Exception if there is an unspecified problem
      */
     @Test
     public void testRelease()
@@ -556,7 +556,7 @@ public class DefaultSessionCacheTest extends AbstractSessionCacheTest
      * Test that if saveOnEviction==true, the session will be persisted before
      * it is evicted.
      * 
-     * @throws Exception
+     * @throws Exception if there is an unspecified problem
      */
     @Test
     public void testSaveOnEviction()
@@ -600,7 +600,7 @@ public class DefaultSessionCacheTest extends AbstractSessionCacheTest
     /**
      * Test that when saveOnEviction=true, if the save fails, the session
      * remains in the cache and can be used later.
-     * @throws Exception
+     * @throws Exception if there is an unspecified problem
      */
     @Test
     public void testSaveOnEvictionFail() throws Exception
