@@ -229,13 +229,32 @@ public class RolloverFileOutputStream extends OutputStream
         File backupFile = null;
         try (AutoLock l = _lock.lock())
         {
+            if (_filename == null)
+            {
+                throw new IOException("Log directory name is null");
+            }
+            _filename = _filename.trim();
+            if (_filename.isEmpty())
+            {
+                throw new IOException("Log directory name is empty");
+            }
             // Check directory
             File file = new File(_filename);
             _filename = file.getCanonicalPath();
             file = new File(_filename);
-            File dir = new File(file.getParent());
-            if (!dir.isDirectory() || !dir.canWrite())
+            File dir = file.getParentFile();
+            if (!dir.exists())
+            {
+                throw new IOException("Log directory does not exist. Path=" + dir);
+            }
+            else if (!dir.isDirectory())
+            {
+                throw new IOException("Path for Log directory is not a directory. Path=" + dir);
+            }
+            else if (!dir.canWrite())
+            {
                 throw new IOException("Cannot write log directory " + dir);
+            }
 
             // Is this a rollover file?
             String filename = file.getName();
