@@ -59,9 +59,9 @@ public class ByteBufferAggregator
     }
 
     /**
-     * Copies the given ByteBuffer into this aggregator. This will aggregate bytes up to the
-     * specified maximum size, at which time this method returns true and
-     * {@link #takeRetainableByteBuffer()} must be called for this method to accept aggregating again.
+     * Aggregates the given ByteBuffer. This copies bytes up to the specified maximum size, at which
+     * time this method returns {@code true} and {@link #takeRetainableByteBuffer()} must be called
+     * for this method to accept aggregating again.
      * @param buffer the buffer to copy into this aggregator; its position is updated according to
      * the number of aggregated bytes
      * @return true if the aggregator's buffer is full and should be taken, false otherwise

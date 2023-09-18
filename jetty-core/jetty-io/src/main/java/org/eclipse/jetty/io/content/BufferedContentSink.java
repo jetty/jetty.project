@@ -130,13 +130,15 @@ public class BufferedContentSink implements Content.Sink
                 {
                     super.succeeded();
                     if (LOG.isDebugEnabled())
-                        LOG.debug("flushing current buffer {}", currentBuffer);
+                        LOG.debug("succeeded writing aggregated buffer, flushing current buffer {}", currentBuffer);
                     _flusher.offer(last, currentBuffer, callback);
                 }
 
                 @Override
                 public void failed(Throwable x)
                 {
+                    if (LOG.isDebugEnabled())
+                        LOG.debug("failure writing aggregated buffer", x);
                     super.failed(x);
                     callback.failed(x);
                 }
@@ -159,11 +161,13 @@ public class BufferedContentSink implements Content.Sink
             if (aggregatedBuffer != null)
             {
                 if (LOG.isDebugEnabled())
-                    LOG.debug("complete; writing aggregated buffer: {} bytes", aggregatedBuffer.remaining());
+                    LOG.debug("complete; writing aggregated buffer as the last one: {} bytes", aggregatedBuffer.remaining());
                 _flusher.offer(true, aggregatedBuffer.getByteBuffer(), Callback.from(callback, aggregatedBuffer::release));
             }
             else
             {
+                if (LOG.isDebugEnabled())
+                    LOG.debug("complete; no aggregated buffer, writing last empty buffer");
                 _flusher.offer(true, BufferUtil.EMPTY_BUFFER, callback);
             }
         }
@@ -189,6 +193,8 @@ public class BufferedContentSink implements Content.Sink
                 @Override
                 public void failed(Throwable x)
                 {
+                    if (LOG.isDebugEnabled())
+                        LOG.debug("failure writing aggregated buffer", x);
                     super.failed(x);
                     callback.failed(x);
                 }
@@ -239,11 +245,15 @@ public class BufferedContentSink implements Content.Sink
                 return Action.SUCCEEDED;
             if (_callback == null)
                 return Action.IDLE;
-            _lastWritten = _last;
             if (_buffer != COMPLETE_CALLBACK)
+            {
+                _lastWritten = _last;
                 _sink.write(_last, _buffer, this);
+            }
             else
+            {
                 succeeded();
+            }
             return Action.SCHEDULED;
         }
 
@@ -260,6 +270,7 @@ public class BufferedContentSink implements Content.Sink
         @Override
         protected void onCompleteFailure(Throwable cause)
         {
+            _buffer = null;
             _callback.failed(cause);
         }
     }
