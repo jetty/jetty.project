@@ -46,8 +46,11 @@ import org.slf4j.LoggerFactory;
  * </p>
  * <p>
  * Note also that the size of the buffer can be controlled by setting the
- * {@link #BUFFER_SIZE_ATTRIBUTE_NAME} request attribute to an integer.
- * In the absence of such header, the {@link HttpConfiguration#getOutputBufferSize()}
+ * {@link #BUFFER_SIZE_ATTRIBUTE_NAME} request attribute to an integer;
+ * in the absence of such header, the {@link HttpConfiguration#getOutputBufferSize()}
+ * config setting is used, while the maximum aggregation size can be controlled
+ * by setting the {@link #MAX_AGGREGATION_SIZE_ATTRIBUTE_NAME} request attribute to an integer,
+ * in the absence of such header, the {@link HttpConfiguration#getOutputAggregationSize()}
  * config setting is used.
  * </p>
  */
