@@ -90,6 +90,7 @@ public interface Extension extends IncomingFrames, OutgoingFrames, Closeable
     void setNextOutgoingFrames(OutgoingFrames nextOutgoing);
 
     /**
+     * Set the {@link CoreSession} for this Extension..
      * @param coreSession the {@link CoreSession} for this Extension.
      */
     void setCoreSession(CoreSession coreSession);

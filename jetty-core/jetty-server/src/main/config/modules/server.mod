@@ -38,6 +38,9 @@ etc/jetty.xml
 ## Max response content write length that is buffered (in bytes)
 # jetty.httpConfig.outputAggregationSize=8192
 
+## If HTTP/1.x persistent connections should be enabled
+# jetty.httpConfig.persistentConnectionsEnabled=true
+
 ## Max request headers size (in bytes)
 # jetty.httpConfig.requestHeaderSize=8192
 

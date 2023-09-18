@@ -69,6 +69,7 @@ public interface RetainableByteBuffer extends Retainable
     public boolean isRetained();
 
     /**
+     * Get the wrapped, not {@code null}, {@code ByteBuffer}.
      * @return the wrapped, not {@code null}, {@code ByteBuffer}
      */
     public ByteBuffer getByteBuffer();

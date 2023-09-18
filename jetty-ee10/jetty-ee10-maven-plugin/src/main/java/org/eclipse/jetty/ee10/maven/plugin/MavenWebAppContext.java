@@ -41,7 +41,6 @@ import org.eclipse.jetty.util.StringUtil;
 import org.eclipse.jetty.util.URIUtil;
 import org.eclipse.jetty.util.resource.CombinedResource;
 import org.eclipse.jetty.util.resource.Resource;
-import org.eclipse.jetty.util.resource.ResourceFactory;
 import org.eclipse.jetty.util.resource.Resources;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -191,6 +190,7 @@ public class MavenWebAppContext extends WebAppContext
     }
 
     /**
+     * Get the originAttribute.
      * @return the originAttribute
      */
     public String getOriginAttribute()

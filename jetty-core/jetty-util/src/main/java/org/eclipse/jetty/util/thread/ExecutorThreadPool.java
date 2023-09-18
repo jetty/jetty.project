@@ -111,6 +111,7 @@ public class ExecutorThreadPool extends ContainerLifeCycle implements ThreadPool
     }
 
     /**
+     * Set the name of this thread pool, used to name threads.
      * @param name the name of this thread pool, used to name threads
      */
     public void setName(String name)

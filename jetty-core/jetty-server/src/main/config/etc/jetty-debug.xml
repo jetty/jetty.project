@@ -9,7 +9,7 @@
   <New id="DebugListener" class="org.eclipse.jetty.server.DebugListener">
     <Arg name="outputStream">
       <New class="org.eclipse.jetty.util.RolloverFileOutputStream">
-        <Arg type="String"><Property name="jetty.logs" default="./logs"/>/yyyy_mm_dd.debug.log</Arg>
+        <Arg type="String"><Property name="jetty.debug.logs" deprecated="jetty.logs" default="./logs"/>/yyyy_mm_dd.debug.log</Arg>
         <Arg type="boolean"><Property name="jetty.debug.append" default="true"/></Arg>
         <Arg type="int"><Property name="jetty.debug.retainDays" default="14"/></Arg>
         <Arg>

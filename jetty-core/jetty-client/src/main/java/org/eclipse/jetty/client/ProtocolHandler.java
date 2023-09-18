@@ -24,6 +24,7 @@ package org.eclipse.jetty.client;
 public interface ProtocolHandler
 {
     /**
+     * Get a unique name among protocol handlers.
      * @return a unique name among protocol handlers
      */
     public String getName();

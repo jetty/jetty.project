@@ -56,6 +56,7 @@ public class Result
     }
 
     /**
+     * Get the request object.
      * @return the request object
      */
     public Request getRequest()
@@ -64,6 +65,7 @@ public class Result
     }
 
     /**
+     * Get the request failure, if any.
      * @return the request failure, if any
      */
     public Throwable getRequestFailure()
@@ -72,6 +74,7 @@ public class Result
     }
 
     /**
+     * Get the response object.
      * @return the response object
      */
     public Response getResponse()
@@ -80,6 +83,7 @@ public class Result
     }
 
     /**
+     * Get the response failure, if any.
      * @return the response failure, if any
      */
     public Throwable getResponseFailure()
@@ -104,6 +108,7 @@ public class Result
     }
 
     /**
+     * Get the response failure, if any, otherwise the request failure, if any.
      * @return the response failure, if any, otherwise the request failure, if any
      */
     public Throwable getFailure()

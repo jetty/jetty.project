@@ -34,6 +34,7 @@ public class MongoSessionDataStoreFactory extends AbstractSessionDataStoreFactor
     int _port = -1;
 
     /**
+     * Get the host.
      * @return the host
      */
     public String getHost()
@@ -42,6 +43,7 @@ public class MongoSessionDataStoreFactory extends AbstractSessionDataStoreFactor
     }
 
     /**
+     * Set the host to set.
      * @param host the host to set
      */
     public void setHost(String host)
@@ -50,6 +52,7 @@ public class MongoSessionDataStoreFactory extends AbstractSessionDataStoreFactor
     }
 
     /**
+     * Get the port.
      * @return the port
      */
     public int getPort()
@@ -58,6 +61,7 @@ public class MongoSessionDataStoreFactory extends AbstractSessionDataStoreFactor
     }
 
     /**
+     * Set the port to set.
      * @param port the port to set
      */
     public void setPort(int port)
@@ -66,6 +70,7 @@ public class MongoSessionDataStoreFactory extends AbstractSessionDataStoreFactor
     }
 
     /**
+     * Get the dbName.
      * @return the dbName
      */
     public String getDbName()
@@ -74,6 +79,7 @@ public class MongoSessionDataStoreFactory extends AbstractSessionDataStoreFactor
     }
 
     /**
+     * Set the dbName to set.
      * @param dbName the dbName to set
      */
     public void setDbName(String dbName)
@@ -82,6 +88,7 @@ public class MongoSessionDataStoreFactory extends AbstractSessionDataStoreFactor
     }
 
     /**
+     * Get the connectionString.
      * @return the connectionString
      */
     public String getConnectionString()
@@ -90,6 +97,7 @@ public class MongoSessionDataStoreFactory extends AbstractSessionDataStoreFactor
     }
 
     /**
+     * Set the connection string to set. This has priority over dbHost and port.
      * @param connectionString the connection string to set. This has priority over dbHost and port
      */
     public void setConnectionString(String connectionString)
@@ -98,6 +106,7 @@ public class MongoSessionDataStoreFactory extends AbstractSessionDataStoreFactor
     }
 
     /**
+     * Get the collectionName.
      * @return the collectionName
      */
     public String getCollectionName()
@@ -106,6 +115,7 @@ public class MongoSessionDataStoreFactory extends AbstractSessionDataStoreFactor
     }
 
     /**
+     * Set the collectionName to set.
      * @param collectionName the collectionName to set
      */
     public void setCollectionName(String collectionName)

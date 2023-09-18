@@ -594,12 +594,12 @@ public class SessionHandler extends AbstractSessionManager implements Handler.Si
     {
         if (isUsingCookies())
         {
-            if (isUsingURLs())
+            if (isUsingUriParameters())
                 return Set.of(SessionTrackingMode.COOKIE, SessionTrackingMode.URL);
             return Set.of(SessionTrackingMode.COOKIE);
         }
 
-        if (isUsingURLs())
+        if (isUsingUriParameters())
             return Set.of(SessionTrackingMode.URL);
 
         return Collections.emptySet();
@@ -635,7 +635,7 @@ public class SessionHandler extends AbstractSessionManager implements Handler.Si
             throw new IllegalArgumentException("sessionTrackingModes specifies a combination of SessionTrackingMode.SSL with a session tracking mode other than SessionTrackingMode.SSL");
         }
         setUsingCookies(sessionTrackingModes != null && sessionTrackingModes.contains(SessionTrackingMode.COOKIE));
-        setUsingURLs(sessionTrackingModes != null && sessionTrackingModes.contains(SessionTrackingMode.URL));
+        setUsingUriParameters(sessionTrackingModes != null && sessionTrackingModes.contains(SessionTrackingMode.URL));
     }
 
     @Override

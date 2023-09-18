@@ -3,7 +3,7 @@
 <!-- =============================================================== -->
 <!-- Configure the test-jndi webapp                                  -->
 <!-- =============================================================== -->
-<Configure id='wac' class="org.eclipse.jetty.ee9.webapp.WebAppContext">
+<Configure id="wac" class="org.eclipse.jetty.ee9.webapp.WebAppContext">
 
   <New id="tx" class="org.eclipse.jetty.ee9.plus.jndi.Transaction">
     <Arg><Property name="environment" default="ee9"/></Arg>
@@ -32,7 +32,7 @@
   <!-- Define an env entry with webapp scope for java:comp/env                   -->
   <New id="wiggle" class="org.eclipse.jetty.ee9.plus.jndi.EnvEntry">
     <Arg>
-      <Ref refid='wac' />
+      <Ref refid="wac" />
     </Arg>
     <Arg>wiggle</Arg>
     <Arg type="java.lang.Double">100</Arg>
@@ -42,7 +42,7 @@
   <!-- Mail Session setup                                          -->
   <New id="xxxmail" class="org.eclipse.jetty.ee9.plus.jndi.Resource">
     <Arg>
-      <Ref refid='wac' />
+      <Ref refid="wac" />
     </Arg>
     <Arg>mail/Session</Arg>
     <Arg>
@@ -64,7 +64,7 @@
   <!-- A mock DataSource                                           -->
   <New id="mydatasource" class="org.eclipse.jetty.ee9.plus.jndi.Resource">
     <Arg>
-      <Ref refid='wac' />
+      <Ref refid="wac" />
     </Arg>
     <Arg>jdbc/mydatasource</Arg>
     <Arg>

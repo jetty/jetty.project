@@ -36,7 +36,8 @@ public abstract class LoginAuthenticator implements Authenticator
 
     protected LoginService _loginService;
     protected IdentityService _identityService;
-    private boolean _renewSession;
+    private boolean _sessionRenewedOnAuthentication;
+    private int _sessionMaxInactiveIntervalOnAuthentication;
 
     protected LoginAuthenticator()
     {
@@ -61,7 +62,7 @@ public abstract class LoginAuthenticator implements Authenticator
             LOG.debug("{}.login {}", this, user);
         if (user != null)
         {
-            renewSession(request, response);
+            updateSession(request, response);
             return user;
         }
         return null;
@@ -87,7 +88,8 @@ public abstract class LoginAuthenticator implements Authenticator
         _identityService = configuration.getIdentityService();
         if (_identityService == null)
             throw new IllegalStateException("No IdentityService for " + this + " in " + configuration);
-        _renewSession = configuration.isSessionRenewedOnAuthentication();
+        _sessionRenewedOnAuthentication = configuration.isSessionRenewedOnAuthentication();
+        _sessionMaxInactiveIntervalOnAuthentication = configuration.getSessionMaxInactiveIntervalOnAuthentication();
     }
 
     public LoginService getLoginService()
@@ -96,35 +98,40 @@ public abstract class LoginAuthenticator implements Authenticator
     }
 
     /**
-     * Change the session id.
+     * Update the session on authentication.
      * The session is changed to a new instance with a new ID if and only if:<ul>
      * <li>A session exists.
      * <li>The {@link Configuration#isSessionRenewedOnAuthentication()} returns true.
      * <li>The session ID has been given to unauthenticated responses
      * </ul>
-     *
      * @param httpRequest the request
      * @param httpResponse the response
-     * @return The new session.
+     * @see Configuration#isSessionRenewedOnAuthentication()
+     * @see Configuration#getSessionMaxInactiveIntervalOnAuthentication()
      */
-    protected Session renewSession(Request httpRequest, Response httpResponse)
+    protected void updateSession(Request httpRequest, Response httpResponse)
     {
         Session session = httpRequest.getSession(false);
-        if (_renewSession && session != null)
+
+        if (session != null && (_sessionRenewedOnAuthentication || _sessionMaxInactiveIntervalOnAuthentication != 0))
         {
             synchronized (session)
             {
-                //if we should renew sessions, and there is an existing session that may have been seen by non-authenticated users
-                //(indicated by SESSION_SECURED not being set on the session) then we should change id
-                if (session.getAttribute(SecurityHandler.SESSION_AUTHENTICATED_ATTRIBUTE) != Boolean.TRUE)
+                if (_sessionMaxInactiveIntervalOnAuthentication != 0)
+                    session.setMaxInactiveInterval(_sessionMaxInactiveIntervalOnAuthentication < 0 ? -1 : _sessionMaxInactiveIntervalOnAuthentication);
+
+                if (_sessionRenewedOnAuthentication)
                 {
-                    session.setAttribute(SecurityHandler.SESSION_AUTHENTICATED_ATTRIBUTE, Boolean.TRUE);
-                    session.renewId(httpRequest, httpResponse);
-                    return session;
+                    //if we should renew sessions, and there is an existing session that may have been seen by non-authenticated users
+                    //(indicated by SESSION_SECURED not being set on the session) then we should change id
+                    if (session.getAttribute(SecurityHandler.SESSION_AUTHENTICATED_ATTRIBUTE) != Boolean.TRUE)
+                    {
+                        session.setAttribute(SecurityHandler.SESSION_AUTHENTICATED_ATTRIBUTE, Boolean.TRUE);
+                        session.renewId(httpRequest, httpResponse);
+                    }
                 }
             }
         }
-        return session;
     }
 
     /**
