@@ -198,12 +198,18 @@ public class ConditionalHandlerTest
         }
     }
 
-    public static class TestConditionalHandler extends ConditionalHandler implements Expected
+    public static class TestConditionalHandler extends ConditionalHandler.Abstract implements Expected
     {
         @Override
         public boolean doHandle(Request request, Response response, Callback callback) throws Exception
         {
             response.getHeaders().put("Test", "applied");
+            return nextHandle(request, response, callback);
+        }
+
+        @Override
+        protected boolean doNotHandle(Request request, Response response, Callback callback) throws Exception
+        {
             return nextHandle(request, response, callback);
         }
 

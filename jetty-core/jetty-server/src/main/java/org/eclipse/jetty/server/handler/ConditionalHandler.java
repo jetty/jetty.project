@@ -43,7 +43,7 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 /**
- * An abstract {@link Handler.Wrapper} that may conditionally handle a {@link Request}.
+ * A {@link Handler.Wrapper} that may conditionally handle a {@link Request}.
  * The conditions are implemented by {@link IncludeExclude}s of:
  * <ul>
  *     <li>A method name, which can be efficiently matched</li>
@@ -51,11 +51,12 @@ import org.slf4j.LoggerFactory;
  *     <li>An arbitrary {@link Predicate} taking the {@link Request}, which is matched in a linear test of all predicates.</li>
  * </ul>
  * <p>If the conditions are met, the abstract {@link #doHandle(Request, Response, Callback)} method will be invoked,
- * otherwise the {@link #doNotHandle(Request, Response, Callback)} method will be invoked, which by default calls
- * the {@link #nextHandle(Request, Response, Callback)} method.</p>
- * <p>A typical usage is to extend the class and provide an implementation of {@link #doHandle(Request, Response, Callback)}:</p>
+ * otherwise the {@link #doNotHandle(Request, Response, Callback)} method will be invoked.  Implementations may call
+ * the {@link #nextHandle(Request, Response, Callback)} method to call the wrapped handler.</p>
+ * <p>A typical usage is to extend the {@link Abstract} sub class and provide an implementation of
+ * {@link #doHandle(Request, Response, Callback)} and {@link #doNotHandle(Request, Response, Callback)}:</p>
  * <pre>{@code
- * public class MyOptionalHandler extends ConditionalHandler
+ * public class MyOptionalHandler extends ConditionalHandler.Abstract
  * {
  *     @Override
  *     public boolean doHandle(Request request, Response response, Callback callback)
@@ -63,20 +64,26 @@ import org.slf4j.LoggerFactory;
  *         response.getHeaders().add("Test", "My Optional Handling");
  *         return nextHandle(request, response, callback);
  *     }
+ *
+ *     @Override
+ *     public boolean doNotHandle(Request request, Response response, Callback callback)
+ *     {
+ *         return false;
+ *     }
  * }
  * }</pre>
  * <p>If the conditions added to {@code MyOptionalHandler} are met, then the {@code doHandle} method is called
  * and a response header added before invoking {@link #nextHandle(Request, Response, Callback)}, otherwise
- * the {@link #nextHandle(Request, Response, Callback)} is directly invoked.</p>
+ * the {@link #doNotHandle(Request, Response, Callback)} is called, which returns false to indicate no more handling..</p>
  *
- * <p>Alternatively, one of the concrete subclasses may be used with the optional behaviour in the following {@link Handler}(s).
- * These implementations vary in how they behave in {@link #doHandle(Request, Response, Callback)} when the conditions are met,
- * otherwise they all call {@link #nextHandle(Request, Response, Callback)} if the conditions are not met:</p>
+ * <p>Alternatively, one of the concrete subclasses may be used.  These implementations conditionally provide a specific
+ * action in their {@link #doHandle(Request, Response, Callback)} methods. Otherwise, when the conditions are not met
+ * they all call {@link #nextHandle(Request, Response, Callback)}.</p>
  * <ul>
- *     <li>{@link DontHandle} - {@code false} is returned if the conditions are met</li>
- *     <li>{@link Reject} - a {@link HttpStatus#FORBIDDEN_403} (or other status code) response is sent if the conditions are met</li>
- *     <li>{@link SkipNext} - the {@link #getHandler() next handler} is skipped if the conditions are met and its
- *     {@link Singleton#getHandler() next hander} invoked instead.</li>
+ *     <li>{@link DontHandle} - If the conditions are met, terminate further handling by returning {@code false}</li>
+ *     <li>{@link Reject} - If the conditions are met, reject the reuqest with a {@link HttpStatus#FORBIDDEN_403} (or other status code) response.</li>
+ *     <li>{@link SkipNext} - If the conditions are met, then the {@link #getHandler() next handler} is skipped and the
+ *     {@link Singleton#getHandler() following hander} invoked instead.</li>
  * </ul>
  */
 public abstract class ConditionalHandler extends Handler.Wrapper
@@ -88,17 +95,17 @@ public abstract class ConditionalHandler extends Handler.Wrapper
     private final IncludeExcludeSet<Predicate<Request>, Request> _predicates = new IncludeExcludeSet<>(PredicateSet.class);
     private Predicate<Request> _handlePredicate;
 
-    public ConditionalHandler()
+    private ConditionalHandler()
     {
         this(false, null);
     }
 
-    public ConditionalHandler(Handler nextHandler)
+    private ConditionalHandler(Handler nextHandler)
     {
         this(false, nextHandler);
     }
 
-    public ConditionalHandler(boolean dynamic, Handler nextHandler)
+    private ConditionalHandler(boolean dynamic, Handler nextHandler)
     {
         super(dynamic, nextHandler);
     }
@@ -352,6 +359,19 @@ public abstract class ConditionalHandler extends Handler.Wrapper
     protected abstract boolean doHandle(Request request, Response response, Callback callback) throws Exception;
 
     /**
+     * This method is called when the request has not met the conditions and is not to
+     * be handled by this handler.  The default implementation returns {@code false}.
+     * Derived implementations may send an error response or handle the request differently.
+     * @param request The request to handle
+     * @param response The response to generate
+     * @param callback The callback for completion
+     * @return True if this handler will complete the callback
+     * @throws Exception If there is a problem handling
+     * @see Handler#handle(Request, Response, Callback)
+     */
+    protected abstract boolean doNotHandle(Request request, Response response, Callback callback) throws Exception;
+
+    /**
      * Handle a request by invoking the {@link #handle(Request, Response, Callback)} method of the
      * {@link #getHandler() next Handler}.
      * @param request The request to handle
@@ -364,22 +384,6 @@ public abstract class ConditionalHandler extends Handler.Wrapper
     protected boolean nextHandle(Request request, Response response, Callback callback) throws Exception
     {
         return super.handle(request, response, callback);
-    }
-
-    /**
-     * This method is called when the request has not met the conditions and is not to
-     * be handled by this handler.  The default implementation returns {@code false}.
-     * Derived implementations may send an error response or handle the request differently.
-     * @param request The request to handle
-     * @param response The response to generate
-     * @param callback The callback for completion
-     * @return True if this handler will complete the callback
-     * @throws Exception If there is a problem handling
-     * @see Handler#handle(Request, Response, Callback)
-     */
-    protected boolean doNotHandle(Request request, Response response, Callback callback) throws Exception
-    {
-        return nextHandle(request, response, callback);
     }
 
     @Override
@@ -675,6 +679,28 @@ public abstract class ConditionalHandler extends Handler.Wrapper
     }
 
     /**
+     * An Abstract {@link ConditionalHandler}.  Implementations must provide
+     * both {@link #doHandle(Request, Response, Callback)} and
+     * {@link #doNotHandle(Request, Response, Callback)} implementations.
+     */
+    public abstract static class Abstract extends ConditionalHandler
+    {
+        protected Abstract()
+        {
+        }
+
+        protected Abstract(Handler nextHandler)
+        {
+            super(nextHandler);
+        }
+
+        protected Abstract(boolean dynamic, Handler nextHandler)
+        {
+            super(dynamic, nextHandler);
+        }
+    }
+
+    /**
      * An implementation of {@link ConditionalHandler} that, if conditions are met, will not do any further
      * handling by returning {@code false} from {@link #doHandle(Request, Response, Callback)}.
      * Otherwise, the {@link #nextHandle(Request, Response, Callback) next handler} will be invoked.
@@ -695,6 +721,12 @@ public abstract class ConditionalHandler extends Handler.Wrapper
         protected boolean doHandle(Request request, Response response, Callback callback) throws Exception
         {
             return false;
+        }
+
+        @Override
+        protected boolean doNotHandle(Request request, Response response, Callback callback) throws Exception
+        {
+            return nextHandle(request, response, callback);
         }
     }
 
@@ -736,6 +768,12 @@ public abstract class ConditionalHandler extends Handler.Wrapper
             Response.writeError(request, response, callback, _status);
             return true;
         }
+
+        @Override
+        protected boolean doNotHandle(Request request, Response response, Callback callback) throws Exception
+        {
+            return nextHandle(request, response, callback);
+        }
     }
 
     /**
@@ -762,6 +800,12 @@ public abstract class ConditionalHandler extends Handler.Wrapper
                 return false;
             Handler nextNext = nextHandler.getHandler();
             return nextNext != null && nextNext.handle(request, response, callback);
+        }
+
+        @Override
+        protected boolean doNotHandle(Request request, Response response, Callback callback) throws Exception
+        {
+            return nextHandle(request, response, callback);
         }
     }
 }

@@ -52,7 +52,7 @@ import org.slf4j.LoggerFactory;
  * generated can also be unbounded.
  * </p>
  */
-public class BufferedResponseHandler extends ConditionalHandler
+public class BufferedResponseHandler extends ConditionalHandler.Abstract
 {
     public static final String BUFFER_SIZE_ATTRIBUTE_NAME = BufferedResponseHandler.class.getName() + ".buffer-size";
 
@@ -148,6 +148,12 @@ public class BufferedResponseHandler extends ConditionalHandler
 
         BufferedResponse bufferedResponse = new BufferedResponse(request, response, callback);
         return next.handle(request, bufferedResponse, bufferedResponse);
+    }
+
+    @Override
+    protected boolean doNotHandle(Request request, Response response, Callback callback) throws Exception
+    {
+        return nextHandle(request, response, callback);
     }
 
     private class BufferedResponse extends Response.Wrapper implements Callback

@@ -62,7 +62,7 @@ import org.slf4j.LoggerFactory;
  * <p>Requests in excess of the limit will be asynchronously suspended until
  * a thread is available.</p>
  */
-public class ThreadLimitHandler extends ConditionalHandler
+public class ThreadLimitHandler extends ConditionalHandler.Abstract
 {
     private static final Logger LOG = LoggerFactory.getLogger(ThreadLimitHandler.class);
 
@@ -166,6 +166,12 @@ public class ThreadLimitHandler extends ConditionalHandler
         LimitedRequest limitedRequest = new LimitedRequest(remote, next, request, response, callback);
         limitedRequest.handle();
         return true;
+    }
+
+    @Override
+    protected boolean doNotHandle(Request request, Response response, Callback callback) throws Exception
+    {
+        return nextHandle(request, response, callback);
     }
 
     private Remote getRemote(Request baseRequest)

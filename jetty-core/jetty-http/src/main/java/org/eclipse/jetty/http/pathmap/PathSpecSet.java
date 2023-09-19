@@ -30,7 +30,7 @@ public class PathSpecSet extends AbstractSet<String> implements Predicate<String
     @Override
     public boolean test(String s)
     {
-        return specs.getMatched(s) != null;
+        return specs.test(s);
     }
 
     @Override

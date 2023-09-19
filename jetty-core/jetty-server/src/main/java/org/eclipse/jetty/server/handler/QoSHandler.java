@@ -70,7 +70,7 @@ import org.slf4j.LoggerFactory;
  * always be able to access the web application.</p>
  */
 @ManagedObject
-public class QoSHandler extends ConditionalHandler
+public class QoSHandler extends ConditionalHandler.Abstract
 {
     private static final Logger LOG = LoggerFactory.getLogger(QoSHandler.class);
     private static final String EXPIRED_ATTRIBUTE_NAME = QoSHandler.class.getName() + ".expired";
@@ -211,6 +211,12 @@ public class QoSHandler extends ConditionalHandler
             }
             return true;
         }
+    }
+
+    @Override
+    protected boolean doNotHandle(Request request, Response response, Callback callback) throws Exception
+    {
+        return nextHandle(request, response, callback);
     }
 
     private static void notAvailable(Response response, Callback callback)

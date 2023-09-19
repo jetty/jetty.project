@@ -32,7 +32,7 @@ import org.eclipse.jetty.util.InetAddressSet;
  * the forwarded for headers, as this cannot be as easily forged.
  * </p>
  */
-public class InetAccessHandler extends ConditionalHandler
+public class InetAccessHandler extends ConditionalHandler.Abstract
 {
     public InetAccessHandler()
     {
