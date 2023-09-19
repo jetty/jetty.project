@@ -395,8 +395,31 @@ public class Utf8StringBuilder implements CharsetStringBuilder
         return new CharacterCodingException()
         {
             {
-                initCause(new IllegalArgumentException("Bad UTF-8 encoding"));
+                initCause(new InvalidUtf8Exception());
             }
         };
+    }
+
+    public static class InvalidUtf8Exception extends IllegalArgumentException
+    {
+        public InvalidUtf8Exception()
+        {
+            this(null, null);
+        }
+
+        public InvalidUtf8Exception(String message)
+        {
+            super(message, null);
+        }
+
+        public InvalidUtf8Exception(Throwable cause)
+        {
+            super(null, cause);
+        }
+
+        public InvalidUtf8Exception(String message, Throwable cause)
+        {
+            super(message != null ? message : "Invalid UTF-8 encoding", cause);
+        }
     }
 }

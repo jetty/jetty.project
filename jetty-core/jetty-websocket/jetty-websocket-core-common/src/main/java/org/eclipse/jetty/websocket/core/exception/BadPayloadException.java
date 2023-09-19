@@ -13,6 +13,7 @@
 
 package org.eclipse.jetty.websocket.core.exception;
 
+import org.eclipse.jetty.util.Utf8StringBuilder;
 import org.eclipse.jetty.websocket.core.CloseStatus;
 
 /**
@@ -37,5 +38,13 @@ public class BadPayloadException extends CloseException
     public BadPayloadException(Throwable t)
     {
         super(CloseStatus.BAD_PAYLOAD, t);
+    }
+
+    public static class InvalidUtf8 extends BadPayloadException
+    {
+        public InvalidUtf8()
+        {
+            super("Invalid UTF-8", new Utf8StringBuilder.InvalidUtf8Exception());
+        }
     }
 }
