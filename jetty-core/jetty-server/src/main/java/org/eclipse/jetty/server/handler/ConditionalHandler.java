@@ -47,7 +47,7 @@ import org.slf4j.LoggerFactory;
  * The conditions are implemented by {@link IncludeExclude}s of:
  * <ul>
  *     <li>A method name, which can be efficiently matched</li>
- *     <li>A {@link PathSpec} or sting representation, which can be efficient matched.</li>
+ *     <li>A {@link PathSpec} or string representation, which can be efficiently matched.</li>
  *     <li>An arbitrary {@link Predicate} taking the {@link Request}, which is matched in a linear test of all predicates.</li>
  * </ul>
  * <p>If the conditions are met, the abstract {@link #doHandle(Request, Response, Callback)} method will be invoked,
@@ -69,7 +69,7 @@ import org.slf4j.LoggerFactory;
  * and a response header added before invoking {@link #nextHandle(Request, Response, Callback)}, otherwise
  * the {@link #nextHandle(Request, Response, Callback)} is directly invoked.</p>
  *
- * <p>Alternately, one of the concrete subclasses may be used with the optional behaviour in the following {@link Handler}(s).
+ * <p>Alternatively, one of the concrete subclasses may be used with the optional behaviour in the following {@link Handler}(s).
  * These implementations all call {@link #nextHandle(Request, Response, Callback)} if the conditions are met, otherwise
  * they vary in how they behave in {@link #doNotHandle(Request, Response, Callback)} when the conditions are not met:</p>
  * <ul>
