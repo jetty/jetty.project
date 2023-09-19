@@ -143,8 +143,8 @@
         <artifactId>maven-javadoc-plugin</artifactId>
         <executions>
           <execution>
-            <id>build-javadoc</id>
-            <phase>prepare-package</phase>
+            <id>javadoc-build</id>
+            <phase>package</phase>
             <goals>
               <goal>jar</goal>
             </goals>
