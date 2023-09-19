@@ -29,7 +29,6 @@ import org.eclipse.jetty.http2.hpack.HpackException.SessionException;
 
 public class MetaDataBuilder
 {
-    private final HttpFields _fields = new HttpFields();
     private int _maxSize;
     private int _size;
     private Integer _status;
@@ -37,7 +36,8 @@ public class MetaDataBuilder
     private HttpScheme _scheme;
     private HostPortHttpField _authority;
     private String _path;
-    private long _contentLength = -1;
+    private long _contentLength = Long.MIN_VALUE;
+    private HttpFields _fields = new HttpFields();
     private HpackException.StreamException _streamException;
     private boolean _request;
     private boolean _response;
@@ -51,6 +51,8 @@ public class MetaDataBuilder
     }
 
     /**
+     * Get the maxSize.
+     *
      * @return the maxSize
      */
     public int getMaxSize()
@@ -262,7 +264,7 @@ public class MetaDataBuilder
         }
         finally
         {
-            _fields.clear();
+            _fields = new HttpFields(Math.max(16, fields.size() + 5));
             _request = false;
             _response = false;
             _status = null;

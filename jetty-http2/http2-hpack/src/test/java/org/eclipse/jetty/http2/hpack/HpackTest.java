@@ -133,7 +133,7 @@ public class HpackTest
         }
         catch (HpackException.SessionException e)
         {
-            assertThat(e.getMessage(), containsString("Header too large"));
+            assertThat(e.getMessage(), containsString("Header size 198 > 164"));
         }
     }
 
@@ -141,21 +141,22 @@ public class HpackTest
     public void encodeDecodeNonAscii() throws Exception
     {
         HpackEncoder encoder = new HpackEncoder();
-        HpackDecoder decoder = new HpackDecoder(4096, 8192);
         ByteBuffer buffer = BufferUtil.allocate(16 * 1024);
 
         HttpFields fields0 = new HttpFields();
-        // @checkstyle-disable-check : AvoidEscapedUnicodeCharactersCheck
+            // @checkstyle-disable-check : AvoidEscapedUnicodeCharactersCheck
         fields0.add("Cookie", "[\uD842\uDF9F]");
         fields0.add("custom-key", "[\uD842\uDF9F]");
         Response original0 = new MetaData.Response(HttpVersion.HTTP_2, 200, fields0);
 
-        BufferUtil.clearToFill(buffer);
-        encoder.encode(buffer, original0);
-        BufferUtil.flipToFlush(buffer, 0);
-        Response decoded0 = (Response)decoder.decode(buffer);
+        HpackException.SessionException throwable = assertThrows(HpackException.SessionException.class, () ->
+        {
+            BufferUtil.clearToFill(buffer);
+            encoder.encode(buffer, original0);
+            BufferUtil.flipToFlush(buffer, 0);
+        });
 
-        assertMetaDataSame(original0, decoded0);
+        assertThat(throwable.getMessage(), containsString("Could not hpack encode"));
     }
     
     @Test
