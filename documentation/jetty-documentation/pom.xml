@@ -13,7 +13,6 @@
 
   <properties>
     <bundle-symbolic-name>${project.groupId}</bundle-symbolic-name>
-    <asciidoctor.skip>${skipTests}</asciidoctor.skip>
     <jacoco.skip>true</jacoco.skip>
     <javadoc.skip>true</javadoc.skip>
     <sources.skip>true</sources.skip>
