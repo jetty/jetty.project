@@ -42,6 +42,7 @@ import org.eclipse.jetty.websocket.api.UpgradeRequest;
 import org.eclipse.jetty.websocket.api.util.WSURI;
 import org.eclipse.jetty.websocket.client.ClientUpgradeRequest;
 import org.eclipse.jetty.websocket.client.WebSocketClient;
+import org.eclipse.jetty.websocket.core.WebSocketComponents;
 import org.eclipse.jetty.websocket.server.config.JettyWebSocketServletContainerInitializer;
 import org.eclipse.jetty.websocket.tests.AnnoMaxMessageEndpoint;
 import org.eclipse.jetty.websocket.tests.CloseTrackingEndpoint;
@@ -129,6 +130,34 @@ public class WebSocketClientTest
         {
             httpClient.start();
             WebSocketClient webSocketClient = new WebSocketClient(httpClient);
+            try
+            {
+                webSocketClient.start();
+                Executor inuseExecutor = webSocketClient.getExecutor();
+                assertSame(executor, inuseExecutor);
+            }
+            finally
+            {
+                webSocketClient.stop();
+            }
+        }
+        finally
+        {
+            httpClient.stop();
+        }
+    }
+
+    @Test
+    public void testCustomizeWebSocketComponentsExecutor() throws Exception
+    {
+        HttpClient httpClient = new HttpClient();
+        try
+        {
+            httpClient.start();
+            Executor executor = Executors.newFixedThreadPool(50);
+            WebSocketComponents webSocketComponents = new WebSocketComponents(null, null,
+                null, null, null, executor);
+            WebSocketClient webSocketClient = new WebSocketClient(httpClient, webSocketComponents);
             try
             {
                 webSocketClient.start();

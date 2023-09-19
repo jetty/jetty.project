@@ -83,9 +83,26 @@ public class WebSocketClient extends ContainerLifeCycle implements WebSocketPoli
      */
     public WebSocketClient(HttpClient httpClient)
     {
-        ByteBufferPool bufferPool = httpClient != null ? httpClient.getByteBufferPool() : null;
-        Executor executor = httpClient != null ? httpClient.getExecutor() : null;
-        components = new WebSocketComponents(null, null, bufferPool, null, null, executor);
+        this (httpClient,
+            new WebSocketComponents(
+                null,
+                null,
+                httpClient != null ? httpClient.getByteBufferPool() : null,
+                null,
+                null,
+                httpClient != null ? httpClient.getExecutor() : null)
+        );
+    }
+
+    /**
+     * Instantiate a WebSocketClient using HttpClient for defaults
+     *
+     * @param httpClient the HttpClient to base internal defaults off of
+     * @param webSocketComponents the configured WebSocketComponents to use
+     */
+    public WebSocketClient(HttpClient httpClient, WebSocketComponents webSocketComponents)
+    {
+        components = webSocketComponents;
         coreClient = new WebSocketCoreClient(httpClient, components);
         addManaged(coreClient);
         frameHandlerFactory = new JettyWebSocketFrameHandlerFactory(this, components);
@@ -339,13 +356,13 @@ public class WebSocketClient extends ContainerLifeCycle implements WebSocketPoli
 
     public ByteBufferPool getBufferPool()
     {
-        return getHttpClient().getByteBufferPool();
+        return components.getBufferPool();
     }
 
     @Override
     public Executor getExecutor()
     {
-        return getHttpClient().getExecutor();
+        return components.getExecutor();
     }
 
     public HttpClient getHttpClient()
