@@ -42,6 +42,7 @@ public class ConditionalHandlerTest
     private Server _server;
     private LocalConnector _connector;
     private HelloHandler _helloHandler;
+    private Expected _expected;
 
     @BeforeEach
     public void beforeEach() throws Exception
@@ -61,6 +62,7 @@ public class ConditionalHandlerTest
 
     private void startServer(Handler.Singleton testHandler) throws Exception
     {
+        _expected = (Expected)testHandler;
         _server.setHandler(testHandler);
         testHandler.getTail().setHandler(_helloHandler);
         _server.start();
@@ -72,7 +74,7 @@ public class ConditionalHandlerTest
             new TestConditionalHandler(),
             new TestConditionalHandlerSkipNext(new TestHandler()),
             new TestConditionalHandlerDontHandle(new TestHandler()),
-            new TestConditionalHandlerForbidden(new TestHandler())
+            new TestConditionalHandlerReject(new TestHandler())
         );
     }
 
@@ -81,13 +83,13 @@ public class ConditionalHandlerTest
     public void testNoConditions(ConditionalHandler testHandler) throws Exception
     {
         startServer(testHandler);
+        Expected expected = (Expected)testHandler;
+
         String response = _connector.getResponse("GET / HTTP/1.0\n\n");
-        assertThat(response, containsString("200 OK"));
-        assertThat(response, containsString("Test: applied"));
+        expected.testDoHandle(response);
 
         response = _connector.getResponse("POST /foo HTTP/1.0\n\n");
-        assertThat(response, containsString("200 OK"));
-        assertThat(response, containsString("Test: applied"));
+        expected.testDoHandle(response);
     }
 
     @ParameterizedTest
@@ -97,13 +99,12 @@ public class ConditionalHandlerTest
         testHandler.includeMethod("GET");
         testHandler.excludeMethod("POST");
         startServer(testHandler);
+
         String response = _connector.getResponse("GET / HTTP/1.0\n\n");
-        assertThat(response, containsString("200 OK"));
-        assertThat(response, containsString("Test: applied"));
+        _expected.testDoHandle(response);
 
         response = _connector.getResponse("POST /foo HTTP/1.0\n\n");
-        assertThat(response, containsString(((ExpectedWhenNotApplied)testHandler).getExpectedStatus()));
-        assertThat(response, not(containsString("Test: applied")));
+        _expected.testDoNotHandle(response);
     }
 
     @ParameterizedTest
@@ -114,12 +115,10 @@ public class ConditionalHandlerTest
         testHandler.excludePath("/foo/bar");
         startServer(testHandler);
         String response = _connector.getResponse("GET /foo HTTP/1.0\n\n");
-        assertThat(response, containsString("200 OK"));
-        assertThat(response, containsString("Test: applied"));
+        _expected.testDoHandle(response);
 
         response = _connector.getResponse("POST /foo/bar HTTP/1.0\n\n");
-        assertThat(response, containsString(((ExpectedWhenNotApplied)testHandler).getExpectedStatus()));
-        assertThat(response, not(containsString("Test: applied")));
+        _expected.testDoNotHandle(response);
     }
 
     @ParameterizedTest
@@ -134,15 +133,14 @@ public class ConditionalHandlerTest
             Forwarded: for=192.168.128.1
             
             """);
-        assertThat(response, containsString("200 OK"));
-        assertThat(response, containsString("Test: applied"));
+        _expected.testDoHandle(response);
+
         response = _connector.getResponse("""
             GET /foo HTTP/1.0
             Forwarded: for=192.168.128.31
             
             """);
-        assertThat(response, containsString(((ExpectedWhenNotApplied)testHandler).getExpectedStatus()));
-        assertThat(response, not(containsString("Test: applied")));
+        _expected.testDoNotHandle(response);
     }
 
     @ParameterizedTest
@@ -155,20 +153,16 @@ public class ConditionalHandlerTest
         testHandler.excludePath("/foo/bar");
         startServer(testHandler);
         String response = _connector.getResponse("GET /foo HTTP/1.0\n\n");
-        assertThat(response, containsString("200 OK"));
-        assertThat(response, containsString("Test: applied"));
+        _expected.testDoHandle(response);
 
         response = _connector.getResponse("GET /foo/bar HTTP/1.0\n\n");
-        assertThat(response, containsString(((ExpectedWhenNotApplied)testHandler).getExpectedStatus()));
-        assertThat(response, not(containsString("Test: applied")));
+        _expected.testDoNotHandle(response);
 
         response = _connector.getResponse("POST /foo HTTP/1.0\n\n");
-        assertThat(response, containsString(((ExpectedWhenNotApplied)testHandler).getExpectedStatus()));
-        assertThat(response, not(containsString("Test: applied")));
+        _expected.testDoNotHandle(response);
 
         response = _connector.getResponse("POST /foo/bar HTTP/1.0\n\n");
-        assertThat(response, containsString(((ExpectedWhenNotApplied)testHandler).getExpectedStatus()));
-        assertThat(response, not(containsString("Test: applied")));
+        _expected.testDoNotHandle(response);
     }
 
     @Test
@@ -193,15 +187,18 @@ public class ConditionalHandlerTest
         assertThat(conditionalHandler.getPredicates().getIncluded(), hasSize(0));
     }
 
-    interface ExpectedWhenNotApplied
+    interface Expected
     {
-        default String getExpectedStatus()
+        void testDoHandle(String response);
+
+        default void testDoNotHandle(String response)
         {
-            return "200 OK";
+            assertThat(response, containsString("200 OK"));
+            assertThat(response, containsString("Test: applied"));
         }
     }
 
-    public static class TestConditionalHandler extends ConditionalHandler implements ExpectedWhenNotApplied
+    public static class TestConditionalHandler extends ConditionalHandler implements Expected
     {
         @Override
         public boolean doHandle(Request request, Response response, Callback callback) throws Exception
@@ -209,41 +206,60 @@ public class ConditionalHandlerTest
             response.getHeaders().put("Test", "applied");
             return nextHandle(request, response, callback);
         }
+
+        public void testDoHandle(String response)
+        {
+            assertThat(response, containsString("200 OK"));
+            assertThat(response, containsString("Test: applied"));
+        }
+
+        public void testDoNotHandle(String response)
+        {
+            assertThat(response, containsString("200 OK"));
+            assertThat(response, not(containsString("Test: applied")));
+        }
+
     }
 
-    public static class TestConditionalHandlerSkipNext extends ConditionalHandler.SkipNext implements ExpectedWhenNotApplied
+    public static class TestConditionalHandlerSkipNext extends ConditionalHandler.SkipNext implements Expected
     {
         TestConditionalHandlerSkipNext(Handler handler)
         {
             super(handler);
         }
+
+        public void testDoHandle(String response)
+        {
+            assertThat(response, containsString("200 OK"));
+            assertThat(response, not(containsString("Test: applied")));
+        }
     }
 
-    public static class TestConditionalHandlerDontHandle extends ConditionalHandler.DontHandle implements ExpectedWhenNotApplied
+    public static class TestConditionalHandlerDontHandle extends ConditionalHandler.DontHandle implements Expected
     {
         TestConditionalHandlerDontHandle(Handler handler)
         {
             super(handler);
         }
 
-        @Override
-        public String getExpectedStatus()
+        public void testDoHandle(String response)
         {
-            return "404 Not Found";
+            assertThat(response, containsString("404 Not Found"));
+            assertThat(response, not(containsString("Test: applied")));
         }
     }
 
-    public static class TestConditionalHandlerForbidden extends ConditionalHandler.Forbidden implements ExpectedWhenNotApplied
+    public static class TestConditionalHandlerReject extends ConditionalHandler.Reject implements Expected
     {
-        TestConditionalHandlerForbidden(Handler handler)
+        TestConditionalHandlerReject(Handler handler)
         {
             super(handler);
         }
 
-        @Override
-        public String getExpectedStatus()
+        public void testDoHandle(String response)
         {
-            return "403 Forbidden";
+            assertThat(response, containsString("403 Forbidden"));
+            assertThat(response, not(containsString("Test: applied")));
         }
     }
     

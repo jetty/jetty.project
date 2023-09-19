@@ -70,13 +70,13 @@ import org.slf4j.LoggerFactory;
  * the {@link #nextHandle(Request, Response, Callback)} is directly invoked.</p>
  *
  * <p>Alternatively, one of the concrete subclasses may be used with the optional behaviour in the following {@link Handler}(s).
- * These implementations all call {@link #nextHandle(Request, Response, Callback)} if the conditions are met, otherwise
- * they vary in how they behave in {@link #doNotHandle(Request, Response, Callback)} when the conditions are not met:</p>
+ * These implementations vary in how they behave in {@link #doHandle(Request, Response, Callback)} when the conditions are met,
+ * otherwise they all call {@link #nextHandle(Request, Response, Callback)} if the conditions are not met:</p>
  * <ul>
- *     <li>{@link DontHandle} - {@code false} is returned</li>
- *     <li>{@link Forbidden} - a {@link HttpStatus#FORBIDDEN_403} response is sent</li>
- *     <li>{@link SkipNext} - the {@link #getHandler() next handler} is skipped and instead, if the next handler is a
- *     {@link org.eclipse.jetty.server.Handler.Singleton}, then its next handler is invoked</li>
+ *     <li>{@link DontHandle} - {@code false} is returned if the conditions are met</li>
+ *     <li>{@link Reject} - a {@link HttpStatus#FORBIDDEN_403} (or other status code) response is sent if the conditions are met</li>
+ *     <li>{@link SkipNext} - the {@link #getHandler() next handler} is skipped if the conditions are met and its
+ *     {@link Singleton#getHandler() next hander} invoked instead.</li>
  * </ul>
  */
 public abstract class ConditionalHandler extends Handler.Wrapper
@@ -675,9 +675,9 @@ public abstract class ConditionalHandler extends Handler.Wrapper
     }
 
     /**
-     * An implementation of {@link ConditionalHandler} that will invoke {@link #nextHandle(Request, Response, Callback)} if
-     * the conditions are met, otherwise {@code false} is returned from {@link #doNotHandle(Request, Response, Callback)} and
-     * no further handling is done.
+     * An implementation of {@link ConditionalHandler} that, if conditions are met, will not do any further
+     * handling by returning {@code false} from {@link #doHandle(Request, Response, Callback)}.
+     * Otherwise, the {@link #nextHandle(Request, Response, Callback) next handler} will be invoked.
      */
     public static class DontHandle extends ConditionalHandler
     {
@@ -694,51 +694,54 @@ public abstract class ConditionalHandler extends Handler.Wrapper
         @Override
         protected boolean doHandle(Request request, Response response, Callback callback) throws Exception
         {
-            return nextHandle(request, response, callback);
-        }
-
-        @Override
-        protected boolean doNotHandle(Request request, Response response, Callback callback) throws Exception
-        {
             return false;
         }
     }
 
     /**
-     * An implementation of {@link ConditionalHandler} that will invoke {@link #nextHandle(Request, Response, Callback)} if
-     * the conditions are met, otherwise {@link #doNotHandle(Request, Response, Callback)} sends a
-     * {@link HttpStatus#FORBIDDEN_403} response.
+     * An implementation of {@link ConditionalHandler} that, if conditions are met, will reject
+     * the request by sending a response (by default a {@link HttpStatus#FORBIDDEN_403}).
+     * Otherwise, the {@link #nextHandle(Request, Response, Callback) next handler} will be invoked.
      */
-    public static class Forbidden extends ConditionalHandler
+    public static class Reject extends ConditionalHandler
     {
-        public Forbidden()
+        private final int _status;
+
+        public Reject()
         {
-            super();
+            this(null, HttpStatus.FORBIDDEN_403);
         }
 
-        public Forbidden(Handler handler)
+        public Reject(int status)
+        {
+            this(null, status);
+        }
+
+        public Reject(Handler handler)
+        {
+            this(handler, HttpStatus.FORBIDDEN_403);
+        }
+
+        public Reject(Handler handler, int status)
         {
             super(handler);
+            if (status < 200 || status > 999)
+                throw new IllegalArgumentException("bad status");
+            _status = status;
         }
 
         @Override
         protected boolean doHandle(Request request, Response response, Callback callback) throws Exception
         {
-            return nextHandle(request, response, callback);
-        }
-
-        @Override
-        protected boolean doNotHandle(Request request, Response response, Callback callback) throws Exception
-        {
-            Response.writeError(request, response, callback, HttpStatus.FORBIDDEN_403);
+            Response.writeError(request, response, callback, _status);
             return true;
         }
     }
 
     /**
-     * An implementation of {@link ConditionalHandler} that will invoke {@link #nextHandle(Request, Response, Callback)} if
-     * the conditions are met, otherwise {@link #doNotHandle(Request, Response, Callback)} will skip the next {@link Handler}
-     * by its {@link Singleton#getHandler() next Handler}.
+     * An implementation of {@link ConditionalHandler} that, if conditions are met, will skip the next {@link Handler} by
+     * invoking its {@link Singleton#getHandler() next Handler}.
+     * Otherwise, the {@link #nextHandle(Request, Response, Callback) next handler} will be invoked.0
      */
     public static class SkipNext extends ConditionalHandler
     {
@@ -754,12 +757,6 @@ public abstract class ConditionalHandler extends Handler.Wrapper
 
         @Override
         protected boolean doHandle(Request request, Response response, Callback callback) throws Exception
-        {
-            return nextHandle(request, response, callback);
-        }
-
-        @Override
-        protected boolean doNotHandle(Request request, Response response, Callback callback) throws Exception
         {
             if (!(getHandler() instanceof Singleton nextHandler))
                 return false;

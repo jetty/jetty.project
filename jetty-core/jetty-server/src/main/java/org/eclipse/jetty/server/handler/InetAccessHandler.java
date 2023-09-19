@@ -13,8 +13,12 @@
 
 package org.eclipse.jetty.server.handler;
 
+import org.eclipse.jetty.http.HttpStatus;
 import org.eclipse.jetty.http.pathmap.PathSpec;
 import org.eclipse.jetty.server.Handler;
+import org.eclipse.jetty.server.Request;
+import org.eclipse.jetty.server.Response;
+import org.eclipse.jetty.util.Callback;
 import org.eclipse.jetty.util.IncludeExcludeSet;
 import org.eclipse.jetty.util.InetAddressPattern;
 import org.eclipse.jetty.util.InetAddressSet;
@@ -28,7 +32,7 @@ import org.eclipse.jetty.util.InetAddressSet;
  * the forwarded for headers, as this cannot be as easily forged.
  * </p>
  */
-public class InetAccessHandler extends ConditionalHandler.Forbidden
+public class InetAccessHandler extends ConditionalHandler
 {
     public InetAccessHandler()
     {
@@ -38,6 +42,19 @@ public class InetAccessHandler extends ConditionalHandler.Forbidden
     public InetAccessHandler(Handler handler)
     {
         super(handler);
+    }
+
+    @Override
+    protected boolean doHandle(Request request, Response response, Callback callback) throws Exception
+    {
+        return nextHandle(request, response, callback);
+    }
+
+    @Override
+    protected boolean doNotHandle(Request request, Response response, Callback callback) throws Exception
+    {
+        Response.writeError(request, response, callback, HttpStatus.FORBIDDEN_403);
+        return true;
     }
 
     /**

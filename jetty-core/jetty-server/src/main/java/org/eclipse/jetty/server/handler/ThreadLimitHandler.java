@@ -47,22 +47,20 @@ import org.slf4j.LoggerFactory;
 /**
  * <p>Handler to limit the threads per IP address for DOS protection</p>
  * <p>The ThreadLimitHandler applies a limit to the number of Threads
- * that can be used simultaneously per remote IP address.
- * </p>
+ * that can be used simultaneously per remote IP address.</p>
  * <p>The handler makes a determination of the remote IP separately to
- * any that may be made by the {@link ForwardedRequestCustomizer} or similar:
+ * any that may be made by the {@link ForwardedRequestCustomizer} or similar:</p>
  * <ul>
- * <li>This handler will use either only a single style
- * of forwarded header.   This is on the assumption that a trusted local proxy
+ * <li>This handler will use only a single style of forwarded header.
+ * This is on the assumption that a trusted local proxy
  * will produce only a single forwarded header and that any additional
  * headers are likely from untrusted client side proxies.</li>
  * <li>If multiple instances of a forwarded header are provided, this
  * handler will use the right-most instance, which will have been set from
  * the trusted local proxy</li>
  * </ul>
- * Requests in excess of the limit will be asynchronously suspended until
- * a thread is available.
- * <p>This is a simpler alternative to DosFilter</p>
+ * <p>Requests in excess of the limit will be asynchronously suspended until
+ * a thread is available.</p>
  */
 public class ThreadLimitHandler extends ConditionalHandler
 {
