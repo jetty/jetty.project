@@ -29,15 +29,15 @@ import org.eclipse.jetty.http2.hpack.HpackException.SessionException;
 
 public class MetaDataBuilder
 {
-    private final int _maxSize;
+    private final HttpFields _fields = new HttpFields();
+    private int _maxSize;
     private int _size;
     private Integer _status;
     private String _method;
     private HttpScheme _scheme;
     private HostPortHttpField _authority;
     private String _path;
-    private long _contentLength = Long.MIN_VALUE;
-    private HttpFields _fields = new HttpFields();
+    private long _contentLength = -1;
     private HpackException.StreamException _streamException;
     private boolean _request;
     private boolean _response;
@@ -51,13 +51,16 @@ public class MetaDataBuilder
     }
 
     /**
-     * Get the maxSize.
-     *
      * @return the maxSize
      */
     public int getMaxSize()
     {
         return _maxSize;
+    }
+
+    public void setMaxSize(int maxSize)
+    {
+        _maxSize = maxSize;
     }
 
     /**
@@ -70,17 +73,18 @@ public class MetaDataBuilder
         return _size;
     }
 
-    public void emit(HttpField field) throws HpackException.SessionException
+    public void emit(HttpField field) throws SessionException
     {
         HttpHeader header = field.getHeader();
         String name = field.getName();
-        if (name == null || name.length() == 0)
-            throw new HpackException.SessionException("Header size 0");
+        if (name == null || name.isEmpty())
+            throw new SessionException("Header size 0");
         String value = field.getValue();
         int fieldSize = name.length() + (value == null ? 0 : value.length());
         _size += fieldSize + 32;
-        if (_size > _maxSize)
-            throw new HpackException.SessionException("Header size %d > %d", _size, _maxSize);
+        int maxSize = getMaxSize();
+        if (maxSize > 0 && _size > maxSize)
+            throw new SessionException("Header size %d > %d", _size, maxSize);
 
         if (field instanceof StaticTableHttpField)
         {
@@ -89,7 +93,7 @@ public class MetaDataBuilder
             {
                 case C_STATUS:
                     if (checkPseudoHeader(header, _status))
-                        _status = (Integer)staticField.getStaticValue();
+                        _status = staticField.getIntValue();
                     _response = true;
                     break;
 
@@ -157,7 +161,7 @@ public class MetaDataBuilder
                 case C_PATH:
                     if (checkPseudoHeader(header, _path))
                     {
-                        if (value != null && value.length() > 0)
+                        if (value != null && !value.isEmpty())
                             _path = value;
                         else
                             streamException("No Path");
@@ -201,7 +205,7 @@ public class MetaDataBuilder
         }
     }
 
-    protected void streamException(String messageFormat, Object... args)
+    public void streamException(String messageFormat, Object... args)
     {
         HpackException.StreamException stream = new HpackException.StreamException(messageFormat, args);
         if (_streamException == null)
@@ -258,7 +262,7 @@ public class MetaDataBuilder
         }
         finally
         {
-            _fields = new HttpFields(Math.max(16, fields.size() + 5));
+            _fields.clear();
             _request = false;
             _response = false;
             _status = null;
@@ -267,23 +271,7 @@ public class MetaDataBuilder
             _authority = null;
             _path = null;
             _size = 0;
-            _contentLength = Long.MIN_VALUE;
+            _contentLength = -1;
         }
-    }
-
-    /**
-     * Check that the max size will not be exceeded.
-     *
-     * @param length the length
-     * @param huffman the huffman name
-     * @throws SessionException in case of size errors
-     */
-    public void checkSize(int length, boolean huffman) throws SessionException
-    {
-        // Apply a huffman fudge factor
-        if (huffman)
-            length = (length * 4) / 3;
-        if ((_size + length) > _maxSize)
-            throw new HpackException.SessionException("Header too large %d > %d", _size + length, _maxSize);
     }
 }
