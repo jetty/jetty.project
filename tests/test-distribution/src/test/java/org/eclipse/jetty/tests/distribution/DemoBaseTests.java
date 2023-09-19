@@ -174,7 +174,9 @@ public class DemoBaseTests extends AbstractDistributionTest
             startHttpClient(true);
             ContentResponse response = client.GET("http://localhost:" + httpPort + "/proxy/current/");
             assertEquals(HttpStatus.OK_200, response.getStatus());
-            assertThat("Expecting APIdoc contents", response.getContentAsString(), containsString("Jetty Util : Common Resource Utilities"));
+            String body = response.getContentAsString();
+            assertThat("Expecting APIdoc contents", body, containsString("All&nbsp;Classes"));
+            assertThat("Expecting APIdoc contents", body, containsString("<title>Overview (Jetty :: Project 9."));
         }
     }
 
