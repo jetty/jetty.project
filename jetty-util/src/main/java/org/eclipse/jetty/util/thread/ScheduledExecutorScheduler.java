@@ -14,6 +14,7 @@
 package org.eclipse.jetty.util.thread;
 
 import java.io.IOException;
+import java.util.concurrent.ScheduledExecutorService;
 import java.util.concurrent.ScheduledFuture;
 import java.util.concurrent.ScheduledThreadPoolExecutor;
 import java.util.concurrent.TimeUnit;
@@ -43,7 +44,7 @@ public class ScheduledExecutorScheduler extends AbstractLifeCycle implements Sch
     private final ThreadGroup threadGroup;
     private final int threads;
     private final AtomicInteger count = new AtomicInteger();
-    private volatile ScheduledThreadPoolExecutor scheduler;
+    private volatile ScheduledExecutorService scheduler;
     private volatile Thread thread;
 
     public ScheduledExecutorScheduler()
@@ -76,7 +77,7 @@ public class ScheduledExecutorScheduler extends AbstractLifeCycle implements Sch
      * @param daemon True if scheduler threads should be daemon
      * @param classLoader The classloader to run the threads with or null to use the current thread context classloader
      * @param threadGroup The threadgroup to use or null for no thread group
-     * @param threads The number of threads to pass to the the core {@link ScheduledThreadPoolExecutor} or -1 for a
+     * @param threads The number of threads to pass to the core {@link ScheduledExecutorService} or -1 for a
      * heuristic determined number of threads.
      */
     public ScheduledExecutorScheduler(@Name("name") String name, @Name("daemon") boolean daemon, @Name("classLoader") ClassLoader classLoader, @Name("threadGroup") ThreadGroup threadGroup, @Name("threads") int threads)
@@ -88,18 +89,35 @@ public class ScheduledExecutorScheduler extends AbstractLifeCycle implements Sch
         this.threads = threads;
     }
 
+    /**
+     * @param scheduledExecutorService the core {@link ScheduledExecutorService} to be used
+     */
+    public ScheduledExecutorScheduler(ScheduledExecutorService scheduledExecutorService)
+    {
+        this.name = null;
+        this.daemon = false;
+        this.classloader = null;
+        this.threadGroup = null;
+        this.threads = 0;
+        this.scheduler = scheduledExecutorService;
+    }
+
     @Override
     protected void doStart() throws Exception
     {
-        int size = threads > 0 ? threads : 1;
-        scheduler = new ScheduledThreadPoolExecutor(size, r ->
+        if (this.scheduler == null)
         {
-            Thread thread = ScheduledExecutorScheduler.this.thread = new Thread(threadGroup, r, name + "-" + count.incrementAndGet());
-            thread.setDaemon(daemon);
-            thread.setContextClassLoader(classloader);
-            return thread;
-        });
-        scheduler.setRemoveOnCancelPolicy(true);
+            int size = threads > 0 ? threads : 1;
+            ScheduledThreadPoolExecutor scheduler = new ScheduledThreadPoolExecutor(size, r ->
+            {
+                Thread thread = ScheduledExecutorScheduler.this.thread = new Thread(threadGroup, r, name + "-" + count.incrementAndGet());
+                thread.setDaemon(daemon);
+                thread.setContextClassLoader(classloader);
+                return thread;
+            });
+            scheduler.setRemoveOnCancelPolicy(true);
+            this.scheduler = scheduler;
+        }
         super.doStart();
     }
 
@@ -108,13 +126,15 @@ public class ScheduledExecutorScheduler extends AbstractLifeCycle implements Sch
     {
         scheduler.shutdownNow();
         super.doStop();
-        scheduler = null;
+        // If name is set to null, this means we got the scheduler from the constructor.
+        if (name != null)
+            scheduler = null;
     }
 
     @Override
     public Task schedule(Runnable task, long delay, TimeUnit unit)
     {
-        ScheduledThreadPoolExecutor s = scheduler;
+        ScheduledExecutorService s = scheduler;
         if (s == null)
             return () -> false;
         ScheduledFuture<?> result = s.schedule(task, delay, unit);
