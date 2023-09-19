@@ -54,20 +54,6 @@
         <artifactId>maven-antrun-plugin</artifactId>
         <executions>
           <execution>
-            <id>show-source-listing</id>
-            <phase>package</phase>
-            <goals>
-              <goal>run</goal>
-            </goals>
-            <configuration>
-              <target>
-                <dirset id="sources.contents" dir="${sources-directory}" includes="*"/>
-                <property name="prop.sources.contents" refid="sources.contents"/>
-                <echo>sources.contents = ${prop.sources.contents}</echo>
-              </target>
-            </configuration>
-          </execution>
-          <execution>
             <id>create-sources-dir</id>
             <phase>generate-sources</phase>
             <goals>
@@ -163,7 +149,6 @@
               <goal>jar</goal>
             </goals>
             <configuration>
-              <verbose>true</verbose>
               <doctitle>Eclipse Jetty API Doc - v${project.version}</doctitle>
               <windowtitle>Eclipse Jetty API Doc - v${project.version}</windowtitle>
               <excludePackageNames>
