@@ -2097,11 +2097,6 @@
         <maven.repo.uri>https://repo.maven.apache.org/maven2/</maven.repo.uri>
         <home.start.timeout>120</home.start.timeout>
       </properties>
-      <modules>
-      <!-- FIXME: Do we want to keep this?
-        <module>javadoc</module>
-        -->
-      </modules>
       <build>
         <pluginManagement>
           <plugins>
