@@ -64,7 +64,7 @@ public class WebSocketClient extends ContainerLifeCycle implements WebSocketPoli
     private final List<WebSocketSessionListener> sessionListeners = new CopyOnWriteArrayList<>();
     private final SessionTracker sessionTracker = new SessionTracker();
     private final Configuration.ConfigurationCustomizer configurationCustomizer = new Configuration.ConfigurationCustomizer();
-    private final WebSocketComponents components = new WebSocketComponents();
+    private final WebSocketComponents components;
     private boolean stopAtShutdown = false;
     private long _stopTimeout = Long.MAX_VALUE;
 
@@ -83,6 +83,9 @@ public class WebSocketClient extends ContainerLifeCycle implements WebSocketPoli
      */
     public WebSocketClient(HttpClient httpClient)
     {
+        ByteBufferPool bufferPool = httpClient != null ? httpClient.getByteBufferPool() : null;
+        Executor executor = httpClient != null ? httpClient.getExecutor() : null;
+        components = new WebSocketComponents(null, null, bufferPool, null, null, executor);
         coreClient = new WebSocketCoreClient(httpClient, components);
         addManaged(coreClient);
         frameHandlerFactory = new JettyWebSocketFrameHandlerFactory(this, components);
