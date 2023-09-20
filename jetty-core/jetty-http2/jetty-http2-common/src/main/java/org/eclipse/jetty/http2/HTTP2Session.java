@@ -29,7 +29,6 @@ import java.util.Queue;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.TimeoutException;
-import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.concurrent.atomic.AtomicLong;
 import java.util.function.Consumer;
@@ -64,7 +63,6 @@ import org.eclipse.jetty.io.EndPoint;
 import org.eclipse.jetty.io.WriteFlusher;
 import org.eclipse.jetty.util.AtomicBiInteger;
 import org.eclipse.jetty.util.Atomics;
-import org.eclipse.jetty.util.BufferUtil;
 import org.eclipse.jetty.util.Callback;
 import org.eclipse.jetty.util.CountingCallback;
 import org.eclipse.jetty.util.MathUtils;
@@ -2416,7 +2414,6 @@ public abstract class HTTP2Session extends ContainerLifeCycle implements Session
         private final Stream.Data data;
         private final HTTP2Stream stream;
         private final int flowControlLength;
-        private final AtomicBoolean consumed = new AtomicBoolean(false);
 
         private StreamData(Stream.Data data, HTTP2Stream stream, int flowControlLength)
         {
@@ -2439,7 +2436,6 @@ public abstract class HTTP2Session extends ContainerLifeCycle implements Session
         @Override
         public void retain()
         {
-            System.err.println("retain " + counter + " " + BufferUtil.toDetailString(data.frame().getByteBuffer()));
             counter.retain();
             data.retain();
         }
@@ -2449,27 +2445,12 @@ public abstract class HTTP2Session extends ContainerLifeCycle implements Session
         {
             data.release();
 
-            System.err.println("release " + counter + " " + BufferUtil.toDetailString(data.frame().getByteBuffer()));
             if (counter.release())
             {
                 notIdle();
                 stream.notIdle();
-
-                // once the reference count goes to zero, then it does not matter if the buffer is empty or not, as it is no
-                // longer available to the application to read, and thus has been consumed (if not already consumed).
-                if (consumed.compareAndSet(false, true))
-                    flowControl.onDataConsumed(HTTP2Session.this, stream, flowControlLength);
                 return true;
             }
-
-            // If all the data has been consumes and at least one release call is made, that indicates that the content
-            // has been fully consumed. The fact that release count has not gone to zero indicates that the application wants
-            // to retain the data, but not prevent more data being read.
-            // Note that a release with a non-empty buffer, may indicate the release of just a part of the buffer and thus
-            // the data has not been consumed. An optimization might be to consume the data up to the current position on each
-            // release.
-            if (BufferUtil.isEmpty(data.frame().getByteBuffer()) && consumed.compareAndSet(false, true))
-                flowControl.onDataConsumed(HTTP2Session.this, stream, flowControlLength);
 
             return false;
         }

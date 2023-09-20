@@ -43,6 +43,7 @@ import org.eclipse.jetty.client.AsyncRequestContent;
 import org.eclipse.jetty.client.BufferingResponseListener;
 import org.eclipse.jetty.client.ByteBufferRequestContent;
 import org.eclipse.jetty.client.BytesRequestContent;
+import org.eclipse.jetty.client.CompletableResponseListener;
 import org.eclipse.jetty.client.ContentResponse;
 import org.eclipse.jetty.client.InputStreamRequestContent;
 import org.eclipse.jetty.client.InputStreamResponseListener;
@@ -1222,6 +1223,12 @@ public class HttpClientStreamTest extends AbstractTest
                                 return;
                             }
 
+                            if (Content.Chunk.isFailure(chunk))
+                            {
+                                callback.failed(chunk.getFailure());
+                                return;
+                            }
+
                             if (chunk.hasRemaining())
                             {
                                 ByteBuffer byteBuffer = chunk.getByteBuffer();
@@ -1237,12 +1244,6 @@ public class HttpClientStreamTest extends AbstractTest
                                 BufferUtil.clear(byteBuffer);
                             }
                             chunk.release();
-
-                            if (Content.Chunk.isFailure(chunk))
-                            {
-                                callback.failed(chunk.getFailure());
-                                return;
-                            }
 
                             if (chunk.isLast())
                             {
@@ -1261,17 +1262,13 @@ public class HttpClientStreamTest extends AbstractTest
         new Random().nextBytes(data);
         CountDownLatch latch = new CountDownLatch(1);
         ByteBufferRequestContent content = new ByteBufferRequestContent(ByteBuffer.wrap(data));
-        client.newRequest(newURI(transport))
-            .body(content)
-            .send(new BufferingResponseListener(data.length)
+
+        new CompletableResponseListener(client.newRequest(newURI(transport)).body(content))
+            .send()
+            .whenComplete((r, t) ->
             {
-                @Override
-                public void onComplete(Result result)
-                {
-                    assertTrue(result.isSucceeded());
-                    assertEquals(200, result.getResponse().getStatus());
-                    latch.countDown();
-                }
+                if (t == null && r.getStatus() == 200)
+                   latch.countDown();
             });
 
         assertTrue(latch.await(30, TimeUnit.SECONDS));
