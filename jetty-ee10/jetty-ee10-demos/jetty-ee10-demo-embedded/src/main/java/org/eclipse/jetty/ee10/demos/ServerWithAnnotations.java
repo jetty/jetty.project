@@ -71,7 +71,7 @@ public class ServerWithAnnotations
         // Configure a LoginService
         String realmResourceName = "etc/realm.properties";
 
-        org.eclipse.jetty.util.resource.Resource realmResource = webapp.getResourceFactory().newClassPathResource(realmResourceName);
+        org.eclipse.jetty.util.resource.Resource realmResource = webapp.getResourceFactory().newClassLoaderResource(realmResourceName, false);
         if (realmResource == null)
             throw new FileNotFoundException("Unable to find " + realmResourceName);
 
