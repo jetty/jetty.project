@@ -2439,6 +2439,7 @@ public abstract class HTTP2Session extends ContainerLifeCycle implements Session
         @Override
         public void retain()
         {
+            System.err.println("retain " + counter + " " + BufferUtil.toDetailString(data.frame().getByteBuffer()));
             counter.retain();
             data.retain();
         }
@@ -2448,6 +2449,7 @@ public abstract class HTTP2Session extends ContainerLifeCycle implements Session
         {
             data.release();
 
+            System.err.println("release " + counter + " " + BufferUtil.toDetailString(data.frame().getByteBuffer()));
             if (counter.release())
             {
                 notIdle();

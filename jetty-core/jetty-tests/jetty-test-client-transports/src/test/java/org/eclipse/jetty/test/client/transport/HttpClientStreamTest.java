@@ -27,7 +27,9 @@ import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.nio.file.StandardOpenOption;
 import java.time.Duration;
+import java.util.ArrayList;
 import java.util.Arrays;
+import java.util.List;
 import java.util.Random;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.ExecutionException;
@@ -39,6 +41,7 @@ import java.util.concurrent.atomic.AtomicReference;
 
 import org.eclipse.jetty.client.AsyncRequestContent;
 import org.eclipse.jetty.client.BufferingResponseListener;
+import org.eclipse.jetty.client.ByteBufferRequestContent;
 import org.eclipse.jetty.client.BytesRequestContent;
 import org.eclipse.jetty.client.ContentResponse;
 import org.eclipse.jetty.client.InputStreamRequestContent;
@@ -50,6 +53,7 @@ import org.eclipse.jetty.client.Result;
 import org.eclipse.jetty.http.HttpFields;
 import org.eclipse.jetty.http.HttpHeader;
 import org.eclipse.jetty.http.HttpStatus;
+import org.eclipse.jetty.io.ByteBufferAccumulator;
 import org.eclipse.jetty.io.Content;
 import org.eclipse.jetty.server.Handler;
 import org.eclipse.jetty.server.Request;
@@ -1191,6 +1195,98 @@ public class HttpClientStreamTest extends AbstractTest
         // Let the server threads go & wait for the requests to be processed.
         processLatch.countDown();
         assertTrue(clientLatch.await(timeoutInSeconds, TimeUnit.SECONDS));
+    }
+
+    @ParameterizedTest
+    @MethodSource("transports")
+    public void testUploadWithRetainedData(Transport transport) throws Exception
+    {
+        List<Content.Chunk> chunks = new ArrayList<>();
+
+        start(transport, new Handler.Abstract()
+        {
+            @Override
+            public boolean handle(Request request, org.eclipse.jetty.server.Response response, Callback callback)
+            {
+                Runnable retainer = new Runnable()
+                {
+                    @Override
+                    public void run()
+                    {
+                        while (true)
+                        {
+                            Content.Chunk chunk = request.read();
+                            if (chunk == null)
+                            {
+                                request.demand(this);
+                                return;
+                            }
+
+                            if (chunk.hasRemaining())
+                            {
+                                ByteBuffer byteBuffer = chunk.getByteBuffer();
+                                if (chunk.canRetain())
+                                {
+                                    chunk.retain();
+                                    chunks.add(Content.Chunk.asChunk(byteBuffer.slice(), chunk.isLast(), chunk));
+                                }
+                                else
+                                {
+                                    chunks.add(Content.Chunk.from(BufferUtil.copy(byteBuffer), chunk.isLast()));
+                                }
+                                BufferUtil.clear(byteBuffer);
+                            }
+                            chunk.release();
+
+                            if (Content.Chunk.isFailure(chunk))
+                            {
+                                callback.failed(chunk.getFailure());
+                                return;
+                            }
+
+                            if (chunk.isLast())
+                            {
+                                callback.succeeded();
+                                return;
+                            }
+                        }
+                    }
+                };
+                retainer.run();
+                return true;
+            }
+        });
+
+        byte[] data = new byte[16 * 1024 * 1024];
+        new Random().nextBytes(data);
+        CountDownLatch latch = new CountDownLatch(1);
+        ByteBufferRequestContent content = new ByteBufferRequestContent(ByteBuffer.wrap(data));
+        client.newRequest(newURI(transport))
+            .body(content)
+            .send(new BufferingResponseListener(data.length)
+            {
+                @Override
+                public void onComplete(Result result)
+                {
+                    assertTrue(result.isSucceeded());
+                    assertEquals(200, result.getResponse().getStatus());
+                    latch.countDown();
+                }
+            });
+
+        assertTrue(latch.await(30, TimeUnit.SECONDS));
+
+        try (ByteBufferAccumulator accumulator = new ByteBufferAccumulator())
+        {
+            for (Content.Chunk c : chunks)
+            {
+                ByteBuffer byteBuffer = c.getByteBuffer();
+                accumulator.copyBuffer(byteBuffer);
+                BufferUtil.clear(byteBuffer);
+                c.release();
+            }
+            assertArrayEquals(data, accumulator.toByteArray());
+        }
     }
 
     private record HandlerContext(Request request, org.eclipse.jetty.server.Response response, Callback callback)
