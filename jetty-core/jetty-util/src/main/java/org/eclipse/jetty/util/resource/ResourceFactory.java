@@ -163,7 +163,7 @@ public interface ResourceFactory
      * @see #newClassLoaderResource(String, boolean)
      * @deprecated use {@link #newClassLoaderResource(String)} or {@link #newClassLoaderResource(String, boolean)} instead, will be removed in Jetty 12.1.0
      */
-    @Deprecated(since = "12.0.1", forRemoval = true)
+    @Deprecated(since = "12.0.2", forRemoval = true)
     default Resource newSystemResource(String resource)
     {
         return newClassLoaderResource(resource);
@@ -273,7 +273,7 @@ public interface ResourceFactory
      * @see #newClassLoaderResource(String, boolean)
      * @deprecated use {@link #newClassLoaderResource(String, boolean)} instead, will be removed in Jetty 12.1.0
      */
-    @Deprecated
+    @Deprecated(since = "12.0.2", forRemoval = true)
     default Resource newClassPathResource(String resource)
     {
         return newClassLoaderResource(resource, false);
