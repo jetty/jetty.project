@@ -19,9 +19,9 @@ The `InfinispanSessionDataStore` supports persistent storage of session data via
 You may use Infinispan in either _embedded mode_, where it runs in the same process as Jetty, or in _remote mode_ mode, where your Infinispan instance is on another node.
 
 For more information on Infinispan, including some code examples, consult the https://infinispan.org/[Infinispan documentation].
-See below for some code examples of configuring the `InfinispanSessionDataStore` in Jetty.
-Note that the configuration options are the same for both the `InfinispanSessionDataStore` and the `InfinispanSessionDataStoreFactory`.
-Use the link:{javadoc-url}/org/eclipse/jetty/session/infinispan/InfinispanSessionDataStoreFactory.html[InfinispanSessionDataStoreFactory] to apply the same configuration to multiple ``InfinispanSessionDataStore``s.
+See below for some code examples of configuring the link:{javadoc-url}/org/eclipse/jetty/session/infinispan/InfinispanSessionDataStore.html[InfinispanSessionDataStore] in Jetty.
+Note that the configuration options are the same for both the `InfinispanSessionDataStore` and the link:{javadoc-url}/org/eclipse/jetty/session/infinispan/InfinispanSessionDataStoreFactory.html[InfinispanSessionDataStoreFactory].
+Use the latter to apply the same configuration to multiple ``InfinispanSessionDataStore``s.
 
 include::session-sessiondatastore.adoc[tag=common-datastore-config]
 

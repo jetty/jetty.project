@@ -55,6 +55,7 @@ See xref:pg-server-session-datastore-file[FileSessionDataStore] for more informa
 
 GCloudSessionDataStore::
 Uses GCloud Datastore for persisting `SessionData`.
+See xref:pg-server-session-datastore-gcloud[GCloudSessionDataStore] for more information.
 
 HazelcastSessionDataStore::
 Uses Hazelcast for persisting `SessionData`.

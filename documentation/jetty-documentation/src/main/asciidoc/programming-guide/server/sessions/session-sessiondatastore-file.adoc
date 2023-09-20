@@ -63,7 +63,7 @@ This is useful to prevent repeated logging of the same error when the xref:pg-se
 
 include::session-sessiondatastore.adoc[tag=common-datastore-config]
 
-Let's look at an example of configuring a `FileSessionDataStoreFactory`:
+Here's an example of configuring a `FileSessionDataStoreFactory`:
 
 [source,java,indent=0]
 ----

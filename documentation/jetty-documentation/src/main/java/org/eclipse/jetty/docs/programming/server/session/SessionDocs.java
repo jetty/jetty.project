@@ -20,6 +20,7 @@ import java.util.Properties;
 
 import org.eclipse.jetty.ee10.servlet.ServletContextHandler;
 import org.eclipse.jetty.ee10.webapp.WebAppContext;
+import org.eclipse.jetty.gcloud.session.GCloudSessionDataStoreFactory;
 import org.eclipse.jetty.io.Content;
 import org.eclipse.jetty.memcached.session.MemcachedSessionDataMapFactory;
 import org.eclipse.jetty.nosql.mongodb.MongoSessionDataStoreFactory;
@@ -377,6 +378,39 @@ public class SessionDocs
             sessionCache.setSessionDataStore(infinispanSessionDataStore);
             sessionHandler.setSessionCache(sessionCache);
             //end::infinispanremote[]
+        }
+        catch (Exception e)
+        {
+            e.printStackTrace();
+        }
+    }
+
+    public void gcloudSessionDataStore()
+    {
+        try
+        {
+            //tag::gcloudsessiondatastorefactory[]
+            Server server = new Server();
+
+            //Ensure there is a SessionCacheFactory
+            DefaultSessionCacheFactory cacheFactory = new DefaultSessionCacheFactory();
+
+            //Add the factory as a bean to the server, now whenever a
+            //SessionManager starts it will consult the bean to create a new DefaultSessionCache
+            server.addBean(cacheFactory);
+
+            //Configure the GCloudSessionDataStoreFactory
+            GCloudSessionDataStoreFactory storeFactory = new GCloudSessionDataStoreFactory();
+            storeFactory.setGracePeriodSec(3600);
+            storeFactory.setSavePeriodSec(0);
+            storeFactory.setBackoffMs(2000); //increase the time between retries of failed writes
+            storeFactory.setMaxRetries(10); //increase the number of retries of failed writes
+
+            //Add the factory as a bean on the server, now whenever a
+            //SessionManager starts, it will consult the bean to create a new GCloudSessionDataStore
+            //for use by the DefaultSessionCache
+            server.addBean(storeFactory);
+            //end::gcloudsessiondatastorefactory[]
         }
         catch (Exception e)
         {
