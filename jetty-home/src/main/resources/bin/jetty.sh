@@ -136,16 +136,36 @@ started()
   STATEFILE=$1
   PIDFILE=$2
   STARTTIMEOUT=$3
-  # wait for 60s to see "STARTED" in state file, needs --module=state as argument
+  # wait till timeout to see "STARTED" in state file, needs --module=state as argument
   for ((T = 0; T < $(($STARTTIMEOUT / 4)); T++))
   do
     sleep 4
-    [ -z "$(tail -1 $STATEFILE | grep STARTED 2>/dev/null)" ] || return 0
-    [ -z "$(tail -1 $STATEFILE | grep STOPPED 2>/dev/null)" ] || return 1
-    [ -z "$(tail -1 $STATEFILE | grep FAILED 2>/dev/null)" ] || return 1
-    local PID=$(cat "$PIDFILE" 2>/dev/null) || return 1
-    kill -0 "$PID" 2>/dev/null || return 1
-    echo -n ". "
+    if [ -r $STATEFILE ]
+    then
+      STATENOW=$(tail -1 $STATEFILE)
+      (( DEBUG )) && echo "State (now): $STATENOW"
+      case "$STATENOW" in
+        STARTED*)
+          return 0;;
+        STOPPED*)
+          return 1;;
+        FAILED*)
+          return 1;;
+      esac
+      echo -n "-"
+    else
+      (( DEBUG )) && echo "Unable to read State File: $STATEFILE"
+      echo -n ":"
+    fi
+    if [ -r $PIDFILE ]
+    then
+      local PID=$(cat "$PIDFILE" 2> /dev/null) || return 1
+      kill -0 "$PID" 2> /dev/null || return 1
+      echo -n ". "
+    else
+      (( DEBUG )) && echo "Unable to read PID File: $PIDFILE"
+      echo -n "!"
+    fi
   done
 
   return 1;
@@ -440,10 +460,6 @@ esac
 JETTY_DRY_RUN=$("$JAVA" -jar "$JETTY_START" --dry-run=opts,path,main,args ${JETTY_ARGS[*]} ${JAVA_OPTIONS[*]})
 RUN_ARGS=($JETTY_SYS_PROPS ${JETTY_DRY_RUN[@]})
 
-#####################################################
-# Comment these out after you're happy with what
-# the script is doing.
-#####################################################
 if (( DEBUG ))
 then
   dumpEnv
