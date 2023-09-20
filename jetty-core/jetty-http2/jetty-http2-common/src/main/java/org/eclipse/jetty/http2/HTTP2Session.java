@@ -2446,7 +2446,12 @@ public abstract class HTTP2Session extends ContainerLifeCycle implements Session
         @Override
         public boolean release()
         {
-            // We should signal flowControl even if not fully released as someone may have retained the data.
+            // If all the data has been consumes and at least one release call is made, that indicates that the content
+            // has been fully consumed. The fact that release count has not gone to zero indicates that the application wants
+            // to retain the data, but not prevent more data being read.
+            // Note that a release with a non-empty buffer, may indicate the release of just a part of the buffer and thus
+            // the data has not been consumed. An optimization might be to consume the data up to the current position on each
+            // release.
             if (BufferUtil.isEmpty(data.frame().getByteBuffer()) && consumed.compareAndSet(false, true))
                 flowControl.onDataConsumed(HTTP2Session.this, stream, flowControlLength);
             data.release();
@@ -2455,6 +2460,9 @@ public abstract class HTTP2Session extends ContainerLifeCycle implements Session
             {
                 notIdle();
                 stream.notIdle();
+
+                // once the reference count goes to zero, then it does not matter if the buffer is empty or not, as it is no
+                // longer available to the application to read, and thus has been consumed.
                 if (consumed.compareAndSet(false, true))
                     flowControl.onDataConsumed(HTTP2Session.this, stream, flowControlLength);
             }
