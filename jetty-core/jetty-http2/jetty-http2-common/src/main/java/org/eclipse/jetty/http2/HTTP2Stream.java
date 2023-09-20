@@ -490,7 +490,12 @@ public class HTTP2Stream implements Stream, Attachable, Closeable, Callback, Dum
         if (LOG.isDebugEnabled())
             LOG.debug("Reading {} for {}", data, this);
 
-        session.getFlowControlStrategy().onDataConsumed(session, this, data.frame().getByteBuffer().remaining());
+        notIdle();
+
+        // Enlarge the flow control window now, since the application
+        // may want to retain the Data objects, accumulating them in
+        // memory beyond the flow control window, without copying them.
+        session.dataConsumed(this, data.frame().flowControlLength());
 
         return data;
     }
