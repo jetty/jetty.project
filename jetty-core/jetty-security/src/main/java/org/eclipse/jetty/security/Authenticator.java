@@ -127,7 +127,21 @@ public interface Authenticator
 
         IdentityService getIdentityService();
 
+        /**
+         * Should session ID be renewed on authentication.
+         * @return true if the session ID should be renewed on authentication
+         */
         boolean isSessionRenewedOnAuthentication();
+
+        /**
+         * Get the interval in seconds, which if non-zero, will be set
+         * with {@link Session#setMaxInactiveInterval(int)}
+         * when a session is newly authenticated
+         * @return An interval in seconds; or 0 to not set the interval
+         *         on authentication; or a negative number to make the
+         *         session never timeout after authentication.
+         */
+        int getSessionMaxInactiveIntervalOnAuthentication();
 
         class Wrapper implements Configuration
         {
@@ -178,6 +192,12 @@ public interface Authenticator
             public boolean isSessionRenewedOnAuthentication()
             {
                 return _configuration.isSessionRenewedOnAuthentication();
+            }
+
+            @Override
+            public int getSessionMaxInactiveIntervalOnAuthentication()
+            {
+                return _configuration.getSessionMaxInactiveIntervalOnAuthentication();
             }
         }
     }

@@ -299,6 +299,7 @@ public class ContextHandler extends Handler.Wrapper implements Attributes, Alias
     }
 
     /**
+     * Set true if /context is not redirected to /context/.
      * @param allowNullPathInContext true if /context is not redirected to /context/
      */
     public void setAllowNullPathInContext(boolean allowNullPathInContext)
@@ -1033,6 +1034,7 @@ public class ContextHandler extends Handler.Wrapper implements Attributes, Alias
     }
 
     /**
+     * Set list of AliasCheck instances.
      * @param checks list of AliasCheck instances
      */
     public void setAliasChecks(List<AliasCheck> checks)

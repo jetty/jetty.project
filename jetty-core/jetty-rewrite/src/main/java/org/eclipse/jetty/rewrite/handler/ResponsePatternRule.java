@@ -52,6 +52,7 @@ public class ResponsePatternRule extends PatternRule
     }
 
     /**
+     * Set the response code.
      * @param code the response code
      */
     public void setCode(int code)

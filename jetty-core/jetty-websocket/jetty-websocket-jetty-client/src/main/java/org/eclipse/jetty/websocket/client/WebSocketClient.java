@@ -348,6 +348,7 @@ public class WebSocketClient extends ContainerLifeCycle implements Configurable,
     }
 
     /**
+     * Get the {@link SslContextFactory} that manages TLS encryption.
      * @return the {@link SslContextFactory} that manages TLS encryption
      */
     public SslContextFactory getSslContextFactory()

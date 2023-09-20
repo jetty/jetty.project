@@ -396,10 +396,11 @@ public class HttpChannelState implements HttpChannel, Components
                 }
 
                 // otherwise, if there is no failure listener, then we can fail the callback directly without a double lock
-                if (_onFailure == null && _request != null)
+                ChannelRequest request = _request;
+                if (_onFailure == null && request != null)
                 {
                     _failure = Content.Chunk.from(t, true);
-                    return () -> _request._callback.failed(t);
+                    return () -> request._callback.failed(t);
                 }
             }
         }
@@ -1403,6 +1404,8 @@ public class HttpChannelState implements HttpChannel, Components
 
         MetaData.Response lockedPrepareResponse(HttpChannelState httpChannel, boolean last)
         {
+            assert _request._lock.isHeldByCurrentThread();
+
             // Assume 200 unless told otherwise.
             if (_status == 0)
                 _status = HttpStatus.OK_200;
@@ -1536,12 +1539,12 @@ public class HttpChannelState implements HttpChannel, Components
             ErrorResponse errorResponse = null;
             try (AutoLock ignored = _request._lock.lock())
             {
+                if (lockedCompleteCallback())
+                    return;
                 httpChannelState = _request._httpChannelState;
                 stream = httpChannelState._stream;
                 request = _request;
 
-                if (lockedCompleteCallback())
-                    return;
                 assert httpChannelState._callbackFailure == null;
 
                 httpChannelState._callbackFailure = failure;
@@ -1639,6 +1642,7 @@ public class HttpChannelState implements HttpChannel, Components
         @Override
         MetaData.Response lockedPrepareResponse(HttpChannelState httpChannelState, boolean last)
         {
+            assert httpChannelState._request._lock.isHeldByCurrentThread();
             MetaData.Response httpFields = super.lockedPrepareResponse(httpChannelState, last);
             httpChannelState._response._status = _status;
             HttpFields.Mutable originalResponseFields = httpChannelState._responseHeaders.getMutableHttpFields();

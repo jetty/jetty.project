@@ -64,6 +64,7 @@ public class RewriteHandler extends Handler.Wrapper
     }
 
     /**
+     * Get the {@link RuleContainer} used by this handler.
      * @return the {@link RuleContainer} used by this handler
      */
     public RuleContainer getRuleContainer()

@@ -235,6 +235,7 @@ public class DefaultHandler extends Handler.Abstract
     }
 
     /**
+     * Set true if the handle can server the jetty favicon.ico.
      * @param serveFavIcon true if the handle can server the jetty favicon.ico
      */
     public void setServeFavIcon(boolean serveFavIcon)

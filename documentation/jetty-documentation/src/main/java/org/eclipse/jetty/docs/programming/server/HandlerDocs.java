@@ -180,7 +180,7 @@ public class HandlerDocs
             response.setStatus(200);
             response.getHeaders().put(HttpHeader.CONTENT_TYPE, request.getHeaders().get(HttpHeader.CONTENT_TYPE));
 
-            long contentLength = request.getHeaders().getLongField(HttpHeader.CONTENT_LENGTH);
+            long contentLength = request.getLength();
             if (contentLength >= 0)
                 response.getHeaders().put(HttpHeader.CONTENT_LENGTH, contentLength);
 

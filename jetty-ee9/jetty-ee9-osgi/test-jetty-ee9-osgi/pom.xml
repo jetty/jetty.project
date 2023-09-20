@@ -12,7 +12,7 @@
     <bundle-symbolic-name>${project.groupId}.boot.test.osgi</bundle-symbolic-name>
     <jetty-orbit-url>https://download.eclipse.org/jetty/orbit/</jetty-orbit-url>
     <assembly-directory>target/distribution</assembly-directory>
-    <pax.exam.version>4.13.1</pax.exam.version>
+    <pax.exam.version>4.13.5</pax.exam.version>
     <pax.url.version>2.6.14</pax.url.version>
     <swissbox.version>1.8.3</swissbox.version>
     <tinybundles.version>3.0.0</tinybundles.version>

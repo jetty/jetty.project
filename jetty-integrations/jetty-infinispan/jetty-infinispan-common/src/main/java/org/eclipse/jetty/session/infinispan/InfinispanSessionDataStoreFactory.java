@@ -29,6 +29,7 @@ public class InfinispanSessionDataStoreFactory extends AbstractSessionDataStoreF
     protected boolean _serialization;
 
     /**
+     * Get the infinispanIdleTimeoutSec.
      * @return the infinispanIdleTimeoutSec
      */
     public int getInfinispanIdleTimeoutSec()
@@ -37,6 +38,7 @@ public class InfinispanSessionDataStoreFactory extends AbstractSessionDataStoreF
     }
 
     /**
+     * Set the infinispanIdleTimeoutSec to set.
      * @param infinispanIdleTimeoutSec the infinispanIdleTimeoutSec to set
      */
     public void setInfinispanIdleTimeoutSec(int infinispanIdleTimeoutSec)

@@ -73,7 +73,7 @@ public class SessionHandlerTest
         _sessionHandler = new SessionHandler();
         _sessionHandler.setSessionCookie("JSESSIONID");
         _sessionHandler.setUsingCookies(true);
-        _sessionHandler.setUsingURLs(false);
+        _sessionHandler.setUsingUriParameters(false);
         _sessionHandler.setSessionPath("/");
         _contextHandler.setHandler(_sessionHandler);
 

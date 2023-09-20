@@ -52,6 +52,7 @@ public class InvalidURIRule extends Rule
     }
 
     /**
+     * Set the response code.
      * @param code the response code
      */
     public void setCode(int code)

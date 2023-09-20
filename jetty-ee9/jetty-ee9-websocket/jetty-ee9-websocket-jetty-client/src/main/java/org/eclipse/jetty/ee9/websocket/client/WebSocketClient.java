@@ -39,7 +39,6 @@ import org.eclipse.jetty.ee9.websocket.client.impl.JettyClientUpgradeRequest;
 import org.eclipse.jetty.ee9.websocket.common.JettyWebSocketFrameHandler;
 import org.eclipse.jetty.ee9.websocket.common.JettyWebSocketFrameHandlerFactory;
 import org.eclipse.jetty.ee9.websocket.common.SessionTracker;
-import org.eclipse.jetty.io.ByteBufferPool;
 import org.eclipse.jetty.io.Connection;
 import org.eclipse.jetty.util.DecoratedObjectFactory;
 import org.eclipse.jetty.util.component.ContainerLifeCycle;
@@ -345,6 +344,7 @@ public class WebSocketClient extends ContainerLifeCycle implements WebSocketPoli
     }
 
     /**
+     * Get the {@link SslContextFactory} that manages TLS encryption.
      * @return the {@link SslContextFactory} that manages TLS encryption
      */
     public SslContextFactory getSslContextFactory()
