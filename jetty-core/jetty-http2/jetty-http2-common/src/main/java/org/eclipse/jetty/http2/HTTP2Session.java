@@ -29,6 +29,7 @@ import java.util.Queue;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.TimeoutException;
+import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.concurrent.atomic.AtomicLong;
 import java.util.function.Consumer;
@@ -63,6 +64,7 @@ import org.eclipse.jetty.io.EndPoint;
 import org.eclipse.jetty.io.WriteFlusher;
 import org.eclipse.jetty.util.AtomicBiInteger;
 import org.eclipse.jetty.util.Atomics;
+import org.eclipse.jetty.util.BufferUtil;
 import org.eclipse.jetty.util.Callback;
 import org.eclipse.jetty.util.CountingCallback;
 import org.eclipse.jetty.util.MathUtils;
@@ -2414,6 +2416,7 @@ public abstract class HTTP2Session extends ContainerLifeCycle implements Session
         private final Stream.Data data;
         private final HTTP2Stream stream;
         private final int flowControlLength;
+        private final AtomicBoolean consumed = new AtomicBoolean(false);
 
         private StreamData(Stream.Data data, HTTP2Stream stream, int flowControlLength)
         {
@@ -2443,13 +2446,17 @@ public abstract class HTTP2Session extends ContainerLifeCycle implements Session
         @Override
         public boolean release()
         {
+            // We should signal flowControl even if not fully released as someone may have retained the data.
+            if (BufferUtil.isEmpty(data.frame().getByteBuffer()) && consumed.compareAndSet(false, true))
+                flowControl.onDataConsumed(HTTP2Session.this, stream, flowControlLength);
             data.release();
             boolean result = counter.release();
             if (result)
             {
                 notIdle();
                 stream.notIdle();
-                flowControl.onDataConsumed(HTTP2Session.this, stream, flowControlLength);
+                if (consumed.compareAndSet(false, true))
+                    flowControl.onDataConsumed(HTTP2Session.this, stream, flowControlLength);
             }
             return result;
         }
