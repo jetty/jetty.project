@@ -91,6 +91,8 @@ public class ProxyWebAppTest
         // this proxy configuration, not redirected to the actual website.
         assertThat("response status", response.getStatus(), is(HttpStatus.OK_200));
         // Expecting a Javadoc / APIDoc response - look for something unique for APIdoc.
-        assertThat("response", response.getContentAsString(), containsString("All&nbsp;Classes"));
+        String body = response.getContentAsString();
+        assertThat(body, containsString("All&nbsp;Classes"));
+        assertThat(body, containsString("<title>Overview (Jetty :: Project 9."));
     }
 }
