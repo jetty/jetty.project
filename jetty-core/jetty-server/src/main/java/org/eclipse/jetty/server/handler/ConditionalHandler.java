@@ -46,7 +46,7 @@ import org.slf4j.LoggerFactory;
  * A {@link Handler.Wrapper} that may conditionally handle a {@link Request}.
  * The conditions are implemented by {@link IncludeExclude}s of:
  * <ul>
- *     <li>A method name, which can be efficiently matched</li>
+ *     <li>A HTTP method name, which can be efficiently matched</li>
  *     <li>A {@link PathSpec} or string representation, which can be efficiently matched.</li>
  *     <li>An arbitrary {@link Predicate} taking the {@link Request}, which is matched in a linear test of all predicates.</li>
  * </ul>
@@ -74,14 +74,14 @@ import org.slf4j.LoggerFactory;
  * }</pre>
  * <p>If the conditions added to {@code MyOptionalHandler} are met, then the {@code doHandle} method is called
  * and a response header added before invoking {@link #nextHandle(Request, Response, Callback)}, otherwise
- * the {@link #doNotHandle(Request, Response, Callback)} is called, which returns false to indicate no more handling..</p>
+ * the {@link #doNotHandle(Request, Response, Callback)} is called, which returns false to indicate no more handling.</p>
  *
  * <p>Alternatively, one of the concrete subclasses may be used.  These implementations conditionally provide a specific
  * action in their {@link #doHandle(Request, Response, Callback)} methods. Otherwise, when the conditions are not met
  * they all call {@link #nextHandle(Request, Response, Callback)}.</p>
  * <ul>
  *     <li>{@link DontHandle} - If the conditions are met, terminate further handling by returning {@code false}</li>
- *     <li>{@link Reject} - If the conditions are met, reject the reuqest with a {@link HttpStatus#FORBIDDEN_403} (or other status code) response.</li>
+ *     <li>{@link Reject} - If the conditions are met, reject the request with a {@link HttpStatus#FORBIDDEN_403} (or other status code) response.</li>
  *     <li>{@link SkipNext} - If the conditions are met, then the {@link #getHandler() next handler} is skipped and the
  *     {@link Singleton#getHandler() following hander} invoked instead.</li>
  * </ul>
@@ -190,7 +190,7 @@ public abstract class ConditionalHandler extends Handler.Wrapper
     /**
      * Include {@link PathSpec}s in the conditions to be met
      * @param paths String representations of {@link PathSpec}s that are
-     *              tested against the {@link Request#getPathInContext(Request) pathInContext}.
+     * tested against the {@link Request#getPathInContext(Request) pathInContext}.
      */
     public void includePath(String... paths)
     {
@@ -202,7 +202,7 @@ public abstract class ConditionalHandler extends Handler.Wrapper
     /**
      * Exclude {@link PathSpec} in the conditions to be met
      * @param paths String representations of {@link PathSpec}s that are
-     *              tested against the {@link Request#getPathInContext(Request) pathInContext}.
+     * tested against the {@link Request#getPathInContext(Request) pathInContext}.
      */
     public void excludePath(String... paths)
     {
@@ -214,8 +214,8 @@ public abstract class ConditionalHandler extends Handler.Wrapper
     /**
      * Include {@link InetAddressPattern}s in the conditions to be met
      * @param patterns {@link InetAddressPattern}s that are
-     *              tested against the {@link ConnectionMetaData#getRemoteSocketAddress() getRemoteSocketAddress()} of
-     *              {@link Request#getConnectionMetaData()}.
+     * tested against the {@link ConnectionMetaData#getRemoteSocketAddress() getRemoteSocketAddress()} of
+     * {@link Request#getConnectionMetaData()}.
      */
     public void include(InetAddressPattern... patterns)
     {
@@ -228,8 +228,8 @@ public abstract class ConditionalHandler extends Handler.Wrapper
     /**
      * Include {@link InetAddressPattern}s in the conditions to be met
      * @param patterns String representations of {@link InetAddressPattern}s that are
-     *              tested against the {@link ConnectionMetaData#getRemoteSocketAddress() getRemoteSocketAddress()} of
-     *              {@link Request#getConnectionMetaData()}.
+     * tested against the {@link ConnectionMetaData#getRemoteSocketAddress() getRemoteSocketAddress()} of
+     * {@link Request#getConnectionMetaData()}.
      */
     public void includeInetAddressPattern(String... patterns)
     {
@@ -240,8 +240,8 @@ public abstract class ConditionalHandler extends Handler.Wrapper
     /**
      * Exclude {@link InetAddressPattern}s in the conditions to be met
      * @param patterns {@link InetAddressPattern}s that are
-     *              tested against the {@link ConnectionMetaData#getRemoteSocketAddress() getRemoteSocketAddress()} of
-     *              {@link Request#getConnectionMetaData()}.
+     * tested against the {@link ConnectionMetaData#getRemoteSocketAddress() getRemoteSocketAddress()} of
+     * {@link Request#getConnectionMetaData()}.
      */
     public void exclude(InetAddressPattern... patterns)
     {
@@ -254,8 +254,8 @@ public abstract class ConditionalHandler extends Handler.Wrapper
     /**
      * Exclude {@link InetAddressPattern} in the conditions to be met
      * @param patterns String representations of {@link InetAddressPattern}s that are
-     *              tested against the {@link ConnectionMetaData#getRemoteSocketAddress() getRemoteSocketAddress()} of
-     *              {@link Request#getConnectionMetaData()}.
+     * tested against the {@link ConnectionMetaData#getRemoteSocketAddress() getRemoteSocketAddress()} of
+     * {@link Request#getConnectionMetaData()}.
      */
     public void excludeInetAddressPattern(String... patterns)
     {
@@ -460,6 +460,8 @@ public abstract class ConditionalHandler extends Handler.Wrapper
         @Override
         public boolean add(Predicate<Request> predicate)
         {
+            if (_predicates.contains(predicate))
+                return false;
             return _predicates.add(predicate);
         }
 
@@ -584,9 +586,9 @@ public abstract class ConditionalHandler extends Handler.Wrapper
         }
 
         @Override
-        public boolean equals(Object obj)
+        public boolean equals(Object other)
         {
-            return obj instanceof InetAddressPatternPredicate inetAddressPatternPredicate && _pattern.equals(inetAddressPatternPredicate._pattern);
+            return other instanceof InetAddressPatternPredicate inetAddressPatternPredicate && _pattern.equals(inetAddressPatternPredicate._pattern);
         }
 
         @Override
@@ -642,7 +644,6 @@ public abstract class ConditionalHandler extends Handler.Wrapper
      * Using predicates in less efficient than using {@link ConditionalHandler#include(PathSpec...)}
      * and {@link ConditionalHandler#exclude(PathSpec...)}, so this predicate should only be used
      * if necessary to combine with other predicates.
-     *
      */
     public static class PathSpecPredicate implements Predicate<Request>
     {
@@ -779,7 +780,7 @@ public abstract class ConditionalHandler extends Handler.Wrapper
     /**
      * An implementation of {@link ConditionalHandler} that, if conditions are met, will skip the next {@link Handler} by
      * invoking its {@link Singleton#getHandler() next Handler}.
-     * Otherwise, the {@link #nextHandle(Request, Response, Callback) next handler} will be invoked.0
+     * Otherwise, the {@link #nextHandle(Request, Response, Callback) next handler} will be invoked.
      */
     public static class SkipNext extends ConditionalHandler
     {
