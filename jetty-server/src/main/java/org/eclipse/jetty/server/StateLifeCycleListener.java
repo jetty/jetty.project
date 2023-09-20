@@ -13,6 +13,7 @@
 
 package org.eclipse.jetty.server;
 
+import java.io.IOException;
 import java.io.Writer;
 import java.nio.file.Files;
 import java.nio.file.Path;
@@ -24,7 +25,7 @@ import org.slf4j.LoggerFactory;
 
 import static java.nio.charset.StandardCharsets.UTF_8;
 import static java.nio.file.StandardOpenOption.APPEND;
-import static java.nio.file.StandardOpenOption.CREATE;
+import static java.nio.file.StandardOpenOption.CREATE_NEW;
 import static java.nio.file.StandardOpenOption.WRITE;
 
 /**
@@ -37,53 +38,75 @@ public class StateLifeCycleListener implements LifeCycle.Listener
 
     private final Path _filename;
 
-    public StateLifeCycleListener(String filename)
+    public StateLifeCycleListener(String filename) throws IOException
     {
         _filename = Paths.get(filename).toAbsolutePath();
 
         if (LOG.isDebugEnabled())
             LOG.debug("State File: {}", _filename);
+
+        // We use raw Files APIs here to allow important IOExceptions
+        // to fail the startup of Jetty, as these kinds of errors
+        // point to filesystem permission issues that must be resolved
+        // by the user before the state file can be used.
+
+        // Start with fresh file (for permission reasons)
+        Files.deleteIfExists(_filename);
+
+        // Create file
+        Files.writeString(_filename, "INIT " + this + "\n", UTF_8, WRITE, CREATE_NEW);
     }
 
-    private void writeState(String action, LifeCycle lifecycle)
+    @Override
+    public String toString()
     {
-        try (Writer out = Files.newBufferedWriter(_filename, UTF_8, WRITE, CREATE, APPEND))
+        return String.format("%s@%h", this.getClass().getSimpleName(), this);
+    }
+
+    private void appendStateChange(String action, Object obj)
+    {
+        try (Writer out = Files.newBufferedWriter(_filename, UTF_8, WRITE, APPEND))
         {
-            out.append(action).append(" ").append(lifecycle.toString()).append("\n");
+            String entry = String.format("%s %s\n", action, obj);
+            if (LOG.isDebugEnabled())
+                LOG.debug("appendEntry to {}: {}", _filename, entry);
+            out.append(entry);
         }
-        catch (Exception e)
+        catch (IOException e)
         {
-            LOG.warn("Unable to write state", e);
+            // this can happen if the uid of the Jetty process changes after it has been started
+            // such as can happen with some setuid configurations
+            LOG.warn("Unable to append to state file: " + _filename, e);
         }
     }
 
     @Override
     public void lifeCycleStarting(LifeCycle event)
     {
-        writeState("STARTING", event);
+        appendStateChange("STARTING", event);
     }
 
     @Override
     public void lifeCycleStarted(LifeCycle event)
     {
-        writeState("STARTED", event);
+        appendStateChange("STARTED", event);
     }
 
     @Override
     public void lifeCycleFailure(LifeCycle event, Throwable cause)
     {
-        writeState("FAILED", event);
+        appendStateChange("FAILED", event);
     }
 
     @Override
     public void lifeCycleStopping(LifeCycle event)
     {
-        writeState("STOPPING", event);
+        appendStateChange("STOPPING", event);
     }
 
     @Override
     public void lifeCycleStopped(LifeCycle event)
     {
-        writeState("STOPPED", event);
+        appendStateChange("STOPPED", event);
     }
 }
