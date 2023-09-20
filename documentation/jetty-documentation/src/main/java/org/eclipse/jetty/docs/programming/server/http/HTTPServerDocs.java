@@ -789,7 +789,7 @@ public class HTTPServerDocs
                 if (requestHeaders.contains(HttpHeader.EXPECT, HttpHeaderValue.CONTINUE.asString()))
                 {
                     // Analyze the request and decide whether to receive the content.
-                    long contentLength = requestHeaders.getLongField(HttpHeader.CONTENT_LENGTH);
+                    long contentLength = request.getLength();
                     if (contentLength > 0 && contentLength < 1024)
                     {
                         // Small request content, ask to send it by

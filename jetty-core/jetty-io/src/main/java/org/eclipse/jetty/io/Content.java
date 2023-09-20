@@ -162,6 +162,19 @@ public class Content
         }
 
         /**
+         * <p>Reads, non-blocking, the whole content source into a {@link ByteBuffer}.</p>
+         *
+         * @param source the source to read
+         * @return the {@link CompletableFuture} to notify when the whole content has been read
+         */
+        static CompletableFuture<ByteBuffer> asByteBufferAsync(Source source)
+        {
+            Promise.Completable<ByteBuffer> completable = new Promise.Completable<>();
+            asByteBuffer(source, completable);
+            return completable;
+        }
+
+        /**
          * <p>Reads, non-blocking, the whole content source into a {@link String}, converting the bytes
          * using the given {@link Charset}.</p>
          *
