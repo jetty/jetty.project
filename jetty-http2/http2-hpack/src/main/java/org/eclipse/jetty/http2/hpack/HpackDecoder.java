@@ -24,8 +24,12 @@ import org.eclipse.jetty.http.HttpField;
 import org.eclipse.jetty.http.HttpHeader;
 import org.eclipse.jetty.http.HttpTokens;
 import org.eclipse.jetty.http.MetaData;
+import org.eclipse.jetty.http.compression.EncodingException;
+import org.eclipse.jetty.http.compression.HuffmanDecoder;
+import org.eclipse.jetty.http.compression.NBitIntegerDecoder;
 import org.eclipse.jetty.http2.hpack.HpackContext.Entry;
-import org.eclipse.jetty.util.TypeUtil;
+import org.eclipse.jetty.util.BufferUtil;
+import org.eclipse.jetty.util.CharsetStringBuilder;
 import org.eclipse.jetty.util.log.Log;
 import org.eclipse.jetty.util.log.Logger;
 
@@ -41,6 +45,8 @@ public class HpackDecoder
 
     private final HpackContext _context;
     private final MetaDataBuilder _builder;
+    private final HuffmanDecoder _huffmanDecoder;
+    private final NBitIntegerDecoder _integerDecoder;
     private int _localMaxDynamicTableSize;
 
     /**
@@ -52,6 +58,8 @@ public class HpackDecoder
         _context = new HpackContext(localMaxDynamicTableSize);
         _localMaxDynamicTableSize = localMaxDynamicTableSize;
         _builder = new MetaDataBuilder(maxHeaderSize);
+        _huffmanDecoder = new HuffmanDecoder();
+        _integerDecoder = new NBitIntegerDecoder();
     }
 
     public HpackContext getHpackContext()
@@ -69,27 +77,22 @@ public class HpackDecoder
         if (LOG.isDebugEnabled())
             LOG.debug(String.format("CtxTbl[%x] decoding %d octets", _context.hashCode(), buffer.remaining()));
 
-        // If the buffer is big, don't even think about decoding it
-        if (buffer.remaining() > _builder.getMaxSize())
-            throw new HpackException.SessionException("431 Request Header Fields too large");
+        // If the buffer is larger than the max headers size, don't even start decoding it.
+        int maxSize = _builder.getMaxSize();
+        if (maxSize > 0 && buffer.remaining() > maxSize)
+            throw new HpackException.SessionException("Header fields size too large");
 
         boolean emitted = false;
-
         while (buffer.hasRemaining())
         {
-            if (LOG.isDebugEnabled() && buffer.hasArray())
-            {
-                int l = Math.min(buffer.remaining(), 32);
-                LOG.debug("decode {}{}",
-                    TypeUtil.toHexString(buffer.array(), buffer.arrayOffset() + buffer.position(), l),
-                    l < buffer.remaining() ? "..." : "");
-            }
+            if (LOG.isDebugEnabled())
+                LOG.debug("decode {}", BufferUtil.toHexString(buffer));
 
             byte b = buffer.get();
             if (b < 0)
             {
                 // 7.1 indexed if the high bit is set
-                int index = NBitInteger.decode(buffer, 7);
+                int index = integerDecode(buffer, 7);
                 Entry entry = _context.get(index);
                 if (entry == null)
                     throw new HpackException.SessionException("Unknown index %d", index);
@@ -130,11 +133,11 @@ public class HpackDecoder
                     case 2: // 7.3
                     case 3: // 7.3
                         // change table size
-                        int size = NBitInteger.decode(buffer, 5);
+                        int size = integerDecode(buffer, 5);
                         if (LOG.isDebugEnabled())
-                            LOG.debug("decode resize=" + size);
+                            LOG.debug("decode resize={}", size);
                         if (size > _localMaxDynamicTableSize)
-                            throw new IllegalArgumentException();
+                            throw new HpackException.CompressionException("Dynamic table resize exceeded max limit");
                         if (emitted)
                             throw new HpackException.CompressionException("Dynamic table resize after fields");
                         _context.resize(size);
@@ -143,7 +146,7 @@ public class HpackDecoder
                     case 0: // 7.2.2
                     case 1: // 7.2.3
                         indexed = false;
-                        nameIndex = NBitInteger.decode(buffer, 4);
+                        nameIndex = integerDecode(buffer, 4);
                         break;
 
                     case 4: // 7.2.1
@@ -151,7 +154,7 @@ public class HpackDecoder
                     case 6: // 7.2.1
                     case 7: // 7.2.1
                         indexed = true;
-                        nameIndex = NBitInteger.decode(buffer, 6);
+                        nameIndex = integerDecode(buffer, 6);
                         break;
 
                     default:
@@ -170,12 +173,11 @@ public class HpackDecoder
                 else
                 {
                     huffmanName = (buffer.get() & 0x80) == 0x80;
-                    int length = NBitInteger.decode(buffer, 7);
-                    _builder.checkSize(length, huffmanName);
+                    int length = integerDecode(buffer, 7);
                     if (huffmanName)
-                        name = Huffman.decode(buffer, length);
+                        name = huffmanDecode(buffer, length);
                     else
-                        name = toASCIIString(buffer, length);
+                        name = toISO88591String(buffer, length);
                     check:
                     for (int i = name.length(); i-- > 0; )
                     {
@@ -211,12 +213,11 @@ public class HpackDecoder
 
                 // decode the value
                 boolean huffmanValue = (buffer.get() & 0x80) == 0x80;
-                int length = NBitInteger.decode(buffer, 7);
-                _builder.checkSize(length, huffmanValue);
+                int length = integerDecode(buffer, 7);
                 if (huffmanValue)
-                    value = Huffman.decode(buffer, length);
+                    value = huffmanDecode(buffer, length);
                 else
-                    value = toASCIIString(buffer, length);
+                    value = toISO88591String(buffer, length);
 
                 // Make the new field
                 HttpField field;
@@ -277,19 +278,61 @@ public class HpackDecoder
         return _builder.build();
     }
 
-    public static String toASCIIString(ByteBuffer buffer, int length)
+    private int integerDecode(ByteBuffer buffer, int prefix) throws HpackException.CompressionException
     {
-        StringBuilder builder = new StringBuilder(length);
-        int position = buffer.position();
-        int start = buffer.arrayOffset() + position;
-        int end = start + length;
-        buffer.position(position + length);
-        byte[] array = buffer.array();
-        for (int i = start; i < end; i++)
+        try
         {
-            builder.append((char)(0x7f & array[i]));
+            if (prefix != 8)
+                buffer.position(buffer.position() - 1);
+
+            _integerDecoder.setPrefix(prefix);
+            int decodedInt = _integerDecoder.decodeInt(buffer);
+            if (decodedInt < 0)
+                throw new EncodingException("invalid integer encoding");
+            return decodedInt;
         }
-        return builder.toString();
+        catch (EncodingException e)
+        {
+            HpackException.CompressionException compressionException = new HpackException.CompressionException(e.getMessage());
+            compressionException.initCause(e);
+            throw compressionException;
+        }
+        finally
+        {
+            _integerDecoder.reset();
+        }
+    }
+
+    private String huffmanDecode(ByteBuffer buffer, int length) throws HpackException.CompressionException
+    {
+        try
+        {
+            _huffmanDecoder.setLength(length);
+            String decoded = _huffmanDecoder.decode(buffer);
+            if (decoded == null)
+                throw new HpackException.CompressionException("invalid string encoding");
+            return decoded;
+        }
+        catch (EncodingException e)
+        {
+            HpackException.CompressionException compressionException = new HpackException.CompressionException(e.getMessage());
+            compressionException.initCause(e);
+            throw compressionException;
+        }
+        finally
+        {
+            _huffmanDecoder.reset();
+        }
+    }
+
+    public static String toISO88591String(ByteBuffer buffer, int length)
+    {
+        CharsetStringBuilder.Iso88591StringBuilder builder = new CharsetStringBuilder.Iso88591StringBuilder();
+        for (int i = 0; i < length; ++i)
+        {
+            builder.append(HttpTokens.sanitizeFieldVchar((char)buffer.get()));
+        }
+        return builder.build();
     }
 
     @Override

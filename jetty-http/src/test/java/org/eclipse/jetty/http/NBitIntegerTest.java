@@ -16,33 +16,37 @@
 //  ========================================================================
 //
 
-package org.eclipse.jetty.http2.hpack;
+package org.eclipse.jetty.http;
 
 import java.nio.ByteBuffer;
 
+import org.eclipse.jetty.http.compression.NBitIntegerDecoder;
+import org.eclipse.jetty.http.compression.NBitIntegerEncoder;
 import org.eclipse.jetty.util.BufferUtil;
 import org.eclipse.jetty.util.TypeUtil;
 import org.junit.jupiter.api.Test;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
 
+@SuppressWarnings("PointlessArithmeticExpression")
 public class NBitIntegerTest
 {
+    private final NBitIntegerDecoder _decoder = new NBitIntegerDecoder();
 
     @Test
     public void testOctetsNeeded()
     {
-        assertEquals(0, NBitInteger.octectsNeeded(5, 10));
-        assertEquals(2, NBitInteger.octectsNeeded(5, 1337));
-        assertEquals(1, NBitInteger.octectsNeeded(8, 42));
-        assertEquals(3, NBitInteger.octectsNeeded(8, 1337));
+        assertEquals(1, NBitIntegerEncoder.octetsNeeded(5, 10));
+        assertEquals(3, NBitIntegerEncoder.octetsNeeded(5, 1337));
+        assertEquals(1, NBitIntegerEncoder.octetsNeeded(8, 42));
+        assertEquals(3, NBitIntegerEncoder.octetsNeeded(8, 1337));
 
-        assertEquals(0, NBitInteger.octectsNeeded(6, 62));
-        assertEquals(1, NBitInteger.octectsNeeded(6, 63));
-        assertEquals(1, NBitInteger.octectsNeeded(6, 64));
-        assertEquals(2, NBitInteger.octectsNeeded(6, 63 + 0x00 + 0x80 * 0x01));
-        assertEquals(3, NBitInteger.octectsNeeded(6, 63 + 0x00 + 0x80 * 0x80));
-        assertEquals(4, NBitInteger.octectsNeeded(6, 63 + 0x00 + 0x80 * 0x80 * 0x80));
+        assertEquals(1, NBitIntegerEncoder.octetsNeeded(6, 62));
+        assertEquals(2, NBitIntegerEncoder.octetsNeeded(6, 63));
+        assertEquals(2, NBitIntegerEncoder.octetsNeeded(6, 64));
+        assertEquals(3, NBitIntegerEncoder.octetsNeeded(6, 63 + 0x00 + 0x80 * 0x01));
+        assertEquals(4, NBitIntegerEncoder.octetsNeeded(6, 63 + 0x00 + 0x80 * 0x80));
+        assertEquals(5, NBitIntegerEncoder.octetsNeeded(6, 63 + 0x00 + 0x80 * 0x80 * 0x80));
     }
 
     @Test
@@ -83,12 +87,12 @@ public class NBitIntegerTest
         int p = BufferUtil.flipToFill(buf);
         if (n < 8)
             buf.put((byte)0x00);
-        NBitInteger.encode(buf, n, i);
+        NBitIntegerEncoder.encode(buf, n, i);
         BufferUtil.flipToFlush(buf, p);
         String r = TypeUtil.toHexString(BufferUtil.toArray(buf));
         assertEquals(expected, r);
 
-        assertEquals(expected.length() / 2, (n < 8 ? 1 : 0) + NBitInteger.octectsNeeded(n, i));
+        assertEquals(expected.length() / 2, NBitIntegerEncoder.octetsNeeded(n, i));
     }
 
     @Test
@@ -126,8 +130,8 @@ public class NBitIntegerTest
     public void testDecode(int n, int expected, String encoded)
     {
         ByteBuffer buf = ByteBuffer.wrap(TypeUtil.fromHexString(encoded));
-        buf.position(n == 8 ? 0 : 1);
-        assertEquals(expected, NBitInteger.decode(buf, n));
+        _decoder.setPrefix(n);
+        assertEquals(expected, _decoder.decodeInt(buf));
     }
 
     @Test
@@ -137,7 +141,7 @@ public class NBitIntegerTest
         int p = BufferUtil.flipToFill(buf);
         buf.put((byte)0x77);
         buf.put((byte)0xFF);
-        NBitInteger.encode(buf, 5, 10);
+        NBitIntegerEncoder.encode(buf, 5, 10);
         BufferUtil.flipToFlush(buf, p);
 
         String r = TypeUtil.toHexString(BufferUtil.toArray(buf));
@@ -149,9 +153,9 @@ public class NBitIntegerTest
     public void testDecodeExampleD11()
     {
         ByteBuffer buf = ByteBuffer.wrap(TypeUtil.fromHexString("77EaFF"));
-        buf.position(2);
-
-        assertEquals(10, NBitInteger.decode(buf, 5));
+        buf.position(1);
+        _decoder.setPrefix(5);
+        assertEquals(10, _decoder.decodeInt(buf));
     }
 
     @Test
@@ -161,11 +165,10 @@ public class NBitIntegerTest
         int p = BufferUtil.flipToFill(buf);
         buf.put((byte)0x88);
         buf.put((byte)0x00);
-        NBitInteger.encode(buf, 5, 1337);
+        NBitIntegerEncoder.encode(buf, 5, 1337);
         BufferUtil.flipToFlush(buf, p);
 
         String r = TypeUtil.toHexString(BufferUtil.toArray(buf));
-
         assertEquals("881f9a0a", r);
     }
 
@@ -173,9 +176,9 @@ public class NBitIntegerTest
     public void testDecodeExampleD12()
     {
         ByteBuffer buf = ByteBuffer.wrap(TypeUtil.fromHexString("881f9a0aff"));
-        buf.position(2);
-
-        assertEquals(1337, NBitInteger.decode(buf, 5));
+        buf.position(1);
+        _decoder.setPrefix(5);
+        assertEquals(1337, _decoder.decodeInt(buf));
     }
 
     @Test
@@ -185,7 +188,7 @@ public class NBitIntegerTest
         int p = BufferUtil.flipToFill(buf);
         buf.put((byte)0x88);
         buf.put((byte)0xFF);
-        NBitInteger.encode(buf, 8, 42);
+        NBitIntegerEncoder.encode(buf, 8, 42);
         BufferUtil.flipToFlush(buf, p);
 
         String r = TypeUtil.toHexString(BufferUtil.toArray(buf));
@@ -198,7 +201,7 @@ public class NBitIntegerTest
     {
         ByteBuffer buf = ByteBuffer.wrap(TypeUtil.fromHexString("882aFf"));
         buf.position(1);
-
-        assertEquals(42, NBitInteger.decode(buf, 8));
+        _decoder.setPrefix(8);
+        assertEquals(42, _decoder.decodeInt(buf));
     }
 }

@@ -29,6 +29,8 @@ import org.eclipse.jetty.http.HttpField;
 import org.eclipse.jetty.http.HttpHeader;
 import org.eclipse.jetty.http.HttpMethod;
 import org.eclipse.jetty.http.HttpScheme;
+import org.eclipse.jetty.http.compression.HuffmanEncoder;
+import org.eclipse.jetty.http.compression.NBitIntegerEncoder;
 import org.eclipse.jetty.util.ArrayTernaryTrie;
 import org.eclipse.jetty.util.StringUtil;
 import org.eclipse.jetty.util.Trie;
@@ -153,7 +155,7 @@ public class HpackContext
 
                     case C_STATUS:
                     {
-                        entry = new StaticEntry(i, new StaticTableHttpField(header, name, value, Integer.valueOf(value)));
+                        entry = new StaticEntry(i, new StaticTableHttpField(header, name, value, value));
                         break;
                     }
 
@@ -461,21 +463,21 @@ public class HpackContext
             super(field);
             _slot = index;
             String value = field.getValue();
-            if (value != null && value.length() > 0)
+            if (value != null && !value.isEmpty())
             {
-                int huffmanLen = Huffman.octetsNeeded(value);
+                int huffmanLen = HuffmanEncoder.octetsNeeded(value);
                 if (huffmanLen < 0)
                     throw new IllegalStateException("bad value");
-                int lenLen = NBitInteger.octectsNeeded(7, huffmanLen);
-                _huffmanValue = new byte[1 + lenLen + huffmanLen];
+                int lenLen = NBitIntegerEncoder.octetsNeeded(7, huffmanLen);
+                _huffmanValue = new byte[lenLen + huffmanLen];
                 ByteBuffer buffer = ByteBuffer.wrap(_huffmanValue);
 
                 // Indicate Huffman
                 buffer.put((byte)0x80);
                 // Add huffman length
-                NBitInteger.encode(buffer, 7, huffmanLen);
+                NBitIntegerEncoder.encode(buffer, 7, huffmanLen);
                 // Encode value
-                Huffman.encode(buffer, value);
+                HuffmanEncoder.encode(buffer, value);
             }
             else
                 _huffmanValue = null;
