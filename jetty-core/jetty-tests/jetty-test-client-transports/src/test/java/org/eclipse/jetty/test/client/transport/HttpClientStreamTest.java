@@ -27,10 +27,10 @@ import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.nio.file.StandardOpenOption;
 import java.time.Duration;
-import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
 import java.util.Random;
+import java.util.concurrent.CopyOnWriteArrayList;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.ExecutionException;
 import java.util.concurrent.TimeUnit;
@@ -69,6 +69,8 @@ import org.junit.jupiter.api.Assumptions;
 import org.junit.jupiter.api.Tag;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.MethodSource;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 import static org.awaitility.Awaitility.await;
 import static org.hamcrest.MatcherAssert.assertThat;
@@ -85,6 +87,8 @@ import static org.junit.jupiter.api.Assertions.assertTrue;
 
 public class HttpClientStreamTest extends AbstractTest
 {
+    private static final Logger LOG = LoggerFactory.getLogger(HttpClientStreamTest.class);
+
     @ParameterizedTest
     @MethodSource("transports")
     public void testFileUpload(Transport transport) throws Exception
@@ -1202,7 +1206,7 @@ public class HttpClientStreamTest extends AbstractTest
     @MethodSource("transports")
     public void testUploadWithRetainedData(Transport transport) throws Exception
     {
-        List<Content.Chunk> chunks = new ArrayList<>();
+        List<Content.Chunk> chunks = new CopyOnWriteArrayList<>();
 
         start(transport, new Handler.Abstract()
         {
@@ -1241,6 +1245,8 @@ public class HttpClientStreamTest extends AbstractTest
                                 {
                                     chunks.add(Content.Chunk.from(BufferUtil.copy(byteBuffer), chunk.isLast()));
                                 }
+                                if (chunks.size() % 100 == 0)
+                                    dumpChunks(chunks);
                                 BufferUtil.clear(byteBuffer);
                             }
                             chunk.release();
@@ -1258,7 +1264,7 @@ public class HttpClientStreamTest extends AbstractTest
             }
         });
 
-        byte[] data = new byte[16 * 1024 * 1024];
+        byte[] data = new byte[10 * 1024 * 1024];
         new Random().nextBytes(data);
         CountDownLatch latch = new CountDownLatch(1);
         ByteBufferRequestContent content = new ByteBufferRequestContent(ByteBuffer.wrap(data));
@@ -1286,6 +1292,16 @@ public class HttpClientStreamTest extends AbstractTest
             }
             assertArrayEquals(data, accumulator.toByteArray());
         }
+    }
+
+    private void dumpChunks(List<Content.Chunk> chunks)
+    {
+        long accumulated = 0L;
+        for (Content.Chunk chunk : chunks)
+        {
+            accumulated += chunk.remaining();
+        }
+        LOG.info("Accumulated {} chunks totalling {} bytes", chunks.size(), accumulated);
     }
 
     private record HandlerContext(Request request, org.eclipse.jetty.server.Response response, Callback callback)
