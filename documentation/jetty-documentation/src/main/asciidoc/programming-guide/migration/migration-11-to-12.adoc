@@ -167,7 +167,7 @@ For more information about the new model, see xref:pg-arch-io-content-source[thi
 
 ===== WebSocket
 
-The Jetty WebSocket APIs have been vastly simplified.
+The Jetty WebSocket APIs have been vastly simplified, and brought in line with the style of other APIs.
 
 The Jetty 12 WebSocket APIs are now fully asynchronous, so the Jetty 11 `SuspendToken` class has been removed in favor of an explicit (or automatic) demand mechanism in Jetty 12 (for more information, refer to xref:pg-websocket-endpoints-demand[this section]).
 
@@ -176,6 +176,7 @@ The various Jetty 11 `WebSocket*Listener` interfaces have been replaced by a sin
 The Jetty 11 `RemoteEndpoint` APIs have been merged into the `Session` APIs in Jetty 12.
 
 The Jetty 11 `WriteCallback` class has been renamed to just `Callback` in Jetty 12, because it is now also used when receiving binary data.
+Note that this `Callback` interface is a different interface from the `org.eclipse.jetty.util.Callback` interface, which cannot be used in the Jetty WebSocket APIs due to class loader visibility issues.
 
 On the server-side, the Jetty WebSocket APIs have been made independent of the Servlet APIs.
 
