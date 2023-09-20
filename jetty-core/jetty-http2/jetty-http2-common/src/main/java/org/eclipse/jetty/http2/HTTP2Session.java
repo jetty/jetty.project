@@ -280,7 +280,7 @@ public abstract class HTTP2Session extends ContainerLifeCycle implements Session
                 {
                     // StreamData has its own reference count (that starts at 1),
                     // so since we create it here, we release it after stream.process().
-                    StreamData streamData = new StreamData(data, stream, flowControlLength);
+                    StreamData streamData = new StreamData(data, stream);
                     stream.process(streamData);
                     streamData.release();
                 }
@@ -2413,14 +2413,12 @@ public abstract class HTTP2Session extends ContainerLifeCycle implements Session
         private final ReferenceCounter counter = new ReferenceCounter();
         private final Stream.Data data;
         private final HTTP2Stream stream;
-        private final int flowControlLength;
 
-        private StreamData(Stream.Data data, HTTP2Stream stream, int flowControlLength)
+        private StreamData(Stream.Data data, HTTP2Stream stream)
         {
             super(data.frame());
             this.data = data;
             this.stream = stream;
-            this.flowControlLength = flowControlLength;
             // Since this class starts its own reference counter
             // at 1, we need to retain the delegate Data object,
             // so that the releases will be paired.

@@ -1267,7 +1267,9 @@ public class HttpClientStreamTest extends AbstractTest
             .send()
             .whenComplete((r, t) ->
             {
-                if (t == null && r.getStatus() == 200)
+                if (t != null)
+                    t.printStackTrace();
+                else if (r.getStatus() == 200)
                    latch.countDown();
             });
 
