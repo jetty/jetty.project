@@ -2446,6 +2446,20 @@ public abstract class HTTP2Session extends ContainerLifeCycle implements Session
         @Override
         public boolean release()
         {
+            data.release();
+
+            if (counter.release())
+            {
+                notIdle();
+                stream.notIdle();
+
+                // once the reference count goes to zero, then it does not matter if the buffer is empty or not, as it is no
+                // longer available to the application to read, and thus has been consumed (if not already consumed).
+                if (consumed.compareAndSet(false, true))
+                    flowControl.onDataConsumed(HTTP2Session.this, stream, flowControlLength);
+                return true;
+            }
+
             // If all the data has been consumes and at least one release call is made, that indicates that the content
             // has been fully consumed. The fact that release count has not gone to zero indicates that the application wants
             // to retain the data, but not prevent more data being read.
@@ -2454,19 +2468,8 @@ public abstract class HTTP2Session extends ContainerLifeCycle implements Session
             // release.
             if (BufferUtil.isEmpty(data.frame().getByteBuffer()) && consumed.compareAndSet(false, true))
                 flowControl.onDataConsumed(HTTP2Session.this, stream, flowControlLength);
-            data.release();
-            boolean result = counter.release();
-            if (result)
-            {
-                notIdle();
-                stream.notIdle();
 
-                // once the reference count goes to zero, then it does not matter if the buffer is empty or not, as it is no
-                // longer available to the application to read, and thus has been consumed.
-                if (consumed.compareAndSet(false, true))
-                    flowControl.onDataConsumed(HTTP2Session.this, stream, flowControlLength);
-            }
-            return result;
+            return false;
         }
     }
 }
