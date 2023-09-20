@@ -77,7 +77,13 @@ public class WebSocketClient extends ContainerLifeCycle implements WebSocketPoli
     }
 
     /**
-     * Instantiate a WebSocketClient using HttpClient for defaults
+     * <p>
+     * Instantiate a WebSocketClient.
+     * </p>
+     *
+     * <p>
+     *     HTTP behaviors of the WebSocket upgrade are taken from the HttpClient configuration.
+     * </p>
      *
      * @param httpClient the HttpClient to base internal defaults off of
      */
@@ -95,10 +101,17 @@ public class WebSocketClient extends ContainerLifeCycle implements WebSocketPoli
     }
 
     /**
-     * Instantiate a WebSocketClient using HttpClient for defaults
+     * <p>
+     * Instantiate a WebSocketClient.
+     * </p>
      *
-     * @param httpClient the HttpClient to base internal defaults off of
-     * @param webSocketComponents the configured WebSocketComponents to use
+     * <p>
+     *     HTTP behaviors of the WebSocket upgrade are taken from the {@link HttpClient} configuration.
+     *     WebSocket behaviors are taken from the {@link WebSocketComponents} configuration.
+     * </p>
+     *
+     * @param httpClient the HttpClient to use for the HTTP behaviors of WebSocket upgrade
+     * @param webSocketComponents the WebSocketComponents to use for WebSocket behaviors
      */
     public WebSocketClient(HttpClient httpClient, WebSocketComponents webSocketComponents)
     {
