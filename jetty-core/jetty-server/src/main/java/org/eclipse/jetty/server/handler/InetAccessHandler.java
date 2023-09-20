@@ -45,13 +45,13 @@ public class InetAccessHandler extends ConditionalHandler.Abstract
     }
 
     @Override
-    protected boolean doHandle(Request request, Response response, Callback callback) throws Exception
+    protected boolean onConditionsMet(Request request, Response response, Callback callback) throws Exception
     {
-        return nextHandle(request, response, callback);
+        return nextHandler(request, response, callback);
     }
 
     @Override
-    protected boolean doNotHandle(Request request, Response response, Callback callback) throws Exception
+    protected boolean onConditionsNotMet(Request request, Response response, Callback callback) throws Exception
     {
         Response.writeError(request, response, callback, HttpStatus.FORBIDDEN_403);
         return true;

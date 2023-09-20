@@ -145,7 +145,7 @@ public class ThreadLimitHandler extends ConditionalHandler.Abstract
     }
 
     @Override
-    public boolean doHandle(Request request, Response response, Callback callback) throws Exception
+    public boolean onConditionsMet(Request request, Response response, Callback callback) throws Exception
     {
         Handler next = getHandler();
         if (next == null)
@@ -169,9 +169,9 @@ public class ThreadLimitHandler extends ConditionalHandler.Abstract
     }
 
     @Override
-    protected boolean doNotHandle(Request request, Response response, Callback callback) throws Exception
+    protected boolean onConditionsNotMet(Request request, Response response, Callback callback) throws Exception
     {
-        return nextHandle(request, response, callback);
+        return nextHandler(request, response, callback);
     }
 
     private Remote getRemote(Request baseRequest)

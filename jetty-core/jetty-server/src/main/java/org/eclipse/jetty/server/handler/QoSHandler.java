@@ -181,7 +181,7 @@ public class QoSHandler extends ConditionalHandler.Abstract
     }
 
     @Override
-    public boolean doHandle(Request request, Response response, Callback callback) throws Exception
+    public boolean onConditionsMet(Request request, Response response, Callback callback) throws Exception
     {
         if (LOG.isDebugEnabled())
             LOG.debug("{} handling {}", this, request);
@@ -214,9 +214,9 @@ public class QoSHandler extends ConditionalHandler.Abstract
     }
 
     @Override
-    protected boolean doNotHandle(Request request, Response response, Callback callback) throws Exception
+    protected boolean onConditionsNotMet(Request request, Response response, Callback callback) throws Exception
     {
-        return nextHandle(request, response, callback);
+        return nextHandler(request, response, callback);
     }
 
     private static void notAvailable(Response response, Callback callback)
@@ -264,7 +264,7 @@ public class QoSHandler extends ConditionalHandler.Abstract
         if (LOG.isDebugEnabled())
             LOG.debug("{} forwarding {}", this, request);
         request.addHttpStreamWrapper(stream -> new Resumer(stream, request));
-        return nextHandle(request, response, callback);
+        return nextHandler(request, response, callback);
     }
 
     private void suspend(Request request, Response response, Callback callback)
