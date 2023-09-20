@@ -36,6 +36,9 @@ public class StatisticsHandler extends EventsHandler
 {
     private final CounterStatistic _requestStats = new CounterStatistic(); // how many requests are being handled (full lifecycle)
     private final SampleStatistic _requestTimeStats = new SampleStatistic(); // latencies of requests (full lifecycle)
+    private final CounterStatistic _dispatchedStats = new CounterStatistic(); // how many requests are in handle
+    private final SampleStatistic _dispatchedTimeStats = new SampleStatistic(); // latencies of requests in handle
+    private final LongAdder _errors = new LongAdder();
     private final LongAdder _handlingFailures = new LongAdder();
     private final LongAdder _responses1xx = new LongAdder();
     private final LongAdder _responses2xx = new LongAdder();
@@ -44,6 +47,7 @@ public class StatisticsHandler extends EventsHandler
     private final LongAdder _responses5xx = new LongAdder();
     private final LongAdder _bytesRead = new LongAdder();
     private final LongAdder _bytesWritten = new LongAdder();
+    private long _startTime = NanoTime.now();
 
     public StatisticsHandler()
     {
@@ -55,9 +59,17 @@ public class StatisticsHandler extends EventsHandler
     }
 
     @Override
+    protected void doStart() throws Exception
+    {
+        reset();
+        super.doStart();
+    }
+
+    @Override
     protected void onBeforeHandling(Request request)
     {
         _requestStats.increment();
+        _dispatchedStats.increment();
     }
 
     @Override
@@ -65,6 +77,8 @@ public class StatisticsHandler extends EventsHandler
     {
         if (failure != null)
             _handlingFailures.increment();
+        _dispatchedStats.decrement();
+        _dispatchedTimeStats.record(NanoTime.since(request.getBeginNanoTime()));
     }
 
     @Override
@@ -98,6 +112,8 @@ public class StatisticsHandler extends EventsHandler
     @Override
     protected void onComplete(Request request, Throwable failure)
     {
+        if (failure != null)
+            _errors.increment();
         _requestTimeStats.record(NanoTime.since(request.getBeginNanoTime()));
         _requestStats.decrement();
     }
@@ -108,6 +124,9 @@ public class StatisticsHandler extends EventsHandler
         dumpObjects(out, indent,
             Dumpable.named("requestStats", _requestStats),
             Dumpable.named("requestTimeStats", _requestTimeStats),
+            Dumpable.named("dispatchedStats", _dispatchedStats),
+            Dumpable.named("dispatchedTimeStats", _dispatchedTimeStats),
+            Dumpable.named("errors", _errors),
             Dumpable.named("handlingFailures", _handlingFailures),
             Dumpable.named("1xxResponses", _responses1xx),
             Dumpable.named("2xxResponses", _responses2xx),
@@ -122,8 +141,12 @@ public class StatisticsHandler extends EventsHandler
     @ManagedOperation(value = "resets the statistics", impact = "ACTION")
     public void reset()
     {
+        _startTime = NanoTime.now();
         _requestStats.reset();
         _requestTimeStats.reset();
+        _dispatchedStats.reset();
+        _dispatchedTimeStats.reset();
+        _errors.reset();
         _handlingFailures.reset();
         _responses1xx.reset();
         _responses2xx.reset();
@@ -150,6 +173,54 @@ public class StatisticsHandler extends EventsHandler
     public int getRequestsActiveMax()
     {
         return (int)_requestStats.getMax();
+    }
+
+    @ManagedAttribute("number of dispatches")
+    public int getDispatched()
+    {
+        return (int)_dispatchedStats.getTotal();
+    }
+
+    @ManagedAttribute("number of dispatches currently active")
+    public int getDispatchedActive()
+    {
+        return (int)_dispatchedStats.getCurrent();
+    }
+
+    @ManagedAttribute("maximum number of active dispatches being handled")
+    public int getDispatchedActiveMax()
+    {
+        return (int)_dispatchedStats.getMax();
+    }
+
+    @ManagedAttribute("maximum time spend in dispatch handling")
+    public long getDispatchedTimeMax()
+    {
+        return _dispatchedTimeStats.getMax();
+    }
+
+    @ManagedAttribute("total time spent in dispatch handling (in ms)")
+    public long getDispatchedTimeTotal()
+    {
+        return _dispatchedTimeStats.getTotal();
+    }
+
+    @ManagedAttribute("mean time spent in dispatch handling (in ms)")
+    public double getDispatchedTimeMean()
+    {
+        return _dispatchedTimeStats.getMean();
+    }
+
+    @ManagedAttribute("standard deviation for dispatch handling (in ms)")
+    public double getDispatchedTimeStdDev()
+    {
+        return _dispatchedTimeStats.getStdDev();
+    }
+
+    @ManagedAttribute("number of async errors that occurred")
+    public int getErrors()
+    {
+        return _errors.intValue();
     }
 
     @ManagedAttribute("number of requests with 1xx response status")
@@ -222,6 +293,12 @@ public class StatisticsHandler extends EventsHandler
     public long getBytesWritten()
     {
         return _bytesWritten.longValue();
+    }
+
+    @ManagedAttribute("time in milliseconds stats have been collected for")
+    public long getStatsOnMs()
+    {
+        return NanoTime.millisSince(_startTime);
     }
 
     /**
