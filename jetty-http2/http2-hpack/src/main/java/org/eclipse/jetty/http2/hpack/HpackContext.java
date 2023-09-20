@@ -120,6 +120,7 @@ public class HpackContext
     private static final StaticEntry[] __staticTableByHeader = new StaticEntry[HttpHeader.UNKNOWN.ordinal()];
     private static final StaticEntry[] __staticTable = new StaticEntry[STATIC_TABLE.length];
     public static final int STATIC_SIZE = STATIC_TABLE.length - 1;
+    public static final int DEFAULT_MAX_TABLE_CAPACITY = 4096;
 
     static
     {
@@ -189,26 +190,26 @@ public class HpackContext
         }
     }
 
-    private int _maxDynamicTableSizeInBytes;
-    private int _dynamicTableSizeInBytes;
     private final DynamicTable _dynamicTable;
     private final Map<HttpField, Entry> _fieldMap = new HashMap<>();
     private final Map<String, Entry> _nameMap = new HashMap<>();
+    private int _maxTableSize;
+    private int _tableSize;
 
-    HpackContext(int maxDynamicTableSize)
+    HpackContext(int maxTableSize)
     {
-        _maxDynamicTableSizeInBytes = maxDynamicTableSize;
-        int guesstimateEntries = 10 + maxDynamicTableSize / (32 + 10 + 10);
+        _maxTableSize = maxTableSize;
+        int guesstimateEntries = 10 + maxTableSize / (32 + 10 + 10);
         _dynamicTable = new DynamicTable(guesstimateEntries);
         if (LOG.isDebugEnabled())
-            LOG.debug(String.format("HdrTbl[%x] created max=%d", hashCode(), maxDynamicTableSize));
+            LOG.debug(String.format("HdrTbl[%x] created max=%d", hashCode(), maxTableSize));
     }
 
     public void resize(int newMaxDynamicTableSize)
     {
         if (LOG.isDebugEnabled())
-            LOG.debug(String.format("HdrTbl[%x] resized max=%d->%d", hashCode(), _maxDynamicTableSizeInBytes, newMaxDynamicTableSize));
-        _maxDynamicTableSizeInBytes = newMaxDynamicTableSize;
+            LOG.debug(String.format("HdrTbl[%x] resized max=%d->%d", hashCode(), _maxTableSize, newMaxDynamicTableSize));
+        _maxTableSize = newMaxDynamicTableSize;
         _dynamicTable.evict();
     }
 
@@ -253,14 +254,14 @@ public class HpackContext
     {
         Entry entry = new Entry(field);
         int size = entry.getSize();
-        if (size > _maxDynamicTableSizeInBytes)
+        if (size > _maxTableSize)
         {
             if (LOG.isDebugEnabled())
-                LOG.debug(String.format("HdrTbl[%x] !added size %d>%d", hashCode(), size, _maxDynamicTableSizeInBytes));
+                LOG.debug(String.format("HdrTbl[%x] !added size %d>%d", hashCode(), size, _maxTableSize));
             _dynamicTable.evictAll();
             return null;
         }
-        _dynamicTableSizeInBytes += size;
+        _tableSize += size;
         _dynamicTable.add(entry);
         _fieldMap.put(field, entry);
         _nameMap.put(field.getLowerCaseName(), entry);
@@ -284,7 +285,7 @@ public class HpackContext
      */
     public int getDynamicTableSize()
     {
-        return _dynamicTableSizeInBytes;
+        return _tableSize;
     }
 
     /**
@@ -292,7 +293,7 @@ public class HpackContext
      */
     public int getMaxDynamicTableSize()
     {
-        return _maxDynamicTableSizeInBytes;
+        return _maxTableSize;
     }
 
     public int index(Entry entry)
@@ -318,15 +319,15 @@ public class HpackContext
     @Override
     public String toString()
     {
-        return String.format("HpackContext@%x{entries=%d,size=%d,max=%d}", hashCode(), _dynamicTable.size(), _dynamicTableSizeInBytes, _maxDynamicTableSizeInBytes);
+        return String.format("HpackContext@%x{entries=%d,size=%d,max=%d}", hashCode(), _dynamicTable.size(), _tableSize, _maxTableSize);
     }
 
     private class DynamicTable
     {
-        Entry[] _entries;
-        int _size;
-        int _offset;
-        int _growby;
+        private Entry[] _entries;
+        private final int _growby;
+        private int _size;
+        private int _offset;
 
         private DynamicTable(int initCapacity)
         {
@@ -374,7 +375,7 @@ public class HpackContext
 
         private void evict()
         {
-            while (_dynamicTableSizeInBytes > _maxDynamicTableSizeInBytes)
+            while (_tableSize > _maxTableSize)
             {
                 Entry entry = _entries[_offset];
                 _entries[_offset] = null;
@@ -382,7 +383,7 @@ public class HpackContext
                 _size--;
                 if (LOG.isDebugEnabled())
                     LOG.debug(String.format("HdrTbl[%x] evict %s", HpackContext.this.hashCode(), entry));
-                _dynamicTableSizeInBytes -= entry.getSize();
+                _tableSize -= entry.getSize();
                 entry._slot = -1;
                 _fieldMap.remove(entry.getHttpField());
                 String lc = entry.getHttpField().getLowerCaseName();
@@ -390,7 +391,7 @@ public class HpackContext
                     _nameMap.remove(lc);
             }
             if (LOG.isDebugEnabled())
-                LOG.debug(String.format("HdrTbl[%x] entries=%d, size=%d, max=%d", HpackContext.this.hashCode(), _dynamicTable.size(), _dynamicTableSizeInBytes, _maxDynamicTableSizeInBytes));
+                LOG.debug(String.format("HdrTbl[%x] entries=%d, size=%d, max=%d", HpackContext.this.hashCode(), _dynamicTable.size(), _tableSize, _maxTableSize));
         }
 
         private void evictAll()
@@ -403,7 +404,7 @@ public class HpackContext
                 _nameMap.clear();
                 _offset = 0;
                 _size = 0;
-                _dynamicTableSizeInBytes = 0;
+                _tableSize = 0;
                 Arrays.fill(_entries, null);
             }
         }
