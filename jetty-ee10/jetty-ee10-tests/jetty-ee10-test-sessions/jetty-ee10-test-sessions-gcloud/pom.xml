@@ -10,7 +10,6 @@
   <name>EE10 :: Tests :: Sessions :: GCloud</name>
   <properties>
     <bundle-symbolic-name>${project.groupId}.sessions.gcloud</bundle-symbolic-name>
-    <maven.build.cache.enabled>false</maven.build.cache.enabled>
   </properties>
   <dependencies>
     <dependency>
