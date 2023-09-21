@@ -16,36 +16,45 @@ package org.eclipse.jetty.ee9.websocket.jakarta.server.internal;
 import java.net.URI;
 import java.security.Principal;
 
+import jakarta.servlet.http.HttpServletRequest;
 import org.eclipse.jetty.ee9.websocket.jakarta.common.UpgradeRequest;
-import org.eclipse.jetty.server.Request;
+import org.eclipse.jetty.http.HttpURI;
+import org.eclipse.jetty.util.URIUtil;
+import org.eclipse.jetty.websocket.core.WebSocketConstants;
 import org.eclipse.jetty.websocket.core.server.ServerUpgradeRequest;
+
+import static org.eclipse.jetty.util.URIUtil.addEncodedPaths;
+import static org.eclipse.jetty.util.URIUtil.encodePath;
 
 public class JakartaServerUpgradeRequest implements UpgradeRequest
 {
-    private final ServerUpgradeRequest servletRequest;
+    private final HttpServletRequest _servletRequest;
+    private final Principal _userPrincipal;
 
-    public JakartaServerUpgradeRequest(ServerUpgradeRequest servletRequest)
+    public JakartaServerUpgradeRequest(ServerUpgradeRequest upgradeRequest)
     {
-        this.servletRequest = servletRequest;
+        _servletRequest = (HttpServletRequest)upgradeRequest.getAttribute(WebSocketConstants.WEBSOCKET_WRAPPED_REQUEST_ATTRIBUTE);
+        _userPrincipal = _servletRequest.getUserPrincipal();
     }
 
     @Override
     public Principal getUserPrincipal()
     {
-        // TODO: keep the wrapped request and ask it for user principal.
-        return null;
+        return _userPrincipal;
     }
 
     @Override
     public URI getRequestURI()
     {
-        // TODO: keep the wrapped request and ask it for request URI.
-        return null;
+        return HttpURI.build(_servletRequest.getRequestURI())
+            .path(addEncodedPaths(_servletRequest.getContextPath(), getPathInContext()))
+            .query(_servletRequest.getQueryString())
+            .asImmutable().toURI();
     }
 
     @Override
     public String getPathInContext()
     {
-        return Request.getPathInContext(servletRequest);
+        return encodePath(URIUtil.addPaths(_servletRequest.getServletPath(), _servletRequest.getPathInfo()));
     }
 }
