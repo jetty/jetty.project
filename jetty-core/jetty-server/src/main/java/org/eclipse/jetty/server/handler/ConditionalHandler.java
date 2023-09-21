@@ -80,16 +80,16 @@ import org.slf4j.LoggerFactory;
  * the {@link #onConditionsNotMet(Request, Response, Callback)} is called, which returns false to indicate no more handling.</p>
  *
  * <p>Alternatively, one of the concrete subclasses may be used.  These implementations conditionally provide a specific
- * action in their {@link #onConditionsMet(Request, Response, Callback)} methods. Otherwise, these subclasses are all extension
- * of the abstract {@link ElseNext} subclass, that implements {@link #onConditionsNotMet(Request, Response, Callback)} to
- * call {@link #nextHandler(Request, Response, Callback)}.
- *
+ * action in their {@link #onConditionsMet(Request, Response, Callback)} methods:
  * <ul>
  *     <li>{@link DontHandle} - If the conditions are met, terminate further handling by returning {@code false}</li>
  *     <li>{@link Reject} - If the conditions are met, reject the request with a {@link HttpStatus#FORBIDDEN_403} (or other status code) response.</li>
  *     <li>{@link SkipNext} - If the conditions are met, then the {@link #getHandler() next handler} is skipped and the
  *     {@link Singleton#getHandler() following hander} invoked instead.</li>
  * </ul>
+ * <p>Otherwise, if their conditions are not met, these subclasses are all extension of the abstract {@link ElseNext} subclass,
+ * that implements {@link #onConditionsNotMet(Request, Response, Callback)} to call {@link #nextHandler(Request, Response, Callback)}.
+ * Thus their specific behaviour is not applied and the handling continues with the next handler.</p>
  *
  * <p>These concrete handlers are ideal for retrofitting conditional behavior. For example, if an application handler was
  * found to not correctly handle the {@code OPTIONS} method for the path "/secret/*", it could be protected as follows:</p>
@@ -395,8 +395,8 @@ public abstract class ConditionalHandler extends Handler.Wrapper
 
     /**
      * This method is called when the request has not met the conditions and is not to
-     * be handled by this handler.  The default implementation returns {@code false}.
-     * Derived implementations may send an error response or handle the request differently.
+     * be handled by this handler.
+     * Implementations may return false; send an error response; or handle the request differently.
      * @param request The request to handle
      * @param response The response to generate
      * @param callback The callback for completion
