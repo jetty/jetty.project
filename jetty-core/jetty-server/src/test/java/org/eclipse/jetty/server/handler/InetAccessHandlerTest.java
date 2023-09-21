@@ -31,8 +31,8 @@ import org.eclipse.jetty.server.Server;
 import org.eclipse.jetty.server.ServerConnector;
 import org.eclipse.jetty.util.Callback;
 import org.eclipse.jetty.util.StringUtil;
-import org.junit.jupiter.api.AfterAll;
-import org.junit.jupiter.api.BeforeAll;
+import org.junit.jupiter.api.AfterEach;
+import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.Arguments;
 import org.junit.jupiter.params.provider.MethodSource;
@@ -41,13 +41,13 @@ import static org.junit.jupiter.api.Assertions.assertEquals;
 
 public class InetAccessHandlerTest
 {
-    private static Server _server;
-    private static ServerConnector _connector1;
-    private static ServerConnector _connector2;
-    private static InetAccessHandler _handler;
+    private Server _server;
+    private ServerConnector _connector1;
+    private ServerConnector _connector2;
+    private InetAccessHandler _handler;
 
-    @BeforeAll
-    public static void setUp() throws Exception
+    @BeforeEach
+    public void setUp() throws Exception
     {
         _server = new Server();
         _connector1 = new ServerConnector(_server);
@@ -70,11 +70,10 @@ public class InetAccessHandlerTest
         });
 
         _server.setHandler(_handler);
-        _server.start();
     }
 
-    @AfterAll
-    public static void tearDown() throws Exception
+    @AfterEach
+    public void tearDown() throws Exception
     {
         _server.stop();
     }
@@ -123,6 +122,7 @@ public class InetAccessHandlerTest
             }
         }
 
+        _server.start();
         testConnector(_connector1.getLocalPort(), path, include, exclude, includeConnectors, excludeConnectors, codePerConnector.get(0));
         testConnector(_connector2.getLocalPort(), path, include, exclude, includeConnectors, excludeConnectors, codePerConnector.get(1));
     }
