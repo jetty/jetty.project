@@ -92,14 +92,14 @@ import org.slf4j.LoggerFactory;
  * </ul>
  *
  * <p>These concrete handlers are ideal for retrofitting conditional behavior. For example, if an application handler was
- * found to not correctly handle the {@code OPTION} method for the path "/secret/*", it could be protected as follows:</p>
+ * found to not correctly handle the {@code OPTIONS} method for the path "/secret/*", it could be protected as follows:</p>
  * <pre>{@code
  *    Server server = new Server();
  *    ApplicationHandler application = new ApplicationHandler();
  *    server.setHandler(application);
  *
  *    ConditionalHandler reject = new ConditionalHandler.Reject(403); // or DontHandle
- *    reject.includeMethod("OPTION");
+ *    reject.includeMethod("OPTIONS");
  *    reject.includePath("/secret/*");
  *    server.insertHandler(reject);
  * }</pre>
