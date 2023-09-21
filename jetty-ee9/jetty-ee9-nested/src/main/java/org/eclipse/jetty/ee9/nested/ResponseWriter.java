@@ -16,12 +16,14 @@ package org.eclipse.jetty.ee9.nested;
 import java.io.IOException;
 import java.io.InterruptedIOException;
 import java.io.PrintWriter;
+import java.io.Writer;
 import java.util.Formatter;
 import java.util.Locale;
 
 import jakarta.servlet.ServletResponse;
 import org.eclipse.jetty.io.EofException;
 import org.eclipse.jetty.io.RuntimeIOException;
+import org.eclipse.jetty.io.writer.AbstractOutputStreamWriter;
 import org.eclipse.jetty.util.Callback;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -40,17 +42,17 @@ public class ResponseWriter extends PrintWriter
 {
     private static final Logger LOG = LoggerFactory.getLogger(ResponseWriter.class);
 
-    private final HttpWriter _httpWriter;
+    private final Writer _writer;
     private final Locale _locale;
     private final String _encoding;
     private IOException _ioException;
     private boolean _isClosed = false;
     private Formatter _formatter;
 
-    public ResponseWriter(HttpWriter httpWriter, Locale locale, String encoding)
+    public ResponseWriter(Writer httpWriter, Locale locale, String encoding)
     {
         super(httpWriter, false);
-        _httpWriter = httpWriter;
+        _writer = httpWriter;
         _locale = locale;
         _encoding = encoding;
     }
@@ -70,7 +72,7 @@ public class ResponseWriter extends PrintWriter
         {
             _isClosed = false;
             clearError();
-            out = _httpWriter;
+            out = _writer;
         }
     }
 
@@ -170,7 +172,10 @@ public class ResponseWriter extends PrintWriter
         {
             _isClosed = true;
         }
-        _httpWriter.complete(callback);
+        if (_writer instanceof AbstractOutputStreamWriter abstractWriter && abstractWriter.getOutputStream() instanceof HttpOutput httpOutput)
+            httpOutput.complete(callback);
+        else
+            callback.succeeded();
     }
 
     @Override

@@ -11,19 +11,20 @@
 // ========================================================================
 //
 
-package org.eclipse.jetty.ee10.servlet.writer;
+package org.eclipse.jetty.io.writer;
 
 import java.io.IOException;
-
-import org.eclipse.jetty.ee10.servlet.HttpOutput;
+import java.io.OutputStream;
 
 /**
- *
+ * An implementation of {@link AbstractOutputStreamWriter} for
+ * optimal ISO-8859-1 conversion.
+ * The ISO-8859-1 encoding is done by this class and no additional
+ * buffers or Writers are used.
  */
-public class Iso88591HttpWriter extends HttpWriter
+public class Iso88591Writer extends AbstractOutputStreamWriter
 {
-
-    public Iso88591HttpWriter(HttpOutput out)
+    public Iso88591Writer(OutputStream out)
     {
         super(out);
     }
@@ -31,7 +32,7 @@ public class Iso88591HttpWriter extends HttpWriter
     @Override
     public void write(char[] s, int offset, int length) throws IOException
     {
-        HttpOutput out = _out;
+        OutputStream out = _out;
 
         if (length == 1)
         {
@@ -43,7 +44,7 @@ public class Iso88591HttpWriter extends HttpWriter
         while (length > 0)
         {
             _bytes.reset();
-            int chars = Math.min(length, MAX_OUTPUT_CHARS);
+            int chars = Math.min(length, _maxWriteSize);
 
             byte[] buffer = _bytes.getBuf();
             int bytes = _bytes.getCount();

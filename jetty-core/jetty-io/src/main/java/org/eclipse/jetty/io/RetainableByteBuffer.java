@@ -39,7 +39,7 @@ public interface RetainableByteBuffer extends Retainable
     /**
      * A Zero-capacity, non-retainable {@code RetainableByteBuffer}.
      */
-    public static RetainableByteBuffer EMPTY = wrap(BufferUtil.EMPTY_BUFFER);
+    RetainableByteBuffer EMPTY = wrap(BufferUtil.EMPTY_BUFFER);
 
     /**
      * <p>Returns a non-retainable {@code RetainableByteBuffer} that wraps
@@ -57,27 +57,72 @@ public interface RetainableByteBuffer extends Retainable
      * @return a non-retainable {@code RetainableByteBuffer}
      * @see ByteBufferPool.NonPooling
      */
-    public static RetainableByteBuffer wrap(ByteBuffer byteBuffer)
+    static RetainableByteBuffer wrap(ByteBuffer byteBuffer)
     {
         return new NonRetainableByteBuffer(byteBuffer);
+    }
+
+    /**
+     * <p>Returns a {@code RetainableByteBuffer} that wraps
+     * the given {@code ByteBuffer} and {@link Retainable}.</p>
+     *
+     * @param byteBuffer the {@code ByteBuffer} to wrap
+     * @param retainable the associated {@link Retainable}.
+     * @return a {@code RetainableByteBuffer}
+     * @see ByteBufferPool.NonPooling
+     */
+    static RetainableByteBuffer wrap(ByteBuffer byteBuffer, Retainable retainable)
+    {
+        return new RetainableByteBuffer()
+        {
+            @Override
+            public ByteBuffer getByteBuffer()
+            {
+                return byteBuffer;
+            }
+
+            @Override
+            public boolean isRetained()
+            {
+                throw new UnsupportedOperationException();
+            }
+
+            @Override
+            public boolean canRetain()
+            {
+                return retainable.canRetain();
+            }
+
+            @Override
+            public void retain()
+            {
+                retainable.retain();
+            }
+
+            @Override
+            public boolean release()
+            {
+                return retainable.release();
+            }
+        };
     }
 
     /**
      * @return whether this instance is retained
      * @see ReferenceCounter#isRetained()
      */
-    public boolean isRetained();
+    boolean isRetained();
 
     /**
      * Get the wrapped, not {@code null}, {@code ByteBuffer}.
      * @return the wrapped, not {@code null}, {@code ByteBuffer}
      */
-    public ByteBuffer getByteBuffer();
+    ByteBuffer getByteBuffer();
 
     /**
      * @return whether the {@code ByteBuffer} is direct
      */
-    public default boolean isDirect()
+    default boolean isDirect()
     {
         return getByteBuffer().isDirect();
     }
@@ -85,7 +130,7 @@ public interface RetainableByteBuffer extends Retainable
     /**
      * @return the number of remaining bytes in the {@code ByteBuffer}
      */
-    public default int remaining()
+    default int remaining()
     {
         return getByteBuffer().remaining();
     }
@@ -93,7 +138,7 @@ public interface RetainableByteBuffer extends Retainable
     /**
      * @return whether the {@code ByteBuffer} has remaining bytes
      */
-    public default boolean hasRemaining()
+    default boolean hasRemaining()
     {
         return getByteBuffer().hasRemaining();
     }
@@ -101,7 +146,7 @@ public interface RetainableByteBuffer extends Retainable
     /**
      * @return the {@code ByteBuffer} capacity
      */
-    public default int capacity()
+    default int capacity()
     {
         return getByteBuffer().capacity();
     }
@@ -109,7 +154,7 @@ public interface RetainableByteBuffer extends Retainable
     /**
      * @see BufferUtil#clear(ByteBuffer)
      */
-    public default void clear()
+    default void clear()
     {
         BufferUtil.clear(getByteBuffer());
     }
@@ -117,7 +162,7 @@ public interface RetainableByteBuffer extends Retainable
     /**
      * A wrapper for {@link RetainableByteBuffer} instances
      */
-    public class Wrapper extends Retainable.Wrapper implements RetainableByteBuffer
+    class Wrapper extends Retainable.Wrapper implements RetainableByteBuffer
     {
         public Wrapper(RetainableByteBuffer wrapped)
         {

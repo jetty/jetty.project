@@ -11,53 +11,45 @@
 // ========================================================================
 //
 
-package org.eclipse.jetty.ee9.nested;
+package org.eclipse.jetty.io.writer;
 
 import java.io.IOException;
+import java.io.OutputStream;
+import java.io.OutputStreamWriter;
+import java.io.Writer;
+import java.nio.charset.Charset;
 
 /**
- *
+ * An implementation of {@link AbstractOutputStreamWriter} that internally
+ * uses {@link java.io.OutputStreamWriter}.
  */
-public class Iso88591HttpWriter extends HttpWriter
+public class EncodingWriter extends AbstractOutputStreamWriter
 {
+    final Writer _converter;
 
-    public Iso88591HttpWriter(HttpOutput out)
+    public EncodingWriter(OutputStream out, String encoding) throws IOException
     {
         super(out);
+        _converter = new OutputStreamWriter(_bytes, encoding);
+    }
+
+    public EncodingWriter(OutputStream out, Charset charset) throws IOException
+    {
+        super(out);
+        _converter = new OutputStreamWriter(_bytes, charset);
     }
 
     @Override
     public void write(char[] s, int offset, int length) throws IOException
     {
-        HttpOutput out = _out;
-
-        if (length == 1)
-        {
-            int c = s[offset];
-            out.write(c < 256 ? c : '?');
-            return;
-        }
-
         while (length > 0)
         {
             _bytes.reset();
-            int chars = Math.min(length, MAX_OUTPUT_CHARS);
+            int chars = Math.min(length, _maxWriteSize);
 
-            byte[] buffer = _bytes.getBuf();
-            int bytes = _bytes.getCount();
-
-            if (chars > buffer.length - bytes)
-                chars = buffer.length - bytes;
-
-            for (int i = 0; i < chars; i++)
-            {
-                int c = s[offset + i];
-                buffer[bytes++] = (byte)(c < 256 ? c : '?');
-            }
-            if (bytes >= 0)
-                _bytes.setCount(bytes);
-
-            _bytes.writeTo(out);
+            _converter.write(s, offset, chars);
+            _converter.flush();
+            _bytes.writeTo(_out);
             length -= chars;
             offset += chars;
         }

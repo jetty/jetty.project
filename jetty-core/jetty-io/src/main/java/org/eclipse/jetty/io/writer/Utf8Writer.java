@@ -11,24 +11,23 @@
 // ========================================================================
 //
 
-package org.eclipse.jetty.ee9.nested;
+package org.eclipse.jetty.io.writer;
 
 import java.io.IOException;
+import java.io.OutputStream;
 
 /**
- * OutputWriter.
- * A writer that can wrap a {@link HttpOutput} stream and provide
- * character encodings.
- *
+ * An implementation of {@link AbstractOutputStreamWriter} for
+ * an optimal UTF-8 conversion.
  * The UTF-8 encoding is done by this class and no additional
  * buffers or Writers are used.
- * The UTF-8 code was inspired by http://javolution.org
+ * The UTF-8 code was inspired by <a href="http://javolution.org">...</a>
  */
-public class Utf8HttpWriter extends HttpWriter
+public class Utf8Writer extends AbstractOutputStreamWriter
 {
     int _surrogate = 0;
 
-    public Utf8HttpWriter(HttpOutput out)
+    public Utf8Writer(OutputStream out)
     {
         super(out);
     }
@@ -36,12 +35,12 @@ public class Utf8HttpWriter extends HttpWriter
     @Override
     public void write(char[] s, int offset, int length) throws IOException
     {
-        HttpOutput out = _out;
+        OutputStream out = _out;
 
         while (length > 0)
         {
             _bytes.reset();
-            int chars = Math.min(length, MAX_OUTPUT_CHARS);
+            int chars = Math.min(length, _maxWriteSize);
 
             byte[] buffer = _bytes.getBuf();
             int bytes = _bytes.getCount();

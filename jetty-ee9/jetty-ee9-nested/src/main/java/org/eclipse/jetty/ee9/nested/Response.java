@@ -51,6 +51,7 @@ import org.eclipse.jetty.http.MimeTypes;
 import org.eclipse.jetty.http.PreEncodedHttpField;
 import org.eclipse.jetty.http.content.HttpContent;
 import org.eclipse.jetty.io.RuntimeIOException;
+import org.eclipse.jetty.io.writer.AbstractOutputStreamWriter;
 import org.eclipse.jetty.server.Context;
 import org.eclipse.jetty.server.HttpCookieUtils;
 import org.eclipse.jetty.server.HttpCookieUtils.SetCookieHttpField;
@@ -869,14 +870,7 @@ public class Response implements HttpServletResponse
             if (_writer != null && _writer.isFor(locale, encoding))
                 _writer.reopen();
             else
-            {
-                if (MimeTypes.ISO_8859_1.equalsIgnoreCase(encoding))
-                    _writer = new ResponseWriter(new Iso88591HttpWriter(_out), locale, encoding);
-                else if (MimeTypes.UTF8.equalsIgnoreCase(encoding))
-                    _writer = new ResponseWriter(new Utf8HttpWriter(_out), locale, encoding);
-                else
-                    _writer = new ResponseWriter(new EncodingHttpWriter(_out, encoding), locale, encoding);
-            }
+                _writer = new ResponseWriter(AbstractOutputStreamWriter.newWriter(_out, encoding), locale, encoding);
 
             // Set the output type at the end, because setCharacterEncoding() checks for it.
             _outputType = OutputType.WRITER;

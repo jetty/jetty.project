@@ -165,13 +165,51 @@ public class Content
          * <p>Reads, non-blocking, the whole content source into a {@link ByteBuffer}.</p>
          *
          * @param source the source to read
+         * @param maxSize The maximum size to read, or -1 for no limit
+         * @return A {@link CompletableFuture} that will be completed when the complete content is read or
+         * failed if the max size is exceeded or there is a read error.
+         */
+        static CompletableFuture<byte[]> asByteArrayAsync(Source source, int maxSize)
+        {
+            return new ChunkAccumulator().readAll(source, maxSize);
+        }
+
+        /**
+         * <p>Reads, non-blocking, the whole content source into a {@link ByteBuffer}.</p>
+         *
+         * @param source the source to read
          * @return the {@link CompletableFuture} to notify when the whole content has been read
          */
         static CompletableFuture<ByteBuffer> asByteBufferAsync(Source source)
         {
-            Promise.Completable<ByteBuffer> completable = new Promise.Completable<>();
-            asByteBuffer(source, completable);
-            return completable;
+            return asByteBufferAsync(source, -1);
+        }
+
+        /**
+         * <p>Reads, non-blocking, the whole content source into a {@link ByteBuffer}.</p>
+         *
+         * @param source the source to read
+         * @param maxSize The maximum size to read, or -1 for no limit
+         * @return the {@link CompletableFuture} to notify when the whole content has been read
+         */
+        static CompletableFuture<ByteBuffer> asByteBufferAsync(Source source, int maxSize)
+        {
+            return new ChunkAccumulator().readAll(source, -1).thenApply(ByteBuffer::wrap);
+        }
+
+        /**
+         * <p>Reads, non-blocking, the whole content source into a {@link ByteBuffer}.</p>
+         *
+         * @param source The {@link Content.Source} to read
+         * @param pool The {@link ByteBufferPool} to acquire the buffer from, or null for a non {@link Retainable} buffer
+         * @param direct True if the buffer should be direct.
+         * @param maxSize The maximum size to read, or -1 for no limit
+         * @return A {@link CompletableFuture} that will be completed when the complete content is read or
+         * failed if the max size is exceeded or there is a read error.
+         */
+        static CompletableFuture<RetainableByteBuffer> asRetainableByteBuffer(Source source, ByteBufferPool pool, boolean direct, int maxSize)
+        {
+            return new ChunkAccumulator().readAll(source, pool, direct, maxSize);
         }
 
         /**
