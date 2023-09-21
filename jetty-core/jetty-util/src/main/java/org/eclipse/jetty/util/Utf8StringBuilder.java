@@ -390,20 +390,8 @@ public class Utf8StringBuilder implements CharsetStringBuilder
         return takeCompleteString(Utf8CharacterCodingException::new);
     }
 
-    public static class Utf8IllegalArgumentException extends IllegalArgumentException
-    {
-        public Utf8IllegalArgumentException()
-        {
-            super(new Utf8CharacterCodingException());
-        }
-    }
-
     public static class Utf8CharacterCodingException extends CharacterCodingException
     {
-        public Utf8CharacterCodingException()
-        {
-        }
-
         @Override
         public String getMessage()
         {
@@ -414,6 +402,14 @@ public class Utf8StringBuilder implements CharsetStringBuilder
         public String toString()
         {
             return "%s@%x: Invalid UTF-8".formatted(CharacterCodingException.class.getSimpleName(), hashCode());
+        }
+    }
+
+    public static class Utf8IllegalArgumentException extends IllegalArgumentException
+    {
+        public Utf8IllegalArgumentException()
+        {
+            super(new Utf8CharacterCodingException());
         }
     }
 }
