@@ -118,30 +118,30 @@ findDirectory()
   done
 }
 
+# test if process specified in PID file is still running
 running()
 {
-  if [ -f "$1" ]
-  then
-    local PID=$(cat "$1" 2>/dev/null) || return 1
-    kill -0 "$PID" 2>/dev/null
-    return
+  local PIDFILE=$1
+  if [ -r "$PIDFILE" ] ; then
+    local PID=$(tail -1 "$PIDFILE")
+    if kill -0 "$PID" 2>/dev/null ; then
+      return 0
+    fi
   fi
-  rm -f "$1"
   return 1
 }
 
 # Test state file (after timeout) for started state
 started()
 {
-  STATEFILE=$1
-  PIDFILE=$2
-  STARTTIMEOUT=$3
+  local STATEFILE=$1
+  local PIDFILE=$2
+  local STARTTIMEOUT=$3
   # wait till timeout to see "STARTED" in state file, needs --module=state as argument
   for ((T = 0; T < $(($STARTTIMEOUT / 4)); T++))
   do
     sleep 4
-    if [ -r $STATEFILE ]
-    then
+    if [ -r $STATEFILE ] ; then
       STATENOW=$(tail -1 $STATEFILE)
       (( DEBUG )) && echo "State (now): $STATENOW"
       case "$STATENOW" in
@@ -157,18 +157,45 @@ started()
       (( DEBUG )) && echo "Unable to read State File: $STATEFILE"
       echo -n ":"
     fi
-    if [ -r $PIDFILE ]
-    then
-      local PID=$(cat "$PIDFILE" 2> /dev/null) || return 1
-      kill -0 "$PID" 2> /dev/null || return 1
-      echo -n ". "
-    else
-      (( DEBUG )) && echo "Unable to read PID File: $PIDFILE"
-      echo -n "!"
-    fi
   done
-
   return 1;
+}
+
+pidKill()
+{
+  local PIDFILE=$1
+  local TIMEOUT=$2
+
+  if [ -r $PIDFILE ] ; then
+    local PID=$(tail -1 "$PIDFILE")
+    if [ -z "$PID" ] ; then
+      echo "ERROR: no pid found in $PIDFILE"
+      return 1
+    fi
+
+    # Try default kill first
+    if kill -0 "$PID" 2>/dev/null ; then
+      (( DEBUG )) && echo "PID=$PID is running, sending kill"
+      kill "$PID" 2>/dev/null
+    else
+      rm -f $PIDFILE 2> /dev/null
+      return 0
+    fi
+
+    # Perform harsh kill next
+    while kill -0 "$PID" 2>/dev/null
+    do
+      if (( TIMEOUT-- == 0 )) ; then
+        (( DEBUG )) && echo "PID=$PID is running, sending kill signal=KILL (TIMEOUT=$TIMEOUT)"
+        kill -KILL "$PID" 2>/dev/null
+      fi
+      sleep 1
+    done
+    return 0
+  else
+    (( DEBUG )) && echo "Unable to read PID File: $PIDFILE"
+    return 1
+  fi
 }
 
 
@@ -533,6 +560,7 @@ case "$ACTION" in
         echo "OK `date`"
       else
         echo "FAILED `date`"
+        pidKill $JETTY_PID 30
         exit 1
       fi
     else
@@ -557,26 +585,12 @@ case "$ACTION" in
       done
     else
       # Stop from a non-service path
-      if [ ! -f "$JETTY_PID" ] ; then
+      if [ ! -r "$JETTY_PID" ] ; then
         echo "ERROR: no pid found at $JETTY_PID"
         exit 1
       fi
 
-      PID=$(cat "$JETTY_PID" 2>/dev/null)
-      if [ -z "$PID" ] ; then
-        echo "ERROR: no pid id found in $JETTY_PID"
-        exit 1
-      fi
-      kill "$PID" 2>/dev/null
-
-      TIMEOUT=30
-      while running $JETTY_PID; do
-        if (( TIMEOUT-- == 0 )); then
-          kill -KILL "$PID" 2>/dev/null
-        fi
-
-        sleep 1
-      done
+      pidKill "$JETTY_PID" 30
     fi
 
     rm -f "$JETTY_PID"
