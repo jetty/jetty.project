@@ -111,7 +111,7 @@ public class HttpWriterTest
 
         Utf8StringBuilder buf = new Utf8StringBuilder();
         buf.append(BufferUtil.toArray(_bytes), 0, _bytes.remaining());
-        assertEquals(data, buf.takeCompleteString(Utf8StringBuilder.InvalidUtf8Exception::new));
+        assertEquals(data, buf.takeCompleteString(Utf8StringBuilder.Utf8CharacterCodingException::new));
     }
 
     @Test

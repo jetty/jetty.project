@@ -329,7 +329,7 @@ public class UrlEncoded
             switch (c)
             {
                 case '&':
-                    value = buffer.takeCompleteString(() -> new Utf8StringBuilder.InvalidUtf8Exception("Invalid value: Bad UTF-8"));
+                    value = buffer.takeCompleteString(Utf8StringBuilder.Utf8IllegalArgumentException::new);
                     if (key != null)
                     {
                         adder.accept(key, value);
@@ -347,7 +347,7 @@ public class UrlEncoded
                         buffer.append(c);
                         break;
                     }
-                    key = buffer.takeCompleteString(() -> new Utf8StringBuilder.InvalidUtf8Exception("Invalid key: Bad UTF-8"));
+                    key = buffer.takeCompleteString(Utf8StringBuilder.Utf8IllegalArgumentException::new);
                     break;
 
                 case '+':
@@ -363,7 +363,7 @@ public class UrlEncoded
                     }
                     else
                     {
-                        throw new Utf8StringBuilder.InvalidUtf8Exception("Incomplete % encoding");
+                        throw new Utf8StringBuilder.Utf8IllegalArgumentException();
                     }
                     break;
 
@@ -375,7 +375,7 @@ public class UrlEncoded
 
         if (key != null)
         {
-            value = buffer.takeCompleteString(() -> new Utf8StringBuilder.InvalidUtf8Exception("Invalid value: Bad UTF-8"));
+            value = buffer.takeCompleteString(Utf8StringBuilder.Utf8IllegalArgumentException::new);
             adder.accept(key, value);
         }
         else if (buffer.length() > 0)

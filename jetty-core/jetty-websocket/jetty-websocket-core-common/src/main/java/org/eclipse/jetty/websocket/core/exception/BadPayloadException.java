@@ -44,7 +44,7 @@ public class BadPayloadException extends CloseException
     {
         public InvalidUtf8()
         {
-            super("Invalid UTF-8", new Utf8StringBuilder.InvalidUtf8Exception());
+            super("Invalid UTF-8", new Utf8StringBuilder.Utf8CharacterCodingException());
         }
     }
 }
