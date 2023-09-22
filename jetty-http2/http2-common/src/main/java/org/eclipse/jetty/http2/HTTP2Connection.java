@@ -52,23 +52,26 @@ public class HTTP2Connection extends AbstractConnection implements WriteFlusher.
     private final HTTP2Producer producer = new HTTP2Producer();
     private final AtomicLong bytesIn = new AtomicLong();
     private final ByteBufferPool byteBufferPool;
-    private final Parser parser;
     private final ISession session;
     private final int bufferSize;
     private final ExecutionStrategy strategy;
 
+    @Deprecated
     public HTTP2Connection(ByteBufferPool byteBufferPool, Executor executor, EndPoint endPoint, Parser parser, ISession session, int bufferSize)
+    {
+        this(byteBufferPool, executor, endPoint, session, bufferSize);
+    }
+
+    public HTTP2Connection(ByteBufferPool byteBufferPool, Executor executor, EndPoint endPoint, ISession session, int bufferSize)
     {
         super(endPoint, executor);
         this.byteBufferPool = byteBufferPool;
-        this.parser = parser;
         this.session = session;
         this.bufferSize = bufferSize;
         if (PEC_MODE)
             executor = new TryExecutor.NoTryExecutor(executor);
         this.strategy = new EatWhatYouKill(producer, executor);
         LifeCycle.start(strategy);
-        parser.init(ParserListener::new);
     }
 
     @Override
@@ -104,12 +107,18 @@ public class HTTP2Connection extends AbstractConnection implements WriteFlusher.
 
     protected Parser getParser()
     {
-        return parser;
+        // TODO: can we downcast.
+        return ((HTTP2Session)session).getParser();
     }
 
     protected void setInputBuffer(ByteBuffer buffer)
     {
         producer.setInputBuffer(buffer);
+    }
+
+    public Parser.Listener newParserListener()
+    {
+        return new ParserListener();
     }
 
     @Override
@@ -258,7 +267,7 @@ public class HTTP2Connection extends AbstractConnection implements WriteFlusher.
                     {
                         while (networkBuffer.hasRemaining())
                         {
-                            parser.parse(networkBuffer.getBuffer());
+                            getParser().parse(networkBuffer.getBuffer());
                             if (failed)
                                 return null;
                         }
@@ -374,11 +383,10 @@ public class HTTP2Connection extends AbstractConnection implements WriteFlusher.
         }
     }
 
-    private class ParserListener extends Parser.Listener.Wrapper
+    private class ParserListener extends Parser.Listener.Adapter
     {
-        private ParserListener(Parser.Listener listener)
+        private ParserListener()
         {
-            super(listener);
         }
 
         @Override

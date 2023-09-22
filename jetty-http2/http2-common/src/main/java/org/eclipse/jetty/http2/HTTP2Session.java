@@ -55,6 +55,7 @@ import org.eclipse.jetty.http2.frames.SettingsFrame;
 import org.eclipse.jetty.http2.frames.StreamFrame;
 import org.eclipse.jetty.http2.frames.WindowUpdateFrame;
 import org.eclipse.jetty.http2.generator.Generator;
+import org.eclipse.jetty.http2.hpack.HpackEncoder;
 import org.eclipse.jetty.http2.hpack.HpackException;
 import org.eclipse.jetty.http2.parser.Parser;
 import org.eclipse.jetty.io.ByteBufferPool;
@@ -94,6 +95,7 @@ public abstract class HTTP2Session extends ContainerLifeCycle implements ISessio
     private final AtomicLong bytesWritten = new AtomicLong();
     private final Scheduler scheduler;
     private final EndPoint endPoint;
+    private final Parser parser;
     private final Generator generator;
     private final Session.Listener listener;
     private final FlowControlStrategy flowControl;
@@ -103,12 +105,21 @@ public abstract class HTTP2Session extends ContainerLifeCycle implements ISessio
     private long streamIdleTimeout;
     private int initialSessionRecvWindow;
     private int writeThreshold;
+    private int maxEncoderTableCapacity;
     private boolean pushEnabled;
 
+    @Deprecated
     public HTTP2Session(Scheduler scheduler, EndPoint endPoint, Generator generator, Session.Listener listener, FlowControlStrategy flowControl, int initialStreamId)
+    {
+        this(scheduler, endPoint, null, generator, listener, flowControl, initialStreamId);
+        throw new UnsupportedOperationException();
+    }
+
+    public HTTP2Session(Scheduler scheduler, EndPoint endPoint, Parser parser, Generator generator, Session.Listener listener, FlowControlStrategy flowControl, int initialStreamId)
     {
         this.scheduler = scheduler;
         this.endPoint = endPoint;
+        this.parser = parser;
         this.generator = generator;
         this.listener = listener;
         this.flowControl = flowControl;
@@ -205,9 +216,25 @@ public abstract class HTTP2Session extends ContainerLifeCycle implements ISessio
         this.writeThreshold = writeThreshold;
     }
 
+    @ManagedAttribute("The HPACK encoder dynamic table maximum capacity")
+    public int getMaxEncoderTableCapacity()
+    {
+        return maxEncoderTableCapacity;
+    }
+
+    public void setMaxEncoderTableCapacity(int maxEncoderTableCapacity)
+    {
+        this.maxEncoderTableCapacity = maxEncoderTableCapacity;
+    }
+
     public EndPoint getEndPoint()
     {
         return endPoint;
+    }
+
+    public Parser getParser()
+    {
+        return parser;
     }
 
     public Generator getGenerator()
@@ -346,8 +373,20 @@ public abstract class HTTP2Session extends ContainerLifeCycle implements ISessio
         if (frame.isReply())
             return;
 
-        // Iterate over all settings
-        for (Map.Entry<Integer, Integer> entry : frame.getSettings().entrySet())
+        Map<Integer, Integer> settings = frame.getSettings();
+        configure(settings, false);
+        notifySettings(this, frame);
+
+        if (reply)
+        {
+            SettingsFrame replyFrame = new SettingsFrame(Collections.emptyMap(), true);
+            settings(replyFrame, Callback.NOOP);
+        }
+    }
+
+    private void configure(Map<Integer, Integer> settings, boolean local)
+    {
+        for (Map.Entry<Integer, Integer> entry : settings.entrySet())
         {
             int key = entry.getKey();
             int value = entry.getValue();
@@ -356,8 +395,17 @@ public abstract class HTTP2Session extends ContainerLifeCycle implements ISessio
                 case SettingsFrame.HEADER_TABLE_SIZE:
                 {
                     if (LOG.isDebugEnabled())
-                        LOG.debug("Updating HPACK header table size to {} for {}", value, this);
-                    generator.setHeaderTableSize(value);
+                        LOG.debug("Updating HPACK {} max table capacity to {} for {}", local ? "decoder" : "encoder", value, this);
+                    if (local)
+                    {
+                        parser.getHpackDecoder().setMaxTableCapacity(value);
+                    }
+                    else
+                    {
+                        HpackEncoder hpackEncoder = generator.getHpackEncoder();
+                        hpackEncoder.setMaxTableCapacity(value);
+                        hpackEncoder.setTableCapacity(Math.min(value, getMaxEncoderTableCapacity()));
+                    }
                     break;
                 }
                 case SettingsFrame.ENABLE_PUSH:
@@ -371,29 +419,38 @@ public abstract class HTTP2Session extends ContainerLifeCycle implements ISessio
                 case SettingsFrame.MAX_CONCURRENT_STREAMS:
                 {
                     if (LOG.isDebugEnabled())
-                        LOG.debug("Updating max local concurrent streams to {} for {}", value, this);
-                    maxLocalStreams = value;
+                        LOG.debug("Updating max {} concurrent streams to {} for {}", local ? "remote" : "local", value, this);
+                    if (local)
+                        maxRemoteStreams = value;
+                    else
+                        maxLocalStreams = value;
                     break;
                 }
                 case SettingsFrame.INITIAL_WINDOW_SIZE:
                 {
                     if (LOG.isDebugEnabled())
                         LOG.debug("Updating initial stream window size to {} for {}", value, this);
-                    flowControl.updateInitialStreamWindow(this, value, false);
+                    flowControl.updateInitialStreamWindow(this, value, local);
                     break;
                 }
                 case SettingsFrame.MAX_FRAME_SIZE:
                 {
                     if (LOG.isDebugEnabled())
-                        LOG.debug("Updating max frame size to {} for {}", value, this);
-                    generator.setMaxFrameSize(value);
+                        LOG.debug("Updating {} max frame size to {} for {}", local ? "parser" : "generator", value, this);
+                    if (local)
+                        parser.setMaxFrameSize(value);
+                    else
+                        generator.setMaxFrameSize(value);
                     break;
                 }
                 case SettingsFrame.MAX_HEADER_LIST_SIZE:
                 {
                     if (LOG.isDebugEnabled())
-                        LOG.debug("Updating max header list size to {} for {}", value, this);
-                    generator.setMaxHeaderListSize(value);
+                        LOG.debug("Updating {} max header list size to {} for {}", local ? "decoder" : "encoder", value, this);
+                    if (local)
+                        parser.getHpackDecoder().setMaxHeaderListSize(value);
+                    else
+                        generator.getHpackEncoder().setMaxHeaderListSize(value);
                     break;
                 }
                 default:
@@ -403,13 +460,6 @@ public abstract class HTTP2Session extends ContainerLifeCycle implements ISessio
                     break;
                 }
             }
-        }
-        notifySettings(this, frame);
-
-        if (reply)
-        {
-            SettingsFrame replyFrame = new SettingsFrame(Collections.emptyMap(), true);
-            settings(replyFrame, Callback.NOOP);
         }
     }
 
@@ -484,6 +534,21 @@ public abstract class HTTP2Session extends ContainerLifeCycle implements ISessio
             else
                 onWindowUpdate(null, frame);
         }
+    }
+
+    @Override
+    public void onWindowUpdate(IStream stream, WindowUpdateFrame frame)
+    {
+        // WindowUpdateFrames arrive concurrently with writes.
+        // Increasing (or reducing) the window size concurrently
+        // with writes requires coordination with the flusher, that
+        // decides how many frames to write depending on the available
+        // window sizes. If the window sizes vary concurrently, the
+        // flusher may take non-optimal or wrong decisions.
+        // Here, we "queue" window updates to the flusher, so it will
+        // be the only component responsible for window updates, for
+        // both increments and reductions.
+        flusher.window(stream, frame);
     }
 
     @Override
@@ -889,21 +954,6 @@ public abstract class HTTP2Session extends ContainerLifeCycle implements ISessio
     }
 
     @Override
-    public void onWindowUpdate(IStream stream, WindowUpdateFrame frame)
-    {
-        // WindowUpdateFrames arrive concurrently with writes.
-        // Increasing (or reducing) the window size concurrently
-        // with writes requires coordination with the flusher, that
-        // decides how many frames to write depending on the available
-        // window sizes. If the window sizes vary concurrently, the
-        // flusher may take non-optimal or wrong decisions.
-        // Here, we "queue" window updates to the flusher, so it will
-        // be the only component responsible for window updates, for
-        // both increments and reductions.
-        flusher.window(stream, frame);
-    }
-
-    @Override
     @ManagedAttribute(value = "Whether HTTP/2 push is enabled", readonly = true)
     public boolean isPushEnabled()
     {
@@ -1005,7 +1055,7 @@ public abstract class HTTP2Session extends ContainerLifeCycle implements ISessio
         return lastRemoteStreamId.get();
     }
 
-    private void updateLastRemoteStreamId(int streamId)
+    protected void updateLastRemoteStreamId(int streamId)
     {
         Atomics.updateMax(lastRemoteStreamId, streamId);
     }
@@ -1208,9 +1258,8 @@ public abstract class HTTP2Session extends ContainerLifeCycle implements ISessio
                 case SETTINGS:
                 {
                     SettingsFrame settingsFrame = (SettingsFrame)frame;
-                    Integer initialWindow = settingsFrame.getSettings().get(SettingsFrame.INITIAL_WINDOW_SIZE);
-                    if (initialWindow != null)
-                        flowControl.updateInitialStreamWindow(HTTP2Session.this, initialWindow, true);
+                    if (!settingsFrame.isReply())
+                        configure(settingsFrame.getSettings(), true);
                     break;
                 }
                 default:
@@ -1407,6 +1456,8 @@ public abstract class HTTP2Session extends ContainerLifeCycle implements ISessio
         @Override
         public void failed(Throwable x)
         {
+            if (LOG.isDebugEnabled())
+                LOG.debug("OnReset failed", x);
             complete();
         }
 
@@ -1424,14 +1475,15 @@ public abstract class HTTP2Session extends ContainerLifeCycle implements ISessio
 
     /**
      * <p>The HTTP/2 specification requires that stream ids are monotonically increasing,
-     * see https://tools.ietf.org/html/rfc7540#section-5.1.1.</p>
+     * see <a href="https://tools.ietf.org/html/rfc7540#section-5.1.1">RFC 7540, 5.1.1</a>.</p>
      * <p>This implementation uses a queue to atomically reserve a stream id and claim
      * a slot in the queue; the slot is then assigned the entries to write.</p>
      * <p>Concurrent threads push slots in the queue but only one thread flushes
      * the slots, up to the slot that has a non-null entries to write, therefore
      * guaranteeing that frames are sent strictly in their stream id order.</p>
      * <p>This class also coordinates the creation of streams with the close of
-     * the session, see https://tools.ietf.org/html/rfc7540#section-6.8.</p>
+     * the session, see
+     * <a href="https://tools.ietf.org/html/rfc7540#section-6.8">RFC 7540, 6.8</a>.</p>
      */
     private class StreamsState
     {
@@ -2180,7 +2232,7 @@ public abstract class HTTP2Session extends ContainerLifeCycle implements ISessio
                     if (flushing == null)
                         flushing = thread;
                     else if (flushing != thread)
-                        return; // another thread is flushing
+                        return; // Another thread is flushing.
 
                     Slot slot = slots.peek();
                     entries = slot == null ? null : slot.entries;
@@ -2188,7 +2240,8 @@ public abstract class HTTP2Session extends ContainerLifeCycle implements ISessio
                     if (entries == null)
                     {
                         flushing = null;
-                        break; // No more slots or null entries, so we may iterate on the flusher
+                        // No more slots or null entries, so we may iterate on the flusher.
+                        break;
                     }
 
                     slots.poll();

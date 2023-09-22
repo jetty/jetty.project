@@ -36,6 +36,7 @@ import org.eclipse.jetty.http2.FlowControlStrategy;
 import org.eclipse.jetty.http2.api.Session;
 import org.eclipse.jetty.http2.frames.Frame;
 import org.eclipse.jetty.http2.frames.SettingsFrame;
+import org.eclipse.jetty.http2.hpack.HpackContext;
 import org.eclipse.jetty.io.ByteBufferPool;
 import org.eclipse.jetty.io.ClientConnectionFactory;
 import org.eclipse.jetty.io.Connection;
@@ -125,6 +126,7 @@ public class HTTP2Client extends ContainerLifeCycle
     private int selectors = 1;
     private long idleTimeout = 30000;
     private long connectTimeout = 10000;
+    private long streamIdleTimeout;
     private boolean connectBlocking;
     private SocketAddress bindAddress;
     private boolean tcpNoDelay = true;
@@ -132,11 +134,13 @@ public class HTTP2Client extends ContainerLifeCycle
     private List<String> protocols = Arrays.asList("h2", "h2-17", "h2-16", "h2-15", "h2-14");
     private int initialSessionRecvWindow = 16 * 1024 * 1024;
     private int initialStreamRecvWindow = 8 * 1024 * 1024;
-    private int maxFrameLength = Frame.DEFAULT_MAX_LENGTH;
+    private int maxFrameSize = Frame.DEFAULT_MAX_LENGTH;
     private int maxConcurrentPushedStreams = 32;
     private int maxSettingsKeys = SettingsFrame.DEFAULT_MAX_KEYS;
-    private int maxDynamicTableSize = 4096;
+    private int maxDecoderTableCapacity = HpackContext.DEFAULT_MAX_TABLE_CAPACITY;
+    private int maxEncoderTableCapacity = HpackContext.DEFAULT_MAX_TABLE_CAPACITY;
     private int maxHeaderBlockFragment = 0;
+    private int maxResponseHeadersSize = -1;
     private FlowControlStrategy.Factory flowControlStrategyFactory = () -> new BufferingFlowControlStrategy(0.5F);
 
     @Override
@@ -263,6 +267,17 @@ public class HTTP2Client extends ContainerLifeCycle
         this.idleTimeout = idleTimeout;
     }
 
+    @ManagedAttribute("The stream idle timeout in milliseconds")
+    public long getStreamIdleTimeout()
+    {
+        return streamIdleTimeout;
+    }
+
+    public void setStreamIdleTimeout(long streamIdleTimeout)
+    {
+        this.streamIdleTimeout = streamIdleTimeout;
+    }
+
     @ManagedAttribute("The connect timeout in milliseconds")
     public long getConnectTimeout()
     {
@@ -352,16 +367,30 @@ public class HTTP2Client extends ContainerLifeCycle
         this.initialStreamRecvWindow = initialStreamRecvWindow;
     }
 
+    @Deprecated
     @ManagedAttribute("The max frame length in bytes")
     public int getMaxFrameLength()
     {
-        return maxFrameLength;
+        return getMaxFrameSize();
     }
 
+    @Deprecated
     public void setMaxFrameLength(int maxFrameLength)
     {
-        this.maxFrameLength = maxFrameLength;
+        setMaxFrameSize(maxFrameLength);
     }
+
+    @ManagedAttribute("The max frame size in bytes")
+    public int getMaxFrameSize()
+    {
+        return maxFrameSize;
+    }
+
+    public void setMaxFrameSize(int maxFrameSize)
+    {
+        this.maxFrameSize = maxFrameSize;
+    }
+
 
     @ManagedAttribute("The max number of concurrent pushed streams")
     public int getMaxConcurrentPushedStreams()
@@ -385,15 +414,45 @@ public class HTTP2Client extends ContainerLifeCycle
         this.maxSettingsKeys = maxSettingsKeys;
     }
 
+    @ManagedAttribute("The HPACK encoder dynamic table maximum capacity")
+    public int getMaxEncoderTableCapacity()
+    {
+        return maxEncoderTableCapacity;
+    }
+
+    /**
+     * <p>Sets the limit for the encoder HPACK dynamic table capacity.</p>
+     * <p>Setting this value to {@code 0} disables the use of the dynamic table.</p>
+     *
+     * @param maxEncoderTableCapacity The HPACK encoder dynamic table maximum capacity
+     */
+    public void setMaxEncoderTableCapacity(int maxEncoderTableCapacity)
+    {
+        this.maxEncoderTableCapacity = maxEncoderTableCapacity;
+    }
+
+    @ManagedAttribute("The HPACK decoder dynamic table maximum capacity")
+    public int getMaxDecoderTableCapacity()
+    {
+        return maxDecoderTableCapacity;
+    }
+
+    public void setMaxDecoderTableCapacity(int maxDecoderTableCapacity)
+    {
+        this.maxDecoderTableCapacity = maxDecoderTableCapacity;
+    }
+
+    @Deprecated
     @ManagedAttribute("The HPACK dynamic table maximum size")
     public int getMaxDynamicTableSize()
     {
-        return maxDynamicTableSize;
+        return getMaxDecoderTableCapacity();
     }
 
+    @Deprecated
     public void setMaxDynamicTableSize(int maxDynamicTableSize)
     {
-        this.maxDynamicTableSize = maxDynamicTableSize;
+        setMaxDecoderTableCapacity(maxDynamicTableSize);
     }
 
     @ManagedAttribute("The max size of header block fragments")
@@ -406,6 +465,18 @@ public class HTTP2Client extends ContainerLifeCycle
     {
         this.maxHeaderBlockFragment = maxHeaderBlockFragment;
     }
+
+    @ManagedAttribute("The max size of response headers")
+    public int getMaxResponseHeadersSize()
+    {
+        return maxResponseHeadersSize;
+    }
+
+    public void setMaxResponseHeadersSize(int maxResponseHeadersSize)
+    {
+        this.maxResponseHeadersSize = maxResponseHeadersSize;
+    }
+
 
     public void connect(InetSocketAddress address, Session.Listener listener, Promise<Session> promise)
     {
