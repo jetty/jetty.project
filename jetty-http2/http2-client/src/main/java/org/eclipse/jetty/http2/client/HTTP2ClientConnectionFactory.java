@@ -82,7 +82,7 @@ public class HTTP2ClientConnectionFactory implements ClientConnectionFactory
         HTTP2ClientConnection connection = new HTTP2ClientConnection(client, byteBufferPool, executor, endPoint,
             session, client.getInputBufferSize(), sessionPromise, listener);
         connection.addListener(connectionListener);
-        parser.init(connection.newParserListener());
+        parser.init(connection.wrapParserListener(session));
 
         return customize(connection, context);
     }

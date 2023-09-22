@@ -117,9 +117,9 @@ public class HTTP2Connection extends AbstractConnection implements WriteFlusher.
         producer.setInputBuffer(buffer);
     }
 
-    public Parser.Listener newParserListener()
+    public Parser.Listener wrapParserListener(Parser.Listener listener)
     {
-        return new ParserListener();
+        return new ParserListener(listener);
     }
 
     @Override
