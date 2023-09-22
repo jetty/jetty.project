@@ -133,6 +133,7 @@ def mavenBuild(jdk, cmdline, mvnName) {
       // debug purpose
       sh "ls -lrt jetty-ee8/jetty-ee8-servlet/target/test-classes/"
       sh "ls -lrt jetty-ee8/jetty-ee8-servlet/target/test-classes/contextResources/"
+      sh "ls -lrt jetty-ee8/jetty-ee8-servlet/target/test-classes/dispatchResourceTest/"
     }
   }
 }
