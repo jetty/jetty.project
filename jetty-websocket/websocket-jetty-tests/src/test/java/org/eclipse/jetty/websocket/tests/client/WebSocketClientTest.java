@@ -22,9 +22,15 @@ import java.util.Arrays;
 import java.util.Collection;
 import java.util.List;
 import java.util.Map;
+import java.util.concurrent.Executor;
+import java.util.concurrent.Executors;
 import java.util.concurrent.Future;
 import java.util.concurrent.TimeUnit;
 
+import org.eclipse.jetty.client.HttpClient;
+import org.eclipse.jetty.client.HttpClientTransport;
+import org.eclipse.jetty.client.http.HttpClientTransportOverHTTP;
+import org.eclipse.jetty.io.ClientConnector;
 import org.eclipse.jetty.server.Server;
 import org.eclipse.jetty.server.ServerConnector;
 import org.eclipse.jetty.servlet.ServletContextHandler;
@@ -36,6 +42,7 @@ import org.eclipse.jetty.websocket.api.UpgradeRequest;
 import org.eclipse.jetty.websocket.api.util.WSURI;
 import org.eclipse.jetty.websocket.client.ClientUpgradeRequest;
 import org.eclipse.jetty.websocket.client.WebSocketClient;
+import org.eclipse.jetty.websocket.core.WebSocketComponents;
 import org.eclipse.jetty.websocket.server.config.JettyWebSocketServletContainerInitializer;
 import org.eclipse.jetty.websocket.tests.AnnoMaxMessageEndpoint;
 import org.eclipse.jetty.websocket.tests.CloseTrackingEndpoint;
@@ -55,6 +62,7 @@ import static org.hamcrest.Matchers.is;
 import static org.hamcrest.Matchers.not;
 import static org.hamcrest.Matchers.notNullValue;
 import static org.hamcrest.Matchers.nullValue;
+import static org.junit.jupiter.api.Assertions.assertSame;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 
 public class WebSocketClientTest
@@ -110,6 +118,91 @@ public class WebSocketClientTest
     public void stopServer() throws Exception
     {
         server.stop();
+    }
+
+    @Test
+    public void testCustomizeExecutorDirectly() throws Exception
+    {
+        Executor executor = Executors.newFixedThreadPool(50);
+        HttpClient httpClient = new HttpClient();
+        httpClient.setExecutor(executor);
+        try
+        {
+            httpClient.start();
+            WebSocketClient webSocketClient = new WebSocketClient(httpClient);
+            try
+            {
+                webSocketClient.start();
+                Executor inuseExecutor = webSocketClient.getExecutor();
+                assertSame(executor, inuseExecutor);
+            }
+            finally
+            {
+                webSocketClient.stop();
+            }
+        }
+        finally
+        {
+            httpClient.stop();
+        }
+    }
+
+    @Test
+    public void testCustomizeWebSocketComponentsExecutor() throws Exception
+    {
+        HttpClient httpClient = new HttpClient();
+        try
+        {
+            httpClient.start();
+            Executor executor = Executors.newFixedThreadPool(50);
+            WebSocketComponents webSocketComponents = new WebSocketComponents(null, null,
+                null, null, null, executor);
+            WebSocketClient webSocketClient = new WebSocketClient(httpClient, webSocketComponents);
+            try
+            {
+                webSocketClient.start();
+                Executor inuseExecutor = webSocketClient.getExecutor();
+                assertSame(executor, inuseExecutor);
+            }
+            finally
+            {
+                webSocketClient.stop();
+            }
+        }
+        finally
+        {
+            httpClient.stop();
+        }
+    }
+
+    @Test
+    public void testCustomizeExecutorViaConnector() throws Exception
+    {
+        ClientConnector clientConnector = new ClientConnector();
+        clientConnector.setSelectors(1);
+        Executor executor = Executors.newFixedThreadPool(50);
+        clientConnector.setExecutor(executor);
+        HttpClientTransport transport = new HttpClientTransportOverHTTP(clientConnector);
+        HttpClient httpClient = new HttpClient(transport);
+        try
+        {
+            httpClient.start();
+            WebSocketClient webSocketClient = new WebSocketClient(httpClient);
+            try
+            {
+                webSocketClient.start();
+                Executor inuseExecutor = webSocketClient.getExecutor();
+                assertSame(executor, inuseExecutor);
+            }
+            finally
+            {
+                webSocketClient.stop();
+            }
+        }
+        finally
+        {
+            httpClient.stop();
+        }
     }
 
     @Test
