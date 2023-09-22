@@ -23,7 +23,6 @@ import org.eclipse.jetty.server.Server;
 import org.eclipse.jetty.toolchain.test.MavenTestingUtils;
 import org.eclipse.jetty.toolchain.test.jupiter.WorkDir;
 import org.eclipse.jetty.toolchain.test.jupiter.WorkDirExtension;
-import org.eclipse.jetty.util.resource.FileSystemPool;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
@@ -31,7 +30,6 @@ import org.junit.jupiter.api.extension.ExtendWith;
 
 import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.Matchers.containsInAnyOrder;
-import static org.hamcrest.Matchers.empty;
 import static org.hamcrest.Matchers.equalToIgnoringCase;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
@@ -119,7 +117,7 @@ public class StandardDescriptorProcessorTest
                 equalToIgnoringCase("SameSite"))));
 
         //test the attributes on SessionHandler do NOT contain the name
-        Map<String, String> sessionAttributes = wac.getSessionHandler().getSessionAttributes();
+        Map<String, String> sessionAttributes = wac.getSessionHandler().getSessionCookieAttributes();
         sessionAttributes.keySet().forEach(System.err::println);
         assertThat(sessionAttributes.keySet(),
             containsInAnyOrder(Arrays.asList(

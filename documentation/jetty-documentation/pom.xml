@@ -359,5 +359,13 @@
       <type>zip</type>
       <optional>true</optional>
     </dependency>
+    <dependency>
+      <groupId>org.eclipse.jetty</groupId>
+      <artifactId>jetty-infinispan-embedded-query</artifactId>
+    </dependency>
+    <dependency>
+      <groupId>org.eclipse.jetty.gcloud</groupId>
+      <artifactId>jetty-gcloud-session-manager</artifactId>
+    </dependency>
   </dependencies>
 </project>

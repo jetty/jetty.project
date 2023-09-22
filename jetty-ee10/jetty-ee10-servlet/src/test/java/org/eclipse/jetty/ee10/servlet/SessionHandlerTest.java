@@ -54,6 +54,7 @@ import org.eclipse.jetty.session.ManagedSession;
 import org.eclipse.jetty.session.NullSessionDataStore;
 import org.eclipse.jetty.session.NullSessionDataStoreFactory;
 import org.eclipse.jetty.session.SessionCache;
+import org.eclipse.jetty.session.SessionConfig;
 import org.eclipse.jetty.session.SessionData;
 import org.eclipse.jetty.session.SessionDataStoreFactory;
 import org.eclipse.jetty.toolchain.test.IO;
@@ -492,7 +493,7 @@ public class SessionHandlerTest
             assertThat(response.getContentAsString(), containsString("valid=false"));
 
             //test with id for non-existent session
-            response = client.GET(url + ";" + SessionHandler.__DefaultSessionIdPathParameterName + "=" + "123456789");
+            response = client.GET(url + ";" + SessionConfig.__DefaultSessionIdPathParameterName + "=" + "123456789");
             assertEquals(HttpServletResponse.SC_OK, response.getStatus());
             String content = response.getContentAsString();
             assertThat(content, containsString("requestedId=123456789"));
@@ -507,7 +508,7 @@ public class SessionHandlerTest
             sessionId = sessionId.trim();
 
             //Check the requestedSessionId is valid
-            response = client.GET(url + ";" + SessionHandler.__DefaultSessionIdPathParameterName + "=" + sessionId);
+            response = client.GET(url + ";" + SessionConfig.__DefaultSessionIdPathParameterName + "=" + sessionId);
             assertEquals(HttpServletResponse.SC_OK, response.getStatus());
             content = response.getContentAsString();
             assertThat(content, containsString("valid=true"));
@@ -678,6 +679,50 @@ public class SessionHandlerTest
 
         String cookieStr = HttpCookieUtils.getRFC6265SetCookie(cookie);
         assertThat(cookieStr, containsString("; SameSite=Strict; ham=cheese"));
+    }
+
+    @Test
+    public void testSessionCookieConfigByInitParam() throws Exception
+    {
+        Server server = new Server();
+        ServletContextHandler contextHandler = new ServletContextHandler();
+        contextHandler.setContextPath("/test");
+        SessionHandler sessionHandler = new SessionHandler();
+        contextHandler.setHandler(sessionHandler);
+        server.setHandler(contextHandler);
+        server.start();
+
+        assertEquals(SessionConfig.__DefaultSessionCookie, sessionHandler.getSessionCookie());
+        assertEquals(null, sessionHandler.getSessionDomain());
+        assertEquals(SessionConfig.__DefaultSessionIdPathParameterName, sessionHandler.getSessionIdPathParameterName());
+        assertEquals("/test", sessionHandler.getSessionPath());
+        assertEquals(-1, sessionHandler.getMaxCookieAge());
+        assertEquals(false, sessionHandler.isCheckingRemoteSessionIdEncoding());
+
+        server.stop();
+
+        //make a new ContextHandler and SessionHandler that can be configured
+        contextHandler = new ServletContextHandler();
+        contextHandler.setContextPath("/test");
+        sessionHandler = new SessionHandler();
+        contextHandler.setHandler(sessionHandler);
+        server.setHandler(contextHandler);
+
+        contextHandler.setInitParameter(SessionConfig.__SessionCookieProperty, "TEST_SESSION_COOKIE");
+        contextHandler.setInitParameter(SessionConfig.__SessionDomainProperty, "TEST_DOMAIN");
+        contextHandler.setInitParameter(SessionConfig.__SessionIdPathParameterNameProperty, "TEST_SESSION_ID_PATH_PARAM");
+        contextHandler.setInitParameter(SessionConfig.__SessionPathProperty, "/mypath");
+        contextHandler.setInitParameter(SessionConfig.__MaxAgeProperty, "1000");
+        contextHandler.setInitParameter(SessionConfig.__CheckRemoteSessionEncodingProperty, "true");
+
+        server.start();
+
+        assertEquals("TEST_SESSION_COOKIE", sessionHandler.getSessionCookie());
+        assertEquals("TEST_DOMAIN", sessionHandler.getSessionDomain());
+        assertEquals("TEST_SESSION_ID_PATH_PARAM", sessionHandler.getSessionIdPathParameterName());
+        assertEquals("/mypath", sessionHandler.getSessionPath());
+        assertEquals(1000, sessionHandler.getMaxCookieAge());
+        assertEquals(true, sessionHandler.isCheckingRemoteSessionIdEncoding());
     }
 
     @Test
