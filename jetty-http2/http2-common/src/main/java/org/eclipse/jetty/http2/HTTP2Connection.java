@@ -27,6 +27,7 @@ import java.util.concurrent.atomic.AtomicLong;
 
 import org.eclipse.jetty.http2.frames.DataFrame;
 import org.eclipse.jetty.http2.parser.Parser;
+import org.eclipse.jetty.http2.parser.ServerParser;
 import org.eclipse.jetty.io.AbstractConnection;
 import org.eclipse.jetty.io.ByteBufferPool;
 import org.eclipse.jetty.io.EndPoint;
@@ -383,10 +384,16 @@ public class HTTP2Connection extends AbstractConnection implements WriteFlusher.
         }
     }
 
-    private class ParserListener extends Parser.Listener.Adapter
+    private class ParserListener extends Parser.Listener.Wrapper
     {
         private ParserListener()
         {
+            this(null);
+        }
+
+        private ParserListener(Parser.Listener listener)
+        {
+            super(listener == null ? new ServerParser.Listener.Adapter() : listener);
         }
 
         @Override

@@ -391,7 +391,6 @@ public class HTTP2Client extends ContainerLifeCycle
         this.maxFrameSize = maxFrameSize;
     }
 
-
     @ManagedAttribute("The max number of concurrent pushed streams")
     public int getMaxConcurrentPushedStreams()
     {
@@ -476,7 +475,6 @@ public class HTTP2Client extends ContainerLifeCycle
     {
         this.maxResponseHeadersSize = maxResponseHeadersSize;
     }
-
 
     public void connect(InetSocketAddress address, Session.Listener listener, Promise<Session> promise)
     {

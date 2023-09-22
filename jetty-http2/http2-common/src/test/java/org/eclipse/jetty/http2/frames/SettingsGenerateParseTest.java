@@ -25,7 +25,6 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.concurrent.atomic.AtomicInteger;
-import java.util.function.UnaryOperator;
 
 import org.eclipse.jetty.http2.ErrorCode;
 import org.eclipse.jetty.http2.generator.HeaderGenerator;
@@ -77,15 +76,15 @@ public class SettingsGenerateParseTest
         SettingsGenerator generator = new SettingsGenerator(new HeaderGenerator());
 
         List<SettingsFrame> frames = new ArrayList<>();
-        Parser parser = new Parser(byteBufferPool, new Parser.Listener.Adapter()
+        Parser parser = new Parser(byteBufferPool, 4096);
+        parser.init(new Parser.Listener.Adapter()
         {
             @Override
             public void onSettings(SettingsFrame frame)
             {
                 frames.add(frame);
             }
-        }, 4096, 8192);
-        parser.init(UnaryOperator.identity());
+        });
 
         // Iterate a few times to be sure generator and parser are properly reset.
         for (int i = 0; i < 2; ++i)
@@ -112,15 +111,15 @@ public class SettingsGenerateParseTest
         SettingsGenerator generator = new SettingsGenerator(new HeaderGenerator());
 
         AtomicInteger errorRef = new AtomicInteger();
-        Parser parser = new Parser(byteBufferPool, new Parser.Listener.Adapter()
+        Parser parser = new Parser(byteBufferPool, 4096);
+        parser.init(new Parser.Listener.Adapter()
         {
             @Override
             public void onConnectionFailure(int error, String reason)
             {
                 errorRef.set(error);
             }
-        }, 4096, 8192);
-        parser.init(UnaryOperator.identity());
+        });
 
         Map<Integer, Integer> settings1 = new HashMap<>();
         settings1.put(13, 17);
@@ -147,15 +146,15 @@ public class SettingsGenerateParseTest
         SettingsGenerator generator = new SettingsGenerator(new HeaderGenerator());
 
         List<SettingsFrame> frames = new ArrayList<>();
-        Parser parser = new Parser(byteBufferPool, new Parser.Listener.Adapter()
+        Parser parser = new Parser(byteBufferPool, 4096);
+        parser.init(new Parser.Listener.Adapter()
         {
             @Override
             public void onSettings(SettingsFrame frame)
             {
                 frames.add(frame);
             }
-        }, 4096, 8192);
-        parser.init(UnaryOperator.identity());
+        });
 
         Map<Integer, Integer> settings1 = new HashMap<>();
         int key = 13;
@@ -192,17 +191,17 @@ public class SettingsGenerateParseTest
         SettingsGenerator generator = new SettingsGenerator(new HeaderGenerator());
 
         AtomicInteger errorRef = new AtomicInteger();
-        Parser parser = new Parser(byteBufferPool, new Parser.Listener.Adapter()
+        Parser parser = new Parser(byteBufferPool, 4096);
+        int maxSettingsKeys = 32;
+        parser.setMaxSettingsKeys(maxSettingsKeys);
+        parser.init(new Parser.Listener.Adapter()
         {
             @Override
             public void onConnectionFailure(int error, String reason)
             {
                 errorRef.set(error);
             }
-        }, 4096, 8192);
-        int maxSettingsKeys = 32;
-        parser.setMaxSettingsKeys(maxSettingsKeys);
-        parser.init(UnaryOperator.identity());
+        });
 
         Map<Integer, Integer> settings = new HashMap<>();
         for (int i = 0; i < maxSettingsKeys + 1; ++i)
@@ -232,10 +231,10 @@ public class SettingsGenerateParseTest
         int maxSettingsKeys = pairs / 2;
 
         AtomicInteger errorRef = new AtomicInteger();
-        Parser parser = new Parser(byteBufferPool, new Parser.Listener.Adapter(), 4096, 8192);
+        Parser parser = new Parser(byteBufferPool, 4096);
         parser.setMaxSettingsKeys(maxSettingsKeys);
-        parser.setMaxFrameLength(Frame.DEFAULT_MAX_LENGTH);
-        parser.init(listener -> new Parser.Listener.Wrapper(listener)
+        parser.setMaxFrameSize(Frame.DEFAULT_MAX_LENGTH);
+        parser.init(new Parser.Listener.Adapter()
         {
             @Override
             public void onConnectionFailure(int error, String reason)
@@ -273,17 +272,17 @@ public class SettingsGenerateParseTest
         SettingsGenerator generator = new SettingsGenerator(new HeaderGenerator());
 
         AtomicInteger errorRef = new AtomicInteger();
-        Parser parser = new Parser(byteBufferPool, new Parser.Listener.Adapter()
+        Parser parser = new Parser(byteBufferPool, 4096);
+        int maxSettingsKeys = 32;
+        parser.setMaxSettingsKeys(maxSettingsKeys);
+        parser.init(new Parser.Listener.Adapter()
         {
             @Override
             public void onConnectionFailure(int error, String reason)
             {
                 errorRef.set(error);
             }
-        }, 4096, 8192);
-        int maxSettingsKeys = 32;
-        parser.setMaxSettingsKeys(maxSettingsKeys);
-        parser.init(UnaryOperator.identity());
+        });
 
         Map<Integer, Integer> settings = new HashMap<>();
         settings.put(13, 17);

@@ -21,7 +21,6 @@ package org.eclipse.jetty.http2.frames;
 import java.nio.ByteBuffer;
 import java.util.ArrayList;
 import java.util.List;
-import java.util.function.UnaryOperator;
 
 import org.eclipse.jetty.http.HostPortHttpField;
 import org.eclipse.jetty.http.HttpField;
@@ -51,7 +50,8 @@ public class ContinuationParseTest
         HeadersGenerator generator = new HeadersGenerator(new HeaderGenerator(), new HpackEncoder());
 
         final List<HeadersFrame> frames = new ArrayList<>();
-        Parser parser = new Parser(byteBufferPool, new Parser.Listener.Adapter()
+        Parser parser = new Parser(byteBufferPool, 4096);
+        parser.init(new Parser.Listener.Adapter()
         {
             @Override
             public void onHeaders(HeadersFrame frame)
@@ -64,8 +64,7 @@ public class ContinuationParseTest
             {
                 frames.add(new HeadersFrame(null, null, false));
             }
-        }, 4096, 8192);
-        parser.init(UnaryOperator.identity());
+        });
 
         // Iterate a few times to be sure the parser is properly reset.
         for (int i = 0; i < 2; ++i)

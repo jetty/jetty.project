@@ -42,6 +42,11 @@ public class ServerParser extends Parser
         this(byteBufferPool, maxHeaderSize, rateControl);
     }
 
+    public ServerParser(ByteBufferPool byteBufferPool, int maxHeaderSize)
+    {
+        super(byteBufferPool, maxHeaderSize);
+    }
+
     public ServerParser(ByteBufferPool byteBufferPool, int maxHeaderSize, RateControl rateControl)
     {
         super(byteBufferPool, maxHeaderSize, rateControl);
@@ -52,12 +57,6 @@ public class ServerParser extends Parser
     {
         super.init(listener);
         this.prefaceParser = new PrefaceParser(listener);
-    }
-
-    @Override
-    protected Listener getListener()
-    {
-        return (Listener)super.getListener();
     }
 
     /**
@@ -153,10 +152,11 @@ public class ServerParser extends Parser
 
     private void notifyPreface()
     {
-        Listener listener = getListener();
+        Parser.Listener listener = getListener();
         try
         {
-            listener.onPreface();
+            if (listener instanceof ServerParser.Listener)
+                ((ServerParser.Listener)listener).onPreface();
         }
         catch (Throwable x)
         {

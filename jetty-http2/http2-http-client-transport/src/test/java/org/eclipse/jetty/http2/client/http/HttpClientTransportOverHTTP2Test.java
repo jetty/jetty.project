@@ -36,7 +36,6 @@ import java.util.concurrent.TimeUnit;
 import java.util.concurrent.TimeoutException;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.concurrent.atomic.AtomicReference;
-import java.util.function.UnaryOperator;
 import javax.servlet.http.HttpServletRequest;
 import javax.servlet.http.HttpServletResponse;
 
@@ -62,7 +61,6 @@ import org.eclipse.jetty.http2.frames.ResetFrame;
 import org.eclipse.jetty.http2.frames.SettingsFrame;
 import org.eclipse.jetty.http2.generator.Generator;
 import org.eclipse.jetty.http2.hpack.HpackException;
-import org.eclipse.jetty.http2.parser.RateControl;
 import org.eclipse.jetty.http2.parser.ServerParser;
 import org.eclipse.jetty.http2.server.RawHTTP2ServerConnectionFactory;
 import org.eclipse.jetty.io.ByteBufferPool;
@@ -456,7 +454,8 @@ public class HttpClientTransportOverHTTP2Test extends AbstractTest
                 OutputStream output = socket.getOutputStream();
                 InputStream input = socket.getInputStream();
 
-                ServerParser parser = new ServerParser(byteBufferPool, new ServerParser.Listener.Adapter()
+                ServerParser parser = new ServerParser(byteBufferPool, 4096);
+                parser.init(new ServerParser.Listener.Adapter()
                 {
                     @Override
                     public void onPreface()
@@ -508,8 +507,7 @@ public class HttpClientTransportOverHTTP2Test extends AbstractTest
                             x.printStackTrace();
                         }
                     }
-                }, 4096, 8192, RateControl.NO_RATE_CONTROL);
-                parser.init(UnaryOperator.identity());
+                });
 
                 byte[] bytes = new byte[1024];
                 while (true)
