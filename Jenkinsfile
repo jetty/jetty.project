@@ -123,10 +123,7 @@ def mavenBuild(jdk, cmdline, mvnName) {
               extraArgs = " -Dmaven.test.failure.ignore=true "
             }
           }
-          sh "ls -lrt jetty-ee8/jetty-ee8-servlet/src/test/"
-          sh "ls -lrt jetty-ee8/jetty-ee8-servlet/src/test/resources"
-          sh "ls -lrt jetty-ee8/jetty-ee8-servlet/src/test/resources/contextResources"
-
+          sh "git status"
           sh "mvn $extraArgs -DsettingsPath=$GLOBAL_MVN_SETTINGS -Dmaven.repo.uri=http://nexus-service.nexus.svc.cluster.local:8081/repository/maven-public/ -ntp -s $GLOBAL_MVN_SETTINGS -Dmaven.repo.local=.repository -Pci -V -B -e -U $cmdline"
         }
       }
@@ -134,13 +131,6 @@ def mavenBuild(jdk, cmdline, mvnName) {
     finally
     {
       junit testResults: '**/target/surefire-reports/*.xml,**/target/invoker-reports/TEST*.xml', allowEmptyResults: true
-      // debug purpose
-      sh "ls -lrt jetty-ee8/jetty-ee8-servlet/target/test-classes/"
-      sh "ls -lrt jetty-ee8/jetty-ee8-servlet/target/test-classes/contextResources/"
-      sh "ls -lrt jetty-ee8/jetty-ee8-servlet/target/test-classes/dispatchResourceTest/"
-      sh "ls -lrt jetty-ee8/jetty-ee8-servlet/src/test/"
-      sh "ls -lrt jetty-ee8/jetty-ee8-servlet/src/test/resources"
-      sh "ls -lrt jetty-ee8/jetty-ee8-servlet/src/test/resources/contextResources"
     }
   }
 }
