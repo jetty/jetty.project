@@ -3,7 +3,7 @@ jetty-9.4.53-SNAPSHOT
 jetty-9.4.52.v20230823 - 23 August 2023
  + 9476 onCompleteFailure called multiple times
  + 9660 OpenId Revoked authentication allows one request (CVE-2023-41900)
- + 9887 Deprecate CGI Servlet (CVE-2023-40167)
+ + 9887 Deprecate CGI Servlet (CVE-2023-36479)
  + 10066 Allow `SAXParserFactory` or `SAXParser` to be configured in Jetty's
    `XmlParser` class
  + 10168 NPE in websocket extension startup

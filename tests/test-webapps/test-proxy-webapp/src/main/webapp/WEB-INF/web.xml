@@ -8,11 +8,11 @@
     <servlet-class>org.eclipse.jetty.proxy.ProxyServlet$Transparent</servlet-class>
     <init-param>
       <param-name>proxyTo</param-name>
-      <param-value>https://www.eclipse.org/jetty/javadoc/jetty-11/index.html?overview-summary.html</param-value>
+      <param-value>https://eclipse.dev/jetty/javadoc/jetty-9/index.html?overview-summary.html</param-value>
     </init-param>
     <init-param>
       <param-name>hostHeader</param-name>
-      <param-value>www.eclipse.org</param-value>
+      <param-value>eclipse.dev</param-value>
     </init-param>
     <load-on-startup>1</load-on-startup>
     <async-supported>true</async-supported>
