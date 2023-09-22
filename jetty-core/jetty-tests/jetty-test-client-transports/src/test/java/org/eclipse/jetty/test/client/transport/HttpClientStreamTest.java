@@ -1200,13 +1200,14 @@ public class HttpClientStreamTest extends AbstractTest
     @ParameterizedTest
     @MethodSource("transports")
     @Tag("DisableLeakTracking:server")
-    public void testUploadWithRetainedData(Transport transport) throws Exception
+    public void testHttpStreamConsumeAvailableUponClientTimeout(Transport transport) throws Exception
     {
         start(transport, new Handler.Abstract()
         {
             @Override
             public boolean handle(Request request, org.eclipse.jetty.server.Response response, Callback callback)
             {
+                // Consume the uploaded data very slowly to make the client timeout.
                 new Runnable()
                 {
                     @Override
@@ -1250,6 +1251,8 @@ public class HttpClientStreamTest extends AbstractTest
             }
         });
 
+        // Upload a large amount of data to the server with a timeout small enough
+        // that the client will timeout during the transfer.
         byte[] data = new byte[16 * 1024 * 1024];
         new Random().nextBytes(data);
         ByteBufferRequestContent content = new ByteBufferRequestContent(ByteBuffer.wrap(data));
