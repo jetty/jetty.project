@@ -398,6 +398,7 @@ public class ServletChannel
     }
 
     /**
+     * Get return the HttpConfiguration server authority override.
      * @return return the HttpConfiguration server authority override
      */
     public HostPort getServerAuthority()

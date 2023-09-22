@@ -116,6 +116,7 @@ public class ConnectorServer extends AbstractLifeCycle
     }
 
     /**
+     * Get the JMXServiceURL of this ConnectorServer.
      * @return the JMXServiceURL of this ConnectorServer
      */
     public JMXServiceURL getAddress()
@@ -135,6 +136,7 @@ public class ConnectorServer extends AbstractLifeCycle
     }
 
     /**
+     * Get the ObjectName of this ConnectorServer.
      * @return the ObjectName of this ConnectorServer
      */
     public String getObjectName()
@@ -143,6 +145,7 @@ public class ConnectorServer extends AbstractLifeCycle
     }
 
     /**
+     * Set the ObjectName of this ConnectorServer.
      * @param objectName the ObjectName of this ConnectorServer
      */
     public void setObjectName(String objectName)

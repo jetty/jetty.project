@@ -19,6 +19,7 @@ import java.io.OutputStream;
 import java.net.ServerSocket;
 import java.net.Socket;
 import java.nio.charset.StandardCharsets;
+import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.TimeUnit;
 import javax.net.ssl.SSLContext;
 import javax.net.ssl.SSLSocket;
@@ -95,8 +96,7 @@ public class TLSServerConnectionCloseTest
             startClient();
 
             Request request = client.newRequest("localhost", port).scheme("https").path("/ctx/path");
-            FutureResponseListener listener = new FutureResponseListener(request);
-            request.send(listener);
+            CompletableFuture<ContentResponse> completable = new CompletableResponseListener(request).send();
 
             try (Socket socket = server.accept())
             {
@@ -159,7 +159,7 @@ public class TLSServerConnectionCloseTest
                     }
                 }
 
-                ContentResponse response = listener.get(5, TimeUnit.SECONDS);
+                ContentResponse response = completable.get(5, TimeUnit.SECONDS);
                 assertEquals(HttpStatus.OK_200, response.getStatus());
 
                 // Give some time to process the connection.

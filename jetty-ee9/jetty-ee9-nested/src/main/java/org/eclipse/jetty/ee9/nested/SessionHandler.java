@@ -221,12 +221,12 @@ public class SessionHandler extends ScopedHandler implements SessionConfig.Mutab
     {
         if (_sessionManager.isUsingCookies())
         {
-            if (_sessionManager.isUsingURLs())
+            if (_sessionManager.isUsingUriParameters())
                 return Set.of(SessionTrackingMode.COOKIE, SessionTrackingMode.URL);
             return Set.of(SessionTrackingMode.COOKIE);
         }
 
-        if (_sessionManager.isUsingURLs())
+        if (_sessionManager.isUsingUriParameters())
             return Set.of(SessionTrackingMode.URL);
 
         return Collections.emptySet();
@@ -241,7 +241,7 @@ public class SessionHandler extends ScopedHandler implements SessionConfig.Mutab
             throw new IllegalArgumentException("sessionTrackingModes.SSL is not supported");
         }
         _sessionManager.setUsingCookies(sessionTrackingModes != null && sessionTrackingModes.contains(SessionTrackingMode.COOKIE));
-        _sessionManager.setUsingURLs(sessionTrackingModes != null && sessionTrackingModes.contains(SessionTrackingMode.URL));
+        _sessionManager.setUsingUriParameters(sessionTrackingModes != null && sessionTrackingModes.contains(SessionTrackingMode.URL));
     }
 
     @Override
@@ -335,9 +335,9 @@ public class SessionHandler extends ScopedHandler implements SessionConfig.Mutab
     }
 
     @Override
-    public boolean isUsingURLs()
+    public boolean isUsingUriParameters()
     {
-        return _sessionManager.isUsingURLs();
+        return _sessionManager.isUsingUriParameters();
     }
 
     @Override
@@ -425,9 +425,9 @@ public class SessionHandler extends ScopedHandler implements SessionConfig.Mutab
     }
 
     @Override
-    public void setUsingURLs(boolean value)
+    public void setUsingUriParameters(boolean value)
     {
-        _sessionManager.setUsingURLs(value);
+        _sessionManager.setUsingUriParameters(value);
     }
 
     @Override

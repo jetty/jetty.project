@@ -13,6 +13,7 @@
 
 package org.eclipse.jetty.client;
 
+import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.TimeUnit;
 
@@ -149,23 +150,21 @@ public class ValidatingConnectionPoolTest extends AbstractHttpClientServerTest
                     r.abort(x);
                 }
             });
-        FutureResponseListener listener1 = new FutureResponseListener(request1);
-        request1.send(listener1);
+        CompletableFuture<ContentResponse> completable1 = new CompletableResponseListener(request1).send();
 
         Request request2 = client.newRequest("localhost", connector.getLocalPort())
             .scheme(scenario.getScheme())
             .path("/two");
-        FutureResponseListener listener2 = new FutureResponseListener(request2);
-        request2.send(listener2);
+        CompletableFuture<ContentResponse> completable2 = new CompletableResponseListener(request2).send();
 
         // Now we have one request about to be sent, and one queued.
 
         latch.countDown();
 
-        ContentResponse response1 = listener1.get(5, TimeUnit.SECONDS);
+        ContentResponse response1 = completable1.get(5, TimeUnit.SECONDS);
         assertEquals(200, response1.getStatus());
 
-        ContentResponse response2 = listener2.get(5, TimeUnit.SECONDS);
+        ContentResponse response2 = completable2.get(5, TimeUnit.SECONDS);
         assertEquals(200, response2.getStatus());
     }
 }

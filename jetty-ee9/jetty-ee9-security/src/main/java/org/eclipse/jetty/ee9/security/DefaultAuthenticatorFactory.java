@@ -93,6 +93,7 @@ public class DefaultAuthenticatorFactory implements Authenticator.Factory
     }
 
     /**
+     * Get the loginService.
      * @return the loginService
      */
     public LoginService getLoginService()
@@ -101,6 +102,7 @@ public class DefaultAuthenticatorFactory implements Authenticator.Factory
     }
 
     /**
+     * Set the loginService to set.
      * @param loginService the loginService to set
      */
     public void setLoginService(LoginService loginService)

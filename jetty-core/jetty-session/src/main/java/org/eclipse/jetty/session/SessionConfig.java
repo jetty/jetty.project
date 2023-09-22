@@ -105,7 +105,7 @@ public interface SessionConfig
     boolean isUsingCookies();
 
     @ManagedAttribute("true if sessions are tracked with URLs")
-    boolean isUsingURLs();
+    boolean isUsingUriParameters();
 
     interface Mutable extends SessionConfig
     {
@@ -139,7 +139,7 @@ public interface SessionConfig
 
         void setUsingCookies(boolean value);
 
-        void setUsingURLs(boolean value);
+        void setUsingUriParameters(boolean value);
 
         void setSessionCache(SessionCache cache);
 

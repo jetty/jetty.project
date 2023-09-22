@@ -50,6 +50,7 @@ public class ByteBufferCallbackAccumulator
     }
 
     /**
+     * Get the total length of the content in the accumulator..
      * @return the total length of the content in the accumulator.
      */
     public int getLength()

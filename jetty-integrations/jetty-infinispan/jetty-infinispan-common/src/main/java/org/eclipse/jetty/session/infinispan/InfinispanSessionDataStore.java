@@ -270,6 +270,7 @@ public class InfinispanSessionDataStore extends AbstractSessionDataStore
     }
 
     /**
+     * Set the infinispan-specific idle timeout in sec or 0 if not set.
      * @param sec the infinispan-specific idle timeout in sec or 0 if not set
      */
     public void setInfinispanIdleTimeoutSec(int sec)

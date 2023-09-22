@@ -195,6 +195,7 @@ public class ErrorPageErrorHandler extends ErrorHandler implements ErrorHandler.
     }
 
     /**
+     * Set a map of Exception class names or error codes as a string to URI string.
      * @param errorPages a map of Exception class names or error codes as a string to URI string
      */
     public void setErrorPages(Map<String, String> errorPages)

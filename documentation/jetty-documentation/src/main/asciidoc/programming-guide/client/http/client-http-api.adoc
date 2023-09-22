@@ -192,11 +192,11 @@ Jetty's `HttpClient` allows applications to handle response content in different
 
 You can buffer the response content in memory; this is done when using the xref:pg-client-http-blocking[blocking APIs] and the content is buffered within a `ContentResponse` up to 2 MiB.
 
-If you want to control the length of the response content (for example limiting to values smaller than the default of 2 MiB), then you can use a `org.eclipse.jetty.client.FutureResponseListener` in this way:
+If you want to control the length of the response content (for example limiting to values smaller than the default of 2 MiB), then you can use a `org.eclipse.jetty.client.CompletableResponseListener` in this way:
 
 [source,java,indent=0]
 ----
-include::../../{doc_code}/org/eclipse/jetty/docs/programming/client/http/HTTPClientDocs.java[tags=futureResponseListener]
+include::../../{doc_code}/org/eclipse/jetty/docs/programming/client/http/HTTPClientDocs.java[tags=completableResponseListener]
 ----
 
 If the response content length is exceeded, the response will be aborted, and an exception will be thrown by method `get(\...)`.

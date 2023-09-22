@@ -443,7 +443,7 @@ public abstract class AbstractSessionDataStoreTest
     
     /**
      * Test that a session containing no attributes can be stored and re-read
-     * @throws Exception
+     * @throws Exception if there is an unspecified problem
      */
     @Test
     public void testEmptyLoadSession() throws Exception

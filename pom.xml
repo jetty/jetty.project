@@ -59,7 +59,7 @@
     <guava.version>32.1.2-jre</guava.version>
     <guice.version>7.0.0</guice.version>
     <hamcrest.version>2.2</hamcrest.version>
-    <hazelcast.version>5.3.1</hazelcast.version>
+    <hazelcast.version>5.3.2</hazelcast.version>
     <infinispan.protostream.version>4.6.5.Final</infinispan.protostream.version>
     <infinispan.version>11.0.17.Final</infinispan.version>
     <jackson.version>2.15.2</jackson.version>
@@ -99,20 +99,20 @@
     <jna.version>5.13.0</jna.version>
     <json-simple.version>1.1.1</json-simple.version>
     <json-smart.version>2.5.0</json-smart.version>
-    <junit.version>5.9.3</junit.version>
+    <junit.version>5.10.0</junit.version>
     <jsp.impl.version>10.0.14</jsp.impl.version>
     <kerb-simplekdc.version>2.0.3</kerb-simplekdc.version>
     <log4j2.version>2.20.0</log4j2.version>
-    <logback.version>1.4.9</logback.version>
-    <mariadb.version>3.1.4</mariadb.version>
+    <logback.version>1.4.11</logback.version>
+    <mariadb.version>3.2.0</mariadb.version>
     <mariadb.docker.version>10.3.6</mariadb.docker.version>
-    <maven.deps.version>3.9.0</maven.deps.version>
+    <maven.deps.version>3.9.4</maven.deps.version>
     <maven-build-cache.version>1.0.1</maven-build-cache.version>
     <maven-artifact-transfer.version>0.13.1</maven-artifact-transfer.version>
     <maven.resolver.version>1.9.15</maven.resolver.version>
     <maven.version>3.9.0</maven.version>
     <mongodb.version>3.12.11</mongodb.version>
-    <netty.version>4.1.95.Final</netty.version>
+    <netty.version>4.1.97.Final</netty.version>
     <openpojo.version>0.9.1</openpojo.version>
     <org.osgi.annotation.version>8.1.0</org.osgi.annotation.version>
     <org.osgi.core.version>8.0.0</org.osgi.core.version>
@@ -132,8 +132,8 @@
     <osgi-util-tracker-version>1.5.4</osgi-util-tracker-version>
     <osgi-util-xml-version>1.0.2</osgi-util-xml-version>
     <equinox-http-servlet-version>1.0.0-v20070606</equinox-http-servlet-version>
-    <pax.exam.version>4.13.1</pax.exam.version>
-    <pax.url.version>2.6.2</pax.url.version>
+    <pax.exam.version>4.13.5</pax.exam.version>
+    <pax.url.version>2.6.14</pax.url.version>
     <swissbox.version>1.8.3</swissbox.version>
     <tinybundles.version>3.0.0</tinybundles.version>
     <injection.bundle.version>1.2</injection.bundle.version>
@@ -141,7 +141,7 @@
     <plexus-component-annotations.version>2.1.1</plexus-component-annotations.version>
     <plexus-utils.version>4.0.0</plexus-utils.version>
     <plexus-xml.version>4.0.2</plexus-xml.version>
-    <slf4j.version>2.0.7</slf4j.version>
+    <slf4j.version>2.0.9</slf4j.version>
     <spifly.version>1.3.6</spifly.version>
     <taglibs-standard-impl.version>1.2.5</taglibs-standard-impl.version>
     <taglibs-standard-spec.version>1.2.5</taglibs-standard-spec.version>
@@ -829,7 +829,7 @@
               <Bundle-DocURL>${jetty.url}</Bundle-DocURL>
               <Bundle-Vendor>Eclipse Jetty Project</Bundle-Vendor>
               <Bundle-Classpath>.</Bundle-Classpath>
-              <Bundle-Copyright>Copyright (c) 2008-2021 Mort Bay Consulting Pty Ltd and others.</Bundle-Copyright>
+              <Bundle-Copyright>Copyright (c) 1995 Mort Bay Consulting Pty Ltd and others.</Bundle-Copyright>
               <Import-Package>
                 ${osgi.slf4j.import.packages},
                 *

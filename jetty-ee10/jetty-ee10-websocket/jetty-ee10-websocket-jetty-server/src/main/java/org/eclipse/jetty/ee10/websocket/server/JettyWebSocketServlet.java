@@ -114,6 +114,7 @@ public abstract class JettyWebSocketServlet extends HttpServlet
     protected abstract void configure(JettyWebSocketServletFactory factory);
 
     /**
+     * Get the instance of {@link FrameHandlerFactory} to be used to create the FrameHandler.
      * @return the instance of {@link FrameHandlerFactory} to be used to create the FrameHandler
      */
     private FrameHandlerFactory getFactory()

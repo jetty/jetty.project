@@ -274,6 +274,7 @@ public class HttpChannel implements Runnable, HttpOutput.Interceptor
     }
 
     /**
+     * Get the number of requests handled by this connection.
      * @return the number of requests handled by this connection
      */
     public long getRequests()
@@ -454,6 +455,7 @@ public class HttpChannel implements Runnable, HttpOutput.Interceptor
     }
 
     /**
+     * Get return the HttpConfiguration server authority override.
      * @return return the HttpConfiguration server authority override
      */
     public HostPort getServerAuthority()

@@ -69,9 +69,9 @@ public class SessionRenewTest
         
         /**
          * For testing to access protected method
-         * @param sessionId
+         * @param sessionId The Session ID
          * @return previous existing session
-         * @throws Exception
+         * @throws Exception if there is an unspecified problem
          */
         public ManagedSession getWithoutReferenceCount(String sessionId) throws Exception
         {

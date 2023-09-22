@@ -358,7 +358,7 @@ public class Response implements HttpServletResponse
             return null;
 
         // should not encode if cookies in evidence
-        if ((sessionManager.isUsingCookies() && request.isRequestedSessionIdFromCookie()) || !sessionManager.isUsingURLs())
+        if ((sessionManager.isUsingCookies() && request.isRequestedSessionIdFromCookie()) || !sessionManager.isUsingUriParameters())
         {
             int prefix = url.indexOf(sessionURLPrefix);
             if (prefix != -1)
@@ -1402,7 +1402,7 @@ public class Response implements HttpServletResponse
 
     public static void putHeaders(HttpServletResponse response, HttpContent content, long contentLength, boolean etag)
     {
-        long lml = content.getLastModified().getLongValue();
+        long lml = content.getResource().lastModified().toEpochMilli();
         if (lml >= 0)
             response.setDateHeader(HttpHeader.LAST_MODIFIED.asString(), lml);
 

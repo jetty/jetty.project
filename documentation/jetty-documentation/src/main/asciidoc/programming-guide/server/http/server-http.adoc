@@ -20,6 +20,17 @@ The Jetty server libraries allow you to write web applications components using 
 These components can then be programmatically assembled together, without the need of creating a `+*.war+` file, added to a Jetty ``Server`` instance that is then started.
 This result in your web applications to be available to HTTP clients as if you deployed your `+*.war+` files in a standalone Jetty server.
 
+Jetty `Handler` APIs pros:
+
+* Simple minimalist asynchronous APIs.
+* Very low overhead, only configure the features you use.
+* Faster turnaround to implement new APIs or new standards.
+* Normal classloading behavior (web application classloading isolation also available).
+
+Servlet APIs pros:
+
+* Standard, well known, APIs.
+
 The Maven artifact coordinates are:
 
 [source,xml,subs="verbatim,attributes"]

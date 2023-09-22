@@ -51,9 +51,9 @@ public class BufferedResponseHandlerTest
         _server.addConnector(_local);
 
         BufferedResponseHandler bufferedHandler = new BufferedResponseHandler();
-        bufferedHandler.getPathIncludeExclude().include("/include/*");
-        bufferedHandler.getPathIncludeExclude().exclude("*.exclude");
-        bufferedHandler.getMimeIncludeExclude().exclude("text/excluded");
+        bufferedHandler.includePath("/include/*");
+        bufferedHandler.excludePath("*.exclude");
+        bufferedHandler.excludeMimeType("text/excluded");
         bufferedHandler.setHandler(_test = new TestHandler());
 
 
@@ -221,17 +221,19 @@ public class BufferedResponseHandlerTest
                 response.getHeaders().put(HttpHeader.CONTENT_TYPE, _mimeType);
 
             // Do not close the stream before adding the header: Written: true.
-            OutputStream outputStream = Content.Sink.asOutputStream(response);
-            for (int i = 0; i < _writes; i++)
+            try (OutputStream outputStream = Content.Sink.asOutputStream(response))
             {
-                response.getHeaders().add("Write", Integer.toString(i));
-                outputStream.write(_content);
-                if (_flush)
-                    outputStream.flush();
+                for (int i = 0; i < _writes; i++)
+                {
+                    response.getHeaders().add("Write", Integer.toString(i));
+                    outputStream.write(_content);
+                    if (_flush)
+                        outputStream.flush();
+                }
+                response.getHeaders().add("Written", "true");
+                callback.succeeded();
             }
 
-            response.getHeaders().add("Written", "true");
-            callback.succeeded();
             return true;
         }
     }

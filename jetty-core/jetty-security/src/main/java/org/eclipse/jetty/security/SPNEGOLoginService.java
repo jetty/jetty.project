@@ -80,6 +80,7 @@ public class SPNEGOLoginService extends ContainerLifeCycle implements LoginServi
     }
 
     /**
+     * Get the path of the keyTab file containing service credentials.
      * @return the path of the keyTab file containing service credentials
      */
     public Path getKeyTabPath()
@@ -88,6 +89,7 @@ public class SPNEGOLoginService extends ContainerLifeCycle implements LoginServi
     }
 
     /**
+     * Set the path of the keyTab file containing service credentials.
      * @param keyTabFile the path of the keyTab file containing service credentials
      */
     public void setKeyTabPath(Path keyTabFile)
@@ -123,6 +125,7 @@ public class SPNEGOLoginService extends ContainerLifeCycle implements LoginServi
     }
 
     /**
+     * Set the host name of the service.
      * @param hostName the host name of the service
      */
     public void setHostName(String hostName)
