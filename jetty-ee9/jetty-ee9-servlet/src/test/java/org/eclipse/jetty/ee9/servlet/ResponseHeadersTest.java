@@ -35,7 +35,7 @@ import org.eclipse.jetty.http.HttpTester;
 import org.eclipse.jetty.http.HttpVersion;
 import org.eclipse.jetty.server.LocalConnector;
 import org.eclipse.jetty.server.Server;
-import org.eclipse.jetty.toolchain.test.MavenTestingUtils;
+import org.eclipse.jetty.toolchain.test.MavenPaths;
 import org.eclipse.jetty.util.StringUtil;
 import org.junit.jupiter.api.AfterAll;
 import org.junit.jupiter.api.BeforeAll;
@@ -154,7 +154,7 @@ public class ResponseHeadersTest
     @BeforeAll
     public static void startServer() throws Exception
     {
-        Path staticContentPath = MavenTestingUtils.getTestResourcePath("contextResources");
+        Path staticContentPath = MavenPaths.findTestResourceDir("contextResources");
         server = new Server();
         connector = new LocalConnector(server);
         server.addConnector(connector);
