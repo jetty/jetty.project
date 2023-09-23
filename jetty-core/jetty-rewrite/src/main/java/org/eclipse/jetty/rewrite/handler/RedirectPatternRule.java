@@ -84,11 +84,11 @@ public class RedirectPatternRule extends PatternRule
         return new Handler(input)
         {
             @Override
-            public boolean handle(Response response, Callback callback)
+            public boolean handle(Request request, Response response, Callback callback)
             {
                 String location = getLocation();
                 response.setStatus(getStatusCode());
-                response.getHeaders().put(HttpHeader.LOCATION, Request.toRedirectURI(this, location));
+                response.getHeaders().put(HttpHeader.LOCATION, Request.toRedirectURI(request, location));
                 callback.succeeded();
                 return true;
             }

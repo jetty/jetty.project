@@ -15,6 +15,7 @@ package org.eclipse.jetty.rewrite.handler;
 
 import java.io.IOException;
 
+import org.eclipse.jetty.server.Request;
 import org.eclipse.jetty.server.Response;
 import org.eclipse.jetty.util.Callback;
 import org.eclipse.jetty.util.annotation.Name;
@@ -65,8 +66,9 @@ public class HeaderPatternRule extends PatternRule
     }
 
     /**
-     * Set true to add the response header, false to put the response header..
-     * @param add true to add the response header, false to put the response header.
+     * Use {@code true} to add the response header, {@code false} to put the response header.
+     *
+     * @param add {@code true} to add the response header, {@code false} to put the response header.
      */
     public void setAdd(boolean add)
     {
@@ -79,13 +81,13 @@ public class HeaderPatternRule extends PatternRule
         return new Handler(input)
         {
             @Override
-            public boolean handle(Response response, Callback callback) throws Exception
+            public boolean handle(Request request, Response response, Callback callback) throws Exception
             {
                 if (isAdd())
                     response.getHeaders().add(getHeaderName(), getHeaderValue());
                 else
                     response.getHeaders().put(getHeaderName(), getHeaderValue());
-                return super.handle(response, callback);
+                return super.handle(request, response, callback);
             }
         };
     }
