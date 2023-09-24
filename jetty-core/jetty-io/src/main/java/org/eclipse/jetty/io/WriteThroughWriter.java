@@ -23,21 +23,22 @@ import java.nio.charset.StandardCharsets;
 import org.eclipse.jetty.util.ByteArrayOutputStream2;
 
 /**
- * An alternate to {@link java.io.OutputStreamWriter} that supports
+ * <p>An alternate to {@link java.io.OutputStreamWriter} that supports
  * several optimized implementation for well known {@link Charset}s,
- * specifically {@link StandardCharsets#UTF_8} and {@link StandardCharsets#ISO_8859_1}.
- * The implementations of this class will never buffer characters beyond a call to the
+ * specifically {@link StandardCharsets#UTF_8} and {@link StandardCharsets#ISO_8859_1}.</p>
+ * <p>The implementations of this class will never buffer characters or bytes beyond a call to the
  * {@link #write(char[], int, int)} method, thus written characters will always be available
- * in converted form to the passed {@link OutputStream}.
+ * in converted form to the passed {@link OutputStream}</p>.
  */
-public abstract class AbstractOutputStreamWriter extends Writer
+public abstract class WriteThroughWriter extends Writer
 {
+    static final int DEFAULT_MAX_WRITE_SIZE = 1024;
     private final int _maxWriteSize;
     private final char[] _chars;
     protected final OutputStream _out;
     protected final ByteArrayOutputStream2 _bytes;
 
-    protected AbstractOutputStreamWriter(OutputStream out)
+    protected WriteThroughWriter(OutputStream out)
     {
         this(out, 0);
     }
@@ -47,9 +48,9 @@ public abstract class AbstractOutputStreamWriter extends Writer
      * @param out The {@link OutputStream} to write the converted bytes to.
      * @param maxWriteSize The maximum size in characters of a single conversion
      */
-    protected AbstractOutputStreamWriter(OutputStream out, int maxWriteSize)
+    protected WriteThroughWriter(OutputStream out, int maxWriteSize)
     {
-        _maxWriteSize = maxWriteSize <= 0 ? 1024 : maxWriteSize;
+        _maxWriteSize = maxWriteSize <= 0 ? DEFAULT_MAX_WRITE_SIZE : maxWriteSize;
         _out = out;
         _chars = new char[_maxWriteSize];
         _bytes = new ByteArrayOutputStream2(_maxWriteSize);
@@ -63,7 +64,7 @@ public abstract class AbstractOutputStreamWriter extends Writer
      * @return A Writer that will
      * @throws IOException If there is a problem creating the {@link Writer}.
      */
-    public static Writer newWriter(OutputStream outputStream, String charset)
+    public static WriteThroughWriter newWriter(OutputStream outputStream, String charset)
         throws IOException
     {
         if (StandardCharsets.ISO_8859_1.name().equalsIgnoreCase(charset))
@@ -81,7 +82,7 @@ public abstract class AbstractOutputStreamWriter extends Writer
      * @return A Writer that will
      * @throws IOException If there is a problem creating the {@link Writer}.
      */
-    public static Writer newWriter(OutputStream outputStream, Charset charset)
+    public static WriteThroughWriter newWriter(OutputStream outputStream, Charset charset)
         throws IOException
     {
         if (StandardCharsets.ISO_8859_1 == charset)
@@ -128,14 +129,14 @@ public abstract class AbstractOutputStreamWriter extends Writer
     public abstract void write(char[] s, int offset, int length) throws IOException;
 
     /**
-     * An implementation of {@link AbstractOutputStreamWriter} for
+     * An implementation of {@link WriteThroughWriter} for
      * optimal ISO-8859-1 conversion.
      * The ISO-8859-1 encoding is done by this class and no additional
      * buffers or Writers are used.
      */
-    public static class Iso88591Writer extends AbstractOutputStreamWriter
+    private static class Iso88591Writer extends WriteThroughWriter
     {
-        public Iso88591Writer(OutputStream out)
+        private Iso88591Writer(OutputStream out)
         {
             super(out);
         }
@@ -177,17 +178,17 @@ public abstract class AbstractOutputStreamWriter extends Writer
     }
 
     /**
-     * An implementation of {@link AbstractOutputStreamWriter} for
+     * An implementation of {@link WriteThroughWriter} for
      * an optimal UTF-8 conversion.
      * The UTF-8 encoding is done by this class and no additional
      * buffers or Writers are used.
      * The UTF-8 code was inspired by <a href="http://javolution.org">...</a>
      */
-    public static class Utf8Writer extends AbstractOutputStreamWriter
+    private static class Utf8Writer extends WriteThroughWriter
     {
         int _surrogate = 0;
 
-        public Utf8Writer(OutputStream out)
+        private Utf8Writer(OutputStream out)
         {
             super(out);
         }
@@ -334,10 +335,10 @@ public abstract class AbstractOutputStreamWriter extends Writer
     }
 
     /**
-     * An implementation of {@link AbstractOutputStreamWriter} that internally
+     * An implementation of {@link WriteThroughWriter} that internally
      * uses {@link java.io.OutputStreamWriter}.
      */
-    public static class EncodingWriter extends AbstractOutputStreamWriter
+    private static class EncodingWriter extends WriteThroughWriter
     {
         final Writer _converter;
 

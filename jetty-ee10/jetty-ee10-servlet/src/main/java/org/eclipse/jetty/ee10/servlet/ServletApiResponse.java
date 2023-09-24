@@ -15,7 +15,6 @@ package org.eclipse.jetty.ee10.servlet;
 
 import java.io.IOException;
 import java.io.PrintWriter;
-import java.io.Writer;
 import java.util.Collection;
 import java.util.EnumSet;
 import java.util.Locale;
@@ -33,7 +32,7 @@ import org.eclipse.jetty.http.HttpFields;
 import org.eclipse.jetty.http.HttpHeader;
 import org.eclipse.jetty.http.HttpStatus;
 import org.eclipse.jetty.http.HttpVersion;
-import org.eclipse.jetty.io.AbstractOutputStreamWriter;
+import org.eclipse.jetty.io.WriteThroughWriter;
 import org.eclipse.jetty.server.Request;
 import org.eclipse.jetty.server.Response;
 import org.eclipse.jetty.session.ManagedSession;
@@ -317,7 +316,7 @@ public class ServletApiResponse implements HttpServletResponse
             {
                 // We must use an implementation of AbstractOutputStreamWriter here as we rely on the non cached characters
                 // in the writer implementation for flush and completion operations.
-                Writer outputStreamWriter = AbstractOutputStreamWriter.newWriter(getServletChannel().getHttpOutput(), encoding);
+                WriteThroughWriter outputStreamWriter = WriteThroughWriter.newWriter(getServletChannel().getHttpOutput(), encoding);
                 getServletResponseInfo().setWriter(writer = new ResponseWriter(
                     outputStreamWriter, locale, encoding));
             }

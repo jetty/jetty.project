@@ -32,22 +32,20 @@ public class ChunkAccumulator
 {
     private static final ByteBufferPool NON_POOLING = new ByteBufferPool.NonPooling();
     private final List<Chunk> _chunks = new ArrayList<>();
-    private int _size;
-
-    public ChunkAccumulator()
-    {
-    }
+    private int _length;
 
     /**
      * Add a {@link Chunk} to the accumulator.
      * @param chunk The {@link Chunk} to accumulate.  If a reference is kept to the chunk (rather than a copy), it will be retained.
      * @return true if the {@link Chunk} had content and was added to the accumulator.
+     * @throws ArithmeticException if more that {@link Integer#MAX_VALUE} bytes are added.
+     * @throws IllegalArgumentException if the passed {@link Chunk} is a {@link Chunk#isFailure(Chunk) failure}.
      */
     public boolean add(Chunk chunk)
     {
         if (chunk.hasRemaining())
         {
-            _size = Math.addExact(_size, chunk.remaining());
+            _length = Math.addExact(_length, chunk.remaining());
             if (chunk.canRetain())
             {
                 chunk.retain();
@@ -55,36 +53,40 @@ public class ChunkAccumulator
             }
             return _chunks.add(Chunk.from(BufferUtil.copy(chunk.getByteBuffer()), chunk.isLast(), () -> {}));
         }
+        else if (Chunk.isFailure(chunk))
+        {
+            throw new IllegalArgumentException("chunk is failure");
+        }
         return false;
     }
 
     /**
-     * Get the total size of the accumulated {@link Chunk}s.
-     * @return The total size in bytes.
+     * Get the total length of the accumulated {@link Chunk}s.
+     * @return The total length in bytes.
      */
-    public int size()
+    public int length()
     {
-        return _size;
+        return _length;
     }
 
     public byte[] take()
     {
-        byte[] bytes = new byte[_size];
+        byte[] bytes = new byte[_length];
         int offset = 0;
         for (Chunk chunk : _chunks)
         {
             offset += chunk.get(bytes, offset, chunk.remaining());
             chunk.release();
         }
-        assert offset == _size;
+        assert offset == _length;
         _chunks.clear();
-        _size = 0;
+        _length = 0;
         return bytes;
     }
 
     public RetainableByteBuffer take(ByteBufferPool pool, boolean direct)
     {
-        if (_size == 0)
+        if (_length == 0)
             return RetainableByteBuffer.EMPTY;
 
         if (_chunks.size() == 1)
@@ -95,12 +97,12 @@ public class ChunkAccumulator
             if (direct == byteBuffer.isDirect())
             {
                 _chunks.clear();
-                _size = 0;
+                _length = 0;
                 return RetainableByteBuffer.wrap(byteBuffer, chunk);
             }
         }
 
-        RetainableByteBuffer buffer = Objects.requireNonNullElse(pool, NON_POOLING).acquire(_size, direct);
+        RetainableByteBuffer buffer = Objects.requireNonNullElse(pool, NON_POOLING).acquire(_length, direct);
         int offset = 0;
         for (Chunk chunk : _chunks)
         {
@@ -108,9 +110,9 @@ public class ChunkAccumulator
             BufferUtil.append(buffer.getByteBuffer(), chunk.getByteBuffer());
             chunk.release();
         }
-        assert offset == _size;
+        assert offset == _length;
         _chunks.clear();
-        _size = 0;
+        _length = 0;
         return buffer;
     }
 
@@ -118,7 +120,7 @@ public class ChunkAccumulator
     {
         _chunks.forEach(Chunk::release);
         _chunks.clear();
-        _size = 0;
+        _length = 0;
     }
 
     public CompletableFuture<byte[]> readAll(Content.Source source)
@@ -164,62 +166,55 @@ public class ChunkAccumulator
     {
         private final Content.Source _source;
         private final ChunkAccumulator _accumulator = new ChunkAccumulator();
-        private final int _maxSize;
+        private final int _maxLength;
 
-        private AccumulatorTask(Content.Source source, int maxSize)
+        private AccumulatorTask(Content.Source source, int maxLength)
         {
             _source = source;
-            _maxSize = maxSize;
+            _maxLength = maxLength;
         }
 
         @Override
         public void run()
         {
-            try
+            while (true)
             {
-                while (true)
+                Chunk chunk = _source.read();
+                if (chunk == null)
                 {
-                    Chunk chunk = _source.read();
-                    if (chunk == null)
-                    {
-                        _source.demand(this);
-                        return;
-                    }
-
-                    if (Chunk.isFailure(chunk))
-                    {
-                        completeExceptionally(chunk.getFailure());
-                        return;
-                    }
-
-                    if (chunk.hasRemaining())
-                    {
-                        _accumulator.add(chunk);
-
-                        if (_maxSize > 0 && _accumulator._size > _maxSize)
-                        {
-                            _accumulator.close();
-                            IOException ioe = new IOException("too large");
-                            _source.fail(ioe);
-                            completeExceptionally(ioe);
-                            return;
-                        }
-                    }
-
-                    chunk.release();
-
-                    if (chunk.isLast())
-                    {
-                        complete(take(_accumulator));
-                        return;
-                    }
+                    _source.demand(this);
+                    break;
                 }
-            }
-            catch (Throwable e)
-            {
-                _accumulator.close();
-                _source.fail(e);
-                completeExceptionally(e);
+
+                if (Chunk.isFailure(chunk))
+                {
+                    completeExceptionally(chunk.getFailure());
+                    break;
+                }
+
+                try
+                {
+                    _accumulator.add(chunk);
+
+                    if (_maxLength > 0 && _accumulator._length > _maxLength)
+                        throw new IOException("accumulation too large");
+                }
+                catch (Throwable t)
+                {
+                    chunk.release();
+                    _accumulator.close();
+                    _source.fail(t);
+                    completeExceptionally(t);
+                    break;
+                }
+
+                chunk.release();
+
+                if (chunk.isLast())
+                {
+                    complete(take(_accumulator));
+                    break;
+                }
             }
         }
 

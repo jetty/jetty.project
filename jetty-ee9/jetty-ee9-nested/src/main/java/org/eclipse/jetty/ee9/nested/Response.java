@@ -15,7 +15,6 @@ package org.eclipse.jetty.ee9.nested;
 
 import java.io.IOException;
 import java.io.PrintWriter;
-import java.io.Writer;
 import java.nio.channels.IllegalSelectorException;
 import java.util.Collection;
 import java.util.Collections;
@@ -51,8 +50,8 @@ import org.eclipse.jetty.http.MetaData;
 import org.eclipse.jetty.http.MimeTypes;
 import org.eclipse.jetty.http.PreEncodedHttpField;
 import org.eclipse.jetty.http.content.HttpContent;
-import org.eclipse.jetty.io.AbstractOutputStreamWriter;
 import org.eclipse.jetty.io.RuntimeIOException;
+import org.eclipse.jetty.io.WriteThroughWriter;
 import org.eclipse.jetty.server.Context;
 import org.eclipse.jetty.server.HttpCookieUtils;
 import org.eclipse.jetty.server.HttpCookieUtils.SetCookieHttpField;
@@ -876,7 +875,7 @@ public class Response implements HttpServletResponse
             {
                 // We must use an implementation of AbstractOutputStreamWriter here as we rely on the non cached characters
                 // in the writer implementation for flush and completion operations.
-                Writer outputStreamWriter = AbstractOutputStreamWriter.newWriter(_out, encoding);
+                WriteThroughWriter outputStreamWriter = WriteThroughWriter.newWriter(_out, encoding);
                 _writer = new ResponseWriter(outputStreamWriter, locale, encoding);
             }
 

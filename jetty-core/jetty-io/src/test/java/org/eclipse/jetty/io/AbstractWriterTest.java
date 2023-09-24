@@ -11,14 +11,13 @@
 // ========================================================================
 //
 
-package org.eclipse.jetty.io.writer;
+package org.eclipse.jetty.io;
 
 import java.io.OutputStream;
+import java.io.Writer;
 import java.nio.ByteBuffer;
 import java.nio.charset.StandardCharsets;
 
-import org.eclipse.jetty.io.AbstractOutputStreamWriter;
-import org.eclipse.jetty.io.ByteBufferOutputStream;
 import org.eclipse.jetty.util.BufferUtil;
 import org.eclipse.jetty.util.StringUtil;
 import org.eclipse.jetty.util.Utf8StringBuilder;
@@ -43,7 +42,7 @@ public class AbstractWriterTest
     @Test
     public void testSimpleUTF8() throws Exception
     {
-        AbstractOutputStreamWriter writer = new AbstractOutputStreamWriter.Utf8Writer(_out);
+        Writer writer = WriteThroughWriter.newWriter(_out, StandardCharsets.UTF_8);
         writer.write("Now is the time");
         assertArrayEquals("Now is the time".getBytes(StandardCharsets.UTF_8), BufferUtil.toArray(_bytes));
     }
@@ -51,7 +50,7 @@ public class AbstractWriterTest
     @Test
     public void testUTF8() throws Exception
     {
-        AbstractOutputStreamWriter writer = new AbstractOutputStreamWriter.Utf8Writer(_out);
+        Writer writer = WriteThroughWriter.newWriter(_out, StandardCharsets.UTF_8);
         writer.write("How now Ｂrown cow");
         assertArrayEquals("How now Ｂrown cow".getBytes(StandardCharsets.UTF_8), BufferUtil.toArray(_bytes));
     }
@@ -59,7 +58,7 @@ public class AbstractWriterTest
     @Test
     public void testUTF16() throws Exception
     {
-        AbstractOutputStreamWriter writer = new AbstractOutputStreamWriter.EncodingWriter(_out, StandardCharsets.UTF_16.displayName());
+        Writer writer = WriteThroughWriter.newWriter(_out, StandardCharsets.UTF_16);
         writer.write("How now Ｂrown cow");
         assertArrayEquals("How now Ｂrown cow".getBytes(StandardCharsets.UTF_16), BufferUtil.toArray(_bytes));
     }
@@ -67,7 +66,7 @@ public class AbstractWriterTest
     @Test
     public void testNotCESU8() throws Exception
     {
-        AbstractOutputStreamWriter writer = new AbstractOutputStreamWriter.Utf8Writer(_out);
+        Writer writer = WriteThroughWriter.newWriter(_out, StandardCharsets.UTF_8);
         String data = "xxx𐐀xxx";
         writer.write(data);
         byte[] b = BufferUtil.toArray(_bytes);
@@ -83,8 +82,8 @@ public class AbstractWriterTest
     @Test
     public void testMultiByteOverflowUTF8() throws Exception
     {
-        AbstractOutputStreamWriter writer = new AbstractOutputStreamWriter.Utf8Writer(_out);
-        int maxWriteSize = writer.getMaxWriteSize();
+        Writer writer = WriteThroughWriter.newWriter(_out, StandardCharsets.UTF_8);
+        int maxWriteSize = WriteThroughWriter.DEFAULT_MAX_WRITE_SIZE;
         final String singleByteStr = "a";
         final String multiByteDuplicateStr = "Ｂ";
         int remainSize = 1;
@@ -107,7 +106,7 @@ public class AbstractWriterTest
     @Test
     public void testISO8859() throws Exception
     {
-        AbstractOutputStreamWriter writer = new AbstractOutputStreamWriter.Iso88591Writer(_out);
+        Writer writer = WriteThroughWriter.newWriter(_out, StandardCharsets.ISO_8859_1);
         writer.write("How now Ｂrown cow");
         assertEquals(new String(BufferUtil.toArray(_bytes), StandardCharsets.ISO_8859_1), "How now ?rown cow");
     }
@@ -115,7 +114,7 @@ public class AbstractWriterTest
     @Test
     public void testUTF16x2() throws Exception
     {
-        AbstractOutputStreamWriter writer = new AbstractOutputStreamWriter.Utf8Writer(_out);
+        Writer writer = WriteThroughWriter.newWriter(_out, StandardCharsets.UTF_8);
         String source = "𠮟";
 
         byte[] bytes = source.getBytes(StandardCharsets.UTF_8);
@@ -137,7 +136,7 @@ public class AbstractWriterTest
     @Test
     public void testMultiByteOverflowUTF16x2() throws Exception
     {
-        AbstractOutputStreamWriter writer = new AbstractOutputStreamWriter.Utf8Writer(_out);
+        Writer writer = WriteThroughWriter.newWriter(_out, StandardCharsets.UTF_8);
 
         final String singleByteStr = "a";
         int remainSize = 1;
@@ -145,7 +144,7 @@ public class AbstractWriterTest
         int adjustSize = -1;
 
         String source =
-            singleByteStr.repeat(Math.max(0, writer.getMaxWriteSize() + adjustSize)) +
+            singleByteStr.repeat(Math.max(0, WriteThroughWriter.DEFAULT_MAX_WRITE_SIZE + adjustSize)) +
             multiByteDuplicateStr +
             singleByteStr.repeat(remainSize);
 
@@ -168,7 +167,7 @@ public class AbstractWriterTest
     @Test
     public void testMultiByteOverflowUTF16X22() throws Exception
     {
-        AbstractOutputStreamWriter writer = new AbstractOutputStreamWriter.Utf8Writer(_out);
+        Writer writer = WriteThroughWriter.newWriter(_out, StandardCharsets.UTF_8);
 
         final String singleByteStr = "a";
         int remainSize = 1;
@@ -176,7 +175,7 @@ public class AbstractWriterTest
         int adjustSize = -2;
 
         String source =
-            singleByteStr.repeat(Math.max(0, writer.getMaxWriteSize() + adjustSize)) +
+            singleByteStr.repeat(Math.max(0, WriteThroughWriter.DEFAULT_MAX_WRITE_SIZE + adjustSize)) +
             multiByteDuplicateStr +
             singleByteStr.repeat(remainSize);
 

@@ -16,13 +16,13 @@ package org.eclipse.jetty.ee9.nested;
 import java.io.IOException;
 import java.io.InterruptedIOException;
 import java.io.PrintWriter;
-import java.io.Writer;
 import java.util.Formatter;
 import java.util.Locale;
 
 import jakarta.servlet.ServletResponse;
 import org.eclipse.jetty.io.EofException;
 import org.eclipse.jetty.io.RuntimeIOException;
+import org.eclipse.jetty.io.WriteThroughWriter;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -40,14 +40,14 @@ public class ResponseWriter extends PrintWriter
 {
     private static final Logger LOG = LoggerFactory.getLogger(ResponseWriter.class);
 
-    private final Writer _writer;
+    private final WriteThroughWriter _writer;
     private final Locale _locale;
     private final String _encoding;
     private IOException _ioException;
     private boolean _isClosed = false;
     private Formatter _formatter;
 
-    public ResponseWriter(Writer httpWriter, Locale locale, String encoding)
+    public ResponseWriter(WriteThroughWriter httpWriter, Locale locale, String encoding)
     {
         super(httpWriter, false);
         _writer = httpWriter;
