@@ -99,6 +99,7 @@ public class ProxyConfiguration
         private final Set<String> included = new HashSet<>();
         private final Set<String> excluded = new HashSet<>();
         private final Map<String, Pattern> _exludedPatterns = new HashMap<>();
+        private final Map<String, HostPort> _hostPorts = new HashMap<>();
         private final Origin origin;
         private final SslContextFactory.Client sslContextFactory;
 
@@ -214,7 +215,7 @@ public class ProxyConfiguration
         private boolean matches(Origin.Address address, String pattern)
         {
             // TODO: add support for CIDR notation like 192.168.0.0/24, see DoSFilter
-            HostPort hostPort = new HostPort(pattern);
+            HostPort hostPort = _hostPorts.computeIfAbsent(pattern, HostPort::new);
             String host = hostPort.getHost();
             int port = hostPort.getPort();
             return host.equals(address.getHost()) && (port <= 0 || port == address.getPort());
@@ -222,7 +223,7 @@ public class ProxyConfiguration
 
         private boolean matchesWithWildcards(Origin.Address address, String pattern)
         {
-            HostPort hostPort = new HostPort(pattern);
+            HostPort hostPort = _hostPorts.computeIfAbsent(pattern, HostPort::new);
             String host = hostPort.getHost();
             int port = hostPort.getPort();
             Pattern hostPattern = _exludedPatterns.computeIfAbsent(host, this::compileHostRegex);
