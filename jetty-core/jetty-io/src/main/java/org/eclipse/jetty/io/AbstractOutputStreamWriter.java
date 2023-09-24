@@ -26,6 +26,9 @@ import org.eclipse.jetty.util.ByteArrayOutputStream2;
  * An alternate to {@link java.io.OutputStreamWriter} that supports
  * several optimized implementation for well known {@link Charset}s,
  * specifically {@link StandardCharsets#UTF_8} and {@link StandardCharsets#ISO_8859_1}.
+ * The implementations of this class will never buffer characters beyond a call to the
+ * {@link #write(char[], int, int)} method, thus written characters will always be available
+ * in converted form to the passed {@link OutputStream}.
  */
 public abstract class AbstractOutputStreamWriter extends Writer
 {
@@ -86,11 +89,6 @@ public abstract class AbstractOutputStreamWriter extends Writer
         if (StandardCharsets.UTF_8.equals(charset))
             return new Utf8Writer(outputStream);
         return new EncodingWriter(outputStream, charset);
-    }
-
-    public OutputStream getOutputStream()
-    {
-        return _out;
     }
 
     public int getMaxWriteSize()

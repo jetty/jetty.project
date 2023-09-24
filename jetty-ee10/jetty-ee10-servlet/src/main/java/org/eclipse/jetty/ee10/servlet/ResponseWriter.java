@@ -22,10 +22,8 @@ import java.util.Locale;
 
 import jakarta.servlet.ServletResponse;
 import jakarta.servlet.http.HttpServletResponse;
-import org.eclipse.jetty.io.AbstractOutputStreamWriter;
 import org.eclipse.jetty.io.EofException;
 import org.eclipse.jetty.io.RuntimeIOException;
-import org.eclipse.jetty.util.Callback;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -101,7 +99,9 @@ public class ResponseWriter extends PrintWriter
         super.setError();
 
         if (th instanceof IOException)
+        {
             _ioException = (IOException)th;
+        }
         else
         {
             _ioException = new IOException(String.valueOf(th));
@@ -167,16 +167,15 @@ public class ResponseWriter extends PrintWriter
         }
     }
 
-    public void complete(Callback callback)
+    /**
+     * Used to mark this writer as closed during any asynchronous completion operation.
+     */
+    void markAsClosed()
     {
         synchronized (lock)
         {
             _isClosed = true;
         }
-        if (_writer instanceof AbstractOutputStreamWriter abstractWriter && abstractWriter.getOutputStream() instanceof HttpOutput httpOutput)
-            httpOutput.complete(callback);
-        else
-            callback.succeeded();
     }
 
     @Override

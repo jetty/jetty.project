@@ -321,13 +321,16 @@ public class HttpOutput extends ServletOutputStream implements Runnable
         }
     }
 
+    /**
+     * This method is invoked for the COMPLETE action handling in
+     * HttpChannel.handle.  The callback passed typically will call completed
+     * to finish the request cycle and so may need to asynchronously wait for:
+     * a pending/blocked operation to finish and then either an async close or
+     * wait for an application close to complete.
+     * @param callback The callback to complete when writing the output is complete.
+     */
     public void complete(Callback callback)
     {
-        // This method is invoked for the COMPLETE action handling in
-        // HttpChannel.handle.  The callback passed typically will call completed
-        // to finish the request cycle and so may need to asynchronously wait for:
-        // a pending/blocked operation to finish and then either an async close or
-        // wait for an application close to complete.
         boolean succeeded = false;
         Throwable error = null;
         ByteBuffer content = null;

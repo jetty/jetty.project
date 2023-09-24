@@ -15,6 +15,7 @@ package org.eclipse.jetty.ee10.servlet;
 
 import java.io.IOException;
 import java.io.PrintWriter;
+import java.io.Writer;
 import java.util.Collection;
 import java.util.EnumSet;
 import java.util.Locale;
@@ -313,8 +314,13 @@ public class ServletApiResponse implements HttpServletResponse
             if (writer != null && writer.isFor(locale, encoding))
                 writer.reopen();
             else
+            {
+                // We must use an implementation of AbstractOutputStreamWriter here as we rely on the non cached characters
+                // in the writer implementation for flush and completion operations.
+                Writer outputStreamWriter = AbstractOutputStreamWriter.newWriter(getServletChannel().getHttpOutput(), encoding);
                 getServletResponseInfo().setWriter(writer = new ResponseWriter(
-                    AbstractOutputStreamWriter.newWriter(getServletChannel().getHttpOutput(), encoding), locale, encoding));
+                    outputStreamWriter, locale, encoding));
+            }
 
             // Set the output type at the end, because setCharacterEncoding() checks for it.
             getServletResponseInfo().setOutputType(ServletContextResponse.OutputType.WRITER);

@@ -205,9 +205,8 @@ public class ServletContextResponse extends ContextResponse implements ServletCo
     public void completeOutput(Callback callback)
     {
         if (_outputType == OutputType.WRITER)
-            _writer.complete(callback);
-        else
-            getHttpOutput().complete(callback);
+            _writer.markAsClosed();
+        getHttpOutput().complete(callback);
     }
 
     public boolean isAllContentWritten(long written)

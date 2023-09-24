@@ -15,6 +15,7 @@ package org.eclipse.jetty.ee9.nested;
 
 import java.io.IOException;
 import java.io.PrintWriter;
+import java.io.Writer;
 import java.nio.channels.IllegalSelectorException;
 import java.util.Collection;
 import java.util.Collections;
@@ -868,9 +869,16 @@ public class Response implements HttpServletResponse
             String encoding = getCharacterEncoding(true);
             Locale locale = getLocale();
             if (_writer != null && _writer.isFor(locale, encoding))
+            {
                 _writer.reopen();
+            }
             else
-                _writer = new ResponseWriter(AbstractOutputStreamWriter.newWriter(_out, encoding), locale, encoding);
+            {
+                // We must use an implementation of AbstractOutputStreamWriter here as we rely on the non cached characters
+                // in the writer implementation for flush and completion operations.
+                Writer outputStreamWriter = AbstractOutputStreamWriter.newWriter(_out, encoding);
+                _writer = new ResponseWriter(outputStreamWriter, locale, encoding);
+            }
 
             // Set the output type at the end, because setCharacterEncoding() checks for it.
             _outputType = OutputType.WRITER;
@@ -959,9 +967,8 @@ public class Response implements HttpServletResponse
     public void completeOutput(Callback callback)
     {
         if (_outputType == OutputType.WRITER)
-            _writer.complete(callback);
-        else
-            _out.complete(callback);
+            _writer.markAsClosed();
+        _out.complete(callback);
     }
 
     public long getLongContentLength()
