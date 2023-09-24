@@ -14,8 +14,10 @@
 package org.eclipse.jetty.client;
 
 import java.net.URI;
+import java.util.HashMap;
 import java.util.HashSet;
 import java.util.List;
+import java.util.Map;
 import java.util.Objects;
 import java.util.Set;
 import java.util.regex.Pattern;
@@ -96,6 +98,7 @@ public class ProxyConfiguration
         // TODO use InetAddressSet? Or IncludeExcludeSet?
         private final Set<String> included = new HashSet<>();
         private final Set<String> excluded = new HashSet<>();
+        private final Map<String, Pattern> _exludedPatterns = new HashMap<>();
         private final Origin origin;
         private final SslContextFactory.Client sslContextFactory;
 
@@ -222,8 +225,13 @@ public class ProxyConfiguration
             HostPort hostPort = new HostPort(pattern);
             String host = hostPort.getHost();
             int port = hostPort.getPort();
-            String hostRegex = extractHostRegex(host);
-            return Pattern.matches(hostRegex, address.getHost()) && (port <= 0 || port == address.getPort());
+            Pattern hostPattern = _exludedPatterns.computeIfAbsent(host, this::compileHostRegex);
+            return hostPattern.matcher(address.getHost()).matches() && (port <= 0 || port == address.getPort());
+        }
+
+        private Pattern compileHostRegex(String host)
+        {
+            return Pattern.compile(extractHostRegex(host));
         }
 
         private String extractHostRegex(String host)
