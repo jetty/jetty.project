@@ -17,6 +17,7 @@ import java.io.OutputStream;
 import java.nio.ByteBuffer;
 import java.nio.charset.StandardCharsets;
 
+import org.eclipse.jetty.io.AbstractOutputStreamWriter;
 import org.eclipse.jetty.io.ByteBufferOutputStream;
 import org.eclipse.jetty.util.BufferUtil;
 import org.eclipse.jetty.util.StringUtil;
@@ -42,7 +43,7 @@ public class AbstractWriterTest
     @Test
     public void testSimpleUTF8() throws Exception
     {
-        AbstractOutputStreamWriter writer = new Utf8Writer(_out);
+        AbstractOutputStreamWriter writer = new AbstractOutputStreamWriter.Utf8Writer(_out);
         writer.write("Now is the time");
         assertArrayEquals("Now is the time".getBytes(StandardCharsets.UTF_8), BufferUtil.toArray(_bytes));
     }
@@ -50,7 +51,7 @@ public class AbstractWriterTest
     @Test
     public void testUTF8() throws Exception
     {
-        AbstractOutputStreamWriter writer = new Utf8Writer(_out);
+        AbstractOutputStreamWriter writer = new AbstractOutputStreamWriter.Utf8Writer(_out);
         writer.write("How now Ｂrown cow");
         assertArrayEquals("How now Ｂrown cow".getBytes(StandardCharsets.UTF_8), BufferUtil.toArray(_bytes));
     }
@@ -58,7 +59,7 @@ public class AbstractWriterTest
     @Test
     public void testUTF16() throws Exception
     {
-        AbstractOutputStreamWriter writer = new EncodingWriter(_out, StandardCharsets.UTF_16.displayName());
+        AbstractOutputStreamWriter writer = new AbstractOutputStreamWriter.EncodingWriter(_out, StandardCharsets.UTF_16.displayName());
         writer.write("How now Ｂrown cow");
         assertArrayEquals("How now Ｂrown cow".getBytes(StandardCharsets.UTF_16), BufferUtil.toArray(_bytes));
     }
@@ -66,7 +67,7 @@ public class AbstractWriterTest
     @Test
     public void testNotCESU8() throws Exception
     {
-        AbstractOutputStreamWriter writer = new Utf8Writer(_out);
+        AbstractOutputStreamWriter writer = new AbstractOutputStreamWriter.Utf8Writer(_out);
         String data = "xxx𐐀xxx";
         writer.write(data);
         byte[] b = BufferUtil.toArray(_bytes);
@@ -82,7 +83,7 @@ public class AbstractWriterTest
     @Test
     public void testMultiByteOverflowUTF8() throws Exception
     {
-        AbstractOutputStreamWriter writer = new Utf8Writer(_out);
+        AbstractOutputStreamWriter writer = new AbstractOutputStreamWriter.Utf8Writer(_out);
         int maxWriteSize = writer.getMaxWriteSize();
         final String singleByteStr = "a";
         final String multiByteDuplicateStr = "Ｂ";
@@ -106,7 +107,7 @@ public class AbstractWriterTest
     @Test
     public void testISO8859() throws Exception
     {
-        AbstractOutputStreamWriter writer = new Iso88591Writer(_out);
+        AbstractOutputStreamWriter writer = new AbstractOutputStreamWriter.Iso88591Writer(_out);
         writer.write("How now Ｂrown cow");
         assertEquals(new String(BufferUtil.toArray(_bytes), StandardCharsets.ISO_8859_1), "How now ?rown cow");
     }
@@ -114,7 +115,7 @@ public class AbstractWriterTest
     @Test
     public void testUTF16x2() throws Exception
     {
-        AbstractOutputStreamWriter writer = new Utf8Writer(_out);
+        AbstractOutputStreamWriter writer = new AbstractOutputStreamWriter.Utf8Writer(_out);
         String source = "𠮟";
 
         byte[] bytes = source.getBytes(StandardCharsets.UTF_8);
@@ -136,7 +137,7 @@ public class AbstractWriterTest
     @Test
     public void testMultiByteOverflowUTF16x2() throws Exception
     {
-        AbstractOutputStreamWriter writer = new Utf8Writer(_out);
+        AbstractOutputStreamWriter writer = new AbstractOutputStreamWriter.Utf8Writer(_out);
 
         final String singleByteStr = "a";
         int remainSize = 1;
@@ -167,7 +168,7 @@ public class AbstractWriterTest
     @Test
     public void testMultiByteOverflowUTF16X22() throws Exception
     {
-        AbstractOutputStreamWriter writer = new Utf8Writer(_out);
+        AbstractOutputStreamWriter writer = new AbstractOutputStreamWriter.Utf8Writer(_out);
 
         final String singleByteStr = "a";
         int remainSize = 1;

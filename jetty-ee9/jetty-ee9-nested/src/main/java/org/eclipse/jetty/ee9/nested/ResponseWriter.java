@@ -21,9 +21,9 @@ import java.util.Formatter;
 import java.util.Locale;
 
 import jakarta.servlet.ServletResponse;
+import org.eclipse.jetty.io.AbstractOutputStreamWriter;
 import org.eclipse.jetty.io.EofException;
 import org.eclipse.jetty.io.RuntimeIOException;
-import org.eclipse.jetty.io.writer.AbstractOutputStreamWriter;
 import org.eclipse.jetty.util.Callback;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;

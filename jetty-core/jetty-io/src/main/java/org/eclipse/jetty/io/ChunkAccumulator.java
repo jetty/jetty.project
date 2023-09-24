@@ -40,7 +40,7 @@ public class ChunkAccumulator
 
     /**
      * Add a {@link Chunk} to the accumulator.
-     * @param chunk The {@link Chunk} to accumulate
+     * @param chunk The {@link Chunk} to accumulate.  If a reference is kept to the chunk (rather than a copy), it will be retained.
      * @return true if the {@link Chunk} had content and was added to the accumulator.
      */
     public boolean add(Chunk chunk)
@@ -48,7 +48,12 @@ public class ChunkAccumulator
         if (chunk.hasRemaining())
         {
             _size = Math.addExact(_size, chunk.remaining());
-            return _chunks.add(chunk);
+            if (chunk.canRetain())
+            {
+                chunk.retain();
+                return _chunks.add(chunk);
+            }
+            return _chunks.add(Chunk.from(BufferUtil.copy(chunk.getByteBuffer()), chunk.isLast(), () -> {}));
         }
         return false;
     }
@@ -131,8 +136,7 @@ public class ChunkAccumulator
                 return accumulator.take();
             }
         };
-        task.run();
-        return task;
+        return task.start();
     }
 
     /**
@@ -153,17 +157,16 @@ public class ChunkAccumulator
                 return accumulator.take(pool, direct);
             }
         };
-        task.run();
-        return task;
+        return task.start();
     }
 
     private abstract static class AccumulatorTask<T> extends CompletableTask<T>
     {
-        final Content.Source _source;
-        final ChunkAccumulator _accumulator = new ChunkAccumulator();
-        final int _maxSize;
+        private final Content.Source _source;
+        private final ChunkAccumulator _accumulator = new ChunkAccumulator();
+        private final int _maxSize;
 
-        AccumulatorTask(Content.Source source, int maxSize)
+        private AccumulatorTask(Content.Source source, int maxSize)
         {
             _source = source;
             _maxSize = maxSize;
@@ -191,14 +194,7 @@ public class ChunkAccumulator
 
                     if (chunk.hasRemaining())
                     {
-                        if (chunk.canRetain())
-                            _accumulator.add(chunk);
-                        else
-                        {
-                            _accumulator.add(Chunk.from(BufferUtil.copy(chunk.getByteBuffer()), chunk.isLast(), () ->
-                            {}));
-                            chunk.release();
-                        }
+                        _accumulator.add(chunk);
 
                         if (_maxSize > 0 && _accumulator._size > _maxSize)
                         {
@@ -210,6 +206,8 @@ public class ChunkAccumulator
                         }
                     }
 
+                    chunk.release();
+
                     if (chunk.isLast())
                     {
                         complete(take(_accumulator));
@@ -217,16 +215,14 @@ public class ChunkAccumulator
                     }
                 }
             }
-            catch (ArithmeticException e)
+            catch (Throwable e)
             {
                 _accumulator.close();
-                IOException ioe = new IOException("too large");
-                _source.fail(ioe);
-                completeExceptionally(ioe);
+                _source.fail(e);
+                completeExceptionally(e);
             }
         }
 
         protected abstract T take(ChunkAccumulator accumulator);
-
     }
 }

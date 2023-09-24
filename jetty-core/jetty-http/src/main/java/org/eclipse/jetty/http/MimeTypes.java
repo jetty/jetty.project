@@ -301,7 +301,7 @@ public class MimeTypes
         }
     }
 
-    public static String nameOf(Charset charset)
+    private static String nameOf(Charset charset)
     {
         return charset == null ? null : charset.name();
     }

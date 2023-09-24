@@ -162,7 +162,7 @@ public class Content
         }
 
         /**
-         * <p>Reads, non-blocking, the whole content source into a {@link ByteBuffer}.</p>
+         * <p>Reads, non-blocking, the whole content source into a {@code byte} array.</p>
          *
          * @param source the source to read
          * @param maxSize The maximum size to read, or -1 for no limit
@@ -194,11 +194,11 @@ public class Content
          */
         static CompletableFuture<ByteBuffer> asByteBufferAsync(Source source, int maxSize)
         {
-            return new ChunkAccumulator().readAll(source, -1).thenApply(ByteBuffer::wrap);
+            return asByteArrayAsync(source, maxSize).thenApply(ByteBuffer::wrap);
         }
 
         /**
-         * <p>Reads, non-blocking, the whole content source into a {@link ByteBuffer}.</p>
+         * <p>Reads, non-blocking, the whole content source into a {@link RetainableByteBuffer}.</p>
          *
          * @param source The {@link Content.Source} to read
          * @param pool The {@link ByteBufferPool} to acquire the buffer from, or null for a non {@link Retainable} buffer

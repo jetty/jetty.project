@@ -1,0 +1,374 @@
+//
+// ========================================================================
+// Copyright (c) 1995 Mort Bay Consulting Pty Ltd and others.
+//
+// This program and the accompanying materials are made available under the
+// terms of the Eclipse Public License v. 2.0 which is available at
+// https://www.eclipse.org/legal/epl-2.0, or the Apache License, Version 2.0
+// which is available at https://www.apache.org/licenses/LICENSE-2.0.
+//
+// SPDX-License-Identifier: EPL-2.0 OR Apache-2.0
+// ========================================================================
+//
+
+package org.eclipse.jetty.io;
+
+import java.io.IOException;
+import java.io.OutputStream;
+import java.io.OutputStreamWriter;
+import java.io.Writer;
+import java.nio.charset.Charset;
+import java.nio.charset.StandardCharsets;
+
+import org.eclipse.jetty.util.ByteArrayOutputStream2;
+
+/**
+ * An alternate to {@link java.io.OutputStreamWriter} that supports
+ * several optimized implementation for well known {@link Charset}s,
+ * specifically {@link StandardCharsets#UTF_8} and {@link StandardCharsets#ISO_8859_1}.
+ */
+public abstract class AbstractOutputStreamWriter extends Writer
+{
+    private final int _maxWriteSize;
+    private final char[] _chars;
+    protected final OutputStream _out;
+    protected final ByteArrayOutputStream2 _bytes;
+
+    protected AbstractOutputStreamWriter(OutputStream out)
+    {
+        this(out, 0);
+    }
+
+    /**
+     * Construct an {@link java.io.OutputStreamWriter}
+     * @param out The {@link OutputStream} to write the converted bytes to.
+     * @param maxWriteSize The maximum size in characters of a single conversion
+     */
+    protected AbstractOutputStreamWriter(OutputStream out, int maxWriteSize)
+    {
+        _maxWriteSize = maxWriteSize <= 0 ? 1024 : maxWriteSize;
+        _out = out;
+        _chars = new char[_maxWriteSize];
+        _bytes = new ByteArrayOutputStream2(_maxWriteSize);
+    }
+
+    /**
+     * Obtain a new {@link Writer} that converts characters written to bytes
+     * written to an {@link OutputStream}.
+     * @param outputStream The {@link OutputStream} to write to/
+     * @param charset The {@link Charset} name.
+     * @return A Writer that will
+     * @throws IOException If there is a problem creating the {@link Writer}.
+     */
+    public static Writer newWriter(OutputStream outputStream, String charset)
+        throws IOException
+    {
+        if (StandardCharsets.ISO_8859_1.name().equalsIgnoreCase(charset))
+            return new Iso88591Writer(outputStream);
+        if (StandardCharsets.UTF_8.name().equalsIgnoreCase(charset))
+            return new Utf8Writer(outputStream);
+        return new EncodingWriter(outputStream, charset);
+    }
+
+    /**
+     * Obtain a new {@link Writer} that converts characters written to bytes
+     * written to an {@link OutputStream}.
+     * @param outputStream The {@link OutputStream} to write to/
+     * @param charset The {@link Charset}.
+     * @return A Writer that will
+     * @throws IOException If there is a problem creating the {@link Writer}.
+     */
+    public static Writer newWriter(OutputStream outputStream, Charset charset)
+        throws IOException
+    {
+        if (StandardCharsets.ISO_8859_1 == charset)
+            return new Iso88591Writer(outputStream);
+        if (StandardCharsets.UTF_8.equals(charset))
+            return new Utf8Writer(outputStream);
+        return new EncodingWriter(outputStream, charset);
+    }
+
+    public OutputStream getOutputStream()
+    {
+        return _out;
+    }
+
+    public int getMaxWriteSize()
+    {
+        return _maxWriteSize;
+    }
+
+    @Override
+    public void close() throws IOException
+    {
+        _out.close();
+    }
+    
+    @Override
+    public void flush() throws IOException
+    {
+        _out.flush();
+    }
+
+    @Override
+    public void write(String string, int offset, int length) throws IOException
+    {
+        while (length > _maxWriteSize)
+        {
+            int end = offset + _maxWriteSize;
+            string.getChars(offset, end, _chars, 0);
+            write(_chars, 0, length);
+            offset = end;
+            length -= _maxWriteSize;
+        }
+
+        string.getChars(offset, offset + length, _chars, 0);
+        write(_chars, 0, length);
+    }
+
+    @Override
+    public abstract void write(char[] s, int offset, int length) throws IOException;
+
+    /**
+     * An implementation of {@link AbstractOutputStreamWriter} for
+     * optimal ISO-8859-1 conversion.
+     * The ISO-8859-1 encoding is done by this class and no additional
+     * buffers or Writers are used.
+     */
+    public static class Iso88591Writer extends AbstractOutputStreamWriter
+    {
+        public Iso88591Writer(OutputStream out)
+        {
+            super(out);
+        }
+
+        @Override
+        public void write(char[] s, int offset, int length) throws IOException
+        {
+            if (length == 1)
+            {
+                int c = s[offset];
+                _out.write(c < 256 ? c : '?');
+                return;
+            }
+
+            while (length > 0)
+            {
+                _bytes.reset();
+                int chars = Math.min(length, getMaxWriteSize());
+
+                byte[] buffer = _bytes.getBuf();
+                int bytes = _bytes.getCount();
+
+                if (chars > buffer.length - bytes)
+                    chars = buffer.length - bytes;
+
+                for (int i = 0; i < chars; i++)
+                {
+                    int c = s[offset + i];
+                    buffer[bytes++] = (byte)(c < 256 ? c : '?');
+                }
+                if (bytes >= 0)
+                    _bytes.setCount(bytes);
+
+                _bytes.writeTo(_out);
+                length -= chars;
+                offset += chars;
+            }
+        }
+    }
+
+    /**
+     * An implementation of {@link AbstractOutputStreamWriter} for
+     * an optimal UTF-8 conversion.
+     * The UTF-8 encoding is done by this class and no additional
+     * buffers or Writers are used.
+     * The UTF-8 code was inspired by <a href="http://javolution.org">...</a>
+     */
+    public static class Utf8Writer extends AbstractOutputStreamWriter
+    {
+        int _surrogate = 0;
+
+        public Utf8Writer(OutputStream out)
+        {
+            super(out);
+        }
+
+        @Override
+        public void write(char[] s, int offset, int length) throws IOException
+        {
+            while (length > 0)
+            {
+                _bytes.reset();
+                int chars = Math.min(length, getMaxWriteSize());
+
+                byte[] buffer = _bytes.getBuf();
+                int bytes = _bytes.getCount();
+
+                if (bytes + chars > buffer.length)
+                    chars = buffer.length - bytes;
+
+                for (int i = 0; i < chars; i++)
+                {
+                    int code = s[offset + i];
+
+                    // Do we already have a surrogate?
+                    if (_surrogate == 0)
+                    {
+                        // No - is this char code a surrogate?
+                        if (Character.isHighSurrogate((char)code))
+                        {
+                            _surrogate = code; // UCS-?
+                            continue;
+                        }
+                    }
+                    // else handle a low surrogate
+                    else if (Character.isLowSurrogate((char)code))
+                    {
+                        code = Character.toCodePoint((char)_surrogate, (char)code); // UCS-4
+                    }
+                    // else UCS-2
+                    else
+                    {
+                        code = _surrogate; // UCS-2
+                        _surrogate = 0; // USED
+                        i--;
+                    }
+
+                    if ((code & 0xffffff80) == 0)
+                    {
+                        // 1b
+                        if (bytes >= buffer.length)
+                        {
+                            chars = i;
+                            break;
+                        }
+                        buffer[bytes++] = (byte)(code);
+                    }
+                    else
+                    {
+                        if ((code & 0xfffff800) == 0)
+                        {
+                            // 2b
+                            if (bytes + 2 > buffer.length)
+                            {
+                                chars = i;
+                                break;
+                            }
+                            buffer[bytes++] = (byte)(0xc0 | (code >> 6));
+                            buffer[bytes++] = (byte)(0x80 | (code & 0x3f));
+                        }
+                        else if ((code & 0xffff0000) == 0)
+                        {
+                            // 3b
+                            if (bytes + 3 > buffer.length)
+                            {
+                                chars = i;
+                                break;
+                            }
+                            buffer[bytes++] = (byte)(0xe0 | (code >> 12));
+                            buffer[bytes++] = (byte)(0x80 | ((code >> 6) & 0x3f));
+                            buffer[bytes++] = (byte)(0x80 | (code & 0x3f));
+                        }
+                        else if ((code & 0xff200000) == 0)
+                        {
+                            // 4b
+                            if (bytes + 4 > buffer.length)
+                            {
+                                chars = i;
+                                break;
+                            }
+                            buffer[bytes++] = (byte)(0xf0 | (code >> 18));
+                            buffer[bytes++] = (byte)(0x80 | ((code >> 12) & 0x3f));
+                            buffer[bytes++] = (byte)(0x80 | ((code >> 6) & 0x3f));
+                            buffer[bytes++] = (byte)(0x80 | (code & 0x3f));
+                        }
+                        else if ((code & 0xf4000000) == 0)
+                        {
+                            // 5b
+                            if (bytes + 5 > buffer.length)
+                            {
+                                chars = i;
+                                break;
+                            }
+                            buffer[bytes++] = (byte)(0xf8 | (code >> 24));
+                            buffer[bytes++] = (byte)(0x80 | ((code >> 18) & 0x3f));
+                            buffer[bytes++] = (byte)(0x80 | ((code >> 12) & 0x3f));
+                            buffer[bytes++] = (byte)(0x80 | ((code >> 6) & 0x3f));
+                            buffer[bytes++] = (byte)(0x80 | (code & 0x3f));
+                        }
+                        else if ((code & 0x80000000) == 0)
+                        {
+                            // 6b
+                            if (bytes + 6 > buffer.length)
+                            {
+                                chars = i;
+                                break;
+                            }
+                            buffer[bytes++] = (byte)(0xfc | (code >> 30));
+                            buffer[bytes++] = (byte)(0x80 | ((code >> 24) & 0x3f));
+                            buffer[bytes++] = (byte)(0x80 | ((code >> 18) & 0x3f));
+                            buffer[bytes++] = (byte)(0x80 | ((code >> 12) & 0x3f));
+                            buffer[bytes++] = (byte)(0x80 | ((code >> 6) & 0x3f));
+                            buffer[bytes++] = (byte)(0x80 | (code & 0x3f));
+                        }
+                        else
+                        {
+                            buffer[bytes++] = (byte)('?');
+                        }
+
+                        _surrogate = 0; // USED
+
+                        if (bytes == buffer.length)
+                        {
+                            chars = i + 1;
+                            break;
+                        }
+                    }
+                }
+                _bytes.setCount(bytes);
+
+                _bytes.writeTo(_out);
+                length -= chars;
+                offset += chars;
+            }
+        }
+    }
+
+    /**
+     * An implementation of {@link AbstractOutputStreamWriter} that internally
+     * uses {@link java.io.OutputStreamWriter}.
+     */
+    public static class EncodingWriter extends AbstractOutputStreamWriter
+    {
+        final Writer _converter;
+
+        public EncodingWriter(OutputStream out, String encoding) throws IOException
+        {
+            super(out);
+            _converter = new OutputStreamWriter(_bytes, encoding);
+        }
+
+        public EncodingWriter(OutputStream out, Charset charset) throws IOException
+        {
+            super(out);
+            _converter = new OutputStreamWriter(_bytes, charset);
+        }
+
+        @Override
+        public void write(char[] s, int offset, int length) throws IOException
+        {
+            while (length > 0)
+            {
+                _bytes.reset();
+                int chars = Math.min(length, getMaxWriteSize());
+
+                _converter.write(s, offset, chars);
+                _converter.flush();
+                _bytes.writeTo(_out);
+                length -= chars;
+                offset += chars;
+            }
+        }
+    }
+}
