@@ -1202,8 +1202,9 @@ public class HttpClientStreamTest extends AbstractTest
     @MethodSource("transports")
     @Tag("DisableLeakTracking:server:H2")
     @Tag("DisableLeakTracking:server:H2C")
+    @Tag("DisableLeakTracking:server:H3")
     @Tag("DisableLeakTracking:server:FCGI")
-    public void testHttpStreamConsumeAvailableUponClientTimeout(Transport transport) throws Exception
+    public void testHttpStreamConsumeAvailableUponClientAbort(Transport transport) throws Exception
     {
         AtomicReference<org.eclipse.jetty.client.Request> clientRequestRef = new AtomicReference<>();
 
