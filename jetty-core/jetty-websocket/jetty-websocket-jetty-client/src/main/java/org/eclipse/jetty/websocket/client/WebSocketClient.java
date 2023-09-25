@@ -60,7 +60,7 @@ public class WebSocketClient extends ContainerLifeCycle implements Configurable,
     private final List<WebSocketSessionListener> sessionListeners = new CopyOnWriteArrayList<>();
     private final SessionTracker sessionTracker = new SessionTracker();
     private final Configuration.ConfigurationCustomizer configurationCustomizer = new Configuration.ConfigurationCustomizer();
-    private final WebSocketComponents components = new WebSocketComponents();
+    private final WebSocketComponents components;
     private boolean stopAtShutdown = false;
     private long _stopTimeout = Long.MAX_VALUE;
 
@@ -73,12 +73,45 @@ public class WebSocketClient extends ContainerLifeCycle implements Configurable,
     }
 
     /**
-     * Instantiate a WebSocketClient using HttpClient for defaults
+     * <p>
+     * Instantiate a WebSocketClient.
+     * </p>
+     *
+     * <p>
+     *     HTTP behaviors of the WebSocket upgrade are taken from the HttpClient configuration.
+     * </p>
      *
      * @param httpClient the HttpClient to base internal defaults off of
      */
     public WebSocketClient(HttpClient httpClient)
     {
+        this (httpClient,
+            new WebSocketComponents(
+                null,
+                null,
+                httpClient != null ? httpClient.getByteBufferPool() : null,
+                null,
+                null,
+                httpClient != null ? httpClient.getExecutor() : null)
+        );
+    }
+
+    /**
+     * <p>
+     * Instantiate a WebSocketClient.
+     * </p>
+     *
+     * <p>
+     *     HTTP behaviors of the WebSocket upgrade are taken from the {@link HttpClient} configuration.
+     *     WebSocket behaviors are taken from the {@link WebSocketComponents} configuration.
+     * </p>
+     *
+     * @param httpClient the HttpClient to use for the HTTP behaviors of WebSocket upgrade
+     * @param webSocketComponents the WebSocketComponents to use for WebSocket behaviors
+     */
+    public WebSocketClient(HttpClient httpClient, WebSocketComponents webSocketComponents)
+    {
+        components = webSocketComponents;
         coreClient = new WebSocketCoreClient(httpClient, components);
         addManaged(coreClient);
         frameHandlerFactory = new JettyWebSocketFrameHandlerFactory(this, components);
@@ -329,7 +362,7 @@ public class WebSocketClient extends ContainerLifeCycle implements Configurable,
     @Override
     public Executor getExecutor()
     {
-        return getHttpClient().getExecutor();
+        return components.getExecutor();
     }
 
     public HttpClient getHttpClient()
