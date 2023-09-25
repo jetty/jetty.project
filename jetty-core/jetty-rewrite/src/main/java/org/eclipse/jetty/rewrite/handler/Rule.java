@@ -78,7 +78,7 @@ public abstract class Rule
      */
     public static class Handler extends Request.Wrapper
     {
-        private Rule.Handler _wrapper;
+        private Rule.Handler _nextRuleHandler;
 
         protected Handler(Request request)
         {
@@ -88,14 +88,14 @@ public abstract class Rule
         public Handler(Rule.Handler handler)
         {
             super(handler);
-            handler._wrapper = this;
+            handler._nextRuleHandler = this;
         }
 
         /**
          * <p>Handles this wrapped request together with the passed response and callback.</p>
          * <p>This method should be overridden only if the rule applies to the response,
          * or the rule completes the callback.
-         * By default this method forwards the handling to the next rule.
+         * By default this method forwards the handling to the next {@link Rule.Handler}.
          * If a rule that overrides this method is non-{@link #isTerminating() terminating},
          * it should call the {@code super} implementation to chain the rules.</p>
          *
@@ -105,7 +105,7 @@ public abstract class Rule
          */
         protected boolean handle(Response response, Callback callback) throws Exception
         {
-            return _wrapper.handle(response, callback);
+            return _nextRuleHandler.handle(response, callback);
         }
     }
 

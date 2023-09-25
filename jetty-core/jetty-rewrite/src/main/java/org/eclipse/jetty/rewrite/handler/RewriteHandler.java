@@ -139,15 +139,15 @@ public class RewriteHandler extends Handler.Wrapper
 
         // At least one rule matched, link the last Rule.Handler
         // to invoke the child Handler of this RewriteHandler.
-        new Output(result, getHandler());
+        new LastRuleHandler(result, getHandler());
         return input.handle(response, callback);
     }
 
-    private static class Output extends Rule.Handler
+    private static class LastRuleHandler extends Rule.Handler
     {
         private final Handler _handler;
 
-        private Output(Rule.Handler ruleHandler, Handler handler)
+        private LastRuleHandler(Rule.Handler ruleHandler, Handler handler)
         {
             super(ruleHandler);
             _handler = handler;
