@@ -498,7 +498,8 @@ public class StringUtil
         if (length == 0)
             return "";
 
-        if (offset < 0 || length < 0 || (offset + length) > string.length())
+        int end = offset + length;
+        if (offset < 0 || offset > end || end > string.length())
             throw new IndexOutOfBoundsException("offset and/or length out of range");
 
         return new CharSequence()
@@ -539,6 +540,7 @@ public class StringUtil
      */
     public static CharSequence subSequence(char[] chars, int offset, int length)
     {
+        // Needed to make bounds check of wrap the same as for string.substring
         if (length == 0)
             return "";
         return CharBuffer.wrap(chars, offset, length);
