@@ -82,11 +82,11 @@ public class RedirectRegexRule extends RegexRule
         return new Handler(input)
         {
             @Override
-            public boolean handle(Request request, Response response, Callback callback)
+            protected boolean handle(Response response, Callback callback)
             {
                 String target = matcher.replaceAll(getLocation());
                 response.setStatus(_statusCode);
-                response.getHeaders().put(HttpHeader.LOCATION, Request.toRedirectURI(request, target));
+                response.getHeaders().put(HttpHeader.LOCATION, Request.toRedirectURI(this, target));
                 callback.succeeded();
                 return true;
             }

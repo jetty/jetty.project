@@ -16,7 +16,6 @@ package org.eclipse.jetty.rewrite.handler;
 import java.io.IOException;
 import java.util.regex.Matcher;
 
-import org.eclipse.jetty.server.Request;
 import org.eclipse.jetty.server.Response;
 import org.eclipse.jetty.util.Callback;
 import org.eclipse.jetty.util.annotation.Name;
@@ -81,13 +80,13 @@ public class HeaderRegexRule extends RegexRule
         return new Handler(input)
         {
             @Override
-            public boolean handle(Request request, Response response, Callback callback) throws Exception
+            protected boolean handle(Response response, Callback callback) throws Exception
             {
                 if (isAdd())
                     response.getHeaders().add(getHeaderName(), matcher.replaceAll(getHeaderValue()));
                 else
                     response.getHeaders().put(getHeaderName(), matcher.replaceAll(getHeaderValue()));
-                return super.handle(request, response, callback);
+                return super.handle(response, callback);
             }
         };
     }

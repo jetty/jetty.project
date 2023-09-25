@@ -93,10 +93,10 @@ public class CookiePatternRule extends PatternRule
         return new Handler(input)
         {
             @Override
-            public boolean handle(Request request, Response response, Callback callback) throws Exception
+            protected boolean handle(Response response, Callback callback) throws Exception
             {
                 Response.addCookie(response, HttpCookie.from(_name, _value));
-                return super.handle(request, response, callback);
+                return super.handle(response, callback);
             }
         };
     }

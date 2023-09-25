@@ -64,49 +64,48 @@ public abstract class Rule
     }
 
     /**
-     * <p>A {@link Request.Wrapper} that is also a {@link Handler},
-     * used to chain a sequence of {@link Rule}s together.</p>
-     * <p>The rule handler is initialized with the initial request,
-     * then it is passed to a chain of rules, which in turn chain
-     * rule handlers together. At the end of the rule applications,
-     * the last rule handler (which eventually wraps the initial
-     * request), the response and the callback are passed to the
-     * chain of rule handlers and finally to the child Handler
-     * of {@link RewriteHandler}.</p>
-     * <p>{@code Handler}s are chained as rules are applied,
-     * so that the first rule produces the innermost {@code Handler}
-     * and the last rule produces the outermost {@code Handler}.</p>
+     * <p>A {@link Request.Wrapper} used to chain a sequence of {@link Rule}s together.</p>
+     * <p>The first {@link Rule.Handler} is initialized with the initial {@link Request},
+     * then it is passed to a chain of {@link Rule}s, which in turn chain {@link Rule.Handler}s
+     * together.
+     * At the end of the {@link Rule} applications, {@link Rule.Handler}s are chained so that
+     * so that the first rule produces the innermost {@code Handler} and the last rule produces
+     * the outermost {@code Handler} in this way: {@code RH3(RH2(RH1(Req)))}.</p>
+     * <p>After the {@link Rule} applications, the {@link Rule.Handler}s are then called in
+     * sequence, starting from the innermost and moving outwards with respect to the wrapping,
+     * until finally the {@link org.eclipse.jetty.server.Handler#handle(Request, Response, Callback)}
+     * method of the child {@code Handler} of {@link RewriteHandler} is invoked.</p>
      */
-    public static class Handler extends Request.Wrapper implements Request.Handler
+    public static class Handler extends Request.Wrapper
     {
-        public Handler(Request request)
+        private Rule.Handler _wrapper;
+
+        protected Handler(Request request)
         {
             super(request);
+        }
+
+        public Handler(Rule.Handler handler)
+        {
+            super(handler);
+            handler._wrapper = this;
         }
 
         /**
          * <p>Handles this wrapped request together with the passed response and callback.</p>
          * <p>This method should be overridden only if the rule applies to the response,
-         * or the rule completes the callback.</p>
-         * <p>By default this method for wards the handling to the next rule.</p>
-         * <p>Note that the {@code request} parameter and {@code "this"} are both wrappers
-         * of the initial request, but at different stages of the application of the rules.
-         * The {@code request} parameter is the outermost {@code Handler}, result of the
-         * application of all the rules.
-         * On the other hand, {@code "this"} is the {@code Handler} result of the application
-         * of the rules up to the rule that produced this {@code Handler}, and therefore
-         * represents only a partial application of the rules.</p>
+         * or the rule completes the callback.
+         * By default this method forwards the handling to the next rule.
+         * If a rule that overrides this method is non-{@link #isTerminating() terminating},
+         * it should call the {@code super} implementation to chain the rules.</p>
          *
-         * @param request the outermost {@code Handler} that eventually wraps the initial {@link Request}
          * @param response the {@link Response}
          * @param callback the {@link Callback}
          * @throws Exception if there is a failure while handling the rules
          */
-        @Override
-        public boolean handle(Request request, Response response, Callback callback) throws Exception
+        protected boolean handle(Response response, Callback callback) throws Exception
         {
-            Rule.Handler handler = (Rule.Handler)getWrapped();
-            return handler.handle(request, response, callback);
+            return _wrapper.handle(response, callback);
         }
     }
 
@@ -117,9 +116,9 @@ public abstract class Rule
     {
         private final HttpURI _uri;
 
-        public HttpURIHandler(Request request, HttpURI uri)
+        public HttpURIHandler(Rule.Handler handler, HttpURI uri)
         {
-            super(request);
+            super(handler);
             _uri = uri;
         }
 

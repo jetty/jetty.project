@@ -84,35 +84,4 @@ public class HeaderPatternRuleTest extends AbstractRuleTest
             stop();
         }
     }
-
-    @Test
-    public void testMultipleRulesWithSamePattern() throws Exception
-    {
-        HeaderPatternRule rule1 = new HeaderPatternRule("/*", "name1", "value1");
-        RewriteRegexRule rule2 = new RewriteRegexRule("/", "/rewritten");
-        HeaderPatternRule rule3 = new HeaderPatternRule("/*", "name2", "value2");
-        List.of(rule2, rule1, rule3).forEach(_rewriteHandler::addRule);
-        start(new Handler.Abstract()
-        {
-            @Override
-            public boolean handle(Request request, Response response, Callback callback)
-            {
-                String pathInContext = Request.getPathInContext(request);
-                assertEquals("/rewritten", pathInContext);
-                callback.succeeded();
-                return true;
-            }
-        });
-
-        String request = """
-                GET / HTTP/1.1
-                Host: localhost
-                            
-                """;
-
-        HttpTester.Response response = HttpTester.parseResponse(_connector.getResponse(request));
-        assertEquals(200, response.getStatus());
-        assertEquals("value1", response.get("name1"));
-        assertEquals("value2", response.get("name2"));
-    }
 }

@@ -130,32 +130,33 @@ public class RewriteHandler extends Handler.Wrapper
         if (!isStarted())
             return false;
 
-        Rule.Handler input = new Input(request, getHandler());
-        Rule.Handler output = getRuleContainer().matchAndApply(input);
+        Rule.Handler input = new Rule.Handler(request);
+        Rule.Handler result = getRuleContainer().matchAndApply(input);
 
         // No rule matched, call super with the original request.
-        if (output == null)
+        if (result == null)
             return super.handle(request, response, callback);
 
-        // At least one rule matched, call handle()
-        // with the output of the rule applications.
-        return output.handle(output, response, callback);
+        // At least one rule matched, link the last Rule.Handler
+        // to invoke the child Handler of this RewriteHandler.
+        new Output(result, getHandler());
+        return input.handle(response, callback);
     }
 
-    private static class Input extends Rule.Handler
+    private static class Output extends Rule.Handler
     {
         private final Handler _handler;
 
-        private Input(Request request, Handler handler)
+        private Output(Rule.Handler ruleHandler, Handler handler)
         {
-            super(request);
+            super(ruleHandler);
             _handler = handler;
         }
 
         @Override
-        public boolean handle(Request request, Response response, Callback callback) throws Exception
+        protected boolean handle(Response response, Callback callback) throws Exception
         {
-            return _handler.handle(request, response, callback);
+            return _handler.handle(getWrapped(), response, callback);
         }
     }
 }
