@@ -20,8 +20,3 @@ lib/ee8-websocket/jetty-ee8-websocket-jetty-api-${jetty.version}.jar
 lib/ee8-websocket/jetty-ee8-websocket-jetty-common-${jetty.version}.jar
 lib/ee8-websocket/jetty-ee8-websocket-jetty-client-${jetty.version}.jar
 lib/ee8-websocket/jetty-ee8-websocket-jetty-client-webapp-${jetty.version}.jar
-
-[jpms]
-# The implementation needs to access method handles in
-# classes that are in the web application classloader.
-add-reads: org.eclipse.jetty.websocket.jetty.common=ALL-UNNAMED
