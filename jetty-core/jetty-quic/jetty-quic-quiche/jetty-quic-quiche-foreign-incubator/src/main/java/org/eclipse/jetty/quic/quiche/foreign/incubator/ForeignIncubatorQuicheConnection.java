@@ -879,7 +879,7 @@ public class ForeignIncubatorQuicheConnection extends QuicheConnection
         try (AutoLock ignore = lock.lock())
         {
             if (quicheConn == null)
-                return -1;
+                throw new IOException("connection was released");
 
             long read;
             try (ResourceScope scope = ResourceScope.newConfinedScope())
@@ -905,15 +905,10 @@ public class ForeignIncubatorQuicheConnection extends QuicheConnection
                 }
             }
 
+            if (read == quiche_error.QUICHE_ERR_DONE)
+                return isStreamFinished(streamId) ? -1 : 0;
             if (read < 0L)
-            {
-                if (isStreamFinished(streamId))
-                    return -1;
-                else if (read == quiche_error.QUICHE_ERR_DONE)
-                    return 0;
-                else
-                    throw new IOException("failed to read from stream " + streamId + "; quiche_err=" + quiche_error.errToString(read));
-            }
+                throw new IOException("failed to read from stream " + streamId + "; quiche_err=" + quiche_error.errToString(read));
             buffer.position((int)(buffer.position() + read));
             return (int)read;
         }
