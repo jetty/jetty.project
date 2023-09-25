@@ -61,13 +61,13 @@ public class BufferedContentSinkTest
     @Test
     public void testConstructor()
     {
-        assertThrows(IllegalArgumentException.class, () -> new BufferedContentSink(new AsyncContent(), _bufferPool, true, 0, 1));
-        assertThrows(IllegalArgumentException.class, () -> new BufferedContentSink(new AsyncContent(), _bufferPool, true, -1, 1));
         assertThrows(IllegalArgumentException.class, () -> new BufferedContentSink(new AsyncContent(), _bufferPool, true, 1, 0));
         assertThrows(IllegalArgumentException.class, () -> new BufferedContentSink(new AsyncContent(), _bufferPool, true, 1, -1));
+        assertThrows(IllegalArgumentException.class, () -> new BufferedContentSink(new AsyncContent(), _bufferPool, true, 0, 1));
+        assertThrows(IllegalArgumentException.class, () -> new BufferedContentSink(new AsyncContent(), _bufferPool, true, -1, 1));
         assertThrows(IllegalArgumentException.class, () -> new BufferedContentSink(new AsyncContent(), _bufferPool, true, 0, 0));
         assertThrows(IllegalArgumentException.class, () -> new BufferedContentSink(new AsyncContent(), _bufferPool, true, -1, -1));
-        assertThrows(IllegalArgumentException.class, () -> new BufferedContentSink(new AsyncContent(), _bufferPool, true, 1, 2));
+        assertThrows(IllegalArgumentException.class, () -> new BufferedContentSink(new AsyncContent(), _bufferPool, true, 2, 1));
     }
 
     @Test
@@ -244,7 +244,7 @@ public class BufferedContentSinkTest
 
         try (AsyncContent async = new AsyncContent())
         {
-            BufferedContentSink buffered = new BufferedContentSink(async, _bufferPool, true, maxBufferSize, maxAggregationSize);
+            BufferedContentSink buffered = new BufferedContentSink(async, _bufferPool, true, maxAggregationSize, maxBufferSize);
 
             buffered.write(false, ByteBuffer.wrap(input1), Callback.from(() ->
                 buffered.write(true, ByteBuffer.wrap(input2), Callback.NOOP)));
@@ -291,7 +291,7 @@ public class BufferedContentSinkTest
 
         try (AsyncContent async = new AsyncContent())
         {
-            BufferedContentSink buffered = new BufferedContentSink(async, _bufferPool, true, maxBufferSize, maxAggregationSize);
+            BufferedContentSink buffered = new BufferedContentSink(async, _bufferPool, true, maxAggregationSize, maxBufferSize);
 
             buffered.write(false, ByteBuffer.wrap(input1), Callback.from(() ->
                 buffered.write(true, ByteBuffer.wrap(input2), Callback.NOOP)));
@@ -338,7 +338,7 @@ public class BufferedContentSinkTest
 
         try (AsyncContent async = new AsyncContent())
         {
-            BufferedContentSink buffered = new BufferedContentSink(async, _bufferPool, true, maxBufferSize, maxAggregationSize);
+            BufferedContentSink buffered = new BufferedContentSink(async, _bufferPool, true, maxAggregationSize, maxBufferSize);
 
             buffered.write(false, ByteBuffer.wrap(input1), Callback.from(() ->
                 buffered.write(true, ByteBuffer.wrap(input2), Callback.NOOP)));
@@ -503,6 +503,48 @@ public class BufferedContentSinkTest
             assertThat(read.isLast(), is(true));
             assertThat(read.remaining(), is(1024));
             assertThat(read.release(), is(true));
+
+            assertTrue(complete.await(5, TimeUnit.SECONDS));
+            assertThat(count.get(), is(-1));
+        }
+    }
+
+    @Test
+    public void testSmallThenLargeWritesRecursion() throws Exception
+    {
+        try (AsyncContent async = new AsyncContent())
+        {
+            BufferedContentSink buffered = new BufferedContentSink(async, _bufferPool, true, 1, 4096);
+            AtomicInteger count = new AtomicInteger(8192);
+            CountDownLatch complete = new CountDownLatch(1);
+            Callback callback = new Callback()
+            {
+                @Override
+                public void succeeded()
+                {
+                    int c = count.decrementAndGet();
+                    ByteBuffer byteBuffer = (c % 2 == 0) ? ByteBuffer.wrap(new byte[512]) : ByteBuffer.wrap(new byte[]{(byte)c});
+                    if (c >= 0)
+                        buffered.write(c == 0, byteBuffer, this);
+                    else
+                        complete.countDown();
+                }
+            };
+
+            callback.succeeded();
+
+            for (int i = 0; i < 4096; i++)
+            {
+                Content.Chunk read = async.read();
+                assertThat(read.isLast(), is(false));
+                assertThat(read.remaining(), is(1));
+                assertThat(read.release(), is(true));
+
+                read = async.read();
+                assertThat(read.isLast(), is(i == 4095));
+                assertThat(read.remaining(), is(512));
+                assertThat(read.release(), is(true));
+            }
 
             assertTrue(complete.await(5, TimeUnit.SECONDS));
             assertThat(count.get(), is(-1));

@@ -109,7 +109,7 @@ public class ByteBufferAggregator
 
     private static int ceilToNextPowerOfTwo(int val)
     {
-        int result = 1 << Integer.SIZE - Integer.numberOfLeadingZeros(val - 1);
+        int result = 1 << (Integer.SIZE - Integer.numberOfLeadingZeros(val - 1));
         return result > 0 ? result : Integer.MAX_VALUE;
     }
 
@@ -133,6 +133,6 @@ public class ByteBufferAggregator
     @Override
     public String toString()
     {
-        return "%s@%x{a=%d c=%d b=%s}".formatted(getClass().getSimpleName(), hashCode(), _aggregatedSize, _currentSize, _retainableByteBuffer);
+        return "%s@%x{a=%d c=%d m=%d b=%s}".formatted(getClass().getSimpleName(), hashCode(), _aggregatedSize, _currentSize, _maxSize, _retainableByteBuffer);
     }
 }

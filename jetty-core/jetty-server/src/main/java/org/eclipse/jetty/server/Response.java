@@ -563,7 +563,7 @@ public interface Response extends Content.Sink
         int bufferSize = httpConfiguration.getOutputBufferSize();
         boolean useOutputDirectByteBuffers = httpConfiguration.isUseOutputDirectByteBuffers();
         int outputAggregationSize = httpConfiguration.getOutputAggregationSize();
-        return Content.Sink.asBuffered(response, bufferPool, useOutputDirectByteBuffers, bufferSize, outputAggregationSize);
+        return Content.Sink.asBuffered(response, bufferPool, useOutputDirectByteBuffers, outputAggregationSize, bufferSize);
     }
 
     class Wrapper implements Response

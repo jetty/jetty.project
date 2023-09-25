@@ -203,7 +203,7 @@ public class BufferedResponseHandler extends ConditionalHandler.Abstract
             attribute = request.getAttribute(BufferedResponseHandler.MAX_AGGREGATION_SIZE_ATTRIBUTE_NAME);
             int maxAggregationSize = attribute instanceof Integer ? (int)attribute : httpConfiguration.getOutputAggregationSize();
             boolean direct = httpConfiguration.isUseOutputDirectByteBuffers();
-            return Content.Sink.asBuffered(getWrapped(), bufferPool, direct, bufferSize, maxAggregationSize);
+            return Content.Sink.asBuffered(getWrapped(), bufferPool, direct, maxAggregationSize, bufferSize);
         }
 
         @Override

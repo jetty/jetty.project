@@ -49,7 +49,7 @@ public class BufferedContentSink implements Content.Sink
     private boolean _firstWrite = true;
     private boolean _lastWritten;
 
-    public BufferedContentSink(Content.Sink delegate, ByteBufferPool bufferPool, boolean direct, int maxBufferSize, int maxAggregationSize)
+    public BufferedContentSink(Content.Sink delegate, ByteBufferPool bufferPool, boolean direct, int maxAggregationSize, int maxBufferSize)
     {
         if (maxBufferSize <= 0)
             throw new IllegalArgumentException("maxBufferSize must be > 0, was: " + maxBufferSize);
