@@ -239,8 +239,8 @@ public class BufferedResponseHandlerTest
                         outputStream.flush();
                 }
                 response.getHeaders().add("Written", "true");
-                callback.succeeded();
             }
+            callback.succeeded();
 
             return true;
         }
