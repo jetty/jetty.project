@@ -14,7 +14,7 @@
   <properties>
     <assembly-directory>${basedir}/target/jetty-home</assembly-directory>
     <source-assembly-directory>${basedir}/target/jetty-home-sources</source-assembly-directory>
-    <jetty-setuid-version>2.0.1</jetty-setuid-version>
+    <jetty-setuid-version>2.0.2</jetty-setuid-version>
     <spotbugs.skip>true</spotbugs.skip>
   </properties>
 
