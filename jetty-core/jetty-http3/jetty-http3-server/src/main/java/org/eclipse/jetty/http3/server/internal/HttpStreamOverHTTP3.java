@@ -528,12 +528,6 @@ public class HttpStreamOverHTTP3 implements HttpStream
 
     public Runnable onFailure(Throwable failure)
     {
-        try (AutoLock ignored = lock.lock())
-        {
-            if (chunk != null)
-                chunk.release();
-            chunk = Content.Chunk.from(failure, true);
-        }
         return httpChannel.onFailure(failure);
     }
 }
