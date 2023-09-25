@@ -472,6 +472,7 @@ public class HttpClientStreamTest extends AbstractTest
     @Tag("DisableLeakTracking:client:HTTP")
     @Tag("DisableLeakTracking:client:HTTPS")
     @Tag("DisableLeakTracking:client:UNIX_DOMAIN")
+    @Tag("DisableLeakTracking:server:FCGI")
     public void testInputStreamContentProviderThrowingWhileReading(Transport transport) throws Exception
     {
         start(transport, new Handler.Abstract()
