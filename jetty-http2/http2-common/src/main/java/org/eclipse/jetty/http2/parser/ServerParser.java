@@ -155,8 +155,20 @@ public class ServerParser extends Parser
         Parser.Listener listener = getListener();
         try
         {
-            if (listener instanceof ServerParser.Listener)
-                ((ServerParser.Listener)listener).onPreface();
+            while (true)
+            {
+                if (listener instanceof ServerParser.Listener)
+                {
+                    ((ServerParser.Listener)listener).onPreface();
+                    break;
+                }
+
+                // Unwrap to try and find a ServerParser.Listener.
+                if (listener instanceof Parser.Listener.Wrapper)
+                    listener = ((Parser.Listener.Wrapper)listener).getParserListener();
+                else
+                    break;
+            }
         }
         catch (Throwable x)
         {

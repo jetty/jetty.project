@@ -386,11 +386,6 @@ public class HTTP2Connection extends AbstractConnection implements WriteFlusher.
 
     private class ParserListener extends Parser.Listener.Wrapper
     {
-        private ParserListener()
-        {
-            this(null);
-        }
-
         private ParserListener(Parser.Listener listener)
         {
             super(listener == null ? new ServerParser.Listener.Adapter() : listener);
