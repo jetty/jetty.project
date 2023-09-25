@@ -21,6 +21,7 @@ import java.nio.charset.Charset;
 import java.nio.charset.StandardCharsets;
 
 import org.eclipse.jetty.util.ByteArrayOutputStream2;
+import org.eclipse.jetty.util.StringUtil;
 
 /**
  * <p>An alternate to {@link java.io.OutputStreamWriter} that supports
@@ -34,7 +35,6 @@ public abstract class WriteThroughWriter extends Writer
 {
     static final int DEFAULT_MAX_WRITE_SIZE = 1024;
     private final int _maxWriteSize;
-    private final char[] _chars;
     protected final OutputStream _out;
     protected final ByteArrayOutputStream2 _bytes;
 
@@ -52,7 +52,6 @@ public abstract class WriteThroughWriter extends Writer
     {
         _maxWriteSize = maxWriteSize <= 0 ? DEFAULT_MAX_WRITE_SIZE : maxWriteSize;
         _out = out;
-        _chars = new char[_maxWriteSize];
         _bytes = new ByteArrayOutputStream2(_maxWriteSize);
     }
 
@@ -110,23 +109,33 @@ public abstract class WriteThroughWriter extends Writer
     }
 
     @Override
+    public abstract WriteThroughWriter append(CharSequence sequence) throws IOException;
+
+    @Override
     public void write(String string, int offset, int length) throws IOException
     {
         while (length > _maxWriteSize)
         {
-            int end = offset + _maxWriteSize;
-            string.getChars(offset, end, _chars, 0);
-            write(_chars, 0, length);
-            offset = end;
+            append(StringUtil.subSequence(string, offset, _maxWriteSize));
+            offset += _maxWriteSize;
             length -= _maxWriteSize;
         }
 
-        string.getChars(offset, offset + length, _chars, 0);
-        write(_chars, 0, length);
+        append(StringUtil.subSequence(string, offset, length));
     }
 
     @Override
-    public abstract void write(char[] s, int offset, int length) throws IOException;
+    public void write(char[] chars, int offset, int length) throws IOException
+    {
+        while (length > _maxWriteSize)
+        {
+            append(StringUtil.subSequence(chars, offset, _maxWriteSize));
+            offset += _maxWriteSize;
+            length -= _maxWriteSize;
+        }
+
+        append(StringUtil.subSequence(chars, offset, length));
+    }
 
     /**
      * An implementation of {@link WriteThroughWriter} for
@@ -142,38 +151,30 @@ public abstract class WriteThroughWriter extends Writer
         }
 
         @Override
-        public void write(char[] s, int offset, int length) throws IOException
+        public WriteThroughWriter append(CharSequence charSequence) throws IOException
         {
-            if (length == 1)
+            assert charSequence.length() <= getMaxWriteSize();
+
+            if (charSequence.length() == 1)
             {
-                int c = s[offset];
+                int c = charSequence.charAt(0);
                 _out.write(c < 256 ? c : '?');
-                return;
+                return this;
             }
 
-            while (length > 0)
+            _bytes.reset();
+            int bytes = 0;
+            byte[] buffer = _bytes.getBuf();
+            int length = charSequence.length();
+            for (int offset = 0; offset < length; offset++)
             {
-                _bytes.reset();
-                int chars = Math.min(length, getMaxWriteSize());
-
-                byte[] buffer = _bytes.getBuf();
-                int bytes = _bytes.getCount();
-
-                if (chars > buffer.length - bytes)
-                    chars = buffer.length - bytes;
-
-                for (int i = 0; i < chars; i++)
-                {
-                    int c = s[offset + i];
-                    buffer[bytes++] = (byte)(c < 256 ? c : '?');
-                }
-                if (bytes >= 0)
-                    _bytes.setCount(bytes);
-
-                _bytes.writeTo(_out);
-                length -= chars;
-                offset += chars;
+                int c = charSequence.charAt(offset);
+                buffer[bytes++] = (byte)(c < 256 ? c : '?');
             }
+            if (bytes >= 0)
+                _bytes.setCount(bytes);
+            _bytes.writeTo(_out);
+            return this;
         }
     }
 
@@ -194,8 +195,11 @@ public abstract class WriteThroughWriter extends Writer
         }
 
         @Override
-        public void write(char[] s, int offset, int length) throws IOException
+        public WriteThroughWriter append(CharSequence charSequence) throws IOException
         {
+            assert charSequence.length() <= getMaxWriteSize();
+            int length = charSequence.length();
+            int offset = 0;
             while (length > 0)
             {
                 _bytes.reset();
@@ -209,7 +213,7 @@ public abstract class WriteThroughWriter extends Writer
 
                 for (int i = 0; i < chars; i++)
                 {
-                    int code = s[offset + i];
+                    int code = charSequence.charAt(offset + i);
 
                     // Do we already have a surrogate?
                     if (_surrogate == 0)
@@ -331,6 +335,7 @@ public abstract class WriteThroughWriter extends Writer
                 length -= chars;
                 offset += chars;
             }
+            return this;
         }
     }
 
@@ -355,19 +360,15 @@ public abstract class WriteThroughWriter extends Writer
         }
 
         @Override
-        public void write(char[] s, int offset, int length) throws IOException
+        public WriteThroughWriter append(CharSequence charSequence) throws IOException
         {
-            while (length > 0)
-            {
-                _bytes.reset();
-                int chars = Math.min(length, getMaxWriteSize());
+            assert charSequence.length() <= getMaxWriteSize();
 
-                _converter.write(s, offset, chars);
-                _converter.flush();
-                _bytes.writeTo(_out);
-                length -= chars;
-                offset += chars;
-            }
+            _bytes.reset();
+            _converter.append(charSequence);
+            _converter.flush();
+            _bytes.writeTo(_out);
+            return this;
         }
     }
 }

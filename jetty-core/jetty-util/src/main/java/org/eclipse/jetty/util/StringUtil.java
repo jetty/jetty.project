@@ -14,6 +14,7 @@
 package org.eclipse.jetty.util;
 
 import java.io.UnsupportedEncodingException;
+import java.nio.CharBuffer;
 import java.nio.charset.Charset;
 import java.nio.charset.StandardCharsets;
 import java.util.ArrayList;
@@ -478,6 +479,69 @@ public class StringUtil
                 return false;
         }
         return true;
+    }
+
+    /**
+     * Get a zero copy subsequence of a {@link String}.
+     * @param string The {@link String} to take a subsequence of.
+     * @param offset The offset in characters into the string to start the subsequence
+     * @param length The length in characters of the substring
+     * @return A new {@link CharSequence} containing the subsequence, backed by the passed {@link String}
+     * or the original {@link String} if it is the same.
+     */
+    public static CharSequence subSequence(String string, int offset, int length)
+    {
+        Objects.requireNonNull(string);
+
+        if (offset == 0 && string.length() == length)
+            return string;
+        if (length == 0)
+            return "";
+
+        if (offset < 0 || length < 0 || (offset + length) > string.length())
+            throw new IndexOutOfBoundsException("offset and/or length out of range");
+
+        return new CharSequence()
+        {
+            @Override
+            public int length()
+            {
+                return length;
+            }
+
+            @Override
+            public char charAt(int index)
+            {
+                return string.charAt(offset + index);
+            }
+
+            @Override
+            public CharSequence subSequence(int start, int end)
+            {
+                return StringUtil.subSequence(string, offset + start, end - start);
+            }
+
+            @Override
+            public String toString()
+            {
+                return string.substring(offset, offset + length);
+            }
+        };
+    }
+
+    /**
+     * Get a zero copy subsequence of a {@code char} array.
+     * @param chars The characters to take a subsequence of.  These character are not copied and the array should not be
+     * modified for the life of the returned CharSequence.
+     * @param offset The offset in characters into the string to start the subsequence
+     * @param length The length in characters of the substring
+     * @return A new {@link CharSequence} containing the subsequence.
+     */
+    public static CharSequence subSequence(char[] chars, int offset, int length)
+    {
+        if (length == 0)
+            return "";
+        return CharBuffer.wrap(chars, offset, length);
     }
 
     public static String toUTF8String(byte[] b, int offset, int length)

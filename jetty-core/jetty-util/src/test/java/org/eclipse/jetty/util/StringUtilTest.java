@@ -23,6 +23,7 @@ import org.junit.jupiter.params.provider.MethodSource;
 import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.Matchers.arrayContaining;
 import static org.hamcrest.Matchers.emptyArray;
+import static org.hamcrest.Matchers.equalTo;
 import static org.hamcrest.Matchers.is;
 import static org.hamcrest.Matchers.nullValue;
 import static org.hamcrest.Matchers.sameInstance;
@@ -35,6 +36,7 @@ import static org.junit.jupiter.api.Assertions.assertTrue;
 // @checkstyle-disable-check : AvoidEscapedUnicodeCharactersCheck
 public class StringUtilTest
 {
+
     @Test
     @SuppressWarnings("ReferenceEquality")
     public void testAsciiToLowerCase()
@@ -293,5 +295,47 @@ public class StringUtilTest
     public void testToHexStringEmpty()
     {
         assertThat(StringUtil.toHexString(new byte[0]), is(""));
+    }
+
+    public static Stream<Arguments> subSequenceTests()
+    {
+        return Stream.of(
+            Arguments.of("", 0, 0, ""),
+            Arguments.of("", 0, 1, null),
+            Arguments.of("", 1, 0, ""),
+            Arguments.of("", 1, 1, null),
+            Arguments.of("hello", 0, 5, "hello"),
+            Arguments.of("hello", 0, 4, "hell"),
+            Arguments.of("hello", 1, 4, "ello"),
+            Arguments.of("hello", 1, 3, "ell"),
+            Arguments.of("hello", 5, 0, ""),
+            Arguments.of("hello", 0, 6, null)
+        );
+    }
+
+    @ParameterizedTest
+    @MethodSource("subSequenceTests")
+    public void testSubSequence(String source, int offset, int length, String expected)
+    {
+        if (expected == null)
+        {
+            assertThrows(IndexOutOfBoundsException.class, () -> StringUtil.subSequence(source, offset, length));
+            assertThrows(IndexOutOfBoundsException.class, () -> StringUtil.subSequence(source.toCharArray(), offset, length));
+            return;
+        }
+
+        CharSequence result = StringUtil.subSequence(source, offset, length);
+        assertThat(result.toString(), equalTo(expected));
+
+        // check string optimization
+        if (offset == 0 && length == source.length())
+        {
+            assertThat(result, sameInstance(source));
+            assertThat(result.subSequence(offset, length), sameInstance(source));
+            return;
+        }
+
+        result = StringUtil.subSequence(source.toCharArray(), offset, length);
+        assertThat(result.toString(), equalTo(expected));
     }
 }

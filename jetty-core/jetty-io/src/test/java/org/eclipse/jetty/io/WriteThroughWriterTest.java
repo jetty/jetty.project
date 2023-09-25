@@ -27,7 +27,7 @@ import org.slf4j.LoggerFactory;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
 
-public class AbstractWriterTest
+public class WriteThroughWriterTest
 {
     private OutputStream _out;
     private ByteBuffer _bytes;
@@ -197,7 +197,7 @@ public class AbstractWriterTest
 
     private void myReportBytes(byte[] bytes) throws Exception
     {
-        if (LoggerFactory.getLogger(AbstractWriterTest.class).isDebugEnabled())
+        if (LoggerFactory.getLogger(WriteThroughWriterTest.class).isDebugEnabled())
         {
             for (int i = 0; i < bytes.length; i++)
                 System.err.format("%s%x", (i == 0) ? "[" : (i % 512 == 0) ? "][" : ",", bytes[i]);
