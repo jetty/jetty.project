@@ -87,11 +87,13 @@ public class BufferedResponseHandlerTest
     @Test
     public void testIncluded() throws Exception
     {
+        _test._bufferSize = 2048;
         String response = _local.getResponse("GET /ctx/include/path HTTP/1.1\r\nHost: localhost\r\n\r\n");
         assertThat(response, containsString(" 200 OK"));
         assertThat(response, containsString("Write: 0"));
         assertThat(response, containsString("Write: 9"));
         assertThat(response, containsString("Written: true"));
+        assertThat(response, containsString("Content-Length: "));
     }
 
     @Test
@@ -124,6 +126,7 @@ public class BufferedResponseHandlerTest
     public void testFlushed() throws Exception
     {
         _test._flush = true;
+        _test._bufferSize = 2048;
         String response = _local.getResponse("GET /ctx/include/path HTTP/1.1\r\nHost: localhost\r\n\r\n");
         assertThat(response, containsString(" 200 OK"));
         assertThat(response, containsString("Write: 0"));
@@ -134,6 +137,7 @@ public class BufferedResponseHandlerTest
     @Test
     public void testBufferSizeSmall() throws Exception
     {
+        _test._aggregationSize = 16;
         _test._bufferSize = 16;
         String response = _local.getResponse("GET /ctx/include/path HTTP/1.1\r\nHost: localhost\r\n\r\n");
         assertThat(response, containsString(" 200 OK"));
@@ -187,6 +191,7 @@ public class BufferedResponseHandlerTest
     public void testReset() throws Exception
     {
         _test._reset = true;
+        _test._bufferSize = 2048;
         String response = _local.getResponse("GET /ctx/include/path HTTP/1.1\r\nHost: localhost\r\n\r\n");
         assertThat(response, containsString(" 200 OK"));
         assertThat(response, containsString("Write: 0"));
@@ -197,6 +202,7 @@ public class BufferedResponseHandlerTest
 
     public static class TestHandler extends Handler.Abstract
     {
+        int _aggregationSize = -1;
         int _bufferSize = -1;
         String _mimeType;
         byte[] _content = new byte[128];
@@ -217,6 +223,8 @@ public class BufferedResponseHandlerTest
 
             if (_bufferSize > 0)
                 request.setAttribute(BufferedResponseHandler.BUFFER_SIZE_ATTRIBUTE_NAME, _bufferSize);
+            if (_aggregationSize > 0)
+                request.setAttribute(BufferedResponseHandler.MAX_AGGREGATION_SIZE_ATTRIBUTE_NAME, _aggregationSize);
             if (_mimeType != null)
                 response.getHeaders().put(HttpHeader.CONTENT_TYPE, _mimeType);
 
@@ -231,8 +239,8 @@ public class BufferedResponseHandlerTest
                         outputStream.flush();
                 }
                 response.getHeaders().add("Written", "true");
-                callback.succeeded();
             }
+            callback.succeeded();
 
             return true;
         }

@@ -19,17 +19,15 @@ import org.eclipse.jetty.http.HttpHeader;
 import org.eclipse.jetty.http.HttpMethod;
 import org.eclipse.jetty.http.HttpStatus;
 import org.eclipse.jetty.http.MimeTypes;
-import org.eclipse.jetty.io.ByteBufferAccumulator;
 import org.eclipse.jetty.io.ByteBufferPool;
-import org.eclipse.jetty.io.RetainableByteBuffer;
+import org.eclipse.jetty.io.Content;
 import org.eclipse.jetty.server.ConnectionMetaData;
 import org.eclipse.jetty.server.Handler;
+import org.eclipse.jetty.server.HttpConfiguration;
 import org.eclipse.jetty.server.Request;
 import org.eclipse.jetty.server.Response;
-import org.eclipse.jetty.util.BufferUtil;
 import org.eclipse.jetty.util.Callback;
 import org.eclipse.jetty.util.IncludeExclude;
-import org.eclipse.jetty.util.IteratingNestedCallback;
 import org.eclipse.jetty.util.StringUtil;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -47,14 +45,25 @@ import org.slf4j.LoggerFactory;
  * decision to buffer or not.
  * </p>
  * <p>
- * Note also that there are no memory limits to the size of the buffer, thus
- * this handler can represent an unbounded memory commitment if the content
- * generated can also be unbounded.
+ * Note also that the size of the buffer can be controlled by setting the
+ * {@link #BUFFER_SIZE_ATTRIBUTE_NAME} request attribute to an integer;
+ * in the absence of such header, the {@link HttpConfiguration#getOutputBufferSize()}
+ * config setting is used, while the maximum aggregation size can be controlled
+ * by setting the {@link #MAX_AGGREGATION_SIZE_ATTRIBUTE_NAME} request attribute to an integer,
+ * in the absence of such header, the {@link HttpConfiguration#getOutputAggregationSize()}
+ * config setting is used.
  * </p>
  */
 public class BufferedResponseHandler extends ConditionalHandler.Abstract
 {
+    /**
+     * The name of the request attribute used to control the buffer size of a particular request.
+     */
     public static final String BUFFER_SIZE_ATTRIBUTE_NAME = BufferedResponseHandler.class.getName() + ".buffer-size";
+    /**
+     * The name of the request attribute used to control the max aggregation size of a particular request.
+     */
+    public static final String MAX_AGGREGATION_SIZE_ATTRIBUTE_NAME = BufferedResponseHandler.class.getName() + ".max-aggregation-size";
 
     private static final Logger LOG = LoggerFactory.getLogger(BufferedResponseHandler.class);
 
@@ -159,8 +168,9 @@ public class BufferedResponseHandler extends ConditionalHandler.Abstract
     private class BufferedResponse extends Response.Wrapper implements Callback
     {
         private final Callback _callback;
-        private CountingByteBufferAccumulator _accumulator;
+        private Content.Sink _bufferedContentSink;
         private boolean _firstWrite = true;
+        private boolean _lastWritten;
 
         private BufferedResponse(Request request, Response response, Callback callback)
         {
@@ -173,130 +183,44 @@ public class BufferedResponseHandler extends ConditionalHandler.Abstract
         {
             if (_firstWrite)
             {
-                if (shouldBuffer(this, last))
-                {
-                    ConnectionMetaData connectionMetaData = getRequest().getConnectionMetaData();
-                    ByteBufferPool bufferPool = connectionMetaData.getConnector().getByteBufferPool();
-                    boolean useOutputDirectByteBuffers = connectionMetaData.getHttpConfiguration().isUseOutputDirectByteBuffers();
-                    _accumulator = new CountingByteBufferAccumulator(bufferPool, useOutputDirectByteBuffers, getBufferSize());
-                }
                 _firstWrite = false;
+                if (shouldBuffer(this, last))
+                    _bufferedContentSink = createBufferedSink();
             }
-
-            if (_accumulator != null)
-            {
-                ByteBuffer current = byteBuffer != null ? byteBuffer : BufferUtil.EMPTY_BUFFER;
-                IteratingNestedCallback writer = new IteratingNestedCallback(callback)
-                {
-                    private boolean complete;
-
-                    @Override
-                    protected Action process()
-                    {
-                        if (complete)
-                            return Action.SUCCEEDED;
-                        boolean write = _accumulator.copyBuffer(current);
-                        complete = last && !current.hasRemaining();
-                        if (write || complete)
-                        {
-                            RetainableByteBuffer buffer = _accumulator.takeRetainableByteBuffer();
-                            BufferedResponse.super.write(complete, buffer.getByteBuffer(), Callback.from(this, buffer::release));
-                            return Action.SCHEDULED;
-                        }
-                        return Action.SUCCEEDED;
-                    }
-                };
-                writer.iterate();
-            }
-            else
-            {
-                super.write(last, byteBuffer, callback);
-            }
+            _lastWritten |= last;
+            Content.Sink destSink = _bufferedContentSink != null ? _bufferedContentSink : getWrapped();
+            destSink.write(last, byteBuffer, callback);
         }
 
-        private int getBufferSize()
+        private Content.Sink createBufferedSink()
         {
-            Object attribute = getRequest().getAttribute(BufferedResponseHandler.BUFFER_SIZE_ATTRIBUTE_NAME);
-            return attribute instanceof Integer ? (int)attribute : Integer.MAX_VALUE;
+            Request request = getRequest();
+            ConnectionMetaData connectionMetaData = request.getConnectionMetaData();
+            ByteBufferPool bufferPool = connectionMetaData.getConnector().getByteBufferPool();
+            HttpConfiguration httpConfiguration = connectionMetaData.getHttpConfiguration();
+            Object attribute = request.getAttribute(BufferedResponseHandler.BUFFER_SIZE_ATTRIBUTE_NAME);
+            int bufferSize = attribute instanceof Integer ? (int)attribute : httpConfiguration.getOutputBufferSize();
+            attribute = request.getAttribute(BufferedResponseHandler.MAX_AGGREGATION_SIZE_ATTRIBUTE_NAME);
+            int maxAggregationSize = attribute instanceof Integer ? (int)attribute : httpConfiguration.getOutputAggregationSize();
+            boolean direct = httpConfiguration.isUseOutputDirectByteBuffers();
+            return Content.Sink.asBuffered(getWrapped(), bufferPool, direct, maxAggregationSize, bufferSize);
         }
 
         @Override
         public void succeeded()
         {
-            // TODO pass all accumulated buffers as an array instead of allocating & copying into a single one.
-            if (_accumulator != null)
-            {
-                RetainableByteBuffer buffer = _accumulator.takeRetainableByteBuffer();
-                super.write(true, buffer.getByteBuffer(), Callback.from(_callback, () ->
-                {
-                    buffer.release();
-                    _accumulator.close();
-                }));
-            }
+            if (_bufferedContentSink != null && !_lastWritten)
+                _bufferedContentSink.write(true, null, _callback);
             else
-            {
                 _callback.succeeded();
-            }
         }
 
         @Override
         public void failed(Throwable x)
         {
-            if (_accumulator != null)
-                _accumulator.close();
+            if (_bufferedContentSink != null && !_lastWritten)
+                _bufferedContentSink.write(true, null, Callback.NOOP);
             _callback.failed(x);
-        }
-    }
-
-    private static class CountingByteBufferAccumulator implements AutoCloseable
-    {
-        private final ByteBufferAccumulator _accumulator;
-        private final int _maxSize;
-        private int _accumulatedCount;
-
-        private CountingByteBufferAccumulator(ByteBufferPool bufferPool, boolean direct, int maxSize)
-        {
-            if (maxSize <= 0)
-                throw new IllegalArgumentException("maxSize must be > 0, was: " + maxSize);
-            _maxSize = maxSize;
-            _accumulator = new ByteBufferAccumulator(bufferPool, direct);
-        }
-
-        private boolean copyBuffer(ByteBuffer buffer)
-        {
-            int remainingCapacity = space();
-            if (buffer.remaining() >= remainingCapacity)
-            {
-                _accumulatedCount += remainingCapacity;
-                int end = buffer.position() + remainingCapacity;
-                _accumulator.copyBuffer(buffer.duplicate().limit(end));
-                buffer.position(end);
-                return true;
-            }
-            else
-            {
-                _accumulatedCount += buffer.remaining();
-                _accumulator.copyBuffer(buffer);
-                return false;
-            }
-        }
-
-        private int space()
-        {
-            return _maxSize - _accumulatedCount;
-        }
-
-        private RetainableByteBuffer takeRetainableByteBuffer()
-        {
-            _accumulatedCount = 0;
-            return _accumulator.takeRetainableByteBuffer();
-        }
-
-        @Override
-        public void close()
-        {
-            _accumulatedCount = 0;
-            _accumulator.close();
         }
     }
 }
