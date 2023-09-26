@@ -45,6 +45,11 @@ public class HeaderBlockParser
         this.notifier = notifier;
     }
 
+    public int getMaxHeaderListSize()
+    {
+        return hpackDecoder.getMaxHeaderListSize();
+    }
+
     /**
      * Parses @{code blockLength} HPACK bytes from the given {@code buffer}.
      *
