@@ -17,15 +17,23 @@ import java.io.OutputStream;
 import java.io.Writer;
 import java.nio.ByteBuffer;
 import java.nio.charset.StandardCharsets;
+import java.util.stream.Stream;
 
 import org.eclipse.jetty.util.BufferUtil;
 import org.eclipse.jetty.util.StringUtil;
 import org.eclipse.jetty.util.Utf8StringBuilder;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
+import org.junit.jupiter.params.ParameterizedTest;
+import org.junit.jupiter.params.provider.Arguments;
+import org.junit.jupiter.params.provider.MethodSource;
 import org.slf4j.LoggerFactory;
 
+import static org.hamcrest.MatcherAssert.assertThat;
+import static org.hamcrest.Matchers.equalTo;
+import static org.hamcrest.Matchers.sameInstance;
 import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertThrows;
 
 public class WriteThroughWriterTest
 {
@@ -213,5 +221,47 @@ public class WriteThroughWriterTest
         {
             assertEquals(b1[i], b2[i], test);
         }
+    }
+
+    public static Stream<Arguments> subSequenceTests()
+    {
+        return Stream.of(
+            Arguments.of("", 0, 0, ""),
+            Arguments.of("", 0, 1, null),
+            Arguments.of("", 1, 0, ""),
+            Arguments.of("", 1, 1, null),
+            Arguments.of("hello", 0, 5, "hello"),
+            Arguments.of("hello", 0, 4, "hell"),
+            Arguments.of("hello", 1, 4, "ello"),
+            Arguments.of("hello", 1, 3, "ell"),
+            Arguments.of("hello", 5, 0, ""),
+            Arguments.of("hello", 0, 6, null)
+        );
+    }
+
+    @ParameterizedTest
+    @MethodSource("subSequenceTests")
+    public void testSubSequence(String source, int offset, int length, String expected)
+    {
+        if (expected == null)
+        {
+            assertThrows(IndexOutOfBoundsException.class, () -> WriteThroughWriter.subSequence(source, offset, length));
+            assertThrows(IndexOutOfBoundsException.class, () -> WriteThroughWriter.subSequence(source.toCharArray(), offset, length));
+            return;
+        }
+
+        CharSequence result = WriteThroughWriter.subSequence(source, offset, length);
+        assertThat(result.toString(), equalTo(expected));
+
+        // check string optimization
+        if (offset == 0 && length == source.length())
+        {
+            assertThat(result, sameInstance(source));
+            assertThat(result.subSequence(offset, length), sameInstance(source));
+            return;
+        }
+
+        result = WriteThroughWriter.subSequence(source.toCharArray(), offset, length);
+        assertThat(result.toString(), equalTo(expected));
     }
 }

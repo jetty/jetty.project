@@ -17,11 +17,12 @@ import java.io.IOException;
 import java.io.OutputStream;
 import java.io.OutputStreamWriter;
 import java.io.Writer;
+import java.nio.CharBuffer;
 import java.nio.charset.Charset;
 import java.nio.charset.StandardCharsets;
+import java.util.Objects;
 
 import org.eclipse.jetty.util.ByteArrayOutputStream2;
-import org.eclipse.jetty.util.StringUtil;
 
 /**
  * <p>An alternate to {@link java.io.OutputStreamWriter} that supports
@@ -91,6 +92,75 @@ public abstract class WriteThroughWriter extends Writer
         return new EncodingWriter(outputStream, charset);
     }
 
+    /**
+     * <p>Get a zero copy subsequence of a {@link String}.</p>
+     * <p>Use of this is method can result in unforeseen GC consequences and can bypass
+     * JVM optimizations available in {@link String#subSequence(int, int)}.  It should only
+     * be used in cases where there is a known benefit: large sub sequence of a larger string with no retained
+     * references to the sub sequence beyond the life time of the string.</p>
+     * @param string The {@link String} to take a subsequence of.
+     * @param offset The offset in characters into the string to start the subsequence
+     * @param length The length in characters of the substring
+     * @return A new {@link CharSequence} containing the subsequence, backed by the passed {@link String}
+     * or the original {@link String} if it is the same.
+     */
+    static CharSequence subSequence(String string, int offset, int length)
+    {
+        Objects.requireNonNull(string);
+
+        if (offset == 0 && string.length() == length)
+            return string;
+        if (length == 0)
+            return "";
+
+        int end = offset + length;
+        if (offset < 0 || offset > end || end > string.length())
+            throw new IndexOutOfBoundsException("offset and/or length out of range");
+
+        return new CharSequence()
+        {
+            @Override
+            public int length()
+            {
+                return length;
+            }
+
+            @Override
+            public char charAt(int index)
+            {
+                return string.charAt(offset + index);
+            }
+
+            @Override
+            public CharSequence subSequence(int start, int end)
+            {
+                return WriteThroughWriter.subSequence(string, offset + start, end - start);
+            }
+
+            @Override
+            public String toString()
+            {
+                return string.substring(offset, offset + length);
+            }
+        };
+    }
+
+    /**
+     * Get a zero copy subsequence of a {@code char} array.
+     * @param chars The characters to take a subsequence of.  These character are not copied and the array should not be
+     * modified for the life of the returned CharSequence.
+     * @param offset The offset in characters into the string to start the subsequence
+     * @param length The length in characters of the substring
+     * @return A new {@link CharSequence} containing the subsequence.
+     */
+    static CharSequence subSequence(char[] chars, int offset, int length)
+    {
+        // Needed to make bounds check of wrap the same as for string.substring
+        if (length == 0)
+            return "";
+        return CharBuffer.wrap(chars, offset, length);
+    }
+
     public int getMaxWriteSize()
     {
         return _maxWriteSize;
@@ -116,12 +186,12 @@ public abstract class WriteThroughWriter extends Writer
     {
         while (length > _maxWriteSize)
         {
-            append(StringUtil.subSequence(string, offset, _maxWriteSize));
+            append(subSequence(string, offset, _maxWriteSize));
             offset += _maxWriteSize;
             length -= _maxWriteSize;
         }
 
-        append(StringUtil.subSequence(string, offset, length));
+        append(subSequence(string, offset, length));
     }
 
     @Override
@@ -129,12 +199,12 @@ public abstract class WriteThroughWriter extends Writer
     {
         while (length > _maxWriteSize)
         {
-            append(StringUtil.subSequence(chars, offset, _maxWriteSize));
+            append(subSequence(chars, offset, _maxWriteSize));
             offset += _maxWriteSize;
             length -= _maxWriteSize;
         }
 
-        append(StringUtil.subSequence(chars, offset, length));
+        append(subSequence(chars, offset, length));
     }
 
     /**
