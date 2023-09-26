@@ -1205,6 +1205,8 @@ public class HttpClientStreamTest extends AbstractTest
     @ParameterizedTest
     @MethodSource("transports")
     @Tag("DisableLeakTracking:server:UNIX_DOMAIN")
+    @Tag("DisableLeakTracking:server:HTTP")
+    @Tag("DisableLeakTracking:server:HTTPS")
     public void testUploadWithRetainedData(Transport transport) throws Exception
     {
         List<Content.Chunk> chunks = new CopyOnWriteArrayList<>();
