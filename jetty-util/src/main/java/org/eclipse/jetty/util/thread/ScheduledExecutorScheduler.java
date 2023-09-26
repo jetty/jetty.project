@@ -124,11 +124,13 @@ public class ScheduledExecutorScheduler extends AbstractLifeCycle implements Sch
     @Override
     protected void doStop() throws Exception
     {
-        scheduler.shutdownNow();
-        super.doStop();
         // If name is set to null, this means we got the scheduler from the constructor.
         if (name != null)
+        {
+            scheduler.shutdownNow();
             scheduler = null;
+        }
+        super.doStop();
     }
 
     @Override
