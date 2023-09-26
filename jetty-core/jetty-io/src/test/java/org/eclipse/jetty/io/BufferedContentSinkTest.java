@@ -21,6 +21,8 @@ import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.concurrent.atomic.AtomicReference;
+import java.util.function.BiConsumer;
+import java.util.stream.Stream;
 
 import org.eclipse.jetty.io.content.AsyncContent;
 import org.eclipse.jetty.io.content.BufferedContentSink;
@@ -29,6 +31,8 @@ import org.eclipse.jetty.util.Callback;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
+import org.junit.jupiter.params.ParameterizedTest;
+import org.junit.jupiter.params.provider.MethodSource;
 
 import static java.nio.charset.StandardCharsets.UTF_8;
 import static org.awaitility.Awaitility.await;
@@ -39,6 +43,7 @@ import static org.hamcrest.Matchers.notNullValue;
 import static org.hamcrest.Matchers.nullValue;
 import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertNotNull;
+import static org.junit.jupiter.api.Assertions.assertNull;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
@@ -226,6 +231,45 @@ public class BufferedContentSinkTest
             {
                 assertThat(accumulatingBuffer.get(), is(b));
             }
+        }
+    }
+
+    public static Stream<BiConsumer<BufferedContentSink, Callback>> flushers()
+    {
+        return Stream.of(
+            BufferedContentSink::flush,
+            (b, callback) -> b.write(false, BufferedContentSink.FLUSH_BUFFER, callback)
+        );
+    }
+
+    @ParameterizedTest
+    @MethodSource("flushers")
+    public void testFlush(BiConsumer<BufferedContentSink, Callback> flusher) throws Exception
+    {
+        ByteBuffer accumulatingBuffer = BufferUtil.allocate(4096);
+        BufferUtil.flipToFill(accumulatingBuffer);
+
+        try (AsyncContent async = new AsyncContent(); )
+        {
+            BufferedContentSink buffered = new BufferedContentSink(async, _bufferPool, false, 8192, 8192);
+
+            Callback.Completable callback = new Callback.Completable();
+            buffered.write(false, BufferUtil.toBuffer("Hello "), callback);
+            callback.get(5, TimeUnit.SECONDS);
+            assertNull(async.read());
+
+            callback = new Callback.Completable();
+            buffered.write(false, BufferUtil.toBuffer("World!"), callback);
+            callback.get(5, TimeUnit.SECONDS);
+            assertNull(async.read());
+
+            callback = new Callback.Completable();
+            flusher.accept(buffered, callback);
+            Content.Chunk chunk = async.read();
+            assertThat(chunk.isLast(), is(false));
+            assertThat(BufferUtil.toString(chunk.getByteBuffer()), is("Hello World!"));
+            chunk.release();
+            callback.get(5, TimeUnit.SECONDS);
         }
     }
 

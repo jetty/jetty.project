@@ -23,7 +23,6 @@ import jakarta.servlet.ServletResponse;
 import jakarta.servlet.ServletResponseWrapper;
 import jakarta.servlet.http.HttpServletResponse;
 import jakarta.servlet.http.HttpSession;
-import org.eclipse.jetty.ee10.servlet.writer.ResponseWriter;
 import org.eclipse.jetty.http.HttpCookie;
 import org.eclipse.jetty.http.HttpField;
 import org.eclipse.jetty.http.HttpFields;
@@ -206,9 +205,8 @@ public class ServletContextResponse extends ContextResponse implements ServletCo
     public void completeOutput(Callback callback)
     {
         if (_outputType == OutputType.WRITER)
-            _writer.complete(callback);
-        else
-            getHttpOutput().complete(callback);
+            _writer.markAsClosed();
+        getHttpOutput().complete(callback);
     }
 
     public boolean isAllContentWritten(long written)

@@ -23,6 +23,7 @@ import java.security.Principal;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Locale;
+import java.util.Objects;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.TimeoutException;
 import java.util.function.Consumer;
@@ -495,10 +496,15 @@ public interface Request extends Attributes, Content.Source
         };
     }
 
-    // TODO: consider inline and remove.
     static InputStream asInputStream(Request request)
     {
         return Content.Source.asInputStream(request);
+    }
+
+    static Charset getCharset(Request request)
+    {
+        String contentType = request.getHeaders().get(HttpHeader.CONTENT_TYPE);
+        return Objects.requireNonNullElse(request.getContext().getMimeTypes(), MimeTypes.DEFAULTS).getCharset(contentType);
     }
 
     static Fields extractQueryParameters(Request request)

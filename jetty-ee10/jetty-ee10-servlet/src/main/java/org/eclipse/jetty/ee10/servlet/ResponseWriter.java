@@ -11,7 +11,7 @@
 // ========================================================================
 //
 
-package org.eclipse.jetty.ee10.servlet.writer;
+package org.eclipse.jetty.ee10.servlet;
 
 import java.io.IOException;
 import java.io.InterruptedIOException;
@@ -23,7 +23,7 @@ import jakarta.servlet.ServletResponse;
 import jakarta.servlet.http.HttpServletResponse;
 import org.eclipse.jetty.io.EofException;
 import org.eclipse.jetty.io.RuntimeIOException;
-import org.eclipse.jetty.util.Callback;
+import org.eclipse.jetty.io.WriteThroughWriter;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -41,17 +41,17 @@ public class ResponseWriter extends PrintWriter
 {
     private static final Logger LOG = LoggerFactory.getLogger(ResponseWriter.class);
 
-    private final HttpWriter _httpWriter;
+    private final WriteThroughWriter _writer;
     private final Locale _locale;
     private final String _encoding;
     private IOException _ioException;
     private boolean _isClosed = false;
     private Formatter _formatter;
 
-    public ResponseWriter(HttpWriter httpWriter, Locale locale, String encoding)
+    public ResponseWriter(WriteThroughWriter writer, Locale locale, String encoding)
     {
-        super(httpWriter, false);
-        _httpWriter = httpWriter;
+        super(writer, false);
+        _writer = writer;
         _locale = locale;
         _encoding = encoding;
     }
@@ -71,7 +71,7 @@ public class ResponseWriter extends PrintWriter
         {
             _isClosed = false;
             clearError();
-            out = _httpWriter;
+            out = _writer;
         }
     }
 
@@ -99,7 +99,9 @@ public class ResponseWriter extends PrintWriter
         super.setError();
 
         if (th instanceof IOException)
+        {
             _ioException = (IOException)th;
+        }
         else
         {
             _ioException = new IOException(String.valueOf(th));
@@ -165,13 +167,15 @@ public class ResponseWriter extends PrintWriter
         }
     }
 
-    public void complete(Callback callback)
+    /**
+     * Used to mark this writer as closed during any asynchronous completion operation.
+     */
+    void markAsClosed()
     {
         synchronized (lock)
         {
             _isClosed = true;
         }
-        _httpWriter.complete(callback);
     }
 
     @Override
