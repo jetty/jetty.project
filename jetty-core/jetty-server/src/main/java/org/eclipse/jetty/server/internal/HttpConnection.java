@@ -586,18 +586,19 @@ public class HttpConnection extends AbstractConnection implements Runnable, Writ
                 if (filled == 0) // Do a retry on fill 0 (optimization for SSL connections)
                     filled = getEndPoint().fill(requestBuffer);
 
+                if (LOG.isDebugEnabled())
+                    LOG.debug("{} filled {} {}", this, filled, _retainableByteBuffer);
+
                 if (filled > 0)
                 {
                     bytesIn.add(filled);
                 }
-                else if (filled < 0)
+                else
                 {
+                    if (filled < 0)
+                        _parser.atEOF();
                     releaseRequestBuffer();
-                    _parser.atEOF();
                 }
-
-                if (LOG.isDebugEnabled())
-                    LOG.debug("{} filled {} {}", this, filled, _retainableByteBuffer);
 
                 return filled;
             }
@@ -606,6 +607,11 @@ public class HttpConnection extends AbstractConnection implements Runnable, Writ
                 if (LOG.isDebugEnabled())
                     LOG.debug("Unable to fill from endpoint {}", getEndPoint(), e);
                 _parser.atEOF();
+                if (_retainableByteBuffer != null)
+                {
+                    _retainableByteBuffer.clear();
+                    releaseRequestBuffer();
+                }
                 return -1;
             }
         }
