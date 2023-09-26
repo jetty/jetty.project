@@ -31,6 +31,9 @@ import jakarta.servlet.http.HttpSessionBindingEvent;
 import jakarta.servlet.http.HttpSessionEvent;
 import jakarta.servlet.http.HttpSessionListener;
 
+/**
+ * Sample of listener using annotations
+ */
 @WebListener
 public class AnnotatedListener implements HttpSessionListener,
     HttpSessionAttributeListener,

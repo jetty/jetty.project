@@ -25,9 +25,27 @@ import org.eclipse.jetty.util.resource.Resource;
  */
 public class AbsoluteOrdering implements Ordering
 {
+    /**
+     * constant for OTHER placeholder
+     */
     public static final String OTHER = "@@-OTHER-@@";
-    protected List<String> _order = new ArrayList<String>();
+
+    /**
+     * field to store order
+     * TODO should be private?
+     */
+    protected List<String> _order = new ArrayList<>();
+
+    /**
+     * field to store if has other
+     * TODO should be private?
+     */
     protected boolean _hasOther = false;
+
+    /**
+     * field to store MetaData
+     * TODO should be private?
+     */
     protected MetaData _metaData;
 
     public AbsoluteOrdering(MetaData metaData)
@@ -38,12 +56,12 @@ public class AbsoluteOrdering implements Ordering
     @Override
     public List<Resource> order(List<Resource> jars)
     {
-        List<Resource> orderedList = new ArrayList<Resource>();
-        List<Resource> tmp = new ArrayList<Resource>(jars);
+        List<Resource> orderedList = new ArrayList<>();
+        List<Resource> tmp = new ArrayList<>(jars);
 
         //1. put everything into the list of named others, and take the named ones out of there,
         //assuming we will want to use the <other> clause
-        Map<String, FragmentDescriptor> others = new HashMap<String, FragmentDescriptor>(_metaData.getNamedFragmentDescriptors());
+        Map<String, FragmentDescriptor> others = new HashMap<>(_metaData.getNamedFragmentDescriptors());
 
         //2. for each name, take out of the list of others, add to tail of list
         int index = -1;
