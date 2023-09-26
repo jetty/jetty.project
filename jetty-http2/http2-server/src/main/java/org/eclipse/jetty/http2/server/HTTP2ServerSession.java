@@ -37,6 +37,7 @@ import org.eclipse.jetty.http2.frames.PushPromiseFrame;
 import org.eclipse.jetty.http2.frames.SettingsFrame;
 import org.eclipse.jetty.http2.frames.WindowUpdateFrame;
 import org.eclipse.jetty.http2.generator.Generator;
+import org.eclipse.jetty.http2.parser.Parser;
 import org.eclipse.jetty.http2.parser.ServerParser;
 import org.eclipse.jetty.io.EndPoint;
 import org.eclipse.jetty.util.Callback;
@@ -50,9 +51,16 @@ public class HTTP2ServerSession extends HTTP2Session implements ServerParser.Lis
 
     private final ServerSessionListener listener;
 
+    @Deprecated
     public HTTP2ServerSession(Scheduler scheduler, EndPoint endPoint, Generator generator, ServerSessionListener listener, FlowControlStrategy flowControl)
     {
-        super(scheduler, endPoint, generator, listener, flowControl, 2);
+        this(scheduler, endPoint, null, generator, listener, flowControl);
+        throw new UnsupportedOperationException();
+    }
+
+    public HTTP2ServerSession(Scheduler scheduler, EndPoint endPoint, Parser parser, Generator generator, ServerSessionListener listener, FlowControlStrategy flowControl)
+    {
+        super(scheduler, endPoint, parser, generator, listener, flowControl, 2);
         this.listener = listener;
     }
 

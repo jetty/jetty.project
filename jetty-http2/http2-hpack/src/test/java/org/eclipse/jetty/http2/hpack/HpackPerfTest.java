@@ -37,7 +37,7 @@ import static org.junit.jupiter.api.Assertions.assertNotNull;
 
 public class HpackPerfTest
 {
-    int _maxDynamicTableSize = 4 * 1024;
+    int _tableCapacity = 4 * 1024;
     int _unencodedSize;
     int _encodedSize;
 
@@ -51,7 +51,7 @@ public class HpackPerfTest
     @AfterEach
     public void after()
     {
-        System.err.printf("dynamictable=%d unencoded=%d encoded=%d p=%3.1f%%%n", _maxDynamicTableSize, _unencodedSize, _encodedSize, 100.0 * _encodedSize / _unencodedSize);
+        System.err.printf("dynamictable=%d unencoded=%d encoded=%d p=%3.1f%%%n", _tableCapacity, _unencodedSize, _encodedSize, 100.0 * _encodedSize / _unencodedSize);
     }
 
     @Test
@@ -68,11 +68,14 @@ public class HpackPerfTest
         assertNotNull(files);
 
         // Parse JSON
-        Map[] stories = new Map[files.length];
+        @SuppressWarnings("unchecked")
+        Map<String, Object>[] stories = new Map[files.length];
         int i = 0;
-        for (String story : files)
+        for (String file : files)
         {
-            stories[i++] = (Map)JSON.parse(new FileReader(new File(data, story)));
+            @SuppressWarnings("unchecked")
+            Map<String, Object> story = (Map<String, Object>)JSON.parse(new FileReader(new File(data, file)));
+            stories[i++] = story;
         }
 
         ByteBuffer buffer = BufferUtil.allocate(256 * 1024);
@@ -88,27 +91,29 @@ public class HpackPerfTest
         encodeStories(buffer, stories, "response");
     }
 
-    private void encodeStories(ByteBuffer buffer, Map[] stories, String type) throws Exception
+    private void encodeStories(ByteBuffer buffer, Map<String, Object>[] stories, String type) throws Exception
     {
-        for (Map story : stories)
+        for (Map<String, Object> story : stories)
         {
             if (type.equals(story.get("context")))
             {
-                HpackEncoder encoder = new HpackEncoder(_maxDynamicTableSize, _maxDynamicTableSize);
+                HpackEncoder encoder = new HpackEncoder();
+                encoder.setMaxTableCapacity(_tableCapacity);
+                encoder.setTableCapacity(_tableCapacity);
                 encoder.setValidateEncoding(false);
 
-                // System.err.println(story);
                 Object[] cases = (Object[])story.get("cases");
                 for (Object c : cases)
                 {
-                    // System.err.println("  "+c);
-                    Object[] headers = (Object[])((Map)c).get("headers");
+                    @SuppressWarnings("unchecked")
+                    Map<String, Object> kase = (Map<String, Object>)c;
+                    Object[] headers = (Object[])kase.get("headers");
                     // System.err.println("    "+headers);
                     HttpFields fields = new HttpFields();
                     for (Object header : headers)
                     {
                         @SuppressWarnings("unchecked")
-                        Map<String, String> h = (Map)header;
+                        Map<String, String> h = (Map<String, String>)header;
                         Map.Entry<String, String> e = h.entrySet().iterator().next();
                         fields.add(e.getKey(), e.getValue());
                         _unencodedSize += e.getKey().length() + e.getValue().length();

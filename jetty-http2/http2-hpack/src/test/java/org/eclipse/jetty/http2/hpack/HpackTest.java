@@ -19,7 +19,6 @@
 package org.eclipse.jetty.http2.hpack;
 
 import java.nio.ByteBuffer;
-import java.util.concurrent.TimeUnit;
 
 import org.eclipse.jetty.http.DateGenerator;
 import org.eclipse.jetty.http.HttpField;
@@ -43,13 +42,13 @@ public class HpackTest
 {
     static final HttpField ServerJetty = new PreEncodedHttpField(HttpHeader.SERVER, "jetty");
     static final HttpField XPowerJetty = new PreEncodedHttpField(HttpHeader.X_POWERED_BY, "jetty");
-    static final HttpField Date = new PreEncodedHttpField(HttpHeader.DATE, DateGenerator.formatDate(TimeUnit.NANOSECONDS.toMillis(System.nanoTime())));
+    static final HttpField Date = new PreEncodedHttpField(HttpHeader.DATE, DateGenerator.formatDate(System.currentTimeMillis()));
 
     @Test
     public void encodeDecodeResponseTest() throws Exception
     {
         HpackEncoder encoder = new HpackEncoder();
-        HpackDecoder decoder = new HpackDecoder(4096, 8192);
+        HpackDecoder decoder = new HpackDecoder(8192);
         ByteBuffer buffer = BufferUtil.allocateDirect(16 * 1024);
 
         HttpFields fields0 = new HttpFields();
@@ -102,7 +101,7 @@ public class HpackTest
     public void encodeDecodeTooLargeTest() throws Exception
     {
         HpackEncoder encoder = new HpackEncoder();
-        HpackDecoder decoder = new HpackDecoder(4096, 164);
+        HpackDecoder decoder = new HpackDecoder(164);
         ByteBuffer buffer = BufferUtil.allocateDirect(16 * 1024);
 
         HttpFields fields0 = new HttpFields();
@@ -138,7 +137,7 @@ public class HpackTest
     }
 
     @Test
-    public void encodeDecodeNonAscii() throws Exception
+    public void encodeNonAscii() throws Exception
     {
         HpackEncoder encoder = new HpackEncoder();
         ByteBuffer buffer = BufferUtil.allocate(16 * 1024);
@@ -158,12 +157,15 @@ public class HpackTest
 
         assertThat(throwable.getMessage(), containsString("Could not hpack encode"));
     }
-    
+
     @Test
     public void evictReferencedFieldTest() throws Exception
     {
-        HpackEncoder encoder = new HpackEncoder(200, 200);
-        HpackDecoder decoder = new HpackDecoder(200, 1024);
+        HpackDecoder decoder = new HpackDecoder(1024);
+        decoder.setMaxTableCapacity(200);
+        HpackEncoder encoder = new HpackEncoder();
+        encoder.setMaxTableCapacity(decoder.getMaxTableCapacity());
+        encoder.setTableCapacity(decoder.getMaxTableCapacity());
         ByteBuffer buffer = BufferUtil.allocateDirect(16 * 1024);
 
         String longEnoughToBeEvicted = "012345678901234567890123456789012345678901234567890";
@@ -206,7 +208,7 @@ public class HpackTest
     public void testHopHeadersAreRemoved() throws Exception
     {
         HpackEncoder encoder = new HpackEncoder();
-        HpackDecoder decoder = new HpackDecoder(4096, 16384);
+        HpackDecoder decoder = new HpackDecoder(16384);
 
         HttpFields input = new HttpFields();
         input.put(HttpHeader.ACCEPT, "*");
@@ -233,14 +235,14 @@ public class HpackTest
     public void testTETrailers() throws Exception
     {
         HpackEncoder encoder = new HpackEncoder();
-        HpackDecoder decoder = new HpackDecoder(4096, 16384);
+        HpackDecoder decoder = new HpackDecoder(16384);
 
-        HttpFields input = new HttpFields();
-        input.put(HttpHeader.CONNECTION, "TE");
         String teValue = "trailers";
-        input.put(HttpHeader.TE, teValue);
         String trailerValue = "Custom";
-        input.put(HttpHeader.TRAILER, trailerValue);
+        HttpFields input = new HttpFields();
+        input.add(HttpHeader.CONNECTION, "TE");
+        input.add(HttpHeader.TE, teValue);
+        input.add(HttpHeader.TRAILER, trailerValue);
 
         ByteBuffer buffer = BufferUtil.allocate(2048);
         BufferUtil.clearToFill(buffer);
@@ -258,7 +260,7 @@ public class HpackTest
     public void testColonHeaders() throws Exception
     {
         HpackEncoder encoder = new HpackEncoder();
-        HpackDecoder decoder = new HpackDecoder(4096, 16384);
+        HpackDecoder decoder = new HpackDecoder(16384);
 
         HttpFields input = new HttpFields();
         input.put(":status", "200");

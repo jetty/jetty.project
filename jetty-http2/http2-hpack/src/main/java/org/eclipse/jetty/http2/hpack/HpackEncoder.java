@@ -99,34 +99,78 @@ public class HpackEncoder
 
     private final HpackContext _context;
     private final boolean _debug;
-    private int _remoteMaxDynamicTableSize;
-    private int _localMaxDynamicTableSize;
+    private int _maxTableCapacity;
+    private int _tableCapacity;
     private int _maxHeaderListSize;
     private int _headerListSize;
     private boolean _validateEncoding = true;
 
-    public HpackEncoder()
-    {
-        this(4096, 4096, -1);
-    }
-
+    @Deprecated
     public HpackEncoder(int localMaxDynamicTableSize)
     {
         this(localMaxDynamicTableSize, 4096, -1);
     }
 
+    @Deprecated
     public HpackEncoder(int localMaxDynamicTableSize, int remoteMaxDynamicTableSize)
     {
         this(localMaxDynamicTableSize, remoteMaxDynamicTableSize, -1);
     }
 
+    @Deprecated
     public HpackEncoder(int localMaxDynamicTableSize, int remoteMaxDynamicTableSize, int maxHeaderListSize)
     {
-        _context = new HpackContext(remoteMaxDynamicTableSize);
-        _remoteMaxDynamicTableSize = remoteMaxDynamicTableSize;
-        _localMaxDynamicTableSize = localMaxDynamicTableSize;
-        _maxHeaderListSize = maxHeaderListSize;
+        this();
+        setLocalMaxDynamicTableSize(localMaxDynamicTableSize);
+        setRemoteMaxDynamicTableSize(remoteMaxDynamicTableSize);
+        setMaxHeaderListSize(maxHeaderListSize);
+    }
+
+    public HpackEncoder()
+    {
+        _context = new HpackContext(0);
         _debug = LOG.isDebugEnabled();
+        setMaxTableCapacity(HpackContext.DEFAULT_MAX_TABLE_CAPACITY);
+        setTableCapacity(HpackContext.DEFAULT_MAX_TABLE_CAPACITY);
+    }
+
+    public int getMaxTableCapacity()
+    {
+        return _maxTableCapacity;
+    }
+
+    /**
+     * <p>Sets the limit for the capacity of the dynamic header table.</p>
+     * <p>This value is set by the remote peer via the
+     * {@code SETTINGS_HEADER_TABLE_SIZE} setting.</p>
+     *
+     * @param maxTableSizeLimit the limit for capacity of the dynamic header table
+     */
+    public void setMaxTableCapacity(int maxTableSizeLimit)
+    {
+        _maxTableCapacity = maxTableSizeLimit;
+    }
+
+    public int getTableCapacity()
+    {
+        return _tableCapacity;
+    }
+
+    /**
+     * <p>Sets the capacity of the dynamic header table.</p>
+     * <p>The value of the capacity may be changed from {@code 0}
+     * up to {@link #getMaxTableCapacity()}.
+     * An HPACK instruction with the new capacity value will
+     * be sent to the decoder when the next call to
+     * {@link #encode(ByteBuffer, MetaData)} is made.</p>
+     *
+     * @param tableCapacity the capacity of the dynamic header table
+     */
+    public void setTableCapacity(int tableCapacity)
+    {
+        if (tableCapacity > getMaxTableCapacity())
+            throw new IllegalArgumentException("Max table capacity exceeded");
+        _tableCapacity = tableCapacity;
     }
 
     public int getMaxHeaderListSize()
@@ -144,14 +188,16 @@ public class HpackEncoder
         return _context;
     }
 
-    public void setRemoteMaxDynamicTableSize(int remoteMaxDynamicTableSize)
+    @Deprecated
+    public void setRemoteMaxDynamicTableSize(int maxTableSize)
     {
-        _remoteMaxDynamicTableSize = remoteMaxDynamicTableSize;
+        setTableCapacity(maxTableSize);
     }
 
-    public void setLocalMaxDynamicTableSize(int localMaxDynamicTableSize)
+    @Deprecated
+    public void setLocalMaxDynamicTableSize(int maxTableSizeLimit)
     {
-        _localMaxDynamicTableSize = localMaxDynamicTableSize;
+        setMaxTableCapacity(maxTableSizeLimit);
     }
 
     public boolean isValidateEncoding()
@@ -187,10 +233,10 @@ public class HpackEncoder
             _headerListSize = 0;
             int pos = buffer.position();
 
-            // Check the dynamic table sizes!
-            int maxDynamicTableSize = Math.min(_remoteMaxDynamicTableSize, _localMaxDynamicTableSize);
-            if (maxDynamicTableSize != _context.getMaxDynamicTableSize())
-                encodeMaxDynamicTableSize(buffer, maxDynamicTableSize);
+            // If max table size changed, send the correspondent instruction.
+            int tableCapacity = getTableCapacity();
+            if (tableCapacity != _context.getMaxDynamicTableSize())
+                encodeMaxDynamicTableSize(buffer, tableCapacity);
 
             // Add Request/response meta fields
             if (metadata.isRequest())

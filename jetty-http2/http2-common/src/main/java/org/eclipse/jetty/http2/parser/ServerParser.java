@@ -32,15 +32,30 @@ public class ServerParser extends Parser
 {
     private static final Logger LOG = Log.getLogger(ServerParser.class);
 
-    private final Listener listener;
-    private final PrefaceParser prefaceParser;
+    private PrefaceParser prefaceParser;
     private State state = State.PREFACE;
     private boolean notifyPreface = true;
 
+    @Deprecated
     public ServerParser(ByteBufferPool byteBufferPool, Listener listener, int maxDynamicTableSize, int maxHeaderSize, RateControl rateControl)
     {
-        super(byteBufferPool, listener, maxDynamicTableSize, maxHeaderSize, rateControl);
-        this.listener = listener;
+        this(byteBufferPool, maxHeaderSize, rateControl);
+    }
+
+    public ServerParser(ByteBufferPool byteBufferPool, int maxHeaderSize)
+    {
+        super(byteBufferPool, maxHeaderSize);
+    }
+
+    public ServerParser(ByteBufferPool byteBufferPool, int maxHeaderSize, RateControl rateControl)
+    {
+        super(byteBufferPool, maxHeaderSize, rateControl);
+    }
+
+    @Override
+    public void init(Parser.Listener listener)
+    {
+        super.init(listener);
         this.prefaceParser = new PrefaceParser(listener);
     }
 
@@ -137,9 +152,23 @@ public class ServerParser extends Parser
 
     private void notifyPreface()
     {
+        Parser.Listener listener = getListener();
         try
         {
-            listener.onPreface();
+            while (true)
+            {
+                if (listener instanceof ServerParser.Listener)
+                {
+                    ((ServerParser.Listener)listener).onPreface();
+                    break;
+                }
+
+                // Unwrap to try and find a ServerParser.Listener.
+                if (listener instanceof Parser.Listener.Wrapper)
+                    listener = ((Parser.Listener.Wrapper)listener).getParserListener();
+                else
+                    break;
+            }
         }
         catch (Throwable x)
         {

@@ -20,7 +20,6 @@ package org.eclipse.jetty.http2.frames;
 
 import java.nio.ByteBuffer;
 import java.util.concurrent.atomic.AtomicInteger;
-import java.util.function.UnaryOperator;
 
 import org.eclipse.jetty.http2.ErrorCode;
 import org.eclipse.jetty.http2.parser.Parser;
@@ -40,16 +39,16 @@ public class MaxFrameSizeParseTest
         int maxFrameLength = Frame.DEFAULT_MAX_LENGTH + 16;
 
         AtomicInteger failure = new AtomicInteger();
-        Parser parser = new Parser(byteBufferPool, new Parser.Listener.Adapter()
+        Parser parser = new Parser(byteBufferPool, 4096);
+        parser.setMaxFrameSize(maxFrameLength);
+        parser.init(new Parser.Listener.Adapter()
         {
             @Override
             public void onConnectionFailure(int error, String reason)
             {
                 failure.set(error);
             }
-        }, 4096, 8192);
-        parser.setMaxFrameLength(maxFrameLength);
-        parser.init(UnaryOperator.identity());
+        });
 
         // Iterate a few times to be sure the parser is properly reset.
         for (int i = 0; i < 2; ++i)

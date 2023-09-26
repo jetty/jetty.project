@@ -35,7 +35,6 @@ import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicReference;
-import java.util.function.UnaryOperator;
 
 import org.eclipse.jetty.http.HttpFields;
 import org.eclipse.jetty.http.HttpStatus;
@@ -169,15 +168,15 @@ public class PrefaceTest extends AbstractTest
             socket.write(buffers.toArray(new ByteBuffer[buffers.size()]));
 
             Queue<SettingsFrame> settings = new ArrayDeque<>();
-            Parser parser = new Parser(byteBufferPool, new Parser.Listener.Adapter()
+            Parser parser = new Parser(byteBufferPool, 4096);
+            parser.init(new Parser.Listener.Adapter()
             {
                 @Override
                 public void onSettings(SettingsFrame frame)
                 {
                     settings.offer(frame);
                 }
-            }, 4096, 8192);
-            parser.init(UnaryOperator.identity());
+            });
 
             ByteBuffer buffer = byteBufferPool.acquire(1024, true);
             while (true)
@@ -302,7 +301,8 @@ public class PrefaceTest extends AbstractTest
 
             CountDownLatch clientSettingsLatch = new CountDownLatch(1);
             AtomicBoolean responded = new AtomicBoolean();
-            Parser parser = new Parser(byteBufferPool, new Parser.Listener.Adapter()
+            Parser parser = new Parser(byteBufferPool, 4096);
+            parser.init(new Parser.Listener.Adapter()
             {
                 @Override
                 public void onSettings(SettingsFrame frame)
@@ -319,8 +319,7 @@ public class PrefaceTest extends AbstractTest
                     if (frame.isEndStream())
                         responded.set(true);
                 }
-            }, 4096, 8192);
-            parser.init(UnaryOperator.identity());
+            });
 
             // HTTP/2 parsing.
             while (true)

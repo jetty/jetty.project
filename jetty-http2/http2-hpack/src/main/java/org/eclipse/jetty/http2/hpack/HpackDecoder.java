@@ -47,19 +47,25 @@ public class HpackDecoder
     private final MetaDataBuilder _builder;
     private final HuffmanDecoder _huffmanDecoder;
     private final NBitIntegerDecoder _integerDecoder;
-    private int _localMaxDynamicTableSize;
+    private int _maxTableCapacity;
 
-    /**
-     * @param localMaxDynamicTableSize The maximum allowed size of the local dynamic header field table.
-     * @param maxHeaderSize The maximum allowed size of a headers block, expressed as total of all name and value characters, plus 32 per field
-     */
+    @Deprecated
     public HpackDecoder(int localMaxDynamicTableSize, int maxHeaderSize)
     {
-        _context = new HpackContext(localMaxDynamicTableSize);
-        _localMaxDynamicTableSize = localMaxDynamicTableSize;
+        this(maxHeaderSize);
+    }
+
+    /**
+     * @param maxHeaderSize The maximum allowed size of a decoded headers block,
+     * expressed as total of all name and value bytes, plus 32 bytes per field
+     */
+    public HpackDecoder(int maxHeaderSize)
+    {
+        _context = new HpackContext(HpackContext.DEFAULT_MAX_TABLE_CAPACITY);
         _builder = new MetaDataBuilder(maxHeaderSize);
         _huffmanDecoder = new HuffmanDecoder();
         _integerDecoder = new NBitIntegerDecoder();
+        setMaxTableCapacity(HpackContext.DEFAULT_MAX_TABLE_CAPACITY);
     }
 
     public HpackContext getHpackContext()
@@ -67,9 +73,39 @@ public class HpackDecoder
         return _context;
     }
 
-    public void setLocalMaxDynamicTableSize(int localMaxdynamciTableSize)
+    public int getMaxTableCapacity()
     {
-        _localMaxDynamicTableSize = localMaxdynamciTableSize;
+        return _maxTableCapacity;
+    }
+
+    /**
+     * <p>Sets the limit for the capacity of the dynamic header table.</p>
+     * <p>This value acts as a limit for the values received from the
+     * remote peer via the HPACK dynamic table size update instruction.</p>
+     * <p>After calling this method, a SETTINGS frame must be sent to the other
+     * peer, containing the {@code SETTINGS_HEADER_TABLE_SIZE} setting with
+     * the value passed as argument to this method.</p>
+     *
+     * @param maxTableCapacity the limit for capacity of the dynamic header table
+     */
+    public void setMaxTableCapacity(int maxTableCapacity)
+    {
+        _maxTableCapacity = maxTableCapacity;
+    }
+
+    /**
+     * @param maxTableSizeLimit the local dynamic table max size
+     * @deprecated use {@link #setMaxTableCapacity(int)} instead
+     */
+    @Deprecated
+    public void setLocalMaxDynamicTableSize(int maxTableSizeLimit)
+    {
+        setMaxTableCapacity(maxTableSizeLimit);
+    }
+
+    public void setMaxHeaderListSize(int maxHeaderListSize)
+    {
+        _builder.setMaxSize(maxHeaderListSize);
     }
 
     public MetaData decode(ByteBuffer buffer) throws HpackException.SessionException, HpackException.StreamException
@@ -136,7 +172,7 @@ public class HpackDecoder
                         int size = integerDecode(buffer, 5);
                         if (LOG.isDebugEnabled())
                             LOG.debug("decode resize={}", size);
-                        if (size > _localMaxDynamicTableSize)
+                        if (size > getMaxTableCapacity())
                             throw new HpackException.CompressionException("Dynamic table resize exceeded max limit");
                         if (emitted)
                             throw new HpackException.CompressionException("Dynamic table resize after fields");
