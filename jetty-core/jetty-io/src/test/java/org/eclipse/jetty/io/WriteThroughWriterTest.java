@@ -35,6 +35,7 @@ import static org.hamcrest.Matchers.sameInstance;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 
+// @checkstyle-disable-check : AvoidEscapedUnicodeCharactersCheck
 public class WriteThroughWriterTest
 {
     private OutputStream _out;
