@@ -59,23 +59,23 @@ public class WriteThroughWriterTest
     public void testUTF8() throws Exception
     {
         Writer writer = WriteThroughWriter.newWriter(_out, StandardCharsets.UTF_8);
-        writer.write("How now Ｂrown cow");
-        assertArrayEquals("How now Ｂrown cow".getBytes(StandardCharsets.UTF_8), BufferUtil.toArray(_bytes));
+        writer.write("How now \uFF22rown cow");
+        assertArrayEquals("How now \uFF22rown cow".getBytes(StandardCharsets.UTF_8), BufferUtil.toArray(_bytes));
     }
 
     @Test
     public void testUTF16() throws Exception
     {
         Writer writer = WriteThroughWriter.newWriter(_out, StandardCharsets.UTF_16);
-        writer.write("How now Ｂrown cow");
-        assertArrayEquals("How now Ｂrown cow".getBytes(StandardCharsets.UTF_16), BufferUtil.toArray(_bytes));
+        writer.write("How now \uFF22rown cow");
+        assertArrayEquals("How now \uFF22rown cow".getBytes(StandardCharsets.UTF_16), BufferUtil.toArray(_bytes));
     }
 
     @Test
     public void testNotCESU8() throws Exception
     {
         Writer writer = WriteThroughWriter.newWriter(_out, StandardCharsets.UTF_8);
-        String data = "xxx𐐀xxx";
+        String data = "xxx\uD801\uDC00xxx";
         writer.write(data);
         byte[] b = BufferUtil.toArray(_bytes);
         assertEquals("787878F0909080787878", StringUtil.toHexString(b));
@@ -93,7 +93,7 @@ public class WriteThroughWriterTest
         Writer writer = WriteThroughWriter.newWriter(_out, StandardCharsets.UTF_8);
         int maxWriteSize = WriteThroughWriter.DEFAULT_MAX_WRITE_SIZE;
         final String singleByteStr = "a";
-        final String multiByteDuplicateStr = "Ｂ";
+        final String multiByteDuplicateStr = "\uFF22";
         int remainSize = 1;
 
         int multiByteStrByteLength = multiByteDuplicateStr.getBytes(StandardCharsets.UTF_8).length;
@@ -115,7 +115,7 @@ public class WriteThroughWriterTest
     public void testISO8859() throws Exception
     {
         Writer writer = WriteThroughWriter.newWriter(_out, StandardCharsets.ISO_8859_1);
-        writer.write("How now Ｂrown cow");
+        writer.write("How now \uFF22rown cow");
         assertEquals(new String(BufferUtil.toArray(_bytes), StandardCharsets.ISO_8859_1), "How now ?rown cow");
     }
 
@@ -123,7 +123,7 @@ public class WriteThroughWriterTest
     public void testUTF16x2() throws Exception
     {
         Writer writer = WriteThroughWriter.newWriter(_out, StandardCharsets.UTF_8);
-        String source = "𠮟";
+        String source = "\uD842\uDF9F";
 
         byte[] bytes = source.getBytes(StandardCharsets.UTF_8);
         writer.write(source.toCharArray(), 0, source.toCharArray().length);
@@ -148,7 +148,7 @@ public class WriteThroughWriterTest
 
         final String singleByteStr = "a";
         int remainSize = 1;
-        final String multiByteDuplicateStr = "𠮟";
+        final String multiByteDuplicateStr = "\uD842\uDF9F";
         int adjustSize = -1;
 
         String source =
@@ -179,7 +179,7 @@ public class WriteThroughWriterTest
 
         final String singleByteStr = "a";
         int remainSize = 1;
-        final String multiByteDuplicateStr = "𠮟";
+        final String multiByteDuplicateStr = "\uD842\uDF9F";
         int adjustSize = -2;
 
         String source =
