@@ -32,7 +32,7 @@ import static java.nio.file.StandardOpenOption.WRITE;
  * A LifeCycle Listener that writes state changes to a file.
  * <p>This can be used with the jetty.sh script to wait for successful startup.
  */
-public class StateLifeCycleListener extends Thread implements LifeCycle.Listener
+public class StateLifeCycleListener implements LifeCycle.Listener
 {
     private static final Logger LOG = LoggerFactory.getLogger(StateLifeCycleListener.class);
 
@@ -55,22 +55,6 @@ public class StateLifeCycleListener extends Thread implements LifeCycle.Listener
 
         // Create file
         Files.writeString(stateFile, "INIT " + this + "\n", UTF_8, WRITE, CREATE_NEW);
-
-        // JVM shutdown should clean up state file
-        Runtime.getRuntime().addShutdownHook(this);
-    }
-
-    @Override
-    public void run()
-    {
-        try
-        {
-            Files.deleteIfExists(stateFile);
-        }
-        catch (Throwable t)
-        {
-            LOG.info("Unable to remove State file: {}", stateFile, t);
-        }
     }
 
     private void appendStateChange(String action, Object obj)

@@ -140,25 +140,24 @@ started()
   # wait till timeout to see "STARTED" in state file, needs --module=state as argument
   for ((T = 0; T < $STARTTIMEOUT; T++))
   do
+    echo -n "."
     sleep 1
     if [ -r $STATEFILE ] ; then
       STATENOW=$(tail -1 $STATEFILE)
       (( DEBUG )) && echo "State (now): $STATENOW"
       case "$STATENOW" in
         STARTED*)
-          echo "."
+          echo " started"
           return 0;;
         STOPPED*)
-          echo "!"
+          echo " stopped"
           return 1;;
         FAILED*)
-          echo "!!"
+          echo " failed"
           return 1;;
       esac
-      echo -n "-"
     else
       (( DEBUG )) && echo "Unable to read State File: $STATEFILE"
-      echo -n ":"
     fi
   done
   (( DEBUG )) && echo "Timeout $STARTTIMEOUT expired waiting for start state from $STATEFILE"
