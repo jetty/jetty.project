@@ -103,6 +103,11 @@ public class HpackDecoder
         setMaxTableCapacity(maxTableSizeLimit);
     }
 
+    public int getMaxHeaderListSize()
+    {
+        return _builder.getMaxSize();
+    }
+
     public void setMaxHeaderListSize(int maxHeaderListSize)
     {
         _builder.setMaxSize(maxHeaderListSize);

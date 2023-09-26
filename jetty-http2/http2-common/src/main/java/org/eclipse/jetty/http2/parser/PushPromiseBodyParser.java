@@ -124,6 +124,10 @@ public class PushPromiseBodyParser extends BodyParser
                 }
                 case HEADERS:
                 {
+                    int maxLength = headerBlockParser.getMaxHeaderListSize();
+                    if (maxLength > 0 && length > maxLength)
+                        return connectionFailure(buffer, ErrorCode.REFUSED_STREAM_ERROR.code, "invalid_headers_frame");
+
                     MetaData metaData = headerBlockParser.parse(buffer, length);
                     if (metaData == HeaderBlockParser.SESSION_FAILURE)
                         return false;
