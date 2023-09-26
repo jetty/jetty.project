@@ -113,7 +113,7 @@ public class HTTP2Client extends ContainerLifeCycle
     private int maxDecoderTableCapacity = HpackContext.DEFAULT_MAX_TABLE_CAPACITY;
     private int maxEncoderTableCapacity = HpackContext.DEFAULT_MAX_TABLE_CAPACITY;
     private int maxHeaderBlockFragment = 0;
-    private int maxResponseHeadersSize = -1;
+    private int maxResponseHeadersSize = 8 * 1024;
     private FlowControlStrategy.Factory flowControlStrategyFactory = () -> new BufferingFlowControlStrategy(0.5F);
     private long streamIdleTimeout;
     private boolean useInputDirectByteBuffers = true;
