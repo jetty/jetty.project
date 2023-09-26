@@ -53,4 +53,26 @@ public interface QuietException
             super(cause);
         }
     }
+
+    class Runtime extends RuntimeException implements QuietException
+    {
+        public Runtime()
+        {
+        }
+
+        public Runtime(String message)
+        {
+            super(message);
+        }
+
+        public Runtime(String message, Throwable cause)
+        {
+            super(message, cause);
+        }
+
+        public Runtime(Throwable cause)
+        {
+            super(cause);
+        }
+    }
 }
