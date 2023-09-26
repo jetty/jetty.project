@@ -76,7 +76,7 @@ public class WriteThroughWriterTest
 
         Utf8StringBuilder buf = new Utf8StringBuilder();
         buf.append(BufferUtil.toArray(_bytes), 0, _bytes.remaining());
-        assertEquals(data, buf.takeCompleteString(IllegalArgumentException::new));
+        assertEquals(data, buf.takeCompleteString(Utf8StringBuilder.Utf8CharacterCodingException::new));
     }
 
     @Test

@@ -80,7 +80,7 @@ public class HeaderRegexRule extends RegexRule
         return new Handler(input)
         {
             @Override
-            public boolean handle(Response response, Callback callback) throws Exception
+            protected boolean handle(Response response, Callback callback) throws Exception
             {
                 if (isAdd())
                     response.getHeaders().add(getHeaderName(), matcher.replaceAll(getHeaderValue()));

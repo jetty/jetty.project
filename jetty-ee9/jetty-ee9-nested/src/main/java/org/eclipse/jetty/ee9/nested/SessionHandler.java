@@ -118,11 +118,48 @@ public class SessionHandler extends ScopedHandler implements SessionConfig.Mutab
         return _sessionManager.getSessionIdManager();
     }
 
+    protected void configureCookies()
+    {
+        if (_contextHandler == null)
+            return;
+
+        //configure the name of the session cookie set by an init param
+        String tmp = _contextHandler.getInitParameter(SessionConfig.__SessionCookieProperty);
+        if (tmp != null)
+            setSessionCookie(tmp);
+
+        //configure the name of the session id path param set by an init param
+        tmp = _contextHandler.getInitParameter(SessionConfig.__SessionIdPathParameterNameProperty);
+        if (tmp != null)
+            setSessionIdPathParameterName(tmp);
+
+        //configure checkRemoteSessionEncoding set by an init param
+        tmp = _contextHandler.getInitParameter(SessionConfig.__CheckRemoteSessionEncodingProperty);
+        if (tmp != null)
+            setCheckingRemoteSessionIdEncoding(Boolean.parseBoolean(tmp));
+
+        //configure the domain of the session cookie set by an init param
+        tmp = _contextHandler.getInitParameter(SessionConfig.__SessionDomainProperty);
+        if (tmp != null)
+            setSessionDomain(tmp);
+
+        //configure the path of the session cookie set by an init param
+        tmp = _contextHandler.getInitParameter(SessionConfig.__SessionPathProperty);
+        if (tmp != null)
+            setSessionPath(tmp);
+
+        //configure the max age of the session cookie set by an init param
+        tmp = _contextHandler.getInitParameter(SessionConfig.__MaxAgeProperty);
+        if (tmp != null)
+            setMaxCookieAge(Integer.parseInt(tmp.trim()));
+    }
+
     @Override
     protected void doStart() throws Exception
     {
         _contextHandler = ContextHandler.getCurrentContext().getContextHandler();
         super.doStart();
+        configureCookies();
     }
 
     /**

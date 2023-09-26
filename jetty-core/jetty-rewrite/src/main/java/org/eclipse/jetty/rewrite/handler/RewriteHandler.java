@@ -101,6 +101,14 @@ public class RewriteHandler extends Handler.Wrapper
     }
 
     /**
+     * <p>Removes all the rules.</p>
+     */
+    public void clear()
+    {
+        _rules.clear();
+    }
+
+    /**
      * @see RuleContainer#getOriginalPathAttribute()
      */
     public String getOriginalPathAttribute()
@@ -123,14 +131,32 @@ public class RewriteHandler extends Handler.Wrapper
             return false;
 
         Rule.Handler input = new Rule.Handler(request);
-        Rule.Handler output = _rules.matchAndApply(input);
+        Rule.Handler result = getRuleContainer().matchAndApply(input);
 
         // No rule matched, call super with the original request.
-        if (output == null)
+        if (result == null)
             return super.handle(request, response, callback);
 
-        // At least one rule matched, call super with the result of the rule applications.
-        output.setHandler(getHandler());
-        return output.handle(output, response, callback);
+        // At least one rule matched, link the last Rule.Handler
+        // to invoke the child Handler of this RewriteHandler.
+        new LastRuleHandler(result, getHandler());
+        return input.handle(response, callback);
+    }
+
+    private static class LastRuleHandler extends Rule.Handler
+    {
+        private final Handler _handler;
+
+        private LastRuleHandler(Rule.Handler ruleHandler, Handler handler)
+        {
+            super(ruleHandler);
+            _handler = handler;
+        }
+
+        @Override
+        protected boolean handle(Response response, Callback callback) throws Exception
+        {
+            return _handler.handle(getWrapped(), response, callback);
+        }
     }
 }

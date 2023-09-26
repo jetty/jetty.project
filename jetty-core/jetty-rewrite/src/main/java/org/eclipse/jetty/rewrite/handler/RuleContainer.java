@@ -51,7 +51,7 @@ public class RuleContainer extends Rule implements Iterable<Rule>, Dumpable
      */
     public void setRules(List<Rule> rules)
     {
-        _rules.clear();
+        clear();
         _rules.addAll(rules);
     }
 
@@ -69,6 +69,14 @@ public class RuleContainer extends Rule implements Iterable<Rule>, Dumpable
     public void addRule(Rule rule)
     {
         _rules.add(rule);
+    }
+
+    /**
+     * <p>Removes all the rules.</p>
+     */
+    public void clear()
+    {
+        _rules.clear();
     }
 
     /**

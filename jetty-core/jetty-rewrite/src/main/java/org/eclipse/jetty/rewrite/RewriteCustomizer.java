@@ -17,6 +17,7 @@ import java.io.IOException;
 
 import org.eclipse.jetty.http.HttpFields;
 import org.eclipse.jetty.io.RuntimeIOException;
+import org.eclipse.jetty.rewrite.handler.Rule;
 import org.eclipse.jetty.rewrite.handler.RuleContainer;
 import org.eclipse.jetty.server.HttpConfiguration.Customizer;
 import org.eclipse.jetty.server.Request;
@@ -35,12 +36,20 @@ public class RewriteCustomizer extends RuleContainer implements Customizer
         try
         {
             // TODO: rule are able to complete the request/response, but customizers cannot.
-            Handler input = new Handler(request);
+            Handler input = new Input(request);
             return matchAndApply(input);
         }
         catch (IOException e)
         {
             throw new RuntimeIOException(e);
+        }
+    }
+
+    private static class Input extends Rule.Handler
+    {
+        private Input(Request request)
+        {
+            super(request);
         }
     }
 }

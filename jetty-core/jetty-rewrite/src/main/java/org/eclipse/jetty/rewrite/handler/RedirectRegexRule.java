@@ -82,7 +82,7 @@ public class RedirectRegexRule extends RegexRule
         return new Handler(input)
         {
             @Override
-            public boolean handle(Response response, Callback callback)
+            protected boolean handle(Response response, Callback callback)
             {
                 String target = matcher.replaceAll(getLocation());
                 response.setStatus(_statusCode);

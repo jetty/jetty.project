@@ -24,6 +24,7 @@ import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.Flow;
 import java.util.function.Consumer;
 
+import org.eclipse.jetty.io.content.BufferedContentSink;
 import org.eclipse.jetty.io.content.ContentSinkOutputStream;
 import org.eclipse.jetty.io.content.ContentSinkSubscriber;
 import org.eclipse.jetty.io.content.ContentSourceInputStream;
@@ -449,6 +450,22 @@ public class Content
      */
     public interface Sink
     {
+        /**
+         * <p>Wraps the given content sink with a buffering sink.</p>
+         *
+         * @param sink the sink to write to
+         * @param bufferPool the {@link ByteBufferPool} to use
+         * @param direct true to use direct buffers, false to use heap buffers
+         * @param maxAggregationSize the maximum size that can be buffered in a single write;
+         * any size above this threshold triggers a buffer flush
+         * @param maxBufferSize the maximum size of the buffer
+         * @return a Sink that writes to the given content sink
+         */
+        static Sink asBuffered(Sink sink, ByteBufferPool bufferPool, boolean direct, int maxAggregationSize, int maxBufferSize)
+        {
+            return new BufferedContentSink(sink, bufferPool, direct, maxAggregationSize, maxBufferSize);
+        }
+
         /**
          * <p>Wraps the given content sink with an {@link OutputStream}.</p>
          *

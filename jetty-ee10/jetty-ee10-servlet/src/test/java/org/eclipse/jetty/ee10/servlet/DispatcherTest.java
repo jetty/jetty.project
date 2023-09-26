@@ -117,6 +117,23 @@ public class DispatcherTest
     }
 
     @Test
+    public void testForwardToWelcome() throws Exception
+    {
+        _contextHandler.addServlet(ForwardServlet.class, "/ForwardServlet/*");
+        _contextHandler.addServlet(DefaultServlet.class, "/");
+        _server.start();
+
+        String responses = _connector.getResponse("""
+            GET /context/ForwardServlet?do=req.echo&uri=/subdir HTTP/1.1\r
+            Host: local\r
+            Connection: close\r
+            \r
+            """);
+
+        assertThat(responses, containsString("HTTP/1.1 302 Found"));
+    }
+
+    @Test
     public void testForward() throws Exception
     {
         _contextHandler.addServlet(ForwardServlet.class, "/ForwardServlet/*");
