@@ -146,10 +146,13 @@ started()
       (( DEBUG )) && echo "State (now): $STATENOW"
       case "$STATENOW" in
         STARTED*)
+          echo "."
           return 0;;
         STOPPED*)
+          echo "!"
           return 1;;
         FAILED*)
+          echo "!!"
           return 1;;
       esac
       echo -n "-"
@@ -158,6 +161,8 @@ started()
       echo -n ":"
     fi
   done
+  (( DEBUG )) && echo "Timeout $STARTTIMEOUT expired waiting for start state from $STATEFILE"
+  echo " timeout"
   return 1;
 }
 
