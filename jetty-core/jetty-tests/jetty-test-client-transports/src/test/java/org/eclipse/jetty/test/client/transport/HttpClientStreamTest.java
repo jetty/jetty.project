@@ -1238,7 +1238,7 @@ public class HttpClientStreamTest extends AbstractTest
                                 return;
                             }
 
-                            org.eclipse.jetty.client.Request r = clientRequestRef.getAndSet(null);
+                            var r = clientRequestRef.getAndSet(null);
                             if (r != null)
                             {
                                 // Abort the client request then give some time for the client's
@@ -1273,7 +1273,7 @@ public class HttpClientStreamTest extends AbstractTest
         new Random().nextBytes(data);
         ByteBufferRequestContent content = new ByteBufferRequestContent(ByteBuffer.wrap(data));
 
-        org.eclipse.jetty.client.Request request = client.newRequest(newURI(transport))
+        var request = client.newRequest(newURI(transport))
             .body(content);
         clientRequestRef.set(request);
         Throwable throwable = new CompletableResponseListener(request)
