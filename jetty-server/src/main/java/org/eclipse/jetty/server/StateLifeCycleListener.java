@@ -32,18 +32,18 @@ import static java.nio.file.StandardOpenOption.WRITE;
  * A LifeCycle Listener that writes state changes to a file.
  * <p>This can be used with the jetty.sh script to wait for successful startup.
  */
-public class StateLifeCycleListener implements LifeCycle.Listener
+public class StateLifeCycleListener extends Thread implements LifeCycle.Listener
 {
     private static final Logger LOG = LoggerFactory.getLogger(StateLifeCycleListener.class);
 
-    private final Path _filename;
+    private final Path stateFile;
 
     public StateLifeCycleListener(String filename) throws IOException
     {
-        _filename = Paths.get(filename).toAbsolutePath();
+        stateFile = Paths.get(filename).toAbsolutePath();
 
         if (LOG.isDebugEnabled())
-            LOG.debug("State File: {}", _filename);
+            LOG.debug("State File: {}", stateFile);
 
         // We use raw Files APIs here to allow important IOExceptions
         // to fail the startup of Jetty, as these kinds of errors
@@ -51,26 +51,42 @@ public class StateLifeCycleListener implements LifeCycle.Listener
         // by the user before the state file can be used.
 
         // Start with fresh file (for permission reasons)
-        Files.deleteIfExists(_filename);
+        Files.deleteIfExists(stateFile);
 
         // Create file
-        Files.writeString(_filename, "INIT " + this + "\n", UTF_8, WRITE, CREATE_NEW);
+        Files.writeString(stateFile, "INIT " + this + "\n", UTF_8, WRITE, CREATE_NEW);
+
+        // JVM shutdown should clean up state file
+        Runtime.getRuntime().addShutdownHook(this);
+    }
+
+    @Override
+    public void run()
+    {
+        try
+        {
+            Files.deleteIfExists(stateFile);
+        }
+        catch (Throwable t)
+        {
+            LOG.info("Unable to remove State file: {}", stateFile, t);
+        }
     }
 
     private void appendStateChange(String action, Object obj)
     {
-        try (Writer out = Files.newBufferedWriter(_filename, UTF_8, WRITE, APPEND))
+        try (Writer out = Files.newBufferedWriter(stateFile, UTF_8, WRITE, APPEND))
         {
             String entry = String.format("%s %s\n", action, obj);
             if (LOG.isDebugEnabled())
-                LOG.debug("appendEntry to {}: {}", _filename, entry);
+                LOG.debug("appendEntry to {}: {}", stateFile, entry);
             out.append(entry);
         }
         catch (IOException e)
         {
             // this can happen if the uid of the Jetty process changes after it has been started
             // such as can happen with some setuid configurations
-            LOG.warn("Unable to append to state file: " + _filename, e);
+            LOG.warn("Unable to append to state file: " + stateFile, e);
         }
     }
 

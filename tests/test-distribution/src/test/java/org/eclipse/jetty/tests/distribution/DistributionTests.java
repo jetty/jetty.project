@@ -156,6 +156,7 @@ public class DistributionTests extends AbstractJettyHomeTest
             }
 
             await().atMost(Duration.ofSeconds(10)).until(() -> !Files.exists(pidfile));
+            await().atMost(Duration.ofSeconds(10)).until(() -> !Files.exists(statefile));
         }
     }
 
