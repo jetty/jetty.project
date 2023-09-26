@@ -59,6 +59,15 @@ public class ByteBufferAggregator
     }
 
     /**
+     * Get the currently aggregated length.
+     * @return The current total aggregated bytes.
+     */
+    public int length()
+    {
+        return _aggregatedSize;
+    }
+
+    /**
      * Aggregates the given ByteBuffer. This copies bytes up to the specified maximum size, at which
      * time this method returns {@code true} and {@link #takeRetainableByteBuffer()} must be called
      * for this method to accept aggregating again.
