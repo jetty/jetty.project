@@ -71,6 +71,8 @@ public class ChunkAccumulator
 
     public byte[] take()
     {
+        if (_length == 0)
+            return BufferUtil.EMPTY_BUFFER.array();
         byte[] bytes = new byte[_length];
         int offset = 0;
         for (Chunk chunk : _chunks)

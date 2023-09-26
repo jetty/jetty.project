@@ -36,17 +36,10 @@ import org.slf4j.LoggerFactory;
 public class BufferedContentSink implements Content.Sink
 {
     /**
-     * An empty byte array, which if {@link #write(boolean, ByteBuffer, Callback) written}
-     * as a {@link ByteBuffer#wrap(byte[]) wrapped ByteBuffer}
-     * will invoke a {@link #flush(Callback)} operation.
-     */
-    public static final byte[] FLUSH_BYTES = new byte[0];
-
-    /**
      * An empty {@link ByteBuffer}, which if {@link #write(boolean, ByteBuffer, Callback) written}
      * will invoke a {@link #flush(Callback)} operation.
      */
-    public static final ByteBuffer FLUSH_BUFFER = ByteBuffer.wrap(FLUSH_BYTES);
+    public static final ByteBuffer FLUSH_BUFFER = ByteBuffer.wrap(new byte[0]);
 
     private static final Logger LOG = LoggerFactory.getLogger(BufferedContentSink.class);
 
@@ -179,9 +172,7 @@ public class BufferedContentSink implements Content.Sink
     {
         boolean full = _aggregator.aggregate(currentBuffer);
         boolean empty = !currentBuffer.hasRemaining();
-        boolean flush = full ||
-            currentBuffer == FLUSH_BUFFER ||
-            empty && currentBuffer.hasArray() && currentBuffer.array() == FLUSH_BYTES;
+        boolean flush = full || currentBuffer == FLUSH_BUFFER;
         boolean complete = last && empty;
         if (LOG.isDebugEnabled())
             LOG.debug("aggregated current buffer, full={}, complete={}, bytes left={}, aggregator={}", full, complete, currentBuffer.remaining(), _aggregator);

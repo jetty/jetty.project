@@ -28,8 +28,8 @@ import org.eclipse.jetty.util.StringUtil;
  * several optimized implementation for well known {@link Charset}s,
  * specifically {@link StandardCharsets#UTF_8} and {@link StandardCharsets#ISO_8859_1}.</p>
  * <p>The implementations of this class will never buffer characters or bytes beyond a call to the
- * {@link #write(char[], int, int)} method, thus written characters will always be available
- * in converted form to the passed {@link OutputStream}</p>.
+ * {@link #write(char[], int, int)} method, thus written characters will always be passed
+ * as bytes to the passed {@link OutputStream}</p>.
  */
 public abstract class WriteThroughWriter extends Writer
 {

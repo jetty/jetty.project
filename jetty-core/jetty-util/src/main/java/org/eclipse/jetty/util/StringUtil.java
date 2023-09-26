@@ -482,7 +482,11 @@ public class StringUtil
     }
 
     /**
-     * Get a zero copy subsequence of a {@link String}.
+     * <p>Get a zero copy subsequence of a {@link String}.</p>
+     * <p>Use of this is method can result in unforeseen GC consequences and can bypass
+     * JVM optimizations available in {@link String#subSequence(int, int)}.  It should only
+     * be used in cases where there is a known benefit: large sub sequence of a larger string with no retained
+     * references to the sub sequence beyond the life time of the string.</p>
      * @param string The {@link String} to take a subsequence of.
      * @param offset The offset in characters into the string to start the subsequence
      * @param length The length in characters of the substring

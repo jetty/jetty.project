@@ -873,7 +873,7 @@ public class Response implements HttpServletResponse
             }
             else
             {
-                // We must use an implementation of AbstractOutputStreamWriter here as we rely on the non cached characters
+                // We must use an specialized Writer here as we rely on the non cached characters
                 // in the writer implementation for flush and completion operations.
                 WriteThroughWriter outputStreamWriter = WriteThroughWriter.newWriter(_out, encoding);
                 _writer = new ResponseWriter(outputStreamWriter, locale, encoding);

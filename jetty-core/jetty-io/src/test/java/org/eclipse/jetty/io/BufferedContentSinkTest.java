@@ -238,8 +238,7 @@ public class BufferedContentSinkTest
     {
         return Stream.of(
             BufferedContentSink::flush,
-            (b, callback) -> b.write(false, BufferedContentSink.FLUSH_BUFFER, callback),
-            (b, callback) -> b.write(false, ByteBuffer.wrap(BufferedContentSink.FLUSH_BYTES), callback)
+            (b, callback) -> b.write(false, BufferedContentSink.FLUSH_BUFFER, callback)
         );
     }
 
