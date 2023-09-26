@@ -57,12 +57,6 @@ public class StateLifeCycleListener implements LifeCycle.Listener
         Files.writeString(_filename, "INIT " + this + "\n", UTF_8, WRITE, CREATE_NEW);
     }
 
-    @Override
-    public String toString()
-    {
-        return String.format("%s@%h", this.getClass().getSimpleName(), this);
-    }
-
     private void appendStateChange(String action, Object obj)
     {
         try (Writer out = Files.newBufferedWriter(_filename, UTF_8, WRITE, APPEND))
@@ -108,5 +102,11 @@ public class StateLifeCycleListener implements LifeCycle.Listener
     public void lifeCycleStopped(LifeCycle event)
     {
         appendStateChange("STOPPED", event);
+    }
+
+    @Override
+    public String toString()
+    {
+        return String.format("%s@%h", this.getClass().getSimpleName(), this);
     }
 }

@@ -138,9 +138,9 @@ started()
   local PIDFILE=$2
   local STARTTIMEOUT=$3
   # wait till timeout to see "STARTED" in state file, needs --module=state as argument
-  for ((T = 0; T < $(($STARTTIMEOUT / 4)); T++))
+  for ((T = 0; T < $STARTTIMEOUT; T++))
   do
-    sleep 4
+    sleep 1
     if [ -r $STATEFILE ] ; then
       STATENOW=$(tail -1 $STATEFILE)
       (( DEBUG )) && echo "State (now): $STATENOW"
@@ -189,8 +189,10 @@ pidKill()
         (( DEBUG )) && echo "PID=$PID is running, sending kill signal=KILL (TIMEOUT=$TIMEOUT)"
         kill -KILL "$PID" 2>/dev/null
       fi
+      echo -n "."
       sleep 1
     done
+    echo "Killed $PID"
     return 0
   else
     (( DEBUG )) && echo "Unable to read PID File: $PIDFILE"
