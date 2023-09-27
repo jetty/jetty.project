@@ -321,13 +321,13 @@ public class ConcurrentPool<P> implements Pool<P>, Dumpable
             new DumpableCollection("entries", entries));
     }
 
-    public int scavenge()
+    public int sweep()
     {
         List<Entry<P>> toRemove = new ArrayList<>();
         for (Entry<P> entry : entries)
         {
             ConcurrentEntry<P> ce = (ConcurrentEntry<P>)entry;
-            if (ce.weakPooled != null && ce.weakPooled.get() == null)
+            if (ce.isGarbage())
                 toRemove.add(entry);
         }
         entries.removeAll(toRemove); // hard remove, these entries are garbage
@@ -401,12 +401,19 @@ public class ConcurrentPool<P> implements Pool<P>, Dumpable
         // Other threads accessing must check the state field above first, so a good before/after
         // relationship exists to make a memory barrier.
         private E pooled;
-
+        // A weak ref to the pooled object; the hard ref gets nulled out when it is read
+        // and re-set when it is released, so if the pooled object is never released and gets
+        // garbage collected, this can be detected as this weak ref will become null.
         private WeakReference<E> weakPooled;
 
         public ConcurrentEntry(ConcurrentPool<E> pool)
         {
             this.pool = pool;
+        }
+
+        boolean isGarbage()
+        {
+            return weakPooled != null && weakPooled.get() == null;
         }
 
         @Override
