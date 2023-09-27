@@ -77,7 +77,7 @@ public class OneWebAppWithJsp
         // can be started and stopped according to the lifecycle of the server
         // itself.
         String realmResourceName = "etc/realm.properties";
-        Resource realmResource = webapp.getResourceFactory().newClassPathResource(realmResourceName);
+        Resource realmResource = webapp.getResourceFactory().newClassLoaderResource(realmResourceName, false);
         if (realmResource == null)
             throw new FileNotFoundException("Unable to find " + realmResourceName);
 

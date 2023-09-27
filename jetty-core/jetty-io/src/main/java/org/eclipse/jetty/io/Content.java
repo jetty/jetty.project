@@ -24,6 +24,7 @@ import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.Flow;
 import java.util.function.Consumer;
 
+import org.eclipse.jetty.io.content.BufferedContentSink;
 import org.eclipse.jetty.io.content.ContentSinkOutputStream;
 import org.eclipse.jetty.io.content.ContentSinkSubscriber;
 import org.eclipse.jetty.io.content.ContentSourceInputStream;
@@ -159,6 +160,57 @@ public class Content
             {
                 throw IO.rethrow(x);
             }
+        }
+
+        /**
+         * <p>Reads, non-blocking, the whole content source into a {@code byte} array.</p>
+         *
+         * @param source the source to read
+         * @param maxSize The maximum size to read, or -1 for no limit
+         * @return A {@link CompletableFuture} that will be completed when the complete content is read or
+         * failed if the max size is exceeded or there is a read error.
+         */
+        static CompletableFuture<byte[]> asByteArrayAsync(Source source, int maxSize)
+        {
+            return new ChunkAccumulator().readAll(source, maxSize);
+        }
+
+        /**
+         * <p>Reads, non-blocking, the whole content source into a {@link ByteBuffer}.</p>
+         *
+         * @param source the source to read
+         * @return the {@link CompletableFuture} to notify when the whole content has been read
+         */
+        static CompletableFuture<ByteBuffer> asByteBufferAsync(Source source)
+        {
+            return asByteBufferAsync(source, -1);
+        }
+
+        /**
+         * <p>Reads, non-blocking, the whole content source into a {@link ByteBuffer}.</p>
+         *
+         * @param source the source to read
+         * @param maxSize The maximum size to read, or -1 for no limit
+         * @return the {@link CompletableFuture} to notify when the whole content has been read
+         */
+        static CompletableFuture<ByteBuffer> asByteBufferAsync(Source source, int maxSize)
+        {
+            return asByteArrayAsync(source, maxSize).thenApply(ByteBuffer::wrap);
+        }
+
+        /**
+         * <p>Reads, non-blocking, the whole content source into a {@link RetainableByteBuffer}.</p>
+         *
+         * @param source The {@link Content.Source} to read
+         * @param pool The {@link ByteBufferPool} to acquire the buffer from, or null for a non {@link Retainable} buffer
+         * @param direct True if the buffer should be direct.
+         * @param maxSize The maximum size to read, or -1 for no limit
+         * @return A {@link CompletableFuture} that will be completed when the complete content is read or
+         * failed if the max size is exceeded or there is a read error.
+         */
+        static CompletableFuture<RetainableByteBuffer> asRetainableByteBuffer(Source source, ByteBufferPool pool, boolean direct, int maxSize)
+        {
+            return new ChunkAccumulator().readAll(source, pool, direct, maxSize);
         }
 
         /**
@@ -398,6 +450,22 @@ public class Content
      */
     public interface Sink
     {
+        /**
+         * <p>Wraps the given content sink with a buffering sink.</p>
+         *
+         * @param sink the sink to write to
+         * @param bufferPool the {@link ByteBufferPool} to use
+         * @param direct true to use direct buffers, false to use heap buffers
+         * @param maxAggregationSize the maximum size that can be buffered in a single write;
+         * any size above this threshold triggers a buffer flush
+         * @param maxBufferSize the maximum size of the buffer
+         * @return a Sink that writes to the given content sink
+         */
+        static Sink asBuffered(Sink sink, ByteBufferPool bufferPool, boolean direct, int maxAggregationSize, int maxBufferSize)
+        {
+            return new BufferedContentSink(sink, bufferPool, direct, maxAggregationSize, maxBufferSize);
+        }
+
         /**
          * <p>Wraps the given content sink with an {@link OutputStream}.</p>
          *

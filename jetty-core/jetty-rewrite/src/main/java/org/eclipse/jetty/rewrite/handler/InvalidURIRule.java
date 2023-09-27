@@ -97,7 +97,7 @@ public class InvalidURIRule extends Rule
         return new Handler(input)
         {
             @Override
-            public boolean handle(Response response, Callback callback)
+            protected boolean handle(Response response, Callback callback)
             {
                 String message = getMessage();
                 if (StringUtil.isBlank(message))

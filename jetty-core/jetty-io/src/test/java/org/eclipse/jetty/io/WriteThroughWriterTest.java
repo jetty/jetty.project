@@ -11,73 +11,47 @@
 // ========================================================================
 //
 
-package org.eclipse.jetty.ee9.nested;
+package org.eclipse.jetty.io;
 
-import java.io.IOException;
+import java.io.OutputStream;
+import java.io.Writer;
 import java.nio.ByteBuffer;
 import java.nio.charset.StandardCharsets;
+import java.util.stream.Stream;
 
-import org.eclipse.jetty.http.MimeTypes;
-import org.eclipse.jetty.server.Server;
 import org.eclipse.jetty.util.BufferUtil;
 import org.eclipse.jetty.util.StringUtil;
 import org.eclipse.jetty.util.Utf8StringBuilder;
 import org.junit.jupiter.api.BeforeEach;
-import org.junit.jupiter.api.Disabled;
 import org.junit.jupiter.api.Test;
+import org.junit.jupiter.params.ParameterizedTest;
+import org.junit.jupiter.params.provider.Arguments;
+import org.junit.jupiter.params.provider.MethodSource;
+import org.slf4j.LoggerFactory;
 
+import static org.hamcrest.MatcherAssert.assertThat;
+import static org.hamcrest.Matchers.equalTo;
+import static org.hamcrest.Matchers.sameInstance;
 import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertThrows;
 
-@Disabled // TODO
-public class HttpWriterTest
+// @checkstyle-disable-check : AvoidEscapedUnicodeCharactersCheck
+public class WriteThroughWriterTest
 {
-    // @checkstyle-disable-check : AvoidEscapedUnicodeCharactersCheck
-    private HttpOutput _httpOut;
+    private OutputStream _out;
     private ByteBuffer _bytes;
 
     @BeforeEach
     public void init() throws Exception
     {
         _bytes = BufferUtil.allocate(2048);
-
-        Server server = new Server();
-        ContextHandler contextHandler = new ContextHandler(server);
-
-        HttpChannel channel = new HttpChannel(contextHandler, new MockConnectionMetaData())
-        {
-            @Override
-            public boolean failAllContent(Throwable failure)
-            {
-                return false;
-            }
-
-            @Override
-            public boolean failed(Throwable x)
-            {
-                return false;
-            }
-
-            @Override
-            protected boolean eof()
-            {
-                return false;
-            }
-        };
-
-        _httpOut = new HttpOutput(channel)
-        {
-            @Override
-            public void write(byte[] b, int off, int len) throws IOException
-            {
-                BufferUtil.append(_bytes, b, off, len);
-            }
-        };
+        _out = new ByteBufferOutputStream(_bytes);
     }
 
     @Test
     public void testSimpleUTF8() throws Exception
     {
-        HttpWriter writer = new Utf8HttpWriter(_httpOut);
+        Writer writer = WriteThroughWriter.newWriter(_out, StandardCharsets.UTF_8);
         writer.write("Now is the time");
         assertArrayEquals("Now is the time".getBytes(StandardCharsets.UTF_8), BufferUtil.toArray(_bytes));
     }
@@ -85,7 +59,7 @@ public class HttpWriterTest
     @Test
     public void testUTF8() throws Exception
     {
-        HttpWriter writer = new Utf8HttpWriter(_httpOut);
+        Writer writer = WriteThroughWriter.newWriter(_out, StandardCharsets.UTF_8);
         writer.write("How now \uFF22rown cow");
         assertArrayEquals("How now \uFF22rown cow".getBytes(StandardCharsets.UTF_8), BufferUtil.toArray(_bytes));
     }
@@ -93,7 +67,7 @@ public class HttpWriterTest
     @Test
     public void testUTF16() throws Exception
     {
-        HttpWriter writer = new EncodingHttpWriter(_httpOut, MimeTypes.UTF16);
+        Writer writer = WriteThroughWriter.newWriter(_out, StandardCharsets.UTF_16);
         writer.write("How now \uFF22rown cow");
         assertArrayEquals("How now \uFF22rown cow".getBytes(StandardCharsets.UTF_16), BufferUtil.toArray(_bytes));
     }
@@ -101,7 +75,7 @@ public class HttpWriterTest
     @Test
     public void testNotCESU8() throws Exception
     {
-        HttpWriter writer = new Utf8HttpWriter(_httpOut);
+        Writer writer = WriteThroughWriter.newWriter(_out, StandardCharsets.UTF_8);
         String data = "xxx\uD801\uDC00xxx";
         writer.write(data);
         byte[] b = BufferUtil.toArray(_bytes);
@@ -111,31 +85,26 @@ public class HttpWriterTest
 
         Utf8StringBuilder buf = new Utf8StringBuilder();
         buf.append(BufferUtil.toArray(_bytes), 0, _bytes.remaining());
-        assertEquals(data, buf.takeCompleteString(IllegalArgumentException::new));
+        assertEquals(data, buf.takeCompleteString(Utf8StringBuilder.Utf8CharacterCodingException::new));
     }
 
     @Test
     public void testMultiByteOverflowUTF8() throws Exception
     {
-        HttpWriter writer = new Utf8HttpWriter(_httpOut);
+        Writer writer = WriteThroughWriter.newWriter(_out, StandardCharsets.UTF_8);
+        int maxWriteSize = WriteThroughWriter.DEFAULT_MAX_WRITE_SIZE;
         final String singleByteStr = "a";
         final String multiByteDuplicateStr = "\uFF22";
         int remainSize = 1;
 
         int multiByteStrByteLength = multiByteDuplicateStr.getBytes(StandardCharsets.UTF_8).length;
         StringBuilder sb = new StringBuilder();
-        for (int i = 0; i < HttpWriter.MAX_OUTPUT_CHARS - multiByteStrByteLength; i++)
-        {
-            sb.append(singleByteStr);
-        }
+        sb.append(singleByteStr.repeat(Math.max(0, maxWriteSize - multiByteStrByteLength)));
         sb.append(multiByteDuplicateStr);
-        for (int i = 0; i < remainSize; i++)
-        {
-            sb.append(singleByteStr);
-        }
-        char[] buf = new char[HttpWriter.MAX_OUTPUT_CHARS * 3];
+        sb.append(singleByteStr.repeat(remainSize));
+        char[] buf = new char[maxWriteSize * 3];
 
-        int length = HttpWriter.MAX_OUTPUT_CHARS - multiByteStrByteLength + remainSize + 1;
+        int length = maxWriteSize - multiByteStrByteLength + remainSize + 1;
         sb.toString().getChars(0, length, buf, 0);
 
         writer.write(buf, 0, length);
@@ -146,7 +115,7 @@ public class HttpWriterTest
     @Test
     public void testISO8859() throws Exception
     {
-        HttpWriter writer = new Iso88591HttpWriter(_httpOut);
+        Writer writer = WriteThroughWriter.newWriter(_out, StandardCharsets.ISO_8859_1);
         writer.write("How now \uFF22rown cow");
         assertEquals(new String(BufferUtil.toArray(_bytes), StandardCharsets.ISO_8859_1), "How now ?rown cow");
     }
@@ -154,8 +123,7 @@ public class HttpWriterTest
     @Test
     public void testUTF16x2() throws Exception
     {
-        HttpWriter writer = new Utf8HttpWriter(_httpOut);
-
+        Writer writer = WriteThroughWriter.newWriter(_out, StandardCharsets.UTF_8);
         String source = "\uD842\uDF9F";
 
         byte[] bytes = source.getBytes(StandardCharsets.UTF_8);
@@ -177,24 +145,17 @@ public class HttpWriterTest
     @Test
     public void testMultiByteOverflowUTF16x2() throws Exception
     {
-        HttpWriter writer = new Utf8HttpWriter(_httpOut);
+        Writer writer = WriteThroughWriter.newWriter(_out, StandardCharsets.UTF_8);
 
         final String singleByteStr = "a";
         int remainSize = 1;
         final String multiByteDuplicateStr = "\uD842\uDF9F";
         int adjustSize = -1;
 
-        StringBuilder sb = new StringBuilder();
-        for (int i = 0; i < HttpWriter.MAX_OUTPUT_CHARS + adjustSize; i++)
-        {
-            sb.append(singleByteStr);
-        }
-        sb.append(multiByteDuplicateStr);
-        for (int i = 0; i < remainSize; i++)
-        {
-            sb.append(singleByteStr);
-        }
-        String source = sb.toString();
+        String source =
+            singleByteStr.repeat(Math.max(0, WriteThroughWriter.DEFAULT_MAX_WRITE_SIZE + adjustSize)) +
+            multiByteDuplicateStr +
+            singleByteStr.repeat(remainSize);
 
         byte[] bytes = source.getBytes(StandardCharsets.UTF_8);
         writer.write(source.toCharArray(), 0, source.toCharArray().length);
@@ -215,24 +176,17 @@ public class HttpWriterTest
     @Test
     public void testMultiByteOverflowUTF16X22() throws Exception
     {
-        HttpWriter writer = new Utf8HttpWriter(_httpOut);
+        Writer writer = WriteThroughWriter.newWriter(_out, StandardCharsets.UTF_8);
 
         final String singleByteStr = "a";
         int remainSize = 1;
         final String multiByteDuplicateStr = "\uD842\uDF9F";
         int adjustSize = -2;
 
-        StringBuilder sb = new StringBuilder();
-        for (int i = 0; i < HttpWriter.MAX_OUTPUT_CHARS + adjustSize; i++)
-        {
-            sb.append(singleByteStr);
-        }
-        sb.append(multiByteDuplicateStr);
-        for (int i = 0; i < remainSize; i++)
-        {
-            sb.append(singleByteStr);
-        }
-        String source = sb.toString();
+        String source =
+            singleByteStr.repeat(Math.max(0, WriteThroughWriter.DEFAULT_MAX_WRITE_SIZE + adjustSize)) +
+            multiByteDuplicateStr +
+            singleByteStr.repeat(remainSize);
 
         byte[] bytes = source.getBytes(StandardCharsets.UTF_8);
         writer.write(source.toCharArray(), 0, source.toCharArray().length);
@@ -252,11 +206,12 @@ public class HttpWriterTest
 
     private void myReportBytes(byte[] bytes) throws Exception
     {
-//        for (int i = 0; i < bytes.length; i++)
-//        {
-//            System.err.format("%s%x",(i == 0)?"[":(i % (HttpWriter.MAX_OUTPUT_CHARS) == 0)?"][":",",bytes[i]);
-//        }
-//        System.err.format("]->%s\n",new String(bytes,StringUtil.__UTF8));
+        if (LoggerFactory.getLogger(WriteThroughWriterTest.class).isDebugEnabled())
+        {
+            for (int i = 0; i < bytes.length; i++)
+                System.err.format("%s%x", (i == 0) ? "[" : (i % 512 == 0) ? "][" : ",", bytes[i]);
+            System.err.format("]->%s\n", new String(bytes, StandardCharsets.UTF_8));
+        }
     }
 
     private void assertArrayEquals(byte[] b1, byte[] b2)
@@ -267,5 +222,47 @@ public class HttpWriterTest
         {
             assertEquals(b1[i], b2[i], test);
         }
+    }
+
+    public static Stream<Arguments> subSequenceTests()
+    {
+        return Stream.of(
+            Arguments.of("", 0, 0, ""),
+            Arguments.of("", 0, 1, null),
+            Arguments.of("", 1, 0, ""),
+            Arguments.of("", 1, 1, null),
+            Arguments.of("hello", 0, 5, "hello"),
+            Arguments.of("hello", 0, 4, "hell"),
+            Arguments.of("hello", 1, 4, "ello"),
+            Arguments.of("hello", 1, 3, "ell"),
+            Arguments.of("hello", 5, 0, ""),
+            Arguments.of("hello", 0, 6, null)
+        );
+    }
+
+    @ParameterizedTest
+    @MethodSource("subSequenceTests")
+    public void testSubSequence(String source, int offset, int length, String expected)
+    {
+        if (expected == null)
+        {
+            assertThrows(IndexOutOfBoundsException.class, () -> WriteThroughWriter.subSequence(source, offset, length));
+            assertThrows(IndexOutOfBoundsException.class, () -> WriteThroughWriter.subSequence(source.toCharArray(), offset, length));
+            return;
+        }
+
+        CharSequence result = WriteThroughWriter.subSequence(source, offset, length);
+        assertThat(result.toString(), equalTo(expected));
+
+        // check string optimization
+        if (offset == 0 && length == source.length())
+        {
+            assertThat(result, sameInstance(source));
+            assertThat(result.subSequence(offset, length), sameInstance(source));
+            return;
+        }
+
+        result = WriteThroughWriter.subSequence(source.toCharArray(), offset, length);
+        assertThat(result.toString(), equalTo(expected));
     }
 }

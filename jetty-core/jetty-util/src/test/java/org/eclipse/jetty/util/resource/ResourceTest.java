@@ -52,7 +52,6 @@ import static org.junit.jupiter.api.Assertions.assertNotNull;
 import static org.junit.jupiter.api.Assertions.assertNull;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.api.Assertions.assertTrue;
-import static org.junit.jupiter.api.Assumptions.assumeFalse;
 import static org.junit.jupiter.api.Assumptions.assumeTrue;
 
 @ExtendWith(WorkDirExtension.class)
@@ -454,91 +453,5 @@ public class ResourceTest
         assertThat(resource.exists(), is(true));
         assertThat(resource.isDirectory(), is(true));
         assertThat(resource.length(), is(0L));
-    }
-
-    /**
-     * Test a class path resource for existence.
-     */
-    @Test
-    public void testClassPathResourceClassRelative()
-    {
-        final String classPathName = "Resource.class";
-
-        Resource resource = resourceFactory.newClassPathResource(classPathName);
-
-        // A class path cannot be a directory
-        assertFalse(resource.isDirectory(), "Class path cannot be a directory.");
-
-        // A class path must exist
-        assertTrue(resource.exists(), "Class path resource does not exist.");
-    }
-
-    /**
-     * Test a class path resource for existence.
-     */
-    @Test
-    public void testClassPathResourceClassAbsolute()
-    {
-        final String classPathName = "/org/eclipse/jetty/util/resource/Resource.class";
-
-        Resource resource = resourceFactory.newClassPathResource(classPathName);
-
-        // A class path cannot be a directory
-        assertFalse(resource.isDirectory(), "Class path cannot be a directory.");
-
-        // A class path must exist
-        assertTrue(resource.exists(), "Class path resource does not exist.");
-    }
-
-    /**
-     * Test a class path resource for directories.
-     *
-     * @throws Exception failed test
-     */
-    @Test
-    public void testClassPathResourceDirectory() throws Exception
-    {
-        // If the test runs in the module-path, resource "/" cannot be found.
-        assumeFalse(Resource.class.getModule().isNamed());
-
-        final String classPathName = "/";
-
-        Resource resource = resourceFactory.newClassPathResource(classPathName);
-
-        // A class path must be a directory
-        assertTrue(resource.isDirectory(), "Class path must be a directory.");
-
-        assertTrue(Files.isDirectory(resource.getPath()), "Class path returned file must be a directory.");
-
-        // A class path must exist
-        assertTrue(resource.exists(), "Class path resource does not exist.");
-    }
-
-    /**
-     * Test a class path resource for a file.
-     *
-     * @throws Exception failed test
-     */
-    @Test
-    public void testClassPathResourceFile() throws Exception
-    {
-        final String fileName = "resource.txt";
-        final String classPathName = "/" + fileName;
-
-        // Will locate a resource in the class path
-        Resource resource = resourceFactory.newClassPathResource(classPathName);
-
-        // A class path cannot be a directory
-        assertFalse(resource.isDirectory(), "Class path must be a directory.");
-
-        assertNotNull(resource);
-
-        Path path = resource.getPath();
-
-        assertEquals(fileName, path.getFileName().toString(), "File name from class path is not equal.");
-        assertTrue(Files.isRegularFile(path), "File returned from class path should be a regular file.");
-
-        // A class path must exist
-        assertTrue(resource.exists(), "Class path resource does not exist.");
     }
 }

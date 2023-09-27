@@ -82,6 +82,7 @@ import static org.hamcrest.Matchers.lessThanOrEqualTo;
 import static org.junit.jupiter.api.Assertions.assertArrayEquals;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
+import static org.junit.jupiter.api.Assertions.assertInstanceOf;
 import static org.junit.jupiter.api.Assertions.assertNotNull;
 import static org.junit.jupiter.api.Assertions.assertSame;
 import static org.junit.jupiter.api.Assertions.assertThrows;
@@ -483,6 +484,7 @@ public class HttpClientStreamTest extends AbstractTest
     @Tag("DisableLeakTracking:client:HTTP")
     @Tag("DisableLeakTracking:client:HTTPS")
     @Tag("DisableLeakTracking:client:UNIX_DOMAIN")
+    @Tag("DisableLeakTracking:server:FCGI")
     public void testInputStreamContentProviderThrowingWhileReading(Transport transport) throws Exception
     {
         start(transport, new Handler.Abstract()
@@ -1204,6 +1206,92 @@ public class HttpClientStreamTest extends AbstractTest
         // Let the server threads go & wait for the requests to be processed.
         processLatch.countDown();
         assertTrue(clientLatch.await(timeoutInSeconds, TimeUnit.SECONDS));
+    }
+
+    @ParameterizedTest
+    @MethodSource("transports")
+    @Tag("DisableLeakTracking:server:H2")
+    @Tag("DisableLeakTracking:server:H2C")
+    @Tag("DisableLeakTracking:server:H3")
+    @Tag("DisableLeakTracking:server:FCGI")
+    public void testHttpStreamConsumeAvailableUponClientAbort(Transport transport) throws Exception
+    {
+        AtomicReference<org.eclipse.jetty.client.Request> clientRequestRef = new AtomicReference<>();
+
+        start(transport, new Handler.Abstract()
+        {
+            @Override
+            public boolean handle(Request request, org.eclipse.jetty.server.Response response, Callback callback)
+            {
+                new CompletableTask<>()
+                {
+                    @Override
+                    public void run()
+                    {
+                        while (true)
+                        {
+                            Content.Chunk chunk = request.read();
+                            if (chunk == null)
+                            {
+                                request.demand(this);
+                                return;
+                            }
+                            if (Content.Chunk.isFailure(chunk))
+                            {
+                                completeExceptionally(chunk.getFailure());
+                                return;
+                            }
+                            chunk.release();
+                            if (chunk.isLast())
+                            {
+                                complete(null);
+                                return;
+                            }
+
+                            var r = clientRequestRef.getAndSet(null);
+                            if (r != null)
+                            {
+                                // Abort the client request then give some time for the client's
+                                // abort notification (e.g.: reset frame) to reach the server.
+                                r.abort(new IllegalCallerException());
+                                try
+                                {
+                                    Thread.sleep(100);
+                                }
+                                catch (InterruptedException e)
+                                {
+                                    completeExceptionally(e);
+                                    return;
+                                }
+                            }
+                        }
+                    }
+                }
+                .start()
+                .whenComplete((result, failure) ->
+                {
+                    if (failure == null)
+                        callback.succeeded();
+                    else
+                        callback.failed(failure);
+                });
+                return true;
+            }
+        });
+
+        byte[] data = new byte[16 * 1024 * 1024];
+        new Random().nextBytes(data);
+        ByteBufferRequestContent content = new ByteBufferRequestContent(ByteBuffer.wrap(data));
+
+        var request = client.newRequest(newURI(transport))
+            .body(content);
+        clientRequestRef.set(request);
+        Throwable throwable = new CompletableResponseListener(request)
+            .send()
+            .handle((r, t) -> t)
+            .get(5, TimeUnit.SECONDS);
+
+        assertInstanceOf(IllegalCallerException.class, throwable);
     }
 
     @ParameterizedTest

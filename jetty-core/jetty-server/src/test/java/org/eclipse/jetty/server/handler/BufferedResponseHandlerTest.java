@@ -51,9 +51,9 @@ public class BufferedResponseHandlerTest
         _server.addConnector(_local);
 
         BufferedResponseHandler bufferedHandler = new BufferedResponseHandler();
-        bufferedHandler.getPathIncludeExclude().include("/include/*");
-        bufferedHandler.getPathIncludeExclude().exclude("*.exclude");
-        bufferedHandler.getMimeIncludeExclude().exclude("text/excluded");
+        bufferedHandler.includePath("/include/*");
+        bufferedHandler.excludePath("*.exclude");
+        bufferedHandler.excludeMimeType("text/excluded");
         bufferedHandler.setHandler(_test = new TestHandler());
 
 
@@ -87,11 +87,13 @@ public class BufferedResponseHandlerTest
     @Test
     public void testIncluded() throws Exception
     {
+        _test._bufferSize = 2048;
         String response = _local.getResponse("GET /ctx/include/path HTTP/1.1\r\nHost: localhost\r\n\r\n");
         assertThat(response, containsString(" 200 OK"));
         assertThat(response, containsString("Write: 0"));
         assertThat(response, containsString("Write: 9"));
         assertThat(response, containsString("Written: true"));
+        assertThat(response, containsString("Content-Length: "));
     }
 
     @Test
@@ -123,17 +125,22 @@ public class BufferedResponseHandlerTest
     @Test
     public void testFlushed() throws Exception
     {
+        _test._writes = 4;
         _test._flush = true;
+        _test._bufferSize = 2048;
         String response = _local.getResponse("GET /ctx/include/path HTTP/1.1\r\nHost: localhost\r\n\r\n");
         assertThat(response, containsString(" 200 OK"));
         assertThat(response, containsString("Write: 0"));
-        assertThat(response, containsString("Write: 9"));
-        assertThat(response, containsString("Written: true"));
+        assertThat(response, containsString("Write: 1"));
+        assertThat(response, containsString("Transfer-Encoding: chunked"));
+        assertThat(response, not(containsString("Write: 3")));
+        assertThat(response, not(containsString("Written: true")));
     }
 
     @Test
     public void testBufferSizeSmall() throws Exception
     {
+        _test._aggregationSize = 16;
         _test._bufferSize = 16;
         String response = _local.getResponse("GET /ctx/include/path HTTP/1.1\r\nHost: localhost\r\n\r\n");
         assertThat(response, containsString(" 200 OK"));
@@ -177,16 +184,17 @@ public class BufferedResponseHandlerTest
         _test._content = new byte[0];
         String response = _local.getResponse("GET /ctx/include/path HTTP/1.1\r\nHost: localhost\r\n\r\n");
         assertThat(response, containsString(" 200 OK"));
-        assertThat(response, containsString("Content-Length: "));
+        assertThat(response, containsString("Transfer-Encoding: chunked"));
         assertThat(response, containsString("Write: 0"));
         assertThat(response, not(containsString("Write: 1")));
-        assertThat(response, containsString("Written: true"));
+        assertThat(response, not(containsString("Written: true")));
     }
 
     @Test
     public void testReset() throws Exception
     {
         _test._reset = true;
+        _test._bufferSize = 2048;
         String response = _local.getResponse("GET /ctx/include/path HTTP/1.1\r\nHost: localhost\r\n\r\n");
         assertThat(response, containsString(" 200 OK"));
         assertThat(response, containsString("Write: 0"));
@@ -197,6 +205,7 @@ public class BufferedResponseHandlerTest
 
     public static class TestHandler extends Handler.Abstract
     {
+        int _aggregationSize = -1;
         int _bufferSize = -1;
         String _mimeType;
         byte[] _content = new byte[128];
@@ -217,21 +226,27 @@ public class BufferedResponseHandlerTest
 
             if (_bufferSize > 0)
                 request.setAttribute(BufferedResponseHandler.BUFFER_SIZE_ATTRIBUTE_NAME, _bufferSize);
+            if (_aggregationSize > 0)
+                request.setAttribute(BufferedResponseHandler.MAX_AGGREGATION_SIZE_ATTRIBUTE_NAME, _aggregationSize);
             if (_mimeType != null)
                 response.getHeaders().put(HttpHeader.CONTENT_TYPE, _mimeType);
 
             // Do not close the stream before adding the header: Written: true.
-            OutputStream outputStream = Content.Sink.asOutputStream(response);
-            for (int i = 0; i < _writes; i++)
+            try (OutputStream outputStream = Content.Sink.asOutputStream(response))
             {
-                response.getHeaders().add("Write", Integer.toString(i));
-                outputStream.write(_content);
+                for (int i = 0; i < _writes; i++)
+                {
+                    response.getHeaders().add("Write", Integer.toString(i));
+                    outputStream.write(_content);
+                    if (_flush && i % 2 == 1)
+                        outputStream.flush();
+                }
                 if (_flush)
                     outputStream.flush();
+                response.getHeaders().add("Written", "true");
             }
-
-            response.getHeaders().add("Written", "true");
             callback.succeeded();
+
             return true;
         }
     }

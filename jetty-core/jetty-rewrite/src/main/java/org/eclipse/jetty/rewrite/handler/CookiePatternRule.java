@@ -82,21 +82,18 @@ public class CookiePatternRule extends PatternRule
     @Override
     public Handler apply(Handler input) throws IOException
     {
-        // Check that cookie is not already set
+        // Check that the cookie is not already set.
         List<HttpCookie> cookies = Request.getCookies(input);
-        if (cookies != null)
+        for (HttpCookie cookie : cookies)
         {
-            for (HttpCookie cookie : cookies)
-            {
-                if (_name.equals(cookie.getName()) && _value.equals(cookie.getValue()))
-                    return null;
-            }
+            if (_name.equals(cookie.getName()) && _value.equals(cookie.getValue()))
+                return null;
         }
 
         return new Handler(input)
         {
             @Override
-            public boolean handle(Response response, Callback callback) throws Exception
+            protected boolean handle(Response response, Callback callback) throws Exception
             {
                 Response.addCookie(response, HttpCookie.from(_name, _value));
                 return super.handle(response, callback);

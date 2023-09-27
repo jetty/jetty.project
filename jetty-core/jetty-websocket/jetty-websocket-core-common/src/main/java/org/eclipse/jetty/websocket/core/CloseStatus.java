@@ -170,7 +170,7 @@ public class CloseStatus
                 Utf8StringBuilder utf = new Utf8StringBuilder();
                 // if this throws, we know we have bad UTF8
                 utf.append(reasonBytes, 0, reasonBytes.length);
-                String reason = utf.takeCompleteString(() -> new BadPayloadException("Invalid UTF8 in CLOSE Reason"));
+                String reason = utf.takeCompleteString(BadPayloadException.InvalidUtf8::new);
 
                 this.code = statusCode;
                 this.reason = reason;
