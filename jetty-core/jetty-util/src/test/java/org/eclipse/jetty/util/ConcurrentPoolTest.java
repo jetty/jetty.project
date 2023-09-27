@@ -13,6 +13,7 @@
 
 package org.eclipse.jetty.util;
 
+import java.lang.ref.Reference;
 import java.util.Arrays;
 import java.util.Collection;
 import java.util.HashMap;
@@ -649,6 +650,12 @@ public class ConcurrentPoolTest
         assertThat(pool.sweep(), is(0));
         assertThat(pool.size(), is(1));
         entryThree.release();
+
+        // This fence is needed otherwise the JIT may optimize out the null assignment,
+        // notice 'three' isn't used anymore right after its assignment and let it be
+        // garbage collected before entryThree.release() is called.
+        Reference.reachabilityFence(three);
+
         three = null;
         System.gc();
         assertThat(pool.sweep(), is(0));
