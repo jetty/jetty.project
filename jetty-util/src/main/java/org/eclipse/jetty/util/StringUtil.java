@@ -511,6 +511,22 @@ public class StringUtil
     }
 
     /**
+     * Generate a string from another string repeated n times.
+     *
+     * @param s the string to use
+     * @param n the number of times this string should be appended
+     */
+    public static String stringFrom(String s, int n)
+    {
+        StringBuilder stringBuilder = new StringBuilder(s.length() * n);
+        for (int i = 0; i < n; i++)
+        {
+            stringBuilder.append(s);
+        }
+        return stringBuilder.toString();
+    }
+
+    /**
      * Return a non null string.
      *
      * @param s String
