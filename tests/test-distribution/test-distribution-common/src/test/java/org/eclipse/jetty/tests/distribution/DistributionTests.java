@@ -145,7 +145,7 @@ public class DistributionTests extends AbstractJettyHomeTest
 
             try (JettyHomeTester.Run run2 = distribution.start(args))
             {
-                assertTrue(run2.awaitConsoleLogsFor("Started Server@", 10, TimeUnit.SECONDS));
+                assertTrue(run2.awaitConsoleLogsFor("Started oejs.Server@", 10, TimeUnit.SECONDS));
 
                 assertTrue(Files.isRegularFile(pidfile), "PID file should exist");
                 assertTrue(Files.isRegularFile(statefile), "State file should exist");
