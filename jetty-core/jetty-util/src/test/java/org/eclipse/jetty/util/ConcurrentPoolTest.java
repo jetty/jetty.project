@@ -611,4 +611,47 @@ public class ConcurrentPoolTest
         assertThat(e3.getPooled().get(), greaterThan(10));
         assertThat(e4.getPooled().get(), greaterThan(10));
     }
+
+    @Test
+    public void testLeakDetection()
+    {
+        ConcurrentPool<AtomicInteger> pool = new ConcurrentPool<>(FIRST, 4);
+
+        // not keeping a hard ref onto the entry that is enabled & not acquired makes it survive
+        pool.reserve().enable(new AtomicInteger(1), false);
+        System.gc();
+        assertThat(pool.scavenge(), is(0));
+        assertThat(pool.size(), is(1));
+
+        // not keeping a hard ref onto the entry that is enabled & acquired makes it die
+        pool.reserve().enable(new AtomicInteger(2), true);
+        assertThat(pool.size(), is(2));
+        System.gc();
+        assertThat(pool.scavenge(), is(1));
+        assertThat(pool.scavenge(), is(0));
+        assertThat(pool.size(), is(1));
+
+        // releasing after nulling the pool object makes the entry die
+        Pool.Entry<AtomicInteger> entryOne = pool.acquire();
+        AtomicInteger one = entryOne.getPooled();
+        System.gc();
+        assertThat(pool.scavenge(), is(0));
+        one = null;
+        System.gc();
+        assertThat(pool.scavenge(), is(1));
+        assertThat(pool.size(), is(0));
+
+        // releasing before nulling the pool object makes the entry survive
+        pool.reserve().enable(new AtomicInteger(3), false);
+        Pool.Entry<AtomicInteger> entryThree = pool.acquire();
+        AtomicInteger three = entryOne.getPooled();
+        System.gc();
+        assertThat(pool.scavenge(), is(0));
+        assertThat(pool.size(), is(1));
+        entryThree.release();
+        three = null;
+        System.gc();
+        assertThat(pool.scavenge(), is(0));
+        assertThat(pool.size(), is(1));
+    }
 }

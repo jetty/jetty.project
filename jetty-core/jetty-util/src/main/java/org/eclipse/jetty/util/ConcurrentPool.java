@@ -14,6 +14,8 @@
 package org.eclipse.jetty.util;
 
 import java.io.IOException;
+import java.lang.ref.WeakReference;
+import java.util.ArrayList;
 import java.util.Collection;
 import java.util.List;
 import java.util.Objects;
@@ -319,6 +321,19 @@ public class ConcurrentPool<P> implements Pool<P>, Dumpable
             new DumpableCollection("entries", entries));
     }
 
+    public int scavenge()
+    {
+        List<Entry<P>> toRemove = new ArrayList<>();
+        for (Entry<P> entry : entries)
+        {
+            ConcurrentEntry<P> ce = (ConcurrentEntry<P>)entry;
+            if (ce.weakPooled != null && ce.weakPooled.get() == null)
+                toRemove.add(entry);
+        }
+        entries.removeAll(toRemove); // hard remove, these entries are garbage
+        return toRemove.size();
+    }
+
     @Override
     public String toString()
     {
@@ -387,6 +402,8 @@ public class ConcurrentPool<P> implements Pool<P>, Dumpable
         // relationship exists to make a memory barrier.
         private E pooled;
 
+        private WeakReference<E> weakPooled;
+
         public ConcurrentEntry(ConcurrentPool<E> pool)
         {
             this.pool = pool;
@@ -404,15 +421,19 @@ public class ConcurrentPool<P> implements Pool<P>, Dumpable
                 throw new IllegalStateException("Entry already enabled " + this + " for " + pool);
             }
             this.pooled = pooled;
+            this.weakPooled = new WeakReference<>(pooled);
 
             if (tryEnable(acquire))
             {
+                if (acquire)
+                    this.pooled = null;
                 if (LOG.isDebugEnabled())
                     LOG.debug("enabled {} for {}", this, pool);
                 return true;
             }
 
             this.pooled = null;
+            this.weakPooled = null;
             if (isTerminated())
                 return false;
             throw new IllegalStateException("Entry already enabled " + this + " for " + pool);
@@ -421,7 +442,8 @@ public class ConcurrentPool<P> implements Pool<P>, Dumpable
         @Override
         public E getPooled()
         {
-            return pooled;
+            this.pooled = null;
+            return weakPooled == null ? null : weakPooled.get();
         }
 
         @Override
@@ -504,7 +526,11 @@ public class ConcurrentPool<P> implements Pool<P>, Dumpable
                     return false;
                 int newMultiplexCount = multiplexCount - 1;
                 if (state.compareAndSet(encoded, 0, newMultiplexCount))
+                {
+                    if (newMultiplexCount == 0)
+                        this.pooled = weakPooled.get();
                     return true;
+                }
             }
         }
 
@@ -589,12 +615,14 @@ public class ConcurrentPool<P> implements Pool<P>, Dumpable
         public String toString()
         {
             long encoded = state.get();
-            return String.format("%s@%x{terminated=%b,multiplex=%d,pooled=%s}",
+            E weak = weakPooled == null ? null : weakPooled.get();
+            return String.format("%s@%x{terminated=%b,multiplex=%d,pooled=%s,weak=%s}",
                 getClass().getSimpleName(),
                 hashCode(),
                 AtomicBiInteger.getHi(encoded) < 0,
                 AtomicBiInteger.getLo(encoded),
-                getPooled());
+                pooled,
+                weak);
         }
     }
 }
