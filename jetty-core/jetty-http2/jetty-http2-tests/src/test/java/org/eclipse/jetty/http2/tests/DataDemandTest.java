@@ -14,13 +14,8 @@
 package org.eclipse.jetty.http2.tests;
 
 import java.nio.ByteBuffer;
-import java.util.Deque;
-import java.util.Queue;
-import java.util.concurrent.ConcurrentLinkedDeque;
-import java.util.concurrent.ConcurrentLinkedQueue;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.TimeUnit;
-import java.util.concurrent.atomic.AtomicInteger;
 import java.util.concurrent.atomic.AtomicReference;
 
 import org.eclipse.jetty.http.HttpFields;
@@ -43,7 +38,6 @@ import org.eclipse.jetty.util.Promise;
 import org.junit.jupiter.api.Test;
 
 import static org.awaitility.Awaitility.await;
-import static org.hamcrest.Matchers.is;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertNotNull;
@@ -57,13 +51,11 @@ public class DataDemandTest extends AbstractTest
     {
         int length = FlowControlStrategy.DEFAULT_WINDOW_SIZE - 1;
         AtomicReference<Stream> serverStreamRef = new AtomicReference<>();
-        Deque<Stream.Data> serverQueue = new ConcurrentLinkedDeque<>();
         start(new ServerSessionListener()
         {
             @Override
             public Stream.Listener onNewStream(Stream stream, HeadersFrame frame)
             {
-                serverStreamRef.set(stream);
                 MetaData.Response response = new MetaData.Response(HttpStatus.OK_200, null, HttpVersion.HTTP_2, HttpFields.EMPTY);
                 stream.headers(new HeadersFrame(stream.getId(), response, null, false), Callback.from(stream::demand));
                 return new Stream.Listener()
@@ -71,9 +63,8 @@ public class DataDemandTest extends AbstractTest
                     @Override
                     public void onDataAvailable(Stream stream)
                     {
-                        Stream.Data data = stream.readData();
-                        // Don't demand and don't release.
-                        serverQueue.offer(data);
+                        // Don't read and don't demand.
+                        serverStreamRef.set(stream);
                     }
                 };
             }
@@ -81,88 +72,90 @@ public class DataDemandTest extends AbstractTest
 
         Session client = newClientSession(new Session.Listener() {});
         MetaData.Request post = newRequest("POST", HttpFields.EMPTY);
-        FuturePromise<Stream> promise = new FuturePromise<>();
-        Queue<Stream.Data> clientQueue = new ConcurrentLinkedQueue<>();
-        client.newStream(new HeadersFrame(post, null, false), promise, new Stream.Listener()
+        AtomicReference<Stream> clientStreamRef = new AtomicReference<>();
+        client.newStream(new HeadersFrame(post, null, false), new Stream.Listener()
         {
             @Override
             public void onDataAvailable(Stream stream)
             {
-                Stream.Data data = stream.readData();
-                // Don't demand and don't release.
-                clientQueue.offer(data);
+                // Don't read and don't demand.
+                clientStreamRef.set(stream);
             }
+        }).thenCompose(s ->
+        {
+            // Send a single frame larger than the default frame size,
+            // so that it will be split on the server in multiple frames.
+            return s.data(new DataFrame(s.getId(), ByteBuffer.allocate(length), true));
         });
-        Stream clientStream = promise.get(5, TimeUnit.SECONDS);
-        // Send a single frame larger than the default frame size,
-        // so that it will be split on the server in multiple frames.
-        clientStream.data(new DataFrame(clientStream.getId(), ByteBuffer.allocate(length), true), Callback.NOOP);
 
-        // The server should receive only 1 DATA frame because it does 1 explicit demand.
-        // Wait a bit more to be sure it only receives 1 DATA frame.
-        Thread.sleep(1000);
-        assertEquals(1, serverQueue.size());
+        // The server onDataAvailable() should be invoked once because it does one explicit demand.
+        await().atMost(5, TimeUnit.SECONDS).until(() -> serverStreamRef.get() != null);
+        Stream serverStream = serverStreamRef.getAndSet(null);
+        await().during(1, TimeUnit.SECONDS).until(() -> serverStreamRef.get() == null);
 
-        Stream serverStream = serverStreamRef.get();
-        assertNotNull(serverStream);
-
-        // Demand 1 more DATA frames.
+        // Read and demand 1 more DATA frame.
+        Stream.Data data = serverStream.readData();
+        assertNotNull(data);
+        int received = data.frame().remaining();
+        data.release();
         serverStream.demand();
-        // The server should have received 1 more DATA frame.
-        await().atMost(1, TimeUnit.SECONDS).until(serverQueue::size, is(2));
 
-        // Demand all the rest.
-        AtomicInteger count = new AtomicInteger(serverQueue.size());
+        // The server onDataAvailable() should be invoked.
+        await().atMost(5, TimeUnit.SECONDS).until(() -> serverStreamRef.get() != null);
+
+        // Read all the rest.
         while (true)
         {
-            serverStream.demand();
-            await().atMost(1, TimeUnit.SECONDS).until(() -> serverQueue.size() == count.get() + 1);
-            count.incrementAndGet();
-            long sum = serverQueue.stream()
-                .mapToLong(data -> data.frame().getByteBuffer().remaining())
-                .sum();
-            if (sum == length)
+            data = serverStream.readData();
+            if (data == null)
+            {
+                Thread.sleep(100);
+                continue;
+            }
+            received += data.frame().remaining();
+            data.release();
+            if (data.frame().isEndStream())
+            {
+                assertEquals(received, length);
                 break;
+            }
         }
-
-        // Even if demanded, the flow control window should not have
-        // decreased because the callbacks have not been completed.
-        int recvWindow = ((HTTP2Session)serverStream.getSession()).updateRecvWindow(0);
-        assertEquals(FlowControlStrategy.DEFAULT_WINDOW_SIZE - length, recvWindow);
-
-        // Release them all.
-        serverQueue.forEach(Stream.Data::release);
 
         // Send a large DATA frame to the client.
-        serverStream.data(new DataFrame(serverStream.getId(), ByteBuffer.allocate(length), true), Callback.NOOP);
+        serverStream.data(new DataFrame(serverStream.getId(), ByteBuffer.allocate(length), true));
 
-        // The client should receive only 1 DATA frame because it does explicit demand.
-        // Wait a bit more to be sure it only receives 1 DATA frame.
-        Thread.sleep(1000);
-        assertEquals(1, clientQueue.size());
+        // The client onDataAvailable() should be invoked once because it does one explicit demand.
+        await().atMost(5, TimeUnit.SECONDS).until(() -> clientStreamRef.get() != null);
+        Stream clientStream = clientStreamRef.getAndSet(null);
+        await().during(1, TimeUnit.SECONDS).until(() -> clientStreamRef.get() == null);
 
-        // Demand 1 more DATA frames.
+        // Read and demand 1 more DATA frame.
+        data = clientStream.readData();
+        assertNotNull(data);
+        received = data.frame().remaining();
+        data.release();
         clientStream.demand();
-        Thread.sleep(1000);
-        // The client should have received 1 more DATA frame.
-        assertEquals(2, clientQueue.size());
 
-        // Demand all the rest.
-        count.set(clientQueue.size());
+        // The client onDataAvailable() should be invoked.
+        await().atMost(5, TimeUnit.SECONDS).until(() -> clientStreamRef.get() != null);
+
+        // Read all the rest.
         while (true)
         {
-            clientStream.demand();
-            await().atMost(1, TimeUnit.SECONDS).until(() -> clientQueue.size() == count.get() + 1);
-            count.incrementAndGet();
-            long sum = clientQueue.stream()
-                .mapToLong(data -> data.frame().getByteBuffer().remaining())
-                .sum();
-            if (sum == length)
+            data = clientStream.readData();
+            if (data == null)
+            {
+                Thread.sleep(100);
+                continue;
+            }
+            received += data.frame().remaining();
+            data.release();
+            if (data.frame().isEndStream())
+            {
+                assertEquals(received, length);
                 break;
+            }
         }
-
-        // Release them all.
-        clientQueue.forEach(Stream.Data::release);
 
         // Both the client and server streams should be gone now.
         assertNull(clientStream.getSession().getStream(clientStream.getId()));
