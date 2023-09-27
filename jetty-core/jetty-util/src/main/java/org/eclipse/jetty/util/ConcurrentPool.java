@@ -176,12 +176,21 @@ public class ConcurrentPool<P> implements Pool<P>, Dumpable
 
         if (cache != null)
         {
-            Entry<P> entry = cache.get();
-            if (entry != null && ((ConcurrentEntry<P>)entry).tryAcquire())
+            ConcurrentEntry<P> entry = (ConcurrentEntry<P>)cache.get();
+            if (entry != null)
             {
-                if (LOG.isDebugEnabled())
-                    LOG.debug("returning cached entry {} for {}", entry, this);
-                return entry;
+                if (entry.isGarbage())
+                {
+                    if (LOG.isDebugEnabled())
+                        LOG.debug("removing garbage cached entry {} for {}", entry, this);
+                    cache.remove();
+                }
+                else if (entry.tryAcquire())
+                {
+                    if (LOG.isDebugEnabled())
+                        LOG.debug("returning cached entry {} for {}", entry, this);
+                    return entry;
+                }
             }
         }
 
@@ -192,11 +201,21 @@ public class ConcurrentPool<P> implements Pool<P>, Dumpable
             try
             {
                 ConcurrentEntry<P> entry = (ConcurrentEntry<P>)entries.get(index);
-                if (entry != null && entry.tryAcquire())
+                if (entry != null)
                 {
-                    if (LOG.isDebugEnabled())
-                        LOG.debug("returning entry {} for {}", entry, this);
-                    return entry;
+                    if (entry.isGarbage())
+                    {
+                        if (LOG.isDebugEnabled())
+                            LOG.debug("removing garbage entry {} for {}", entry, this);
+                        entries.remove(index);
+                        tries++;
+                    }
+                    else if (entry.tryAcquire())
+                    {
+                        if (LOG.isDebugEnabled())
+                            LOG.debug("returning entry {} for {}", entry, this);
+                        return entry;
+                    }
                 }
             }
             catch (IndexOutOfBoundsException e)
