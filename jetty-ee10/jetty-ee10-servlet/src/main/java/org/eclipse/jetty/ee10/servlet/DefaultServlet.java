@@ -428,8 +428,7 @@ public class DefaultServlet extends HttpServlet
         if (value != null && value.length() > 0)
             return Integer.parseInt(value);
         return dft;
-    }        createServer(_contextCollection);
-        _server.start();
+    }
 
     protected ServletContextHandler initContextHandler(ServletContext servletContext)
     {

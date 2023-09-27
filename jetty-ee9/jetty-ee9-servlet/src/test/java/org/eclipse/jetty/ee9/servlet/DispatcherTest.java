@@ -422,7 +422,7 @@ public class DispatcherTest
     public void testServletIncludeWelcome() throws Exception
     {
         createDefaultContextHandlerCollection();
-        _contextHandler.setWelcomeFiles(new String[] { "index.x" });
+        _contextHandler.setWelcomeFiles(new String[] {"index.x"});
         _contextHandler.addServlet(DispatchServletServlet.class, "/dispatch/*");
         ServletHolder defaultHolder = _contextHandler.addServlet(DefaultServlet.class, "/");
         defaultHolder.setInitParameter("welcomeServlets", "true");
