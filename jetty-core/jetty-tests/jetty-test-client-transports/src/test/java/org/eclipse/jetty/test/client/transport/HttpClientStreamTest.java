@@ -34,6 +34,7 @@ import java.util.concurrent.CopyOnWriteArrayList;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.ExecutionException;
 import java.util.concurrent.TimeUnit;
+import java.util.concurrent.TimeoutException;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.concurrent.atomic.AtomicLong;
@@ -61,6 +62,7 @@ import org.eclipse.jetty.server.Request;
 import org.eclipse.jetty.toolchain.test.MavenTestingUtils;
 import org.eclipse.jetty.util.BufferUtil;
 import org.eclipse.jetty.util.Callback;
+import org.eclipse.jetty.util.CompletableTask;
 import org.eclipse.jetty.util.IO;
 import org.eclipse.jetty.util.NanoTime;
 import org.eclipse.jetty.util.component.LifeCycle;
@@ -504,7 +506,7 @@ public class HttpClientStreamTest extends AbstractTest
                     public int read()
                     {
                         // Will eventually throw ArrayIndexOutOfBounds
-                        return data[index++];
+                        return data[index++] & 0xFF;
                     }
                 }, data.length / 2))
                 .timeout(5, TimeUnit.SECONDS)
@@ -1160,8 +1162,10 @@ public class HttpClientStreamTest extends AbstractTest
             public boolean handle(Request request, org.eclipse.jetty.server.Response response, Callback callback) throws Exception
             {
                 processCount.incrementAndGet();
-                processLatch.await(timeoutInSeconds * 2, TimeUnit.SECONDS);
-                callback.succeeded();
+                if (processLatch.await(timeoutInSeconds * 2, TimeUnit.SECONDS))
+                    callback.succeeded();
+                else
+                    callback.failed(new TimeoutException());
                 return true;
             }
         });
@@ -1216,7 +1220,7 @@ public class HttpClientStreamTest extends AbstractTest
             @Override
             public boolean handle(Request request, org.eclipse.jetty.server.Response response, Callback callback)
             {
-                Runnable retainer = new Runnable()
+                callback.completeWith(new CompletableTask<>()
                 {
                     @Override
                     public void run()
@@ -1232,7 +1236,7 @@ public class HttpClientStreamTest extends AbstractTest
 
                             if (Content.Chunk.isFailure(chunk))
                             {
-                                callback.failed(chunk.getFailure());
+                                completeExceptionally(chunk.getFailure());
                                 return;
                             }
 
@@ -1256,13 +1260,12 @@ public class HttpClientStreamTest extends AbstractTest
 
                             if (chunk.isLast())
                             {
-                                callback.succeeded();
+                                complete(null);
                                 return;
                             }
                         }
                     }
-                };
-                retainer.run();
+                }.start());
                 return true;
             }
         });
