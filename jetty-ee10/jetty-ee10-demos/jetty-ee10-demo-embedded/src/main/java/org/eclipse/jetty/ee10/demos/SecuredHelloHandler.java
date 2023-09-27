@@ -47,7 +47,7 @@ public class SecuredHelloHandler
         // In this example the name can be whatever you like since we are not
         // dealing with webapp realms.
         String realmResourceName = "etc/realm.properties";
-        Resource realmResource = ResourceFactory.of(server).newClassPathResource("etc/realm.properties");
+        Resource realmResource = ResourceFactory.of(server).newClassLoaderResource("etc/realm.properties", false);
         if (realmResource == null)
             throw new FileNotFoundException("Unable to find " + realmResourceName);
 

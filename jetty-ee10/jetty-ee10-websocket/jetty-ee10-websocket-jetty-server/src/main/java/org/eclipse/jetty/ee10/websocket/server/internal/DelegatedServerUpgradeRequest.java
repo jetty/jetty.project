@@ -46,6 +46,7 @@ public class DelegatedServerUpgradeRequest implements JettyServerUpgradeRequest
     private final String queryString;
     private final ServerUpgradeRequest upgradeRequest;
     private final HttpServletRequest httpServletRequest;
+    private final Principal userPrincipal;
     private List<HttpCookie> cookies;
     private Map<String, List<String>> parameterMap;
 
@@ -55,6 +56,7 @@ public class DelegatedServerUpgradeRequest implements JettyServerUpgradeRequest
             .getAttribute(WebSocketConstants.WEBSOCKET_WRAPPED_REQUEST_ATTRIBUTE);
         this.upgradeRequest = request;
         this.queryString = httpServletRequest.getQueryString();
+        this.userPrincipal = httpServletRequest.getUserPrincipal();
 
         try
         {
@@ -205,7 +207,7 @@ public class DelegatedServerUpgradeRequest implements JettyServerUpgradeRequest
     @Override
     public Principal getUserPrincipal()
     {
-        return httpServletRequest.getUserPrincipal();
+        return userPrincipal;
     }
 
     @Override

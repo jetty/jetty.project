@@ -17,7 +17,3 @@ websocket-jetty-client
 [lib]
 lib/ee10-websocket/jetty-ee10-websocket-jetty-client-webapp-${jetty.version}.jar
 
-[jpms]
-# The implementation needs to access method handles in
-# classes that are in the web application classloader.
-add-reads: org.eclipse.jetty.ee10.websocket.jetty.common=ALL-UNNAMED

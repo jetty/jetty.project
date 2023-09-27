@@ -20,6 +20,46 @@ import org.eclipse.jetty.util.annotation.ManagedAttribute;
 // TODO the managed attribute descriptions need review
 public interface SessionConfig
 {
+    /**
+     * Session cookie name.
+     * Defaults to <code>JSESSIONID</code>, but can be set with the
+     * <code>org.eclipse.jetty.session.SessionCookie</code> context init parameter.
+     */
+    String __SessionCookieProperty = "org.eclipse.jetty.session.SessionCookie";
+    String __DefaultSessionCookie = "JSESSIONID";
+    /**
+     * Session id path parameter name.
+     * Defaults to <code>jsessionid</code>, but can be set with the
+     * <code>org.eclipse.jetty.session.SessionIdPathParameterName</code> context init parameter.
+     * If context init param is "none", or setSessionIdPathParameterName is called with null or "none",
+     * no URL rewriting will be done.
+     */
+    String __SessionIdPathParameterNameProperty = "org.eclipse.jetty.session.SessionIdPathParameterName";
+    String __DefaultSessionIdPathParameterName = "jsessionid";
+    String __CheckRemoteSessionEncodingProperty = "org.eclipse.jetty.session.CheckingRemoteSessionIdEncoding";
+    /**
+     * Session Domain.
+     * If this property is set as a ServletContext InitParam, then it is
+     * used as the domain for session cookies. If it is not set, then
+     * no domain is specified for the session cookie.
+     */
+    String __SessionDomainProperty = "org.eclipse.jetty.session.SessionDomain";
+    String __DefaultSessionDomain = null;
+    /**
+     * Session Path.
+     * If this property is set as a ServletContext InitParam, then it is
+     * used as the path for the session cookie.  If it is not set, then
+     * the context path is used as the path for the cookie.
+     */
+    String __SessionPathProperty = "org.eclipse.jetty.session.SessionPath";
+    /**
+     * Session Max Age.
+     * If this property is set as a ServletContext InitParam, then it is
+     * used as the max age for the session cookie.  If it is not set, then
+     * a max age of -1 is used.
+     */
+    String __MaxAgeProperty = "org.eclipse.jetty.session.MaxAge";
+
     @ManagedAttribute("if greater the zero, the time in seconds a session cookie will last for")
     int getMaxCookieAge();
 

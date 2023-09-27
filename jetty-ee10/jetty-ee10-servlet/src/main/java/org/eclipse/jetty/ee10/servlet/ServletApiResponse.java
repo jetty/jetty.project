@@ -27,16 +27,12 @@ import jakarta.servlet.http.Cookie;
 import jakarta.servlet.http.HttpServletResponse;
 import org.eclipse.jetty.ee10.servlet.ServletContextHandler.ServletRequestInfo;
 import org.eclipse.jetty.ee10.servlet.ServletContextHandler.ServletResponseInfo;
-import org.eclipse.jetty.ee10.servlet.writer.EncodingHttpWriter;
-import org.eclipse.jetty.ee10.servlet.writer.Iso88591HttpWriter;
-import org.eclipse.jetty.ee10.servlet.writer.ResponseWriter;
-import org.eclipse.jetty.ee10.servlet.writer.Utf8HttpWriter;
 import org.eclipse.jetty.http.HttpCookie;
 import org.eclipse.jetty.http.HttpFields;
 import org.eclipse.jetty.http.HttpHeader;
 import org.eclipse.jetty.http.HttpStatus;
 import org.eclipse.jetty.http.HttpVersion;
-import org.eclipse.jetty.http.MimeTypes;
+import org.eclipse.jetty.io.WriteThroughWriter;
 import org.eclipse.jetty.server.Request;
 import org.eclipse.jetty.server.Response;
 import org.eclipse.jetty.session.ManagedSession;
@@ -318,12 +314,11 @@ public class ServletApiResponse implements HttpServletResponse
                 writer.reopen();
             else
             {
-                if (MimeTypes.ISO_8859_1.equalsIgnoreCase(encoding))
-                    getServletResponseInfo().setWriter(writer = new ResponseWriter(new Iso88591HttpWriter(getServletChannel().getHttpOutput()), locale, encoding));
-                else if (MimeTypes.UTF8.equalsIgnoreCase(encoding))
-                    getServletResponseInfo().setWriter(writer = new ResponseWriter(new Utf8HttpWriter(getServletChannel().getHttpOutput()), locale, encoding));
-                else
-                    getServletResponseInfo().setWriter(writer = new ResponseWriter(new EncodingHttpWriter(getServletChannel().getHttpOutput(), encoding), locale, encoding));
+                // We must use an implementation of AbstractOutputStreamWriter here as we rely on the non cached characters
+                // in the writer implementation for flush and completion operations.
+                WriteThroughWriter outputStreamWriter = WriteThroughWriter.newWriter(getServletChannel().getHttpOutput(), encoding);
+                getServletResponseInfo().setWriter(writer = new ResponseWriter(
+                    outputStreamWriter, locale, encoding));
             }
 
             // Set the output type at the end, because setCharacterEncoding() checks for it.

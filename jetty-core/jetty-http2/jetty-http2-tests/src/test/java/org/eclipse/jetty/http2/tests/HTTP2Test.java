@@ -58,6 +58,8 @@ import org.junit.jupiter.api.Test;
 
 import static org.awaitility.Awaitility.await;
 import static org.hamcrest.MatcherAssert.assertThat;
+import static org.hamcrest.Matchers.containsString;
+import static org.hamcrest.Matchers.equalTo;
 import static org.hamcrest.Matchers.instanceOf;
 import static org.hamcrest.Matchers.is;
 import static org.junit.jupiter.api.Assertions.assertEquals;
@@ -982,6 +984,157 @@ public class HTTP2Test extends AbstractTest
 
         assertFalse(((HTTP2Session)clientSession).getEndPoint().isOpen());
         assertFalse(((HTTP2Session)serverSession).getEndPoint().isOpen());
+    }
+
+    @Test
+    public void testClientSendsLargeHeader() throws Exception
+    {
+        CountDownLatch settingsLatch = new CountDownLatch(2);
+
+        CompletableFuture<Throwable> serverFailureFuture = new CompletableFuture<>();
+        CompletableFuture<String> serverCloseReasonFuture = new CompletableFuture<>();
+        start(new ServerSessionListener()
+        {
+            @Override
+            public void onSettings(Session session, SettingsFrame frame)
+            {
+                settingsLatch.countDown();
+            }
+
+            @Override
+            public void onFailure(Session session, Throwable failure, Callback callback)
+            {
+                serverFailureFuture.complete(failure);
+                ServerSessionListener.super.onFailure(session, failure, callback);
+            }
+
+            @Override
+            public void onClose(Session session, GoAwayFrame frame, Callback callback)
+            {
+                serverCloseReasonFuture.complete(frame.tryConvertPayload());
+                ServerSessionListener.super.onClose(session, frame, callback);
+            }
+        });
+
+        CompletableFuture<Throwable> clientFailureFuture = new CompletableFuture<>();
+        CompletableFuture<String> clientCloseReasonFuture = new CompletableFuture<>();
+        Session.Listener listener = new Session.Listener()
+        {
+            @Override
+            public void onSettings(Session session, SettingsFrame frame)
+            {
+                settingsLatch.countDown();
+            }
+
+            @Override
+            public void onFailure(Session session, Throwable failure, Callback callback)
+            {
+                clientFailureFuture.complete(failure);
+                Session.Listener.super.onFailure(session, failure, callback);
+            }
+
+            @Override
+            public void onClose(Session session, GoAwayFrame frame, Callback callback)
+            {
+                clientCloseReasonFuture.complete(frame.tryConvertPayload());
+                Session.Listener.super.onClose(session, frame, callback);
+            }
+        };
+
+        HTTP2Session session = (HTTP2Session)newClientSession(listener);
+        assertTrue(settingsLatch.await(5, TimeUnit.SECONDS));
+        session.getGenerator().getHpackEncoder().setMaxHeaderListSize(1024 * 1024);
+
+        String value = "x".repeat(8 * 1024);
+        HttpFields requestFields = HttpFields.build()
+            .put("custom", value);
+        MetaData.Request metaData = newRequest("GET", requestFields);
+        HeadersFrame request = new HeadersFrame(metaData, null, true);
+        session.newStream(request, new FuturePromise<>(), new Stream.Listener(){});
+
+        // Test failure and close reason on client.
+        String closeReason = clientCloseReasonFuture.get(5, TimeUnit.SECONDS);
+        assertThat(closeReason, equalTo("invalid_hpack_block"));
+        assertNull(clientFailureFuture.getNow(null));
+
+        // Test failure and close reason on server.
+        closeReason = serverCloseReasonFuture.get(5, TimeUnit.SECONDS);
+        assertThat(closeReason, equalTo("invalid_hpack_block"));
+        Throwable failure = serverFailureFuture.get(5, TimeUnit.SECONDS);
+        assertThat(failure, instanceOf(IOException.class));
+        assertThat(failure.getMessage(), containsString("invalid_hpack_block"));
+    }
+
+    @Test
+    public void testServerSendsLargeHeader() throws Exception
+    {
+        CompletableFuture<Throwable> serverFailureFuture = new CompletableFuture<>();
+        CompletableFuture<String> serverCloseReasonFuture = new CompletableFuture<>();
+        start(new ServerSessionListener()
+        {
+            @Override
+            public Stream.Listener onNewStream(Stream stream, HeadersFrame frame)
+            {
+                HTTP2Session session = (HTTP2Session)stream.getSession();
+                session.getGenerator().getHpackEncoder().setMaxHeaderListSize(1024 * 1024);
+
+                String value = "x".repeat(8 * 1024);
+                HttpFields fields = HttpFields.build().put("custom", value);
+                MetaData.Response response = new MetaData.Response(HttpStatus.OK_200, null, HttpVersion.HTTP_2, fields);
+                stream.headers(new HeadersFrame(stream.getId(), response, null, true));
+                return null;
+            }
+
+            @Override
+            public void onFailure(Session session, Throwable failure, Callback callback)
+            {
+                serverFailureFuture.complete(failure);
+                ServerSessionListener.super.onFailure(session, failure, callback);
+            }
+
+            @Override
+            public void onClose(Session session, GoAwayFrame frame, Callback callback)
+            {
+                serverCloseReasonFuture.complete(frame.tryConvertPayload());
+                ServerSessionListener.super.onClose(session, frame, callback);
+            }
+        });
+
+        CompletableFuture<Throwable> clientFailureFuture = new CompletableFuture<>();
+        CompletableFuture<String> clientCloseReasonFuture = new CompletableFuture<>();
+        Session.Listener listener = new Session.Listener()
+        {
+            @Override
+            public void onFailure(Session session, Throwable failure, Callback callback)
+            {
+                clientFailureFuture.complete(failure);
+                Session.Listener.super.onFailure(session, failure, callback);
+            }
+
+            @Override
+            public void onClose(Session session, GoAwayFrame frame, Callback callback)
+            {
+                clientCloseReasonFuture.complete(frame.tryConvertPayload());
+                Session.Listener.super.onClose(session, frame, callback);
+            }
+        };
+
+        Session session = newClientSession(listener);
+        MetaData.Request metaData = newRequest("GET", HttpFields.EMPTY);
+        HeadersFrame request = new HeadersFrame(metaData, null, true);
+        session.newStream(request, new FuturePromise<>(), new Stream.Listener(){});
+
+        // Test failure and close reason on server.
+        String closeReason = serverCloseReasonFuture.get(5, TimeUnit.SECONDS);
+        assertThat(closeReason, equalTo("invalid_hpack_block"));
+        assertNull(serverFailureFuture.getNow(null));
+
+        // Test failure and close reason on client.
+        closeReason = clientCloseReasonFuture.get(5, TimeUnit.SECONDS);
+        assertThat(closeReason, equalTo("invalid_hpack_block"));
+        Throwable failure = clientFailureFuture.get(5, TimeUnit.SECONDS);
+        assertThat(failure, instanceOf(IOException.class));
+        assertThat(failure.getMessage(), containsString("invalid_hpack_block"));
     }
 
     private static void sleep(long time)

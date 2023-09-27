@@ -80,6 +80,7 @@ public class HeaderPatternRuleTest extends AbstractRuleTest
             assertEquals(200, response.getStatus());
             assertEquals(value, response.get(name));
 
+            _rewriteHandler.clear();
             stop();
         }
     }

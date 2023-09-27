@@ -103,10 +103,10 @@ public class ServletApiRequest implements HttpServletRequest
     private final ServletContextRequest _servletContextRequest;
     private final ServletChannel _servletChannel;
     private AsyncContextState _async;
-    private String _characterEncoding;
+    private Charset _charset;
+    private Charset _readerCharset;
     private int _inputState = ServletContextRequest.INPUT_NONE;
     private BufferedReader _reader;
-    private String _readerEncoding;
     private String _contentType;
     private boolean _contentParamsExtracted;
     private Fields _contentParameters;
@@ -717,24 +717,13 @@ public class ServletApiRequest implements HttpServletRequest
     @Override
     public String getCharacterEncoding()
     {
-        if (_characterEncoding == null)
-        {
-            if (getRequest().getContext() != null)
-                _characterEncoding = getServletRequestInfo().getServletContext().getServletContext().getRequestCharacterEncoding();
+        if (_charset == null)
+            _charset = Request.getCharset(getRequest());
 
-            if (_characterEncoding == null)
-            {
-                String contentType = getContentType();
-                if (contentType != null)
-                {
-                    MimeTypes.Type mime = MimeTypes.CACHE.get(contentType);
-                    String charset = (mime == null || mime.getCharset() == null) ? MimeTypes.getCharsetFromContentType(contentType) : mime.getCharset().toString();
-                    if (charset != null)
-                        _characterEncoding = charset;
-                }
-            }
-        }
-        return _characterEncoding;
+        if (_charset == null)
+            return getServletRequestInfo().getServletContext().getServletContext().getRequestCharacterEncoding();
+
+        return _charset.name();
     }
 
     @Override
@@ -742,8 +731,7 @@ public class ServletApiRequest implements HttpServletRequest
     {
         if (_inputState != ServletContextRequest.INPUT_NONE)
             return;
-        MimeTypes.getKnownCharset(encoding);
-        _characterEncoding = encoding;
+        _charset = MimeTypes.getKnownCharset(encoding);
     }
 
     @Override
@@ -1039,15 +1027,18 @@ public class ServletApiRequest implements HttpServletRequest
         if (_inputState == ServletContextRequest.INPUT_READER)
             return _reader;
 
-        String encoding = getCharacterEncoding();
-        if (encoding == null)
-            encoding = MimeTypes.ISO_8859_1;
+        if (_charset == null)
+            _charset = Request.getCharset(getRequest());
+        if (_charset == null)
+            _charset = getRequest().getContext().getMimeTypes().getCharset(getServletRequestInfo().getServletContext().getServletContextHandler().getDefaultRequestCharacterEncoding());
+        if (_charset == null)
+            _charset = StandardCharsets.ISO_8859_1;
 
-        if (_reader == null || !encoding.equalsIgnoreCase(_readerEncoding))
+        if (_reader == null || !_charset.equals(_readerCharset))
         {
             ServletInputStream in = getInputStream();
-            _readerEncoding = encoding;
-            _reader = new BufferedReader(new InputStreamReader(in, encoding))
+            _readerCharset = _charset;
+            _reader = new BufferedReader(new InputStreamReader(in, _charset))
             {
                 @Override
                 public void close() throws IOException

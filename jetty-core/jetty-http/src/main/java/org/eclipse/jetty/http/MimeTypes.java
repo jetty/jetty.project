@@ -28,6 +28,7 @@ import java.util.Map;
 import java.util.Objects;
 import java.util.Properties;
 import java.util.Set;
+import java.util.stream.Collectors;
 
 import org.eclipse.jetty.util.FileID;
 import org.eclipse.jetty.util.Index;
@@ -300,9 +301,14 @@ public class MimeTypes
         }
     }
 
+    private static String nameOf(Charset charset)
+    {
+        return charset == null ? null : charset.name();
+    }
+
     protected final Map<String, String> _mimeMap = new HashMap<>();
-    protected final Map<String, String> _inferredEncodings = new HashMap<>();
-    protected final Map<String, String> _assumedEncodings = new HashMap<>();
+    protected final Map<String, Charset> _inferredEncodings = new HashMap<>();
+    protected final Map<String, Charset> _assumedEncodings = new HashMap<>();
 
     public MimeTypes()
     {
@@ -314,9 +320,35 @@ public class MimeTypes
         if (defaults != null)
         {
             _mimeMap.putAll(defaults.getMimeMap());
-            _assumedEncodings.putAll(defaults.getAssumedMap());
-            _inferredEncodings.putAll(defaults.getInferredMap());
+            _assumedEncodings.putAll(defaults._assumedEncodings);
+            _inferredEncodings.putAll(defaults._inferredEncodings);
         }
+    }
+
+    /**
+     * Get the explicit, assumed, or inferred Charset for a mime type
+     * @param mimeType String form or a mimeType
+     * @return A {@link Charset} or null;
+     */
+    public Charset getCharset(String mimeType)
+    {
+        if (mimeType == null)
+            return null;
+
+        MimeTypes.Type mime = MimeTypes.CACHE.get(mimeType);
+        if (mime != null && mime.getCharset() != null)
+            return mime.getCharset();
+
+        String charsetName = MimeTypes.getCharsetFromContentType(mimeType);
+        if (charsetName != null)
+            return Charset.forName(charsetName);
+
+        Charset charset = getAssumedCharset(mimeType);
+        if (charset != null)
+            return charset;
+
+        charset = getInferredCharset(mimeType);
+        return charset;
     }
 
     /**
@@ -337,14 +369,24 @@ public class MimeTypes
         return _mimeMap.get(extension);
     }
 
-    public String getCharsetInferredFromContentType(String contentType)
+    public Charset getInferredCharset(String contentType)
     {
         return _inferredEncodings.get(contentType);
     }
 
-    public String getCharsetAssumedFromContentType(String contentType)
+    public Charset getAssumedCharset(String contentType)
     {
         return _assumedEncodings.get(contentType);
+    }
+
+    public String getCharsetInferredFromContentType(String contentType)
+    {
+        return nameOf(_inferredEncodings.get(contentType));
+    }
+
+    public String getCharsetAssumedFromContentType(String contentType)
+    {
+        return nameOf(_assumedEncodings.get(contentType));
     }
 
     public Map<String, String> getMimeMap()
@@ -354,12 +396,12 @@ public class MimeTypes
 
     public Map<String, String> getInferredMap()
     {
-        return Collections.unmodifiableMap(_inferredEncodings);
+        return _inferredEncodings.entrySet().stream().collect(Collectors.toMap(Map.Entry::getKey, e -> e.getValue().name()));
     }
 
     public Map<String, String> getAssumedMap()
     {
-        return Collections.unmodifiableMap(_assumedEncodings);
+        return _assumedEncodings.entrySet().stream().collect(Collectors.toMap(Map.Entry::getKey, e -> e.getValue().name()));
     }
 
     public static class Mutable extends MimeTypes
@@ -390,12 +432,12 @@ public class MimeTypes
 
         public String addInferred(String contentType, String encoding)
         {
-            return _inferredEncodings.put(contentType, encoding);
+            return nameOf(_inferredEncodings.put(contentType, Charset.forName(encoding)));
         }
 
         public String addAssumed(String contentType, String encoding)
         {
-            return _assumedEncodings.put(contentType, encoding);
+            return nameOf(_assumedEncodings.put(contentType, Charset.forName(encoding)));
         }
     }
 
@@ -479,7 +521,7 @@ public class MimeTypes
             for (Type type : Type.values())
             {
                 if (type.isCharsetAssumed())
-                    _assumedEncodings.put(type.asString(), type.getCharsetString());
+                    _assumedEncodings.put(type.asString(), type.getCharset());
             }
 
             String resourceName = "mime.properties";
@@ -548,9 +590,9 @@ public class MimeTypes
                             {
                                 String charset = props.getProperty(t);
                                 if (charset.startsWith("-"))
-                                    _assumedEncodings.put(t, charset.substring(1));
+                                    _assumedEncodings.put(t, Charset.forName(charset.substring(1)));
                                 else
-                                    _inferredEncodings.put(t, props.getProperty(t));
+                                    _inferredEncodings.put(t, Charset.forName(props.getProperty(t)));
                             });
 
                         if (_inferredEncodings.isEmpty())

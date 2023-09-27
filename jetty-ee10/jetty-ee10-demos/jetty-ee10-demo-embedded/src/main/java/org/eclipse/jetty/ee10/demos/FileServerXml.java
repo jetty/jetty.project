@@ -35,7 +35,7 @@ public class FileServerXml
         // Find Jetty XML (in classpath) that configures and starts Server.
         // See src/main/resources/fileserver.xml
         ResourceFactory.LifeCycle resourceFactory = ResourceFactory.lifecycle();
-        Resource fileServerXml = resourceFactory.newSystemResource("fileserver.xml");
+        Resource fileServerXml = resourceFactory.newClassLoaderResource("fileserver.xml");
         Resource baseResource = resourceFactory.newResource(basePath);
         XmlConfiguration configuration = new XmlConfiguration(fileServerXml);
         configuration.getProperties().put("fileserver.baseResource", baseResource.toString());

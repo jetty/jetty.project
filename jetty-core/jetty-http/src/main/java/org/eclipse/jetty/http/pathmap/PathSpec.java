@@ -97,20 +97,24 @@ public interface PathSpec extends Comparable<PathSpec>
     String getSuffix();
 
     /**
-     * Test to see if the provided path matches this path spec
+     * Test to see if the provided path matches this path spec.
+     * This can be more efficient that {@link #matched(String)} if the details of the match are not required.
      *
      * @param path the path to test
      * @return true if the path matches this path spec, false otherwise
-     * @deprecated use {@link #matched(String)} instead
+     * @see #matched(String) 
      */
-    @Deprecated
-    boolean matches(String path);
+    default boolean matches(String path)
+    {
+        return matched(path) != null;
+    }
 
     /**
      * Get the complete matched details of the provided path.
      *
      * @param path the path to test
      * @return the matched details, if a match was possible, or null if not able to be matched.
+     * @see #matches(String) 
      */
     MatchedPath matched(String path);
 }
