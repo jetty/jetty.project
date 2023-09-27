@@ -526,8 +526,6 @@ fi
 ##################################################
 case "$ACTION" in
   start)
-    echo -n "Starting Jetty: "
-
     if (( NO_START )); then
       echo "Not starting ${NAME} - NO_START=1";
       exit
@@ -546,6 +544,8 @@ case "$ACTION" in
       echo "          Correct issues preventing use of \$JETTY_STATE and try again."
       exit 1
     fi
+
+    echo -n "Starting Jetty: "
 
     # Startup from a service file
     if [ $UID -eq 0 ] && type start-stop-daemon > /dev/null 2>&1
