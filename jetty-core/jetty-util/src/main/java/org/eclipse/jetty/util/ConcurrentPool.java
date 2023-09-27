@@ -468,8 +468,14 @@ public class ConcurrentPool<P> implements Pool<P>, Dumpable
         @Override
         public E getPooled()
         {
-            this.pooled = null;
-            return weakPooled == null ? null : weakPooled.get();
+            try
+            {
+                return weakPooled == null ? null : weakPooled.get();
+            }
+            finally
+            {
+                this.pooled = null;
+            }
         }
 
         @Override
