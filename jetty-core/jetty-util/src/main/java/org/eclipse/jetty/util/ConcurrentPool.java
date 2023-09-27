@@ -493,7 +493,7 @@ public class ConcurrentPool<P> implements Pool<P>, Dumpable
                 if (multiplexCount < 0)
                     return false;
 
-                int maxMultiplexed = pool.getMaxMultiplex(pooled);
+                int maxMultiplexed = pool.getMaxMultiplex(weakPooled.get());
                 if (maxMultiplexed > 0 && multiplexCount >= maxMultiplexed)
                     return false;
 
