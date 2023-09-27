@@ -53,6 +53,8 @@ import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.Assertions;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
+import org.junit.jupiter.params.ParameterizedTest;
+import org.junit.jupiter.params.provider.ValueSource;
 
 import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.Matchers.containsString;
@@ -120,21 +122,23 @@ public class WebSocketClientTest
         server.stop();
     }
 
-    @Test
-    public void testCustomizeExecutorDirectly() throws Exception
+    @ParameterizedTest
+    @ValueSource(booleans = {false, true})
+    public void testCustomizeExecutorDirectly(boolean startHttpClient) throws Exception
     {
         Executor executor = Executors.newFixedThreadPool(50);
         HttpClient httpClient = new HttpClient();
         httpClient.setExecutor(executor);
         try
         {
-            httpClient.start();
+            if (startHttpClient)
+                httpClient.start();
             WebSocketClient webSocketClient = new WebSocketClient(httpClient);
             try
             {
                 webSocketClient.start();
-                Executor inuseExecutor = webSocketClient.getExecutor();
-                assertSame(executor, inuseExecutor);
+                Executor wsExecutor = webSocketClient.getExecutor();
+                assertSame(executor, wsExecutor);
             }
             finally
             {
