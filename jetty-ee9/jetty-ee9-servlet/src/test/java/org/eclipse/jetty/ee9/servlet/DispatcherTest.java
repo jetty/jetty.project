@@ -419,6 +419,67 @@ public class DispatcherTest
     }
 
     @Test
+    public void testServletIncludeWelcome() throws Exception
+    {
+        createDefaultContextHandlerCollection();
+        _contextHandler.setWelcomeFiles(new String[] { "index.x" });
+        _contextHandler.addServlet(DispatchServletServlet.class, "/dispatch/*");
+        ServletHolder defaultHolder = _contextHandler.addServlet(DefaultServlet.class, "/");
+        defaultHolder.setInitParameter("welcomeServlets", "true");
+        _contextHandler.addServlet(RogerThatServlet.class, "*.x");
+        createServer(_contextCollection);
+        _server.start();
+
+        String rawResponse = _connector.getResponse("""
+            GET /context/r/ HTTP/1.0\r
+            Host: localhost\r
+            Connection: close\r
+            \r
+            """);
+
+        String expected = """
+            HTTP/1.1 200 OK\r
+            Content-Length: 11\r
+            \r
+            Roger That!""";
+
+        assertEquals(expected, rawResponse);
+
+
+        // direct include
+        rawResponse = _connector.getResponse("""
+            GET /context/dispatch/test?include=/index.x HTTP/1.0\r
+            Host: localhost\r
+            Connection: close\r
+            \r
+            """);
+
+        expected = """
+            HTTP/1.1 200 OK\r
+            Content-Length: 11\r
+            \r
+            Roger That!""";
+
+        assertEquals(expected, rawResponse);
+
+        // include through welcome file based on servlet mapping
+        rawResponse = _connector.getResponse("""
+            GET /context/dispatch/test?include=/r/ HTTP/1.0\r
+            Host: localhost\r
+            Connection: close\r
+            \r
+            """);
+
+        expected = """
+            HTTP/1.1 200 OK\r
+            Content-Length: 11\r
+            \r
+            Roger That!""";
+
+        assertEquals(expected, rawResponse);
+    }
+
+    @Test
     public void testInclude() throws Exception
     {
         createDefaultContextHandlerCollection();
@@ -1003,13 +1064,13 @@ public class DispatcherTest
             if (request.getParameter("include") != null)
             {
                 dispatcher = getServletContext().getRequestDispatcher(request.getParameter("include"));
-                dispatcher.include(new ServletRequestWrapper(request), new ServletResponseWrapper(response));
+                dispatcher.include(new HttpServletRequestWrapper(request), new HttpServletResponseWrapper(response));
             }
             else if (request.getParameter("forward") != null)
             {
                 dispatcher = getServletContext().getRequestDispatcher(request.getParameter("forward"));
                 if (dispatcher != null)
-                    dispatcher.forward(new ServletRequestWrapper(request), new ServletResponseWrapper(response));
+                    dispatcher.forward(new HttpServletRequestWrapper(request), new HttpServletResponseWrapper(response));
                 else
                     response.sendError(404);
             }
