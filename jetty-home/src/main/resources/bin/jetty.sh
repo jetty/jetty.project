@@ -368,13 +368,14 @@ fi
 if [ -z "$JETTY_RUN" ]
 then
   JETTY_RUN=$(findDirectory -w /var/run /usr/var/run $JETTY_BASE /tmp)/jetty
-  if [ ! -d "$JETTY_RUN" ] ; then
-    if ! mkdir $JETTY_RUN
-    then
-      echo "** ERROR: Unable to create directory: $JETTY_RUN"
-      echo "          Correct issues preventing use of \$JETTY_RUN and try again."
-      exit 1
-    fi
+fi
+
+if [ ! -d "$JETTY_RUN" ] ; then
+  if ! mkdir $JETTY_RUN
+  then
+    echo "** ERROR: Unable to create directory: $JETTY_RUN"
+    echo "          Correct issues preventing use of \$JETTY_RUN and try again."
+    exit 1
   fi
 fi
 
