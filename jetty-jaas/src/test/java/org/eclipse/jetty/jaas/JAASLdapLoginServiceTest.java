@@ -43,6 +43,7 @@ import static org.junit.Assert.assertTrue;
 /**
  * JAASLdapLoginServiceTest
  */
+@EnabledForJreRange(max = JRE.JAVA_17, disabledReason = "sun.security.x509.X509CertInfo.set not present in Java 21, needs a Java 21 compatible version of Apache Directory Server")
 @RunWith(FrameworkRunner.class)
 @CreateLdapServer(transports = {@CreateTransport(protocol = "LDAP")})
 @CreateDS(allowAnonAccess = false, partitions = {
@@ -115,7 +116,6 @@ import static org.junit.Assert.assertTrue;
     "uniquemember: uid=uniqueuser,ou=subdir,ou=people,dc=jetty,dc=org",
     "cn: admin"
 })
-@EnabledForJreRange(max = JRE.JAVA_17, disabledReason = "sun.security.x509.X509CertInfo.set not present in Java 21, needs a Java 21 compatible version of Apache Directory Server")
 public class JAASLdapLoginServiceTest
 {
     private static LdapServer _ldapServer;
