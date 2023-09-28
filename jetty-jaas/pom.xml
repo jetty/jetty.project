@@ -167,9 +167,9 @@
       </build>
     </profile>
     <profile>
-      <id>over-jdk17</id>
+      <id>jdk20</id>
       <activation>
-        <jdk>[21,)</jdk>
+        <jdk>[20,)</jdk>
       </activation>
       <build>
         <pluginManagement>
@@ -179,7 +179,7 @@
               <artifactId>maven-surefire-plugin</artifactId>
               <configuration>
                 <excludes>
-                  <!-- sun.security.x509.X509CertInfo.set not present in Java 21, needs a Java 21 compatible version of Apache Directory Server -->
+                  <!-- sun.security.x509.X509CertInfo.set not present in Java 20, needs a Java 20 compatible version of Apache Directory Server -->
                   <exclude>**/JAASLdapLoginServiceTest*</exclude>
                 </excludes>
               </configuration>
