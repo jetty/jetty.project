@@ -16,6 +16,7 @@ package org.eclipse.jetty.http2.tests;
 import java.nio.ByteBuffer;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.TimeUnit;
+import java.util.concurrent.atomic.AtomicInteger;
 import java.util.concurrent.atomic.AtomicReference;
 
 import org.eclipse.jetty.http.HttpFields;
@@ -91,12 +92,12 @@ public class DataDemandTest extends AbstractTest
         // The server onDataAvailable() should be invoked once because it does one explicit demand.
         await().atMost(5, TimeUnit.SECONDS).until(() -> serverStreamRef.get() != null);
         Stream serverStream = serverStreamRef.getAndSet(null);
-        await().during(1, TimeUnit.SECONDS).until(() -> serverStreamRef.get() == null);
+        await().during(1, TimeUnit.SECONDS).atMost(5, TimeUnit.SECONDS).until(() -> serverStreamRef.get() == null);
 
         // Read and demand 1 more DATA frame.
         Stream.Data data = serverStream.readData();
         assertNotNull(data);
-        int received = data.frame().remaining();
+        AtomicInteger serverReceived = new AtomicInteger(data.frame().remaining());
         data.release();
         serverStream.demand();
 
@@ -104,22 +105,16 @@ public class DataDemandTest extends AbstractTest
         await().atMost(5, TimeUnit.SECONDS).until(() -> serverStreamRef.get() != null);
 
         // Read all the rest.
-        while (true)
+        await().pollInterval(1, TimeUnit.MILLISECONDS).atMost(5, TimeUnit.SECONDS).until(() ->
         {
-            data = serverStream.readData();
-            if (data == null)
-            {
-                Thread.sleep(100);
-                continue;
-            }
-            received += data.frame().remaining();
-            data.release();
-            if (data.frame().isEndStream())
-            {
-                assertEquals(received, length);
-                break;
-            }
-        }
+            Stream.Data d = serverStream.readData();
+            if (d == null)
+                return false;
+            serverReceived.addAndGet(d.frame().remaining());
+            d.release();
+            return d.frame().isEndStream();
+        });
+        assertEquals(length, serverReceived.get());
 
         // Send a large DATA frame to the client.
         serverStream.data(new DataFrame(serverStream.getId(), ByteBuffer.allocate(length), true));
@@ -127,12 +122,12 @@ public class DataDemandTest extends AbstractTest
         // The client onDataAvailable() should be invoked once because it does one explicit demand.
         await().atMost(5, TimeUnit.SECONDS).until(() -> clientStreamRef.get() != null);
         Stream clientStream = clientStreamRef.getAndSet(null);
-        await().during(1, TimeUnit.SECONDS).until(() -> clientStreamRef.get() == null);
+        await().during(1, TimeUnit.SECONDS).atMost(5, TimeUnit.SECONDS).until(() -> clientStreamRef.get() == null);
 
         // Read and demand 1 more DATA frame.
         data = clientStream.readData();
         assertNotNull(data);
-        received = data.frame().remaining();
+        AtomicInteger clientReceived = new AtomicInteger(data.frame().remaining());
         data.release();
         clientStream.demand();
 
@@ -140,22 +135,16 @@ public class DataDemandTest extends AbstractTest
         await().atMost(5, TimeUnit.SECONDS).until(() -> clientStreamRef.get() != null);
 
         // Read all the rest.
-        while (true)
+        await().pollInterval(1, TimeUnit.MILLISECONDS).atMost(5, TimeUnit.SECONDS).until(() ->
         {
-            data = clientStream.readData();
-            if (data == null)
-            {
-                Thread.sleep(100);
-                continue;
-            }
-            received += data.frame().remaining();
-            data.release();
-            if (data.frame().isEndStream())
-            {
-                assertEquals(received, length);
-                break;
-            }
-        }
+            Stream.Data d = clientStream.readData();
+            if (d == null)
+                return false;
+            clientReceived.addAndGet(d.frame().remaining());
+            d.release();
+            return d.frame().isEndStream();
+        });
+        assertEquals(length, clientReceived.get());
 
         // Both the client and server streams should be gone now.
         assertNull(clientStream.getSession().getStream(clientStream.getId()));

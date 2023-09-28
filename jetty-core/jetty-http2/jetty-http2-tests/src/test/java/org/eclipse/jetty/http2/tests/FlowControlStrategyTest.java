@@ -360,7 +360,7 @@ public class FlowControlStrategyTest
 
         // Did not read yet, verify that we are flow control stalled.
         Stream stream = streamRef.getAndSet(null);
-        await().during(1, TimeUnit.SECONDS).until(() -> streamRef.get() == null);
+        await().during(1, TimeUnit.SECONDS).atMost(5, TimeUnit.SECONDS).until(() -> streamRef.get() == null);
 
         // Read the first chunk.
         Stream.Data data = stream.readData();
@@ -368,7 +368,7 @@ public class FlowControlStrategyTest
         data.release();
 
         // Did not demand, so onDataAvailable() should not be called.
-        await().during(1, TimeUnit.SECONDS).until(() -> streamRef.get() == null);
+        await().during(1, TimeUnit.SECONDS).atMost(5, TimeUnit.SECONDS).until(() -> streamRef.get() == null);
 
         // Demand, onDataAvailable() should be called.
         stream.demand();
@@ -376,7 +376,7 @@ public class FlowControlStrategyTest
 
         // Did not read yet, verify that we are flow control stalled.
         stream = streamRef.getAndSet(null);
-        await().during(1, TimeUnit.SECONDS).until(() -> streamRef.get() == null);
+        await().during(1, TimeUnit.SECONDS).atMost(5, TimeUnit.SECONDS).until(() -> streamRef.get() == null);
 
         // Read the second chunk.
         data = stream.readData();
@@ -446,7 +446,7 @@ public class FlowControlStrategyTest
 
         // Did not read yet, verify that we are flow control stalled.
         Stream serverStream = serverStreamRef.getAndSet(null);
-        await().during(1, TimeUnit.SECONDS).until(() -> serverStreamRef.get() == null);
+        await().during(1, TimeUnit.SECONDS).atMost(5, TimeUnit.SECONDS).until(() -> serverStreamRef.get() == null);
 
         // Read the first chunk.
         Stream.Data data = serverStream.readData();
@@ -454,7 +454,7 @@ public class FlowControlStrategyTest
         data.release();
 
         // Did not demand, so onDataAvailable() should not be called.
-        await().during(1, TimeUnit.SECONDS).until(() -> serverStreamRef.get() == null);
+        await().during(1, TimeUnit.SECONDS).atMost(5, TimeUnit.SECONDS).until(() -> serverStreamRef.get() == null);
 
         // Demand, onDataAvailable() should be called.
         serverStream.demand();
@@ -462,7 +462,7 @@ public class FlowControlStrategyTest
 
         // Did not read yet, verify that we are flow control stalled.
         serverStream = serverStreamRef.getAndSet(null);
-        await().during(1, TimeUnit.SECONDS).until(() -> serverStreamRef.get() == null);
+        await().during(1, TimeUnit.SECONDS).atMost(5, TimeUnit.SECONDS).until(() -> serverStreamRef.get() == null);
 
         // Read the second chunk.
         data = serverStream.readData();
@@ -568,7 +568,7 @@ public class FlowControlStrategyTest
             }
         });
         // Verify that the data does not arrive because the server session is stalled.
-        await().during(1, TimeUnit.SECONDS).until(() -> streamRef4.get() == null);
+        await().during(1, TimeUnit.SECONDS).atMost(5, TimeUnit.SECONDS).until(() -> streamRef4.get() == null);
 
         // Consume the data of the first response.
         // This will open up the session window, allowing the fourth stream to send data.
@@ -582,18 +582,14 @@ public class FlowControlStrategyTest
 
     private void consumeAll(Stream stream) throws Exception
     {
-        while (true)
+        await().pollInterval(1, TimeUnit.MILLISECONDS).atMost(5, TimeUnit.SECONDS).until(() ->
         {
             Stream.Data data = stream.readData();
             if (data == null)
-            {
-                Thread.sleep(100);
-                continue;
-            }
+                return false;
             data.release();
-            if (data.frame().isEndStream())
-                break;
-        }
+            return data.frame().isEndStream();
+        });
     }
 
     @ParameterizedTest
