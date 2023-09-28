@@ -113,9 +113,10 @@ public interface Stream
      *   stream</li>
      * </ul>
      * <p>When the returned {@link Stream.Data} object is not {@code null},
-     * applications <em>must</em> call, either immediately or later (possibly
-     * asynchronously) {@link Stream.Data#release()} to notify the
-     * implementation that the bytes have been processed.</p>
+     * the flow control window has been enlarged by the DATA frame length;
+     * applications <em>must</em> call, either immediately or later (even
+     * asynchronously from a different thread) {@link Stream.Data#release()}
+     * to notify the implementation that the bytes have been processed.</p>
      * <p>{@link Stream.Data} objects may be stored away for later, asynchronous,
      * processing (for example, to process them only when all of them have been
      * received).</p>

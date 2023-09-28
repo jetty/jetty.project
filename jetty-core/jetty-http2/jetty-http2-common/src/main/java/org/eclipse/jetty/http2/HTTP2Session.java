@@ -259,7 +259,7 @@ public abstract class HTTP2Session extends ContainerLifeCycle implements Session
 
         // SPEC: the session window must be updated even if the stream is null.
         // The flow control length includes the padding bytes.
-        int flowControlLength = frame.remaining() + frame.padding();
+        int flowControlLength = frame.flowControlLength();
         flowControl.onDataReceived(this, stream, flowControlLength);
 
         if (stream != null)
@@ -278,11 +278,7 @@ public abstract class HTTP2Session extends ContainerLifeCycle implements Session
                 }
                 else
                 {
-                    // StreamData has its own reference count (that starts at 1),
-                    // so since we create it here, we release it after stream.process().
-                    StreamData streamData = new StreamData(data, stream, flowControlLength);
-                    stream.process(streamData);
-                    streamData.release();
+                    stream.process(data);
                 }
             }
         }
@@ -292,12 +288,18 @@ public abstract class HTTP2Session extends ContainerLifeCycle implements Session
                 LOG.debug("Stream #{} not found on {}", streamId, this);
             // We must enlarge the session flow control window,
             // otherwise other requests will be stalled.
-            flowControl.onDataConsumed(this, null, flowControlLength);
+            dataConsumed(null, flowControlLength);
             if (isStreamClosed(streamId))
                 reset(null, new ResetFrame(streamId, ErrorCode.STREAM_CLOSED_ERROR.code), Callback.NOOP);
             else
                 onSessionFailure(ErrorCode.PROTOCOL_ERROR.code, "unexpected_data_frame", Callback.NOOP);
         }
+    }
+
+    void dataConsumed(HTTP2Stream stream, int length)
+    {
+        notIdle();
+        flowControl.onDataConsumed(this, stream, length);
     }
 
     private boolean isStreamClosed(int streamId)
@@ -2361,7 +2363,7 @@ public abstract class HTTP2Session extends ContainerLifeCycle implements Session
             }
         }
 
-        private class Slot
+        private static class Slot
         {
             private volatile List<Entry> entries;
         }
@@ -2387,71 +2389,6 @@ public abstract class HTTP2Session extends ContainerLifeCycle implements Session
             // The implementation of the Iterator returned above does not support
             // removal, but the HTTP2Stream will be removed by stream.onIdleTimeout().
             return false;
-        }
-    }
-
-    /**
-     * @implNote This class needs an extra reference counter because it needs to
-     * open the flow control window when the application releases this instance.
-     * Imagine a network buffer with 2 DATA frames: this will create 2 Data
-     * objects, which will be passed to the application. The network buffer is
-     * now retained 3 times (1 time for the network usage, and 1 time for each
-     * Data object).
-     * When the application releases the first Data object, the flow control
-     * window should be opened immediately for the length of that Data object,
-     * so the implementation cannot rely on delegating the call to release()
-     * to the network buffer, because the network buffer will still be retained.
-     * Furthermore, the flow control logic must be executed only once, while
-     * the Data object release() method may be invoked multiple times (since
-     * it may be additionally retained, for example when converted to a Chunk).
-     * The solution is to have an additional reference counter for the objects
-     * of this class, that allows to invoke the flow control logic only once,
-     * and only when all retains performed on an instance have been released.
-     */
-    private class StreamData extends Stream.Data
-    {
-        private final ReferenceCounter counter = new ReferenceCounter();
-        private final Stream.Data data;
-        private final HTTP2Stream stream;
-        private final int flowControlLength;
-
-        private StreamData(Stream.Data data, HTTP2Stream stream, int flowControlLength)
-        {
-            super(data.frame());
-            this.data = data;
-            this.stream = stream;
-            this.flowControlLength = flowControlLength;
-            // Since this class starts its own reference counter
-            // at 1, we need to retain the delegate Data object,
-            // so that the releases will be paired.
-            data.retain();
-        }
-
-        @Override
-        public boolean canRetain()
-        {
-            return data.canRetain();
-        }
-
-        @Override
-        public void retain()
-        {
-            counter.retain();
-            data.retain();
-        }
-
-        @Override
-        public boolean release()
-        {
-            data.release();
-            boolean result = counter.release();
-            if (result)
-            {
-                notIdle();
-                stream.notIdle();
-                flowControl.onDataConsumed(HTTP2Session.this, stream, flowControlLength);
-            }
-            return result;
         }
     }
 }
