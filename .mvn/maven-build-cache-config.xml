@@ -58,6 +58,11 @@
             <goal>install</goal>
           </goals>
         </goalsList>
+        <goalsList artifactId="maven-deploy-plugin">
+          <goals>
+            <goal>deploy</goal>
+          </goals>
+        </goalsList>
       </goalsLists>
     </runAlways>
     <reconcile>
