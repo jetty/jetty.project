@@ -374,7 +374,7 @@ if [ ! -d "$JETTY_RUN" ] ; then
   if ! mkdir $JETTY_RUN
   then
     echo "** ERROR: Unable to create directory: $JETTY_RUN"
-    echo "          Correct issues preventing use of \$JETTY_RUN and try again."
+    echo "          Correct issues preventing the creation of \$JETTY_RUN and try again."
     exit 1
   fi
 fi
@@ -565,7 +565,7 @@ case "$ACTION" in
        --make-pidfile \
        --startas "$JAVA" \
        --
-      (( DEBUG )) && echo "Starting: start-stop-daemon usage"
+      (( DEBUG )) && echo "Starting: start-stop-daemon"
     else
 
       if running $JETTY_PID
@@ -589,7 +589,7 @@ case "$ACTION" in
           echo ${RUN_ARGS[*]} --start-log-file=\"$JETTY_START_LOG\" | xargs ${JAVA} > /dev/null &
           PID=\$!
           disown \$PID"
-        (( DEBUG )) && echo "Starting: su shell (w/user) on PID $PID"
+        (( DEBUG )) && echo "Starting: su shell (w/user $JETTY_USER) on PID $PID"
       else
         # Startup if not switching users
         echo ${RUN_ARGS[*]} --start-log-file="${JETTY_START_LOG}" | xargs ${JAVA} > /dev/null &
