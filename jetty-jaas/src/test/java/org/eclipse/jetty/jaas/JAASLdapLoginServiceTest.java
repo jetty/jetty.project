@@ -31,7 +31,7 @@ import org.eclipse.jetty.security.DefaultIdentityService;
 import org.eclipse.jetty.server.Request;
 import org.eclipse.jetty.server.UserIdentity;
 import org.junit.Test;
-import org.junit.jupiter.api.condition.DisabledForJreRange;
+import org.junit.jupiter.api.condition.EnabledForJreRange;
 import org.junit.jupiter.api.condition.JRE;
 import org.junit.runner.RunWith;
 
@@ -115,7 +115,7 @@ import static org.junit.Assert.assertTrue;
     "uniquemember: uid=uniqueuser,ou=subdir,ou=people,dc=jetty,dc=org",
     "cn: admin"
 })
-@DisabledForJreRange(max = JRE.JAVA_18, disabledReason = "sun.security.x509.X509CertInfo.set not present in Java 21, needs a Java 21 compatible version of Apache Directory Server")
+@EnabledForJreRange(max = JRE.JAVA_17, disabledReason = "sun.security.x509.X509CertInfo.set not present in Java 21, needs a Java 21 compatible version of Apache Directory Server")
 public class JAASLdapLoginServiceTest
 {
     private static LdapServer _ldapServer;
