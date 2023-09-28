@@ -11,13 +11,13 @@ pipeline {
   stages {
     stage("Parallel Stage") {
       parallel {
-        stage("Build / Test - JDK19") {
+        stage("Build / Test - JDK21") {
           agent { node { label 'linux' } }
           steps {
             timeout( time: 180, unit: 'MINUTES' ) {
               checkout scm
-              mavenBuild( "jdk19", "clean install -Dspotbugs.skip=true -Djacoco.skip=true", "maven3")
-              recordIssues id: "jdk19", name: "Static Analysis jdk19", aggregatingResults: true, enabledForFailure: true, tools: [mavenConsole(), java(), checkStyle()]
+              mavenBuild( "jdk21", "clean install -Dspotbugs.skip=true -Djacoco.skip=true", "maven3")
+              recordIssues id: "jdk21", name: "Static Analysis jdk21", aggregatingResults: true, enabledForFailure: true, tools: [mavenConsole(), java(), checkStyle()]
             }
           }
         }

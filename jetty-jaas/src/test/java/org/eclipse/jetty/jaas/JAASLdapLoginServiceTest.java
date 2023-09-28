@@ -31,6 +31,8 @@ import org.eclipse.jetty.security.DefaultIdentityService;
 import org.eclipse.jetty.server.Request;
 import org.eclipse.jetty.server.UserIdentity;
 import org.junit.Test;
+import org.junit.jupiter.api.condition.EnabledForJreRange;
+import org.junit.jupiter.api.condition.JRE;
 import org.junit.runner.RunWith;
 
 import static org.junit.Assert.assertFalse;
@@ -41,6 +43,7 @@ import static org.junit.Assert.assertTrue;
 /**
  * JAASLdapLoginServiceTest
  */
+@EnabledForJreRange(max = JRE.JAVA_17, disabledReason = "sun.security.x509.X509CertInfo.set not present in Java 21, needs a Java 21 compatible version of Apache Directory Server")
 @RunWith(FrameworkRunner.class)
 @CreateLdapServer(transports = {@CreateTransport(protocol = "LDAP")})
 @CreateDS(allowAnonAccess = false, partitions = {
