@@ -1258,7 +1258,7 @@ public class HttpConnection extends AbstractConnection implements Runnable, Writ
                 _uri.scheme(getEndPoint() instanceof SslConnection.SslEndPoint ? HttpScheme.HTTPS : HttpScheme.HTTP);
 
             // Set the authority (if not already set) in the URI
-            if (!HttpMethod.CONNECT.is(_method) && _uri.getAuthority() == null)
+            if (_uri.getAuthority() == null && !HttpMethod.CONNECT.is(_method))
             {
                 HostPort hostPort = _hostField == null ? getServerAuthority() : _hostField.getHostPort();
                 int port = hostPort.getPort();

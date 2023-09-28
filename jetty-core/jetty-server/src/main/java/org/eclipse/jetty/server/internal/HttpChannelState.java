@@ -616,9 +616,9 @@ public class HttpChannelState implements HttpChannel, Components
 
             try
             {
-                if (!HttpMethod.PRI.is(request.getMethod()) &&
+                if (!Request.getPathInContext(_request).startsWith("/") &&
+                    !HttpMethod.PRI.is(request.getMethod()) &&
                     !HttpMethod.CONNECT.is(request.getMethod()) &&
-                    !Request.getPathInContext(_request).startsWith("/") &&
                     !HttpMethod.OPTIONS.is(request.getMethod()))
                 {
                     throw new BadMessageException("Bad URI path");
