@@ -245,7 +245,7 @@
     <jetty-version.maven.plugin.version>2.7</jetty-version.maven.plugin.version>
     <jetty.perf-helper.version>1.0.7</jetty.perf-helper.version>
     <jetty.surefire.argLine>-Dfile.encoding=UTF-8 -Duser.language=en -Duser.region=US -Djava.io.tmpdir=${project.build.directory} -showversion -Xmx6g -Xms4g -Xlog:gc:stderr:time,level,tags</jetty.surefire.argLine>
-    <jetty.test.version>6.1</jetty.test.version>
+    <jetty.test.version>6.2</jetty.test.version>
     <jetty.testtracker.log>true</jetty.testtracker.log>
     <jetty.unixdomain.dir>/tmp</jetty.unixdomain.dir>
     <jetty.url>https://eclipse.dev/jetty/</jetty.url>
@@ -265,7 +265,7 @@
     <junit.jupiter.execution.parallel.enabled>true</junit.jupiter.execution.parallel.enabled>
     <junit.jupiter.execution.parallel.mode.classes.default>concurrent</junit.jupiter.execution.parallel.mode.classes.default>
     <junit.jupiter.execution.parallel.mode.default>same_thread</junit.jupiter.execution.parallel.mode.default>
-    <junit.jupiter.extensions.autodetection.enabled>false</junit.jupiter.extensions.autodetection.enabled>
+    <junit.jupiter.extensions.autodetection.enabled>true</junit.jupiter.extensions.autodetection.enabled>
     <junit.version>5.10.0</junit.version>
     <kerb-simplekdc.version>2.0.3</kerb-simplekdc.version>
     <license.maven.plugin.version>4.1</license.maven.plugin.version>
