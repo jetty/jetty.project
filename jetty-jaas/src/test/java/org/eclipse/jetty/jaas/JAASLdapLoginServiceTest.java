@@ -115,7 +115,7 @@ import static org.junit.Assert.assertTrue;
     "uniquemember: uid=uniqueuser,ou=subdir,ou=people,dc=jetty,dc=org",
     "cn: admin"
 })
-@DisabledForJreRange(max = JRE.JAVA_18)
+@DisabledForJreRange(max = JRE.JAVA_18, disabledReason = "sun.security.x509.X509CertInfo.set not anymore in 21")
 public class JAASLdapLoginServiceTest
 {
     private static LdapServer _ldapServer;
