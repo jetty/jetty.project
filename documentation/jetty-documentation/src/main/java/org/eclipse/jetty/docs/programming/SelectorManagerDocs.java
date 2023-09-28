@@ -20,10 +20,16 @@ import java.nio.channels.ServerSocketChannel;
 import java.nio.channels.SocketChannel;
 import java.util.Map;
 import java.util.concurrent.Executor;
+import java.util.concurrent.atomic.AtomicInteger;
 
+import org.eclipse.jetty.client.HttpClient;
 import org.eclipse.jetty.io.AbstractConnection;
+import org.eclipse.jetty.io.Connection;
+import org.eclipse.jetty.io.ConnectionStatistics;
 import org.eclipse.jetty.io.EndPoint;
 import org.eclipse.jetty.io.SelectorManager;
+import org.eclipse.jetty.server.Server;
+import org.eclipse.jetty.server.ServerConnector;
 import org.eclipse.jetty.util.BufferUtil;
 import org.eclipse.jetty.util.Callback;
 import org.eclipse.jetty.util.IteratingCallback;
@@ -79,16 +85,73 @@ public class SelectorManagerDocs
                 super.onOpen();
 
                 // Declare interest for fill events.
+                // When the fill event happens, method onFillable() below is invoked.
                 fillInterested();
             }
 
             @Override
             public void onFillable()
             {
-                // Called when a fill event happens.
+                // Invoked when a fill event happens.
             }
         }
         // end::connection[]
+    }
+
+    public void connectionListener() throws Exception
+    {
+        // tag::connectionListener[]
+        class ThresholdConnectionListener implements Connection.Listener
+        {
+            private final AtomicInteger connections = new AtomicInteger();
+
+            private int threshold;
+            private boolean notified;
+
+            public ThresholdConnectionListener(int threshold)
+            {
+                this.threshold = threshold;
+            }
+
+            @Override
+            public void onOpened(Connection connection)
+            {
+                int count = connections.incrementAndGet();
+                if (count > threshold && !notified)
+                {
+                    notified = true;
+                    System.getLogger("connection.threshold").log(System.Logger.Level.WARNING, "Connection threshold exceeded");
+                }
+            }
+
+            @Override
+            public void onClosed(Connection connection)
+            {
+                int count = connections.decrementAndGet();
+                // Reset the alert when we are below 90% of the threshold.
+                if (count < threshold * 0.9F)
+                    notified = false;
+            }
+        }
+
+        // Configure server-side connectors with Connection.Listeners.
+        Server server = new Server();
+        ServerConnector connector = new ServerConnector(server);
+        server.addConnector(connector);
+        // Add statistics.
+        connector.addBean(new ConnectionStatistics());
+        // Add your own Connection.Listener.
+        connector.addBean(new ThresholdConnectionListener(2048));
+        server.start();
+
+        // Configure client-side HttpClient with Connection.Listeners.
+        HttpClient httpClient = new HttpClient();
+        // Add statistics.
+        httpClient.addBean(new ConnectionStatistics());
+        // Add your own Connection.Listener.
+        httpClient.addBean(new ThresholdConnectionListener(512));
+        httpClient.start();
+        // end::connectionListener[]
     }
 
     public void echoWrong()
