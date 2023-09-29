@@ -251,6 +251,7 @@
         <groupId>org.apache.maven.plugins</groupId>
         <artifactId>maven-assembly-plugin</artifactId>
         <configuration>
+          <skipAssembly>${asciidoctor.skip}</skipAssembly>
           <descriptors>
             <descriptor>src/main/assembly/html.xml</descriptor>
           </descriptors>
