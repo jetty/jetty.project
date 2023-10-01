@@ -28,7 +28,7 @@
     <ant.version>1.10.14</ant.version>
     <apache.avro.version>1.11.3</apache.avro.version>
     <mina.core.version>2.2.3</mina.core.version>
-    <asm.version>9.5</asm.version>
+    <asm.version>9.6</asm.version>
     <bndlib.version>6.3.1</bndlib.version>
     <build-support.version>1.5</build-support.version>
     <checkstyle.version>9.3</checkstyle.version>
