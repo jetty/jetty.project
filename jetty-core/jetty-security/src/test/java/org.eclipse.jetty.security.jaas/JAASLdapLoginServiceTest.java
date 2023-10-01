@@ -45,12 +45,17 @@ import org.eclipse.jetty.ee10.servlet.security.authentication.BasicAuthenticator
 import org.eclipse.jetty.server.LocalConnector;
 import org.eclipse.jetty.server.Server;
 import org.junit.Test;
+import org.junit.jupiter.api.condition.EnabledForJreRange;
+import org.junit.jupiter.api.condition.JRE;
 import org.junit.runner.RunWith;
 
 import static java.nio.charset.StandardCharsets.ISO_8859_1;
 import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.Matchers.startsWith;
 
+
+@EnabledForJreRange(max = JRE.JAVA_17, disabledReason = "sun.security.x509.X509CertInfo.set not present in Java 21, needs a Java 21 compatible version of Apache Directory Server")
+>>>>>>> jetty-11.0.x:jetty-jaas/src/test/java/org/eclipse/jetty/jaas/JAASLdapLoginServiceTest.java
 @RunWith(FrameworkRunner.class)
 @CreateLdapServer(transports = {@CreateTransport(protocol = "LDAP")})
 @CreateDS(allowAnonAccess = false, partitions = {
@@ -123,6 +128,7 @@ import static org.hamcrest.Matchers.startsWith;
     "uniquemember: uid=uniqueuser,ou=subdir,ou=people,dc=jetty,dc=org",
     "cn: admin"
 })
+
 */
 
 public class JAASLdapLoginServiceTest

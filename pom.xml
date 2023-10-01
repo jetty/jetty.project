@@ -34,20 +34,20 @@
     <!-- dependency versions -->
     <alpn.agent.version>2.0.10</alpn.agent.version>
     <ant.version>1.10.14</ant.version>
-    <apache.avro.version>1.11.2</apache.avro.version>
+    <apache.avro.version>1.11.3</apache.avro.version>
     <apache.httpclient.version>4.5.14</apache.httpclient.version>
     <apache.httpcore.version>4.4.16</apache.httpcore.version>
-    <asciidoctorj-diagram.version>2.2.11</asciidoctorj-diagram.version>
+    <asciidoctorj-diagram.version>2.2.13</asciidoctorj-diagram.version>
     <asciidoctorj.version>2.5.10</asciidoctorj.version>
-    <mina.core.version>2.2.2</mina.core.version>
-    <asm.version>9.5</asm.version>
+    <mina.core.version>2.2.3</mina.core.version>
+    <asm.version>9.6</asm.version>
     <awaitility.version>4.2.0</awaitility.version>
     <bndlib.version>6.4.1</bndlib.version>
     <build-support.version>1.5</build-support.version>
     <checkstyle.version>10.6.0</checkstyle.version>
     <commons-codec.version>1.16.0</commons-codec.version>
     <commons.compress.version>1.24.0</commons.compress.version>
-    <commons.io.version>2.13.0</commons.io.version>
+    <commons.io.version>2.14.0</commons.io.version>
     <commons-lang3.version>3.13.0</commons-lang3.version>
     <conscrypt.version>2.5.2</conscrypt.version>
     <disruptor.version>3.4.2</disruptor.version>
@@ -88,7 +88,7 @@
     <jboss.logging.processor.version>2.2.1.Final</jboss.logging.processor.version>
     <jboss.logging.version>3.5.3.Final</jboss.logging.version>
     <jboss-logmanager.version>3.0.2.Final</jboss-logmanager.version>
-    <jboss-threads.version>3.5.0.Final</jboss-threads.version>
+    <jboss-threads.version>3.5.1.Final</jboss-threads.version>
     <jetty-assembly-descriptors.version>1.1</jetty-assembly-descriptors.version>
     <jetty.perf-helper.version>1.0.7</jetty.perf-helper.version>
     <jetty-quiche-native.version>0.18.0</jetty-quiche-native.version>
@@ -109,7 +109,7 @@
     <maven.deps.version>3.9.4</maven.deps.version>
     <maven-build-cache.version>1.0.1</maven-build-cache.version>
     <maven-artifact-transfer.version>0.13.1</maven-artifact-transfer.version>
-    <maven.resolver.version>1.9.15</maven.resolver.version>
+    <maven.resolver.version>1.9.16</maven.resolver.version>
     <maven.version>3.9.0</maven.version>
     <mongodb.version>3.12.11</mongodb.version>
     <netty.version>4.1.97.Final</netty.version>
@@ -169,7 +169,7 @@
     <maven.compiler.plugin.version>3.11.0</maven.compiler.plugin.version>
     <maven.dependency.plugin.version>3.6.0</maven.dependency.plugin.version>
     <maven.deploy.plugin.version>3.1.1</maven.deploy.plugin.version>
-    <maven.enforcer.plugin.version>3.4.0</maven.enforcer.plugin.version>
+    <maven.enforcer.plugin.version>3.4.1</maven.enforcer.plugin.version>
     <maven.exec.plugin.version>3.1.0</maven.exec.plugin.version>
     <maven.gpg.plugin.version>3.1.0</maven.gpg.plugin.version>
     <maven.install.plugin.version>3.1.1</maven.install.plugin.version>
@@ -182,7 +182,7 @@
     <maven.release.plugin.version>3.0.1</maven.release.plugin.version>
     <maven.remote-resources-plugin.version>3.1.0</maven.remote-resources-plugin.version>
     <maven.resources.plugin.version>3.3.1</maven.resources.plugin.version>
-    <maven.shade.plugin.version>3.5.0</maven.shade.plugin.version>
+    <maven.shade.plugin.version>3.5.1</maven.shade.plugin.version>
     <maven.surefire.plugin.version>3.1.2</maven.surefire.plugin.version>
     <maven.source.plugin.version>3.3.0</maven.source.plugin.version>
     <maven.war.plugin.version>3.4.0</maven.war.plugin.version>
