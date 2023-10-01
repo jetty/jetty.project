@@ -25,13 +25,13 @@
     <!-- dependency versions -->
     <alpn.agent.version>2.0.10</alpn.agent.version>
     <ant.version>1.10.14</ant.version>
-    <apache.avro.version>1.11.2</apache.avro.version>
+    <apache.avro.version>1.11.3</apache.avro.version>
     <apache.httpclient.version>4.5.14</apache.httpclient.version>
     <apache.httpcore.version>4.4.16</apache.httpcore.version>
     <asciidoctorj-diagram.version>2.2.13</asciidoctorj-diagram.version>
     <asciidoctorj.version>2.5.6</asciidoctorj.version>
     <mina.core.version>2.2.3</mina.core.version>
-    <asm.version>9.5</asm.version>
+    <asm.version>9.6</asm.version>
     <awaitility.version>4.2.0</awaitility.version>
     <bndlib.version>6.3.1</bndlib.version>
     <build-support.version>1.5</build-support.version>
