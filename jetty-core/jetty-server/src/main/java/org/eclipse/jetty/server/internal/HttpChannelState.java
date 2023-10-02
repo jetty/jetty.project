@@ -616,12 +616,12 @@ public class HttpChannelState implements HttpChannel, Components
 
             try
             {
-                if (!Request.getPathInContext(_request).startsWith("/") &&
-                    !HttpMethod.PRI.is(request.getMethod()) &&
-                    !HttpMethod.CONNECT.is(request.getMethod()) &&
-                    !HttpMethod.OPTIONS.is(request.getMethod()))
+                String pathInContext = Request.getPathInContext(request);
+                if (pathInContext != null && !pathInContext.startsWith("/"))
                 {
-                    throw new BadMessageException("Bad URI path");
+                    String method = request.getMethod();
+                    if (!HttpMethod.PRI.is(method) && !HttpMethod.CONNECT.is(method) && !HttpMethod.OPTIONS.is(method))
+                        throw new BadMessageException("Bad URI path");
                 }
 
                 HttpURI uri = request.getHttpURI();
