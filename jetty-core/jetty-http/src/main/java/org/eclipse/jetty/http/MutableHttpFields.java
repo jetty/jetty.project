@@ -238,8 +238,9 @@ class MutableHttpFields implements HttpFields.Mutable
     public HttpField getField(HttpHeader header)
     {
         // default impl overridden for efficiency
-        for (HttpField f : _fields)
+        for (int i = 0; i < _size; i++)
         {
+            HttpField f = _fields[i];
             if (f != null && f.getHeader() == header)
                 return f;
         }
@@ -250,8 +251,9 @@ class MutableHttpFields implements HttpFields.Mutable
     public HttpField getField(String name)
     {
         // default impl overridden for efficiency
-        for (HttpField f : _fields)
+        for (int i = 0; i < _size; i++)
         {
+            HttpField f = _fields[i];
             if (f != null && f.is(name))
                 return f;
         }
