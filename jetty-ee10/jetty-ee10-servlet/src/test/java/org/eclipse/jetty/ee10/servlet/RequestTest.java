@@ -41,6 +41,7 @@ import static org.hamcrest.Matchers.containsString;
 import static org.hamcrest.Matchers.equalTo;
 import static org.hamcrest.Matchers.is;
 import static org.hamcrest.Matchers.not;
+import static org.hamcrest.Matchers.nullValue;
 import static org.hamcrest.Matchers.sameInstance;
 
 public class RequestTest
@@ -281,5 +282,32 @@ public class RequestTest
 
         assertThat(cookieHistory.get(0), sameInstance(cookieHistory.get(2)));
         assertThat(cookieHistory.get(2), not(sameInstance(cookieHistory.get(4))));
+    }
+
+    @Test
+    public void testGetCharacterEncoding() throws Exception
+    {
+        startServer(new HttpServlet()
+        {
+            @Override
+            protected void service(HttpServletRequest request, HttpServletResponse resp) throws IOException
+            {
+                // No character encoding specified
+                request.getReader();
+                // Try setting after read has been obtained
+                request.setCharacterEncoding("ISO-8859-2");
+                assertThat(request.getCharacterEncoding(), nullValue());
+            }
+        });
+
+        String rawResponse = _connector.getResponse(
+            """
+                GET /test HTTP/1.1\r
+                Host: host\r
+                Connection: close\r
+                \r
+                """);
+        HttpTester.Response response = HttpTester.parseResponse(rawResponse);
+        assertThat(response.getStatus(), is(HttpStatus.OK_200));
     }
 }

@@ -104,7 +104,7 @@ public class ServletApiRequest implements HttpServletRequest
     private final ServletChannel _servletChannel;
     private AsyncContextState _async;
     private Charset _charset;
-    private Charset _readerCharset;
+    private String _readerCharset;
     private int _inputState = ServletContextRequest.INPUT_NONE;
     private BufferedReader _reader;
     private String _contentType;
@@ -1027,18 +1027,15 @@ public class ServletApiRequest implements HttpServletRequest
         if (_inputState == ServletContextRequest.INPUT_READER)
             return _reader;
 
-        if (_charset == null)
-            _charset = Request.getCharset(getRequest());
-        if (_charset == null)
-            _charset = getRequest().getContext().getMimeTypes().getCharset(getServletRequestInfo().getServletContext().getServletContextHandler().getDefaultRequestCharacterEncoding());
-        if (_charset == null)
-            _charset = StandardCharsets.ISO_8859_1;
+        String encoding = getCharacterEncoding();
+        if (encoding == null)
+            encoding = StandardCharsets.ISO_8859_1.name();
 
-        if (_reader == null || !_charset.equals(_readerCharset))
+        if (_reader == null || !_charset.name().equals(_readerCharset))
         {
             ServletInputStream in = getInputStream();
-            _readerCharset = _charset;
-            _reader = new BufferedReader(new InputStreamReader(in, _charset))
+            _readerCharset = encoding;
+            _reader = new BufferedReader(_charset == null ? new InputStreamReader(in, encoding) :  new InputStreamReader(in, _charset))
             {
                 @Override
                 public void close() throws IOException
