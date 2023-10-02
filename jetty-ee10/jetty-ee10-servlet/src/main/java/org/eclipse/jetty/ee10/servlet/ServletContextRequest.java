@@ -85,7 +85,6 @@ public class ServletContextRequest extends ContextRequest implements ServletCont
         throw new IllegalStateException("could not find %s for %s".formatted(ServletContextRequest.class.getSimpleName(), request));
     }
 
-    private final List<ServletRequestAttributeListener> _requestAttributeListeners = new ArrayList<>();
     private final ServletApiRequest _servletApiRequest;
     private final ServletContextResponse _response;
     private final MatchedResource<ServletHandler.MappedServlet> _matchedResource;
@@ -93,6 +92,7 @@ public class ServletContextRequest extends ContextRequest implements ServletCont
     private final String _decodedPathInContext;
     private final ServletChannel _servletChannel;
     private final SessionManager _sessionManager;
+    private List<ServletRequestAttributeListener> _requestAttributeListeners;
     private Charset _queryEncoding;
     private HttpFields _trailers;
     private ManagedSession _managedSession;
@@ -339,20 +339,27 @@ public class ServletContextRequest extends ContextRequest implements ServletCont
     @Override
     public List<ServletRequestAttributeListener> getRequestAttributeListeners()
     {
+        if (_requestAttributeListeners == null)
+            _requestAttributeListeners = new ArrayList<>();
         return _requestAttributeListeners;
     }
 
-    public void addEventListener(final EventListener listener)
+    public void addEventListener(EventListener listener)
     {
-        if (listener instanceof ServletRequestAttributeListener)
-            _requestAttributeListeners.add((ServletRequestAttributeListener)listener);
+        if (listener instanceof ServletRequestAttributeListener attributeListener)
+        {
+            if (_requestAttributeListeners == null)
+                _requestAttributeListeners = new ArrayList<>();
+            _requestAttributeListeners.add(attributeListener);
+        }
         if (listener instanceof AsyncListener)
             throw new IllegalArgumentException(listener.getClass().toString());
     }
 
-    public void removeEventListener(final EventListener listener)
+    public void removeEventListener(EventListener listener)
     {
-        _requestAttributeListeners.remove(listener);
+        if (_requestAttributeListeners != null)
+            _requestAttributeListeners.remove(listener);
     }
 
     /**
