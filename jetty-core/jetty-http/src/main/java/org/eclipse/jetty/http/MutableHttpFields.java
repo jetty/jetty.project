@@ -192,6 +192,11 @@ class MutableHttpFields implements HttpFields.Mutable
     @Override
     public Mutable clear()
     {
+        if (_immutable)
+        {
+            _fields = new HttpField[_fields.length];
+            _immutable = false;
+        }
         _size = 0;
         return this;
     }
