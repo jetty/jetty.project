@@ -52,6 +52,7 @@ public abstract class IdleTimeout
     }
 
     /**
+     * Get the period of time, in milliseconds, that this object was idle.
      * @return the period of time, in milliseconds, that this object was idle
      */
     public long getIdleFor()

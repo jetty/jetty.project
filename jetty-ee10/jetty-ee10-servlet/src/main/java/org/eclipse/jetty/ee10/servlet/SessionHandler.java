@@ -46,6 +46,7 @@ import org.eclipse.jetty.server.Server;
 import org.eclipse.jetty.server.Session;
 import org.eclipse.jetty.session.AbstractSessionManager;
 import org.eclipse.jetty.session.ManagedSession;
+import org.eclipse.jetty.session.SessionConfig;
 import org.eclipse.jetty.util.Callback;
 
 public class SessionHandler extends AbstractSessionManager implements Handler.Singleton
@@ -137,7 +138,7 @@ public class SessionHandler extends AbstractSessionManager implements Handler.Si
                 case "httponly" -> setHttpOnly(Boolean.parseBoolean(value));
                 case "secure" -> setSecure(Boolean.parseBoolean(value));
                 case "path" -> setPath(value);
-                default -> setSessionAttribute(name, value);
+                default -> setSessionCookieAttribute(name, value);
             }
         }
 
@@ -154,7 +155,7 @@ public class SessionHandler extends AbstractSessionManager implements Handler.Si
                 case "httponly" -> String.valueOf(isHttpOnly());
                 case "secure" -> String.valueOf(isSecure());
                 case "path" -> getPath();
-                default -> getSessionAttribute(name);
+                default -> getSessionCookieAttribute(name);
             };
         }
 
@@ -174,7 +175,7 @@ public class SessionHandler extends AbstractSessionManager implements Handler.Si
             specials.put("httponly", getAttribute("httponly"));
             specials.put("secure", getAttribute("secure"));
             specials.put("path", getAttribute("path"));
-            specials.putAll(getSessionAttributes());
+            specials.putAll(getSessionCookieAttributes());
             return Collections.unmodifiableMap(specials);
         }
 
@@ -234,10 +235,6 @@ public class SessionHandler extends AbstractSessionManager implements Handler.Si
         public void setName(String name)
         {
             checkState();
-            if ("".equals(name))
-                throw new IllegalArgumentException("Blank cookie name");
-            if (name != null)
-                Syntax.requireValidRFC2616Token(name, "Bad Session cookie name");
             SessionHandler.this.setSessionCookie(name);
         }
 
@@ -450,6 +447,39 @@ public class SessionHandler extends AbstractSessionManager implements Handler.Si
      */
     protected void configureCookies()
     {
+        ServletContextHandler contextHandler = ServletContextHandler.getCurrentServletContextHandler();
+        if (contextHandler == null)
+            return;
+
+        //configure the name of the session cookie set by an init param
+        String tmp = contextHandler.getInitParameter(SessionConfig.__SessionCookieProperty);
+        if (tmp != null)
+            setSessionCookie(tmp);
+
+        //configure the name of the session id path param set by an init param
+        tmp = contextHandler.getInitParameter(SessionConfig.__SessionIdPathParameterNameProperty);
+        if (tmp != null)
+            setSessionIdPathParameterName(tmp);
+
+        //configure checkRemoteSessionEncoding set by an init param
+        tmp = contextHandler.getInitParameter(SessionConfig.__CheckRemoteSessionEncodingProperty);
+        if (tmp != null)
+            setCheckingRemoteSessionIdEncoding(Boolean.parseBoolean(tmp));
+
+        //configure the domain of the session cookie set by an init param
+        tmp = contextHandler.getInitParameter(SessionConfig.__SessionDomainProperty);
+        if (tmp != null)
+            setSessionDomain(tmp);
+
+        //configure the path of the session cookie set by an init param
+        tmp = contextHandler.getInitParameter(SessionConfig.__SessionPathProperty);
+        if (tmp != null)
+            setSessionPath(tmp);
+
+        //configure the max age of the session cookie set by an init param
+        tmp = contextHandler.getInitParameter(SessionConfig.__MaxAgeProperty);
+        if (tmp != null)
+            setMaxCookieAge(Integer.parseInt(tmp.trim()));
     }
 
     public Session.API newSessionAPIWrapper(ManagedSession session)
@@ -594,12 +624,12 @@ public class SessionHandler extends AbstractSessionManager implements Handler.Si
     {
         if (isUsingCookies())
         {
-            if (isUsingURLs())
+            if (isUsingUriParameters())
                 return Set.of(SessionTrackingMode.COOKIE, SessionTrackingMode.URL);
             return Set.of(SessionTrackingMode.COOKIE);
         }
 
-        if (isUsingURLs())
+        if (isUsingUriParameters())
             return Set.of(SessionTrackingMode.URL);
 
         return Collections.emptySet();
@@ -608,7 +638,7 @@ public class SessionHandler extends AbstractSessionManager implements Handler.Si
     @Override
     public HttpCookie.SameSite getSameSite()
     {
-        String sameSite = getSessionAttribute("SameSite");
+        String sameSite = getSessionCookieAttribute("SameSite");
         if (sameSite == null)
             return null;
         return SameSite.valueOf(sameSite.toUpperCase(Locale.ENGLISH));
@@ -623,7 +653,7 @@ public class SessionHandler extends AbstractSessionManager implements Handler.Si
     @Override
     public void setSameSite(HttpCookie.SameSite sameSite)
     {
-        setSessionAttribute("SameSite", sameSite.getAttributeValue());
+        setSessionCookieAttribute("SameSite", sameSite.getAttributeValue());
     }
     
     public void setSessionTrackingModes(Set<SessionTrackingMode> sessionTrackingModes)
@@ -635,7 +665,7 @@ public class SessionHandler extends AbstractSessionManager implements Handler.Si
             throw new IllegalArgumentException("sessionTrackingModes specifies a combination of SessionTrackingMode.SSL with a session tracking mode other than SessionTrackingMode.SSL");
         }
         setUsingCookies(sessionTrackingModes != null && sessionTrackingModes.contains(SessionTrackingMode.COOKIE));
-        setUsingURLs(sessionTrackingModes != null && sessionTrackingModes.contains(SessionTrackingMode.URL));
+        setUsingUriParameters(sessionTrackingModes != null && sessionTrackingModes.contains(SessionTrackingMode.URL));
     }
 
     @Override

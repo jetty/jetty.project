@@ -37,7 +37,7 @@ public class EarlyHintsProtocolHandler implements ProtocolHandler
     @Override
     public boolean accept(Request request, Response response)
     {
-        return response.getStatus() == HttpStatus.EARLY_HINT_103;
+        return response.getStatus() == HttpStatus.EARLY_HINTS_103;
     }
 
     @Override

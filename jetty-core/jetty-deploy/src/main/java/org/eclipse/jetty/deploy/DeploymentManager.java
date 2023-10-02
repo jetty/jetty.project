@@ -121,7 +121,7 @@ public class DeploymentManager extends ContainerLifeCycle
 
     private final AutoLock _lock = new AutoLock();
     private Throwable _onStartupErrors;
-    private final List<AppProvider> _providers = new ArrayList<AppProvider>();
+    private final List<AppProvider> _providers = new ArrayList<>();
     private final AppLifeCycle _lifecycle = new AppLifeCycle();
     private final Queue<AppEntry> _apps = new ConcurrentLinkedQueue<AppEntry>();
     private ContextHandlerCollection _contexts;
@@ -129,18 +129,15 @@ public class DeploymentManager extends ContainerLifeCycle
     private String _defaultLifeCycleGoal = AppLifeCycle.STARTED;
 
     /**
-     * Get the default {@link Environment} name for deployed applications.
-     * @return The name of environment known to the {@link AppProvider}s returned from
-     * {@link #getAppProviders()} that matches {@link Deployable#EE_ENVIRONMENT_NAME}.
-     * If multiple names match, then the maximal name, according to {@link Deployable#EE_ENVIRONMENT_COMPARATOR}
-     * is returned.
+     * Get the default {@link Environment} name for deployed applications, which is
+     * the maximal name when using the {@link Deployable#ENVIRONMENT_COMPARATOR}.
+     * @return The default {@link Environment} name or null.
      */
     public String getDefaultEnvironmentName()
     {
         return _providers.stream()
             .map(AppProvider::getEnvironmentName)
-            .filter(Deployable.EE_ENVIRONMENT_NAME)
-            .max(Deployable.EE_ENVIRONMENT_COMPARATOR)
+            .max(Deployable.ENVIRONMENT_COMPARATOR)
             .orElse(null);
     }
 

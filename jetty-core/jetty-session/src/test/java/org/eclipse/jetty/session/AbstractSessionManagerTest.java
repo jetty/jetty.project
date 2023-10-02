@@ -46,8 +46,8 @@ public class AbstractSessionManagerTest
         //check cookie with all default cookie config settings
         HttpCookie cookie = sessionManager.getSessionCookie(session, false);
         assertNotNull(cookie);
-        assertEquals(SessionManager.__DefaultSessionCookie, cookie.getName());
-        assertEquals(SessionManager.__DefaultSessionDomain, cookie.getDomain());
+        assertEquals(SessionConfig.__DefaultSessionCookie, cookie.getName());
+        assertEquals(SessionConfig.__DefaultSessionDomain, cookie.getDomain());
         assertEquals("/test", cookie.getPath());
         assertFalse(cookie.isSecure());
         assertFalse(cookie.isHttpOnly());
@@ -58,16 +58,16 @@ public class AbstractSessionManagerTest
         sessionManager.setSecureCookies(true);
         cookie = sessionManager.getSessionCookie(session, true);
         assertNotNull(cookie);
-        assertEquals(SessionManager.__DefaultSessionCookie, cookie.getName());
-        assertEquals(SessionManager.__DefaultSessionDomain, cookie.getDomain());
+        assertEquals(SessionConfig.__DefaultSessionCookie, cookie.getName());
+        assertEquals(SessionConfig.__DefaultSessionDomain, cookie.getDomain());
         assertEquals("/test", cookie.getPath());
         assertTrue(cookie.isHttpOnly());
         assertTrue(cookie.isSecure());
         
         //check cookie when cookie config is set
-        sessionManager.getCookieConfig().put(SessionManager.__SessionCookieProperty, "MYSESSIONID");
-        sessionManager.getCookieConfig().put(SessionManager.__SessionDomainProperty, "foo.bar");
-        sessionManager.getCookieConfig().put(SessionManager.__SessionPathProperty, "/special");
+        sessionManager.getCookieConfig().put(SessionConfig.__SessionCookieProperty, "MYSESSIONID");
+        sessionManager.getCookieConfig().put(SessionConfig.__SessionDomainProperty, "foo.bar");
+        sessionManager.getCookieConfig().put(SessionConfig.__SessionPathProperty, "/special");
         sessionManager.configureCookies();
         cookie = sessionManager.getSessionCookie(session, false);
         assertNotNull(cookie);
@@ -203,7 +203,7 @@ public class AbstractSessionManagerTest
      * Test that an immortal session is never scavenged, regardless of whether it
      * is evicted from the cache or not.
      * 
-     * @throws Exception
+     * @throws Exception if there is an unspecified problem
      */
     @Test
     public void testImmortalScavenge() throws Exception
@@ -256,7 +256,7 @@ public class AbstractSessionManagerTest
     /**
      * Test that a session that has a max valid time is always scavenged,
      * regardless of whether it is evicted from the cache or not.
-     * @throws Exception
+     * @throws Exception if there is an unspecified problem
      */
     @Test
     public void testNonImmortalScavenge() throws Exception

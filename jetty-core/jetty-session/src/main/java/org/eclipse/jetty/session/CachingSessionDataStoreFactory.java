@@ -27,6 +27,7 @@ public class CachingSessionDataStoreFactory extends AbstractSessionDataStoreFact
     protected SessionDataMapFactory _mapFactory;
 
     /**
+     * Get the SessionDataMapFactory.
      * @return the SessionDataMapFactory
      */
     public SessionDataMapFactory getMapFactory()
@@ -35,6 +36,7 @@ public class CachingSessionDataStoreFactory extends AbstractSessionDataStoreFact
     }
 
     /**
+     * Set the SessionDataMapFactory.
      * @param mapFactory the SessionDataMapFactory
      */
     public void setSessionDataMapFactory(SessionDataMapFactory mapFactory)

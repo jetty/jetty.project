@@ -79,7 +79,7 @@ $ java -jar $JETTY_HOME/start.jar --add-modules=server,http,logging-jetty
 
 The `$JETTY_BASE` directory structure is now:
 
-[source,subs=quotes]
+[source,subs="verbatim,quotes"]
 ----
 $JETTY_BASE
 ├── resources
@@ -259,7 +259,7 @@ The `--dry-run` option is quite flexible and below you can find a few examples o
 
 To display the `java` executable used to start Jetty:
 
-[source,subs=quotes]
+[source,subs="verbatim,quotes"]
 ----
 $ java -jar $JETTY_HOME/start.jar --dry-run=##java##
 ----
@@ -271,7 +271,7 @@ include::jetty[setupArgs="--add-modules=http",args="--dry-run=java"]
 
 To display the JVM options:
 
-[source,subs=quotes]
+[source,subs="verbatim,quotes"]
 ----
 $ java -jar $JETTY_HOME/start.jar --dry-run=##opts##
 ----
@@ -283,7 +283,7 @@ include::jetty[setupModules="src/main/asciidoc/operations-guide/start/jvm.mod",s
 
 To display the JVM class-path:
 
-[source,subs=quotes]
+[source,subs="verbatim,quotes"]
 ----
 $ java -jar $JETTY_HOME/start.jar --dry-run=##path##
 ----
@@ -295,7 +295,7 @@ include::jetty[setupModules="src/main/asciidoc/operations-guide/start/postgresql
 
 To display the JVM class-path and module-path, if you want to xref:og-start-start-jpms[start Jetty using JPMS] with the `--jpms` option:
 
-[source,subs=quotes]
+[source,subs="verbatim,quotes"]
 ----
 $ java -jar $JETTY_HOME/start.jar ##--jpms## --dry-run=##path##
 ----
@@ -307,7 +307,7 @@ include::jetty[setupModules="src/main/asciidoc/operations-guide/start/postgresql
 
 To display the JVM main class:
 
-[source,subs=quotes]
+[source,subs="verbatim,quotes"]
 ----
 $ java -jar $JETTY_HOME/start.jar --dry-run=##main##
 ----
@@ -319,7 +319,7 @@ include::jetty[setupArgs="--add-modules=http",args="--dry-run=main"]
 
 To display the JVM main class when xref:og-start-start-jpms[starting Jetty using JPMS]:
 
-[source,subs=quotes]
+[source,subs="verbatim,quotes"]
 ----
 $ java -jar $JETTY_HOME/start.jar --jpms --dry-run=##main##
 ----
@@ -334,7 +334,7 @@ The Jetty XML files compose together the Jetty components that are then configur
 
 To display the program arguments passed to the main class:
 
-[source,subs=quotes]
+[source,subs="verbatim,quotes"]
 ----
 $ java -jar $JETTY_HOME/start.jar --dry-run=##args##
 ----
@@ -348,7 +348,7 @@ Note how the program arguments are a list of properties in the form `<name>=<val
 
 The various parts of the full JVM command line can be combined to leverage the arguments file feature (that is, specify the JVM options in a file rather than on the command line) that is built-in in the `java` executable:
 
-[source,subs=quotes]
+[source,subs="verbatim,quotes"]
 ----
 $ java -jar $JETTY_HOME/start.jar --dry-run=##opts,path,main,args## > /tmp/jvm_cmd_line.txt
 $ /some/other/java @/tmp/jvm_cmd_line.txt
@@ -362,7 +362,7 @@ $ java $(java -jar $JETTY_HOME/start.jar --dry-run=opts,path,main,args)
 
 The output of different `--dry-run` executions can be creatively combined in a shell script:
 
-[source,subs=quotes]
+[source,subs="verbatim,quotes"]
 ----
 $ OPTS=$(java -jar start.jar --dry-run=##opts,path##)
 $ MAIN=$(java -jar start.jar --dry-run=##main##)

@@ -3,17 +3,19 @@
   <parent>
     <groupId>org.eclipse.jetty.documentation</groupId>
     <artifactId>documentation</artifactId>
-    <version>12.0.1-SNAPSHOT</version>
+    <version>12.0.2-SNAPSHOT</version>
   </parent>
 
   <modelVersion>4.0.0</modelVersion>
   <artifactId>jetty-documentation</artifactId>
   <name>Documentation :: Guides</name>
-  <packaging>jar</packaging>
+  <packaging>pom</packaging>
 
   <properties>
     <bundle-symbolic-name>${project.groupId}</bundle-symbolic-name>
-    <asciidoctor.skip>${skipTests}</asciidoctor.skip>
+    <jacoco.skip>true</jacoco.skip>
+    <javadoc.skip>true</javadoc.skip>
+    <sources.skip>true</sources.skip>
   </properties>
 
   <profiles>
@@ -87,13 +89,14 @@
     </resources>
     <plugins>
       <plugin>
+        <groupId>org.apache.maven.plugins</groupId>
         <artifactId>maven-enforcer-plugin</artifactId>
         <configuration>
           <fail>false</fail>
           <rules>
             <requireJavaVersion>
-              <version>[19,)</version>
-              <message>[ERROR] OLD JDK [${java.version}] in use. Jetty documentation ${project.version} MUST use JDK 19 or newer</message>
+              <version>[21,)</version>
+              <message>[ERROR] OLD JDK [${java.version}] in use. Jetty documentation ${project.version} MUST use JDK 21 or newer</message>
             </requireJavaVersion>
           </rules>
         </configuration>
@@ -137,7 +140,7 @@
           <attributes>
             <project-basedir>${project.basedir}</project-basedir>
             <project-version>${project.version}</project-version>
-            <maven-local-repo>${settings.localRepository}</maven-local-repo>
+            <maven-local-repo>${session.repositorySession.localRepository.basedir.absolutePath}</maven-local-repo>
             <version>${project.version}</version>
             <prog-guide>../programming-guide/index.html</prog-guide>
             <op-guide>../operations-guide/index.html</op-guide>
@@ -208,6 +211,44 @@
         </executions>
       </plugin>
       <plugin>
+        <groupId>org.apache.maven.plugins</groupId>
+        <artifactId>maven-dependency-plugin</artifactId>
+        <executions>
+          <execution>
+            <id>unpack-jetty-home</id>
+            <phase>generate-resources</phase>
+            <goals>
+              <goal>unpack</goal>
+            </goals>
+            <configuration>
+              <artifactItems>
+                <artifactItem>
+                  <groupId>org.eclipse.jetty</groupId>
+                  <artifactId>jetty-home</artifactId>
+                  <version>${project.version}</version>
+                  <type>zip</type>
+                </artifactItem>
+              </artifactItems>
+              <outputDirectory>${project.build.directory}/</outputDirectory>
+            </configuration>
+          </execution>
+          <execution>
+            <id>copy-javadoc-jar</id>
+            <phase>generate-resources</phase>
+            <goals>
+              <goal>copy-dependencies</goal>
+            </goals>
+            <configuration>
+              <includeGroupIds>org.eclipse.jetty</includeGroupIds>
+              <includeArtifactIds>javadoc</includeArtifactIds>
+              <classifier>javadoc</classifier>
+              <outputDirectory>${project.build.directory}/other-artifacts/</outputDirectory>
+            </configuration>
+          </execution>
+        </executions>
+      </plugin>
+      <plugin>
+        <groupId>org.apache.maven.plugins</groupId>
         <artifactId>maven-assembly-plugin</artifactId>
         <configuration>
           <descriptors>
@@ -221,6 +262,28 @@
             <goals>
               <goal>single</goal>
             </goals>
+          </execution>
+        </executions>
+      </plugin>
+      <plugin>
+        <groupId>org.codehaus.mojo</groupId>
+        <artifactId>build-helper-maven-plugin</artifactId>
+        <executions>
+          <execution>
+            <id>attach-javadoc</id>
+            <phase>package</phase>
+            <goals>
+              <goal>attach-artifact</goal>
+            </goals>
+            <configuration>
+              <artifacts>
+                <artifact>
+                  <file>${project.build.directory}/other-artifacts/javadoc-${project.version}-javadoc.jar</file>
+                  <type>jar</type>
+                  <classifier>javadoc</classifier>
+                </artifact>
+              </artifacts>
+            </configuration>
           </execution>
         </executions>
       </plugin>
@@ -318,12 +381,35 @@
       <artifactId>jetty-websocket-jetty-client</artifactId>
     </dependency>
     <dependency>
-      <groupId>org.eclipse.jetty.ee10.websocket</groupId>
-      <artifactId>jetty-ee10-websocket-jetty-server</artifactId>
+      <groupId>org.eclipse.jetty.websocket</groupId>
+      <artifactId>jetty-websocket-jetty-server</artifactId>
     </dependency>
     <dependency>
       <groupId>org.eclipse.jetty.ee10.websocket</groupId>
       <artifactId>jetty-ee10-websocket-jakarta-server</artifactId>
+    </dependency>
+    <dependency>
+      <groupId>org.eclipse.jetty</groupId>
+      <artifactId>jetty-home</artifactId>
+      <version>${project.version}</version>
+      <type>zip</type>
+      <optional>true</optional>
+    </dependency>
+    <dependency>
+      <groupId>org.eclipse.jetty</groupId>
+      <artifactId>javadoc</artifactId>
+      <version>${project.version}</version>
+      <classifier>javadoc</classifier>
+      <type>jar</type>
+      <optional>true</optional>
+    </dependency>
+    <dependency>
+      <groupId>org.eclipse.jetty</groupId>
+      <artifactId>jetty-infinispan-embedded-query</artifactId>
+    </dependency>
+    <dependency>
+      <groupId>org.eclipse.jetty.gcloud</groupId>
+      <artifactId>jetty-gcloud-session-manager</artifactId>
     </dependency>
   </dependencies>
 </project>

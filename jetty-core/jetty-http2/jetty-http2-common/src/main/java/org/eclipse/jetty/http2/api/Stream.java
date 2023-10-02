@@ -41,16 +41,19 @@ import org.eclipse.jetty.util.Promise;
 public interface Stream
 {
     /**
+     * Get the stream unique id.
      * @return the stream unique id
      */
     public int getId();
 
     /**
+     * Get the {@link org.eclipse.jetty.http2.api.Stream.Listener} associated with this stream.
      * @return the {@link org.eclipse.jetty.http2.api.Stream.Listener} associated with this stream
      */
     public Listener getListener();
 
     /**
+     * Get the session this stream is associated to.
      * @return the session this stream is associated to
      */
     public Session getSession();
@@ -110,9 +113,10 @@ public interface Stream
      *   stream</li>
      * </ul>
      * <p>When the returned {@link Stream.Data} object is not {@code null},
-     * applications <em>must</em> call, either immediately or later (possibly
-     * asynchronously) {@link Stream.Data#release()} to notify the
-     * implementation that the bytes have been processed.</p>
+     * the flow control window has been enlarged by the DATA frame length;
+     * applications <em>must</em> call, either immediately or later (even
+     * asynchronously from a different thread) {@link Stream.Data#release()}
+     * to notify the implementation that the bytes have been processed.</p>
      * <p>{@link Stream.Data} objects may be stored away for later, asynchronous,
      * processing (for example, to process them only when all of them have been
      * received).</p>

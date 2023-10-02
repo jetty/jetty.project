@@ -51,6 +51,7 @@ import org.eclipse.jetty.http.MimeTypes;
 import org.eclipse.jetty.http.PreEncodedHttpField;
 import org.eclipse.jetty.http.content.HttpContent;
 import org.eclipse.jetty.io.RuntimeIOException;
+import org.eclipse.jetty.io.WriteThroughWriter;
 import org.eclipse.jetty.server.Context;
 import org.eclipse.jetty.server.HttpCookieUtils;
 import org.eclipse.jetty.server.HttpCookieUtils.SetCookieHttpField;
@@ -96,10 +97,10 @@ public class Response implements HttpServletResponse
     public static final String SET_INCLUDE_HEADER_PREFIX = "org.eclipse.jetty.server.include.";
 
     private final HttpChannel _channel;
-    private final HttpFields.Mutable _fields = HttpFields.build();
     private final AtomicBiInteger _errorSentAndIncludes = new AtomicBiInteger(); // hi is errorSent flag, lo is include count
     private final HttpOutput _out;
     private int _status = HttpStatus.OK_200;
+    private HttpFields.Mutable _fields;
     private String _reason;
     private Locale _locale;
     private MimeTypes.Type _mimeType;
@@ -158,10 +159,15 @@ public class Response implements HttpServletResponse
         return _channel;
     }
 
+    protected void onResponse(HttpFields.Mutable headers)
+    {
+        _fields = headers;
+    }
+
     protected void recycle()
     {
         // _channel need not be recycled
-        _fields.clear();
+        _fields = null;
         _errorSentAndIncludes.set(0);
         _out.recycle();
         _status = HttpStatus.OK_200;
@@ -353,7 +359,7 @@ public class Response implements HttpServletResponse
             return null;
 
         // should not encode if cookies in evidence
-        if ((sessionManager.isUsingCookies() && request.isRequestedSessionIdFromCookie()) || !sessionManager.isUsingURLs())
+        if ((sessionManager.isUsingCookies() && request.isRequestedSessionIdFromCookie()) || !sessionManager.isUsingUriParameters())
         {
             int prefix = url.indexOf(sessionURLPrefix);
             if (prefix != -1)
@@ -464,7 +470,7 @@ public class Response implements HttpServletResponse
         {
             case -1 -> _channel.abort(new IOException(message));
             case HttpStatus.PROCESSING_102 -> sendProcessing();
-            case HttpStatus.EARLY_HINT_103 -> sendEarlyHint();
+            case HttpStatus.EARLY_HINTS_103 -> sendEarlyHint();
             default -> _channel.getState().sendError(code, message);
         }
     }
@@ -862,15 +868,15 @@ public class Response implements HttpServletResponse
             String encoding = getCharacterEncoding(true);
             Locale locale = getLocale();
             if (_writer != null && _writer.isFor(locale, encoding))
+            {
                 _writer.reopen();
+            }
             else
             {
-                if (MimeTypes.ISO_8859_1.equalsIgnoreCase(encoding))
-                    _writer = new ResponseWriter(new Iso88591HttpWriter(_out), locale, encoding);
-                else if (MimeTypes.UTF8.equalsIgnoreCase(encoding))
-                    _writer = new ResponseWriter(new Utf8HttpWriter(_out), locale, encoding);
-                else
-                    _writer = new ResponseWriter(new EncodingHttpWriter(_out, encoding), locale, encoding);
+                // We must use an specialized Writer here as we rely on the non cached characters
+                // in the writer implementation for flush and completion operations.
+                WriteThroughWriter outputStreamWriter = WriteThroughWriter.newWriter(_out, encoding);
+                _writer = new ResponseWriter(outputStreamWriter, locale, encoding);
             }
 
             // Set the output type at the end, because setCharacterEncoding() checks for it.
@@ -960,9 +966,8 @@ public class Response implements HttpServletResponse
     public void completeOutput(Callback callback)
     {
         if (_outputType == OutputType.WRITER)
-            _writer.complete(callback);
-        else
-            _out.complete(callback);
+            _writer.markAsClosed();
+        _out.complete(callback);
     }
 
     public long getLongContentLength()
@@ -1272,25 +1277,7 @@ public class Response implements HttpServletResponse
 
     protected MetaData.Response newResponseMetaData()
     {
-        return new MetaData.Response(getStatus(), getReason(), _channel.getRequest().getHttpVersion(), _fields, getLongContentLength(), getTrailers());
-    }
-
-    /**
-     * Get the MetaData.Response committed for this response.
-     * This may differ from the meta data in this response for
-     * exceptional responses (eg 4xx and 5xx responses generated
-     * by the container) and the committedMetaData should be used
-     * for logging purposes.
-     *
-     * @return The committed MetaData or a {@link #newResponseMetaData()}
-     * if not yet committed.
-     */
-    public MetaData.Response getCommittedMetaData()
-    {
-        MetaData.Response meta = _channel.getCommittedMetaData();
-        if (meta == null)
-            return newResponseMetaData();
-        return meta;
+        return new MetaData.Response(getStatus(), getReason(), _channel.getRequest().getHttpVersion(), _channel.getCoreResponse().getHeaders(), getLongContentLength(), getTrailers());
     }
 
     @Override
@@ -1415,7 +1402,7 @@ public class Response implements HttpServletResponse
 
     public static void putHeaders(HttpServletResponse response, HttpContent content, long contentLength, boolean etag)
     {
-        long lml = content.getLastModified().getLongValue();
+        long lml = content.getResource().lastModified().toEpochMilli();
         if (lml >= 0)
             response.setDateHeader(HttpHeader.LAST_MODIFIED.asString(), lml);
 

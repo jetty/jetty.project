@@ -34,10 +34,12 @@ import java.util.Collections;
 import java.util.HashMap;
 import java.util.Iterator;
 import java.util.List;
+import java.util.Objects;
 import java.util.Optional;
 import java.util.ServiceConfigurationError;
 import java.util.ServiceLoader;
 import java.util.function.Function;
+import java.util.function.Predicate;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 import java.util.stream.Stream;
@@ -723,6 +725,78 @@ public class TypeUtil
     public static <T> Stream<ServiceLoader.Provider<T>> serviceProviderStream(ServiceLoader<T> serviceLoader)
     {
         return StreamSupport.stream(new ServiceLoaderSpliterator<>(serviceLoader), false);
+    }
+
+    /**
+     * A Predicate that is always true, with optimized {@code and}/{@code or}/{@code not} methods.
+     * @param <T> The type of the predicate test
+     * @return true
+     */
+    public static <T> Predicate<T> truePredicate()
+    {
+        return new Predicate<T>()
+        {
+            @Override
+            public boolean test(T t)
+            {
+                return true;
+            }
+
+            @Override
+            @SuppressWarnings("unchecked")
+            public Predicate<T> and(Predicate<? super T> other)
+            {
+                return (Predicate<T>)Objects.requireNonNull(other);
+            }
+
+            @Override
+            public Predicate<T> negate()
+            {
+                return falsePredicate();
+            }
+
+            @Override
+            public Predicate<T> or(Predicate<? super T> other)
+            {
+                return this;
+            }
+        };
+    }
+
+    /**
+     * A {@link Predicate} that is always false, with optimized {@code and}/{@code or}/{@code not} methods.
+     * @param <T> The type of the predicate test
+     * @return true
+     */
+    public static <T> Predicate<T> falsePredicate()
+    {
+        return new Predicate<T>()
+        {
+            @Override
+            public boolean test(T t)
+            {
+                return false;
+            }
+
+            @Override
+            public Predicate<T> and(Predicate<? super T> other)
+            {
+                return this;
+            }
+
+            @Override
+            public Predicate<T> negate()
+            {
+                return truePredicate();
+            }
+
+            @Override
+            @SuppressWarnings("unchecked")
+            public Predicate<T> or(Predicate<? super T> other)
+            {
+                return (Predicate<T>)Objects.requireNonNull(other);
+            }
+        };
     }
 
     private TypeUtil()

@@ -19,8 +19,10 @@ import java.io.StringWriter;
 import java.nio.ByteBuffer;
 import java.time.Instant;
 import java.util.Arrays;
+import java.util.List;
 import java.util.Set;
 import java.util.concurrent.ConcurrentHashMap;
+import java.util.concurrent.CopyOnWriteArrayList;
 import java.util.concurrent.atomic.AtomicLong;
 import java.util.function.Consumer;
 import java.util.function.IntUnaryOperator;
@@ -627,6 +629,8 @@ public class ArrayByteBufferPool implements ByteBufferPool, Dumpable
             private final int size;
             private final Instant acquireInstant;
             private final Throwable acquireStack;
+            private final List<Throwable> retainStacks = new CopyOnWriteArrayList<>();
+            private final List<Throwable> releaseStacks = new CopyOnWriteArrayList<>();
 
             private Buffer(RetainableByteBuffer wrapped, int size)
             {
@@ -652,6 +656,13 @@ public class ArrayByteBufferPool implements ByteBufferPool, Dumpable
             }
 
             @Override
+            public void retain()
+            {
+                super.retain();
+                retainStacks.add(new Throwable());
+            }
+
+            @Override
             public boolean release()
             {
                 boolean released = super.release();
@@ -661,20 +672,26 @@ public class ArrayByteBufferPool implements ByteBufferPool, Dumpable
                     if (LOG.isDebugEnabled())
                         LOG.debug("released {}", this);
                 }
+                releaseStacks.add(new Throwable());
                 return released;
             }
 
             public String dump()
             {
                 StringWriter w = new StringWriter();
-                getAcquireStack().printStackTrace(new PrintWriter(w));
-                return "%s of %d bytes on %s at %s".formatted(getClass().getSimpleName(), getSize(), getAcquireInstant(), w);
-            }
-
-            @Override
-            public String toString()
-            {
-                return "%s@%x[%s]".formatted(getClass().getSimpleName(), hashCode(), super.toString());
+                PrintWriter pw = new PrintWriter(w);
+                getAcquireStack().printStackTrace(pw);
+                pw.println("\n" + retainStacks.size() + " retain(s)");
+                for (Throwable retainStack : retainStacks)
+                {
+                    retainStack.printStackTrace(pw);
+                }
+                pw.println("\n" + releaseStacks.size() + " release(s)");
+                for (Throwable releaseStack : releaseStacks)
+                {
+                    releaseStack.printStackTrace(pw);
+                }
+                return "%s@%x of %d bytes on %s wrapping %s acquired at %s".formatted(getClass().getSimpleName(), hashCode(), getSize(), getAcquireInstant(), getWrapped(), w);
             }
         }
     }

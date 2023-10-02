@@ -37,6 +37,7 @@ import org.eclipse.jetty.http3.frames.SettingsFrame;
 public interface Session
 {
     /**
+     * Get the local socket address this session is bound to.
      * @return the local socket address this session is bound to
      */
     public default SocketAddress getLocalSocketAddress()
@@ -45,6 +46,7 @@ public interface Session
     }
 
     /**
+     * Get the remote socket address this session is connected to.
      * @return the remote socket address this session is connected to
      */
     public default SocketAddress getRemoteSocketAddress()

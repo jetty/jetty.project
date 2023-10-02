@@ -173,8 +173,8 @@ public class JettyForkedChild extends ContainerLifeCycle
      * present.
      * 
      * @return file contents as properties
-     * @throws FileNotFoundException
-     * @throws IOException
+     * @throws FileNotFoundException if there is a file not found problem
+     * @throws IOException if there is an IO problem
      */
     private Properties loadWebAppProps() throws FileNotFoundException, IOException
     {

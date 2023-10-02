@@ -81,7 +81,7 @@ public class ServletMultiPartFormData
                 return CompletableFuture.failedFuture(new IllegalStateException("No multipart configuration element"));
 
             // Are we the right content type to produce our own parts?
-            if (contentType == null || !MimeTypes.Type.MULTIPART_FORM_DATA.is(HttpField.valueParameters(contentType, null)))
+            if (contentType == null || !MimeTypes.Type.MULTIPART_FORM_DATA.is(HttpField.getValueParameters(contentType, null)))
                 return CompletableFuture.failedFuture(new IllegalStateException("Not multipart Content-Type"));
 
             // Do we have a boundary?

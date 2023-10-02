@@ -37,7 +37,6 @@ import org.eclipse.jetty.http.HttpURI;
 import org.eclipse.jetty.http.HttpVersion;
 import org.eclipse.jetty.http.MetaData;
 import org.eclipse.jetty.http.MultiPartFormData.Parts;
-import org.eclipse.jetty.http.PreEncodedHttpField;
 import org.eclipse.jetty.http.Trailers;
 import org.eclipse.jetty.http.UriCompliance;
 import org.eclipse.jetty.io.ByteBufferPool;
@@ -98,8 +97,8 @@ public class HttpChannelState implements HttpChannel, Components
 
     private static final Logger LOG = LoggerFactory.getLogger(HttpChannelState.class);
     private static final Throwable DO_NOT_SEND = new Throwable("No Send");
-    private static final HttpField SERVER_VERSION = new PreEncodedHttpField(HttpHeader.SERVER, HttpConfiguration.SERVER_VERSION);
-    private static final HttpField POWERED_BY = new PreEncodedHttpField(HttpHeader.X_POWERED_BY, HttpConfiguration.SERVER_VERSION);
+    private static final HttpField SERVER_VERSION = new ResponseHttpFields.PersistentPreEncodedHttpField(HttpHeader.SERVER, HttpConfiguration.SERVER_VERSION);
+    private static final HttpField POWERED_BY = new ResponseHttpFields.PersistentPreEncodedHttpField(HttpHeader.X_POWERED_BY, HttpConfiguration.SERVER_VERSION);
 
     private final AutoLock _lock = new AutoLock();
     private final HandlerInvoker _handlerInvoker = new HandlerInvoker();
@@ -151,7 +150,7 @@ public class HttpChannelState implements HttpChannel, Components
             _request._httpChannelState = null;
 
             // Recycle.
-            _responseHeaders.reset();
+            _responseHeaders.recycle();
             _handling = null;
             _handled = false;
             _streamSendState = StreamSendState.SENDING;
@@ -274,8 +273,8 @@ public class HttpChannelState implements HttpChannel, Components
             _request = new ChannelRequest(this, request);
             _response = new ChannelResponse(_request);
 
-            HttpFields.Mutable responseHeaders = _response.getHeaders();
             HttpConfiguration httpConfiguration = getHttpConfiguration();
+            HttpFields.Mutable responseHeaders = _response.getHeaders();
             if (httpConfiguration.getSendServerVersion())
                 responseHeaders.add(SERVER_VERSION);
             if (httpConfiguration.getSendXPoweredBy())
@@ -348,7 +347,6 @@ public class HttpChannelState implements HttpChannel, Components
     @Override
     public Runnable onIdleTimeout(TimeoutException t)
     {
-        Predicate<TimeoutException> onIdleTimeout;
         try (AutoLock ignored = _lock.lock())
         {
             if (LOG.isDebugEnabled())
@@ -382,29 +380,30 @@ public class HttpChannelState implements HttpChannel, Components
                 if (invokeOnContentAvailable != null || invokeWriteFailure != null)
                     return _serializedInvoker.offer(invokeOnContentAvailable, invokeWriteFailure);
 
-                // Otherwise We ask any idle timeout listeners if we should call onFailure or not
-                onIdleTimeout = _onIdleTimeout;
-            }
-            else
-            {
-                onIdleTimeout = null;
-            }
-        }
-
-        // Ask any listener what to do
-        if (onIdleTimeout != null)
-        {
-            Runnable onIdle = () ->
-            {
-                if (onIdleTimeout.test(t))
+                // otherwise, if there is an idle timeout listener, we ask if if we should call onFailure or not
+                Predicate<TimeoutException> onIdleTimeout = _onIdleTimeout;
+                if (onIdleTimeout != null)
                 {
-                    // If the idle timeout listener(s) return true, then we call onFailure and any task it returns.
-                    Runnable task = onFailure(t);
-                    if (task != null)
-                        task.run();
+                    return _serializedInvoker.offer(() ->
+                    {
+                        if (onIdleTimeout.test(t))
+                        {
+                            // If the idle timeout listener(s) return true, then we call onFailure and run any task it returns.
+                            Runnable task = onFailure(t);
+                            if (task != null)
+                                task.run();
+                        }
+                    });
                 }
-            };
-            return _serializedInvoker.offer(onIdle);
+
+                // otherwise, if there is no failure listener, then we can fail the callback directly without a double lock
+                ChannelRequest request = _request;
+                if (_onFailure == null && request != null)
+                {
+                    _failure = Content.Chunk.from(t, true);
+                    return () -> request._callback.failed(t);
+                }
+            }
         }
 
         // otherwise treat as a failure
@@ -478,7 +477,7 @@ public class HttpChannelState implements HttpChannel, Components
                     }
 
                     // If the application has not been otherwise informed of the failure
-                    if (invokeOnContentAvailable == null && invokeWriteFailure == null)
+                    if (invokeOnContentAvailable == null && invokeWriteFailure == null && onFailure == null)
                     {
                         if (LOG.isDebugEnabled())
                             LOG.debug("failing callback in {}", this, x);
@@ -618,12 +617,12 @@ public class HttpChannelState implements HttpChannel, Components
 
             try
             {
-                if (!HttpMethod.PRI.is(request.getMethod()) &&
-                    !HttpMethod.CONNECT.is(request.getMethod()) &&
-                    !Request.getPathInContext(_request).startsWith("/") &&
-                    !HttpMethod.OPTIONS.is(request.getMethod()))
+                String pathInContext = Request.getPathInContext(request);
+                if (pathInContext != null && !pathInContext.startsWith("/"))
                 {
-                    throw new BadMessageException("Bad URI path");
+                    String method = request.getMethod();
+                    if (!HttpMethod.PRI.is(method) && !HttpMethod.CONNECT.is(method) && !HttpMethod.OPTIONS.is(method))
+                        throw new BadMessageException("Bad URI path");
                 }
 
                 HttpURI uri = request.getHttpURI();
@@ -1416,6 +1415,8 @@ public class HttpChannelState implements HttpChannel, Components
 
         MetaData.Response lockedPrepareResponse(HttpChannelState httpChannel, boolean last)
         {
+            assert _request._lock.isHeldByCurrentThread();
+
             // Assume 200 unless told otherwise.
             if (_status == 0)
                 _status = HttpStatus.OK_200;
@@ -1549,12 +1550,12 @@ public class HttpChannelState implements HttpChannel, Components
             ErrorResponse errorResponse = null;
             try (AutoLock ignored = _request._lock.lock())
             {
+                if (lockedCompleteCallback())
+                    return;
                 httpChannelState = _request._httpChannelState;
                 stream = httpChannelState._stream;
                 request = _request;
 
-                if (lockedCompleteCallback())
-                    return;
                 assert httpChannelState._callbackFailure == null;
 
                 httpChannelState._callbackFailure = failure;
@@ -1652,6 +1653,7 @@ public class HttpChannelState implements HttpChannel, Components
         @Override
         MetaData.Response lockedPrepareResponse(HttpChannelState httpChannelState, boolean last)
         {
+            assert httpChannelState._request._lock.isHeldByCurrentThread();
             MetaData.Response httpFields = super.lockedPrepareResponse(httpChannelState, last);
             httpChannelState._response._status = _status;
             HttpFields.Mutable originalResponseFields = httpChannelState._responseHeaders.getMutableHttpFields();

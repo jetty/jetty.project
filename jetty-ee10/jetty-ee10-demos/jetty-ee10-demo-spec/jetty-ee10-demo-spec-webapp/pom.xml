@@ -4,7 +4,7 @@
   <parent>
     <groupId>org.eclipse.jetty.ee10.demos</groupId>
     <artifactId>jetty-ee10-demos</artifactId>
-    <version>12.0.1-SNAPSHOT</version>
+    <version>12.0.2-SNAPSHOT</version>
     <relativePath>../../pom.xml</relativePath>
   </parent>
   <name>EE10 :: Demo :: Servlet Spec :: WebApp</name>
@@ -121,6 +121,46 @@
                   <outputDirectory>${project.build.directory}/lib/jndi</outputDirectory>
                 </artifactItem>
               </artifactItems>
+            </configuration>
+          </execution>
+          <execution>
+            <id>unpack-jetty-ee10-demo-container-initializer</id>
+            <phase>process-test-resources</phase>
+            <goals>
+              <goal>copy</goal>
+            </goals>
+            <configuration>
+              <artifactItems>
+                <artifactItem>
+                  <groupId>org.eclipse.jetty.ee10.demos</groupId>
+                  <artifactId>jetty-ee10-demo-container-initializer</artifactId>
+                  <type>jar</type>
+                  <overWrite>false</overWrite>
+                  <outputDirectory>${project.build.directory}/</outputDirectory>
+                  <destFileName>jetty-ee10-demo-container-initializer.jar</destFileName>
+                </artifactItem>
+              </artifactItems>
+              <overWriteSnapshots>true</overWriteSnapshots>
+            </configuration>
+          </execution>
+          <execution>
+            <id>unpack-jetty-ee10-demo-web-fragment</id>
+            <phase>process-test-resources</phase>
+            <goals>
+              <goal>copy</goal>
+            </goals>
+            <configuration>
+              <artifactItems>
+                <artifactItem>
+                  <groupId>org.eclipse.jetty.ee10.demos</groupId>
+                  <artifactId>jetty-ee10-demo-web-fragment</artifactId>
+                  <type>jar</type>
+                  <overWrite>false</overWrite>
+                  <outputDirectory>${project.build.directory}/</outputDirectory>
+                  <destFileName>jetty-ee10-demo-web-fragment.jar</destFileName>
+                </artifactItem>
+              </artifactItems>
+              <overWriteSnapshots>true</overWriteSnapshots>
             </configuration>
           </execution>
         </executions>

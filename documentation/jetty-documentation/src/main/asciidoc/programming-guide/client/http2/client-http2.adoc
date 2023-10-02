@@ -27,7 +27,7 @@ See also the correspondent xref:pg-server-http2[HTTP/2 server library].
 
 The Maven artifact coordinates for the HTTP/2 client library are the following:
 
-[source,xml,subs=normal]
+[source,xml,subs="verbatim,attributes"]
 ----
 <dependency>
   <groupId>org.eclipse.jetty.http2</groupId>
@@ -109,7 +109,7 @@ In order to send an HTTP request to the server, the client must send a `HEADERS`
 `HEADERS` frames carry the request method, the request URI and the request headers.
 Sending the `HEADERS` frame opens the `Stream`:
 
-[source,java,indent=0,subs=normal]
+[source,java,indent=0,subs="verbatim,attributes"]
 ----
 include::../../{doc_code}/org/eclipse/jetty/docs/programming/client/http2/HTTP2ClientDocs.java[tags=newStream]
 ----

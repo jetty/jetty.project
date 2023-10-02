@@ -422,6 +422,9 @@ public class GZIPContentDecoder implements Destroyable
      */
     public RetainableByteBuffer acquire(int capacity)
     {
+        // Zero-capacity buffers aren't released, they MUST NOT come from the pool.
+        if (capacity == 0)
+            return RetainableByteBuffer.EMPTY;
         return _pool.acquire(capacity, false);
     }
 }

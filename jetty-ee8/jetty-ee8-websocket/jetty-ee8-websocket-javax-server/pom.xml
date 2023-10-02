@@ -3,7 +3,7 @@
   <parent>
     <groupId>org.eclipse.jetty.ee8.websocket</groupId>
     <artifactId>jetty-ee8-websocket</artifactId>
-    <version>12.0.1-SNAPSHOT</version>
+    <version>12.0.2-SNAPSHOT</version>
   </parent>
 
   <modelVersion>4.0.0</modelVersion>
@@ -49,7 +49,7 @@
         <artifactId>maven-surefire-plugin</artifactId>
         <configuration>
           <argLine>
-            @{argLine} ${jetty.surefire.argLine} --add-reads org.eclipse.jetty.websocket.javax.server=org.eclipse.jetty.security --add-reads org.eclipse.jetty.websocket.javax.common=org.eclipse.jetty.websocket.javax.server
+            @{argLine} ${jetty.surefire.argLine}
           </argLine>
         </configuration>
       </plugin>

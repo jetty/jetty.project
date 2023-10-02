@@ -84,9 +84,9 @@ public class InformationalResponseTest extends AbstractTest
             protected void service(HttpServletRequest request, HttpServletResponse response) throws IOException
             {
                 response.addHeader("Hint", "one");
-                response.sendError(HttpStatus.EARLY_HINT_103);
+                response.sendError(HttpStatus.EARLY_HINTS_103);
                 response.addHeader("Hint", "two");
-                response.sendError(HttpStatus.EARLY_HINT_103);
+                response.sendError(HttpStatus.EARLY_HINTS_103);
                 response.addHeader("Hint", "three");
                 response.setStatus(200);
                 response.getOutputStream().print("OK");

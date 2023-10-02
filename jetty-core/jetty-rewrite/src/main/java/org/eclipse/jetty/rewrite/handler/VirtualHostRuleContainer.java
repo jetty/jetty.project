@@ -47,6 +47,7 @@ public class VirtualHostRuleContainer extends RuleContainer
     }
 
     /**
+     * Add the virtual host to add to the existing list of virtual hosts.
      * @param virtualHost the virtual host to add to the existing list of virtual hosts
      */
     public void addVirtualHost(String virtualHost)

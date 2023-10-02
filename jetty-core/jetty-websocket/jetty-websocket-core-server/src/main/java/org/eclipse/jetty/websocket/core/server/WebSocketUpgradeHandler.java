@@ -15,7 +15,6 @@ package org.eclipse.jetty.websocket.core.server;
 
 import org.eclipse.jetty.http.HttpStatus;
 import org.eclipse.jetty.http.pathmap.PathSpec;
-import org.eclipse.jetty.http.pathmap.ServletPathSpec;
 import org.eclipse.jetty.server.Handler;
 import org.eclipse.jetty.server.Request;
 import org.eclipse.jetty.server.Response;
@@ -49,7 +48,7 @@ public class WebSocketUpgradeHandler extends Handler.Wrapper
 
     public void addMapping(String pathSpec, WebSocketNegotiator negotiator)
     {
-        mappings.addMapping(new ServletPathSpec(pathSpec), negotiator);
+        mappings.addMapping(WebSocketMappings.parsePathSpec(pathSpec), negotiator);
     }
 
     public void addMapping(PathSpec pathSpec, WebSocketNegotiator negotiator)
@@ -65,29 +64,15 @@ public class WebSocketUpgradeHandler extends Handler.Wrapper
     @Override
     public boolean handle(Request request, Response response, Callback callback) throws Exception
     {
-        String target = Request.getPathInContext(request);
-        WebSocketNegotiator negotiator = mappings.getMatchedNegotiator(target, pathSpec ->
-        {
-            // Store PathSpec resource mapping as request attribute,
-            // for WebSocketCreator implementors to use later if they wish.
-            request.setAttribute(PathSpec.class.getName(), pathSpec);
-        });
-
-        if (negotiator == null)
-        {
-            return super.handle(request, response, callback);
-        }
-
         try
         {
-            if (mappings.upgrade(negotiator, request, response, callback, customizer))
+            if (mappings.upgrade(request, response, callback, customizer))
                 return true;
-
             return super.handle(request, response, callback);
         }
-        catch (Throwable t)
+        catch (Throwable x)
         {
-            callback.failed(t);
+            Response.writeError(request, response, callback, x);
             return true;
         }
     }

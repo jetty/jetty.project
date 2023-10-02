@@ -66,6 +66,7 @@ public class HeaderRegexRule extends RegexRule
     }
 
     /**
+     * Set true to add the response header, false to put the response header..
      * @param add true to add the response header, false to put the response header.
      */
     public void setAdd(boolean add)
@@ -79,7 +80,7 @@ public class HeaderRegexRule extends RegexRule
         return new Handler(input)
         {
             @Override
-            public boolean handle(Response response, Callback callback) throws Exception
+            protected boolean handle(Response response, Callback callback) throws Exception
             {
                 if (isAdd())
                     response.getHeaders().add(getHeaderName(), matcher.replaceAll(getHeaderValue()));

@@ -13,6 +13,7 @@
 
 package org.eclipse.jetty.server;
 
+import java.io.OutputStream;
 import java.nio.ByteBuffer;
 import java.util.ListIterator;
 import java.util.concurrent.CompletableFuture;
@@ -30,6 +31,7 @@ import org.eclipse.jetty.http.HttpMethod;
 import org.eclipse.jetty.http.HttpStatus;
 import org.eclipse.jetty.http.HttpVersion;
 import org.eclipse.jetty.http.Trailers;
+import org.eclipse.jetty.io.ByteBufferPool;
 import org.eclipse.jetty.io.Content;
 import org.eclipse.jetty.io.QuietException;
 import org.eclipse.jetty.server.handler.ErrorHandler;
@@ -55,6 +57,7 @@ public interface Response extends Content.Sink
     int getStatus();
 
     /**
+     * Set the response HTTP status code.
      * @param code the response HTTP status code
      */
     void setStatus(int code);
@@ -129,7 +132,7 @@ public interface Response extends Content.Sink
      * <p>Writes an {@link HttpStatus#isInterim(int) HTTP interim response},
      * with the given HTTP status code and HTTP headers.</p>
      * <p>It is possible to write more than one interim response, for example
-     * in case of {@link HttpStatus#EARLY_HINT_103}.</p>
+     * in case of {@link HttpStatus#EARLY_HINTS_103}.</p>
      * <p>The returned {@link CompletableFuture} is notified of the result
      * of this write, whether it succeeded or failed.</p>
      *
@@ -214,7 +217,7 @@ public interface Response extends Content.Sink
      * @see Wrapper
      */
     @SuppressWarnings("unchecked")
-    static <T extends Response> T as(Response response, Class<T> type)
+    static <T> T as(Response response, Class<T> type)
     {
         while (response != null)
         {
@@ -527,6 +530,40 @@ public interface Response extends Content.Sink
         if (originalResponse instanceof HttpChannelState.ChannelResponse channelResponse)
             return channelResponse.getContentBytesWritten();
         return -1;
+    }
+
+    /**
+     * <p>Wraps a {@link Response} as a {@link OutputStream} that performs buffering. The necessary
+     * {@link ByteBufferPool} is taken from the request's connector while the size and direction of the buffer
+     * is read from the request's {@link HttpConfiguration}.</p>
+     * <p>This is equivalent to:</p>
+     * <p>{@code Content.Sink.asOutputStream(Response.asBufferedSink(request, response))}</p>
+     * @param request the request from which to get the buffering sink's settings
+     * @param response the response to wrap
+     * @return a buffering {@link OutputStream}
+     */
+    static OutputStream asBufferedOutputStream(Request request, Response response)
+    {
+        return Content.Sink.asOutputStream(Response.asBufferedSink(request, response));
+    }
+
+    /**
+     * Wraps a {@link Response} as a {@link Content.Sink} that performs buffering. The necessary
+     * {@link ByteBufferPool} is taken from the request's connector while the size, direction of the buffer
+     * and commit size are read from the request's {@link HttpConfiguration}.
+     * @param request the request from which to get the buffering sink's settings
+     * @param response the response to wrap
+     * @return a buffering {@link Content.Sink}
+     */
+    static Content.Sink asBufferedSink(Request request, Response response)
+    {
+        ConnectionMetaData connectionMetaData = request.getConnectionMetaData();
+        ByteBufferPool bufferPool = connectionMetaData.getConnector().getByteBufferPool();
+        HttpConfiguration httpConfiguration = connectionMetaData.getHttpConfiguration();
+        int bufferSize = httpConfiguration.getOutputBufferSize();
+        boolean useOutputDirectByteBuffers = httpConfiguration.isUseOutputDirectByteBuffers();
+        int outputAggregationSize = httpConfiguration.getOutputAggregationSize();
+        return Content.Sink.asBuffered(response, bufferPool, useOutputDirectByteBuffers, outputAggregationSize, bufferSize);
     }
 
     class Wrapper implements Response

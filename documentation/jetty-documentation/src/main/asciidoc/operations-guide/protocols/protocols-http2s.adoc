@@ -42,7 +42,7 @@ Starting Jetty yields:
 $ java -jar $JETTY_HOME/start.jar
 ----
 
-[source,subs=quotes,options=nowrap]
+[source,options=nowrap,subs="verbatim,quotes"]
 ----
 include::jetty[setupArgs="--add-modules=ssl,http2,https,test-keystore",highlight="(\{.*:8443})"]
 ----

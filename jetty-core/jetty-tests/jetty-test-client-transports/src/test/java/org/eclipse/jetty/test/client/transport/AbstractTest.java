@@ -14,14 +14,21 @@
 package org.eclipse.jetty.test.client.transport;
 
 import java.io.InputStream;
+import java.lang.management.ManagementFactory;
+import java.lang.reflect.AnnotatedElement;
 import java.net.URI;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.security.KeyStore;
 import java.util.Collection;
+import java.util.Comparator;
 import java.util.EnumSet;
 import java.util.List;
+import java.util.concurrent.TimeUnit;
+import java.util.stream.Stream;
+import javax.management.MBeanServer;
 
+import org.awaitility.Awaitility;
 import org.eclipse.jetty.alpn.server.ALPNServerConnectionFactory;
 import org.eclipse.jetty.client.HttpClient;
 import org.eclipse.jetty.client.HttpClientTransport;
@@ -58,11 +65,16 @@ import org.eclipse.jetty.util.SocketAddressResolver;
 import org.eclipse.jetty.util.component.LifeCycle;
 import org.eclipse.jetty.util.ssl.SslContextFactory;
 import org.eclipse.jetty.util.thread.QueuedThreadPool;
+import org.hamcrest.Matchers;
 import org.junit.jupiter.api.AfterEach;
+import org.junit.jupiter.api.Tag;
+import org.junit.jupiter.api.Tags;
+import org.junit.jupiter.api.TestInfo;
 import org.junit.jupiter.api.extension.BeforeTestExecutionCallback;
 import org.junit.jupiter.api.extension.RegisterExtension;
 
 import static org.junit.jupiter.api.Assertions.assertTrue;
+import static org.junit.jupiter.api.Assertions.fail;
 
 public class AbstractTest
 {
@@ -75,6 +87,8 @@ public class AbstractTest
     protected AbstractConnector connector;
     protected HttpClient client;
     protected Path unixDomainPath;
+    protected ArrayByteBufferPool.Tracking serverBufferPool;
+    protected ArrayByteBufferPool.Tracking clientBufferPool;
 
     public static Collection<Transport> transports()
     {
@@ -107,10 +121,123 @@ public class AbstractTest
     }
 
     @AfterEach
-    public void dispose()
+    public void dispose(TestInfo testInfo) throws Exception
     {
-        LifeCycle.stop(client);
-        LifeCycle.stop(server);
+        try
+        {
+            if (serverBufferPool != null && !isLeakTrackingDisabled(testInfo, "server"))
+                assertNoLeaks(serverBufferPool, testInfo, "server-", "\n---\nServer Leaks: " + serverBufferPool.dumpLeaks() + "---\n");
+            if (clientBufferPool != null && !isLeakTrackingDisabled(testInfo, "client"))
+                assertNoLeaks(clientBufferPool, testInfo, "client-", "\n---\nClient Leaks: " + clientBufferPool.dumpLeaks() + "---\n");
+        }
+        finally
+        {
+            LifeCycle.stop(client);
+            LifeCycle.stop(server);
+        }
+    }
+
+    private void assertNoLeaks(ArrayByteBufferPool.Tracking bufferPool, TestInfo testInfo, String prefix, String msg) throws Exception
+    {
+        try
+        {
+            Awaitility.await().atMost(3, TimeUnit.SECONDS).until(() -> bufferPool.getLeaks().size(), Matchers.is(0));
+        }
+        catch (Exception e)
+        {
+            String className = testInfo.getTestClass().orElseThrow().getName();
+            dumpHeap(prefix + className);
+            fail(e.getMessage() + msg);
+        }
+    }
+
+    private static boolean isLeakTrackingDisabled(TestInfo testInfo, String tagSubValue)
+    {
+        String disableLeakTrackingTagValue = "DisableLeakTracking";
+        String[] split = testInfo.getDisplayName().replace(",", " ").split(" ");
+        String transports = split.length > 1 ? split[1] : "";
+        String[] transportNames = transports.split("\\|");
+
+        boolean disabled = isAnnotatedWithTagValue(testInfo.getTestMethod().orElseThrow(), disableLeakTrackingTagValue) ||
+            isAnnotatedWithTagValue(testInfo.getTestClass().orElseThrow(), disableLeakTrackingTagValue);
+        if (disabled)
+        {
+            System.err.println("Not tracking " + tagSubValue + " leaks");
+            return true;
+        }
+
+        for (String transportName : transportNames)
+        {
+            disabled = isAnnotatedWithTagValue(testInfo.getTestMethod().orElseThrow(), disableLeakTrackingTagValue + ":" + transportName) ||
+                isAnnotatedWithTagValue(testInfo.getTestClass().orElseThrow(), disableLeakTrackingTagValue + ":" + transportName);
+            if (disabled)
+            {
+                System.err.println("Not tracking " + tagSubValue + " leaks for transport " + transportName);
+                return true;
+            }
+        }
+
+        disabled = isAnnotatedWithTagValue(testInfo.getTestMethod().orElseThrow(), disableLeakTrackingTagValue + ":" + tagSubValue) ||
+            isAnnotatedWithTagValue(testInfo.getTestClass().orElseThrow(), disableLeakTrackingTagValue + ":" + tagSubValue);
+        if (disabled)
+        {
+            System.err.println("Not tracking " + tagSubValue + " leaks");
+            return true;
+        }
+
+        for (String transportName : transportNames)
+        {
+            disabled = isAnnotatedWithTagValue(testInfo.getTestMethod().orElseThrow(), disableLeakTrackingTagValue + ":" + tagSubValue + ":" + transportName) ||
+                isAnnotatedWithTagValue(testInfo.getTestClass().orElseThrow(), disableLeakTrackingTagValue + ":" + tagSubValue + ":" + transportName);
+            if (disabled)
+            {
+                System.err.println("Not tracking " + tagSubValue + " leaks for transport " + transportName);
+                return true;
+            }
+        }
+
+        return disabled;
+    }
+
+    private static boolean isAnnotatedWithTagValue(AnnotatedElement annotatedElement, String tagValue)
+    {
+        Tags tags = annotatedElement.getAnnotation(Tags.class);
+        if (tags != null)
+        {
+            for (Tag tag : tags.value())
+            {
+                if (tag != null && tagValue.equalsIgnoreCase(tag.value()))
+                    return true;
+            }
+            return false;
+        }
+        else
+        {
+            Tag tag = annotatedElement.getAnnotation(Tag.class);
+            return tag != null && tagValue.equalsIgnoreCase(tag.value());
+        }
+    }
+
+    private static void dumpHeap(String testMethodName) throws Exception
+    {
+        Path targetDir = Path.of("target/leaks");
+        if (Files.exists(targetDir))
+        {
+            try (Stream<Path> stream = Files.walk(targetDir))
+            {
+                stream.sorted(Comparator.reverseOrder())
+                    .map(Path::toFile)
+                    .forEach(java.io.File::delete);
+            }
+        }
+        Files.createDirectories(targetDir);
+        String dumpName = targetDir.resolve(testMethodName + ".hprof").toString();
+
+        MBeanServer server = ManagementFactory.getPlatformMBeanServer();
+        Class<?> mxBeanClass = Class.forName("com.sun.management.HotSpotDiagnosticMXBean");
+        Object mxBean = ManagementFactory.newPlatformMXBeanProxy(
+            server, "com.sun.management:type=HotSpotDiagnostic", mxBeanClass);
+        mxBeanClass.getMethod("dumpHeap", String.class, boolean.class).invoke(mxBean, dumpName, true);
     }
 
     protected void start(Transport transport, Handler handler) throws Exception
@@ -146,8 +273,8 @@ public class AbstractTest
     {
         QueuedThreadPool serverThreads = new QueuedThreadPool();
         serverThreads.setName("server");
-        // TODO: restore leak tracking.
-        return new Server(serverThreads, null, new ArrayByteBufferPool());
+        serverBufferPool = new ArrayByteBufferPool.Tracking();
+        return new Server(serverThreads, null, serverBufferPool);
     }
 
     protected SslContextFactory.Server newSslContextFactoryServer() throws Exception
@@ -176,6 +303,8 @@ public class AbstractTest
         QueuedThreadPool clientThreads = new QueuedThreadPool();
         clientThreads.setName("client");
         client = new HttpClient(newHttpClientTransport(transport));
+        clientBufferPool = new ArrayByteBufferPool.Tracking();
+        client.setByteBufferPool(clientBufferPool);
         client.setExecutor(clientThreads);
         client.setSocketAddressResolver(new SocketAddressResolver.Sync());
         client.start();

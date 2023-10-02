@@ -2,7 +2,7 @@
   <parent>
     <groupId>org.eclipse.jetty</groupId>
     <artifactId>jetty-core</artifactId>
-    <version>12.0.1-SNAPSHOT</version>
+    <version>12.0.2-SNAPSHOT</version>
   </parent>
 
   <modelVersion>4.0.0</modelVersion>
@@ -23,7 +23,7 @@
           <argLine>
             @{argLine} ${jetty.surefire.argLine}
             --add-modules org.eclipse.jetty.jmx
-            --add-reads org.eclipse.jetty.deploy=org.eclipse.jetty.http,jetty.servlet.api
+            --add-reads org.eclipse.jetty.deploy=org.eclipse.jetty.http
             --add-reads org.eclipse.jetty.deploy=org.eclipse.jetty.logging
           </argLine>
         </configuration>

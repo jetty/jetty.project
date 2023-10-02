@@ -36,7 +36,7 @@ public class WebSocketCoreClient extends ContainerLifeCycle
     public static final String WEBSOCKET_CORECLIENT_ATTRIBUTE = WebSocketCoreClient.class.getName();
 
     private static final Logger LOG = LoggerFactory.getLogger(WebSocketCoreClient.class);
-    private final HttpClient httpClient;
+    private final HttpClient client;
     private final WebSocketComponents components;
     private ClassLoader classLoader;
 
@@ -52,16 +52,25 @@ public class WebSocketCoreClient extends ContainerLifeCycle
 
     public WebSocketCoreClient(HttpClient httpClient, WebSocketComponents webSocketComponents)
     {
-        if (httpClient == null)
-            httpClient = Objects.requireNonNull(HttpClientProvider.get());
-        if (httpClient.getExecutor() == null)
-            httpClient.setExecutor(webSocketComponents.getExecutor());
-
-        this.classLoader = Thread.currentThread().getContextClassLoader();
-        this.httpClient = httpClient;
-        this.components = webSocketComponents;
-        addBean(httpClient);
-        addBean(webSocketComponents);
+        client = Objects.requireNonNullElse(httpClient, HttpClientProvider.get());
+        addBean(client);
+        if (webSocketComponents == null)
+        {
+            if (client.isStarted())
+                webSocketComponents = new WebSocketComponents(null, null, client.getByteBufferPool(), null, null, client.getExecutor());
+            else
+                webSocketComponents = new WebSocketComponents();
+        }
+        components = webSocketComponents;
+        addBean(components);
+        if (!client.isStarted())
+        {
+            if (client.getByteBufferPool() == null)
+                client.setByteBufferPool(components.getByteBufferPool());
+            if (client.getExecutor() == null)
+                client.setExecutor(components.getExecutor());
+        }
+        classLoader = Thread.currentThread().getContextClassLoader();
     }
 
     public ClassLoader getClassLoader()
@@ -112,7 +121,7 @@ public class WebSocketCoreClient extends ContainerLifeCycle
 
     public HttpClient getHttpClient()
     {
-        return httpClient;
+        return client;
     }
 
     public DecoratedObjectFactory getObjectFactory()

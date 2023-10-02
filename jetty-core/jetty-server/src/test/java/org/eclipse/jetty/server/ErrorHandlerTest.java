@@ -617,10 +617,17 @@ public class ErrorHandlerTest
                 "\r\n");
 
         HttpTester.Response response = HttpTester.parseResponse(rawResponse);
-
         assertThat("Response status code", response.getStatus(), is(444));
 
         assertContent(response);
+
+        rawResponse = connector.getResponse(
+            "GET /badmessage/444 HTTP/1.1\r\n" +
+                "Host: Localhost\r\n" +
+                "Accept: application/json\r\n" +
+                "\r\n");
+        response = HttpTester.parseResponse(rawResponse);
+        assertThat("Response status code", response.getStatus(), is(444));
     }
 
     @ParameterizedTest

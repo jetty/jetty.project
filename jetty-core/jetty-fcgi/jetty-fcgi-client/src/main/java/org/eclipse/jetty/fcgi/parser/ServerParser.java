@@ -29,6 +29,12 @@ public class ServerParser extends Parser
         contentParsers.put(FCGI.FrameType.STDIN, new StreamContentParser(headerParser, FCGI.StreamType.STD_IN, listener));
     }
 
+    public long getBeginNanoTime()
+    {
+        BeginRequestContentParser contentParser = (BeginRequestContentParser)contentParsers.get(FCGI.FrameType.BEGIN_REQUEST);
+        return contentParser.getBeginNanoTime();
+    }
+
     @Override
     protected ContentParser findContentParser(FCGI.FrameType frameType)
     {

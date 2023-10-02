@@ -20,8 +20,12 @@ import java.util.stream.Stream;
 
 import org.eclipse.jetty.http.HttpField;
 import org.eclipse.jetty.http.HttpFields;
+import org.eclipse.jetty.http.HttpHeader;
+import org.eclipse.jetty.http.PreEncodedHttpField;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+
+import static org.eclipse.jetty.server.internal.ResponseHttpFields.Persistent.isPersistent;
 
 public class ResponseHttpFields implements HttpFields.Mutable
 {
@@ -47,7 +51,7 @@ public class ResponseHttpFields implements HttpFields.Mutable
         return _committed.get();
     }
 
-    public void reset()
+    public void recycle()
     {
         _committed.set(false);
         _fields.clear();
@@ -72,14 +76,6 @@ public class ResponseHttpFields implements HttpFields.Mutable
     }
 
     @Override
-    public HttpFields takeAsImmutable()
-    {
-        if (_committed.get())
-            return this;
-        return _fields.asImmutable();
-    }
-
-    @Override
     public Mutable add(HttpField field)
     {
         if (field != null && !_committed.get())
@@ -96,7 +92,18 @@ public class ResponseHttpFields implements HttpFields.Mutable
     @Override
     public Mutable clear()
     {
-        return _committed.get() ? this : _fields.clear();
+        if (!_committed.get())
+        {
+            for (ListIterator<HttpField> iterator = _fields.listIterator(_fields.size()); iterator.hasPrevious();)
+            {
+                HttpField field = iterator.previous();
+                if (field instanceof Persistent persistent)
+                    iterator.set(persistent.getOriginal());
+                else
+                    iterator.remove();
+            }
+        }
+        return this;
     }
 
     @Override
@@ -112,6 +119,8 @@ public class ResponseHttpFields implements HttpFields.Mutable
         Iterator<HttpField> i = _fields.iterator();
         return new Iterator<>()
         {
+            private HttpField _current;
+
             @Override
             public boolean hasNext()
             {
@@ -121,7 +130,8 @@ public class ResponseHttpFields implements HttpFields.Mutable
             @Override
             public HttpField next()
             {
-                return i.next();
+                _current = i.next();
+                return _current;
             }
 
             @Override
@@ -129,17 +139,24 @@ public class ResponseHttpFields implements HttpFields.Mutable
             {
                 if (_committed.get())
                     throw new UnsupportedOperationException("Read Only");
+                if (isPersistent(_current))
+                    throw new UnsupportedOperationException("Persistent field");
+                if (_current == null)
+                    throw new IllegalStateException("No current field");
                 i.remove();
+                _current = null;
             }
         };
     }
 
     @Override
-    public ListIterator<HttpField> listIterator()
+    public ListIterator<HttpField> listIterator(int index)
     {
-        ListIterator<HttpField> i = _fields.listIterator();
+        ListIterator<HttpField> i = _fields.listIterator(index);
         return new ListIterator<>()
         {
+            private HttpField _current;
+
             @Override
             public boolean hasNext()
             {
@@ -149,7 +166,8 @@ public class ResponseHttpFields implements HttpFields.Mutable
             @Override
             public HttpField next()
             {
-                return i.next();
+                _current = i.next();
+                return _current;
             }
 
             @Override
@@ -161,7 +179,8 @@ public class ResponseHttpFields implements HttpFields.Mutable
             @Override
             public HttpField previous()
             {
-                return i.previous();
+                _current = i.previous();
+                return _current;
             }
 
             @Override
@@ -181,7 +200,12 @@ public class ResponseHttpFields implements HttpFields.Mutable
             {
                 if (_committed.get())
                     throw new UnsupportedOperationException("Read Only");
+                if (isPersistent(_current))
+                    throw new UnsupportedOperationException("Persistent field");
+                if (_current == null)
+                    throw new IllegalStateException("No current field");
                 i.remove();
+                _current = null;
             }
 
             @Override
@@ -189,10 +213,24 @@ public class ResponseHttpFields implements HttpFields.Mutable
             {
                 if (_committed.get())
                     throw new UnsupportedOperationException("Read Only");
+                if (_current instanceof Persistent persistent)
+                {
+                    // cannot change the field name
+                    if (field == null || !field.isSameName(_current))
+                        throw new UnsupportedOperationException("Persistent field");
+
+                    // new field must also be persistent and clear back to the previous value
+                    field = (field instanceof PreEncodedHttpField)
+                        ? new PersistentPreEncodedHttpField(_current.getHeader(), field.getValue(), persistent.getOriginal())
+                        : new PersistentHttpField(field, persistent.getOriginal());
+                }
+                if (_current == null)
+                    throw new IllegalStateException("No current field");
                 if (field == null)
                     i.remove();
                 else
                     i.set(field);
+                _current = field;
             }
 
             @Override
@@ -210,5 +248,87 @@ public class ResponseHttpFields implements HttpFields.Mutable
     public String toString()
     {
         return _fields.toString();
+    }
+
+    /**
+     * A marker interface for {@link HttpField}s that cannot be {@link #remove(HttpHeader) removed} or {@link #clear() cleared}
+     * from a {@link ResponseHttpFields} instance. Persistent fields are not immutable in the {@link ResponseHttpFields}
+     * and may be replaced with a different value. i.e. A Persistent field cannot be removed but can be overwritten.
+     */
+    public interface Persistent
+    {
+        static boolean isPersistent(HttpField field)
+        {
+            return field instanceof Persistent;
+        }
+
+        /**
+         * @return the original persistent field set before any mutations
+         */
+        HttpField getOriginal();
+    }
+
+    /**
+     * A {@link HttpField} that is a {@link Persistent}.
+     */
+    public static class PersistentHttpField extends HttpField implements Persistent
+    {
+        private final HttpField _field;
+        private final HttpField _original;
+
+        public PersistentHttpField(HttpField field)
+        {
+            this(field, null);
+        }
+
+        PersistentHttpField(HttpField field, HttpField original)
+        {
+            super(field.getHeader(), field.getName(), field.getValue());
+            _field = field;
+            _original = original == null ? this : original;
+        }
+
+        @Override
+        public int getIntValue()
+        {
+            return _field.getIntValue();
+        }
+
+        @Override
+        public long getLongValue()
+        {
+            return _field.getIntValue();
+        }
+
+        @Override
+        public HttpField getOriginal()
+        {
+            return _original;
+        }
+    }
+
+    /**
+     * A {@link PreEncodedHttpField} that is a {@link Persistent}.
+     */
+    public static class PersistentPreEncodedHttpField extends PreEncodedHttpField implements Persistent
+    {
+        private final HttpField _original;
+
+        public PersistentPreEncodedHttpField(HttpHeader header, String value)
+        {
+            this(header, value, null);
+        }
+
+        PersistentPreEncodedHttpField(HttpHeader header, String value, HttpField original)
+        {
+            super(header, value);
+            _original = original == null ? this : original;
+        }
+
+        @Override
+        public HttpField getOriginal()
+        {
+            return _original;
+        }
     }
 }

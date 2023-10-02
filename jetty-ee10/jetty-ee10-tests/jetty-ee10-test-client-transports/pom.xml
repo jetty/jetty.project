@@ -3,7 +3,7 @@
   <parent>
     <groupId>org.eclipse.jetty.ee10</groupId>
     <artifactId>jetty-ee10-tests</artifactId>
-    <version>12.0.1-SNAPSHOT</version>
+    <version>12.0.2-SNAPSHOT</version>
   </parent>
 
   <modelVersion>4.0.0</modelVersion>
@@ -42,7 +42,7 @@
     <profile>
       <id>enable-preview</id>
       <activation>
-        <jdk>[19,)</jdk>
+        <jdk>[19,21)</jdk>
       </activation>
       <build>
         <plugins>

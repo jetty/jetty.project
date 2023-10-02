@@ -26,8 +26,6 @@ import java.util.concurrent.atomic.AtomicLong;
 import java.util.stream.IntStream;
 
 import org.eclipse.jetty.client.BytesRequestContent;
-import org.eclipse.jetty.client.Connection;
-import org.eclipse.jetty.client.LeakTrackingConnectionPool;
 import org.eclipse.jetty.client.Request;
 import org.eclipse.jetty.client.Response;
 import org.eclipse.jetty.client.Result;
@@ -40,7 +38,6 @@ import org.eclipse.jetty.server.Handler;
 import org.eclipse.jetty.server.NetworkConnector;
 import org.eclipse.jetty.util.BufferUtil;
 import org.eclipse.jetty.util.Callback;
-import org.eclipse.jetty.util.LeakDetector;
 import org.eclipse.jetty.util.NanoTime;
 import org.eclipse.jetty.util.thread.Scheduler;
 import org.hamcrest.Matchers;
@@ -57,7 +54,6 @@ public class HttpClientLoadTest extends AbstractTest
 {
     private final Logger logger = LoggerFactory.getLogger(HttpClientLoadTest.class);
     private final AtomicLong requestCount = new AtomicLong();
-    private final AtomicLong connectionLeaks = new AtomicLong();
 
     @ParameterizedTest
     @MethodSource("transports")
@@ -67,27 +63,11 @@ public class HttpClientLoadTest extends AbstractTest
         start(transport, new LoadHandler());
         setStreamIdleTimeout(120000);
         client.stop();
-        // TODO: restore leak tracking.
-        client.setByteBufferPool(new ArrayByteBufferPool());
+        ArrayByteBufferPool.Tracking byteBufferPool = new ArrayByteBufferPool.Tracking();
+        client.setByteBufferPool(byteBufferPool);
         client.setMaxConnectionsPerDestination(32768);
         client.setMaxRequestsQueuedPerDestination(1024 * 1024);
         client.setIdleTimeout(120000);
-        switch (transport)
-        {
-            case HTTP, HTTPS, FCGI, UNIX_DOMAIN ->
-            {
-                // Track connection leaking only for non-multiplexed transports.
-                client.getTransport().setConnectionPoolFactory(destination -> new LeakTrackingConnectionPool(destination, client.getMaxConnectionsPerDestination())
-                {
-                    @Override
-                    protected void leaked(LeakDetector<Connection>.LeakInfo leakInfo)
-                    {
-                        super.leaked(leakInfo);
-                        connectionLeaks.incrementAndGet();
-                    }
-                });
-            }
-        }
         client.start();
 
         // At least 25k requests to warmup properly (use -XX:+PrintCompilation to verify JIT activity)
@@ -105,7 +85,7 @@ public class HttpClientLoadTest extends AbstractTest
             run(transport, iterations);
         }
 
-        assertLeaks();
+        assertThat("Leaks: " + byteBufferPool.dumpLeaks(), byteBufferPool.getLeaks().size(), Matchers.is(0));
     }
 
     @ParameterizedTest
@@ -117,8 +97,8 @@ public class HttpClientLoadTest extends AbstractTest
 
         start(transport, new LoadHandler());
         client.stop();
-        // TODO: restore leak tracking.
-        client.setByteBufferPool(new ArrayByteBufferPool());
+        ArrayByteBufferPool.Tracking byteBufferPool = new ArrayByteBufferPool.Tracking();
+        client.setByteBufferPool(byteBufferPool);
         client.setMaxConnectionsPerDestination(32768);
         client.setMaxRequestsQueuedPerDestination(1024 * 1024);
         client.start();
@@ -129,14 +109,7 @@ public class HttpClientLoadTest extends AbstractTest
                 IntStream.range(0, runs).forEach(j ->
                         run(transport, iterations)));
 
-        assertLeaks();
-    }
-
-    private void assertLeaks()
-    {
-        System.gc();
-
-        assertThat("Connection Leaks", connectionLeaks.get(), Matchers.is(0L));
+        assertThat("Connection Leaks: " + byteBufferPool.getLeaks(), byteBufferPool.getLeaks().size(), Matchers.is(0));
     }
 
     private void run(Transport transport, int iterations)

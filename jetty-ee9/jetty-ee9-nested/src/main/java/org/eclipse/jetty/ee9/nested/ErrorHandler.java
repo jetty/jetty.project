@@ -432,7 +432,7 @@ public class ErrorHandler extends AbstractHandler
         writer.write("</td></tr>\n");
     }
 
-    private void writeErrorPlain(HttpServletRequest request, PrintWriter writer, int code, String message)
+    protected void writeErrorPlain(HttpServletRequest request, PrintWriter writer, int code, String message)
     {
         writer.write("HTTP ERROR ");
         writer.write(Integer.toString(code));
@@ -458,7 +458,7 @@ public class ErrorHandler extends AbstractHandler
         }
     }
 
-    private void writeErrorJson(HttpServletRequest request, PrintWriter writer, int code, String message)
+    protected void writeErrorJson(HttpServletRequest request, PrintWriter writer, int code, String message)
     {
         Throwable cause = (Throwable)request.getAttribute(Dispatcher.ERROR_EXCEPTION);
         Object servlet = request.getAttribute(Dispatcher.ERROR_SERVLET_NAME);
@@ -578,6 +578,7 @@ public class ErrorHandler extends AbstractHandler
     }
 
     /**
+     * Set if true, the error message appears in page title.
      * @param showMessageInTitle if true, the error message appears in page title
      */
     public void setShowMessageInTitle(boolean showMessageInTitle)

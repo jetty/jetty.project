@@ -25,4 +25,4 @@ This section lists the listeners available in the Jetty components, but the even
 
 * xref:pg-arch-bean-listener[]
 * xref:pg-arch-io-connection-listener[]
-* xref:pg-server-http-channel-events[]
+* xref:pg-server-http-request-processing-events[]

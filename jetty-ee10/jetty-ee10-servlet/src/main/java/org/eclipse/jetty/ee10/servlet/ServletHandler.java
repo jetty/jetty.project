@@ -619,6 +619,7 @@ public class ServletHandler extends Handler.Wrapper
     }
 
     /**
+     * Set the allowDuplicateMappings to set.
      * @param allowDuplicateMappings the allowDuplicateMappings to set
      */
     public void setAllowDuplicateMappings(boolean allowDuplicateMappings)

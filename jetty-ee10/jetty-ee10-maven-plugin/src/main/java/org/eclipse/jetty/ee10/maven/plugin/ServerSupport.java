@@ -226,7 +226,7 @@ public class ServerSupport
      * @param server the Server instance to configure
      * @param files the xml configs to apply
      * @return the Server after application of configs
-     * @throws Exception
+     * @throws Exception if there is an unspecified problem
      */
     public static Server applyXmlConfigurations(Server server, List<File> files)
         throws Exception

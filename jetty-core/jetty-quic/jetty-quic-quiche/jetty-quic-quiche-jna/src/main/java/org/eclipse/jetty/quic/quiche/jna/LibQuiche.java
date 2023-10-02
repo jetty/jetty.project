@@ -31,7 +31,7 @@ public interface LibQuiche extends Library
 {
     // This interface is a translation of the quiche.h header of a specific version.
     // It needs to be reviewed each time the native lib version changes.
-    String EXPECTED_QUICHE_VERSION = "0.16.0";
+    String EXPECTED_QUICHE_VERSION = "0.18.0";
 
     // The charset used to convert java.lang.String to char * and vice versa.
     Charset CHARSET = StandardCharsets.UTF_8;
@@ -373,6 +373,17 @@ public interface LibQuiche extends Library
     // field of `quiche_stats`).
     int quiche_conn_path_stats(quiche_conn conn, size_t idx, quiche_path_stats out);
 
+    // Returns whether or not this is a server-side connection.
+    boolean quiche_conn_is_server(quiche_conn conn);
+
+    // Schedule an ack-eliciting packet on the active path.
+    ssize_t quiche_conn_send_ack_eliciting(quiche_conn conn);
+
+    // Schedule an ack-eliciting packet on the specified path.
+    ssize_t quiche_conn_send_ack_eliciting_on_path(quiche_conn conn,
+                           sockaddr local, size_t local_len,
+                           sockaddr peer, size_t peer_len);
+
     @Structure.FieldOrder({"from", "from_len", "to", "to_len", "at"})
     class quiche_send_info extends Structure
     {
@@ -457,6 +468,7 @@ public interface LibQuiche extends Library
         public byte dummy;
     }
 
+    // The side of the stream to be shut down.
     interface quiche_shutdown
     {
         int QUICHE_SHUTDOWN_READ = 0,
@@ -471,7 +483,24 @@ public interface LibQuiche extends Library
     int quiche_conn_stream_shutdown(quiche_conn conn, uint64_t stream_id,
                                     int /*quiche_shutdown*/ direction, uint64_t err);
 
+    // Returns the stream's send capacity in bytes.
     ssize_t quiche_conn_stream_capacity(quiche_conn conn, uint64_t stream_id);
+
+    // Returns true if the stream has data that can be read.
+    boolean quiche_conn_stream_readable(quiche_conn conn, uint64_t stream_id);
+
+    // Returns the next stream that has data to read, or -1 if no such stream is
+    // available.
+    int64_t quiche_conn_stream_readable_next(quiche_conn conn);
+
+    // Returns true if the stream has enough send capacity.
+    //
+    // On error a value lower than 0 is returned.
+    int quiche_conn_stream_writable(quiche_conn conn, uint64_t stream_id, size_t len);
+
+    // Returns the next stream that can be written to, or -1 if no such stream is
+    // available.
+    int64_t quiche_conn_stream_writable_next(quiche_conn conn);
 
     // Returns true if all the data has been read from the specified stream.
     boolean quiche_conn_stream_finished(quiche_conn conn, uint64_t stream_id);

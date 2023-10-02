@@ -50,6 +50,7 @@ public class MetaDataBuilder
     }
 
     /**
+     * Get the maxSize.
      * @return the maxSize
      */
     public int getMaxSize()
@@ -76,7 +77,7 @@ public class MetaDataBuilder
     {
         HttpHeader header = field.getHeader();
         String name = field.getName();
-        if (name == null || name.length() == 0)
+        if (name == null || name.isEmpty())
             throw new SessionException("Header size 0");
         String value = field.getValue();
         int fieldSize = name.length() + (value == null ? 0 : value.length());
@@ -147,7 +148,7 @@ public class MetaDataBuilder
                 case C_PATH:
                     if (checkPseudoHeader(header, _path))
                     {
-                        if (value != null && value.length() > 0)
+                        if (value != null && !value.isEmpty())
                             _path = value;
                         else
                             streamException("No Path");
@@ -255,7 +256,7 @@ public class MetaDataBuilder
                     return new MetaData.Request(
                         NanoTime.now(), // TODO #9900 make beginNanoTime accurate
                          _method,
-                        _scheme == null ? HttpScheme.HTTP.asString() : _scheme.asString(),
+                        _scheme.asString(),
                         _authority,
                         _path,
                         HttpVersion.HTTP_2,

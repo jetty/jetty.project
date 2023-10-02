@@ -14,12 +14,9 @@
 [[pg-server-websocket-configure-filter]]
 ==== Advanced `WebSocketUpgradeFilter` Configuration
 
-The `WebSocketUpgradeFilter` that handles the HTTP requests that upgrade to WebSocket is installed in these cases:
+The `WebSocketUpgradeFilter` that handles the HTTP requests that upgrade to WebSocket is installed by the `JakartaWebSocketServletContainerInitializer`, as described in xref:pg-server-websocket-standard[this section].
 
-* Either by the `JakartaWebSocketServletContainerInitializer`, as described in xref:pg-server-websocket-standard[this section].
-* Or by a call to `JettyWebSocketServerContainer.addMapping(\...)`, as described in xref:pg-server-websocket-jetty[this section].
-
-Typically, the `WebSocketUpgradeFilter` is not present in the `web.xml` configuration, and therefore the mechanisms above create a new `WebSocketUpgradeFilter` and install it _before_ any other Filter declared in `web.xml`, under the default name of `"org.eclipse.jetty.websocket.servlet.WebSocketUpgradeFilter"` and with path mapping `/*`.
+Typically, the `WebSocketUpgradeFilter` is not present in the `web.xml` configuration, and therefore the mechanisms above create a new `WebSocketUpgradeFilter` and install it _before_ any other Filter declared in `web.xml`, under the default name of `"org.eclipse.jetty.{ee-current}.websocket.servlet.WebSocketUpgradeFilter"` and with path mapping `/*`.
 
 However, if the `WebSocketUpgradeFilter` is already present in `web.xml` under the default name, then the ``ServletContainerInitializer``s will use that declared in `web.xml` instead of creating a new one.
 
@@ -32,7 +29,7 @@ This allows you to customize:
 
 For example:
 
-[source,xml,subs=verbatim]
+[source,xml,subs="verbatim,attributes"]
 ----
 <?xml version="1.0" encoding="UTF-8"?>
 <web-app xmlns="https://jakarta.ee/xml/ns/jakartaee"
@@ -44,7 +41,7 @@ For example:
   <!-- The CrossOriginFilter *must* be the first --> <!--1-->
   <filter>
     <filter-name>cross-origin</filter-name>
-    <filter-class>org.eclipse.jetty.ee9.servlets.CrossOriginFilter</filter-class>
+    <filter-class>org.eclipse.jetty.{ee-current}.servlets.CrossOriginFilter</filter-class>
     <async-supported>true</async-supported>
   </filter>
   <filter-mapping>
@@ -55,8 +52,8 @@ For example:
   <!-- Configure the default WebSocketUpgradeFilter --> <!--2-->
   <filter>
     <!-- The filter name must be the default WebSocketUpgradeFilter name -->
-    <filter-name>org.eclipse.jetty.websocket.servlet.WebSocketUpgradeFilter</filter-name> <!--3-->
-    <filter-class>org.eclipse.jetty.websocket.servlet.WebSocketUpgradeFilter</filter-class>
+    <filter-name>org.eclipse.jetty.{ee-current}.websocket.servlet.WebSocketUpgradeFilter</filter-name> <!--3-->
+    <filter-class>org.eclipse.jetty.{ee-current}.websocket.servlet.WebSocketUpgradeFilter</filter-class>
     <!-- Configure at most 1 MiB text messages -->
     <init-param> <!--4-->
       <param-name>maxTextMessageSize</param-name>
@@ -65,7 +62,7 @@ For example:
     <async-supported>true</async-supported>
   </filter>
   <filter-mapping>
-    <filter-name>org.eclipse.jetty.websocket.servlet.WebSocketUpgradeFilter</filter-name>
+    <filter-name>org.eclipse.jetty.{ee-current}.websocket.servlet.WebSocketUpgradeFilter</filter-name>
     <!-- Use a more specific path mapping for WebSocket requests -->
     <url-pattern>/ws/*</url-pattern> <!--5-->
   </filter-mapping>

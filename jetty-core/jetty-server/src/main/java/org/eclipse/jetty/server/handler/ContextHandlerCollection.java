@@ -62,9 +62,7 @@ public class ContextHandlerCollection extends Handler.Sequence
      */
     public ContextHandlerCollection(boolean dynamic, ContextHandler... contexts)
     {
-        super(dynamic);
-        if (contexts.length > 0)
-            setHandlers(contexts);
+        super(dynamic, List.of(contexts));
     }
 
     /**

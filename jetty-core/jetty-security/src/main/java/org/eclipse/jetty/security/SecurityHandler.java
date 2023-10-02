@@ -24,8 +24,12 @@ import java.util.Map;
 import java.util.ServiceLoader;
 import java.util.Set;
 
+import org.eclipse.jetty.http.HttpField;
 import org.eclipse.jetty.http.HttpFields;
+import org.eclipse.jetty.http.HttpHeader;
+import org.eclipse.jetty.http.HttpHeaderValue;
 import org.eclipse.jetty.http.HttpStatus;
+import org.eclipse.jetty.http.HttpURI;
 import org.eclipse.jetty.http.pathmap.MappedResource;
 import org.eclipse.jetty.http.pathmap.PathMappings;
 import org.eclipse.jetty.http.pathmap.PathSpec;
@@ -75,7 +79,8 @@ public abstract class SecurityHandler extends Handler.Wrapper implements Configu
     private final Map<String, String> _parameters = new HashMap<>();
     private LoginService _loginService;
     private IdentityService _identityService;
-    private boolean _renewSession = true;
+    private boolean _renewSessionOnAuthentication = true;
+    private int _sessionMaxInactiveIntervalOnAuthentication = 0;
     private AuthenticationState.Deferred _deferred;
 
     static
@@ -426,22 +431,42 @@ public abstract class SecurityHandler extends Handler.Wrapper implements Configu
     @Override
     public boolean isSessionRenewedOnAuthentication()
     {
-        return _renewSession;
+        return _renewSessionOnAuthentication;
     }
 
     /**
      * Set renew the session on Authentication.
      * <p>
-     * If set to true, then on authentication, the session associated with a reqeuest is invalidated and replaced with a new session.
+     * If set to true, then on authentication, the session associated with a request is invalidated and replaced with a new session.
      *
      * @param renew true to renew the authentication on session
      * @see Configuration#isSessionRenewedOnAuthentication()
      */
     public void setSessionRenewedOnAuthentication(boolean renew)
     {
-        _renewSession = renew;
+        _renewSessionOnAuthentication = renew;
     }
-    
+
+    @Override
+    public int getSessionMaxInactiveIntervalOnAuthentication()
+    {
+        return _sessionMaxInactiveIntervalOnAuthentication;
+    }
+
+    /**
+     * Set the interval in seconds, which if non-zero, will be set with
+     * {@link org.eclipse.jetty.server.Session#setMaxInactiveInterval(int)}
+     * when a session is newly authenticated.
+     * @param seconds An interval in seconds; or 0 to not set the interval
+     *                on authentication; or a negative number to make the
+     *                session never timeout after authentication.
+     * @see Configuration#getSessionMaxInactiveIntervalOnAuthentication()
+     */
+    public void setSessionMaxInactiveIntervalOnAuthentication(int seconds)
+    {
+        _sessionMaxInactiveIntervalOnAuthentication = seconds;
+    }
+
     @Override
     public boolean handle(Request request, Response response, Callback callback) throws Exception
     {
@@ -489,20 +514,56 @@ public abstract class SecurityHandler extends Handler.Wrapper implements Configu
             if (authenticationState instanceof AuthenticationState.ResponseSent)
                 return true;
 
-            if (mustValidate && isNotAuthorized(constraint, authenticationState))
+            if (authenticationState instanceof AuthenticationState.ServeAs serveAs)
+            {
+                HttpURI uri = request.getHttpURI();
+                request = serveAs.wrap(request);
+                if (!uri.equals(request.getHttpURI()))
+                {
+                    // URI is replaced, so filter out all metadata for the old URI
+                    response.getHeaders().put(HttpHeader.CACHE_CONTROL.asString(), HttpHeaderValue.NO_CACHE.asString());
+                    response.getHeaders().putDate(HttpHeader.EXPIRES.asString(), 1);
+                    HttpFields.Mutable headers = new HttpFields.Mutable.Wrapper(response.getHeaders())
+                    {
+                        @Override
+                        public HttpField onAddField(HttpField field)
+                        {
+                            if (field.getHeader() == null)
+                                return field;
+                            return switch (field.getHeader())
+                            {
+                                case CACHE_CONTROL, PRAGMA, ETAG, EXPIRES, LAST_MODIFIED, AGE -> null;
+                                default -> field;
+                            };
+                        }
+                    };
+
+                    response = new Response.Wrapper(request, response)
+                    {
+                        @Override
+                        public HttpFields.Mutable getHeaders()
+                        {
+                            return headers;
+                        }
+                    };
+                }
+
+                authenticationState = _deferred;
+            }
+            else if (mustValidate && !isAuthorized(constraint, authenticationState))
             {
                 Response.writeError(request, response, callback, HttpStatus.FORBIDDEN_403, "!authorized");
                 return true;
             }
-
-            if (authenticationState == null)
+            else if (authenticationState == null)
+            {
                 authenticationState = _deferred;
+            }
 
             AuthenticationState.setAuthenticationState(request, authenticationState);
             IdentityService.Association association =
                 (authenticationState instanceof AuthenticationState.Succeeded user)
                 ? _identityService.associate(user.getUserIdentity(), null) : null;
-
 
             try
             {
@@ -554,21 +615,20 @@ public abstract class SecurityHandler extends Handler.Wrapper implements Configu
         }
     }
 
-    protected boolean isNotAuthorized(Constraint constraint, AuthenticationState authenticationState)
+    protected boolean isAuthorized(Constraint constraint, AuthenticationState authenticationState)
     {
         UserIdentity userIdentity = authenticationState instanceof AuthenticationState.Succeeded user ? user.getUserIdentity() : null;
-
         return switch (constraint.getAuthorization())
         {
-            case FORBIDDEN, ALLOWED, INHERIT -> false;
-            case ANY_USER -> userIdentity == null || userIdentity.getUserPrincipal() == null;
+            case FORBIDDEN, ALLOWED, INHERIT -> true;
+            case ANY_USER -> userIdentity != null && userIdentity.getUserPrincipal() != null;
             case KNOWN_ROLE ->
             {
                 if (userIdentity != null && userIdentity.getUserPrincipal() != null)
                     for (String role : getKnownRoles())
                         if (userIdentity.isUserInRole(role))
-                            yield false;
-                yield true;
+                            yield true;
+                yield false;
             }
 
             case SPECIFIC_ROLE ->
@@ -576,8 +636,8 @@ public abstract class SecurityHandler extends Handler.Wrapper implements Configu
                 if (userIdentity != null && userIdentity.getUserPrincipal() != null)
                     for (String role : constraint.getRoles())
                         if (userIdentity.isUserInRole(role))
-                            yield false;
-                yield true;
+                            yield true;
+                yield false;
             }
         };
     }

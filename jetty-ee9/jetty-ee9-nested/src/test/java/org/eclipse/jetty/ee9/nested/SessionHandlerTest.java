@@ -39,6 +39,7 @@ import org.eclipse.jetty.session.AbstractSessionCache;
 import org.eclipse.jetty.session.DefaultSessionIdManager;
 import org.eclipse.jetty.session.ManagedSession;
 import org.eclipse.jetty.session.NullSessionDataStore;
+import org.eclipse.jetty.session.SessionConfig;
 import org.eclipse.jetty.session.SessionData;
 import org.eclipse.jetty.session.SessionManager;
 import org.junit.jupiter.api.AfterEach;
@@ -73,7 +74,7 @@ public class SessionHandlerTest
         _sessionHandler = new SessionHandler();
         _sessionHandler.setSessionCookie("JSESSIONID");
         _sessionHandler.setUsingCookies(true);
-        _sessionHandler.setUsingURLs(false);
+        _sessionHandler.setUsingUriParameters(false);
         _sessionHandler.setSessionPath("/");
         _contextHandler.setHandler(_sessionHandler);
 
@@ -203,6 +204,50 @@ public class SessionHandlerTest
 
         String cookieStr = HttpCookieUtils.getRFC6265SetCookie(cookie);
         assertThat(cookieStr, containsString("; SameSite=Strict"));
+    }
+
+    @Test
+    public void testSessionCookieConfigByInitParam() throws Exception
+    {
+        Server server = new Server();
+        ContextHandler contextHandler = new ContextHandler();
+        contextHandler.setContextPath("/test");
+        SessionHandler sessionHandler = new SessionHandler();
+        contextHandler.setHandler(sessionHandler);
+        server.setHandler(contextHandler);
+        server.start();
+
+        assertEquals(SessionConfig.__DefaultSessionCookie, sessionHandler.getSessionCookie());
+        assertEquals(null, sessionHandler.getSessionDomain());
+        assertEquals(SessionConfig.__DefaultSessionIdPathParameterName, sessionHandler.getSessionIdPathParameterName());
+        assertEquals("/test", sessionHandler.getSessionPath());
+        assertEquals(-1, sessionHandler.getMaxCookieAge());
+        assertEquals(false, sessionHandler.isCheckingRemoteSessionIdEncoding());
+
+        server.stop();
+
+        //make a new ContextHandler and SessionHandler that can be configured
+        contextHandler = new ContextHandler();
+        contextHandler.setContextPath("/test");
+        sessionHandler = new SessionHandler();
+        contextHandler.setHandler(sessionHandler);
+        server.setHandler(contextHandler);
+
+        contextHandler.setInitParameter(SessionConfig.__SessionCookieProperty, "TEST_SESSION_COOKIE");
+        contextHandler.setInitParameter(SessionConfig.__SessionDomainProperty, "TEST_DOMAIN");
+        contextHandler.setInitParameter(SessionConfig.__SessionIdPathParameterNameProperty, "TEST_SESSION_ID_PATH_PARAM");
+        contextHandler.setInitParameter(SessionConfig.__SessionPathProperty, "/mypath");
+        contextHandler.setInitParameter(SessionConfig.__MaxAgeProperty, "1000");
+        contextHandler.setInitParameter(SessionConfig.__CheckRemoteSessionEncodingProperty, "true");
+
+        server.start();
+
+        assertEquals("TEST_SESSION_COOKIE", sessionHandler.getSessionCookie());
+        assertEquals("TEST_DOMAIN", sessionHandler.getSessionDomain());
+        assertEquals("TEST_SESSION_ID_PATH_PARAM", sessionHandler.getSessionIdPathParameterName());
+        assertEquals("/mypath", sessionHandler.getSessionPath());
+        assertEquals(1000, sessionHandler.getMaxCookieAge());
+        assertEquals(true, sessionHandler.isCheckingRemoteSessionIdEncoding());
     }
 
     @Test

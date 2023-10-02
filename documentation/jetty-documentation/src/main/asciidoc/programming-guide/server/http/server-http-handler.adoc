@@ -19,8 +19,8 @@ An `org.eclipse.jetty.server.Handler` is the component that processes incoming H
 ``Handler``s can process the HTTP request themselves, or they can be ``Handler.Container``s that delegate HTTP request processing to one or more contained ``Handler``s.
 This allows ``Handler``s to be organized as a tree comprised of:
 
-* Leaf ``Handler``s that return `true` from the `handle(\...)` method, generate a response and succeed the `Callback`.
-* A `Handler.Wrapper` can be used to form a chain of ``Handler``s where request, response or callback objects are wrapped in the `handle(\...)` method before being passed down the chain.
+* Leaf ``Handler``s that generate a response, complete the `Callback`, and return `true` from the `handle(\...)` method.
+* A `Handler.Wrapper` can be used to form a chain of ``Handler``s where request, response or callback objects may be wrapped in the `handle(\...)` method before being passed down the chain.
 * A `Handler.Sequence` that contains a sequence of ``Handler``s, with each `Handler` being called in sequence until one returns `true` from its `handle(\...)` method.
 * A specialized `Handler.Container` that may use properties of the request (for example, the URI, or a header, etc.) to select from one or more contained ``Handler``s to delegate the HTTP request processing to, for example link:{javadoc-url}/org/eclipse/jetty/server/handler/PathMappingsHandler.html[`PathMappingsHandler`].
 
@@ -42,12 +42,11 @@ Server
         └── App2Handler
 ----
 
-Server applications should rarely write custom ``Handler``s, preferring instead to use existing ``Handler``s provided by the Jetty Server Libraries for managing web application contexts, security, HTTP sessions and Servlet support.
-Refer to xref:pg-server-http-handler-use[this section] for more information about how to use the ``Handler``s provided by the Jetty Server Libraries.
+You should prefer using existing ``Handler``s provided by the Jetty server libraries for managing web application contexts, security, HTTP sessions and Servlet support.
+Refer to xref:pg-server-http-handler-use[this section] for more information about how to use the ``Handler``s provided by the Jetty server libraries.
 
-However, in some cases the additional features are not required, or additional constraints on memory footprint, or performance, or just simplicity must be met.
-In these cases, implementing your own `Handler` may be a better solution.
-Refer to xref:pg-server-http-handler-implement[this section] for more information about how to write your own ``Handler``s.
+You should write your own leaf ``Handler``s to implement your web application logic.
+Refer to xref:pg-server-http-handler-impl[this section] for more information about how to write your own ``Handler``s.
 
 // TODO: document ScopedHandler? Is this really necessary or just an implementation detail that application will never worry about?
 

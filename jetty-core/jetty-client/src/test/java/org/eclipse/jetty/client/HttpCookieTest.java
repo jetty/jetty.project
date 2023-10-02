@@ -242,8 +242,8 @@ public class HttpCookieTest extends AbstractHttpClientServerTest
                     List<HttpCookie> cookies = Request.getCookies(request);
                     switch (target)
                     {
-                        case "/", "/foo", "/foobar" -> assertEquals(0, cookies.size(), target);
-                        case "/foo/", "/foo/bar", "/foo/bar/baz" ->
+                        case "/", "/foobar" -> assertEquals(0, cookies.size(), target);
+                        case "/foo", "/foo/", "/foo/bar", "/foo/bar/", "/foo/bar/baz" ->
                         {
                             assertEquals(1, cookies.size(), target);
                             HttpCookie cookie = cookies.get(0);
@@ -263,7 +263,63 @@ public class HttpCookieTest extends AbstractHttpClientServerTest
             .timeout(5, TimeUnit.SECONDS));
         assertEquals(HttpStatus.OK_200, response.getStatus());
 
-        Arrays.asList("/", "/foo", "/foo/", "/foobar", "/foo/bar", "/foo/bar/baz").forEach(path ->
+        Arrays.asList("/", "/foo", "/foo/", "/foobar", "/foo/bar", "/foo/bar/", "/foo/bar/baz").forEach(path ->
+        {
+            ContentResponse r = send(client.newRequest("localhost", connector.getLocalPort())
+                .scheme(scenario.getScheme())
+                .path(path)
+                .headers(headers -> headers.put(headerName, "1"))
+                .timeout(5, TimeUnit.SECONDS));
+            assertEquals(HttpStatus.OK_200, r.getStatus());
+        });
+    }
+
+    @ParameterizedTest
+    @ArgumentsSource(ScenarioProvider.class)
+    public void testSetCookieWithoutPathRequestURIWithTwoSegmentsEndingWithSlash(Scenario scenario) throws Exception
+    {
+        String headerName = "X-Request";
+        String cookieName = "a";
+        String cookieValue = "1";
+        start(scenario, new EmptyServerHandler()
+        {
+            @Override
+            protected void service(Request request, org.eclipse.jetty.server.Response response)
+            {
+                String target = Request.getPathInContext(request);
+                int r = (int)request.getHeaders().getLongField(headerName);
+                if ("/foo/bar/".equals(target) && r == 0)
+                {
+                    HttpCookie cookie = HttpCookie.from(cookieName, cookieValue);
+                    org.eclipse.jetty.server.Response.addCookie(response, cookie);
+                }
+                else
+                {
+                    List<HttpCookie> cookies = Request.getCookies(request);
+                    switch (target)
+                    {
+                        case "/", "/foo", "/foo/", "/foobar" -> assertEquals(0, cookies.size(), target);
+                        case "/foo/bar", "/foo/bar/", "/foo/bar/baz" ->
+                        {
+                            assertEquals(1, cookies.size(), target);
+                            HttpCookie cookie = cookies.get(0);
+                            assertEquals(cookieName, cookie.getName(), target);
+                            assertEquals(cookieValue, cookie.getValue(), target);
+                        }
+                        default -> fail("Unrecognized Target: " + target);
+                    }
+                }
+            }
+        });
+
+        ContentResponse response = send(client.newRequest("localhost", connector.getLocalPort())
+            .scheme(scenario.getScheme())
+            .path("/foo/bar/")
+            .headers(headers -> headers.put(headerName, "0"))
+            .timeout(5, TimeUnit.SECONDS));
+        assertEquals(HttpStatus.OK_200, response.getStatus());
+
+        Arrays.asList("/", "/foo", "/foo/", "/foobar", "/foo/bar", "/foo/bar/", "/foo/bar/baz").forEach(path ->
         {
             ContentResponse r = send(client.newRequest("localhost", connector.getLocalPort())
                 .scheme(scenario.getScheme())

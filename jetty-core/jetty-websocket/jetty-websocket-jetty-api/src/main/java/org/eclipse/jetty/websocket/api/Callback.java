@@ -14,24 +14,29 @@
 package org.eclipse.jetty.websocket.api;
 
 import java.util.concurrent.CompletableFuture;
+import java.util.function.BiConsumer;
 import java.util.function.Consumer;
 
 /**
- * Callback for Write events.
- * <p>
- * NOTE: We don't expose org.eclipse.jetty.util.Callback here as that would complicate matters with the WebAppContext's classloader isolation.
+ * <p>A callback object that handles success/failure events of asynchronous operations.</p>
+ * <p>NOTE: This interface is almost identical to {@code org.eclipse.jetty.util.Callback},
+ * which however cannot be used in the Jetty WebSocket APIs for web application classloading
+ * reasons.</p>
  */
 public interface Callback
 {
+    /**
+     * <p>Empty implementation.</p>
+     */
     Callback NOOP = new Callback()
     {
     };
 
     /**
-     * Creates a callback from the given success and failure lambdas.
+     * <p>Creates a callback from the given success and failure lambdas.</p>
      *
-     * @param success called when the callback succeeds
-     * @param failure called when the callback fails
+     * @param success the success action to invoke when the callback succeeds
+     * @param failure the failure consumer to invoke when the callback fails
      * @return a new callback
      */
     static Callback from(Runnable success, Consumer<Throwable> failure)
@@ -53,9 +58,7 @@ public interface Callback
     }
 
     /**
-     * <p>
-     * Callback invoked when the write succeeds.
-     * </p>
+     * <p>Method to invoke to succeed the callback.</p>
      *
      * @see #fail(Throwable)
      */
@@ -64,18 +67,53 @@ public interface Callback
     }
 
     /**
-     * <p>
-     * Callback invoked when the write fails.
-     * </p>
+     * <p>Method to invoke to fail the callback.</p>
      *
-     * @param x the reason for the write failure
+     * @param x the failure
      */
     default void fail(Throwable x)
     {
     }
 
+    /**
+     * <p>Converts this callback into a {@link BiConsumer} that can be passed
+     * to {@link CompletableFuture#whenComplete(BiConsumer)}.</p>
+     * <p>When the {@link BiConsumer} is accepted, this callback is completed.</p>
+     *
+     * @return a {@link BiConsumer} that completes this callback
+     * @see Completable#with(Consumer)
+     */
+    default BiConsumer<? super Void, ? super Throwable> asBiConsumer()
+    {
+        return (r, x) ->
+        {
+            if (x == null)
+                succeed();
+            else
+                fail(x);
+        };
+    }
+
+    /**
+     * <p>A {@link Callback} that is also a {@link CompletableFuture}.</p>
+     * <p>Applications can pass an instance of this class as a {@link Callback},
+     * but also use the {@link CompletableFuture} APIs.
+     */
     class Completable extends CompletableFuture<Void> implements Callback
     {
+        /**
+         * <p>Convenience method that creates a {@link Completable} that
+         * is passed to the given consumer and then returned.</p>
+         * <p>For example:</p>
+         * <pre>{@code
+         * Completable.with(completable -> session.sendText("TEXT", completable))
+         *     .thenRun(session::demand);
+         * }</pre>
+         *
+         * @param consumer the consumer that receives the completable
+         * @return a new completable passed to the consumer
+         * @see #compose(Consumer)
+         */
         public static Completable with(Consumer<Completable> consumer)
         {
             Completable completable = new Completable();
@@ -95,10 +133,33 @@ public interface Callback
             completeExceptionally(x);
         }
 
+        /**
+         * <p>Returns a new {@link Completable} that, when this {@link Completable}
+         * succeeds, is passed to the given consumer and then returned.</p>
+         * <p>If this {@link Completable} fails, the new {@link Completable} is
+         * also failed, and the consumer is not invoked.</p>
+         * <p>For example:</p>
+         * <pre>{@code
+         * Callback.Completable.with(completable1 -> session.sendPartialText("hello", false, completable1))
+         *     .compose(completable2 -> session.sendPartialText(" ", false, completable2))
+         *     .compose(completable3 -> session.sendPartialText("world", true, completable3))
+         *     .thenRun(session::demand);
+         * }</pre>
+         *
+         * @param consumer the consumer that receives the {@link Completable}
+         * @return a new {@link Completable} passed to the consumer
+         * @see #with(Consumer)
+         */
         public Completable compose(Consumer<Completable> consumer)
         {
             Completable completable = new Completable();
-            thenAccept(ignored -> consumer.accept(completable));
+            whenComplete((r, x) ->
+            {
+                if (x == null)
+                    consumer.accept(completable);
+                else
+                    completable.fail(x);
+            });
             return completable;
         }
     }

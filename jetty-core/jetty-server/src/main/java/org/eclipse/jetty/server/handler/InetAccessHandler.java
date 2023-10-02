@@ -13,11 +13,6 @@
 
 package org.eclipse.jetty.server.handler;
 
-import java.io.IOException;
-import java.net.InetAddress;
-import java.net.InetSocketAddress;
-import java.net.SocketAddress;
-
 import org.eclipse.jetty.http.HttpStatus;
 import org.eclipse.jetty.http.pathmap.PathSpec;
 import org.eclipse.jetty.server.Handler;
@@ -27,10 +22,6 @@ import org.eclipse.jetty.util.Callback;
 import org.eclipse.jetty.util.IncludeExcludeSet;
 import org.eclipse.jetty.util.InetAddressPattern;
 import org.eclipse.jetty.util.InetAddressSet;
-import org.eclipse.jetty.util.component.DumpableCollection;
-
-import static org.eclipse.jetty.server.handler.InetAccessSet.AccessTuple;
-import static org.eclipse.jetty.server.handler.InetAccessSet.PatternTuple;
 
 /**
  * InetAddress Access Handler
@@ -41,12 +32,8 @@ import static org.eclipse.jetty.server.handler.InetAccessSet.PatternTuple;
  * the forwarded for headers, as this cannot be as easily forged.
  * </p>
  */
-public class InetAccessHandler extends Handler.Wrapper
+public class InetAccessHandler extends ConditionalHandler.Abstract
 {
-    // TODO replace this handler with a general conditional handler wrapper.
-
-    private final IncludeExcludeSet<PatternTuple, AccessTuple> _set = new IncludeExcludeSet<>(InetAccessSet.class);
-
     public InetAccessHandler()
     {
         this(null);
@@ -57,13 +44,17 @@ public class InetAccessHandler extends Handler.Wrapper
         super(handler);
     }
 
-    /**
-     * Clears all the includes, excludes, included connector names and excluded
-     * connector names.
-     */
-    public void clear()
+    @Override
+    protected boolean onConditionsMet(Request request, Response response, Callback callback) throws Exception
     {
-        _set.clear();
+        return nextHandler(request, response, callback);
+    }
+
+    @Override
+    protected boolean onConditionsNotMet(Request request, Response response, Callback callback) throws Exception
+    {
+        Response.writeError(request, response, callback, HttpStatus.FORBIDDEN_403);
+        return true;
     }
 
     /**
@@ -87,7 +78,7 @@ public class InetAccessHandler extends Handler.Wrapper
      */
     public void include(String pattern)
     {
-        _set.include(PatternTuple.from(pattern));
+        includeExclude(true, pattern);
     }
 
     /**
@@ -113,7 +104,7 @@ public class InetAccessHandler extends Handler.Wrapper
      */
     public void include(String connectorName, String addressPattern, PathSpec pathSpec)
     {
-        _set.include(new PatternTuple(connectorName, InetAddressPattern.from(addressPattern), pathSpec));
+        include(from(connectorName, InetAddressPattern.from(addressPattern), null, pathSpec));
     }
 
     /**
@@ -121,13 +112,16 @@ public class InetAccessHandler extends Handler.Wrapper
      *
      * <p>The connector name is separated from the InetAddress pattern with an '@' character,
      * and the InetAddress pattern is separated from the URI pattern using the "|" (pipe)
-     * character. URI patterns follow the servlet specification for simple * prefix and
+     * character. A method name is separated from the URI pattern using the ">" character.
+     * URI patterns follow the servlet specification for simple * prefix and
      * suffix wild cards (e.g. /, /foo, /foo/bar, /foo/bar/*, *.baz).</p>
      *
      * <br>Examples:
      * <ul>
      * <li>"connector1@127.0.0.1|/foo"</li>
      * <li>"127.0.0.1|/foo"</li>
+     * <li>"127.0.0.1>GET|/foo"</li>
+     * <li>"127.0.0.1>GET"</li>
      * <li>"connector1@127.0.0.1"</li>
      * <li>"127.0.0.1"</li>
      * </ul>
@@ -137,7 +131,7 @@ public class InetAccessHandler extends Handler.Wrapper
      */
     public void exclude(String pattern)
     {
-        _set.exclude(PatternTuple.from(pattern));
+        includeExclude(false, pattern);
     }
 
     /**
@@ -163,92 +157,41 @@ public class InetAccessHandler extends Handler.Wrapper
      */
     public void exclude(String connectorName, String addressPattern, PathSpec pathSpec)
     {
-        _set.exclude(new PatternTuple(connectorName, InetAddressPattern.from(addressPattern), pathSpec));
+        exclude(from(connectorName, InetAddressPattern.from(addressPattern), null, pathSpec));
     }
 
-    /**
-     * Includes a connector name.
-     *
-     * @param name Connector name to include in this handler.
-     * @deprecated use {@link InetAccessHandler#include(String)} instead.
-     */
-    @Deprecated
-    public void includeConnector(String name)
+    private void includeExclude(boolean include, String pattern)
     {
-        throw new UnsupportedOperationException();
-    }
-
-    /**
-     * Excludes a connector name.
-     *
-     * @param name Connector name to exclude in this handler.
-     * @deprecated use {@link InetAccessHandler#include(String)} instead.
-     */
-    @Deprecated
-    public void excludeConnector(String name)
-    {
-        _set.exclude(new PatternTuple(name, null, null));
-    }
-
-    /**
-     * Includes connector names.
-     *
-     * @param names Connector names to include in this handler.
-     * @deprecated use {@link InetAccessHandler#include(String)} instead.
-     */
-    @Deprecated
-    public void includeConnectors(String... names)
-    {
-        throw new UnsupportedOperationException();
-    }
-
-    /**
-     * Excludes connector names.
-     *
-     * @param names Connector names to exclude in this handler.
-     * @deprecated use {@link InetAccessHandler#include(String)} instead.
-     */
-    @Deprecated
-    public void excludeConnectors(String... names)
-    {
-        for (String name : names)
+        String path = null;
+        int pathIndex = pattern.indexOf('|');
+        if (pathIndex >= 0)
         {
-            excludeConnector(name);
+            path = pattern.substring(pathIndex + 1);
+            pattern = pattern.substring(0, pathIndex);
         }
-    }
 
-    @Override
-    public boolean handle(Request request, Response response, Callback callback) throws Exception
-    {
-        SocketAddress socketAddress = request.getConnectionMetaData().getRemoteSocketAddress();
-        if (socketAddress instanceof InetSocketAddress inetSocketAddress && !isAllowed(inetSocketAddress.getAddress(), request))
+        String method = null;
+        int methodIndex = pattern.indexOf('>');
+        if (methodIndex >= 0)
         {
-            // TODO a false return may be better here.
-            Response.writeError(request, response, callback, HttpStatus.FORBIDDEN_403);
-            return true;
+            method = pattern.substring(methodIndex + 1);
+            pattern = pattern.substring(0, methodIndex);
         }
-        return super.handle(request, response, callback);
-    }
 
-    /**
-     * Checks if specified address and request are allowed by current InetAddress rules.
-     *
-     * @param addr the inetAddress to check
-     * @param request the HttpServletRequest request to check
-     * @return true if inetAddress and request are allowed
-     */
-    protected boolean isAllowed(InetAddress addr, Request request)
-    {
-        String connectorName = request.getConnectionMetaData().getConnector().getName();
-        String path = Request.getPathInContext(request);
-        return _set.test(new AccessTuple(connectorName, addr, path));
-    }
+        String connector = null;
+        int connectorIndex = pattern.indexOf('@');
+        if (connectorIndex >= 0)
+            connector = pattern.substring(0, connectorIndex);
 
-    @Override
-    public void dump(Appendable out, String indent) throws IOException
-    {
-        dumpObjects(out, indent,
-            new DumpableCollection("included", _set.getIncluded()),
-            new DumpableCollection("excluded", _set.getExcluded()));
+        String addr = null;
+        int addrStart = (connectorIndex < 0) ? 0 : connectorIndex + 1;
+        int addrEnd = (pathIndex < 0) ? pattern.length() : pathIndex;
+        if (addrStart != addrEnd)
+            addr = pattern.substring(addrStart, addrEnd);
+
+        if (include)
+            include(from(connector, addr, method, path));
+        else
+            exclude(from(connector, addr, method, path));
     }
 }

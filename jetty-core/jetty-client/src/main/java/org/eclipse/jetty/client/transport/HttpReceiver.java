@@ -23,12 +23,16 @@ import org.eclipse.jetty.client.ProtocolHandler;
 import org.eclipse.jetty.client.Response;
 import org.eclipse.jetty.client.Result;
 import org.eclipse.jetty.http.HttpField;
+import org.eclipse.jetty.http.HttpFields;
 import org.eclipse.jetty.http.HttpHeader;
+import org.eclipse.jetty.http.HttpMethod;
 import org.eclipse.jetty.http.HttpStatus;
+import org.eclipse.jetty.http.QuotedCSV;
 import org.eclipse.jetty.io.Content;
 import org.eclipse.jetty.io.RetainableByteBuffer;
 import org.eclipse.jetty.io.content.ContentSourceTransformer;
 import org.eclipse.jetty.util.Promise;
+import org.eclipse.jetty.util.component.Destroyable;
 import org.eclipse.jetty.util.thread.AutoLock;
 import org.eclipse.jetty.util.thread.SerializedInvoker;
 import org.slf4j.Logger;
@@ -240,10 +244,42 @@ public abstract class HttpReceiver
 
             if (exchange.isResponseComplete())
                 return;
+
             responseState = ResponseState.HEADERS;
             HttpResponse response = exchange.getResponse();
+            HttpFields responseHeaders = response.getHeaders();
             if (LOG.isDebugEnabled())
-                LOG.debug("Response headers {}{}{}", response, System.lineSeparator(), response.getHeaders().toString().trim());
+                LOG.debug("Response headers {}{}{}", response, System.lineSeparator(), responseHeaders.toString().trim());
+
+            // HEAD responses may have Content-Encoding
+            // and Content-Length, but have no content.
+            ContentDecoder decoder = null;
+            if (!HttpMethod.HEAD.is(exchange.getRequest().getMethod()))
+            {
+                // Content-Encoding may have multiple values in the order they
+                // are applied, but we only support one decoding pass, the last one.
+                String contentEncoding = responseHeaders.getLast(HttpHeader.CONTENT_ENCODING);
+                if (contentEncoding != null)
+                {
+                    int comma = contentEncoding.indexOf(",");
+                    if (comma > 0)
+                    {
+                        List<String> values = new QuotedCSV(false, contentEncoding).getValues();
+                        contentEncoding = values.get(values.size() - 1);
+                    }
+                }
+                // If there is a matching content decoder factory, build a decoder.
+                for (ContentDecoder.Factory factory : getHttpDestination().getHttpClient().getContentDecoderFactories())
+                {
+                    if (factory.getEncoding().equalsIgnoreCase(contentEncoding))
+                    {
+                        decoder = factory.newContentDecoder();
+                        decoder.beforeDecoding(response);
+                        break;
+                    }
+                }
+            }
+
             ResponseListeners responseListeners = exchange.getConversation().getResponseListeners();
             responseListeners.notifyHeaders(response);
 
@@ -263,25 +299,8 @@ public abstract class HttpReceiver
                 throw new IllegalStateException();
             contentSource = new ContentSource();
 
-            if (responseListeners.hasContentSourceListeners())
-            {
-                List<String> contentEncodings = response.getHeaders().getCSV(HttpHeader.CONTENT_ENCODING.asString(), false);
-                if (contentEncodings != null && !contentEncodings.isEmpty())
-                {
-                    both:
-                    for (ContentDecoder.Factory factory : getHttpDestination().getHttpClient().getContentDecoderFactories())
-                    {
-                        for (String encoding : contentEncodings)
-                        {
-                            if (factory.getEncoding().equalsIgnoreCase(encoding))
-                            {
-                                contentSource = new DecodingContentSource(contentSource, factory.newContentDecoder(), invoker);
-                                break both;
-                            }
-                        }
-                    }
-                }
-            }
+            if (decoder != null)
+                contentSource = new DecodingContentSource(contentSource, invoker, decoder, response);
 
             if (LOG.isDebugEnabled())
                 LOG.debug("Response content {} {}", response, contentSource);
@@ -431,6 +450,8 @@ public abstract class HttpReceiver
 
     private void cleanup()
     {
+        if (contentSource != null)
+            contentSource.destroy();
         contentSource = null;
     }
 
@@ -462,7 +483,7 @@ public abstract class HttpReceiver
 
             HttpResponse response = exchange.getResponse();
             if (LOG.isDebugEnabled())
-                LOG.debug("Response abort {} {} on {}: {}", response, exchange, getHttpChannel(), failure);
+                LOG.debug("Response abort {} {} on {}", response, exchange, getHttpChannel(), failure);
             exchange.getConversation().getResponseListeners().notifyFailure(response, failure);
 
             // Mark atomically the response as terminated, with
@@ -514,32 +535,43 @@ public abstract class HttpReceiver
         FAILURE
     }
 
-    private interface NotifiableContentSource extends Content.Source
+    private interface NotifiableContentSource extends Content.Source, Destroyable
     {
         boolean error(Throwable failure);
 
         void onDataAvailable();
+
+        @Override
+        default void destroy()
+        {
+        }
     }
 
     private static class DecodingContentSource extends ContentSourceTransformer implements NotifiableContentSource
     {
         private static final Logger LOG = LoggerFactory.getLogger(DecodingContentSource.class);
 
-        private final NotifiableContentSource _rawSource;
         private final ContentDecoder _decoder;
+        private final Response _response;
         private volatile Content.Chunk _chunk;
 
-        public DecodingContentSource(NotifiableContentSource rawSource, ContentDecoder decoder, SerializedInvoker invoker)
+        private DecodingContentSource(NotifiableContentSource rawSource, SerializedInvoker invoker, ContentDecoder decoder, Response response)
         {
             super(rawSource, invoker);
-            _rawSource = rawSource;
             _decoder = decoder;
+            _response = response;
+        }
+
+        @Override
+        protected NotifiableContentSource getContentSource()
+        {
+            return (NotifiableContentSource)super.getContentSource();
         }
 
         @Override
         public void onDataAvailable()
         {
-            _rawSource.onDataAvailable();
+            getContentSource().onDataAvailable();
         }
 
         @Override
@@ -603,7 +635,14 @@ public abstract class HttpReceiver
             if (_chunk != null)
                 _chunk.release();
             _chunk = null;
-            return _rawSource.error(failure);
+            return getContentSource().error(failure);
+        }
+
+        @Override
+        public void destroy()
+        {
+            _decoder.afterDecoding(_response);
+            getContentSource().destroy();
         }
     }
 

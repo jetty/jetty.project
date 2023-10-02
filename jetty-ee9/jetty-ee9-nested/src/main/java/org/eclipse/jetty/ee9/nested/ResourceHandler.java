@@ -149,6 +149,7 @@ public class ResourceHandler extends HandlerWrapper implements ResourceFactory, 
     }
 
     /**
+     * Get the cacheControl header to set on all static content..
      * @return the cacheControl header to set on all static content.
      */
     public String getCacheControl()
@@ -367,6 +368,7 @@ public class ResourceHandler extends HandlerWrapper implements ResourceFactory, 
     }
 
     /**
+     * Set the cacheControl header to set on all static content..
      * @param cacheControl the cacheControl header to set on all static content.
      */
     public void setCacheControl(String cacheControl)
@@ -401,6 +403,7 @@ public class ResourceHandler extends HandlerWrapper implements ResourceFactory, 
     }
 
     /**
+     * Set file extensions that signify that a file is gzip compressed. Eg ".svgz".
      * @param gzipEquivalentFileExtensions file extensions that signify that a file is gzip compressed. Eg ".svgz"
      */
     public void setGzipEquivalentFileExtensions(List<String> gzipEquivalentFileExtensions)
@@ -423,6 +426,7 @@ public class ResourceHandler extends HandlerWrapper implements ResourceFactory, 
     }
 
     /**
+     * Set true, only the path info will be applied to the resourceBase.
      * @param pathInfoOnly true, only the path info will be applied to the resourceBase
      */
     public void setPathInfoOnly(boolean pathInfoOnly)

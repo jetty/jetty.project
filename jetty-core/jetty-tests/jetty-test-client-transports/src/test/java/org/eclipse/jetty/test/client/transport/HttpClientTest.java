@@ -21,6 +21,7 @@ import java.nio.ByteBuffer;
 import java.nio.charset.StandardCharsets;
 import java.util.List;
 import java.util.Random;
+import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.CopyOnWriteArrayList;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.ExecutionException;
@@ -31,9 +32,9 @@ import java.util.concurrent.atomic.AtomicReference;
 import java.util.stream.IntStream;
 
 import org.eclipse.jetty.client.BytesRequestContent;
+import org.eclipse.jetty.client.CompletableResponseListener;
 import org.eclipse.jetty.client.ContentResponse;
 import org.eclipse.jetty.client.Destination;
-import org.eclipse.jetty.client.FutureResponseListener;
 import org.eclipse.jetty.client.InputStreamResponseListener;
 import org.eclipse.jetty.client.Origin;
 import org.eclipse.jetty.client.Response;
@@ -58,6 +59,7 @@ import org.eclipse.jetty.util.IteratingNestedCallback;
 import org.eclipse.jetty.util.ssl.SslContextFactory;
 import org.hamcrest.Matchers;
 import org.junit.jupiter.api.Assertions;
+import org.junit.jupiter.api.Tag;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.MethodSource;
 
@@ -128,10 +130,10 @@ public class HttpClientTest extends AbstractTest
             }
         });
 
-        org.eclipse.jetty.client.Request request = client.newRequest(newURI(transport));
-        FutureResponseListener listener = new FutureResponseListener(request, length);
-        request.timeout(10, TimeUnit.SECONDS).send(listener);
-        ContentResponse response = listener.get();
+        var request = client.newRequest(newURI(transport))
+            .timeout(10, TimeUnit.SECONDS);
+        CompletableFuture<ContentResponse> completable = new CompletableResponseListener(request, length).send();
+        ContentResponse response = completable.get();
 
         assertEquals(200, response.getStatus());
         assertArrayEquals(bytes, response.getContent());
@@ -172,10 +174,10 @@ public class HttpClientTest extends AbstractTest
             }
         });
 
-        org.eclipse.jetty.client.Request request = client.newRequest(newURI(transport));
-        FutureResponseListener listener = new FutureResponseListener(request, 2 * length);
-        request.timeout(10, TimeUnit.SECONDS).send(listener);
-        ContentResponse response = listener.get();
+        var request = client.newRequest(newURI(transport))
+            .timeout(10, TimeUnit.SECONDS);
+        CompletableFuture<ContentResponse> completable = new CompletableResponseListener(request, 2 * length).send();
+        ContentResponse response = completable.get();
 
         assertEquals(200, response.getStatus());
         assertArrayEquals(bytes, response.getContent());
@@ -289,6 +291,8 @@ public class HttpClientTest extends AbstractTest
 
     @ParameterizedTest
     @MethodSource("transports")
+    @Tag("DisableLeakTracking:client:H3")
+    @Tag("DisableLeakTracking:client:FCGI")
     public void testRequestAfterFailedRequest(Transport transport) throws Exception
     {
         int length = FlowControlStrategy.DEFAULT_WINDOW_SIZE;
@@ -303,19 +307,17 @@ public class HttpClientTest extends AbstractTest
         });
 
         // Make a request with a large enough response buffer.
-        org.eclipse.jetty.client.Request request = client.newRequest(newURI(transport));
-        FutureResponseListener listener = new FutureResponseListener(request, length);
-        request.send(listener);
-        ContentResponse response = listener.get(15, TimeUnit.SECONDS);
+        var request = client.newRequest(newURI(transport));
+        CompletableFuture<ContentResponse> completable = new CompletableResponseListener(request, length).send();
+        ContentResponse response = completable.get(15, TimeUnit.SECONDS);
         assertEquals(response.getStatus(), 200);
 
         // Make a request with a small response buffer, should fail.
         try
         {
             request = client.newRequest(newURI(transport));
-            listener = new FutureResponseListener(request, length / 10);
-            request.send(listener);
-            listener.get(15, TimeUnit.SECONDS);
+            completable = new CompletableResponseListener(request, length / 10).send();
+            completable.get(15, TimeUnit.SECONDS);
             fail("Expected ExecutionException");
         }
         catch (ExecutionException x)
@@ -325,9 +327,8 @@ public class HttpClientTest extends AbstractTest
 
         // Verify that we can make another request.
         request = client.newRequest(newURI(transport));
-        listener = new FutureResponseListener(request, length);
-        request.send(listener);
-        response = listener.get(15, TimeUnit.SECONDS);
+        completable = new CompletableResponseListener(request, length).send();
+        response = completable.get(15, TimeUnit.SECONDS);
         assertEquals(response.getStatus(), 200);
     }
 
@@ -634,11 +635,10 @@ public class HttpClientTest extends AbstractTest
             }
         });
 
-        org.eclipse.jetty.client.Request request = client.newRequest(newURI(transport))
+        var request = client.newRequest(newURI(transport))
             .method(HttpMethod.HEAD);
-        FutureResponseListener listener = new FutureResponseListener(request, length / 2);
-        request.send(listener);
-        ContentResponse response = listener.get(5, TimeUnit.SECONDS);
+        CompletableFuture<ContentResponse> completable = new CompletableResponseListener(request, length / 2).send();
+        ContentResponse response = completable.get(5, TimeUnit.SECONDS);
 
         assertEquals(HttpStatus.OK_200, response.getStatus());
         assertEquals(0, response.getContent().length);
@@ -835,6 +835,8 @@ public class HttpClientTest extends AbstractTest
 
     @ParameterizedTest
     @MethodSource("transports")
+    @Tag("DisableLeakTracking:client:H3")
+    @Tag("DisableLeakTracking:client:FCGI")
     public void testContentSourceListenersFailure(Transport transport) throws Exception
     {
         int totalBytes = 1024;
@@ -991,6 +993,8 @@ public class HttpClientTest extends AbstractTest
 
     @ParameterizedTest
     @MethodSource("transports")
+    @Tag("DisableLeakTracking:client:H3")
+    @Tag("DisableLeakTracking:client:FCGI")
     public void testParallelContentSourceListenersTotalFailure(Transport transport) throws Exception
     {
         start(transport, new TestHandler(1024));
@@ -1084,7 +1088,7 @@ public class HttpClientTest extends AbstractTest
         }
 
         @Override
-        public boolean handle(Request request, org.eclipse.jetty.server.Response response, Callback callback) throws Exception
+        public boolean handle(Request request, org.eclipse.jetty.server.Response response, Callback callback)
         {
             response.getHeaders().put(HttpHeader.CONTENT_TYPE, "text/plain");
 

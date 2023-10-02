@@ -65,7 +65,9 @@ public class HeaderPatternRule extends PatternRule
     }
 
     /**
-     * @param add true to add the response header, false to put the response header.
+     * Use {@code true} to add the response header, {@code false} to put the response header.
+     *
+     * @param add {@code true} to add the response header, {@code false} to put the response header.
      */
     public void setAdd(boolean add)
     {
@@ -78,7 +80,7 @@ public class HeaderPatternRule extends PatternRule
         return new Handler(input)
         {
             @Override
-            public boolean handle(Response response, Callback callback) throws Exception
+            protected boolean handle(Response response, Callback callback) throws Exception
             {
                 if (isAdd())
                     response.getHeaders().add(getHeaderName(), getHeaderValue());

@@ -65,29 +65,6 @@ public abstract class RFC2616BaseTest
 
     private HttpTesting http;
 
-    class TestFile
-    {
-        String name;
-        String modDate;
-        String data;
-        long length;
-
-        public TestFile(String name)
-        {
-            this.name = name;
-            // HTTP-Date format - see RFC 2616 section 14.29
-            SimpleDateFormat sdf = new SimpleDateFormat("EEE, dd MMM yyyy HH:mm:ss zzz");
-            sdf.setTimeZone(TimeZone.getTimeZone("GMT"));
-            this.modDate = sdf.format(new Date());
-        }
-
-        public void setData(String data)
-        {
-            this.data = data;
-            this.length = data.length();
-        }
-    }
-    
     public static class EchoHandler extends Handler.Abstract.NonBlocking
     {
         @Override
@@ -104,7 +81,7 @@ public abstract class RFC2616BaseTest
                 response.setTrailersSupplier(() -> responseTrailers);
             }
 
-            long contentLength = request.getHeaders().getLongField(HttpHeader.CONTENT_LENGTH);
+            long contentLength = request.getLength();
             if (contentLength >= 0)
                 response.getHeaders().put(HttpHeader.CONTENT_LENGTH, contentLength);
 
@@ -355,12 +332,12 @@ public abstract class RFC2616BaseTest
 
         fields.put("Q", "bbb;q=0.5,aaa,ccc;q=0.002,d;q=0,e;q=0.0001,ddd;q=0.001,aa2,abb;q=0.7");
         List<String> list = fields.getQualityCSV("Q");
-        assertEquals("aaa", HttpField.valueParameters(list.get(0).toString(), null), "Quality parameters");
-        assertEquals("aa2", HttpField.valueParameters(list.get(1).toString(), null), "Quality parameters");
-        assertEquals("abb", HttpField.valueParameters(list.get(2).toString(), null), "Quality parameters");
-        assertEquals("bbb", HttpField.valueParameters(list.get(3).toString(), null), "Quality parameters");
-        assertEquals("ccc", HttpField.valueParameters(list.get(4).toString(), null), "Quality parameters");
-        assertEquals("ddd", HttpField.valueParameters(list.get(5).toString(), null), "Quality parameters");
+        assertEquals("aaa", HttpField.getValueParameters(list.get(0), null), "Quality parameters");
+        assertEquals("aa2", HttpField.getValueParameters(list.get(1), null), "Quality parameters");
+        assertEquals("abb", HttpField.getValueParameters(list.get(2), null), "Quality parameters");
+        assertEquals("bbb", HttpField.getValueParameters(list.get(3), null), "Quality parameters");
+        assertEquals("ccc", HttpField.getValueParameters(list.get(4), null), "Quality parameters");
+        assertEquals("ddd", HttpField.getValueParameters(list.get(5), null), "Quality parameters");
     }
 
     /**

@@ -29,163 +29,58 @@ import org.eclipse.jetty.server.LocalConnector;
 import org.eclipse.jetty.server.Server;
 import org.eclipse.jetty.util.StringUtil;
 import org.eclipse.jetty.util.URIUtil;
-import org.junit.jupiter.api.AfterAll;
-import org.junit.jupiter.api.BeforeAll;
+import org.eclipse.jetty.util.component.LifeCycle;
+import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.Test;
 
 import static org.hamcrest.MatcherAssert.assertThat;
+import static org.hamcrest.Matchers.endsWith;
 import static org.hamcrest.Matchers.equalTo;
 import static org.hamcrest.Matchers.is;
+import static org.hamcrest.Matchers.nullValue;
 
 public class ResponseHeadersTest
 {
-    public static class SimulateUpgradeServlet extends HttpServlet
-    {
-        @Override
-        protected void doGet(HttpServletRequest req, HttpServletResponse response) throws ServletException, IOException
-        {
-            response.setHeader("Upgrade", "WebSocket");
-            response.addHeader("Connection", "Upgrade");
-            response.addHeader("Sec-WebSocket-Accept", "123456789==");
+    private Server server;
+    private LocalConnector connector;
 
-            response.setStatus(HttpServletResponse.SC_SWITCHING_PROTOCOLS);
-        }
-    }
-
-    public static class MultilineResponseValueServlet extends HttpServlet
-    {
-        @Override
-        protected void doGet(HttpServletRequest req, HttpServletResponse response) throws ServletException, IOException
-        {
-            // The bad use-case
-            String pathInfo = URIUtil.decodePath(req.getPathInfo());
-            if (pathInfo != null && pathInfo.length() > 1 && pathInfo.startsWith("/"))
-            {
-                pathInfo = pathInfo.substring(1);
-            }
-            response.setHeader("X-example", pathInfo);
-
-            // The correct use
-            response.setContentType("text/plain");
-            response.setCharacterEncoding("utf-8");
-            response.getWriter().println("Got request uri - " + req.getRequestURI());
-        }
-    }
-
-    public static class CharsetResetToJsonMimeTypeServlet extends HttpServlet
-    {
-        @Override
-        protected void doGet(HttpServletRequest request, HttpServletResponse response) throws ServletException, IOException
-        {
-            // We set an initial desired behavior.
-            response.setContentType("text/html; charset=US-ASCII");
-            PrintWriter writer = response.getWriter();
-
-            // We reset the response, as we don't want it to be HTML anymore.
-            response.reset();
-
-            // switch to json operation
-            // The use of application/json is always assumed to be UTF-8
-            // and should never have a `charset=` entry on the `Content-Type` response header
-            response.setContentType("application/json");
-            writer.println("{ \"what\": \"should this be?\" }");
-        }
-    }
-
-    public static class CharsetChangeToJsonMimeTypeServlet extends HttpServlet
-    {
-        @Override
-        protected void doGet(HttpServletRequest request, HttpServletResponse response) throws ServletException, IOException
-        {
-            // We set an initial desired behavior.
-            response.setContentType("text/html; charset=US-ASCII");
-
-            // switch to json behavior.
-            // The use of application/json is always assumed to be UTF-8
-            // and should never have a `charset=` entry on the `Content-Type` response header
-            response.setContentType("application/json");
-
-            PrintWriter writer = response.getWriter();
-            writer.println("{ \"what\": \"should this be?\" }");
-        }
-    }
-
-    public static class CharsetChangeToJsonMimeTypeSetCharsetToNullServlet extends HttpServlet
-    {
-        @Override
-        protected void doGet(HttpServletRequest request, HttpServletResponse response) throws ServletException, IOException
-        {
-            // We set an initial desired behavior.
-
-            response.setContentType("text/html; charset=us-ascii");
-            PrintWriter writer = response.getWriter();
-
-            // switch to json behavior.
-            // The use of application/json is always assumed to be UTF-8
-            // and should never have a `charset=` entry on the `Content-Type` response header
-            response.setContentType("application/json");
-            // attempt to indicate that there is truly no charset meant to be used in the response header
-            response.setCharacterEncoding(null);
-
-            writer.println("{ \"what\": \"should this be?\" }");
-        }
-    }
-
-    public static class FlushResponseServlet extends HttpServlet
-    {
-        @Override
-        protected void doGet(HttpServletRequest request, HttpServletResponse response) throws ServletException, IOException
-        {
-            PrintWriter writer = response.getWriter();
-            writer.println("Hello");
-            writer.flush();
-            if (!response.isCommitted())
-                throw new IllegalStateException();
-            writer.println("World");
-            writer.close();
-        }
-    }
-
-    private static Server server;
-    private static LocalConnector connector;
-
-    @BeforeAll
-    public static void startServer() throws Exception
+    public void startServer(ServletContextHandler contextHandler) throws Exception
     {
         server = new Server();
         connector = new LocalConnector(server);
         server.addConnector(connector);
 
-        ServletContextHandler context = new ServletContextHandler();
-        context.setContextPath("/");
-        server.setHandler(context);
-
-        context.addServlet(new ServletHolder(new SimulateUpgradeServlet()), "/ws/*");
-        context.addServlet(new ServletHolder(new MultilineResponseValueServlet()), "/multiline/*");
-        context.addServlet(CharsetResetToJsonMimeTypeServlet.class, "/charset/json-reset/*");
-        context.addServlet(CharsetChangeToJsonMimeTypeServlet.class, "/charset/json-change/*");
-        context.addServlet(CharsetChangeToJsonMimeTypeSetCharsetToNullServlet.class, "/charset/json-change-null/*");
-        context.addServlet(FlushResponseServlet.class, "/flush/*");
-
+        server.setHandler(contextHandler);
         server.start();
     }
 
-    @AfterAll
-    public static void stopServer()
+    @AfterEach
+    public void stopServer()
     {
-        try
-        {
-            server.stop();
-        }
-        catch (Exception e)
-        {
-            e.printStackTrace(System.err);
-        }
+        LifeCycle.stop(server);
     }
 
     @Test
     public void testResponseWebSocketHeaderFormat() throws Exception
     {
+        ServletContextHandler contextHandler = new ServletContextHandler();
+        contextHandler.setContextPath("/");
+        HttpServlet fakeWsServlet = new HttpServlet()
+        {
+            @Override
+            protected void doGet(HttpServletRequest req, HttpServletResponse response) throws ServletException, IOException
+            {
+                response.setHeader("Upgrade", "WebSocket");
+                response.addHeader("Connection", "Upgrade");
+                response.addHeader("Sec-WebSocket-Accept", "123456789==");
+
+                response.setStatus(HttpServletResponse.SC_SWITCHING_PROTOCOLS);
+            }
+        };
+        contextHandler.addServlet(fakeWsServlet, "/ws/*");
+
+        startServer(contextHandler);
+
         HttpTester.Request request = new HttpTester.Request();
         request.setMethod("GET");
         request.setURI("/ws/");
@@ -204,6 +99,32 @@ public class ResponseHeadersTest
     @Test
     public void testMultilineResponseHeaderValue() throws Exception
     {
+        ServletContextHandler contextHandler = new ServletContextHandler();
+        contextHandler.setContextPath("/");
+
+        HttpServlet multilineServlet = new HttpServlet()
+        {
+            @Override
+            protected void doGet(HttpServletRequest req, HttpServletResponse response) throws ServletException, IOException
+            {
+                // The bad use-case
+                String pathInfo = URIUtil.decodePath(req.getPathInfo());
+                if (pathInfo != null && pathInfo.length() > 1 && pathInfo.startsWith("/"))
+                {
+                    pathInfo = pathInfo.substring(1);
+                }
+                response.setHeader("X-example", pathInfo);
+
+                // The correct use
+                response.setContentType("text/plain");
+                response.setCharacterEncoding("utf-8");
+                response.getWriter().println("Got request uri - " + req.getRequestURI());
+            }
+        };
+
+        contextHandler.addServlet(multilineServlet, "/multiline/*");
+        startServer(contextHandler);
+
         String actualPathInfo = "%0A%20Content-Type%3A%20image/png%0A%20Content-Length%3A%208%0A%20%0A%20yuck<!--";
 
         HttpTester.Request request = new HttpTester.Request();
@@ -230,6 +151,32 @@ public class ResponseHeadersTest
     @Test
     public void testCharsetResetToJsonMimeType() throws Exception
     {
+        ServletContextHandler contextHandler = new ServletContextHandler();
+        contextHandler.setContextPath("/");
+
+        HttpServlet charsetResetToJsonMimeTypeServlet = new HttpServlet()
+        {
+            @Override
+            protected void doGet(HttpServletRequest request, HttpServletResponse response) throws ServletException, IOException
+            {
+                // We set an initial desired behavior.
+                response.setContentType("text/html; charset=US-ASCII");
+                PrintWriter writer = response.getWriter();
+
+                // We reset the response, as we don't want it to be HTML anymore.
+                response.reset();
+
+                // switch to json operation
+                // The use of application/json is always assumed to be UTF-8
+                // and should never have a `charset=` entry on the `Content-Type` response header
+                response.setContentType("application/json");
+                writer.println("{ \"what\": \"should this be?\" }");
+            }
+        };
+
+        contextHandler.addServlet(charsetResetToJsonMimeTypeServlet, "/charset/json-reset/*");
+        startServer(contextHandler);
+
         HttpTester.Request request = new HttpTester.Request();
         request.setMethod("GET");
         request.setURI("/charset/json-reset/");
@@ -250,6 +197,29 @@ public class ResponseHeadersTest
     @Test
     public void testCharsetChangeToJsonMimeType() throws Exception
     {
+        ServletContextHandler contextHandler = new ServletContextHandler();
+        contextHandler.setContextPath("/");
+        HttpServlet charsetChangeToJsonMimeTypeServlet = new HttpServlet()
+        {
+            @Override
+            protected void doGet(HttpServletRequest request, HttpServletResponse response) throws ServletException, IOException
+            {
+                // We set an initial desired behavior.
+                response.setContentType("text/html; charset=US-ASCII");
+
+                // switch to json behavior.
+                // The use of application/json is always assumed to be UTF-8
+                // and should never have a `charset=` entry on the `Content-Type` response header
+                response.setContentType("application/json");
+
+                PrintWriter writer = response.getWriter();
+                writer.println("{ \"what\": \"should this be?\" }");
+            }
+        };
+
+        contextHandler.addServlet(charsetChangeToJsonMimeTypeServlet, "/charset/json-change/*");
+        startServer(contextHandler);
+
         HttpTester.Request request = new HttpTester.Request();
         request.setMethod("GET");
         request.setURI("/charset/json-change/");
@@ -270,6 +240,31 @@ public class ResponseHeadersTest
     @Test
     public void testCharsetChangeToJsonMimeTypeSetCharsetToNull() throws Exception
     {
+        ServletContextHandler contextHandler = new ServletContextHandler();
+        contextHandler.setContextPath("/");
+        HttpServlet charsetChangeToJsonMimeTypeSetCharsetToNullServlet = new HttpServlet()
+        {
+            @Override
+            protected void doGet(HttpServletRequest request, HttpServletResponse response) throws ServletException, IOException
+            {
+                // We set an initial desired behavior.
+                response.setContentType("text/html; charset=us-ascii");
+                PrintWriter writer = response.getWriter();
+
+                // switch to json behavior.
+                // The use of application/json is always assumed to be UTF-8
+                // and should never have a `charset=` entry on the `Content-Type` response header
+                response.setContentType("application/json");
+                // attempt to indicate that there is truly no charset meant to be used in the response header
+                response.setCharacterEncoding(null);
+
+                writer.println("{ \"what\": \"should this be?\" }");
+            }
+        };
+
+        contextHandler.addServlet(charsetChangeToJsonMimeTypeSetCharsetToNullServlet, "/charset/json-change-null/*");
+        startServer(contextHandler);
+
         HttpTester.Request request = new HttpTester.Request();
         request.setMethod("GET");
         request.setURI("/charset/json-change-null/");
@@ -288,8 +283,190 @@ public class ResponseHeadersTest
     }
 
     @Test
+    public void testAddSetHeaderNulls() throws Exception
+    {
+        ServletContextHandler contextHandler = new ServletContextHandler();
+        contextHandler.setContextPath("/");
+        HttpServlet addHeaderNullServlet = new HttpServlet()
+        {
+            @Override
+            protected void doGet(HttpServletRequest request, HttpServletResponse response) throws ServletException, IOException
+            {
+                // Add the header
+                response.addHeader("X-Foo", "foo-value");
+
+                // Add a null header value (should result in no change, and no exception)
+                response.addHeader("X-Foo", null);
+
+                // Add a null name (should result in no change, and no exception)
+                response.addHeader(null, "bogus");
+
+                // Add a null name and null value (should result in no change, and no exception)
+                response.addHeader(null, null);
+
+                // Set a new header
+                response.setHeader("X-Bar", "bar-value");
+
+                // Set same header with null (should remove header)
+                response.setHeader("X-Bar", null);
+
+                // Set a header with null name (should result in no change, and no exception)
+                response.setHeader(null, "bogus");
+
+                // Set a header with null name and null value (should result in no change, and no exception)
+                response.setHeader(null, null);
+
+                response.setCharacterEncoding("utf-8");
+                response.setContentType("text/plain");
+
+                PrintWriter writer = response.getWriter();
+                writer.println("Done");
+            }
+        };
+
+        contextHandler.addServlet(addHeaderNullServlet, "/add-header-nulls/*");
+        startServer(contextHandler);
+
+        HttpTester.Request request = new HttpTester.Request();
+        request.setMethod("GET");
+        request.setURI("/add-header-nulls/");
+        request.setVersion(HttpVersion.HTTP_1_1);
+        request.setHeader("Connection", "close");
+        request.setHeader("Host", "test");
+
+        ByteBuffer responseBuffer = connector.getResponse(request.generate());
+        // System.err.println(BufferUtil.toUTF8String(responseBuffer));
+        HttpTester.Response response = HttpTester.parseResponse(responseBuffer);
+
+        // Now test for properly formatted HTTP Response Headers.
+        assertThat("Response Code", response.getStatus(), is(200));
+        // The X-Foo header should be present an unchanged
+        assertThat("Response Header X-Foo", response.get("X-Foo"), is("foo-value"));
+        assertThat("Response Header X-Bar should not exist", response.getField("X-Bar"), nullValue());
+    }
+
+    @Test
+    public void testAddSetDateHeaderNulls() throws Exception
+    {
+        ServletContextHandler contextHandler = new ServletContextHandler();
+        contextHandler.setContextPath("/");
+        final long date = System.currentTimeMillis();
+        HttpServlet addHeaderNullServlet = new HttpServlet()
+        {
+            @Override
+            protected void doGet(HttpServletRequest request, HttpServletResponse response) throws ServletException, IOException
+            {
+                // Add the header
+                response.addDateHeader("X-Foo", date);
+                String dateStr = response.getHeader("X-Foo"); // get the formatted Date as a String
+
+                // Add a null name (should result in no change, and no exception)
+                response.addDateHeader(null, 123456);
+
+                // Set a null name (should result in no change, and no exception)
+                response.setDateHeader(null, 987654);
+
+                response.setCharacterEncoding("utf-8");
+                response.setContentType("text/plain");
+
+                PrintWriter writer = response.getWriter();
+                writer.println(dateStr);
+            }
+        };
+
+        contextHandler.addServlet(addHeaderNullServlet, "/add-dateheader-nulls/*");
+        startServer(contextHandler);
+
+        HttpTester.Request request = new HttpTester.Request();
+        request.setMethod("GET");
+        request.setURI("/add-dateheader-nulls/");
+        request.setVersion(HttpVersion.HTTP_1_1);
+        request.setHeader("Connection", "close");
+        request.setHeader("Host", "test");
+
+        ByteBuffer responseBuffer = connector.getResponse(request.generate());
+        // System.err.println(BufferUtil.toUTF8String(responseBuffer));
+        HttpTester.Response response = HttpTester.parseResponse(responseBuffer);
+
+        // Now test for properly formatted HTTP Response Headers.
+        assertThat("Response Code", response.getStatus(), is(200));
+        String dateStr = response.getContent().trim();
+        assertThat("Should have seen a Date String", dateStr, endsWith(" GMT"));
+        // The X-Foo header should be present an unchanged
+        assertThat("Response Header X-Foo", response.get("X-Foo"), is(dateStr));
+    }
+
+    @Test
+    public void testAddSetIntHeaderNulls() throws Exception
+    {
+        ServletContextHandler contextHandler = new ServletContextHandler();
+        contextHandler.setContextPath("/");
+        final int foovalue = 22222222;
+        HttpServlet addHeaderNullServlet = new HttpServlet()
+        {
+            @Override
+            protected void doGet(HttpServletRequest request, HttpServletResponse response) throws ServletException, IOException
+            {
+                // Add the header
+                response.addIntHeader("X-Foo", foovalue);
+
+                // Add a null name (should result in no change, and no exception)
+                response.addIntHeader(null, 123456);
+
+                // Set a null name (should result in no change, and no exception)
+                response.setIntHeader(null, 987654);
+
+                response.setCharacterEncoding("utf-8");
+                response.setContentType("text/plain");
+
+                PrintWriter writer = response.getWriter();
+                writer.println("Done");
+            }
+        };
+
+        contextHandler.addServlet(addHeaderNullServlet, "/add-intheader-nulls/*");
+        startServer(contextHandler);
+
+        HttpTester.Request request = new HttpTester.Request();
+        request.setMethod("GET");
+        request.setURI("/add-intheader-nulls/");
+        request.setVersion(HttpVersion.HTTP_1_1);
+        request.setHeader("Connection", "close");
+        request.setHeader("Host", "test");
+
+        ByteBuffer responseBuffer = connector.getResponse(request.generate());
+        // System.err.println(BufferUtil.toUTF8String(responseBuffer));
+        HttpTester.Response response = HttpTester.parseResponse(responseBuffer);
+
+        // Now test for properly formatted HTTP Response Headers.
+        assertThat("Response Code", response.getStatus(), is(200));
+        // The X-Foo header should be present an unchanged
+        assertThat("Response Header X-Foo", response.getField("X-Foo").getIntValue(), is(foovalue));
+    }
+
+    @Test
     public void testFlushPrintWriter() throws Exception
     {
+        ServletContextHandler contextHandler = new ServletContextHandler();
+        contextHandler.setContextPath("/");
+        HttpServlet flushResponseServlet = new HttpServlet()
+        {
+            @Override
+            protected void doGet(HttpServletRequest request, HttpServletResponse response) throws ServletException, IOException
+            {
+                PrintWriter writer = response.getWriter();
+                writer.println("Hello");
+                writer.flush();
+                if (!response.isCommitted())
+                    throw new IllegalStateException();
+                writer.println("World");
+                writer.close();
+            }
+        };
+
+        contextHandler.addServlet(flushResponseServlet, "/flush/*");
+        startServer(contextHandler);
+
         HttpTester.Request request = new HttpTester.Request();
         request.setMethod("GET");
         request.setURI("/flush");

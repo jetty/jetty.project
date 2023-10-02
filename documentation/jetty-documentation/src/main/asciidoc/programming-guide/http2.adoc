@@ -61,11 +61,11 @@ Applications must call `Stream.demand()` to explicitly require that `onDataAvail
 Applications that consume the content buffer within `onDataAvailable(Stream stream)` (for example, writing it to a file, or copying the bytes to another storage) should call `Data.release()` as soon as they have consumed the content buffer.
 This allows the implementation to reuse the buffer, reducing the memory requirements needed to handle the content buffers.
 
-Alternatively, a client application may store away the `Data` object to consume the buffer bytes later, or pass the `Data` object to another asynchronous API (this is typical in proxy applications).
+Alternatively, an application may store away the `Data` object to consume the buffer bytes later, or pass the `Data` object to another asynchronous API (this is typical in proxy applications).
 
 [IMPORTANT]
 ====
-Calling `Data.release()` is very important not only to allow the implementation to reuse the buffer, but also tells the implementation to enlarge the stream and session flow control windows so that the sender will be able to send more `DATA` frames without stalling.
+The call to `Stream.readData()` tells the implementation to enlarge the stream and session flow control windows so that the sender will be able to send more `DATA` frames without stalling.
 ====
 
 Applications can unwrap the `Data` object into some other object that may be used later, provided that the _release_ semantic is maintained:

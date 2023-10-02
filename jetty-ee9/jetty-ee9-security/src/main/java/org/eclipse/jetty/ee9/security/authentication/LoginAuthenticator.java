@@ -38,7 +38,8 @@ public abstract class LoginAuthenticator implements Authenticator
 
     protected LoginService _loginService;
     protected IdentityService _identityService;
-    private boolean _renewSession;
+    private boolean _sessionRenewedOnAuthentication;
+    private int _sessionMaxInactiveIntervalOnAuthentication;
 
     protected LoginAuthenticator()
     {
@@ -97,7 +98,8 @@ public abstract class LoginAuthenticator implements Authenticator
         _identityService = configuration.getIdentityService();
         if (_identityService == null)
             throw new IllegalStateException("No IdentityService for " + this + " in " + configuration);
-        _renewSession = configuration.isSessionRenewedOnAuthentication();
+        _sessionRenewedOnAuthentication = configuration.isSessionRenewedOnAuthentication();
+        _sessionMaxInactiveIntervalOnAuthentication = configuration.getSessionMaxInactiveIntervalOnAuthentication();
     }
 
     public LoginService getLoginService()
@@ -121,30 +123,36 @@ public abstract class LoginAuthenticator implements Authenticator
     {
         HttpSession httpSession = request.getSession(false);
 
-        if (_renewSession && httpSession != null)
+        if (httpSession != null && (_sessionRenewedOnAuthentication || _sessionMaxInactiveIntervalOnAuthentication != 0))
         {
             synchronized (httpSession)
             {
-                //if we should renew sessions, and there is an existing session that may have been seen by non-authenticated users
-                //(indicated by SESSION_SECURED not being set on the session) then we should change id
-                if (httpSession.getAttribute(ManagedSession.SESSION_CREATED_SECURE) != Boolean.TRUE)
+                if (_sessionMaxInactiveIntervalOnAuthentication != 0)
+                    httpSession.setMaxInactiveInterval(_sessionMaxInactiveIntervalOnAuthentication < 0 ? -1 : _sessionMaxInactiveIntervalOnAuthentication);
+                if (_sessionRenewedOnAuthentication)
                 {
-                    if (httpSession instanceof Session.API api)
+                    //if we should renew sessions, and there is an existing session that may have been seen by non-authenticated users
+                    //(indicated by SESSION_SECURED not being set on the session) then we should change id
+                    if (httpSession.getAttribute(ManagedSession.SESSION_CREATED_SECURE) != Boolean.TRUE)
                     {
-                        Request baseRequest = Request.getBaseRequest(request);
-                        if (baseRequest != null)
+                        if (httpSession instanceof Session.API api)
                         {
-                            httpSession.setAttribute(ManagedSession.SESSION_CREATED_SECURE, Boolean.TRUE);
-                            HttpChannel httpChannel = baseRequest.getHttpChannel();
-                            api.getSession().renewId(httpChannel.getCoreRequest(), httpChannel.getCoreResponse());
-                            return httpSession;
+                            Request baseRequest = Request.getBaseRequest(request);
+                            if (baseRequest != null)
+                            {
+                                httpSession.setAttribute(ManagedSession.SESSION_CREATED_SECURE, Boolean.TRUE);
+                                HttpChannel httpChannel = baseRequest.getHttpChannel();
+                                api.getSession().renewId(httpChannel.getCoreRequest(), httpChannel.getCoreResponse());
+                                return httpSession;
+                            }
                         }
+                        LOG.warn("Unable to renew session {}", httpSession);
+                        return httpSession;
                     }
-                    LOG.warn("Unable to renew session {}", httpSession);
-                    return httpSession;
                 }
             }
         }
+
         return httpSession;
     }
 }

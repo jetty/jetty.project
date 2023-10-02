@@ -18,6 +18,7 @@ import java.util.Collection;
 import java.util.Set;
 
 import org.eclipse.jetty.deploy.test.XmlConfiguredJetty;
+import org.eclipse.jetty.server.Deployable;
 import org.eclipse.jetty.server.handler.ContextHandlerCollection;
 import org.eclipse.jetty.toolchain.test.jupiter.WorkDir;
 import org.eclipse.jetty.toolchain.test.jupiter.WorkDirExtension;
@@ -27,6 +28,7 @@ import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 
 import static org.hamcrest.MatcherAssert.assertThat;
+import static org.hamcrest.Matchers.contains;
 import static org.hamcrest.Matchers.endsWith;
 import static org.hamcrest.Matchers.is;
 import static org.junit.jupiter.api.Assertions.assertEquals;
@@ -117,7 +119,7 @@ public class DeploymentManagerTest
             @Override
             public String getEnvironmentName()
             {
-                return "ee12";
+                return "ee10";
             }
         });
         assertThat(depman.getDefaultEnvironmentName(), is("ee12"));
@@ -128,10 +130,29 @@ public class DeploymentManagerTest
             @Override
             public String getEnvironmentName()
             {
-                return "ee12";
+                return "somethingElse";
             }
         });
         assertThat(depman.getDefaultEnvironmentName(), is("ee12"));
+
+        Environment.ensure("other");
+        depman.addAppProvider(new MockAppProvider()
+        {
+            @Override
+            public String getEnvironmentName()
+            {
+                return "other";
+            }
+        });
+
+        assertThat(depman.getAppProviders().stream().map(AppProvider::getEnvironmentName).sorted(Deployable.ENVIRONMENT_COMPARATOR).toList(),
+            contains(
+                "other",
+                "somethingElse",
+                "ee7",
+                "ee10",
+                "ee12"
+                ));
     }
 
     @Test

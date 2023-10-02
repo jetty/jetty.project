@@ -157,7 +157,7 @@ public class HttpConnection extends AbstractConnection implements Runnable, Writ
 
     protected HttpGenerator newHttpGenerator()
     {
-        return new HttpGenerator(_configuration.getSendServerVersion(), _configuration.getSendXPoweredBy());
+        return new HttpGenerator();
     }
 
     protected HttpParser newHttpParser(HttpCompliance compliance)
@@ -564,39 +564,49 @@ public class HttpConnection extends AbstractConnection implements Runnable, Writ
             _retainableByteBuffer = newBuffer;
         }
 
-        if (isRequestBufferEmpty())
+        if (!isRequestBufferEmpty())
+            return _retainableByteBuffer.remaining();
+
+        // Get a buffer
+        // We are not in a race here for the request buffer as we have not yet received a request,
+        // so there are not any possible legal threads calling #parseContent or #completed.
+        ByteBuffer requestBuffer = getRequestBuffer();
+
+        // fill
+        try
         {
-            // Get a buffer
-            // We are not in a race here for the request buffer as we have not yet received a request,
-            // so there are not an possible legal threads calling #parseContent or #completed.
-            ByteBuffer requestBuffer = getRequestBuffer();
+            int filled = getEndPoint().fill(requestBuffer);
+            if (filled == 0) // Do a retry on fill 0 (optimization for SSL connections)
+                filled = getEndPoint().fill(requestBuffer);
 
-            // fill
-            try
+            if (LOG.isDebugEnabled())
+                LOG.debug("{} filled {} {}", this, filled, _retainableByteBuffer);
+
+            if (filled > 0)
             {
-                int filled = getEndPoint().fill(requestBuffer);
-                if (filled == 0) // Do a retry on fill 0 (optimization for SSL connections)
-                    filled = getEndPoint().fill(requestBuffer);
-
-                if (filled > 0)
-                    bytesIn.add(filled);
-                else if (filled < 0)
+                bytesIn.add(filled);
+            }
+            else
+            {
+                if (filled < 0)
                     _parser.atEOF();
-
-                if (LOG.isDebugEnabled())
-                    LOG.debug("{} filled {} {}", this, filled, _retainableByteBuffer);
-
-                return filled;
+                releaseRequestBuffer();
             }
-            catch (IOException e)
-            {
-                if (LOG.isDebugEnabled())
-                    LOG.debug("Unable to fill from endpoint {}", getEndPoint(), e);
-                _parser.atEOF();
-                return -1;
-            }
+
+            return filled;
         }
-        return 0;
+        catch (Throwable x)
+        {
+            if (LOG.isDebugEnabled())
+                LOG.debug("Unable to fill from endpoint {}", getEndPoint(), x);
+            _parser.atEOF();
+            if (_retainableByteBuffer != null)
+            {
+                _retainableByteBuffer.clear();
+                releaseRequestBuffer();
+            }
+            return -1;
+        }
     }
 
     private boolean parseRequestBuffer()
@@ -1136,7 +1146,12 @@ public class HttpConnection extends AbstractConnection implements Runnable, Writ
         {
             Throwable result = HttpStream.consumeAvailable(this, getHttpConfiguration());
             if (result != null)
+            {
                 _generator.setPersistent(false);
+                if (_chunk != null)
+                    _chunk.release();
+                _chunk = Content.Chunk.from(result, true);
+            }
             return result;
         }
 
@@ -1234,7 +1249,7 @@ public class HttpConnection extends AbstractConnection implements Runnable, Writ
                 _uri.scheme(getEndPoint() instanceof SslConnection.SslEndPoint ? HttpScheme.HTTPS : HttpScheme.HTTP);
 
             // Set the authority (if not already set) in the URI
-            if (!HttpMethod.CONNECT.is(_method) && _uri.getAuthority() == null)
+            if (_uri.getAuthority() == null && !HttpMethod.CONNECT.is(_method))
             {
                 HostPort hostPort = _hostField == null ? getServerAuthority() : _hostField.getHostPort();
                 int port = hostPort.getPort();

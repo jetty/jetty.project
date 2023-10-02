@@ -35,6 +35,7 @@ import static org.junit.jupiter.api.Assertions.assertTrue;
 // @checkstyle-disable-check : AvoidEscapedUnicodeCharactersCheck
 public class StringUtilTest
 {
+
     @Test
     @SuppressWarnings("ReferenceEquality")
     public void testAsciiToLowerCase()

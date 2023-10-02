@@ -16,7 +16,7 @@
 
 The `server` module provides generic server support, and configures generic HTTP properties that apply to all HTTP protocols, the scheduler properties and the server specific properties.
 
-The `server` module depends on the xref:og-module-threadpool[`threadpool` module], the xref:og-module-bytebufferpool[`bytebufferpool` module] and the xref:og-module-logging[`logging`  module].
+The `server` module depends on the xref:og-module-threadpool[`threadpool` module], the xref:og-module-bytebufferpool[`bytebufferpool` module] and the xref:og-module-logging[`logging` module].
 
 [NOTE]
 ====
@@ -45,7 +45,7 @@ It is not uncommon for the network packets containing a request header to arrive
 `jetty.httpConfig.sendServerVersion`::
 Whether you want to send the `Server` header in every HTTP response:
 +
-[source,screen,subs=normal]
+[source,subs="verbatim,attributes"]
 ----
 HTTP/1.1 200 OK
 Content-Length: 0

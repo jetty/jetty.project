@@ -80,7 +80,7 @@ public class SessionTableSchemaTest
      * @param id id of session
      * @param contextPath the context path of the session
      * @param vhost the virtual host of the session 
-     * @throws Exception
+     * @throws Exception if there is an unspecified problem
      */
     public void insertSessionWithoutAttributes(String id, String contextPath, String vhost)
         throws Exception

@@ -45,7 +45,9 @@ public class ServerWithAnnotations
         webapp.addConfiguration(new EnvConfiguration(), new PlusConfiguration(), new AnnotationConfiguration());
 
         webapp.setContextPath("/");
-        Path warFile = JettyDemos.find("ee10-demo-spec/ee10-demo-spec-webapp/target/demo-spec-webapp-@VER@.war");
+        JettyDemos.MavenCoordinate mavenCoordinate = new JettyDemos.MavenCoordinate("org.eclipse.jetty.ee10.demos",
+                "jetty-ee10-demo-spec-webapp", "", "war");
+        Path warFile = JettyDemos.find("ee10-demo-spec/ee10-demo-spec-webapp/target/demo-spec-webapp-@VER@.war", mavenCoordinate);
         webapp.setWar(warFile.toString());
         webapp.setAttribute(
             "org.eclipse.jetty.server.webapp.ContainerIncludeJarPattern",
@@ -69,7 +71,7 @@ public class ServerWithAnnotations
         // Configure a LoginService
         String realmResourceName = "etc/realm.properties";
 
-        org.eclipse.jetty.util.resource.Resource realmResource = webapp.getResourceFactory().newClassPathResource(realmResourceName);
+        org.eclipse.jetty.util.resource.Resource realmResource = webapp.getResourceFactory().newClassLoaderResource(realmResourceName, false);
         if (realmResource == null)
             throw new FileNotFoundException("Unable to find " + realmResourceName);
 

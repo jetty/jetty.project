@@ -41,7 +41,7 @@ import org.slf4j.LoggerFactory;
  * @param <E> the type of mapping endpoint
  */
 @ManagedObject("Path Mappings")
-public class PathMappings<E> extends AbstractMap<PathSpec, E> implements Iterable<MappedResource<E>>, Dumpable
+public class PathMappings<E> extends AbstractMap<PathSpec, E> implements Iterable<MappedResource<E>>, Dumpable, Predicate<String>
 {
     private static final Logger LOG = LoggerFactory.getLogger(PathMappings.class);
     // In prefix matches, this is the length ("/*".length() + 1) - used for the best prefix match loop
@@ -189,6 +189,77 @@ public class PathMappings<E> extends AbstractMap<PathSpec, E> implements Iterabl
             }
         }
         return matches == null ? Collections.emptyList() : matches;
+    }
+
+    /**
+     * Test if the mappings contains a specified path.
+     * @param path the path to return matches on
+     * @return true if the path matches
+     */
+    @Override
+    public boolean test(String path)
+    {
+        if (_mappings.isEmpty())
+            return false;
+
+        // Try for default
+        if (_servletDefault != null)
+            return true;
+
+        // Try a root match
+        if (_servletRoot != null && "/".equals(path))
+            return true;
+
+        // try an exact match
+        MappedResource<E> exact = _exactMap.get(path);
+        if (exact != null)
+            return true;
+
+        // Try a prefix match
+        MappedResource<E> prefix = _prefixMap.getBest(path);
+        while (prefix != null)
+        {
+            PathSpec pathSpec = prefix.getPathSpec();
+            if (pathSpec.matches(path))
+                return true;
+            int specLength = pathSpec.getSpecLength();
+            prefix = specLength > PREFIX_TAIL_LEN ? _prefixMap.getBest(path, 0, specLength - PREFIX_TAIL_LEN) : null;
+        }
+
+        // Try a suffix match
+        if (!_suffixMap.isEmpty())
+        {
+            int i = Math.max(0, path.lastIndexOf("/"));
+            // Loop through each suffix mark
+            // Input is "/a.b.c.foo"
+            //  Loop 1: "b.c.foo"
+            //  Loop 2: "c.foo"
+            //  Loop 3: "foo"
+            while ((i = path.indexOf('.', i + 1)) > 0)
+            {
+                MappedResource<E> suffix = _suffixMap.get(path, i + 1, path.length() - i - 1);
+                if (suffix == null)
+                    continue;
+
+                MatchedPath matchedPath = suffix.getPathSpec().matched(path);
+                if (matchedPath != null)
+                    return true;
+            }
+        }
+
+        // If order is significant, then we need to match by iterating over all mappings.
+        if (_orderIsSignificant)
+        {
+            for (MappedResource<E> mr : _mappings)
+            {
+                if (mr.getPathSpec() instanceof ServletPathSpec)
+                    continue;
+                if (mr.getPathSpec().matches(path))
+                    return true;
+            }
+        }
+
+        return false;
     }
 
     /**

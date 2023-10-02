@@ -2,7 +2,7 @@
   <parent>
     <groupId>org.eclipse.jetty.tests</groupId>
     <artifactId>tests</artifactId>
-    <version>12.0.1-SNAPSHOT</version>
+    <version>12.0.2-SNAPSHOT</version>
   </parent>
 
   <modelVersion>4.0.0</modelVersion>
@@ -103,7 +103,7 @@
           <artifactId>maven-surefire-plugin</artifactId>
           <configuration>
             <systemPropertyVariables>
-              <mavenRepoPath>${settings.localRepository}</mavenRepoPath>
+              <mavenRepoPath>${session.repositorySession.localRepository.basedir.absolutePath}</mavenRepoPath>
               <jettyVersion>${project.version}</jettyVersion>
               <hazelcast.version>${hazelcast.version}</hazelcast.version>
               <mariadb.docker.version>${mariadb.docker.version}</mariadb.docker.version>

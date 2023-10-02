@@ -277,6 +277,7 @@ public class ForwardedRequestCustomizer implements HttpConfiguration.Customizer
     }
 
     /**
+     * Get the header name for forwarded server..
      * @return the header name for forwarded server.
      */
     public String getForwardedServerHeader()
@@ -297,6 +298,7 @@ public class ForwardedRequestCustomizer implements HttpConfiguration.Customizer
     }
 
     /**
+     * Get the forwarded for header.
      * @return the forwarded for header
      */
     public String getForwardedForHeader()
@@ -426,6 +428,7 @@ public class ForwardedRequestCustomizer implements HttpConfiguration.Customizer
     }
 
     /**
+     * Set the header name holding a forwarded Https status indicator(default {@code X-Proxied-Https}).
      * @param forwardedHttpsHeader the header name holding a forwarded Https status indicator(default {@code X-Proxied-Https})
      */
     public void setForwardedHttpsHeader(String forwardedHttpsHeader)

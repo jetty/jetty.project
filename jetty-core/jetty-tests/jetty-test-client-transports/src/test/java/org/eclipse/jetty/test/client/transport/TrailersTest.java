@@ -16,10 +16,11 @@ package org.eclipse.jetty.test.client.transport;
 import java.io.InputStream;
 import java.io.OutputStream;
 import java.nio.ByteBuffer;
+import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.TimeUnit;
 
+import org.eclipse.jetty.client.CompletableResponseListener;
 import org.eclipse.jetty.client.ContentResponse;
-import org.eclipse.jetty.client.FutureResponseListener;
 import org.eclipse.jetty.client.InputStreamResponseListener;
 import org.eclipse.jetty.client.OutputStreamRequestContent;
 import org.eclipse.jetty.client.StringRequestContent;
@@ -91,6 +92,7 @@ public class TrailersTest extends AbstractTest
             client.newRequest(newURI(transport))
                 .trailersSupplier(() -> requestTrailers)
                 .body(body)
+                .timeout(15, TimeUnit.SECONDS)
                 .send(listener);
 
             // Write the content first, then the trailers.
@@ -145,10 +147,9 @@ public class TrailersTest extends AbstractTest
             .headers(headers -> headers.put(HttpHeader.TRAILER, trailerName))
             .body(new StringRequestContent(content))
             .trailersSupplier(() -> HttpFields.build().put(trailerName, trailerValue));
-        FutureResponseListener listener = new FutureResponseListener(request);
-        request.send(listener);
+        CompletableFuture<ContentResponse> completable = new CompletableResponseListener(request).send();
 
-        ContentResponse response = listener.get(5, TimeUnit.SECONDS);
+        ContentResponse response = completable.get(5, TimeUnit.SECONDS);
         assertEquals(HttpStatus.OK_200, response.getStatus());
         assertEquals(content, response.getContentAsString());
         assertEquals(trailerValue, response.getTrailers().get(trailerName));

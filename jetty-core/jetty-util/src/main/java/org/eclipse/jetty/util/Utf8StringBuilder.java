@@ -387,16 +387,29 @@ public class Utf8StringBuilder implements CharsetStringBuilder
     @Override
     public String build() throws CharacterCodingException
     {
-        return takeCompleteString(Utf8StringBuilder::newUtf8CharacterCodingException);
+        return takeCompleteString(Utf8CharacterCodingException::new);
     }
 
-    private static CharacterCodingException newUtf8CharacterCodingException()
+    public static class Utf8CharacterCodingException extends CharacterCodingException
     {
-        return new CharacterCodingException()
+        @Override
+        public String getMessage()
         {
-            {
-                initCause(new IllegalArgumentException("Bad UTF-8 encoding"));
-            }
-        };
+            return "Invalid UTF-8";
+        }
+
+        @Override
+        public String toString()
+        {
+            return "%s@%x: Invalid UTF-8".formatted(CharacterCodingException.class.getSimpleName(), hashCode());
+        }
+    }
+
+    public static class Utf8IllegalArgumentException extends IllegalArgumentException
+    {
+        public Utf8IllegalArgumentException()
+        {
+            super(new Utf8CharacterCodingException());
+        }
     }
 }

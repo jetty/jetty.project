@@ -62,6 +62,9 @@ import org.eclipse.jetty.util.thread.Invocable;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+/**
+ * A {@link Handler} that scopes a request to a specific {@link Context}.
+ */
 public class ContextHandler extends Handler.Wrapper implements Attributes, AliasCheck
 {
     private static final Logger LOG = LoggerFactory.getLogger(ContextHandler.class);
@@ -296,6 +299,7 @@ public class ContextHandler extends Handler.Wrapper implements Attributes, Alias
     }
 
     /**
+     * Set true if /context is not redirected to /context/.
      * @param allowNullPathInContext true if /context is not redirected to /context/
      */
     public void setAllowNullPathInContext(boolean allowNullPathInContext)
@@ -1030,6 +1034,7 @@ public class ContextHandler extends Handler.Wrapper implements Attributes, Alias
     }
 
     /**
+     * Set list of AliasCheck instances.
      * @param checks list of AliasCheck instances
      */
     public void setAliasChecks(List<AliasCheck> checks)

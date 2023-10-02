@@ -58,6 +58,7 @@ public class ServerConnectorListener extends AbstractLifeCycleListener
     }
 
     /**
+     * Get the filePath.
      * @return the filePath
      */
     public Path getFilePath()
@@ -66,6 +67,7 @@ public class ServerConnectorListener extends AbstractLifeCycleListener
     }
 
     /**
+     * Set the filePath to set.
      * @param filePath the filePath to set
      */
     public void setFilePath(Path filePath)
@@ -74,6 +76,7 @@ public class ServerConnectorListener extends AbstractLifeCycleListener
     }
 
     /**
+     * Get the sysPropertyName.
      * @return the sysPropertyName
      */
     public String getSysPropertyName()
@@ -82,6 +85,7 @@ public class ServerConnectorListener extends AbstractLifeCycleListener
     }
 
     /**
+     * Set the sysPropertyName to set.
      * @param sysPropertyName the sysPropertyName to set
      */
     public void setSysPropertyName(String sysPropertyName)
