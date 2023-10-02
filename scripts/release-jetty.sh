@@ -156,12 +156,12 @@ if proceedyn "Are you sure you want to release using above? (y/N)" n; then
             -DprocessAllModules=true 
     fi
     if proceedyn "Commit $VER_RELEASE updates? (Y/n)" y; then
-        git commit -a -m "Updating to version $VER_RELEASE"
+        git commit -sa -m "Updating to version $VER_RELEASE"
     fi
     if proceedyn "Create Tag $TAG_NAME? (Y/n)" y; then
         echo "TODO: Sign tags with GIT_USER_EMAIL=$GIT_USER_EMAIL"
         echo "Using target/version-tag.txt as tag text"
-        git tag --file=target/version-tag.txt $TAG_NAME
+        git -s tag --file=target/version-tag.txt $TAG_NAME
     fi
 
     # This is equivalent to 'mvn release:perform'
@@ -181,7 +181,7 @@ if proceedyn "Are you sure you want to release using above? (y/N)" n; then
             -DprocessAllModules=true 
         echo "Commit $VER_NEXT"
         if proceedyn "Commit updates in working directory for $VER_NEXT? (Y/n)" y; then
-            git commit -a -m "Updating to version $VER_NEXT"
+            git commit -sa -m "Updating to version $VER_NEXT"
         fi
     fi
     if proceedyn "Push git commits to remote $GIT_REMOTE_ID? (Y/n)" y; then
