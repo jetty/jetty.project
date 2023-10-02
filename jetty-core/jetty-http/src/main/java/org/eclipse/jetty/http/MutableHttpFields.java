@@ -235,6 +235,30 @@ class MutableHttpFields implements HttpFields.Mutable
     }
 
     @Override
+    public HttpField getField(HttpHeader header)
+    {
+        // default impl overridden for efficiency
+        for (HttpField f : _fields)
+        {
+            if (f != null && f.getHeader() == header)
+                return f;
+        }
+        return null;
+    }
+
+    @Override
+    public HttpField getField(String name)
+    {
+        // default impl overridden for efficiency
+        for (HttpField f : _fields)
+        {
+            if (f != null && f.is(name))
+                return f;
+        }
+        return null;
+    }
+
+    @Override
     public Iterator<HttpField> iterator()
     {
         return new Iterator<>()

@@ -556,8 +556,11 @@ public class ManagedSelector extends ContainerLifeCycle implements Dumpable
             if (LOG.isDebugEnabled())
                 LOG.debug("updateable {}", _updateable.size());
 
-            for (SelectorUpdate update : _updateable)
+            while (true)
             {
+                SelectorUpdate update = _updateable.pollFirst();
+                if (update == null)
+                    break;
                 if (_selector == null)
                     break;
                 try
@@ -571,7 +574,6 @@ public class ManagedSelector extends ContainerLifeCycle implements Dumpable
                     LOG.warn("Cannot update selector {}", ManagedSelector.this, x);
                 }
             }
-            _updateable.clear();
 
             Selector selector;
             int updates;
@@ -707,12 +709,12 @@ public class ManagedSelector extends ContainerLifeCycle implements Dumpable
             // Do update keys for only previously selected keys.
             // This will update only those keys whose selection did not cause an
             // updateKeys update to be submitted.
-            for (SelectionKey key : _keys)
+            _keys.forEach(key ->
             {
                 Object attachment = key.attachment();
                 if (attachment instanceof Selectable)
                     ((Selectable)attachment).updateKey();
-            }
+            });
             _keys.clear();
         }
 
