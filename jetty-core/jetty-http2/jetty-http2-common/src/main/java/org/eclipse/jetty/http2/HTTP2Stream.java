@@ -423,6 +423,8 @@ public class HTTP2Stream implements Stream, Attachable, Closeable, Callback, Dum
 
     private void onData(Data data)
     {
+        // Note: The retainable buffer doctrine is not respected as the caller
+        //  does not release the Data instance after calling this method.
         DataFrame frame = data.frame();
 
         // SPEC: remotely closed streams must be replied with a reset.
@@ -430,7 +432,7 @@ public class HTTP2Stream implements Stream, Attachable, Closeable, Callback, Dum
         {
             if (LOG.isDebugEnabled())
                 LOG.debug("Data {} for already closed {}", data, this);
-            consume(data);
+            session.dataConsumed(this, data.frame().flowControlLength());
             reset(new ResetFrame(streamId, ErrorCode.STREAM_CLOSED_ERROR.code), Callback.NOOP);
             return;
         }
@@ -440,7 +442,7 @@ public class HTTP2Stream implements Stream, Attachable, Closeable, Callback, Dum
             // Just drop the frame.
             if (LOG.isDebugEnabled())
                 LOG.debug("Data {} for already reset {}", data, this);
-            consume(data);
+            session.dataConsumed(this, data.frame().flowControlLength());
             return;
         }
 
@@ -451,26 +453,20 @@ public class HTTP2Stream implements Stream, Attachable, Closeable, Callback, Dum
             {
                 if (LOG.isDebugEnabled())
                     LOG.debug("Invalid data length {} for {}", data, this);
-                consume(data);
+                session.dataConsumed(this, data.frame().flowControlLength());
                 reset(new ResetFrame(streamId, ErrorCode.PROTOCOL_ERROR.code), Callback.NOOP);
                 return;
             }
         }
 
+        // Retain the data because it is stored for later use.
+        data.retain();
         if (offer(data))
             processData();
     }
 
-    private void consume(Data data)
-    {
-        data.release();
-        session.dataConsumed(this, data.frame().flowControlLength());
-    }
-
     private boolean offer(Data data)
     {
-        // Retain the data because it is stored for later use.
-        data.retain();
         boolean process;
         try (AutoLock ignored = lock.lock())
         {
