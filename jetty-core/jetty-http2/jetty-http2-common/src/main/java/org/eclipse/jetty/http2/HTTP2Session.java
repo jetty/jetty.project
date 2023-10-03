@@ -266,6 +266,7 @@ public abstract class HTTP2Session extends ContainerLifeCycle implements Session
         {
             if (getRecvWindow() < 0)
             {
+                data.release();
                 onSessionFailure(ErrorCode.FLOW_CONTROL_ERROR.code, "session_window_exceeded", Callback.NOOP);
             }
             else
@@ -274,6 +275,7 @@ public abstract class HTTP2Session extends ContainerLifeCycle implements Session
                 {
                     // It's a bad client, it does not deserve to be
                     // treated gently by just resetting the stream.
+                    data.release();
                     onSessionFailure(ErrorCode.FLOW_CONTROL_ERROR.code, "stream_window_exceeded", Callback.NOOP);
                 }
                 else
@@ -288,6 +290,7 @@ public abstract class HTTP2Session extends ContainerLifeCycle implements Session
                 LOG.debug("Stream #{} not found on {}", streamId, this);
             // We must enlarge the session flow control window,
             // otherwise other requests will be stalled.
+            data.release();
             dataConsumed(null, flowControlLength);
             if (isStreamClosed(streamId))
                 reset(null, new ResetFrame(streamId, ErrorCode.STREAM_CLOSED_ERROR.code), Callback.NOOP);

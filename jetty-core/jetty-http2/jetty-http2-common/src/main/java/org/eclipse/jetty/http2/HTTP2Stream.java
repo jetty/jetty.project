@@ -430,7 +430,7 @@ public class HTTP2Stream implements Stream, Attachable, Closeable, Callback, Dum
         {
             if (LOG.isDebugEnabled())
                 LOG.debug("Data {} for already closed {}", data, this);
-            session.dataConsumed(this, frame.flowControlLength());
+            consume(data);
             reset(new ResetFrame(streamId, ErrorCode.STREAM_CLOSED_ERROR.code), Callback.NOOP);
             return;
         }
@@ -440,7 +440,7 @@ public class HTTP2Stream implements Stream, Attachable, Closeable, Callback, Dum
             // Just drop the frame.
             if (LOG.isDebugEnabled())
                 LOG.debug("Data {} for already reset {}", data, this);
-            session.dataConsumed(this, frame.flowControlLength());
+            consume(data);
             return;
         }
 
@@ -451,7 +451,7 @@ public class HTTP2Stream implements Stream, Attachable, Closeable, Callback, Dum
             {
                 if (LOG.isDebugEnabled())
                     LOG.debug("Invalid data length {} for {}", data, this);
-                session.dataConsumed(this, frame.flowControlLength());
+                consume(data);
                 reset(new ResetFrame(streamId, ErrorCode.PROTOCOL_ERROR.code), Callback.NOOP);
                 return;
             }
@@ -459,6 +459,12 @@ public class HTTP2Stream implements Stream, Attachable, Closeable, Callback, Dum
 
         if (offer(data))
             processData();
+    }
+
+    private void consume(Data data)
+    {
+        data.release();
+        session.dataConsumed(this, data.frame().flowControlLength());
     }
 
     private boolean offer(Data data)
@@ -627,6 +633,7 @@ public class HTTP2Stream implements Stream, Attachable, Closeable, Callback, Dum
             Data data = dataQueue.poll();
             if (data == null)
                 break;
+            data.release();
             DataFrame frame = data.frame();
             length += frame.flowControlLength();
             if (frame.isEndStream())
