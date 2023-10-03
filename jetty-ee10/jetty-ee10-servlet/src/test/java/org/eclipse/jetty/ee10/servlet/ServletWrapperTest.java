@@ -22,7 +22,9 @@ import jakarta.servlet.FilterChain;
 import jakarta.servlet.FilterConfig;
 import jakarta.servlet.ServletException;
 import jakarta.servlet.ServletRequest;
+import jakarta.servlet.ServletRequestWrapper;
 import jakarta.servlet.ServletResponse;
+import jakarta.servlet.ServletResponseWrapper;
 import jakarta.servlet.http.HttpServlet;
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletRequestWrapper;
@@ -135,9 +137,7 @@ public class ServletWrapperTest
         @Override
         public void doFilter(ServletRequest request, ServletResponse response, FilterChain chain) throws IOException, ServletException
         {
-            HttpServletRequest wrappedRequest = new ServletRequestHttpWrapper(request);
-            HttpServletResponse wrappedResponse = new ServletResponseHttpWrapper(response);
-            chain.doFilter(wrappedRequest, wrappedResponse);
+            chain.doFilter(new ServletRequestWrapper(request), new ServletResponseWrapper(response));
         }
     }
 
