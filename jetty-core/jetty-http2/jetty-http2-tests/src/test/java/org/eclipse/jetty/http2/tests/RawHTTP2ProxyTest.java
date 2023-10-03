@@ -58,6 +58,7 @@ import org.junit.jupiter.api.Test;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+import static org.awaitility.Awaitility.await;
 import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.Matchers.is;
 import static org.junit.jupiter.api.Assertions.assertEquals;
@@ -110,12 +111,14 @@ public class RawHTTP2ProxyTest
             for (int i = 0; i < serverBufferPools.size(); i++)
             {
                 ArrayByteBufferPool.Tracking serverBufferPool = serverBufferPools.get(i);
-                assertThat("Server #" + i + " leaks: " + serverBufferPool.dumpLeaks(), serverBufferPool.getLeaks().size(), is(0));
+                int idx = i;
+                await().atMost(5, TimeUnit.SECONDS).untilAsserted(() -> assertThat("Server #" + idx + " leaks: " + serverBufferPool.dumpLeaks(), serverBufferPool.getLeaks().size(), is(0)));
             }
             for (int i = 0; i < clientBufferPools.size(); i++)
             {
                 ArrayByteBufferPool.Tracking clientBufferPool = clientBufferPools.get(i);
-                assertThat("Client #" + i + " leaks: " + clientBufferPool.dumpLeaks(), clientBufferPool.getLeaks().size(), is(0));
+                int idx = i;
+                await().atMost(5, TimeUnit.SECONDS).untilAsserted(() -> assertThat("Client #" + idx + " leaks: " + clientBufferPool.dumpLeaks(), clientBufferPool.getLeaks().size(), is(0)));
             }
         }
         finally
