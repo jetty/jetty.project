@@ -170,6 +170,14 @@ public final class UriCompliance implements ComplianceViolation.Mode
 
     private static final AtomicInteger __custom = new AtomicInteger();
     private static final List<UriCompliance> KNOWN_MODES = List.of(DEFAULT, LEGACY, RFC3986, UNAMBIGUOUS, UNSAFE);
+    private static final EnumSet<Violation> NO_VIOLATION = EnumSet.noneOf(Violation.class);
+
+    // This saves a AccessController.executePrivileged() call caused by
+    // EnumSet.noneOf() calling EnumSet.getUniverse().
+    public static EnumSet<Violation> emptyViolationsEnumSet()
+    {
+        return NO_VIOLATION.clone();
+    }
 
     public static boolean isAmbiguous(EnumSet<Violation> violations)
     {
