@@ -923,6 +923,7 @@ public class StreamResetTest extends AbstractTest
             generator.control(accumulator, new ResetFrame(streamId, ErrorCode.CANCEL_STREAM_ERROR.code));
             buffers = accumulator.getByteBuffers();
             socket.write(buffers.toArray(new ByteBuffer[0]));
+            accumulator.release();
 
             assertTrue(writeLatch1.await(5, TimeUnit.SECONDS));
             assertTrue(writeLatch2.await(5, TimeUnit.SECONDS));
@@ -1021,6 +1022,7 @@ public class StreamResetTest extends AbstractTest
             generator.control(accumulator, new ResetFrame(streamId, ErrorCode.CANCEL_STREAM_ERROR.code));
             buffers = accumulator.getByteBuffers();
             socket.write(buffers.toArray(new ByteBuffer[0]));
+            accumulator.release();
             // Wait to be sure that the server processed the reset.
             Thread.sleep(1000);
             // Let the request write, it should not block.

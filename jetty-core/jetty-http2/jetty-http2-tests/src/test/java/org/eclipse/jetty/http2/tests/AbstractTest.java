@@ -31,6 +31,7 @@ import org.eclipse.jetty.http2.client.transport.HttpClientTransportOverHTTP2;
 import org.eclipse.jetty.http2.server.AbstractHTTP2ServerConnectionFactory;
 import org.eclipse.jetty.http2.server.HTTP2CServerConnectionFactory;
 import org.eclipse.jetty.http2.server.RawHTTP2ServerConnectionFactory;
+import org.eclipse.jetty.io.ArrayByteBufferPool;
 import org.eclipse.jetty.io.ClientConnector;
 import org.eclipse.jetty.server.ConnectionFactory;
 import org.eclipse.jetty.server.Handler;
@@ -42,12 +43,17 @@ import org.eclipse.jetty.util.component.LifeCycle;
 import org.eclipse.jetty.util.thread.QueuedThreadPool;
 import org.junit.jupiter.api.AfterEach;
 
+import static org.hamcrest.MatcherAssert.assertThat;
+import static org.hamcrest.Matchers.is;
+
 public class AbstractTest
 {
     protected Server server;
     protected ServerConnector connector;
     protected HTTP2Client http2Client;
     protected HttpClient httpClient;
+    private ArrayByteBufferPool.Tracking serverBufferPool;
+    private ArrayByteBufferPool.Tracking clientBufferPool;
 
     protected void start(Handler handler) throws Exception
     {
@@ -84,7 +90,8 @@ public class AbstractTest
     {
         QueuedThreadPool serverExecutor = new QueuedThreadPool();
         serverExecutor.setName("server");
-        server = new Server(serverExecutor);
+        serverBufferPool = new ArrayByteBufferPool.Tracking();
+        server = new Server(serverExecutor, null, serverBufferPool);
         connector = new ServerConnector(server, 1, 1, connectionFactories);
         server.addConnector(connector);
     }
@@ -92,6 +99,8 @@ public class AbstractTest
     protected void prepareClient()
     {
         ClientConnector connector = new ClientConnector();
+        clientBufferPool = new ArrayByteBufferPool.Tracking();
+        connector.setByteBufferPool(clientBufferPool);
         QueuedThreadPool clientExecutor = new QueuedThreadPool();
         clientExecutor.setName("client");
         connector.setExecutor(clientExecutor);
@@ -128,7 +137,17 @@ public class AbstractTest
     @AfterEach
     public void dispose() throws Exception
     {
-        LifeCycle.stop(httpClient);
-        LifeCycle.stop(server);
+        try
+        {
+            if (serverBufferPool != null)
+                assertThat("Server leaks: " + serverBufferPool.dumpLeaks(), serverBufferPool.getLeaks().size(), is(0));
+            if (clientBufferPool != null)
+                assertThat("Client leaks: " + clientBufferPool.dumpLeaks(), clientBufferPool.getLeaks().size(), is(0));
+        }
+        finally
+        {
+            LifeCycle.stop(httpClient);
+            LifeCycle.stop(server);
+        }
     }
 }
