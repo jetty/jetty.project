@@ -18,6 +18,7 @@ import java.io.InputStream;
 import java.io.InputStreamReader;
 import java.io.UnsupportedEncodingException;
 import java.nio.charset.Charset;
+import java.nio.charset.IllegalCharsetNameException;
 import java.nio.charset.StandardCharsets;
 import java.nio.charset.UnsupportedCharsetException;
 import java.util.Arrays;
@@ -329,8 +330,13 @@ public class MimeTypes
      * Get the explicit, assumed, or inferred Charset for a mime type
      * @param mimeType String form or a mimeType
      * @return A {@link Charset} or null;
+     * @throws  IllegalCharsetNameException
+     *          If the given charset name is illegal
+     * @throws  UnsupportedCharsetException
+     *          If no support for the named charset is available
+     *          in this instance of the Java virtual machine
      */
-    public Charset getCharset(String mimeType)
+    public Charset getCharset(String mimeType) throws IllegalCharsetNameException, UnsupportedCharsetException
     {
         if (mimeType == null)
             return null;
