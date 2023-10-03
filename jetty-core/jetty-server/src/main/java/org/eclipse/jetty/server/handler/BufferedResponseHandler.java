@@ -150,8 +150,8 @@ public class BufferedResponseHandler extends ConditionalHandler.Abstract
                 if (LOG.isDebugEnabled())
                     LOG.debug("{} excluded by path suffix mime type {}", this, request);
 
-                // handle normally
-                return super.handle(request, response, callback);
+                // handle without buffering
+                return next.handle(request, response, callback);
             }
         }
 

@@ -28,10 +28,13 @@ import java.nio.file.Paths;
 import java.nio.file.StandardOpenOption;
 import java.time.Duration;
 import java.util.Arrays;
+import java.util.List;
 import java.util.Random;
+import java.util.concurrent.CopyOnWriteArrayList;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.ExecutionException;
 import java.util.concurrent.TimeUnit;
+import java.util.concurrent.TimeoutException;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.concurrent.atomic.AtomicLong;
@@ -39,7 +42,9 @@ import java.util.concurrent.atomic.AtomicReference;
 
 import org.eclipse.jetty.client.AsyncRequestContent;
 import org.eclipse.jetty.client.BufferingResponseListener;
+import org.eclipse.jetty.client.ByteBufferRequestContent;
 import org.eclipse.jetty.client.BytesRequestContent;
+import org.eclipse.jetty.client.CompletableResponseListener;
 import org.eclipse.jetty.client.ContentResponse;
 import org.eclipse.jetty.client.InputStreamRequestContent;
 import org.eclipse.jetty.client.InputStreamResponseListener;
@@ -50,12 +55,14 @@ import org.eclipse.jetty.client.Result;
 import org.eclipse.jetty.http.HttpFields;
 import org.eclipse.jetty.http.HttpHeader;
 import org.eclipse.jetty.http.HttpStatus;
+import org.eclipse.jetty.io.ByteBufferAccumulator;
 import org.eclipse.jetty.io.Content;
 import org.eclipse.jetty.server.Handler;
 import org.eclipse.jetty.server.Request;
 import org.eclipse.jetty.toolchain.test.MavenTestingUtils;
 import org.eclipse.jetty.util.BufferUtil;
 import org.eclipse.jetty.util.Callback;
+import org.eclipse.jetty.util.CompletableTask;
 import org.eclipse.jetty.util.IO;
 import org.eclipse.jetty.util.NanoTime;
 import org.eclipse.jetty.util.component.LifeCycle;
@@ -64,6 +71,8 @@ import org.junit.jupiter.api.Assumptions;
 import org.junit.jupiter.api.Tag;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.MethodSource;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 import static org.awaitility.Awaitility.await;
 import static org.hamcrest.MatcherAssert.assertThat;
@@ -73,6 +82,7 @@ import static org.hamcrest.Matchers.lessThanOrEqualTo;
 import static org.junit.jupiter.api.Assertions.assertArrayEquals;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
+import static org.junit.jupiter.api.Assertions.assertInstanceOf;
 import static org.junit.jupiter.api.Assertions.assertNotNull;
 import static org.junit.jupiter.api.Assertions.assertSame;
 import static org.junit.jupiter.api.Assertions.assertThrows;
@@ -80,6 +90,8 @@ import static org.junit.jupiter.api.Assertions.assertTrue;
 
 public class HttpClientStreamTest extends AbstractTest
 {
+    private static final Logger LOG = LoggerFactory.getLogger(HttpClientStreamTest.class);
+
     @ParameterizedTest
     @MethodSource("transports")
     public void testFileUpload(Transport transport) throws Exception
@@ -496,7 +508,7 @@ public class HttpClientStreamTest extends AbstractTest
                     public int read()
                     {
                         // Will eventually throw ArrayIndexOutOfBounds
-                        return data[index++];
+                        return data[index++] & 0xFF;
                     }
                 }, data.length / 2))
                 .timeout(5, TimeUnit.SECONDS)
@@ -1152,8 +1164,10 @@ public class HttpClientStreamTest extends AbstractTest
             public boolean handle(Request request, org.eclipse.jetty.server.Response response, Callback callback) throws Exception
             {
                 processCount.incrementAndGet();
-                processLatch.await(timeoutInSeconds * 2, TimeUnit.SECONDS);
-                callback.succeeded();
+                if (processLatch.await(timeoutInSeconds * 2, TimeUnit.SECONDS))
+                    callback.succeeded();
+                else
+                    callback.failed(new TimeoutException());
                 return true;
             }
         });
@@ -1192,6 +1206,198 @@ public class HttpClientStreamTest extends AbstractTest
         // Let the server threads go & wait for the requests to be processed.
         processLatch.countDown();
         assertTrue(clientLatch.await(timeoutInSeconds, TimeUnit.SECONDS));
+    }
+
+    @ParameterizedTest
+    @MethodSource("transports")
+    @Tag("DisableLeakTracking:server:H2")
+    @Tag("DisableLeakTracking:server:H2C")
+    @Tag("DisableLeakTracking:server:H3")
+    @Tag("DisableLeakTracking:server:FCGI")
+    public void testHttpStreamConsumeAvailableUponClientAbort(Transport transport) throws Exception
+    {
+        AtomicReference<org.eclipse.jetty.client.Request> clientRequestRef = new AtomicReference<>();
+
+        start(transport, new Handler.Abstract()
+        {
+            @Override
+            public boolean handle(Request request, org.eclipse.jetty.server.Response response, Callback callback)
+            {
+                new CompletableTask<>()
+                {
+                    @Override
+                    public void run()
+                    {
+                        while (true)
+                        {
+                            Content.Chunk chunk = request.read();
+                            if (chunk == null)
+                            {
+                                request.demand(this);
+                                return;
+                            }
+                            if (Content.Chunk.isFailure(chunk))
+                            {
+                                completeExceptionally(chunk.getFailure());
+                                return;
+                            }
+                            chunk.release();
+                            if (chunk.isLast())
+                            {
+                                complete(null);
+                                return;
+                            }
+
+                            var r = clientRequestRef.getAndSet(null);
+                            if (r != null)
+                            {
+                                // Abort the client request then give some time for the client's
+                                // abort notification (e.g.: reset frame) to reach the server.
+                                r.abort(new IllegalCallerException());
+                                try
+                                {
+                                    Thread.sleep(100);
+                                }
+                                catch (InterruptedException e)
+                                {
+                                    completeExceptionally(e);
+                                    return;
+                                }
+                            }
+                        }
+                    }
+                }
+                .start()
+                .whenComplete((result, failure) ->
+                {
+                    if (failure == null)
+                        callback.succeeded();
+                    else
+                        callback.failed(failure);
+                });
+                return true;
+            }
+        });
+
+        byte[] data = new byte[16 * 1024 * 1024];
+        new Random().nextBytes(data);
+        ByteBufferRequestContent content = new ByteBufferRequestContent(ByteBuffer.wrap(data));
+
+        var request = client.newRequest(newURI(transport))
+            .body(content);
+        clientRequestRef.set(request);
+        Throwable throwable = new CompletableResponseListener(request)
+            .send()
+            .handle((r, t) -> t)
+            .get(5, TimeUnit.SECONDS);
+
+        assertInstanceOf(IllegalCallerException.class, throwable);
+    }
+
+    @ParameterizedTest
+    @MethodSource("transportsNoFCGI")
+    @Tag("DisableLeakTracking:server:UNIX_DOMAIN")
+    @Tag("DisableLeakTracking:server:HTTP")
+    @Tag("DisableLeakTracking:server:HTTPS")
+    public void testUploadWithRetainedData(Transport transport) throws Exception
+    {
+        // TODO: broken for FCGI, investigate.
+
+        List<Content.Chunk> chunks = new CopyOnWriteArrayList<>();
+
+        start(transport, new Handler.Abstract()
+        {
+            @Override
+            public boolean handle(Request request, org.eclipse.jetty.server.Response response, Callback callback)
+            {
+                callback.completeWith(new CompletableTask<>()
+                {
+                    @Override
+                    public void run()
+                    {
+                        while (true)
+                        {
+                            Content.Chunk chunk = request.read();
+                            if (chunk == null)
+                            {
+                                request.demand(this);
+                                return;
+                            }
+
+                            if (Content.Chunk.isFailure(chunk))
+                            {
+                                completeExceptionally(chunk.getFailure());
+                                return;
+                            }
+
+                            if (chunk.hasRemaining())
+                            {
+                                ByteBuffer byteBuffer = chunk.getByteBuffer();
+                                if (chunk.canRetain())
+                                {
+                                    chunk.retain();
+                                    chunks.add(Content.Chunk.asChunk(byteBuffer.slice(), chunk.isLast(), chunk));
+                                }
+                                else
+                                {
+                                    chunks.add(Content.Chunk.from(BufferUtil.copy(byteBuffer), chunk.isLast()));
+                                }
+                                if (chunks.size() % 100 == 0)
+                                    dumpChunks(chunks);
+                                BufferUtil.clear(byteBuffer);
+                            }
+                            chunk.release();
+
+                            if (chunk.isLast())
+                            {
+                                complete(null);
+                                return;
+                            }
+                        }
+                    }
+                }.start());
+                return true;
+            }
+        });
+
+        byte[] data = new byte[10 * 1024 * 1024];
+        new Random().nextBytes(data);
+        CountDownLatch latch = new CountDownLatch(1);
+        ByteBufferRequestContent content = new ByteBufferRequestContent(ByteBuffer.wrap(data));
+
+        new CompletableResponseListener(client.newRequest(newURI(transport)).body(content))
+            .send()
+            .whenComplete((r, t) ->
+            {
+                if (t != null)
+                    t.printStackTrace();
+                else if (r.getStatus() == 200)
+                   latch.countDown();
+            });
+
+        assertTrue(latch.await(30, TimeUnit.SECONDS));
+
+        try (ByteBufferAccumulator accumulator = new ByteBufferAccumulator())
+        {
+            for (Content.Chunk c : chunks)
+            {
+                ByteBuffer byteBuffer = c.getByteBuffer();
+                accumulator.copyBuffer(byteBuffer);
+                BufferUtil.clear(byteBuffer);
+                c.release();
+            }
+            assertArrayEquals(data, accumulator.toByteArray());
+        }
+    }
+
+    private void dumpChunks(List<Content.Chunk> chunks)
+    {
+        long accumulated = 0L;
+        for (Content.Chunk chunk : chunks)
+        {
+            accumulated += chunk.remaining();
+        }
+        LOG.info("Accumulated {} chunks totalling {} bytes", chunks.size(), accumulated);
     }
 
     private record HandlerContext(Request request, org.eclipse.jetty.server.Response response, Callback callback)

@@ -173,7 +173,8 @@ public class Server extends Handler.Wrapper implements Attributes
     public boolean handle(Request request, Response response, Callback callback) throws Exception
     {
         // Handle either with normal handler or default handler
-        return super.handle(request, response, callback) || _defaultHandler != null && _defaultHandler.handle(request, response, callback);
+        Handler next = getHandler();
+        return next != null && next.handle(request, response, callback) || _defaultHandler != null && _defaultHandler.handle(request, response, callback);
     }
 
     public String getServerInfo()

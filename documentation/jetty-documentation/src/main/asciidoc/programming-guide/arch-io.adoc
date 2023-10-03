@@ -14,19 +14,19 @@
 [[pg-arch-io]]
 === Jetty I/O Architecture
 
-Jetty libraries (both client and server) use Java NIO to handle I/O, so that at its core Jetty I/O is completely non-blocking.
+The Jetty libraries (both client and server) use Java NIO to handle I/O, so that at its core Jetty I/O is completely non-blocking.
 
 [[pg-arch-io-selector-manager]]
 ==== Jetty I/O: `SelectorManager`
 
-The core class of Jetty I/O is link:{javadoc-url}/org/eclipse/jetty/io/SelectorManager.html[`SelectorManager`].
+The main class of The Jetty I/O library is link:{javadoc-url}/org/eclipse/jetty/io/SelectorManager.html[`SelectorManager`].
 
 `SelectorManager` manages internally a configurable number of link:{javadoc-url}/org/eclipse/jetty/io/ManagedSelector.html[`ManagedSelector`]s.
 Each `ManagedSelector` wraps an instance of `java.nio.channels.Selector` that in turn manages a number of `java.nio.channels.SocketChannel` instances.
 
 NOTE: TODO: add image
 
-`SocketChannel` instances can be created by clients when connecting to a server and by a server when accepting connections from clients.
+`SocketChannel` instances are typically created by the Jetty implementation, on client-side when connecting to a server and on server-side when accepting connections from clients.
 In both cases the `SocketChannel` instance is passed to `SelectorManager` (which passes it to `ManagedSelector` and eventually to `java.nio.channels.Selector`) to be registered for use within Jetty.
 
 It is possible for an application to create the `SocketChannel` instances outside Jetty, even perform some initial network traffic also outside Jetty (for example for authentication purposes), and then pass the `SocketChannel` instance to `SelectorManager` for use within Jetty.
@@ -56,9 +56,9 @@ include::{doc_code}/org/eclipse/jetty/docs/programming/SelectorManagerDocs.java[
 For example, an HTTP/1.1 server-side `Connection` implementation is responsible to deserialize HTTP/1.1 request bytes into an HTTP request object.
 Conversely, an HTTP/1.1 client-side `Connection` implementation is responsible to deserialize HTTP/1.1 response bytes into an HTTP response object.
 
-`Connection` is the abstraction that implements the reading side of a specific protocol such as HTTP/1.1, or HTTP/2, or HTTP/3, or WebSocket: it is able to read incoming communication in that protocol.
+`Connection` is the abstraction that implements the reading side of a specific protocol such as HTTP/1.1, or HTTP/2, or HTTP/3, or WebSocket: it is able to read and parse incoming bytes in that protocol.
 
-The writing side for a specific protocol _may_ be implemented in the `Connection` but may also be implemented in other components, although eventually the bytes to be written will be written through the `EndPoint`.
+The writing side for a specific protocol _may_ be implemented in the `Connection` but may also be implemented in other components, although eventually the bytes to write will be written through the `EndPoint`.
 
 While there are primarily only two implementations of `EndPoint`,link:{javadoc-url}/org/eclipse/jetty/io/SocketChannelEndPoint.html[`SocketChannelEndPoint`] for TCP and link:{javadoc-url}/org/eclipse/jetty/io/DatagramChannelEndPoint.html[`DatagramChannelEndPoint`] for UDP (used both on the client-side and on the server-side), there are many implementations of `Connection`, typically two for each protocol (one for the client-side and one for the server-side).
 
@@ -103,13 +103,13 @@ The `EndPoint` APIs are typically called by `Connection` implementations, see xr
 
 `Connection` instances have two lifecycle methods:
 
-* `Connection.onOpen()`, invoked when the `Connection` is associated with the `EndPoint`
-* `Connection.onClose(Throwable)`, invoked when the `Connection` is disassociated from the `EndPoint`, where the `Throwable` parameter indicates whether the disassociation was normal (when the parameter is `null`) or was due to an error (when the parameter is not `null`)
+* `Connection.onOpen()`, invoked when the `Connection` is associated with the `EndPoint`.
+* `Connection.onClose(Throwable)`, invoked when the `Connection` is disassociated from the `EndPoint`, where the `Throwable` parameter indicates whether the disassociation was normal (when the parameter is `null`) or was due to an error (when the parameter is not `null`).
 
 When a `Connection` is first created, it is not registered for any Java NIO event.
-It is therefore typical to implement `onOpen()` to call `EndPoint.fillInterested(Callback)` so that the `Connection` declares interest for read events and it is invoked (via the `Callback`) when the read event happens.
+It is therefore typical to implement `onOpen()` to call `EndPoint.fillInterested(Callback)` so that the `Connection` declares interest for read events, and it is invoked (via the `Callback`) when the read event happens.
 
-Abstract class `AbstractConnection` partially implements `Connection` and provides simpler APIs.
+The abstract class `AbstractConnection` partially implements `Connection` and provides simpler APIs.
 The example below shows a typical implementation that extends `AbstractConnection`:
 
 [source,java,indent=0]
@@ -120,7 +120,30 @@ include::{doc_code}/org/eclipse/jetty/docs/programming/SelectorManagerDocs.java[
 [[pg-arch-io-connection-listener]]
 ===== Jetty I/O: `Connection.Listener`
 
-TODO
+The Jetty I/O library allows applications to register xref:pg-arch-listener[event listeners] for the `Connection` events "opened" and "closed" via the interface `Connection.Listener`.
+
+This is useful in many cases, for example:
+
+* Gather statistics about connection lifecycle, such as time of creation and duration.
+* Gather statistics about the number of concurrent connections, and take action if a threshold is exceeded.
+* Gather statistics about the number of bytes read and written, and the number of "messages" read and written, where "messages" may mean HTTP/1.1 requests or responses, or WebSocket frames, or HTTP/2 frames, etc.
+* Gather statistics about the different types of connections being opened (TLS, HTTP/1.1, HTTP/2, WebSocket, etc.).
+* Etc.
+
+`Connection.Listener` implementations must be added as beans to a server-side `Connector`, or to client-side `HttpClient`, `WebSocketClient`, `HTTP2Client` or `HTTP3Client`.
+You can add as beans many `Connection.Listener` objects, each with its own logic, so that you can separate different logics into different `Connection.Listener` implementations.
+
+The Jetty I/O library provides useful `Connection.Listener` implementations that you should evaluate before writing your own:
+
+* link:{javadoc-url}/org/eclipse/jetty/io/ConnectionStatistics[`ConnectionStatistics`]
+* link:{javadoc-url}/org/eclipse/jetty/server/ConnectionLimit[`ConnectionLimit`]
+
+Here is a simple example of a `Connection.Listener` used both on the client and on the server:
+
+[source,java,indent=0]
+----
+include::{doc_code}/org/eclipse/jetty/docs/programming/SelectorManagerDocs.java[tags=connectionListener]
+----
 
 [[pg-arch-io-echo]]
 ==== Jetty I/O: TCP Network Echo

@@ -45,7 +45,6 @@ import org.eclipse.jetty.websocket.common.JettyWebSocketFrameHandlerFactory;
 import org.eclipse.jetty.websocket.common.SessionTracker;
 import org.eclipse.jetty.websocket.core.Configuration;
 import org.eclipse.jetty.websocket.core.CoreSession;
-import org.eclipse.jetty.websocket.core.WebSocketComponents;
 import org.eclipse.jetty.websocket.core.client.UpgradeListener;
 import org.eclipse.jetty.websocket.core.client.WebSocketCoreClient;
 import org.slf4j.Logger;
@@ -60,12 +59,11 @@ public class WebSocketClient extends ContainerLifeCycle implements Configurable,
     private final List<WebSocketSessionListener> sessionListeners = new CopyOnWriteArrayList<>();
     private final SessionTracker sessionTracker = new SessionTracker();
     private final Configuration.ConfigurationCustomizer configurationCustomizer = new Configuration.ConfigurationCustomizer();
-    private final WebSocketComponents components;
     private boolean stopAtShutdown = false;
     private long _stopTimeout = Long.MAX_VALUE;
 
     /**
-     * Instantiate a WebSocketClient with defaults
+     * Instantiates a WebSocketClient with a default {@link HttpClient}.
      */
     public WebSocketClient()
     {
@@ -73,48 +71,15 @@ public class WebSocketClient extends ContainerLifeCycle implements Configurable,
     }
 
     /**
-     * <p>
-     * Instantiate a WebSocketClient.
-     * </p>
+     * <p>Instantiates a WebSocketClient with the given {@link HttpClient}.</p>
      *
-     * <p>
-     *     HTTP behaviors of the WebSocket upgrade are taken from the HttpClient configuration.
-     * </p>
-     *
-     * @param httpClient the HttpClient to base internal defaults off of
+     * @param httpClient the HttpClient to use
      */
     public WebSocketClient(HttpClient httpClient)
     {
-        this (httpClient,
-            new WebSocketComponents(
-                null,
-                null,
-                httpClient != null ? httpClient.getByteBufferPool() : null,
-                null,
-                null,
-                httpClient != null ? httpClient.getExecutor() : null)
-        );
-    }
-
-    /**
-     * <p>
-     * Instantiate a WebSocketClient.
-     * </p>
-     *
-     * <p>
-     *     HTTP behaviors of the WebSocket upgrade are taken from the {@link HttpClient} configuration.
-     *     WebSocket behaviors are taken from the {@link WebSocketComponents} configuration.
-     * </p>
-     *
-     * @param httpClient the HttpClient to use for the HTTP behaviors of WebSocket upgrade
-     * @param webSocketComponents the WebSocketComponents to use for WebSocket behaviors
-     */
-    public WebSocketClient(HttpClient httpClient, WebSocketComponents webSocketComponents)
-    {
-        components = webSocketComponents;
-        coreClient = new WebSocketCoreClient(httpClient, components);
+        coreClient = new WebSocketCoreClient(httpClient, null);
         addManaged(coreClient);
-        frameHandlerFactory = new JettyWebSocketFrameHandlerFactory(this, components);
+        frameHandlerFactory = new JettyWebSocketFrameHandlerFactory(this, coreClient.getWebSocketComponents());
         sessionListeners.add(sessionTracker);
         addBean(sessionTracker);
     }
@@ -362,7 +327,7 @@ public class WebSocketClient extends ContainerLifeCycle implements Configurable,
     @Override
     public Executor getExecutor()
     {
-        return components.getExecutor();
+        return getHttpClient().getExecutor();
     }
 
     public HttpClient getHttpClient()
@@ -372,7 +337,7 @@ public class WebSocketClient extends ContainerLifeCycle implements Configurable,
 
     public DecoratedObjectFactory getObjectFactory()
     {
-        return components.getObjectFactory();
+        return coreClient.getObjectFactory();
     }
 
     public Collection<Session> getOpenSessions()
@@ -391,6 +356,7 @@ public class WebSocketClient extends ContainerLifeCycle implements Configurable,
 
     /**
      * Set JVM shutdown behavior.
+     *
      * @param stop If true, this client instance will be explicitly stopped when the
      * JVM is shutdown. Otherwise the application is responsible for maintaining the WebSocketClient lifecycle.
      * @see Runtime#addShutdownHook(Thread)
@@ -411,6 +377,7 @@ public class WebSocketClient extends ContainerLifeCycle implements Configurable,
 
     /**
      * The timeout to allow all remaining open Sessions to be closed gracefully using  the close code {@link org.eclipse.jetty.websocket.api.StatusCode#SHUTDOWN}.
+     *
      * @param stopTimeout the time in ms to wait for the graceful close, use a value less than or equal to 0 to not gracefully close.
      */
     public void setStopTimeout(long stopTimeout)
