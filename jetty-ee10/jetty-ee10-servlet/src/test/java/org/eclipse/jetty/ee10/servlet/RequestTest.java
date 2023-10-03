@@ -14,6 +14,7 @@
 package org.eclipse.jetty.ee10.servlet;
 
 import java.io.IOException;
+import java.io.UnsupportedEncodingException;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
@@ -33,6 +34,7 @@ import org.eclipse.jetty.server.LocalConnector;
 import org.eclipse.jetty.server.Server;
 import org.eclipse.jetty.util.component.LifeCycle;
 import org.junit.jupiter.api.AfterEach;
+import org.junit.jupiter.api.Assertions;
 import org.junit.jupiter.api.Test;
 
 import static org.hamcrest.MatcherAssert.assertThat;
@@ -306,6 +308,33 @@ public class RequestTest
                 Host: host\r
                 Connection: close\r
                 \r
+                """);
+        HttpTester.Response response = HttpTester.parseResponse(rawResponse);
+        assertThat(response.getStatus(), is(HttpStatus.OK_200));
+    }
+
+    @Test
+    public void testUnknownCharacterEncoding() throws Exception
+    {
+        startServer(new HttpServlet()
+        {
+            @Override
+            protected void service(HttpServletRequest request, HttpServletResponse resp) throws IOException
+            {
+                assertThat(request.getCharacterEncoding(), is("Unknown"));
+                Assertions.assertThrows(UnsupportedEncodingException.class, request::getReader);
+            }
+        });
+
+        String rawResponse = _connector.getResponse(
+            """
+                POST /test HTTP/1.1\r
+                Host: host\r
+                Content-Type:text/plain; charset=Unknown\r
+                Content-Length: 10\r
+                Connection: close\r
+                \r
+                1234567890\r
                 """);
         HttpTester.Response response = HttpTester.parseResponse(rawResponse);
         assertThat(response.getStatus(), is(HttpStatus.OK_200));
