@@ -121,6 +121,7 @@ public interface Request extends Attributes, Content.Source
 {
     String CACHE_ATTRIBUTE = Request.class.getCanonicalName() + ".CookieCache";
     String COOKIE_ATTRIBUTE = Request.class.getCanonicalName() + ".Cookies";
+    String TIMESTAMP_ATTRIBUTE = Request.class.getCanonicalName() + ".TimeStamp";
     List<Locale> DEFAULT_LOCALES = List.of(Locale.getDefault());
 
     /**
@@ -223,7 +224,13 @@ public interface Request extends Attributes, Content.Source
      */
     static long getTimeStamp(Request request)
     {
-        return System.currentTimeMillis() - NanoTime.millisSince(request.getHeadersNanoTime());
+        Long timeStampAttribute = (Long)request.getAttribute(TIMESTAMP_ATTRIBUTE);
+        if (timeStampAttribute != null)
+            return timeStampAttribute;
+
+        long timeStamp = System.currentTimeMillis() - NanoTime.millisSince(request.getHeadersNanoTime());
+        request.setAttribute(TIMESTAMP_ATTRIBUTE, timeStamp);
+        return timeStamp;
     }
 
     /**
