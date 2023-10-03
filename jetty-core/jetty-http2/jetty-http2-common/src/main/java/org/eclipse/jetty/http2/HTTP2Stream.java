@@ -423,8 +423,6 @@ public class HTTP2Stream implements Stream, Attachable, Closeable, Callback, Dum
 
     private void onData(Data data)
     {
-        // Note: The retainable buffer doctrine is not respected as the caller
-        //  does not release the Data instance after calling this method.
         DataFrame frame = data.frame();
 
         // SPEC: remotely closed streams must be replied with a reset.
