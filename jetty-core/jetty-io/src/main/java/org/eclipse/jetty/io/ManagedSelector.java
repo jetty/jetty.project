@@ -709,12 +709,12 @@ public class ManagedSelector extends ContainerLifeCycle implements Dumpable
             // Do update keys for only previously selected keys.
             // This will update only those keys whose selection did not cause an
             // updateKeys update to be submitted.
-            _keys.forEach(key ->
+            for (SelectionKey key : _keys)
             {
                 Object attachment = key.attachment();
                 if (attachment instanceof Selectable)
                     ((Selectable)attachment).updateKey();
-            });
+            }
             _keys.clear();
         }
 
