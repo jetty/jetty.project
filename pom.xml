@@ -838,14 +838,27 @@
             </supportedProjectTypes>
             <instructions>
               <Bundle-SymbolicName>${bundle-symbolic-name}</Bundle-SymbolicName>
-              <Bundle-Description>Jetty module for ${project.name}</Bundle-Description>
-              <Bundle-RequiredExecutionEnvironment>JavaSE-11</Bundle-RequiredExecutionEnvironment>
+              <Bundle-Description>Jetty xmodule for ${project.name}</Bundle-Description>
+              <Bundle-RequiredExecutionEnvironment>JavaSE-17</Bundle-RequiredExecutionEnvironment>
               <Bundle-DocURL>${jetty.url}</Bundle-DocURL>
               <Bundle-Vendor>Eclipse Jetty Project</Bundle-Vendor>
               <Bundle-Classpath>.</Bundle-Classpath>
               <Bundle-Copyright>Copyright (c) 1995 Mort Bay Consulting Pty Ltd and others.</Bundle-Copyright>
               <Import-Package>
                 ${osgi.slf4j.import.packages},
+                !java.io,
+                !java.lang,
+                !java.lang.annotation,
+                !java.lang.invoke,
+                !java.lang.reflect,
+                !java.net,
+                !java.nio.charset,
+                !java.nio.file,
+                !java.util,
+                !java.util.function,
+                !java.util.stream,
+                !javax.xml.catalog,
+                !javax.xml.parsers,
                 *
               </Import-Package>
               <_provider-policy><![CDATA[$<range;[===,=+)>]]></_provider-policy>
