@@ -38,6 +38,7 @@
           <argLine>
             @{argLine} ${jetty.surefire.argLine}
             --add-exports org.eclipse.jetty.ee10.webapp/org.acme.webapp=org.eclipse.jetty.ee10.servlet
+            --add-reads org.eclipse.jetty.ee10.webapp=org.eclipse.jetty.logging
           </argLine>
           <useManifestOnlyJar>false</useManifestOnlyJar>
           <additionalClasspathElements>

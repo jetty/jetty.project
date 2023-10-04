@@ -222,7 +222,6 @@ public class StandardDescriptorProcessorTest
 
         //test the attributes on SessionHandler do NOT contain the name
         Map<String, String> sessionAttributes = wac.getSessionHandler().getSessionCookieAttributes();
-        sessionAttributes.keySet().forEach(System.err::println);
         assertThat(sessionAttributes.keySet(),
             containsInAnyOrder(Arrays.asList(
                 equalToIgnoringCase("comment"),
