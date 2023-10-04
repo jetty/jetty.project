@@ -29,6 +29,7 @@ import org.eclipse.jetty.toolchain.test.MavenTestingUtils;
 import org.eclipse.jetty.util.FutureCallback;
 import org.eclipse.jetty.websocket.core.Frame;
 import org.eclipse.jetty.websocket.core.WebSocketComponents;
+import org.eclipse.jetty.websocket.core.internal.util.MethodHolder;
 import org.eclipse.jetty.websocket.javax.common.decoders.RegisteredDecoder;
 import org.eclipse.jetty.websocket.javax.common.messages.DecodedTextStreamMessageSink;
 import org.eclipse.jetty.websocket.javax.tests.FunctionMethod;
@@ -80,7 +81,7 @@ public class DecoderTextStreamTest extends AbstractClientSessionTest
         });
 
         List<RegisteredDecoder> decoders = toRegisteredDecoderList(QuotesDecoder.class, Quotes.class);
-        DecodedTextStreamMessageSink<Quotes> sink = new DecodedTextStreamMessageSink<>(session.getCoreSession(), quoteHandle, decoders);
+        DecodedTextStreamMessageSink<Quotes> sink = new DecodedTextStreamMessageSink<>(session.getCoreSession(), MethodHolder.from(quoteHandle), decoders);
 
         List<FutureCallback> callbacks = new ArrayList<>();
         FutureCallback finCallback = null;

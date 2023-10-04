@@ -22,6 +22,7 @@ import javax.websocket.Session;
 
 import org.eclipse.jetty.util.annotation.Name;
 import org.eclipse.jetty.websocket.core.internal.util.InvokerUtils;
+import org.eclipse.jetty.websocket.core.internal.util.MethodHolder;
 import org.eclipse.jetty.websocket.core.internal.util.ReflectUtils;
 import org.eclipse.jetty.websocket.javax.common.JavaxWebSocketFrameHandlerFactory;
 import org.junit.jupiter.api.Test;
@@ -57,6 +58,12 @@ public class InvokerUtilsStaticParamsTest
     
     private static MethodHandles.Lookup lookup = MethodHandles.lookup();
 
+    private MethodHolder getMethodHolder(Method method, String[] namedVariables, InvokerUtils.Arg... args)
+    {
+        MethodHandle methodHandle = InvokerUtils.mutatedInvoker(lookup, Foo.class, method, new NameParamIdentifier(), namedVariables, args);
+        return MethodHolder.from(methodHandle);
+    }
+
     @Test
     public void testOnlyParamString() throws Throwable
     {
@@ -70,21 +77,21 @@ public class InvokerUtilsStaticParamsTest
         // Raw Calling Args - none specified
 
         // Get basic method handle (without a instance to call against) - this is what the metadata stores
-        MethodHandle methodHandle = InvokerUtils.mutatedInvoker(lookup, Foo.class, method, new NameParamIdentifier(), namedVariables);
+        MethodHolder methodHolder = getMethodHolder(method, namedVariables);
 
         // Some point later an actual instance is needed, which has static named parameters
         Map<String, String> templateValues = new HashMap<>();
         templateValues.put("fruit", "pear");
 
         // Bind the static values, in same order as declared
-        methodHandle = JavaxWebSocketFrameHandlerFactory.bindTemplateVariables(methodHandle, namedVariables, templateValues);
+        methodHolder = JavaxWebSocketFrameHandlerFactory.bindTemplateVariables(methodHolder, namedVariables, templateValues);
 
         // Assign an instance to call.
         Foo foo = new Foo();
-        methodHandle = methodHandle.bindTo(foo);
+        methodHolder = methodHolder.bindTo(foo);
 
         // Call method against instance
-        String result = (String)methodHandle.invoke();
+        String result = (String)methodHolder.invoke();
         assertThat("Result", result, is("onFruit('pear')"));
     }
 
@@ -99,21 +106,21 @@ public class InvokerUtilsStaticParamsTest
         };
 
         // Get basic method handle (without a instance to call against) - this is what the metadata stores
-        MethodHandle methodHandle = InvokerUtils.mutatedInvoker(lookup, Foo.class, method, new NameParamIdentifier(), namedVariables);
+        MethodHolder methodHolder = getMethodHolder(method, namedVariables);
 
         // Some point later an actual instance is needed, which has static named parameters
         Map<String, String> templateValues = new HashMap<>();
         templateValues.put("count", "2222");
 
         // Bind the static values for the variables, in same order as the variables were declared
-        methodHandle = JavaxWebSocketFrameHandlerFactory.bindTemplateVariables(methodHandle, namedVariables, templateValues);
+        methodHolder = JavaxWebSocketFrameHandlerFactory.bindTemplateVariables(methodHolder, namedVariables, templateValues);
 
         // Assign an instance to call.
         Foo foo = new Foo();
-        methodHandle = methodHandle.bindTo(foo);
+        methodHolder = methodHolder.bindTo(foo);
 
         // Call method against instance
-        String result = (String)methodHandle.invoke();
+        String result = (String)methodHolder.invoke();
         assertThat("Result", result, is("onCount(2222)"));
     }
 
@@ -130,21 +137,21 @@ public class InvokerUtilsStaticParamsTest
         final InvokerUtils.Arg ARG_LABEL = new InvokerUtils.Arg(String.class).required();
 
         // Get basic method handle (without a instance to call against) - this is what the metadata stores
-        MethodHandle methodHandle = InvokerUtils.mutatedInvoker(lookup, Foo.class, method, new NameParamIdentifier(), namedVariables, ARG_LABEL);
+        MethodHolder methodHolder = getMethodHolder(method, namedVariables, ARG_LABEL);
 
         // Some point later an actual instance is needed, which has static named parameters
         Map<String, String> templateValues = new HashMap<>();
         templateValues.put("count", "444");
 
         // Bind the static values for the variables, in same order as the variables were declared
-        methodHandle = JavaxWebSocketFrameHandlerFactory.bindTemplateVariables(methodHandle, namedVariables, templateValues);
+        methodHolder = JavaxWebSocketFrameHandlerFactory.bindTemplateVariables(methodHolder, namedVariables, templateValues);
 
         // Assign an instance to call.
         Foo foo = new Foo();
-        methodHandle = methodHandle.bindTo(foo);
+        methodHolder = methodHolder.bindTo(foo);
 
         // Call method against instance
-        String result = (String)methodHandle.invoke("cherry");
+        String result = (String)methodHolder.invoke("cherry");
         assertThat("Result", result, is("onLabeledCount('cherry', 444)"));
     }
 }

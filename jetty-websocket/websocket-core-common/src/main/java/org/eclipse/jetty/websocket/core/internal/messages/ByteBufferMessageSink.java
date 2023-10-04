@@ -13,10 +13,7 @@
 
 package org.eclipse.jetty.websocket.core.internal.messages;
 
-import java.lang.invoke.MethodHandle;
-import java.lang.invoke.MethodType;
 import java.nio.ByteBuffer;
-import java.util.Objects;
 
 import org.eclipse.jetty.io.ByteBufferCallbackAccumulator;
 import org.eclipse.jetty.io.ByteBufferPool;
@@ -24,24 +21,16 @@ import org.eclipse.jetty.util.BufferUtil;
 import org.eclipse.jetty.util.Callback;
 import org.eclipse.jetty.websocket.core.CoreSession;
 import org.eclipse.jetty.websocket.core.Frame;
-import org.eclipse.jetty.websocket.core.exception.InvalidSignatureException;
 import org.eclipse.jetty.websocket.core.exception.MessageTooLargeException;
+import org.eclipse.jetty.websocket.core.internal.util.MethodHolder;
 
 public class ByteBufferMessageSink extends AbstractMessageSink
 {
     private ByteBufferCallbackAccumulator out;
 
-    public ByteBufferMessageSink(CoreSession session, MethodHandle methodHandle)
+    public ByteBufferMessageSink(CoreSession session, MethodHolder methodHolder)
     {
-        super(session, methodHandle);
-
-        // Validate onMessageMethod
-        Objects.requireNonNull(methodHandle, "MethodHandle");
-        MethodType onMessageType = MethodType.methodType(Void.TYPE, ByteBuffer.class);
-        if (methodHandle.type() != onMessageType)
-        {
-            throw InvalidSignatureException.build(onMessageType, methodHandle.type());
-        }
+        super(session, methodHolder);
     }
 
     @Override
@@ -61,9 +50,9 @@ public class ByteBufferMessageSink extends AbstractMessageSink
             if (frame.isFin() && (out == null))
             {
                 if (frame.hasPayload())
-                    methodHandle.invoke(frame.getPayload());
+                    methodHolder.invoke(frame.getPayload());
                 else
-                    methodHandle.invoke(BufferUtil.EMPTY_BUFFER);
+                    methodHolder.invoke(BufferUtil.EMPTY_BUFFER);
 
                 callback.succeeded();
                 session.demand(1);
@@ -89,7 +78,7 @@ public class ByteBufferMessageSink extends AbstractMessageSink
 
                 try
                 {
-                    methodHandle.invoke(buffer);
+                    methodHolder.invoke(buffer);
                 }
                 finally
                 {

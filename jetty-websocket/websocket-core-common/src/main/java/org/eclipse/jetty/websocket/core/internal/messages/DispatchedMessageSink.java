@@ -14,7 +14,6 @@
 package org.eclipse.jetty.websocket.core.internal.messages;
 
 import java.io.Closeable;
-import java.lang.invoke.MethodHandle;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.Executor;
 
@@ -22,6 +21,7 @@ import org.eclipse.jetty.util.Callback;
 import org.eclipse.jetty.util.IO;
 import org.eclipse.jetty.websocket.core.CoreSession;
 import org.eclipse.jetty.websocket.core.Frame;
+import org.eclipse.jetty.websocket.core.internal.util.MethodHolder;
 
 /**
  * Centralized logic for Dispatched Message Handling.
@@ -98,9 +98,9 @@ public abstract class DispatchedMessageSink extends AbstractMessageSink
     private MessageSink typeSink;
     private final Executor executor;
 
-    public DispatchedMessageSink(CoreSession session, MethodHandle methodHandle)
+    public DispatchedMessageSink(CoreSession session, MethodHolder methodHolder)
     {
-        super(session, methodHandle);
+        super(session, methodHolder);
         executor = session.getWebSocketComponents().getExecutor();
     }
 
@@ -119,7 +119,7 @@ public abstract class DispatchedMessageSink extends AbstractMessageSink
             {
                 try
                 {
-                    methodHandle.invoke(typeSink);
+                    methodHolder.invoke(typeSink);
                     if (typeSink instanceof Closeable)
                         IO.close((Closeable)typeSink);
 

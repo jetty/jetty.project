@@ -30,6 +30,7 @@ import org.eclipse.jetty.websocket.core.CoreSession;
 import org.eclipse.jetty.websocket.core.Frame;
 import org.eclipse.jetty.websocket.core.OpCode;
 import org.eclipse.jetty.websocket.core.internal.messages.PartialStringMessageSink;
+import org.eclipse.jetty.websocket.core.internal.util.MethodHolder;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 
@@ -48,7 +49,7 @@ public class PartialStringMessageSinkTest
     @BeforeEach
     public void before() throws Exception
     {
-        messageSink = new PartialStringMessageSink(coreSession, endpoint.getMethodHandle());
+        messageSink = new PartialStringMessageSink(coreSession, MethodHolder.from(endpoint.getMethodHandle()));
     }
 
     @Test

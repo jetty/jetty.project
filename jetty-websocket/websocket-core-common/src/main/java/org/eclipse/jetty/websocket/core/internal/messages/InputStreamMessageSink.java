@@ -13,16 +13,15 @@
 
 package org.eclipse.jetty.websocket.core.internal.messages;
 
-import java.lang.invoke.MethodHandle;
-
 import org.eclipse.jetty.websocket.core.CoreSession;
 import org.eclipse.jetty.websocket.core.Frame;
+import org.eclipse.jetty.websocket.core.internal.util.MethodHolder;
 
 public class InputStreamMessageSink extends DispatchedMessageSink
 {
-    public InputStreamMessageSink(CoreSession session, MethodHandle methodHandle)
+    public InputStreamMessageSink(CoreSession session, MethodHolder methodHolder)
     {
-        super(session, methodHandle);
+        super(session, methodHolder);
     }
 
     @Override

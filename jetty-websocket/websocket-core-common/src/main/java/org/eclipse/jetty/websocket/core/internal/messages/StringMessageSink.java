@@ -13,22 +13,21 @@
 
 package org.eclipse.jetty.websocket.core.internal.messages;
 
-import java.lang.invoke.MethodHandle;
-
 import org.eclipse.jetty.util.Callback;
 import org.eclipse.jetty.util.Utf8StringBuilder;
 import org.eclipse.jetty.websocket.core.CoreSession;
 import org.eclipse.jetty.websocket.core.Frame;
 import org.eclipse.jetty.websocket.core.exception.MessageTooLargeException;
+import org.eclipse.jetty.websocket.core.internal.util.MethodHolder;
 
 public class StringMessageSink extends AbstractMessageSink
 {
     private Utf8StringBuilder out;
     private int size;
 
-    public StringMessageSink(CoreSession session, MethodHandle methodHandle)
+    public StringMessageSink(CoreSession session, MethodHolder methodHolder)
     {
-        super(session, methodHandle);
+        super(session, methodHolder);
         this.size = 0;
     }
 
@@ -50,7 +49,7 @@ public class StringMessageSink extends AbstractMessageSink
 
             out.append(frame.getPayload());
             if (frame.isFin())
-                methodHandle.invoke(out.toString());
+                methodHolder.invoke(out.toString());
 
             callback.succeeded();
             session.demand(1);

@@ -28,6 +28,7 @@ import org.eclipse.jetty.websocket.core.Frame;
 import org.eclipse.jetty.websocket.core.OpCode;
 import org.eclipse.jetty.websocket.core.exception.MessageTooLargeException;
 import org.eclipse.jetty.websocket.core.internal.messages.StringMessageSink;
+import org.eclipse.jetty.websocket.core.internal.util.MethodHolder;
 import org.junit.jupiter.api.Test;
 
 import static org.hamcrest.MatcherAssert.assertThat;
@@ -44,7 +45,7 @@ public class StringMessageSinkTest
     @Test
     public void testMaxMessageSize() throws Exception
     {
-        StringMessageSink messageSink = new StringMessageSink(coreSession, endpoint.getMethodHandle());
+        StringMessageSink messageSink = new StringMessageSink(coreSession, MethodHolder.from(endpoint.getMethodHandle()));
         ByteBuffer utf8Payload = BufferUtil.toBuffer(new byte[]{(byte)0xF0, (byte)0x90, (byte)0x8D, (byte)0x88});
 
         FutureCallback callback = new FutureCallback();
@@ -60,7 +61,7 @@ public class StringMessageSinkTest
     @Test
     public void testValidUtf8() throws Exception
     {
-        StringMessageSink messageSink = new StringMessageSink(coreSession, endpoint.getMethodHandle());
+        StringMessageSink messageSink = new StringMessageSink(coreSession, MethodHolder.from(endpoint.getMethodHandle()));
         ByteBuffer utf8Payload = BufferUtil.toBuffer(new byte[]{(byte)0xF0, (byte)0x90, (byte)0x8D, (byte)0x88});
 
         FutureCallback callback = new FutureCallback();
@@ -73,7 +74,7 @@ public class StringMessageSinkTest
     @Test
     public void testUtf8Continuation() throws Exception
     {
-        StringMessageSink messageSink = new StringMessageSink(coreSession, endpoint.getMethodHandle());
+        StringMessageSink messageSink = new StringMessageSink(coreSession, MethodHolder.from(endpoint.getMethodHandle()));
         ByteBuffer firstUtf8Payload = BufferUtil.toBuffer(new byte[]{(byte)0xF0, (byte)0x90});
         ByteBuffer continuationUtf8Payload = BufferUtil.toBuffer(new byte[]{(byte)0x8D, (byte)0x88});
 
@@ -91,7 +92,7 @@ public class StringMessageSinkTest
     @Test
     public void testInvalidSingleFrameUtf8() throws Exception
     {
-        StringMessageSink messageSink = new StringMessageSink(coreSession, endpoint.getMethodHandle());
+        StringMessageSink messageSink = new StringMessageSink(coreSession, MethodHolder.from(endpoint.getMethodHandle()));
         ByteBuffer invalidUtf8Payload = BufferUtil.toBuffer(new byte[]{(byte)0xF0, (byte)0x90, (byte)0x8D});
 
         FutureCallback callback = new FutureCallback();
@@ -106,7 +107,7 @@ public class StringMessageSinkTest
     @Test
     public void testInvalidMultiFrameUtf8() throws Exception
     {
-        StringMessageSink messageSink = new StringMessageSink(coreSession, endpoint.getMethodHandle());
+        StringMessageSink messageSink = new StringMessageSink(coreSession, MethodHolder.from(endpoint.getMethodHandle()));
         ByteBuffer firstUtf8Payload = BufferUtil.toBuffer(new byte[]{(byte)0xF0, (byte)0x90});
         ByteBuffer continuationUtf8Payload = BufferUtil.toBuffer(new byte[]{(byte)0x8D});
 

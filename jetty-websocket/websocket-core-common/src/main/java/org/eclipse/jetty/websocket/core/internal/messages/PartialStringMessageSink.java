@@ -13,22 +13,19 @@
 
 package org.eclipse.jetty.websocket.core.internal.messages;
 
-import java.lang.invoke.MethodHandle;
-import java.util.Objects;
-
 import org.eclipse.jetty.util.Callback;
 import org.eclipse.jetty.util.Utf8StringBuilder;
 import org.eclipse.jetty.websocket.core.CoreSession;
 import org.eclipse.jetty.websocket.core.Frame;
+import org.eclipse.jetty.websocket.core.internal.util.MethodHolder;
 
 public class PartialStringMessageSink extends AbstractMessageSink
 {
     private Utf8StringBuilder out;
 
-    public PartialStringMessageSink(CoreSession session, MethodHandle methodHandle)
+    public PartialStringMessageSink(CoreSession session, MethodHolder methodHolder)
     {
-        super(session, methodHandle);
-        Objects.requireNonNull(methodHandle, "MethodHandle");
+        super(session, methodHolder);
     }
 
     @Override
@@ -42,12 +39,12 @@ public class PartialStringMessageSink extends AbstractMessageSink
             out.append(frame.getPayload());
             if (frame.isFin())
             {
-                methodHandle.invoke(out.toString(), true);
+                methodHolder.invoke(out.toString(), true);
                 out = null;
             }
             else
             {
-                methodHandle.invoke(out.takePartialString(), false);
+                methodHolder.invoke(out.takePartialString(), false);
             }
 
             callback.succeeded();

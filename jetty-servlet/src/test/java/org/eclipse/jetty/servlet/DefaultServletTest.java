@@ -1564,6 +1564,7 @@ public class DefaultServletTest
 
         rawResponse = connector.getResponse("GET /context/data0.txt HTTP/1.0\r\nHost:localhost:8080\r\n\r\n");
         response = HttpTester.parseResponse(rawResponse);
+        System.err.println(response);
         assertThat(response.toString(), response.getStatus(), is(HttpStatus.OK_200));
         assertThat(response, containsHeaderValue(HttpHeader.CONTENT_LENGTH, "12"));
         assertThat(response, containsHeaderValue(HttpHeader.CONTENT_TYPE, "text/plain"));

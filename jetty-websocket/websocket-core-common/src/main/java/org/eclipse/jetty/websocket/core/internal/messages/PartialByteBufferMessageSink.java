@@ -13,17 +13,16 @@
 
 package org.eclipse.jetty.websocket.core.internal.messages;
 
-import java.lang.invoke.MethodHandle;
-
 import org.eclipse.jetty.util.Callback;
 import org.eclipse.jetty.websocket.core.CoreSession;
 import org.eclipse.jetty.websocket.core.Frame;
+import org.eclipse.jetty.websocket.core.internal.util.MethodHolder;
 
 public class PartialByteBufferMessageSink extends AbstractMessageSink
 {
-    public PartialByteBufferMessageSink(CoreSession session, MethodHandle methodHandle)
+    public PartialByteBufferMessageSink(CoreSession session, MethodHolder methodHolder)
     {
-        super(session, methodHandle);
+        super(session, methodHolder);
     }
 
     @Override
@@ -32,7 +31,7 @@ public class PartialByteBufferMessageSink extends AbstractMessageSink
         try
         {
             if (frame.hasPayload() || frame.isFin())
-                methodHandle.invoke(frame.getPayload(), frame.isFin());
+                methodHolder.invoke(frame.getPayload(), frame.isFin());
 
             callback.succeeded();
             session.demand(1);
