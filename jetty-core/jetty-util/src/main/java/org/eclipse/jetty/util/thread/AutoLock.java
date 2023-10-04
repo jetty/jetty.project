@@ -37,6 +37,14 @@ public class AutoLock implements AutoCloseable, Serializable
     private final ReentrantLock _lock = new ReentrantLock();
 
     /**
+     * simple constructor
+     */
+    public AutoLock()
+    {
+        // nothing
+    }
+
+    /**
      * <p>Acquires the lock.</p>
      *
      * @return this AutoLock for unlocking
@@ -64,8 +72,9 @@ public class AutoLock implements AutoCloseable, Serializable
     }
 
     /**
-     * @return whether this lock is held by the current thread
+     * <p>isHeldByCurrentThread</p>
      * @see ReentrantLock#isHeldByCurrentThread()
+     * @return whether this lock is held by the current thread
      */
     public boolean isHeldByCurrentThread()
     {
@@ -73,6 +82,7 @@ public class AutoLock implements AutoCloseable, Serializable
     }
 
     /**
+     * <p>newCondition</p>
      * @return a {@link Condition} associated with this lock
      */
     public Condition newCondition()
@@ -127,6 +137,7 @@ public class AutoLock implements AutoCloseable, Serializable
         }
 
         /**
+         * <p>signal</p>
          * @see Condition#signal()
          */
         public void signal()
@@ -135,6 +146,7 @@ public class AutoLock implements AutoCloseable, Serializable
         }
 
         /**
+         * <p>signalAll</p>
          * @see Condition#signalAll()
          */
         public void signalAll()
@@ -143,8 +155,9 @@ public class AutoLock implements AutoCloseable, Serializable
         }
 
         /**
-         * @throws InterruptedException if the current thread is interrupted
+         * <p>await</p>
          * @see Condition#await()
+         * @throws InterruptedException if the current thread is interrupted
          */
         public void await() throws InterruptedException
         {
@@ -152,11 +165,12 @@ public class AutoLock implements AutoCloseable, Serializable
         }
 
         /**
+         * <p>await</p>
+         * @see Condition#await(long, TimeUnit)
          * @param time the time to wait
          * @param unit the time unit
          * @return false if the waiting time elapsed
          * @throws InterruptedException if the current thread is interrupted
-         * @see Condition#await(long, TimeUnit)
          */
         public boolean await(long time, TimeUnit unit) throws InterruptedException
         {

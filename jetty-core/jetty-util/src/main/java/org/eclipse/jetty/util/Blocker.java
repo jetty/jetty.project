@@ -90,14 +90,25 @@ public class Blocker
         }
     };
 
+    /**
+     * Runnable
+     */
     public interface Runnable extends java.lang.Runnable, AutoCloseable, Invocable
     {
+        /**
+         * <p>block</p>
+         * @throws IOException if failing to block
+         */
         void block() throws IOException;
 
         @Override
         void close();
     }
 
+    /**
+     * <p>runnable</p>
+     * @return Runnable instance
+     */
     public static Runnable runnable()
     {
         return new Runnable()
@@ -143,14 +154,25 @@ public class Blocker
         };
     }
 
+    /**
+     * Callback
+     */
     public interface Callback extends org.eclipse.jetty.util.Callback, AutoCloseable, Invocable
     {
+        /**
+         * <p>block</p>
+         * @throws IOException if failing to block
+         */
         void block() throws IOException;
 
         @Override
         void close();
     }
 
+    /**
+     * <p>callback</p>
+     * @return Callback
+     */
     public static Callback callback()
     {
         return new Callback()
@@ -336,6 +358,11 @@ public class Blocker
             }
         };
 
+        /**
+         * <p>callback</p>
+         * @return Callback
+         * @throws IOException or InterruptedIOException
+         */
         public Callback callback() throws IOException
         {
             _lock.lock();
@@ -356,6 +383,11 @@ public class Blocker
             }
         }
 
+        /**
+         * <p>runnable</p>
+         * @return Runnable instalce
+         * @throws IOException or InterruptedIOException
+         */
         public Runnable runnable() throws IOException
         {
             _lock.lock();

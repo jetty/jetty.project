@@ -35,10 +35,18 @@ public class AttributesMap implements Attributes, Dumpable
 {
     private final AtomicReference<ConcurrentMap<String, Object>> _map = new AtomicReference<>();
 
+    /**
+     * empty constructor
+     */
     public AttributesMap()
     {
+        // nothing
     }
 
+    /**
+     * constructor
+     * @param attributes the AttributesMap to copy
+     */
     public AttributesMap(AttributesMap attributes)
     {
         ConcurrentMap<String, Object> map = attributes.map();
@@ -92,12 +100,21 @@ public class AttributesMap implements Attributes, Dumpable
         return Collections.unmodifiableSet(keySet());
     }
 
+    /**
+     * not used
+     * @return TODO not used remove?
+     */
     public Set<Map.Entry<String, Object>> getAttributeEntrySet()
     {
         Map<String, Object> map = map();
-        return map == null ? Collections.<Map.Entry<String, Object>>emptySet() : map.entrySet();
+        return map == null ? Collections.emptySet() : map.entrySet();
     }
 
+    /**
+     * <p>getAttributeNamesCopy</p>
+     * @param attrs the Attributes to get the names as a copy
+     * @return TOOD not used remmove
+     */
     public static Enumeration<String> getAttributeNamesCopy(Attributes attrs)
     {
         if (attrs instanceof AttributesMap)
@@ -107,6 +124,11 @@ public class AttributesMap implements Attributes, Dumpable
         return Collections.enumeration(names);
     }
 
+    /**
+     * <p>getAttributeNameSetCopy</p>
+     * @param attrs the Attributes to get the names as Set copy
+     * @return Set TODO not used remove?
+     */
     public static Set<String> getAttributeNameSetCopy(Attributes attrs)
     {
         if (attrs instanceof AttributesMap)
@@ -124,6 +146,10 @@ public class AttributesMap implements Attributes, Dumpable
             map.clear();
     }
 
+    /**
+     * <p>size</p>
+     * @return int the size
+     */
     public int size()
     {
         Map<String, Object> map = map();
@@ -143,6 +169,10 @@ public class AttributesMap implements Attributes, Dumpable
         return map == null ? Collections.emptySet() : map.keySet();
     }
 
+    /**
+     * <p>addAll</p>
+     * @param attributes Attributes to use
+     */
     public void addAll(Attributes attributes)
     {
         for (String name : attributes.getAttributeNameSet())
