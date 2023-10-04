@@ -20,8 +20,14 @@ etc/jetty-deploy.xml
 # Defaults Descriptor for all deployed webapps
 # jetty.deploy.defaultsDescriptorPath=${jetty.base}/etc/webdefault.xml
 
+# Deploy On Startup
+# true (default) will deploy on start, allowing failed deployments to fail server start.
+# false will deploy after server has started, failed deployments will not stop server.
+# jetty.deploy.deployOnStartup=true
+
 # Monitored directory scan period (seconds)
 # jetty.deploy.scanInterval=1
 
 # Whether to extract *.war files
 # jetty.deploy.extractWars=true
+
