@@ -20,6 +20,9 @@ import org.slf4j.helpers.NOPMDCAdapter;
 import org.slf4j.spi.MDCAdapter;
 import org.slf4j.spi.SLF4JServiceProvider;
 
+/**
+ * JettyLoggingServiceProvider implementation of slf4j {@link SLF4JServiceProvider}
+ */
 public class JettyLoggingServiceProvider implements SLF4JServiceProvider
 {
     /**
@@ -40,6 +43,9 @@ public class JettyLoggingServiceProvider implements SLF4JServiceProvider
         mdcAdapter = new NOPMDCAdapter(); // TODO: Provide Jetty Implementation?
     }
 
+    /**
+     * @return the corresponding {@link JettyLoggerFactory} instance
+     */
     public JettyLoggerFactory getJettyLoggerFactory()
     {
         return loggerFactory;

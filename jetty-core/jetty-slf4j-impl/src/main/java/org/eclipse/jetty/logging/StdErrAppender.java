@@ -21,6 +21,9 @@ import org.slf4j.event.Level;
 import org.slf4j.helpers.FormattingTuple;
 import org.slf4j.helpers.MessageFormatter;
 
+/**
+ * {@link JettyAppender} implementation writing logging events to {@code System.err} or the provided {@link PrintStream}
+ */
 public class StdErrAppender implements JettyAppender
 {
     /**
@@ -54,16 +57,31 @@ public class StdErrAppender implements JettyAppender
      */
     private PrintStream stream;
 
+    /**
+     * constructor
+     * @param config the {@link JettyLoggerConfiguration} to use
+     */
     public StdErrAppender(JettyLoggerConfiguration config)
     {
         this(config, null);
     }
 
+    /**
+     * constructor
+     * @param config the {@link JettyLoggerConfiguration} to use
+     * @param stream an instance of {@link PrintStream} to write log events to
+     */
     public StdErrAppender(JettyLoggerConfiguration config, PrintStream stream)
     {
         this(config, stream, null);
     }
 
+    /**
+     * main constructor
+     * @param config the {@link JettyLoggerConfiguration} to use
+     * @param stream an instance of {@link PrintStream} to write log events to
+     * @param timeZone timezone to use
+     */
     public StdErrAppender(JettyLoggerConfiguration config, PrintStream stream, TimeZone timeZone)
     {
         Objects.requireNonNull(config, "JettyLoggerConfiguration");
@@ -101,26 +119,46 @@ public class StdErrAppender implements JettyAppender
         }
     }
 
+    /**
+     * TODO really used??
+     * @return {@code true} if using condensed names
+     */
     public boolean isCondensedNames()
     {
         return condensedNames;
     }
 
+    /**
+     * TODO really used??
+     * @return boolean
+     */
     public boolean isEscapedMessages()
     {
         return escapedMessages;
     }
 
+    /**
+     * TODO really used??
+     * @return int
+     */
     public int getMessageAlignColumn()
     {
         return messageAlignColumn;
     }
 
+    /**
+     * the configured {@link PrintStream} to use
+     * @return the configured {@link PrintStream} to use
+     */
     public PrintStream getStream()
     {
         return stream;
     }
 
+    /**
+     * The {@link PrintStream} instance to use
+     * @param stream {@link PrintStream} instance to use
+     */
     public void setStream(PrintStream stream)
     {
         this.stream = stream;

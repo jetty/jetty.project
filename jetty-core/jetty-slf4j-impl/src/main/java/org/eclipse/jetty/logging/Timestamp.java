@@ -37,6 +37,10 @@ class Timestamp
     private final ZoneId zoneId;
     private volatile Tick tick;
 
+    /**
+     * cached value of a formatted timestamped
+     * TODO could be private
+     */
     public static class Tick
     {
         private final long seconds;

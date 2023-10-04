@@ -11,6 +11,9 @@
 // ========================================================================
 //
 
+/**
+ * Module declaration
+ */
 module org.eclipse.jetty.logging
 {
     requires transitive java.management;

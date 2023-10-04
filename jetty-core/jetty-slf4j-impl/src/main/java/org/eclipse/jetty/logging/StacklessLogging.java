@@ -22,7 +22,7 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 /**
- * A try-with-resources compatible layer for {@link JettyLogger#setHideStacks(boolean) hiding stacktraces} within the scope of the <code>try</code> block when
+ * A try-with-resources compatible layer for {@link JettyLogger#setHideStacks(boolean) hiding stacktraces} within the scope of the {@code try} block when
  * logging with {@link JettyLogger} implementation.
  * <p>
  * Use of other logging implementation cause no effect when using this class
@@ -60,6 +60,10 @@ public class StacklessLogging implements AutoCloseable
 
     private final Set<JettyLogger> squelched = new HashSet<>();
 
+    /**
+     * constructor
+     * @param classesToSquelch array of the {@link Class} logger to hide stacktrace
+     */
     public StacklessLogging(Class<?>... classesToSquelch)
     {
         this(Stream.of(classesToSquelch)
@@ -67,6 +71,10 @@ public class StacklessLogging implements AutoCloseable
             .toArray(String[]::new));
     }
 
+    /**
+     * constructor
+     * @param packagesToSquelch array of the {@link Package} logger to hide stacktrace
+     */
     public StacklessLogging(Package... packagesToSquelch)
     {
         this(Stream.of(packagesToSquelch)
@@ -74,6 +82,10 @@ public class StacklessLogging implements AutoCloseable
             .toArray(String[]::new));
     }
 
+    /**
+     * constructor
+     * @param loggerNames array of loggers names to hide stacktrace
+     */
     public StacklessLogging(String... loggerNames)
     {
         this(Stream.of(loggerNames)
@@ -82,6 +94,10 @@ public class StacklessLogging implements AutoCloseable
         );
     }
 
+    /**
+     * constructor
+     * @param logs array of the {@link Logger} instance to hide stacktrace
+     */
     public StacklessLogging(Logger... logs)
     {
         for (Logger log : logs)

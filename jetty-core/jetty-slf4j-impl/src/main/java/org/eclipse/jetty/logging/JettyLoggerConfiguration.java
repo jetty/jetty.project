@@ -54,6 +54,10 @@ public class JettyLoggerConfiguration
         load(props);
     }
 
+    /**
+     * @param name the logger name
+     * @return {@code true} if hidding stacktrace for the given logger name
+     */
     public boolean getHideStacks(String name)
     {
         if (properties.isEmpty())
@@ -142,6 +146,10 @@ public class JettyLoggerConfiguration
         return level;
     }
 
+    /**
+     * @param key timezone key
+     * @return the {@link TimeZone} corresponding to user property mapping or standard one
+     */
     public TimeZone getTimeZone(String key)
     {
         String zoneIdStr = properties.getProperty(key);
@@ -168,7 +176,7 @@ public class JettyLoggerConfiguration
         // Next see if an OS specific jetty-logging.properties object exists in the classpath.
         // This really for setting up test specific logging behavior based on OS.
         String osName = System.getProperty("os.name");
-        if (osName != null && osName.length() > 0)
+        if (osName != null && !osName.isEmpty())
         {
             // NOTE: cannot use jetty-util's StringUtil.replace() as it may initialize logging itself.
             osName = osName.toLowerCase(Locale.ENGLISH).replace(' ', '-');
@@ -181,18 +189,31 @@ public class JettyLoggerConfiguration
         return this;
     }
 
+    /**
+     * @param key the configuration key
+     * @param defValue the default value to return if no value found
+     * @return the value corresponding to the key or default if not found
+     */
     public String getString(String key, String defValue)
     {
         return properties.getProperty(key, defValue);
     }
 
-    public boolean getBoolean(String key, boolean defValue)
+    /**
+     * @param key the configuration key
+     * @param defValue the default value to return if no value found
+     * @return the value corresponding to the key or default if not found
+     */public boolean getBoolean(String key, boolean defValue)
     {
         String val = properties.getProperty(key, Boolean.toString(defValue));
         return Boolean.parseBoolean(val);
     }
 
-    public int getInt(String key, int defValue)
+    /**
+     * @param key the configuration key
+     * @param defValue the default value to return if no value found
+     * @return the value corresponding to the key or default if not found
+     */public int getInt(String key, int defValue)
     {
         String val = properties.getProperty(key, Integer.toString(defValue));
         if (val == null)

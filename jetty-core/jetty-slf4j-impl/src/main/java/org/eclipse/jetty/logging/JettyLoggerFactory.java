@@ -35,6 +35,9 @@ import javax.management.ReflectionException;
 import org.slf4j.ILoggerFactory;
 import org.slf4j.Logger;
 
+/**
+ * JettyLoggerFactory implementing {@link ILoggerFactory}
+ */
 public class JettyLoggerFactory implements ILoggerFactory, DynamicMBean
 {
     private final JettyLoggerConfiguration configuration;
@@ -42,6 +45,9 @@ public class JettyLoggerFactory implements ILoggerFactory, DynamicMBean
     private final ConcurrentMap<String, JettyLogger> loggerMap;
     private MBeanInfo mBeanInfo;
 
+    /**
+     * @param config the {@link JettyLoggerConfiguration} to use
+     */
     public JettyLoggerFactory(JettyLoggerConfiguration config)
     {
         configuration = Objects.requireNonNull(config, "JettyLoggerConfiguration");
@@ -55,6 +61,10 @@ public class JettyLoggerFactory implements ILoggerFactory, DynamicMBean
         rootLogger.setLevel(configuration.getLevel(Logger.ROOT_LOGGER_NAME));
     }
 
+    /**
+     *
+     * @return not used TODO remove?
+     */
     @SuppressWarnings("unused")
     public String jmxContext()
     {
@@ -142,17 +152,27 @@ public class JettyLoggerFactory implements ILoggerFactory, DynamicMBean
         return nameFunction.apply(Logger.ROOT_LOGGER_NAME);
     }
 
+    /**
+     * @return an array of the configured loggers
+     */
     public String[] getLoggerNames()
     {
         TreeSet<String> names = new TreeSet<>(loggerMap.keySet());
         return names.toArray(new String[0]);
     }
 
+    /**
+     * @return number of configured loggers
+     */
     public int getLoggerCount()
     {
         return loggerMap.size();
     }
 
+    /**
+     * @param loggerName the name
+     * @return the corresponding {@link JettyLevel} as a String
+     */
     public String getLoggerLevel(String loggerName)
     {
         return walkParentLoggerNames(loggerName, key ->
@@ -164,6 +184,12 @@ public class JettyLoggerFactory implements ILoggerFactory, DynamicMBean
         });
     }
 
+    /**
+     * change the level of a logger
+     * @param loggerName the name
+     * @param levelName the level as String
+     * @return {@code true} if the level of the corresponding logger has been changed
+     */
     public boolean setLoggerLevel(String loggerName, String levelName)
     {
         JettyLevel level = JettyLoggerConfiguration.toJettyLevel(loggerName, levelName);

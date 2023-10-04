@@ -17,15 +17,40 @@ import java.util.Locale;
 
 import org.slf4j.event.Level;
 
+/**
+ * The Jetty logging level constants
+ */
 public enum JettyLevel
 {
     // Intentionally sorted incrementally by level int
+
+    /**
+     * Activate all log levels
+     */
     ALL(Level.TRACE.toInt() - 10),
+    /**
+     * Trace level
+     */
     TRACE(Level.TRACE),
+    /**
+     * Debug level
+     */
     DEBUG(Level.DEBUG),
+    /**
+     * Info level
+     */
     INFO(Level.INFO),
+    /**
+     * Warning level
+     */
     WARN(Level.WARN),
+    /**
+     * Error level
+     */
     ERROR(Level.ERROR),
+    /**
+     * Disable logging
+     */
     OFF(Level.ERROR.toInt() + 1);
 
     private final Level level;
@@ -43,6 +68,11 @@ public enum JettyLevel
         this.levelInt = i;
     }
 
+    /**
+     *
+     * @param slf4jLevel the slf4j {@link Level}
+     * @return the correct {@link JettyLevel}
+     */
     public static JettyLevel fromLevel(Level slf4jLevel)
     {
         for (JettyLevel level : JettyLevel.values())
@@ -53,11 +83,18 @@ public enum JettyLevel
         return OFF;
     }
 
+    /**
+     * @return the level as {@code int}
+     */
     public int toInt()
     {
         return levelInt;
     }
 
+    /**
+     *
+     * @return the corresponding slf4j {@link Level}
+     */
     public Level toLevel()
     {
         return level;
@@ -80,6 +117,11 @@ public enum JettyLevel
         return name();
     }
 
+    /**
+     *
+     * @param levelInt the level as {@code int}
+     * @return the corresponding {@link JettyLevel}
+     */
     public static JettyLevel intToLevel(int levelInt)
     {
         for (JettyLevel level : JettyLevel.values())
@@ -90,6 +132,11 @@ public enum JettyLevel
         return OFF;
     }
 
+    /**
+     *
+     * @param levelStr level as String
+     * @return the corresponding {@link JettyLevel}
+     */
     public static JettyLevel strToLevel(String levelStr)
     {
         if (levelStr == null)
