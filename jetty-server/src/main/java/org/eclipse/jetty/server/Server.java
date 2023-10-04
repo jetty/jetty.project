@@ -88,6 +88,7 @@ public class Server extends HandlerWrapper implements Attributes
     private final AutoLock _dateLock = new AutoLock();
     private volatile DateField _dateField;
     private long _stopTimeout;
+    private boolean _startConnectorsEarly = true;
 
     public Server()
     {
@@ -131,6 +132,16 @@ public class Server extends HandlerWrapper implements Attributes
         addBean(_threadPool);
         addBean(_attributes);
         setServer(this);
+    }
+
+    public void setStartConnectorsEarly(boolean earlyConnectors)
+    {
+        _startConnectorsEarly = earlyConnectors;
+    }
+
+    public boolean isStartConnectorsEarly()
+    {
+        return _startConnectorsEarly;
     }
 
     public boolean isDryRun()
@@ -410,6 +421,13 @@ public class Server extends HandlerWrapper implements Attributes
                 mex.ifExceptionThrow();
             }
 
+            if (_startConnectorsEarly)
+            {
+                LOG.info("Starting Connectors Early");
+                // start connectors
+                startConnectors(mex);
+            }
+
             // Start the server and components, but not connectors!
             // #start(LifeCycle) is overridden so that connectors are not started
             super.doStart();
@@ -420,22 +438,13 @@ public class Server extends HandlerWrapper implements Attributes
                 throw new StopException();
             }
 
-            // start connectors
-            for (Connector connector : _connectors)
+            if (!_startConnectorsEarly)
             {
-                try
-                {
-                    connector.start();
-                }
-                catch (Throwable e)
-                {
-                    mex.add(e);
-                    // stop any started connectors
-                    _connectors.stream().filter(LifeCycle::isRunning).map(Object.class::cast).forEach(LifeCycle::stop);
-                }
+                LOG.info("Starting Connectors Late");
+                // start connectors
+                startConnectors(mex);
             }
 
-            mex.ifExceptionThrow();
             LOG.info(String.format("Started %s @%dms", this, Uptime.getUptime()));
         }
         catch (Throwable th)
@@ -460,6 +469,25 @@ public class Server extends HandlerWrapper implements Attributes
             if (isDumpAfterStart() && !(_dryRun && isDumpBeforeStop()))
                 dumpStdErr();
         }
+    }
+
+    private void startConnectors(MultiException mex) throws Exception
+    {
+        for (Connector connector : _connectors)
+        {
+            try
+            {
+                connector.start();
+            }
+            catch (Throwable e)
+            {
+                mex.add(e);
+                // stop any started connectors
+                _connectors.stream().filter(LifeCycle::isRunning).map(Object.class::cast).forEach(LifeCycle::stop);
+            }
+        }
+
+        mex.ifExceptionThrow();
     }
 
     @Override

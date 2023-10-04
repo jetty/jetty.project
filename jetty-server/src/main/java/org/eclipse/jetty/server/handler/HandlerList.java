@@ -44,7 +44,7 @@ public class HandlerList extends HandlerCollection
     {
         Handler[] handlers = getHandlers();
 
-        if (handlers != null && isStarted())
+        if (handlers != null)
         {
             for (int i = 0; i < handlers.length; i++)
             {
