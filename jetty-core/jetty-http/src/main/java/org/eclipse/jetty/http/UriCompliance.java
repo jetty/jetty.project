@@ -13,6 +13,7 @@
 
 package org.eclipse.jetty.http;
 
+import java.util.Collections;
 import java.util.EnumSet;
 import java.util.List;
 import java.util.Objects;
@@ -127,12 +128,13 @@ public final class UriCompliance implements ComplianceViolation.Mode
         }
     }
 
-    public static final EnumSet<Violation> AMBIGUOUS_VIOLATIONS = EnumSet.of(
+    public static final Set<Violation> NO_VIOLATION = Collections.unmodifiableSet(EnumSet.noneOf(Violation.class));
+    public static final Set<Violation> AMBIGUOUS_VIOLATIONS = Collections.unmodifiableSet(EnumSet.of(
         Violation.AMBIGUOUS_EMPTY_SEGMENT,
         Violation.AMBIGUOUS_PATH_ENCODING,
         Violation.AMBIGUOUS_PATH_PARAMETER,
         Violation.AMBIGUOUS_PATH_SEGMENT,
-        Violation.AMBIGUOUS_PATH_SEPARATOR);
+        Violation.AMBIGUOUS_PATH_SEPARATOR));
 
     /**
      * Compliance mode that exactly follows <a href="https://tools.ietf.org/html/rfc3986">RFC3986</a>,
@@ -143,7 +145,8 @@ public final class UriCompliance implements ComplianceViolation.Mode
     /**
      * Compliance mode that allows all unambiguous violations.
      */
-    public static final UriCompliance UNAMBIGUOUS = new UriCompliance("UNAMBIGUOUS", complementOf(AMBIGUOUS_VIOLATIONS));
+    public static final UriCompliance UNAMBIGUOUS = new UriCompliance("UNAMBIGUOUS",
+        complementOf(EnumSet.copyOf(AMBIGUOUS_VIOLATIONS)));
 
     /**
      * The default compliance mode allows no violations from <a href="https://tools.ietf.org/html/rfc3986">RFC3986</a>
@@ -170,16 +173,8 @@ public final class UriCompliance implements ComplianceViolation.Mode
 
     private static final AtomicInteger __custom = new AtomicInteger();
     private static final List<UriCompliance> KNOWN_MODES = List.of(DEFAULT, LEGACY, RFC3986, UNAMBIGUOUS, UNSAFE);
-    private static final EnumSet<Violation> NO_VIOLATION = EnumSet.noneOf(Violation.class);
 
-    // This saves a AccessController.executePrivileged() call caused by
-    // EnumSet.noneOf() calling EnumSet.getUniverse().
-    public static EnumSet<Violation> emptyViolationsEnumSet()
-    {
-        return NO_VIOLATION.clone();
-    }
-
-    public static boolean isAmbiguous(EnumSet<Violation> violations)
+    public static boolean isAmbiguous(Set<Violation> violations)
     {
         if (violations.isEmpty())
             return false;
@@ -285,7 +280,7 @@ public final class UriCompliance implements ComplianceViolation.Mode
     {
         Objects.requireNonNull(violations);
         _name = name;
-        _allowed = unmodifiableSet(violations.isEmpty() ? noneOf(Violation.class) : copyOf(violations));
+        _allowed = violations.isEmpty() ? NO_VIOLATION : unmodifiableSet(copyOf(violations));
     }
 
     @Override

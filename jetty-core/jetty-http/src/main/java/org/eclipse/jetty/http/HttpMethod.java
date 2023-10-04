@@ -95,7 +95,7 @@ public enum HttpMethod
 
     public boolean is(String s)
     {
-        return toString().equals(s);
+        return name().equals(s);
     }
 
     /**

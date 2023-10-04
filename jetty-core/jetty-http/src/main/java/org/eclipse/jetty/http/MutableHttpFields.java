@@ -74,10 +74,14 @@ class MutableHttpFields implements HttpFields.Mutable
             _fields = immutable._fields;
             _size = immutable._size;
         }
+        else if (fields != null)
+        {
+            _fields = new HttpField[fields.size() + INITIAL_SIZE];
+            add(fields);
+        }
         else
         {
             _fields = new HttpField[INITIAL_SIZE];
-            add(fields);
         }
     }
 

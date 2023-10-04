@@ -280,7 +280,7 @@ public class StringUtil
      */
     public static boolean asciiStartsWithIgnoreCase(String string, String prefix)
     {
-        if (prefix == null)
+        if (isEmpty(prefix))
             return true;
 
         if (string == null || string.length() < prefix.length())
@@ -324,20 +324,20 @@ public class StringUtil
      */
     public static boolean asciiEndsWithIgnoreCase(String string, String suffix)
     {
-        if (suffix == null)
+        if (isEmpty(suffix))
             return true;
         if (string == null)
             return false;
 
-        int sl = string.length();
-        int wl = suffix.length();
+        int stringLength = string.length();
+        int suffixLength = suffix.length();
 
-        if (sl < wl)
+        if (stringLength < suffixLength)
             return false;
 
-        for (int i = wl; i-- > 0; )
+        for (int i = suffixLength; i-- > 0; )
         {
-            char c1 = string.charAt(--sl);
+            char c1 = string.charAt(--stringLength);
             char c2 = suffix.charAt(i);
             if (c1 != c2)
             {
