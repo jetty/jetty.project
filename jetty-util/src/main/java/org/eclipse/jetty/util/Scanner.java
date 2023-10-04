@@ -70,6 +70,7 @@ public class Scanner extends ContainerLifeCycle
     private Map<Path, MetaData> _prevScan;
     private FilenameFilter _filter;
     private final Map<Path, IncludeExcludeSet<PathMatcher, Path>> _scannables = new ConcurrentHashMap<>();
+    private boolean _scanInStart = true;
     private boolean _reportExisting = true;
     private boolean _reportDirs = true;
     private Scheduler.Task _task;
@@ -521,6 +522,25 @@ public class Scanner extends ContainerLifeCycle
     }
 
     /**
+     * Test if scan in start is set
+     * @return true if begins during start of Scanner
+     */
+    public boolean isScanInStart()
+    {
+        return _scanInStart;
+    }
+
+    /**
+     * Set if Scanner should perform an initial scan during start of its lifecycle.
+     *
+     * @param scan true to scan during start of Scanner, false to not scan during start of Scanner.
+     */
+    public void setScanInStart(boolean scan)
+    {
+        this._scanInStart = scan;
+    }
+
+    /**
      * Whether or not an initial scan will report all files as being
      * added.
      *
@@ -587,19 +607,22 @@ public class Scanner extends ContainerLifeCycle
     public void doStart() throws Exception
     {
         if (LOG.isDebugEnabled())
-            LOG.debug("Scanner start: rprtExists={}, depth={}, rprtDirs={}, interval={}, filter={}, scannables={}",
-                      _reportExisting, _scanDepth, _reportDirs, _scanInterval, _filter, _scannables);
+            LOG.debug("Scanner start: scanInStart={}, reportExists={}, depth={}, rprtDirs={}, interval={}, filter={}, scannables={}",
+                      _scanInStart, _reportExisting, _scanDepth, _reportDirs, _scanInterval, _filter, _scannables);
 
-        if (_reportExisting)
+        if (_scanInStart)
         {
-            // if files exist at startup, report them
-            scan();
-            scan(); // scan twice so files reported as stable
-        }
-        else
-        {
-            //just register the list of existing files and only report changes
-            _prevScan = scanFiles();
+            if (_reportExisting)
+            {
+                // if files exist at startup, report them
+                scan();
+                scan(); // scan twice so files reported as stable
+            }
+            else
+            {
+                //just register the list of existing files and only report changes
+                _prevScan = scanFiles();
+            }
         }
 
         super.doStart();

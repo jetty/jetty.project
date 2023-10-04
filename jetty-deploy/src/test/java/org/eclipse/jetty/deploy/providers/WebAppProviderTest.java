@@ -17,6 +17,7 @@ import java.io.File;
 import java.nio.file.FileSystemException;
 import java.nio.file.Files;
 import java.nio.file.Path;
+import java.time.Duration;
 import java.util.Arrays;
 import java.util.HashMap;
 import java.util.List;
@@ -39,6 +40,8 @@ import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.condition.EnabledOnOs;
 import org.junit.jupiter.api.extension.ExtendWith;
 
+import static org.awaitility.Awaitility.await;
+import static org.hamcrest.Matchers.is;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertTrue;
@@ -266,9 +269,17 @@ public class WebAppProviderTest
                 }
             }
 
-            Handler[] children = server.getChildHandlersByClass(WebAppContext.class);
-            assertEquals(1, children.length);
-            assertEquals("/foo", ((WebAppContext)children[0]).getContextPath());
+            // Wait till the webapp is deployed and started
+            await().atMost(Duration.ofSeconds(5)).until(() ->
+            {
+                Handler[] children = server.getChildHandlersByClass(WebAppContext.class);
+                if (children == null || children.length == 0)
+                    return false;
+                WebAppContext webAppContext = (WebAppContext)children[0];
+                if (webAppContext.isStarted())
+                    return webAppContext.getContextPath();
+                return null;
+            }, is("/foo"));
         }
         finally
         {

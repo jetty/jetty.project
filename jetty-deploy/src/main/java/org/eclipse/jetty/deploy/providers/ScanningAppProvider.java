@@ -28,6 +28,7 @@ import org.eclipse.jetty.deploy.App;
 import org.eclipse.jetty.deploy.AppProvider;
 import org.eclipse.jetty.deploy.DeploymentManager;
 import org.eclipse.jetty.server.Server;
+import org.eclipse.jetty.util.Callback;
 import org.eclipse.jetty.util.Scanner;
 import org.eclipse.jetty.util.annotation.ManagedAttribute;
 import org.eclipse.jetty.util.annotation.ManagedObject;
@@ -156,46 +157,30 @@ public abstract class ScanningAppProvider extends ContainerLifeCycle implements 
         _scanner.setScanDepth(1); //consider direct dir children of monitored dir
         _scanner.addListener(_scannerListener);
         _scanner.setReportExistingFilesOnStartup(true);
+        _scanner.setScanInStart(_deployOnStartup);
+        addBean(_scanner);
 
-        if (_deployOnStartup)
-        {
-            addBean(_scanner);
-        }
-        else
+        if (!_deployOnStartup)
         {
             // Setup listener to wait for Server in STARTED state, which
             // triggers the first scan of the monitored directories
-            getDeploymentManager().getServer().addEventListener(getListener());
+            getDeploymentManager().getServer().addEventListener(
+                new LifeCycle.Listener()
+                {
+                    @Override
+                    public void lifeCycleStarted(LifeCycle event)
+                    {
+                        if (event instanceof Server)
+                        {
+                            if (LOG.isDebugEnabled())
+                                LOG.debug("Triggering Delayed Scan of {}", _monitored);
+                            _scanner.scan(Callback.NOOP);
+                        }
+                    }
+                });
         }
 
         super.doStart();
-    }
-
-    private LifeCycle.Listener getListener()
-    {
-        ContainerLifeCycle container = this;
-        return new LifeCycle.Listener()
-        {
-            @Override
-            public void lifeCycleStarted(LifeCycle event)
-            {
-                if (event instanceof Server)
-                {
-                    if (LOG.isDebugEnabled())
-                        LOG.debug("Triggering Delayed Scan of {}", _monitored);
-                    try
-                    {
-                        _scanner.start();
-                    }
-                    catch (Exception e)
-                    {
-                        throw new RuntimeException("Unable to start Scanner", e);
-                    }
-                    container.addBean(_scanner);
-                    _scanner.nudge();
-                }
-            }
-        };
     }
 
     @Override
