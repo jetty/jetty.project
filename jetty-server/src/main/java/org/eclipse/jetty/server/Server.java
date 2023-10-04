@@ -88,7 +88,7 @@ public class Server extends HandlerWrapper implements Attributes
     private final AutoLock _dateLock = new AutoLock();
     private volatile DateField _dateField;
     private long _stopTimeout;
-    private boolean _startConnectorsEarly = true;
+    private boolean _startConnectorsEarly = false;
 
     public Server()
     {
