@@ -69,7 +69,7 @@ public enum JettyLevel
     }
 
     /**
-     *
+     * <p>fromLevel</p>
      * @param slf4jLevel the slf4j {@link Level}
      * @return the correct {@link JettyLevel}
      */
@@ -84,6 +84,7 @@ public enum JettyLevel
     }
 
     /**
+     * <p>toInt</p>
      * @return the level as {@code int}
      */
     public int toInt()
@@ -92,7 +93,7 @@ public enum JettyLevel
     }
 
     /**
-     *
+     * <p>toLevel</p>
      * @return the corresponding slf4j {@link Level}
      */
     public Level toLevel()
@@ -118,7 +119,7 @@ public enum JettyLevel
     }
 
     /**
-     *
+     * <p>intToLevel</p>
      * @param levelInt the level as {@code int}
      * @return the corresponding {@link JettyLevel}
      */
@@ -133,7 +134,7 @@ public enum JettyLevel
     }
 
     /**
-     *
+     * <p>strToLevel</p>
      * @param levelStr level as String
      * @return the corresponding {@link JettyLevel}
      */

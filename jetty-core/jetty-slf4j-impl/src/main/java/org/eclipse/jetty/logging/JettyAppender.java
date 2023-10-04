@@ -21,7 +21,7 @@ import org.slf4j.event.Level;
 public interface JettyAppender
 {
     /**
-     *
+     * <p>emit</p>
      * @param logger the {@link JettyLogger} instance to use
      * @param level the logger {@link Level}
      * @param timestamp event timestamp

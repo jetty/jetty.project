@@ -33,6 +33,7 @@ public class JettyLogger implements LocationAwareLogger, Logger
     private boolean hideStacks;
 
     /**
+     * constructor
      * @param factory the {@link JettyAppender}
      * @param name logger name
      * @param appender the {@link JettyAppender} instance
@@ -43,6 +44,7 @@ public class JettyLogger implements LocationAwareLogger, Logger
     }
 
     /**
+     * constructor
      * @param factory the {@link JettyAppender}
      * @param name logger name
      * @param appender the {@link JettyAppender} instance
@@ -120,6 +122,7 @@ public class JettyLogger implements LocationAwareLogger, Logger
     }
 
     /**
+     * <p>getAppender</p>
      * @return the {@link JettyAppender}
      */
     public JettyAppender getAppender()
@@ -133,6 +136,7 @@ public class JettyLogger implements LocationAwareLogger, Logger
     }
 
     /**
+     * <p>getLevel</p>
      * @return the {@link JettyLevel}
      */
     public JettyLevel getLevel()
@@ -141,6 +145,7 @@ public class JettyLogger implements LocationAwareLogger, Logger
     }
 
     /**
+     * <p>setLevel</p>
      * @param level the {@link JettyLevel} to use
      */
     public void setLevel(JettyLevel level)
@@ -158,6 +163,7 @@ public class JettyLogger implements LocationAwareLogger, Logger
     }
 
     /**
+     * <p>isHideStacks</p>
      * @return {@code true} if hidding stacktrace
      */
     public boolean isHideStacks()
@@ -166,6 +172,7 @@ public class JettyLogger implements LocationAwareLogger, Logger
     }
 
     /**
+     * <p>setHideStacks</p>
      * @param hideStacks {@code true} to hide stack trace
      */
     public void setHideStacks(boolean hideStacks)

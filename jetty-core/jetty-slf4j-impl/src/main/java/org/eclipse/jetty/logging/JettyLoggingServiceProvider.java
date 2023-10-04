@@ -34,6 +34,15 @@ public class JettyLoggingServiceProvider implements SLF4JServiceProvider
     private BasicMarkerFactory markerFactory;
     private MDCAdapter mdcAdapter;
 
+    /**
+     * constructor
+     */
+    public JettyLoggingServiceProvider()
+    {
+        // nothing to do here except providing an empty constructor with useless javadoc
+        // to avoid some javadoc warning :)
+    }
+
     @Override
     public void initialize()
     {
@@ -44,6 +53,7 @@ public class JettyLoggingServiceProvider implements SLF4JServiceProvider
     }
 
     /**
+     * <p>getJettyLoggerFactory</p>
      * @return the corresponding {@link JettyLoggerFactory} instance
      */
     public JettyLoggerFactory getJettyLoggerFactory()
