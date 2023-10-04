@@ -27,11 +27,13 @@ import java.util.stream.Collectors;
 import org.eclipse.jetty.deploy.App;
 import org.eclipse.jetty.deploy.AppProvider;
 import org.eclipse.jetty.deploy.DeploymentManager;
+import org.eclipse.jetty.server.Server;
 import org.eclipse.jetty.util.Scanner;
 import org.eclipse.jetty.util.annotation.ManagedAttribute;
 import org.eclipse.jetty.util.annotation.ManagedObject;
 import org.eclipse.jetty.util.annotation.ManagedOperation;
 import org.eclipse.jetty.util.component.ContainerLifeCycle;
+import org.eclipse.jetty.util.component.LifeCycle;
 import org.eclipse.jetty.util.resource.Resource;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -153,10 +155,47 @@ public abstract class ScanningAppProvider extends ContainerLifeCycle implements 
         _scanner.setReportDirs(true);
         _scanner.setScanDepth(1); //consider direct dir children of monitored dir
         _scanner.addListener(_scannerListener);
-        _scanner.setReportExistingFilesOnStartup(_deployOnStartup);
-        addBean(_scanner);
+        _scanner.setReportExistingFilesOnStartup(true);
+
+        if (_deployOnStartup)
+        {
+            addBean(_scanner);
+        }
+        else
+        {
+            // Setup listener to wait for Server in STARTED state, which
+            // triggers the first scan of the monitored directories
+            getDeploymentManager().getServer().addEventListener(getListener());
+        }
 
         super.doStart();
+    }
+
+    private LifeCycle.Listener getListener()
+    {
+        ContainerLifeCycle container = this;
+        return new LifeCycle.Listener()
+        {
+            @Override
+            public void lifeCycleStarted(LifeCycle event)
+            {
+                if (event instanceof Server)
+                {
+                    if (LOG.isDebugEnabled())
+                        LOG.debug("Triggering Delayed Scan of {}", _monitored);
+                    try
+                    {
+                        _scanner.start();
+                    }
+                    catch (Exception e)
+                    {
+                        throw new RuntimeException("Unable to start Scanner", e);
+                    }
+                    container.addBean(_scanner);
+                    _scanner.nudge();
+                }
+            }
+        };
     }
 
     @Override

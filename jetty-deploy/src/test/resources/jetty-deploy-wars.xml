@@ -19,6 +19,7 @@
               <Set name="scanInterval">1</Set>
               <Set name="tempDir"><Property name="jetty.home" default="target" />/workish</Set>
               <Set name="useRealPaths">false</Set>
+              <Set name="deployOnStartup"><Property name="jetty.deploy.onstartup" default="true"/></Set>
              </New>
             </Item>
           </Array>
