@@ -208,7 +208,7 @@ class MutableHttpFields implements HttpFields.Mutable
     @Override
     public int hashCode()
     {
-        int hash = 0;
+        int hash = 2099; // prime
         for (int i = _size; i-- > 0; )
         {
             HttpField field = _fields[i];

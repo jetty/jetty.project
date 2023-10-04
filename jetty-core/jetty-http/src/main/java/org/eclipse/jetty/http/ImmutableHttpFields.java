@@ -57,7 +57,7 @@ class ImmutableHttpFields implements HttpFields
     @Override
     public int hashCode()
     {
-        int hash = 0;
+        int hash = 1993; // prime
         for (int i = _size; i-- > 0; )
         {
             hash ^= _fields[i].hashCode();
