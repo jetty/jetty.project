@@ -457,14 +457,14 @@ public class HTTP2Stream implements Stream, Attachable, Closeable, Callback, Dum
             }
         }
 
-        // Retain the data because it is stored for later use.
-        data.retain();
         if (offer(data))
             processData();
     }
 
     private boolean offer(Data data)
     {
+        // Retain the data because it is stored for later use.
+        data.retain();
         boolean process;
         try (AutoLock ignored = lock.lock())
         {
