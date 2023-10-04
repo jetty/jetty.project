@@ -165,14 +165,14 @@ public abstract class ScanningAppProvider extends ContainerLifeCycle implements 
                 @Override
                 public void lifeCycleStarted(LifeCycle event)
                 {
-                    if (event == server)
+                    if (event instanceof Server)
                     {
                         ScanningAppProvider.this.addBean(_scanner);
                         _scanner.nudge();
                     }
                 }
             };
-            getDeploymentManager().getServer().addEventListener(delayScanningTrigger);
+            server.addEventListener(delayScanningTrigger);
         }
         else
         {
@@ -318,6 +318,16 @@ public abstract class ScanningAppProvider extends ContainerLifeCycle implements 
         {
             throw new IllegalArgumentException(e);
         }
+    }
+
+    public boolean isDelayScanning()
+    {
+        return _delayScanning;
+    }
+
+    public void setDelayScanning(boolean delayScanning)
+    {
+        _delayScanning = delayScanning;
     }
 
     public void setScanInterval(int scanInterval)
