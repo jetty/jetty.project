@@ -46,6 +46,7 @@ public class JettyLoggerFactory implements ILoggerFactory, DynamicMBean
     private MBeanInfo mBeanInfo;
 
     /**
+     * constructor
      * @param config the {@link JettyLoggerConfiguration} to use
      */
     public JettyLoggerFactory(JettyLoggerConfiguration config)
@@ -62,7 +63,7 @@ public class JettyLoggerFactory implements ILoggerFactory, DynamicMBean
     }
 
     /**
-     *
+     * <p>jmxContext</p>
      * @return not used TODO remove?
      */
     @SuppressWarnings("unused")
@@ -153,6 +154,7 @@ public class JettyLoggerFactory implements ILoggerFactory, DynamicMBean
     }
 
     /**
+     * <p>getLoggerNames</p>
      * @return an array of the configured loggers
      */
     public String[] getLoggerNames()
@@ -162,6 +164,7 @@ public class JettyLoggerFactory implements ILoggerFactory, DynamicMBean
     }
 
     /**
+     * <p>getLoggerCount</p>
      * @return number of configured loggers
      */
     public int getLoggerCount()
@@ -170,6 +173,7 @@ public class JettyLoggerFactory implements ILoggerFactory, DynamicMBean
     }
 
     /**
+     * <p>getLoggerLevel</p>
      * @param loggerName the name
      * @return the corresponding {@link JettyLevel} as a String
      */

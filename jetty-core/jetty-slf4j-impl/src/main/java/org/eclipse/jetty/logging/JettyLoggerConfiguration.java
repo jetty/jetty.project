@@ -55,6 +55,7 @@ public class JettyLoggerConfiguration
     }
 
     /**
+     * <p>getHideStacks</p>
      * @param name the logger name
      * @return {@code true} if hidding stacktrace for the given logger name
      */
@@ -147,6 +148,7 @@ public class JettyLoggerConfiguration
     }
 
     /**
+     * <p>getTimeZone</p>
      * @param key timezone key
      * @return the {@link TimeZone} corresponding to user property mapping or standard one
      */
@@ -190,6 +192,7 @@ public class JettyLoggerConfiguration
     }
 
     /**
+     * <p>getString</p>
      * @param key the configuration key
      * @param defValue the default value to return if no value found
      * @return the value corresponding to the key or default if not found
@@ -200,6 +203,7 @@ public class JettyLoggerConfiguration
     }
 
     /**
+     * <p>getBoolean</p>
      * @param key the configuration key
      * @param defValue the default value to return if no value found
      * @return the value corresponding to the key or default if not found
@@ -210,6 +214,7 @@ public class JettyLoggerConfiguration
     }
 
     /**
+     * <p>getInt</p>
      * @param key the configuration key
      * @param defValue the default value to return if no value found
      * @return the value corresponding to the key or default if not found
