@@ -13,14 +13,13 @@
 
 package org.eclipse.jetty.websocket.core.messages;
 
-import java.lang.invoke.MethodHandle;
-
 import org.eclipse.jetty.util.Callback;
 import org.eclipse.jetty.util.Utf8StringBuilder;
 import org.eclipse.jetty.websocket.core.CoreSession;
 import org.eclipse.jetty.websocket.core.Frame;
 import org.eclipse.jetty.websocket.core.exception.BadPayloadException;
 import org.eclipse.jetty.websocket.core.exception.MessageTooLargeException;
+import org.eclipse.jetty.websocket.core.util.MethodHolder;
 
 /**
  * <p>A {@link MessageSink} implementation that accumulates TEXT frames
@@ -36,12 +35,12 @@ public class StringMessageSink extends AbstractMessageSink
      * Creates a new {@link StringMessageSink}.
      *
      * @param session the WebSocket session
-     * @param methodHandle the application function to invoke when a new message has been assembled
+     * @param methodHolder the application function to invoke when a new message has been assembled
      * @param autoDemand whether this {@link MessageSink} manages demand automatically
      */
-    public StringMessageSink(CoreSession session, MethodHandle methodHandle, boolean autoDemand)
+    public StringMessageSink(CoreSession session, MethodHolder methodHolder, boolean autoDemand)
     {
-        super(session, methodHandle, autoDemand);
+        super(session, methodHolder, autoDemand);
         this.size = 0;
     }
 
@@ -65,7 +64,7 @@ public class StringMessageSink extends AbstractMessageSink
 
             if (frame.isFin())
             {
-                getMethodHandle().invoke(out.takeCompleteString(BadPayloadException.InvalidUtf8::new));
+                getMethodHolder().invoke(out.takeCompleteString(BadPayloadException.InvalidUtf8::new));
                 callback.succeeded();
                 autoDemand();
             }

@@ -33,6 +33,7 @@ import org.eclipse.jetty.toolchain.test.MavenTestingUtils;
 import org.eclipse.jetty.util.FutureCallback;
 import org.eclipse.jetty.websocket.core.Frame;
 import org.eclipse.jetty.websocket.core.WebSocketComponents;
+import org.eclipse.jetty.websocket.core.util.MethodHolder;
 import org.junit.jupiter.api.Test;
 
 import static org.hamcrest.MatcherAssert.assertThat;
@@ -80,7 +81,7 @@ public class DecoderTextStreamTest extends AbstractClientSessionTest
         });
 
         List<RegisteredDecoder> decoders = toRegisteredDecoderList(QuotesDecoder.class, Quotes.class);
-        DecodedTextStreamMessageSink<Quotes> sink = new DecodedTextStreamMessageSink<>(session.getCoreSession(), quoteHandle, decoders);
+        DecodedTextStreamMessageSink<Quotes> sink = new DecodedTextStreamMessageSink<>(session.getCoreSession(), MethodHolder.from(quoteHandle), decoders);
 
         List<FutureCallback> callbacks = new ArrayList<>();
         FutureCallback finCallback = null;

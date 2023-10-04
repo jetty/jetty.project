@@ -42,6 +42,7 @@ import org.eclipse.jetty.websocket.core.exception.WebSocketException;
 import org.eclipse.jetty.websocket.core.exception.WebSocketTimeoutException;
 import org.eclipse.jetty.websocket.core.messages.MessageSink;
 import org.eclipse.jetty.websocket.core.util.InvokerUtils;
+import org.eclipse.jetty.websocket.core.util.MethodHolder;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -52,16 +53,16 @@ public class JettyWebSocketFrameHandler implements FrameHandler
     private final WebSocketContainer container;
     private final Object endpointInstance;
     private final JettyWebSocketFrameHandlerMetadata metadata;
-    private MethodHandle openHandle;
-    private MethodHandle closeHandle;
-    private MethodHandle errorHandle;
-    private MethodHandle textHandle;
-    private MethodHandle binaryHandle;
+    private MethodHolder openHandle;
+    private MethodHolder closeHandle;
+    private MethodHolder errorHandle;
+    private MethodHolder textHandle;
+    private MethodHolder binaryHandle;
     private final Class<? extends MessageSink> textSinkClass;
     private final Class<? extends MessageSink> binarySinkClass;
-    private MethodHandle frameHandle;
-    private MethodHandle pingHandle;
-    private MethodHandle pongHandle;
+    private MethodHolder frameHandle;
+    private MethodHolder pingHandle;
+    private MethodHolder pongHandle;
     private UpgradeRequest upgradeRequest;
     private UpgradeResponse upgradeResponse;
     private MessageSink textSink;
@@ -76,16 +77,16 @@ public class JettyWebSocketFrameHandler implements FrameHandler
         this.endpointInstance = endpointInstance;
         this.metadata = metadata;
 
-        this.openHandle = InvokerUtils.bindTo(metadata.getOpenHandle(), endpointInstance);
-        this.closeHandle = InvokerUtils.bindTo(metadata.getCloseHandle(), endpointInstance);
-        this.errorHandle = InvokerUtils.bindTo(metadata.getErrorHandle(), endpointInstance);
-        this.textHandle = InvokerUtils.bindTo(metadata.getTextHandle(), endpointInstance);
-        this.binaryHandle = InvokerUtils.bindTo(metadata.getBinaryHandle(), endpointInstance);
+        this.openHandle = InvokerUtils.bindTo(MethodHolder.from(metadata.getOpenHandle()), endpointInstance);
+        this.closeHandle = InvokerUtils.bindTo(MethodHolder.from(metadata.getCloseHandle()), endpointInstance);
+        this.errorHandle = InvokerUtils.bindTo(MethodHolder.from(metadata.getErrorHandle()), endpointInstance);
+        this.textHandle = InvokerUtils.bindTo(MethodHolder.from(metadata.getTextHandle()), endpointInstance);
+        this.binaryHandle = InvokerUtils.bindTo(MethodHolder.from(metadata.getBinaryHandle()), endpointInstance);
         this.textSinkClass = metadata.getTextSink();
         this.binarySinkClass = metadata.getBinarySink();
-        this.frameHandle = InvokerUtils.bindTo(metadata.getFrameHandle(), endpointInstance);
-        this.pingHandle = InvokerUtils.bindTo(metadata.getPingHandle(), endpointInstance);
-        this.pongHandle = InvokerUtils.bindTo(metadata.getPongHandle(), endpointInstance);
+        this.frameHandle = InvokerUtils.bindTo(MethodHolder.from(metadata.getFrameHandle()), endpointInstance);
+        this.pingHandle = InvokerUtils.bindTo(MethodHolder.from(metadata.getPingHandle()), endpointInstance);
+        this.pongHandle = InvokerUtils.bindTo(MethodHolder.from(metadata.getPongHandle()), endpointInstance);
     }
 
     public void setUpgradeRequest(UpgradeRequest upgradeRequest)
@@ -156,7 +157,7 @@ public class JettyWebSocketFrameHandler implements FrameHandler
         }
     }
 
-    private static MessageSink createMessageSink(Class<? extends MessageSink> sinkClass, WebSocketSession session, MethodHandle msgHandle, boolean autoDemanding)
+    private static MessageSink createMessageSink(Class<? extends MessageSink> sinkClass, WebSocketSession session, MethodHolder msgHandle, boolean autoDemanding)
     {
         if (msgHandle == null)
             return null;
@@ -167,7 +168,7 @@ public class JettyWebSocketFrameHandler implements FrameHandler
         {
             MethodHandles.Lookup lookup = JettyWebSocketFrameHandlerFactory.getServerMethodHandleLookup();
             MethodHandle ctorHandle = lookup.findConstructor(sinkClass,
-                MethodType.methodType(void.class, CoreSession.class, MethodHandle.class, boolean.class));
+                MethodType.methodType(void.class, CoreSession.class, MethodHolder.class, boolean.class));
             return (MessageSink)ctorHandle.invoke(session.getCoreSession(), msgHandle, autoDemanding);
         }
         catch (NoSuchMethodException e)

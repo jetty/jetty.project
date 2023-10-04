@@ -20,21 +20,25 @@ import java.nio.ByteBuffer;
 import org.eclipse.jetty.websocket.api.Callback;
 import org.eclipse.jetty.websocket.core.CoreSession;
 import org.eclipse.jetty.websocket.core.exception.InvalidSignatureException;
+import org.eclipse.jetty.websocket.core.util.MethodHolder;
 
 public class PartialByteBufferMessageSink extends org.eclipse.jetty.websocket.core.messages.PartialByteBufferMessageSink
 {
-    public PartialByteBufferMessageSink(CoreSession session, MethodHandle methodHandle, boolean autoDemand)
+    public PartialByteBufferMessageSink(CoreSession session, MethodHolder methodHolder, boolean autoDemand)
     {
-        super(session, methodHandle, autoDemand);
+        super(session, methodHolder, autoDemand);
 
-        MethodType onMessageType = MethodType.methodType(Void.TYPE, ByteBuffer.class, boolean.class, Callback.class);
-        if (methodHandle.type() != onMessageType)
-            throw InvalidSignatureException.build(onMessageType, methodHandle.type());
+        /*
+        TODO:
+            MethodType onMessageType = MethodType.methodType(Void.TYPE, ByteBuffer.class, boolean.class, Callback.class);
+            if (methodHolder.type() != onMessageType)
+                throw InvalidSignatureException.build(onMessageType, methodHolder.type());
+         */
     }
 
     @Override
-    protected void invoke(MethodHandle methodHandle, ByteBuffer byteBuffer, boolean fin, org.eclipse.jetty.util.Callback callback) throws Throwable
+    protected void invoke(MethodHolder methodHolder, ByteBuffer byteBuffer, boolean fin, org.eclipse.jetty.util.Callback callback) throws Throwable
     {
-        methodHandle.invoke(byteBuffer, fin, Callback.from(callback::succeeded, callback::failed));
+        methodHolder.invoke(byteBuffer, fin, Callback.from(callback::succeeded, callback::failed));
     }
 }

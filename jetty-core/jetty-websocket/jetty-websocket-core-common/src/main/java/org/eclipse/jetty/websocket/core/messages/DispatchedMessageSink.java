@@ -24,6 +24,7 @@ import org.eclipse.jetty.util.Callback;
 import org.eclipse.jetty.util.IO;
 import org.eclipse.jetty.websocket.core.CoreSession;
 import org.eclipse.jetty.websocket.core.Frame;
+import org.eclipse.jetty.websocket.core.util.MethodHolder;
 
 /**
  * <p>A partial implementation of {@link MessageSink} for methods that consume WebSocket
@@ -49,9 +50,9 @@ public abstract class DispatchedMessageSink extends AbstractMessageSink
     private volatile CompletableFuture<Void> dispatchComplete;
     private MessageSink typeSink;
 
-    public DispatchedMessageSink(CoreSession session, MethodHandle methodHandle, boolean autoDemand)
+    public DispatchedMessageSink(CoreSession session, MethodHolder methodHolder, boolean autoDemand)
     {
-        super(session, methodHandle, autoDemand);
+        super(session, methodHolder, autoDemand);
         if (!autoDemand)
             throw new IllegalArgumentException("%s must be auto-demanding".formatted(getClass().getSimpleName()));
         executor = session.getWebSocketComponents().getExecutor();
@@ -72,7 +73,7 @@ public abstract class DispatchedMessageSink extends AbstractMessageSink
             {
                 try
                 {
-                    getMethodHandle().invoke(typeSink);
+                    getMethodHolder().invoke(typeSink);
                     if (typeSink instanceof Closeable closeable)
                         IO.close(closeable);
                     dispatchComplete.complete(null);

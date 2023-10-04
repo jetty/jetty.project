@@ -52,25 +52,11 @@ import org.eclipse.jetty.websocket.core.messages.PartialByteArrayMessageSink;
 import org.eclipse.jetty.websocket.core.messages.PartialByteBufferMessageSink;
 import org.eclipse.jetty.websocket.core.messages.PartialStringMessageSink;
 import org.eclipse.jetty.websocket.core.util.InvokerUtils;
+import org.eclipse.jetty.websocket.core.util.MethodHolder;
 import org.eclipse.jetty.websocket.core.util.ReflectUtils;
 
 public abstract class JakartaWebSocketFrameHandlerFactory
 {
-    private static final MethodHandle FILTER_RETURN_TYPE_METHOD;
-
-    static
-    {
-        try
-        {
-            FILTER_RETURN_TYPE_METHOD = getServerMethodHandleLookup()
-                .findVirtual(JakartaWebSocketSession.class, "filterReturnType", MethodType.methodType(void.class, Object.class));
-        }
-        catch (Throwable e)
-        {
-            throw new RuntimeException(e);
-        }
-    }
-
     static InvokerUtils.Arg[] getArgsFor(Class<?> objectType)
     {
         return new InvokerUtils.Arg[]{new InvokerUtils.Arg(Session.class), new InvokerUtils.Arg(objectType).required()};
@@ -135,10 +121,10 @@ public abstract class JakartaWebSocketFrameHandlerFactory
         if (metadata == null)
             return null;
 
-        MethodHandle openHandle = metadata.getOpenHandle();
-        MethodHandle closeHandle = metadata.getCloseHandle();
-        MethodHandle errorHandle = metadata.getErrorHandle();
-        MethodHandle pongHandle = metadata.getPongHandle();
+        MethodHolder openHandle = MethodHolder.from(metadata.getOpenHandle());
+        MethodHolder closeHandle = MethodHolder.from(metadata.getCloseHandle());
+        MethodHolder errorHandle = MethodHolder.from(metadata.getErrorHandle());
+        MethodHolder pongHandle = MethodHolder.from(metadata.getPongHandle());
 
         JakartaWebSocketMessageMetadata textMetadata = JakartaWebSocketMessageMetadata.copyOf(metadata.getTextMetadata());
         JakartaWebSocketMessageMetadata binaryMetadata = JakartaWebSocketMessageMetadata.copyOf(metadata.getBinaryMetadata());
@@ -156,9 +142,9 @@ public abstract class JakartaWebSocketFrameHandlerFactory
             pongHandle = bindTemplateVariables(pongHandle, namedVariables, pathParams);
 
             if (textMetadata != null)
-                textMetadata.setMethodHandle(bindTemplateVariables(textMetadata.getMethodHandle(), namedVariables, pathParams));
+                textMetadata.setMethodHolder(bindTemplateVariables(textMetadata.getMethodHolder(), namedVariables, pathParams));
             if (binaryMetadata != null)
-                binaryMetadata.setMethodHandle(bindTemplateVariables(binaryMetadata.getMethodHandle(), namedVariables, pathParams));
+                binaryMetadata.setMethodHolder(bindTemplateVariables(binaryMetadata.getMethodHolder(), namedVariables, pathParams));
         }
 
         openHandle = InvokerUtils.bindTo(openHandle, endpoint);
@@ -190,15 +176,15 @@ public abstract class JakartaWebSocketFrameHandlerFactory
             if (AbstractDecodedMessageSink.class.isAssignableFrom(msgMetadata.getSinkClass()))
             {
                 MethodHandle ctorHandle = lookup.findConstructor(msgMetadata.getSinkClass(),
-                    MethodType.methodType(void.class, CoreSession.class, MethodHandle.class, List.class));
+                    MethodType.methodType(void.class, CoreSession.class, MethodHolder.class, List.class));
                 List<RegisteredDecoder> registeredDecoders = msgMetadata.getRegisteredDecoders();
-                return (MessageSink)ctorHandle.invoke(session.getCoreSession(), msgMetadata.getMethodHandle(), registeredDecoders);
+                return (MessageSink)ctorHandle.invoke(session.getCoreSession(), msgMetadata.getMethodHolder(), registeredDecoders);
             }
             else
             {
                 MethodHandle ctorHandle = lookup.findConstructor(msgMetadata.getSinkClass(),
-                    MethodType.methodType(void.class, CoreSession.class, MethodHandle.class, boolean.class));
-                return (MessageSink)ctorHandle.invoke(session.getCoreSession(), msgMetadata.getMethodHandle(), true);
+                    MethodType.methodType(void.class, CoreSession.class, MethodHolder.class));
+                return (MessageSink)ctorHandle.invoke(session.getCoreSession(), msgMetadata.getMethodHolder(), true);
             }
         }
         catch (NoSuchMethodException e)
@@ -219,23 +205,19 @@ public abstract class JakartaWebSocketFrameHandlerFactory
         }
     }
 
-    public static MethodHandle wrapNonVoidReturnType(MethodHandle handle, JakartaWebSocketSession session)
+    static MethodHolder wrapNonVoidReturnType(MethodHolder handle, JakartaWebSocketSession session)
     {
         if (handle == null)
             return null;
 
-        if (handle.type().returnType() == Void.TYPE)
+        if (handle.returnType() == Void.TYPE)
             return handle;
 
-        // Technique from  https://stackoverflow.com/questions/48505787/methodhandle-with-general-non-void-return-filter
-
-        // Change the return type of the to be Object so it will match exact with JakartaWebSocketSession.filterReturnType(Object)
-        handle = handle.asType(handle.type().changeReturnType(Object.class));
-
-        // Filter the method return type to a call to JakartaWebSocketSession.filterReturnType() bound to this session
-        handle = MethodHandles.filterReturnValue(handle, FILTER_RETURN_TYPE_METHOD.bindTo(session));
-
-        return handle;
+        return args ->
+        {
+            session.filterReturnType(handle.invoke(args));
+            return null;
+        };
     }
 
     private MethodHandle toMethodHandle(MethodHandles.Lookup lookup, Method method)
@@ -252,7 +234,7 @@ public abstract class JakartaWebSocketFrameHandlerFactory
 
     protected JakartaWebSocketFrameHandlerMetadata createEndpointMetadata(EndpointConfig endpointConfig)
     {
-        JakartaWebSocketFrameHandlerMetadata metadata = new JakartaWebSocketFrameHandlerMetadata(endpointConfig, container.getWebSocketComponents());
+        JakartaWebSocketFrameHandlerMetadata metadata = new JakartaWebSocketFrameHandlerMetadata(endpointConfig, components);
         MethodHandles.Lookup lookup = getServerMethodHandleLookup();
 
         Method openMethod = ReflectUtils.findMethod(Endpoint.class, "onOpen", Session.class, EndpointConfig.class);
@@ -360,7 +342,7 @@ public abstract class JakartaWebSocketFrameHandlerFactory
         if (methodHandle != null)
         {
             msgMetadata.setSinkClass(PartialStringMessageSink.class);
-            msgMetadata.setMethodHandle(methodHandle);
+            msgMetadata.setMethodHolder(MethodHolder.from(methodHandle));
             metadata.setTextMetadata(msgMetadata, onMsg);
             return true;
         }
@@ -370,7 +352,7 @@ public abstract class JakartaWebSocketFrameHandlerFactory
         if (methodHandle != null)
         {
             msgMetadata.setSinkClass(PartialByteBufferMessageSink.class);
-            msgMetadata.setMethodHandle(methodHandle);
+            msgMetadata.setMethodHolder(MethodHolder.from(methodHandle));
             metadata.setBinaryMetadata(msgMetadata, onMsg);
             return true;
         }
@@ -380,7 +362,7 @@ public abstract class JakartaWebSocketFrameHandlerFactory
         if (methodHandle != null)
         {
             msgMetadata.setSinkClass(PartialByteArrayMessageSink.class);
-            msgMetadata.setMethodHandle(methodHandle);
+            msgMetadata.setMethodHolder(MethodHolder.from(methodHandle));
             metadata.setBinaryMetadata(msgMetadata, onMsg);
             return true;
         }
@@ -423,7 +405,7 @@ public abstract class JakartaWebSocketFrameHandlerFactory
                 objectType = decoder.objectType;
         }
         MethodHandle methodHandle = getMethodHandle.apply(getArgsFor(objectType));
-        msgMetadata.setMethodHandle(methodHandle);
+        msgMetadata.setMethodHolder(MethodHolder.from(methodHandle));
 
         // Set the sinkClass and then set the MessageMetadata on the FrameHandlerMetadata
         if (interfaceType.equals(Decoder.Text.class))
@@ -508,7 +490,7 @@ public abstract class JakartaWebSocketFrameHandlerFactory
      * have been statically assigned a converted value (and removed from the resulting {@link MethodHandle#type()}, or null if
      * no {@code target} MethodHandle was provided.
      */
-    public static MethodHandle bindTemplateVariables(MethodHandle target, String[] namedVariables, Map<String, String> templateValues)
+    public static MethodHolder bindTemplateVariables(MethodHolder target, String[] namedVariables, Map<String, String> templateValues)
     {
         if (target == null)
         {
@@ -517,7 +499,7 @@ public abstract class JakartaWebSocketFrameHandlerFactory
 
         final int IDX = 1;
 
-        MethodHandle retHandle = target;
+        MethodHolder retHandle = target;
 
         if ((templateValues == null) || (templateValues.isEmpty()))
         {
@@ -527,54 +509,54 @@ public abstract class JakartaWebSocketFrameHandlerFactory
         for (String variableName : namedVariables)
         {
             String strValue = templateValues.get(variableName);
-            Class<?> type = retHandle.type().parameterType(IDX);
+            Class<?> type = retHandle.parameterType(IDX);
             try
             {
                 if (String.class.isAssignableFrom(type))
                 {
-                    retHandle = MethodHandles.insertArguments(retHandle, IDX, strValue);
+                    retHandle = retHandle.bindTo(strValue, IDX);
                 }
                 else if (Integer.class.isAssignableFrom(type) || Integer.TYPE.isAssignableFrom(type))
                 {
                     Integer intValue = Integer.parseInt(strValue);
-                    retHandle = MethodHandles.insertArguments(retHandle, IDX, intValue);
+                    retHandle = retHandle.bindTo(intValue, IDX);
                 }
                 else if (Long.class.isAssignableFrom(type) || Long.TYPE.isAssignableFrom(type))
                 {
                     Long longValue = Long.parseLong(strValue);
-                    retHandle = MethodHandles.insertArguments(retHandle, IDX, longValue);
+                    retHandle = retHandle.bindTo(longValue, IDX);
                 }
                 else if (Short.class.isAssignableFrom(type) || Short.TYPE.isAssignableFrom(type))
                 {
                     Short shortValue = Short.parseShort(strValue);
-                    retHandle = MethodHandles.insertArguments(retHandle, IDX, shortValue);
+                    retHandle = retHandle.bindTo(shortValue, IDX);
                 }
                 else if (Float.class.isAssignableFrom(type) || Float.TYPE.isAssignableFrom(type))
                 {
                     Float floatValue = Float.parseFloat(strValue);
-                    retHandle = MethodHandles.insertArguments(retHandle, IDX, floatValue);
+                    retHandle = retHandle.bindTo(floatValue, IDX);
                 }
                 else if (Double.class.isAssignableFrom(type) || Double.TYPE.isAssignableFrom(type))
                 {
                     Double doubleValue = Double.parseDouble(strValue);
-                    retHandle = MethodHandles.insertArguments(retHandle, IDX, doubleValue);
+                    retHandle = retHandle.bindTo(doubleValue, IDX);
                 }
                 else if (Boolean.class.isAssignableFrom(type) || Boolean.TYPE.isAssignableFrom(type))
                 {
                     Boolean boolValue = Boolean.parseBoolean(strValue);
-                    retHandle = MethodHandles.insertArguments(retHandle, IDX, boolValue);
+                    retHandle = retHandle.bindTo(boolValue, IDX);
                 }
                 else if (Character.class.isAssignableFrom(type) || Character.TYPE.isAssignableFrom(type))
                 {
                     if (strValue.length() != 1)
                         throw new IllegalArgumentException("Invalid Size");
                     Character charValue = strValue.charAt(0);
-                    retHandle = MethodHandles.insertArguments(retHandle, IDX, charValue);
+                    retHandle = retHandle.bindTo(charValue, IDX);
                 }
                 else if (Byte.class.isAssignableFrom(type) || Byte.TYPE.isAssignableFrom(type))
                 {
                     Byte b = Byte.parseByte(strValue);
-                    retHandle = MethodHandles.insertArguments(retHandle, IDX, b);
+                    retHandle = retHandle.bindTo(b, IDX);
                 }
                 else
                 {

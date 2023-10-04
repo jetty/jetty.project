@@ -33,6 +33,7 @@ import org.eclipse.jetty.util.BufferUtil;
 import org.eclipse.jetty.util.FutureCallback;
 import org.eclipse.jetty.websocket.core.Frame;
 import org.eclipse.jetty.websocket.core.OpCode;
+import org.eclipse.jetty.websocket.core.util.MethodHolder;
 import org.junit.jupiter.api.Test;
 
 import static org.hamcrest.MatcherAssert.assertThat;
@@ -47,7 +48,7 @@ public class DecodedBinaryStreamMessageSinkTest extends AbstractMessageSinkTest
     {
         CompletableFuture<Calendar> copyFuture = new CompletableFuture<>();
         DecodedCalendarCopy copy = new DecodedCalendarCopy(copyFuture);
-        MethodHandle copyHandle = getAcceptHandle(copy, Calendar.class);
+        MethodHolder copyHandle = getAcceptHandle(copy, Calendar.class);
         List<RegisteredDecoder> decoders = toRegisteredDecoderList(GmtDecoder.class, Calendar.class);
         DecodedBinaryStreamMessageSink<Calendar> sink = new DecodedBinaryStreamMessageSink<>(session.getCoreSession(), copyHandle, decoders);
 
@@ -69,7 +70,7 @@ public class DecodedBinaryStreamMessageSinkTest extends AbstractMessageSinkTest
     {
         CompletableFuture<Calendar> copyFuture = new CompletableFuture<>();
         DecodedCalendarCopy copy = new DecodedCalendarCopy(copyFuture);
-        MethodHandle copyHandle = getAcceptHandle(copy, Calendar.class);
+        MethodHolder copyHandle = getAcceptHandle(copy, Calendar.class);
         List<RegisteredDecoder> decoders = toRegisteredDecoderList(GmtDecoder.class, Calendar.class);
         DecodedBinaryStreamMessageSink<Calendar> sink = new DecodedBinaryStreamMessageSink<>(session.getCoreSession(), copyHandle, decoders);
 
