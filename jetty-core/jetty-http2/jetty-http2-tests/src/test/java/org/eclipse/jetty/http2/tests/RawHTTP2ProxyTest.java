@@ -43,6 +43,7 @@ import org.eclipse.jetty.http2.frames.HeadersFrame;
 import org.eclipse.jetty.http2.frames.PushPromiseFrame;
 import org.eclipse.jetty.http2.frames.ResetFrame;
 import org.eclipse.jetty.http2.server.RawHTTP2ServerConnectionFactory;
+import org.eclipse.jetty.io.ArrayByteBufferPool;
 import org.eclipse.jetty.server.HttpConfiguration;
 import org.eclipse.jetty.server.Server;
 import org.eclipse.jetty.server.ServerConnector;
@@ -57,6 +58,9 @@ import org.junit.jupiter.api.Test;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+import static org.awaitility.Awaitility.await;
+import static org.hamcrest.MatcherAssert.assertThat;
+import static org.hamcrest.Matchers.is;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
@@ -66,12 +70,16 @@ public class RawHTTP2ProxyTest
 
     private final List<Server> servers = new ArrayList<>();
     private final List<HTTP2Client> clients = new ArrayList<>();
+    private final List<ArrayByteBufferPool.Tracking> serverBufferPools = new ArrayList<>();
+    private final List<ArrayByteBufferPool.Tracking> clientBufferPools = new ArrayList<>();
 
     private Server startServer(String name, ServerSessionListener listener) throws Exception
     {
         QueuedThreadPool serverExecutor = new QueuedThreadPool();
         serverExecutor.setName(name);
-        Server server = new Server(serverExecutor);
+        ArrayByteBufferPool.Tracking pool = new ArrayByteBufferPool.Tracking();
+        serverBufferPools.add(pool);
+        Server server = new Server(serverExecutor, null, pool);
         RawHTTP2ServerConnectionFactory connectionFactory = new RawHTTP2ServerConnectionFactory(new HttpConfiguration(), listener);
         ServerConnector connector = new ServerConnector(server, 1, 1, connectionFactory);
         server.addConnector(connector);
@@ -88,6 +96,9 @@ public class RawHTTP2ProxyTest
         clientExecutor.setName(name);
         client.setExecutor(clientExecutor);
         clients.add(client);
+        ArrayByteBufferPool.Tracking pool = new ArrayByteBufferPool.Tracking();
+        clientBufferPools.add(pool);
+        client.setByteBufferPool(pool);
         client.start();
         return client;
     }
@@ -95,15 +106,35 @@ public class RawHTTP2ProxyTest
     @AfterEach
     public void dispose() throws Exception
     {
-        for (int i = clients.size() - 1; i >= 0; i--)
+        try
         {
-            HTTP2Client client = clients.get(i);
-            client.stop();
+            for (int i = 0; i < serverBufferPools.size(); i++)
+            {
+                ArrayByteBufferPool.Tracking serverBufferPool = serverBufferPools.get(i);
+                int idx = i;
+                await().atMost(5, TimeUnit.SECONDS).untilAsserted(() -> assertThat("Server #" + idx + " leaks: " + serverBufferPool.dumpLeaks(), serverBufferPool.getLeaks().size(), is(0)));
+            }
+            for (int i = 0; i < clientBufferPools.size(); i++)
+            {
+                ArrayByteBufferPool.Tracking clientBufferPool = clientBufferPools.get(i);
+                int idx = i;
+                await().atMost(5, TimeUnit.SECONDS).untilAsserted(() -> assertThat("Client #" + idx + " leaks: " + clientBufferPool.dumpLeaks(), clientBufferPool.getLeaks().size(), is(0)));
+            }
         }
-        for (int i = servers.size() - 1; i >= 0; i--)
+        finally
         {
-            Server server = servers.get(i);
-            server.stop();
+            serverBufferPools.clear();
+            clientBufferPools.clear();
+            for (int i = clients.size() - 1; i >= 0; i--)
+            {
+                HTTP2Client client = clients.get(i);
+                client.stop();
+            }
+            for (int i = servers.size() - 1; i >= 0; i--)
+            {
+                Server server = servers.get(i);
+                server.stop();
+            }
         }
     }
 

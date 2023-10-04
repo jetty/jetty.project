@@ -55,7 +55,6 @@ import static org.junit.jupiter.api.Assertions.assertArrayEquals;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertNotNull;
-import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.junit.jupiter.api.Assertions.fail;
 
@@ -285,10 +284,6 @@ public class HttpClientDemandTest extends AbstractTest
         // Demand once more to trigger response success.
         demanderRef.get().run();
         assertTrue(resultLatch.await(5, TimeUnit.SECONDS));
-
-        // Make sure the chunks were not leaked.
-        assertThrows(IllegalStateException.class, c1::release);
-        assertThrows(IllegalStateException.class, c2::release);
     }
 
     private static String asStringAndRelease(Content.Chunk chunk)
