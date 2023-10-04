@@ -324,7 +324,7 @@ public class SettingsTest extends AbstractTest
                     MetaData.Request push = newRequest("GET", "/push", HttpFields.EMPTY);
                     PushPromiseFrame pushFrame = new PushPromiseFrame(stream.getId(), 2, push);
                     session.getGenerator().control(accumulator, pushFrame);
-                    session.getEndPoint().write(Callback.NOOP, accumulator.getByteBuffers().toArray(ByteBuffer[]::new));
+                    session.getEndPoint().write(Callback.from(accumulator::release), accumulator.getByteBuffers().toArray(ByteBuffer[]::new));
                     return null;
                 }
                 catch (HpackException x)
