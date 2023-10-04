@@ -15,8 +15,21 @@ package org.eclipse.jetty.logging;
 
 import org.slf4j.event.Level;
 
+/**
+ * The interface to implement to emit/append log events
+ */
 public interface JettyAppender
 {
+    /**
+     *
+     * @param logger the {@link JettyLogger} instance to use
+     * @param level the logger {@link Level}
+     * @param timestamp event timestamp
+     * @param threadName the name of the thread to be logged in
+     * @param throwable any Exception to log
+     * @param message the message
+     * @param argumentArray the array of arguments for message replacement
+     */
     void emit(JettyLogger logger, Level level, long timestamp, String threadName,
               Throwable throwable, String message, Object... argumentArray);
 }

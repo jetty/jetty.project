@@ -20,6 +20,9 @@ import org.slf4j.event.LoggingEvent;
 import org.slf4j.helpers.SubstituteLogger;
 import org.slf4j.spi.LocationAwareLogger;
 
+/**
+ * Jetty implementation of slf4j {@link Logger}
+ */
 public class JettyLogger implements LocationAwareLogger, Logger
 {
     private final JettyLoggerFactory factory;
@@ -29,11 +32,23 @@ public class JettyLogger implements LocationAwareLogger, Logger
     private JettyLevel level;
     private boolean hideStacks;
 
+    /**
+     * @param factory the {@link JettyAppender}
+     * @param name logger name
+     * @param appender the {@link JettyAppender} instance
+     */
     public JettyLogger(JettyLoggerFactory factory, String name, JettyAppender appender)
     {
         this(factory, name, appender, JettyLevel.INFO, false);
     }
 
+    /**
+     * @param factory the {@link JettyAppender}
+     * @param name logger name
+     * @param appender the {@link JettyAppender} instance
+     * @param level the {@link JettyLevel} to use
+     * @param hideStacks {@code true} to hide stack trace
+     */
     public JettyLogger(JettyLoggerFactory factory, String name, JettyAppender appender, JettyLevel level, boolean hideStacks)
     {
         this.factory = factory;
@@ -104,6 +119,9 @@ public class JettyLogger implements LocationAwareLogger, Logger
         return dense.toString();
     }
 
+    /**
+     * @return the {@link JettyAppender}
+     */
     public JettyAppender getAppender()
     {
         return appender;
@@ -114,11 +132,17 @@ public class JettyLogger implements LocationAwareLogger, Logger
         return condensedName;
     }
 
+    /**
+     * @return the {@link JettyLevel}
+     */
     public JettyLevel getLevel()
     {
         return level;
     }
 
+    /**
+     * @param level the {@link JettyLevel} to use
+     */
     public void setLevel(JettyLevel level)
     {
         this.level = level;
@@ -133,11 +157,17 @@ public class JettyLogger implements LocationAwareLogger, Logger
         return name;
     }
 
+    /**
+     * @return {@code true} if hidding stacktrace
+     */
     public boolean isHideStacks()
     {
         return hideStacks;
     }
 
+    /**
+     * @param hideStacks {@code true} to hide stack trace
+     */
     public void setHideStacks(boolean hideStacks)
     {
         this.hideStacks = hideStacks;
