@@ -105,6 +105,9 @@ public class BufferUtil
             (byte)'E', (byte)'F'
         };
 
+    /**
+     * convenient enpty buffer
+     */
     public static final ByteBuffer EMPTY_BUFFER = ByteBuffer.wrap(new byte[0]);
 
     /**
@@ -577,11 +580,23 @@ public class BufferUtil
         }
     }
 
+    /**
+     * unused TODO remove?
+     * @param file the file to read
+     * @param buffer the buffer to fill
+     * @throws IOException any exception during transfer
+     */
     public static void readFrom(File file, ByteBuffer buffer) throws IOException
     {
         readFrom(file.toPath(), buffer);
     }
 
+    /**
+     * unused TODO remove?
+     * @param path the file to read
+     * @param buffer the buffer to fill
+     * @throws IOException any exception during transfer
+     */
     public static void readFrom(Path path, ByteBuffer buffer) throws IOException
     {
         try (SeekableByteChannel channel = Files.newByteChannel(path))
@@ -633,6 +648,13 @@ public class BufferUtil
         return totalRead;
     }
 
+    /**
+     * read the content of the provided {@link InputStream} to the provided {@link ByteBuffer}
+     * @param is the input stream to read
+     * @param needed number of byte needed
+     * @param buffer the buffer to read into.
+     * @throws IOException if an I/O error occurs.
+     */
     public static void readFrom(InputStream is, int needed, ByteBuffer buffer) throws IOException
     {
         ByteBuffer tmp = allocate(8192);
@@ -648,6 +670,13 @@ public class BufferUtil
         }
     }
 
+    /**
+     * read the content of the provided {@link InputStream} to the provided {@link ByteBuffer}
+     * @param is the input stream to read
+     * @param buffer the buffer to read into.
+     * @return int number of bytes read
+     * @throws IOException if an I/O error occurs.
+     */
     public static int readFrom(InputStream is, ByteBuffer buffer) throws IOException
     {
         if (buffer.hasArray())
@@ -685,6 +714,12 @@ public class BufferUtil
         }
     }
 
+    /**
+     * write the content of the provided {@link ByteBuffer} to the provided {@link OutputStream}
+     * @param buffer the {@link ByteBuffer} to write
+     * @param out the {@link OutputStream} to write too
+     * @throws IOException if an I/O error occurs.
+     */
     public static void writeTo(ByteBuffer buffer, OutputStream out) throws IOException
     {
         if (buffer.hasArray())
@@ -910,6 +945,11 @@ public class BufferUtil
         throw new NumberFormatException(toString(buffer));
     }
 
+    /**
+     * <p>putHexInt</p>
+     * @param buffer the {@link ByteBuffer} to fill in
+     * @param n the integer
+     */
     public static void putHexInt(ByteBuffer buffer, int n)
     {
         if (n < 0)
@@ -957,6 +997,11 @@ public class BufferUtil
         }
     }
 
+    /**
+     * <p>putDecInt</p>
+     * @param buffer the {@link ByteBuffer} to fill in
+     * @param n the integer
+     */
     public static void putDecInt(ByteBuffer buffer, int n)
     {
         if (n < 0)
@@ -997,6 +1042,11 @@ public class BufferUtil
         }
     }
 
+    /**
+     * <p>putDecLong</p>
+     * @param buffer the {@link ByteBuffer} to fill in
+     * @param n the long
+     */
     public static void putDecLong(ByteBuffer buffer, long n)
     {
         if (n < 0)
@@ -1037,6 +1087,11 @@ public class BufferUtil
         }
     }
 
+    /**
+     * <p>toBuffer</p>
+     * @param value the int value
+     * @return {@link ByteBuffer} including the given parameter as dec
+     */
     public static ByteBuffer toBuffer(int value)
     {
         ByteBuffer buf = ByteBuffer.allocate(32);
@@ -1044,6 +1099,11 @@ public class BufferUtil
         return buf;
     }
 
+    /**
+     * <p>toBuffer</p>
+     * @param value the long value
+     * @return {@link ByteBuffer} including the given parameter as dec
+     */
     public static ByteBuffer toBuffer(long value)
     {
         ByteBuffer buf = ByteBuffer.allocate(32);
