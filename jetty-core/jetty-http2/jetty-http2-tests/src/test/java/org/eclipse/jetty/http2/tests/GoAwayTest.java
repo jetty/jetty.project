@@ -507,7 +507,7 @@ public class GoAwayTest extends AbstractTest
                         // the server and be able to complete this stream.
                         clientStream1.data(new DataFrame(clientStream1.getId(), ByteBuffer.allocate(flowControlWindow / 2), true), Callback.NOOP);
                     }
-                }, new Stream.Listener() {});
+                }, AUTO_DISCARD);
             }
         });
 
