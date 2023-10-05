@@ -13,8 +13,6 @@
 
 package org.eclipse.jetty.websocket.core.messages;
 
-import java.lang.invoke.MethodHandle;
-import java.lang.invoke.MethodType;
 import java.nio.ByteBuffer;
 
 import org.eclipse.jetty.io.ByteBufferCallbackAccumulator;
@@ -22,7 +20,6 @@ import org.eclipse.jetty.util.BufferUtil;
 import org.eclipse.jetty.util.Callback;
 import org.eclipse.jetty.websocket.core.CoreSession;
 import org.eclipse.jetty.websocket.core.Frame;
-import org.eclipse.jetty.websocket.core.exception.InvalidSignatureException;
 import org.eclipse.jetty.websocket.core.exception.MessageTooLargeException;
 import org.eclipse.jetty.websocket.core.util.MethodHolder;
 
@@ -45,12 +42,6 @@ public class ByteArrayMessageSink extends AbstractMessageSink
     public ByteArrayMessageSink(CoreSession session, MethodHolder methodHolder, boolean autoDemand)
     {
         super(session, methodHolder, autoDemand);
-
-        // TODO: This uses the offset length byte array signature not supported by jakarta websocket.
-        //  The jakarta layer instead uses decoders for whole byte array messages instead of this message sink.
-        //  MethodType onMessageType = MethodType.methodType(Void.TYPE, byte[].class, int.class, int.class);
-        //  if (methodHolder.type().changeReturnType(void.class) != onMessageType.changeReturnType(void.class))
-        //      throw InvalidSignatureException.build(onMessageType, methodHolder.type());
     }
 
     @Override

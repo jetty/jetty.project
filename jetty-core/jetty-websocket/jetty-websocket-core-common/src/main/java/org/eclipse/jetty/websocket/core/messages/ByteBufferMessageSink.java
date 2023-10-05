@@ -13,7 +13,6 @@
 
 package org.eclipse.jetty.websocket.core.messages;
 
-import java.lang.invoke.MethodHandle;
 import java.nio.ByteBuffer;
 
 import org.eclipse.jetty.io.ByteBufferCallbackAccumulator;
@@ -43,20 +42,7 @@ public class ByteBufferMessageSink extends AbstractMessageSink
      */
     public ByteBufferMessageSink(CoreSession session, MethodHolder methodHolder, boolean autoDemand)
     {
-        this(session, methodHolder, autoDemand, true);
-    }
-
-    protected ByteBufferMessageSink(CoreSession session, MethodHolder methodHolder, boolean autoDemand, boolean validateSignature)
-    {
         super(session, methodHolder, autoDemand);
-
-        if (validateSignature)
-        {
-            // TODO: fix
-            //  MethodType onMessageType = MethodType.methodType(Void.TYPE, ByteBuffer.class);
-            //  if (methodHolder.type() != onMessageType)
-            //      throw InvalidSignatureException.build(onMessageType, methodHandle.type());
-        }
     }
 
     @Override

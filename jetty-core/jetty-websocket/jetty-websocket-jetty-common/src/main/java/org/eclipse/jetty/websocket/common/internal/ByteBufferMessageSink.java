@@ -23,13 +23,7 @@ public class ByteBufferMessageSink extends org.eclipse.jetty.websocket.core.mess
 {
     public ByteBufferMessageSink(CoreSession session, MethodHolder methodHolder, boolean autoDemand)
     {
-        super(session, methodHolder, autoDemand, false);
-
-        /* TODO
-            MethodType onMessageType = MethodType.methodType(Void.TYPE, ByteBuffer.class, Callback.class);
-            if (methodHolder.type() != onMessageType)
-                throw InvalidSignatureException.build(onMessageType, methodHolder.type());
-         */
+        super(session, methodHolder, autoDemand);
     }
 
     @Override

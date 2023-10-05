@@ -13,13 +13,10 @@
 
 package org.eclipse.jetty.websocket.common.internal;
 
-import java.lang.invoke.MethodHandle;
-import java.lang.invoke.MethodType;
 import java.nio.ByteBuffer;
 
 import org.eclipse.jetty.websocket.api.Callback;
 import org.eclipse.jetty.websocket.core.CoreSession;
-import org.eclipse.jetty.websocket.core.exception.InvalidSignatureException;
 import org.eclipse.jetty.websocket.core.util.MethodHolder;
 
 public class PartialByteBufferMessageSink extends org.eclipse.jetty.websocket.core.messages.PartialByteBufferMessageSink
@@ -27,13 +24,6 @@ public class PartialByteBufferMessageSink extends org.eclipse.jetty.websocket.co
     public PartialByteBufferMessageSink(CoreSession session, MethodHolder methodHolder, boolean autoDemand)
     {
         super(session, methodHolder, autoDemand);
-
-        /*
-        TODO:
-            MethodType onMessageType = MethodType.methodType(Void.TYPE, ByteBuffer.class, boolean.class, Callback.class);
-            if (methodHolder.type() != onMessageType)
-                throw InvalidSignatureException.build(onMessageType, methodHolder.type());
-         */
     }
 
     @Override
