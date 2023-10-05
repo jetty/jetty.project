@@ -20,7 +20,7 @@ import java.lang.annotation.RetentionPolicy;
 import java.lang.annotation.Target;
 
 /**
- * The <code>&#064;ManagedOperation</code> annotation is used to indicate that a given method
+ * The {@code &#064;ManagedOperation} annotation is used to indicate that a given method
  * should be considered a JMX operation.
  */
 @Retention(RetentionPolicy.RUNTIME)
