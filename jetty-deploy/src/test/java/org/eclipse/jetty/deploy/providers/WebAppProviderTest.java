@@ -248,7 +248,7 @@ public class WebAppProviderTest
 
         Map<String, String> properties = new HashMap<>();
         properties.put("jetty.home", jettyHome.toString());
-        properties.put("jetty.deploy.onstartup", "false");
+        properties.put("jetty.deploy.deferInitialScan", "true");
         //Start jetty, but this time running from the symlinked base
         System.setProperty("jetty.home", properties.get("jetty.home"));
 
@@ -265,7 +265,7 @@ public class WebAppProviderTest
                 if (appProvider instanceof ScanningAppProvider)
                 {
                     ScanningAppProvider scanningAppProvider = (ScanningAppProvider)appProvider;
-                    assertFalse(scanningAppProvider.isDeployOnStartup(), "The DeployOnStartup configuration should be false");
+                    assertTrue(scanningAppProvider.isDeferInitialScan(), "The DeferInitialScan configuration should be true");
                 }
             }
 
