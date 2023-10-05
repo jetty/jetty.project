@@ -211,6 +211,14 @@ public class StandardDescriptorProcessor extends IterativeDescriptorProcessor
             _servletHolderMap.put(name, holder);
             _servletHolders.add(holder);
         }
+        else
+        {
+            //A servlet of the same name already exists. If it came from the jetty api
+            //and we're parsing webdefaults, then we will stop reading the descriptor to allow
+            //the api to define the default
+            if (Source.Origin.EMBEDDED == holder.getSource().getOrigin() && descriptor instanceof DefaultsDescriptor)
+                return;
+        }
 
         // init params
         Iterator<?> iParamsIter = node.iterator("init-param");
@@ -1221,34 +1229,41 @@ public class StandardDescriptorProcessor extends IterativeDescriptorProcessor
                     {
                         //The same path has been mapped multiple times, either to a different servlet or the same servlet.
                         //If its a different servlet, this is only valid to do if the old mapping was from a default descriptor.
-                        if (p.equals(ps) && (sm.isFromDefaultDescriptor() || servletName.equals(sm.getServletName())))
+                        if (p.equals(ps))
                         {
-                            if (sm.isFromDefaultDescriptor())
+                            if (!servletName.equals(sm.getServletName()))
                             {
-                                if (LOG.isDebugEnabled())
-                                    LOG.debug("{} in mapping {} from defaults descriptor is overridden by {}", ps, sm, servletName);
+                                if (!sm.isFromDefaultDescriptor())
+                                    throw new IllegalStateException("Duplicate mapping of " + p + ": " + servletName + "," + sm.getServletName());
+                                else
+                                {
+                                    if (LOG.isDebugEnabled())
+                                        LOG.debug("{} in mapping {} from defaults descriptor is overridden by {}", ps, sm, servletName);
+
+                                    //remove ps from the path specs on the existing mapping
+                                    //if the mapping now has no pathspecs, remove it
+                                    String[] updatedPaths = ArrayUtil.removeFromArray(sm.getPathSpecs(), ps);
+
+                                    if (updatedPaths == null || updatedPaths.length == 0)
+                                    {
+                                        if (LOG.isDebugEnabled())
+                                            LOG.debug("Removed empty mapping {}", sm);
+                                        listItor.remove();
+                                    }
+                                    else
+                                    {
+                                        sm.setPathSpecs(updatedPaths);
+                                        if (LOG.isDebugEnabled())
+                                            LOG.debug("Removed path {} from mapping {}", p, sm);
+                                    }
+                                    found = true;
+                                    break;
+                                }
                             }
                             else
+                            {
                                 LOG.warn("Duplicate mapping from {} to {}", p, servletName);
-
-                            //remove ps from the path specs on the existing mapping
-                            //if the mapping now has no pathspecs, remove it
-                            String[] updatedPaths = ArrayUtil.removeFromArray(sm.getPathSpecs(), ps);
-
-                            if (updatedPaths == null || updatedPaths.length == 0)
-                            {
-                                if (LOG.isDebugEnabled())
-                                    LOG.debug("Removed empty mapping {}", sm);
-                                listItor.remove();
                             }
-                            else
-                            {
-                                sm.setPathSpecs(updatedPaths);
-                                if (LOG.isDebugEnabled())
-                                    LOG.debug("Removed path {} from mapping {}", p, sm);
-                            }
-                            found = true;
-                            break;
                         }
                     }
                 }

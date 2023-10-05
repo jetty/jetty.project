@@ -56,6 +56,7 @@
             @{argLine} ${jetty.surefire.argLine}
             --add-exports org.eclipse.jetty.ee9.webapp/org.acme.webapp=org.eclipse.jetty.ee9.servlet
             --add-exports org.eclipse.jetty.ee9.webapp/org.acme.webapp=org.eclipse.jetty.ee9.nested
+            --add-reads org.eclipse.jetty.ee9.webapp=org.eclipse.jetty.logging
           </argLine>
           <useManifestOnlyJar>false</useManifestOnlyJar>
           <additionalClasspathElements>

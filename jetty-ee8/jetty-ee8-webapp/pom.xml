@@ -77,6 +77,7 @@
         <configuration>
           <argLine>
             @{argLine} ${jetty.surefire.argLine}
+            --add-reads org.eclipse.jetty.ee8.webapp=org.eclipse.jetty.logging
           </argLine>
           <useManifestOnlyJar>false</useManifestOnlyJar>
           <additionalClasspathElements>
