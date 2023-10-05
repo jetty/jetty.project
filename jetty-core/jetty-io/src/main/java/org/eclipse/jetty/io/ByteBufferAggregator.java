@@ -51,7 +51,7 @@ public class ByteBufferAggregator
         if (startSize <= 0)
             throw new IllegalArgumentException("startSize must be > 0, was: " + startSize);
         if (startSize > maxSize)
-            throw new IllegalArgumentException("maxSize (" + maxSize + ") must be > startSize (" + startSize + ")");
+            throw new IllegalArgumentException("maxSize (" + maxSize + ") must be >= startSize (" + startSize + ")");
         _bufferPool = (bufferPool == null) ? new ByteBufferPool.NonPooling() : bufferPool;
         _direct = direct;
         _maxSize = maxSize;
