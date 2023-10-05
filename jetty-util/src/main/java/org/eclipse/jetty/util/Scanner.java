@@ -70,7 +70,8 @@ public class Scanner extends ContainerLifeCycle
     private Map<Path, MetaData> _prevScan;
     private FilenameFilter _filter;
     private final Map<Path, IncludeExcludeSet<PathMatcher, Path>> _scannables = new ConcurrentHashMap<>();
-    private boolean _scanInStart = true;
+    private boolean _deferInitialScan = false;
+    private boolean _initialScanPerformed = false;
     private boolean _reportExisting = true;
     private boolean _reportDirs = true;
     private Scheduler.Task _task;
@@ -522,22 +523,33 @@ public class Scanner extends ContainerLifeCycle
     }
 
     /**
-     * Test if scan in start is set
-     * @return true if begins during start of Scanner
+     * Test if initial scan should be deferred.
+     *
+     * @return true if initial scan is deferred, false to have initial scan occur on startup of Scanner.
      */
-    public boolean isScanInStart()
+    public boolean isDeferInitialScan()
     {
-        return _scanInStart;
+        return _deferInitialScan;
     }
 
     /**
-     * Set if Scanner should perform an initial scan during start of its lifecycle.
+     * Flag to control initial scan behavior.
      *
-     * @param scan true to scan during start of Scanner, false to not scan during start of Scanner.
+     * <ul>
+     *     <li>{@code true} - to have initial scan deferred.</li>
+     *     <li>{@code false} - to have initial scan occur as normal on Scanner startup</li>
+     * </ul>
+     *
+     * <p>
+     *     If choosing to defer the initial scan, a future call to {@link #startup()}
+     *     must occur before this Scanner will begin reporting changes in the {@link #setScanDirs(List)}
+     * </p>
+     *
+     * @param defer true to defer initial scan, false to have initial scan occur on startup of Scanner.
      */
-    public void setScanInStart(boolean scan)
+    public void setDeferInitialScan(boolean defer)
     {
-        this._scanInStart = scan;
+        this._deferInitialScan = defer;
     }
 
     /**
@@ -607,27 +619,49 @@ public class Scanner extends ContainerLifeCycle
     public void doStart() throws Exception
     {
         if (LOG.isDebugEnabled())
-            LOG.debug("Scanner start: scanInStart={}, reportExists={}, depth={}, rprtDirs={}, interval={}, filter={}, scannables={}",
-                      _scanInStart, _reportExisting, _scanDepth, _reportDirs, _scanInterval, _filter, _scannables);
+            LOG.debug("Scanner start: deferScan={}, reportExists={}, depth={}, rprtDirs={}, interval={}, filter={}, scannables={}",
+                _deferInitialScan, _reportExisting, _scanDepth, _reportDirs, _scanInterval, _filter, _scannables);
 
-        if (_scanInStart)
+        if (!_deferInitialScan)
         {
-            if (_reportExisting)
-            {
-                // if files exist at startup, report them
-                scan();
-                scan(); // scan twice so files reported as stable
-            }
-            else
-            {
-                //just register the list of existing files and only report changes
-                _prevScan = scanFiles();
-            }
+            _scheduler.start();
+            startup();
         }
 
         super.doStart();
+    }
 
-        //schedule the scan
+    /**
+     * Perform the initial scan of the directories {@link #setScanDirs(List),
+     * and start the scan interval schedule.
+     */
+    public void startup()
+    {
+        if (!isRunning())
+            throw new IllegalStateException("Scanner not started");
+        if (!_scheduler.isRunning())
+            throw new IllegalStateException("Scheduler not started");
+
+        if (_initialScanPerformed)
+            return;
+        _initialScanPerformed = true;
+
+        if (LOG.isDebugEnabled())
+            LOG.debug("{}.startup()", this.getClass().getSimpleName());
+
+        if (_reportExisting)
+        {
+            // if files exist at startup, report them
+            scan();
+            scan(); // scan twice so files reported as stable
+        }
+        else
+        {
+            //just register the list of existing files and only report changes
+            _prevScan = scanFiles();
+        }
+
+        // schedule further scans
         schedule();
     }
 
@@ -647,6 +681,7 @@ public class Scanner extends ContainerLifeCycle
         _task = null;
         if (task != null)
             task.cancel();
+        _initialScanPerformed = false;
     }
 
     /**
@@ -735,7 +770,7 @@ public class Scanner extends ContainerLifeCycle
     }
 
     /**
-     * Scan all of the given paths.
+     * Scan all the given paths.
      */
     private Map<Path, MetaData> scanFiles()
     {

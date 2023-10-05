@@ -28,7 +28,6 @@ import org.eclipse.jetty.deploy.App;
 import org.eclipse.jetty.deploy.AppProvider;
 import org.eclipse.jetty.deploy.DeploymentManager;
 import org.eclipse.jetty.server.Server;
-import org.eclipse.jetty.util.Callback;
 import org.eclipse.jetty.util.Scanner;
 import org.eclipse.jetty.util.annotation.ManagedAttribute;
 import org.eclipse.jetty.util.annotation.ManagedObject;
@@ -157,10 +156,11 @@ public abstract class ScanningAppProvider extends ContainerLifeCycle implements 
         _scanner.setScanDepth(1); //consider direct dir children of monitored dir
         _scanner.addListener(_scannerListener);
         _scanner.setReportExistingFilesOnStartup(true);
-        _scanner.setScanInStart(_deployOnStartup);
+        boolean deferInitialScan = !_deployOnStartup;
+        _scanner.setDeferInitialScan(deferInitialScan);
         addBean(_scanner);
 
-        if (!_deployOnStartup)
+        if (deferInitialScan)
         {
             // Setup listener to wait for Server in STARTED state, which
             // triggers the first scan of the monitored directories
@@ -174,7 +174,7 @@ public abstract class ScanningAppProvider extends ContainerLifeCycle implements 
                         {
                             if (LOG.isDebugEnabled())
                                 LOG.debug("Triggering Delayed Scan of {}", _monitored);
-                            _scanner.scan(Callback.NOOP);
+                            _scanner.startup();
                         }
                     }
                 });
