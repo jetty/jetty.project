@@ -53,7 +53,7 @@
                   </Default>
                 </Property>
               </Set>
-              <Set name="deployOnStartup"><Property name="jetty.deploy.deployOnStartup" default="true"/></Set>
+              <Set name="deferInitialScan"><Property name="jetty.deploy.deferInitialScan" default="false"/></Set>
               <Set name="scanInterval"><Property name="jetty.deploy.scanInterval" default="1"/></Set>
               <Set name="extractWars"><Property name="jetty.deploy.extractWars" default="true"/></Set>
               <Set name="configurationManager">

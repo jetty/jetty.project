@@ -20,10 +20,11 @@ etc/jetty-deploy.xml
 # Defaults Descriptor for all deployed webapps
 # jetty.deploy.defaultsDescriptorPath=${jetty.base}/etc/webdefault.xml
 
-# Deploy On Startup
-# true (default) will deploy on start, allowing failed deployments to fail server start.
-# false will deploy after server has started, failed deployments will not stop server.
-# jetty.deploy.deployOnStartup=true
+# Defer Initial Scan
+# true to have the initial scan deferred until the Server component is started.
+#      Note: deploy failures do not fail server startup in a deferred initial scan mode.
+# false (default) to have initial scan occur as normal.
+# jetty.deploy.deferInitialScan=false
 
 # Monitored directory scan period (seconds)
 # jetty.deploy.scanInterval=1

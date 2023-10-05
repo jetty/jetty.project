@@ -51,7 +51,7 @@ public abstract class ScanningAppProvider extends ContainerLifeCycle implements 
     private int _scanInterval = 10;
     private Scanner _scanner;
     private boolean _useRealPaths;
-    private boolean _deployOnStartup = true;
+    private boolean _deferInitialScan = false;
 
     private final Scanner.DiscreteListener _scannerListener = new Scanner.DiscreteListener()
     {
@@ -156,11 +156,10 @@ public abstract class ScanningAppProvider extends ContainerLifeCycle implements 
         _scanner.setScanDepth(1); //consider direct dir children of monitored dir
         _scanner.addListener(_scannerListener);
         _scanner.setReportExistingFilesOnStartup(true);
-        boolean deferInitialScan = !_deployOnStartup;
-        _scanner.setDeferInitialScan(deferInitialScan);
+        _scanner.setDeferInitialScan(_deferInitialScan);
         addBean(_scanner);
 
-        if (deferInitialScan)
+        if (_deferInitialScan)
         {
             // Setup listener to wait for Server in STARTED state, which
             // triggers the first scan of the monitored directories
@@ -321,14 +320,34 @@ public abstract class ScanningAppProvider extends ContainerLifeCycle implements 
         }
     }
 
-    public boolean isDeployOnStartup()
+    /**
+     * Test if initial scan should be deferred.
+     *
+     * @return true if initial scan is deferred, false to have initial scan occur on startup of ScanningAppProvider.
+     * @see Scanner#isDeferInitialScan()
+     */
+    public boolean isDeferInitialScan()
     {
-        return _deployOnStartup;
+        return _deferInitialScan;
     }
 
-    public void setDeployOnStartup(boolean deployOnStartup)
+    /**
+     * Flag to control initial scan behavior.
+     *
+     * <ul>
+     *     <li>{@code true} - to have initial scan deferred until the {@link Server} component
+     *     has reached it's STARTED state.<br/>
+     *     Note: any failures in a deploy will not fail the Server startup in this mode.</li>
+     *     <li>{@code false} - (default value) to have initial scan occur as normal on
+     *     ScanningAppProvider startup.</li>
+     * </ul>
+     *
+     * @param defer true to defer initial scan, false to have initial scan occur on startup of ScanningAppProvider.
+     * @see Scanner#setDeferInitialScan(boolean)
+     */
+    public void setDeferInitialScan(boolean defer)
     {
-        _deployOnStartup = deployOnStartup;
+        _deferInitialScan = defer;
     }
 
     public void setScanInterval(int scanInterval)
