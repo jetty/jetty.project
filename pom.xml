@@ -208,6 +208,7 @@
     <infinispan.docker.image.version>11.0.14.Final</infinispan.docker.image.version>
     <asciidoctor.skip>false</asciidoctor.skip>
     <project.build.outputTimestamp>2023-06-05T23:12:49Z</project.build.outputTimestamp>
+    <javadoc.verbose>false</javadoc.verbose>
   </properties>
 
   <licenses>
@@ -674,7 +675,7 @@
           <artifactId>maven-javadoc-plugin</artifactId>
           <version>${maven.javadoc.plugin.version}</version>
           <configuration>
-            <verbose>true</verbose>
+            <verbose>${javadoc.verbose}</verbose>
             <debug>true</debug>
             <source>17</source>
             <charset>UTF-8</charset>
@@ -839,7 +840,6 @@
             <instructions>
               <Bundle-SymbolicName>${bundle-symbolic-name}</Bundle-SymbolicName>
               <Bundle-Description>Jetty module for ${project.name}</Bundle-Description>
-              <Bundle-RequiredExecutionEnvironment>JavaSE-11</Bundle-RequiredExecutionEnvironment>
               <Bundle-DocURL>${jetty.url}</Bundle-DocURL>
               <Bundle-Vendor>Eclipse Jetty Project</Bundle-Vendor>
               <Bundle-Classpath>.</Bundle-Classpath>
@@ -850,7 +850,6 @@
               </Import-Package>
               <_provider-policy><![CDATA[$<range;[===,=+)>]]></_provider-policy>
               <_consumer-policy><![CDATA[$<range;[===,+)>]]></_consumer-policy>
-              <_noee>true</_noee>
             </instructions>
           </configuration>
         </plugin>
@@ -1096,6 +1095,11 @@
             <artifactId>jsr305</artifactId>
           </exclusion>
         </exclusions>
+      </dependency>
+      <dependency>
+        <groupId>org.apache.maven</groupId>
+        <artifactId>maven-model</artifactId>
+        <version>${maven.deps.version}</version>
       </dependency>
       <dependency>
         <groupId>org.apache.maven</groupId>
