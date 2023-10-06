@@ -22,6 +22,7 @@ import java.util.concurrent.TimeUnit;
 
 import org.eclipse.jetty.ee10.servlet.DefaultServlet;
 import org.eclipse.jetty.ee10.servlet.ServletHolder;
+import org.eclipse.jetty.ee10.servlet.ServletMapping;
 import org.eclipse.jetty.logging.StacklessLogging;
 import org.eclipse.jetty.server.Server;
 import org.eclipse.jetty.toolchain.test.MavenTestingUtils;
@@ -137,7 +138,18 @@ public class StandardDescriptorProcessorTest
         wac.setBaseResourceAsPath(docroot);
         wac.setDescriptor(webXml.toURI().toURL().toString());
         wac.start();
-        assertEquals("other", wac.getServletHandler().getServletMapping("/").getServletName());
+        ServletMapping[] mappings = wac.getServletHandler().getServletMappings();
+        ServletMapping mapping = null;
+        for (ServletMapping m : mappings)
+        {
+            if (m.containsPathSpec("/"))
+            {
+                assertEquals(null, mapping);
+                mapping = m;
+            }
+        }
+        assertNotNull(mapping);
+        assertEquals("other", mapping.getServletName());
     }
 
     @Test
