@@ -182,6 +182,47 @@ public class RolloverFileOutputStreamTest
     }
 
     @Test
+    public void testMissingDirectory()
+    {
+
+        ZoneId zone = toZoneId("Australia/Sydney");
+        ZonedDateTime now = toDateTime("2016.04.10-08:30:12.3 AM AEDT", zone);
+        String templateString = "missingDir/test-rofos-yyyy_mm_dd.log";
+        String excMessageExpected = "Log directory does not exist.";
+
+        try (RolloverFileOutputStream rofos =
+                 new RolloverFileOutputStream(templateString, false, 3, TimeZone.getTimeZone(zone), null, null, now))
+        {
+            rofos.write("TICK".getBytes());
+            rofos.flush();
+        }
+        catch (Exception ex)
+        {
+            boolean exClassOK = false;
+            if (ex instanceof java.io.IOException)
+            {
+                exClassOK = true;
+            }
+            assertThat("Exception Type", exClassOK, is(true));
+
+            String excMessageActual = ex.getMessage();
+            boolean messageOK = false;
+            if (excMessageActual != null)
+            {
+                excMessageActual = excMessageActual.trim();
+                if (!excMessageActual.isEmpty())
+                {
+                    if (excMessageActual.contains(excMessageExpected))
+                    {
+                        messageOK = true;
+                    }
+                }
+            }
+            assertThat("Exception Message", messageOK, is(true));
+        }
+    }        
+
+    @Test
     public void testFileHandling() throws Exception
     {
         Path testPath = testingDir.getEmptyPathDir();
