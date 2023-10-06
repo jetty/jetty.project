@@ -853,28 +853,14 @@ public class HTTP2Stream implements Stream, Attachable, Closeable, Callback, Dum
 
     private void notifyDataAvailable(Stream stream)
     {
-        Listener listener = this.listener;
-        if (listener != null)
+        Listener listener = Objects.requireNonNullElse(this.listener, Listener.AUTO_DISCARD);
+        try
         {
-            try
-            {
-                listener.onDataAvailable(stream);
-            }
-            catch (Throwable x)
-            {
-                LOG.info("Failure while notifying listener {}", listener, x);
-            }
+            listener.onDataAvailable(stream);
         }
-        else
+        catch (Throwable x)
         {
-            Data data = readData();
-            if (data != null)
-            {
-                data.release();
-                if (data.frame().isEndStream())
-                    return;
-            }
-            stream.demand();
+            LOG.info("Failure while notifying listener {}", listener, x);
         }
     }
 
