@@ -11,7 +11,6 @@
   <name>EE10 :: Jetty JSPC Maven Plugin</name>
   <properties>
     <bundle-symbolic-name>${project.groupId}.jspc.plugin</bundle-symbolic-name>
-    <skipTests>true</skipTests>
     <jacoco.skip>true</jacoco.skip>
   </properties>
   <build>
@@ -62,6 +61,7 @@
     <dependency>
       <groupId>org.apache.maven</groupId>
       <artifactId>maven-plugin-api</artifactId>
+      <scope>provided</scope>
       <exclusions>
         <exclusion>
           <groupId>javax.annotation</groupId>
@@ -76,7 +76,18 @@
     </dependency>
     <dependency>
       <groupId>org.apache.maven</groupId>
+      <artifactId>maven-core</artifactId>
+      <scope>provided</scope>
+    </dependency>
+    <dependency>
+      <groupId>org.apache.maven</groupId>
+      <artifactId>maven-model</artifactId>
+      <scope>provided</scope>
+    </dependency>
+    <dependency>
+      <groupId>org.apache.maven</groupId>
       <artifactId>maven-artifact</artifactId>
+      <scope>provided</scope>
     </dependency>
     <dependency>
       <groupId>org.apache.maven.plugin-tools</groupId>
