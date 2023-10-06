@@ -70,8 +70,8 @@ public class Scanner extends ContainerLifeCycle
     private Map<Path, MetaData> _prevScan;
     private FilenameFilter _filter;
     private final Map<Path, IncludeExcludeSet<PathMatcher, Path>> _scannables = new ConcurrentHashMap<>();
-    private boolean _deferInitialScan = false;
-    private boolean _initialScanPerformed = false;
+    private boolean _autoStartScanning = true;
+    private boolean _scanningStarted = false;
     private boolean _reportExisting = true;
     private boolean _reportDirs = true;
     private Scheduler.Task _task;
@@ -523,33 +523,33 @@ public class Scanner extends ContainerLifeCycle
     }
 
     /**
-     * Test if initial scan should be deferred.
+     * Test if scanning should start automatically with Scanner.{@link #start()}
      *
-     * @return true if initial scan is deferred, false to have initial scan occur on startup of Scanner.
+     * @return true if scanning should start automatically, false to have scanning is deferred to a later manual call to {@link #startScanning()}
      */
-    public boolean isDeferInitialScan()
+    public boolean isAutoStartScanning()
     {
-        return _deferInitialScan;
+        return _autoStartScanning;
     }
 
     /**
-     * Flag to control initial scan behavior.
+     * Flag to control scanning auto start feature.
      *
      * <ul>
-     *     <li>{@code true} - to have initial scan deferred.</li>
-     *     <li>{@code false} - to have initial scan occur as normal on Scanner startup</li>
+     *     <li>{@code true} - to have scanning automatically start with the Scanner.{@link #start()}</li>
+     *     <li>{@code false} - to have scanning deferred until a future call to {@link #startScanning()}</li>
      * </ul>
      *
      * <p>
-     *     If choosing to defer the initial scan, a future call to {@link #startup()}
-     *     must occur before this Scanner will begin reporting changes in the {@link #setScanDirs(List)}
+     *     If choosing to defer the automatic scanning, a future call to {@link #startScanning()}
+     *     is required to initiate this Scanner so that it can begin report files in the {@link #setScanDirs(List)}
      * </p>
      *
-     * @param defer true to defer initial scan, false to have initial scan occur on startup of Scanner.
+     * @param autostart true if scanning should start automatically, false to have scanning is deferred to a later manual call to {@link #startScanning()}
      */
-    public void setDeferInitialScan(boolean defer)
+    public void setAutoStartScanning(boolean autostart)
     {
-        this._deferInitialScan = defer;
+        this._autoStartScanning = autostart;
     }
 
     /**
@@ -619,32 +619,39 @@ public class Scanner extends ContainerLifeCycle
     public void doStart() throws Exception
     {
         if (LOG.isDebugEnabled())
-            LOG.debug("Scanner start: deferScan={}, reportExists={}, depth={}, rprtDirs={}, interval={}, filter={}, scannables={}",
-                _deferInitialScan, _reportExisting, _scanDepth, _reportDirs, _scanInterval, _filter, _scannables);
+            LOG.debug("Scanner start: autoStartScanning={}, reportExists={}, depth={}, rprtDirs={}, interval={}, filter={}, scannables={}",
+                isAutoStartScanning(), _reportExisting, _scanDepth, _reportDirs, _scanInterval, _filter, _scannables);
 
-        if (!_deferInitialScan)
+        if (isAutoStartScanning())
         {
-            _scheduler.start();
-            startup();
+            // need to manually start _scheduler here
+            if (!_scheduler.isRunning())
+                _scheduler.start();
+            startScanning();
         }
 
+        // Start the scanner and managed beans (eg: the scheduler)
         super.doStart();
     }
 
     /**
-     * Perform the initial scan of the directories {@link #setScanDirs(List)},
-     * and start the scan interval schedule.
+     * Start the scanning process.
+     * <p>
+     *     This will perform the scan of the directories {@link #setScanDirs(List)}
+     *     and schedule future scans, following all of the configuration
+     *     of the scan (eg: {@link #setReportExistingFilesOnStartup(boolean)})
+     * </p>
      */
-    public void startup()
+    public void startScanning()
     {
         if (!isRunning())
             throw new IllegalStateException("Scanner not started");
-        if (!_scheduler.isRunning())
-            throw new IllegalStateException("Scheduler not started");
+        // the scheduling of tasks cannot work until _scheduler is running
+        assert _scheduler.isRunning();
 
-        if (_initialScanPerformed)
+        if (_scanningStarted)
             return;
-        _initialScanPerformed = true;
+        _scanningStarted = true;
 
         if (LOG.isDebugEnabled())
             LOG.debug("{}.startup()", this.getClass().getSimpleName());
@@ -681,7 +688,7 @@ public class Scanner extends ContainerLifeCycle
         _task = null;
         if (task != null)
             task.cancel();
-        _initialScanPerformed = false;
+        _scanningStarted = false;
     }
 
     /**

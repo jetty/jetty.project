@@ -156,7 +156,7 @@ public abstract class ScanningAppProvider extends ContainerLifeCycle implements 
         _scanner.setScanDepth(1); //consider direct dir children of monitored dir
         _scanner.addListener(_scannerListener);
         _scanner.setReportExistingFilesOnStartup(true);
-        _scanner.setDeferInitialScan(_deferInitialScan);
+        _scanner.setAutoStartScanning(!_deferInitialScan);
         addBean(_scanner);
 
         if (_deferInitialScan)
@@ -172,8 +172,8 @@ public abstract class ScanningAppProvider extends ContainerLifeCycle implements 
                         if (event instanceof Server)
                         {
                             if (LOG.isDebugEnabled())
-                                LOG.debug("Triggering Delayed Scan of {}", _monitored);
-                            _scanner.startup();
+                                LOG.debug("Triggering Deferred Scan of {}", _monitored);
+                            _scanner.startScanning();
                         }
                     }
                 });
@@ -324,7 +324,6 @@ public abstract class ScanningAppProvider extends ContainerLifeCycle implements 
      * Test if initial scan should be deferred.
      *
      * @return true if initial scan is deferred, false to have initial scan occur on startup of ScanningAppProvider.
-     * @see Scanner#isDeferInitialScan()
      */
     public boolean isDeferInitialScan()
     {
@@ -343,7 +342,6 @@ public abstract class ScanningAppProvider extends ContainerLifeCycle implements 
      * </ul>
      *
      * @param defer true to defer initial scan, false to have initial scan occur on startup of ScanningAppProvider.
-     * @see Scanner#setDeferInitialScan(boolean)
      */
     public void setDeferInitialScan(boolean defer)
     {
