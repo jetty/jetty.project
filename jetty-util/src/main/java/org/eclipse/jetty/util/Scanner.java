@@ -632,7 +632,7 @@ public class Scanner extends ContainerLifeCycle
     }
 
     /**
-     * Perform the initial scan of the directories {@link #setScanDirs(List),
+     * Perform the initial scan of the directories {@link #setScanDirs(List)},
      * and start the scan interval schedule.
      */
     public void startup()

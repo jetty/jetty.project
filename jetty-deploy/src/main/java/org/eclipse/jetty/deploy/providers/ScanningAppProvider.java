@@ -336,7 +336,7 @@ public abstract class ScanningAppProvider extends ContainerLifeCycle implements 
      *
      * <ul>
      *     <li>{@code true} - to have initial scan deferred until the {@link Server} component
-     *     has reached it's STARTED state.<br/>
+     *     has reached it's STARTED state.<br>
      *     Note: any failures in a deploy will not fail the Server startup in this mode.</li>
      *     <li>{@code false} - (default value) to have initial scan occur as normal on
      *     ScanningAppProvider startup.</li>
