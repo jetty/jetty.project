@@ -10,6 +10,10 @@
   <artifactId>jetty-http-tools</artifactId>
   <name>Core :: HTTP Tools</name>
 
+  <properties>
+    <bundle-symbolic-name>${project.groupId}.http.tools</bundle-symbolic-name>
+  </properties>
+
   <dependencies>
     <dependency>
       <groupId>org.eclipse.jetty</groupId>
