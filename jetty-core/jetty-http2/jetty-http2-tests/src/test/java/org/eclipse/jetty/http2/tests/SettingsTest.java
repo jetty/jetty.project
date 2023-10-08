@@ -261,7 +261,7 @@ public class SettingsTest extends AbstractTest
                         MetaData.Request push = newRequest("GET", "/push", HttpFields.EMPTY);
                         try
                         {
-                            s.push(new PushPromiseFrame(s.getId(), push), new Stream.Listener() {});
+                            s.push(new PushPromiseFrame(s.getId(), push), Stream.Listener.AUTO_DISCARD);
                         }
                         catch (IllegalStateException x)
                         {
@@ -359,7 +359,7 @@ public class SettingsTest extends AbstractTest
 
         MetaData.Request request = newRequest("GET", HttpFields.EMPTY);
         HeadersFrame frame = new HeadersFrame(request, null, true);
-        clientSession.newStream(frame, new Stream.Listener() {});
+        clientSession.newStream(frame, Stream.Listener.AUTO_DISCARD);
 
         Assertions.assertTrue(clientFailureLatch.await(5, TimeUnit.SECONDS));
     }
