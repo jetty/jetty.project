@@ -36,6 +36,7 @@ import org.junit.jupiter.api.extension.ExtendWith;
 import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.Matchers.containsInAnyOrder;
 import static org.hamcrest.Matchers.equalToIgnoringCase;
+import static org.hamcrest.Matchers.nullValue;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertNotNull;
@@ -90,7 +91,7 @@ public class StandardDescriptorProcessorTest
         {
             if ("default".equals(h.getName()))
             {
-                assertEquals(null, holder);
+                assertThat(holder, nullValue());
                 holder = h;
             }
         }
@@ -144,7 +145,7 @@ public class StandardDescriptorProcessorTest
         {
             if (m.containsPathSpec("/"))
             {
-                assertEquals(null, mapping);
+                assertThat(mapping, nullValue());
                 mapping = m;
             }
         }
