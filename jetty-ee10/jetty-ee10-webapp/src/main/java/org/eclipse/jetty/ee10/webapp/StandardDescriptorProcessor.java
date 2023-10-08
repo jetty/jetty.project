@@ -216,8 +216,8 @@ public class StandardDescriptorProcessor extends IterativeDescriptorProcessor
         else
         {
             //A servlet of the same name already exists. If it came from the jetty api
-            //and we're parsing webdefaults, then we will stop reading the descriptor to allow
-            //the api to define the default
+            //and we're parsing webdefaults, then we will stop visiting this Servlet to allow
+            //the api to define the defaults rather than webdefaults
             if (Source.Origin.EMBEDDED == holder.getSource().getOrigin() && descriptor instanceof DefaultsDescriptor)
                 return;
         }
