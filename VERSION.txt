@@ -1,3 +1,5 @@
+jetty-10.0.18-SNAPSHOT
+
 jetty-10.0.17 - 09 October 2023
  + 9777 CrossOriginFilter does not return Vary header on no-cors mode
  + 9928 Backport `Request.getBeginNanoTime()`
