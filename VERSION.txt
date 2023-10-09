@@ -1,4 +1,10 @@
-jetty-10.0.17-SNAPSHOT
+jetty-10.0.17 - 09 October 2023
+ + 9777 CrossOriginFilter does not return Vary header on no-cors mode
+ + 9928 Backport `Request.getBeginNanoTime()`
+ + 10473 Startup Script reports `ok` too fast, and doesn't wait for actual
+   start of Jetty
+ + 10547 Cannot customize Executor on WebSocketClient
+ + 10679 Review HTTP/2 rate control
 
 jetty-10.0.16 - 25 August 2023
  + 6140 Report total number of keys in SelectorManager
@@ -69,7 +75,8 @@ jetty-10.0.15 - 11 April 2023
  + 9309 `jetty.sh` cannot handle complex Jetty properties from `start.d/*.ini`
  + 9400 Jetty logs warning with stacktrace when annotation parser encounters
    module-info.class file inside elasticsearch-x-content jar
- + 9464 Add optional configuration to log user out after OpenID idToken expires (CVE-2023-41900)
+ + 9464 Add optional configuration to log user out after OpenID idToken expires
+   (CVE-2023-41900)
  + 9468 Jetty 11.0.14 is less tolerant of non-compliant cookies than 11.0.13
  + 9497 Maven plugin effective web xml: add support for jar projects
  + 9501 jetty client with proxy - ssl traffic between both proxy and servers
@@ -219,7 +226,6 @@ jetty-10.0.10 - 16 June 2022
  + 8088 Add option to configure exitVm on ShutdownMonitor from System
    properties
  + 8161 Improve SSLConnection buffers handling (CVE-2022-2191)
-
 
 jetty-9.4.47.v20220610 - 10 June 2022
  + 4717 High CPU spikes with jetty winstone threads
@@ -528,7 +534,8 @@ jetty-10.0.3 - 20 May 2021
  + 6254 Total timeout not enforced for queued requests
  + 6263 Review URI encoding in ConcatServlet & WelcomeFilter (CVE-2021-28169)
  + 6272 Reduce allocation in HttpClient when notifying content listeners
- + 6277 Better handle exceptions thrown from session destroy listener (CVE-2021-34428)
+ + 6277 Better handle exceptions thrown from session destroy listener
+   (CVE-2021-34428)
  + 6280 Copy ServletHolder class/instance properly during startWebapp
  + 6287 Class loading broken for WebSocketClient used inside webapp
 
@@ -559,7 +566,8 @@ jetty-10.0.2 - 26 March 2021
  + 6037 Review logging modules for j.u.l
  + 6050 Websocket: NotUtf8Exception after upgrade 9.4.35 -> 9.4.36 or newer
  + 6063 Allow override of hazelcast version when using module
- + 6072 jetty server high CPU when client send data length > 17408 (CVE-2021-28165)
+ + 6072 jetty server high CPU when client send data length > 17408
+   (CVE-2021-28165)
  + 6076 Embedded Jetty throws null pointer exception
  + 6082 SslConnection compacting
  + 6085 Jetty keeps Sessions in use after "Duplicate valid session cookies"
@@ -635,7 +643,8 @@ jetty-10.0.0 - 02 December 2020
  + 5555 NPE for servlet with no mapping
  + 5562 ArrayTernaryTrie consumes too much memory
  + 5575 Add SEARCH as a known HttpMethod
- + 5605 java.io.IOException: unconsumed input during http request parsing (CVE-2020-27218)
+ + 5605 java.io.IOException: unconsumed input during http request parsing
+   (CVE-2020-27218)
  + 5633 Allow to configure HttpClient request authority
  + 5679 Distro argument --list-all-modules does not work
  + 5680 No way to see which modules are enabled for the distro
@@ -827,7 +836,8 @@ jetty-9.4.41.v20210516 - 16 May 2021
    `AsyncContext.dispatch`
  + 6254 Total timeout not enforced for queued requests
  + 6263 Review URI encoding in ConcatServlet & WelcomeFilter (CVE-2021-28169)
- + 6277 Better handle exceptions thrown from session destroy listener (CVE-2021-34428)
+ + 6277 Better handle exceptions thrown from session destroy listener
+   (CVE-2021-34428)
  + 6280 Copy ServletHolder class/instance properly during startWebapp
 
 jetty-9.4.40.v20210413 - 13 April 2021
@@ -843,7 +853,8 @@ jetty-9.4.39.v20210325 - 25 March 2021
  + 6052 Cleanup TypeUtil and ModuleLocation to allow jetty-client/hybrid to
    work on Android
  + 6063 Allow override of hazelcast version when using module
- + 6072 jetty server high CPU when client send data length > 17408 (CVE-2021-28165)
+ + 6072 jetty server high CPU when client send data length > 17408
+   (CVE-2021-28165)
  + 6085 Jetty keeps Sessions in use after "Duplicate valid session cookies"
    Message
  + 6101 Normalize ambiguous URIs (CVE-2021-28164)
@@ -899,7 +910,8 @@ jetty-9.4.35.v20201120 - 20 November 2020
  + 5539 StatisticsServlet output is not valid
  + 5562 ArrayTernaryTrie consumes too much memory
  + 5575 Add SEARCH as a known HttpMethod
- + 5605 java.io.IOException: unconsumed input during http request parsing (CVE-2020-27218)
+ + 5605 java.io.IOException: unconsumed input during http request parsing
+   (CVE-2020-27218)
  + 5633 Allow to configure HttpClient request authority
 
 jetty-9.4.34.v20201102 - 02 November 2020
@@ -1393,8 +1405,10 @@ jetty-9.4.18.v20190429 - 29 April 2019
 jetty-9.4.17.v20190418 - 18 April 2019
  + 2140 Infinispan and hazelcast changes to scavenge zombie expired sessions
  + 3464 Split SslContextFactory into Client and Server
- + 3549 Directory Listing on Windows reveals Resource Base path (CVE-2019-10246)
- + 3555 DefaultHandler Reveals Base Resource Path of each Context (CVE-2019-10247)
+ + 3549 Directory Listing on Windows reveals Resource Base path
+   (CVE-2019-10246)
+ + 3555 DefaultHandler Reveals Base Resource Path of each Context
+   (CVE-2019-10247)
 
 jetty-9.4.16.v20190411 - 11 April 2019
  + 1861 Limit total bytes pooled by ByteBufferPools
@@ -1475,8 +1489,10 @@ jetty-9.3.28.v20191105 - 05 November 2019
  + 4217 SslConnection.DecryptedEnpoint.flush eternal busy loop
 
 jetty-9.3.27.v20190418 - 18 April 2019
- + 3549 Directory Listing on Windows reveals Resource Base path (CVE-2019-10246)
- + 3555 DefaultHandler Reveals Base Resource Path of each Context (CVE-2019-10247)
+ + 3549 Directory Listing on Windows reveals Resource Base path
+   (CVE-2019-10246)
+ + 3555 DefaultHandler Reveals Base Resource Path of each Context
+   (CVE-2019-10247)
 
 jetty-9.3.26.v20190403 - 03 April 2019
  + 2954 Improve cause reporting for HttpClient failures
@@ -1490,11 +1506,14 @@ jetty-9.2.29.v20191105 - 05 November 2019
  + 4217 SslConnection.DecryptedEnpoint.flush eternal busy loop
 
 jetty-9.2.28.v20190418 - 18 April 2019
- + 3549 Directory Listing on Windows reveals Resource Base path (CVE-2019-10246)
- + 3555 DefaultHandler Reveals Base Resource Path of each Context (CVE-2019-10247)
+ + 3549 Directory Listing on Windows reveals Resource Base path
+   (CVE-2019-10246)
+ + 3555 DefaultHandler Reveals Base Resource Path of each Context
+   (CVE-2019-10247)
 
 jetty-9.2.27.v20190403 - 03 April 2019
- + 3319 Refactored Directory Listing to modernize and avoid XSS (CVE-2019-10241)
+ + 3319 Refactored Directory Listing to modernize and avoid XSS
+   (CVE-2019-10241)
 
 jetty-9.4.14.v20181114 - 14 November 2018
  + 3097 Duplicated programmatic Servlet Listeners causing duplicate calls
