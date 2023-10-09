@@ -76,32 +76,30 @@ public interface MethodHolder
 
     static Object doInvoke(MethodHandle methodHandle, Object... args) throws Throwable
     {
-        return methodHandle.invokeExact(args[0], args[1]);
-
-//        switch (args.length)
-//        {
-//            case 0:
-//                return methodHandle.invoke();
-//            case 1:
-//                return methodHandle.invoke(args[0]);
-//            case 2:
-//                return methodHandle.invoke(args[0], args[1]);
-//            case 3:
-//                return methodHandle.invoke(args[0], args[1], args[2]);
-//            case 4:
-//                return methodHandle.invoke(args[0], args[1], args[2], args[3]);
-//            case 5:
-//                return methodHandle.invoke(args[0], args[1], args[2], args[3], args[4]);
-//            case 6:
-//                return methodHandle.invoke(args[0], args[1], args[2], args[3], args[4], args[5]);
-//            case 7:
-//                return methodHandle.invoke(args[0], args[1], args[2], args[3], args[4], args[5], args[6]);
-//            case 8:
-//                return methodHandle.invoke(args[0], args[1], args[2], args[3], args[4], args[5], args[6], args[7]);
-//            case 9:
-//                return methodHandle.invoke(args[0], args[1], args[2], args[3], args[4], args[5], args[6], args[7], args[8]);
-//            default:
-//                return methodHandle.invokeWithArguments(args);
-//        }
+        switch (args.length)
+        {
+            case 0:
+                return methodHandle.invoke();
+            case 1:
+                return methodHandle.invoke(args[0]);
+            case 2:
+                return methodHandle.invoke(args[0], args[1]);
+            case 3:
+                return methodHandle.invoke(args[0], args[1], args[2]);
+            case 4:
+                return methodHandle.invoke(args[0], args[1], args[2], args[3]);
+            case 5:
+                return methodHandle.invoke(args[0], args[1], args[2], args[3], args[4]);
+            case 6:
+                return methodHandle.invoke(args[0], args[1], args[2], args[3], args[4], args[5]);
+            case 7:
+                return methodHandle.invoke(args[0], args[1], args[2], args[3], args[4], args[5], args[6]);
+            case 8:
+                return methodHandle.invoke(args[0], args[1], args[2], args[3], args[4], args[5], args[6], args[7]);
+            case 9:
+                return methodHandle.invoke(args[0], args[1], args[2], args[3], args[4], args[5], args[6], args[7], args[8]);
+            default:
+                return methodHandle.invokeWithArguments(args);
+        }
     }
 }
