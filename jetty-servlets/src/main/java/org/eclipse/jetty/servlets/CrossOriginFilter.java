@@ -31,10 +31,6 @@ import jakarta.servlet.ServletRequest;
 import jakarta.servlet.ServletResponse;
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletResponse;
-import org.eclipse.jetty.http.HttpField;
-import org.eclipse.jetty.http.HttpHeader;
-import org.eclipse.jetty.http.PreEncodedHttpField;
-import org.eclipse.jetty.server.Response;
 import org.eclipse.jetty.util.StringUtil;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -153,7 +149,6 @@ public class CrossOriginFilter implements Filter
     private static final List<String> SIMPLE_HTTP_METHODS = Arrays.asList("GET", "POST", "HEAD");
     private static final List<String> DEFAULT_ALLOWED_METHODS = Arrays.asList("GET", "POST", "HEAD");
     private static final List<String> DEFAULT_ALLOWED_HEADERS = Arrays.asList("X-Requested-With", "Content-Type", "Accept", "Origin");
-    private static final HttpField VARY_ORIGIN = new PreEncodedHttpField(HttpHeader.VARY, HttpHeader.ORIGIN.asString());
 
     private boolean anyOriginAllowed;
     private boolean anyTimingOriginAllowed;
@@ -274,10 +269,7 @@ public class CrossOriginFilter implements Filter
 
     private void handle(HttpServletRequest request, HttpServletResponse response, FilterChain chain) throws IOException, ServletException
     {
-        if (response instanceof Response)
-            ((Response)response).getHttpFields().add(VARY_ORIGIN);
-        else
-            response.addHeader(VARY_ORIGIN.getName(), VARY_ORIGIN.getValue());
+        response.addHeader("Vary", ORIGIN_HEADER);
         String origin = request.getHeader(ORIGIN_HEADER);
         // Is it a cross origin request ?
         if (origin != null && isEnabled(request))
