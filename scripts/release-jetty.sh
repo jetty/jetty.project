@@ -163,6 +163,11 @@ if proceedyn "Are you sure you want to release using above? (y/N)" n; then
     # This is equivalent to 'mvn release:perform'
     if proceedyn "Build/Deploy from tag $TAG_NAME? (Y/n)" y; then
         mvn clean deploy -Peclipse-release $DEPLOY_OPTS
+        echo "IMPORTANT NOTICE: You will need to build+deploy jetty-documentation on JDK21 to make the documentation sane!"
+        echo "Switch to a new window, make sure you are using JDK21, and run the following command:"
+        echo "$ mvn clean deploy -Peclipse-release $DEPLOY_OPTS -pl :jetty-documentation"
+        if proceedyn "Did you build and deploy jetty-documentation in JDK21? (y/N)" n; then
+        fi
     fi
     if proceedyn "Update working directory for $VER_NEXT? (Y/n)" y; then
         echo "Update VERSION.txt for $VER_NEXT"
