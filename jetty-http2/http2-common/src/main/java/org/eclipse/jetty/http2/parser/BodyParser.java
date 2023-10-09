@@ -39,7 +39,7 @@ import org.slf4j.LoggerFactory;
  */
 public abstract class BodyParser
 {
-    protected static final Logger LOG = LoggerFactory.getLogger(BodyParser.class);
+    private static final Logger LOG = LoggerFactory.getLogger(BodyParser.class);
 
     private final HeaderParser headerParser;
     private final Parser.Listener listener;
