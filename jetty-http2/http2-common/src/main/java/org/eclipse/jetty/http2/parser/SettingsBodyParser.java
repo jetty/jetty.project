@@ -72,10 +72,7 @@ public class SettingsBodyParser extends BodyParser
             return;
         boolean isReply = hasFlag(Flags.ACK);
         SettingsFrame frame = new SettingsFrame(Collections.emptyMap(), isReply);
-        if (!isReply && !rateControlOnEvent(frame))
-            connectionFailure(buffer, ErrorCode.ENHANCE_YOUR_CALM_ERROR.code, "invalid_settings_frame_rate");
-        else
-            onSettings(frame);
+        onSettings(buffer, frame);
     }
 
     private boolean validateFrame(ByteBuffer buffer, int streamId, int bodyLength)
@@ -218,11 +215,13 @@ public class SettingsBodyParser extends BodyParser
             return connectionFailure(buffer, ErrorCode.PROTOCOL_ERROR.code, "invalid_settings_max_frame_size");
 
         SettingsFrame frame = new SettingsFrame(settings, hasFlag(Flags.ACK));
-        return onSettings(frame);
+        return onSettings(buffer, frame);
     }
 
-    private boolean onSettings(SettingsFrame frame)
+    private boolean onSettings(ByteBuffer buffer, SettingsFrame frame)
     {
+        if (!rateControlOnEvent(frame))
+            return connectionFailure(buffer, ErrorCode.ENHANCE_YOUR_CALM_ERROR.code, "invalid_settings_frame_rate");
         reset();
         notifySettings(frame);
         return true;

@@ -63,7 +63,7 @@ public abstract class AbstractHTTP2ServerConnectionFactory extends AbstractConne
     private int maxFrameSize = Frame.DEFAULT_MAX_LENGTH;
     private int maxSettingsKeys = SettingsFrame.DEFAULT_MAX_KEYS;
     private boolean connectProtocolEnabled = true;
-    private RateControl.Factory rateControlFactory = new WindowRateControl.Factory(50);
+    private RateControl.Factory rateControlFactory = new WindowRateControl.Factory(128);
     private FlowControlStrategy.Factory flowControlStrategyFactory = () -> new BufferingFlowControlStrategy(0.5F);
     private long streamIdleTimeout;
     private boolean useInputDirectByteBuffers;
