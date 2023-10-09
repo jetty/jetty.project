@@ -73,12 +73,22 @@ public class SettingsBodyParser extends BodyParser
     @Override
     protected void emptyBody(ByteBuffer buffer)
     {
+        if (!validateFrame(buffer, getStreamId(), 0))
+            return;
         boolean isReply = hasFlag(Flags.ACK);
         SettingsFrame frame = new SettingsFrame(Collections.emptyMap(), isReply);
-        if (!isReply && !rateControlOnEvent(frame))
-            connectionFailure(buffer, ErrorCode.ENHANCE_YOUR_CALM_ERROR.code, "invalid_settings_frame_rate");
-        else
-            onSettings(frame);
+        onSettings(buffer, frame);
+    }
+
+    private boolean validateFrame(ByteBuffer buffer, int streamId, int bodyLength)
+    {
+        // SPEC: wrong streamId is treated as connection error.
+        if (streamId != 0)
+            return connectionFailure(buffer, ErrorCode.PROTOCOL_ERROR.code, "invalid_settings_frame");
+        // SPEC: reply with body is treated as connection error.
+        if (hasFlag(Flags.ACK) && bodyLength > 0)
+            return connectionFailure(buffer, ErrorCode.FRAME_SIZE_ERROR.code, "invalid_settings_frame");
+        return true;
     }
 
     @Override
@@ -95,9 +105,8 @@ public class SettingsBodyParser extends BodyParser
             {
                 case PREPARE:
                 {
-                    // SPEC: wrong streamId is treated as connection error.
-                    if (streamId != 0)
-                        return connectionFailure(buffer, ErrorCode.PROTOCOL_ERROR.code, "invalid_settings_frame");
+                    if (!validateFrame(buffer, streamId, bodyLength))
+                        return false;
                     length = bodyLength;
                     settings = new HashMap<>();
                     state = State.SETTING_ID;
@@ -211,11 +220,13 @@ public class SettingsBodyParser extends BodyParser
             return connectionFailure(buffer, ErrorCode.PROTOCOL_ERROR.code, "invalid_settings_max_frame_size");
 
         SettingsFrame frame = new SettingsFrame(settings, hasFlag(Flags.ACK));
-        return onSettings(frame);
+        return onSettings(buffer, frame);
     }
 
-    private boolean onSettings(SettingsFrame frame)
+    private boolean onSettings(ByteBuffer buffer, SettingsFrame frame)
     {
+        if (!rateControlOnEvent(frame))
+            return connectionFailure(buffer, ErrorCode.ENHANCE_YOUR_CALM_ERROR.code, "invalid_settings_frame_rate");
         reset();
         notifySettings(frame);
         return true;

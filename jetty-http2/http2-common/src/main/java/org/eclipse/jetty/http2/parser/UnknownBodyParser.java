@@ -40,7 +40,6 @@ public class UnknownBodyParser extends BodyParser
         boolean parsed = cursor == 0;
         if (parsed && !rateControlOnEvent(new UnknownFrame(getFrameType())))
             return connectionFailure(buffer, ErrorCode.ENHANCE_YOUR_CALM_ERROR.code, "invalid_unknown_frame_rate");
-
         return parsed;
     }
 
