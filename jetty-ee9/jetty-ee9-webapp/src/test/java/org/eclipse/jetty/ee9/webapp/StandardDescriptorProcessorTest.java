@@ -31,6 +31,7 @@ import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 
 import static org.hamcrest.MatcherAssert.assertThat;
+import static org.hamcrest.Matchers.not;
 import static org.hamcrest.Matchers.nullValue;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertNotNull;
@@ -122,6 +123,7 @@ public class StandardDescriptorProcessorTest
         ServletMapping mapping = null;
         for (ServletMapping m : mappings)
         {
+            assertThat(m.getServletName(), not(equals("default")));
             if (m.containsPathSpec("/"))
             {
                 assertThat(mapping, nullValue());
@@ -147,6 +149,7 @@ public class StandardDescriptorProcessorTest
         ServletMapping mapping = null;
         for (ServletMapping m : mappings)
         {
+            assertThat(m.getServletName(), not(equals("default")));
             if (m.containsPathSpec("/"))
             {
                 assertThat(mapping, nullValue());
