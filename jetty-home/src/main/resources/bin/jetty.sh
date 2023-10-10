@@ -216,6 +216,48 @@ pidKill()
   fi
 }
 
+testFileSystemPermissions()
+{
+  # Don't test file system permissions if user is root
+  if [ $UID -eq 0 ] ; then
+    (( DEBUG )) && echo "Not testing file system permissions: uid is 0"
+    return 0
+  fi
+
+  # Don't test if JETTY_USER is specified
+  # as the Jetty process will switch to a different
+  # user id on startup
+  if [ -z "$JETTY_USER"] ; then
+    (( DEBUG )) && echo "Not testing file system permissions: JETTY_USER=$JETTY_USER"
+    return 0
+  fi
+
+  # Don't test if setuid is specified
+  # as the Jetty process will switch to a different
+  # user id on startup
+  if expr "${JETTY_ARGS[*]}" : '.*setuid.*' >/dev/null
+  then
+    (( DEBUG )) && echo "Not testing file system permissions: setuid in use"
+    return 0
+  fi
+
+  # Test if PID can be written from this userid
+  if ! touch "$JETTY_PID"
+  then
+    echo "** ERROR: Unable to touch file: $JETTY_PID"
+    echo "          Correct issues preventing use of \$JETTY_PID and try again."
+    exit 1
+  fi
+
+  # Test if STATE can be written from this userid
+  if ! touch "$JETTY_STATE"
+  then
+    echo "** ERROR: Unable to touch file: $JETTY_STATE"
+    echo "          Correct issues preventing use of \$JETTY_STATE and try again."
+    exit 1
+  fi
+}
+
 readConfig()
 {
   (( DEBUG )) && echo "Reading $1.."
@@ -253,6 +295,7 @@ dumpEnv()
 CONFIGS=()
 NO_START=0
 DEBUG=0
+USE_START_STOP_DAEMON=1
 
 while [[ $1 = -* ]]; do
   case $1 in
@@ -510,16 +553,12 @@ case "`uname`" in
 CYGWIN*) JETTY_START="`cygpath -w $JETTY_START`";;
 esac
 
-# Determine if we are using start-stop-daemon or not
-if [ -z "$USE_START_STOP_DAEMON" ]
-then
-  USE_START_STOP_DAEMON=1
-fi
-
+# Determine if we can use start-stop-daemon or not
 START_STOP_DAEMON_AVAILABLE=0
 
 if (( USE_START_STOP_DAEMON ))
 then
+  # only if root user is executing jetty.sh, and the start-stop-daemon exists
   if [ $UID -eq 0 ] && type start-stop-daemon > /dev/null 2>&1
   then
     START_STOP_DAEMON_AVAILABLE=1
@@ -552,23 +591,7 @@ case "$ACTION" in
       exit
     fi
 
-    # Do not test for file system permissions if user is root, or process will switch to JETTY_USER
-    if [ $UID -ne 0 ] && [ -z "$JETTY_USER" ]
-    then
-      if ! touch "$JETTY_PID"
-      then
-        echo "** ERROR: Unable to touch file: $JETTY_PID"
-        echo "          Correct issues preventing use of \$JETTY_PID and try again."
-        exit 1
-      fi
-
-      if ! touch "$JETTY_STATE"
-      then
-        echo "** ERROR: Unable to touch file: $JETTY_STATE"
-        echo "          Correct issues preventing use of \$JETTY_STATE and try again."
-        exit 1
-      fi
-    fi
+    testFileSystemPermissions
 
     echo -n "Starting Jetty: "
 
