@@ -1,3 +1,5 @@
+jetty-12.0.3-SNAPSHOT
+
 jetty-12.0.2 - 09 October 2023
  + 7408 Change scope of maven plugin dependencies
  + 9665 `HttpCookieStore` incorrectly rejects cookies for domains that are an
