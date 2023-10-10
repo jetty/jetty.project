@@ -76,6 +76,8 @@ public interface SessionManager extends LifeCycle, SessionConfig
 
     String encodeURI(Request request, String uri, boolean cookiesInUse);
 
+    Session.Accessor getAccessor(String extendedId);
+
     default void onSessionIdChanged(Session session, String oldId)
     {
     }

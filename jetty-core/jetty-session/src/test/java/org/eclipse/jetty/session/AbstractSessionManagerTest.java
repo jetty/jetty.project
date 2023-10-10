@@ -14,6 +14,7 @@
 package org.eclipse.jetty.session;
 
 import java.util.concurrent.TimeUnit;
+import java.util.concurrent.atomic.AtomicReference;
 import java.util.function.Function;
 
 import org.eclipse.jetty.http.HttpCookie;
@@ -25,6 +26,7 @@ import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertNotNull;
 import static org.junit.jupiter.api.Assertions.assertNull;
+import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
 /**
@@ -305,6 +307,82 @@ public class AbstractSessionManagerTest
         sessionCache.setEvictionPolicy(scavengeSec / 2); //make idle shorter than scavenge
         server.start();
         checkScavenge(false, waitMs, sessionManager);
+    }
+
+    @Test
+    public void testSessionAccessor() throws Exception
+    {
+        Server server = new Server();
+        DefaultSessionIdManager idManager = new DefaultSessionIdManager(server);
+        server.addBean(idManager, true);
+        HouseKeeper housekeeper = new HouseKeeper();
+        housekeeper.setIntervalSec(300);
+        housekeeper.setSessionIdManager(idManager);
+        idManager.setSessionHouseKeeper(housekeeper);
+
+        TestableSessionManager sessionManager = new TestableSessionManager();
+        sessionManager.setMaxInactiveInterval(-1);
+        DefaultSessionCache sessionCache = new DefaultSessionCache(sessionManager);
+        sessionCache.setEvictionPolicy(SessionCache.NEVER_EVICT);
+        TestableSessionDataStore sessionDataStore = new TestableSessionDataStore();
+        sessionCache.setSessionDataStore(sessionDataStore);
+        sessionManager.setSessionCache(sessionCache);
+
+        server.addBean(sessionManager);
+        sessionManager.setServer(server);
+        server.start();
+
+        //test session invalid before Accessor
+        final AtomicReference<ManagedSession> managedSession = new AtomicReference<>();
+        sessionManager.newSession(null, null, (session)->{managedSession.set(session);});
+        managedSession.get().invalidate();
+        assertThrows(IllegalStateException.class, () -> managedSession.get().getAccessor());
+
+        //test session invalid after Accessor
+        sessionManager.newSession(null, null, (session)->{managedSession.set(session);});
+        final AtomicReference<Session.Accessor> accessor = new AtomicReference<>();
+        accessor.set(managedSession.get().getAccessor());
+        managedSession.get().invalidate();
+        assertThrows(IllegalStateException.class, () -> accessor.get().access((s) -> {}));
+
+        //test session is valid
+         sessionManager.newSession(null, null, (session) ->
+         {managedSession.set(session);});
+        accessor.set(managedSession.get().getAccessor());
+        final AtomicReference<String> id = new AtomicReference<>();
+        accessor.get().access((s) -> id.set(s.getSession().getId()));
+        assertEquals(managedSession.get().getId(), id.get());
+
+        //test re-using the Accessor
+        accessor.get().access((s) -> id.set(s.getSession().getId()));
+        assertEquals(managedSession.get().getId(), id.get());
+
+        //test re-using the Accessor on an invalid session
+        managedSession.get().invalidate();
+        assertThrows(IllegalStateException.class, () -> accessor.get().access((s) -> id.set(s.getSession().getId())));
+
+        //test invalidating the session via the Accessor
+        sessionManager.newSession(null, null, (session) ->
+        {
+            managedSession.set(session);
+        });
+        accessor.set(managedSession.get().getAccessor());
+        accessor.get().access((s) ->
+        {
+            Session session = s.getSession();
+            session.invalidate();
+        });
+        assertThrows(IllegalStateException.class, () -> accessor.get().access((s) ->
+        {}));
+
+        //test using Accessor after id change
+        sessionManager.newSession(null, null, (session) ->
+        {
+            managedSession.set(session);
+        });
+        accessor.set(managedSession.get().getAccessor());
+        managedSession.get().renewId(new TestableRequest(), null);
+        assertThrows(IllegalStateException.class, () -> accessor.get().access((s) -> {}));
     }
 
     private void checkScavenge(boolean expectExist, long waitMs, TestableSessionManager sessionManager)

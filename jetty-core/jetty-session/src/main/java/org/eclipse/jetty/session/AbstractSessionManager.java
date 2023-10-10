@@ -393,7 +393,7 @@ public abstract class AbstractSessionManager extends ContainerLifeCycle implemen
     /**
      * Get a known existing session
      *
-     * @param extendedId The session id, possibly imcluding worker name suffix.
+     * @param extendedId The session id, possibly including worker name suffix.
      * @return the Session matching the id or null if none exists
      */
     @Override
@@ -1165,6 +1165,11 @@ public abstract class AbstractSessionManager extends ContainerLifeCycle implemen
         }
     }
     
+    public Session.Accessor getAccessor(String extendedId)
+    {
+        return new SessionAccessor(extendedId);
+    }
+    
     protected void addSessionStreamWrapper(Request request)
     {
         request.addHttpStreamWrapper(s -> new SessionStreamWrapper(s, this, request));
@@ -1395,6 +1400,43 @@ public abstract class AbstractSessionManager extends ContainerLifeCycle implemen
         }
 
         return null;
+    }
+    
+    public class SessionAccessor implements Session.Accessor
+    {
+        private String _extendedId;
+        public SessionAccessor (String extendedId)
+        {
+            _extendedId = extendedId;
+        }
+
+        /**
+         * @param sessionConsumer 
+         * @throws IllegalStateException
+         */
+        @Override
+        public void access(Consumer<Session.API> sessionConsumer) throws IllegalStateException
+        {
+            if (_extendedId == null)
+                throw new IllegalStateException("No session id");
+
+            //Get the session matching the id
+            ManagedSession managedSession = getManagedSession(_extendedId);
+            if (managedSession == null)
+                throw new IllegalStateException("No session " + _extendedId);
+
+            //update the last accessed time, but ignore any updated session cookie
+            managedSession.access(System.currentTimeMillis());
+
+            try
+            {
+                sessionConsumer.accept(managedSession.getApi());
+            }
+            finally
+            {
+                managedSession.release();
+            }
+        }
     }
 
     /**
