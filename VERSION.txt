@@ -7,7 +7,7 @@ jetty-11.0.17 - 09 October 2023
  + 10473 Startup Script reports `ok` too fast, and doesn't wait for actual
    start of Jetty
  + 10547 Cannot customize Executor on WebSocketClient
- + 10679 Review HTTP/2 rate control
+ + 10679 Review HTTP/2 rate control (CVE-2023-44487)
 
 jetty-11.0.16 - 25 August 2023
  + 6140 Report total number of keys in SelectorManager
@@ -32,6 +32,7 @@ jetty-11.0.16 - 25 August 2023
  + 9685 Jetty doesn't set the date header on error responses
  + 9720 Http2Session.streamIdleTimeout should permit being disabled from
    AbstractHTTP2ServerConnectionFactory
+ + 9749 Correct HPACK Integer Overflow (CVE-2023-36478)
  + 9772 Improve Quiche certificates deployment
  + 9777 CrossOriginFilter does not return Vary header on no-cors mode
  + 9795 http3-server is leaking the Jetty logging service to web applications
