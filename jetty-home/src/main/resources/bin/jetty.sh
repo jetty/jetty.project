@@ -225,16 +225,14 @@ testFileSystemPermissions()
   fi
 
   # Don't test if JETTY_USER is specified
-  # as the Jetty process will switch to a different
-  # user id on startup
-  if [ -z "$JETTY_USER"] ; then
+  # as the Jetty process will switch to a different user id on startup
+  if [ -n "$JETTY_USER"] ; then
     (( DEBUG )) && echo "Not testing file system permissions: JETTY_USER=$JETTY_USER"
     return 0
   fi
 
   # Don't test if setuid is specified
-  # as the Jetty process will switch to a different
-  # user id on startup
+  # as the Jetty process will switch to a different user id on startup
   if expr "${JETTY_ARGS[*]}" : '.*setuid.*' >/dev/null
   then
     (( DEBUG )) && echo "Not testing file system permissions: setuid in use"
