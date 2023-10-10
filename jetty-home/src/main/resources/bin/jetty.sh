@@ -552,8 +552,8 @@ case "$ACTION" in
       exit
     fi
 
-    # If not changing users, test for file system permissions.
-    if [ -z "$JETTY_USER"]
+    # Do not test for file system permissions if user is root, or process will switch to JETTY_USER
+    if [ $UID -ne 0] && [ -z "$JETTY_USER"]
     then
       if ! touch "$JETTY_PID"
       then
