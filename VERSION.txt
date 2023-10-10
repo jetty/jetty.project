@@ -9,6 +9,14 @@ jetty-11.0.17 - 09 October 2023
  + 10547 Cannot customize Executor on WebSocketClient
  + 10679 Review HTTP/2 rate control (CVE-2023-44487)
 
+jetty-10.0.17 - 09 October 2023
+ + 9777 CrossOriginFilter does not return Vary header on no-cors mode
+ + 9928 Backport `Request.getBeginNanoTime()`
+ + 10473 Startup Script reports `ok` too fast, and doesn't wait for actual
+   start of Jetty
+ + 10547 Cannot customize Executor on WebSocketClient
+ + 10679 Review HTTP/2 rate control (CVE-2023-44487)
+
 jetty-11.0.16 - 25 August 2023
  + 6140 Report total number of keys in SelectorManager
  + 7091 Add SOCKS5 support
@@ -185,6 +193,7 @@ jetty-10.0.16 - 25 August 2023
    common location
  + 9682 RetainableByteBuffer buffer release bug in WebSocket
  + 9685 Jetty doesn't set the date header on error responses
+ + 9749 Correct HPACK Integer Overflow (CVE-2023-36478)
  + 9720 Http2Session.streamIdleTimeout should permit being disabled from
    AbstractHTTP2ServerConnectionFactory
  + 9772 Improve Quiche certificates deployment
@@ -1219,7 +1228,7 @@ jetty-11.0.0.beta1 - 10 July 2020
    SETTINGS Frame.
  + 4903 Give better errors for non public Websocket Endpoints
  + 4904 WebsocketClient creates more connections than needed
- + 4907 
+ + 4907
    org.eclipse.jetty.websocket.tests.SuspendResumeTest#testSuspendAfterClose
  + 4920 Restore ability to delete sessions on stop
  + 4921 Quickstart run improperly runs dynamically added context initializers
