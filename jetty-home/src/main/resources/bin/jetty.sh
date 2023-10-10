@@ -553,7 +553,7 @@ case "$ACTION" in
     fi
 
     # Do not test for file system permissions if user is root, or process will switch to JETTY_USER
-    if [ $UID -ne 0] && [ -z "$JETTY_USER"]
+    if [ $UID -ne 0 ] && [ -z "$JETTY_USER" ]
     then
       if ! touch "$JETTY_PID"
       then
