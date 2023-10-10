@@ -36,8 +36,8 @@ public class StatisticsHandler extends EventsHandler
 {
     private final CounterStatistic _requestStats = new CounterStatistic(); // how many requests are being handled (full lifecycle)
     private final SampleStatistic _requestTimeStats = new SampleStatistic(); // latencies of requests (full lifecycle)
-    private final CounterStatistic _dispatchedStats = new CounterStatistic(); // how many requests are in handle
-    private final SampleStatistic _dispatchedTimeStats = new SampleStatistic(); // latencies of requests in handle
+    private final CounterStatistic _handlingStats = new CounterStatistic(); // how many requests are in handle
+    private final SampleStatistic _handlingTimeStats = new SampleStatistic(); // latencies of requests in handle
     private final LongAdder _errors = new LongAdder();
     private final LongAdder _handlingFailures = new LongAdder();
     private final LongAdder _responses1xx = new LongAdder();
@@ -69,7 +69,7 @@ public class StatisticsHandler extends EventsHandler
     protected void onBeforeHandling(Request request)
     {
         _requestStats.increment();
-        _dispatchedStats.increment();
+        _handlingStats.increment();
     }
 
     @Override
@@ -77,8 +77,8 @@ public class StatisticsHandler extends EventsHandler
     {
         if (failure != null)
             _handlingFailures.increment();
-        _dispatchedStats.decrement();
-        _dispatchedTimeStats.record(NanoTime.since(request.getBeginNanoTime()));
+        _handlingStats.decrement();
+        _handlingTimeStats.record(NanoTime.since(request.getBeginNanoTime()));
     }
 
     @Override
@@ -124,8 +124,8 @@ public class StatisticsHandler extends EventsHandler
         dumpObjects(out, indent,
             Dumpable.named("requestStats", _requestStats),
             Dumpable.named("requestTimeStats", _requestTimeStats),
-            Dumpable.named("dispatchedStats", _dispatchedStats),
-            Dumpable.named("dispatchedTimeStats", _dispatchedTimeStats),
+            Dumpable.named("handlingStats", _handlingStats),
+            Dumpable.named("handlingTimeStats", _handlingTimeStats),
             Dumpable.named("errors", _errors),
             Dumpable.named("handlingFailures", _handlingFailures),
             Dumpable.named("1xxResponses", _responses1xx),
@@ -144,8 +144,8 @@ public class StatisticsHandler extends EventsHandler
         _startTime = NanoTime.now();
         _requestStats.reset();
         _requestTimeStats.reset();
-        _dispatchedStats.reset();
-        _dispatchedTimeStats.reset();
+        _handlingStats.reset();
+        _handlingTimeStats.reset();
         _errors.reset();
         _handlingFailures.reset();
         _responses1xx.reset();
@@ -175,46 +175,46 @@ public class StatisticsHandler extends EventsHandler
         return (int)_requestStats.getMax();
     }
 
-    @ManagedAttribute("number of dispatches")
-    public int getDispatched()
+    @ManagedAttribute("number of handlings")
+    public int getHandlings()
     {
-        return (int)_dispatchedStats.getTotal();
+        return (int)_handlingStats.getTotal();
     }
 
-    @ManagedAttribute("number of dispatches currently active")
-    public int getDispatchedActive()
+    @ManagedAttribute("number of handlings currently active")
+    public int getHandlingsActive()
     {
-        return (int)_dispatchedStats.getCurrent();
+        return (int)_handlingStats.getCurrent();
     }
 
-    @ManagedAttribute("maximum number of active dispatches being handled")
-    public int getDispatchedActiveMax()
+    @ManagedAttribute("maximum number of active handlings")
+    public int getHandlingsActiveMax()
     {
-        return (int)_dispatchedStats.getMax();
+        return (int)_handlingStats.getMax();
     }
 
-    @ManagedAttribute("maximum time spend in dispatch handling")
-    public long getDispatchedTimeMax()
+    @ManagedAttribute("maximum time spend in handling (in ns)")
+    public long getHandlingsTimeMax()
     {
-        return _dispatchedTimeStats.getMax();
+        return _handlingTimeStats.getMax();
     }
 
-    @ManagedAttribute("total time spent in dispatch handling (in ms)")
-    public long getDispatchedTimeTotal()
+    @ManagedAttribute("total time spent in handling (in ns)")
+    public long getHandlingsTimeTotal()
     {
-        return _dispatchedTimeStats.getTotal();
+        return _handlingTimeStats.getTotal();
     }
 
-    @ManagedAttribute("mean time spent in dispatch handling (in ms)")
-    public double getDispatchedTimeMean()
+    @ManagedAttribute("mean time spent in handling (in ns)")
+    public double getHandlingsTimeMean()
     {
-        return _dispatchedTimeStats.getMean();
+        return _handlingTimeStats.getMean();
     }
 
-    @ManagedAttribute("standard deviation for dispatch handling (in ms)")
+    @ManagedAttribute("standard deviation for dispatch handling (in ns)")
     public double getDispatchedTimeStdDev()
     {
-        return _dispatchedTimeStats.getStdDev();
+        return _handlingTimeStats.getStdDev();
     }
 
     @ManagedAttribute("number of async errors that occurred")
@@ -295,10 +295,10 @@ public class StatisticsHandler extends EventsHandler
         return _bytesWritten.longValue();
     }
 
-    @ManagedAttribute("time in milliseconds stats have been collected for")
-    public long getStatsOnMs()
+    @ManagedAttribute("time in nanoseconds stats have been collected for")
+    public long getStatsOnNs()
     {
-        return NanoTime.millisSince(_startTime);
+        return NanoTime.since(_startTime);
     }
 
     /**
