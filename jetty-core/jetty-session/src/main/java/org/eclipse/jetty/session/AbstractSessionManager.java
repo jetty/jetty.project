@@ -1405,7 +1405,8 @@ public abstract class AbstractSessionManager extends ContainerLifeCycle implemen
     public class SessionAccessor implements Session.Accessor
     {
         private String _extendedId;
-        public SessionAccessor (String extendedId)
+
+        public SessionAccessor(String extendedId)
         {
             _extendedId = extendedId;
         }

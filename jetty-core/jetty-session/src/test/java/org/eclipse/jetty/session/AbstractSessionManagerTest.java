@@ -35,6 +35,127 @@ import static org.junit.jupiter.api.Assertions.assertTrue;
 public class AbstractSessionManagerTest
 {
     @Test
+    public void testAccess() throws Exception
+    {
+        //Make a session
+        SessionData sessionData = new SessionData("1234", "_test", "0.0.0.0", 100, 200, 200, -1);
+        TestableSessionManager sessionManager = new TestableSessionManager();
+        ManagedSession session = new ManagedSession(sessionManager, sessionData);
+        session.setExtendedId("1234.foo");
+        session.getSessionData().setLastNode("foo");
+        session.setResident(true); //pretend its in a cache
+
+        //not using cookies
+        sessionManager.setUsingCookies(false);
+        HttpCookie cookie = sessionManager.access(session, false);
+        assertNull(cookie);
+
+        //session cookies never expire, shouldn't create a new one
+        sessionManager.setUsingCookies(true);
+        session.getSessionData().setCookieSet(0);
+        cookie = sessionManager.access(session, false);
+        assertNull(cookie);
+
+        //session cookies expire, should create a new one
+        session.getSessionData().setCookieSet(300); //time session cookie was set
+        sessionManager.setRefreshCookieAge(10); //cookie reset after 10sec
+        sessionManager.setMaxCookieAge(5); //cookies cannot be older than 5 sec
+        cookie = sessionManager.access(session, false);
+        assertNotNull(cookie);
+    }
+
+    @Test
+    public void testCalculateInactivityTimeOut() throws Exception
+    {
+        //Make a session
+        TestableSessionManager sessionManager = new TestableSessionManager();
+
+        AbstractSessionCache sessionCache = new AbstractSessionCache(sessionManager)
+        {
+            @Override
+            public ManagedSession doDelete(String id)
+            {
+                return null;
+            }
+
+            @Override
+            public ManagedSession newSession(SessionData data)
+            {
+                return null;
+            }
+
+            @Override
+            public void shutdown()
+            {
+            }
+
+            @Override
+            protected ManagedSession doComputeIfAbsent(String id, Function<String, ManagedSession> mappingFunction)
+            {
+                return null;
+            }
+
+            @Override
+            protected ManagedSession doGet(String id)
+            {
+                return null;
+            }
+
+            @Override
+            protected Session doPutIfAbsent(String id, ManagedSession session)
+            {
+                return null;
+            }
+
+            @Override
+            protected boolean doReplace(String id, ManagedSession oldValue, ManagedSession newValue)
+            {
+                return false;
+            }
+        };
+        sessionManager.setSessionCache(sessionCache);
+
+        //calculate inactivity time when sessions are never evicted && they are immortal
+        sessionCache.setEvictionPolicy(SessionCache.NEVER_EVICT);
+        long timeToExpiry = 0;
+        long maxIdleTime = -1;
+        long timeout = sessionManager.calculateInactivityTimeout("1234", timeToExpiry, maxIdleTime);
+        assertEquals(-1, timeout); //no timeout
+
+        //calculate inactivity time when sessions are evicted && they are immortal
+        int evictionTimeout = 1; //period after which session should be evicted
+        sessionCache.setEvictionPolicy(evictionTimeout);
+        timeout = sessionManager.calculateInactivityTimeout("1234", timeToExpiry, maxIdleTime);
+        assertEquals(TimeUnit.SECONDS.toMillis(evictionTimeout), timeout); //inactivity timeout == the eviction timeout
+
+        //calculate inactivity time when sessions are never evicted && they are mortal
+        sessionCache.setEvictionPolicy(SessionCache.NEVER_EVICT);
+        timeToExpiry = 1000; //session has 1sec remaining before expiry
+        maxIdleTime = 20000; //sessions only last 20sec
+        timeout = sessionManager.calculateInactivityTimeout("1234", timeToExpiry, 20000);
+        assertEquals(timeToExpiry, timeout);
+
+        //calculate inactivity time when sessions are evicted && they are mortal
+        evictionTimeout = 5; //will be evicted after 5sec inactivity
+        sessionCache.setEvictionPolicy(evictionTimeout);
+        timeout = sessionManager.calculateInactivityTimeout("1234", timeToExpiry, maxIdleTime);
+        assertEquals(TimeUnit.SECONDS.toMillis(evictionTimeout), timeout); //the eviction timeout is smaller than the maxIdle timeout
+
+        //calculate inactivity time when sessions are evicted && they are mortal, session expired
+        timeToExpiry = 0;
+        timeout = sessionManager.calculateInactivityTimeout("1234", timeToExpiry, maxIdleTime);
+        assertEquals(0, timeout); //no timeout for an expired session
+
+        //calculate inactivity time when sessions are evicted && they are mortal, session expired
+        maxIdleTime = 20000; //sessions only last 20sec
+        evictionTimeout = 30; //idle eviction timeout is 30sec
+        timeToExpiry = 1000; //session not yet expired
+        sessionCache.setEvictionPolicy(evictionTimeout);
+        timeout = sessionManager.calculateInactivityTimeout("1234", timeToExpiry, maxIdleTime);
+        assertEquals(maxIdleTime, timeout); //the maxIdleTime is smaller than the eviction timeout
+    }
+
+    @Test
     public void testGetSessionCookie() throws Exception
     {
         //Make a session
@@ -53,7 +174,7 @@ public class AbstractSessionManagerTest
         assertEquals("/test", cookie.getPath());
         assertFalse(cookie.isSecure());
         assertFalse(cookie.isHttpOnly());
-        
+
         //check cookie with httpOnly and secure
         sessionManager.setHttpOnly(true);
         sessionManager.setSecureRequestOnly(true);
@@ -65,7 +186,7 @@ public class AbstractSessionManagerTest
         assertEquals("/test", cookie.getPath());
         assertTrue(cookie.isHttpOnly());
         assertTrue(cookie.isSecure());
-        
+
         //check cookie when cookie config is set
         sessionManager.getCookieConfig().put(SessionConfig.__SessionCookieProperty, "MYSESSIONID");
         sessionManager.getCookieConfig().put(SessionConfig.__SessionDomainProperty, "foo.bar");
@@ -79,132 +200,11 @@ public class AbstractSessionManagerTest
         assertTrue(cookie.isSecure());
         assertTrue(cookie.isHttpOnly());
     }
-    
-    @Test
-    public void testAccess() throws Exception
-    {
-        //Make a session
-        SessionData sessionData = new SessionData("1234", "_test", "0.0.0.0", 100, 200, 200, -1);
-        TestableSessionManager sessionManager = new TestableSessionManager();
-        ManagedSession session = new ManagedSession(sessionManager, sessionData);
-        session.setExtendedId("1234.foo");
-        session.getSessionData().setLastNode("foo");
-        session.setResident(true); //pretend its in a cache
-        
-        //not using cookies
-        sessionManager.setUsingCookies(false);
-        HttpCookie cookie = sessionManager.access(session, false);
-        assertNull(cookie);
-        
-        //session cookies never expire, shouldn't create a new one
-        sessionManager.setUsingCookies(true);
-        session.getSessionData().setCookieSet(0);
-        cookie = sessionManager.access(session, false);
-        assertNull(cookie);
-        
-        //session cookies expire, should create a new one
-        session.getSessionData().setCookieSet(300); //time session cookie was set
-        sessionManager.setRefreshCookieAge(10); //cookie reset after 10sec
-        sessionManager.setMaxCookieAge(5); //cookies cannot be older than 5 sec
-        cookie = sessionManager.access(session, false);
-        assertNotNull(cookie);
-    }
 
-    @Test
-    public void testCalculateInactivityTimeOut() throws Exception
-    {
-        //Make a session
-        TestableSessionManager sessionManager = new TestableSessionManager();
-
-        AbstractSessionCache sessionCache = new AbstractSessionCache(sessionManager)
-        {
-            @Override
-            public void shutdown()
-            {
-            }
-
-            @Override
-            public ManagedSession newSession(SessionData data)
-            {
-                return null;
-            }
-
-            @Override
-            protected ManagedSession doGet(String id)
-            {
-                return null;
-            }
-
-            @Override
-            protected Session doPutIfAbsent(String id, ManagedSession session)
-            {
-                return null;
-            }
-
-            @Override
-            protected ManagedSession doComputeIfAbsent(String id, Function<String, ManagedSession> mappingFunction)
-            {
-                return null;
-            }
-
-            @Override
-            protected boolean doReplace(String id, ManagedSession oldValue, ManagedSession newValue)
-            {
-                return false;
-            }
-
-            @Override
-            public ManagedSession doDelete(String id)
-            {
-                return null;
-            }
-        };
-        sessionManager.setSessionCache(sessionCache);
-        
-        //calculate inactivity time when sessions are never evicted && they are immortal
-        sessionCache.setEvictionPolicy(SessionCache.NEVER_EVICT);
-        long timeToExpiry = 0;
-        long maxIdleTime = -1;
-        long timeout = sessionManager.calculateInactivityTimeout("1234", timeToExpiry, maxIdleTime);
-        assertEquals(-1, timeout); //no timeout
-        
-        //calculate inactivity time when sessions are evicted && they are immortal
-        int evictionTimeout = 1; //period after which session should be evicted
-        sessionCache.setEvictionPolicy(evictionTimeout);
-        timeout = sessionManager.calculateInactivityTimeout("1234", timeToExpiry, maxIdleTime);
-        assertEquals(TimeUnit.SECONDS.toMillis(evictionTimeout), timeout); //inactivity timeout == the eviction timeout
-        
-        //calculate inactivity time when sessions are never evicted && they are mortal
-        sessionCache.setEvictionPolicy(SessionCache.NEVER_EVICT);
-        timeToExpiry = 1000; //session has 1sec remaining before expiry
-        maxIdleTime = 20000; //sessions only last 20sec
-        timeout = sessionManager.calculateInactivityTimeout("1234", timeToExpiry, 20000);
-        assertEquals(timeToExpiry, timeout);
-
-        //calculate inactivity time when sessions are evicted && they are mortal
-        evictionTimeout = 5; //will be evicted after 5sec inactivity
-        sessionCache.setEvictionPolicy(evictionTimeout);
-        timeout = sessionManager.calculateInactivityTimeout("1234", timeToExpiry, maxIdleTime);
-        assertEquals(TimeUnit.SECONDS.toMillis(evictionTimeout), timeout); //the eviction timeout is smaller than the maxIdle timeout
-
-        //calculate inactivity time when sessions are evicted && they are mortal, session expired
-        timeToExpiry = 0;
-        timeout = sessionManager.calculateInactivityTimeout("1234", timeToExpiry, maxIdleTime);
-        assertEquals(0, timeout); //no timeout for an expired session
-      
-        //calculate inactivity time when sessions are evicted && they are mortal, session expired
-        maxIdleTime = 20000; //sessions only last 20sec
-        evictionTimeout = 30; //idle eviction timeout is 30sec
-        timeToExpiry = 1000; //session not yet expired
-        sessionCache.setEvictionPolicy(evictionTimeout);
-        timeout = sessionManager.calculateInactivityTimeout("1234", timeToExpiry, maxIdleTime);
-        assertEquals(maxIdleTime, timeout); //the maxIdleTime is smaller than the eviction timeout
-    }
-    
     /**
      * Test that an immortal session is never scavenged, regardless of whether it
      * is evicted from the cache or not.
-     * 
+     *
      * @throws Exception if there is an unspecified problem
      */
     @Test
@@ -212,7 +212,7 @@ public class AbstractSessionManagerTest
     {
         int scavengeSec = 1;
         int maxInactiveSec = -1;
-        
+
         Server server = new Server();
         DefaultSessionIdManager idManager = new DefaultSessionIdManager(server);
         server.addBean(idManager, true);
@@ -221,7 +221,7 @@ public class AbstractSessionManagerTest
         scavengeSec = (int)housekeeper.getIntervalSec(); //housekeeper puts some jitter in the interval if it is short
         housekeeper.setSessionIdManager(idManager);
         idManager.setSessionHouseKeeper(housekeeper);
-        
+
         TestableSessionManager sessionManager = new TestableSessionManager();
         sessionManager.setMaxInactiveInterval(maxInactiveSec);
         DefaultSessionCache sessionCache = new DefaultSessionCache(sessionManager);
@@ -233,31 +233,32 @@ public class AbstractSessionManagerTest
         server.addBean(sessionManager);
         sessionManager.setServer(server);
         server.start();
-        
+
         //check with never evict
-        long waitMs = scavengeSec * 2500; //wait for at least 1 run of the scavenger
+        long waitMs = scavengeSec * 2500L; //wait for at least 1 run of the scavenger
         checkScavenge(true, waitMs, sessionManager);
-        
+
         server.stop();
-        
+
         //Check with eviction on exit
         sessionCache.setEvictionPolicy(SessionCache.EVICT_ON_SESSION_EXIT);
         server.start();
         checkScavenge(true, waitMs, sessionManager);
-        
+
         //Check with evict on idle
         server.stop();
         scavengeSec = scavengeSec * 2;
-        waitMs = scavengeSec * 2500; //wait for at least 1 run of the scavenger
+        waitMs = scavengeSec * 2500L; //wait for at least 1 run of the scavenger
         housekeeper.setIntervalSec(scavengeSec); //make scavenge cycles longer
         sessionCache.setEvictionPolicy(scavengeSec / 2); //make idle shorter than scavenge
         server.start();
         checkScavenge(true, waitMs, sessionManager);
     }
-    
+
     /**
      * Test that a session that has a max valid time is always scavenged,
      * regardless of whether it is evicted from the cache or not.
+     *
      * @throws Exception if there is an unspecified problem
      */
     @Test
@@ -265,7 +266,7 @@ public class AbstractSessionManagerTest
     {
         int scavengeSec = 1;
         int maxInactiveSec = 3;
-        
+
         Server server = new Server();
         DefaultSessionIdManager idManager = new DefaultSessionIdManager(server);
         server.addBean(idManager, true);
@@ -274,7 +275,7 @@ public class AbstractSessionManagerTest
         scavengeSec = (int)housekeeper.getIntervalSec(); //housekeeper puts some jitter in the interval if it is short
         housekeeper.setSessionIdManager(idManager);
         idManager.setSessionHouseKeeper(housekeeper);
-        
+
         TestableSessionManager sessionManager = new TestableSessionManager();
         sessionManager.setMaxInactiveInterval(maxInactiveSec);
         DefaultSessionCache sessionCache = new DefaultSessionCache(sessionManager);
@@ -286,23 +287,23 @@ public class AbstractSessionManagerTest
         server.addBean(sessionManager);
         sessionManager.setServer(server);
         server.start();
-        
+
         //check the session should be scavenged after the max valid of the session has passed
-        long waitMs = (maxInactiveSec + scavengeSec) * 1000;
+        long waitMs = (maxInactiveSec + scavengeSec) * 1000L;
         checkScavenge(false, waitMs, sessionManager);
-        
+
         server.stop();
-        
+
         //now change to EVICT_ON_EXIT and check that the session is still scavenged
         sessionCache.setEvictionPolicy(SessionCache.EVICT_ON_SESSION_EXIT);
         server.start();
         checkScavenge(false, waitMs, sessionManager);
-        
+
         server.stop();
-        
+
         //now change to evict after idle and check that the session is still scavenged
         scavengeSec = scavengeSec * 2;
-        waitMs = scavengeSec * 2500; //wait for at least 1 run of the scavenger
+        waitMs = scavengeSec * 2500L; //wait for at least 1 run of the scavenger
         housekeeper.setIntervalSec(scavengeSec); //make scavenge cycles longer
         sessionCache.setEvictionPolicy(scavengeSec / 2); //make idle shorter than scavenge
         server.start();
@@ -334,20 +335,21 @@ public class AbstractSessionManagerTest
 
         //test session invalid before Accessor
         final AtomicReference<ManagedSession> managedSession = new AtomicReference<>();
-        sessionManager.newSession(null, null, (session)->{managedSession.set(session);});
+        sessionManager.newSession(null, null, managedSession::set);
         managedSession.get().invalidate();
         assertThrows(IllegalStateException.class, () -> managedSession.get().getAccessor());
 
         //test session invalid after Accessor
-        sessionManager.newSession(null, null, (session)->{managedSession.set(session);});
+        sessionManager.newSession(null, null, managedSession::set);
         final AtomicReference<Session.Accessor> accessor = new AtomicReference<>();
         accessor.set(managedSession.get().getAccessor());
         managedSession.get().invalidate();
-        assertThrows(IllegalStateException.class, () -> accessor.get().access((s) -> {}));
+        assertThrows(IllegalStateException.class, () -> accessor.get().access((s) ->
+        {
+        }));
 
         //test session is valid
-         sessionManager.newSession(null, null, (session) ->
-         {managedSession.set(session);});
+        sessionManager.newSession(null, null, managedSession::set);
         accessor.set(managedSession.get().getAccessor());
         final AtomicReference<String> id = new AtomicReference<>();
         accessor.get().access((s) -> id.set(s.getSession().getId()));
@@ -362,10 +364,7 @@ public class AbstractSessionManagerTest
         assertThrows(IllegalStateException.class, () -> accessor.get().access((s) -> id.set(s.getSession().getId())));
 
         //test invalidating the session via the Accessor
-        sessionManager.newSession(null, null, (session) ->
-        {
-            managedSession.set(session);
-        });
+        sessionManager.newSession(null, null, managedSession::set);
         accessor.set(managedSession.get().getAccessor());
         accessor.get().access((s) ->
         {
@@ -373,20 +372,19 @@ public class AbstractSessionManagerTest
             session.invalidate();
         });
         assertThrows(IllegalStateException.class, () -> accessor.get().access((s) ->
-        {}));
+        {
+        }));
 
         //test using Accessor after id change
-        sessionManager.newSession(null, null, (session) ->
-        {
-            managedSession.set(session);
-        });
+        sessionManager.newSession(null, null, managedSession::set);
         accessor.set(managedSession.get().getAccessor());
         managedSession.get().renewId(new TestableRequest(), null);
-        assertThrows(IllegalStateException.class, () -> accessor.get().access((s) -> {}));
+        assertThrows(IllegalStateException.class, () -> accessor.get().access((s) ->
+        {
+        }));
     }
 
-    private void checkScavenge(boolean expectExist, long waitMs, TestableSessionManager sessionManager)
-        throws Exception
+    private void checkScavenge(boolean expectExist, long waitMs, TestableSessionManager sessionManager) throws Exception
     {
         int evictionPolicy = sessionManager.getSessionCache().getEvictionPolicy();
 
@@ -399,7 +397,7 @@ public class AbstractSessionManagerTest
         if (evictionPolicy != SessionCache.EVICT_ON_SESSION_EXIT)
             assertTrue(sessionManager.getSessionCache().contains(id));
         assertTrue(sessionManager.getSessionCache().getSessionDataStore().exists(id));
-        
+
         //if there is an idle eviction timeout, wait until it is passed
         if (evictionPolicy >= SessionCache.EVICT_ON_INACTIVITY)
         {
@@ -407,7 +405,7 @@ public class AbstractSessionManagerTest
             //check it has been evicted from the cache
             assertFalse(sessionManager.getSessionCache().contains(id));
         }
-        
+
         //Wait some time. This must be at least one run of the scavenger, more
         //if the session has a max valid time.
         Thread.sleep(waitMs);
