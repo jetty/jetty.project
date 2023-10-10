@@ -240,6 +240,10 @@ dumpEnv()
   echo "JETTY_START_TIMEOUT   =  $JETTY_START_TIMEOUT"
   echo "JETTY_SYS_PROPS       =  $JETTY_SYS_PROPS"
   echo "RUN_ARGS              =  ${RUN_ARGS[*]}"
+  echo "ID                    =  $(id)"
+  echo "JETTY_USER            =  $JETTY_USER"
+  echo "USE_START_STOP_DAEMON =  $USE_START_STOP_DAEMON"
+  echo "START_STOP_DAEMON     =  $START_STOP_DAEMON_AVAILABLE"
 }
 
 
@@ -404,7 +408,6 @@ case "`uname`" in
 CYGWIN*) JETTY_STATE="`cygpath -w $JETTY_STATE`";;
 esac
 
-
 JETTY_ARGS=(${JETTY_ARGS[*]} "jetty.state=$JETTY_STATE" "jetty.pid=$JETTY_PID")
 
 ##################################################
@@ -507,6 +510,25 @@ case "`uname`" in
 CYGWIN*) JETTY_START="`cygpath -w $JETTY_START`";;
 esac
 
+# Determine if we are using start-stop-daemon or not
+if [ -z "$USE_START_STOP_DAEMON" ]
+then
+  USE_START_STOP_DAEMON=1
+fi
+
+START_STOP_DAEMON_AVAILABLE=0
+
+if (( USE_START_STOP_DAEMON ))
+then
+  if [ $UID -eq 0 ] && type start-stop-daemon > /dev/null 2>&1
+  then
+    START_STOP_DAEMON_AVAILABLE=1
+  else
+    USE_START_STOP_DAEMON=0
+    JETTY_ARGS=(${JETTY_ARGS[*]} "--module=pid" "jetty.pid=$JETTY_PID")
+  fi
+fi
+
 # Collect the dry-run (of opts,path,main,args) from the jetty.base configuration
 JETTY_DRY_RUN=$("$JAVA" -jar "$JETTY_START" --dry-run=opts,path,main,args ${JETTY_ARGS[*]} ${JAVA_OPTIONS[*]})
 RUN_ARGS=($JETTY_SYS_PROPS ${JETTY_DRY_RUN[@]})
@@ -531,24 +553,28 @@ case "$ACTION" in
       exit
     fi
 
-    if ! touch "$JETTY_PID"
+    # If not changing users, test for file system permissions.
+    if [ -z "$JETTY_USER"]
     then
-      echo "** ERROR: Unable to touch file: $JETTY_PID"
-      echo "          Correct issues preventing use of \$JETTY_PID and try again."
-      exit 1
-    fi
+      if ! touch "$JETTY_PID"
+      then
+        echo "** ERROR: Unable to touch file: $JETTY_PID"
+        echo "          Correct issues preventing use of \$JETTY_PID and try again."
+        exit 1
+      fi
 
-    if ! touch "$JETTY_STATE"
-    then
-      echo "** ERROR: Unable to touch file: $JETTY_STATE"
-      echo "          Correct issues preventing use of \$JETTY_STATE and try again."
-      exit 1
+      if ! touch "$JETTY_STATE"
+      then
+        echo "** ERROR: Unable to touch file: $JETTY_STATE"
+        echo "          Correct issues preventing use of \$JETTY_STATE and try again."
+        exit 1
+      fi
     fi
 
     echo -n "Starting Jetty: "
 
     # Startup from a service file
-    if [ $UID -eq 0 ] && type start-stop-daemon > /dev/null 2>&1
+    if (( USE_START_STOP_DAEMON ))
     then
       unset CH_USER
       if [ -n "$JETTY_USER" ]
@@ -556,7 +582,7 @@ case "$ACTION" in
         CH_USER="--chuid $JETTY_USER"
       fi
 
-      echo ${RUN_ARGS[@]} --start-log-file="$JETTY_START_LOG" | xargs start-stop-daemon \
+      echo ${RUN_ARGS[@]} | xargs start-stop-daemon \
        --start $CH_USER \
        --pidfile "$JETTY_PID" \
        --chdir "$JETTY_BASE" \
