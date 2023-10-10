@@ -116,10 +116,20 @@ public class StandardDescriptorProcessorTest
         ServletHolder defaultServlet = new ServletHolder(DefaultServlet.class);
         defaultServlet.setName("noname");
         wac.getServletHandler().addServletWithMapping(defaultServlet, "/");
-        try (StacklessLogging ignored = new StacklessLogging(WebAppContext.class))
+        wac.start();
+
+        ServletMapping[] mappings = wac.getServletHandler().getServletMappings();
+        ServletMapping mapping = null;
+        for (ServletMapping m : mappings)
         {
-            assertThrows(RuntimeException.class, () -> wac.start());
+            if (m.containsPathSpec("/"))
+            {
+                assertThat(mapping, nullValue());
+                mapping = m;
+            }
         }
+        assertNotNull(mapping);
+        assertEquals("noname", mapping.getServletName());
     }
 
     @Test

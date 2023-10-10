@@ -112,20 +112,29 @@ public class StandardDescriptorProcessorTest
     @Test
     public void testDuplicateServletMappingsFromJettyApi(WorkDir workDir) throws Exception
     {
+        //Test that an embedded mapping overrides one from webdefault-ee10.xml
         Path docroot = workDir.getEmptyPathDir();
         WebAppContext wac = new WebAppContext();
         wac.setServer(_server);
         wac.setBaseResourceAsPath(docroot);
         wac.setThrowUnavailableOnStartupException(true);
-        //add a mapping that will conflict with the webdefault-ee10.xml mapping
-        //for the default servlet
         ServletHolder defaultServlet = new ServletHolder(DefaultServlet.class);
         defaultServlet.setName("noname");
         wac.getServletHandler().addServletWithMapping(defaultServlet, "/");
-        try (StacklessLogging ignored = new StacklessLogging(WebAppContext.class))
+        wac.start();
+
+        ServletMapping[] mappings = wac.getServletHandler().getServletMappings();
+        ServletMapping mapping = null;
+        for (ServletMapping m : mappings)
         {
-            assertThrows(InvocationTargetException.class, () -> wac.start());
+            if (m.containsPathSpec("/"))
+            {
+                assertThat(mapping, nullValue());
+                mapping = m;
+            }
         }
+        assertNotNull(mapping);
+        assertEquals("noname", mapping.getServletName());
     }
 
     @Test
