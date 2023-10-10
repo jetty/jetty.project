@@ -1039,7 +1039,7 @@ public class StandardDescriptorProcessor extends IterativeDescriptorProcessor
     }
 
     /**
-     * Check if a path is eligible to be mapped to the servlet.
+     * Resolve any duplicate servlet path mappings.
      * A path can be (re)mapped iff:
      * <ul>
      *     <li>it is not already mapped</li>
@@ -1058,87 +1058,54 @@ public class StandardDescriptorProcessor extends IterativeDescriptorProcessor
      * @param path the path to check
      * @param context the context of the mapping
      * @param descriptor the descriptor currently being parsed
-     * @return true if the path can be (re)mapped, false otherwise
+     * @return true if the path can be mapped, false otherwise
+     * @throws IllegalStateException if the duplicate mappings are illegal
      */
-    private boolean checkServletMappingPath(String servletName, String path, WebAppContext context, Descriptor descriptor)
+    private boolean resolveAnyDuplicateServletPathMapping(String servletName, String path, WebAppContext context, Descriptor descriptor)
     {
         Objects.requireNonNull(servletName);
         Objects.requireNonNull(path);
         Objects.requireNonNull(context);
         Objects.requireNonNull(descriptor);
 
-        ListIterator<ServletMapping> listItor = _servletMappings.listIterator();
-        boolean found = false;
-        while (listItor.hasNext() && !found)
+        //Find any duplicate mapping
+        ServletMapping existing = null;
+        loop: for (ServletMapping existingMapping: _servletMappings)
         {
-            ServletMapping originalMapping = listItor.next();
-            String[] originalPathSpecs = originalMapping.getPathSpecs();
-            if (originalPathSpecs == null || (originalPathSpecs.length == 0))
-                continue;
-
-            for (String originalPath : originalPathSpecs)
+            for (String pathSpec : existingMapping.getPathSpecs())
             {
-                if (!originalPath.equals(path))
-                    continue;
-
-                if (servletName.equals(originalMapping.getServletName()))
+                if (Objects.equals(pathSpec, path))
                 {
-                   //Same path mapped to same servlet, ignore
-                   return false;
-               }
-               else
-               {
-                   //Same path mapped to different servlet
-                   switch (originalMapping.getSource().getOrigin())
-                   {
-                       case EMBEDDED ->
-                       {
-                           if (descriptor instanceof DefaultsDescriptor)
-                               return false;  //webdefault.xml cannot override a path mapping
-
-                           //Remove existing mapping
-                           removeMapping(originalMapping, path);
-                           //Tidy up by removing the originMapping if it now has no paths
-                           if (originalMapping.getPathSpecs() == null || originalMapping.getPathSpecs().length == 0)
-                               listItor.remove();
-                           return true;
-                       }
-                       case DESCRIPTOR ->
-                       {
-                           //if the descriptor of the original mapping and the new mapping are the same, that is an error
-                           if (originalMapping.getSource().getResource().equals(descriptor.getResource()))
-                               throw new IllegalStateException("Duplicate mappings for " + path);
-
-                           //if the original mapping came from the defaults descriptor it can be overridden by any other descriptor
-                           if (originalMapping.isFromDefaultDescriptor())
-                           {
-                               //Remove existing mapping
-                               removeMapping(originalMapping, path);
-                               //Tidy up by removing the originMapping if it now has no paths
-                               if (originalMapping.getPathSpecs() == null || originalMapping.getPathSpecs().length == 0)
-                                   listItor.remove();
-                               return true;
-                           }
-                       }
-                   }
-               }
+                    existing = existingMapping;
+                    break loop;
+                }
             }
         }
-        return true;
-    }
 
-    /**
-     * Remove a path from the pathSpecs for a ServletMapping
-     * @param mapping the ServletMapping
-     * @param path the path to remove
-     */
-    private void removeMapping(ServletMapping mapping, String path)
-    {
-        //Remove the path from the path specs on the existing mapping so it can be remapped
-        String[] updatedPaths = ArrayUtil.removeFromArray(mapping.getPathSpecs(), path);
-        mapping.setPathSpecs(updatedPaths);
+        //If there is no duplicate we can add it
+        if (existing == null)
+            return true;
+
+        //If it is the same name we can ignore it
+        if (Objects.equals(existing.getServletName(), servletName))
+            return false;
+
+        //A defaults descriptor cannot override embedded.
+        if (existing.getSource().getOrigin() == Source.Origin.EMBEDDED && descriptor instanceof DefaultsDescriptor)
+            return false;
+
+        //If the descriptor of the original mapping and the new mapping are the same, that is an error
+        if (existing.getSource().getOrigin() == Source.Origin.DESCRIPTOR && existing.getSource().getResource().equals(descriptor.getResource()))
+            throw new IllegalStateException("Duplicate mappings for " + path);
+
+        //Remove existing duplicate mapping and tidy up by removing the originMapping if it now has no paths
         if (LOG.isDebugEnabled())
-            LOG.debug("Removed path {} from mapping {}", path, mapping);
+            LOG.debug("Removed path {} from mapping {}", path, existing);
+        existing.setPathSpecs(ArrayUtil.removeFromArray(existing.getPathSpecs(), path));
+        if (existing.getPathSpecs() == null || existing.getPathSpecs().length == 0)
+            _servletMappings.remove(existing);
+
+        return true;
     }
 
     public ServletMapping addServletMapping(String servletName, XmlParser.Node node, WebAppContext context, Descriptor descriptor)
@@ -1152,7 +1119,7 @@ public class StandardDescriptorProcessor extends IterativeDescriptorProcessor
             path = ServletPathSpec.normalize(path);
 
             //check if there is already a mapping for this path
-            if (checkServletMappingPath(servletName, path, context, descriptor))
+            if (resolveAnyDuplicateServletPathMapping(servletName, path, context, descriptor))
             {
                 paths.add(path);
                 context.getMetaData().setOrigin(servletName + ".servlet.mapping.url" + path, descriptor);
@@ -1166,7 +1133,7 @@ public class StandardDescriptorProcessor extends IterativeDescriptorProcessor
         mapping.setServletName(servletName);
         mapping.setFromDefaultDescriptor(descriptor instanceof DefaultsDescriptor);
         context.getMetaData().setOrigin(servletName + ".servlet.mapping." + Long.toHexString(mapping.hashCode()), descriptor);
-        mapping.setPathSpecs((String[])paths.toArray(new String[paths.size()]));
+        mapping.setPathSpecs(paths.toArray(new String[0]));
         if (LOG.isDebugEnabled())
             LOG.debug("Added mapping {} ", mapping);
         _servletMappings.add(mapping);
