@@ -525,7 +525,6 @@ then
     START_STOP_DAEMON_AVAILABLE=1
   else
     USE_START_STOP_DAEMON=0
-    JETTY_ARGS=(${JETTY_ARGS[*]} "--module=pid" "jetty.pid=$JETTY_PID")
   fi
 fi
 
@@ -582,13 +581,14 @@ case "$ACTION" in
         CH_USER="--chuid $JETTY_USER"
       fi
 
+      # use of --pidfile /dev/null disables internal pidfile
+      # management of the start-stop-daemon (see man page)
       echo ${RUN_ARGS[@]} | xargs start-stop-daemon \
        --start $CH_USER \
-       --pidfile "$JETTY_PID" \
+       --pidfile /dev/null \
        --chdir "$JETTY_BASE" \
        --background \
-       --output "${JETTY_RUN}/start-stop.log"
-       --make-pidfile \
+       --output "${JETTY_RUN}/start-stop.log" \
        --startas "$JAVA" \
        --
       (( DEBUG )) && echo "Starting: start-stop-daemon"
