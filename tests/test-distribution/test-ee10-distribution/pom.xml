@@ -1,14 +1,15 @@
+<?xml version="1.0" encoding="UTF-8"?>
 <project xmlns="http://maven.apache.org/POM/4.0.0" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/xsd/maven-4.0.0.xsd">
+
+  <modelVersion>4.0.0</modelVersion>
   <parent>
     <groupId>org.eclipse.jetty.tests</groupId>
     <artifactId>test-distribution</artifactId>
     <version>12.0.3-SNAPSHOT</version>
   </parent>
-
-  <modelVersion>4.0.0</modelVersion>
   <artifactId>test-ee10-distribution</artifactId>
-  <name>Tests :: Distribution :: EE10</name>
   <packaging>jar</packaging>
+  <name>Tests :: Distribution :: EE10</name>
 
   <properties>
     <bundle-symbolic-name>${project.groupId}.ee10.distribution</bundle-symbolic-name>
@@ -19,13 +20,13 @@
   <dependencyManagement>
     <dependencies>
       <!-- doesn't work with partial build -->
-<!--      <dependency>-->
-<!--        <groupId>org.eclipse.jetty.ee10</groupId>-->
-<!--        <artifactId>jetty-ee10-bom</artifactId>-->
-<!--        <version>${project.version}</version>-->
-<!--        <scope>import</scope>-->
-<!--        <type>pom</type>-->
-<!--      </dependency>-->
+      <!--      <dependency>-->
+      <!--        <groupId>org.eclipse.jetty.ee10</groupId>-->
+      <!--        <artifactId>jetty-ee10-bom</artifactId>-->
+      <!--        <version>${project.version}</version>-->
+      <!--        <scope>import</scope>-->
+      <!--        <type>pom</type>-->
+      <!--      </dependency>-->
     </dependencies>
   </dependencyManagement>
 
@@ -35,15 +36,28 @@
       <artifactId>test-distribution-common</artifactId>
     </dependency>
     <dependency>
-      <groupId>org.eclipse.jetty.tests</groupId>
-      <artifactId>test-distribution-common</artifactId>
-      <type>test-jar</type>
-      <scope>test</scope>
+      <groupId>org.eclipse.jetty.toolchain</groupId>
+      <artifactId>jetty-test-helper</artifactId>
+    </dependency>
+    <dependency>
+      <groupId>org.junit.jupiter</groupId>
+      <artifactId>junit-jupiter</artifactId>
     </dependency>
 
     <dependency>
       <groupId>org.slf4j</groupId>
       <artifactId>slf4j-api</artifactId>
+    </dependency>
+    <dependency>
+      <groupId>org.eclipse.jetty</groupId>
+      <artifactId>jetty-client</artifactId>
+      <scope>test</scope>
+    </dependency>
+    <dependency>
+      <groupId>org.eclipse.jetty</groupId>
+      <artifactId>jetty-openid</artifactId>
+      <version>${project.version}</version>
+      <scope>test</scope>
     </dependency>
 
     <dependency>
@@ -53,27 +67,8 @@
       <scope>test</scope>
     </dependency>
     <dependency>
-      <groupId>org.eclipse.jetty</groupId>
-      <artifactId>jetty-client</artifactId>
-      <scope>test</scope>
-    </dependency>
-    <dependency>
-      <groupId>org.eclipse.jetty.toolchain</groupId>
-      <artifactId>jetty-test-helper</artifactId>
-    </dependency>
-    <dependency>
-      <groupId>org.junit.jupiter</groupId>
-      <artifactId>junit-jupiter</artifactId>
-    </dependency>
-    <dependency>
       <groupId>org.eclipse.jetty.ee10</groupId>
       <artifactId>jetty-ee10-servlet</artifactId>
-      <version>${project.version}</version>
-      <scope>test</scope>
-    </dependency>
-    <dependency>
-      <groupId>org.eclipse.jetty</groupId>
-      <artifactId>jetty-openid</artifactId>
       <version>${project.version}</version>
       <scope>test</scope>
     </dependency>
@@ -82,6 +77,12 @@
       <artifactId>jetty-ee10-test-openid-webapp</artifactId>
       <version>${project.version}</version>
       <type>war</type>
+      <scope>test</scope>
+    </dependency>
+    <dependency>
+      <groupId>org.eclipse.jetty.tests</groupId>
+      <artifactId>test-distribution-common</artifactId>
+      <type>test-jar</type>
       <scope>test</scope>
     </dependency>
   </dependencies>

@@ -1,12 +1,12 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <project xmlns="http://maven.apache.org/POM/4.0.0" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/xsd/maven-4.0.0.xsd">
+
+  <modelVersion>4.0.0</modelVersion>
   <parent>
     <groupId>org.eclipse.jetty</groupId>
     <artifactId>jetty-alpn</artifactId>
     <version>12.0.3-SNAPSHOT</version>
   </parent>
-
-  <modelVersion>4.0.0</modelVersion>
   <artifactId>jetty-alpn-conscrypt-server</artifactId>
   <name>Core :: ALPN :: Conscrypt Server</name>
 
@@ -33,22 +33,17 @@
     </dependency>
     <dependency>
       <groupId>org.eclipse.jetty</groupId>
-      <artifactId>jetty-slf4j-impl</artifactId>
-      <scope>test</scope>
-    </dependency>
-    <dependency>
-      <groupId>org.eclipse.jetty.http2</groupId>
-      <artifactId>jetty-http2-server</artifactId>
-      <scope>test</scope>
-    </dependency>
-    <dependency>
-      <groupId>org.eclipse.jetty</groupId>
       <artifactId>jetty-alpn-conscrypt-client</artifactId>
       <scope>test</scope>
     </dependency>
     <dependency>
       <groupId>org.eclipse.jetty</groupId>
       <artifactId>jetty-client</artifactId>
+      <scope>test</scope>
+    </dependency>
+    <dependency>
+      <groupId>org.eclipse.jetty</groupId>
+      <artifactId>jetty-slf4j-impl</artifactId>
       <scope>test</scope>
     </dependency>
     <dependency>
@@ -59,6 +54,11 @@
     <dependency>
       <groupId>org.eclipse.jetty.http2</groupId>
       <artifactId>jetty-http2-client-transport</artifactId>
+      <scope>test</scope>
+    </dependency>
+    <dependency>
+      <groupId>org.eclipse.jetty.http2</groupId>
+      <artifactId>jetty-http2-server</artifactId>
       <scope>test</scope>
     </dependency>
 
@@ -82,9 +82,7 @@
       <plugin>
         <artifactId>maven-surefire-plugin</artifactId>
         <configuration>
-          <argLine>
-            @{argLine} ${jetty.surefire.argLine} --add-reads org.eclipse.jetty.alpn.conscrypt.server=org.eclipse.jetty.server
-          </argLine>
+          <argLine>@{argLine} ${jetty.surefire.argLine} --add-reads org.eclipse.jetty.alpn.conscrypt.server=org.eclipse.jetty.server</argLine>
         </configuration>
       </plugin>
     </plugins>

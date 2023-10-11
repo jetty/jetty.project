@@ -1,3 +1,4 @@
+<?xml version="1.0" encoding="UTF-8"?>
 <project xmlns="http://maven.apache.org/POM/4.0.0" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/maven-v4_0_0.xsd">
   <modelVersion>4.0.0</modelVersion>
   <parent>
@@ -9,9 +10,16 @@
   <packaging>jar</packaging>
   <name>EE8 :: Demo :: Servlet Spec :: ServletContainerInitializer Jar</name>
   <properties>
-    <ee9.module>jetty-ee9-demos/jetty-ee9-demo-spec/jetty-ee9-demo-container-initializer</ee9.module>
     <bundle-symbolic-name>${project.groupId}.sci</bundle-symbolic-name>
+    <ee9.module>jetty-ee9-demos/jetty-ee9-demo-spec/jetty-ee9-demo-container-initializer</ee9.module>
   </properties>
+  <dependencies>
+    <dependency>
+      <groupId>org.eclipse.jetty.toolchain</groupId>
+      <artifactId>jetty-servlet-api</artifactId>
+      <scope>provided</scope>
+    </dependency>
+  </dependencies>
   <build>
     <plugins>
       <plugin>
@@ -31,11 +39,4 @@
       </plugin>
     </plugins>
   </build>
-  <dependencies>
-    <dependency>
-      <groupId>org.eclipse.jetty.toolchain</groupId>
-      <artifactId>jetty-servlet-api</artifactId>
-      <scope>provided</scope>
-    </dependency>
-  </dependencies>
 </project>

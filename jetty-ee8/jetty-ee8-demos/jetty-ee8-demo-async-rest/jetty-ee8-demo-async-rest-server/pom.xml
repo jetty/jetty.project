@@ -1,18 +1,19 @@
+<?xml version="1.0" encoding="UTF-8"?>
 <project xmlns="http://maven.apache.org/POM/4.0.0" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/maven-v4_0_0.xsd">
+
+  <modelVersion>4.0.0</modelVersion>
   <parent>
     <groupId>org.eclipse.jetty.ee8.demos</groupId>
     <artifactId>jetty-ee8-demo-async-rest</artifactId>
     <version>12.0.3-SNAPSHOT</version>
   </parent>
-
-  <modelVersion>4.0.0</modelVersion>
   <artifactId>jetty-ee8-demo-async-rest-server</artifactId>
   <packaging>jar</packaging>
   <name>EE8 :: Demo :: Async Rest :: Server</name>
 
   <properties>
-    <ee9.module>jetty-ee9-demos/jetty-ee9-demo-async-rest/jetty-ee9-demo-async-rest-server</ee9.module>
     <bundle-symbolic-name>${project.parent.groupId}.async.rest.server</bundle-symbolic-name>
+    <ee9.module>jetty-ee9-demos/jetty-ee9-demo-async-rest/jetty-ee9-demo-async-rest-server</ee9.module>
   </properties>
 
   <dependencies>

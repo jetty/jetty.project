@@ -1,16 +1,17 @@
+<?xml version="1.0" encoding="UTF-8"?>
 <project xmlns="http://maven.apache.org/POM/4.0.0" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/maven-v4_0_0.xsd">
+
+  <!-- TODO: review if this module is still needed -->
+
+  <modelVersion>4.0.0</modelVersion>
   <parent>
     <groupId>org.eclipse.jetty.ee10.osgi</groupId>
     <artifactId>jetty-ee10-osgi</artifactId>
     <version>12.0.3-SNAPSHOT</version>
   </parent>
-
-  <!-- TODO: review if this module is still needed -->
-
-  <modelVersion>4.0.0</modelVersion>
   <artifactId>jetty-ee10-osgi-alpn</artifactId>
-  <name>EE10 :: OSGi :: ALPN Fragment</name>
   <packaging>jar</packaging>
+  <name>EE10 :: OSGi :: ALPN Fragment</name>
   <properties>
     <bundle-symbolic-name>${project.groupId}.alpn.fragment</bundle-symbolic-name>
   </properties>

@@ -7,35 +7,35 @@
     <version>12.0.3-SNAPSHOT</version>
   </parent>
   <artifactId>jetty-ee9-test-sessions</artifactId>
-  <name>EE9 :: Tests :: Sessions</name>
   <packaging>pom</packaging>
-  <properties>
-    <maven.javadoc.skip>true</maven.javadoc.skip>
-    <maven.deploy.skip>true</maven.deploy.skip>
-    <maven.source.skip>true</maven.source.skip>
-  </properties>
+  <name>EE9 :: Tests :: Sessions</name>
   <modules>
     <module>jetty-ee9-test-sessions-common</module>
     <module>jetty-ee9-test-sessions-file</module>
-    <module>jetty-ee9-test-sessions-jdbc</module>
-    <module>jetty-ee9-test-sessions-mongodb</module>
-    <module>jetty-ee9-test-sessions-infinispan</module>
     <module>jetty-ee9-test-sessions-gcloud</module>
-    <module>jetty-ee9-test-sessions-memcached</module>
     <module>jetty-ee9-test-sessions-hazelcast</module>
+    <module>jetty-ee9-test-sessions-infinispan</module>
+    <module>jetty-ee9-test-sessions-jdbc</module>
+    <module>jetty-ee9-test-sessions-memcached</module>
+    <module>jetty-ee9-test-sessions-mongodb</module>
   </modules>
+  <properties>
+    <maven.deploy.skip>true</maven.deploy.skip>
+    <maven.javadoc.skip>true</maven.javadoc.skip>
+    <maven.source.skip>true</maven.source.skip>
+  </properties>
   <dependencyManagement>
     <dependencies>
-      <dependency>
-        <groupId>org.eclipse.jetty.ee9</groupId>
-        <artifactId>jetty-ee9-test-sessions-common</artifactId>
-        <version>${project.version}</version>
-      </dependency>
       <dependency>
         <groupId>org.eclipse.jetty</groupId>
         <artifactId>jetty-session</artifactId>
         <version>${project.version}</version>
         <type>test-jar</type>
+      </dependency>
+      <dependency>
+        <groupId>org.eclipse.jetty.ee9</groupId>
+        <artifactId>jetty-ee9-test-sessions-common</artifactId>
+        <version>${project.version}</version>
       </dependency>
     </dependencies>
   </dependencyManagement>

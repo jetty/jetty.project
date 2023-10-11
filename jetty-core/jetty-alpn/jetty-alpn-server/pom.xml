@@ -1,31 +1,17 @@
+<?xml version="1.0" encoding="UTF-8"?>
 <project xmlns="http://maven.apache.org/POM/4.0.0" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/maven-v4_0_0.xsd">
+  <modelVersion>4.0.0</modelVersion>
   <parent>
     <groupId>org.eclipse.jetty</groupId>
     <artifactId>jetty-alpn</artifactId>
     <version>12.0.3-SNAPSHOT</version>
   </parent>
-  <modelVersion>4.0.0</modelVersion>
   <artifactId>jetty-alpn-server</artifactId>
   <name>Core :: ALPN :: Server</name>
   <properties>
     <bundle-symbolic-name>${project.groupId}.alpn.server</bundle-symbolic-name>
     <spotbugs.onlyAnalyze>org.eclipse.jetty.alpn.*</spotbugs.onlyAnalyze>
   </properties>
-  <build>
-    <plugins>
-      <plugin>
-        <groupId>org.apache.felix</groupId>
-        <artifactId>maven-bundle-plugin</artifactId>
-        <configuration>
-          <instructions>
-            <Bundle-SymbolicName>${bundle-symbolic-name};singleton:=true</Bundle-SymbolicName>
-            <Export-Package>org.eclipse.jetty.alpn.server,*</Export-Package>
-            <Require-Capability>osgi.extender; filter:="(osgi.extender=osgi.serviceloader.processor)";resolution:=optional, osgi.serviceloader; filter:="(osgi.serviceloader=org.eclipse.jetty.io.ssl.ALPNProcessor$Server)";resolution:=optional;cardinality:=multiple</Require-Capability>
-          </instructions>
-        </configuration>
-      </plugin>
-    </plugins>
-  </build>
   <dependencies>
     <dependency>
       <groupId>org.eclipse.jetty</groupId>
@@ -46,4 +32,19 @@
       <scope>test</scope>
     </dependency>
   </dependencies>
+  <build>
+    <plugins>
+      <plugin>
+        <groupId>org.apache.felix</groupId>
+        <artifactId>maven-bundle-plugin</artifactId>
+        <configuration>
+          <instructions>
+            <Bundle-SymbolicName>${bundle-symbolic-name};singleton:=true</Bundle-SymbolicName>
+            <Export-Package>org.eclipse.jetty.alpn.server,*</Export-Package>
+            <Require-Capability>osgi.extender; filter:="(osgi.extender=osgi.serviceloader.processor)";resolution:=optional, osgi.serviceloader; filter:="(osgi.serviceloader=org.eclipse.jetty.io.ssl.ALPNProcessor$Server)";resolution:=optional;cardinality:=multiple</Require-Capability>
+          </instructions>
+        </configuration>
+      </plugin>
+    </plugins>
+  </build>
 </project>
