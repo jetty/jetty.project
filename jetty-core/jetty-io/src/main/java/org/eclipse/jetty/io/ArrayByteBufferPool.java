@@ -360,8 +360,13 @@ public class ArrayByteBufferPool implements ByteBufferPool, Dumpable
             {
                 if (entry.remove())
                 {
-                    memoryCounter.addAndGet(-entry.getPooled().capacity());
-                    removed(entry.getPooled());
+                    RetainableByteBuffer pooled = entry.getPooled();
+                    // Calling getPooled can return null if the entry was not yet enabled.
+                    if (pooled != null)
+                    {
+                        memoryCounter.addAndGet(-pooled.capacity());
+                        removed(pooled);
+                    }
                 }
             });
         }
