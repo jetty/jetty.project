@@ -114,15 +114,15 @@
   <modules>
     <module>build</module>
     <!-- <module>jetty-p2</module> -->
-    <module>documentation</module>
-    <module>javadoc</module>
     <module>jetty-core</module>
     <module>jetty-ee10</module>
-    <module>jetty-ee8</module>
     <module>jetty-ee9</module>
+    <module>jetty-ee8</module>
     <module>jetty-home</module>
     <module>jetty-integrations</module>
     <module>tests</module>
+    <module>javadoc</module>
+    <module>documentation</module>
   </modules>
 
   <scm>
@@ -1649,7 +1649,7 @@
               <!-- Sort properties -->
               <sortProperties>true</sortProperties>
               <!-- Sort modules -->
-              <sortModules>true</sortModules>
+              <!--              <sortModules>true</sortModules>-->
               <!-- Sort plugin executions -->
               <sortExecutions>true</sortExecutions>
               <!-- Sort dependencies see https://github.com/Ekryd/sortpom/wiki/SortDependencies -->
