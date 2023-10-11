@@ -12,6 +12,7 @@
     <ee9.module>jetty-ee9-osgi/jetty-ee9-osgi-boot-jsp</ee9.module>
     <bundle-symbolic-name>${project.groupId}.boot.jsp</bundle-symbolic-name>
     <spotbugs.onlyAnalyze>org.eclipse.jetty.ee8.osgi.boot.jasper.*,org.eclipse.jetty.ee8.osgi.boot.jsp.*</spotbugs.onlyAnalyze>
+    <javax.servlet.jsp.api.version>4.0.6</javax.servlet.jsp.api.version>
   </properties>
   <dependencies>
     <dependency>

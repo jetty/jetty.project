@@ -202,11 +202,12 @@
     </dependency>
     <dependency>
       <groupId>org.eclipse.jetty.toolchain</groupId>
-      <artifactId>jetty-jakarta-servlet-api</artifactId>
+      <artifactId>jetty-servlet-api</artifactId>
     </dependency>
     <dependency>
       <groupId>jakarta.inject</groupId>
       <artifactId>jakarta.inject-api</artifactId>
+      <version>1.0.5</version>
       <scope>test</scope>
     </dependency>
     <dependency>
@@ -217,16 +218,19 @@
     <dependency>
       <groupId>jakarta.interceptor</groupId>
       <artifactId>jakarta.interceptor-api</artifactId>
+      <version>1.2.5</version>
       <scope>test</scope>
     </dependency>
     <dependency>
       <groupId>jakarta.enterprise</groupId>
       <artifactId>jakarta.enterprise.cdi-api</artifactId>
       <scope>test</scope>
+      <version>2.0.2</version>
     </dependency>
     <dependency>
       <groupId>jakarta.el</groupId>
       <artifactId>jakarta.el-api</artifactId>
+      <version>3.0.3</version>
       <scope>test</scope>
     </dependency>
     <dependency>
@@ -252,6 +256,7 @@
     <dependency>
       <groupId>org.mortbay.jasper</groupId>
       <artifactId>apache-el</artifactId>
+      <version>9.0.52</version>
     </dependency>
     <dependency>
       <groupId>jakarta.servlet.jsp.jstl</groupId>
@@ -265,7 +270,17 @@
     </dependency>
     <dependency>
       <groupId>org.glassfish.web</groupId>
-      <artifactId>jakarta.servlet.jsp.jstl</artifactId>
+      <artifactId>javax.servlet.jsp.jstl</artifactId>
+      <exclusions>
+        <exclusion>
+          <groupId>javax.servlet.jsp</groupId>
+          <artifactId>*</artifactId>
+        </exclusion>
+        <exclusion>
+          <groupId>javax.servlet</groupId>
+          <artifactId>*</artifactId>
+        </exclusion>
+      </exclusions>
    </dependency>
     <!-- Jetty Deps -->
     <dependency>
@@ -345,7 +360,7 @@
     </dependency>
     <dependency>
       <groupId>org.eclipse.jetty.ee8.websocket</groupId>
-      <artifactId>jetty-ee8-websocket-jakarta-client</artifactId>
+      <artifactId>jetty-ee8-websocket-javax-client</artifactId>
       <scope>runtime</scope>
     </dependency>
     <dependency>
@@ -360,12 +375,12 @@
     </dependency>
     <dependency>
       <groupId>org.eclipse.jetty.toolchain</groupId>
-      <artifactId>jetty-jakarta-websocket-api</artifactId>
+      <artifactId>jetty-javax-websocket-api</artifactId>
       <scope>runtime</scope>
     </dependency>
     <dependency>
       <groupId>org.eclipse.jetty.ee8.websocket</groupId>
-      <artifactId>jetty-ee8-websocket-jakarta-server</artifactId>
+      <artifactId>jetty-ee8-websocket-javax-server</artifactId>
       <scope>runtime</scope>
     </dependency>
     <dependency>
