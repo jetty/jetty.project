@@ -1,41 +1,26 @@
+<?xml version="1.0" encoding="UTF-8"?>
 <project xmlns="http://maven.apache.org/POM/4.0.0" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/maven-v4_0_0.xsd">
+
+  <modelVersion>4.0.0</modelVersion>
   <parent>
     <groupId>org.eclipse.jetty.ee8</groupId>
     <artifactId>jetty-ee8</artifactId>
     <version>12.0.3-SNAPSHOT</version>
   </parent>
-
-  <modelVersion>4.0.0</modelVersion>
   <artifactId>jetty-ee8-openid</artifactId>
   <name>EE8 :: OpenID</name>
   <description>Jetty OpenID Connect infrastructure</description>
 
   <properties>
-    <ee9.module>jetty-ee9-openid</ee9.module>
     <bundle-symbolic-name>${project.groupId}.openid</bundle-symbolic-name>
+    <ee9.module>jetty-ee9-openid</ee9.module>
     <spotbugs.onlyAnalyze>org.eclipse.jetty.ee8.security.openid.*</spotbugs.onlyAnalyze>
   </properties>
-
-  <build>
-    <plugins>
-      <plugin>
-        <groupId>org.apache.felix</groupId>
-        <artifactId>maven-bundle-plugin</artifactId>
-        <extensions>true</extensions>
-        <configuration>
-          <instructions>
-            <Require-Capability>osgi.extender; filter:="(osgi.extender=osgi.serviceloader.registrar)"</Require-Capability>
-            <Provide-Capability>osgi.serviceloader;osgi.serviceloader=org.eclipse.jetty.security.Authenticator$Factory</Provide-Capability>
-          </instructions>
-        </configuration>
-      </plugin>
-    </plugins>
-  </build>
 
   <dependencies>
     <dependency>
       <groupId>org.eclipse.jetty</groupId>
-      <artifactId>jetty-server</artifactId>
+      <artifactId>jetty-client</artifactId>
     </dependency>
     <dependency>
       <groupId>org.eclipse.jetty</groupId>
@@ -43,15 +28,15 @@
     </dependency>
     <dependency>
       <groupId>org.eclipse.jetty</groupId>
-      <artifactId>jetty-client</artifactId>
-    </dependency>
-    <dependency>
-      <groupId>org.eclipse.jetty.ee8</groupId>
-      <artifactId>jetty-ee8-security</artifactId>
+      <artifactId>jetty-server</artifactId>
     </dependency>
     <dependency>
       <groupId>org.eclipse.jetty</groupId>
       <artifactId>jetty-util-ajax</artifactId>
+    </dependency>
+    <dependency>
+      <groupId>org.eclipse.jetty.ee8</groupId>
+      <artifactId>jetty-ee8-security</artifactId>
     </dependency>
     <dependency>
       <groupId>org.slf4j</groupId>
@@ -73,4 +58,20 @@
       <scope>test</scope>
     </dependency>
   </dependencies>
+
+  <build>
+    <plugins>
+      <plugin>
+        <groupId>org.apache.felix</groupId>
+        <artifactId>maven-bundle-plugin</artifactId>
+        <extensions>true</extensions>
+        <configuration>
+          <instructions>
+            <Require-Capability>osgi.extender; filter:="(osgi.extender=osgi.serviceloader.registrar)"</Require-Capability>
+            <Provide-Capability>osgi.serviceloader;osgi.serviceloader=org.eclipse.jetty.security.Authenticator$Factory</Provide-Capability>
+          </instructions>
+        </configuration>
+      </plugin>
+    </plugins>
+  </build>
 </project>

@@ -1,25 +1,25 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <project xmlns="http://maven.apache.org/POM/4.0.0" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/maven-v4_0_0.xsd">
+
+  <modelVersion>4.0.0</modelVersion>
   <parent>
     <groupId>org.eclipse.jetty</groupId>
     <artifactId>jetty-integrations</artifactId>
     <version>12.0.3-SNAPSHOT</version>
   </parent>
-
-  <modelVersion>4.0.0</modelVersion>
   <artifactId>jetty-infinispan</artifactId>
   <packaging>pom</packaging>
   <name>Integrations :: Infinispan</name>
+  <modules>
+    <module>jetty-infinispan-common</module>
+    <module>jetty-infinispan-embedded</module>
+    <module>jetty-infinispan-embedded-query</module>
+    <module>jetty-infinispan-remote</module>
+    <module>jetty-infinispan-remote-query</module>
+  </modules>
 
   <properties>
     <bundle-symbolic-name>${project.groupId}.infinispan</bundle-symbolic-name>
   </properties>
-  <modules>
-    <module>jetty-infinispan-common</module>
-    <module>jetty-infinispan-embedded</module>
-    <module>jetty-infinispan-remote</module>
-    <module>jetty-infinispan-embedded-query</module>
-    <module>jetty-infinispan-remote-query</module>
-  </modules>
 
 </project>

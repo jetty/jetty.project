@@ -1,3 +1,4 @@
+<?xml version="1.0" encoding="UTF-8"?>
 <project xmlns="http://maven.apache.org/POM/4.0.0" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/maven-v4_0_0.xsd">
   <modelVersion>4.0.0</modelVersion>
   <parent>
@@ -5,14 +6,14 @@
     <artifactId>jetty-ee8-demo-spec</artifactId>
     <version>12.0.3-SNAPSHOT</version>
   </parent>
-
-  <name>EE8 :: Demo :: Servlet Spec :: Fragment Jar</name>
   <artifactId>jetty-ee8-demo-web-fragment</artifactId>
   <packaging>jar</packaging>
 
+  <name>EE8 :: Demo :: Servlet Spec :: Fragment Jar</name>
+
   <properties>
-    <ee9.module>jetty-ee9-demos/jetty-ee9-demo-spec/jetty-ee9-demo-web-fragment</ee9.module>
     <bundle-symbolic-name>${project.groupId}.spec.fragment</bundle-symbolic-name>
+    <ee9.module>jetty-ee9-demos/jetty-ee9-demo-spec/jetty-ee9-demo-web-fragment</ee9.module>
   </properties>
 
   <dependencies>

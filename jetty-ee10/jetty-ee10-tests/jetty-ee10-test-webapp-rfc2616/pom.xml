@@ -7,30 +7,13 @@
     <version>12.0.3-SNAPSHOT</version>
   </parent>
   <artifactId>jetty-ee10-test-webapp-rfc2616</artifactId>
-  <name>EE10 :: Tests :: RFC2616 WebApp</name>
   <packaging>war</packaging>
+  <name>EE10 :: Tests :: RFC2616 WebApp</name>
   <properties>
     <bundle-symbolic-name>${project.groupId}.rfc2616</bundle-symbolic-name>
     <maven.deploy.skip>true</maven.deploy.skip>
     <maven.javadoc.skip>true</maven.javadoc.skip>
   </properties>
-  <build>
-    <plugins>
-      <plugin>
-        <groupId>org.eclipse.jetty.ee10</groupId>
-        <artifactId>jetty-ee10-maven-plugin</artifactId>
-        <version>${project.version}</version>
-        <configuration>
-          <stopPort>8087</stopPort>
-          <stopKey>foo</stopKey>
-          <scan>1</scan>
-          <systemProperties>
-              <fooprop>222</fooprop>
-          </systemProperties>
-        </configuration>
-      </plugin>
-    </plugins>
-  </build>
   <dependencies>
     <dependency>
       <groupId>org.eclipse.jetty.ee10</groupId>
@@ -42,4 +25,21 @@
       <scope>provided</scope>
     </dependency>
   </dependencies>
+  <build>
+    <plugins>
+      <plugin>
+        <groupId>org.eclipse.jetty.ee10</groupId>
+        <artifactId>jetty-ee10-maven-plugin</artifactId>
+        <version>${project.version}</version>
+        <configuration>
+          <stopPort>8087</stopPort>
+          <stopKey>foo</stopKey>
+          <scan>1</scan>
+          <systemProperties>
+            <fooprop>222</fooprop>
+          </systemProperties>
+        </configuration>
+      </plugin>
+    </plugins>
+  </build>
 </project>

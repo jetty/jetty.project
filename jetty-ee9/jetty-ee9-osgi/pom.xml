@@ -1,28 +1,29 @@
+<?xml version="1.0" encoding="UTF-8"?>
 <project xmlns="http://maven.apache.org/POM/4.0.0" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/maven-v4_0_0.xsd">
+
+  <modelVersion>4.0.0</modelVersion>
   <parent>
     <groupId>org.eclipse.jetty.ee9</groupId>
     <artifactId>jetty-ee9</artifactId>
     <version>12.0.3-SNAPSHOT</version>
   </parent>
-
-  <modelVersion>4.0.0</modelVersion>
   <groupId>org.eclipse.jetty.ee9.osgi</groupId>
   <artifactId>jetty-ee9-osgi</artifactId>
-  <name>EE9 :: OSGi</name>
   <packaging>pom</packaging>
-
-  <properties>
-    <jacoco.skip>true</jacoco.skip>
-  </properties>
+  <name>EE9 :: OSGi</name>
 
   <modules>
     <module>jetty-ee9-osgi-boot</module>
     <module>jetty-ee9-osgi-boot-jsp</module>
-    <module>test-jetty-ee9-osgi-webapp-resources</module>
+    <module>test-jetty-ee9-osgi</module>
     <module>test-jetty-ee9-osgi-fragment</module>
     <module>test-jetty-ee9-osgi-server</module>
-    <module>test-jetty-ee9-osgi</module>
+    <module>test-jetty-ee9-osgi-webapp-resources</module>
   </modules>
+
+  <properties>
+    <jacoco.skip>true</jacoco.skip>
+  </properties>
 
   <dependencyManagement>
     <dependencies>
@@ -42,8 +43,11 @@
   <build>
     <resources>
       <resource>
-        <directory>META-INF/..</directory>
         <filtering>true</filtering>
+        <directory>META-INF/..</directory>
+        <includes>
+          <include>META-INF/**/*</include>
+        </includes>
         <excludes>
           <exclude>**/.*</exclude>
           <exclude>**/*.jar</exclude>
@@ -55,9 +59,6 @@
           <exclude>target/**/*</exclude>
           <exclude>build.properties</exclude>
         </excludes>
-        <includes>
-          <include>META-INF/**/*</include>
-        </includes>
       </resource>
       <resource>
         <directory>src/main/java</directory>

@@ -1,11 +1,12 @@
+<?xml version="1.0" encoding="UTF-8"?>
 <project xmlns="http://maven.apache.org/POM/4.0.0" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/maven-v4_0_0.xsd">
+
+  <modelVersion>4.0.0</modelVersion>
   <parent>
     <groupId>org.eclipse.jetty.ee9</groupId>
     <artifactId>jetty-ee9</artifactId>
     <version>12.0.3-SNAPSHOT</version>
   </parent>
-
-  <modelVersion>4.0.0</modelVersion>
   <artifactId>jetty-ee9-nested</artifactId>
   <name>EE9 :: Nested</name>
   <description>The jetty core handler adapted to legacy ee9 handler.</description>
@@ -15,30 +16,15 @@
     <spotbugs.onlyAnalyze>org.eclipse.jetty.ee9.nested.*</spotbugs.onlyAnalyze>
   </properties>
 
-  <build>
-    <plugins>
-      <plugin>
-        <artifactId>maven-surefire-plugin</artifactId>
-        <configuration>
-          <argLine>
-            @{argLine} ${jetty.surefire.argLine} 
-            --add-reads org.eclipse.jetty.ee9.nested=org.eclipse.jetty.logging 
-            --add-opens org.eclipse.jetty.server/org.eclipse.jetty.server=ALL-UNNAMED
-            --add-reads org.eclipse.jetty.server=org.eclipse.jetty.logging
-          </argLine>
-        </configuration>
-      </plugin>
-    </plugins>
-  </build>
-
   <dependencies>
-    <dependency>
-      <groupId>org.eclipse.jetty.toolchain</groupId>
-      <artifactId>jetty-jakarta-servlet-api</artifactId>
-    </dependency>
     <dependency>
       <groupId>org.eclipse.jetty</groupId>
       <artifactId>jetty-http</artifactId>
+    </dependency>
+    <dependency>
+      <groupId>org.eclipse.jetty</groupId>
+      <artifactId>jetty-jmx</artifactId>
+      <optional>true</optional>
     </dependency>
     <dependency>
       <groupId>org.eclipse.jetty</groupId>
@@ -50,12 +36,31 @@
     </dependency>
     <dependency>
       <groupId>org.eclipse.jetty</groupId>
-      <artifactId>jetty-jmx</artifactId>
-      <optional>true</optional>
+      <artifactId>jetty-session</artifactId>
+      <scope>compile</scope>
+    </dependency>
+    <dependency>
+      <groupId>org.eclipse.jetty.toolchain</groupId>
+      <artifactId>jetty-jakarta-servlet-api</artifactId>
     </dependency>
     <dependency>
       <groupId>org.slf4j</groupId>
       <artifactId>slf4j-api</artifactId>
+    </dependency>
+    <dependency>
+      <groupId>org.eclipse.jetty</groupId>
+      <artifactId>jetty-http-tools</artifactId>
+      <scope>test</scope>
+    </dependency>
+    <dependency>
+      <groupId>org.eclipse.jetty</groupId>
+      <artifactId>jetty-slf4j-impl</artifactId>
+      <scope>test</scope>
+    </dependency>
+    <dependency>
+      <groupId>org.eclipse.jetty</groupId>
+      <artifactId>jetty-util-ajax</artifactId>
+      <scope>test</scope>
     </dependency>
     <dependency>
       <groupId>org.eclipse.jetty</groupId>
@@ -67,26 +72,20 @@
       <artifactId>jetty-test-helper</artifactId>
       <scope>test</scope>
     </dependency>
-    <dependency>
-      <groupId>org.eclipse.jetty</groupId>
-      <artifactId>jetty-http-tools</artifactId>
-      <scope>test</scope>
-    </dependency>
-    <dependency>
-      <groupId>org.eclipse.jetty</groupId>
-      <artifactId>jetty-util-ajax</artifactId>
-      <scope>test</scope>
-    </dependency>
-    <dependency>
-      <groupId>org.eclipse.jetty</groupId>
-      <artifactId>jetty-slf4j-impl</artifactId>
-      <scope>test</scope>
-    </dependency>
-    <dependency>
-      <groupId>org.eclipse.jetty</groupId>
-      <artifactId>jetty-session</artifactId>
-      <scope>compile</scope>
-    </dependency>
   </dependencies>
+
+  <build>
+    <plugins>
+      <plugin>
+        <artifactId>maven-surefire-plugin</artifactId>
+        <configuration>
+          <argLine>@{argLine} ${jetty.surefire.argLine} 
+            --add-reads org.eclipse.jetty.ee9.nested=org.eclipse.jetty.logging 
+            --add-opens org.eclipse.jetty.server/org.eclipse.jetty.server=ALL-UNNAMED
+            --add-reads org.eclipse.jetty.server=org.eclipse.jetty.logging</argLine>
+        </configuration>
+      </plugin>
+    </plugins>
+  </build>
 
 </project>
