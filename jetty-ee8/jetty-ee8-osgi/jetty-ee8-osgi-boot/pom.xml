@@ -1,19 +1,28 @@
+<?xml version="1.0" encoding="UTF-8"?>
 <project xmlns="http://maven.apache.org/POM/4.0.0" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/maven-v4_0_0.xsd">
+  <modelVersion>4.0.0</modelVersion>
   <parent>
     <groupId>org.eclipse.jetty.ee8.osgi</groupId>
     <artifactId>jetty-ee8-osgi</artifactId>
     <version>12.0.3-SNAPSHOT</version>
   </parent>
-  <modelVersion>4.0.0</modelVersion>
   <artifactId>jetty-ee8-osgi-boot</artifactId>
   <name>EE8 :: OSGi :: Boot</name>
   <description>Jetty OSGi Boot bundle</description>
   <properties>
-    <ee9.module>jetty-ee9-osgi/jetty-ee9-osgi-boot</ee9.module>
     <bundle-symbolic-name>${project.groupId}.boot</bundle-symbolic-name>
+    <ee9.module>jetty-ee9-osgi/jetty-ee9-osgi-boot</ee9.module>
     <spotbugs.onlyAnalyze>org.eclipse.jetty.ee8.osgi.boot.*</spotbugs.onlyAnalyze>
   </properties>
   <dependencies>
+    <dependency>
+      <groupId>org.eclipse.jetty</groupId>
+      <artifactId>jetty-jmx</artifactId>
+    </dependency>
+    <dependency>
+      <groupId>org.eclipse.jetty</groupId>
+      <artifactId>jetty-osgi</artifactId>
+    </dependency>
     <dependency>
       <groupId>org.eclipse.jetty.ee8</groupId>
       <artifactId>jetty-ee8-annotations</artifactId>
@@ -21,14 +30,6 @@
     <dependency>
       <groupId>org.eclipse.jetty.ee8</groupId>
       <artifactId>jetty-ee8-webapp</artifactId>
-    </dependency>
-    <dependency>
-      <groupId>org.eclipse.jetty</groupId>
-      <artifactId>jetty-osgi</artifactId>
-    </dependency>
-    <dependency>
-      <groupId>org.eclipse.jetty</groupId>
-      <artifactId>jetty-jmx</artifactId>
     </dependency>
     <dependency>
       <groupId>org.eclipse.platform</groupId>
@@ -60,27 +61,6 @@
     </resources>
     <plugins>
       <plugin>
-        <artifactId>maven-antrun-plugin</artifactId>
-        <executions>
-          <execution>
-            <phase>process-resources</phase>
-            <configuration>
-              <target>
-                <!--delete file="target/classes/META-INF/MANIFEST.MF" /-->
-                <copy todir="target/classes/jettyhome">
-                  <fileset dir="jettyhome">
-                    <exclude name="**/*.log" />
-                  </fileset>
-                </copy>
-              </target>
-            </configuration>
-            <goals>
-              <goal>run</goal>
-            </goals>
-          </execution>
-        </executions>
-      </plugin>
-      <plugin>
         <groupId>org.apache.felix</groupId>
         <artifactId>maven-bundle-plugin</artifactId>
         <extensions>true</extensions>
@@ -89,8 +69,7 @@
             <Bundle-SymbolicName>org.eclipse.jetty.ee8.osgi.boot;singleton:=true</Bundle-SymbolicName>
             <Bundle-Activator>org.eclipse.jetty.ee8.osgi.boot.ee8Activator</Bundle-Activator>
             <DynamicImport-Package>org.eclipse.jetty.*;version="[$(version;===;${parsedVersion.osgiVersion}),$(version;==+;${parsedVersion.osgiVersion}))", org.eclipse.jetty.ee8.*;version="[$(version;===;${parsedVersion.osgiVersion}),$(version;==+;${parsedVersion.osgiVersion}))"</DynamicImport-Package>
-            <Import-Package>
-              ${osgi.slf4j.import.packages},
+            <Import-Package>${osgi.slf4j.import.packages},
               javax.mail;version="2.0";resolution:=optional,
               javax.mail.event;version="2.0";resolution:=optional,
               javax.mail.internet;version="2.0";resolution:=optional,
@@ -112,17 +91,33 @@
               org.xml.sax,
               org.xml.sax.helpers,
               org.eclipse.jetty.ee8.annotations;resolution:=optional,
-              *
-            </Import-Package>
-            <Require-Capability>
-              osgi.extender; filter:="(osgi.extender=osgi.serviceloader.registrar)"
-            </Require-Capability>
-            <Provide-Capability>
-              osgi.serviceloader; osgi.serviceloader=org.eclipse.jetty.ee8.webapp.Configuration
-            </Provide-Capability>
+              *</Import-Package>
+            <Require-Capability>osgi.extender; filter:="(osgi.extender=osgi.serviceloader.registrar)"</Require-Capability>
+            <Provide-Capability>osgi.serviceloader; osgi.serviceloader=org.eclipse.jetty.ee8.webapp.Configuration</Provide-Capability>
             <_nouses>true</_nouses>
           </instructions>
         </configuration>
+      </plugin>
+      <plugin>
+        <artifactId>maven-antrun-plugin</artifactId>
+        <executions>
+          <execution>
+            <goals>
+              <goal>run</goal>
+            </goals>
+            <phase>process-resources</phase>
+            <configuration>
+              <target>
+                <!--delete file="target/classes/META-INF/MANIFEST.MF" /-->
+                <copy todir="target/classes/jettyhome">
+                  <fileset dir="jettyhome">
+                    <exclude name="**/*.log"></exclude>
+                  </fileset>
+                </copy>
+              </target>
+            </configuration>
+          </execution>
+        </executions>
       </plugin>
     </plugins>
   </build>

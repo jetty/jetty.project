@@ -1,16 +1,17 @@
+<?xml version="1.0" encoding="UTF-8"?>
 <project xmlns="http://maven.apache.org/POM/4.0.0" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/maven-v4_0_0.xsd">
+  <modelVersion>4.0.0</modelVersion>
   <parent>
     <groupId>org.eclipse.jetty.ee8.osgi</groupId>
     <artifactId>jetty-ee8-osgi</artifactId>
     <version>12.0.3-SNAPSHOT</version>
   </parent>
-  <modelVersion>4.0.0</modelVersion>
   <artifactId>test-jetty-ee8-osgi-server</artifactId>
   <name>EE8 :: OSGi :: Server</name>
   <description>Test Jetty OSGi bundle with a Server</description>
   <properties>
-    <ee9.module>jetty-ee9-osgi/test-jetty-ee9-osgi-server</ee9.module>
     <bundle-symbolic-name>${project.groupId}.testserver</bundle-symbolic-name>
+    <ee9.module>jetty-ee9-osgi/test-jetty-ee9-osgi-server</ee9.module>
     <maven.deploy.skip>true</maven.deploy.skip>
     <maven.javadoc.skip>true</maven.javadoc.skip>
   </properties>
@@ -51,8 +52,7 @@
             of the packages it uses; no need to reflect some tight dependency determined at
             compilation time. -->
             <_nouses>true</_nouses>
-            <Import-Package>
-              org.osgi.framework,
+            <Import-Package>org.osgi.framework,
               org.osgi.service.cm;version="${osgi-service-cm-version}",
               org.osgi.service.packageadmin,
               org.osgi.service.startlevel;version="1.0.0",
@@ -60,8 +60,7 @@
               org.osgi.util.tracker;version="${osgi-util-tracker-version}",
               org.xml.sax,
               org.xml.sax.helpers,
-              *
-            </Import-Package>
+              *</Import-Package>
             <DynamicImport-Package>org.eclipse.jetty.*;version="[$(version;==;${parsedVersion.osgiVersion}),$(version;+;${parsedVersion.osgiVersion}))"</DynamicImport-Package>
           </instructions>
         </configuration>
