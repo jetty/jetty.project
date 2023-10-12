@@ -11,9 +11,9 @@
   <properties>
     <bundle-symbolic-name>${project.groupId}.http.spi</bundle-symbolic-name>
     <jacoco.skip>true</jacoco.skip>
-    <spotbugs.onlyAnalyze>org.eclipse.jetty.http.spi.*</spotbugs.onlyAnalyze>
     <jakarta.ws.rs.api.version>3.1.0</jakarta.ws.rs.api.version>
     <jakarta.xml.jaxws.impl.version>4.0.1</jakarta.xml.jaxws.impl.version>
+    <spotbugs.onlyAnalyze>org.eclipse.jetty.http.spi.*</spotbugs.onlyAnalyze>
   </properties>
   <dependencies>
     <dependency>
@@ -25,6 +25,18 @@
       <groupId>org.slf4j</groupId>
       <artifactId>slf4j-api</artifactId>
       <scope>provided</scope>
+    </dependency>
+    <dependency>
+      <groupId>com.sun.xml.ws</groupId>
+      <artifactId>jaxws-rt</artifactId>
+      <version>${jakarta.xml.jaxws.impl.version}</version>
+      <scope>test</scope>
+    </dependency>
+    <dependency>
+      <groupId>jakarta.ws.rs</groupId>
+      <artifactId>jakarta.ws.rs-api</artifactId>
+      <version>${jakarta.ws.rs.api.version}</version>
+      <scope>test</scope>
     </dependency>
     <dependency>
       <groupId>org.eclipse.jetty</groupId>
@@ -44,18 +56,6 @@
     <dependency>
       <groupId>org.slf4j</groupId>
       <artifactId>jul-to-slf4j</artifactId>
-      <scope>test</scope>
-    </dependency>
-    <dependency>
-      <groupId>jakarta.ws.rs</groupId>
-      <artifactId>jakarta.ws.rs-api</artifactId>
-      <version>${jakarta.ws.rs.api.version}</version>
-      <scope>test</scope>
-    </dependency>
-    <dependency>
-      <groupId>com.sun.xml.ws</groupId>
-      <artifactId>jaxws-rt</artifactId>
-      <version>${jakarta.xml.jaxws.impl.version}</version>
       <scope>test</scope>
     </dependency>
   </dependencies>
@@ -96,7 +96,8 @@
               <groupId>org.apache.maven.plugins</groupId>
               <artifactId>maven-surefire-plugin</artifactId>
               <configuration>
-                <argLine>--add-opens java.base/jdk.internal.misc=ALL-UNNAMED</argLine>
+                <argLine>--add-opens java.base/jdk.internal.misc=ALL-UNNAMED
+                  --add-reads org.eclipse.jetty.http.spi=org.eclipse.jetty.logging</argLine>
               </configuration>
             </plugin>
           </plugins>
