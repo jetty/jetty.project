@@ -53,7 +53,7 @@
     <hawtio.version>2.15.2</hawtio.version>
     <hazelcast.version>5.2.1</hazelcast.version>
     <infinispan.protostream.version>4.6.5.Final</infinispan.protostream.version>
-    <infinispan.version>11.0.17.Final</infinispan.version>
+    <infinispan.version>11.0.18.Final</infinispan.version>
     <jackson.version>2.14.2</jackson.version>
     <jakarta.activation.api.version>2.0.1</jakarta.activation.api.version>
     <jakarta.annotation.api.version>2.1.1</jakarta.annotation.api.version>
