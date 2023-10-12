@@ -34,6 +34,7 @@ import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.Test;
 
 import static org.hamcrest.MatcherAssert.assertThat;
+import static org.hamcrest.Matchers.containsString;
 import static org.hamcrest.Matchers.endsWith;
 import static org.hamcrest.Matchers.equalTo;
 import static org.hamcrest.Matchers.is;
@@ -479,5 +480,79 @@ public class ResponseHeadersTest
 
         assertThat("Response Code", response.getStatus(), is(200));
         assertThat(response.getContent(), equalTo("Hello\nWorld\n"));
+    }
+
+    @Test
+    public void testContentTypeAfterWriterBeforeWrite() throws Exception
+    {
+        ServletContextHandler contextHandler = new ServletContextHandler();
+        contextHandler.setContextPath("/");
+        HttpServlet contentTypeServlet = new HttpServlet()
+        {
+            @Override
+            protected void doGet(HttpServletRequest request, HttpServletResponse response) throws ServletException, IOException
+            {
+                response.setContentType("text/xml;charset=ISO-8859-7");
+                PrintWriter pw = response.getWriter();
+                response.setContentType("text/html;charset=UTF-8");
+
+                PrintWriter writer = response.getWriter();
+                writer.println("Hello");
+            }
+        };
+
+        contextHandler.addServlet(contentTypeServlet, "/content/*");
+        startServer(contextHandler);
+
+        HttpTester.Request request = new HttpTester.Request();
+        request.setMethod("GET");
+        request.setURI("/content");
+        request.setVersion(HttpVersion.HTTP_1_1);
+        request.setHeader("Connection", "close");
+        request.setHeader("Host", "test");
+
+        ByteBuffer responseBuffer = connector.getResponse(request.generate());
+        HttpTester.Response response = HttpTester.parseResponse(responseBuffer);
+
+        assertThat("Response Code", response.getStatus(), is(200));
+        assertThat("Content Type", response.getField("Content-Type").getValue(), containsString("text/html;charset=ISO-8859-7"));
+        assertThat(response.getContent(), containsString("Hello"));
+    }
+
+    @Test
+    public void testContentTypeNoCharset() throws Exception
+    {
+        ServletContextHandler contextHandler = new ServletContextHandler();
+        contextHandler.setContextPath("/");
+        HttpServlet contentTypeServlet = new HttpServlet()
+        {
+            @Override
+            protected void doGet(HttpServletRequest request, HttpServletResponse response) throws ServletException, IOException
+            {
+                response.setContentType("text/html;charset=Shift_Jis");
+                response.setContentType("text/xml");
+
+                PrintWriter pw = response.getWriter();
+                pw.println("Hello");
+            }
+        };
+
+        contextHandler.addServlet(contentTypeServlet, "/content/*");
+        startServer(contextHandler);
+
+        HttpTester.Request request = new HttpTester.Request();
+        request.setMethod("GET");
+        request.setURI("/content");
+        request.setVersion(HttpVersion.HTTP_1_1);
+        request.setHeader("Connection", "close");
+        request.setHeader("Host", "test");
+
+        ByteBuffer responseBuffer = connector.getResponse(request.generate());
+        HttpTester.Response response = HttpTester.parseResponse(responseBuffer);
+
+        assertThat("Response Code", response.getStatus(), is(200));
+        assertThat("Content Type", response.getField("Content-Type").getValue(), containsString("text/xml;charset=Shift_Jis"));
+        assertThat(response.getContent(), equalTo("Hello"));
+
     }
 }
