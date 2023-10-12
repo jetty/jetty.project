@@ -187,9 +187,11 @@ public class ServletApiRequest implements HttpServletRequest
     @Override
     public String getProtocolRequestId()
     {
-        if (getRequest().getConnectionMetaData().getHttpVersion().getVersion() <= HttpVersion.HTTP_1_0.getVersion())
-            return null;
-        return getRequest().getId();
+        return switch (getRequest().getConnectionMetaData().getHttpVersion())
+        {
+            case HTTP_2, HTTP_3 -> getRequest().getId();
+            default -> "";
+        };
     }
 
     @Override
