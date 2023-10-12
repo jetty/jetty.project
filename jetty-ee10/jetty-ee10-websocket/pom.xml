@@ -1,20 +1,16 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <project xmlns="http://maven.apache.org/POM/4.0.0" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/maven-v4_0_0.xsd">
+
+  <modelVersion>4.0.0</modelVersion>
   <parent>
     <groupId>org.eclipse.jetty.ee10</groupId>
     <artifactId>jetty-ee10</artifactId>
     <version>12.0.3-SNAPSHOT</version>
   </parent>
-
-  <modelVersion>4.0.0</modelVersion>
   <groupId>org.eclipse.jetty.ee10.websocket</groupId>
   <artifactId>jetty-ee10-websocket</artifactId>
-  <name>EE10 :: Websocket</name>
   <packaging>pom</packaging>
-
-  <properties>
-    <sonar.skip>true</sonar.skip>
-  </properties>
+  <name>EE10 :: Websocket</name>
 
   <modules>
     <module>jetty-ee10-websocket-jakarta-client</module>
@@ -27,5 +23,9 @@
     <module>jetty-ee10-websocket-jetty-tests</module>
     <module>jetty-ee10-websocket-servlet</module>
   </modules>
+
+  <properties>
+    <sonar.skip>true</sonar.skip>
+  </properties>
 
 </project>

@@ -8,21 +8,21 @@
   </parent>
   <groupId>org.eclipse.jetty.tests</groupId>
   <artifactId>tests</artifactId>
-  <name>Tests</name>
   <packaging>pom</packaging>
-  <properties>
-    <spotbugs.skip>true</spotbugs.skip>
-    <maven.javadoc.skip>true</maven.javadoc.skip>
-    <maven.deploy.skip>true</maven.deploy.skip>
-    <maven.source.skip>true</maven.source.skip>
-  </properties>
+  <name>Tests</name>
   <modules>
     <module>jetty-home-tester</module>
     <module>jetty-jmh</module>
+    <module>jetty-test-session-common</module>
     <module>test-distribution</module>
     <module>test-integration</module>
-    <module>jetty-test-session-common</module>
     <!-- TODO -->
     <!-- module>test-jpms</module -->
   </modules>
+  <properties>
+    <maven.deploy.skip>true</maven.deploy.skip>
+    <maven.javadoc.skip>true</maven.javadoc.skip>
+    <maven.source.skip>true</maven.source.skip>
+    <spotbugs.skip>true</spotbugs.skip>
+  </properties>
 </project>

@@ -1,23 +1,23 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <project xmlns="http://maven.apache.org/POM/4.0.0" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/maven-v4_0_0.xsd">
+
+  <modelVersion>4.0.0</modelVersion>
   <parent>
     <groupId>org.eclipse.jetty</groupId>
     <artifactId>jetty-core</artifactId>
     <version>12.0.3-SNAPSHOT</version>
   </parent>
-
-  <modelVersion>4.0.0</modelVersion>
   <groupId>org.eclipse.jetty.http3</groupId>
   <artifactId>jetty-http3</artifactId>
   <packaging>pom</packaging>
   <name>Core :: HTTP3</name>
 
   <modules>
-    <module>jetty-http3-qpack</module>
-    <module>jetty-http3-common</module>
-    <module>jetty-http3-server</module>
     <module>jetty-http3-client</module>
     <module>jetty-http3-client-transport</module>
+    <module>jetty-http3-common</module>
+    <module>jetty-http3-qpack</module>
+    <module>jetty-http3-server</module>
     <module>jetty-http3-tests</module>
   </modules>
 
