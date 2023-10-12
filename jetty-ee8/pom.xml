@@ -1,59 +1,254 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <project xmlns="http://maven.apache.org/POM/4.0.0" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/maven-v4_0_0.xsd">
+
+  <modelVersion>4.0.0</modelVersion>
   <parent>
     <groupId>org.eclipse.jetty</groupId>
     <artifactId>jetty-project</artifactId>
-    <version>12.0.2-SNAPSHOT</version>
+    <version>12.0.3-SNAPSHOT</version>
   </parent>
-
-  <modelVersion>4.0.0</modelVersion>
   <groupId>org.eclipse.jetty.ee8</groupId>
   <artifactId>jetty-ee8</artifactId>
-  <name>EE8</name>
   <packaging>pom</packaging>
-
-  <properties>
-    <jetty.servlet.api.version>4.0.6</jetty.servlet.api.version>
-    <jakarta.transaction-api.version>1.3.3</jakarta.transaction-api.version>
-    <jakarta.annotation.api.version>1.3.5</jakarta.annotation.api.version>
-    <javax.mail.glassfish.version>1.4.1.v201005082020</javax.mail.glassfish.version>
-    <jakarta.websocket.api.version>1.1.2</jakarta.websocket.api.version>
-    <jsp.impl.version>9.0.52</jsp.impl.version>
-    <weld.version>3.1.9.Final</weld.version>
-    <!-- generated sources cannot follow exactly Jetty code style -->
-    <checkstyle.skip>true</checkstyle.skip>
-    <sonar.skip>true</sonar.skip>
-    <ee9.module></ee9.module>
-    <ee9.module.path>${maven.multiModuleProjectDirectory}/jetty-ee9/${ee9.module}</ee9.module.path>
-    <modify-sources-plugin.version>1.0.6</modify-sources-plugin.version>
-  </properties>
+  <name>EE8</name>
 
   <modules>
+    <module>jetty-ee8-annotations</module>
+    <module>jetty-ee8-apache-jsp</module>
+    <module>jetty-ee8-bom</module>
+    <module>jetty-ee8-demos</module>
+    <module>jetty-ee8-glassfish-jstl</module>
+    <module>jetty-ee8-home</module>
+    <module>jetty-ee8-jaspi</module>
+    <module>jetty-ee8-jndi</module>
+    <module>jetty-ee8-jspc-maven-plugin</module>
+    <module>jetty-ee8-maven-plugin</module>
     <module>jetty-ee8-nested</module>
+    <module>jetty-ee8-openid</module>
+    <module>jetty-ee8-plus</module>
+    <module>jetty-ee8-proxy</module>
+    <module>jetty-ee8-quickstart</module>
     <module>jetty-ee8-security</module>
     <module>jetty-ee8-servlet</module>
     <module>jetty-ee8-servlets</module>
     <module>jetty-ee8-webapp</module>
-    <module>jetty-ee8-plus</module>
-    <module>jetty-ee8-jndi</module>
-    <module>jetty-ee8-maven-plugin</module>
-    <module>jetty-ee8-jaspi</module>
-    <module>jetty-ee8-jspc-maven-plugin</module>
-    <module>jetty-ee8-proxy</module>
-    <module>jetty-ee8-annotations</module>
     <module>jetty-ee8-websocket</module>
-    <module>jetty-ee8-quickstart</module>
-    <module>jetty-ee8-openid</module>
-    <module>jetty-ee8-apache-jsp</module>
-    <module>jetty-ee8-glassfish-jstl</module>
-    <module>jetty-ee8-bom</module>
-    <module>jetty-ee8-demos</module>
-    <module>jetty-ee8-home</module>
   </modules>
 
+  <properties>
+    <!-- generated sources cannot follow exactly Jetty code style -->
+    <checkstyle.skip>true</checkstyle.skip>
+    <ee9.module></ee9.module>
+    <ee9.module.path>${maven.multiModuleProjectDirectory}/jetty-ee9/${ee9.module}</ee9.module.path>
+    <jakarta.annotation.api.version>1.3.5</jakarta.annotation.api.version>
+    <jakarta.transaction-api.version>1.3.3</jakarta.transaction-api.version>
+    <jakarta.websocket.api.version>1.1.2</jakarta.websocket.api.version>
+    <javax.mail.glassfish.version>1.4.1.v201005082020</javax.mail.glassfish.version>
+    <jetty.servlet.api.version>4.0.6</jetty.servlet.api.version>
+    <jsp.impl.version>9.0.52</jsp.impl.version>
+    <modify-sources-plugin.version>1.0.6</modify-sources-plugin.version>
+    <sonar.skip>true</sonar.skip>
+    <weld.version>3.1.9.Final</weld.version>
+  </properties>
+
+  <dependencyManagement>
+
+    <!-- Jetty EE 8 Dependencies -->
+    <dependencies>
+      <dependency>
+        <groupId>jakarta.activation</groupId>
+        <artifactId>jakarta.activation-api</artifactId>
+        <version>1.2.2</version>
+      </dependency>
+      <dependency>
+        <groupId>jakarta.annotation</groupId>
+        <artifactId>jakarta.annotation-api</artifactId>
+        <version>${jakarta.annotation.api.version}</version>
+      </dependency>
+      <dependency>
+        <groupId>jakarta.servlet.jsp</groupId>
+        <artifactId>jakarta.servlet.jsp-api</artifactId>
+        <version>2.3.6</version>
+      </dependency>
+      <dependency>
+        <groupId>jakarta.servlet.jsp.jstl</groupId>
+        <artifactId>jakarta.servlet.jsp.jstl-api</artifactId>
+        <version>1.2.7</version>
+      </dependency>
+      <dependency>
+        <groupId>jakarta.transaction</groupId>
+        <artifactId>jakarta.transaction-api</artifactId>
+        <version>${jakarta.transaction-api.version}</version>
+      </dependency>
+      <dependency>
+        <groupId>org.eclipse.jetty.ee8</groupId>
+        <artifactId>jetty-ee8-annotations</artifactId>
+        <version>${project.version}</version>
+      </dependency>
+      <dependency>
+        <groupId>org.eclipse.jetty.ee8</groupId>
+        <artifactId>jetty-ee8-apache-jsp</artifactId>
+        <version>${project.version}</version>
+      </dependency>
+      <dependency>
+        <groupId>org.eclipse.jetty.ee8</groupId>
+        <artifactId>jetty-ee8-glassfish-jstl</artifactId>
+        <version>${project.version}</version>
+      </dependency>
+      <dependency>
+        <groupId>org.eclipse.jetty.ee8</groupId>
+        <artifactId>jetty-ee8-jndi</artifactId>
+        <version>${project.version}</version>
+      </dependency>
+      <dependency>
+        <groupId>org.eclipse.jetty.ee8</groupId>
+        <artifactId>jetty-ee8-nested</artifactId>
+        <version>${project.version}</version>
+      </dependency>
+      <dependency>
+        <groupId>org.eclipse.jetty.ee8</groupId>
+        <artifactId>jetty-ee8-openid</artifactId>
+        <version>${project.version}</version>
+      </dependency>
+      <dependency>
+        <groupId>org.eclipse.jetty.ee8</groupId>
+        <artifactId>jetty-ee8-plus</artifactId>
+        <version>${project.version}</version>
+      </dependency>
+      <dependency>
+        <groupId>org.eclipse.jetty.ee8</groupId>
+        <artifactId>jetty-ee8-proxy</artifactId>
+        <version>${project.version}</version>
+      </dependency>
+      <dependency>
+        <groupId>org.eclipse.jetty.ee8</groupId>
+        <artifactId>jetty-ee8-quickstart</artifactId>
+        <version>${project.version}</version>
+      </dependency>
+      <dependency>
+        <groupId>org.eclipse.jetty.ee8</groupId>
+        <artifactId>jetty-ee8-security</artifactId>
+        <version>${project.version}</version>
+      </dependency>
+      <dependency>
+        <groupId>org.eclipse.jetty.ee8</groupId>
+        <artifactId>jetty-ee8-servlet</artifactId>
+        <version>${project.version}</version>
+      </dependency>
+      <dependency>
+        <groupId>org.eclipse.jetty.ee8</groupId>
+        <artifactId>jetty-ee8-servlets</artifactId>
+        <version>${project.version}</version>
+      </dependency>
+      <dependency>
+        <groupId>org.eclipse.jetty.ee8</groupId>
+        <artifactId>jetty-ee8-webapp</artifactId>
+        <version>${project.version}</version>
+      </dependency>
+      <dependency>
+        <groupId>org.eclipse.jetty.ee8.demos</groupId>
+        <artifactId>jetty-ee8-demo-container-initializer</artifactId>
+        <version>${project.version}</version>
+      </dependency>
+      <dependency>
+        <groupId>org.eclipse.jetty.ee8.demos</groupId>
+        <artifactId>jetty-ee8-demo-mock-resources</artifactId>
+        <version>${project.version}</version>
+      </dependency>
+      <dependency>
+        <groupId>org.eclipse.jetty.ee8.demos</groupId>
+        <artifactId>jetty-ee8-demo-web-fragment</artifactId>
+        <version>${project.version}</version>
+      </dependency>
+      <dependency>
+        <groupId>org.eclipse.jetty.ee8.websocket</groupId>
+        <artifactId>jetty-ee8-websocket-javax-client</artifactId>
+        <version>${project.version}</version>
+      </dependency>
+      <dependency>
+        <groupId>org.eclipse.jetty.ee8.websocket</groupId>
+        <artifactId>jetty-ee8-websocket-javax-client-webapp</artifactId>
+        <version>${project.version}</version>
+      </dependency>
+      <dependency>
+        <groupId>org.eclipse.jetty.ee8.websocket</groupId>
+        <artifactId>jetty-ee8-websocket-javax-common</artifactId>
+        <version>${project.version}</version>
+      </dependency>
+      <dependency>
+        <groupId>org.eclipse.jetty.ee8.websocket</groupId>
+        <artifactId>jetty-ee8-websocket-javax-server</artifactId>
+        <version>${project.version}</version>
+      </dependency>
+      <dependency>
+        <groupId>org.eclipse.jetty.ee8.websocket</groupId>
+        <artifactId>jetty-ee8-websocket-jetty-api</artifactId>
+        <version>${project.version}</version>
+      </dependency>
+      <dependency>
+        <groupId>org.eclipse.jetty.ee8.websocket</groupId>
+        <artifactId>jetty-ee8-websocket-jetty-client</artifactId>
+        <version>${project.version}</version>
+      </dependency>
+      <dependency>
+        <groupId>org.eclipse.jetty.ee8.websocket</groupId>
+        <artifactId>jetty-ee8-websocket-jetty-client-webapp</artifactId>
+        <version>${project.version}</version>
+      </dependency>
+      <dependency>
+        <groupId>org.eclipse.jetty.ee8.websocket</groupId>
+        <artifactId>jetty-ee8-websocket-jetty-common</artifactId>
+        <version>${project.version}</version>
+      </dependency>
+      <dependency>
+        <groupId>org.eclipse.jetty.ee8.websocket</groupId>
+        <artifactId>jetty-ee8-websocket-jetty-server</artifactId>
+        <version>${project.version}</version>
+      </dependency>
+      <dependency>
+        <groupId>org.eclipse.jetty.ee8.websocket</groupId>
+        <artifactId>jetty-ee8-websocket-servlet</artifactId>
+        <version>${project.version}</version>
+      </dependency>
+      <dependency>
+        <groupId>org.eclipse.jetty.orbit</groupId>
+        <artifactId>javax.mail.glassfish</artifactId>
+        <version>${javax.mail.glassfish.version}</version>
+      </dependency>
+      <dependency>
+        <groupId>org.eclipse.jetty.orbit</groupId>
+        <artifactId>javax.security.auth.message</artifactId>
+        <version>1.0.0.v201108011116</version>
+      </dependency>
+      <dependency>
+        <groupId>org.eclipse.jetty.toolchain</groupId>
+        <artifactId>jetty-javax-websocket-api</artifactId>
+        <version>${jakarta.websocket.api.version}</version>
+      </dependency>
+      <dependency>
+        <groupId>org.eclipse.jetty.toolchain</groupId>
+        <artifactId>jetty-servlet-api</artifactId>
+        <version>${jetty.servlet.api.version}</version>
+      </dependency>
+      <dependency>
+        <groupId>org.glassfish.web</groupId>
+        <artifactId>javax.servlet.jsp.jstl</artifactId>
+        <version>1.2.5</version>
+      </dependency>
+      <dependency>
+        <groupId>org.mortbay.jasper</groupId>
+        <artifactId>apache-jsp</artifactId>
+        <version>${jsp.impl.version}</version>
+      </dependency>
+      <dependency>
+        <groupId>xalan</groupId>
+        <artifactId>xalan</artifactId>
+        <version>2.7.3</version>
+      </dependency>
+    </dependencies>
+  </dependencyManagement>
+
   <build>
-    <sourceDirectory>${project.build.directory}/generated-sources/ee8</sourceDirectory>
-    <testSourceDirectory>${project.build.directory}/generated-test-sources/ee8</testSourceDirectory>
     <pluginManagement>
       <plugins>
         <plugin>
@@ -116,10 +311,10 @@
         <executions>
           <execution>
             <id>copy-ee8-resources</id>
-            <phase>generate-resources</phase>
             <goals>
               <goal>copy-resources</goal>
             </goals>
+            <phase>generate-resources</phase>
             <configuration>
               <outputDirectory>${project.build.outputDirectory}</outputDirectory>
               <mavenFilteringHints>
@@ -134,31 +329,31 @@
             </configuration>
           </execution>
           <!-- TODO this would be nice to reuse mod files from ee9 but the mod file name need to be changed as well as the content -->
-<!--          <execution>-->
-<!--            <id>copy-ee8-modules-resources</id>-->
-<!--            <phase>generate-resources</phase>-->
-<!--            <goals>-->
-<!--              <goal>copy-resources</goal>-->
-<!--            </goals>-->
-<!--            <configuration>-->
-<!--              <mavenFilteringHints>-->
-<!--                <mavenFilteringHint>ee9-to-ee8</mavenFilteringHint>-->
-<!--              </mavenFilteringHints>-->
-<!--              <outputDirectory>${project.build.directory}/jetty-config-files</outputDirectory>-->
-<!--              <resources>-->
-<!--                <resource>-->
-<!--                  <filtering>true</filtering>-->
-<!--                  <directory>${ee9.module.path}/src/main/config</directory>-->
-<!--                </resource>-->
-<!--              </resources>-->
-<!--            </configuration>-->
-<!--          </execution>-->
+          <!--          <execution>-->
+          <!--            <id>copy-ee8-modules-resources</id>-->
+          <!--            <phase>generate-resources</phase>-->
+          <!--            <goals>-->
+          <!--              <goal>copy-resources</goal>-->
+          <!--            </goals>-->
+          <!--            <configuration>-->
+          <!--              <mavenFilteringHints>-->
+          <!--                <mavenFilteringHint>ee9-to-ee8</mavenFilteringHint>-->
+          <!--              </mavenFilteringHints>-->
+          <!--              <outputDirectory>${project.build.directory}/jetty-config-files</outputDirectory>-->
+          <!--              <resources>-->
+          <!--                <resource>-->
+          <!--                  <filtering>true</filtering>-->
+          <!--                  <directory>${ee9.module.path}/src/main/config</directory>-->
+          <!--                </resource>-->
+          <!--              </resources>-->
+          <!--            </configuration>-->
+          <!--          </execution>-->
           <execution>
             <id>copy-ee8-test-resources</id>
-            <phase>generate-test-resources</phase>
             <goals>
               <goal>copy-resources</goal>
             </goals>
+            <phase>generate-test-resources</phase>
             <configuration>
               <mavenFilteringHints>
                 <mavenFilteringHint>ee9-to-ee8</mavenFilteringHint>
@@ -180,240 +375,45 @@
         <executions>
           <execution>
             <id>generate-ee8-sources</id>
-            <phase>generate-sources</phase>
             <goals>
               <goal>modify-sources-ee9-to-ee8</goal>
             </goals>
+            <phase>generate-sources</phase>
             <configuration>
               <sourceProjectLocation>${ee9.module.path}/src/main/java</sourceProjectLocation>
               <outputDirectory>${project.build.sourceDirectory}</outputDirectory>
             </configuration>
           </execution>
           <execution>
-            <id>generate-ee8-test-sources</id>
-            <phase>generate-test-sources</phase>
-            <goals>
-              <goal>modify-sources-ee9-to-ee8</goal>
-            </goals>
-            <configuration>
-              <testSources>true</testSources>
-              <sourceProjectLocation>${ee9.module.path}/src/test/java</sourceProjectLocation>
-              <outputDirectory>${project.build.testSourceDirectory}</outputDirectory>
-            </configuration>
-          </execution>
-          <execution>
             <id>modify-services-loader-ee9-to-ee8</id>
+            <goals>
+              <goal>modify-service-loader-files-ee9-to-ee8</goal>
+            </goals>
             <phase>process-resources</phase>
             <configuration>
               <extraFileNames>
                 <extraFileName>org.apache.juli.logging.Log</extraFileName>
               </extraFileNames>
             </configuration>
+          </execution>
+          <execution>
+            <id>generate-ee8-test-sources</id>
             <goals>
-              <goal>modify-service-loader-files-ee9-to-ee8</goal>
+              <goal>modify-sources-ee9-to-ee8</goal>
             </goals>
+            <phase>generate-test-sources</phase>
+            <configuration>
+              <testSources>true</testSources>
+              <sourceProjectLocation>${ee9.module.path}/src/test/java</sourceProjectLocation>
+              <outputDirectory>${project.build.testSourceDirectory}</outputDirectory>
+            </configuration>
           </execution>
         </executions>
       </plugin>
     </plugins>
+    <sourceDirectory>${project.build.directory}/generated-sources/ee8</sourceDirectory>
+    <testSourceDirectory>${project.build.directory}/generated-test-sources/ee8</testSourceDirectory>
   </build>
-
-  <dependencyManagement>
-
-      <!-- Jetty EE 8 Dependencies -->
-      <dependencies>
-        <dependency>
-          <groupId>org.eclipse.jetty.toolchain</groupId>
-          <artifactId>jetty-servlet-api</artifactId>
-          <version>${jetty.servlet.api.version}</version>
-        </dependency>
-        <dependency>
-          <groupId>jakarta.transaction</groupId>
-          <artifactId>jakarta.transaction-api</artifactId>
-          <version>${jakarta.transaction-api.version}</version>
-        </dependency>
-        <dependency>
-          <groupId>jakarta.annotation</groupId>
-          <artifactId>jakarta.annotation-api</artifactId>
-          <version>${jakarta.annotation.api.version}</version>
-        </dependency>
-        <dependency>
-          <groupId>org.mortbay.jasper</groupId>
-          <artifactId>apache-jsp</artifactId>
-          <version>${jsp.impl.version}</version>
-        </dependency>
-        <dependency>
-          <groupId>jakarta.activation</groupId>
-          <artifactId>jakarta.activation-api</artifactId>
-          <version>1.2.2</version>
-        </dependency>
-        <dependency>
-          <groupId>jakarta.servlet.jsp.jstl</groupId>
-          <artifactId>jakarta.servlet.jsp.jstl-api</artifactId>
-          <version>1.2.7</version>
-        </dependency>
-        <dependency>
-          <groupId>jakarta.servlet.jsp</groupId>
-          <artifactId>jakarta.servlet.jsp-api</artifactId>
-          <version>2.3.6</version>
-        </dependency>
-        <dependency>
-          <groupId>org.eclipse.jetty.orbit</groupId>
-          <artifactId>javax.security.auth.message</artifactId>
-          <version>1.0.0.v201108011116</version>
-        </dependency>
-        <dependency>
-          <groupId>org.glassfish.web</groupId>
-          <artifactId>javax.servlet.jsp.jstl</artifactId>
-          <version>1.2.5</version>
-        </dependency>
-        <dependency>
-          <groupId>xalan</groupId>
-          <artifactId>xalan</artifactId>
-          <version>2.7.3</version>
-        </dependency>
-        <dependency>
-          <groupId>org.eclipse.jetty.toolchain</groupId>
-          <artifactId>jetty-javax-websocket-api</artifactId>
-          <version>${jakarta.websocket.api.version}</version>
-        </dependency>
-        <dependency>
-          <groupId>org.eclipse.jetty.orbit</groupId>
-          <artifactId>javax.mail.glassfish</artifactId>
-          <version>${javax.mail.glassfish.version}</version>
-        </dependency>
-        <dependency>
-          <groupId>org.eclipse.jetty.ee8</groupId>
-          <artifactId>jetty-ee8-apache-jsp</artifactId>
-          <version>${project.version}</version>
-        </dependency>
-        <dependency>
-          <groupId>org.eclipse.jetty.ee8</groupId>
-          <artifactId>jetty-ee8-annotations</artifactId>
-          <version>${project.version}</version>
-        </dependency>
-        <dependency>
-          <groupId>org.eclipse.jetty.ee8</groupId>
-          <artifactId>jetty-ee8-proxy</artifactId>
-          <version>${project.version}</version>
-        </dependency>
-        <dependency>
-          <groupId>org.eclipse.jetty.ee8</groupId>
-          <artifactId>jetty-ee8-quickstart</artifactId>
-          <version>${project.version}</version>
-        </dependency>
-        <dependency>
-          <groupId>org.eclipse.jetty.ee8</groupId>
-          <artifactId>jetty-ee8-nested</artifactId>
-          <version>${project.version}</version>
-        </dependency>
-        <dependency>
-          <groupId>org.eclipse.jetty.ee8</groupId>
-          <artifactId>jetty-ee8-security</artifactId>
-          <version>${project.version}</version>
-        </dependency>
-        <dependency>
-          <groupId>org.eclipse.jetty.ee8</groupId>
-          <artifactId>jetty-ee8-servlet</artifactId>
-          <version>${project.version}</version>
-        </dependency>
-        <dependency>
-          <groupId>org.eclipse.jetty.ee8</groupId>
-          <artifactId>jetty-ee8-webapp</artifactId>
-          <version>${project.version}</version>
-        </dependency>
-        <dependency>
-          <groupId>org.eclipse.jetty.ee8</groupId>
-          <artifactId>jetty-ee8-servlets</artifactId>
-          <version>${project.version}</version>
-        </dependency>
-        <dependency>
-          <groupId>org.eclipse.jetty.ee8</groupId>
-          <artifactId>jetty-ee8-jndi</artifactId>
-          <version>${project.version}</version>
-        </dependency>
-        <dependency>
-          <groupId>org.eclipse.jetty.ee8</groupId>
-          <artifactId>jetty-ee8-plus</artifactId>
-          <version>${project.version}</version>
-        </dependency>
-        <dependency>
-          <groupId>org.eclipse.jetty.ee8</groupId>
-          <artifactId>jetty-ee8-openid</artifactId>
-          <version>${project.version}</version>
-        </dependency>
-        <dependency>
-          <groupId>org.eclipse.jetty.ee8</groupId>
-          <artifactId>jetty-ee8-glassfish-jstl</artifactId>
-          <version>${project.version}</version>
-        </dependency>
-        <dependency>
-          <groupId>org.eclipse.jetty.ee8.websocket</groupId>
-          <artifactId>jetty-ee8-websocket-javax-common</artifactId>
-          <version>${project.version}</version>
-        </dependency>
-        <dependency>
-          <groupId>org.eclipse.jetty.ee8.websocket</groupId>
-          <artifactId>jetty-ee8-websocket-javax-client</artifactId>
-          <version>${project.version}</version>
-        </dependency>
-        <dependency>
-          <groupId>org.eclipse.jetty.ee8.websocket</groupId>
-          <artifactId>jetty-ee8-websocket-javax-client-webapp</artifactId>
-          <version>${project.version}</version>
-        </dependency>
-        <dependency>
-          <groupId>org.eclipse.jetty.ee8.websocket</groupId>
-          <artifactId>jetty-ee8-websocket-servlet</artifactId>
-          <version>${project.version}</version>
-        </dependency>
-        <dependency>
-          <groupId>org.eclipse.jetty.ee8.websocket</groupId>
-          <artifactId>jetty-ee8-websocket-jetty-api</artifactId>
-          <version>${project.version}</version>
-        </dependency>
-        <dependency>
-          <groupId>org.eclipse.jetty.ee8.websocket</groupId>
-          <artifactId>jetty-ee8-websocket-jetty-common</artifactId>
-          <version>${project.version}</version>
-        </dependency>
-        <dependency>
-          <groupId>org.eclipse.jetty.ee8.websocket</groupId>
-          <artifactId>jetty-ee8-websocket-jetty-client</artifactId>
-          <version>${project.version}</version>
-        </dependency>
-        <dependency>
-          <groupId>org.eclipse.jetty.ee8.websocket</groupId>
-          <artifactId>jetty-ee8-websocket-jetty-client-webapp</artifactId>
-          <version>${project.version}</version>
-        </dependency>
-        <dependency>
-          <groupId>org.eclipse.jetty.ee8.websocket</groupId>
-          <artifactId>jetty-ee8-websocket-jetty-server</artifactId>
-          <version>${project.version}</version>
-        </dependency>
-        <dependency>
-          <groupId>org.eclipse.jetty.ee8.websocket</groupId>
-          <artifactId>jetty-ee8-websocket-javax-server</artifactId>
-          <version>${project.version}</version>
-        </dependency>
-        <dependency>
-          <groupId>org.eclipse.jetty.ee8.demos</groupId>
-          <artifactId>jetty-ee8-demo-mock-resources</artifactId>
-          <version>${project.version}</version>
-        </dependency>
-        <dependency>
-          <groupId>org.eclipse.jetty.ee8.demos</groupId>
-          <artifactId>jetty-ee8-demo-web-fragment</artifactId>
-          <version>${project.version}</version>
-        </dependency>
-        <dependency>
-          <groupId>org.eclipse.jetty.ee8.demos</groupId>
-          <artifactId>jetty-ee8-demo-container-initializer</artifactId>
-          <version>${project.version}</version>
-        </dependency>
-      </dependencies>
-  </dependencyManagement>
 
   <profiles>
     <profile>
@@ -430,10 +430,10 @@
             <executions>
               <execution>
                 <id>ee8-report</id>
-                <phase>validate</phase>
                 <goals>
                   <goal>dependency-updates-aggregate-report</goal>
                 </goals>
+                <phase>validate</phase>
                 <configuration>
                   <formats>
                     <format>html</format>

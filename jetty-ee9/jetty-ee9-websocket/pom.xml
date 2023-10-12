@@ -1,34 +1,34 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <project xmlns="http://maven.apache.org/POM/4.0.0" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/maven-v4_0_0.xsd">
+
+  <modelVersion>4.0.0</modelVersion>
   <parent>
     <groupId>org.eclipse.jetty.ee9</groupId>
     <artifactId>jetty-ee9</artifactId>
-    <version>12.0.2-SNAPSHOT</version>
+    <version>12.0.3-SNAPSHOT</version>
     <relativePath>../pom.xml</relativePath>
   </parent>
-
-  <modelVersion>4.0.0</modelVersion>
   <groupId>org.eclipse.jetty.ee9.websocket</groupId>
   <artifactId>jetty-ee9-websocket</artifactId>
-  <name>EE9 :: Websocket</name>
   <packaging>pom</packaging>
-
-  <properties>
-    <sonar.skip>true</sonar.skip>
-  </properties>
+  <name>EE9 :: Websocket</name>
 
   <modules>
-    <module>jetty-ee9-websocket-jakarta-common</module>
     <module>jetty-ee9-websocket-jakarta-client</module>
     <module>jetty-ee9-websocket-jakarta-client-webapp</module>
+    <module>jetty-ee9-websocket-jakarta-common</module>
     <module>jetty-ee9-websocket-jakarta-server</module>
     <module>jetty-ee9-websocket-jakarta-tests</module>
     <module>jetty-ee9-websocket-jetty-api</module>
-    <module>jetty-ee9-websocket-jetty-common</module>
     <module>jetty-ee9-websocket-jetty-client</module>
     <module>jetty-ee9-websocket-jetty-client-webapp</module>
+    <module>jetty-ee9-websocket-jetty-common</module>
     <module>jetty-ee9-websocket-jetty-server</module>
     <module>jetty-ee9-websocket-jetty-tests</module>
     <module>jetty-ee9-websocket-servlet</module>
   </modules>
+
+  <properties>
+    <sonar.skip>true</sonar.skip>
+  </properties>
 </project>

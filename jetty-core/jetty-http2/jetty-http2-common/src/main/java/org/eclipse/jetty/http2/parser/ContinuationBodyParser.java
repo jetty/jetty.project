@@ -76,16 +76,28 @@ public class ContinuationBodyParser extends BodyParser
                     int remaining = buffer.remaining();
                     if (remaining < length)
                     {
-                        headerBlockFragments.storeFragment(buffer, remaining, false);
+                        ContinuationFrame frame = new ContinuationFrame(getStreamId(), false);
+                        if (!rateControlOnEvent(frame))
+                            return connectionFailure(buffer, ErrorCode.ENHANCE_YOUR_CALM_ERROR.code, "invalid_continuation_frame_rate");
+
+                        if (!headerBlockFragments.storeFragment(buffer, remaining, false))
+                            return connectionFailure(buffer, ErrorCode.PROTOCOL_ERROR.code, "invalid_continuation_stream");
+
                         length -= remaining;
                         break;
                     }
                     else
                     {
-                        boolean last = hasFlag(Flags.END_HEADERS);
-                        headerBlockFragments.storeFragment(buffer, length, last);
+                        boolean endHeaders = hasFlag(Flags.END_HEADERS);
+                        ContinuationFrame frame = new ContinuationFrame(getStreamId(), endHeaders);
+                        if (!rateControlOnEvent(frame))
+                            return connectionFailure(buffer, ErrorCode.ENHANCE_YOUR_CALM_ERROR.code, "invalid_continuation_frame_rate");
+
+                        if (!headerBlockFragments.storeFragment(buffer, length, endHeaders))
+                            return connectionFailure(buffer, ErrorCode.PROTOCOL_ERROR.code, "invalid_continuation_stream");
+
                         reset();
-                        if (last)
+                        if (endHeaders)
                             return onHeaders(buffer);
                         return true;
                     }
@@ -104,17 +116,21 @@ public class ContinuationBodyParser extends BodyParser
         RetainableByteBuffer headerBlock = headerBlockFragments.complete();
         MetaData metaData = headerBlockParser.parse(headerBlock.getByteBuffer(), headerBlock.remaining());
         headerBlock.release();
-        if (metaData == null)
-            return true;
+        HeadersFrame frame = new HeadersFrame(getStreamId(), metaData, headerBlockFragments.getPriorityFrame(), headerBlockFragments.isEndStream());
+        headerBlockFragments.reset();
+
         if (metaData == HeaderBlockParser.SESSION_FAILURE)
             return false;
-        HeadersFrame frame = new HeadersFrame(getStreamId(), metaData, headerBlockFragments.getPriorityFrame(), headerBlockFragments.isEndStream());
-        if (metaData == HeaderBlockParser.STREAM_FAILURE)
+
+        if (metaData != HeaderBlockParser.STREAM_FAILURE)
+        {
+            notifyHeaders(frame);
+        }
+        else
         {
             if (!rateControlOnEvent(frame))
-                return connectionFailure(buffer, ErrorCode.ENHANCE_YOUR_CALM_ERROR.code, "invalid_continuation_frame_rate");
+                return connectionFailure(buffer, ErrorCode.ENHANCE_YOUR_CALM_ERROR.code, "invalid_headers_frame_rate");
         }
-        notifyHeaders(frame);
         return true;
     }
 

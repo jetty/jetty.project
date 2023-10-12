@@ -43,11 +43,15 @@ import org.junit.jupiter.params.provider.MethodSource;
 
 import static org.awaitility.Awaitility.await;
 import static org.hamcrest.MatcherAssert.assertThat;
+import static org.hamcrest.Matchers.allOf;
 import static org.hamcrest.Matchers.both;
 import static org.hamcrest.Matchers.equalTo;
 import static org.hamcrest.Matchers.greaterThan;
+import static org.hamcrest.Matchers.greaterThanOrEqualTo;
 import static org.hamcrest.Matchers.is;
 import static org.hamcrest.Matchers.lessThan;
+import static org.hamcrest.Matchers.lessThanOrEqualTo;
+import static org.junit.jupiter.api.Assertions.fail;
 
 public class EventsHandlerTest extends AbstractTest
 {
@@ -210,19 +214,24 @@ public class EventsHandlerTest extends AbstractTest
             .send();
 
         assertThat(response.getStatus(), is(200));
-        int events = switch (transport)
+        switch (transport)
         {
-            // Two reads, two writes, two writes complete.
-            case HTTP -> 10;
-            case HTTPS -> 10;
-            case FCGI -> 10;
-            case UNIX_DOMAIN -> 10;
-            // One read, one write, one write complete.
-            case H2 -> 7;
-            case H2C -> 7;
-            case H3 -> 7;
-        };
-        await().atMost(1, TimeUnit.SECONDS).until(eventsHandler.exceptions::size, is(4 * events));
+            // Two reads, maybe one null read, two writes, two writes complete.
+            case HTTP:
+            case HTTPS:
+            case FCGI:
+            case UNIX_DOMAIN:
+                await().atMost(5, TimeUnit.SECONDS).until(() -> eventsHandler.exceptions.size() / 4, allOf(greaterThanOrEqualTo(10), lessThanOrEqualTo(11)));
+                break;
+            // One read, maybe one null read, one write, one write complete.
+            case H2:
+            case H2C:
+            case H3:
+                await().atMost(5, TimeUnit.SECONDS).until(() -> eventsHandler.exceptions.size() / 4, allOf(greaterThanOrEqualTo(7), lessThanOrEqualTo(8)));
+                break;
+            default:
+                fail("Missing assertion for transport " + transport);
+        }
     }
 
     @ParameterizedTest
@@ -249,19 +258,7 @@ public class EventsHandlerTest extends AbstractTest
 
         assertThat(latch.await(5, TimeUnit.SECONDS), is(true));
         assertThat(status.get(), is(200));
-        int events = switch (transport)
-        {
-            // Reads return data, trailers.
-            case HTTP -> 10;
-            case HTTPS -> 10;
-            case FCGI -> 10;
-            case UNIX_DOMAIN -> 10;
-            // Reads return data, null, trailers.
-            case H2 -> 11;
-            case H2C -> 11;
-            case H3 -> 11;
-        };
-        await().atMost(1, TimeUnit.SECONDS).until(eventsHandler.exceptions::size, is(4 * events));
+        await().atMost(5, TimeUnit.SECONDS).until(() -> eventsHandler.exceptions.size() / 4, allOf(greaterThanOrEqualTo(10), lessThanOrEqualTo(12)));
     }
 
     @ParameterizedTest

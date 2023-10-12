@@ -204,7 +204,7 @@ public class StreamCountTest extends AbstractTest
         ByteBufferPool.Accumulator accumulator = new ByteBufferPool.Accumulator();
         generator.control(accumulator, frame3);
         generator.data(accumulator, data3, data3.remaining());
-        ((HTTP2Session)session).getEndPoint().write(Callback.NOOP, accumulator.getByteBuffers().toArray(ByteBuffer[]::new));
+        ((HTTP2Session)session).getEndPoint().write(Callback.from(accumulator::release), accumulator.getByteBuffers().toArray(ByteBuffer[]::new));
         // Expect 2 RST_STREAM frames.
         assertTrue(sessionResetLatch.await(5, TimeUnit.SECONDS));
 
