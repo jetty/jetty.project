@@ -672,7 +672,6 @@ public class StreamResetTest extends AbstractTest
 
         // Reset and consume.
         stream.reset(new ResetFrame(stream.getId(), ErrorCode.CANCEL_STREAM_ERROR.code), Callback.NOOP);
-
         assertTrue(writeLatch.await(5, TimeUnit.SECONDS));
     }
 
@@ -764,7 +763,6 @@ public class StreamResetTest extends AbstractTest
 
         // Reset and consume.
         stream.reset(new ResetFrame(stream.getId(), ErrorCode.CANCEL_STREAM_ERROR.code), Callback.NOOP);
-
         assertTrue(writeLatch.await(5, TimeUnit.SECONDS));
     }
 
