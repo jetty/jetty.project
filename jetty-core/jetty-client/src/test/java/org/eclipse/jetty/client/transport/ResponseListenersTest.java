@@ -14,11 +14,13 @@
 package org.eclipse.jetty.client.transport;
 
 import java.nio.ByteBuffer;
+import java.util.Arrays;
 import java.util.List;
 import java.util.Queue;
 import java.util.concurrent.ConcurrentLinkedQueue;
 import java.util.concurrent.CopyOnWriteArrayList;
 
+import org.eclipse.jetty.client.Response;
 import org.eclipse.jetty.io.Content;
 import org.junit.jupiter.api.Test;
 
@@ -30,33 +32,42 @@ public class ResponseListenersTest
     @Test
     public void testContentSourceDemultiplexerSpuriousWakeup()
     {
-        SimpleSource contentSource = new SimpleSource();
-        contentSource.add(Content.Chunk.from(ByteBuffer.wrap(new byte[] {1}), false));
-        contentSource.addSpuriousWakup();
-        contentSource.add(Content.Chunk.from(ByteBuffer.wrap(new byte[] {2}), false));
-        contentSource.addSpuriousWakup();
-        contentSource.add(Content.Chunk.from(ByteBuffer.wrap(new byte[] {3}), true));
+        SimpleSource contentSource = new SimpleSource(Arrays.asList(
+            Content.Chunk.from(ByteBuffer.wrap(new byte[]{1}), false),
+            null,
+            Content.Chunk.from(ByteBuffer.wrap(new byte[]{2}), false),
+            null,
+            Content.Chunk.from(ByteBuffer.wrap(new byte[]{3}), true)
+        ));
 
         List<Content.Chunk> chunks = new CopyOnWriteArrayList<>();
 
         ResponseListeners responseListeners = new ResponseListeners();
+        Response.ContentSourceListener contentSourceListener = (r, source) ->
+        {
+            Runnable runnable = new Runnable()
+            {
+                @Override
+                public void run()
+                {
+                    Content.Chunk chunk = source.read();
+                    chunks.add(chunk);
+                    if (chunk == null)
+                    {
+                        source.demand(this);
+                        return;
+                    }
+                    chunk.release();
+                    if (!chunk.isLast())
+                        source.demand(this);
+                }
+            };
+            source.demand(runnable);
+        };
         // Add 2 ContentSourceListeners to enable the use of ContentSourceDemultiplexer.
-        responseListeners.addContentSourceListener((r, cs) -> new Consumer(cs)
-        {
-            @Override
-            void onChunk(Content.Chunk chunk)
-            {
-                chunks.add(chunk);
-            }
-        });
-        responseListeners.addContentSourceListener((r, cs) -> new Consumer(cs)
-        {
-            @Override
-            void onChunk(Content.Chunk chunk)
-            {
-                chunks.add(chunk);
-            }
-        });
+        responseListeners.addContentSourceListener(contentSourceListener);
+        responseListeners.addContentSourceListener(contentSourceListener);
+
         responseListeners.notifyContentSource(null, contentSource);
 
         assertThat("Chunks: " + chunks, chunks.size(), is(6));
@@ -74,37 +85,9 @@ public class ResponseListenersTest
         assertThat(chunks.get(5).getByteBuffer().get(), is((byte)3));
     }
 
-    private abstract static class Consumer implements Runnable
-    {
-        private final Content.Source source;
-
-        private Consumer(Content.Source source)
-        {
-            this.source = source;
-            source.demand(this);
-        }
-
-        @Override
-        public void run()
-        {
-            Content.Chunk chunk = source.read();
-            onChunk(chunk);
-            if (chunk == null)
-            {
-                source.demand(this);
-                return;
-            }
-            chunk.release();
-            if (!chunk.isLast())
-                source.demand(this);
-        }
-
-        abstract void onChunk(Content.Chunk chunk);
-    }
-
     private static class SimpleSource implements Content.Source
     {
-        private static final Content.Chunk NULL = new Content.Chunk()
+        private static final Content.Chunk SPURIOUS_WAKEUP = new Content.Chunk()
         {
             @Override
             public ByteBuffer getByteBuffer()
@@ -121,27 +104,11 @@ public class ResponseListenersTest
         private final Queue<Content.Chunk> chunks = new ConcurrentLinkedQueue<>();
         private Runnable demand;
 
-        // Add a chunk to be served normally
-        void add(Content.Chunk chunk)
+        public SimpleSource(List<Content.Chunk> chunks)
         {
-            chunks.add(chunk);
-            if (demand != null)
+            for (Content.Chunk chunk : chunks)
             {
-                Runnable r = demand;
-                demand = null;
-                r.run();
-            }
-        }
-
-        // Add a spurious wakeup
-        void addSpuriousWakup()
-        {
-            chunks.add(NULL);
-            if (demand != null)
-            {
-                Runnable r = demand;
-                demand = null;
-                r.run();
+                this.chunks.add(chunk != null ? chunk : SPURIOUS_WAKEUP);
             }
         }
 
@@ -152,7 +119,7 @@ public class ResponseListenersTest
                 throw new IllegalStateException();
 
             Content.Chunk chunk = chunks.poll();
-            return chunk == NULL ? null : chunk;
+            return chunk == SPURIOUS_WAKEUP ? null : chunk;
         }
 
         @Override
