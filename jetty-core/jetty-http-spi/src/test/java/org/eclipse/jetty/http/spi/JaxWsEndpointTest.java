@@ -28,8 +28,8 @@ import org.eclipse.jetty.server.ServerConnector;
 import org.eclipse.jetty.server.handler.ContextHandlerCollection;
 import org.eclipse.jetty.util.component.LifeCycle;
 import org.eclipse.jetty.util.thread.QueuedThreadPool;
-import org.junit.jupiter.api.AfterAll;
-import org.junit.jupiter.api.BeforeAll;
+import org.junit.jupiter.api.AfterEach;
+import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 
 import static org.hamcrest.MatcherAssert.assertThat;
@@ -38,17 +38,17 @@ import static org.hamcrest.Matchers.is;
 
 public class JaxWsEndpointTest
 {
-    private static StacklessLogging STACKLESS_LOGGING;
-    private static String URL_PREFIX;
-    private static Server SERVER;
-    private static HttpClient CLIENT;
+    private StacklessLogging stacklessLogging;
+    private String urlPrefix;
+    private Server server;
+    private HttpClient client;
 
     @Test
     public void testPostToURLWithoutTrailingSlash() throws Exception
     {
-        Endpoint.publish(URL_PREFIX + "/add", new AddService());
+        Endpoint.publish(urlPrefix + "/add", new AddService());
 
-        ContentResponse response = CLIENT.newRequest(URL_PREFIX)
+        ContentResponse response = client.newRequest(urlPrefix)
             .method(HttpMethod.POST)
             .path("/add")
             .send();
@@ -67,11 +67,11 @@ public class JaxWsEndpointTest
         }
     }
 
-    @BeforeAll
-    public static void setUp() throws Exception
+    @BeforeEach
+    public void setUp() throws Exception
     {
         LoggingUtil.init();
-        STACKLESS_LOGGING = new StacklessLogging("com.sun.xml.ws.transport.http.HttpAdapter");
+        stacklessLogging = new StacklessLogging(com.sun.xml.ws.transport.http.HttpAdapter.class);
 
         int port;
         try (ServerSocket serverSocket = new ServerSocket())
@@ -79,30 +79,31 @@ public class JaxWsEndpointTest
             serverSocket.setReuseAddress(true);
             serverSocket.bind(new InetSocketAddress("localhost", 0));
             port = serverSocket.getLocalPort();
-            URL_PREFIX = "http://localhost:" + port;
+            urlPrefix = "http://localhost:" + port;
         }
 
-        SERVER = new Server(new DelegatingThreadPool(new QueuedThreadPool()));
-        ServerConnector connector = new ServerConnector(SERVER);
+        server = new Server(new DelegatingThreadPool(new QueuedThreadPool()));
+        ServerConnector connector = new ServerConnector(server);
         connector.setPort(port);
-        SERVER.addConnector(connector);
-        SERVER.setHandler(new ContextHandlerCollection());
-        SERVER.start();
+        server.addConnector(connector);
+        server.setHandler(new ContextHandlerCollection());
+        server.start();
 
-        JettyHttpServerProvider.setServer(SERVER);
+        JettyHttpServerProvider.setServer(server);
         System.setProperty("com.sun.net.httpserver.HttpServerProvider", JettyHttpServerProvider.class.getName());
 
-        CLIENT = new HttpClient();
-        CLIENT.start();
+        client = new HttpClient();
+        client.start();
     }
 
-    @AfterAll
-    public static void tearDown()
+    @AfterEach
+    public void tearDown()
     {
-        LifeCycle.stop(CLIENT);
-        LifeCycle.stop(SERVER);
+        LifeCycle.stop(client);
+        LifeCycle.stop(server);
         JettyHttpServerProvider.setServer(null);
         System.clearProperty("com.sun.net.httpserver.HttpServerProvider");
-        STACKLESS_LOGGING.close();
+        stacklessLogging.close();
+        LoggingUtil.end();
     }
 }
