@@ -260,8 +260,8 @@ public class StatisticsHandlerTest
         assertEquals(1, _statsHandler.getRequests());
         assertEquals(1, _statsHandler.getRequestsActive());
         assertEquals(1, _statsHandler.getRequestsActiveMax());
-        assertEquals(1, _statsHandler.getHandleActive());
-        assertEquals(1, _statsHandler.getHandleActiveMax());
+        assertEquals(1, _statsHandler.getHandlesActive());
+        assertEquals(1, _statsHandler.getHandlesActiveMax());
         assertEquals(0, _statsHandler.getErrors());
 
         barrier[1].await();
@@ -271,8 +271,8 @@ public class StatisticsHandlerTest
         assertEquals(1, _statsHandler.getRequests());
         assertEquals(0, _statsHandler.getRequestsActive());
         assertEquals(1, _statsHandler.getRequestsActiveMax());
-        assertEquals(0, _statsHandler.getHandleActive());
-        assertEquals(1, _statsHandler.getHandleActiveMax());
+        assertEquals(0, _statsHandler.getHandlesActive());
+        assertEquals(1, _statsHandler.getHandlesActiveMax());
         assertEquals(1, _statsHandler.getResponses2xx());
         assertEquals(0, _statsHandler.getErrors());
 
@@ -289,8 +289,8 @@ public class StatisticsHandlerTest
         assertEquals(2, _statsHandler.getRequests());
         assertEquals(1, _statsHandler.getRequestsActive());
         assertEquals(1, _statsHandler.getRequestsActiveMax());
-        assertEquals(1, _statsHandler.getHandleActive());
-        assertEquals(1, _statsHandler.getHandleActiveMax());
+        assertEquals(1, _statsHandler.getHandlesActive());
+        assertEquals(1, _statsHandler.getHandlesActiveMax());
         assertEquals(0, _statsHandler.getErrors());
 
         barrier[1].await();
@@ -301,8 +301,8 @@ public class StatisticsHandlerTest
         assertEquals(2, _statsHandler.getRequests());
         assertEquals(0, _statsHandler.getRequestsActive());
         assertEquals(1, _statsHandler.getRequestsActiveMax());
-        assertEquals(0, _statsHandler.getHandleActive());
-        assertEquals(1, _statsHandler.getHandleActiveMax());
+        assertEquals(0, _statsHandler.getHandlesActive());
+        assertEquals(1, _statsHandler.getHandlesActiveMax());
         assertEquals(2, _statsHandler.getResponses2xx());
         assertEquals(0, _statsHandler.getErrors());
     }
@@ -329,8 +329,8 @@ public class StatisticsHandlerTest
         assertEquals(2, _statsHandler.getRequests());
         assertEquals(2, _statsHandler.getRequestsActive());
         assertEquals(2, _statsHandler.getRequestsActiveMax());
-        assertEquals(2, _statsHandler.getHandleActive());
-        assertEquals(2, _statsHandler.getHandleActiveMax());
+        assertEquals(2, _statsHandler.getHandlesActive());
+        assertEquals(2, _statsHandler.getHandlesActiveMax());
         assertEquals(0, _statsHandler.getErrors());
 
         barrier[1].await();
@@ -340,8 +340,8 @@ public class StatisticsHandlerTest
         assertEquals(2, _statsHandler.getRequests());
         assertEquals(0, _statsHandler.getRequestsActive());
         assertEquals(2, _statsHandler.getRequestsActiveMax());
-        assertEquals(0, _statsHandler.getHandleActive());
-        assertEquals(2, _statsHandler.getHandleActiveMax());
+        assertEquals(0, _statsHandler.getHandlesActive());
+        assertEquals(2, _statsHandler.getHandlesActiveMax());
         assertEquals(2, _statsHandler.getResponses2xx());
         assertEquals(0, _statsHandler.getErrors());
     }
@@ -381,14 +381,14 @@ public class StatisticsHandlerTest
             assertEquals(1, _statistics.getConnections());
             assertEquals(1, _statsHandler.getRequests());
             assertEquals(1, _statsHandler.getRequestsActive());
-            assertEquals(1, _statsHandler.getHandleActive());
+            assertEquals(1, _statsHandler.getHandlesActive());
             barrier[1].await();
             barrier[2].await();
 
             assertEquals(1, _statistics.getConnections());
             assertEquals(1, _statsHandler.getRequests());
             assertEquals(1, _statsHandler.getRequestsActive());
-            assertEquals(1, _statsHandler.getHandleActive());
+            assertEquals(1, _statsHandler.getHandlesActive());
             barrier[3].await();
             barrier[4].await();
 
@@ -399,7 +399,7 @@ public class StatisticsHandlerTest
             assertEquals(1, _statistics.getConnections());
             assertEquals(1, _statsHandler.getRequests());
             assertEquals(0, _statsHandler.getRequestsActive());
-            assertEquals(0, _statsHandler.getHandleActive());
+            assertEquals(0, _statsHandler.getHandlesActive());
         }
     }
 
@@ -449,21 +449,21 @@ public class StatisticsHandlerTest
             assertEquals(1, _statistics.getConnections());
             assertEquals(1, _statsHandler.getRequests());
             assertEquals(1, _statsHandler.getRequestsActive());
-            assertEquals(1, _statsHandler.getHandleActive());
+            assertEquals(1, _statsHandler.getHandlesActive());
             barrier[1].await();
             barrier[2].await();
 
             assertEquals(1, _statistics.getConnections());
             assertEquals(1, _statsHandler.getRequests());
             assertEquals(1, _statsHandler.getRequestsActive());
-            assertEquals(1, _statsHandler.getHandleActive());
+            assertEquals(1, _statsHandler.getHandlesActive());
             barrier[3].await();
             barrier[4].await();
 
             assertEquals(1, _statistics.getConnections());
             assertEquals(1, _statsHandler.getRequests());
             assertEquals(1, _statsHandler.getRequestsActive());
-            assertEquals(0, _statsHandler.getHandleActive());
+            assertEquals(0, _statsHandler.getHandlesActive());
             barrier[5].await();
 
             String response = endp.getResponse();
@@ -473,7 +473,7 @@ public class StatisticsHandlerTest
             assertEquals(1, _statistics.getConnections());
             assertEquals(1, _statsHandler.getRequests());
             assertEquals(0, _statsHandler.getRequestsActive());
-            assertEquals(0, _statsHandler.getHandleActive());
+            assertEquals(0, _statsHandler.getHandlesActive());
         }
     }
 
@@ -504,7 +504,7 @@ public class StatisticsHandlerTest
         await().atMost(5, TimeUnit.SECONDS).until(_statsHandler::getRequestsActive, is(0));
         assertEquals(1, _statsHandler.getRequests(), "stats.requests");
         assertEquals(1, _statsHandler.getRequestsActiveMax(), "stats.requestsActiveMax");
-        assertEquals(1, _statsHandler.getHandleActiveMax(), "stats.dispatchedActiveMax");
+        assertEquals(1, _statsHandler.getHandlesActiveMax(), "stats.dispatchedActiveMax");
 
         // We get no recorded status, but we get a recorded thrown response.
         assertEquals(0, _statsHandler.getResponses1xx(), "stats.responses1xx");
@@ -544,7 +544,7 @@ public class StatisticsHandlerTest
         await().atMost(5, TimeUnit.SECONDS).until(_statsHandler::getRequestsActive, is(0));
         assertEquals(1, _statsHandler.getRequests(), "stats.requests");
         assertEquals(1, _statsHandler.getRequestsActiveMax(), "stats.requestsActiveMax");
-        assertEquals(1, _statsHandler.getHandleActiveMax(), "stats.dispatchedActiveMax");
+        assertEquals(1, _statsHandler.getHandlesActiveMax(), "stats.dispatchedActiveMax");
 
         // We get no recorded status, but we get a recorded thrown response.
         assertEquals(0, _statsHandler.getResponses1xx(), "stats.responses1xx");
@@ -595,7 +595,7 @@ public class StatisticsHandlerTest
         await().atMost(5, TimeUnit.SECONDS).until(_statsHandler::getRequestsActive, is(0));
         assertEquals(1, _statsHandler.getRequests(), "stats.requests");
         assertEquals(1, _statsHandler.getRequestsActiveMax(), "stats.requestsActiveMax");
-        assertEquals(1, _statsHandler.getHandleActiveMax(), "stats.dispatchedActiveMax");
+        assertEquals(1, _statsHandler.getHandlesActiveMax(), "stats.dispatchedActiveMax");
 
         // We get no recorded status, but we get a recorded thrown response.
         assertEquals(0, _statsHandler.getResponses1xx(), "stats.responses1xx");
@@ -636,8 +636,8 @@ public class StatisticsHandlerTest
         assertEquals(1, _statsHandler.getRequests());
         assertEquals(0, _statsHandler.getRequestsActive());
         assertEquals(1, _statsHandler.getRequestsActiveMax());
-        assertEquals(0, _statsHandler.getHandleActive());
-        assertEquals(1, _statsHandler.getHandleActiveMax());
+        assertEquals(0, _statsHandler.getHandlesActive());
+        assertEquals(1, _statsHandler.getHandlesActiveMax());
 
         // We get no recorded status, but we get a recorded thrown response.
         assertEquals(0, _statsHandler.getResponses1xx());
@@ -703,7 +703,7 @@ public class StatisticsHandlerTest
             barrier[1].await();
             assertEquals(1, _statsHandler.getRequests());
             assertEquals(1, _statsHandler.getRequestsActive());
-            assertEquals(1, _statsHandler.getHandleActive());
+            assertEquals(1, _statsHandler.getHandlesActive());
             barrier[2].await();
             assertTrue(_latchHandler.await());
             await().atMost(5, TimeUnit.SECONDS).until(_statsHandler::getRequestsActive, equalTo(0));
@@ -712,7 +712,7 @@ public class StatisticsHandlerTest
 
             assertEquals(1, _statsHandler.getRequests());
             assertEquals(0, _statsHandler.getRequestsActive());
-            assertEquals(0, _statsHandler.getHandleActive());
+            assertEquals(0, _statsHandler.getHandlesActive());
             assertEquals(1, _statsHandler.getResponses2xx());
 
             _statsHandler.dumpStdErr();
@@ -727,11 +727,11 @@ public class StatisticsHandlerTest
                 lessThan(TimeUnit.MILLISECONDS.toNanos(requestTime + wastedTime) * 5 / 4)));
             assertEquals(_statsHandler.getRequestTimeTotal(), _statsHandler.getRequestTimeMax());
             assertEquals(_statsHandler.getRequestTimeTotal(), _statsHandler.getRequestTimeMean(), 1.0);
-            assertThat(_statsHandler.getHandleTimeTotal(), allOf(
+            assertThat(_statsHandler.getHandlesTimeTotal(), allOf(
                 greaterThan(TimeUnit.MILLISECONDS.toNanos(handleTime + wastedTime) * 3 / 4),
                 lessThan(TimeUnit.MILLISECONDS.toNanos(handleTime + wastedTime) * 5 / 4)));
-            assertEquals(_statsHandler.getHandleTimeTotal(), _statsHandler.getHandleTimeMax());
-            assertEquals(_statsHandler.getHandleTimeTotal(), _statsHandler.getHandleTimeMean(), 1.0);
+            assertEquals(_statsHandler.getHandlesTimeTotal(), _statsHandler.getHandlesTimeMax());
+            assertEquals(_statsHandler.getHandlesTimeTotal(), _statsHandler.getHandlesTimeMean(), 1.0);
         }
     }
 

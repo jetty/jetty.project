@@ -186,44 +186,68 @@ public class StatisticsHandler extends EventsHandler
         return (int)_requestStats.getMax();
     }
 
-    @ManagedAttribute("total number of handles")
-    public int getHandleTotalCount()
+    @ManagedAttribute("total time spend in all request execution (in ns)")
+    public long getRequestTimeTotal()
+    {
+        return _requestTimeStats.getTotal();
+    }
+
+    @ManagedAttribute("maximum time spend executing requests (in ns)")
+    public long getRequestTimeMax()
+    {
+        return _requestTimeStats.getMax();
+    }
+
+    @ManagedAttribute("mean time spent executing requests (in ns)")
+    public double getRequestTimeMean()
+    {
+        return _requestTimeStats.getMean();
+    }
+
+    @ManagedAttribute("standard deviation for request execution (in ns)")
+    public double getRequestTimeStdDev()
+    {
+        return _requestTimeStats.getStdDev();
+    }
+
+    @ManagedAttribute("total number of requests in handle")
+    public int getHandlesTotalCount()
     {
         return (int)_handleStats.getTotal();
     }
 
-    @ManagedAttribute("number of handles")
-    public int getHandleActive()
+    @ManagedAttribute("current number of requests in handle")
+    public int getHandlesActive()
     {
         return (int)_handleStats.getCurrent();
     }
 
-    @ManagedAttribute("maximum number of active handles")
-    public int getHandleActiveMax()
+    @ManagedAttribute("maximum number of requests in handle")
+    public int getHandlesActiveMax()
     {
         return (int)_handleStats.getMax();
     }
 
     @ManagedAttribute("maximum time spend in handle (in ns)")
-    public long getHandleTimeMax()
+    public long getHandlesTimeMax()
     {
         return _handleTimeStats.getMax();
     }
 
     @ManagedAttribute("total time spent in handle (in ns)")
-    public long getHandleTimeTotal()
+    public long getHandlesTimeTotal()
     {
         return _handleTimeStats.getTotal();
     }
 
     @ManagedAttribute("mean time spent in handle (in ns)")
-    public double getHandleTimeMean()
+    public double getHandlesTimeMean()
     {
         return _handleTimeStats.getMean();
     }
 
-    @ManagedAttribute("standard deviation for dispatch handling (in ns)")
-    public double getDispatchedTimeStdDev()
+    @ManagedAttribute("standard deviation for the time spent in handle (in ns)")
+    public double getHandlesTimeStdDev()
     {
         return _handleTimeStats.getStdDev();
     }
@@ -264,34 +288,10 @@ public class StatisticsHandler extends EventsHandler
         return _responses5xx.intValue();
     }
 
-    @ManagedAttribute("number of requests that threw an exception during handling")
+    @ManagedAttribute("number of requests that threw an exception during handle")
     public int getHandlingFailures()
     {
         return _handlingFailures.intValue();
-    }
-
-    @ManagedAttribute("total time spend in all request execution (in ns)")
-    public long getRequestTimeTotal()
-    {
-        return _requestTimeStats.getTotal();
-    }
-
-    @ManagedAttribute("maximum time spend executing requests (in ns)")
-    public long getRequestTimeMax()
-    {
-        return _requestTimeStats.getMax();
-    }
-
-    @ManagedAttribute("mean time spent executing requests (in ns)")
-    public double getRequestTimeMean()
-    {
-        return _requestTimeStats.getMean();
-    }
-
-    @ManagedAttribute("standard deviation for request execution (in ns)")
-    public double getRequestTimeStdDev()
-    {
-        return _requestTimeStats.getStdDev();
     }
 
     @ManagedAttribute("bytes read count")
