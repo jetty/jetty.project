@@ -67,7 +67,7 @@
         <configuration>
           <instructions>
             <Bundle-SymbolicName>org.eclipse.jetty.ee8.osgi.boot;singleton:=true</Bundle-SymbolicName>
-            <Bundle-Activator>org.eclipse.jetty.ee8.osgi.boot.ee8Activator</Bundle-Activator>
+            <Bundle-Activator>org.eclipse.jetty.ee8.osgi.boot.EE8Activator</Bundle-Activator>
             <DynamicImport-Package>org.eclipse.jetty.*;version="[$(version;===;${parsedVersion.osgiVersion}),$(version;==+;${parsedVersion.osgiVersion}))", org.eclipse.jetty.ee8.*;version="[$(version;===;${parsedVersion.osgiVersion}),$(version;==+;${parsedVersion.osgiVersion}))"</DynamicImport-Package>
             <Import-Package>${osgi.slf4j.import.packages},
               javax.mail;version="2.0";resolution:=optional,
