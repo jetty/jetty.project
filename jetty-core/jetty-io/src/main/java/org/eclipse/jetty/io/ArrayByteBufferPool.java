@@ -204,7 +204,8 @@ public class ArrayByteBufferPool implements ByteBufferPool, Dumpable
                 buffer = newRetainableByteBuffer(bucket._capacity, direct, retainedBuffer ->
                 {
                     BufferUtil.reset(retainedBuffer.getByteBuffer());
-                    reservedEntry.release();
+                    if (!reservedEntry.release())
+                        reservedEntry.remove();
                 });
                 reservedEntry.enable(buffer, true);
                 if (direct)
