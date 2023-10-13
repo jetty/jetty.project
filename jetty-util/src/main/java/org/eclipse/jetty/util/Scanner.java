@@ -622,16 +622,13 @@ public class Scanner extends ContainerLifeCycle
             LOG.debug("Scanner start: autoStartScanning={}, reportExists={}, depth={}, rprtDirs={}, interval={}, filter={}, scannables={}",
                 isAutoStartScanning(), _reportExisting, _scanDepth, _reportDirs, _scanInterval, _filter, _scannables);
 
-        if (isAutoStartScanning())
-        {
-            // need to manually start _scheduler here
-            if (!_scheduler.isRunning())
-                _scheduler.start();
-            startScanning();
-        }
-
         // Start the scanner and managed beans (eg: the scheduler)
         super.doStart();
+
+        if (isAutoStartScanning())
+        {
+            startScanning();
+        }
     }
 
     /**
@@ -646,8 +643,6 @@ public class Scanner extends ContainerLifeCycle
     {
         if (!isRunning())
             throw new IllegalStateException("Scanner not started");
-        // the scheduling of tasks cannot work until _scheduler is running
-        assert _scheduler.isRunning();
 
         if (_scanningStarted)
             return;
