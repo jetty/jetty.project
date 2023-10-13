@@ -65,6 +65,8 @@ public class ServletContextRequest extends ContextRequest implements ServletCont
     static final Fields NO_PARAMS = new Fields(Collections.emptyMap());
     static final Fields BAD_PARAMS = new Fields(Collections.emptyMap());
 
+    private static final Object NULL_VALUE = new Object();
+
     public static ServletContextRequest getServletContextRequest(ServletRequest request)
     {
         if (request instanceof ServletApiRequest servletApiRequest &&
@@ -262,8 +264,6 @@ public class ServletContextRequest extends ContextRequest implements ServletCont
         return _queryEncoding;
     }
 
-    private static final Object NULL_VALUE = new Object();
-
     private Object getAttributeNotNullOrElse(String name, Supplier<Object> getter)
     {
         Object value = super.getAttribute(name);
@@ -320,7 +320,7 @@ public class ServletContextRequest extends ContextRequest implements ServletCont
         };
     }
 
-    void checkContainsNotNull(Set<String> names, String name, Supplier<Boolean> contains)
+    private void checkContainsNotNull(Set<String> names, String name, Supplier<Boolean> contains)
     {
         Object value = super.getAttribute(name);
         if (value == NULL_VALUE)
