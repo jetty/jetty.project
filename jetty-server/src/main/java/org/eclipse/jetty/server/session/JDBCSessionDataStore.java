@@ -15,8 +15,10 @@ package org.eclipse.jetty.server.session;
 
 import java.io.ByteArrayInputStream;
 import java.io.ByteArrayOutputStream;
+import java.io.IOException;
 import java.io.InputStream;
 import java.io.ObjectOutputStream;
+import java.io.OutputStream;
 import java.sql.Connection;
 import java.sql.DatabaseMetaData;
 import java.sql.PreparedStatement;
@@ -25,6 +27,8 @@ import java.sql.SQLException;
 import java.sql.Statement;
 import java.util.HashSet;
 import java.util.Set;
+import java.util.zip.GZIPInputStream;
+import java.util.zip.GZIPOutputStream;
 
 import org.eclipse.jetty.util.ClassLoadingObjectInputStream;
 import org.eclipse.jetty.util.StringUtil;
@@ -52,6 +56,10 @@ public class JDBCSessionDataStore extends AbstractSessionDataStore
     protected DatabaseAdaptor _dbAdaptor;
     protected SessionTableSchema _sessionTableSchema;
     protected boolean _schemaProvided;
+
+    private boolean _serializationSkipNonSerializable;
+    private boolean _serializationLogNonSerializable;
+    private boolean _serializationCompressData;
 
     private static final ByteArrayInputStream EMPTY = new ByteArrayInputStream(new byte[0]);
 
@@ -662,7 +670,7 @@ public class JDBCSessionDataStore extends AbstractSessionDataStore
                 data.setContextPath(_context.getCanonicalContextPath());
                 data.setVhost(_context.getVhost());
 
-                try (InputStream is = _dbAdaptor.getBlobInputStream(result, _sessionTableSchema.getMapColumn());
+                try (InputStream is = getBlobInputStream(result);
                      ClassLoadingObjectInputStream ois = new ClassLoadingObjectInputStream(is))
                 {
                     SessionData.deserializeAttributes(data, ois);
@@ -742,10 +750,21 @@ public class JDBCSessionDataStore extends AbstractSessionDataStore
                 statement.setLong(11, data.getMaxInactiveMs());
 
                 try (ByteArrayOutputStream baos = new ByteArrayOutputStream();
-                     ObjectOutputStream oos = new ObjectOutputStream(baos))
+                     ObjectOutputStream oos = getObjectOutputStream(baos))
                 {
                     SessionData.serializeAttributes(data, oos);
                     byte[] bytes = baos.toByteArray();
+
+                    if (_serializationCompressData)
+                    {
+                        bytes = compressBytes(bytes);
+                    }
+
+                    try (ByteArrayInputStream bais = new ByteArrayInputStream(bytes))
+                    {
+                        statement.setBinaryStream(13, bais, bytes.length); //attribute map as blob
+                    }
+                    
                     ByteArrayInputStream bais = new ByteArrayInputStream(bytes);
                     statement.setBinaryStream(12, bais, bytes.length); //attribute map as blob
                 }
@@ -773,10 +792,16 @@ public class JDBCSessionDataStore extends AbstractSessionDataStore
                 statement.setLong(6, data.getMaxInactiveMs());
 
                 try (ByteArrayOutputStream baos = new ByteArrayOutputStream();
-                     ObjectOutputStream oos = new ObjectOutputStream(baos))
+                     ObjectOutputStream oos = getObjectOutputStream(baos))
                 {
                     SessionData.serializeAttributes(data, oos);
                     byte[] bytes = baos.toByteArray();
+
+                    if (_serializationCompressData)
+                    {
+                        bytes = compressBytes(bytes);
+                    }
+
                     try (ByteArrayInputStream bais = new ByteArrayInputStream(bytes))
                     {
                         statement.setBinaryStream(7, bais, bytes.length); //attribute map as blob
@@ -980,5 +1005,74 @@ public class JDBCSessionDataStore extends AbstractSessionDataStore
                 }
             }
         }
+    }
+
+    private byte[] compressBytes(byte[] bytes) throws IOException
+    {
+        try (ByteArrayOutputStream baos = new ByteArrayOutputStream();
+             GZIPOutputStream gos = new GZIPOutputStream(baos))
+        {
+            gos.write(bytes);
+            gos.finish();
+
+            return baos.toByteArray();
+        }
+    }
+
+    private InputStream getBlobInputStream(ResultSet resultSet) throws SQLException, IOException
+    {
+        InputStream resultStream = _dbAdaptor.getBlobInputStream(resultSet, _sessionTableSchema.getMapColumn());
+        if (_serializationCompressData)
+        {
+            try (InputStream gis = new GZIPInputStream(resultStream))
+            {
+                resultStream = new ByteArrayInputStream(gis.readAllBytes());
+            }
+        }
+
+        return resultStream;
+    }
+
+    private ObjectOutputStream getObjectOutputStream(OutputStream os) throws IOException
+    {
+        if (_serializationSkipNonSerializable)
+        {
+            return new ExtendedObjectOutputStream(os, _serializationLogNonSerializable);
+        }
+
+        return new ObjectOutputStream(os);
+    }
+
+    @ManagedAttribute(value = "specify if serializer can skip non serializable object", readonly = true)
+    public boolean getSerializationSkipNonSerializable()
+    {
+        return _serializationSkipNonSerializable;
+    }
+
+    public void setSerializationSkipNonSerializable(boolean serializationSkipNonSerializable)
+    {
+        _serializationSkipNonSerializable = serializationSkipNonSerializable;
+    }
+
+    @ManagedAttribute(value = "specify if serializer should log warn message on skipped object", readonly = true)
+    public boolean getSerializationLogNonSerializable()
+    {
+        return _serializationLogNonSerializable;
+    }
+
+    public void setSerializationLogNonSerializable(boolean serializationLogNonSerializable)
+    {
+        _serializationLogNonSerializable = serializationLogNonSerializable;
+    }
+
+    @ManagedAttribute(value = "specify if serialized data should be compressed", readonly = true)
+    public boolean getSerializationCompressData()
+    {
+        return _serializationCompressData;
+    }
+
+    public void setSerializationCompressData(boolean serializationCompressData)
+    {
+        _serializationCompressData = serializationCompressData;
     }
 }

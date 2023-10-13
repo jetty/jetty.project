@@ -28,6 +28,10 @@ db-connection-type?=datasource
 #jetty.session.gracePeriod.seconds=3600
 #jetty.session.savePeriod.seconds=0
 
+#jetty.session.serialization.skipNonSerializable=false
+#jetty.session.serialization.logNonSerializable=false
+#jetty.session.serialization.compressData=false
+
 #jetty.session.jdbc.blobType=
 #jetty.session.jdbc.longType=
 #jetty.session.jdbc.stringType=

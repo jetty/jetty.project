@@ -29,6 +29,10 @@ public class JDBCSessionDataStoreFactory extends AbstractSessionDataStoreFactory
      */
     JDBCSessionDataStore.SessionTableSchema _schema;
 
+    boolean _serializationSkipNonSerializable = false;
+    boolean _serializationLogNonSerializable = false;
+    boolean _serializationCompressData = false;
+
     @Override
     public SessionDataStore getSessionDataStore(SessionHandler handler)
     {
@@ -37,6 +41,11 @@ public class JDBCSessionDataStoreFactory extends AbstractSessionDataStoreFactory
         ds.setSessionTableSchema(_schema);
         ds.setGracePeriodSec(getGracePeriodSec());
         ds.setSavePeriodSec(getSavePeriodSec());
+
+        ds.setSerializationSkipNonSerializable(_serializationSkipNonSerializable);
+        ds.setSerializationLogNonSerializable(_serializationLogNonSerializable);
+        ds.setSerializationCompressData(_serializationCompressData);
+
         return ds;
     }
 
@@ -54,5 +63,20 @@ public class JDBCSessionDataStoreFactory extends AbstractSessionDataStoreFactory
     public void setSessionTableSchema(JDBCSessionDataStore.SessionTableSchema schema)
     {
         _schema = schema;
+    }
+
+    public void setSerializationSkipNonSerializable(boolean serializationSkipNonSerializable)
+    {
+        _serializationSkipNonSerializable = serializationSkipNonSerializable;
+    }
+
+    public void setSerializationLogNonSerializable(boolean serializationLogNonSerializable)
+    {
+        _serializationLogNonSerializable = serializationLogNonSerializable;
+    }
+
+    public void setSerializationCompressData(boolean serializationCompressData)
+    {
+        _serializationCompressData = serializationCompressData;
     }
 }
