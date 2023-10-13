@@ -15,6 +15,7 @@ package org.eclipse.jetty.server.handler;
 
 import java.io.IOException;
 import java.nio.ByteBuffer;
+import java.time.Duration;
 import java.util.concurrent.TimeoutException;
 import java.util.concurrent.atomic.LongAdder;
 
@@ -36,8 +37,8 @@ public class StatisticsHandler extends EventsHandler
 {
     private final CounterStatistic _requestStats = new CounterStatistic(); // how many requests are being handled (full lifecycle)
     private final SampleStatistic _requestTimeStats = new SampleStatistic(); // latencies of requests (full lifecycle)
-    private final CounterStatistic _handlingStats = new CounterStatistic(); // how many requests are in handle
-    private final SampleStatistic _handlingTimeStats = new SampleStatistic(); // latencies of requests in handle
+    private final CounterStatistic _handleStats = new CounterStatistic(); // how many requests are in handle
+    private final SampleStatistic _handleTimeStats = new SampleStatistic(); // latencies of requests in handle
     private final LongAdder _errors = new LongAdder();
     private final LongAdder _handlingFailures = new LongAdder();
     private final LongAdder _responses1xx = new LongAdder();
@@ -69,7 +70,7 @@ public class StatisticsHandler extends EventsHandler
     protected void onBeforeHandling(Request request)
     {
         _requestStats.increment();
-        _handlingStats.increment();
+        _handleStats.increment();
     }
 
     @Override
@@ -77,8 +78,8 @@ public class StatisticsHandler extends EventsHandler
     {
         if (failure != null)
             _handlingFailures.increment();
-        _handlingStats.decrement();
-        _handlingTimeStats.record(NanoTime.since(request.getBeginNanoTime()));
+        _handleStats.decrement();
+        _handleTimeStats.record(NanoTime.since(request.getHeadersNanoTime()));
     }
 
     @Override
@@ -124,8 +125,8 @@ public class StatisticsHandler extends EventsHandler
         dumpObjects(out, indent,
             Dumpable.named("requestStats", _requestStats),
             Dumpable.named("requestTimeStats", _requestTimeStats),
-            Dumpable.named("handlingStats", _handlingStats),
-            Dumpable.named("handlingTimeStats", _handlingTimeStats),
+            Dumpable.named("handleStats", _handleStats),
+            Dumpable.named("handleTimeStats", _handleTimeStats),
             Dumpable.named("errors", _errors),
             Dumpable.named("handlingFailures", _handlingFailures),
             Dumpable.named("1xxResponses", _responses1xx),
@@ -144,8 +145,8 @@ public class StatisticsHandler extends EventsHandler
         _startTime = NanoTime.now();
         _requestStats.reset();
         _requestTimeStats.reset();
-        _handlingStats.reset();
-        _handlingTimeStats.reset();
+        _handleStats.reset();
+        _handleTimeStats.reset();
         _errors.reset();
         _handlingFailures.reset();
         _responses1xx.reset();
@@ -157,8 +158,18 @@ public class StatisticsHandler extends EventsHandler
         _bytesWritten.reset();
     }
 
+    /**
+     * @deprecated use {@link #getRequestsTotalCount()} instead.
+     */
+    @Deprecated
     @ManagedAttribute("number of requests")
     public int getRequests()
+    {
+        return (int)_requestStats.getTotal();
+    }
+
+    @ManagedAttribute("total number of requests")
+    public int getRequestsTotalCount()
     {
         return (int)_requestStats.getTotal();
     }
@@ -175,46 +186,46 @@ public class StatisticsHandler extends EventsHandler
         return (int)_requestStats.getMax();
     }
 
-    @ManagedAttribute("number of handlings")
-    public int getHandlings()
+    @ManagedAttribute("total number of handles")
+    public int getHandleTotalCount()
     {
-        return (int)_handlingStats.getTotal();
+        return (int)_handleStats.getTotal();
     }
 
-    @ManagedAttribute("number of handlings currently active")
-    public int getHandlingsActive()
+    @ManagedAttribute("number of handles")
+    public int getHandleActive()
     {
-        return (int)_handlingStats.getCurrent();
+        return (int)_handleStats.getCurrent();
     }
 
-    @ManagedAttribute("maximum number of active handlings")
-    public int getHandlingsActiveMax()
+    @ManagedAttribute("maximum number of active handles")
+    public int getHandleActiveMax()
     {
-        return (int)_handlingStats.getMax();
+        return (int)_handleStats.getMax();
     }
 
-    @ManagedAttribute("maximum time spend in handling (in ns)")
-    public long getHandlingsTimeMax()
+    @ManagedAttribute("maximum time spend in handle (in ns)")
+    public long getHandleTimeMax()
     {
-        return _handlingTimeStats.getMax();
+        return _handleTimeStats.getMax();
     }
 
-    @ManagedAttribute("total time spent in handling (in ns)")
-    public long getHandlingsTimeTotal()
+    @ManagedAttribute("total time spent in handle (in ns)")
+    public long getHandleTimeTotal()
     {
-        return _handlingTimeStats.getTotal();
+        return _handleTimeStats.getTotal();
     }
 
-    @ManagedAttribute("mean time spent in handling (in ns)")
-    public double getHandlingsTimeMean()
+    @ManagedAttribute("mean time spent in handle (in ns)")
+    public double getHandleTimeMean()
     {
-        return _handlingTimeStats.getMean();
+        return _handleTimeStats.getMean();
     }
 
     @ManagedAttribute("standard deviation for dispatch handling (in ns)")
     public double getDispatchedTimeStdDev()
     {
-        return _handlingTimeStats.getStdDev();
+        return _handleTimeStats.getStdDev();
     }
 
     @ManagedAttribute("number of async errors that occurred")
@@ -295,10 +306,10 @@ public class StatisticsHandler extends EventsHandler
         return _bytesWritten.longValue();
     }
 
-    @ManagedAttribute("time in nanoseconds stats have been collected for")
-    public long getStatsOnNs()
+    @ManagedAttribute("duration for which stats have been collected")
+    public Duration getStatisticsDuration()
     {
-        return NanoTime.since(_startTime);
+        return Duration.ofNanos(NanoTime.since(_startTime));
     }
 
     /**
