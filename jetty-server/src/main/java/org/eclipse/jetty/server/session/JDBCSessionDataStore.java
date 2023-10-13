@@ -762,11 +762,8 @@ public class JDBCSessionDataStore extends AbstractSessionDataStore
 
                     try (ByteArrayInputStream bais = new ByteArrayInputStream(bytes))
                     {
-                        statement.setBinaryStream(13, bais, bytes.length); //attribute map as blob
+                        statement.setBinaryStream(12, bais, bytes.length); //attribute map as blob
                     }
-                    
-                    ByteArrayInputStream bais = new ByteArrayInputStream(bytes);
-                    statement.setBinaryStream(12, bais, bytes.length); //attribute map as blob
                 }
 
                 statement.executeUpdate();
