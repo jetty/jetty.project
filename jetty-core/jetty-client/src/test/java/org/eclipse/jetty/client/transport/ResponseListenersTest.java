@@ -104,7 +104,8 @@ public class ResponseListenersTest
 
     private static class SimpleSource implements Content.Source
     {
-        private final Content.Chunk NULL = new Content.Chunk() {
+        private static final Content.Chunk NULL = new Content.Chunk()
+        {
             @Override
             public ByteBuffer getByteBuffer()
             {
