@@ -50,7 +50,7 @@
     <javax.mail.glassfish.version>1.4.1.v201005082020</javax.mail.glassfish.version>
     <jetty.servlet.api.version>4.0.6</jetty.servlet.api.version>
     <jsp.impl.version>9.0.52</jsp.impl.version>
-    <modify-sources-plugin.version>1.0.8-SNAPSHOT</modify-sources-plugin.version>
+    <modify-sources-plugin.version>1.0.8</modify-sources-plugin.version>
     <sonar.skip>true</sonar.skip>
     <weld.version>3.1.9.Final</weld.version>
 
