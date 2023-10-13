@@ -665,25 +665,41 @@ case "$ACTION" in
 
   stop)
     echo -n "Stopping Jetty: "
-    # Stop from a service file
+    if [ ! -r "$JETTY_PID" ] ; then
+      echo "** ERROR: no pid found at $JETTY_PID"
+      exit 1
+    fi
+
+    PID=$(tail -1 "$JETTY_PID")
+    if [ -z "$PID" ] ; then
+      echo "** ERROR: no pid found in $JETTY_PID"
+      exit 1
+    fi
+
+    # Stopping service started with start-stop-daemon
     if [ $UID -eq 0 ] && type start-stop-daemon > /dev/null 2>&1; then
-      start-stop-daemon -K -p"$JETTY_PID" -d"$JETTY_HOME" -a "$JAVA" -s HUP
+      (( DEBUG )) && echo "Issuing HUP to $PID"
+      start-stop-daemon --stop \
+         --pid "$PID" \
+         --chdir "$JETTY_BASE" \
+         --startas "$JAVA" \
+         --signal HUP
 
       TIMEOUT=30
       while running "$JETTY_PID"; do
+        (( DEBUG )) && echo "Issuing KILL to $PID"
         if (( TIMEOUT-- == 0 )); then
-          start-stop-daemon -K -p"$JETTY_PID" -d"$JETTY_HOME" -a "$JAVA" -s KILL
+          start-stop-daemon --stop \
+            --pid "$PID" \
+            --chdir "$JETTY_BASE" \
+            --startas "$JAVA" \
+            --signal KILL
         fi
 
         sleep 1
       done
     else
-      # Stop from a non-service path
-      if [ ! -r "$JETTY_PID" ] ; then
-        echo "** ERROR: no pid found at $JETTY_PID"
-        exit 1
-      fi
-
+      # Stopping from non-service start
       pidKill "$JETTY_PID" 30
     fi
 
