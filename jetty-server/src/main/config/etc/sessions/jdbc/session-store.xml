@@ -12,7 +12,7 @@
         <Set name="savePeriodSec" property="jetty.session.savePeriod.seconds"/>
         <Set name="serializationSkipNonSerializable" property="jetty.session.serialization.skipNonSerializable"/>
         <Set name="serializationLogNonSerializable" property="jetty.session.serialization.logNonSerializable"/>
-        <Set name="serializationСompressData" property="jetty.session.serialization.compressData"/>
+        <Set name="serializationCompressData" property="jetty.session.serialization.compressData"/>
         <Set name="databaseAdaptor">
           <Ref refid="databaseAdaptor" />
         </Set>
