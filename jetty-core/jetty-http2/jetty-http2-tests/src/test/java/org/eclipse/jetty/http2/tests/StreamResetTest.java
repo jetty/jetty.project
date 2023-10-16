@@ -20,9 +20,7 @@ import java.nio.ByteBuffer;
 import java.nio.channels.SocketChannel;
 import java.nio.charset.Charset;
 import java.nio.charset.StandardCharsets;
-import java.util.ArrayDeque;
 import java.util.ArrayList;
-import java.util.Deque;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
@@ -33,7 +31,6 @@ import java.util.concurrent.Exchanger;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.TimeoutException;
 import java.util.concurrent.atomic.AtomicBoolean;
-import java.util.concurrent.atomic.AtomicLong;
 import java.util.concurrent.atomic.AtomicReference;
 import java.util.function.Consumer;
 
@@ -658,34 +655,23 @@ public class StreamResetTest extends AbstractTest
             }
         });
 
-        Deque<Stream.Data> dataQueue = new ArrayDeque<>();
-        AtomicLong received = new AtomicLong();
-        CountDownLatch latch = new CountDownLatch(1);
         Session client = newClientSession(new Session.Listener() {});
         MetaData.Request request = newRequest("GET", HttpFields.EMPTY);
         HeadersFrame frame = new HeadersFrame(request, null, true);
-        FuturePromise<Stream> promise = new FuturePromise<>();
-        client.newStream(frame, promise, new Stream.Listener()
+        Stream stream = client.newStream(frame, new Stream.Listener()
         {
             @Override
             public void onDataAvailable(Stream stream)
             {
-                Stream.Data data = stream.readData();
-                dataQueue.offer(data);
-                // Do not consume the data yet.
-                if (received.addAndGet(data.frame().getByteBuffer().remaining()) == windowSize)
-                    latch.countDown();
-                else
-                    stream.demand();
+                // Do not read to stall the flow control window.
             }
-        });
-        Stream stream = promise.get(5, TimeUnit.SECONDS);
-        assertTrue(latch.await(5, TimeUnit.SECONDS));
+        }).get(5, TimeUnit.SECONDS);
+
+        // Wait until the flow control stalls.
+        await().atMost(5, TimeUnit.SECONDS).until(() -> ((HTTP2Stream)stream).getDataLength(), is((long)windowSize));
 
         // Reset and consume.
         stream.reset(new ResetFrame(stream.getId(), ErrorCode.CANCEL_STREAM_ERROR.code), Callback.NOOP);
-        dataQueue.forEach(Stream.Data::release);
-
         assertTrue(writeLatch.await(5, TimeUnit.SECONDS));
     }
 
@@ -760,34 +746,23 @@ public class StreamResetTest extends AbstractTest
             }
         });
 
-        Deque<Stream.Data> dataQueue = new ArrayDeque<>();
-        AtomicLong received = new AtomicLong();
-        CountDownLatch latch = new CountDownLatch(1);
         Session client = newClientSession(new Session.Listener() {});
         MetaData.Request request = newRequest("GET", HttpFields.EMPTY);
         HeadersFrame frame = new HeadersFrame(request, null, true);
-        FuturePromise<Stream> promise = new FuturePromise<>();
-        client.newStream(frame, promise, new Stream.Listener()
+        Stream stream = client.newStream(frame, new Stream.Listener()
         {
             @Override
             public void onDataAvailable(Stream stream)
             {
-                Stream.Data data = stream.readData();
-                dataQueue.offer(data);
-                // Do not consume the data yet.
-                if (received.addAndGet(data.frame().getByteBuffer().remaining()) == windowSize)
-                    latch.countDown();
-                else
-                    stream.demand();
+                // Do not read to stall the flow control window.
             }
-        });
-        Stream stream = promise.get(5, TimeUnit.SECONDS);
-        assertTrue(latch.await(5, TimeUnit.SECONDS));
+        }).get(5, TimeUnit.SECONDS);
+
+        // Wait until the flow control stalls.
+        await().atMost(5, TimeUnit.SECONDS).until(() -> ((HTTP2Stream)stream).getDataLength(), is((long)windowSize));
 
         // Reset and consume.
         stream.reset(new ResetFrame(stream.getId(), ErrorCode.CANCEL_STREAM_ERROR.code), Callback.NOOP);
-        dataQueue.forEach(Stream.Data::release);
-
         assertTrue(writeLatch.await(5, TimeUnit.SECONDS));
     }
 
