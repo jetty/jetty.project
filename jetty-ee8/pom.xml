@@ -299,6 +299,7 @@
             <nonFilteredFileExtension>sha1</nonFilteredFileExtension>
             <nonFilteredFileExtension>png</nonFilteredFileExtension>
             <nonFilteredFileExtension>sha</nonFilteredFileExtension>
+            <nonFilteredFileExtension>clazz</nonFilteredFileExtension>
           </nonFilteredFileExtensions>
         </configuration>
         <dependencies>

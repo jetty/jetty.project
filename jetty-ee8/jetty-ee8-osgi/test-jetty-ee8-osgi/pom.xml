@@ -12,7 +12,7 @@
   <properties>
     <assembly-directory>target/distribution</assembly-directory>
     <bundle-symbolic-name>${project.groupId}.boot.test.osgi</bundle-symbolic-name>
-    <ee8.module>jetty-ee9-osgi/test-jetty-ee9-osgi</ee8.module>
+    <ee9.module>jetty-ee9-osgi/test-jetty-ee9-osgi</ee9.module>
     <injection.bundle.version>1.2</injection.bundle.version>
     <jetty-orbit-url>https://download.eclipse.org/jetty/orbit/</jetty-orbit-url>
     <maven.deploy.skip>true</maven.deploy.skip>
