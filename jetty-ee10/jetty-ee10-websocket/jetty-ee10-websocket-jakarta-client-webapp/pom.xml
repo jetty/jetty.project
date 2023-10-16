@@ -1,12 +1,12 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <project xmlns="http://maven.apache.org/POM/4.0.0" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/maven-v4_0_0.xsd">
+
+  <modelVersion>4.0.0</modelVersion>
   <parent>
     <groupId>org.eclipse.jetty.ee10.websocket</groupId>
     <artifactId>jetty-ee10-websocket</artifactId>
-    <version>12.0.2-SNAPSHOT</version>
+    <version>12.0.3-SNAPSHOT</version>
   </parent>
-
-  <modelVersion>4.0.0</modelVersion>
   <artifactId>jetty-ee10-websocket-jakarta-client-webapp</artifactId>
   <name>EE10 :: Websocket :: Jakarta Client WebApp</name>
 
@@ -16,12 +16,12 @@
 
   <dependencies>
     <dependency>
-      <groupId>org.eclipse.jetty.ee10.websocket</groupId>
-      <artifactId>jetty-ee10-websocket-jakarta-client</artifactId>
-    </dependency>
-    <dependency>
       <groupId>jakarta.servlet</groupId>
       <artifactId>jakarta.servlet-api</artifactId>
+    </dependency>
+    <dependency>
+      <groupId>org.eclipse.jetty.ee10.websocket</groupId>
+      <artifactId>jetty-ee10-websocket-jakarta-client</artifactId>
     </dependency>
   </dependencies>
 
@@ -39,15 +39,9 @@
             <configuration>
               <instructions>
                 <Bundle-Description>jakarta.websocket.client WebApp Implementation</Bundle-Description>
-                <Export-Package>
-                  org.eclipse.jetty.ee10.websocket.jakarta.client.webapp.*;version="${parsedVersion.majorVersion}.${parsedVersion.minorVersion}.${parsedVersion.incrementalVersion}"
-                </Export-Package>
-                <Require-Capability>
-                  osgi.extender; filter:="(osgi.extender=osgi.serviceloader.registrar)";resolution:=optional
-                </Require-Capability>
-                <Provide-Capability>
-                    osgi.serviceloader;osgi.serviceloader=jakarta.servlet.ServletContainerInitializer
-                </Provide-Capability>
+                <Export-Package>org.eclipse.jetty.ee10.websocket.jakarta.client.webapp.*;version="${parsedVersion.majorVersion}.${parsedVersion.minorVersion}.${parsedVersion.incrementalVersion}"</Export-Package>
+                <Require-Capability>osgi.extender; filter:="(osgi.extender=osgi.serviceloader.registrar)";resolution:=optional</Require-Capability>
+                <Provide-Capability>osgi.serviceloader;osgi.serviceloader=jakarta.servlet.ServletContainerInitializer</Provide-Capability>
               </instructions>
             </configuration>
           </execution>

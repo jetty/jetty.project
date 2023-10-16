@@ -44,11 +44,12 @@ import org.eclipse.jetty.http2.frames.PushPromiseFrame;
 import org.eclipse.jetty.http2.frames.ResetFrame;
 import org.eclipse.jetty.http2.server.RawHTTP2ServerConnectionFactory;
 import org.eclipse.jetty.io.ArrayByteBufferPool;
+import org.eclipse.jetty.io.ByteBufferAggregator;
+import org.eclipse.jetty.io.RetainableByteBuffer;
 import org.eclipse.jetty.server.HttpConfiguration;
 import org.eclipse.jetty.server.Server;
 import org.eclipse.jetty.server.ServerConnector;
 import org.eclipse.jetty.util.Callback;
-import org.eclipse.jetty.util.FuturePromise;
 import org.eclipse.jetty.util.IteratingCallback;
 import org.eclipse.jetty.util.Promise;
 import org.eclipse.jetty.util.thread.AutoLock;
@@ -62,6 +63,8 @@ import static org.awaitility.Awaitility.await;
 import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.Matchers.is;
 import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertFalse;
+import static org.junit.jupiter.api.Assertions.assertNotNull;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
 public class RawHTTP2ProxyTest
@@ -86,6 +89,8 @@ public class RawHTTP2ProxyTest
         server.setAttribute("connector", connector);
         servers.add(server);
         server.start();
+        if (LOGGER.isDebugEnabled())
+            LOGGER.debug("{}:{} started", name, connector.getLocalPort());
         return server;
     }
 
@@ -141,9 +146,13 @@ public class RawHTTP2ProxyTest
     @Test
     public void testRawHTTP2Proxy() throws Exception
     {
+        Random random = new Random();
         byte[] data1 = new byte[1024];
-        new Random().nextBytes(data1);
+        random.nextBytes(data1);
         ByteBuffer buffer1 = ByteBuffer.wrap(data1);
+        byte[] data2 = new byte[512];
+        random.nextBytes(data2);
+        ByteBuffer buffer2 = ByteBuffer.wrap(data2);
         Server server1 = startServer("server1", new ServerSessionListener()
         {
             @Override
@@ -164,16 +173,12 @@ public class RawHTTP2ProxyTest
                             HeadersFrame reply = new HeadersFrame(stream.getId(), response, null, false);
                             if (LOGGER.isDebugEnabled())
                                 LOGGER.debug("SERVER1 sending {}", reply);
-                            stream.headers(reply, new Callback()
+                            stream.headers(reply).thenAccept(s ->
                             {
-                                @Override
-                                public void succeeded()
-                                {
-                                    DataFrame data = new DataFrame(stream.getId(), buffer1.slice(), true);
-                                    if (LOGGER.isDebugEnabled())
-                                        LOGGER.debug("SERVER1 sending {}", data);
-                                    stream.data(data, NOOP);
-                                }
+                                DataFrame data = new DataFrame(s.getId(), buffer1.slice(), true);
+                                if (LOGGER.isDebugEnabled())
+                                    LOGGER.debug("SERVER1 sending {}", data);
+                                s.data(data);
                             });
                         }
                     }
@@ -198,25 +203,28 @@ public class RawHTTP2ProxyTest
                         if (LOGGER.isDebugEnabled())
                             LOGGER.debug("SERVER2 received {}", data);
                         data.release();
-                        MetaData.Response response = new MetaData.Response(HttpStatus.OK_200, null, HttpVersion.HTTP_2, HttpFields.EMPTY);
-                        HeadersFrame reply = new HeadersFrame(stream.getId(), response, null, false);
-                        if (LOGGER.isDebugEnabled())
-                            LOGGER.debug("SERVER2 sending {}", reply);
-                        stream.headers(reply)
-                            .thenCompose(s ->
-                            {
-                                DataFrame dataFrame = new DataFrame(s.getId(), buffer1.slice(), false);
-                                if (LOGGER.isDebugEnabled())
-                                    LOGGER.debug("SERVER2 sending {}", dataFrame);
-                                return s.data(dataFrame);
-                            }).thenAccept(s ->
-                            {
-                                MetaData trailer = new MetaData(HttpVersion.HTTP_2, HttpFields.EMPTY);
-                                HeadersFrame end = new HeadersFrame(s.getId(), trailer, null, true);
-                                if (LOGGER.isDebugEnabled())
-                                    LOGGER.debug("SERVER2 sending {}", end);
-                                s.headers(end);
-                            });
+                        if (data.frame().isEndStream())
+                        {
+                            MetaData.Response response = new MetaData.Response(HttpStatus.OK_200, null, HttpVersion.HTTP_2, HttpFields.EMPTY);
+                            HeadersFrame reply = new HeadersFrame(stream.getId(), response, null, false);
+                            if (LOGGER.isDebugEnabled())
+                                LOGGER.debug("SERVER2 sending {}", reply);
+                            stream.headers(reply)
+                                .thenCompose(s ->
+                                {
+                                    DataFrame dataFrame = new DataFrame(s.getId(), buffer2.slice(), false);
+                                    if (LOGGER.isDebugEnabled())
+                                        LOGGER.debug("SERVER2 sending {}", dataFrame);
+                                    return s.data(dataFrame);
+                                }).thenAccept(s ->
+                                {
+                                    MetaData trailers = new MetaData(HttpVersion.HTTP_2, HttpFields.EMPTY);
+                                    HeadersFrame end = new HeadersFrame(s.getId(), trailers, null, true);
+                                    if (LOGGER.isDebugEnabled())
+                                        LOGGER.debug("SERVER2 sending {}", end);
+                                    s.headers(end);
+                                });
+                        }
                     }
                 };
             }
@@ -228,23 +236,22 @@ public class RawHTTP2ProxyTest
         InetSocketAddress proxyAddress = new InetSocketAddress("localhost", proxyConnector.getLocalPort());
         HTTP2Client client = startClient("client");
 
-        FuturePromise<Session> clientPromise = new FuturePromise<>();
-        client.connect(proxyAddress, new Session.Listener() {}, clientPromise);
-        Session clientSession = clientPromise.get(5, TimeUnit.SECONDS);
+        Session clientSession = client.connect(proxyAddress, new Session.Listener() {}).get(5, TimeUnit.SECONDS);
 
         // Send a request with trailers for server1.
         HttpFields.Mutable fields1 = HttpFields.build();
         fields1.put("X-Target", String.valueOf(connector1.getLocalPort()));
         MetaData.Request request1 = new MetaData.Request("GET", HttpURI.from("http://localhost/server1"), HttpVersion.HTTP_2, fields1);
-        FuturePromise<Stream> streamPromise1 = new FuturePromise<>();
         CountDownLatch latch1 = new CountDownLatch(1);
-        clientSession.newStream(new HeadersFrame(request1, null, false), streamPromise1, new Stream.Listener()
+        Stream stream1 = clientSession.newStream(new HeadersFrame(request1, null, false), new Stream.Listener()
         {
+            private final ByteBufferAggregator aggregator = new ByteBufferAggregator(client.getByteBufferPool(), true, data1.length, data1.length * 2);
+
             @Override
             public void onHeaders(Stream stream, HeadersFrame frame)
             {
                 if (LOGGER.isDebugEnabled())
-                    LOGGER.debug("CLIENT received {}", frame);
+                    LOGGER.debug("CLIENT1 received {}", frame);
                 stream.demand();
             }
 
@@ -254,30 +261,35 @@ public class RawHTTP2ProxyTest
                 Stream.Data data = stream.readData();
                 DataFrame frame = data.frame();
                 if (LOGGER.isDebugEnabled())
-                    LOGGER.debug("CLIENT received {}", frame);
-                assertEquals(buffer1.slice(), frame.getByteBuffer());
+                    LOGGER.debug("CLIENT1 received {}", frame);
+                assertFalse(aggregator.aggregate(frame.getByteBuffer()));
                 data.release();
-                latch1.countDown();
                 if (!data.frame().isEndStream())
+                {
                     stream.demand();
+                    return;
+                }
+                RetainableByteBuffer buffer = aggregator.takeRetainableByteBuffer();
+                assertNotNull(buffer);
+                assertEquals(buffer1.slice(), buffer.getByteBuffer());
+                buffer.release();
+                latch1.countDown();
             }
-        });
-        Stream stream1 = streamPromise1.get(5, TimeUnit.SECONDS);
+        }).get(5, TimeUnit.SECONDS);
         stream1.headers(new HeadersFrame(stream1.getId(), new MetaData(HttpVersion.HTTP_2, HttpFields.EMPTY), null, true), Callback.NOOP);
 
         // Send a request for server2.
         HttpFields.Mutable fields2 = HttpFields.build();
         fields2.put("X-Target", String.valueOf(connector2.getLocalPort()));
         MetaData.Request request2 = new MetaData.Request("GET", HttpURI.from("http://localhost/server1"), HttpVersion.HTTP_2, fields2);
-        FuturePromise<Stream> streamPromise2 = new FuturePromise<>();
         CountDownLatch latch2 = new CountDownLatch(1);
-        clientSession.newStream(new HeadersFrame(request2, null, false), streamPromise2, new Stream.Listener()
+        Stream stream2 = clientSession.newStream(new HeadersFrame(request2, null, false), new Stream.Listener()
         {
             @Override
             public void onHeaders(Stream stream, HeadersFrame frame)
             {
                 if (LOGGER.isDebugEnabled())
-                    LOGGER.debug("CLIENT received {}", frame);
+                    LOGGER.debug("CLIENT2 received {}", frame);
                 if (frame.isEndStream())
                     latch2.countDown();
                 else
@@ -289,13 +301,12 @@ public class RawHTTP2ProxyTest
             {
                 Stream.Data data = stream.readData();
                 if (LOGGER.isDebugEnabled())
-                    LOGGER.debug("CLIENT received {}", data.frame());
+                    LOGGER.debug("CLIENT2 received {}", data.frame());
                 data.release();
                 if (!data.frame().isEndStream())
                     stream.demand();
             }
-        });
-        Stream stream2 = streamPromise2.get(5, TimeUnit.SECONDS);
+        }).get(5, TimeUnit.SECONDS);
         stream2.data(new DataFrame(stream2.getId(), buffer1.slice(), true), Callback.NOOP);
 
         assertTrue(latch1.await(5, TimeUnit.SECONDS));
@@ -316,13 +327,13 @@ public class RawHTTP2ProxyTest
         public Stream.Listener onNewStream(Stream stream, HeadersFrame frame)
         {
             if (LOGGER.isDebugEnabled())
-                LOGGER.debug("Received {} for {} on {}: {}", frame, stream, stream.getSession(), frame.getMetaData());
+                LOGGER.debug("CP received {} for {} on {}: {}", frame, stream, stream.getSession(), frame.getMetaData());
             // Forward to the right server.
             MetaData metaData = frame.getMetaData();
             HttpFields fields = metaData.getHttpFields();
             int port = Integer.parseInt(fields.get("X-Target"));
             ClientToProxyToServer clientToProxyToServer = forwarders.computeIfAbsent(port, p -> new ClientToProxyToServer("localhost", p, client));
-            clientToProxyToServer.offer(stream, frame, Callback.NOOP);
+            clientToProxyToServer.offer(stream, frame, Callback.NOOP, true);
             stream.demand();
             return clientToProxyToServer;
         }
@@ -331,7 +342,7 @@ public class RawHTTP2ProxyTest
         public void onClose(Session session, GoAwayFrame frame, Callback callback)
         {
             if (LOGGER.isDebugEnabled())
-                LOGGER.debug("Received {} on {}", frame, session);
+                LOGGER.debug("CP received {} on {}", frame, session);
             // TODO
             callback.succeeded();
         }
@@ -340,7 +351,7 @@ public class RawHTTP2ProxyTest
         public boolean onIdleTimeout(Session session)
         {
             if (LOGGER.isDebugEnabled())
-                LOGGER.debug("Idle timeout on {}", session);
+                LOGGER.debug("CP idle timeout on {}", session);
             // TODO
             return true;
         }
@@ -349,7 +360,7 @@ public class RawHTTP2ProxyTest
         public void onFailure(Session session, Throwable failure, Callback callback)
         {
             if (LOGGER.isDebugEnabled())
-                LOGGER.debug("Failure on " + session, failure);
+                LOGGER.debug("CP failure on " + session, failure);
             // TODO
             callback.succeeded();
         }
@@ -360,10 +371,10 @@ public class RawHTTP2ProxyTest
         private final AutoLock lock = new AutoLock();
         private final Map<Stream, Deque<FrameInfo>> frames = new HashMap<>();
         private final Map<Stream, Stream> streams = new HashMap<>();
-        private final ServerToProxyToClient serverToProxyToClient = new ServerToProxyToClient();
         private final String host;
         private final int port;
         private final HTTP2Client client;
+        private final ServerToProxyToClient serverToProxyToClient;
         private Session proxyToServerSession;
         private FrameInfo frameInfo;
         private Stream clientToProxyStream;
@@ -373,12 +384,13 @@ public class RawHTTP2ProxyTest
             this.host = host;
             this.port = port;
             this.client = client;
+            this.serverToProxyToClient = new ServerToProxyToClient(port);
         }
 
-        private void offer(Stream stream, Frame frame, Callback callback)
+        private void offer(Stream stream, Frame frame, Callback callback, boolean connect)
         {
             if (LOGGER.isDebugEnabled())
-                LOGGER.debug("CPS queueing {} for {} on {}", frame, stream, stream.getSession());
+                LOGGER.debug("CPS:{} queueing (connect={}) {} for {} on {}", port, connect, frame, stream, stream.getSession());
             boolean connected;
             try (AutoLock ignored = lock.lock())
             {
@@ -388,7 +400,7 @@ public class RawHTTP2ProxyTest
             }
             if (connected)
                 iterate();
-            else
+            else if (connect)
                 connect();
         }
 
@@ -396,14 +408,14 @@ public class RawHTTP2ProxyTest
         {
             InetSocketAddress address = new InetSocketAddress(host, port);
             if (LOGGER.isDebugEnabled())
-                LOGGER.debug("CPS connecting to {}", address);
+                LOGGER.debug("CPS:{} connecting to {}", port, address);
             client.connect(address, new ServerToProxySessionListener(), new Promise<>()
             {
                 @Override
                 public void succeeded(Session result)
                 {
                     if (LOGGER.isDebugEnabled())
-                        LOGGER.debug("CPS connected to {} with {}", address, result);
+                        LOGGER.debug("CPS:{} connected to {} with {}", port, address, result);
                     try (AutoLock ignored = lock.lock())
                     {
                         proxyToServerSession = result;
@@ -415,14 +427,14 @@ public class RawHTTP2ProxyTest
                 public void failed(Throwable x)
                 {
                     if (LOGGER.isDebugEnabled())
-                        LOGGER.debug("CPS connect failed to {}", address);
+                        LOGGER.debug("CPS:{} connect failed to {}", port, address);
                     // TODO: drain the queue and fail the streams.
                 }
             });
         }
 
         @Override
-        protected Action process() throws Throwable
+        protected Action process()
         {
             Stream proxyToServerStream = null;
             Session proxyToServerSession = null;
@@ -442,7 +454,7 @@ public class RawHTTP2ProxyTest
             }
 
             if (LOGGER.isDebugEnabled())
-                LOGGER.debug("CPS processing {} for {} to {}", frameInfo, clientToProxyStream, proxyToServerStream);
+                LOGGER.debug("CPS:{} processing {} for {} to {}", port, frameInfo, clientToProxyStream, proxyToServerStream);
 
             if (frameInfo == null)
                 return Action.IDLE;
@@ -459,7 +471,7 @@ public class RawHTTP2ProxyTest
                         try (AutoLock ignored = lock.lock())
                         {
                             if (LOGGER.isDebugEnabled())
-                                LOGGER.debug("CPS created {}", result);
+                                LOGGER.debug("CPS:{} created {}", port, result);
                             streams.put(clientToProxyStream, result);
                         }
                         serverToProxyToClient.link(result, clientToProxyStream);
@@ -470,7 +482,7 @@ public class RawHTTP2ProxyTest
                     public void failed(Throwable failure)
                     {
                         if (LOGGER.isDebugEnabled())
-                            LOGGER.debug("CPS create failed", failure);
+                            LOGGER.debug("CPS:{} create failed", port, failure);
                         // TODO: cannot open stream to server.
                         ClientToProxyToServer.this.failed(failure);
                     }
@@ -480,7 +492,7 @@ public class RawHTTP2ProxyTest
             else
             {
                 if (LOGGER.isDebugEnabled())
-                    LOGGER.debug("CPS forwarding {} from {} to {}", frameInfo, clientToProxyStream, proxyToServerStream);
+                    LOGGER.debug("CPS:{} forwarding {} from {} to {}", port, frameInfo, clientToProxyStream, proxyToServerStream);
                 return switch (frameInfo.frame.getType())
                 {
                     case HEADERS ->
@@ -520,9 +532,10 @@ public class RawHTTP2ProxyTest
         public void onHeaders(Stream stream, HeadersFrame frame)
         {
             if (LOGGER.isDebugEnabled())
-                LOGGER.debug("CPS received {} on {}", frame, stream);
-            offer(stream, frame, NOOP);
-            stream.demand();
+                LOGGER.debug("CPS:{} received {} on {}", port, frame, stream);
+            offer(stream, frame, NOOP, false);
+            if (!frame.isEndStream())
+                stream.demand();
         }
 
         @Override
@@ -537,8 +550,8 @@ public class RawHTTP2ProxyTest
         {
             Stream.Data data = stream.readData();
             if (LOGGER.isDebugEnabled())
-                LOGGER.debug("CPS read {} on {}", data, stream);
-            offer(stream, data.frame(), Callback.from(data::release));
+                LOGGER.debug("CPS:{} read {} on {}", port, data, stream);
+            offer(stream, data.frame(), Callback.from(data::release), false);
             if (!data.frame().isEndStream())
                 stream.demand();
         }
@@ -547,7 +560,7 @@ public class RawHTTP2ProxyTest
         public void onReset(Stream stream, ResetFrame frame, Callback callback)
         {
             if (LOGGER.isDebugEnabled())
-                LOGGER.debug("CPS received {} on {}", frame, stream);
+                LOGGER.debug("CPS:{} received {} on {}", port, frame, stream);
             // TODO: drain the queue for that stream, and notify server.
             callback.succeeded();
         }
@@ -556,7 +569,7 @@ public class RawHTTP2ProxyTest
         public void onIdleTimeout(Stream stream, TimeoutException x, Promise<Boolean> promise)
         {
             if (LOGGER.isDebugEnabled())
-                LOGGER.debug("CPS idle timeout for {}", stream);
+                LOGGER.debug("CPS:{} idle timeout for {}", port, stream);
             // TODO: drain the queue for that stream, reset stream, and notify server.
             promise.succeeded(true);
         }
@@ -568,7 +581,7 @@ public class RawHTTP2ProxyTest
         public void onClose(Session session, GoAwayFrame frame, Callback callback)
         {
             if (LOGGER.isDebugEnabled())
-                LOGGER.debug("Received {} on {}", frame, session);
+                LOGGER.debug("SP received {} on {}", frame, session);
             // TODO
             callback.succeeded();
         }
@@ -577,7 +590,7 @@ public class RawHTTP2ProxyTest
         public boolean onIdleTimeout(Session session)
         {
             if (LOGGER.isDebugEnabled())
-                LOGGER.debug("Idle timeout on {}", session);
+                LOGGER.debug("SP idle timeout on {}", session);
             // TODO
             return true;
         }
@@ -586,7 +599,7 @@ public class RawHTTP2ProxyTest
         public void onFailure(Session session, Throwable failure, Callback callback)
         {
             if (LOGGER.isDebugEnabled())
-                LOGGER.debug("Failure on " + session, failure);
+                LOGGER.debug("SP failure on " + session, failure);
             // TODO
             callback.succeeded();
         }
@@ -597,11 +610,17 @@ public class RawHTTP2ProxyTest
         private final AutoLock lock = new AutoLock();
         private final Map<Stream, Deque<FrameInfo>> frames = new HashMap<>();
         private final Map<Stream, Stream> streams = new HashMap<>();
+        private final int port;
         private FrameInfo frameInfo;
         private Stream serverToProxyStream;
 
+        private ServerToProxyToClient(int port)
+        {
+            this.port = port;
+        }
+
         @Override
-        protected Action process() throws Throwable
+        protected Action process()
         {
             Stream proxyToClientStream = null;
             try (AutoLock ignored = lock.lock())
@@ -619,7 +638,7 @@ public class RawHTTP2ProxyTest
             }
 
             if (LOGGER.isDebugEnabled())
-                LOGGER.debug("SPC processing {} for {} to {}", frameInfo, serverToProxyStream, proxyToClientStream);
+                LOGGER.debug("SPC:{} processing {} for {} to {}", port, frameInfo, serverToProxyStream, proxyToClientStream);
 
             // It may happen that we received a frame from the server,
             // but the proxyToClientStream is not linked yet.
@@ -627,7 +646,7 @@ public class RawHTTP2ProxyTest
                 return Action.IDLE;
 
             if (LOGGER.isDebugEnabled())
-                LOGGER.debug("SPC forwarding {} for {} to {}", frameInfo, serverToProxyStream, proxyToClientStream);
+                LOGGER.debug("SPC:{} forwarding {} for {} to {}", port, frameInfo, serverToProxyStream, proxyToClientStream);
 
             return switch (frameInfo.frame.getType())
             {
@@ -640,9 +659,9 @@ public class RawHTTP2ProxyTest
                 }
                 case DATA ->
                 {
-                    DataFrame clientToProxyFrame = (DataFrame)frameInfo.frame;
-                    DataFrame proxyToServerFrame = new DataFrame(serverToProxyStream.getId(), clientToProxyFrame.getByteBuffer(), clientToProxyFrame.isEndStream());
-                    proxyToClientStream.data(proxyToServerFrame, this);
+                    DataFrame serverToProxyFrame = (DataFrame)frameInfo.frame;
+                    DataFrame proxyToClientFrame = new DataFrame(proxyToClientStream.getId(), serverToProxyFrame.getByteBuffer(), serverToProxyFrame.isEndStream());
+                    proxyToClientStream.data(proxyToClientFrame, this);
                     yield Action.SCHEDULED;
                 }
                 // TODO
@@ -668,7 +687,7 @@ public class RawHTTP2ProxyTest
         private void offer(Stream stream, Frame frame, Callback callback)
         {
             if (LOGGER.isDebugEnabled())
-                LOGGER.debug("SPC queueing {} for {} on {}", frame, stream, stream.getSession());
+                LOGGER.debug("SPC:{} queueing {} for {} on {}", port, frame, stream, stream.getSession());
             try (AutoLock ignored = lock.lock())
             {
                 Deque<FrameInfo> deque = frames.computeIfAbsent(stream, s -> new ArrayDeque<>());
@@ -681,16 +700,17 @@ public class RawHTTP2ProxyTest
         public void onHeaders(Stream stream, HeadersFrame frame)
         {
             if (LOGGER.isDebugEnabled())
-                LOGGER.debug("SPC received {} on {}", frame, stream);
+                LOGGER.debug("SPC:{} received {} on {}", port, frame, stream);
             offer(stream, frame, NOOP);
-            stream.demand();
+            if (!frame.isEndStream())
+                stream.demand();
         }
 
         @Override
         public Stream.Listener onPush(Stream stream, PushPromiseFrame frame)
         {
             if (LOGGER.isDebugEnabled())
-                LOGGER.debug("SPC received {} on {}", frame, stream);
+                LOGGER.debug("SPC:{} received {} on {}", port, frame, stream);
             // TODO
             return null;
         }
@@ -700,7 +720,7 @@ public class RawHTTP2ProxyTest
         {
             Stream.Data data = stream.readData();
             if (LOGGER.isDebugEnabled())
-                LOGGER.debug("SPC read {} on {}", data, stream);
+                LOGGER.debug("SPC:{} read {} on {}", port, data, stream);
             offer(stream, data.frame(), Callback.from(data::release));
             if (!data.frame().isEndStream())
                 stream.demand();
@@ -710,7 +730,7 @@ public class RawHTTP2ProxyTest
         public void onReset(Stream stream, ResetFrame frame, Callback callback)
         {
             if (LOGGER.isDebugEnabled())
-                LOGGER.debug("SPC received {} on {}", frame, stream);
+                LOGGER.debug("SPC:{} received {} on {}", port, frame, stream);
             // TODO: drain queue, reset client stream.
             callback.succeeded();
         }
@@ -719,7 +739,7 @@ public class RawHTTP2ProxyTest
         public void onIdleTimeout(Stream stream, TimeoutException x, Promise<Boolean> promise)
         {
             if (LOGGER.isDebugEnabled())
-                LOGGER.debug("SPC idle timeout for {}", stream);
+                LOGGER.debug("SPC:{} idle timeout for {}", port, stream);
             // TODO:
             promise.succeeded(true);
         }
