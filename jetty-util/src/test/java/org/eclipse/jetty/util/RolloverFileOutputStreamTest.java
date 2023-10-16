@@ -36,7 +36,10 @@ import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 
 import static org.hamcrest.MatcherAssert.assertThat;
+import static org.hamcrest.Matchers.containsString;
+import static org.hamcrest.Matchers.instanceOf;
 import static org.hamcrest.Matchers.is;
+import static org.junit.jupiter.api.Assertions.assertNotNull;
 
 @ExtendWith(WorkDirExtension.class)
 public class RolloverFileOutputStreamTest
@@ -185,41 +188,21 @@ public class RolloverFileOutputStreamTest
     public void testMissingDirectory()
     {
 
-        ZoneId zone = toZoneId("Australia/Sydney");
-        ZonedDateTime now = toDateTime("2016.04.10-08:30:12.3 AM AEDT", zone);
         String templateString = "missingDir/test-rofos-yyyy_mm_dd.log";
-        String excMessageExpected = "Log directory does not exist.";
-
-        try (RolloverFileOutputStream rofos =
-                 new RolloverFileOutputStream(templateString, false, 3, TimeZone.getTimeZone(zone), null, null, now))
+        String excMessageActual = null;
+        Throwable error = null;
+        try (RolloverFileOutputStream rofos = new RolloverFileOutputStream(templateString))
         {
-            rofos.write("TICK".getBytes());
-            rofos.flush();
+            throw new IllegalStateException();
         }
-        catch (Exception ex)
+        catch (Throwable  t)
         {
-            boolean exClassOK = false;
-            if (ex instanceof java.io.IOException)
-            {
-                exClassOK = true;
-            }
-            assertThat("Exception Type", exClassOK, is(true));
-
-            String excMessageActual = ex.getMessage();
-            boolean messageOK = false;
-            if (excMessageActual != null)
-            {
-                excMessageActual = excMessageActual.trim();
-                if (!excMessageActual.isEmpty())
-                {
-                    if (excMessageActual.contains(excMessageExpected))
-                    {
-                        messageOK = true;
-                    }
-                }
-            }
-            assertThat("Exception Message", messageOK, is(true));
+            error = t;
+            excMessageActual = t.getMessage();
         }
+        assertNotNull(error);
+        assertThat(error, instanceOf(IOException.class));
+        assertThat(excMessageActual, containsString("Log directory does not exist."));
     }        
 
     @Test
