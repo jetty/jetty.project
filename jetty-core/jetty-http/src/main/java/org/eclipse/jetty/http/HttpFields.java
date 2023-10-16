@@ -1602,6 +1602,11 @@ public interface HttpFields extends Iterable<HttpField>, Supplier<HttpFields>
                 return true;
             }
 
+            public HttpField onReplaceField(HttpField oldField, HttpField newField)
+            {
+                return newField;
+            }
+
             @Override
             public int size()
             {
@@ -1702,9 +1707,9 @@ public interface HttpFields extends Iterable<HttpField>, Supplier<HttpFields>
                         }
                         else
                         {
-                            if (last != null && onRemoveField(last))
+                            if (last != null)
                             {
-                                field = onAddField(field);
+                                field = onReplaceField(last, field);
                                 if (field != null)
                                 {
                                     last = null;

@@ -597,6 +597,44 @@ public class ServletContextResponse extends ContextResponse implements ServletCo
             return true;
         }
 
+        /**
+         *
+         */
+        @Override
+        public HttpField onReplaceField(HttpField oldField, HttpField newField)
+        {
+            if (oldField == null)
+            {
+                return onAddField(newField);
+            }
+
+            if (newField == null)
+            {
+                onRemoveField(oldField);
+                return null;
+            }
+
+            switch (newField.getHeader())
+            {
+                case CONTENT_LENGTH ->
+                {
+                    if (!isCommitted())
+                    {
+                        return setContentLength(newField);
+                    }
+                }
+                case CONTENT_TYPE ->
+                {
+                    if (!isCommitted())
+                    {
+                        return setContentType(newField);
+                    }
+                }
+            }
+
+            return null;
+        }
+
         private HttpField setContentLength(HttpField field)
         {
             long len = field.getLongValue();

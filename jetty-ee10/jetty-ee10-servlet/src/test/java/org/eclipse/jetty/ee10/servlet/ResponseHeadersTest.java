@@ -38,6 +38,7 @@ import static org.hamcrest.Matchers.containsString;
 import static org.hamcrest.Matchers.endsWith;
 import static org.hamcrest.Matchers.equalTo;
 import static org.hamcrest.Matchers.is;
+import static org.hamcrest.Matchers.not;
 import static org.hamcrest.Matchers.nullValue;
 
 public class ResponseHeadersTest
@@ -552,7 +553,43 @@ public class ResponseHeadersTest
 
         assertThat("Response Code", response.getStatus(), is(200));
         assertThat("Content Type", response.getField("Content-Type").getValue(), containsString("text/xml;charset=Shift_Jis"));
-        assertThat(response.getContent(), equalTo("Hello"));
+        assertThat(response.getContent(), containsString("Hello"));
+    }
 
+    @Test
+    public void testContentTypeNull() throws Exception
+    {
+        ServletContextHandler contextHandler = new ServletContextHandler();
+        contextHandler.setContextPath("/");
+        HttpServlet contentTypeServlet = new HttpServlet()
+        {
+            @Override
+            protected void doGet(HttpServletRequest request, HttpServletResponse response) throws ServletException, IOException
+            {
+                response.setContentType("text/html;charset=Shift_Jis");
+                response.setContentType(null);
+
+                PrintWriter pw = response.getWriter();
+                assertThat(response.getCharacterEncoding(), not(is("Shift_Jis")));
+                pw.println("Hello");
+            }
+        };
+
+        contextHandler.addServlet(contentTypeServlet, "/content/*");
+        startServer(contextHandler);
+
+        HttpTester.Request request = new HttpTester.Request();
+        request.setMethod("GET");
+        request.setURI("/content");
+        request.setVersion(HttpVersion.HTTP_1_1);
+        request.setHeader("Connection", "close");
+        request.setHeader("Host", "test");
+
+        ByteBuffer responseBuffer = connector.getResponse(request.generate());
+        HttpTester.Response response = HttpTester.parseResponse(responseBuffer);
+
+        assertThat("Response Code", response.getStatus(), is(200));
+        assertThat("Content Type", response.getField("Content-Type"), nullValue());
+        assertThat(response.getContent(), containsString("Hello"));
     }
 }
