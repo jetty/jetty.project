@@ -447,6 +447,44 @@ public class ResponseHeadersTest
     }
 
     @Test
+    public void testSetIntHeader() throws Exception
+    {
+        ServletContextHandler contextHandler = new ServletContextHandler();
+        contextHandler.setContextPath("/");
+        HttpServlet addHeaderServlet = new HttpServlet()
+        {
+            @Override
+            protected void doGet(HttpServletRequest request, HttpServletResponse response) throws ServletException, IOException
+            {
+                response.addIntHeader("X-Foo", 10);
+                response.setIntHeader("X-Foo", 20);
+
+                PrintWriter writer = response.getWriter();
+                writer.println("Done");
+            }
+        };
+
+        contextHandler.addServlet(addHeaderServlet, "/add-intheader/*");
+        startServer(contextHandler);
+
+        HttpTester.Request request = new HttpTester.Request();
+        request.setMethod("GET");
+        request.setURI("/add-intheader/");
+        request.setVersion(HttpVersion.HTTP_1_1);
+        request.setHeader("Connection", "close");
+        request.setHeader("Host", "test");
+
+        ByteBuffer responseBuffer = connector.getResponse(request.generate());
+        // System.err.println(BufferUtil.toUTF8String(responseBuffer));
+        HttpTester.Response response = HttpTester.parseResponse(responseBuffer);
+
+        // Now test for properly formatted HTTP Response Headers.
+        assertThat("Response Code", response.getStatus(), is(200));
+        // The X-Foo header should be present an unchanged
+        assertThat("Response Header X-Foo", response.getField("X-Foo").getIntValue(), is(20));
+    }
+
+    @Test
     public void testFlushPrintWriter() throws Exception
     {
         ServletContextHandler contextHandler = new ServletContextHandler();

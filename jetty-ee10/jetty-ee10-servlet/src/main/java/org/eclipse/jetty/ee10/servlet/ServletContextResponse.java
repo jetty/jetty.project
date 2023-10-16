@@ -614,20 +614,23 @@ public class ServletContextResponse extends ContextResponse implements ServletCo
                 return null;
             }
 
-            switch (newField.getHeader())
+            if (newField.getHeader() != null)
             {
-                case CONTENT_LENGTH ->
+                switch (newField.getHeader())
                 {
-                    if (!isCommitted())
+                    case CONTENT_LENGTH ->
                     {
-                        return setContentLength(newField);
+                        if (!isCommitted())
+                        {
+                            return setContentLength(newField);
+                        }
                     }
-                }
-                case CONTENT_TYPE ->
-                {
-                    if (!isCommitted())
+                    case CONTENT_TYPE ->
                     {
-                        return setContentType(newField);
+                        if (!isCommitted())
+                        {
+                            return setContentType(newField);
+                        }
                     }
                 }
             }
