@@ -367,7 +367,7 @@ public class MultiPartFormInputStream
      * @param in Request input stream
      * @param contentType Content-Type header
      * @param config MultipartConfigElement
-     * @param contextTmpDir jakarta.servlet.context.tempdir
+     * @param contextTmpDir {@value jakarta.servlet.ServletContext#TEMPDIR}
      */
     public MultiPartFormInputStream(InputStream in, String contentType, MultipartConfigElement config, File contextTmpDir)
     {

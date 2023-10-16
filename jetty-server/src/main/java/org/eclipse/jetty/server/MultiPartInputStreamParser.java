@@ -375,7 +375,7 @@ public class MultiPartInputStreamParser
      * @param in Request input stream
      * @param contentType Content-Type header
      * @param config MultipartConfigElement
-     * @param contextTmpDir jakarta.servlet.context.tempdir
+     * @param contextTmpDir {@value jakarta.servlet.ServletContext#TEMPDIR}
      */
     public MultiPartInputStreamParser(InputStream in, String contentType, MultipartConfigElement config, File contextTmpDir)
     {
@@ -386,7 +386,7 @@ public class MultiPartInputStreamParser
      * @param in Request input stream
      * @param contentType Content-Type header
      * @param config MultipartConfigElement
-     * @param contextTmpDir jakarta.servlet.context.tempdir
+     * @param contextTmpDir {@value jakarta.servlet.ServletContext#TEMPDIR}
      * @param maxParts the maximum number of parts that can be parsed from the multipart content (0 for no parts allowed, -1 for unlimited parts).
      */
     public MultiPartInputStreamParser(InputStream in, String contentType, MultipartConfigElement config, File contextTmpDir, int maxParts)

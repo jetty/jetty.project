@@ -119,7 +119,7 @@ public class WebInfConfiguration extends AbstractConfiguration
      * exit depends on value of persistTempDirectory.
      * </li>
      * <li>
-     * Iff jakarta.servlet.context.tempdir context attribute is set for
+     * Iff {@value jakarta.servlet.ServletContext#TEMPDIR} context attribute is set for
      * this webapp &amp;&amp; exists &amp;&amp; writeable, then use it. Set delete on exit depends on
      * value of persistTempDirectory.
      * </li>
