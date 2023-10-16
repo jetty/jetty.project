@@ -164,8 +164,9 @@ public class TestOSGiUtil
         res.add(CoreOptions.streamBundle(loggingPropertiesBundle.build()).noStart());
         res.add(mavenBundle().groupId("org.eclipse.jetty").artifactId("jetty-slf4j-impl").versionAsInProject().start());
         // END - slf4j 2.x
-
-        res.add(mavenBundle().groupId("org.eclipse.jetty.toolchain").artifactId("jetty-jakarta-servlet-api").versionAsInProject().start());
+        String servletGroupId = System.getProperty("servlet.groupId", "org.eclipse.jetty.toolchain");
+        String servletArtifactId = System.getProperty("servlet.artifactId", "jetty-jakarta-servlet-api");
+        res.add(mavenBundle().groupId(servletGroupId).artifactId(servletArtifactId).versionAsInProject().start());
         res.add(mavenBundle().groupId("org.eclipse.platform").artifactId("org.eclipse.osgi.util").versionAsInProject());
         res.add(mavenBundle().groupId("org.osgi").artifactId("org.osgi.service.cm").versionAsInProject());
         res.add(mavenBundle().groupId("org.osgi").artifactId("org.osgi.service.device").versionAsInProject());
@@ -191,12 +192,24 @@ public class TestOSGiUtil
         res.add(mavenBundle().groupId("org.ow2.asm").artifactId("asm-analysis").versionAsInProject().start());
         res.add(mavenBundle().groupId("org.ow2.asm").artifactId("asm-util").versionAsInProject().start());
         res.add(mavenBundle().groupId("org.apache.aries.spifly").artifactId("org.apache.aries.spifly.dynamic.bundle").versionAsInProject().start());
-        res.add(mavenBundle().groupId("jakarta.inject").artifactId("jakarta.inject-api").versionAsInProject().start());
-        res.add(mavenBundle().groupId("jakarta.annotation").artifactId("jakarta.annotation-api").versionAsInProject().start());
-        res.add(mavenBundle().groupId("jakarta.enterprise").artifactId("jakarta.enterprise.cdi-api").versionAsInProject().start());
-        res.add(mavenBundle().groupId("jakarta.interceptor").artifactId("jakarta.interceptor-api").versionAsInProject().start());
-        res.add(mavenBundle().groupId("jakarta.transaction").artifactId("jakarta.transaction-api").versionAsInProject().start());
-        res.add(mavenBundle().groupId("jakarta.el").artifactId("jakarta.el-api").versionAsInProject().start());
+        String injectGroupId = System.getProperty("inject.groupId", "jakarta.inject");
+        String injectArtifactId = System.getProperty("inject.artifactId", "jakarta.inject-api");
+        res.add(mavenBundle().groupId(injectGroupId).artifactId(injectArtifactId).versionAsInProject().start());
+        String annotationGroupId = System.getProperty("annotation.groupId", "jakarta.annotation");
+        String annotationArtifactId = System.getProperty("annotation.artifactId", "jakarta.annotation-api");
+        res.add(mavenBundle().groupId(annotationGroupId).artifactId(annotationArtifactId).versionAsInProject().start());
+        String enterpriseGroupId = System.getProperty("enterprise.groupId", "jakarta.enterprise");
+        String enterpriseArtifactId = System.getProperty("enterprise.artifactId", "jakarta.enterprise.cdi-api");
+        res.add(mavenBundle().groupId(enterpriseGroupId).artifactId(enterpriseArtifactId).versionAsInProject().start());
+        String interceptorGroupId = System.getProperty("interceptor.groupId", "jakarta.interceptor");
+        String interceptorArtifactId = System.getProperty("interceptor.artifactId", "jakarta.interceptor-api");
+        res.add(mavenBundle().groupId(interceptorGroupId).artifactId(interceptorArtifactId).versionAsInProject().start());
+        String transactionGroupId = System.getProperty("transaction.groupId", "jakarta.transaction");
+        String transactionArtifactId = System.getProperty("transaction.artifactId", "jakarta.transaction-api");
+        res.add(mavenBundle().groupId(transactionGroupId).artifactId(transactionArtifactId).versionAsInProject().start());
+        String elGroupId = System.getProperty("el.groupId", "jakarta.el");
+        String elArtifactId = System.getProperty("el.artifactId", "jakarta.el-api");
+        res.add(mavenBundle().groupId(elGroupId).artifactId(elArtifactId).versionAsInProject().start());
 
         res.add(mavenBundle().groupId("org.eclipse.jetty").artifactId("jetty-util").versionAsInProject().start());
         res.add(mavenBundle().groupId("org.eclipse.jetty").artifactId("jetty-io").versionAsInProject().start());
@@ -240,7 +253,9 @@ public class TestOSGiUtil
          * However, as we are now configuring the full jsp bundle set, we need to remove the jakarta.el-api
          * bundle because the org.mortbay.jasper.apache-el bundle will be providing both the api and the impl.
          */
-        MavenArtifactProvisionOption option = mavenBundle().groupId("jakarta.el").artifactId("jakarta.el-api").versionAsInProject();
+        String elGroupId = System.getProperty("el.groupId", "jakarta.el");
+        String elArtifactId = System.getProperty("el.artifactId", "jakarta.el-api");
+        MavenArtifactProvisionOption option = mavenBundle().groupId(elGroupId).artifactId(elArtifactId).versionAsInProject();
         
         ListIterator<Option> iter = res.listIterator();
         while (iter.hasNext())
@@ -258,7 +273,9 @@ public class TestOSGiUtil
         res.add(mavenBundle().groupId("org.mortbay.jasper").artifactId("apache-el").versionAsInProject().start());
         res.add(mavenBundle().groupId("org.mortbay.jasper").artifactId("apache-jsp").versionAsInProject().start());
         res.add(mavenBundle().groupId("org.eclipse.jetty.ee9").artifactId("jetty-ee9-apache-jsp").versionAsInProject().start());
-        res.add(mavenBundle().groupId("jakarta.servlet.jsp.jstl").artifactId("jakarta.servlet.jsp.jstl-api").versionAsInProject());
+        String jstlGroupId = System.getProperty("jstl.groupId", "jakarta.servlet.jsp.jstl");
+        String jstlArtifactId = System.getProperty("jstl.artifactId", "jakarta.servlet.jsp.jstl-api");
+        res.add(mavenBundle().groupId(jstlGroupId).artifactId(jstlArtifactId).versionAsInProject());
         res.add(mavenBundle().groupId("org.glassfish.web").artifactId("jakarta.servlet.jsp.jstl").versionAsInProject().start());
         res.add(mavenBundle().groupId("org.eclipse.jdt").artifactId("ecj").versionAsInProject().start());
         res.add(mavenBundle().groupId("org.eclipse.jetty.ee9.osgi").artifactId("jetty-ee9-osgi-boot-jsp").versionAsInProject().noStart());

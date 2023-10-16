@@ -10,18 +10,33 @@
   <name>EE8 :: OSGi :: Test</name>
   <description>Jetty OSGi Integration test</description>
   <properties>
+    <annotation.artifactId>jakarta.annotation-api</annotation.artifactId>
+    <annotation.groupId>jakarta.annotation</annotation.groupId>
     <assembly-directory>target/distribution</assembly-directory>
     <bundle-symbolic-name>${project.groupId}.boot.test.osgi</bundle-symbolic-name>
     <ee9.module>jetty-ee9-osgi/test-jetty-ee9-osgi</ee9.module>
+    <el.artifactId>jakarta.el-api</el.artifactId>
+    <el.groupId>jakarta.el</el.groupId>
+    <enterprise.artifactId>jakarta.enterprise.cdi-api</enterprise.artifactId>
+    <enterprise.groupId>jakarta.enterprise</enterprise.groupId>
+    <inject.artifactId>jakarta.inject-api</inject.artifactId>
+    <inject.groupId>jakarta.inject</inject.groupId>
     <injection.bundle.version>1.2</injection.bundle.version>
+    <interceptor.artifactId>jakarta.interceptor-api</interceptor.artifactId>
+    <interceptor.groupId>jakarta.interceptor</interceptor.groupId>
     <jetty-orbit-url>https://download.eclipse.org/jetty/orbit/</jetty-orbit-url>
+    <jstl.artifactId>jakarta.servlet.jsp.jstl-api</jstl.artifactId>
+    <jstl.groupId>jakarta.servlet.jsp.jstl</jstl.groupId>
     <maven.deploy.skip>true</maven.deploy.skip>
     <maven.javadoc.skip>true</maven.javadoc.skip>
     <pax.exam.version>4.13.5</pax.exam.version>
     <pax.url.version>2.6.14</pax.url.version>
+    <servlet.artifactId>jetty-servlet-api</servlet.artifactId>
     <spifly.version>1.3.6</spifly.version>
     <swissbox.version>1.8.3</swissbox.version>
     <tinybundles.version>3.0.0</tinybundles.version>
+    <transaction.artifactId>jakarta.interceptor-api</transaction.artifactId>
+    <transaction.groupId>jakarta.interceptor</transaction.groupId>
   </properties>
   <dependencies>
     <dependency>
@@ -537,8 +552,23 @@
           <configuration>
             <skipTests>${skipTests}</skipTests>
             <systemPropertyVariables>
+              <annotation.groupId>${annotation.groupId}</annotation.groupId>
+              <annotation.artifactId>${annotation.artifactId}</annotation.artifactId>
+              <el.artifactId>${el.artifactId}</el.artifactId>
+              <el.groupId>${el.groupId}</el.groupId>
+              <enterprise.groupId>${enterprise.groupId}</enterprise.groupId>
+              <enterprise.artifactId>${enterprise.artifactId}</enterprise.artifactId>
+              <interceptor.artifactId>${interceptor.artifactId}</interceptor.artifactId>
+              <interceptor.groupId>${interceptor.groupId}</interceptor.groupId>
+              <jstl.artifactId>${jstl.artifactId}</jstl.artifactId>
+              <jstl.groupId>${jstl.groupId}</jstl.groupId>
               <mavenRepoPath>${session.repositorySession.localRepository.basedir.absolutePath}</mavenRepoPath>
               <settingsFilePath>${env.GLOBAL_MVN_SETTINGS}</settingsFilePath>
+              <servlet.artifactId>${servlet.artifactId}</servlet.artifactId>
+              <inject.groupId>${inject.groupId}</inject.groupId>
+              <inject.artifactId>${inject.artifactId}</inject.artifactId>
+              <transaction.groupId>${transaction.groupId}</transaction.groupId>
+              <transaction.artifactId>${transaction.artifactId}</transaction.artifactId>
             </systemPropertyVariables>
             <argLine>-Dconscrypt-version=${conscrypt.version}</argLine>
             <!-- TODO -->
