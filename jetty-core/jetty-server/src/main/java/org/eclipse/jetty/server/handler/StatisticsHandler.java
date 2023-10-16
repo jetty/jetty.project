@@ -37,9 +37,9 @@ public class StatisticsHandler extends EventsHandler
 {
     private final CounterStatistic _requestStats = new CounterStatistic(); // how many requests are being handled (full lifecycle)
     private final SampleStatistic _requestTimeStats = new SampleStatistic(); // latencies of requests (full lifecycle)
-    private final CounterStatistic _handleStats = new CounterStatistic(); // how many requests are in handle
-    private final SampleStatistic _handleTimeStats = new SampleStatistic(); // latencies of requests in handle
-    private final LongAdder _errors = new LongAdder();
+    private final CounterStatistic _handleStats = new CounterStatistic(); // how many requests are in handle()
+    private final SampleStatistic _handleTimeStats = new SampleStatistic(); // latencies of requests in handle()
+    private final LongAdder _failures = new LongAdder();
     private final LongAdder _handlingFailures = new LongAdder();
     private final LongAdder _responses1xx = new LongAdder();
     private final LongAdder _responses2xx = new LongAdder();
@@ -114,7 +114,7 @@ public class StatisticsHandler extends EventsHandler
     protected void onComplete(Request request, Throwable failure)
     {
         if (failure != null)
-            _errors.increment();
+            _failures.increment();
         _requestTimeStats.record(NanoTime.since(request.getBeginNanoTime()));
         _requestStats.decrement();
     }
@@ -127,7 +127,7 @@ public class StatisticsHandler extends EventsHandler
             Dumpable.named("requestTimeStats", _requestTimeStats),
             Dumpable.named("handleStats", _handleStats),
             Dumpable.named("handleTimeStats", _handleTimeStats),
-            Dumpable.named("errors", _errors),
+            Dumpable.named("failures", _failures),
             Dumpable.named("handlingFailures", _handlingFailures),
             Dumpable.named("1xxResponses", _responses1xx),
             Dumpable.named("2xxResponses", _responses2xx),
@@ -147,7 +147,7 @@ public class StatisticsHandler extends EventsHandler
         _requestTimeStats.reset();
         _handleStats.reset();
         _handleTimeStats.reset();
-        _errors.reset();
+        _failures.reset();
         _handlingFailures.reset();
         _responses1xx.reset();
         _responses2xx.reset();
@@ -159,7 +159,7 @@ public class StatisticsHandler extends EventsHandler
     }
 
     /**
-     * @deprecated use {@link #getRequestsTotalCount()} instead.
+     * @deprecated use {@link #getRequestTotal()} instead.
      */
     @Deprecated
     @ManagedAttribute("number of requests")
@@ -169,12 +169,12 @@ public class StatisticsHandler extends EventsHandler
     }
 
     @ManagedAttribute("total number of requests")
-    public int getRequestsTotalCount()
+    public int getRequestTotal()
     {
         return (int)_requestStats.getTotal();
     }
 
-    @ManagedAttribute("number of requests currently active")
+    @ManagedAttribute("current number of active requests")
     public int getRequestsActive()
     {
         return (int)_requestStats.getCurrent();
@@ -186,76 +186,76 @@ public class StatisticsHandler extends EventsHandler
         return (int)_requestStats.getMax();
     }
 
-    @ManagedAttribute("total time spend in all request execution (in ns)")
+    @ManagedAttribute("total time spent in request execution (in ns)")
     public long getRequestTimeTotal()
     {
         return _requestTimeStats.getTotal();
     }
 
-    @ManagedAttribute("maximum time spend executing requests (in ns)")
+    @ManagedAttribute("maximum request execution time (in ns)")
     public long getRequestTimeMax()
     {
         return _requestTimeStats.getMax();
     }
 
-    @ManagedAttribute("mean time spent executing requests (in ns)")
+    @ManagedAttribute("mean request execution time (in ns)")
     public double getRequestTimeMean()
     {
         return _requestTimeStats.getMean();
     }
 
-    @ManagedAttribute("standard deviation for request execution (in ns)")
+    @ManagedAttribute("standard deviation for request execution time (in ns)")
     public double getRequestTimeStdDev()
     {
         return _requestTimeStats.getStdDev();
     }
 
-    @ManagedAttribute("total number of requests in handle")
-    public int getHandlesTotalCount()
+    @ManagedAttribute("total number of calls to handle()")
+    public int getHandleTotal()
     {
         return (int)_handleStats.getTotal();
     }
 
-    @ManagedAttribute("current number of requests in handle")
-    public int getHandlesActive()
+    @ManagedAttribute("current number of requests in handle()")
+    public int getHandleActive()
     {
         return (int)_handleStats.getCurrent();
     }
 
-    @ManagedAttribute("maximum number of requests in handle")
-    public int getHandlesActiveMax()
+    @ManagedAttribute("maximum number of requests in handle()")
+    public int getHandleActiveMax()
     {
         return (int)_handleStats.getMax();
     }
 
-    @ManagedAttribute("maximum time spend in handle (in ns)")
-    public long getHandlesTimeMax()
+    @ManagedAttribute("maximum handle() execution time (in ns)")
+    public long getHandleTimeMax()
     {
         return _handleTimeStats.getMax();
     }
 
-    @ManagedAttribute("total time spent in handle (in ns)")
-    public long getHandlesTimeTotal()
+    @ManagedAttribute("total time spent in handle() execution (in ns)")
+    public long getHandleTimeTotal()
     {
         return _handleTimeStats.getTotal();
     }
 
-    @ManagedAttribute("mean time spent in handle (in ns)")
-    public double getHandlesTimeMean()
+    @ManagedAttribute("mean handle() execution time (in ns)")
+    public double getHandleTimeMean()
     {
         return _handleTimeStats.getMean();
     }
 
-    @ManagedAttribute("standard deviation for the time spent in handle (in ns)")
-    public double getHandlesTimeStdDev()
+    @ManagedAttribute("standard deviation for handle() execution time (in ns)")
+    public double getHandleTimeStdDev()
     {
         return _handleTimeStats.getStdDev();
     }
 
-    @ManagedAttribute("number of async errors that occurred")
-    public int getErrors()
+    @ManagedAttribute("number of failed requests")
+    public int getFailures()
     {
-        return _errors.intValue();
+        return _failures.intValue();
     }
 
     @ManagedAttribute("number of requests with 1xx response status")
@@ -288,7 +288,7 @@ public class StatisticsHandler extends EventsHandler
         return _responses5xx.intValue();
     }
 
-    @ManagedAttribute("number of requests that threw an exception during handle")
+    @ManagedAttribute("number of requests that threw an exception from handle()")
     public int getHandlingFailures()
     {
         return _handlingFailures.intValue();
@@ -306,7 +306,7 @@ public class StatisticsHandler extends EventsHandler
         return _bytesWritten.longValue();
     }
 
-    @ManagedAttribute("duration for which stats have been collected")
+    @ManagedAttribute("duration for which statistics have been collected")
     public Duration getStatisticsDuration()
     {
         return Duration.ofNanos(NanoTime.since(_startTime));
