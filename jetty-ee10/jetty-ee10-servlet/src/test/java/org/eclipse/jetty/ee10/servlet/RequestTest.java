@@ -14,6 +14,7 @@
 package org.eclipse.jetty.ee10.servlet;
 
 import java.io.IOException;
+import java.io.UnsupportedEncodingException;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
@@ -33,6 +34,7 @@ import org.eclipse.jetty.server.LocalConnector;
 import org.eclipse.jetty.server.Server;
 import org.eclipse.jetty.util.component.LifeCycle;
 import org.junit.jupiter.api.AfterEach;
+import org.junit.jupiter.api.Assertions;
 import org.junit.jupiter.api.Test;
 
 import static org.hamcrest.MatcherAssert.assertThat;
@@ -41,6 +43,7 @@ import static org.hamcrest.Matchers.containsString;
 import static org.hamcrest.Matchers.equalTo;
 import static org.hamcrest.Matchers.is;
 import static org.hamcrest.Matchers.not;
+import static org.hamcrest.Matchers.nullValue;
 import static org.hamcrest.Matchers.sameInstance;
 
 public class RequestTest
@@ -281,5 +284,59 @@ public class RequestTest
 
         assertThat(cookieHistory.get(0), sameInstance(cookieHistory.get(2)));
         assertThat(cookieHistory.get(2), not(sameInstance(cookieHistory.get(4))));
+    }
+
+    @Test
+    public void testGetCharacterEncoding() throws Exception
+    {
+        startServer(new HttpServlet()
+        {
+            @Override
+            protected void service(HttpServletRequest request, HttpServletResponse resp) throws IOException
+            {
+                // No character encoding specified
+                request.getReader();
+                // Try setting after read has been obtained
+                request.setCharacterEncoding("ISO-8859-2");
+                assertThat(request.getCharacterEncoding(), nullValue());
+            }
+        });
+
+        String rawResponse = _connector.getResponse(
+            """
+                GET /test HTTP/1.1\r
+                Host: host\r
+                Connection: close\r
+                \r
+                """);
+        HttpTester.Response response = HttpTester.parseResponse(rawResponse);
+        assertThat(response.getStatus(), is(HttpStatus.OK_200));
+    }
+
+    @Test
+    public void testUnknownCharacterEncoding() throws Exception
+    {
+        startServer(new HttpServlet()
+        {
+            @Override
+            protected void service(HttpServletRequest request, HttpServletResponse resp) throws IOException
+            {
+                assertThat(request.getCharacterEncoding(), is("Unknown"));
+                Assertions.assertThrows(UnsupportedEncodingException.class, request::getReader);
+            }
+        });
+
+        String rawResponse = _connector.getResponse(
+            """
+                POST /test HTTP/1.1\r
+                Host: host\r
+                Content-Type:text/plain; charset=Unknown\r
+                Content-Length: 10\r
+                Connection: close\r
+                \r
+                1234567890\r
+                """);
+        HttpTester.Response response = HttpTester.parseResponse(rawResponse);
+        assertThat(response.getStatus(), is(HttpStatus.OK_200));
     }
 }

@@ -1,11 +1,12 @@
+<?xml version="1.0" encoding="UTF-8"?>
 <project xmlns="http://maven.apache.org/POM/4.0.0" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/maven-v4_0_0.xsd">
+
+  <modelVersion>4.0.0</modelVersion>
   <parent>
     <groupId>org.eclipse.jetty.ee10</groupId>
     <artifactId>jetty-ee10</artifactId>
-    <version>12.0.2-SNAPSHOT</version>
+    <version>12.0.3-SNAPSHOT</version>
   </parent>
-
-  <modelVersion>4.0.0</modelVersion>
   <artifactId>jetty-ee10-proxy</artifactId>
   <name>EE10 :: Proxy</name>
   <description>Jetty Proxy</description>
@@ -15,21 +16,15 @@
     <spotbugs.onlyAnalyze>org.eclipse.jetty.ee10.proxy.*</spotbugs.onlyAnalyze>
   </properties>
 
-  <build>
-    <plugins>
-      <plugin>
-        <groupId>org.apache.maven.plugins</groupId>
-        <artifactId>maven-surefire-plugin</artifactId>
-        <configuration>
-          <argLine>
-            @{argLine} ${jetty.surefire.argLine} --add-reads org.eclipse.jetty.ee10.proxy=org.eclipse.jetty.logging
-          </argLine>
-        </configuration>
-      </plugin>
-    </plugins>
-  </build>
-
   <dependencies>
+    <dependency>
+      <groupId>org.eclipse.jetty</groupId>
+      <artifactId>jetty-client</artifactId>
+    </dependency>
+    <dependency>
+      <groupId>org.eclipse.jetty</groupId>
+      <artifactId>jetty-util</artifactId>
+    </dependency>
     <dependency>
       <groupId>org.slf4j</groupId>
       <artifactId>slf4j-api</artifactId>
@@ -46,20 +41,12 @@
     </dependency>
     <dependency>
       <groupId>org.eclipse.jetty</groupId>
-      <artifactId>jetty-util</artifactId>
-    </dependency>
-    <dependency>
-      <groupId>org.eclipse.jetty</groupId>
-      <artifactId>jetty-client</artifactId>
-    </dependency>
-    <dependency>
-      <groupId>org.eclipse.jetty</groupId>
-      <artifactId>jetty-util-ajax</artifactId>
+      <artifactId>jetty-http-tools</artifactId>
       <scope>test</scope>
     </dependency>
     <dependency>
       <groupId>org.eclipse.jetty</groupId>
-      <artifactId>jetty-http-tools</artifactId>
+      <artifactId>jetty-rewrite</artifactId>
       <scope>test</scope>
     </dependency>
     <dependency>
@@ -69,7 +56,7 @@
     </dependency>
     <dependency>
       <groupId>org.eclipse.jetty</groupId>
-      <artifactId>jetty-rewrite</artifactId>
+      <artifactId>jetty-util-ajax</artifactId>
       <scope>test</scope>
     </dependency>
     <dependency>
@@ -78,4 +65,16 @@
       <scope>test</scope>
     </dependency>
   </dependencies>
+
+  <build>
+    <plugins>
+      <plugin>
+        <groupId>org.apache.maven.plugins</groupId>
+        <artifactId>maven-surefire-plugin</artifactId>
+        <configuration>
+          <argLine>@{argLine} ${jetty.surefire.argLine} --add-reads org.eclipse.jetty.ee10.proxy=org.eclipse.jetty.logging</argLine>
+        </configuration>
+      </plugin>
+    </plugins>
+  </build>
 </project>

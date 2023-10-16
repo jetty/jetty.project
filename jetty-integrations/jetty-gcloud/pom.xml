@@ -1,23 +1,23 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <project xmlns="http://maven.apache.org/POM/4.0.0" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/maven-v4_0_0.xsd">
+
+  <modelVersion>4.0.0</modelVersion>
   <parent>
     <groupId>org.eclipse.jetty</groupId>
     <artifactId>jetty-integrations</artifactId>
-    <version>12.0.2-SNAPSHOT</version>
+    <version>12.0.3-SNAPSHOT</version>
   </parent>
-
-  <modelVersion>4.0.0</modelVersion>
   <groupId>org.eclipse.jetty.gcloud</groupId>
   <artifactId>jetty-gcloud</artifactId>
   <packaging>pom</packaging>
   <name>Integrations :: GCloud</name>
 
-  <properties>
-    <gcloud.version>2.11.4</gcloud.version>
-  </properties>
-
   <modules>
     <module>jetty-gcloud-session-manager</module>
   </modules>
+
+  <properties>
+    <gcloud.version>2.11.4</gcloud.version>
+  </properties>
 
 </project>

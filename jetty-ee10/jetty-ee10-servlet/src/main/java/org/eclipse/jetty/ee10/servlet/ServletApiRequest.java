@@ -19,7 +19,9 @@ import java.io.InputStream;
 import java.io.InputStreamReader;
 import java.io.UnsupportedEncodingException;
 import java.nio.charset.Charset;
+import java.nio.charset.IllegalCharsetNameException;
 import java.nio.charset.StandardCharsets;
+import java.nio.charset.UnsupportedCharsetException;
 import java.security.Principal;
 import java.util.AbstractList;
 import java.util.Collection;
@@ -185,7 +187,11 @@ public class ServletApiRequest implements HttpServletRequest
     @Override
     public String getProtocolRequestId()
     {
-        return getRequest().getId();
+        return switch (getRequest().getConnectionMetaData().getHttpVersion())
+        {
+            case HTTP_2, HTTP_3 -> getRequest().getId();
+            default -> "";
+        };
     }
 
     @Override
@@ -717,8 +723,15 @@ public class ServletApiRequest implements HttpServletRequest
     @Override
     public String getCharacterEncoding()
     {
-        if (_charset == null)
-            _charset = Request.getCharset(getRequest());
+        try
+        {
+            if (_charset == null)
+                _charset = Request.getCharset(getRequest());
+        }
+        catch (IllegalCharsetNameException | UnsupportedCharsetException e)
+        {
+            return MimeTypes.getCharsetFromContentType(getRequest().getHeaders().get(HttpHeader.CONTENT_TYPE));
+        }
 
         if (_charset == null)
             return getServletRequestInfo().getServletContext().getServletContext().getRequestCharacterEncoding();
@@ -1027,18 +1040,38 @@ public class ServletApiRequest implements HttpServletRequest
         if (_inputState == ServletContextRequest.INPUT_READER)
             return _reader;
 
-        if (_charset == null)
-            _charset = Request.getCharset(getRequest());
-        if (_charset == null)
-            _charset = getRequest().getContext().getMimeTypes().getCharset(getServletRequestInfo().getServletContext().getServletContextHandler().getDefaultRequestCharacterEncoding());
-        if (_charset == null)
-            _charset = StandardCharsets.ISO_8859_1;
+        Charset charset = _charset;
+        try
+        {
+            if (charset == null)
+            {
+                charset = _charset = Request.getCharset(getRequest());
+                if (charset == null)
+                    charset = StandardCharsets.ISO_8859_1;
+            }
 
-        if (_reader == null || !_charset.equals(_readerCharset))
+        }
+        catch (IllegalCharsetNameException | UnsupportedCharsetException e)
+        {
+            throw new UnsupportedEncodingException(e.getMessage())
+            {
+                {
+                    initCause(e);
+                }
+
+                @Override
+                public String toString()
+                {
+                    return "%s@%x:%s".formatted(UnsupportedEncodingException.class.getName(), hashCode(), getMessage());
+                }
+            };
+        }
+
+        if (_reader == null || !charset.equals(_readerCharset))
         {
             ServletInputStream in = getInputStream();
-            _readerCharset = _charset;
-            _reader = new BufferedReader(new InputStreamReader(in, _charset))
+            _readerCharset = charset;
+            _reader = new BufferedReader(new InputStreamReader(in, charset))
             {
                 @Override
                 public void close() throws IOException
