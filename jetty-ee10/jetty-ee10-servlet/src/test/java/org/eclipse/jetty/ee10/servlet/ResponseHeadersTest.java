@@ -630,4 +630,51 @@ public class ResponseHeadersTest
         assertThat("Content Type", response.getField("Content-Type"), nullValue());
         assertThat(response.getContent(), containsString("Hello"));
     }
+
+    @Test
+    public void testCommittedNoop() throws Exception
+    {
+        ServletContextHandler contextHandler = new ServletContextHandler();
+        contextHandler.setContextPath("/");
+        HttpServlet addHeaderServlet = new HttpServlet()
+        {
+            @Override
+            protected void doGet(HttpServletRequest request, HttpServletResponse response) throws ServletException, IOException
+            {
+                response.setHeader("Test", "Before");
+                response.setHeader("Content-Length", "2");
+                response.setHeader("Content-Type", "text/html");
+
+                response.getOutputStream().print("OK");
+                response.flushBuffer();
+
+                // These should be silently ignored
+                response.setHeader("Test", "After");
+                response.setHeader("Content-Length", "10");
+                response.setHeader("Content-Type", "text/xml");
+
+                assertThat(response.getHeader("Test"), is("Before"));
+                assertThat(response.getContentType(), is("text/html"));
+                assertThat(response.getHeader("Content-Length"), is("2"));
+            }
+        };
+
+        contextHandler.addServlet(addHeaderServlet, "/test/*");
+        startServer(contextHandler);
+
+        HttpTester.Request request = new HttpTester.Request();
+        request.setMethod("GET");
+        request.setURI("/test/");
+        request.setVersion(HttpVersion.HTTP_1_1);
+        request.setHeader("Connection", "close");
+        request.setHeader("Host", "test");
+
+        ByteBuffer responseBuffer = connector.getResponse(request.generate());
+        HttpTester.Response response = HttpTester.parseResponse(responseBuffer);
+
+        assertThat(response.getStatus(), is(200));
+        assertThat(response.getField("Test").getValue(), is("Before"));
+        assertThat(response.getField("Content-Type").getValue(), is("text/html"));
+        assertThat(response.getContent(), is("OK"));
+    }
 }

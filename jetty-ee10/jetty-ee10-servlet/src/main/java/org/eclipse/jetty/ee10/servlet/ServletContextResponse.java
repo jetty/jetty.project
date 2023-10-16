@@ -540,102 +540,65 @@ public class ServletContextResponse extends ContextResponse implements ServletCo
         @Override
         public HttpField onAddField(HttpField field)
         {
-            if (field.getHeader() != null)
-            {
-                switch (field.getHeader())
-                {
-                    case CONTENT_LENGTH ->
-                    {
-                        if (!isCommitted())
-                        {
-                            return setContentLength(field);
-                        }
-                    }
-                    case CONTENT_TYPE ->
-                    {
-                        if (!isCommitted())
-                        {
-                            return setContentType(field);
-                        }
-                    }
-                }
-            }
+            if (isCommitted())
+                return null;
 
-            return super.onAddField(field);
+            if (field.getHeader() == null)
+                return super.onAddField(field);
+
+            return switch (field.getHeader())
+            {
+                case CONTENT_LENGTH -> setContentLength(field);
+                case CONTENT_TYPE -> setContentType(field);
+                default -> super.onAddField(field);
+            };
         }
 
         @Override
         public boolean onRemoveField(HttpField field)
         {
-            if (field.getHeader() != null)
+            if (isCommitted())
+                return false;
+            if (field.getHeader() == null)
+                return true;
+            switch (field.getHeader())
             {
-                switch (field.getHeader())
+                case CONTENT_LENGTH -> _contentLength = -1;
+                case CONTENT_TYPE ->
                 {
-                    case CONTENT_LENGTH ->
+                    _contentType = null;
+                    _mimeType = null;
+                    if (!isWriting())
                     {
-                        if (!isCommitted())
-                            _contentLength = -1;
-                    }
-                    case CONTENT_TYPE ->
-                    {
-                        if (!isCommitted())
+                        _characterEncoding = switch (_encodingFrom)
                         {
-                            _contentType = null;
-                            _mimeType = null;
-                            if (!isWriting())
-                            {
-                                _characterEncoding = switch (_encodingFrom)
-                                {
-                                    case SET_CHARACTER_ENCODING, SET_LOCALE -> _characterEncoding;
-                                    default -> null;
-                                };
-                            }
-                        }
+                            case SET_CHARACTER_ENCODING, SET_LOCALE -> _characterEncoding;
+                            default -> null;
+                        };
                     }
                 }
             }
+
             return true;
         }
 
-        /**
-         *
-         */
         @Override
         public HttpField onReplaceField(HttpField oldField, HttpField newField)
         {
-            if (oldField == null)
-            {
-                return onAddField(newField);
-            }
+            assert oldField != null && newField != null;
 
-            if (newField == null)
-            {
-                onRemoveField(oldField);
+            if (isCommitted())
                 return null;
-            }
 
-            if (newField.getHeader() != null)
+            if (newField.getHeader() == null)
+                return newField;
+
+            return switch (newField.getHeader())
             {
-                switch (newField.getHeader())
-                {
-                    case CONTENT_LENGTH ->
-                    {
-                        if (!isCommitted())
-                        {
-                            return setContentLength(newField);
-                        }
-                    }
-                    case CONTENT_TYPE ->
-                    {
-                        if (!isCommitted())
-                        {
-                            return setContentType(newField);
-                        }
-                    }
-                }
-            }
-
-            return newField;
+                case CONTENT_LENGTH -> setContentLength(newField);
+                case CONTENT_TYPE -> setContentType(newField);
+                default -> newField;
+            };
         }
 
         private HttpField setContentLength(HttpField field)
