@@ -556,8 +556,11 @@ public class ManagedSelector extends ContainerLifeCycle implements Dumpable
             if (LOG.isDebugEnabled())
                 LOG.debug("updateable {}", _updateable.size());
 
-            for (SelectorUpdate update : _updateable)
+            while (true)
             {
+                SelectorUpdate update = _updateable.pollFirst();
+                if (update == null)
+                    break;
                 if (_selector == null)
                     break;
                 try
@@ -571,7 +574,6 @@ public class ManagedSelector extends ContainerLifeCycle implements Dumpable
                     LOG.warn("Cannot update selector {}", ManagedSelector.this, x);
                 }
             }
-            _updateable.clear();
 
             Selector selector;
             int updates;

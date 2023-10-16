@@ -194,7 +194,7 @@ public enum HttpHeader
 
     public boolean is(String s)
     {
-        return _string.equalsIgnoreCase(s);
+        return StringUtil.asciiEqualsIgnoreCase(_string, s);
     }
 
     /**
