@@ -523,7 +523,7 @@ public class Scanner extends ContainerLifeCycle
     }
 
     /**
-     * Test if scanning should start automatically with Scanner.{@link #start()}
+     * Test if scanning should start automatically with {@code Scanner}.{@link #start()}
      *
      * @return true if scanning should start automatically, false to have scanning is deferred to a later manual call to {@link #startScanning()}
      */
@@ -545,7 +545,7 @@ public class Scanner extends ContainerLifeCycle
      *     is required to initiate this Scanner so that it can begin report files in the {@link #setScanDirs(List)}
      * </p>
      *
-     * @param autostart true if scanning should start automatically, false to have scanning is deferred to a later manual call to {@link #startScanning()}
+     * @param autostart true if scanning should start automatically, false to defer start of scanning to a later call to {@link #startScanning()}
      */
     public void setAutoStartScanning(boolean autostart)
     {
@@ -632,9 +632,9 @@ public class Scanner extends ContainerLifeCycle
     }
 
     /**
-     * Start the scanning process.
+     * Start scanning.
      * <p>
-     *     This will perform the scan of the directories {@link #setScanDirs(List)}
+     *     This will perform the initial scan of the directories {@link #setScanDirs(List)}
      *     and schedule future scans, following all of the configuration
      *     of the scan (eg: {@link #setReportExistingFilesOnStartup(boolean)})
      * </p>
