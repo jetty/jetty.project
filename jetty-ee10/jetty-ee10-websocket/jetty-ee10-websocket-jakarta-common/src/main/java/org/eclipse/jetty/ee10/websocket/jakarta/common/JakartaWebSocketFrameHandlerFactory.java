@@ -191,14 +191,14 @@ public abstract class JakartaWebSocketFrameHandlerFactory
             if (AbstractDecodedMessageSink.class.isAssignableFrom(msgMetadata.getSinkClass()))
             {
                 MethodHandle ctorHandle = lookup.findConstructor(msgMetadata.getSinkClass(),
-                    MethodType.methodType(void.class, CoreSession.class, MethodHandle.class, List.class));
+                    MethodType.methodType(void.class, CoreSession.class, MethodHolder.class, List.class));
                 List<RegisteredDecoder> registeredDecoders = msgMetadata.getRegisteredDecoders();
                 return (MessageSink)ctorHandle.invoke(session.getCoreSession(), msgMetadata.getMethodHolder(), registeredDecoders);
             }
             else
             {
                 MethodHandle ctorHandle = lookup.findConstructor(msgMetadata.getSinkClass(),
-                    MethodType.methodType(void.class, CoreSession.class, MethodHandle.class, boolean.class));
+                    MethodType.methodType(void.class, CoreSession.class, MethodHolder.class, boolean.class));
                 return (MessageSink)ctorHandle.invoke(session.getCoreSession(), msgMetadata.getMethodHolder(), true);
             }
         }
