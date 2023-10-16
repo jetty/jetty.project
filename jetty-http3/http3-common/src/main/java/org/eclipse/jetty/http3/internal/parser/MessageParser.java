@@ -19,6 +19,7 @@ import java.util.function.BooleanSupplier;
 import java.util.function.UnaryOperator;
 
 import org.eclipse.jetty.http3.frames.FrameType;
+import org.eclipse.jetty.http3.internal.Grease;
 import org.eclipse.jetty.http3.internal.HTTP3ErrorCode;
 import org.eclipse.jetty.http3.qpack.QpackDecoder;
 import org.eclipse.jetty.util.BufferUtil;
@@ -128,8 +129,9 @@ public class MessageParser
                                 return Result.NO_FRAME;
                             }
 
+                            // SPEC: grease and unknown frame types are ignored.
                             if (LOG.isDebugEnabled())
-                                LOG.debug("ignoring unknown frame type {}", Long.toHexString(frameType));
+                                LOG.debug("ignoring {} frame type {}", Grease.isGreaseValue(frameType) ? "grease" : "unknown", Long.toHexString(frameType));
 
                             BodyParser.Result result = unknownBodyParser.parse(buffer);
                             if (result == BodyParser.Result.NO_FRAME)
