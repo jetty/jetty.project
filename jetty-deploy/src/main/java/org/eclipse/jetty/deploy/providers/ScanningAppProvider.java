@@ -159,7 +159,7 @@ public abstract class ScanningAppProvider extends ContainerLifeCycle implements 
         _scanner.setAutoStartScanning(!_deferInitialScan);
         addBean(_scanner);
 
-        if (_deferInitialScan)
+        if (isDeferInitialScan())
         {
             // Setup listener to wait for Server in STARTED state, which
             // triggers the first scan of the monitored directories

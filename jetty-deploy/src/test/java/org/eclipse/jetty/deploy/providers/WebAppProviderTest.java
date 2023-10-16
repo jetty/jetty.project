@@ -22,6 +22,9 @@ import java.util.Arrays;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.concurrent.BlockingQueue;
+import java.util.concurrent.LinkedBlockingDeque;
+import java.util.concurrent.TimeUnit;
 
 import org.eclipse.jetty.deploy.AppProvider;
 import org.eclipse.jetty.deploy.DeploymentManager;
@@ -33,6 +36,9 @@ import org.eclipse.jetty.toolchain.test.MavenTestingUtils;
 import org.eclipse.jetty.toolchain.test.jupiter.WorkDir;
 import org.eclipse.jetty.toolchain.test.jupiter.WorkDirExtension;
 import org.eclipse.jetty.util.IO;
+import org.eclipse.jetty.util.Scanner;
+import org.eclipse.jetty.util.component.Container;
+import org.eclipse.jetty.util.component.LifeCycle;
 import org.eclipse.jetty.util.resource.Resource;
 import org.eclipse.jetty.webapp.WebAppContext;
 import org.junit.jupiter.api.AfterEach;
@@ -41,9 +47,11 @@ import org.junit.jupiter.api.condition.EnabledOnOs;
 import org.junit.jupiter.api.extension.ExtendWith;
 
 import static org.awaitility.Awaitility.await;
+import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.Matchers.is;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
+import static org.junit.jupiter.api.Assertions.assertNotNull;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.junit.jupiter.api.Assumptions.assumeTrue;
 import static org.junit.jupiter.api.condition.OS.LINUX;
@@ -257,17 +265,77 @@ public class WebAppProviderTest
 
         try
         {
-            server.start();
+            BlockingQueue<String> eventQueue = new LinkedBlockingDeque<>();
 
+            LifeCycle.Listener eventCaptureListener = new LifeCycle.Listener()
+            {
+                @Override
+                public void lifeCycleStarted(LifeCycle event)
+                {
+                    if (event instanceof Server)
+                    {
+                        eventQueue.add("Server started");
+                    }
+                    if (event instanceof ScanningAppProvider)
+                    {
+                        eventQueue.add("ScanningAppProvider started");
+                    }
+                    if (event instanceof Scanner)
+                    {
+                        eventQueue.add("Scanner started");
+                    }
+                }
+            };
+
+            server.addEventListener(eventCaptureListener);
+
+            ScanningAppProvider scanningAppProvider = null;
             DeploymentManager deploymentManager = server.getBean(DeploymentManager.class);
             for (AppProvider appProvider : deploymentManager.getAppProviders())
             {
                 if (appProvider instanceof ScanningAppProvider)
                 {
-                    ScanningAppProvider scanningAppProvider = (ScanningAppProvider)appProvider;
-                    assertTrue(scanningAppProvider.isDeferInitialScan(), "The DeferInitialScan configuration should be true");
+                    scanningAppProvider = (ScanningAppProvider)appProvider;
                 }
             }
+            assertNotNull(scanningAppProvider, "Should have found ScanningAppProvider");
+            assertTrue(scanningAppProvider.isDeferInitialScan(), "The DeferInitialScan configuration should be true");
+
+            scanningAppProvider.addEventListener(eventCaptureListener);
+            scanningAppProvider.addEventListener(new Container.InheritedListener()
+            {
+                @Override
+                public void beanAdded(Container parent, Object child)
+                {
+                    if (child instanceof Scanner)
+                    {
+                        Scanner scanner = (Scanner)child;
+                        scanner.addEventListener(eventCaptureListener);
+                        scanner.addListener(new Scanner.ScanCycleListener()
+                        {
+                            @Override
+                            public void scanStarted(int cycle) throws Exception
+                            {
+                                eventQueue.add("Scan Started [" + cycle + "]");
+                            }
+
+                            @Override
+                            public void scanEnded(int cycle) throws Exception
+                            {
+                                eventQueue.add("Scan Ended [" + cycle + "]");
+                            }
+                        });
+                    }
+                }
+
+                @Override
+                public void beanRemoved(Container parent, Object child)
+                {
+                    // no-op
+                }
+            });
+
+            server.start();
 
             // Wait till the webapp is deployed and started
             await().atMost(Duration.ofSeconds(5)).until(() ->
@@ -280,6 +348,27 @@ public class WebAppProviderTest
                     return webAppContext.getContextPath();
                 return null;
             }, is("/foo"));
+
+            String[] expectedOrderedEvents = {
+                // The deepest component starts first
+                "Scanner started",
+                "ScanningAppProvider started",
+                "Server started",
+                // We should see scan events after the server has started
+                "Scan Started [1]",
+                "Scan Ended [1]",
+                "Scan Started [2]",
+                "Scan Ended [2]"
+            };
+
+            assertThat(eventQueue.size(), is(expectedOrderedEvents.length));
+            // collect string array representing ACTUAL scan events (useful for meaningful error message on failed assertion)
+            String scanEventsStr = "[\"" + String.join("\", \"", eventQueue) + "\"]";
+            for (int i = 0; i < expectedOrderedEvents.length; i++)
+            {
+                String event = eventQueue.poll(5, TimeUnit.SECONDS);
+                assertThat("Expected Event [" + i + "]: " + scanEventsStr, event, is(expectedOrderedEvents[i]));
+            }
         }
         finally
         {
