@@ -79,7 +79,7 @@ public class PutFilter implements Filter
     {
         _context = config.getServletContext();
 
-        _tmpdir = (File)_context.getAttribute("jakarta.servlet.context.tempdir");
+        _tmpdir = (File)_context.getAttribute(ServletContext.TEMPDIR);
 
         String realPath = _context.getRealPath("/");
         if (realPath == null)

@@ -2424,12 +2424,12 @@ public class Request implements HttpServletRequest
         {
             case RFC7578:
                 return new MultiParts.MultiPartsHttpParser(getInputStream(), getContentType(), config,
-                    (_context != null ? (File)_context.getAttribute("javax.servlet.context.tempdir") : null), this, maxParts);
+                    (_context != null ? (File)_context.getAttribute(ServletContext.TEMPDIR) : null), this, maxParts);
 
             case LEGACY:
             default:
                 return new MultiParts.MultiPartsUtilParser(getInputStream(), getContentType(), config,
-                    (_context != null ? (File)_context.getAttribute("javax.servlet.context.tempdir") : null), this, maxParts);
+                    (_context != null ? (File)_context.getAttribute(ServletContext.TEMPDIR) : null), this, maxParts);
         }
     }
 
