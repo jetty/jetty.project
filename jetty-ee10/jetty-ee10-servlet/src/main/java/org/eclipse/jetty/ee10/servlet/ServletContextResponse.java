@@ -632,7 +632,7 @@ public class ServletContextResponse extends ContextResponse implements ServletCo
                 }
             }
 
-            return null;
+            return newField;
         }
 
         private HttpField setContentLength(HttpField field)
