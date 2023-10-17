@@ -544,7 +544,7 @@ public interface Attributes
         @Override
         public int hashCode()
         {
-            int hash = 0;
+            int hash = 113;
             for (String name : getAttributeNameSet())
                 hash += name.hashCode() ^ getAttribute(name).hashCode();
             return hash;

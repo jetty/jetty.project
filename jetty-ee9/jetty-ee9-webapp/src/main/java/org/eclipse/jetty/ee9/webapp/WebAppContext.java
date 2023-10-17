@@ -1157,7 +1157,7 @@ public class WebAppContext extends ServletContextHandler implements WebAppClassL
 
     /**
      * Set temporary directory for context.
-     * The jakarta.servlet.context.tempdir attribute is also set.
+     * The {@value jakarta.servlet.ServletContext#TEMPDIR} attribute is also set.
      *
      * @param dir Writable temporary directory.
      */

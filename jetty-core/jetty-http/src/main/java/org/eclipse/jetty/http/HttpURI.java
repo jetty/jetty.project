@@ -20,6 +20,7 @@ import java.net.URISyntaxException;
 import java.util.Collection;
 import java.util.Collections;
 import java.util.EnumSet;
+import java.util.Set;
 
 import org.eclipse.jetty.http.UriCompliance.Violation;
 import org.eclipse.jetty.util.HostPort;
@@ -283,7 +284,7 @@ public interface HttpURI
         private final String _fragment;
         private String _uri;
         private String _canonicalPath;
-        private final EnumSet<Violation> _violations = EnumSet.noneOf(Violation.class);
+        private Set<Violation> _violations;
 
         private Immutable(Mutable builder)
         {
@@ -297,7 +298,8 @@ public interface HttpURI
             _fragment = builder._fragment;
             _uri = builder._uri;
             _canonicalPath = builder._canonicalPath;
-            _violations.addAll(builder._violations);
+            if (builder._violations != null)
+                _violations = Collections.unmodifiableSet(EnumSet.copyOf(builder._violations));
         }
 
         private Immutable(String uri)
@@ -470,25 +472,25 @@ public interface HttpURI
         @Override
         public boolean isAmbiguous()
         {
-            return UriCompliance.isAmbiguous(_violations);
+            return _violations != null && UriCompliance.isAmbiguous(_violations);
         }
 
         @Override
         public boolean hasViolations()
         {
-            return !_violations.isEmpty();
+            return _violations != null && !_violations.isEmpty();
         }
 
         @Override
         public boolean hasViolation(Violation violation)
         {
-            return _violations.contains(violation);
+            return _violations != null && _violations.contains(violation);
         }
 
         @Override
         public Collection<Violation> getViolations()
         {
-            return Collections.unmodifiableCollection(_violations);
+            return _violations == null ? Collections.emptySet() : _violations;
         }
 
         @Override
@@ -566,7 +568,7 @@ public interface HttpURI
         private String _fragment;
         private String _uri;
         private String _canonicalPath;
-        private final EnumSet<Violation> _violations = EnumSet.noneOf(Violation.class);
+        private Set<Violation> _violations;
         private boolean _emptySegment;
 
         private Mutable()
@@ -709,7 +711,8 @@ public interface HttpURI
             _uri = null;
             _canonicalPath = null;
             _emptySegment = false;
-            _violations.clear();
+            if (_violations != null)
+                _violations.clear();
             return this;
         }
 
@@ -844,25 +847,25 @@ public interface HttpURI
         @Override
         public boolean isAmbiguous()
         {
-            return UriCompliance.isAmbiguous(_violations);
+            return _violations != null && UriCompliance.isAmbiguous(_violations);
         }
 
         @Override
         public boolean hasViolations()
         {
-            return !_violations.isEmpty();
+            return _violations != null && !_violations.isEmpty();
         }
 
         @Override
         public boolean hasViolation(Violation violation)
         {
-            return _violations.contains(violation);
+            return _violations != null && _violations.contains(violation);
         }
 
         @Override
         public Collection<Violation> getViolations()
         {
-            return Collections.unmodifiableCollection(_violations);
+            return _violations == null ? Collections.emptySet() : Collections.unmodifiableCollection(_violations);
         }
 
         public Mutable normalize()
@@ -991,7 +994,9 @@ public interface HttpURI
             _query = uri.getQuery();
             _uri = null;
             _canonicalPath = uri.getCanonicalPath();
-            _violations.addAll(uri.getViolations());
+            Collection<Violation> violations = uri.getViolations();
+            if (!violations.isEmpty())
+                _violations = EnumSet.copyOf(violations);
             return this;
         }
 
@@ -1265,7 +1270,7 @@ public interface HttpURI
                         {
                             if (encodedCharacters == 2 && c == 'u' && !encodedUtf16)
                             {
-                                _violations.add(Violation.UTF16_ENCODINGS);
+                                addViolation(Violation.UTF16_ENCODINGS);
                                 encodedUtf16 = true;
                                 encodedCharacters = 4;
                                 continue;
@@ -1281,10 +1286,10 @@ public interface HttpURI
                                         // other than as the NUL ASCII byte which we do not wish to allow.
                                         throw new IllegalArgumentException("Illegal character in path");
                                     case '/':
-                                        _violations.add(Violation.AMBIGUOUS_PATH_SEPARATOR);
+                                        addViolation(Violation.AMBIGUOUS_PATH_SEPARATOR);
                                         break;
                                     case '%':
-                                        _violations.add(Violation.AMBIGUOUS_PATH_ENCODING);
+                                        addViolation(Violation.AMBIGUOUS_PATH_ENCODING);
                                         break;
                                     default:
                                         break;
@@ -1448,7 +1453,7 @@ public interface HttpURI
         private RuntimeException onBadUtf8()
         {
             // We just remember the violation and return null so nothing is thrown
-            _violations.add(Violation.BAD_UTF8_ENCODING);
+            addViolation(Violation.BAD_UTF8_ENCODING);
             return null;
         }
 
@@ -1470,7 +1475,7 @@ public interface HttpURI
             // So if this method is called for any segment and we have previously
             // seen an empty segment, then it was ambiguous.
             if (_emptySegment)
-                _violations.add(Violation.AMBIGUOUS_EMPTY_SEGMENT);
+                addViolation(Violation.AMBIGUOUS_EMPTY_SEGMENT);
 
             if (end == segment)
             {
@@ -1481,7 +1486,7 @@ public interface HttpURI
                 // If this empty segment is the first segment then it is ambiguous.
                 if (segment == 0)
                 {
-                    _violations.add(Violation.AMBIGUOUS_EMPTY_SEGMENT);
+                    addViolation(Violation.AMBIGUOUS_EMPTY_SEGMENT);
                     return;
                 }
 
@@ -1499,11 +1504,19 @@ public interface HttpURI
             {
                 // The segment is always ambiguous.
                 if (Boolean.TRUE.equals(ambiguous))
-                    _violations.add(Violation.AMBIGUOUS_PATH_SEGMENT);
+                    addViolation(Violation.AMBIGUOUS_PATH_SEGMENT);
                 // The segment is ambiguous only when followed by a parameter.
                 if (param)
-                    _violations.add(Violation.AMBIGUOUS_PATH_PARAMETER);
+                    addViolation(Violation.AMBIGUOUS_PATH_PARAMETER);
             }
+        }
+
+        private void addViolation(Violation violation)
+        {
+            if (_violations == null)
+                _violations = EnumSet.of(violation);
+            else 
+                _violations.add(violation);
         }
     }
 }
