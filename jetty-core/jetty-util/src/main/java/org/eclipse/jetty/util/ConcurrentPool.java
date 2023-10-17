@@ -347,7 +347,10 @@ public class ConcurrentPool<P> implements Pool<P>, Dumpable
         {
             ConcurrentEntry<P> ce = (ConcurrentEntry<P>)entry;
             if (ce.isGarbage())
+            {
                 toRemove.add(entry);
+                LOG.warn("Leaked pooled object detected: {}", ce);
+            }
         }
         entries.removeAll(toRemove); // hard remove, these entries are garbage
         return toRemove.size();
@@ -416,14 +419,13 @@ public class ConcurrentPool<P> implements Pool<P>, Dumpable
         //    1+ -> multiplex count
         private final AtomicBiInteger state = new AtomicBiInteger(0, -1);
         private final ConcurrentPool<E> pool;
-        // The pooled object. This is not volatile as it is set once and then never changed.
-        // Other threads accessing must check the state field above first, so a good before/after
-        // relationship exists to make a memory barrier.
-        private E pooled;
-        // A weak ref to the pooled object; the hard ref gets nulled out when it is read
+        // A hard ref to the pooled object; this is volatile as it is nulled out on every
+        // getPooled() call and re-set on release.
+        private volatile E released;
+        // A weak ref to the pooled object; the hard ref is nulled out when it is read
         // and re-set when it is released, so if the pooled object is never released and gets
-        // garbage collected, this can be detected as this weak ref will become null.
-        private WeakReference<E> weakPooled;
+        // garbage collected, this can be detected as this weak ref will be cleared.
+        private WeakReference<E> pooled;
 
         public ConcurrentEntry(ConcurrentPool<E> pool)
         {
@@ -432,7 +434,7 @@ public class ConcurrentPool<P> implements Pool<P>, Dumpable
 
         boolean isGarbage()
         {
-            return weakPooled != null && weakPooled.get() == null;
+            return pooled != null && pooled.get() == null;
         }
 
         @Override
@@ -446,20 +448,20 @@ public class ConcurrentPool<P> implements Pool<P>, Dumpable
                     return false;
                 throw new IllegalStateException("Entry already enabled " + this + " for " + pool);
             }
-            this.pooled = pooled;
-            this.weakPooled = new WeakReference<>(pooled);
+            this.released = pooled;
+            this.pooled = new WeakReference<>(pooled);
 
             if (tryEnable(acquire))
             {
                 if (acquire)
-                    this.pooled = null;
+                    this.released = null;
                 if (LOG.isDebugEnabled())
                     LOG.debug("enabled {} for {}", this, pool);
                 return true;
             }
 
+            this.released = null;
             this.pooled = null;
-            this.weakPooled = null;
             if (isTerminated())
                 return false;
             throw new IllegalStateException("Entry already enabled " + this + " for " + pool);
@@ -468,14 +470,9 @@ public class ConcurrentPool<P> implements Pool<P>, Dumpable
         @Override
         public E getPooled()
         {
-            try
-            {
-                return weakPooled == null ? null : weakPooled.get();
-            }
-            finally
-            {
-                this.pooled = null;
-            }
+            E ref = pooled == null ? null : pooled.get();
+            this.released = null;
+            return ref;
         }
 
         @Override
@@ -525,7 +522,7 @@ public class ConcurrentPool<P> implements Pool<P>, Dumpable
                 if (multiplexCount < 0)
                     return false;
 
-                int maxMultiplexed = pool.getMaxMultiplex(weakPooled.get());
+                int maxMultiplexed = pool.getMaxMultiplex(pooled.get());
                 if (maxMultiplexed > 0 && multiplexCount >= maxMultiplexed)
                     return false;
 
@@ -560,7 +557,7 @@ public class ConcurrentPool<P> implements Pool<P>, Dumpable
                 if (state.compareAndSet(encoded, 0, newMultiplexCount))
                 {
                     if (newMultiplexCount == 0)
-                        this.pooled = weakPooled.get();
+                        this.released = pooled.get();
                     return true;
                 }
             }
@@ -647,14 +644,14 @@ public class ConcurrentPool<P> implements Pool<P>, Dumpable
         public String toString()
         {
             long encoded = state.get();
-            E weak = weakPooled == null ? null : weakPooled.get();
-            return String.format("%s@%x{terminated=%b,multiplex=%d,pooled=%s,weak=%s}",
+            E pooledRef = pooled == null ? null : pooled.get();
+            return String.format("%s@%x{terminated=%b,multiplex=%d,pooled=%s,released=%s}",
                 getClass().getSimpleName(),
                 hashCode(),
                 AtomicBiInteger.getHi(encoded) < 0,
                 AtomicBiInteger.getLo(encoded),
-                pooled,
-                weak);
+                pooledRef,
+                released);
         }
     }
 }
