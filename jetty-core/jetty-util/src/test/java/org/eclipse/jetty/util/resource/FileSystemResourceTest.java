@@ -49,6 +49,7 @@ import org.junit.jupiter.api.Tag;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.condition.EnabledOnOs;
 import org.junit.jupiter.api.extension.ExtendWith;
+import org.junit.jupiter.api.parallel.Isolated;
 
 import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.Matchers.containsInAnyOrder;
@@ -70,6 +71,7 @@ import static org.junit.jupiter.api.condition.OS.MAC;
 import static org.junit.jupiter.api.condition.OS.WINDOWS;
 
 @ExtendWith(WorkDirExtension.class)
+@Isolated("Access static FileSystemPool.INSTANCE.mounts()")
 public class FileSystemResourceTest
 {
 

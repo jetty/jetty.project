@@ -14,6 +14,7 @@
     <annotation.groupId>jakarta.annotation</annotation.groupId>
     <assembly-directory>target/distribution</assembly-directory>
     <bundle-symbolic-name>${project.groupId}.boot.test.osgi</bundle-symbolic-name>
+    <bundle.debug>false</bundle.debug>
     <ee9.module>jetty-ee9-osgi/test-jetty-ee9-osgi</ee9.module>
     <el.artifactId>jakarta.el-api</el.artifactId>
     <el.groupId>jakarta.el</el.groupId>
@@ -35,8 +36,8 @@
     <spifly.version>1.3.6</spifly.version>
     <swissbox.version>1.8.3</swissbox.version>
     <tinybundles.version>3.0.0</tinybundles.version>
-    <transaction.artifactId>jakarta.interceptor-api</transaction.artifactId>
-    <transaction.groupId>jakarta.interceptor</transaction.groupId>
+    <transaction.artifactId>jakarta.transaction-api</transaction.artifactId>
+    <transaction.groupId>jakarta.transaction</transaction.groupId>
   </properties>
   <dependencies>
     <dependency>
@@ -554,6 +555,7 @@
             <systemPropertyVariables>
               <annotation.groupId>${annotation.groupId}</annotation.groupId>
               <annotation.artifactId>${annotation.artifactId}</annotation.artifactId>
+              <bundle.debug>${bundle.debug}</bundle.debug>
               <el.artifactId>${el.artifactId}</el.artifactId>
               <el.groupId>${el.groupId}</el.groupId>
               <enterprise.groupId>${enterprise.groupId}</enterprise.groupId>
