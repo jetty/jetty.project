@@ -164,6 +164,7 @@ public class PrefaceTest extends AbstractTest
 
             List<ByteBuffer> buffers = accumulator.getByteBuffers();
             socket.write(buffers.toArray(new ByteBuffer[0]));
+            accumulator.release();
 
             Queue<SettingsFrame> settings = new ArrayDeque<>();
             AtomicBoolean closed = new AtomicBoolean();

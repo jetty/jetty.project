@@ -113,9 +113,10 @@ public interface Stream
      *   stream</li>
      * </ul>
      * <p>When the returned {@link Stream.Data} object is not {@code null},
-     * applications <em>must</em> call, either immediately or later (possibly
-     * asynchronously) {@link Stream.Data#release()} to notify the
-     * implementation that the bytes have been processed.</p>
+     * the flow control window has been enlarged by the DATA frame length;
+     * applications <em>must</em> call, either immediately or later (even
+     * asynchronously from a different thread) {@link Stream.Data#release()}
+     * to notify the implementation that the bytes have been processed.</p>
      * <p>{@link Stream.Data} objects may be stored away for later, asynchronous,
      * processing (for example, to process them only when all of them have been
      * received).</p>
@@ -264,6 +265,14 @@ public interface Stream
     public interface Listener
     {
         /**
+         * <p>A convenient constant for a {@link Listener} implementation that
+         * demands and discards DATA frames, typically to be returned from
+         * {@link Session.Listener#onNewStream(Stream, HeadersFrame)}
+         * and {@link Listener#onPush(Stream, PushPromiseFrame)}.</p>
+         */
+        public static Listener AUTO_DISCARD = new Listener() {};
+
+        /**
          * <p>Callback method invoked when a stream is created locally by
          * {@link Session#newStream(HeadersFrame, Promise, Listener)}.</p>
          *
@@ -281,11 +290,22 @@ public interface Stream
          */
         public default void onHeaders(Stream stream, HeadersFrame frame)
         {
-            stream.demand();
+            if (!frame.isEndStream())
+                stream.demand();
         }
 
         /**
          * <p>Callback method invoked when a PUSH_PROMISE frame has been received.</p>
+         * <p>Applications that override this method are typically interested in
+         * processing the pushed stream DATA frames, and must demand for pushed
+         * DATA frames via {@link Stream#demand()} and then return either a
+         * {@link Listener} implementation that overrides
+         * {@link #onDataAvailable(Stream)} where applications can
+         * read from the {@link Stream} via {@link Stream#readData()}, or
+         * {@link #AUTO_DISCARD} that automatically reads and
+         * discards DATA frames.
+         * Returning {@code null} is possible but discouraged, and has the
+         * same effect of demanding and discarding the pushed DATA frames.</p>
          *
          * @param stream the pushed stream
          * @param frame the PUSH_PROMISE frame received
@@ -293,7 +313,8 @@ public interface Stream
          */
         public default Listener onPush(Stream stream, PushPromiseFrame frame)
         {
-            return null;
+            stream.demand();
+            return AUTO_DISCARD;
         }
 
         /**
@@ -351,6 +372,18 @@ public interface Stream
          */
         public default void onDataAvailable(Stream stream)
         {
+            while (true)
+            {
+                Data data = stream.readData();
+                if (data == null)
+                {
+                    stream.demand();
+                    return;
+                }
+                data.release();
+                if (data.frame().isEndStream())
+                    return;
+            }
         }
 
         /**

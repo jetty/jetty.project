@@ -61,8 +61,24 @@ public class RequestTrailersTest extends AbstractTest
                 MetaData.Response response = new MetaData.Response(HttpStatus.OK_200, null, HttpVersion.HTTP_2, HttpFields.EMPTY);
                 HeadersFrame responseFrame = new HeadersFrame(stream.getId(), response, null, true);
                 stream.headers(responseFrame, Callback.NOOP);
+                stream.demand();
                 return new Stream.Listener()
                 {
+                    @Override
+                    public void onDataAvailable(Stream stream)
+                    {
+                        while (true)
+                        {
+                            Stream.Data data = stream.readData();
+                            if (data != null)
+                                data.release();
+                            if (data == null || !data.frame().isEndStream())
+                                stream.demand();
+                            if (data == null || data.frame().isEndStream())
+                                break;
+                        }
+                    }
+
                     @Override
                     public void onHeaders(Stream stream, HeadersFrame frame)
                     {

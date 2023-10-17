@@ -1,28 +1,25 @@
+<?xml version="1.0" encoding="UTF-8"?>
 <project xmlns="http://maven.apache.org/POM/4.0.0" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/maven-v4_0_0.xsd">
+  <modelVersion>4.0.0</modelVersion>
   <parent>
     <groupId>org.eclipse.jetty</groupId>
     <artifactId>jetty-integrations</artifactId>
-    <version>12.0.2-SNAPSHOT</version>
+    <version>12.0.3-SNAPSHOT</version>
   </parent>
-  <modelVersion>4.0.0</modelVersion>
   <artifactId>jetty-nosql</artifactId>
   <name>Integrations :: NoSQL :: Sessions</name>
   <properties>
     <bundle-symbolic-name>${project.groupId}.nosql</bundle-symbolic-name>
   </properties>
-  <build>
-    <defaultGoal>install</defaultGoal>
-    <plugins></plugins>
-  </build>
   <dependencies>
-    <dependency>
-      <groupId>org.eclipse.jetty</groupId>
-      <artifactId>jetty-session</artifactId>
-    </dependency>
     <dependency>
       <groupId>org.eclipse.jetty</groupId>
       <artifactId>jetty-jmx</artifactId>
       <optional>true</optional>
+    </dependency>
+    <dependency>
+      <groupId>org.eclipse.jetty</groupId>
+      <artifactId>jetty-session</artifactId>
     </dependency>
     <dependency>
       <groupId>org.mongodb</groupId>
@@ -35,4 +32,8 @@
       <artifactId>slf4j-api</artifactId>
     </dependency>
   </dependencies>
+  <build>
+    <defaultGoal>install</defaultGoal>
+    <plugins></plugins>
+  </build>
 </project>

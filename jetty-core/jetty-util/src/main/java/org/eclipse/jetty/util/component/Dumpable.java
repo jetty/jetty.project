@@ -15,10 +15,12 @@ package org.eclipse.jetty.util.component;
 
 import java.io.IOException;
 import java.lang.reflect.Array;
+import java.nio.file.Path;
 import java.util.Arrays;
 import java.util.Collection;
 import java.util.Iterator;
 import java.util.Map;
+import java.util.Objects;
 import java.util.stream.Stream;
 
 import org.eclipse.jetty.util.StringUtil;
@@ -155,7 +157,8 @@ public interface Dumpable
         {
             dumpContainer(out, indent, (Container)object, extras == 0);
         }
-        if (object instanceof Iterable)
+        // Dump an Iterable Path because it may contain itself.
+        if (object instanceof Iterable && !(object instanceof Path))
         {
             dumpIterable(out, indent, (Iterable<?>)object, extras == 0);
         }
@@ -231,12 +234,15 @@ public interface Dumpable
             }
         }
     }
-    
+
     static void dumpIterable(Appendable out, String indent, Iterable<?> iterable, boolean last) throws IOException
     {
         for (Iterator i = iterable.iterator(); i.hasNext(); )
         {
             Object item = i.next();
+            // Safety net to stop iteration when an Iterable contains itself e.g. Path.
+            if (Objects.equals(item, iterable))
+                return;
             String nextIndent = indent + ((i.hasNext() || !last) ? "|  " : "   ");
             out.append(indent).append("+: ");
             if (item instanceof Dumpable)

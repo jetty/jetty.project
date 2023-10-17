@@ -19,6 +19,7 @@ public class DataFrame extends StreamFrame
 {
     private final ByteBuffer data;
     private final boolean endStream;
+    private final int length;
     private final int padding;
 
     public DataFrame(ByteBuffer data, boolean endStream)
@@ -36,6 +37,7 @@ public class DataFrame extends StreamFrame
         super(FrameType.DATA, streamId);
         this.data = data;
         this.endStream = endStream;
+        this.length = data.remaining();
         this.padding = padding;
     }
 
@@ -65,6 +67,14 @@ public class DataFrame extends StreamFrame
         return padding;
     }
 
+    /**
+     * @return the flow control length, equivalent to the sum of data bytes and padding bytes
+     */
+    public int flowControlLength()
+    {
+        return length + padding;
+    }
+
     @Override
     public DataFrame withStreamId(int streamId)
     {
@@ -74,6 +84,6 @@ public class DataFrame extends StreamFrame
     @Override
     public String toString()
     {
-        return String.format("%s#%d{length:%d,end=%b}", super.toString(), getStreamId(), remaining(), isEndStream());
+        return String.format("%s#%d{length:%d,end=%b}", super.toString(), getStreamId(), length, isEndStream());
     }
 }

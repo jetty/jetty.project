@@ -162,7 +162,7 @@ public class AbstractTest
             isAnnotatedWithTagValue(testInfo.getTestClass().orElseThrow(), disableLeakTrackingTagValue);
         if (disabled)
         {
-            System.err.println("Not tracking leaks");
+            System.err.println("Not tracking " + tagSubValue + " leaks");
             return true;
         }
 
@@ -172,7 +172,7 @@ public class AbstractTest
                 isAnnotatedWithTagValue(testInfo.getTestClass().orElseThrow(), disableLeakTrackingTagValue + ":" + transportName);
             if (disabled)
             {
-                System.err.println("Not tracking leaks for transport " + transportName);
+                System.err.println("Not tracking " + tagSubValue + " leaks for transport " + transportName);
                 return true;
             }
         }
@@ -181,7 +181,7 @@ public class AbstractTest
             isAnnotatedWithTagValue(testInfo.getTestClass().orElseThrow(), disableLeakTrackingTagValue + ":" + tagSubValue);
         if (disabled)
         {
-            System.err.println("Not tracking leaks for " + tagSubValue);
+            System.err.println("Not tracking " + tagSubValue + " leaks");
             return true;
         }
 
@@ -191,7 +191,7 @@ public class AbstractTest
                 isAnnotatedWithTagValue(testInfo.getTestClass().orElseThrow(), disableLeakTrackingTagValue + ":" + tagSubValue + ":" + transportName);
             if (disabled)
             {
-                System.err.println("Not tracking leaks for " + tagSubValue + " using transport " + transportName);
+                System.err.println("Not tracking " + tagSubValue + " leaks for transport " + transportName);
                 return true;
             }
         }

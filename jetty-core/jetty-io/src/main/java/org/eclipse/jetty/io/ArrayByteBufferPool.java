@@ -479,10 +479,10 @@ public class ArrayByteBufferPool implements ByteBufferPool, Dumpable
         private RetainedBucket(int capacity, int poolSize)
         {
             if (poolSize <= ConcurrentPool.OPTIMAL_MAX_SIZE)
-                _pool = new ConcurrentPool<>(ConcurrentPool.StrategyType.THREAD_ID, poolSize, true);
+                _pool = new ConcurrentPool<>(ConcurrentPool.StrategyType.THREAD_ID, poolSize, false);
             else
                 _pool = new CompoundPool<>(
-                    new ConcurrentPool<>(ConcurrentPool.StrategyType.THREAD_ID, ConcurrentPool.OPTIMAL_MAX_SIZE, true),
+                    new ConcurrentPool<>(ConcurrentPool.StrategyType.THREAD_ID, ConcurrentPool.OPTIMAL_MAX_SIZE, false),
                     new QueuedPool<>(poolSize - ConcurrentPool.OPTIMAL_MAX_SIZE)
                 );
             _capacity = capacity;
@@ -631,6 +631,7 @@ public class ArrayByteBufferPool implements ByteBufferPool, Dumpable
             private final Throwable acquireStack;
             private final List<Throwable> retainStacks = new CopyOnWriteArrayList<>();
             private final List<Throwable> releaseStacks = new CopyOnWriteArrayList<>();
+            private final List<Throwable> overReleaseStacks = new CopyOnWriteArrayList<>();
 
             private Buffer(RetainableByteBuffer wrapped, int size)
             {
@@ -665,15 +666,24 @@ public class ArrayByteBufferPool implements ByteBufferPool, Dumpable
             @Override
             public boolean release()
             {
-                boolean released = super.release();
-                if (released)
+                try
                 {
-                    buffers.remove(this);
-                    if (LOG.isDebugEnabled())
-                        LOG.debug("released {}", this);
+                    boolean released = super.release();
+                    if (released)
+                    {
+                        buffers.remove(this);
+                        if (LOG.isDebugEnabled())
+                            LOG.debug("released {}", this);
+                    }
+                    releaseStacks.add(new Throwable());
+                    return released;
                 }
-                releaseStacks.add(new Throwable());
-                return released;
+                catch (IllegalStateException e)
+                {
+                    buffers.add(this);
+                    overReleaseStacks.add(new Throwable());
+                    throw e;
+                }
             }
 
             public String dump()
@@ -690,6 +700,11 @@ public class ArrayByteBufferPool implements ByteBufferPool, Dumpable
                 for (Throwable releaseStack : releaseStacks)
                 {
                     releaseStack.printStackTrace(pw);
+                }
+                pw.println("\n" + overReleaseStacks.size() + " over-release(s)");
+                for (Throwable overReleaseStack : overReleaseStacks)
+                {
+                    overReleaseStack.printStackTrace(pw);
                 }
                 return "%s@%x of %d bytes on %s wrapping %s acquired at %s".formatted(getClass().getSimpleName(), hashCode(), getSize(), getAcquireInstant(), getWrapped(), w);
             }

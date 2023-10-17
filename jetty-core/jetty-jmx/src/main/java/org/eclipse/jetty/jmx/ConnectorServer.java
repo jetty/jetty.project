@@ -326,7 +326,7 @@ public class ConnectorServer extends AbstractLifeCycle
         @Override
         public int hashCode()
         {
-            return _host != null ? _host.hashCode() : 0;
+            return _host != null ? _host.hashCode() : 101;
         }
 
         @Override

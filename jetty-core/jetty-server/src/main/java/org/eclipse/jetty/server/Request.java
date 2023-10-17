@@ -19,10 +19,13 @@ import java.net.InetSocketAddress;
 import java.net.SocketAddress;
 import java.nio.ByteBuffer;
 import java.nio.charset.Charset;
+import java.nio.charset.IllegalCharsetNameException;
+import java.nio.charset.UnsupportedCharsetException;
 import java.security.Principal;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Locale;
+import java.util.Objects;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.TimeoutException;
 import java.util.function.Consumer;
@@ -495,10 +498,22 @@ public interface Request extends Attributes, Content.Source
         };
     }
 
-    // TODO: consider inline and remove.
     static InputStream asInputStream(Request request)
     {
         return Content.Source.asInputStream(request);
+    }
+
+    /**
+     * Get a {@link Charset} from the request {@link HttpHeader#CONTENT_TYPE}, if any.
+     * @param request The request.
+     * @return A {@link Charset} or null
+     * @throws IllegalCharsetNameException If the charset name is illegal
+     * @throws UnsupportedCharsetException If no support for the charset is available
+     */
+    static Charset getCharset(Request request) throws IllegalCharsetNameException, UnsupportedCharsetException
+    {
+        String contentType = request.getHeaders().get(HttpHeader.CONTENT_TYPE);
+        return Objects.requireNonNullElse(request.getContext().getMimeTypes(), MimeTypes.DEFAULTS).getCharset(contentType);
     }
 
     static Fields extractQueryParameters(Request request)

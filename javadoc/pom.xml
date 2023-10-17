@@ -1,165 +1,24 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <project xmlns="http://maven.apache.org/POM/4.0.0" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/maven-v4_0_0.xsd">
+
+  <modelVersion>4.0.0</modelVersion>
   <parent>
     <groupId>org.eclipse.jetty</groupId>
     <artifactId>jetty-project</artifactId>
-    <version>12.0.2-SNAPSHOT</version>
+    <version>12.0.3-SNAPSHOT</version>
   </parent>
-
-  <modelVersion>4.0.0</modelVersion>
   <artifactId>javadoc</artifactId>
-  <name>Javadocs</name>
   <packaging>jar</packaging>
+  <name>Javadocs</name>
 
   <properties>
-    <sources-directory>${project.build.directory}/jetty-sources</sources-directory>
-    <sonar.skip>true</sonar.skip>
-    <pmd.skip>true</pmd.skip>
-    <spotbugs.skip>true</spotbugs.skip>
     <checkstyle.skip>true</checkstyle.skip>
     <maven.deploy.skip>true</maven.deploy.skip>
+    <pmd.skip>true</pmd.skip>
+    <sonar.skip>true</sonar.skip>
+    <sources-directory>${project.build.directory}/jetty-sources</sources-directory>
+    <spotbugs.skip>true</spotbugs.skip>
   </properties>
-
-  <build>
-    <sourceDirectory>${sources-directory}</sourceDirectory>
-    <plugins>
-      <plugin>
-        <groupId>org.apache.maven.plugins</groupId>
-        <artifactId>maven-enforcer-plugin</artifactId>
-        <executions>
-          <execution>
-            <id>enforce-java</id>
-            <goals>
-              <goal>enforce</goal>
-            </goals>
-            <configuration>
-              <rules>
-                <requireUpperBoundDeps>
-                  <excludes>
-                    <exclude>com.google.code.findbugs:jsr305</exclude>
-                    <exclude>com.google.code.gson:gson</exclude>
-                    <exclude>com.google.guava:guava</exclude>
-                    <exclude>com.google.protobuf:protobuf-java</exclude>
-                    <exclude>org.codehaus.plexus:plexus-interpolation</exclude>
-                    <exclude>org.codehaus.plexus:plexus-utils</exclude>
-                  </excludes>
-                </requireUpperBoundDeps>
-              </rules>
-            </configuration>
-          </execution>
-        </executions>
-      </plugin>
-      <plugin>
-        <groupId>org.apache.maven.plugins</groupId>
-        <artifactId>maven-antrun-plugin</artifactId>
-        <executions>
-          <execution>
-            <id>create-sources-dir</id>
-            <phase>generate-sources</phase>
-            <goals>
-              <goal>run</goal>
-            </goals>
-            <configuration>
-              <target>
-                <mkdir dir="${sources-directory}" />
-              </target>
-            </configuration>
-          </execution>
-          <execution>
-            <id>delete-sources-dir</id>
-            <phase>verify</phase>
-            <goals>
-              <goal>run</goal>
-            </goals>
-            <configuration>
-              <target>
-                <delete dir="${sources-directory}" failonerror="false" />
-              </target>
-            </configuration>
-          </execution>
-        </executions>
-      </plugin>
-      <plugin>
-        <groupId>org.apache.maven.plugins</groupId>
-        <artifactId>maven-dependency-plugin</artifactId>
-        <executions>
-          <execution>
-            <id>unpack-sources</id>
-            <phase>prepare-package</phase>
-            <goals>
-              <goal>unpack-dependencies</goal>
-            </goals>
-            <configuration>
-              <includeGroupIds>
-                org.eclipse.jetty,
-                org.eclipse.jetty.fcgi,
-                org.eclipse.jetty.gcloud,
-                org.eclipse.jetty.http2,
-                org.eclipse.jetty.http3,
-                org.eclipse.jetty.memcached,
-                org.eclipse.jetty.osgi,
-                org.eclipse.jetty.quic,
-                org.eclipse.jetty.websocket
-              </includeGroupIds>
-              <excludeGroupIds>
-                org.eclipse.jetty.toolchain,
-                org.eclipse.jetty.orbit
-              </excludeGroupIds>
-              <excludeArtifactIds>
-                infinispan-embedded,
-                infinispan-remote,
-                jetty-test-helper,
-                jetty-maven-plugin,
-                jetty-jspc-maven-plugin,
-                jetty-quic-foreign-incubator,
-                jetty-quic-foreign-jna,
-                alpn-api,
-                javax.servlet,
-                javax.websocket,
-                jakarta.servlet,
-                jakarta.websocket,
-                jetty-servlet-api,
-                jetty-javax-websocket-api,
-                jetty-jakarta-servlet-api,
-                jetty-jakarta-websocket-api,
-                javax.mail,
-                jakarta.mail-api,
-                mailapi,
-                javax.security.auth.message,
-                plexus-utils,
-                plexus-interpolation,
-                jetty-quic-quiche-foreign-incubator
-              </excludeArtifactIds>
-              <classifier>sources</classifier>
-              <failOnMissingClassifierArtifact>false</failOnMissingClassifierArtifact>
-              <excludes>META-INF/**,module-info.java</excludes>
-              <outputDirectory>${sources-directory}</outputDirectory>
-            </configuration>
-          </execution>
-        </executions>
-      </plugin>
-      <plugin>
-        <groupId>org.apache.maven.plugins</groupId>
-        <artifactId>maven-javadoc-plugin</artifactId>
-        <executions>
-          <execution>
-            <id>build-javadoc</id>
-            <phase>prepare-package</phase>
-            <goals>
-              <goal>jar</goal>
-            </goals>
-            <configuration>
-              <doctitle>Eclipse Jetty API Doc - v${project.version}</doctitle>
-              <windowtitle>Eclipse Jetty API Doc - v${project.version}</windowtitle>
-              <excludePackageNames>
-                org.eclipse.jetty.http3.client.transport.internal; org.eclipse.jetty.http3.client.internal; org.eclipse.jetty.http3.internal; org.eclipse.jetty.http3.internal.*; org.eclipse.jetty.http3.qpack.internal; org.eclipse.jetty.http3.qpack.internal.*; org.eclipse.jetty.http3.server.internal; org.eclipse.jetty.quic.common.internal; org.eclipse.jetty.quic.quiche; org.eclipse.jetty.quic.quiche.foreign.*; org.eclipse.jetty.quic.quiche.*; org.eclipse.jetty.quic.server.internal;
-              </excludePackageNames>
-            </configuration>
-          </execution>
-        </executions>
-      </plugin>
-    </plugins>
-  </build>
 
   <dependencyManagement>
     <dependencies>
@@ -167,13 +26,21 @@
         <groupId>org.eclipse.jetty.ee10</groupId>
         <artifactId>jetty-ee10-bom</artifactId>
         <version>${project.version}</version>
-        <scope>import</scope>
         <type>pom</type>
+        <scope>import</scope>
       </dependency>
     </dependencies>
   </dependencyManagement>
 
   <dependencies>
+
+    <!-- Necessary dependencies -->
+    <dependency>
+      <groupId>jakarta.mail</groupId>
+      <artifactId>jakarta.mail-api</artifactId>
+      <version>2.1.2</version>
+      <scope>provided</scope>
+    </dependency>
     <!-- Jetty Core Dependencies -->
     <dependency>
       <groupId>org.eclipse.jetty</groupId>
@@ -216,21 +83,6 @@
       <scope>provided</scope>
     </dependency>
     <dependency>
-      <groupId>org.eclipse.jetty.fcgi</groupId>
-      <artifactId>jetty-fcgi-client</artifactId>
-      <scope>provided</scope>
-    </dependency>
-    <dependency>
-      <groupId>org.eclipse.jetty.fcgi</groupId>
-      <artifactId>jetty-fcgi-proxy</artifactId>
-      <scope>provided</scope>
-    </dependency>
-    <dependency>
-      <groupId>org.eclipse.jetty.fcgi</groupId>
-      <artifactId>jetty-fcgi-server</artifactId>
-      <scope>provided</scope>
-    </dependency>
-    <dependency>
       <groupId>org.eclipse.jetty</groupId>
       <artifactId>jetty-http</artifactId>
       <scope>provided</scope>
@@ -238,36 +90,6 @@
     <dependency>
       <groupId>org.eclipse.jetty</groupId>
       <artifactId>jetty-http-spi</artifactId>
-      <scope>provided</scope>
-    </dependency>
-    <dependency>
-      <groupId>org.eclipse.jetty.http2</groupId>
-      <artifactId>jetty-http2-client</artifactId>
-      <scope>provided</scope>
-    </dependency>
-    <dependency>
-      <groupId>org.eclipse.jetty.http2</groupId>
-      <artifactId>jetty-http2-client-transport</artifactId>
-      <scope>provided</scope>
-    </dependency>
-    <dependency>
-      <groupId>org.eclipse.jetty.http2</groupId>
-      <artifactId>jetty-http2-server</artifactId>
-      <scope>provided</scope>
-    </dependency>
-    <dependency>
-      <groupId>org.eclipse.jetty.http3</groupId>
-      <artifactId>jetty-http3-client</artifactId>
-      <scope>provided</scope>
-    </dependency>
-    <dependency>
-      <groupId>org.eclipse.jetty.http3</groupId>
-      <artifactId>jetty-http3-client-transport</artifactId>
-      <scope>provided</scope>
-    </dependency>
-    <dependency>
-      <groupId>org.eclipse.jetty.http3</groupId>
-      <artifactId>jetty-http3-server</artifactId>
       <scope>provided</scope>
     </dependency>
     <dependency>
@@ -293,16 +115,6 @@
     <dependency>
       <groupId>org.eclipse.jetty</groupId>
       <artifactId>jetty-proxy</artifactId>
-      <scope>provided</scope>
-    </dependency>
-    <dependency>
-      <groupId>org.eclipse.jetty.quic</groupId>
-      <artifactId>jetty-quic-client</artifactId>
-      <scope>provided</scope>
-    </dependency>
-    <dependency>
-      <groupId>org.eclipse.jetty.quic</groupId>
-      <artifactId>jetty-quic-server</artifactId>
       <scope>provided</scope>
     </dependency>
     <dependency>
@@ -343,31 +155,6 @@
     <dependency>
       <groupId>org.eclipse.jetty</groupId>
       <artifactId>jetty-util-ajax</artifactId>
-      <scope>provided</scope>
-    </dependency>
-    <dependency>
-      <groupId>org.eclipse.jetty.websocket</groupId>
-      <artifactId>jetty-websocket-core-client</artifactId>
-      <scope>provided</scope>
-    </dependency>
-    <dependency>
-      <groupId>org.eclipse.jetty.websocket</groupId>
-      <artifactId>jetty-websocket-core-server</artifactId>
-      <scope>provided</scope>
-    </dependency>
-    <dependency>
-      <groupId>org.eclipse.jetty.websocket</groupId>
-      <artifactId>jetty-websocket-jetty-api</artifactId>
-      <scope>provided</scope>
-    </dependency>
-    <dependency>
-      <groupId>org.eclipse.jetty.websocket</groupId>
-      <artifactId>jetty-websocket-jetty-client</artifactId>
-      <scope>provided</scope>
-    </dependency>
-    <dependency>
-      <groupId>org.eclipse.jetty.websocket</groupId>
-      <artifactId>jetty-websocket-jetty-server</artifactId>
       <scope>provided</scope>
     </dependency>
     <dependency>
@@ -413,21 +200,6 @@
       <scope>provided</scope>
     </dependency>
     <dependency>
-      <groupId>org.eclipse.jetty.ee10.osgi</groupId>
-      <artifactId>jetty-ee10-osgi-alpn</artifactId>
-      <scope>provided</scope>
-    </dependency>
-    <dependency>
-      <groupId>org.eclipse.jetty.ee10.osgi</groupId>
-      <artifactId>jetty-ee10-osgi-boot</artifactId>
-      <scope>provided</scope>
-    </dependency>
-    <dependency>
-      <groupId>org.eclipse.jetty.ee10.osgi</groupId>
-      <artifactId>jetty-ee10-osgi-boot-jsp</artifactId>
-      <scope>provided</scope>
-    </dependency>
-    <dependency>
       <groupId>org.eclipse.jetty.ee10</groupId>
       <artifactId>jetty-ee10-plus</artifactId>
       <scope>provided</scope>
@@ -463,6 +235,21 @@
       <scope>provided</scope>
     </dependency>
     <dependency>
+      <groupId>org.eclipse.jetty.ee10.osgi</groupId>
+      <artifactId>jetty-ee10-osgi-alpn</artifactId>
+      <scope>provided</scope>
+    </dependency>
+    <dependency>
+      <groupId>org.eclipse.jetty.ee10.osgi</groupId>
+      <artifactId>jetty-ee10-osgi-boot</artifactId>
+      <scope>provided</scope>
+    </dependency>
+    <dependency>
+      <groupId>org.eclipse.jetty.ee10.osgi</groupId>
+      <artifactId>jetty-ee10-osgi-boot-jsp</artifactId>
+      <scope>provided</scope>
+    </dependency>
+    <dependency>
       <groupId>org.eclipse.jetty.ee10.websocket</groupId>
       <artifactId>jetty-ee10-websocket-jakarta-client</artifactId>
       <scope>provided</scope>
@@ -482,13 +269,218 @@
       <artifactId>jetty-ee10-websocket-servlet</artifactId>
       <scope>provided</scope>
     </dependency>
-
-    <!-- Necessary dependencies -->
     <dependency>
-      <groupId>jakarta.mail</groupId>
-      <artifactId>jakarta.mail-api</artifactId>
-      <version>2.1.2</version>
+      <groupId>org.eclipse.jetty.fcgi</groupId>
+      <artifactId>jetty-fcgi-client</artifactId>
+      <scope>provided</scope>
+    </dependency>
+    <dependency>
+      <groupId>org.eclipse.jetty.fcgi</groupId>
+      <artifactId>jetty-fcgi-proxy</artifactId>
+      <scope>provided</scope>
+    </dependency>
+    <dependency>
+      <groupId>org.eclipse.jetty.fcgi</groupId>
+      <artifactId>jetty-fcgi-server</artifactId>
+      <scope>provided</scope>
+    </dependency>
+    <dependency>
+      <groupId>org.eclipse.jetty.http2</groupId>
+      <artifactId>jetty-http2-client</artifactId>
+      <scope>provided</scope>
+    </dependency>
+    <dependency>
+      <groupId>org.eclipse.jetty.http2</groupId>
+      <artifactId>jetty-http2-client-transport</artifactId>
+      <scope>provided</scope>
+    </dependency>
+    <dependency>
+      <groupId>org.eclipse.jetty.http2</groupId>
+      <artifactId>jetty-http2-server</artifactId>
+      <scope>provided</scope>
+    </dependency>
+    <dependency>
+      <groupId>org.eclipse.jetty.http3</groupId>
+      <artifactId>jetty-http3-client</artifactId>
+      <scope>provided</scope>
+    </dependency>
+    <dependency>
+      <groupId>org.eclipse.jetty.http3</groupId>
+      <artifactId>jetty-http3-client-transport</artifactId>
+      <scope>provided</scope>
+    </dependency>
+    <dependency>
+      <groupId>org.eclipse.jetty.http3</groupId>
+      <artifactId>jetty-http3-server</artifactId>
+      <scope>provided</scope>
+    </dependency>
+    <dependency>
+      <groupId>org.eclipse.jetty.quic</groupId>
+      <artifactId>jetty-quic-client</artifactId>
+      <scope>provided</scope>
+    </dependency>
+    <dependency>
+      <groupId>org.eclipse.jetty.quic</groupId>
+      <artifactId>jetty-quic-server</artifactId>
+      <scope>provided</scope>
+    </dependency>
+    <dependency>
+      <groupId>org.eclipse.jetty.websocket</groupId>
+      <artifactId>jetty-websocket-core-client</artifactId>
+      <scope>provided</scope>
+    </dependency>
+    <dependency>
+      <groupId>org.eclipse.jetty.websocket</groupId>
+      <artifactId>jetty-websocket-core-server</artifactId>
+      <scope>provided</scope>
+    </dependency>
+    <dependency>
+      <groupId>org.eclipse.jetty.websocket</groupId>
+      <artifactId>jetty-websocket-jetty-api</artifactId>
+      <scope>provided</scope>
+    </dependency>
+    <dependency>
+      <groupId>org.eclipse.jetty.websocket</groupId>
+      <artifactId>jetty-websocket-jetty-client</artifactId>
+      <scope>provided</scope>
+    </dependency>
+    <dependency>
+      <groupId>org.eclipse.jetty.websocket</groupId>
+      <artifactId>jetty-websocket-jetty-server</artifactId>
       <scope>provided</scope>
     </dependency>
   </dependencies>
+
+  <build>
+    <plugins>
+      <plugin>
+        <groupId>org.apache.maven.plugins</groupId>
+        <artifactId>maven-antrun-plugin</artifactId>
+        <executions>
+          <execution>
+            <id>create-sources-dir</id>
+            <goals>
+              <goal>run</goal>
+            </goals>
+            <phase>generate-sources</phase>
+            <configuration>
+              <target>
+                <mkdir dir="${sources-directory}"></mkdir>
+              </target>
+            </configuration>
+          </execution>
+          <execution>
+            <id>delete-sources-dir</id>
+            <goals>
+              <goal>run</goal>
+            </goals>
+            <phase>verify</phase>
+            <configuration>
+              <target>
+                <delete dir="${sources-directory}" failonerror="false"></delete>
+              </target>
+            </configuration>
+          </execution>
+        </executions>
+      </plugin>
+      <plugin>
+        <groupId>org.apache.maven.plugins</groupId>
+        <artifactId>maven-dependency-plugin</artifactId>
+        <executions>
+          <execution>
+            <id>unpack-sources</id>
+            <goals>
+              <goal>unpack-dependencies</goal>
+            </goals>
+            <phase>prepare-package</phase>
+            <configuration>
+              <includeGroupIds>org.eclipse.jetty,
+                org.eclipse.jetty.fcgi,
+                org.eclipse.jetty.gcloud,
+                org.eclipse.jetty.http2,
+                org.eclipse.jetty.http3,
+                org.eclipse.jetty.memcached,
+                org.eclipse.jetty.osgi,
+                org.eclipse.jetty.quic,
+                org.eclipse.jetty.websocket</includeGroupIds>
+              <excludeGroupIds>org.eclipse.jetty.toolchain,
+                org.eclipse.jetty.orbit</excludeGroupIds>
+              <excludeArtifactIds>infinispan-embedded,
+                infinispan-remote,
+                jetty-test-helper,
+                jetty-maven-plugin,
+                jetty-jspc-maven-plugin,
+                jetty-quic-foreign-incubator,
+                jetty-quic-foreign-jna,
+                alpn-api,
+                javax.servlet,
+                javax.websocket,
+                jakarta.servlet,
+                jakarta.websocket,
+                jetty-servlet-api,
+                jetty-javax-websocket-api,
+                jetty-jakarta-servlet-api,
+                jetty-jakarta-websocket-api,
+                javax.mail,
+                jakarta.mail-api,
+                mailapi,
+                javax.security.auth.message,
+                plexus-utils,
+                plexus-interpolation,
+                jetty-quic-quiche-foreign-incubator</excludeArtifactIds>
+              <classifier>sources</classifier>
+              <failOnMissingClassifierArtifact>false</failOnMissingClassifierArtifact>
+              <excludes>META-INF/**,module-info.java</excludes>
+              <outputDirectory>${sources-directory}</outputDirectory>
+            </configuration>
+          </execution>
+        </executions>
+      </plugin>
+      <plugin>
+        <groupId>org.apache.maven.plugins</groupId>
+        <artifactId>maven-enforcer-plugin</artifactId>
+        <executions>
+          <execution>
+            <id>enforce-java</id>
+            <goals>
+              <goal>enforce</goal>
+            </goals>
+            <configuration>
+              <rules>
+                <requireUpperBoundDeps>
+                  <excludes>
+                    <exclude>com.google.code.findbugs:jsr305</exclude>
+                    <exclude>com.google.code.gson:gson</exclude>
+                    <exclude>com.google.guava:guava</exclude>
+                    <exclude>com.google.protobuf:protobuf-java</exclude>
+                    <exclude>org.codehaus.plexus:plexus-interpolation</exclude>
+                    <exclude>org.codehaus.plexus:plexus-utils</exclude>
+                  </excludes>
+                </requireUpperBoundDeps>
+              </rules>
+            </configuration>
+          </execution>
+        </executions>
+      </plugin>
+      <plugin>
+        <groupId>org.apache.maven.plugins</groupId>
+        <artifactId>maven-javadoc-plugin</artifactId>
+        <executions>
+          <execution>
+            <id>javadoc-build</id>
+            <goals>
+              <goal>jar</goal>
+            </goals>
+            <phase>package</phase>
+            <configuration>
+              <doctitle>Eclipse Jetty API Doc - v${project.version}</doctitle>
+              <windowtitle>Eclipse Jetty API Doc - v${project.version}</windowtitle>
+              <excludePackageNames>org.eclipse.jetty.http3.client.transport.internal; org.eclipse.jetty.http3.client.internal; org.eclipse.jetty.http3.internal; org.eclipse.jetty.http3.internal.*; org.eclipse.jetty.http3.qpack.internal; org.eclipse.jetty.http3.qpack.internal.*; org.eclipse.jetty.http3.server.internal; org.eclipse.jetty.quic.common.internal; org.eclipse.jetty.quic.quiche; org.eclipse.jetty.quic.quiche.foreign.*; org.eclipse.jetty.quic.quiche.*; org.eclipse.jetty.quic.server.internal;</excludePackageNames>
+            </configuration>
+          </execution>
+        </executions>
+      </plugin>
+    </plugins>
+    <sourceDirectory>${sources-directory}</sourceDirectory>
+  </build>
 </project>

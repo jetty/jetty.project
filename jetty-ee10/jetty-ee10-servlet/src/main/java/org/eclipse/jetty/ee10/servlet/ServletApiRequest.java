@@ -19,7 +19,9 @@ import java.io.InputStream;
 import java.io.InputStreamReader;
 import java.io.UnsupportedEncodingException;
 import java.nio.charset.Charset;
+import java.nio.charset.IllegalCharsetNameException;
 import java.nio.charset.StandardCharsets;
+import java.nio.charset.UnsupportedCharsetException;
 import java.security.Principal;
 import java.util.AbstractList;
 import java.util.Collection;
@@ -103,10 +105,10 @@ public class ServletApiRequest implements HttpServletRequest
     private final ServletContextRequest _servletContextRequest;
     private final ServletChannel _servletChannel;
     private AsyncContextState _async;
-    private String _characterEncoding;
+    private Charset _charset;
+    private Charset _readerCharset;
     private int _inputState = ServletContextRequest.INPUT_NONE;
     private BufferedReader _reader;
-    private String _readerEncoding;
     private String _contentType;
     private boolean _contentParamsExtracted;
     private Fields _contentParameters;
@@ -185,7 +187,11 @@ public class ServletApiRequest implements HttpServletRequest
     @Override
     public String getProtocolRequestId()
     {
-        return getRequest().getId();
+        return switch (getRequest().getConnectionMetaData().getHttpVersion())
+        {
+            case HTTP_2, HTTP_3 -> getRequest().getId();
+            default -> "";
+        };
     }
 
     @Override
@@ -717,24 +723,20 @@ public class ServletApiRequest implements HttpServletRequest
     @Override
     public String getCharacterEncoding()
     {
-        if (_characterEncoding == null)
+        try
         {
-            if (getRequest().getContext() != null)
-                _characterEncoding = getServletRequestInfo().getServletContext().getServletContext().getRequestCharacterEncoding();
-
-            if (_characterEncoding == null)
-            {
-                String contentType = getContentType();
-                if (contentType != null)
-                {
-                    MimeTypes.Type mime = MimeTypes.CACHE.get(contentType);
-                    String charset = (mime == null || mime.getCharset() == null) ? MimeTypes.getCharsetFromContentType(contentType) : mime.getCharset().toString();
-                    if (charset != null)
-                        _characterEncoding = charset;
-                }
-            }
+            if (_charset == null)
+                _charset = Request.getCharset(getRequest());
         }
-        return _characterEncoding;
+        catch (IllegalCharsetNameException | UnsupportedCharsetException e)
+        {
+            return MimeTypes.getCharsetFromContentType(getRequest().getHeaders().get(HttpHeader.CONTENT_TYPE));
+        }
+
+        if (_charset == null)
+            return getServletRequestInfo().getServletContext().getServletContext().getRequestCharacterEncoding();
+
+        return _charset.name();
     }
 
     @Override
@@ -742,8 +744,7 @@ public class ServletApiRequest implements HttpServletRequest
     {
         if (_inputState != ServletContextRequest.INPUT_NONE)
             return;
-        MimeTypes.getKnownCharset(encoding);
-        _characterEncoding = encoding;
+        _charset = MimeTypes.getKnownCharset(encoding);
     }
 
     @Override
@@ -1039,15 +1040,38 @@ public class ServletApiRequest implements HttpServletRequest
         if (_inputState == ServletContextRequest.INPUT_READER)
             return _reader;
 
-        String encoding = getCharacterEncoding();
-        if (encoding == null)
-            encoding = MimeTypes.ISO_8859_1;
+        Charset charset = _charset;
+        try
+        {
+            if (charset == null)
+            {
+                charset = _charset = Request.getCharset(getRequest());
+                if (charset == null)
+                    charset = StandardCharsets.ISO_8859_1;
+            }
 
-        if (_reader == null || !encoding.equalsIgnoreCase(_readerEncoding))
+        }
+        catch (IllegalCharsetNameException | UnsupportedCharsetException e)
+        {
+            throw new UnsupportedEncodingException(e.getMessage())
+            {
+                {
+                    initCause(e);
+                }
+
+                @Override
+                public String toString()
+                {
+                    return "%s@%x:%s".formatted(UnsupportedEncodingException.class.getName(), hashCode(), getMessage());
+                }
+            };
+        }
+
+        if (_reader == null || !charset.equals(_readerCharset))
         {
             ServletInputStream in = getInputStream();
-            _readerEncoding = encoding;
-            _reader = new BufferedReader(new InputStreamReader(in, encoding))
+            _readerCharset = charset;
+            _reader = new BufferedReader(new InputStreamReader(in, charset))
             {
                 @Override
                 public void close() throws IOException

@@ -15,6 +15,7 @@ package org.eclipse.jetty.tests.distribution;
 
 import java.io.File;
 import java.io.FileWriter;
+import java.io.IOException;
 import java.net.URI;
 import java.net.http.WebSocket;
 import java.nio.ByteBuffer;
@@ -24,6 +25,7 @@ import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.nio.file.StandardCopyOption;
 import java.nio.file.StandardOpenOption;
+import java.time.Duration;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
@@ -53,6 +55,7 @@ import org.eclipse.jetty.tests.hometester.JettyHomeTester;
 import org.eclipse.jetty.toolchain.test.FS;
 import org.eclipse.jetty.toolchain.test.PathMatchers;
 import org.eclipse.jetty.util.BlockingArrayQueue;
+import org.eclipse.jetty.util.StringUtil;
 import org.eclipse.jetty.util.ssl.SslContextFactory;
 import org.junit.jupiter.api.Tag;
 import org.junit.jupiter.api.Test;
@@ -63,6 +66,7 @@ import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.CsvSource;
 import org.junit.jupiter.params.provider.ValueSource;
 
+import static org.awaitility.Awaitility.await;
 import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.Matchers.containsString;
 import static org.hamcrest.Matchers.equalTo;
@@ -104,6 +108,78 @@ public class DistributionTests extends AbstractJettyHomeTest
                 run2.stop();
                 assertTrue(run2.awaitFor(START_TIMEOUT, TimeUnit.SECONDS));
             }
+        }
+    }
+
+    @Test
+    public void testJettyConf() throws Exception
+    {
+        String jettyVersion = System.getProperty("jettyVersion");
+        JettyHomeTester distribution = JettyHomeTester.Builder.newInstance()
+            .jettyVersion(jettyVersion)
+            .mavenLocalRepository(System.getProperty("mavenRepoPath"))
+            .build();
+
+        try (JettyHomeTester.Run run1 = distribution.start("--add-modules=http"))
+        {
+            assertTrue(run1.awaitFor(10, TimeUnit.SECONDS));
+            assertEquals(0, run1.getExitValue());
+
+            Path pidfile = run1.getConfig().getJettyBase().resolve("jetty.pid");
+            Path statefile = run1.getConfig().getJettyBase().resolve("jetty.state");
+
+            int port = distribution.freePort();
+
+            List<String> args = new ArrayList<>();
+            args.add("jetty.http.port=" + port);
+            args.add("jetty.state=" + statefile);
+            args.add("jetty.pid=" + pidfile);
+
+            Path confFile = run1.getConfig().getJettyHome().resolve("etc/jetty.conf");
+            for (String line : Files.readAllLines(confFile, StandardCharsets.UTF_8))
+            {
+                if (line.startsWith("#") || StringUtil.isBlank(line))
+                    continue; // skip
+                args.add(line);
+            }
+
+            try (JettyHomeTester.Run run2 = distribution.start(args))
+            {
+                assertTrue(run2.awaitConsoleLogsFor("Started oejs.Server@", 10, TimeUnit.SECONDS));
+
+                assertTrue(Files.isRegularFile(pidfile), "PID file should exist");
+                assertTrue(Files.isRegularFile(statefile), "State file should exist");
+                String state = tail(statefile);
+                assertThat("State file", state, startsWith("STARTED "));
+
+                startHttpClient();
+                ContentResponse response = client.GET("http://localhost:" + port);
+                assertEquals(HttpStatus.NOT_FOUND_404, response.getStatus());
+            }
+
+            await().atMost(Duration.ofSeconds(10)).until(() -> !Files.exists(pidfile));
+            await().atMost(Duration.ofSeconds(10)).until(() -> tail(statefile).startsWith("STOPPED "));
+        }
+    }
+
+    /**
+     * Get the last line of the file.
+     *
+     * @param file the file to read from
+     * @return the string representing the last line of the file, or null if not found
+     */
+    private static String tail(Path file)
+    {
+        try
+        {
+            List<String> lines = Files.readAllLines(file, StandardCharsets.UTF_8);
+            if (lines.isEmpty())
+                return "";
+            return lines.get(lines.size() - 1);
+        }
+        catch (IOException e)
+        {
+            return "";
         }
     }
 
@@ -1164,7 +1240,7 @@ public class DistributionTests extends AbstractJettyHomeTest
             int port = distribution.freePort();
             String[] args2 = {
                 "jetty.http.port=" + port,
-            };
+                };
             try (JettyHomeTester.Run run2 = distribution.start(args2))
             {
                 assertTrue(run2.awaitConsoleLogsFor("Started oejs.Server@", START_TIMEOUT, TimeUnit.SECONDS));
@@ -1180,7 +1256,7 @@ public class DistributionTests extends AbstractJettyHomeTest
 
                 Path requestLog = distribution.getJettyBase().resolve("logs/test.request.log");
                 List<String> loggedLines = Files.readAllLines(requestLog, StandardCharsets.UTF_8);
-                for (String loggedLine: loggedLines)
+                for (String loggedLine : loggedLines)
                 {
                     assertThat(loggedLine, containsString(" [foo space here] "));
                 }
@@ -1434,7 +1510,7 @@ public class DistributionTests extends AbstractJettyHomeTest
             int httpPort = distribution.freePort();
             try (JettyHomeTester.Run run2 = distribution.start(List.of("jetty.http.selectors=1", "jetty.http.port=" + httpPort)))
             {
-                assertTrue(run2.awaitConsoleLogsFor("Started Server@", 10, TimeUnit.SECONDS));
+                assertTrue(run2.awaitConsoleLogsFor("Started oejs.Server@", 10, TimeUnit.SECONDS));
 
                 startHttpClient();
                 ContentResponse response = client.newRequest("localhost", httpPort)

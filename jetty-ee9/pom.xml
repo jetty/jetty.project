@@ -1,24 +1,46 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <project xmlns="http://maven.apache.org/POM/4.0.0" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/maven-v4_0_0.xsd">
+
+  <modelVersion>4.0.0</modelVersion>
   <parent>
     <groupId>org.eclipse.jetty</groupId>
     <artifactId>jetty-project</artifactId>
-    <version>12.0.2-SNAPSHOT</version>
+    <version>12.0.3-SNAPSHOT</version>
   </parent>
-
-  <modelVersion>4.0.0</modelVersion>
   <groupId>org.eclipse.jetty.ee9</groupId>
   <artifactId>jetty-ee9</artifactId>
-  <name>EE9</name>
   <packaging>pom</packaging>
+  <name>EE9</name>
+
+  <modules>
+    <module>jetty-ee9-annotations</module>
+    <module>jetty-ee9-apache-jsp</module>
+    <module>jetty-ee9-bom</module>
+    <module>jetty-ee9-cdi</module>
+    <module>jetty-ee9-demos</module>
+    <module>jetty-ee9-fcgi-proxy</module>
+    <module>jetty-ee9-glassfish-jstl</module>
+    <module>jetty-ee9-home</module>
+    <module>jetty-ee9-jaspi</module>
+    <module>jetty-ee9-jndi</module>
+    <module>jetty-ee9-jspc-maven-plugin</module>
+    <module>jetty-ee9-maven-plugin</module>
+    <module>jetty-ee9-nested</module>
+    <module>jetty-ee9-openid</module>
+    <module>jetty-ee9-osgi</module>
+    <module>jetty-ee9-plus</module>
+    <module>jetty-ee9-proxy</module>
+    <module>jetty-ee9-quickstart</module>
+    <module>jetty-ee9-runner</module>
+    <module>jetty-ee9-security</module>
+    <module>jetty-ee9-servlet</module>
+    <module>jetty-ee9-servlets</module>
+    <module>jetty-ee9-tests</module>
+    <module>jetty-ee9-webapp</module>
+    <module>jetty-ee9-websocket</module>
+  </modules>
 
   <properties>
-    <!-- FIXME we need a separate property for this one -->
-    <jetty.servlet.api.version>5.0.2</jetty.servlet.api.version>
-
-    <!-- TODO: Remove these javax.* entries? -->
-    <javax.activation.impl.version>1.1.0.v201105071233</javax.activation.impl.version>
-    <javax.mail.glassfish.version>1.4.1.v201005082020</javax.mail.glassfish.version>
 
     <jakarta.activation.api.version>2.0.1</jakarta.activation.api.version>
     <jakarta.annotation.api.version>2.0.0</jakarta.annotation.api.version>
@@ -28,54 +50,128 @@
     <jakarta.inject.api.version>2.0.1</jakarta.inject.api.version>
     <jakarta.interceptor.api.version>2.0.1</jakarta.interceptor.api.version>
     <jakarta.mail.api.version>2.0.1</jakarta.mail.api.version>
-    <jakarta.transaction-api.version>2.0.1</jakarta.transaction-api.version>
     <jakarta.servlet.api.version>5.0.0</jakarta.servlet.api.version>
     <jakarta.servlet.jsp.api.version>3.0.0</jakarta.servlet.jsp.api.version>
     <jakarta.servlet.jsp.jstl.api.version>2.0.0</jakarta.servlet.jsp.jstl.api.version>
-    <jakarta.servlet.jsp.jstl.impl.version>2.0.0</jakarta.servlet.jsp.jstl.impl.version> <!-- TODO: remove? -->
+    <jakarta.servlet.jsp.jstl.impl.version>2.0.0</jakarta.servlet.jsp.jstl.impl.version>
+    <jakarta.transaction-api.version>2.0.1</jakarta.transaction-api.version>
+    <jakarta.websocket.api.version>2.0.0</jakarta.websocket.api.version>
+    <!-- TODO: remove? -->
     <jakarta.ws.rs.api.version>3.0.0</jakarta.ws.rs.api.version>
     <jakarta.xml.bind.api.version>3.0.1</jakarta.xml.bind.api.version>
     <jakarta.xml.bind.impl.version>3.0.2</jakarta.xml.bind.impl.version>
-    <jakarta.xml.ws.api.version>3.0.1</jakarta.xml.ws.api.version>
     <jakarta.xml.jaxws.impl.version>3.0.2</jakarta.xml.jaxws.impl.version>
-    <jakarta.websocket.api.version>2.0.0</jakarta.websocket.api.version>
+    <jakarta.xml.ws.api.version>3.0.1</jakarta.xml.ws.api.version>
+
+    <!-- TODO: Remove these javax.* entries? -->
+    <javax.activation.impl.version>1.1.0.v201105071233</javax.activation.impl.version>
+    <javax.mail.glassfish.version>1.4.1.v201005082020</javax.mail.glassfish.version>
+    <!-- FIXME we need a separate property for this one -->
+    <jetty.servlet.api.version>5.0.2</jetty.servlet.api.version>
 
     <jsp.impl.version>10.0.14</jsp.impl.version>
-    <weld.version>4.0.3.Final</weld.version>
 
     <sonar.skip>true</sonar.skip>
+    <weld.version>4.0.3.Final</weld.version>
   </properties>
-
-  <modules>
-    <module>jetty-ee9-nested</module>
-    <module>jetty-ee9-security</module>
-    <module>jetty-ee9-servlet</module>
-    <module>jetty-ee9-webapp</module>
-    <module>jetty-ee9-servlets</module>
-    <module>jetty-ee9-demos</module>
-    <module>jetty-ee9-apache-jsp</module>
-    <module>jetty-ee9-glassfish-jstl</module>
-    <module>jetty-ee9-annotations</module>
-    <module>jetty-ee9-cdi</module>
-    <module>jetty-ee9-jaspi</module>
-    <module>jetty-ee9-jndi</module>
-    <module>jetty-ee9-jspc-maven-plugin</module>
-    <module>jetty-ee9-maven-plugin</module>
-    <module>jetty-ee9-openid</module>
-    <module>jetty-ee9-osgi</module>
-    <module>jetty-ee9-plus</module>
-    <module>jetty-ee9-proxy</module>
-    <module>jetty-ee9-quickstart</module>
-    <module>jetty-ee9-runner</module>
-    <module>jetty-ee9-websocket</module>
-    <module>jetty-ee9-tests</module>
-    <module>jetty-ee9-bom</module>
-    <module>jetty-ee9-home</module>
-    <module>jetty-ee9-fcgi-proxy</module>
-  </modules>
 
   <dependencyManagement>
     <dependencies>
+      <dependency>
+        <groupId>com.sun.mail</groupId>
+        <artifactId>jakarta.mail</artifactId>
+        <version>${jakarta.mail.api.version}</version>
+      </dependency>
+      <dependency>
+        <groupId>com.sun.xml.ws</groupId>
+        <artifactId>jaxws-rt</artifactId>
+        <version>${jakarta.xml.jaxws.impl.version}</version>
+      </dependency>
+      <dependency>
+        <groupId>jakarta.activation</groupId>
+        <artifactId>jakarta.activation-api</artifactId>
+        <version>${jakarta.activation.api.version}</version>
+      </dependency>
+      <dependency>
+        <groupId>jakarta.annotation</groupId>
+        <artifactId>jakarta.annotation-api</artifactId>
+        <version>${jakarta.annotation.api.version}</version>
+      </dependency>
+      <dependency>
+        <groupId>jakarta.authentication</groupId>
+        <artifactId>jakarta.authentication-api</artifactId>
+        <version>${jakarta.authentication.api.version}</version>
+      </dependency>
+      <dependency>
+        <groupId>jakarta.el</groupId>
+        <artifactId>jakarta.el-api</artifactId>
+        <version>${jakarta.el.api.version}</version>
+      </dependency>
+      <dependency>
+        <groupId>jakarta.enterprise</groupId>
+        <artifactId>jakarta.enterprise.cdi-api</artifactId>
+        <version>${jakarta.enterprise.cdi.api.version}</version>
+      </dependency>
+      <dependency>
+        <groupId>jakarta.inject</groupId>
+        <artifactId>jakarta.inject-api</artifactId>
+        <version>${jakarta.inject.api.version}</version>
+      </dependency>
+      <dependency>
+        <groupId>jakarta.interceptor</groupId>
+        <artifactId>jakarta.interceptor-api</artifactId>
+        <version>${jakarta.interceptor.api.version}</version>
+      </dependency>
+      <dependency>
+        <groupId>jakarta.mail</groupId>
+        <artifactId>jakarta.mail-api</artifactId>
+        <version>${jakarta.mail.api.version}</version>
+      </dependency>
+      <dependency>
+        <groupId>jakarta.servlet</groupId>
+        <artifactId>jakarta.servlet-api</artifactId>
+        <version>${jakarta.servlet.api.version}</version>
+      </dependency>
+      <dependency>
+        <groupId>jakarta.servlet.jsp</groupId>
+        <artifactId>jakarta.servlet.jsp-api</artifactId>
+        <version>${jakarta.servlet.jsp.api.version}</version>
+      </dependency>
+      <dependency>
+        <groupId>jakarta.servlet.jsp.jstl</groupId>
+        <artifactId>jakarta.servlet.jsp.jstl-api</artifactId>
+        <version>${jakarta.servlet.jsp.jstl.api.version}</version>
+        <exclusions>
+          <exclusion>
+            <groupId>jakarta.el</groupId>
+            <artifactId>jakarta.el-api</artifactId>
+          </exclusion>
+          <exclusion>
+            <groupId>jakarta.servlet</groupId>
+            <artifactId>jakarta.servlet-api</artifactId>
+          </exclusion>
+        </exclusions>
+      </dependency>
+      <dependency>
+        <groupId>jakarta.transaction</groupId>
+        <artifactId>jakarta.transaction-api</artifactId>
+        <version>${jakarta.transaction-api.version}</version>
+      </dependency>
+      <dependency>
+        <groupId>jakarta.ws.rs</groupId>
+        <artifactId>jakarta.ws.rs-api</artifactId>
+        <version>${jakarta.ws.rs.api.version}</version>
+      </dependency>
+      <dependency>
+        <groupId>jakarta.xml.bind</groupId>
+        <artifactId>jakarta.xml.bind-api</artifactId>
+        <version>${jakarta.xml.bind.api.version}</version>
+      </dependency>
+      <dependency>
+        <groupId>jakarta.xml.ws</groupId>
+        <artifactId>jakarta.xml.ws-api</artifactId>
+        <version>${jakarta.xml.ws.api.version}</version>
+      </dependency>
 
       <!-- Jetty EE 9 Dependencies -->
       <dependency>
@@ -105,11 +201,6 @@
       </dependency>
       <dependency>
         <groupId>org.eclipse.jetty.ee9</groupId>
-        <artifactId>jetty-ee9-nested</artifactId>
-        <version>${project.version}</version>
-      </dependency>
-      <dependency>
-        <groupId>org.eclipse.jetty.ee9</groupId>
         <artifactId>jetty-ee9-jaspi</artifactId>
         <version>${project.version}</version>
       </dependency>
@@ -126,6 +217,11 @@
       <dependency>
         <groupId>org.eclipse.jetty.ee9</groupId>
         <artifactId>jetty-ee9-maven-plugin</artifactId>
+        <version>${project.version}</version>
+      </dependency>
+      <dependency>
+        <groupId>org.eclipse.jetty.ee9</groupId>
+        <artifactId>jetty-ee9-nested</artifactId>
         <version>${project.version}</version>
       </dependency>
       <dependency>
@@ -166,56 +262,6 @@
       <dependency>
         <groupId>org.eclipse.jetty.ee9</groupId>
         <artifactId>jetty-ee9-webapp</artifactId>
-        <version>${project.version}</version>
-      </dependency>
-      <dependency>
-        <groupId>org.eclipse.jetty.ee9.websocket</groupId>
-        <artifactId>jetty-ee9-websocket-jakarta-client</artifactId>
-        <version>${project.version}</version>
-      </dependency>
-      <dependency>
-        <groupId>org.eclipse.jetty.ee9.websocket</groupId>
-        <artifactId>jetty-ee9-websocket-jakarta-client-webapp</artifactId>
-        <version>${project.version}</version>
-      </dependency>
-      <dependency>
-        <groupId>org.eclipse.jetty.ee9.websocket</groupId>
-        <artifactId>jetty-ee9-websocket-jakarta-common</artifactId>
-        <version>${project.version}</version>
-      </dependency>
-      <dependency>
-        <groupId>org.eclipse.jetty.ee9.websocket</groupId>
-        <artifactId>jetty-ee9-websocket-jakarta-server</artifactId>
-        <version>${project.version}</version>
-      </dependency>
-      <dependency>
-        <groupId>org.eclipse.jetty.ee9.websocket</groupId>
-        <artifactId>jetty-ee9-websocket-jetty-api</artifactId>
-        <version>${project.version}</version>
-      </dependency>
-      <dependency>
-        <groupId>org.eclipse.jetty.ee9.websocket</groupId>
-        <artifactId>jetty-ee9-websocket-jetty-client</artifactId>
-        <version>${project.version}</version>
-      </dependency>
-      <dependency>
-        <groupId>org.eclipse.jetty.ee9.websocket</groupId>
-        <artifactId>jetty-ee9-websocket-jetty-client-webapp</artifactId>
-        <version>${project.version}</version>
-      </dependency>
-      <dependency>
-        <groupId>org.eclipse.jetty.ee9.websocket</groupId>
-        <artifactId>jetty-ee9-websocket-jetty-common</artifactId>
-        <version>${project.version}</version>
-      </dependency>
-      <dependency>
-        <groupId>org.eclipse.jetty.ee9.websocket</groupId>
-        <artifactId>jetty-ee9-websocket-jetty-server</artifactId>
-        <version>${project.version}</version>
-      </dependency>
-      <dependency>
-        <groupId>org.eclipse.jetty.ee9.websocket</groupId>
-        <artifactId>jetty-ee9-websocket-servlet</artifactId>
         <version>${project.version}</version>
       </dependency>
       <dependency>
@@ -270,13 +316,13 @@
       </dependency>
       <dependency>
         <groupId>org.eclipse.jetty.ee9.demos</groupId>
-        <artifactId>jetty-ee9-demo-spec-webapp</artifactId>
+        <artifactId>jetty-ee9-demo-simple-webapp</artifactId>
         <version>${project.version}</version>
         <type>war</type>
       </dependency>
       <dependency>
         <groupId>org.eclipse.jetty.ee9.demos</groupId>
-        <artifactId>jetty-ee9-demo-simple-webapp</artifactId>
+        <artifactId>jetty-ee9-demo-spec-webapp</artifactId>
         <version>${project.version}</version>
         <type>war</type>
       </dependency>
@@ -285,116 +331,65 @@
         <artifactId>jetty-ee9-demo-web-fragment</artifactId>
         <version>${project.version}</version>
       </dependency>
-      <!-- Jakarta EE 9 Dependencies -->
-       <dependency>
-        <groupId>org.mortbay.jasper</groupId>
-        <artifactId>apache-jsp</artifactId>
-        <version>${jsp.impl.version}</version>
+      <dependency>
+        <groupId>org.eclipse.jetty.ee9.websocket</groupId>
+        <artifactId>jetty-ee9-websocket-jakarta-client</artifactId>
+        <version>${project.version}</version>
       </dependency>
       <dependency>
-        <groupId>org.mortbay.jasper</groupId>
-        <artifactId>apache-el</artifactId>
-        <version>${jsp.impl.version}</version>
+        <groupId>org.eclipse.jetty.ee9.websocket</groupId>
+        <artifactId>jetty-ee9-websocket-jakarta-client-webapp</artifactId>
+        <version>${project.version}</version>
       </dependency>
       <dependency>
-        <groupId>org.eclipse.jetty.toolchain</groupId>
-        <artifactId>jetty-jakarta-servlet-api</artifactId>
-        <version>${jetty.servlet.api.version}</version>
+        <groupId>org.eclipse.jetty.ee9.websocket</groupId>
+        <artifactId>jetty-ee9-websocket-jakarta-common</artifactId>
+        <version>${project.version}</version>
       </dependency>
       <dependency>
-        <groupId>com.sun.xml.ws</groupId>
-        <artifactId>jaxws-rt</artifactId>
-        <version>${jakarta.xml.jaxws.impl.version}</version>
+        <groupId>org.eclipse.jetty.ee9.websocket</groupId>
+        <artifactId>jetty-ee9-websocket-jakarta-server</artifactId>
+        <version>${project.version}</version>
       </dependency>
       <dependency>
-        <groupId>com.sun.mail</groupId>
-        <artifactId>jakarta.mail</artifactId>
-        <version>${jakarta.mail.api.version}</version>
+        <groupId>org.eclipse.jetty.ee9.websocket</groupId>
+        <artifactId>jetty-ee9-websocket-jetty-api</artifactId>
+        <version>${project.version}</version>
       </dependency>
       <dependency>
-        <groupId>jakarta.el</groupId>
-        <artifactId>jakarta.el-api</artifactId>
-        <version>${jakarta.el.api.version}</version>
+        <groupId>org.eclipse.jetty.ee9.websocket</groupId>
+        <artifactId>jetty-ee9-websocket-jetty-client</artifactId>
+        <version>${project.version}</version>
       </dependency>
       <dependency>
-        <groupId>jakarta.enterprise</groupId>
-        <artifactId>jakarta.enterprise.cdi-api</artifactId>
-        <version>${jakarta.enterprise.cdi.api.version}</version>
+        <groupId>org.eclipse.jetty.ee9.websocket</groupId>
+        <artifactId>jetty-ee9-websocket-jetty-client-webapp</artifactId>
+        <version>${project.version}</version>
       </dependency>
       <dependency>
-        <groupId>jakarta.activation</groupId>
-        <artifactId>jakarta.activation-api</artifactId>
-        <version>${jakarta.activation.api.version}</version>
+        <groupId>org.eclipse.jetty.ee9.websocket</groupId>
+        <artifactId>jetty-ee9-websocket-jetty-common</artifactId>
+        <version>${project.version}</version>
       </dependency>
       <dependency>
-        <groupId>jakarta.annotation</groupId>
-        <artifactId>jakarta.annotation-api</artifactId>
-        <version>${jakarta.annotation.api.version}</version>
+        <groupId>org.eclipse.jetty.ee9.websocket</groupId>
+        <artifactId>jetty-ee9-websocket-jetty-server</artifactId>
+        <version>${project.version}</version>
       </dependency>
       <dependency>
-        <groupId>jakarta.authentication</groupId>
-        <artifactId>jakarta.authentication-api</artifactId>
-        <version>${jakarta.authentication.api.version}</version>
+        <groupId>org.eclipse.jetty.ee9.websocket</groupId>
+        <artifactId>jetty-ee9-websocket-servlet</artifactId>
+        <version>${project.version}</version>
       </dependency>
       <dependency>
-        <groupId>jakarta.interceptor</groupId>
-        <artifactId>jakarta.interceptor-api</artifactId>
-        <version>${jakarta.interceptor.api.version}</version>
+        <groupId>org.eclipse.jetty.orbit</groupId>
+        <artifactId>javax.activation</artifactId>
+        <version>${javax.activation.impl.version}</version>
       </dependency>
       <dependency>
-        <groupId>jakarta.inject</groupId>
-        <artifactId>jakarta.inject-api</artifactId>
-        <version>${jakarta.inject.api.version}</version>
-      </dependency>
-      <dependency>
-        <groupId>jakarta.mail</groupId>
-        <artifactId>jakarta.mail-api</artifactId>
-        <version>${jakarta.mail.api.version}</version>
-      </dependency>
-      <dependency>
-        <groupId>jakarta.servlet</groupId>
-        <artifactId>jakarta.servlet-api</artifactId>
-        <version>${jakarta.servlet.api.version}</version>
-      </dependency>
-      <dependency>
-        <groupId>jakarta.servlet.jsp</groupId>
-        <artifactId>jakarta.servlet.jsp-api</artifactId>
-        <version>${jakarta.servlet.jsp.api.version}</version>
-      </dependency>
-      <dependency>
-        <groupId>jakarta.servlet.jsp.jstl</groupId>
-        <artifactId>jakarta.servlet.jsp.jstl-api</artifactId>
-        <version>${jakarta.servlet.jsp.jstl.api.version}</version>
-        <exclusions>
-          <exclusion>
-            <groupId>jakarta.servlet</groupId>
-            <artifactId>jakarta.servlet-api</artifactId>
-          </exclusion>
-          <exclusion>
-            <groupId>jakarta.el</groupId>
-            <artifactId>jakarta.el-api</artifactId>
-          </exclusion>
-        </exclusions>
-      </dependency>
-      <dependency>
-        <groupId>jakarta.transaction</groupId>
-        <artifactId>jakarta.transaction-api</artifactId>
-        <version>${jakarta.transaction-api.version}</version>
-      </dependency>
-      <dependency>
-        <groupId>jakarta.ws.rs</groupId>
-        <artifactId>jakarta.ws.rs-api</artifactId>
-        <version>${jakarta.ws.rs.api.version}</version>
-      </dependency>
-      <dependency>
-        <groupId>jakarta.xml.bind</groupId>
-        <artifactId>jakarta.xml.bind-api</artifactId>
-        <version>${jakarta.xml.bind.api.version}</version>
-      </dependency>
-      <dependency>
-        <groupId>jakarta.xml.ws</groupId>
-        <artifactId>jakarta.xml.ws-api</artifactId>
-        <version>${jakarta.xml.ws.api.version}</version>
+        <groupId>org.eclipse.jetty.orbit</groupId>
+        <artifactId>javax.mail.glassfish</artifactId>
+        <version>${javax.mail.glassfish.version}</version>
       </dependency>
       <dependency>
         <groupId>org.eclipse.jetty.orbit</groupId>
@@ -413,6 +408,11 @@
       </dependency>
       <dependency>
         <groupId>org.eclipse.jetty.toolchain</groupId>
+        <artifactId>jetty-jakarta-servlet-api</artifactId>
+        <version>${jetty.servlet.api.version}</version>
+      </dependency>
+      <dependency>
+        <groupId>org.eclipse.jetty.toolchain</groupId>
         <artifactId>jetty-jakarta-websocket-api</artifactId>
         <version>${jakarta.websocket.api.version}</version>
       </dependency>
@@ -427,14 +427,15 @@
         <version>${jakarta.servlet.jsp.jstl.impl.version}</version>
       </dependency>
       <dependency>
-        <groupId>org.eclipse.jetty.orbit</groupId>
-        <artifactId>javax.mail.glassfish</artifactId>
-        <version>${javax.mail.glassfish.version}</version>
+        <groupId>org.mortbay.jasper</groupId>
+        <artifactId>apache-el</artifactId>
+        <version>${jsp.impl.version}</version>
       </dependency>
+      <!-- Jakarta EE 9 Dependencies -->
       <dependency>
-        <groupId>org.eclipse.jetty.orbit</groupId>
-        <artifactId>javax.activation</artifactId>
-        <version>${javax.activation.impl.version}</version>
+        <groupId>org.mortbay.jasper</groupId>
+        <artifactId>apache-jsp</artifactId>
+        <version>${jsp.impl.version}</version>
       </dependency>
     </dependencies>
   </dependencyManagement>
@@ -454,10 +455,10 @@
             <executions>
               <execution>
                 <id>ee9-report</id>
-                <phase>validate</phase>
                 <goals>
                   <goal>dependency-updates-aggregate-report</goal>
                 </goals>
+                <phase>validate</phase>
                 <configuration>
                   <formats>
                     <format>html</format>

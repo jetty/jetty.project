@@ -125,13 +125,16 @@ public class BufferedResponseHandlerTest
     @Test
     public void testFlushed() throws Exception
     {
+        _test._writes = 4;
         _test._flush = true;
         _test._bufferSize = 2048;
         String response = _local.getResponse("GET /ctx/include/path HTTP/1.1\r\nHost: localhost\r\n\r\n");
         assertThat(response, containsString(" 200 OK"));
         assertThat(response, containsString("Write: 0"));
-        assertThat(response, containsString("Write: 9"));
-        assertThat(response, containsString("Written: true"));
+        assertThat(response, containsString("Write: 1"));
+        assertThat(response, containsString("Transfer-Encoding: chunked"));
+        assertThat(response, not(containsString("Write: 3")));
+        assertThat(response, not(containsString("Written: true")));
     }
 
     @Test
@@ -181,10 +184,10 @@ public class BufferedResponseHandlerTest
         _test._content = new byte[0];
         String response = _local.getResponse("GET /ctx/include/path HTTP/1.1\r\nHost: localhost\r\n\r\n");
         assertThat(response, containsString(" 200 OK"));
-        assertThat(response, containsString("Content-Length: "));
+        assertThat(response, containsString("Transfer-Encoding: chunked"));
         assertThat(response, containsString("Write: 0"));
         assertThat(response, not(containsString("Write: 1")));
-        assertThat(response, containsString("Written: true"));
+        assertThat(response, not(containsString("Written: true")));
     }
 
     @Test
@@ -235,9 +238,11 @@ public class BufferedResponseHandlerTest
                 {
                     response.getHeaders().add("Write", Integer.toString(i));
                     outputStream.write(_content);
-                    if (_flush)
+                    if (_flush && i % 2 == 1)
                         outputStream.flush();
                 }
+                if (_flush)
+                    outputStream.flush();
                 response.getHeaders().add("Written", "true");
             }
             callback.succeeded();

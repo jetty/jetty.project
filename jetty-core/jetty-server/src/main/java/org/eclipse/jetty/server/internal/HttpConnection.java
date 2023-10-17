@@ -572,39 +572,49 @@ public class HttpConnection extends AbstractConnection implements Runnable, Writ
             _retainableByteBuffer = newBuffer;
         }
 
-        if (isRequestBufferEmpty())
+        if (!isRequestBufferEmpty())
+            return _retainableByteBuffer.remaining();
+
+        // Get a buffer
+        // We are not in a race here for the request buffer as we have not yet received a request,
+        // so there are not any possible legal threads calling #parseContent or #completed.
+        ByteBuffer requestBuffer = getRequestBuffer();
+
+        // fill
+        try
         {
-            // Get a buffer
-            // We are not in a race here for the request buffer as we have not yet received a request,
-            // so there are not an possible legal threads calling #parseContent or #completed.
-            ByteBuffer requestBuffer = getRequestBuffer();
+            int filled = getEndPoint().fill(requestBuffer);
+            if (filled == 0) // Do a retry on fill 0 (optimization for SSL connections)
+                filled = getEndPoint().fill(requestBuffer);
 
-            // fill
-            try
+            if (LOG.isDebugEnabled())
+                LOG.debug("{} filled {} {}", this, filled, _retainableByteBuffer);
+
+            if (filled > 0)
             {
-                int filled = getEndPoint().fill(requestBuffer);
-                if (filled == 0) // Do a retry on fill 0 (optimization for SSL connections)
-                    filled = getEndPoint().fill(requestBuffer);
-
-                if (filled > 0)
-                    bytesIn.add(filled);
-                else if (filled < 0)
+                bytesIn.add(filled);
+            }
+            else
+            {
+                if (filled < 0)
                     _parser.atEOF();
-
-                if (LOG.isDebugEnabled())
-                    LOG.debug("{} filled {} {}", this, filled, _retainableByteBuffer);
-
-                return filled;
+                releaseRequestBuffer();
             }
-            catch (IOException e)
-            {
-                if (LOG.isDebugEnabled())
-                    LOG.debug("Unable to fill from endpoint {}", getEndPoint(), e);
-                _parser.atEOF();
-                return -1;
-            }
+
+            return filled;
         }
-        return 0;
+        catch (Throwable x)
+        {
+            if (LOG.isDebugEnabled())
+                LOG.debug("Unable to fill from endpoint {}", getEndPoint(), x);
+            _parser.atEOF();
+            if (_retainableByteBuffer != null)
+            {
+                _retainableByteBuffer.clear();
+                releaseRequestBuffer();
+            }
+            return -1;
+        }
     }
 
     private boolean parseRequestBuffer()
@@ -1113,7 +1123,7 @@ public class HttpConnection extends AbstractConnection implements Runnable, Writ
 
     protected class HttpStreamOverHTTP1 implements HttpStream
     {
-        private final String _id;
+        private final long _id;
         private final String _method;
         private final HttpURI.Mutable _uri;
         private final HttpVersion _version;
@@ -1131,10 +1141,10 @@ public class HttpConnection extends AbstractConnection implements Runnable, Writ
 
         protected HttpStreamOverHTTP1(String method, String uri, HttpVersion version)
         {
-            _id = Objects.requireNonNull(version).toString() + '#' + _streamIdGenerator.getAndIncrement();
+            _id = _streamIdGenerator.getAndIncrement();
             _method = method;
             _uri = uri == null ? null : HttpURI.build(method, uri);
-            _version = version;
+            _version = Objects.requireNonNull(version);
 
             if (_uri != null && _uri.getPath() == null && _uri.getScheme() != null && _uri.hasAuthority())
                 _uri.path("/");
@@ -1147,15 +1157,9 @@ public class HttpConnection extends AbstractConnection implements Runnable, Writ
             if (result != null)
             {
                 _generator.setPersistent(false);
-                // If HttpStream.consumeAvailable() returns an error, there may be unconsumed content left,
-                // so we must make sure the buffer is released and that the next chunk indicates the end of the stream.
-                if (_retainableByteBuffer != null)
-                {
-                    _retainableByteBuffer.release();
-                    _retainableByteBuffer = null;
-                }
-                if (_chunk == null)
-                    _chunk = Content.Chunk.from(result, true);
+                if (_chunk != null)
+                    _chunk.release();
+                _chunk = Content.Chunk.from(result, true);
             }
             return result;
         }
@@ -1254,7 +1258,7 @@ public class HttpConnection extends AbstractConnection implements Runnable, Writ
                 _uri.scheme(getEndPoint() instanceof SslConnection.SslEndPoint ? HttpScheme.HTTPS : HttpScheme.HTTP);
 
             // Set the authority (if not already set) in the URI
-            if (!HttpMethod.CONNECT.is(_method) && _uri.getAuthority() == null)
+            if (_uri.getAuthority() == null && !HttpMethod.CONNECT.is(_method))
             {
                 HostPort hostPort = _hostField == null ? getServerAuthority() : _hostField.getHostPort();
                 int port = hostPort.getPort();
@@ -1360,7 +1364,7 @@ public class HttpConnection extends AbstractConnection implements Runnable, Writ
         @Override
         public String getId()
         {
-            return _id;
+            return Long.toString(_id);
         }
 
         @Override

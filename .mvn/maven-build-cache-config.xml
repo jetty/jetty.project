@@ -22,7 +22,11 @@
   </configuration>
   <input>
     <global>
-      <glob>*.{java,xml,properties,mod,adoc}</glob>
+      <glob>{*.java,*.xml,*.properties,*.mod,*.adoc}</glob>
+      <excludes>
+        <exclude>*Jenkinsfile*</exclude>
+        <exclude>./idea/*</exclude>
+      </excludes>
     </global>
     <plugins>
       <plugin groupId="org.apache.maven.plugins" artifactId="maven-invoker-plugin">
@@ -56,6 +60,11 @@
         <goalsList artifactId="maven-install-plugin">
           <goals>
             <goal>install</goal>
+          </goals>
+        </goalsList>
+        <goalsList artifactId="maven-deploy-plugin">
+          <goals>
+            <goal>deploy</goal>
           </goals>
         </goalsList>
       </goalsLists>

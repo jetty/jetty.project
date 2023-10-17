@@ -1,28 +1,28 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <project xmlns="http://maven.apache.org/POM/4.0.0" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/maven-v4_0_0.xsd">
+  <modelVersion>4.0.0</modelVersion>
   <parent>
     <groupId>org.eclipse.jetty.ee10</groupId>
     <artifactId>jetty-ee10-test-jmx</artifactId>
-    <version>12.0.2-SNAPSHOT</version>
+    <version>12.0.3-SNAPSHOT</version>
   </parent>
-  <modelVersion>4.0.0</modelVersion>
   <artifactId>jetty-ee10-jmx-webapp-it</artifactId>
   <packaging>jar</packaging>
   <name>EE10 :: Tests :: JMX :: WebApp Integration Tests</name>
   <properties>
+    <bundle-symbolic-name>${project.groupId}.jmx.webapp.it</bundle-symbolic-name>
     <project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
     <project.reporting.outputEncoding>UTF-8</project.reporting.outputEncoding>
-    <bundle-symbolic-name>${project.groupId}.jmx.webapp.it</bundle-symbolic-name>
     <test-base-dir>${project.build.directory}/test-base</test-base-dir>
   </properties>
   <dependencies>
     <dependency>
-      <groupId>org.eclipse.jetty.ee10</groupId>
-      <artifactId>jetty-ee10-annotations</artifactId>
-    </dependency>
-    <dependency>
       <groupId>org.eclipse.jetty</groupId>
       <artifactId>jetty-jmx</artifactId>
+    </dependency>
+    <dependency>
+      <groupId>org.eclipse.jetty.ee10</groupId>
+      <artifactId>jetty-ee10-annotations</artifactId>
     </dependency>
     <dependency>
       <groupId>org.eclipse.jetty.ee10</groupId>
@@ -45,10 +45,10 @@
         <executions>
           <execution>
             <id>copy-apps-for-testing</id>
-            <phase>process-test-resources</phase>
             <goals>
               <goal>copy-dependencies</goal>
             </goals>
+            <phase>process-test-resources</phase>
             <configuration>
               <includeArtifactIds>jetty-ee10-jmx-webapp</includeArtifactIds>
               <includeScope>runtime</includeScope>
