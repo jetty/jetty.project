@@ -27,11 +27,13 @@ import java.util.stream.Collectors;
 import org.eclipse.jetty.deploy.App;
 import org.eclipse.jetty.deploy.AppProvider;
 import org.eclipse.jetty.deploy.DeploymentManager;
+import org.eclipse.jetty.server.Server;
 import org.eclipse.jetty.util.Scanner;
 import org.eclipse.jetty.util.annotation.ManagedAttribute;
 import org.eclipse.jetty.util.annotation.ManagedObject;
 import org.eclipse.jetty.util.annotation.ManagedOperation;
 import org.eclipse.jetty.util.component.ContainerLifeCycle;
+import org.eclipse.jetty.util.component.LifeCycle;
 import org.eclipse.jetty.util.resource.Resource;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -49,6 +51,7 @@ public abstract class ScanningAppProvider extends ContainerLifeCycle implements 
     private int _scanInterval = 10;
     private Scanner _scanner;
     private boolean _useRealPaths;
+    private boolean _deferInitialScan = false;
 
     private final Scanner.DiscreteListener _scannerListener = new Scanner.DiscreteListener()
     {
@@ -152,8 +155,29 @@ public abstract class ScanningAppProvider extends ContainerLifeCycle implements 
         _scanner.setReportDirs(true);
         _scanner.setScanDepth(1); //consider direct dir children of monitored dir
         _scanner.addListener(_scannerListener);
-
+        _scanner.setReportExistingFilesOnStartup(true);
+        _scanner.setAutoStartScanning(!_deferInitialScan);
         addBean(_scanner);
+
+        if (isDeferInitialScan())
+        {
+            // Setup listener to wait for Server in STARTED state, which
+            // triggers the first scan of the monitored directories
+            getDeploymentManager().getServer().addEventListener(
+                new LifeCycle.Listener()
+                {
+                    @Override
+                    public void lifeCycleStarted(LifeCycle event)
+                    {
+                        if (event instanceof Server)
+                        {
+                            if (LOG.isDebugEnabled())
+                                LOG.debug("Triggering Deferred Scan of {}", _monitored);
+                            _scanner.startScanning();
+                        }
+                    }
+                });
+        }
 
         super.doStart();
     }
@@ -294,6 +318,34 @@ public abstract class ScanningAppProvider extends ContainerLifeCycle implements 
         {
             throw new IllegalArgumentException(e);
         }
+    }
+
+    /**
+     * Test if initial scan should be deferred.
+     *
+     * @return true if initial scan is deferred, false to have initial scan occur on startup of ScanningAppProvider.
+     */
+    public boolean isDeferInitialScan()
+    {
+        return _deferInitialScan;
+    }
+
+    /**
+     * Flag to control initial scan behavior.
+     *
+     * <ul>
+     *     <li>{@code true} - to have initial scan deferred until the {@link Server} component
+     *     has reached it's STARTED state.<br>
+     *     Note: any failures in a deploy will not fail the Server startup in this mode.</li>
+     *     <li>{@code false} - (default value) to have initial scan occur as normal on
+     *     ScanningAppProvider startup.</li>
+     * </ul>
+     *
+     * @param defer true to defer initial scan, false to have initial scan occur on startup of ScanningAppProvider.
+     */
+    public void setDeferInitialScan(boolean defer)
+    {
+        _deferInitialScan = defer;
     }
 
     public void setScanInterval(int scanInterval)
