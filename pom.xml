@@ -200,7 +200,7 @@
     <!-- but hey we have no more strange people?? :P -->
     <infinispan.docker.image.version>11.0.14.Final</infinispan.docker.image.version>
     <infinispan.protostream.version>4.6.5.Final</infinispan.protostream.version>
-    <infinispan.version>11.0.17.Final</infinispan.version>
+    <infinispan.version>11.0.18.Final</infinispan.version>
     <injection.bundle.version>1.2</injection.bundle.version>
 
     <!-- testing -->
@@ -245,7 +245,7 @@
     <jetty-version.maven.plugin.version>2.7</jetty-version.maven.plugin.version>
     <jetty.perf-helper.version>1.0.7</jetty.perf-helper.version>
     <jetty.surefire.argLine>-Dfile.encoding=UTF-8 -Duser.language=en -Duser.region=US -Djava.io.tmpdir=${project.build.directory} -showversion -Xmx6g -Xms4g -Xlog:gc:stderr:time,level,tags</jetty.surefire.argLine>
-    <jetty.test.version>6.1</jetty.test.version>
+    <jetty.test.version>6.2</jetty.test.version>
     <jetty.testtracker.log>true</jetty.testtracker.log>
     <jetty.unixdomain.dir>/tmp</jetty.unixdomain.dir>
     <jetty.url>https://eclipse.dev/jetty/</jetty.url>
@@ -265,7 +265,7 @@
     <junit.jupiter.execution.parallel.enabled>true</junit.jupiter.execution.parallel.enabled>
     <junit.jupiter.execution.parallel.mode.classes.default>concurrent</junit.jupiter.execution.parallel.mode.classes.default>
     <junit.jupiter.execution.parallel.mode.default>same_thread</junit.jupiter.execution.parallel.mode.default>
-    <junit.jupiter.extensions.autodetection.enabled>false</junit.jupiter.extensions.autodetection.enabled>
+    <junit.jupiter.extensions.autodetection.enabled>true</junit.jupiter.extensions.autodetection.enabled>
     <junit.version>5.10.0</junit.version>
     <kerb-simplekdc.version>2.0.3</kerb-simplekdc.version>
     <license.maven.plugin.version>4.1</license.maven.plugin.version>
@@ -345,7 +345,7 @@
     <swissbox.version>1.8.3</swissbox.version>
     <taglibs-standard-impl.version>1.2.5</taglibs-standard-impl.version>
     <taglibs-standard-spec.version>1.2.5</taglibs-standard-spec.version>
-    <testcontainers.version>1.19.0</testcontainers.version>
+    <testcontainers.version>1.19.1</testcontainers.version>
     <tinybundles.version>3.0.0</tinybundles.version>
     <versions.maven.plugin.version>2.14.2</versions.maven.plugin.version>
     <wildfly.common.version>1.6.0.Final</wildfly.common.version>
@@ -1511,6 +1511,24 @@
                 junit.jupiter.execution.parallel.config.fixed.parallelism=${junit.jupiter.execution.parallel.config.fixed.parallelism}
                 junit.jupiter.extensions.autodetection.enabled=${junit.jupiter.extensions.autodetection.enabled}</configurationParameters>
             </properties>
+            <statelessTestsetReporter implementation="org.apache.maven.plugin.surefire.extensions.junit5.JUnit5Xml30StatelessReporter">
+              <disable>false</disable>
+              <usePhrasedFileName>false</usePhrasedFileName>
+              <usePhrasedTestSuiteClassName>true</usePhrasedTestSuiteClassName>
+              <usePhrasedTestCaseClassName>true</usePhrasedTestCaseClassName>
+              <usePhrasedTestCaseMethodName>true</usePhrasedTestCaseMethodName>
+            </statelessTestsetReporter>
+            <consoleOutputReporter implementation="org.apache.maven.plugin.surefire.extensions.junit5.JUnit5ConsoleOutputReporter">
+              <disable>false</disable>
+              <encoding>UTF-8</encoding>
+              <usePhrasedFileName>false</usePhrasedFileName>
+            </consoleOutputReporter>
+            <statelessTestsetInfoReporter implementation="org.apache.maven.plugin.surefire.extensions.junit5.JUnit5StatelessTestsetInfoReporter">
+              <disable>false</disable>
+              <usePhrasedFileName>false</usePhrasedFileName>
+              <usePhrasedClassNameInRunning>true</usePhrasedClassNameInRunning>
+              <usePhrasedClassNameInTestCaseSummary>true</usePhrasedClassNameInTestCaseSummary>
+            </statelessTestsetInfoReporter>
           </configuration>
           <dependencies>
             <dependency>
