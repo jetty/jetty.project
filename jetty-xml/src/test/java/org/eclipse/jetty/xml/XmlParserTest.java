@@ -18,6 +18,7 @@ import javax.xml.parsers.SAXParser;
 import javax.xml.parsers.SAXParserFactory;
 
 import org.junit.jupiter.api.Test;
+import org.xml.sax.InputSource;
 import org.xml.sax.SAXException;
 import org.xml.sax.XMLReader;
 
@@ -31,12 +32,21 @@ public class XmlParserTest
     @Test
     public void testXmlParser() throws Exception
     {
-        XmlParser parser = new XmlParser();
+        XmlParser parser = new XmlParser()
+        {
+            @Override
+            protected InputSource resolveEntity(String pid, String sid)
+            {
+                InputSource inputSource = super.resolveEntity(pid, sid);
+                assertNotNull(inputSource, "You are using entities in your XML that don't match your redirectEntity mappings: pid=" + pid + ", sid=" + sid);
+                return inputSource;
+            }
+        };
 
         URL configURL = XmlConfiguration.class.getResource("configure_10_0.dtd");
         parser.redirectEntity("configure_10_0.dtd", configURL);
-        parser.redirectEntity("http://jetty.eclipse.org/configure.dtd", configURL);
-        parser.redirectEntity("-//Mort Bay Consulting//DTD Configure//EN", configURL);
+        parser.redirectEntity("https://www.eclipse.org/jetty/configure_10_0.dtd", configURL);
+        parser.redirectEntity("-//Jetty//Configure//EN", configURL);
 
         URL url = XmlParserTest.class.getClassLoader().getResource("org/eclipse/jetty/xml/configureWithAttr.xml");
         XmlParser.Node testDoc = parser.parse(url.toString());
