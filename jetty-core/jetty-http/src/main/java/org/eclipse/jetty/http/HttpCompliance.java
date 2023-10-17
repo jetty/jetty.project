@@ -46,7 +46,7 @@ public final class HttpCompliance implements ComplianceViolation.Mode
         /**
          * The HTTP RFC(s) require that field names are case-insensitive, so for example the fields "{@code Content-Type: text/xml}"
          * and "{@code content-type: text/xml}" are considered equivalent.  Jetty has been optimized to take advantage of this by
-         * looking up field names in a case insensitive cache and will by default provide the standard capitalisation of a field
+         * looking up field names in a case-insensitive cache and will by default provide the standard capitalisation of a field
          * name rather than create a new string with the actual capitalisation received.   However, some applications have been
          * written to expect a specific capitalisation of field, so deployments of such applications must include this violation
          * in their {@link HttpCompliance} mode to prevent Jetty altering the case of the fields received. Jetty itself will still
@@ -56,8 +56,8 @@ public final class HttpCompliance implements ComplianceViolation.Mode
         CASE_SENSITIVE_FIELD_NAME("https://tools.ietf.org/html/rfc7230#section-3.2", "Field name is case-insensitive"),
 
         /**
-         * The HTTP RFC(s) require that method names are case sensitive, so that "{@code Get}" and "{@code GET}" are considered
-         * different methods.   Jetty releases prior to 9.4 used a case insensitive cache to match method names, thus this requirement
+         * The HTTP RFC(s) require that method names are case-sensitive, so that "{@code Get}" and "{@code GET}" are considered
+         * different methods.   Jetty releases prior to 9.4 used a case-insensitive cache to match method names, thus this requirement
          * was violated.  Deployments which wish to retain this legacy violation can include this violation in the
          * {@link HttpCompliance} mode.
          */

@@ -1123,7 +1123,7 @@ public class HttpConnection extends AbstractConnection implements Runnable, Writ
 
     protected class HttpStreamOverHTTP1 implements HttpStream
     {
-        private final String _id;
+        private final long _id;
         private final String _method;
         private final HttpURI.Mutable _uri;
         private final HttpVersion _version;
@@ -1141,10 +1141,10 @@ public class HttpConnection extends AbstractConnection implements Runnable, Writ
 
         protected HttpStreamOverHTTP1(String method, String uri, HttpVersion version)
         {
-            _id = Objects.requireNonNull(version).toString() + '#' + _streamIdGenerator.getAndIncrement();
+            _id = _streamIdGenerator.getAndIncrement();
             _method = method;
             _uri = uri == null ? null : HttpURI.build(method, uri);
-            _version = version;
+            _version = Objects.requireNonNull(version);
 
             if (_uri != null && _uri.getPath() == null && _uri.getScheme() != null && _uri.hasAuthority())
                 _uri.path("/");
@@ -1364,7 +1364,7 @@ public class HttpConnection extends AbstractConnection implements Runnable, Writ
         @Override
         public String getId()
         {
-            return _id;
+            return Long.toString(_id);
         }
 
         @Override

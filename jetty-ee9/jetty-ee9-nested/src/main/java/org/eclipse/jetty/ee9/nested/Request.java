@@ -1997,7 +1997,7 @@ public class Request implements HttpServletRequest
     private MultiPartFormInputStream newMultiParts(MultipartConfigElement config, int maxParts) throws IOException
     {
         return new MultiPartFormInputStream(getInputStream(), getContentType(), config,
-            (_context != null ? (File)_context.getAttribute("jakarta.servlet.context.tempdir") : null), maxParts);
+            (_context != null ? (File)_context.getAttribute(ServletContext.TEMPDIR) : null), maxParts);
     }
 
     @Override
