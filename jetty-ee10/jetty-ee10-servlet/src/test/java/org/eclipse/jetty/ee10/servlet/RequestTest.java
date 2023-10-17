@@ -17,10 +17,14 @@ import java.io.IOException;
 import java.io.UnsupportedEncodingException;
 import java.util.ArrayList;
 import java.util.Arrays;
+import java.util.Collections;
+import java.util.HashSet;
 import java.util.List;
+import java.util.Set;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.concurrent.atomic.AtomicReference;
 
+import jakarta.servlet.MultipartConfigElement;
 import jakarta.servlet.http.Cookie;
 import jakarta.servlet.http.HttpServlet;
 import jakarta.servlet.http.HttpServletRequest;
@@ -28,9 +32,12 @@ import jakarta.servlet.http.HttpServletResponse;
 import org.eclipse.jetty.http.HttpStatus;
 import org.eclipse.jetty.http.HttpTester;
 import org.eclipse.jetty.http.UriCompliance;
+import org.eclipse.jetty.server.FormFields;
 import org.eclipse.jetty.server.ForwardedRequestCustomizer;
 import org.eclipse.jetty.server.HttpConnectionFactory;
 import org.eclipse.jetty.server.LocalConnector;
+import org.eclipse.jetty.server.Request;
+import org.eclipse.jetty.server.SecureRequestCustomizer;
 import org.eclipse.jetty.server.Server;
 import org.eclipse.jetty.util.component.LifeCycle;
 import org.junit.jupiter.api.AfterEach;
@@ -39,10 +46,13 @@ import org.junit.jupiter.api.Test;
 
 import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.Matchers.contains;
+import static org.hamcrest.Matchers.containsInAnyOrder;
 import static org.hamcrest.Matchers.containsString;
+import static org.hamcrest.Matchers.empty;
 import static org.hamcrest.Matchers.equalTo;
 import static org.hamcrest.Matchers.is;
 import static org.hamcrest.Matchers.not;
+import static org.hamcrest.Matchers.notNullValue;
 import static org.hamcrest.Matchers.nullValue;
 import static org.hamcrest.Matchers.sameInstance;
 
@@ -66,7 +76,7 @@ public class RequestTest
         _server.addConnector(_connector);
 
         ServletContextHandler servletContextHandler = new ServletContextHandler();
-        servletContextHandler.addServlet(servlet, "/*");
+        servletContextHandler.addServlet(servlet, "/*").getRegistration().setMultipartConfig(new MultipartConfigElement("here"));
 
         _server.setHandler(servletContextHandler);
         _server.start();
@@ -284,6 +294,114 @@ public class RequestTest
 
         assertThat(cookieHistory.get(0), sameInstance(cookieHistory.get(2)));
         assertThat(cookieHistory.get(2), not(sameInstance(cookieHistory.get(4))));
+    }
+
+    @Test
+    public void testAttributes() throws Exception
+    {
+        startServer(new HttpServlet()
+        {
+            @Override
+            protected void service(HttpServletRequest request, HttpServletResponse resp) throws IOException
+            {
+                ServletContextRequest servletContextRequest = ServletContextRequest.getServletContextRequest(request);
+                Request coreRequest = servletContextRequest.getRequest();
+
+                // Set some fake SSL attributes
+                Object certificate = new Object();
+                coreRequest.setAttribute(SecureRequestCustomizer.CIPHER_SUITE_ATTRIBUTE, "quantumKnowledge");
+                coreRequest.setAttribute(SecureRequestCustomizer.KEY_SIZE_ATTRIBUTE, 42);
+                coreRequest.setAttribute(SecureRequestCustomizer.SSL_SESSION_ID_ATTRIBUTE, "identity");
+                coreRequest.setAttribute(SecureRequestCustomizer.PEER_CERTIFICATES_ATTRIBUTE, certificate);
+
+                // Check we have all the attribute names in servlet API
+                Set<String> names = new HashSet<>(Collections.list(request.getAttributeNames()));
+                assertThat(names, containsInAnyOrder(
+                    SecureRequestCustomizer.CIPHER_SUITE_ATTRIBUTE,
+                    "jakarta.servlet.request.cipher_suite",
+                    SecureRequestCustomizer.KEY_SIZE_ATTRIBUTE,
+                    "jakarta.servlet.request.key_size",
+                    SecureRequestCustomizer.SSL_SESSION_ID_ATTRIBUTE,
+                    "jakarta.servlet.request.ssl_session_id",
+                    SecureRequestCustomizer.PEER_CERTIFICATES_ATTRIBUTE,
+                    "jakarta.servlet.request.X509Certificate",
+                    FormFields.MAX_FIELDS_ATTRIBUTE,
+                    FormFields.MAX_LENGTH_ATTRIBUTE,
+                    ServletContextRequest.MULTIPART_CONFIG_ELEMENT
+                ));
+
+                // check we can get the expected values
+                assertThat(request.getAttribute(SecureRequestCustomizer.CIPHER_SUITE_ATTRIBUTE), is("quantumKnowledge"));
+                assertThat(request.getAttribute("jakarta.servlet.request.cipher_suite"), is("quantumKnowledge"));
+                assertThat(request.getAttribute(SecureRequestCustomizer.KEY_SIZE_ATTRIBUTE), is(42));
+                assertThat(request.getAttribute("jakarta.servlet.request.key_size"), is(42));
+                assertThat(request.getAttribute(SecureRequestCustomizer.SSL_SESSION_ID_ATTRIBUTE), is("identity"));
+                assertThat(request.getAttribute("jakarta.servlet.request.ssl_session_id"), is("identity"));
+                assertThat(request.getAttribute(SecureRequestCustomizer.PEER_CERTIFICATES_ATTRIBUTE), sameInstance(certificate));
+                assertThat(request.getAttribute("jakarta.servlet.request.X509Certificate"), sameInstance(certificate));
+                assertThat(request.getAttribute(ServletContextRequest.MULTIPART_CONFIG_ELEMENT), notNullValue());
+                int maxFormKeys = ServletContextHandler.getServletContextHandler(request.getServletContext()).getMaxFormKeys();
+                assertThat(request.getAttribute(FormFields.MAX_FIELDS_ATTRIBUTE), is(maxFormKeys));
+                int maxFormContentSize = ServletContextHandler.getServletContextHandler(request.getServletContext()).getMaxFormContentSize();
+                assertThat(request.getAttribute(FormFields.MAX_LENGTH_ATTRIBUTE), is(maxFormContentSize));
+
+                // check we can set all those attributes in the servlet API
+                request.setAttribute("jakarta.servlet.request.cipher_suite", "piglatin");
+                request.setAttribute(SecureRequestCustomizer.KEY_SIZE_ATTRIBUTE, 3);
+                request.setAttribute(SecureRequestCustomizer.SSL_SESSION_ID_ATTRIBUTE, "other");
+                request.setAttribute("jakarta.servlet.request.X509Certificate", "certificate");
+                request.setAttribute(ServletContextRequest.MULTIPART_CONFIG_ELEMENT, "config2");
+                request.setAttribute(FormFields.MAX_FIELDS_ATTRIBUTE, 101);
+                request.setAttribute(FormFields.MAX_LENGTH_ATTRIBUTE, 102);
+
+                // check we can get the updated values
+                assertThat(request.getAttribute(SecureRequestCustomizer.CIPHER_SUITE_ATTRIBUTE), is("piglatin"));
+                assertThat(request.getAttribute("jakarta.servlet.request.cipher_suite"), is("piglatin"));
+                assertThat(request.getAttribute(SecureRequestCustomizer.KEY_SIZE_ATTRIBUTE), is(3));
+                assertThat(request.getAttribute("jakarta.servlet.request.key_size"), is(3));
+                assertThat(request.getAttribute(SecureRequestCustomizer.SSL_SESSION_ID_ATTRIBUTE), is("other"));
+                assertThat(request.getAttribute("jakarta.servlet.request.ssl_session_id"), is("other"));
+                assertThat(request.getAttribute(SecureRequestCustomizer.PEER_CERTIFICATES_ATTRIBUTE), is("certificate"));
+                assertThat(request.getAttribute("jakarta.servlet.request.X509Certificate"), is("certificate"));
+                assertThat(request.getAttribute(ServletContextRequest.MULTIPART_CONFIG_ELEMENT), is("config2"));
+                assertThat(request.getAttribute(FormFields.MAX_FIELDS_ATTRIBUTE), is(101));
+                assertThat(request.getAttribute(FormFields.MAX_LENGTH_ATTRIBUTE), is(102));
+
+                // but shared values are not changed
+                assertThat(servletContextRequest.getMatchedResource().getResource().getServletHolder().getMultipartConfigElement(), notNullValue());
+                assertThat(ServletContextHandler.getServletContextHandler(request.getServletContext()).getMaxFormKeys(), is(maxFormKeys));
+                assertThat(ServletContextHandler.getServletContextHandler(request.getServletContext()).getMaxFormContentSize(), is(maxFormContentSize));
+
+                // Check we can remove all the attributes
+                request.removeAttribute("jakarta.servlet.request.cipher_suite");
+                request.removeAttribute(SecureRequestCustomizer.KEY_SIZE_ATTRIBUTE);
+                request.setAttribute(SecureRequestCustomizer.SSL_SESSION_ID_ATTRIBUTE, null);
+                request.setAttribute("jakarta.servlet.request.X509Certificate", null);
+                request.removeAttribute(ServletContextRequest.MULTIPART_CONFIG_ELEMENT);
+                request.removeAttribute(FormFields.MAX_FIELDS_ATTRIBUTE);
+                request.removeAttribute(FormFields.MAX_LENGTH_ATTRIBUTE);
+
+                assertThat(Collections.list(request.getAttributeNames()), empty());
+
+                // but shared values are not changed
+                assertThat(servletContextRequest.getMatchedResource().getResource().getServletHolder().getMultipartConfigElement(), notNullValue());
+                assertThat(ServletContextHandler.getServletContextHandler(request.getServletContext()).getMaxFormKeys(), is(maxFormKeys));
+                assertThat(ServletContextHandler.getServletContextHandler(request.getServletContext()).getMaxFormContentSize(), is(maxFormContentSize));
+
+                resp.getWriter().println("OK");
+            }
+        });
+
+        String rawResponse = _connector.getResponse(
+            """
+                GET /test HTTP/1.1\r
+                Host: host\r
+                Connection: close\r
+                \r
+                """);
+        HttpTester.Response response = HttpTester.parseResponse(rawResponse);
+        assertThat(response.getStatus(), is(HttpStatus.OK_200));
+        assertThat(response.getContent(), containsString("OK"));
     }
 
     @Test

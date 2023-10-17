@@ -25,6 +25,7 @@ import java.util.ListIterator;
 import java.util.Locale;
 import java.util.Map;
 import java.util.NoSuchElementException;
+import java.util.function.Consumer;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
 
@@ -32,6 +33,7 @@ import org.eclipse.jetty.util.BufferUtil;
 import org.hamcrest.Matchers;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.params.ParameterizedTest;
+import org.junit.jupiter.params.provider.Arguments;
 import org.junit.jupiter.params.provider.MethodSource;
 import org.junit.jupiter.params.provider.ValueSource;
 
@@ -177,6 +179,101 @@ public class HttpFieldsTest
         assertEquals("value0", header.getField(0).getValue());
         assertEquals("value1", header.getField(1).getValue());
         assertThrows(NoSuchElementException.class, () -> header.getField(2));
+    }
+
+    public static Stream<Arguments> afterAsImmutable()
+    {
+        return Stream.of(
+            Arguments.of(
+                (Consumer<HttpFields.Mutable>)m -> m.remove("name0"),
+                (Consumer<HttpFields.Mutable>)m ->
+                {
+                    assertThat(m.size(), is(1));
+                    assertThat(m.get("name1"), is("value1"));
+                }
+            ),
+            Arguments.of(
+                (Consumer<HttpFields.Mutable>)m -> m.remove("name1"),
+                (Consumer<HttpFields.Mutable>)m ->
+                {
+                    assertThat(m.size(), is(1));
+                    assertThat(m.get("name0"), is("value0"));
+                }
+            ),
+            Arguments.of(
+                (Consumer<HttpFields.Mutable>)m ->
+                {
+                    ListIterator<HttpField> i = m.listIterator();
+                    i.next();
+                    i.remove();
+                },
+                (Consumer<HttpFields.Mutable>)m ->
+                {
+                    assertThat(m.size(), is(1));
+                    assertThat(m.get("name1"), is("value1"));
+                }
+            ),
+            Arguments.of(
+                (Consumer<HttpFields.Mutable>)m -> m.remove("name2"),
+                (Consumer<HttpFields.Mutable>)m ->
+                {
+                    assertThat(m.size(), is(2));
+                    assertThat(m.get("name0"), is("value0"));
+                    assertThat(m.get("name1"), is("value1"));
+                }
+            ),
+            Arguments.of(
+                (Consumer<HttpFields.Mutable>)m -> m.add("name2", "value2"),
+                (Consumer<HttpFields.Mutable>)m ->
+                {
+                    assertThat(m.size(), is(3));
+                    assertThat(m.get("name0"), is("value0"));
+                    assertThat(m.get("name1"), is("value1"));
+                    assertThat(m.get("name2"), is("value2"));
+                }
+            ),
+            Arguments.of(
+                (Consumer<HttpFields.Mutable>)m -> m.put("name2", "value2"),
+                (Consumer<HttpFields.Mutable>)m ->
+                {
+                    assertThat(m.size(), is(3));
+                    assertThat(m.get("name0"), is("value0"));
+                    assertThat(m.get("name1"), is("value1"));
+                    assertThat(m.get("name2"), is("value2"));
+                }
+            ),
+            Arguments.of(
+                (Consumer<HttpFields.Mutable>)m -> m.put("name1", "ONE"),
+                (Consumer<HttpFields.Mutable>)m ->
+                {
+                    assertThat(m.size(), is(2));
+                    assertThat(m.get("name0"), is("value0"));
+                    assertThat(m.get("name1"), is("ONE"));
+                }
+            )
+        );
+    }
+
+    @ParameterizedTest
+    @MethodSource("afterAsImmutable")
+    public void testMutationAfterAsImmutable(Consumer<HttpFields.Mutable> mutation, Consumer<HttpFields.Mutable> check)
+    {
+        HttpFields.Mutable mutable = HttpFields.build();
+        HttpFields immutable = mutable
+            .put("name0", "value0")
+            .put("name1", "value1").asImmutable();
+
+        assertThat(immutable.size(), is(2));
+        assertThat(immutable.get("name0"), is("value0"));
+        assertThat(immutable.get("name1"), is("value1"));
+
+        mutation.accept(mutable);
+
+        assertThat(immutable.size(), is(2));
+        assertThat(immutable.get("name0"), is("value0"));
+        assertThat(immutable.get("name1"), is("value1"));
+
+        check.accept(mutable);
     }
 
     @ParameterizedTest

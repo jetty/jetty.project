@@ -1,22 +1,20 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <project xmlns="http://maven.apache.org/POM/4.0.0" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/xsd/maven-4.0.0.xsd">
+
+  <modelVersion>4.0.0</modelVersion>
   <parent>
     <groupId>org.eclipse.jetty.ee8.demos</groupId>
     <artifactId>jetty-ee8-demos</artifactId>
     <version>12.0.3-SNAPSHOT</version>
   </parent>
-
-  <modelVersion>4.0.0</modelVersion>
   <artifactId>jetty-ee8-demo-simple-webapp</artifactId>
-  <name>EE8 :: Demo :: Simple WebApp</name>
   <packaging>war</packaging>
+  <name>EE8 :: Demo :: Simple WebApp</name>
 
   <properties>
-    <ee9.module>jetty-ee9-demos/jetty-ee9-demo-simple-webapp</ee9.module>
     <bundle-symbolic-name>${project.groupId}.simple</bundle-symbolic-name>
+    <ee9.module>jetty-ee9-demos/jetty-ee9-demo-simple-webapp</ee9.module>
   </properties>
-
-
 
   <dependencies>
     <dependency>

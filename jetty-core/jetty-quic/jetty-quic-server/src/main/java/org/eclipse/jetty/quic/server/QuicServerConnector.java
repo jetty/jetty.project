@@ -161,7 +161,7 @@ public class QuicServerConnector extends AbstractNetworkConnector
 
         Set<String> aliases = sslContextFactory.getAliases();
         if (aliases.isEmpty())
-            throw new IllegalStateException("Invalid KeyStore: no aliases");
+            throw new IllegalStateException("Missing or invalid KeyStore: a SslContextFactory configured with a valid, non-empty KeyStore is required");
         String alias = sslContextFactory.getCertAlias();
         if (alias == null)
             alias = aliases.stream().findFirst().orElseThrow();

@@ -41,197 +41,195 @@ public class ServletRequestHttpWrapper extends ServletRequestWrapper implements 
     }
 
     @Override
+    public boolean authenticate(HttpServletResponse response) throws IOException, ServletException
+    {
+        throw new UnsupportedOperationException();
+    }
+
+    @Override
+    public String changeSessionId()
+    {
+        throw new UnsupportedOperationException();
+    }
+
+    @Override
     public String getAuthType()
     {
-        return null;
-    }
-
-    @Override
-    public Cookie[] getCookies()
-    {
-        return null;
-    }
-
-    @Override
-    public long getDateHeader(String name)
-    {
-        return 0;
-    }
-
-    @Override
-    public String getHeader(String name)
-    {
-        return null;
-    }
-
-    @Override
-    public Enumeration<String> getHeaders(String name)
-    {
-        return null;
-    }
-
-    @Override
-    public Enumeration<String> getHeaderNames()
-    {
-        return null;
-    }
-
-    @Override
-    public int getIntHeader(String name)
-    {
-        return 0;
-    }
-
-    @Override
-    public String getMethod()
-    {
-        return null;
-    }
-
-    @Override
-    public String getPathInfo()
-    {
-        return null;
-    }
-
-    @Override
-    public String getPathTranslated()
-    {
-        return null;
+        throw new UnsupportedOperationException();
     }
 
     @Override
     public String getContextPath()
     {
-        return null;
+        throw new UnsupportedOperationException();
+    }
+
+    @Override
+    public Cookie[] getCookies()
+    {
+        throw new UnsupportedOperationException();
+    }
+
+    @Override
+    public long getDateHeader(String name)
+    {
+        throw new UnsupportedOperationException();
+    }
+
+    @Override
+    public String getHeader(String name)
+    {
+        throw new UnsupportedOperationException();
+    }
+
+    @Override
+    public Enumeration<String> getHeaderNames()
+    {
+        throw new UnsupportedOperationException();
+    }
+
+    @Override
+    public Enumeration<String> getHeaders(String name)
+    {
+        throw new UnsupportedOperationException();
+    }
+
+    @Override
+    public int getIntHeader(String name)
+    {
+        throw new UnsupportedOperationException();
+    }
+
+    @Override
+    public String getMethod()
+    {
+        throw new UnsupportedOperationException();
+    }
+
+    @Override
+    public Part getPart(String name) throws IOException, ServletException
+    {
+        throw new UnsupportedOperationException();
+    }
+
+    @Override
+    public Collection<Part> getParts() throws IOException, ServletException
+    {
+        throw new UnsupportedOperationException();
+    }
+
+    @Override
+    public String getPathInfo()
+    {
+        throw new UnsupportedOperationException();
+    }
+
+    @Override
+    public String getPathTranslated()
+    {
+        throw new UnsupportedOperationException();
     }
 
     @Override
     public String getQueryString()
     {
-        return null;
+        throw new UnsupportedOperationException();
     }
 
     @Override
     public String getRemoteUser()
     {
-        return null;
-    }
-
-    @Override
-    public boolean isUserInRole(String role)
-    {
-        return false;
-    }
-
-    @Override
-    public Principal getUserPrincipal()
-    {
-        return null;
-    }
-
-    @Override
-    public String getRequestedSessionId()
-    {
-        return null;
+        throw new UnsupportedOperationException();
     }
 
     @Override
     public String getRequestURI()
     {
-        return null;
+        throw new UnsupportedOperationException();
     }
 
     @Override
     public StringBuffer getRequestURL()
     {
-        return null;
+        throw new UnsupportedOperationException();
+    }
+
+    @Override
+    public String getRequestedSessionId()
+    {
+        throw new UnsupportedOperationException();
     }
 
     @Override
     public String getServletPath()
     {
-        return null;
+        throw new UnsupportedOperationException();
     }
 
     @Override
     public HttpSession getSession(boolean create)
     {
-        return null;
+        throw new UnsupportedOperationException();
     }
 
     @Override
     public HttpSession getSession()
     {
-        return null;
+        throw new UnsupportedOperationException();
     }
 
     @Override
-    public boolean isRequestedSessionIdValid()
+    public Principal getUserPrincipal()
     {
-        return false;
+        throw new UnsupportedOperationException();
     }
 
     @Override
     public boolean isRequestedSessionIdFromCookie()
     {
-        return false;
+        throw new UnsupportedOperationException();
     }
 
     @Override
     public boolean isRequestedSessionIdFromURL()
     {
-        return false;
+        throw new UnsupportedOperationException();
     }
 
     @Override
     @Deprecated(since = "Servlet API 2.1")
     public boolean isRequestedSessionIdFromUrl()
     {
-        return false;
+        throw new UnsupportedOperationException();
     }
 
     @Override
-    public boolean authenticate(HttpServletResponse response) throws IOException, ServletException
+    public boolean isRequestedSessionIdValid()
     {
-        return false;
+        throw new UnsupportedOperationException();
     }
 
     @Override
-    public Part getPart(String name) throws IOException, ServletException
+    public boolean isUserInRole(String role)
     {
-        return null;
-    }
-
-    @Override
-    public Collection<Part> getParts() throws IOException, ServletException
-    {
-        return null;
+        throw new UnsupportedOperationException();
     }
 
     @Override
     public void login(String username, String password) throws ServletException
     {
-
+        throw new UnsupportedOperationException();
     }
 
     @Override
     public void logout() throws ServletException
     {
-
-    }
-
-    @Override
-    public String changeSessionId()
-    {
-        // TODO 3.1 Auto-generated method stub
-        return null;
+        throw new UnsupportedOperationException();
     }
 
     @Override
     public <T extends HttpUpgradeHandler> T upgrade(Class<T> handlerClass) throws IOException, ServletException
     {
-        // TODO 3.1 Auto-generated method stub
-        return null;
+        throw new UnsupportedOperationException();
     }
 }
