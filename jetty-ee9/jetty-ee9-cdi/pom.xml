@@ -1,13 +1,14 @@
+<?xml version="1.0" encoding="UTF-8"?>
 <project xmlns="http://maven.apache.org/POM/4.0.0" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/maven-v4_0_0.xsd">
+  <modelVersion>4.0.0</modelVersion>
   <parent>
     <groupId>org.eclipse.jetty.ee9</groupId>
     <artifactId>jetty-ee9</artifactId>
-    <version>12.0.2-SNAPSHOT</version>
+    <version>12.0.3-SNAPSHOT</version>
   </parent>
-  <modelVersion>4.0.0</modelVersion>
   <artifactId>jetty-ee9-cdi</artifactId>
-  <name>EE9 :: CDI</name>
   <packaging>jar</packaging>
+  <name>EE9 :: CDI</name>
   <properties>
     <bundle-symbolic-name>${project.groupId}.cdi</bundle-symbolic-name>
   </properties>
@@ -19,12 +20,12 @@
     </dependency>
     <dependency>
       <groupId>org.eclipse.jetty.ee9</groupId>
-      <artifactId>jetty-ee9-webapp</artifactId>
+      <artifactId>jetty-ee9-annotations</artifactId>
       <scope>compile</scope>
     </dependency>
     <dependency>
       <groupId>org.eclipse.jetty.ee9</groupId>
-      <artifactId>jetty-ee9-annotations</artifactId>
+      <artifactId>jetty-ee9-webapp</artifactId>
       <scope>compile</scope>
     </dependency>
     <dependency>
@@ -34,19 +35,15 @@
   </dependencies>
   <build>
     <plugins>
-     <plugin>
+      <plugin>
         <groupId>org.apache.felix</groupId>
         <artifactId>maven-bundle-plugin</artifactId>
         <extensions>true</extensions>
         <configuration>
           <instructions>
-            <Require-Capability>
-              osgi.extender; filter:="(osgi.extender=osgi.serviceloader.registrar)"
-            </Require-Capability>
-            <Provide-Capability>
-                osgi.serviceloader; osgi.serviceloader=org.eclipse.jetty.ee9.webapp.Configuration,
-                osgi.serviceloader; osgi.serviceloader=jakarta.servlet.ServletContainerInitializer
-            </Provide-Capability>
+            <Require-Capability>osgi.extender; filter:="(osgi.extender=osgi.serviceloader.registrar)"</Require-Capability>
+            <Provide-Capability>osgi.serviceloader; osgi.serviceloader=org.eclipse.jetty.ee9.webapp.Configuration,
+                osgi.serviceloader; osgi.serviceloader=jakarta.servlet.ServletContainerInitializer</Provide-Capability>
           </instructions>
         </configuration>
       </plugin>
@@ -56,7 +53,7 @@
         <version>${maven.surefire.plugin.version}</version>
         <configuration>
           <argLine>--add-opens java.base/java.lang=ALL-UNNAMED</argLine>
-          <additionalClasspathElements />
+          <additionalClasspathElements></additionalClasspathElements>
         </configuration>
       </plugin>
     </plugins>

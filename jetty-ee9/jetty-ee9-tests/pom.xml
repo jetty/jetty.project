@@ -1,44 +1,44 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <project xmlns="http://maven.apache.org/POM/4.0.0" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/maven-v4_0_0.xsd">
+
+  <modelVersion>4.0.0</modelVersion>
   <parent>
     <groupId>org.eclipse.jetty.ee9</groupId>
     <artifactId>jetty-ee9</artifactId>
-    <version>12.0.2-SNAPSHOT</version>
+    <version>12.0.3-SNAPSHOT</version>
   </parent>
-
-  <modelVersion>4.0.0</modelVersion>
   <artifactId>jetty-ee9-tests</artifactId>
-  <name>EE9 :: Tests</name>
   <packaging>pom</packaging>
-
-  <properties>
-    <sonar.skip>true</sonar.skip>
-    <maven.deploy.skip>true</maven.deploy.skip>
-    <jacoco.skip>true</jacoco.skip>
-  </properties>
+  <name>EE9 :: Tests</name>
 
   <modules>
     <module>jetty-ee9-test-bad-websocket-webapp</module>
+    <module>jetty-ee9-test-badinit-webapp</module>
     <module>jetty-ee9-test-cdi</module>
-    <module>jetty-ee9-test-http2-webapp</module>
+    <module>jetty-ee9-test-cdi-common-webapp</module>
     <module>jetty-ee9-test-client-transports</module>
+    <module>jetty-ee9-test-felix-webapp</module>
+    <module>jetty-ee9-test-http2-webapp</module>
     <module>jetty-ee9-test-integration</module>
     <module>jetty-ee9-test-jmx</module>
     <module>jetty-ee9-test-jndi</module>
     <module>jetty-ee9-test-loginservice</module>
+    <module>jetty-ee9-test-openid-webapp</module>
+    <module>jetty-ee9-test-owb-cdi-webapp</module>
     <module>jetty-ee9-test-quickstart</module>
+    <module>jetty-ee9-test-sessions</module>
+    <module>jetty-ee9-test-simple-session-webapp</module>
+    <module>jetty-ee9-test-webapp-rfc2616</module>
     <module>jetty-ee9-test-websocket-client-provided-webapp</module>
     <module>jetty-ee9-test-websocket-client-webapp</module>
     <module>jetty-ee9-test-websocket-webapp</module>
-    <module>jetty-ee9-test-cdi-common-webapp</module>
-    <module>jetty-ee9-test-felix-webapp</module>
-    <module>jetty-ee9-test-openid-webapp</module>
-    <module>jetty-ee9-test-owb-cdi-webapp</module>
-    <module>jetty-ee9-test-simple-session-webapp</module>
-    <module>jetty-ee9-test-webapp-rfc2616</module>
     <module>jetty-ee9-test-weld-cdi-webapp</module>
-    <module>jetty-ee9-test-badinit-webapp</module>
-    <module>jetty-ee9-test-sessions</module>
   </modules>
+
+  <properties>
+    <jacoco.skip>true</jacoco.skip>
+    <maven.deploy.skip>true</maven.deploy.skip>
+    <sonar.skip>true</sonar.skip>
+  </properties>
 
 </project>

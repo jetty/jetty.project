@@ -1,12 +1,12 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <project xmlns="http://maven.apache.org/POM/4.0.0" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/xsd/maven-4.0.0.xsd">
+
+  <modelVersion>4.0.0</modelVersion>
   <parent>
     <groupId>org.eclipse.jetty</groupId>
     <artifactId>jetty-alpn</artifactId>
-    <version>12.0.2-SNAPSHOT</version>
+    <version>12.0.3-SNAPSHOT</version>
   </parent>
-
-  <modelVersion>4.0.0</modelVersion>
   <artifactId>jetty-alpn-java-server</artifactId>
   <name>Core :: ALPN :: Java Server</name>
 
@@ -14,40 +14,14 @@
     <bundle-symbolic-name>${project.groupId}.alpn.java.server</bundle-symbolic-name>
   </properties>
 
-  <build>
-    <plugins>
-      <plugin>
-        <artifactId>maven-surefire-plugin</artifactId>
-        <configuration>
-          <argLine>
-            @{argLine} ${jetty.surefire.argLine} --add-reads org.eclipse.jetty.alpn.java.server=org.eclipse.jetty.server
-          </argLine>
-        </configuration>
-      </plugin>
-      <plugin>
-        <groupId>org.apache.felix</groupId>
-        <artifactId>maven-bundle-plugin</artifactId>
-        <extensions>true</extensions>
-        <configuration>
-          <instructions>
-            <Bundle-Description>JDK9 Server ALPN</Bundle-Description>
-            <Require-Capability>osgi.extender; filter:="(osgi.extender=osgi.serviceloader.registrar)";resolution:=optional</Require-Capability>
-            <Provide-Capability>osgi.serviceloader;osgi.serviceloader=org.eclipse.jetty.io.ssl.ALPNProcessor$Server</Provide-Capability>
-            <_nouses>true</_nouses>
-          </instructions>
-        </configuration>
-      </plugin>
-    </plugins>
-  </build>
-
   <dependencies>
     <dependency>
       <groupId>org.eclipse.jetty</groupId>
-      <artifactId>jetty-io</artifactId>
+      <artifactId>jetty-alpn-server</artifactId>
     </dependency>
     <dependency>
       <groupId>org.eclipse.jetty</groupId>
-      <artifactId>jetty-alpn-server</artifactId>
+      <artifactId>jetty-io</artifactId>
     </dependency>
     <dependency>
       <groupId>org.slf4j</groupId>
@@ -69,5 +43,29 @@
       <scope>test</scope>
     </dependency>
   </dependencies>
+
+  <build>
+    <plugins>
+      <plugin>
+        <groupId>org.apache.felix</groupId>
+        <artifactId>maven-bundle-plugin</artifactId>
+        <extensions>true</extensions>
+        <configuration>
+          <instructions>
+            <Bundle-Description>JDK9 Server ALPN</Bundle-Description>
+            <Require-Capability>osgi.extender; filter:="(osgi.extender=osgi.serviceloader.registrar)";resolution:=optional</Require-Capability>
+            <Provide-Capability>osgi.serviceloader;osgi.serviceloader=org.eclipse.jetty.io.ssl.ALPNProcessor$Server</Provide-Capability>
+            <_nouses>true</_nouses>
+          </instructions>
+        </configuration>
+      </plugin>
+      <plugin>
+        <artifactId>maven-surefire-plugin</artifactId>
+        <configuration>
+          <argLine>@{argLine} ${jetty.surefire.argLine} --add-reads org.eclipse.jetty.alpn.java.server=org.eclipse.jetty.server</argLine>
+        </configuration>
+      </plugin>
+    </plugins>
+  </build>
 
 </project>
