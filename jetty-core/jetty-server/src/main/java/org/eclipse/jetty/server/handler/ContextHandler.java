@@ -52,6 +52,7 @@ import org.eclipse.jetty.util.StringUtil;
 import org.eclipse.jetty.util.TypeUtil;
 import org.eclipse.jetty.util.URIUtil;
 import org.eclipse.jetty.util.annotation.ManagedAttribute;
+import org.eclipse.jetty.util.annotation.ManagedObject;
 import org.eclipse.jetty.util.component.ClassLoaderDump;
 import org.eclipse.jetty.util.component.DumpableAttributes;
 import org.eclipse.jetty.util.component.LifeCycle;
@@ -65,6 +66,7 @@ import org.slf4j.LoggerFactory;
 /**
  * A {@link Handler} that scopes a request to a specific {@link Context}.
  */
+@ManagedObject
 public class ContextHandler extends Handler.Wrapper implements Attributes, AliasCheck
 {
     private static final Logger LOG = LoggerFactory.getLogger(ContextHandler.class);
@@ -108,11 +110,6 @@ public class ContextHandler extends Handler.Wrapper implements Attributes, Alias
         if (contextRequest == null)
             return null;
         return contextRequest.getContext() instanceof ScopedContext scoped ? scoped.getContextHandler() : null;
-    }
-
-    public static String getServerInfo()
-    {
-        return "jetty/" + Server.getVersion();
     }
 
     /*

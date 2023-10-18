@@ -111,7 +111,7 @@ import org.slf4j.LoggerFactory;
  *
  * @see Request.Handler
  */
-@ManagedObject("Handler")
+@ManagedObject
 public interface Handler extends LifeCycle, Destroyable, Request.Handler
 {
     /**
@@ -132,12 +132,13 @@ public interface Handler extends LifeCycle, Destroyable, Request.Handler
      * @see Singleton
      * @see Collection
      */
+    @ManagedObject
     interface Container extends Handler
     {
         /**
          * @return an immutable collection of {@code Handler}s directly contained by this {@code Handler}.
          */
-        @ManagedAttribute("The direct children Handlers of this container")
+        @ManagedAttribute(value = "The direct children Handlers of this Container", readonly = true)
         List<Handler> getHandlers();
 
         /**
@@ -292,11 +293,13 @@ public interface Handler extends LifeCycle, Destroyable, Request.Handler
      * @see Wrapper for an implementation of {@link Singleton}.
      * @see Collection
      */
+    @ManagedObject
     interface Singleton extends Container
     {
         /**
          * @return the child {@code Handler}
          */
+        @ManagedAttribute(value = "The child Handler of this Container", readonly = true)
         Handler getHandler();
 
         /**
@@ -409,6 +412,7 @@ public interface Handler extends LifeCycle, Destroyable, Request.Handler
      *
      * @see NonBlocking
      */
+    @ManagedObject
     abstract class Abstract extends ContainerLifeCycle implements Handler
     {
         private static final Logger LOG = LoggerFactory.getLogger(Abstract.class);
@@ -436,6 +440,7 @@ public interface Handler extends LifeCycle, Destroyable, Request.Handler
         }
 
         @Override
+        @ManagedAttribute(value = "The Server associated with this Handler", readonly = true)
         public Server getServer()
         {
             return _server;
@@ -505,6 +510,7 @@ public interface Handler extends LifeCycle, Destroyable, Request.Handler
      *
      * @see Abstract
      */
+    @ManagedObject
     abstract class AbstractContainer extends Abstract implements Container
     {
         private boolean _dynamic;
@@ -530,6 +536,7 @@ public interface Handler extends LifeCycle, Destroyable, Request.Handler
         /**
          * @return whether this container is dynamic
          */
+        @ManagedAttribute("Whether this Handler container is dynamic")
         public boolean isDynamic()
         {
             return _dynamic;
@@ -728,6 +735,7 @@ public interface Handler extends LifeCycle, Destroyable, Request.Handler
      * whose {@link Handler#handle(Request, Response, Callback)} method is invoked
      * in sequence on each child until a child returns {@code true}.</p>
      */
+    @ManagedObject
     class Sequence extends AbstractContainer implements Collection
     {
         private volatile List<Handler> _handlers = new ArrayList<>();
