@@ -14,7 +14,7 @@
     <annotation.groupId>jakarta.annotation</annotation.groupId>
     <assembly-directory>target/distribution</assembly-directory>
     <bundle-symbolic-name>${project.groupId}.boot.test.osgi</bundle-symbolic-name>
-    <bundle.debug>false</bundle.debug>
+    <bundle.debug>true</bundle.debug>
     <ee9.module>jetty-ee9-osgi/test-jetty-ee9-osgi</ee9.module>
     <el.artifactId>jakarta.el-api</el.artifactId>
     <el.groupId>jakarta.el</el.groupId>
