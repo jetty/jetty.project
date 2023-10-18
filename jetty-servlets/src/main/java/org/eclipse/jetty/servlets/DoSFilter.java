@@ -501,6 +501,10 @@ public class DoSFilter implements Filter
         handlingThread.interrupt();
     }
 
+    /**
+     * @return null
+     * @deprecated Priority no longer supported
+     */
     @Deprecated
     protected RateType getMaxPriority()
     {
@@ -703,6 +707,11 @@ public class DoSFilter implements Filter
         }
     }
 
+    /**
+     * @param request ignored
+     * @return null
+     * @deprecated User ID no longer supported
+     */
     @Deprecated
     protected String extractUserId(ServletRequest request)
     {
@@ -1368,13 +1377,13 @@ public class DoSFilter implements Filter
             switch (action)
             {
                 case REJECT:
-                    LOG.warn("DOS ALERT: Request rejected ip={}, overlimit={}, user={}", request.getRemoteAddr(), overlimit, request.getUserPrincipal());
+                    LOG.warn("DoS ALERT: Request rejected ip={}, overlimit={}, user={}", request.getRemoteAddr(), overlimit, request.getUserPrincipal());
                     break;
                 case DELAY:
-                    LOG.warn("DOS ALERT: Request delayed={}ms, ip={}, overlimit={}, user={}", dosFilter.getDelayMs(), request.getRemoteAddr(), overlimit, request.getUserPrincipal());
+                    LOG.warn("DoS ALERT: Request delayed={}ms, ip={}, overlimit={}, user={}", dosFilter.getDelayMs(), request.getRemoteAddr(), overlimit, request.getUserPrincipal());
                     break;
                 case THROTTLE:
-                    LOG.warn("DOS ALERT: Request throttled ip={}, overlimit={}, user={}", request.getRemoteAddr(), overlimit, request.getUserPrincipal());
+                    LOG.warn("DoS ALERT: Request throttled ip={}, overlimit={}, user={}", request.getRemoteAddr(), overlimit, request.getUserPrincipal());
                     break;
             }
 
