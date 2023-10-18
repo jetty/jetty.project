@@ -188,10 +188,9 @@ public class RolloverFileOutputStreamTest
     @Test
     public void testMissingDirectory()
     {
-
         String templateString = "missingDir/test-rofos-yyyy_mm_dd.log";
         Throwable error;
-        try (RolloverFileOutputStream rofos = new RolloverFileOutputStream(templateString))
+        try (RolloverFileOutputStream ignored = new RolloverFileOutputStream(templateString))
         {
             throw new IllegalStateException();
         }
@@ -201,9 +200,8 @@ public class RolloverFileOutputStreamTest
         }
         assertNotNull(error);
         assertThat(error, instanceOf(IOException.class));
-        error.getMessage();
         assertThat(error.getMessage(), containsString("Log directory does not exist."));
-    }        
+    }
 
     @Test
     public void testFileHandling() throws Exception
