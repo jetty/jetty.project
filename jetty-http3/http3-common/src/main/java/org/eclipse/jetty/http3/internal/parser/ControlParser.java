@@ -17,6 +17,7 @@ import java.io.IOException;
 import java.nio.ByteBuffer;
 
 import org.eclipse.jetty.http3.frames.FrameType;
+import org.eclipse.jetty.http3.internal.Grease;
 import org.eclipse.jetty.http3.internal.HTTP3ErrorCode;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -91,8 +92,9 @@ public class ControlParser
                                 return;
                             }
 
+                            // SPEC: grease and unknown frame types are ignored.
                             if (LOG.isDebugEnabled())
-                                LOG.debug("ignoring unknown frame type {}", Long.toHexString(frameType));
+                                LOG.debug("ignoring {} frame type {}", Grease.isGreaseValue(frameType) ? "grease" : "unknown", Long.toHexString(frameType));
 
                             BodyParser.Result result = unknownBodyParser.parse(buffer);
                             if (result == BodyParser.Result.NO_FRAME)
