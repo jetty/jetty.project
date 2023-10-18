@@ -38,9 +38,7 @@ The DoS filter is related to the QoS filter, using Continuations to prioritize r
 [[dos-filter-using]]
 ==== Using the DoS Filter
 
-Jetty places throttled requests in a priority queue, giving priority first to authenticated users and users with an HttpSession, then to connections identified by their IP addresses.
-Connections with no way to identify them have lowest priority.
-To uniquely identify authenticated users, you should implement the The extractUserId(ServletRequest request) function.
+Jetty places throttled requests in a queue, and proceed only when there is capacity available.
 
 ===== Required JARs
 
@@ -100,11 +98,8 @@ Default is 30000L.
 insertHeaders::
 If true, insert the DoSFilter headers into the response.
 Defaults to true.
-trackSessions::
-If true, usage rate is tracked by session if a session exists.
-Defaults to true.
 remotePort::
-If true and session tracking is not used, then rate is tracked by IP and port (effectively connection).
+If true, then rate is tracked by IP and port (effectively connection).
 Defaults to false.
 ipWhitelist::
 A comma-separated list of IP addresses that will not be rate limited.
