@@ -34,7 +34,7 @@
         <Call name="addEventListener">
           <Arg>
             <New class="org.eclipse.jetty.osgi.util.ServerConnectorListener">
-              <Set name="sysPropertyName">boot.jakarta.websocket.port</Set>
+              <Set name="sysPropertyName">boot.websocket.port</Set>
             </New>
           </Arg>
         </Call>

@@ -45,7 +45,7 @@
             <supportedProjectType>war</supportedProjectType>
           </supportedProjectTypes>
           <instructions>
-            <Import-Package>javax.servlet.jsp.*;version="[3,4)",org.eclipse.jetty.*;version="[$(version;===;${parsedVersion.osgiVersion}),$(version;==+;${parsedVersion.osgiVersion}))",*</Import-Package>
+            <Import-Package>javax.servlet.jsp.*;version="[2,3)",org.eclipse.jetty.*;version="[$(version;===;${parsedVersion.osgiVersion}),$(version;==+;${parsedVersion.osgiVersion}))",*</Import-Package>
             <Export-Package>!org.example.*</Export-Package>
             <Web-ContextPath>/ee8-demo-jsp</Web-ContextPath>
             <Bundle-ClassPath>.,WEB-INF/classes</Bundle-ClassPath>
