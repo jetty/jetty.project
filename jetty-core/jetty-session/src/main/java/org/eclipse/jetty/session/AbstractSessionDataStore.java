@@ -13,10 +13,16 @@
 
 package org.eclipse.jetty.session;
 
+import java.io.IOException;
+import java.io.InputStream;
+import java.io.ObjectInputStream;
+import java.io.ObjectOutputStream;
+import java.io.OutputStream;
 import java.util.HashSet;
 import java.util.Set;
 import java.util.concurrent.TimeUnit;
 
+import org.eclipse.jetty.util.ClassLoadingObjectInputStream;
 import org.eclipse.jetty.util.FuturePromise;
 import org.eclipse.jetty.util.annotation.ManagedAttribute;
 import org.eclipse.jetty.util.annotation.ManagedObject;
@@ -364,6 +370,51 @@ public abstract class AbstractSessionDataStore extends ContainerLifeCycle implem
     public void setSavePeriodSec(int savePeriodSec)
     {
         _savePeriodSec = savePeriodSec;
+    }
+
+    /**
+     * Get an ObjectOutputStream suitable to serialize SessionData objects
+     * into the provided OutputStream.
+     *
+     * By default, an ObjectObjectStream is returned.
+     *
+     * Override this method to provide a custom ObjectOutputStream, and/or to
+     * chain other OutputStreams to perform such tasks as compressing the serialized
+     * data, for example:
+     *
+     * GZIPOutputStream gos = new GZIPOutputStream(os);
+     * return new ObjectOutputStream(gos);
+     *
+     * @param os
+     * @return
+     * @throws IOException
+     */
+    public ObjectOutputStream newObjectOutputStream(OutputStream os) throws IOException
+    {
+        return new ObjectOutputStream(os);
+    }
+
+    /**
+     * Get an ObjectInputStream that is capable of deserializing the session data
+     * present in the provided InputStream.
+     *
+     * By default, a Classloader-aware ObjectInputStream is used, however, you
+     * can return your own specialized ObjectInputStream, or chain other InputStreams
+     * together to perform such tasks as data decompression, for example:
+     *
+     * GZIPInputStream gis = new GZIPInputStream(is);
+     * return new ClassLoadingObjectInputStream(is)
+     *
+     * @param is an input stream for accessing the session data to be deserialized
+     * @return an ObjectInputStream that can deserialize the session data
+     * @throws IOException
+     */
+    public ObjectInputStream newObjectInputStream(InputStream is) throws IOException
+    {
+        //in here you can do:
+        //GZIPInputStream gis = new GZIPInputStream(is);
+        //ClassLoadingObjectInputStream ois = new ClassLoadingObjectInputStream(is)
+        return new ClassLoadingObjectInputStream(is);
     }
 
     @Override

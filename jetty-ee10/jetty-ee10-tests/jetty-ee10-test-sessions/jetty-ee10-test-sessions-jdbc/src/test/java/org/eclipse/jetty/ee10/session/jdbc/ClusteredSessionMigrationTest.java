@@ -64,7 +64,7 @@ public class ClusteredSessionMigrationTest extends AbstractSessionTestBase
     @Override
     public SessionDataStoreFactory createSessionDataStoreFactory()
     {
-        return JdbcTestHelper.newSessionDataStoreFactory(sessionTableName);
+        return JdbcTestHelper.newSessionDataStoreFactory(sessionTableName, false);
     }
 
     @AfterEach

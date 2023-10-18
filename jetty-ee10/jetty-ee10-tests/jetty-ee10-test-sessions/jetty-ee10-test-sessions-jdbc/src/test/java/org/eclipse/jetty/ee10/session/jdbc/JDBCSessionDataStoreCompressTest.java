@@ -13,8 +13,6 @@
 
 package org.eclipse.jetty.ee10.session.jdbc;
 
-import java.io.NotSerializableException;
-
 import org.eclipse.jetty.session.AbstractSessionDataStoreTest;
 import org.eclipse.jetty.session.JdbcTestHelper;
 import org.eclipse.jetty.session.SessionData;
@@ -26,24 +24,17 @@ import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.testcontainers.junit.jupiter.Testcontainers;
 
-import static org.junit.Assert.assertEquals;
-import static org.junit.Assert.assertNotNull;
-import static org.junit.Assert.assertNull;
-import static org.junit.Assert.assertThrows;
-
-/**
- * JDBCSessionDataStoreTest
- */
 @Testcontainers(disabledWithoutDocker = true)
-public class JDBCSessionDataStoreTest extends AbstractSessionDataStoreTest
+public class JDBCSessionDataStoreCompressTest extends AbstractSessionDataStoreTest
 {
+    public static final boolean COMPRESS = true;
 
     class NonSerializable
     {
         int x = 10;
     }
 
-    public JDBCSessionDataStoreTest() throws Exception
+    public JDBCSessionDataStoreCompressTest() throws Exception
     {
         super();
     }
@@ -66,14 +57,14 @@ public class JDBCSessionDataStoreTest extends AbstractSessionDataStoreTest
     @Override
     public SessionDataStoreFactory createSessionDataStoreFactory()
     {
-        return JdbcTestHelper.newSessionDataStoreFactory(sessionTableName, false);
+        return JdbcTestHelper.newSessionDataStoreFactory(sessionTableName, COMPRESS);
     }
 
     @Override
     public void persistSession(SessionData data)
         throws Exception
     {
-        JdbcTestHelper.insertSession(data, sessionTableName, false);
+        JdbcTestHelper.insertSession(data, sessionTableName, COMPRESS);
     }
 
     @Override
@@ -104,7 +95,7 @@ public class JDBCSessionDataStoreTest extends AbstractSessionDataStoreTest
         Thread.currentThread().setContextClassLoader(_contextClassLoader);
         try
         {
-            return JdbcTestHelper.checkSessionPersisted(data, sessionTableName, false);
+            return JdbcTestHelper.checkSessionPersisted(data, sessionTableName, COMPRESS);
         }
         finally
         {
@@ -122,10 +113,13 @@ public class JDBCSessionDataStoreTest extends AbstractSessionDataStoreTest
 
         //persist a session that has an unserializable attribute
         long now = System.currentTimeMillis();
-        final SessionData data = store.newSessionData("xxx999", 100, now, now - 1, -1); //never expires
+        SessionData data = store.newSessionData("xxx999", 100, now, now - 1, -1); //never expires
         data.setLastNode(_sessionIdManager.getWorkerName());
         data.setAttribute("bad", new NonSerializable());
 
-        assertThrows(NotSerializableException.class, () -> store.store("xxx999", data));
+        store.store("xxx999", data);
+
+        data = store.load("xxx999");
+        Assertions.assertNull(data.getAttribute("bad"));
     }
 }

@@ -15,8 +15,12 @@ package org.eclipse.jetty.session;
 
 import java.io.ByteArrayInputStream;
 import java.io.ByteArrayOutputStream;
+import java.io.IOException;
 import java.io.InputStream;
+import java.io.ObjectInputStream;
 import java.io.ObjectOutputStream;
+import java.io.OutputStream;
+import java.io.Serializable;
 import java.sql.Blob;
 import java.sql.Connection;
 import java.sql.DriverManager;
@@ -25,6 +29,8 @@ import java.sql.ResultSet;
 import java.sql.SQLException;
 import java.util.HashSet;
 import java.util.Set;
+import java.util.zip.GZIPInputStream;
+import java.util.zip.GZIPOutputStream;
 
 import org.eclipse.jetty.util.ClassLoadingObjectInputStream;
 import org.slf4j.Logger;
@@ -129,14 +135,75 @@ public class JdbcTestHelper
     /**
      * @return a fresh JDBCSessionDataStoreFactory
      */
-    public static SessionDataStoreFactory newSessionDataStoreFactory(String sessionTableName)
+    public static SessionDataStoreFactory newSessionDataStoreFactory(String sessionTableName, boolean compress)
     {
-        return newSessionDataStoreFactory(buildDatabaseAdaptor(), sessionTableName);
+        return newSessionDataStoreFactory(buildDatabaseAdaptor(), sessionTableName, compress);
     }
 
-    public static SessionDataStoreFactory newSessionDataStoreFactory(DatabaseAdaptor da, String sessionTableName)
+    public static ObjectOutputStream newObjectOutputStream(OutputStream os, boolean compress) throws IOException
     {
-        JDBCSessionDataStoreFactory factory = new JDBCSessionDataStoreFactory();
+        if (!compress)
+            return new ObjectOutputStream(os);
+
+        GZIPOutputStream gos = new GZIPOutputStream(os, 1024);
+        class SkipUnserializableObjectOutputStream extends ObjectOutputStream
+        {
+            public SkipUnserializableObjectOutputStream(OutputStream out) throws IOException
+            {
+                super(out);
+                enableReplaceObject(true);
+            }
+
+            @Override
+            protected Object replaceObject(Object obj) throws IOException
+            {
+                if (obj instanceof Serializable)
+                    return obj;
+
+                return null;
+            }
+        }
+
+        return new SkipUnserializableObjectOutputStream(gos);
+    }
+
+    public static ObjectInputStream newObjectInputStream(InputStream is, boolean compress) throws IOException
+    {
+        if (!compress)
+            return new ClassLoadingObjectInputStream(is);
+
+        GZIPInputStream gis = new GZIPInputStream(is, 1024);
+        return new ClassLoadingObjectInputStream(gis);
+    }
+
+    public static SessionDataStoreFactory newSessionDataStoreFactory(DatabaseAdaptor da, String sessionTableName, boolean compress)
+    {
+        JDBCSessionDataStoreFactory factory = new JDBCSessionDataStoreFactory()
+        {
+            @Override
+            public SessionDataStore getSessionDataStore(SessionManager manager)
+            {
+                JDBCSessionDataStore ds = new JDBCSessionDataStore()
+                {
+                    @Override
+                    public ObjectOutputStream newObjectOutputStream(OutputStream os) throws IOException
+                    {
+                        return JdbcTestHelper.newObjectOutputStream(os, compress);
+                    }
+
+                    @Override
+                    public ObjectInputStream newObjectInputStream(InputStream is) throws IOException
+                    {
+                        return JdbcTestHelper.newObjectInputStream(is, compress);
+                    }
+                };
+                ds.setDatabaseAdaptor(_adaptor);
+                ds.setSessionTableSchema(_schema);
+                ds.setGracePeriodSec(getGracePeriodSec());
+                ds.setSavePeriodSec(getSavePeriodSec());
+                return ds;
+            }
+        };
         factory.setDatabaseAdaptor(da);
         JDBCSessionDataStore.SessionTableSchema sessionTableSchema = newSessionTableSchema(sessionTableName);
         factory.setSessionTableSchema(sessionTableSchema);
@@ -224,7 +291,7 @@ public class JdbcTestHelper
     }
 
     @SuppressWarnings("unchecked")
-    public static boolean checkSessionPersisted(SessionData data, String sessionTableName)
+    public static boolean checkSessionPersisted(SessionData data, String sessionTableName, boolean compress)
         throws Exception
     {
         PreparedStatement statement = null;
@@ -266,9 +333,10 @@ public class JdbcTestHelper
             if (blob.length() > 0)
             {
                 try (InputStream is = blob.getBinaryStream();
-                     ClassLoadingObjectInputStream ois = new ClassLoadingObjectInputStream(is))
+                     ObjectInputStream ois = JdbcTestHelper.newObjectInputStream(is, compress))
                 {
                     SessionData.deserializeAttributes(tmp, ois);
+                    ois.close();
                 }
             }
             //same number of attributes
@@ -292,7 +360,7 @@ public class JdbcTestHelper
         return true;
     }
     
-    public static void insertSession(SessionData data, String sessionTableName) throws Exception
+    public static void insertSession(SessionData data, String sessionTableName, boolean compress) throws Exception
     {
         try (Connection con = getConnection())
         {
@@ -317,14 +385,15 @@ public class JdbcTestHelper
             statement.setLong(11, data.getMaxInactiveMs());
             
             try (ByteArrayOutputStream baos = new ByteArrayOutputStream();
-                ObjectOutputStream oos = new ObjectOutputStream(baos);)
+                ObjectOutputStream oos = newObjectOutputStream(baos, compress);)
             {
                 SessionData.serializeAttributes(data, oos);
+                oos.close();
                 byte[] bytes = baos.toByteArray();
 
                 try (ByteArrayInputStream bais = new ByteArrayInputStream(bytes);)
                 {
-                    statement.setBinaryStream(12, bais, bytes.length);
+                    statement.setBinaryStream(12, bais);
                 }
             }
             statement.execute();

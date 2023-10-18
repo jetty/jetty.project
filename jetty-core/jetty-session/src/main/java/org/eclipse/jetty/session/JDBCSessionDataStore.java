@@ -16,6 +16,7 @@ package org.eclipse.jetty.session;
 import java.io.ByteArrayInputStream;
 import java.io.ByteArrayOutputStream;
 import java.io.InputStream;
+import java.io.ObjectInputStream;
 import java.io.ObjectOutputStream;
 import java.sql.Connection;
 import java.sql.DatabaseMetaData;
@@ -26,7 +27,6 @@ import java.sql.Statement;
 import java.util.HashSet;
 import java.util.Set;
 
-import org.eclipse.jetty.util.ClassLoadingObjectInputStream;
 import org.eclipse.jetty.util.StringUtil;
 import org.eclipse.jetty.util.annotation.ManagedAttribute;
 import org.eclipse.jetty.util.annotation.ManagedObject;
@@ -663,7 +663,7 @@ public class JDBCSessionDataStore extends AbstractSessionDataStore
                 data.setVhost(_context.getVhost());
 
                 try (InputStream is = _dbAdaptor.getBlobInputStream(result, _sessionTableSchema.getMapColumn());
-                     ClassLoadingObjectInputStream ois = new ClassLoadingObjectInputStream(is))
+                     ObjectInputStream ois = newObjectInputStream(is))
                 {
                     SessionData.deserializeAttributes(data, ois);
                 }
@@ -741,10 +741,13 @@ public class JDBCSessionDataStore extends AbstractSessionDataStore
                 statement.setLong(10, data.getExpiry());
                 statement.setLong(11, data.getMaxInactiveMs());
 
-                try (ByteArrayOutputStream baos = new ByteArrayOutputStream();
-                     ObjectOutputStream oos = new ObjectOutputStream(baos))
+                try (ByteArrayOutputStream baos = new ByteArrayOutputStream();)
                 {
-                    SessionData.serializeAttributes(data, oos);
+                     try (ObjectOutputStream oos = newObjectOutputStream(baos))
+                     {
+                         SessionData.serializeAttributes(data, oos);
+                     }
+
                     byte[] bytes = baos.toByteArray();
                     ByteArrayInputStream bais = new ByteArrayInputStream(bytes);
                     statement.setBinaryStream(12, bais, bytes.length); //attribute map as blob
@@ -772,10 +775,13 @@ public class JDBCSessionDataStore extends AbstractSessionDataStore
                 statement.setLong(5, data.getExpiry());
                 statement.setLong(6, data.getMaxInactiveMs());
 
-                try (ByteArrayOutputStream baos = new ByteArrayOutputStream();
-                     ObjectOutputStream oos = new ObjectOutputStream(baos))
+                try (ByteArrayOutputStream baos = new ByteArrayOutputStream();)
                 {
-                    SessionData.serializeAttributes(data, oos);
+                    try (ObjectOutputStream oos = newObjectOutputStream(baos))
+                    {
+                        SessionData.serializeAttributes(data, oos);
+                    }
+
                     byte[] bytes = baos.toByteArray();
                     try (ByteArrayInputStream bais = new ByteArrayInputStream(bytes))
                     {

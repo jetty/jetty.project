@@ -456,10 +456,9 @@ public abstract class AbstractSessionDataStoreTest
         long now = System.currentTimeMillis();
         SessionData data = store.newSessionData("aaa6", 100, now, now - 1, -1);
         data.setLastNode(_sessionIdManager.getWorkerName());
-        //persistSession(data);
         store.store("aaa6", data);
         _server.stop();
-        _server.start(); //reindex files
+        _server.start();
         store = _sessionManager.getSessionCache().getSessionDataStore();
         
         //test that we can retrieve it

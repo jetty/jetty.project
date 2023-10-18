@@ -38,7 +38,7 @@ public class ClusteredOrphanedSessionTest extends AbstractClusteredOrphanedSessi
     @Override
     public SessionDataStoreFactory createSessionDataStoreFactory()
     {
-        return JdbcTestHelper.newSessionDataStoreFactory(sessionTableName);
+        return JdbcTestHelper.newSessionDataStoreFactory(sessionTableName, false);
     }
 
     @AfterEach
