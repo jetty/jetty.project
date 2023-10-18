@@ -72,6 +72,7 @@ public class ConcurrentPool<P> implements Pool<P>, Dumpable
     private final AutoLock lock = new AutoLock();
     private final AtomicInteger nextIndex;
     private final ToIntFunction<P> maxMultiplex;
+    private final boolean weakEntries;
     private volatile boolean terminated;
 
     /**
@@ -108,6 +109,11 @@ public class ConcurrentPool<P> implements Pool<P>, Dumpable
      */
     public ConcurrentPool(StrategyType strategyType, int maxSize, boolean cache, ToIntFunction<P> maxMultiplex)
     {
+        this(strategyType, maxSize, cache, maxMultiplex, false);
+    }
+
+    public ConcurrentPool(StrategyType strategyType, int maxSize, boolean cache, ToIntFunction<P> maxMultiplex, boolean weakEntries)
+    {
         if (maxSize > OPTIMAL_MAX_SIZE && LOG.isDebugEnabled())
             LOG.debug("{} configured with max size {} which is above the recommended value {}", getClass().getSimpleName(), maxSize, OPTIMAL_MAX_SIZE);
         this.maxSize = maxSize;
@@ -115,6 +121,7 @@ public class ConcurrentPool<P> implements Pool<P>, Dumpable
         this.cache = cache ? new ThreadLocal<>() : null;
         this.nextIndex = strategyType == StrategyType.ROUND_ROBIN ? new AtomicInteger() : null;
         this.maxMultiplex = Objects.requireNonNull(maxMultiplex);
+        this.weakEntries = weakEntries;
     }
 
     public int getTerminatedCount()
@@ -181,9 +188,8 @@ public class ConcurrentPool<P> implements Pool<P>, Dumpable
             {
                 if (entry.isGarbage())
                 {
-                    if (LOG.isDebugEnabled())
-                        LOG.debug("removing garbage cached entry {} for {}", entry, this);
                     cache.remove();
+                    LOG.warn("Leaked cached entry {} detected for {}", entry, this);
                 }
                 else if (entry.tryAcquire())
                 {
@@ -205,10 +211,9 @@ public class ConcurrentPool<P> implements Pool<P>, Dumpable
                 {
                     if (entry.isGarbage())
                     {
-                        if (LOG.isDebugEnabled())
-                            LOG.debug("removing garbage entry {} for {}", entry, this);
                         entries.remove(index);
                         tries++;
+                        LOG.warn("Leaked entry {} detected for {}", entry, this);
                     }
                     else if (entry.tryAcquire())
                     {
@@ -228,7 +233,7 @@ public class ConcurrentPool<P> implements Pool<P>, Dumpable
                 if (size == 0)
                     break;
             }
-            if (++index == size)
+            if (++index >= size)
                 index = 0;
         }
 
@@ -349,7 +354,7 @@ public class ConcurrentPool<P> implements Pool<P>, Dumpable
             if (ce.isGarbage())
             {
                 toRemove.add(entry);
-                LOG.warn("Leaked pooled object detected: {}", ce);
+                LOG.warn("Leaked pooled object detected {} for {}", ce, this);
             }
         }
         entries.removeAll(toRemove); // hard remove, these entries are garbage
@@ -359,13 +364,14 @@ public class ConcurrentPool<P> implements Pool<P>, Dumpable
     @Override
     public String toString()
     {
-        return String.format("%s@%x[inUse=%d,size=%d,max=%d,terminated=%b]",
+        return String.format("%s@%x[inUse=%d,size=%d,max=%d,terminated=%b,weak=%b]",
             getClass().getSimpleName(),
             hashCode(),
             getInUseCount(),
             size(),
             getMaxSize(),
-            isTerminated());
+            isTerminated(),
+            weakEntries);
     }
 
     /**
@@ -453,7 +459,7 @@ public class ConcurrentPool<P> implements Pool<P>, Dumpable
 
             if (tryEnable(acquire))
             {
-                if (acquire)
+                if (pool.weakEntries && acquire)
                     this.released = null;
                 if (LOG.isDebugEnabled())
                     LOG.debug("enabled {} for {}", this, pool);
@@ -471,7 +477,8 @@ public class ConcurrentPool<P> implements Pool<P>, Dumpable
         public E getPooled()
         {
             E ref = pooled == null ? null : pooled.get();
-            this.released = null;
+            if (pool.weakEntries)
+                this.released = null;
             return ref;
         }
 
@@ -556,7 +563,7 @@ public class ConcurrentPool<P> implements Pool<P>, Dumpable
                 int newMultiplexCount = multiplexCount - 1;
                 if (state.compareAndSet(encoded, 0, newMultiplexCount))
                 {
-                    if (newMultiplexCount == 0)
+                    if (pool.weakEntries && newMultiplexCount == 0)
                         this.released = pooled.get();
                     return true;
                 }

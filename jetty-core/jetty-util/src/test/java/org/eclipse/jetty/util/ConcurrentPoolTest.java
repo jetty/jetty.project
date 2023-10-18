@@ -616,7 +616,7 @@ public class ConcurrentPoolTest
     @Test
     public void testLeakDetection()
     {
-        ConcurrentPool<AtomicInteger> pool = new ConcurrentPool<>(FIRST, 4);
+        ConcurrentPool<AtomicInteger> pool = new ConcurrentPool<>(FIRST, 4, false, e -> 1, true);
 
         // not keeping a hard ref onto the entry that is enabled & not acquired makes it survive
         pool.reserve().enable(new AtomicInteger(1), false);

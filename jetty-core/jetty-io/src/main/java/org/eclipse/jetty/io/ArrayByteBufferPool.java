@@ -116,7 +116,12 @@ public class ArrayByteBufferPool implements ByteBufferPool, Dumpable
      */
     public ArrayByteBufferPool(int minCapacity, int factor, int maxCapacity, int maxBucketSize, long maxHeapMemory, long maxDirectMemory)
     {
-        this(minCapacity, factor, maxCapacity, maxBucketSize, maxHeapMemory, maxDirectMemory, null, null);
+        this(minCapacity, factor, maxCapacity, maxBucketSize, maxHeapMemory, maxDirectMemory, null, null, false);
+    }
+
+    public ArrayByteBufferPool(int minCapacity, int factor, int maxCapacity, int maxBucketSize, long maxHeapMemory, long maxDirectMemory, boolean weakPool)
+    {
+        this(minCapacity, factor, maxCapacity, maxBucketSize, maxHeapMemory, maxDirectMemory, null, null, true);
     }
 
     /**
@@ -131,7 +136,7 @@ public class ArrayByteBufferPool implements ByteBufferPool, Dumpable
      * @param bucketIndexFor a {@link IntUnaryOperator} that takes a capacity and returns a bucket index
      * @param bucketCapacity a {@link IntUnaryOperator} that takes a bucket index and returns a capacity
      */
-    protected ArrayByteBufferPool(int minCapacity, int factor, int maxCapacity, int maxBucketSize, long maxHeapMemory, long maxDirectMemory, IntUnaryOperator bucketIndexFor, IntUnaryOperator bucketCapacity)
+    protected ArrayByteBufferPool(int minCapacity, int factor, int maxCapacity, int maxBucketSize, long maxHeapMemory, long maxDirectMemory, IntUnaryOperator bucketIndexFor, IntUnaryOperator bucketCapacity, boolean weakPool)
     {
         if (minCapacity <= 0)
             minCapacity = 0;
@@ -153,8 +158,8 @@ public class ArrayByteBufferPool implements ByteBufferPool, Dumpable
         for (int i = 0; i < directArray.length; i++)
         {
             int capacity = Math.min(bucketCapacity.applyAsInt(i), maxCapacity);
-            directArray[i] = new RetainedBucket(capacity, maxBucketSize);
-            indirectArray[i] = new RetainedBucket(capacity, maxBucketSize);
+            directArray[i] = new RetainedBucket(capacity, maxBucketSize, weakPool);
+            indirectArray[i] = new RetainedBucket(capacity, maxBucketSize, weakPool);
         }
 
         _minCapacity = minCapacity;
@@ -476,13 +481,13 @@ public class ArrayByteBufferPool implements ByteBufferPool, Dumpable
         private final Pool<RetainableByteBuffer> _pool;
         private final int _capacity;
 
-        private RetainedBucket(int capacity, int poolSize)
+        private RetainedBucket(int capacity, int poolSize, boolean weakPool)
         {
             if (poolSize <= ConcurrentPool.OPTIMAL_MAX_SIZE)
-                _pool = new ConcurrentPool<>(ConcurrentPool.StrategyType.THREAD_ID, poolSize, false);
+                _pool = new ConcurrentPool<>(ConcurrentPool.StrategyType.THREAD_ID, poolSize, false, e -> 1, weakPool);
             else
                 _pool = new CompoundPool<>(
-                    new ConcurrentPool<>(ConcurrentPool.StrategyType.THREAD_ID, ConcurrentPool.OPTIMAL_MAX_SIZE, false),
+                    new ConcurrentPool<>(ConcurrentPool.StrategyType.THREAD_ID, ConcurrentPool.OPTIMAL_MAX_SIZE, false, e -> 1, weakPool),
                     new QueuedPool<>(poolSize - ConcurrentPool.OPTIMAL_MAX_SIZE)
                 );
             _capacity = capacity;
@@ -561,6 +566,11 @@ public class ArrayByteBufferPool implements ByteBufferPool, Dumpable
 
         public Quadratic(int minCapacity, int maxCapacity, int maxBucketSize, long maxHeapMemory, long maxDirectMemory)
         {
+            this(minCapacity, maxCapacity, maxBucketSize, maxHeapMemory, maxDirectMemory, false);
+        }
+
+        public Quadratic(int minCapacity, int maxCapacity, int maxBucketSize, long maxHeapMemory, long maxDirectMemory, boolean weakPool)
+        {
             super(minCapacity,
                 -1,
                 maxCapacity,
@@ -568,7 +578,8 @@ public class ArrayByteBufferPool implements ByteBufferPool, Dumpable
                 maxHeapMemory,
                 maxDirectMemory,
                 c -> 32 - Integer.numberOfLeadingZeros(c - 1),
-                i -> 1 << i
+                i -> 1 << i,
+                weakPool
             );
         }
     }
