@@ -310,6 +310,12 @@ public class quiche_h
         FunctionDescriptor.of(C_LONG, C_POINTER, C_LONG, C_POINTER, C_LONG, C_CHAR)
     );
 
+    private static final MethodHandle quiche_conn_stream_writable$MH = downcallHandle(
+        "quiche_conn_stream_writable",
+        "(Ljdk/incubator/foreign/MemoryAddress;JJ)I",
+        FunctionDescriptor.of(C_INT, C_POINTER, C_LONG, C_LONG)
+    );
+
     private static final MethodHandle quiche_conn_stream_recv$MH = downcallHandle(
         "quiche_conn_stream_recv",
         "(Ljdk/incubator/foreign/MemoryAddress;JLjdk/incubator/foreign/MemoryAddress;JLjdk/incubator/foreign/MemoryAddress;)J",
@@ -663,6 +669,18 @@ public class quiche_h
         try
         {
             return (long) quiche_conn_stream_send$MH.invokeExact(conn, stream_id, buf, buf_len, fin);
+        }
+        catch (Throwable ex)
+        {
+            throw new AssertionError("should not reach here", ex);
+        }
+    }
+
+    public static int quiche_conn_stream_writable(MemoryAddress conn, long stream_id, long buf_len)
+    {
+        try
+        {
+            return (int) quiche_conn_stream_writable$MH.invokeExact(conn, stream_id, buf_len);
         }
         catch (Throwable ex)
         {

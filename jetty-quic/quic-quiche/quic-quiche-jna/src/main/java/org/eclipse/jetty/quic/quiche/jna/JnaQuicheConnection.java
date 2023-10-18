@@ -692,7 +692,12 @@ public class JnaQuicheConnection extends QuicheConnection
                 throw new IOException("connection was released");
             int written = LibQuiche.INSTANCE.quiche_conn_stream_send(quicheConn, new uint64_t(streamId), buffer, new size_t(buffer.remaining()), last).intValue();
             if (written == quiche_error.QUICHE_ERR_DONE)
+            {
+                int rc = LibQuiche.INSTANCE.quiche_conn_stream_writable(quicheConn, new uint64_t(streamId), new size_t(buffer.remaining()));
+                if (rc < 0)
+                    throw new IOException("failed to write to stream " + streamId + "; quiche_err=" + quiche_error.errToString(rc));
                 return 0;
+            }
             if (written < 0L)
                 throw new IOException("failed to write to stream " + streamId + "; quiche_err=" + quiche_error.errToString(written));
             buffer.position(buffer.position() + written);
