@@ -38,6 +38,14 @@
       <artifactId>jetty-test-helper</artifactId>
     </dependency>
     <dependency>
+      <groupId>org.eclipse.jetty.websocket</groupId>
+      <artifactId>jetty-websocket-jetty-client</artifactId>
+    </dependency>
+    <dependency>
+      <groupId>org.eclipse.jetty.websocket</groupId>
+      <artifactId>jetty-websocket-jetty-server</artifactId>
+    </dependency>
+    <dependency>
       <groupId>org.openjdk.jmh</groupId>
       <artifactId>jmh-core</artifactId>
       <version>${jmh.version}</version>
@@ -120,12 +128,4 @@
       </plugin>
     </plugins>
   </build>
-      <groupId>org.eclipse.jetty.websocket</groupId>
-      <artifactId>jetty-websocket-jetty-server</artifactId>
-    </dependency>
-    <dependency>
-      <groupId>org.eclipse.jetty.websocket</groupId>
-      <artifactId>jetty-websocket-jetty-client</artifactId>
-    </dependency>
-    <dependency>
 </project>
