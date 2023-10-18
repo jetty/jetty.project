@@ -10,7 +10,6 @@ jetty-12.0.2 - 09 October 2023
  + 10271 jetty.sh does not stop jetty anymore
  + 10328 Review `ResourceFactory.newSystemResource(String)` behavior & javadoc
  + 10361 Introduce QoSHandler
- + 10382 NPE thrown during HttpClient tests
  + 10388 Jetty10 inetaccess mod started error
  + 10440 ClassCastException with `<jettyEnvXml>` use in
    `jetty-ee10-maven-plugin`
