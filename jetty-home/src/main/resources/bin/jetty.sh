@@ -456,6 +456,7 @@ JETTY_ARGS=(${JETTY_ARGS[*]} "jetty.state=$JETTY_STATE" "jetty.pid=$JETTY_PID")
 ##################################################
 if [ -f "$JETTY_CONF" ] && [ -r "$JETTY_CONF" ]
 then
+  (( DEBUG )) && echo "$JETTY_CONF: (begin read) JETTY_ARGS.length=${#JETTY_ARGS[@]}"
   while read -r CONF
   do
     if expr "$CONF" : '#' >/dev/null ; then
@@ -471,16 +472,17 @@ then
       do
         if [ -r "$XMLFILE" ] && [ -f "$XMLFILE" ]
         then
-          JETTY_ARGS=(${JETTY_ARGS[*]} "$XMLFILE")
+          JETTY_ARGS[${#JETTY_ARGS[@]}]="$XMLFILE"
         else
           echo "** WARNING: Cannot read '$XMLFILE' specified in '$JETTY_CONF'"
         fi
       done
     else
       # assume it's a command line parameter (let start.jar deal with its validity)
-      JETTY_ARGS=(${JETTY_ARGS[*]} "$CONF")
+      JETTY_ARGS[${#JETTY_ARGS[@]}]="$CONF"
     fi
   done < "$JETTY_CONF"
+  (( DEBUG )) && echo "$JETTY_CONF: (finished read) JETTY_ARGS.length=${#JETTY_ARGS[@]}"
 fi
 
 ##################################################
@@ -566,7 +568,7 @@ then
 fi
 
 # Collect the dry-run (of opts,path,main,args) from the jetty.base configuration
-JETTY_DRY_RUN=$("$JAVA" -jar "$JETTY_START" --dry-run=opts,path,main,args ${JETTY_ARGS[*]} ${JAVA_OPTIONS[*]})
+JETTY_DRY_RUN=$("$JAVA" -jar "$JETTY_START" --dry-run=opts,path,main,args ${JETTY_ARGS} ${JAVA_OPTIONS[*]})
 RUN_ARGS=($JETTY_SYS_PROPS ${JETTY_DRY_RUN[@]})
 
 if (( DEBUG ))
