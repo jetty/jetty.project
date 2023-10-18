@@ -411,9 +411,6 @@ public abstract class AbstractSessionDataStore extends ContainerLifeCycle implem
      */
     public ObjectInputStream newObjectInputStream(InputStream is) throws IOException
     {
-        //in here you can do:
-        //GZIPInputStream gis = new GZIPInputStream(is);
-        //ClassLoadingObjectInputStream ois = new ClassLoadingObjectInputStream(is)
         return new ClassLoadingObjectInputStream(is);
     }
 
