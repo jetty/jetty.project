@@ -15,6 +15,7 @@ package org.eclipse.jetty.nosql.mongodb;
 
 import java.io.ByteArrayInputStream;
 import java.io.ByteArrayOutputStream;
+import java.io.ObjectInputStream;
 import java.io.ObjectOutputStream;
 import java.util.HashMap;
 import java.util.HashSet;
@@ -34,7 +35,6 @@ import org.eclipse.jetty.nosql.NoSqlSessionDataStore;
 import org.eclipse.jetty.session.SessionContext;
 import org.eclipse.jetty.session.SessionData;
 import org.eclipse.jetty.session.UnreadableSessionDataException;
-import org.eclipse.jetty.util.ClassLoadingObjectInputStream;
 import org.eclipse.jetty.util.StringUtil;
 import org.eclipse.jetty.util.annotation.ManagedAttribute;
 import org.eclipse.jetty.util.annotation.ManagedObject;
@@ -239,10 +239,9 @@ public class MongoSessionDataStore extends NoSqlSessionDataStore
                 else
                 {
                     //attributes have special serialized format
-                    try (ByteArrayInputStream bais = new ByteArrayInputStream(attributes);
-                         ClassLoadingObjectInputStream ois = new ClassLoadingObjectInputStream(bais);)
+                    try (ByteArrayInputStream bais = new ByteArrayInputStream(attributes);)
                     {
-                        SessionData.deserializeAttributes(data, ois);
+                            deserializeAttributes(data, bais);
                     }
                 }
             }
@@ -514,10 +513,9 @@ public class MongoSessionDataStore extends NoSqlSessionDataStore
         sets.put(__ACCESSED, data.getAccessed());
         sets.put(__LAST_ACCESSED, data.getLastAccessed());
 
-        try (ByteArrayOutputStream baos = new ByteArrayOutputStream();
-             ObjectOutputStream oos = new ObjectOutputStream(baos);)
+        try (ByteArrayOutputStream baos = new ByteArrayOutputStream();)
         {
-            SessionData.serializeAttributes(data, oos);
+            serializeAttributes(data, baos);
             sets.put(getContextSubfield(__ATTRIBUTES), baos.toByteArray());
         }
 

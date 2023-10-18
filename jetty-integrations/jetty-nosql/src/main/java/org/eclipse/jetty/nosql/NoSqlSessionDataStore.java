@@ -16,13 +16,13 @@ package org.eclipse.jetty.nosql;
 import java.util.HashSet;
 import java.util.Set;
 
-import org.eclipse.jetty.session.AbstractSessionDataStore;
+import org.eclipse.jetty.session.ObjectStreamSessionDataStore;
 import org.eclipse.jetty.session.SessionData;
 
 /**
  * NoSqlSessionDataStore
  */
-public abstract class NoSqlSessionDataStore extends AbstractSessionDataStore
+public abstract class NoSqlSessionDataStore extends ObjectStreamSessionDataStore
 {
 
     public class NoSqlSessionData extends SessionData

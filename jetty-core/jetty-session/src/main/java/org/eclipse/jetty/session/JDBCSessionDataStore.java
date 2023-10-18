@@ -39,7 +39,7 @@ import org.slf4j.LoggerFactory;
  * Session data stored in database
  */
 @ManagedObject
-public class JDBCSessionDataStore extends AbstractSessionDataStore
+public class JDBCSessionDataStore extends ObjectStreamSessionDataStore
 {
     private static final Logger LOG = LoggerFactory.getLogger(JDBCSessionDataStore.class);
 
@@ -662,10 +662,9 @@ public class JDBCSessionDataStore extends AbstractSessionDataStore
                 data.setContextPath(_context.getCanonicalContextPath());
                 data.setVhost(_context.getVhost());
 
-                try (InputStream is = _dbAdaptor.getBlobInputStream(result, _sessionTableSchema.getMapColumn());
-                     ObjectInputStream ois = newObjectInputStream(is))
+                try (InputStream is = _dbAdaptor.getBlobInputStream(result, _sessionTableSchema.getMapColumn()))
                 {
-                    SessionData.deserializeAttributes(data, ois);
+                   deserializeAttributes(data, is);
                 }
                 catch (Exception e)
                 {
@@ -743,10 +742,7 @@ public class JDBCSessionDataStore extends AbstractSessionDataStore
 
                 try (ByteArrayOutputStream baos = new ByteArrayOutputStream();)
                 {
-                     try (ObjectOutputStream oos = newObjectOutputStream(baos))
-                     {
-                         SessionData.serializeAttributes(data, oos);
-                     }
+                    serializeAttributes(data, baos);
 
                     byte[] bytes = baos.toByteArray();
                     ByteArrayInputStream bais = new ByteArrayInputStream(bytes);
@@ -777,10 +773,7 @@ public class JDBCSessionDataStore extends AbstractSessionDataStore
 
                 try (ByteArrayOutputStream baos = new ByteArrayOutputStream();)
                 {
-                    try (ObjectOutputStream oos = newObjectOutputStream(baos))
-                    {
-                        SessionData.serializeAttributes(data, oos);
-                    }
+                    serializeAttributes(data, baos);
 
                     byte[] bytes = baos.toByteArray();
                     try (ByteArrayInputStream bais = new ByteArrayInputStream(bytes))

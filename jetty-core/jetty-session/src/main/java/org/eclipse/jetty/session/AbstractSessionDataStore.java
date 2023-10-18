@@ -372,48 +372,6 @@ public abstract class AbstractSessionDataStore extends ContainerLifeCycle implem
         _savePeriodSec = savePeriodSec;
     }
 
-    /**
-     * Get an ObjectOutputStream suitable to serialize SessionData objects
-     * into the provided OutputStream.
-     *
-     * By default, an ObjectObjectStream is returned.
-     *
-     * Override this method to provide a custom ObjectOutputStream, and/or to
-     * chain other OutputStreams to perform such tasks as compressing the serialized
-     * data, for example:
-     *
-     * GZIPOutputStream gos = new GZIPOutputStream(os);
-     * return new ObjectOutputStream(gos);
-     *
-     * @param os
-     * @return
-     * @throws IOException
-     */
-    public ObjectOutputStream newObjectOutputStream(OutputStream os) throws IOException
-    {
-        return new ObjectOutputStream(os);
-    }
-
-    /**
-     * Get an ObjectInputStream that is capable of deserializing the session data
-     * present in the provided InputStream.
-     *
-     * By default, a Classloader-aware ObjectInputStream is used, however, you
-     * can return your own specialized ObjectInputStream, or chain other InputStreams
-     * together to perform such tasks as data decompression, for example:
-     *
-     * GZIPInputStream gis = new GZIPInputStream(is);
-     * return new ClassLoadingObjectInputStream(is)
-     *
-     * @param is an input stream for accessing the session data to be deserialized
-     * @return an ObjectInputStream that can deserialize the session data
-     * @throws IOException
-     */
-    public ObjectInputStream newObjectInputStream(InputStream is) throws IOException
-    {
-        return new ClassLoadingObjectInputStream(is);
-    }
-
     @Override
     public String toString()
     {
