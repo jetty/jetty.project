@@ -162,6 +162,7 @@ public class HTTP2Stream implements Stream, Attachable, Closeable, Callback, Dum
     @Override
     public void reset(ResetFrame frame, Callback callback)
     {
+        int flowControlLength;
         Throwable resetFailure = null;
         try (AutoLock ignored = lock.lock())
         {
@@ -174,7 +175,9 @@ public class HTTP2Stream implements Stream, Attachable, Closeable, Callback, Dum
                 localReset = true;
                 failure = new EOFException("reset");
             }
+            flowControlLength = drain();
         }
+        session.dataConsumed(this, flowControlLength);
         if (resetFailure != null)
             callback.failed(resetFailure);
         else
@@ -340,6 +343,8 @@ public class HTTP2Stream implements Stream, Attachable, Closeable, Callback, Dum
     public void setListener(Listener listener)
     {
         this.listener = listener;
+        if (listener == null)
+            demand();
     }
 
     public void process(Frame frame, Callback callback)
@@ -418,11 +423,14 @@ public class HTTP2Stream implements Stream, Attachable, Closeable, Callback, Dum
 
     private void onData(Data data)
     {
+        DataFrame frame = data.frame();
+
         // SPEC: remotely closed streams must be replied with a reset.
         if (isRemotelyClosed())
         {
             if (LOG.isDebugEnabled())
                 LOG.debug("Data {} for already closed {}", data, this);
+            session.dataConsumed(this, data.frame().flowControlLength());
             reset(new ResetFrame(streamId, ErrorCode.STREAM_CLOSED_ERROR.code), Callback.NOOP);
             return;
         }
@@ -432,28 +440,25 @@ public class HTTP2Stream implements Stream, Attachable, Closeable, Callback, Dum
             // Just drop the frame.
             if (LOG.isDebugEnabled())
                 LOG.debug("Data {} for already reset {}", data, this);
+            session.dataConsumed(this, data.frame().flowControlLength());
             return;
         }
 
         if (dataLength >= 0)
         {
-            DataFrame frame = data.frame();
             dataLength -= frame.remaining();
             if (dataLength < 0 || (frame.isEndStream() && dataLength != 0))
             {
                 if (LOG.isDebugEnabled())
                     LOG.debug("Invalid data length {} for {}", data, this);
+                session.dataConsumed(this, data.frame().flowControlLength());
                 reset(new ResetFrame(streamId, ErrorCode.PROTOCOL_ERROR.code), Callback.NOOP);
                 return;
             }
         }
 
-        boolean listenerPresent = getListener() != null;
-        boolean endStream = data.frame().isEndStream();
-        if ((listenerPresent || endStream) && offer(data))
+        if (offer(data))
             processData();
-        if (!listenerPresent && updateClose(endStream, CloseState.Event.RECEIVED))
-            session.removeStream(this);
     }
 
     private boolean offer(Data data)
@@ -555,15 +560,29 @@ public class HTTP2Stream implements Stream, Attachable, Closeable, Callback, Dum
         }
     }
 
+    public long getDataLength()
+    {
+        try (AutoLock ignored = lock.lock())
+        {
+            return dataQueue.stream()
+                .mapToLong(data -> data.frame().remaining())
+                .sum();
+        }
+    }
+
     private void onReset(ResetFrame frame, Callback callback)
     {
+        int flowControlLength;
         try (AutoLock ignored = lock.lock())
         {
             remoteReset = true;
             failure = new EofException("reset");
+            flowControlLength = drain();
         }
         close();
-        if (session.removeStream(this))
+        boolean removed = session.removeStream(this);
+        session.dataConsumed(this, flowControlLength);
+        if (removed)
             notifyReset(this, frame, callback);
         else
             callback.succeeded();
@@ -584,15 +603,42 @@ public class HTTP2Stream implements Stream, Attachable, Closeable, Callback, Dum
 
     private void onFailure(FailureFrame frame, Callback callback)
     {
+        int flowControlLength;
         try (AutoLock ignored = lock.lock())
         {
             failure = frame.getFailure();
+            flowControlLength = drain();
         }
         close();
-        if (session.removeStream(this))
+        boolean removed = session.removeStream(this);
+        session.dataConsumed(this, flowControlLength);
+        if (removed)
             notifyFailure(this, frame, callback);
         else
             callback.succeeded();
+    }
+
+    private int drain()
+    {
+        assert lock.isHeldByCurrentThread();
+        int length = 0;
+        while (true)
+        {
+            Data data = dataQueue.poll();
+            if (data == null)
+                break;
+            data.release();
+            DataFrame frame = data.frame();
+            length += frame.flowControlLength();
+            if (frame.isEndStream())
+            {
+                dataQueue.offer(Data.eof(getId()));
+                break;
+            }
+        }
+        if (LOG.isDebugEnabled())
+            LOG.debug("Drained {} bytes for {}", length, this);
+        return length;
     }
 
     public boolean updateClose(boolean update, CloseState.Event event)
@@ -807,28 +853,14 @@ public class HTTP2Stream implements Stream, Attachable, Closeable, Callback, Dum
 
     private void notifyDataAvailable(Stream stream)
     {
-        Listener listener = this.listener;
-        if (listener != null)
+        Listener listener = Objects.requireNonNullElse(this.listener, Listener.AUTO_DISCARD);
+        try
         {
-            try
-            {
-                listener.onDataAvailable(stream);
-            }
-            catch (Throwable x)
-            {
-                LOG.info("Failure while notifying listener {}", listener, x);
-            }
+            listener.onDataAvailable(stream);
         }
-        else
+        catch (Throwable x)
         {
-            Data data = readData();
-            if (data != null)
-            {
-                data.release();
-                if (data.frame().isEndStream())
-                    return;
-            }
-            stream.demand();
+            LOG.info("Failure while notifying listener {}", listener, x);
         }
     }
 

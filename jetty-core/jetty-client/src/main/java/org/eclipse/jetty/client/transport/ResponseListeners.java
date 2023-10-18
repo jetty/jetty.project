@@ -483,10 +483,17 @@ public class ResponseListeners
                 LOG.debug("Original content source's demand calling back");
 
             Content.Chunk chunk = originalContentSource.read();
-            // Demultiplexer content sources are invoked sequentially to be consistent with other listeners,
-            // applications can parallelize from the listeners they register if needed.
             if (LOG.isDebugEnabled())
                 LOG.debug("Read from original content source {}", chunk);
+            if (chunk == null)
+            {
+                // Retry the demand on spurious wakeup to avoid passing
+                // a null chunk to the demultiplexer's ContentSources.
+                originalContentSource.demand(this::onDemandCallback);
+                return;
+            }
+            // Demultiplexer content sources are invoked sequentially to be consistent with other listeners,
+            // applications can parallelize from the listeners they register if needed.
             for (ContentSource demultiplexerContentSource : contentSources)
             {
                 demultiplexerContentSource.onChunk(chunk);
@@ -673,7 +680,7 @@ public class ResponseListeners
                     LOG.debug("Content source #{} fail while current chunk is {}", index, currentChunk);
                 if (Content.Chunk.isFailure(currentChunk))
                     return;
-                if (currentChunk != null)
+                if (currentChunk != null && currentChunk != ALREADY_READ_CHUNK)
                     currentChunk.release();
                 this.chunk = Content.Chunk.from(failure);
                 onDemandCallback();

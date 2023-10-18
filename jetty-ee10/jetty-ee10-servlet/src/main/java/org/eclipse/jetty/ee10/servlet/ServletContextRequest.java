@@ -20,6 +20,7 @@ import java.util.EventListener;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Set;
+import java.util.function.Supplier;
 
 import jakarta.servlet.AsyncListener;
 import jakarta.servlet.ServletRequest;
@@ -64,6 +65,8 @@ public class ServletContextRequest extends ContextRequest implements ServletCont
     static final Fields NO_PARAMS = new Fields(Collections.emptyMap());
     static final Fields BAD_PARAMS = new Fields(Collections.emptyMap());
 
+    private static final Object NULL_VALUE = new Object();
+
     public static ServletContextRequest getServletContextRequest(ServletRequest request)
     {
         if (request instanceof ServletApiRequest servletApiRequest &&
@@ -85,7 +88,6 @@ public class ServletContextRequest extends ContextRequest implements ServletCont
         throw new IllegalStateException("could not find %s for %s".formatted(ServletContextRequest.class.getSimpleName(), request));
     }
 
-    private final List<ServletRequestAttributeListener> _requestAttributeListeners = new ArrayList<>();
     private final ServletApiRequest _servletApiRequest;
     private final ServletContextResponse _response;
     private final MatchedResource<ServletHandler.MappedServlet> _matchedResource;
@@ -93,6 +95,7 @@ public class ServletContextRequest extends ContextRequest implements ServletCont
     private final String _decodedPathInContext;
     private final ServletChannel _servletChannel;
     private final SessionManager _sessionManager;
+    private List<ServletRequestAttributeListener> _requestAttributeListeners;
     private Charset _queryEncoding;
     private HttpFields _trailers;
     private ManagedSession _managedSession;
@@ -261,6 +264,16 @@ public class ServletContextRequest extends ContextRequest implements ServletCont
         return _queryEncoding;
     }
 
+    private Object getAttributeNotNullOrElse(String name, Supplier<Object> getter)
+    {
+        Object value = super.getAttribute(name);
+        if (value == NULL_VALUE)
+            return null;
+        if (value != null)
+            return value;
+        return getter.get();
+    }
+
     @Override
     public Object getAttribute(String name)
     {
@@ -270,11 +283,50 @@ public class ServletContextRequest extends ContextRequest implements ServletCont
             case "jakarta.servlet.request.key_size" -> super.getAttribute(SecureRequestCustomizer.KEY_SIZE_ATTRIBUTE);
             case "jakarta.servlet.request.ssl_session_id" -> super.getAttribute(SecureRequestCustomizer.SSL_SESSION_ID_ATTRIBUTE);
             case "jakarta.servlet.request.X509Certificate" -> super.getAttribute(SecureRequestCustomizer.PEER_CERTIFICATES_ATTRIBUTE);
-            case ServletContextRequest.MULTIPART_CONFIG_ELEMENT -> _matchedResource.getResource().getServletHolder().getMultipartConfigElement();
-            case FormFields.MAX_FIELDS_ATTRIBUTE -> getServletContext().getServletContextHandler().getMaxFormKeys();
-            case FormFields.MAX_LENGTH_ATTRIBUTE -> getServletContext().getServletContextHandler().getMaxFormContentSize();
+            case ServletContextRequest.MULTIPART_CONFIG_ELEMENT -> getAttributeNotNullOrElse(name, _matchedResource.getResource().getServletHolder()::getMultipartConfigElement);
+            case FormFields.MAX_FIELDS_ATTRIBUTE -> getAttributeNotNullOrElse(name, getServletContext().getServletContextHandler()::getMaxFormKeys);
+            case FormFields.MAX_LENGTH_ATTRIBUTE -> getAttributeNotNullOrElse(name, getServletContext().getServletContextHandler()::getMaxFormContentSize);
             default -> super.getAttribute(name);
         };
+    }
+
+    @Override
+    public Object removeAttribute(String name)
+    {
+        return switch (name)
+        {
+            case "jakarta.servlet.request.cipher_suite" -> super.removeAttribute(SecureRequestCustomizer.CIPHER_SUITE_ATTRIBUTE);
+            case "jakarta.servlet.request.key_size" -> super.removeAttribute(SecureRequestCustomizer.KEY_SIZE_ATTRIBUTE);
+            case "jakarta.servlet.request.ssl_session_id" -> super.removeAttribute(SecureRequestCustomizer.SSL_SESSION_ID_ATTRIBUTE);
+            case "jakarta.servlet.request.X509Certificate" -> super.removeAttribute(SecureRequestCustomizer.PEER_CERTIFICATES_ATTRIBUTE);
+            case ServletContextRequest.MULTIPART_CONFIG_ELEMENT, FormFields.MAX_FIELDS_ATTRIBUTE, FormFields.MAX_LENGTH_ATTRIBUTE -> super.setAttribute(name, NULL_VALUE);
+            default -> super.removeAttribute(name);
+        };
+    }
+
+    @Override
+    public Object setAttribute(String name, Object value)
+    {
+        if (value == null)
+            return removeAttribute(name);
+
+        return switch (name)
+        {
+            case "jakarta.servlet.request.cipher_suite" -> super.setAttribute(SecureRequestCustomizer.CIPHER_SUITE_ATTRIBUTE, value);
+            case "jakarta.servlet.request.key_size" -> super.setAttribute(SecureRequestCustomizer.KEY_SIZE_ATTRIBUTE, value);
+            case "jakarta.servlet.request.ssl_session_id" -> super.setAttribute(SecureRequestCustomizer.SSL_SESSION_ID_ATTRIBUTE, value);
+            case "jakarta.servlet.request.X509Certificate" -> super.setAttribute(SecureRequestCustomizer.PEER_CERTIFICATES_ATTRIBUTE, value);
+            default -> super.setAttribute(name, value);
+        };
+    }
+
+    private void checkContainsNotNull(Set<String> names, String name, Supplier<Boolean> contains)
+    {
+        Object value = super.getAttribute(name);
+        if (value == NULL_VALUE)
+            names.remove(name);
+        else if (value != null || contains.get())
+            names.add(name);
     }
 
     @Override
@@ -289,12 +341,10 @@ public class ServletContextRequest extends ContextRequest implements ServletCont
             names.add("jakarta.servlet.request.ssl_session_id");
         if (names.contains(SecureRequestCustomizer.PEER_CERTIFICATES_ATTRIBUTE))
             names.add("jakarta.servlet.request.X509Certificate");
-        if (_matchedResource.getResource().getServletHolder().getMultipartConfigElement() != null)
-            names.add(ServletContextRequest.MULTIPART_CONFIG_ELEMENT);
-        if (getServletContext().getServletContextHandler().getMaxFormKeys() >= 0)
-            names.add(FormFields.MAX_FIELDS_ATTRIBUTE);
-        if (getServletContext().getServletContextHandler().getMaxFormContentSize() >= 0L)
-            names.add(FormFields.MAX_FIELDS_ATTRIBUTE);
+
+        checkContainsNotNull(names, ServletContextRequest.MULTIPART_CONFIG_ELEMENT, () -> _matchedResource.getResource().getServletHolder().getMultipartConfigElement() != null);
+        checkContainsNotNull(names, FormFields.MAX_FIELDS_ATTRIBUTE, () -> getServletContext().getServletContextHandler().getMaxFormKeys() >= 0);
+        checkContainsNotNull(names, FormFields.MAX_LENGTH_ATTRIBUTE, () -> getServletContext().getServletContextHandler().getMaxFormContentSize() >= 0L);
         return names;
     }
 
@@ -339,20 +389,27 @@ public class ServletContextRequest extends ContextRequest implements ServletCont
     @Override
     public List<ServletRequestAttributeListener> getRequestAttributeListeners()
     {
+        if (_requestAttributeListeners == null)
+            _requestAttributeListeners = new ArrayList<>();
         return _requestAttributeListeners;
     }
 
-    public void addEventListener(final EventListener listener)
+    public void addEventListener(EventListener listener)
     {
-        if (listener instanceof ServletRequestAttributeListener)
-            _requestAttributeListeners.add((ServletRequestAttributeListener)listener);
+        if (listener instanceof ServletRequestAttributeListener attributeListener)
+        {
+            if (_requestAttributeListeners == null)
+                _requestAttributeListeners = new ArrayList<>();
+            _requestAttributeListeners.add(attributeListener);
+        }
         if (listener instanceof AsyncListener)
             throw new IllegalArgumentException(listener.getClass().toString());
     }
 
-    public void removeEventListener(final EventListener listener)
+    public void removeEventListener(EventListener listener)
     {
-        _requestAttributeListeners.remove(listener);
+        if (_requestAttributeListeners != null)
+            _requestAttributeListeners.remove(listener);
     }
 
     /**

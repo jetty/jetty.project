@@ -4,11 +4,11 @@
   <parent>
     <groupId>org.eclipse.jetty.ee9.demos</groupId>
     <artifactId>jetty-ee9-demos</artifactId>
-    <version>12.0.2-SNAPSHOT</version>
+    <version>12.0.3-SNAPSHOT</version>
   </parent>
   <artifactId>jetty-ee9-demo-jaas-webapp</artifactId>
-  <name>EE9 :: Demo :: JAAS WebApp</name>
   <packaging>war</packaging>
+  <name>EE9 :: Demo :: JAAS WebApp</name>
   <properties>
     <bundle-symbolic-name>${project.groupId}.jaas</bundle-symbolic-name>
   </properties>

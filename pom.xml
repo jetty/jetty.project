@@ -4,211 +4,17 @@
   <modelVersion>4.0.0</modelVersion>
   <groupId>org.eclipse.jetty</groupId>
   <artifactId>jetty-project</artifactId>
-  <version>12.0.2-SNAPSHOT</version>
+  <version>12.0.3-SNAPSHOT</version>
+  <packaging>pom</packaging>
   <name>Jetty :: Project</name>
   <description>The Eclipse Jetty Project</description>
-  <packaging>pom</packaging>
   <url>https://eclipse.dev/jetty</url>
   <inceptionYear>1995</inceptionYear>
 
-  <properties>
-    <!-- build -->
-    <compiler.source>17</compiler.source>
-    <compiler.target>17</compiler.target>
-    <compiler.release>17</compiler.release>
-    <maven.compiler.createMissingPackageInfoClass>false</maven.compiler.createMissingPackageInfoClass>
-    <jetty.url>https://eclipse.dev/jetty/</jetty.url>
-    <jmhjar.name>benchmarks</jmhjar.name>
-    <osgi.slf4j.import.packages>org.slf4j;version="[1.7,3.0)", org.slf4j.event;version="[1.7,3.0)", org.slf4j.helpers;version="[1.7,3.0)", org.slf4j.spi;version="[1.7,3.0)"</osgi.slf4j.import.packages>
-    <project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
-    <surefire.failIfNoSpecifiedTests>false</surefire.failIfNoSpecifiedTests>
-
-    <!-- execute top-level classes in parallel but methods in same thread -->
-    <junit.jupiter.execution.parallel.enabled>true</junit.jupiter.execution.parallel.enabled>
-    <junit.jupiter.execution.parallel.mode.default>same_thread</junit.jupiter.execution.parallel.mode.default>
-    <junit.jupiter.execution.parallel.mode.classes.default>concurrent</junit.jupiter.execution.parallel.mode.classes.default>
-    <junit.jupiter.execution.parallel.config.strategy>fixed</junit.jupiter.execution.parallel.config.strategy>
-    <junit.jupiter.execution.parallel.config.fixed.parallelism>2</junit.jupiter.execution.parallel.config.fixed.parallelism>
-    <junit.jupiter.extensions.autodetection.enabled>false</junit.jupiter.extensions.autodetection.enabled>
-
-    <!-- dependency versions -->
-    <alpn.agent.version>2.0.10</alpn.agent.version>
-    <ant.version>1.10.14</ant.version>
-    <apache.avro.version>1.11.3</apache.avro.version>
-    <apache.httpclient.version>4.5.14</apache.httpclient.version>
-    <apache.httpcore.version>4.4.16</apache.httpcore.version>
-    <asciidoctorj-diagram.version>2.2.13</asciidoctorj-diagram.version>
-    <asciidoctorj.version>2.5.10</asciidoctorj.version>
-    <mina.core.version>2.2.3</mina.core.version>
-    <asm.version>9.6</asm.version>
-    <awaitility.version>4.2.0</awaitility.version>
-    <bndlib.version>6.4.1</bndlib.version>
-    <build-support.version>1.5</build-support.version>
-    <checkstyle.version>10.6.0</checkstyle.version>
-    <commons-codec.version>1.16.0</commons-codec.version>
-    <commons.compress.version>1.24.0</commons.compress.version>
-    <commons.io.version>2.14.0</commons.io.version>
-    <commons-lang3.version>3.13.0</commons-lang3.version>
-    <conscrypt.version>2.5.2</conscrypt.version>
-    <disruptor.version>3.4.2</disruptor.version>
-    <felix.version>7.0.5</felix.version>
-    <findbugs.jsr305.version>3.0.2</findbugs.jsr305.version>
-    <google.errorprone.version>2.20.0</google.errorprone.version>
-    <grpc.version>1.56.1</grpc.version>
-    <gson.version>2.10.1</gson.version>
-    <guava.version>32.1.2-jre</guava.version>
-    <guice.version>7.0.0</guice.version>
-    <hamcrest.version>2.2</hamcrest.version>
-    <hazelcast.version>5.3.2</hazelcast.version>
-    <infinispan.protostream.version>4.6.5.Final</infinispan.protostream.version>
-    <infinispan.version>11.0.17.Final</infinispan.version>
-    <jackson.version>2.15.2</jackson.version>
-    <jakarta.activation.api.version>2.0.1</jakarta.activation.api.version>
-    <jakarta.annotation.api.version>2.1.1</jakarta.annotation.api.version>
-    <jakarta.el.api.version>4.0.0</jakarta.el.api.version>
-    <jakarta.enterprise.cdi.api.version>3.0.0</jakarta.enterprise.cdi.api.version>
-    <jakarta.inject.api.version>2.0.1</jakarta.inject.api.version>
-    <jakarta.interceptor.api.version>2.0.0</jakarta.interceptor.api.version>
-    <jakarta.mail.api.version>2.0.1</jakarta.mail.api.version>
-    <jakarta.servlet.api.version>5.0.0</jakarta.servlet.api.version>
-    <jakarta.servlet.jsp.api.version>3.1.1</jakarta.servlet.jsp.api.version>
-    <jakarta.servlet.jsp.jstl.api.version>2.0.0</jakarta.servlet.jsp.jstl.api.version>
-    <jakarta.servlet.jsp.jstl.impl.version>2.0.0</jakarta.servlet.jsp.jstl.impl.version> <!-- TODO: remove? -->
-    <jakarta.transaction-api.version>2.0.1</jakarta.transaction-api.version>
-    <jakarta.websocket.api.version>2.0.0</jakarta.websocket.api.version>
-    <jakarta.ws.rs.api.version>3.1.0</jakarta.ws.rs.api.version>
-    <jakarta.xml.bind.api.version>3.0.1</jakarta.xml.bind.api.version>
-    <jakarta.xml.bind.impl.version>3.0.2</jakarta.xml.bind.impl.version>
-    <jakarta.xml.jaxws.impl.version>3.0.2</jakarta.xml.jaxws.impl.version>
-    <jakarta.xml.ws.api.version>3.0.1</jakarta.xml.ws.api.version>
-    <javax.activation.impl.version>1.1.0.v201105071233</javax.activation.impl.version> <!-- TODO: remove? -->
-    <javax.cdi.api.version>2.0</javax.cdi.api.version> <!-- TODO: remove? -->
-    <javax.mail.glassfish.version>1.4.1.v201005082020</javax.mail.glassfish.version> <!-- TODO: remove? -->
-    <jboss.logging.annotations.version>2.2.1.Final</jboss.logging.annotations.version>
-    <jboss.logging.processor.version>2.2.1.Final</jboss.logging.processor.version>
-    <jboss.logging.version>3.5.3.Final</jboss.logging.version>
-    <jboss-logmanager.version>3.0.2.Final</jboss-logmanager.version>
-    <jboss-threads.version>3.5.1.Final</jboss-threads.version>
-    <jetty-assembly-descriptors.version>1.1</jetty-assembly-descriptors.version>
-    <jetty.perf-helper.version>1.0.7</jetty.perf-helper.version>
-    <jetty-quiche-native.version>0.18.0</jetty-quiche-native.version>
-    <jetty-test-policy.version>1.2</jetty-test-policy.version>
-    <jetty.test.version>6.1</jetty.test.version>
-    <jetty.xhtml.schemas-version>1.1</jetty.xhtml.schemas-version>
-    <jmh.version>1.37</jmh.version>
-    <jna.version>5.13.0</jna.version>
-    <json-simple.version>1.1.1</json-simple.version>
-    <json-smart.version>2.5.0</json-smart.version>
-    <junit.version>5.10.0</junit.version>
-    <jsp.impl.version>10.0.14</jsp.impl.version>
-    <kerb-simplekdc.version>2.0.3</kerb-simplekdc.version>
-    <log4j2.version>2.20.0</log4j2.version>
-    <logback.version>1.4.11</logback.version>
-    <mariadb.version>3.2.0</mariadb.version>
-    <mariadb.docker.version>10.3.6</mariadb.docker.version>
-    <maven.deps.version>3.9.4</maven.deps.version>
-    <maven-build-cache.version>1.0.1</maven-build-cache.version>
-    <maven-artifact-transfer.version>0.13.1</maven-artifact-transfer.version>
-    <maven.resolver.version>1.9.16</maven.resolver.version>
-    <maven.version>3.9.0</maven.version>
-    <mongodb.version>3.12.11</mongodb.version>
-    <netty.version>4.1.97.Final</netty.version>
-    <openpojo.version>0.9.1</openpojo.version>
-    <org.osgi.annotation.version>8.1.0</org.osgi.annotation.version>
-    <org.osgi.core.version>8.0.0</org.osgi.core.version>
-    <org.osgi.util.function.version>1.2.0</org.osgi.util.function.version>
-    <org.osgi.util.promise.version>1.3.0</org.osgi.util.promise.version>
-
-    <osgi-version>3.18.500</osgi-version>
-    <!-- really used -->
-    <osgi-services-version>3.11.100</osgi-services-version>
-    <osgi-service-cm-version>1.6.1</osgi-service-cm-version>
-    <osgi-service-component-version>1.5.1</osgi-service-component-version>
-    <osgi-service-event-version>1.4.1</osgi-service-event-version>
-    <osgi-util-version>3.7.200</osgi-util-version>
-    <osgi-util-function-version>1.2.0</osgi-util-function-version>
-    <osgi-util-measurement-version>1.0.2</osgi-util-measurement-version>
-    <osgi-util-position-version>1.0.1</osgi-util-position-version>
-    <osgi-util-tracker-version>1.5.4</osgi-util-tracker-version>
-    <osgi-util-xml-version>1.0.2</osgi-util-xml-version>
-    <equinox-http-servlet-version>1.0.0-v20070606</equinox-http-servlet-version>
-    <pax.exam.version>4.13.5</pax.exam.version>
-    <pax.url.version>2.6.14</pax.url.version>
-    <swissbox.version>1.8.3</swissbox.version>
-    <tinybundles.version>3.0.0</tinybundles.version>
-    <injection.bundle.version>1.2</injection.bundle.version>
-
-    <plexus-component-annotations.version>2.1.1</plexus-component-annotations.version>
-    <plexus-utils.version>4.0.0</plexus-utils.version>
-    <plexus-xml.version>4.0.2</plexus-xml.version>
-    <slf4j.version>2.0.9</slf4j.version>
-    <spifly.version>1.3.6</spifly.version>
-    <taglibs-standard-impl.version>1.2.5</taglibs-standard-impl.version>
-    <taglibs-standard-spec.version>1.2.5</taglibs-standard-spec.version>
-    <testcontainers.version>1.19.0</testcontainers.version>
-    <wildfly.common.version>1.6.0.Final</wildfly.common.version>
-    <wildfly.elytron.version>2.2.2.Final</wildfly.elytron.version>
-    <xmemcached.version>2.4.7</xmemcached.version>
-
-    <!-- some maven plugins versions -->
-    <asciidoctor.maven.plugin.version>2.2.4</asciidoctor.maven.plugin.version>
-    <build-helper.maven.plugin.version>3.3.0</build-helper.maven.plugin.version>
-    <buildnumber.maven.plugin.version>3.2.0</buildnumber.maven.plugin.version>
-    <depends.maven.plugin.version>1.5.0</depends.maven.plugin.version>
-    <flatten.maven.plugin.version>1.3.0</flatten.maven.plugin.version>
-    <groovy.version>4.0.6</groovy.version>
-    <h2spec.maven.plugin.version>1.0.10</h2spec.maven.plugin.version>
-    <jacoco.maven.plugin.version>0.8.10</jacoco.maven.plugin.version>
-    <jetty-version.maven.plugin.version>2.7</jetty-version.maven.plugin.version>
-    <license.maven.plugin.version>4.1</license.maven.plugin.version>
-    <maven.antrun.plugin.version>3.1.0</maven.antrun.plugin.version>
-    <maven.assembly.plugin.version>3.6.0</maven.assembly.plugin.version>
-    <maven.bundle.plugin.version>5.1.9</maven.bundle.plugin.version>
-    <maven.clean.plugin.version>3.3.1</maven.clean.plugin.version>
-    <maven.checkstyle.plugin.version>3.3.0</maven.checkstyle.plugin.version>
-    <maven.compiler.plugin.version>3.11.0</maven.compiler.plugin.version>
-    <maven.dependency.plugin.version>3.6.0</maven.dependency.plugin.version>
-    <maven.deploy.plugin.version>3.1.1</maven.deploy.plugin.version>
-    <maven.enforcer.plugin.version>3.4.1</maven.enforcer.plugin.version>
-    <maven.exec.plugin.version>3.1.0</maven.exec.plugin.version>
-    <maven.gpg.plugin.version>3.1.0</maven.gpg.plugin.version>
-    <maven.install.plugin.version>3.1.1</maven.install.plugin.version>
-    <maven.invoker.plugin.version>3.6.0</maven.invoker.plugin.version>
-    <groovy.version>4.0.6</groovy.version>
-    <maven.jar.plugin.version>3.3.0</maven.jar.plugin.version>
-    <maven.javadoc.plugin.version>3.6.0</maven.javadoc.plugin.version>
-    <maven.plugin-tools.version>3.9.0</maven.plugin-tools.version>
-    <maven-plugin.plugin.version>3.9.0</maven-plugin.plugin.version>
-    <maven.release.plugin.version>3.0.1</maven.release.plugin.version>
-    <maven.remote-resources-plugin.version>3.1.0</maven.remote-resources-plugin.version>
-    <maven.resources.plugin.version>3.3.1</maven.resources.plugin.version>
-    <maven.shade.plugin.version>3.5.1</maven.shade.plugin.version>
-    <maven.surefire.plugin.version>3.1.2</maven.surefire.plugin.version>
-    <maven.source.plugin.version>3.3.0</maven.source.plugin.version>
-    <maven.war.plugin.version>3.4.0</maven.war.plugin.version>
-    <spotbugs.maven.plugin.version>4.7.3.5</spotbugs.maven.plugin.version>
-    <versions.maven.plugin.version>2.14.2</versions.maven.plugin.version>
-
-    <!-- testing -->
-    <invoker.mergeUserSettings>false</invoker.mergeUserSettings>
-    <it.debug>false</it.debug>
-    <localRepoPath>${project.build.directory}/local-repo</localRepoPath>
-    <jettyHomeZipFileName>jetty-home.zip</jettyHomeZipFileName>
-    <jettyHomeZip>${project.build.directory}/${jettyHomeZipFileName}</jettyHomeZip>
-    <jetty.surefire.argLine>-Dfile.encoding=UTF-8 -Duser.language=en -Duser.region=US -Djava.io.tmpdir=${project.build.directory} -showversion -Xmx6g -Xms4g -Xlog:gc:stderr:time,level,tags</jetty.surefire.argLine>
-    <jetty.testtracker.log>true</jetty.testtracker.log>
-    <jetty.unixdomain.dir>/tmp</jetty.unixdomain.dir>
-    <!-- if changing this version please update default in MongoTestHelper you will get thanks from Eclipse IDE users -->
-    <mongo.docker.version>3.2.20</mongo.docker.version>
-    <settingsPath>src/it/settings.xml</settingsPath>
-    <surefire.rerunFailingTestsCount>0</surefire.rerunFailingTestsCount>
-    <!-- if changing this version please update default in RemoteInfinispanTestSupport/InfinispanSessionDistributionTests
-    you will get thanks from Eclipse IDE users -->
-    <!-- but hey we have no more strange people?? :P -->
-    <infinispan.docker.image.version>11.0.14.Final</infinispan.docker.image.version>
-    <asciidoctor.skip>false</asciidoctor.skip>
-    <project.build.outputTimestamp>2023-06-05T23:12:49Z</project.build.outputTimestamp>
-  </properties>
+  <organization>
+    <name>Webtide</name>
+    <url>https://webtide.com</url>
+  </organization>
 
   <licenses>
     <license>
@@ -221,335 +27,1261 @@
     </license>
   </licenses>
 
+  <developers>
+    <developer>
+      <id>gregw</id>
+      <name>Greg Wilkins</name>
+      <email>gregw@webtide.com</email>
+      <organization>Webtide, LLC</organization>
+      <organizationUrl>https://webtide.com</organizationUrl>
+      <timezone>10</timezone>
+    </developer>
+    <developer>
+      <id>janb</id>
+      <name>Jan Bartel</name>
+      <email>janb@webtide.com</email>
+      <organization>Webtide, LLC</organization>
+      <organizationUrl>https://webtide.com</organizationUrl>
+      <timezone>10</timezone>
+    </developer>
+    <developer>
+      <id>jesse</id>
+      <name>Jesse McConnell</name>
+      <email>jesse.mcconnell@gmail.com</email>
+      <organization>Webtide, LLC</organization>
+      <organizationUrl>https://webtide.com</organizationUrl>
+      <timezone>-6</timezone>
+    </developer>
+    <developer>
+      <id>joakime</id>
+      <name>Joakim Erdfelt</name>
+      <email>joakim.erdfelt@gmail.com</email>
+      <organization>Webtide, LLC</organization>
+      <organizationUrl>https://webtide.com</organizationUrl>
+      <timezone>-6</timezone>
+    </developer>
+    <developer>
+      <id>sbordet</id>
+      <name>Simone Bordet</name>
+      <email>simone.bordet@gmail.com</email>
+      <organization>Webtide, LLC</organization>
+      <organizationUrl>https://webtide.com</organizationUrl>
+      <timezone>1</timezone>
+    </developer>
+    <developer>
+      <id>djencks</id>
+      <name>David Jencks</name>
+      <email>david.a.jencks@gmail.com</email>
+      <organization>IBM</organization>
+      <timezone>-8</timezone>
+    </developer>
+    <developer>
+      <id>olamy</id>
+      <name>Olivier Lamy</name>
+      <email>oliver.lamy@gmail.com</email>
+      <organization>Webtide, LLC</organization>
+      <organizationUrl>https://webtide.com</organizationUrl>
+      <timezone>Australia/Brisbane</timezone>
+    </developer>
+    <developer>
+      <id>lorban</id>
+      <name>Ludovic Orban</name>
+      <email>lorban@bitronix.be</email>
+      <organization>Webtide, LLC</organization>
+      <organizationUrl>https://webtide.com</organizationUrl>
+      <timezone>1</timezone>
+    </developer>
+  </developers>
+
+  <mailingLists>
+    <mailingList>
+      <name>Jetty Developer Mailing List</name>
+      <subscribe>https://accounts.eclipse.org/mailing-list/jetty-dev</subscribe>
+      <archive>https://www.eclipse.org/lists/jetty-dev/</archive>
+    </mailingList>
+    <mailingList>
+      <name>Jetty Users Mailing List</name>
+      <subscribe>https://accounts.eclipse.org/mailing-list/jetty-users</subscribe>
+      <archive>https://www.eclipse.org/lists/jetty-users/</archive>
+    </mailingList>
+    <mailingList>
+      <name>Jetty Announce Mailing List</name>
+      <subscribe>https://accounts.eclipse.org/mailing-list/jetty-announce</subscribe>
+      <archive>https://www.eclipse.org/lists/jetty-announce/</archive>
+    </mailingList>
+  </mailingLists>
+
+  <modules>
+    <module>build</module>
+    <!-- <module>jetty-p2</module> -->
+    <module>jetty-core</module>
+    <module>jetty-ee10</module>
+    <module>jetty-ee9</module>
+    <module>jetty-ee8</module>
+    <module>jetty-home</module>
+    <module>jetty-integrations</module>
+    <module>tests</module>
+    <module>javadoc</module>
+    <module>documentation</module>
+  </modules>
+
   <scm>
     <connection>scm:git:https://github.com/eclipse/jetty.project.git</connection>
     <developerConnection>scm:git:git@github.com:eclipse/jetty.project.git</developerConnection>
     <url>https://github.com/eclipse/jetty.project</url>
   </scm>
 
-  <modules>
-    <module>build</module>
-    <module>jetty-core</module>
-    <module>jetty-integrations</module>
-    <module>jetty-ee10</module>
-    <module>jetty-ee9</module>
-    <module>jetty-ee8</module>
-    <module>jetty-home</module>
-    <module>tests</module>
-    <!-- <module>jetty-p2</module> -->
-    <module>documentation</module>
-    <module>javadoc</module>
-  </modules>
+  <issueManagement>
+    <system>github</system>
+    <url>https://github.com/eclipse/jetty.project/issues</url>
+  </issueManagement>
+
+  <distributionManagement>
+    <repository>
+      <id>oss.sonatype.org</id>
+      <name>Jetty Staging Repository</name>
+      <url>https://oss.sonatype.org/service/local/staging/deploy/maven2/</url>
+    </repository>
+    <snapshotRepository>
+      <id>oss.sonatype.org</id>
+      <name>Jetty Snapshot Repository</name>
+      <url>https://oss.sonatype.org/content/repositories/jetty-snapshots/</url>
+    </snapshotRepository>
+  </distributionManagement>
+
+  <properties>
+
+    <!-- dependency versions -->
+    <alpn.agent.version>2.0.10</alpn.agent.version>
+    <ant.version>1.10.14</ant.version>
+    <apache.avro.version>1.11.3</apache.avro.version>
+    <apache.httpclient.version>4.5.14</apache.httpclient.version>
+    <apache.httpcore.version>4.4.16</apache.httpcore.version>
+
+    <!-- some maven plugins versions -->
+    <asciidoctor.maven.plugin.version>2.2.4</asciidoctor.maven.plugin.version>
+    <asciidoctor.skip>false</asciidoctor.skip>
+    <asciidoctorj-diagram.version>2.2.13</asciidoctorj-diagram.version>
+    <asciidoctorj.version>2.5.10</asciidoctorj.version>
+    <asm.version>9.6</asm.version>
+    <awaitility.version>4.2.0</awaitility.version>
+    <bndlib.version>6.4.1</bndlib.version>
+    <build-helper.maven.plugin.version>3.3.0</build-helper.maven.plugin.version>
+    <build-support.version>1.5</build-support.version>
+    <buildnumber.maven.plugin.version>3.2.0</buildnumber.maven.plugin.version>
+    <checkstyle.version>10.6.0</checkstyle.version>
+    <commons-codec.version>1.16.0</commons-codec.version>
+    <commons-lang3.version>3.13.0</commons-lang3.version>
+    <commons.compress.version>1.24.0</commons.compress.version>
+    <commons.io.version>2.14.0</commons.io.version>
+    <compiler.release>17</compiler.release>
+    <!-- build -->
+    <compiler.source>17</compiler.source>
+    <compiler.target>17</compiler.target>
+    <conscrypt.version>2.5.2</conscrypt.version>
+    <depends.maven.plugin.version>1.5.0</depends.maven.plugin.version>
+    <disruptor.version>3.4.2</disruptor.version>
+    <equinox-http-servlet-version>1.0.0-v20070606</equinox-http-servlet-version>
+    <felix.version>7.0.5</felix.version>
+    <findbugs.jsr305.version>3.0.2</findbugs.jsr305.version>
+    <flatten.maven.plugin.version>1.3.0</flatten.maven.plugin.version>
+    <google.errorprone.version>2.20.0</google.errorprone.version>
+    <groovy.version>4.0.6</groovy.version>
+    <groovy.version>4.0.6</groovy.version>
+    <grpc.version>1.56.1</grpc.version>
+    <gson.version>2.10.1</gson.version>
+    <guava.version>32.1.2-jre</guava.version>
+    <guice.version>7.0.0</guice.version>
+    <h2spec.maven.plugin.version>1.0.10</h2spec.maven.plugin.version>
+    <hamcrest.version>2.2</hamcrest.version>
+    <hazelcast.version>5.3.2</hazelcast.version>
+    <!-- if changing this version please update default in RemoteInfinispanTestSupport/InfinispanSessionDistributionTests
+    you will get thanks from Eclipse IDE users -->
+    <!-- but hey we have no more strange people?? :P -->
+    <infinispan.docker.image.version>11.0.14.Final</infinispan.docker.image.version>
+    <infinispan.protostream.version>4.6.5.Final</infinispan.protostream.version>
+    <infinispan.version>11.0.18.Final</infinispan.version>
+    <injection.bundle.version>1.2</injection.bundle.version>
+
+    <!-- testing -->
+    <invoker.mergeUserSettings>false</invoker.mergeUserSettings>
+    <it.debug>false</it.debug>
+    <jackson.version>2.15.2</jackson.version>
+    <jacoco.maven.plugin.version>0.8.10</jacoco.maven.plugin.version>
+    <jakarta.activation.api.version>2.0.1</jakarta.activation.api.version>
+    <jakarta.annotation.api.version>2.1.1</jakarta.annotation.api.version>
+    <jakarta.el.api.version>4.0.0</jakarta.el.api.version>
+    <jakarta.enterprise.cdi.api.version>3.0.0</jakarta.enterprise.cdi.api.version>
+    <jakarta.inject.api.version>2.0.1</jakarta.inject.api.version>
+    <jakarta.interceptor.api.version>2.0.0</jakarta.interceptor.api.version>
+    <jakarta.mail.api.version>2.0.1</jakarta.mail.api.version>
+    <jakarta.servlet.api.version>5.0.0</jakarta.servlet.api.version>
+    <jakarta.servlet.jsp.api.version>3.1.1</jakarta.servlet.jsp.api.version>
+    <jakarta.servlet.jsp.jstl.api.version>2.0.0</jakarta.servlet.jsp.jstl.api.version>
+    <jakarta.servlet.jsp.jstl.impl.version>2.0.0</jakarta.servlet.jsp.jstl.impl.version>
+    <!-- TODO: remove? -->
+    <jakarta.transaction-api.version>2.0.1</jakarta.transaction-api.version>
+    <jakarta.websocket.api.version>2.0.0</jakarta.websocket.api.version>
+    <jakarta.ws.rs.api.version>3.1.0</jakarta.ws.rs.api.version>
+    <jakarta.xml.bind.api.version>3.0.1</jakarta.xml.bind.api.version>
+    <jakarta.xml.bind.impl.version>3.0.2</jakarta.xml.bind.impl.version>
+    <jakarta.xml.jaxws.impl.version>3.0.2</jakarta.xml.jaxws.impl.version>
+    <jakarta.xml.ws.api.version>3.0.1</jakarta.xml.ws.api.version>
+    <javadoc.verbose>false</javadoc.verbose>
+    <javax.activation.impl.version>1.1.0.v201105071233</javax.activation.impl.version>
+    <!-- TODO: remove? -->
+    <javax.cdi.api.version>2.0</javax.cdi.api.version>
+    <!-- TODO: remove? -->
+    <javax.mail.glassfish.version>1.4.1.v201005082020</javax.mail.glassfish.version>
+    <jboss-logmanager.version>3.0.2.Final</jboss-logmanager.version>
+    <jboss-threads.version>3.5.1.Final</jboss-threads.version>
+    <!-- TODO: remove? -->
+    <jboss.logging.annotations.version>2.2.1.Final</jboss.logging.annotations.version>
+    <jboss.logging.processor.version>2.2.1.Final</jboss.logging.processor.version>
+    <jboss.logging.version>3.5.3.Final</jboss.logging.version>
+    <jetty-assembly-descriptors.version>1.1</jetty-assembly-descriptors.version>
+    <jetty-quiche-native.version>0.18.0</jetty-quiche-native.version>
+    <jetty-test-policy.version>1.2</jetty-test-policy.version>
+    <jetty-version.maven.plugin.version>2.7</jetty-version.maven.plugin.version>
+    <jetty.perf-helper.version>1.0.7</jetty.perf-helper.version>
+    <jetty.surefire.argLine>-Dfile.encoding=UTF-8 -Duser.language=en -Duser.region=US -Djava.io.tmpdir=${project.build.directory} -showversion -Xmx6g -Xms4g -Xlog:gc:stderr:time,level,tags</jetty.surefire.argLine>
+    <jetty.test.version>6.2</jetty.test.version>
+    <jetty.testtracker.log>true</jetty.testtracker.log>
+    <jetty.unixdomain.dir>/tmp</jetty.unixdomain.dir>
+    <jetty.url>https://eclipse.dev/jetty/</jetty.url>
+    <jetty.xhtml.schemas-version>1.1</jetty.xhtml.schemas-version>
+    <jettyHomeZip>${project.build.directory}/${jettyHomeZipFileName}</jettyHomeZip>
+    <jettyHomeZipFileName>jetty-home.zip</jettyHomeZipFileName>
+    <jmh.version>1.37</jmh.version>
+    <jmhjar.name>benchmarks</jmhjar.name>
+    <jna.version>5.13.0</jna.version>
+    <json-simple.version>1.1.1</json-simple.version>
+    <json-smart.version>2.5.0</json-smart.version>
+    <jsp.impl.version>10.0.14</jsp.impl.version>
+    <junit.jupiter.execution.parallel.config.fixed.parallelism>2</junit.jupiter.execution.parallel.config.fixed.parallelism>
+    <junit.jupiter.execution.parallel.config.strategy>fixed</junit.jupiter.execution.parallel.config.strategy>
+
+    <!-- execute top-level classes in parallel but methods in same thread -->
+    <junit.jupiter.execution.parallel.enabled>true</junit.jupiter.execution.parallel.enabled>
+    <junit.jupiter.execution.parallel.mode.classes.default>concurrent</junit.jupiter.execution.parallel.mode.classes.default>
+    <junit.jupiter.execution.parallel.mode.default>same_thread</junit.jupiter.execution.parallel.mode.default>
+    <junit.jupiter.extensions.autodetection.enabled>true</junit.jupiter.extensions.autodetection.enabled>
+    <junit.version>5.10.0</junit.version>
+    <kerb-simplekdc.version>2.0.3</kerb-simplekdc.version>
+    <license.maven.plugin.version>4.1</license.maven.plugin.version>
+    <localRepoPath>${project.build.directory}/local-repo</localRepoPath>
+    <log4j2.version>2.20.0</log4j2.version>
+    <logback.version>1.4.11</logback.version>
+    <mariadb.docker.version>10.3.6</mariadb.docker.version>
+    <mariadb.version>3.2.0</mariadb.version>
+    <maven-artifact-transfer.version>0.13.1</maven-artifact-transfer.version>
+    <maven-build-cache.version>1.0.1</maven-build-cache.version>
+    <maven-plugin.plugin.version>3.9.0</maven-plugin.plugin.version>
+    <maven.antrun.plugin.version>3.1.0</maven.antrun.plugin.version>
+    <maven.assembly.plugin.version>3.6.0</maven.assembly.plugin.version>
+    <maven.bundle.plugin.version>5.1.9</maven.bundle.plugin.version>
+    <maven.checkstyle.plugin.version>3.3.0</maven.checkstyle.plugin.version>
+    <maven.clean.plugin.version>3.3.1</maven.clean.plugin.version>
+    <maven.compiler.createMissingPackageInfoClass>false</maven.compiler.createMissingPackageInfoClass>
+    <maven.compiler.plugin.version>3.11.0</maven.compiler.plugin.version>
+    <maven.dependency.plugin.version>3.6.0</maven.dependency.plugin.version>
+    <maven.deploy.plugin.version>3.1.1</maven.deploy.plugin.version>
+    <maven.deps.version>3.9.4</maven.deps.version>
+    <maven.enforcer.plugin.version>3.4.1</maven.enforcer.plugin.version>
+    <maven.exec.plugin.version>3.1.0</maven.exec.plugin.version>
+    <maven.gpg.plugin.version>3.1.0</maven.gpg.plugin.version>
+    <maven.install.plugin.version>3.1.1</maven.install.plugin.version>
+    <maven.invoker.plugin.version>3.6.0</maven.invoker.plugin.version>
+    <maven.jar.plugin.version>3.3.0</maven.jar.plugin.version>
+    <maven.javadoc.plugin.version>3.6.0</maven.javadoc.plugin.version>
+    <maven.plugin-tools.version>3.9.0</maven.plugin-tools.version>
+    <maven.release.plugin.version>3.0.1</maven.release.plugin.version>
+    <maven.remote-resources-plugin.version>3.1.0</maven.remote-resources-plugin.version>
+    <maven.resolver.version>1.9.16</maven.resolver.version>
+    <maven.resources.plugin.version>3.3.1</maven.resources.plugin.version>
+    <maven.shade.plugin.version>3.5.1</maven.shade.plugin.version>
+    <maven.source.plugin.version>3.3.0</maven.source.plugin.version>
+    <maven.surefire.plugin.version>3.1.2</maven.surefire.plugin.version>
+    <maven.version>3.9.0</maven.version>
+    <maven.war.plugin.version>3.4.0</maven.war.plugin.version>
+    <mina.core.version>2.2.3</mina.core.version>
+    <!-- if changing this version please update default in MongoTestHelper you will get thanks from Eclipse IDE users -->
+    <mongo.docker.version>3.2.20</mongo.docker.version>
+    <mongodb.version>3.12.11</mongodb.version>
+    <netty.version>4.1.97.Final</netty.version>
+    <openpojo.version>0.9.1</openpojo.version>
+    <org.osgi.annotation.version>8.1.0</org.osgi.annotation.version>
+    <org.osgi.core.version>8.0.0</org.osgi.core.version>
+    <org.osgi.util.function.version>1.2.0</org.osgi.util.function.version>
+    <org.osgi.util.promise.version>1.3.0</org.osgi.util.promise.version>
+    <osgi-service-cm-version>1.6.1</osgi-service-cm-version>
+    <osgi-service-component-version>1.5.1</osgi-service-component-version>
+    <osgi-service-event-version>1.4.1</osgi-service-event-version>
+    <!-- really used -->
+    <osgi-services-version>3.11.100</osgi-services-version>
+    <osgi-util-function-version>1.2.0</osgi-util-function-version>
+    <osgi-util-measurement-version>1.0.2</osgi-util-measurement-version>
+    <osgi-util-position-version>1.0.1</osgi-util-position-version>
+    <osgi-util-tracker-version>1.5.4</osgi-util-tracker-version>
+    <osgi-util-version>3.7.200</osgi-util-version>
+    <osgi-util-xml-version>1.0.2</osgi-util-xml-version>
+
+    <osgi-version>3.18.500</osgi-version>
+    <osgi.slf4j.import.packages>org.slf4j;version="[1.7,3.0)", org.slf4j.event;version="[1.7,3.0)", org.slf4j.helpers;version="[1.7,3.0)", org.slf4j.spi;version="[1.7,3.0)"</osgi.slf4j.import.packages>
+    <pax.exam.version>4.13.5</pax.exam.version>
+    <pax.url.version>2.6.14</pax.url.version>
+
+    <plexus-component-annotations.version>2.1.1</plexus-component-annotations.version>
+    <plexus-utils.version>4.0.0</plexus-utils.version>
+    <plexus-xml.version>4.0.2</plexus-xml.version>
+    <project.build.outputTimestamp>2023-06-05T23:12:49Z</project.build.outputTimestamp>
+    <project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
+    <settingsPath>src/it/settings.xml</settingsPath>
+    <slf4j.version>2.0.9</slf4j.version>
+    <spifly.version>1.3.6</spifly.version>
+    <spotbugs.maven.plugin.version>4.7.3.5</spotbugs.maven.plugin.version>
+    <surefire.failIfNoSpecifiedTests>false</surefire.failIfNoSpecifiedTests>
+    <surefire.rerunFailingTestsCount>0</surefire.rerunFailingTestsCount>
+    <swissbox.version>1.8.3</swissbox.version>
+    <taglibs-standard-impl.version>1.2.5</taglibs-standard-impl.version>
+    <taglibs-standard-spec.version>1.2.5</taglibs-standard-spec.version>
+    <testcontainers.version>1.19.1</testcontainers.version>
+    <tinybundles.version>3.0.0</tinybundles.version>
+    <versions.maven.plugin.version>2.14.2</versions.maven.plugin.version>
+    <wildfly.common.version>1.6.0.Final</wildfly.common.version>
+    <wildfly.elytron.version>2.2.2.Final</wildfly.elytron.version>
+    <xmemcached.version>2.4.7</xmemcached.version>
+  </properties>
+
+  <dependencyManagement>
+    <dependencies>
+      <dependency>
+        <groupId>com.fasterxml.jackson</groupId>
+        <artifactId>jackson-bom</artifactId>
+        <version>${jackson.version}</version>
+        <type>pom</type>
+        <scope>import</scope>
+      </dependency>
+      <dependency>
+        <groupId>org.infinispan</groupId>
+        <artifactId>infinispan-bom</artifactId>
+        <version>${infinispan.version}</version>
+        <type>pom</type>
+        <scope>import</scope>
+      </dependency>
+      <dependency>
+        <groupId>org.junit</groupId>
+        <artifactId>junit-bom</artifactId>
+        <version>${junit.version}</version>
+        <type>pom</type>
+        <scope>import</scope>
+      </dependency>
+      <dependency>
+        <groupId>org.ow2.asm</groupId>
+        <artifactId>asm-bom</artifactId>
+        <version>${asm.version}</version>
+        <type>pom</type>
+        <scope>import</scope>
+      </dependency>
+      <dependency>
+        <groupId>org.testcontainers</groupId>
+        <artifactId>testcontainers-bom</artifactId>
+        <version>${testcontainers.version}</version>
+        <type>pom</type>
+        <scope>import</scope>
+      </dependency>
+      <dependency>
+        <groupId>biz.aQute.bnd</groupId>
+        <artifactId>biz.aQute.bndlib</artifactId>
+        <version>${bndlib.version}</version>
+      </dependency>
+      <dependency>
+        <groupId>ch.qos.logback</groupId>
+        <artifactId>logback-core</artifactId>
+        <version>${logback.version}</version>
+      </dependency>
+      <dependency>
+        <groupId>com.google.code.findbugs</groupId>
+        <artifactId>jsr305</artifactId>
+        <version>${findbugs.jsr305.version}</version>
+      </dependency>
+      <dependency>
+        <groupId>com.google.code.gson</groupId>
+        <artifactId>gson</artifactId>
+        <version>${gson.version}</version>
+      </dependency>
+      <dependency>
+        <groupId>com.google.errorprone</groupId>
+        <artifactId>error_prone_annotations</artifactId>
+        <version>${google.errorprone.version}</version>
+      </dependency>
+      <dependency>
+        <groupId>com.google.guava</groupId>
+        <artifactId>guava</artifactId>
+        <version>${guava.version}</version>
+      </dependency>
+      <dependency>
+        <groupId>com.google.inject</groupId>
+        <artifactId>guice</artifactId>
+        <version>${guice.version}</version>
+      </dependency>
+      <dependency>
+        <groupId>com.googlecode.json-simple</groupId>
+        <artifactId>json-simple</artifactId>
+        <version>${json-simple.version}</version>
+      </dependency>
+      <dependency>
+        <groupId>com.hazelcast</groupId>
+        <artifactId>hazelcast</artifactId>
+        <version>${hazelcast.version}</version>
+      </dependency>
+      <dependency>
+        <groupId>com.openpojo</groupId>
+        <artifactId>openpojo</artifactId>
+        <version>${openpojo.version}</version>
+      </dependency>
+      <dependency>
+        <groupId>commons-codec</groupId>
+        <artifactId>commons-codec</artifactId>
+        <version>${commons-codec.version}</version>
+      </dependency>
+      <dependency>
+        <groupId>io.grpc</groupId>
+        <artifactId>grpc-core</artifactId>
+        <version>${grpc.version}</version>
+      </dependency>
+      <dependency>
+        <groupId>io.netty</groupId>
+        <artifactId>netty-handler</artifactId>
+        <version>${netty.version}</version>
+      </dependency>
+      <dependency>
+        <groupId>net.java.dev.jna</groupId>
+        <artifactId>jna</artifactId>
+        <version>${jna.version}</version>
+      </dependency>
+      <dependency>
+        <groupId>net.java.dev.jna</groupId>
+        <artifactId>jna-jpms</artifactId>
+        <version>${jna.version}</version>
+      </dependency>
+      <dependency>
+        <groupId>net.minidev</groupId>
+        <artifactId>json-smart</artifactId>
+        <version>${json-smart.version}</version>
+      </dependency>
+      <dependency>
+        <groupId>org.apache.ant</groupId>
+        <artifactId>ant</artifactId>
+        <version>${ant.version}</version>
+      </dependency>
+      <dependency>
+        <groupId>org.apache.ant</groupId>
+        <artifactId>ant-launcher</artifactId>
+        <version>${ant.version}</version>
+      </dependency>
+      <dependency>
+        <groupId>org.apache.aries.spifly</groupId>
+        <artifactId>org.apache.aries.spifly.dynamic.bundle</artifactId>
+        <version>${spifly.version}</version>
+      </dependency>
+      <dependency>
+        <groupId>org.apache.avro</groupId>
+        <artifactId>avro</artifactId>
+        <version>${apache.avro.version}</version>
+      </dependency>
+      <dependency>
+        <groupId>org.apache.commons</groupId>
+        <artifactId>commons-compress</artifactId>
+        <version>${commons.compress.version}</version>
+      </dependency>
+      <dependency>
+        <groupId>org.apache.commons</groupId>
+        <artifactId>commons-lang3</artifactId>
+        <version>${commons-lang3.version}</version>
+      </dependency>
+      <dependency>
+        <groupId>org.apache.felix</groupId>
+        <artifactId>org.apache.felix.framework</artifactId>
+        <version>${felix.version}</version>
+      </dependency>
+      <dependency>
+        <groupId>org.apache.geronimo.specs</groupId>
+        <artifactId>geronimo-atinject_1.0_spec</artifactId>
+        <version>${injection.bundle.version}</version>
+      </dependency>
+      <dependency>
+        <groupId>org.apache.kerby</groupId>
+        <artifactId>kerb-simplekdc</artifactId>
+        <version>${kerb-simplekdc.version}</version>
+      </dependency>
+      <dependency>
+        <groupId>org.apache.logging.log4j</groupId>
+        <artifactId>log4j-api</artifactId>
+        <version>${log4j2.version}</version>
+      </dependency>
+      <dependency>
+        <groupId>org.apache.maven</groupId>
+        <artifactId>maven-artifact</artifactId>
+        <version>${maven.deps.version}</version>
+      </dependency>
+      <dependency>
+        <groupId>org.apache.maven</groupId>
+        <artifactId>maven-core</artifactId>
+        <version>${maven.deps.version}</version>
+        <exclusions>
+          <exclusion>
+            <groupId>com.google.code.findbugs</groupId>
+            <artifactId>jsr305</artifactId>
+          </exclusion>
+          <exclusion>
+            <groupId>javax.inject</groupId>
+            <artifactId>javax.inject</artifactId>
+          </exclusion>
+        </exclusions>
+      </dependency>
+      <dependency>
+        <groupId>org.apache.maven</groupId>
+        <artifactId>maven-model</artifactId>
+        <version>${maven.deps.version}</version>
+      </dependency>
+      <dependency>
+        <groupId>org.apache.maven</groupId>
+        <artifactId>maven-plugin-api</artifactId>
+        <version>${maven.deps.version}</version>
+        <exclusions>
+          <exclusion>
+            <groupId>javax.enterprise</groupId>
+            <artifactId>cdi-api</artifactId>
+          </exclusion>
+        </exclusions>
+      </dependency>
+      <dependency>
+        <groupId>org.apache.maven</groupId>
+        <artifactId>maven-resolver-provider</artifactId>
+        <version>${maven.deps.version}</version>
+        <exclusions>
+          <exclusion>
+            <groupId>javax.inject</groupId>
+            <artifactId>javax.inject</artifactId>
+          </exclusion>
+        </exclusions>
+      </dependency>
+      <dependency>
+        <groupId>org.apache.maven</groupId>
+        <artifactId>maven-settings</artifactId>
+        <version>${maven.deps.version}</version>
+      </dependency>
+      <dependency>
+        <groupId>org.apache.maven.plugin-tools</groupId>
+        <artifactId>maven-plugin-tools-api</artifactId>
+        <version>${maven.plugin-tools.version}</version>
+      </dependency>
+      <dependency>
+        <groupId>org.asciidoctor</groupId>
+        <artifactId>asciidoctor-maven-plugin</artifactId>
+        <version>${asciidoctor.maven.plugin.version}</version>
+      </dependency>
+      <dependency>
+        <groupId>org.asciidoctor</groupId>
+        <artifactId>asciidoctorj</artifactId>
+        <version>${asciidoctorj.version}</version>
+      </dependency>
+      <dependency>
+        <groupId>org.awaitility</groupId>
+        <artifactId>awaitility</artifactId>
+        <version>${awaitility.version}</version>
+      </dependency>
+      <dependency>
+        <groupId>org.codehaus.plexus</groupId>
+        <artifactId>plexus-component-annotations</artifactId>
+        <version>${plexus-component-annotations.version}</version>
+      </dependency>
+      <dependency>
+        <groupId>org.codehaus.plexus</groupId>
+        <artifactId>plexus-utils</artifactId>
+        <version>${plexus-utils.version}</version>
+      </dependency>
+      <dependency>
+        <groupId>org.codehaus.plexus</groupId>
+        <artifactId>plexus-xml</artifactId>
+        <version>${plexus-xml.version}</version>
+      </dependency>
+      <dependency>
+        <groupId>org.conscrypt</groupId>
+        <artifactId>conscrypt-openjdk-uber</artifactId>
+        <version>${conscrypt.version}</version>
+      </dependency>
+      <dependency>
+        <groupId>org.eclipse.equinox.http</groupId>
+        <artifactId>servlet</artifactId>
+        <version>${equinox-http-servlet-version}</version>
+      </dependency>
+      <dependency>
+        <groupId>org.eclipse.jetty</groupId>
+        <artifactId>jetty-alpn-client</artifactId>
+        <version>${project.version}</version>
+      </dependency>
+      <dependency>
+        <groupId>org.eclipse.jetty</groupId>
+        <artifactId>jetty-alpn-conscrypt-client</artifactId>
+        <version>${project.version}</version>
+      </dependency>
+      <dependency>
+        <groupId>org.eclipse.jetty</groupId>
+        <artifactId>jetty-alpn-conscrypt-server</artifactId>
+        <version>${project.version}</version>
+      </dependency>
+      <dependency>
+        <groupId>org.eclipse.jetty</groupId>
+        <artifactId>jetty-alpn-java-client</artifactId>
+        <version>${project.version}</version>
+      </dependency>
+      <dependency>
+        <groupId>org.eclipse.jetty</groupId>
+        <artifactId>jetty-alpn-java-server</artifactId>
+        <version>${project.version}</version>
+      </dependency>
+      <dependency>
+        <groupId>org.eclipse.jetty</groupId>
+        <artifactId>jetty-alpn-server</artifactId>
+        <version>${project.version}</version>
+      </dependency>
+      <dependency>
+        <groupId>org.eclipse.jetty</groupId>
+        <artifactId>jetty-client</artifactId>
+        <version>${project.version}</version>
+      </dependency>
+      <dependency>
+        <groupId>org.eclipse.jetty</groupId>
+        <artifactId>jetty-deploy</artifactId>
+        <version>${project.version}</version>
+      </dependency>
+      <dependency>
+        <groupId>org.eclipse.jetty</groupId>
+        <artifactId>jetty-ee</artifactId>
+        <version>${project.version}</version>
+      </dependency>
+      <dependency>
+        <groupId>org.eclipse.jetty</groupId>
+        <artifactId>jetty-hazelcast</artifactId>
+        <version>${project.version}</version>
+      </dependency>
+      <dependency>
+        <groupId>org.eclipse.jetty</groupId>
+        <artifactId>jetty-home</artifactId>
+        <version>${project.version}</version>
+        <type>zip</type>
+      </dependency>
+      <dependency>
+        <groupId>org.eclipse.jetty</groupId>
+        <artifactId>jetty-http</artifactId>
+        <version>${project.version}</version>
+      </dependency>
+      <dependency>
+        <groupId>org.eclipse.jetty</groupId>
+        <artifactId>jetty-http-spi</artifactId>
+        <version>${project.version}</version>
+      </dependency>
+      <dependency>
+        <groupId>org.eclipse.jetty</groupId>
+        <artifactId>jetty-http-tools</artifactId>
+        <version>${project.version}</version>
+      </dependency>
+      <dependency>
+        <groupId>org.eclipse.jetty</groupId>
+        <artifactId>jetty-infinispan-common</artifactId>
+        <version>${project.version}</version>
+      </dependency>
+      <dependency>
+        <groupId>org.eclipse.jetty</groupId>
+        <artifactId>jetty-infinispan-embedded</artifactId>
+        <version>${project.version}</version>
+        <classifier>config</classifier>
+      </dependency>
+      <dependency>
+        <groupId>org.eclipse.jetty</groupId>
+        <artifactId>jetty-infinispan-embedded-query</artifactId>
+        <version>${project.version}</version>
+      </dependency>
+      <dependency>
+        <groupId>org.eclipse.jetty</groupId>
+        <artifactId>jetty-infinispan-remote</artifactId>
+        <version>${project.version}</version>
+        <classifier>config</classifier>
+      </dependency>
+      <dependency>
+        <groupId>org.eclipse.jetty</groupId>
+        <artifactId>jetty-infinispan-remote-query</artifactId>
+        <version>${project.version}</version>
+      </dependency>
+      <dependency>
+        <groupId>org.eclipse.jetty</groupId>
+        <artifactId>jetty-io</artifactId>
+        <version>${project.version}</version>
+      </dependency>
+      <dependency>
+        <groupId>org.eclipse.jetty</groupId>
+        <artifactId>jetty-jmx</artifactId>
+        <version>${project.version}</version>
+      </dependency>
+      <dependency>
+        <groupId>org.eclipse.jetty</groupId>
+        <artifactId>jetty-jndi</artifactId>
+        <version>${project.version}</version>
+      </dependency>
+      <dependency>
+        <groupId>org.eclipse.jetty</groupId>
+        <artifactId>jetty-keystore</artifactId>
+        <version>${project.version}</version>
+      </dependency>
+      <dependency>
+        <groupId>org.eclipse.jetty</groupId>
+        <artifactId>jetty-nosql</artifactId>
+        <version>${project.version}</version>
+      </dependency>
+      <dependency>
+        <groupId>org.eclipse.jetty</groupId>
+        <artifactId>jetty-openid</artifactId>
+        <version>${project.version}</version>
+      </dependency>
+      <dependency>
+        <groupId>org.eclipse.jetty</groupId>
+        <artifactId>jetty-osgi</artifactId>
+        <version>${project.version}</version>
+      </dependency>
+      <dependency>
+        <groupId>org.eclipse.jetty</groupId>
+        <artifactId>jetty-proxy</artifactId>
+        <version>${project.version}</version>
+      </dependency>
+      <dependency>
+        <groupId>org.eclipse.jetty</groupId>
+        <artifactId>jetty-rewrite</artifactId>
+        <version>${project.version}</version>
+      </dependency>
+      <dependency>
+        <groupId>org.eclipse.jetty</groupId>
+        <artifactId>jetty-security</artifactId>
+        <version>${project.version}</version>
+      </dependency>
+      <dependency>
+        <groupId>org.eclipse.jetty</groupId>
+        <artifactId>jetty-server</artifactId>
+        <version>${project.version}</version>
+      </dependency>
+      <dependency>
+        <groupId>org.eclipse.jetty</groupId>
+        <artifactId>jetty-session</artifactId>
+        <version>${project.version}</version>
+      </dependency>
+      <dependency>
+        <groupId>org.eclipse.jetty</groupId>
+        <artifactId>jetty-slf4j-impl</artifactId>
+        <version>${project.version}</version>
+      </dependency>
+      <dependency>
+        <groupId>org.eclipse.jetty</groupId>
+        <artifactId>jetty-start</artifactId>
+        <version>${project.version}</version>
+      </dependency>
+      <dependency>
+        <groupId>org.eclipse.jetty</groupId>
+        <artifactId>jetty-unixdomain-server</artifactId>
+        <version>${project.version}</version>
+      </dependency>
+      <dependency>
+        <groupId>org.eclipse.jetty</groupId>
+        <artifactId>jetty-util</artifactId>
+        <version>${project.version}</version>
+      </dependency>
+      <dependency>
+        <groupId>org.eclipse.jetty</groupId>
+        <artifactId>jetty-util-ajax</artifactId>
+        <version>${project.version}</version>
+      </dependency>
+      <dependency>
+        <groupId>org.eclipse.jetty</groupId>
+        <artifactId>jetty-xml</artifactId>
+        <version>${project.version}</version>
+      </dependency>
+      <dependency>
+        <groupId>org.eclipse.jetty.fcgi</groupId>
+        <artifactId>jetty-fcgi-client</artifactId>
+        <version>${project.version}</version>
+      </dependency>
+      <dependency>
+        <groupId>org.eclipse.jetty.fcgi</groupId>
+        <artifactId>jetty-fcgi-proxy</artifactId>
+        <version>${project.version}</version>
+      </dependency>
+      <dependency>
+        <groupId>org.eclipse.jetty.fcgi</groupId>
+        <artifactId>jetty-fcgi-server</artifactId>
+        <version>${project.version}</version>
+      </dependency>
+      <dependency>
+        <groupId>org.eclipse.jetty.gcloud</groupId>
+        <artifactId>jetty-gcloud-session-manager</artifactId>
+        <version>${project.version}</version>
+      </dependency>
+      <dependency>
+        <groupId>org.eclipse.jetty.http2</groupId>
+        <artifactId>jetty-http2-client</artifactId>
+        <version>${project.version}</version>
+      </dependency>
+      <dependency>
+        <groupId>org.eclipse.jetty.http2</groupId>
+        <artifactId>jetty-http2-client-transport</artifactId>
+        <version>${project.version}</version>
+      </dependency>
+      <dependency>
+        <groupId>org.eclipse.jetty.http2</groupId>
+        <artifactId>jetty-http2-common</artifactId>
+        <version>${project.version}</version>
+      </dependency>
+      <dependency>
+        <groupId>org.eclipse.jetty.http2</groupId>
+        <artifactId>jetty-http2-hpack</artifactId>
+        <version>${project.version}</version>
+      </dependency>
+      <dependency>
+        <groupId>org.eclipse.jetty.http2</groupId>
+        <artifactId>jetty-http2-server</artifactId>
+        <version>${project.version}</version>
+      </dependency>
+      <dependency>
+        <groupId>org.eclipse.jetty.http3</groupId>
+        <artifactId>jetty-http3-client</artifactId>
+        <version>${project.version}</version>
+      </dependency>
+      <dependency>
+        <groupId>org.eclipse.jetty.http3</groupId>
+        <artifactId>jetty-http3-client-transport</artifactId>
+        <version>${project.version}</version>
+      </dependency>
+      <dependency>
+        <groupId>org.eclipse.jetty.http3</groupId>
+        <artifactId>jetty-http3-common</artifactId>
+        <version>${project.version}</version>
+      </dependency>
+      <dependency>
+        <groupId>org.eclipse.jetty.http3</groupId>
+        <artifactId>jetty-http3-qpack</artifactId>
+        <version>${project.version}</version>
+      </dependency>
+      <dependency>
+        <groupId>org.eclipse.jetty.http3</groupId>
+        <artifactId>jetty-http3-server</artifactId>
+        <version>${project.version}</version>
+      </dependency>
+      <dependency>
+        <groupId>org.eclipse.jetty.memcached</groupId>
+        <artifactId>jetty-memcached-sessions</artifactId>
+        <version>${project.version}</version>
+      </dependency>
+      <dependency>
+        <groupId>org.eclipse.jetty.osgi</groupId>
+        <artifactId>jetty-httpservice</artifactId>
+        <version>${project.version}</version>
+      </dependency>
+      <dependency>
+        <groupId>org.eclipse.jetty.osgi</groupId>
+        <artifactId>jetty-osgi-alpn</artifactId>
+        <version>${project.version}</version>
+      </dependency>
+      <dependency>
+        <groupId>org.eclipse.jetty.osgi</groupId>
+        <artifactId>jetty-osgi-boot</artifactId>
+        <version>${project.version}</version>
+      </dependency>
+      <dependency>
+        <groupId>org.eclipse.jetty.osgi</groupId>
+        <artifactId>jetty-osgi-boot-jsp</artifactId>
+        <version>${project.version}</version>
+      </dependency>
+      <dependency>
+        <groupId>org.eclipse.jetty.osgi</groupId>
+        <artifactId>jetty-osgi-boot-warurl</artifactId>
+        <version>${project.version}</version>
+      </dependency>
+
+      <dependency>
+        <groupId>org.eclipse.jetty.quic</groupId>
+        <artifactId>jetty-quic-client</artifactId>
+        <version>${project.version}</version>
+      </dependency>
+      <dependency>
+        <groupId>org.eclipse.jetty.quic</groupId>
+        <artifactId>jetty-quic-common</artifactId>
+        <version>${project.version}</version>
+      </dependency>
+      <dependency>
+        <groupId>org.eclipse.jetty.quic</groupId>
+        <artifactId>jetty-quic-quiche-common</artifactId>
+        <version>${project.version}</version>
+      </dependency>
+      <dependency>
+        <groupId>org.eclipse.jetty.quic</groupId>
+        <artifactId>jetty-quic-quiche-foreign-incubator</artifactId>
+        <version>${project.version}</version>
+      </dependency>
+      <dependency>
+        <groupId>org.eclipse.jetty.quic</groupId>
+        <artifactId>jetty-quic-quiche-jna</artifactId>
+        <version>${project.version}</version>
+      </dependency>
+      <dependency>
+        <groupId>org.eclipse.jetty.quic</groupId>
+        <artifactId>jetty-quic-server</artifactId>
+        <version>${project.version}</version>
+      </dependency>
+      <dependency>
+        <groupId>org.eclipse.jetty.tests</groupId>
+        <artifactId>jetty-home-tester</artifactId>
+        <version>${project.version}</version>
+      </dependency>
+      <dependency>
+        <groupId>org.eclipse.jetty.tests</groupId>
+        <artifactId>jetty-test-session-common</artifactId>
+        <version>${project.version}</version>
+      </dependency>
+      <dependency>
+        <groupId>org.eclipse.jetty.tests</groupId>
+        <artifactId>test-distribution-common</artifactId>
+        <version>${project.version}</version>
+      </dependency>
+      <dependency>
+        <groupId>org.eclipse.jetty.toolchain</groupId>
+        <artifactId>jetty-perf-helper</artifactId>
+        <version>${jetty.perf-helper.version}</version>
+      </dependency>
+      <dependency>
+        <groupId>org.eclipse.jetty.toolchain</groupId>
+        <artifactId>jetty-test-helper</artifactId>
+        <version>${jetty.test.version}</version>
+      </dependency>
+      <dependency>
+        <groupId>org.eclipse.jetty.websocket</groupId>
+        <artifactId>jetty-websocket-core-client</artifactId>
+        <version>${project.version}</version>
+      </dependency>
+      <dependency>
+        <groupId>org.eclipse.jetty.websocket</groupId>
+        <artifactId>jetty-websocket-core-common</artifactId>
+        <version>${project.version}</version>
+      </dependency>
+      <dependency>
+        <groupId>org.eclipse.jetty.websocket</groupId>
+        <artifactId>jetty-websocket-core-server</artifactId>
+        <version>${project.version}</version>
+      </dependency>
+      <dependency>
+        <groupId>org.eclipse.jetty.websocket</groupId>
+        <artifactId>jetty-websocket-jetty-api</artifactId>
+        <version>${project.version}</version>
+      </dependency>
+      <dependency>
+        <groupId>org.eclipse.jetty.websocket</groupId>
+        <artifactId>jetty-websocket-jetty-client</artifactId>
+        <version>${project.version}</version>
+      </dependency>
+      <dependency>
+        <groupId>org.eclipse.jetty.websocket</groupId>
+        <artifactId>jetty-websocket-jetty-common</artifactId>
+        <version>${project.version}</version>
+      </dependency>
+      <dependency>
+        <groupId>org.eclipse.jetty.websocket</groupId>
+        <artifactId>jetty-websocket-jetty-server</artifactId>
+        <version>${project.version}</version>
+      </dependency>
+
+      <dependency>
+        <groupId>org.eclipse.platform</groupId>
+        <artifactId>org.eclipse.osgi</artifactId>
+        <version>${osgi-version}</version>
+      </dependency>
+      <dependency>
+        <groupId>org.eclipse.platform</groupId>
+        <artifactId>org.eclipse.osgi.services</artifactId>
+        <version>${osgi-services-version}</version>
+        <exclusions>
+          <exclusion>
+            <!-- we use the servlet jar from orbit -->
+            <groupId>jakarta.servlet</groupId>
+            <artifactId>servlet-api</artifactId>
+          </exclusion>
+          <exclusion>
+            <!-- cannot override core java classes with Java 9+ -->
+            <groupId>org.apache.felix</groupId>
+            <artifactId>org.osgi.foundation</artifactId>
+          </exclusion>
+        </exclusions>
+      </dependency>
+      <dependency>
+        <groupId>org.eclipse.platform</groupId>
+        <artifactId>org.eclipse.osgi.util</artifactId>
+        <version>${osgi-util-version}</version>
+      </dependency>
+      <dependency>
+        <groupId>org.hamcrest</groupId>
+        <artifactId>hamcrest</artifactId>
+        <version>${hamcrest.version}</version>
+      </dependency>
+      <dependency>
+        <groupId>org.infinispan.protostream</groupId>
+        <artifactId>protostream</artifactId>
+        <version>${infinispan.protostream.version}</version>
+      </dependency>
+      <dependency>
+        <groupId>org.infinispan.protostream</groupId>
+        <artifactId>protostream-processor</artifactId>
+        <version>${infinispan.protostream.version}</version>
+      </dependency>
+      <dependency>
+        <groupId>org.jboss.logging</groupId>
+        <artifactId>jboss-logging</artifactId>
+        <version>${jboss.logging.version}</version>
+      </dependency>
+      <dependency>
+        <groupId>org.jboss.logging</groupId>
+        <artifactId>jboss-logging-annotations</artifactId>
+        <version>${jboss.logging.annotations.version}</version>
+      </dependency>
+      <dependency>
+        <groupId>org.jboss.logging</groupId>
+        <artifactId>jboss-logging-processor</artifactId>
+        <version>${jboss.logging.processor.version}</version>
+      </dependency>
+      <dependency>
+        <groupId>org.jboss.logmanager</groupId>
+        <artifactId>jboss-logmanager</artifactId>
+        <version>${jboss-logmanager.version}</version>
+      </dependency>
+      <dependency>
+        <groupId>org.jboss.threads</groupId>
+        <artifactId>jboss-threads</artifactId>
+        <version>${jboss-threads.version}</version>
+      </dependency>
+      <dependency>
+        <groupId>org.mariadb.jdbc</groupId>
+        <artifactId>mariadb-java-client</artifactId>
+        <version>${mariadb.version}</version>
+      </dependency>
+      <dependency>
+        <groupId>org.mortbay.jetty.quiche</groupId>
+        <artifactId>jetty-quiche-native</artifactId>
+        <version>${jetty-quiche-native.version}</version>
+      </dependency>
+
+      <!-- Pax Exam Dependencies -->
+      <dependency>
+        <groupId>org.ops4j.pax.exam</groupId>
+        <artifactId>pax-exam</artifactId>
+        <version>${pax.exam.version}</version>
+      </dependency>
+      <dependency>
+        <groupId>org.ops4j.pax.exam</groupId>
+        <artifactId>pax-exam-container-forked</artifactId>
+        <version>${pax.exam.version}</version>
+      </dependency>
+      <dependency>
+        <groupId>org.ops4j.pax.exam</groupId>
+        <artifactId>pax-exam-inject</artifactId>
+        <version>${pax.exam.version}</version>
+      </dependency>
+      <dependency>
+        <groupId>org.ops4j.pax.exam</groupId>
+        <artifactId>pax-exam-junit4</artifactId>
+        <version>${pax.exam.version}</version>
+      </dependency>
+      <dependency>
+        <groupId>org.ops4j.pax.exam</groupId>
+        <artifactId>pax-exam-link-mvn</artifactId>
+        <version>${pax.exam.version}</version>
+      </dependency>
+      <dependency>
+        <groupId>org.ops4j.pax.swissbox</groupId>
+        <artifactId>pax-swissbox-framework</artifactId>
+        <version>${swissbox.version}</version>
+      </dependency>
+      <dependency>
+        <groupId>org.ops4j.pax.swissbox</groupId>
+        <artifactId>pax-swissbox-tracker</artifactId>
+        <version>${swissbox.version}</version>
+      </dependency>
+      <dependency>
+        <groupId>org.ops4j.pax.tinybundles</groupId>
+        <artifactId>tinybundles</artifactId>
+        <version>${tinybundles.version}</version>
+      </dependency>
+      <dependency>
+        <groupId>org.ops4j.pax.url</groupId>
+        <artifactId>pax-url-aether</artifactId>
+        <version>${pax.url.version}</version>
+      </dependency>
+      <dependency>
+        <groupId>org.ops4j.pax.url</groupId>
+        <artifactId>pax-url-wrap</artifactId>
+        <version>${pax.url.version}</version>
+      </dependency>
+
+      <dependency>
+        <groupId>org.osgi</groupId>
+        <!-- older artifact location, some of our transitive deps still use this coordinate -->
+        <artifactId>org.osgi.core</artifactId>
+        <version>${org.osgi.core.version}</version>
+      </dependency>
+      <dependency>
+        <groupId>org.osgi</groupId>
+        <artifactId>org.osgi.service.cm</artifactId>
+        <version>${osgi-service-cm-version}</version>
+      </dependency>
+      <dependency>
+        <groupId>org.osgi</groupId>
+        <artifactId>org.osgi.service.component</artifactId>
+        <version>${osgi-service-component-version}</version>
+      </dependency>
+      <dependency>
+        <groupId>org.osgi</groupId>
+        <artifactId>org.osgi.service.event</artifactId>
+        <version>${osgi-service-event-version}</version>
+      </dependency>
+      <dependency>
+        <groupId>org.osgi</groupId>
+        <artifactId>org.osgi.util.function</artifactId>
+        <version>${org.osgi.util.function.version}</version>
+      </dependency>
+      <dependency>
+        <groupId>org.osgi</groupId>
+        <artifactId>org.osgi.util.promise</artifactId>
+        <version>${org.osgi.util.promise.version}</version>
+      </dependency>
+      <dependency>
+        <groupId>org.osgi</groupId>
+        <artifactId>org.osgi.util.tracker</artifactId>
+        <version>${osgi-util-tracker-version}</version>
+      </dependency>
+      <dependency>
+        <groupId>org.osgi</groupId>
+        <artifactId>osgi.annotation</artifactId>
+        <version>${org.osgi.annotation.version}</version>
+      </dependency>
+      <dependency>
+        <groupId>org.osgi</groupId>
+        <!-- newer artifact location, some of our transitive deps use this up to date coordinate -->
+        <artifactId>osgi.core</artifactId>
+        <version>${org.osgi.core.version}</version>
+      </dependency>
+      <dependency>
+        <groupId>org.slf4j</groupId>
+        <artifactId>jcl104-over-slf4j</artifactId>
+        <version>${slf4j.version}</version>
+      </dependency>
+      <dependency>
+        <groupId>org.slf4j</groupId>
+        <artifactId>jul-to-slf4j</artifactId>
+        <version>${slf4j.version}</version>
+      </dependency>
+      <dependency>
+        <groupId>org.slf4j</groupId>
+        <artifactId>log4j-over-slf4j</artifactId>
+        <version>${slf4j.version}</version>
+      </dependency>
+      <dependency>
+        <groupId>org.slf4j</groupId>
+        <artifactId>slf4j-api</artifactId>
+        <version>${slf4j.version}</version>
+      </dependency>
+      <dependency>
+        <groupId>org.slf4j</groupId>
+        <artifactId>slf4j-simple</artifactId>
+        <version>${slf4j.version}</version>
+      </dependency>
+      <dependency>
+        <groupId>org.wildfly.security</groupId>
+        <artifactId>wildfly-elytron</artifactId>
+        <version>${wildfly.elytron.version}</version>
+      </dependency>
+      <dependency>
+        <groupId>org.apache.maven.plugin-tools</groupId>
+        <artifactId>maven-plugin-annotations</artifactId>
+        <version>${maven.plugin-tools.version}</version>
+        <scope>provided</scope>
+      </dependency>
+      <dependency>
+        <groupId>org.eclipse.jetty.toolchain</groupId>
+        <artifactId>jetty-xhtml-schemas</artifactId>
+        <version>${jetty.xhtml.schemas-version}</version>
+        <scope>test</scope>
+      </dependency>
+      <dependency>
+        <groupId>org.osgi</groupId>
+        <artifactId>org.osgi.util.measurement</artifactId>
+        <version>${osgi-util-measurement-version}</version>
+        <scope>test</scope>
+      </dependency>
+      <dependency>
+        <groupId>org.osgi</groupId>
+        <artifactId>org.osgi.util.position</artifactId>
+        <version>${osgi-util-position-version}</version>
+        <scope>test</scope>
+      </dependency>
+      <dependency>
+        <groupId>org.osgi</groupId>
+        <artifactId>org.osgi.util.xml</artifactId>
+        <version>${osgi-util-xml-version}</version>
+        <scope>test</scope>
+      </dependency>
+    </dependencies>
+  </dependencyManagement>
+
+  <dependencies>
+    <dependency>
+      <groupId>org.eclipse.jetty.toolchain</groupId>
+      <artifactId>jetty-test-helper</artifactId>
+      <scope>test</scope>
+    </dependency>
+    <dependency>
+      <groupId>org.junit.jupiter</groupId>
+      <artifactId>junit-jupiter</artifactId>
+      <scope>test</scope>
+    </dependency>
+  </dependencies>
 
   <build>
-    <extensions>
-      <extension>
-        <groupId>org.apache.maven.extensions</groupId>
-        <artifactId>maven-build-cache-extension</artifactId>
-        <version>${maven-build-cache.version}</version>
-      </extension>
-    </extensions>
-    <plugins>
-      <plugin>
-        <groupId>org.apache.maven.plugins</groupId>
-        <artifactId>maven-enforcer-plugin</artifactId>
-        <executions>
-          <execution>
-            <id>ban-javax-servlet-api</id>
-            <goals>
-              <goal>enforce</goal>
-            </goals>
-            <phase>validate</phase>
-            <configuration>
-              <rules>
-                <bannedDependencies>
-                  <excludes>
-                    <exclude>javax.servlet:*</exclude>
-                    <exclude>servletapi</exclude>
-                    <exclude>org.eclipse.jetty.orbit:javax.servlet</exclude>
-                    <exclude>*:javax.servlet</exclude>
-                    <exclude>org.mortbay.jetty:servlet-api</exclude>
-                    <exclude>jetty:servlet-api</exclude>
-                    <exclude>jetty-servlet-api</exclude>
-                    <exclude>javax.websocket</exclude>
-                    <exclude>javax.el:*</exclude>
-                    <exclude>javax.annotation:javax.annotation-api</exclude>
-                  </excludes>
-                  <searchTransitive>true</searchTransitive>
-                </bannedDependencies>
-              </rules>
-            </configuration>
-          </execution>
-          <execution>
-            <id>enforce-java</id>
-            <goals>
-              <goal>enforce</goal>
-            </goals>
-            <phase>validate</phase>
-            <configuration>
-              <rules>
-                <requireMavenVersion>
-                  <version>[3.9.2,)</version>
-                  <message>[ERROR] OLD MAVEN [${maven.version}] in use, Jetty ${project.version} requires Maven 3.9.2 or newer</message>
-                </requireMavenVersion>
-                <requireJavaVersion>
-                  <version>[17,)</version>
-                  <message>[ERROR] OLD JDK [${java.version}] in use. Jetty ${project.version} requires JDK 17 or newer</message>
-                </requireJavaVersion>
-                <versionTxtRule implementation="org.eclipse.jetty.toolchain.enforcer.rules.VersionTxtRule" />
-		            <versionOsgiRule implementation="org.eclipse.jetty.toolchain.enforcer.rules.RequireOsgiCompatibleVersionRule" />
-                <!-- do not support alphax as a version number -->
-                      <!--
-                            <versionRedhatRule implementation="org.eclipse.jetty.toolchain.enforcer.rules.RequireRedhatCompatibleVersionRule" />
-                <versionDebianRule implementation="org.eclipse.jetty.toolchain.enforcer.rules.RequireDebianCompatibleVersionRule" />
-                -->
-                <requireUpperBoundDeps/>
-              </rules>
-            </configuration>
-          </execution>
-        </executions>
-        <dependencies>
-          <dependency>
-            <groupId>org.eclipse.jetty.toolchain</groupId>
-            <artifactId>jetty-build-support</artifactId>
-            <version>${build-support.version}</version>
-          </dependency>
-        </dependencies>
-      </plugin>
-      <plugin>
-        <groupId>org.apache.maven.plugins</groupId>
-        <artifactId>maven-source-plugin</artifactId>
-        <inherited>true</inherited>
-        <executions>
-          <execution>
-            <id>attach-sources</id>
-            <phase>package</phase>
-            <goals>
-              <goal>jar-no-fork</goal>
-            </goals>
-          </execution>
-        </executions>
-      </plugin>
-      <plugin>
-        <groupId>org.jacoco</groupId>
-        <artifactId>jacoco-maven-plugin</artifactId>
-        <configuration>
-          <excludes>
-            <!-- build tools -->
-            <exclude>**/org/eclipse/jetty/ant/**</exclude>
-            <!-- example code / documentation -->
-            <exclude>**/org/eclipse/jetty/embedded/**</exclude>
-            <exclude>**/org/eclipse/jetty/asyncrest/**</exclude>
-            <exclude>**/org/eclipse/jetty/demo/**</exclude>
-            <!-- special environments / late integrations -->
-            <exclude>**/org/eclipse/jetty/gcloud/**</exclude>
-            <exclude>**/org/eclipse/jetty/infinispan/**</exclude>
-            <exclude>**/org/eclipse/jetty/osgi/**</exclude>
-            <exclude>**/org/eclipse/jetty/spring/**</exclude>
-            <exclude>**/org/eclipse/jetty/http/spi/**</exclude>
-            <!-- test classes -->
-            <exclude>**/org/eclipse/jetty/tests/**</exclude>
-            <exclude>**/org/eclipse/jetty/test/**</exclude>
-          </excludes>
-        </configuration>
-        <executions>
-          <execution>
-            <id>jacoco-initialize</id>
-            <phase>initialize</phase>
-            <goals>
-              <goal>prepare-agent</goal>
-            </goals>
-          </execution>
-          <execution>
-            <id>jacoco-setup-m-invoker-p</id>
-            <phase>initialize</phase>
-            <configuration>
-              <!-- Enable recording of coverage during execution of maven-invoker-plugin -->
-              <propertyName>invoker.mavenOpts</propertyName>
-            </configuration>
-            <goals>
-              <goal>prepare-agent</goal>
-            </goals>
-          </execution>
-          <execution>
-            <id>jacoco-site</id>
-            <phase>package</phase>
-            <goals>
-              <goal>report</goal>
-            </goals>
-            <configuration>
-              <!-- list of classes that you want to see in the report.
-                   Specify a narrow list of multi-module project
-                   classes you want to see here.
-                   This is useful to remove 3rd party library classes
-                   from the report. -->
-              <includes>
-                <include>**/org/eclipse/jetty/**</include>
-              </includes>
-            </configuration>
-          </execution>
-        </executions>
-      </plugin>
-      <plugin>
-        <groupId>org.apache.maven.plugins</groupId>
-        <artifactId>maven-release-plugin</artifactId>
-        <configuration>
-          <autoVersionSubmodules>true</autoVersionSubmodules>
-          <useReleaseProfile>false</useReleaseProfile>
-          <goals>deploy</goals>
-          <arguments>-Peclipse-release</arguments>
-          <preparationGoals>clean install</preparationGoals>
-          <mavenExecutorId>forked-path</mavenExecutorId>
-        </configuration>
-      </plugin>
-      <plugin>
-        <groupId>org.apache.maven.plugins</groupId>
-        <artifactId>maven-remote-resources-plugin</artifactId>
-        <executions>
-          <execution>
-            <id>copy-shared-resources</id>
-            <phase>generate-resources</phase>
-            <goals>
-              <goal>process</goal>
-            </goals>
-            <configuration>
-              <resourceBundles>
-                <resourceBundle>org.eclipse.jetty:build-resources:${project.version}</resourceBundle>
-              </resourceBundles>
-            </configuration>
-          </execution>
-        </executions>
-      </plugin>
-      <plugin>
-        <groupId>com.mycila</groupId>
-        <artifactId>license-maven-plugin</artifactId>
-        <inherited>false</inherited>
-        <configuration>
-          <failIfMissing>true</failIfMissing>
-          <aggregate>true</aggregate>
-          <strictCheck>true</strictCheck>
-        </configuration>
-        <executions>
-          <execution>
-            <id>check-java-headers</id>
-            <phase>verify</phase>
-            <goals>
-              <goal>check</goal>
-            </goals>
-            <configuration>
-              <header>header-template.txt</header>
-              <mapping>
-                <java>DOUBLESLASH_STYLE</java>
-                <adoc>DOUBLESLASH_STYLE</adoc>
-              </mapping>
-              <includes>
-                <include>**/*.java</include>
-                <include>**/*.adoc</include>
-              </includes>
-              <excludes>
-                <!-- Sabre Holdings -->
-                <exclude>jetty-ee*/jetty-ee*-ant/src/main/java/org/eclipse/jetty/ee*/ant/AntWebAppContext.java</exclude>
-                <exclude>jetty-ee*/jetty-ee*-ant/src/main/java/org/eclipse/jetty/ee*/ant/types/Connectors.java</exclude>
-                <exclude>jetty-ee*/jetty-ee*-ant/src/main/java/org/eclipse/jetty/ee*/ant/types/ContextHandlers.java</exclude>
-                <exclude>jetty-ee*/jetty-ee*-ant/src/main/java/org/eclipse/jetty/ee*/ant/types/FileMatchingConfiguration.java</exclude>
-                <exclude>jetty-ee*/jetty-ee*-ant/src/main/java/org/eclipse/jetty/ee*/ant/types/LoginServices.java</exclude>
-                <exclude>jetty-ee*/jetty-ee*-ant/src/main/java/org/eclipse/jetty/ee*/ant/types/SystemProperties.java</exclude>
-                <exclude>jetty-ee*/jetty-ee*-ant/src/main/java/org/eclipse/jetty/ee*/ant/utils/ServerProxy.java</exclude>
-                <exclude>jetty-ee*/jetty-ee*-ant/src/main/java/org/eclipse/jetty/ee*/ant/utils/TaskLog.java</exclude>
-                <exclude>jetty-ee*/jetty-ee*-ant/src/main/java/org/eclipse/jetty/ee*/ant/AntWebXmlConfiguration.java</exclude>
-                <exclude>jetty-ee*/jetty-ee*-ant/src/main/java/org/eclipse/jetty/ee*/ant/JettyRunTask.java</exclude>
-                <exclude>jetty-ee*/jetty-ee*-ant/src/main/java/org/eclipse/jetty/ee*/ant/ServerProxyImpl.java</exclude>
-                <!-- Aki Yoshida -->
-                <exclude>jetty-core/jetty-util/src/main/java/org/eclipse/jetty/util/security/UnixCrypt.java</exclude>
-                <!-- Distribution Text (no header, too noisy) -->
-                <exclude>jetty-home/src/main/resources/README.adoc</exclude>
-              </excludes>
-            </configuration>
-          </execution>
-        </executions>
-      </plugin>
-      <plugin>
-        <groupId>org.apache.felix</groupId>
-        <artifactId>maven-bundle-plugin</artifactId>
-        <executions>
-          <execution>
-            <phase>process-classes</phase>
-            <goals>
-              <goal>manifest</goal>
-            </goals>
-          </execution>
-        </executions>
-      </plugin>
-      <!-- Build helper maven plugin sets the parsedVersion.osgiVersion property -->
-      <plugin>
-        <groupId>org.codehaus.mojo</groupId>
-        <artifactId>build-helper-maven-plugin</artifactId>
-        <executions>
-          <execution>
-            <id>set-osgi-version</id>
-            <phase>validate</phase>
-            <goals>
-              <goal>parse-version</goal>
-            </goals>
-          </execution>
-        </executions>
-      </plugin>
-      <plugin>
-        <groupId>org.eclipse.jetty.toolchain</groupId>
-        <artifactId>jetty-version-maven-plugin</artifactId>
-        <executions>
-          <execution>
-            <id>attach-version</id>
-            <phase>process-resources</phase>
-            <goals>
-              <goal>attach-version-text</goal>
-            </goals>
-          </execution>
-        </executions>
-      </plugin>
-      <plugin>
-        <groupId>org.apache.maven.plugins</groupId>
-        <artifactId>maven-checkstyle-plugin</artifactId>
-        <version>${maven.checkstyle.plugin.version}</version>
-        <configuration>
-          <configLocation>jetty-checkstyle.xml</configLocation>
-          <includeTestSourceDirectory>true</includeTestSourceDirectory>
-          <violationSeverity>warning</violationSeverity>
-          <consoleOutput>true</consoleOutput>
-          <sourceDirectories>
-            <!-- only scan source directory (not generated, filtered, or copied source) -->
-            <sourceDirectory>${project.build.sourceDirectory}</sourceDirectory>
-          </sourceDirectories>
-          <testSourceDirectories>
-            <sourceDirectory>${project.build.testSourceDirectory}</sourceDirectory>
-          </testSourceDirectories>
-        </configuration>
-        <dependencies>
-          <dependency>
-            <groupId>org.eclipse.jetty</groupId>
-            <artifactId>build-resources</artifactId>
-            <version>${project.version}</version>
-          </dependency>
-          <dependency>
-            <groupId>com.puppycrawl.tools</groupId>
-            <artifactId>checkstyle</artifactId>
-            <version>${checkstyle.version}</version>
-          </dependency>
-        </dependencies>
-        <executions>
-          <execution>
-            <id>checkstyle-check</id>
-            <phase>validate</phase>
-            <goals>
-              <goal>check</goal>
-            </goals>
-          </execution>
-        </executions>
-      </plugin>
-    </plugins>
 
     <pluginManagement>
       <plugins>
+        <plugin>
+          <groupId>com.mycila</groupId>
+          <artifactId>license-maven-plugin</artifactId>
+          <version>${license.maven.plugin.version}</version>
+        </plugin>
+        <plugin>
+          <groupId>org.apache.felix</groupId>
+          <artifactId>maven-bundle-plugin</artifactId>
+          <version>${maven.bundle.plugin.version}</version>
+          <configuration>
+            <supportedProjectTypes>
+              <supportedProjectType>jar</supportedProjectType>
+              <supportedProjectType>maven-plugin</supportedProjectType>
+            </supportedProjectTypes>
+            <instructions>
+              <Bundle-SymbolicName>${bundle-symbolic-name}</Bundle-SymbolicName>
+              <Bundle-Description>Jetty module for ${project.name}</Bundle-Description>
+              <Bundle-DocURL>${jetty.url}</Bundle-DocURL>
+              <Bundle-Vendor>Eclipse Jetty Project</Bundle-Vendor>
+              <Bundle-Classpath>.</Bundle-Classpath>
+              <Bundle-Copyright>Copyright (c) 1995 Mort Bay Consulting Pty Ltd and others.</Bundle-Copyright>
+              <Import-Package>${osgi.slf4j.import.packages},
+                *</Import-Package>
+              <_provider-policy><![CDATA[$<range;[===,=+)>]]></_provider-policy>
+              <_consumer-policy><![CDATA[$<range;[===,+)>]]></_consumer-policy>
+            </instructions>
+          </configuration>
+        </plugin>
         <plugin>
           <groupId>org.apache.maven.plugins</groupId>
           <artifactId>maven-antrun-plugin</artifactId>
@@ -622,6 +1354,11 @@
         </plugin>
         <plugin>
           <groupId>org.apache.maven.plugins</groupId>
+          <artifactId>maven-install-plugin</artifactId>
+          <version>${maven.install.plugin.version}</version>
+        </plugin>
+        <plugin>
+          <groupId>org.apache.maven.plugins</groupId>
           <artifactId>maven-invoker-plugin</artifactId>
           <version>${maven.invoker.plugin.version}</version>
           <configuration>
@@ -651,11 +1388,6 @@
         </plugin>
         <plugin>
           <groupId>org.apache.maven.plugins</groupId>
-          <artifactId>maven-install-plugin</artifactId>
-          <version>${maven.install.plugin.version}</version>
-        </plugin>
-        <plugin>
-          <groupId>org.apache.maven.plugins</groupId>
           <artifactId>maven-jar-plugin</artifactId>
           <version>${maven.jar.plugin.version}</version>
           <configuration>
@@ -674,7 +1406,7 @@
           <artifactId>maven-javadoc-plugin</artifactId>
           <version>${maven.javadoc.plugin.version}</version>
           <configuration>
-            <verbose>true</verbose>
+            <verbose>${javadoc.verbose}</verbose>
             <debug>true</debug>
             <source>17</source>
             <charset>UTF-8</charset>
@@ -756,12 +1488,11 @@
             <trimStackTrace>false</trimStackTrace>
             <rerunFailingTestsCount>${surefire.rerunFailingTestsCount}</rerunFailingTestsCount>
             <forkedProcessTimeoutInSeconds>3600</forkedProcessTimeoutInSeconds>
-            <argLine>
-              @{argLine} ${jetty.surefire.argLine}
-            </argLine>
+            <argLine>@{argLine} ${jetty.surefire.argLine}</argLine>
             <failIfNoTests>false</failIfNoTests>
             <forkCount>1</forkCount>
-            <reuseForks>true</reuseForks> <!-- to work around crash at https://github.com/junit-team/junit5/issues/801 -->
+            <reuseForks>true</reuseForks>
+            <!-- to work around crash at https://github.com/junit-team/junit5/issues/801 -->
             <!-- order can be different depending on os jvm so let's force it -->
             <runOrder>alphabetical</runOrder>
             <systemPropertyVariables>
@@ -773,15 +1504,31 @@
               <LC_ALL>en_US.UTF-8</LC_ALL>
             </environmentVariables>
             <properties>
-              <configurationParameters>
-                junit.jupiter.execution.parallel.enabled=${junit.jupiter.execution.parallel.enabled}
+              <configurationParameters>junit.jupiter.execution.parallel.enabled=${junit.jupiter.execution.parallel.enabled}
                 junit.jupiter.execution.parallel.mode.default=${junit.jupiter.execution.parallel.mode.default}
                 junit.jupiter.execution.parallel.mode.classes.default=${junit.jupiter.execution.parallel.mode.classes.default}
                 junit.jupiter.execution.parallel.config.strategy=${junit.jupiter.execution.parallel.config.strategy}
                 junit.jupiter.execution.parallel.config.fixed.parallelism=${junit.jupiter.execution.parallel.config.fixed.parallelism}
-                junit.jupiter.extensions.autodetection.enabled=${junit.jupiter.extensions.autodetection.enabled}
-              </configurationParameters>
+                junit.jupiter.extensions.autodetection.enabled=${junit.jupiter.extensions.autodetection.enabled}</configurationParameters>
             </properties>
+            <statelessTestsetReporter implementation="org.apache.maven.plugin.surefire.extensions.junit5.JUnit5Xml30StatelessReporter">
+              <disable>false</disable>
+              <usePhrasedFileName>false</usePhrasedFileName>
+              <usePhrasedTestSuiteClassName>true</usePhrasedTestSuiteClassName>
+              <usePhrasedTestCaseClassName>true</usePhrasedTestCaseClassName>
+              <usePhrasedTestCaseMethodName>true</usePhrasedTestCaseMethodName>
+            </statelessTestsetReporter>
+            <consoleOutputReporter implementation="org.apache.maven.plugin.surefire.extensions.junit5.JUnit5ConsoleOutputReporter">
+              <disable>false</disable>
+              <encoding>UTF-8</encoding>
+              <usePhrasedFileName>false</usePhrasedFileName>
+            </consoleOutputReporter>
+            <statelessTestsetInfoReporter implementation="org.apache.maven.plugin.surefire.extensions.junit5.JUnit5StatelessTestsetInfoReporter">
+              <disable>false</disable>
+              <usePhrasedFileName>false</usePhrasedFileName>
+              <usePhrasedClassNameInRunning>true</usePhrasedClassNameInRunning>
+              <usePhrasedClassNameInTestCaseSummary>true</usePhrasedClassNameInTestCaseSummary>
+            </statelessTestsetInfoReporter>
           </configuration>
           <dependencies>
             <dependency>
@@ -797,64 +1544,6 @@
           <version>${maven.war.plugin.version}</version>
         </plugin>
         <plugin>
-          <groupId>org.codehaus.mojo</groupId>
-          <artifactId>flatten-maven-plugin</artifactId>
-          <version>${flatten.maven.plugin.version}</version>
-          <configuration>
-            <outputDirectory>${project.build.directory}</outputDirectory>
-            <flattenedPomFilename>flattened-pom.xml</flattenedPomFilename>
-            <flattenMode>bom</flattenMode>
-            <updatePomFile>true</updatePomFile>
-            <pomElements>
-              <build>remove</build>
-              <properties>remove</properties>
-              <distributionManagement>remove</distributionManagement>
-            </pomElements>
-          </configuration>
-        </plugin>
-        <plugin>
-          <groupId>org.eclipse.jetty.toolchain</groupId>
-          <artifactId>jetty-version-maven-plugin</artifactId>
-          <version>${jetty-version.maven.plugin.version}</version>
-        </plugin>
-        <plugin>
-          <groupId>org.jacoco</groupId>
-          <artifactId>jacoco-maven-plugin</artifactId>
-          <version>${jacoco.maven.plugin.version}</version>
-        </plugin>
-        <plugin>
-          <groupId>com.mycila</groupId>
-          <artifactId>license-maven-plugin</artifactId>
-          <version>${license.maven.plugin.version}</version>
-        </plugin>
-        <plugin>
-          <groupId>org.apache.felix</groupId>
-          <artifactId>maven-bundle-plugin</artifactId>
-          <version>${maven.bundle.plugin.version}</version>
-          <configuration>
-            <supportedProjectTypes>
-              <supportedProjectType>jar</supportedProjectType>
-              <supportedProjectType>maven-plugin</supportedProjectType>
-            </supportedProjectTypes>
-            <instructions>
-              <Bundle-SymbolicName>${bundle-symbolic-name}</Bundle-SymbolicName>
-              <Bundle-Description>Jetty module for ${project.name}</Bundle-Description>
-              <Bundle-RequiredExecutionEnvironment>JavaSE-11</Bundle-RequiredExecutionEnvironment>
-              <Bundle-DocURL>${jetty.url}</Bundle-DocURL>
-              <Bundle-Vendor>Eclipse Jetty Project</Bundle-Vendor>
-              <Bundle-Classpath>.</Bundle-Classpath>
-              <Bundle-Copyright>Copyright (c) 1995 Mort Bay Consulting Pty Ltd and others.</Bundle-Copyright>
-              <Import-Package>
-                ${osgi.slf4j.import.packages},
-                *
-              </Import-Package>
-              <_provider-policy><![CDATA[$<range;[===,=+)>]]></_provider-policy>
-              <_consumer-policy><![CDATA[$<range;[===,+)>]]></_consumer-policy>
-              <_noee>true</_noee>
-            </instructions>
-          </configuration>
-        </plugin>
-        <plugin>
           <groupId>org.apache.servicemix.tooling</groupId>
           <artifactId>depends-maven-plugin</artifactId>
           <version>${depends.maven.plugin.version}</version>
@@ -863,13 +1552,6 @@
           <groupId>org.asciidoctor</groupId>
           <artifactId>asciidoctor-maven-plugin</artifactId>
           <version>${asciidoctor.maven.plugin.version}</version>
-          <dependencies>
-            <dependency>
-              <groupId>org.asciidoctor</groupId>
-              <artifactId>asciidoctorj-diagram</artifactId>
-              <version>${asciidoctorj-diagram.version}</version>
-            </dependency>
-          </dependencies>
           <configuration>
             <backend>html5</backend>
             <requires>
@@ -887,13 +1569,20 @@
               <icons>font</icons>
             </attributes>
           </configuration>
+          <dependencies>
+            <dependency>
+              <groupId>org.asciidoctor</groupId>
+              <artifactId>asciidoctorj-diagram</artifactId>
+              <version>${asciidoctorj-diagram.version}</version>
+            </dependency>
+          </dependencies>
           <executions>
             <execution>
               <id>index</id>
-              <phase>generate-resources</phase>
               <goals>
                 <goal>process-asciidoc</goal>
               </goals>
+              <phase>generate-resources</phase>
               <configuration>
                 <sourceDirectory>src/main/asciidoc</sourceDirectory>
                 <sourceDocumentName>index.adoc</sourceDocumentName>
@@ -918,9 +1607,20 @@
           <version>${maven.exec.plugin.version}</version>
         </plugin>
         <plugin>
-          <groupId>org.mortbay.jetty</groupId>
-          <artifactId>h2spec-maven-plugin</artifactId>
-          <version>${h2spec.maven.plugin.version}</version>
+          <groupId>org.codehaus.mojo</groupId>
+          <artifactId>flatten-maven-plugin</artifactId>
+          <version>${flatten.maven.plugin.version}</version>
+          <configuration>
+            <outputDirectory>${project.build.directory}</outputDirectory>
+            <flattenedPomFilename>flattened-pom.xml</flattenedPomFilename>
+            <flattenMode>bom</flattenMode>
+            <updatePomFile>true</updatePomFile>
+            <pomElements>
+              <build>remove</build>
+              <properties>remove</properties>
+              <distributionManagement>remove</distributionManagement>
+            </pomElements>
+          </configuration>
         </plugin>
         <plugin>
           <groupId>org.codehaus.mojo</groupId>
@@ -933,901 +1633,369 @@
             <processPluginDependenciesInPluginManagement>true</processPluginDependenciesInPluginManagement>
           </configuration>
         </plugin>
+        <plugin>
+          <groupId>org.eclipse.jetty.toolchain</groupId>
+          <artifactId>jetty-version-maven-plugin</artifactId>
+          <version>${jetty-version.maven.plugin.version}</version>
+        </plugin>
+        <plugin>
+          <groupId>org.jacoco</groupId>
+          <artifactId>jacoco-maven-plugin</artifactId>
+          <version>${jacoco.maven.plugin.version}</version>
+        </plugin>
+        <plugin>
+          <groupId>org.mortbay.jetty</groupId>
+          <artifactId>h2spec-maven-plugin</artifactId>
+          <version>${h2spec.maven.plugin.version}</version>
+        </plugin>
       </plugins>
     </pluginManagement>
-  </build>
-
-  <dependencies>
-    <dependency>
-      <groupId>org.eclipse.jetty.toolchain</groupId>
-      <artifactId>jetty-test-helper</artifactId>
-      <scope>test</scope>
-    </dependency>
-    <dependency>
-      <groupId>org.junit.jupiter</groupId>
-      <artifactId>junit-jupiter</artifactId>
-      <scope>test</scope>
-    </dependency>
-  </dependencies>
-
-  <dependencyManagement>
-    <dependencies>
-      <dependency>
-        <groupId>biz.aQute.bnd</groupId>
-        <artifactId>biz.aQute.bndlib</artifactId>
-        <version>${bndlib.version}</version>
-      </dependency>
-      <dependency>
-        <groupId>ch.qos.logback</groupId>
-        <artifactId>logback-core</artifactId>
-        <version>${logback.version}</version>
-      </dependency>
-      <dependency>
-        <groupId>com.google.code.findbugs</groupId>
-        <artifactId>jsr305</artifactId>
-        <version>${findbugs.jsr305.version}</version>
-      </dependency>
-      <dependency>
-        <groupId>com.google.errorprone</groupId>
-        <artifactId>error_prone_annotations</artifactId>
-        <version>${google.errorprone.version}</version>
-      </dependency>
-      <dependency>
-        <groupId>com.google.code.gson</groupId>
-        <artifactId>gson</artifactId>
-        <version>${gson.version}</version>
-      </dependency>
-      <dependency>
-        <groupId>com.google.guava</groupId>
-        <artifactId>guava</artifactId>
-        <version>${guava.version}</version>
-      </dependency>
-      <dependency>
-        <groupId>com.google.inject</groupId>
-        <artifactId>guice</artifactId>
-        <version>${guice.version}</version>
-      </dependency>
-      <dependency>
-        <groupId>com.googlecode.json-simple</groupId>
-        <artifactId>json-simple</artifactId>
-        <version>${json-simple.version}</version>
-      </dependency>
-      <dependency>
-        <groupId>com.hazelcast</groupId>
-        <artifactId>hazelcast</artifactId>
-        <version>${hazelcast.version}</version>
-      </dependency>
-      <dependency>
-        <groupId>com.openpojo</groupId>
-        <artifactId>openpojo</artifactId>
-        <version>${openpojo.version}</version>
-      </dependency>
-      <dependency>
-        <groupId>commons-codec</groupId>
-        <artifactId>commons-codec</artifactId>
-        <version>${commons-codec.version}</version>
-      </dependency>
-      <dependency>
-        <groupId>org.apache.commons</groupId>
-        <artifactId>commons-compress</artifactId>
-        <version>${commons.compress.version}</version>
-      </dependency>
-      <dependency>
-        <groupId>org.apache.avro</groupId>
-        <artifactId>avro</artifactId>
-        <version>${apache.avro.version}</version>
-      </dependency>
-      <dependency>
-        <groupId>io.grpc</groupId>
-        <artifactId>grpc-core</artifactId>
-        <version>${grpc.version}</version>
-      </dependency>
-      <dependency>
-        <groupId>net.java.dev.jna</groupId>
-        <artifactId>jna-jpms</artifactId>
-        <version>${jna.version}</version>
-      </dependency>
-      <dependency>
-        <groupId>net.java.dev.jna</groupId>
-        <artifactId>jna</artifactId>
-        <version>${jna.version}</version>
-      </dependency>
-      <dependency>
-        <groupId>net.minidev</groupId>
-        <artifactId>json-smart</artifactId>
-        <version>${json-smart.version}</version>
-      </dependency>
-      <dependency>
-        <groupId>org.apache.ant</groupId>
-        <artifactId>ant</artifactId>
-        <version>${ant.version}</version>
-      </dependency>
-      <dependency>
-        <groupId>org.apache.ant</groupId>
-        <artifactId>ant-launcher</artifactId>
-        <version>${ant.version}</version>
-      </dependency>
-      <dependency>
-        <groupId>org.apache.aries.spifly</groupId>
-        <artifactId>org.apache.aries.spifly.dynamic.bundle</artifactId>
-        <version>${spifly.version}</version>
-      </dependency>
-      <dependency>
-        <groupId>org.apache.commons</groupId>
-        <artifactId>commons-lang3</artifactId>
-        <version>${commons-lang3.version}</version>
-      </dependency>
-      <dependency>
+    <plugins>
+      <plugin>
+        <groupId>com.diffplug.spotless</groupId>
+        <artifactId>spotless-maven-plugin</artifactId>
+        <version>2.39.0</version>
+        <configuration>
+          <pom>
+            <includes>
+              <include>pom.xml</include>
+            </includes>
+            <sortPom>
+              <nrOfIndentSpace>2</nrOfIndentSpace>
+              <!-- default see https://github.com/Ekryd/sortpom/wiki/PredefinedSortOrderProfiles -->
+              <predefinedSortOrder>recommended_2008_06</predefinedSortOrder>
+              <!-- Sort properties -->
+              <sortProperties>true</sortProperties>
+              <!-- Sort modules -->
+              <!--              <sortModules>true</sortModules>-->
+              <!-- Sort plugin executions -->
+              <sortExecutions>true</sortExecutions>
+              <!-- Sort dependencies see https://github.com/Ekryd/sortpom/wiki/SortDependencies -->
+              <sortDependencies>scope,groupId,artifactId</sortDependencies>
+              <!-- Sort dependency exclusions -->
+              <sortDependencyExclusions>groupId,artifactId</sortDependencyExclusions>
+              <!-- Sort plugins: https://github.com/Ekryd/sortpom/wiki/SortPlugins -->
+              <sortPlugins>groupId,artifactId</sortPlugins>
+            </sortPom>
+          </pom>
+          <upToDateChecking>
+            <enabled>true</enabled>
+          </upToDateChecking>
+        </configuration>
+        <executions>
+          <execution>
+            <goals>
+              <goal>check</goal>
+            </goals>
+            <phase>validate</phase>
+          </execution>
+        </executions>
+      </plugin>
+      <plugin>
+        <groupId>com.mycila</groupId>
+        <artifactId>license-maven-plugin</artifactId>
+        <inherited>false</inherited>
+        <configuration>
+          <failIfMissing>true</failIfMissing>
+          <aggregate>true</aggregate>
+          <strictCheck>true</strictCheck>
+        </configuration>
+        <executions>
+          <execution>
+            <id>check-java-headers</id>
+            <goals>
+              <goal>check</goal>
+            </goals>
+            <phase>verify</phase>
+            <configuration>
+              <header>header-template.txt</header>
+              <mapping>
+                <java>DOUBLESLASH_STYLE</java>
+                <adoc>DOUBLESLASH_STYLE</adoc>
+              </mapping>
+              <includes>
+                <include>**/*.java</include>
+                <include>**/*.adoc</include>
+              </includes>
+              <excludes>
+                <!-- Sabre Holdings -->
+                <exclude>jetty-ee*/jetty-ee*-ant/src/main/java/org/eclipse/jetty/ee*/ant/AntWebAppContext.java</exclude>
+                <exclude>jetty-ee*/jetty-ee*-ant/src/main/java/org/eclipse/jetty/ee*/ant/types/Connectors.java</exclude>
+                <exclude>jetty-ee*/jetty-ee*-ant/src/main/java/org/eclipse/jetty/ee*/ant/types/ContextHandlers.java</exclude>
+                <exclude>jetty-ee*/jetty-ee*-ant/src/main/java/org/eclipse/jetty/ee*/ant/types/FileMatchingConfiguration.java</exclude>
+                <exclude>jetty-ee*/jetty-ee*-ant/src/main/java/org/eclipse/jetty/ee*/ant/types/LoginServices.java</exclude>
+                <exclude>jetty-ee*/jetty-ee*-ant/src/main/java/org/eclipse/jetty/ee*/ant/types/SystemProperties.java</exclude>
+                <exclude>jetty-ee*/jetty-ee*-ant/src/main/java/org/eclipse/jetty/ee*/ant/utils/ServerProxy.java</exclude>
+                <exclude>jetty-ee*/jetty-ee*-ant/src/main/java/org/eclipse/jetty/ee*/ant/utils/TaskLog.java</exclude>
+                <exclude>jetty-ee*/jetty-ee*-ant/src/main/java/org/eclipse/jetty/ee*/ant/AntWebXmlConfiguration.java</exclude>
+                <exclude>jetty-ee*/jetty-ee*-ant/src/main/java/org/eclipse/jetty/ee*/ant/JettyRunTask.java</exclude>
+                <exclude>jetty-ee*/jetty-ee*-ant/src/main/java/org/eclipse/jetty/ee*/ant/ServerProxyImpl.java</exclude>
+                <!-- Aki Yoshida -->
+                <exclude>jetty-core/jetty-util/src/main/java/org/eclipse/jetty/util/security/UnixCrypt.java</exclude>
+                <!-- Distribution Text (no header, too noisy) -->
+                <exclude>jetty-home/src/main/resources/README.adoc</exclude>
+              </excludes>
+            </configuration>
+          </execution>
+        </executions>
+      </plugin>
+      <plugin>
         <groupId>org.apache.felix</groupId>
-        <artifactId>org.apache.felix.framework</artifactId>
-        <version>${felix.version}</version>
-      </dependency>
-      <dependency>
-        <groupId>org.apache.geronimo.specs</groupId>
-        <artifactId>geronimo-atinject_1.0_spec</artifactId>
-        <version>${injection.bundle.version}</version>
-      </dependency>
-      <dependency>
-        <groupId>org.apache.kerby</groupId>
-        <artifactId>kerb-simplekdc</artifactId>
-        <version>${kerb-simplekdc.version}</version>
-      </dependency>
-      <dependency>
-        <groupId>org.apache.logging.log4j</groupId>
-        <artifactId>log4j-api</artifactId>
-        <version>${log4j2.version}</version>
-      </dependency>
-      <dependency>
-        <groupId>org.apache.maven</groupId>
-        <artifactId>maven-artifact</artifactId>
-        <version>${maven.deps.version}</version>
-      </dependency>
-      <dependency>
-        <groupId>org.apache.maven</groupId>
-        <artifactId>maven-core</artifactId>
-        <version>${maven.deps.version}</version>
-        <exclusions>
-          <exclusion>
-            <groupId>javax.inject</groupId>
-            <artifactId>javax.inject</artifactId>
-          </exclusion>
-          <exclusion>
-            <groupId>com.google.code.findbugs</groupId>
-            <artifactId>jsr305</artifactId>
-          </exclusion>
-        </exclusions>
-      </dependency>
-      <dependency>
-        <groupId>org.apache.maven</groupId>
-        <artifactId>maven-plugin-api</artifactId>
-        <version>${maven.deps.version}</version>
-        <exclusions>
-          <exclusion>
-            <groupId>javax.enterprise</groupId>
-            <artifactId>cdi-api</artifactId>
-          </exclusion>
-        </exclusions>
-      </dependency>
-      <dependency>
-        <groupId>org.apache.maven</groupId>
-        <artifactId>maven-resolver-provider</artifactId>
-        <version>${maven.deps.version}</version>
-        <exclusions>
-          <exclusion>
-            <groupId>javax.inject</groupId>
-            <artifactId>javax.inject</artifactId>
-          </exclusion>
-        </exclusions>
-      </dependency>
-      <dependency>
-        <groupId>org.apache.maven</groupId>
-        <artifactId>maven-settings</artifactId>
-        <version>${maven.deps.version}</version>
-      </dependency>
-      <dependency>
-        <groupId>org.apache.maven.plugin-tools</groupId>
-        <artifactId>maven-plugin-annotations</artifactId>
-        <version>${maven.plugin-tools.version}</version>
-        <scope>provided</scope>
-      </dependency>
-      <dependency>
-        <groupId>org.apache.maven.plugin-tools</groupId>
-        <artifactId>maven-plugin-tools-api</artifactId>
-        <version>${maven.plugin-tools.version}</version>
-      </dependency>
-      <dependency>
-        <groupId>io.netty</groupId>
-        <artifactId>netty-handler</artifactId>
-        <version>${netty.version}</version>
-      </dependency>
-      <dependency>
-        <groupId>org.awaitility</groupId>
-        <artifactId>awaitility</artifactId>
-        <version>${awaitility.version}</version>
-      </dependency>
-      <dependency>
-        <groupId>org.asciidoctor</groupId>
-        <artifactId>asciidoctorj</artifactId>
-        <version>${asciidoctorj.version}</version>
-      </dependency>
-      <dependency>
-        <groupId>org.asciidoctor</groupId>
-        <artifactId>asciidoctor-maven-plugin</artifactId>
-        <version>${asciidoctor.maven.plugin.version}</version>
-      </dependency>
-      <dependency>
-        <groupId>org.conscrypt</groupId>
-        <artifactId>conscrypt-openjdk-uber</artifactId>
-        <version>${conscrypt.version}</version>
-      </dependency>
-      <dependency>
-        <groupId>org.codehaus.plexus</groupId>
-        <artifactId>plexus-component-annotations</artifactId>
-        <version>${plexus-component-annotations.version}</version>
-      </dependency>
-      <dependency>
-        <groupId>org.codehaus.plexus</groupId>
-        <artifactId>plexus-utils</artifactId>
-        <version>${plexus-utils.version}</version>
-      </dependency>
-      <dependency>
-        <groupId>org.codehaus.plexus</groupId>
-        <artifactId>plexus-xml</artifactId>
-        <version>${plexus-xml.version}</version>
-      </dependency>
-      <dependency>
-        <groupId>org.eclipse.jetty</groupId>
-        <artifactId>jetty-alpn-client</artifactId>
-        <version>${project.version}</version>
-      </dependency>
-      <dependency>
-        <groupId>org.eclipse.jetty</groupId>
-        <artifactId>jetty-alpn-conscrypt-client</artifactId>
-        <version>${project.version}</version>
-      </dependency>
-      <dependency>
-        <groupId>org.eclipse.jetty</groupId>
-        <artifactId>jetty-alpn-conscrypt-server</artifactId>
-        <version>${project.version}</version>
-      </dependency>
-      <dependency>
-        <groupId>org.eclipse.jetty</groupId>
-        <artifactId>jetty-alpn-java-server</artifactId>
-        <version>${project.version}</version>
-      </dependency>
-      <dependency>
-        <groupId>org.eclipse.jetty</groupId>
-        <artifactId>jetty-alpn-java-client</artifactId>
-        <version>${project.version}</version>
-      </dependency>
-      <dependency>
-        <groupId>org.eclipse.jetty</groupId>
-        <artifactId>jetty-alpn-server</artifactId>
-        <version>${project.version}</version>
-      </dependency>
-      <dependency>
-        <groupId>org.eclipse.jetty</groupId>
-        <artifactId>jetty-client</artifactId>
-        <version>${project.version}</version>
-      </dependency>
-      <dependency>
-        <groupId>org.eclipse.jetty</groupId>
-        <artifactId>jetty-deploy</artifactId>
-        <version>${project.version}</version>
-      </dependency>
-      <dependency>
-        <groupId>org.eclipse.jetty</groupId>
-        <artifactId>jetty-ee</artifactId>
-        <version>${project.version}</version>
-      </dependency>
-      <dependency>
-        <groupId>org.eclipse.jetty</groupId>
-        <artifactId>jetty-hazelcast</artifactId>
-        <version>${project.version}</version>
-      </dependency>
-      <dependency>
-        <groupId>org.eclipse.jetty</groupId>
-        <artifactId>jetty-home</artifactId>
-        <version>${project.version}</version>
-        <type>zip</type>
-      </dependency>
-      <dependency>
-        <groupId>org.eclipse.jetty.tests</groupId>
-        <artifactId>jetty-home-tester</artifactId>
-        <version>${project.version}</version>
-      </dependency>
-      <dependency>
-        <groupId>org.eclipse.jetty</groupId>
-        <artifactId>jetty-http</artifactId>
-        <version>${project.version}</version>
-      </dependency>
-      <dependency>
-        <groupId>org.eclipse.jetty</groupId>
-        <artifactId>jetty-http-spi</artifactId>
-        <version>${project.version}</version>
-      </dependency>
-      <dependency>
-        <groupId>org.eclipse.jetty</groupId>
-        <artifactId>jetty-infinispan-common</artifactId>
-        <version>${project.version}</version>
-      </dependency>
-      <dependency>
-        <groupId>org.eclipse.jetty</groupId>
-        <artifactId>jetty-infinispan-embedded</artifactId>
-        <classifier>config</classifier>
-        <version>${project.version}</version>
-      </dependency>
-      <dependency>
-        <groupId>org.eclipse.jetty</groupId>
-        <artifactId>jetty-infinispan-embedded-query</artifactId>
-        <version>${project.version}</version>
-      </dependency>
-      <dependency>
-        <groupId>org.eclipse.jetty</groupId>
-        <artifactId>jetty-infinispan-remote</artifactId>
-        <classifier>config</classifier>
-        <version>${project.version}</version>
-      </dependency>
-      <dependency>
-        <groupId>org.eclipse.jetty</groupId>
-        <artifactId>jetty-infinispan-remote-query</artifactId>
-        <version>${project.version}</version>
-      </dependency>
-      <dependency>
-        <groupId>org.eclipse.jetty</groupId>
-        <artifactId>jetty-io</artifactId>
-        <version>${project.version}</version>
-      </dependency>
-      <dependency>
-        <groupId>org.eclipse.jetty</groupId>
-        <artifactId>jetty-jmx</artifactId>
-        <version>${project.version}</version>
-      </dependency>
-      <dependency>
-        <groupId>org.eclipse.jetty</groupId>
-        <artifactId>jetty-jndi</artifactId>
-        <version>${project.version}</version>
-      </dependency>
-      <dependency>
-        <groupId>org.eclipse.jetty</groupId>
-        <artifactId>jetty-keystore</artifactId>
-        <version>${project.version}</version>
-      </dependency>
-      <dependency>
-        <groupId>org.eclipse.jetty</groupId>
-        <artifactId>jetty-nosql</artifactId>
-        <version>${project.version}</version>
-      </dependency>
-      <dependency>
-        <groupId>org.eclipse.jetty</groupId>
-        <artifactId>jetty-openid</artifactId>
-        <version>${project.version}</version>
-      </dependency>
-      <dependency>
-        <groupId>org.eclipse.jetty</groupId>
-        <artifactId>jetty-osgi</artifactId>
-        <version>${project.version}</version>
-      </dependency>
-      <dependency>
-        <groupId>org.eclipse.jetty</groupId>
-        <artifactId>jetty-proxy</artifactId>
-        <version>${project.version}</version>
-      </dependency>
-      <dependency>
-        <groupId>org.eclipse.jetty</groupId>
-        <artifactId>jetty-rewrite</artifactId>
-        <version>${project.version}</version>
-      </dependency>
-      <dependency>
-        <groupId>org.eclipse.jetty</groupId>
-        <artifactId>jetty-security</artifactId>
-        <version>${project.version}</version>
-      </dependency>
-      <dependency>
-        <groupId>org.eclipse.jetty</groupId>
-        <artifactId>jetty-session</artifactId>
-        <version>${project.version}</version>
-      </dependency>
-      <dependency>
-        <groupId>org.eclipse.jetty</groupId>
-        <artifactId>jetty-server</artifactId>
-        <version>${project.version}</version>
-      </dependency>
-      <dependency>
-        <groupId>org.eclipse.jetty</groupId>
-        <artifactId>jetty-slf4j-impl</artifactId>
-        <version>${project.version}</version>
-      </dependency>
-      <dependency>
-        <groupId>org.eclipse.jetty</groupId>
-        <artifactId>jetty-start</artifactId>
-        <version>${project.version}</version>
-      </dependency>
-      <dependency>
-        <groupId>org.eclipse.jetty</groupId>
-        <artifactId>jetty-unixdomain-server</artifactId>
-        <version>${project.version}</version>
-      </dependency>
-      <dependency>
-        <groupId>org.eclipse.jetty</groupId>
-        <artifactId>jetty-util</artifactId>
-        <version>${project.version}</version>
-      </dependency>
-      <dependency>
-        <groupId>org.eclipse.jetty</groupId>
-        <artifactId>jetty-util-ajax</artifactId>
-        <version>${project.version}</version>
-      </dependency>
-      <dependency>
-        <groupId>org.eclipse.jetty</groupId>
-        <artifactId>jetty-xml</artifactId>
-        <version>${project.version}</version>
-      </dependency>
-      <dependency>
-        <groupId>org.eclipse.jetty.fcgi</groupId>
-        <artifactId>jetty-fcgi-client</artifactId>
-        <version>${project.version}</version>
-      </dependency>
-      <dependency>
-        <groupId>org.eclipse.jetty.fcgi</groupId>
-        <artifactId>jetty-fcgi-server</artifactId>
-        <version>${project.version}</version>
-      </dependency>
-      <dependency>
-        <groupId>org.eclipse.jetty.fcgi</groupId>
-        <artifactId>jetty-fcgi-proxy</artifactId>
-        <version>${project.version}</version>
-      </dependency>
-      <dependency>
-        <groupId>org.eclipse.jetty.gcloud</groupId>
-        <artifactId>jetty-gcloud-session-manager</artifactId>
-        <version>${project.version}</version>
-      </dependency>
-      <dependency>
-        <groupId>org.eclipse.jetty.http2</groupId>
-        <artifactId>jetty-http2-client</artifactId>
-        <version>${project.version}</version>
-      </dependency>
-      <dependency>
-        <groupId>org.eclipse.jetty.http2</groupId>
-        <artifactId>jetty-http2-common</artifactId>
-        <version>${project.version}</version>
-      </dependency>
-      <dependency>
-        <groupId>org.eclipse.jetty.http2</groupId>
-        <artifactId>jetty-http2-hpack</artifactId>
-        <version>${project.version}</version>
-      </dependency>
-      <dependency>
-        <groupId>org.eclipse.jetty.http2</groupId>
-        <artifactId>jetty-http2-client-transport</artifactId>
-        <version>${project.version}</version>
-      </dependency>
-      <dependency>
-        <groupId>org.eclipse.jetty.http2</groupId>
-        <artifactId>jetty-http2-server</artifactId>
-        <version>${project.version}</version>
-      </dependency>
-      <dependency>
-        <groupId>org.eclipse.jetty.http3</groupId>
-        <artifactId>jetty-http3-client</artifactId>
-        <version>${project.version}</version>
-      </dependency>
-      <dependency>
-        <groupId>org.eclipse.jetty.http3</groupId>
-        <artifactId>jetty-http3-common</artifactId>
-        <version>${project.version}</version>
-      </dependency>
-      <dependency>
-        <groupId>org.eclipse.jetty.http3</groupId>
-        <artifactId>jetty-http3-qpack</artifactId>
-        <version>${project.version}</version>
-      </dependency>
-      <dependency>
-        <groupId>org.eclipse.jetty.http3</groupId>
-        <artifactId>jetty-http3-client-transport</artifactId>
-        <version>${project.version}</version>
-      </dependency>
-      <dependency>
-        <groupId>org.eclipse.jetty.http3</groupId>
-        <artifactId>jetty-http3-server</artifactId>
-        <version>${project.version}</version>
-      </dependency>
-      <dependency>
-        <groupId>org.eclipse.jetty.memcached</groupId>
-        <artifactId>jetty-memcached-sessions</artifactId>
-        <version>${project.version}</version>
-      </dependency>
-      <dependency>
-        <groupId>org.eclipse.jetty.osgi</groupId>
-        <artifactId>jetty-osgi-alpn</artifactId>
-        <version>${project.version}</version>
-      </dependency>
-      <dependency>
-        <groupId>org.eclipse.jetty.osgi</groupId>
-        <artifactId>jetty-osgi-boot</artifactId>
-        <version>${project.version}</version>
-      </dependency>
-      <dependency>
-        <groupId>org.eclipse.jetty.osgi</groupId>
-        <artifactId>jetty-osgi-boot-jsp</artifactId>
-        <version>${project.version}</version>
-      </dependency>
-      <dependency>
-        <groupId>org.eclipse.jetty.osgi</groupId>
-        <artifactId>jetty-osgi-boot-warurl</artifactId>
-        <version>${project.version}</version>
-      </dependency>
-      <dependency>
-        <groupId>org.eclipse.jetty.osgi</groupId>
-        <artifactId>jetty-httpservice</artifactId>
-        <version>${project.version}</version>
-      </dependency>
-
-      <dependency>
-        <groupId>org.eclipse.jetty.quic</groupId>
-        <artifactId>jetty-quic-client</artifactId>
-        <version>${project.version}</version>
-      </dependency>
-      <dependency>
-        <groupId>org.eclipse.jetty.quic</groupId>
-        <artifactId>jetty-quic-common</artifactId>
-        <version>${project.version}</version>
-      </dependency>
-      <dependency>
-        <groupId>org.eclipse.jetty.quic</groupId>
-        <artifactId>jetty-quic-quiche-common</artifactId>
-        <version>${project.version}</version>
-      </dependency>
-      <dependency>
-        <groupId>org.eclipse.jetty.quic</groupId>
-        <artifactId>jetty-quic-quiche-jna</artifactId>
-        <version>${project.version}</version>
-      </dependency>
-      <dependency>
-        <groupId>org.eclipse.jetty.quic</groupId>
-        <artifactId>jetty-quic-quiche-foreign-incubator</artifactId>
-        <version>${project.version}</version>
-      </dependency>
-      <dependency>
-        <groupId>org.eclipse.jetty.quic</groupId>
-        <artifactId>jetty-quic-server</artifactId>
-        <version>${project.version}</version>
-      </dependency>
-      <dependency>
-        <groupId>org.eclipse.jetty</groupId>
-        <artifactId>jetty-http-tools</artifactId>
-        <version>${project.version}</version>
-      </dependency>
-      <dependency>
-        <groupId>org.eclipse.jetty.tests</groupId>
-        <artifactId>jetty-test-session-common</artifactId>
-        <version>${project.version}</version>
-      </dependency>
-      <dependency>
-        <groupId>org.eclipse.jetty.tests</groupId>
-        <artifactId>test-distribution-common</artifactId>
-        <version>${project.version}</version>
-      </dependency>
-      <dependency>
-        <groupId>org.eclipse.jetty.websocket</groupId>
-        <artifactId>jetty-websocket-core-client</artifactId>
-        <version>${project.version}</version>
-      </dependency>
-      <dependency>
-        <groupId>org.eclipse.jetty.websocket</groupId>
-        <artifactId>jetty-websocket-core-common</artifactId>
-        <version>${project.version}</version>
-      </dependency>
-      <dependency>
-        <groupId>org.eclipse.jetty.websocket</groupId>
-        <artifactId>jetty-websocket-core-server</artifactId>
-        <version>${project.version}</version>
-      </dependency>
-      <dependency>
-        <groupId>org.eclipse.jetty.websocket</groupId>
-        <artifactId>jetty-websocket-jetty-api</artifactId>
-        <version>${project.version}</version>
-      </dependency>
-      <dependency>
-        <groupId>org.eclipse.jetty.websocket</groupId>
-        <artifactId>jetty-websocket-jetty-common</artifactId>
-        <version>${project.version}</version>
-      </dependency>
-      <dependency>
-        <groupId>org.eclipse.jetty.websocket</groupId>
-        <artifactId>jetty-websocket-jetty-client</artifactId>
-        <version>${project.version}</version>
-      </dependency>
-      <dependency>
-        <groupId>org.eclipse.jetty.websocket</groupId>
-        <artifactId>jetty-websocket-jetty-server</artifactId>
-        <version>${project.version}</version>
-      </dependency>
-      <dependency>
+        <artifactId>maven-bundle-plugin</artifactId>
+        <executions>
+          <execution>
+            <goals>
+              <goal>manifest</goal>
+            </goals>
+            <phase>process-classes</phase>
+          </execution>
+        </executions>
+      </plugin>
+      <plugin>
+        <groupId>org.apache.maven.plugins</groupId>
+        <artifactId>maven-checkstyle-plugin</artifactId>
+        <version>${maven.checkstyle.plugin.version}</version>
+        <configuration>
+          <configLocation>jetty-checkstyle.xml</configLocation>
+          <includeTestSourceDirectory>true</includeTestSourceDirectory>
+          <violationSeverity>warning</violationSeverity>
+          <consoleOutput>true</consoleOutput>
+          <sourceDirectories>
+            <!-- only scan source directory (not generated, filtered, or copied source) -->
+            <sourceDirectory>${project.build.sourceDirectory}</sourceDirectory>
+          </sourceDirectories>
+          <testSourceDirectories>
+            <sourceDirectory>${project.build.testSourceDirectory}</sourceDirectory>
+          </testSourceDirectories>
+        </configuration>
+        <dependencies>
+          <dependency>
+            <groupId>com.puppycrawl.tools</groupId>
+            <artifactId>checkstyle</artifactId>
+            <version>${checkstyle.version}</version>
+          </dependency>
+          <dependency>
+            <groupId>org.eclipse.jetty</groupId>
+            <artifactId>build-resources</artifactId>
+            <version>${project.version}</version>
+          </dependency>
+        </dependencies>
+        <executions>
+          <execution>
+            <id>checkstyle-check</id>
+            <goals>
+              <goal>check</goal>
+            </goals>
+            <phase>validate</phase>
+          </execution>
+        </executions>
+      </plugin>
+      <plugin>
+        <groupId>org.apache.maven.plugins</groupId>
+        <artifactId>maven-enforcer-plugin</artifactId>
+        <dependencies>
+          <dependency>
+            <groupId>org.eclipse.jetty.toolchain</groupId>
+            <artifactId>jetty-build-support</artifactId>
+            <version>${build-support.version}</version>
+          </dependency>
+        </dependencies>
+        <executions>
+          <execution>
+            <id>ban-javax-servlet-api</id>
+            <goals>
+              <goal>enforce</goal>
+            </goals>
+            <phase>validate</phase>
+            <configuration>
+              <rules>
+                <bannedDependencies>
+                  <excludes>
+                    <exclude>javax.servlet:*</exclude>
+                    <exclude>servletapi</exclude>
+                    <exclude>org.eclipse.jetty.orbit:javax.servlet</exclude>
+                    <exclude>*:javax.servlet</exclude>
+                    <exclude>org.mortbay.jetty:servlet-api</exclude>
+                    <exclude>jetty:servlet-api</exclude>
+                    <exclude>jetty-servlet-api</exclude>
+                    <exclude>javax.websocket</exclude>
+                    <exclude>javax.el:*</exclude>
+                    <exclude>javax.annotation:javax.annotation-api</exclude>
+                  </excludes>
+                  <searchTransitive>true</searchTransitive>
+                </bannedDependencies>
+              </rules>
+            </configuration>
+          </execution>
+          <execution>
+            <id>enforce-java</id>
+            <goals>
+              <goal>enforce</goal>
+            </goals>
+            <phase>validate</phase>
+            <configuration>
+              <rules>
+                <requireMavenVersion>
+                  <version>[3.9.2,)</version>
+                  <message>[ERROR] OLD MAVEN [${maven.version}] in use, Jetty ${project.version} requires Maven 3.9.2 or newer</message>
+                </requireMavenVersion>
+                <requireJavaVersion>
+                  <version>[17,)</version>
+                  <message>[ERROR] OLD JDK [${java.version}] in use. Jetty ${project.version} requires JDK 17 or newer</message>
+                </requireJavaVersion>
+                <versionTxtRule implementation="org.eclipse.jetty.toolchain.enforcer.rules.VersionTxtRule"></versionTxtRule>
+                <versionOsgiRule implementation="org.eclipse.jetty.toolchain.enforcer.rules.RequireOsgiCompatibleVersionRule"></versionOsgiRule>
+                <!-- do not support alphax as a version number -->
+                <!--
+                            <versionRedhatRule implementation="org.eclipse.jetty.toolchain.enforcer.rules.RequireRedhatCompatibleVersionRule" />
+                <versionDebianRule implementation="org.eclipse.jetty.toolchain.enforcer.rules.RequireDebianCompatibleVersionRule" />
+                -->
+                <requireUpperBoundDeps></requireUpperBoundDeps>
+              </rules>
+            </configuration>
+          </execution>
+        </executions>
+      </plugin>
+      <plugin>
+        <groupId>org.apache.maven.plugins</groupId>
+        <artifactId>maven-release-plugin</artifactId>
+        <configuration>
+          <autoVersionSubmodules>true</autoVersionSubmodules>
+          <useReleaseProfile>false</useReleaseProfile>
+          <goals>deploy</goals>
+          <arguments>-Peclipse-release</arguments>
+          <preparationGoals>clean install</preparationGoals>
+          <mavenExecutorId>forked-path</mavenExecutorId>
+        </configuration>
+      </plugin>
+      <plugin>
+        <groupId>org.apache.maven.plugins</groupId>
+        <artifactId>maven-remote-resources-plugin</artifactId>
+        <executions>
+          <execution>
+            <id>copy-shared-resources</id>
+            <goals>
+              <goal>process</goal>
+            </goals>
+            <phase>generate-resources</phase>
+            <configuration>
+              <resourceBundles>
+                <resourceBundle>org.eclipse.jetty:build-resources:${project.version}</resourceBundle>
+              </resourceBundles>
+            </configuration>
+          </execution>
+        </executions>
+      </plugin>
+      <plugin>
+        <groupId>org.apache.maven.plugins</groupId>
+        <artifactId>maven-source-plugin</artifactId>
+        <inherited>true</inherited>
+        <executions>
+          <execution>
+            <id>attach-sources</id>
+            <goals>
+              <goal>jar-no-fork</goal>
+            </goals>
+            <phase>package</phase>
+          </execution>
+        </executions>
+      </plugin>
+      <!-- Build helper maven plugin sets the parsedVersion.osgiVersion property -->
+      <plugin>
+        <groupId>org.codehaus.mojo</groupId>
+        <artifactId>build-helper-maven-plugin</artifactId>
+        <executions>
+          <execution>
+            <id>set-osgi-version</id>
+            <goals>
+              <goal>parse-version</goal>
+            </goals>
+            <phase>validate</phase>
+          </execution>
+        </executions>
+      </plugin>
+      <plugin>
         <groupId>org.eclipse.jetty.toolchain</groupId>
-        <artifactId>jetty-perf-helper</artifactId>
-        <version>${jetty.perf-helper.version}</version>
-      </dependency>
-      <dependency>
-        <groupId>org.eclipse.jetty.toolchain</groupId>
-        <artifactId>jetty-test-helper</artifactId>
-        <version>${jetty.test.version}</version>
-      </dependency>
-      <dependency>
-        <groupId>org.eclipse.jetty.toolchain</groupId>
-        <artifactId>jetty-xhtml-schemas</artifactId>
-        <version>${jetty.xhtml.schemas-version}</version>
-        <scope>test</scope>
-      </dependency>
-      <dependency>
-        <groupId>org.eclipse.platform</groupId>
-        <artifactId>org.eclipse.osgi.services</artifactId>
-        <version>${osgi-services-version}</version>
-        <exclusions>
-          <exclusion>
-            <!-- we use the servlet jar from orbit -->
-            <groupId>jakarta.servlet</groupId>
-            <artifactId>servlet-api</artifactId>
-          </exclusion>
-          <exclusion>
-            <!-- cannot override core java classes with Java 9+ -->
-            <groupId>org.apache.felix</groupId>
-            <artifactId>org.osgi.foundation</artifactId>
-          </exclusion>
-        </exclusions>
-      </dependency>
-
-      <dependency>
-        <groupId>org.eclipse.platform</groupId>
-        <artifactId>org.eclipse.osgi</artifactId>
-        <version>${osgi-version}</version>
-      </dependency>
-      <dependency>
-        <groupId>org.eclipse.platform</groupId>
-        <artifactId>org.eclipse.osgi.util</artifactId>
-        <version>${osgi-util-version}</version>
-      </dependency>
-      <dependency>
-        <groupId>org.osgi</groupId>
-        <artifactId>org.osgi.service.cm</artifactId>
-        <version>${osgi-service-cm-version}</version>
-      </dependency>
-      <dependency>
-        <groupId>org.osgi</groupId>
-        <artifactId>org.osgi.service.component</artifactId>
-        <version>${osgi-service-component-version}</version>
-      </dependency>
-      <dependency>
-        <groupId>org.osgi</groupId>
-        <artifactId>org.osgi.service.event</artifactId>
-        <version>${osgi-service-event-version}</version>
-      </dependency>
-      <dependency>
-        <groupId>org.osgi</groupId>
-        <artifactId>org.osgi.util.tracker</artifactId>
-        <version>${osgi-util-tracker-version}</version>
-      </dependency>
-      <dependency>
-        <groupId>org.osgi</groupId>
-        <artifactId>org.osgi.util.measurement</artifactId>
-        <version>${osgi-util-measurement-version}</version>
-        <scope>test</scope>
-      </dependency>
-      <dependency>
-        <groupId>org.osgi</groupId>
-        <artifactId>org.osgi.util.position</artifactId>
-        <version>${osgi-util-position-version}</version>
-        <scope>test</scope>
-      </dependency>
-      <dependency>
-        <groupId>org.osgi</groupId>
-        <artifactId>org.osgi.util.xml</artifactId>
-        <version>${osgi-util-xml-version}</version>
-        <scope>test</scope>
-      </dependency>
-      <dependency>
-        <groupId>org.eclipse.equinox.http</groupId>
-        <artifactId>servlet</artifactId>
-        <version>${equinox-http-servlet-version}</version>
-      </dependency>
-      <dependency>
-        <groupId>org.hamcrest</groupId>
-        <artifactId>hamcrest</artifactId>
-        <version>${hamcrest.version}</version>
-      </dependency>
-      <dependency>
-        <groupId>org.infinispan</groupId>
-        <artifactId>infinispan-bom</artifactId>
-        <version>${infinispan.version}</version>
-        <type>pom</type>
-        <scope>import</scope>
-      </dependency>
-      <dependency>
-        <groupId>org.infinispan.protostream</groupId>
-        <artifactId>protostream</artifactId>
-        <version>${infinispan.protostream.version}</version>
-      </dependency>
-      <dependency>
-        <groupId>org.infinispan.protostream</groupId>
-        <artifactId>protostream-processor</artifactId>
-        <version>${infinispan.protostream.version}</version>
-      </dependency>
-      <dependency>
-        <groupId>com.fasterxml.jackson</groupId>
-        <artifactId>jackson-bom</artifactId>
-        <version>${jackson.version}</version>
-        <type>pom</type>
-        <scope>import</scope>
-      </dependency>
-      <dependency>
-        <groupId>org.jboss.logging</groupId>
-        <artifactId>jboss-logging</artifactId>
-        <version>${jboss.logging.version}</version>
-      </dependency>
-      <dependency>
-        <groupId>org.jboss.logging</groupId>
-        <artifactId>jboss-logging-annotations</artifactId>
-        <version>${jboss.logging.annotations.version}</version>
-      </dependency>
-      <dependency>
-        <groupId>org.jboss.logging</groupId>
-        <artifactId>jboss-logging-processor</artifactId>
-        <version>${jboss.logging.processor.version}</version>
-      </dependency>
-      <dependency>
-        <groupId>org.jboss.logmanager</groupId>
-        <artifactId>jboss-logmanager</artifactId>
-        <version>${jboss-logmanager.version}</version>
-      </dependency>
-      <dependency>
-        <groupId>org.jboss.threads</groupId>
-        <artifactId>jboss-threads</artifactId>
-        <version>${jboss-threads.version}</version>
-      </dependency>
-      <dependency>
-        <groupId>org.wildfly.security</groupId>
-        <artifactId>wildfly-elytron</artifactId>
-        <version>${wildfly.elytron.version}</version>
-      </dependency>
-      <dependency>
-        <groupId>org.junit</groupId>
-        <artifactId>junit-bom</artifactId>
-        <version>${junit.version}</version>
-        <type>pom</type>
-        <scope>import</scope>
-      </dependency>
-      <dependency>
-        <groupId>org.mariadb.jdbc</groupId>
-        <artifactId>mariadb-java-client</artifactId>
-        <version>${mariadb.version}</version>
-      </dependency>
-      <dependency>
-        <groupId>org.mortbay.jetty.quiche</groupId>
-        <artifactId>jetty-quiche-native</artifactId>
-        <version>${jetty-quiche-native.version}</version>
-      </dependency>
-
-      <!-- Pax Exam Dependencies -->
-      <dependency>
-        <groupId>org.ops4j.pax.exam</groupId>
-        <artifactId>pax-exam</artifactId>
-        <version>${pax.exam.version}</version>
-      </dependency>
-      <dependency>
-        <groupId>org.ops4j.pax.exam</groupId>
-        <artifactId>pax-exam-inject</artifactId>
-        <version>${pax.exam.version}</version>
-      </dependency>
-      <dependency>
-        <groupId>org.ops4j.pax.exam</groupId>
-        <artifactId>pax-exam-container-forked</artifactId>
-        <version>${pax.exam.version}</version>
-      </dependency>
-      <dependency>
-        <groupId>org.ops4j.pax.tinybundles</groupId>
-        <artifactId>tinybundles</artifactId>
-        <version>${tinybundles.version}</version>
-      </dependency>
-      <dependency>
-        <groupId>org.ops4j.pax.swissbox</groupId>
-        <artifactId>pax-swissbox-framework</artifactId>
-        <version>${swissbox.version}</version>
-      </dependency>
-      <dependency>
-        <groupId>org.ops4j.pax.swissbox</groupId>
-        <artifactId>pax-swissbox-tracker</artifactId>
-        <version>${swissbox.version}</version>
-      </dependency>
-      <dependency>
-        <groupId>org.ops4j.pax.exam</groupId>
-        <artifactId>pax-exam-junit4</artifactId>
-        <version>${pax.exam.version}</version>
-      </dependency>
-      <dependency>
-        <groupId>org.ops4j.pax.exam</groupId>
-        <artifactId>pax-exam-link-mvn</artifactId>
-        <version>${pax.exam.version}</version>
-      </dependency>
-      <dependency>
-        <groupId>org.ops4j.pax.url</groupId>
-        <artifactId>pax-url-aether</artifactId>
-        <version>${pax.url.version}</version>
-      </dependency>
-      <dependency>
-        <groupId>org.ops4j.pax.url</groupId>
-        <artifactId>pax-url-wrap</artifactId>
-        <version>${pax.url.version}</version>
-      </dependency>
-
-      <dependency>
-        <groupId>org.osgi</groupId>
-        <!-- older artifact location, some of our transitive deps still use this coordinate -->
-        <artifactId>org.osgi.core</artifactId>
-        <version>${org.osgi.core.version}</version>
-      </dependency>
-      <dependency>
-        <groupId>org.osgi</groupId>
-        <!-- newer artifact location, some of our transitive deps use this up to date coordinate -->
-        <artifactId>osgi.core</artifactId>
-        <version>${org.osgi.core.version}</version>
-      </dependency>
-      <dependency>
-        <groupId>org.osgi</groupId>
-        <artifactId>osgi.annotation</artifactId>
-        <version>${org.osgi.annotation.version}</version>
-      </dependency>
-      <dependency>
-        <groupId>org.osgi</groupId>
-        <artifactId>org.osgi.util.function</artifactId>
-        <version>${org.osgi.util.function.version}</version>
-      </dependency>
-      <dependency>
-        <groupId>org.osgi</groupId>
-        <artifactId>org.osgi.util.promise</artifactId>
-        <version>${org.osgi.util.promise.version}</version>
-      </dependency>
-      <dependency>
-        <groupId>org.ow2.asm</groupId>
-        <artifactId>asm-bom</artifactId>
-        <version>${asm.version}</version>
-        <type>pom</type>
-        <scope>import</scope>
-      </dependency>
-      <dependency>
-        <groupId>org.slf4j</groupId>
-        <artifactId>jcl104-over-slf4j</artifactId>
-        <version>${slf4j.version}</version>
-      </dependency>
-      <dependency>
-        <groupId>org.slf4j</groupId>
-        <artifactId>jul-to-slf4j</artifactId>
-        <version>${slf4j.version}</version>
-      </dependency>
-      <dependency>
-        <groupId>org.slf4j</groupId>
-        <artifactId>log4j-over-slf4j</artifactId>
-        <version>${slf4j.version}</version>
-      </dependency>
-      <dependency>
-        <groupId>org.slf4j</groupId>
-        <artifactId>slf4j-api</artifactId>
-        <version>${slf4j.version}</version>
-      </dependency>
-      <dependency>
-        <groupId>org.slf4j</groupId>
-        <artifactId>slf4j-simple</artifactId>
-        <version>${slf4j.version}</version>
-      </dependency>
-      <dependency>
-        <groupId>org.testcontainers</groupId>
-        <artifactId>testcontainers-bom</artifactId>
-        <version>${testcontainers.version}</version>
-        <type>pom</type>
-        <scope>import</scope>
-      </dependency>
-    </dependencies>
-  </dependencyManagement>
+        <artifactId>jetty-version-maven-plugin</artifactId>
+        <executions>
+          <execution>
+            <id>attach-version</id>
+            <goals>
+              <goal>attach-version-text</goal>
+            </goals>
+            <phase>process-resources</phase>
+          </execution>
+        </executions>
+      </plugin>
+      <plugin>
+        <groupId>org.jacoco</groupId>
+        <artifactId>jacoco-maven-plugin</artifactId>
+        <configuration>
+          <excludes>
+            <!-- build tools -->
+            <exclude>**/org/eclipse/jetty/ant/**</exclude>
+            <!-- example code / documentation -->
+            <exclude>**/org/eclipse/jetty/embedded/**</exclude>
+            <exclude>**/org/eclipse/jetty/asyncrest/**</exclude>
+            <exclude>**/org/eclipse/jetty/demo/**</exclude>
+            <!-- special environments / late integrations -->
+            <exclude>**/org/eclipse/jetty/gcloud/**</exclude>
+            <exclude>**/org/eclipse/jetty/infinispan/**</exclude>
+            <exclude>**/org/eclipse/jetty/osgi/**</exclude>
+            <exclude>**/org/eclipse/jetty/spring/**</exclude>
+            <exclude>**/org/eclipse/jetty/http/spi/**</exclude>
+            <!-- test classes -->
+            <exclude>**/org/eclipse/jetty/tests/**</exclude>
+            <exclude>**/org/eclipse/jetty/test/**</exclude>
+          </excludes>
+        </configuration>
+        <executions>
+          <execution>
+            <id>jacoco-initialize</id>
+            <goals>
+              <goal>prepare-agent</goal>
+            </goals>
+            <phase>initialize</phase>
+          </execution>
+          <execution>
+            <id>jacoco-setup-m-invoker-p</id>
+            <goals>
+              <goal>prepare-agent</goal>
+            </goals>
+            <phase>initialize</phase>
+            <configuration>
+              <!-- Enable recording of coverage during execution of maven-invoker-plugin -->
+              <propertyName>invoker.mavenOpts</propertyName>
+            </configuration>
+          </execution>
+          <execution>
+            <id>jacoco-site</id>
+            <goals>
+              <goal>report</goal>
+            </goals>
+            <phase>package</phase>
+            <configuration>
+              <!-- list of classes that you want to see in the report.
+                   Specify a narrow list of multi-module project
+                   classes you want to see here.
+                   This is useful to remove 3rd party library classes
+                   from the report. -->
+              <includes>
+                <include>**/org/eclipse/jetty/**</include>
+              </includes>
+            </configuration>
+          </execution>
+        </executions>
+      </plugin>
+    </plugins>
+    <extensions>
+      <extension>
+        <groupId>org.apache.maven.extensions</groupId>
+        <artifactId>maven-build-cache-extension</artifactId>
+        <version>${maven-build-cache.version}</version>
+      </extension>
+    </extensions>
+  </build>
 
   <profiles>
     <profile>
@@ -1881,14 +2049,32 @@
         <plugins>
           <plugin>
             <groupId>org.apache.maven.plugins</groupId>
+            <artifactId>maven-assembly-plugin</artifactId>
+            <executions>
+              <execution>
+                <id>config-assembly</id>
+                <goals>
+                  <goal>single</goal>
+                </goals>
+                <phase>package</phase>
+                <configuration>
+                  <descriptorRefs>
+                    <descriptorRef>config</descriptorRef>
+                  </descriptorRefs>
+                </configuration>
+              </execution>
+            </executions>
+          </plugin>
+          <plugin>
+            <groupId>org.apache.maven.plugins</groupId>
             <artifactId>maven-resources-plugin</artifactId>
             <executions>
               <execution>
                 <id>copy-resources</id>
-                <phase>process-resources</phase>
                 <goals>
                   <goal>copy-resources</goal>
                 </goals>
+                <phase>process-resources</phase>
                 <configuration>
                   <encoding>UTF-8</encoding>
                   <useDefaultDelimiters>false</useDefaultDelimiters>
@@ -1909,24 +2095,6 @@
               </execution>
             </executions>
           </plugin>
-          <plugin>
-            <groupId>org.apache.maven.plugins</groupId>
-            <artifactId>maven-assembly-plugin</artifactId>
-            <executions>
-              <execution>
-                <id>config-assembly</id>
-                <phase>package</phase>
-                <goals>
-                  <goal>single</goal>
-                </goals>
-                <configuration>
-                  <descriptorRefs>
-                    <descriptorRef>config</descriptorRef>
-                  </descriptorRefs>
-                </configuration>
-              </execution>
-            </executions>
-          </plugin>
         </plugins>
       </build>
     </profile>
@@ -1941,14 +2109,31 @@
         <plugins>
           <plugin>
             <groupId>org.apache.maven.plugins</groupId>
+            <artifactId>maven-assembly-plugin</artifactId>
+            <executions>
+              <execution>
+                <goals>
+                  <goal>single</goal>
+                </goals>
+                <phase>package</phase>
+                <configuration>
+                  <descriptors>
+                    <descriptor>src/main/assembly/config.xml</descriptor>
+                  </descriptors>
+                </configuration>
+              </execution>
+            </executions>
+          </plugin>
+          <plugin>
+            <groupId>org.apache.maven.plugins</groupId>
             <artifactId>maven-resources-plugin</artifactId>
             <executions>
               <execution>
                 <id>copy-resources</id>
-                <phase>process-resources</phase>
                 <goals>
                   <goal>copy-resources</goal>
                 </goals>
+                <phase>process-resources</phase>
                 <configuration>
                   <encoding>UTF-8</encoding>
                   <useDefaultDelimiters>false</useDefaultDelimiters>
@@ -1965,23 +2150,6 @@
                       </excludes>
                     </resource>
                   </resources>
-                </configuration>
-              </execution>
-            </executions>
-          </plugin>
-          <plugin>
-            <groupId>org.apache.maven.plugins</groupId>
-            <artifactId>maven-assembly-plugin</artifactId>
-            <executions>
-              <execution>
-                <phase>package</phase>
-                <goals>
-                  <goal>single</goal>
-                </goals>
-                <configuration>
-                  <descriptors>
-                    <descriptor>src/main/assembly/config.xml</descriptor>
-                  </descriptors>
                 </configuration>
               </execution>
             </executions>
@@ -2006,6 +2174,14 @@
         </pluginManagement>
         <plugins>
           <plugin>
+            <groupId>org.apache.maven.plugins</groupId>
+            <artifactId>maven-deploy-plugin</artifactId>
+            <inherited>true</inherited>
+            <configuration>
+              <updateReleaseInfo>true</updateReleaseInfo>
+            </configuration>
+          </plugin>
+          <plugin>
             <artifactId>maven-enforcer-plugin</artifactId>
             <executions>
               <execution>
@@ -2025,9 +2201,23 @@
             </executions>
           </plugin>
           <plugin>
-            <inherited>true</inherited>
+            <groupId>org.apache.maven.plugins</groupId>
+            <artifactId>maven-gpg-plugin</artifactId>
+            <version>${maven.gpg.plugin.version}</version>
+            <executions>
+              <execution>
+                <id>sign-artifacts</id>
+                <goals>
+                  <goal>sign</goal>
+                </goals>
+                <phase>verify</phase>
+              </execution>
+            </executions>
+          </plugin>
+          <plugin>
             <groupId>org.apache.maven.plugins</groupId>
             <artifactId>maven-javadoc-plugin</artifactId>
+            <inherited>true</inherited>
             <executions>
               <execution>
                 <id>attach-javadoc-jar</id>
@@ -2038,38 +2228,16 @@
             </executions>
           </plugin>
           <plugin>
-            <inherited>true</inherited>
-            <groupId>org.apache.maven.plugins</groupId>
-            <artifactId>maven-deploy-plugin</artifactId>
-            <configuration>
-              <updateReleaseInfo>true</updateReleaseInfo>
-            </configuration>
-          </plugin>
-          <plugin>
-            <groupId>org.apache.maven.plugins</groupId>
-            <artifactId>maven-gpg-plugin</artifactId>
-            <version>${maven.gpg.plugin.version}</version>
-            <executions>
-              <execution>
-                <id>sign-artifacts</id>
-                <phase>verify</phase>
-                <goals>
-                  <goal>sign</goal>
-                </goals>
-              </execution>
-            </executions>
-          </plugin>
-          <plugin>
             <groupId>org.codehaus.mojo</groupId>
             <artifactId>exec-maven-plugin</artifactId>
             <executions>
               <execution>
-                <inherited>false</inherited>
                 <id>validate-dot</id>
                 <goals>
                   <goal>exec</goal>
                 </goals>
                 <phase>validate</phase>
+                <inherited>false</inherited>
                 <configuration>
                   <executable>dot</executable>
                   <arguments>
@@ -2085,17 +2253,17 @@
     <profile>
       <id>ci</id>
       <properties>
-        <surefire.rerunFailingTestsCount>0</surefire.rerunFailingTestsCount>
-        <spotbugs.failOnError>false</spotbugs.failOnError>
-        <!-- Defines a SpotBugs threshold. Use "Low" to discover low-priority bugs -->
-        <spotbugs.threshold>Medium</spotbugs.threshold>
-        <!-- Defines a SpotBugs effort. Use "Max" to maximize the scan depth -->
-        <spotbugs.effort>Default</spotbugs.effort>
-        <spotbugs.skip>false</spotbugs.skip>
-        <spotbugs.onlyAnalyze>org.eclipse.jetty.*</spotbugs.onlyAnalyze>
+        <home.start.timeout>120</home.start.timeout>
         <!-- need a good default value if running this profile locally with empty repo -->
         <maven.repo.uri>https://repo.maven.apache.org/maven2/</maven.repo.uri>
-        <home.start.timeout>120</home.start.timeout>
+        <!-- Defines a SpotBugs effort. Use "Max" to maximize the scan depth -->
+        <spotbugs.effort>Default</spotbugs.effort>
+        <spotbugs.failOnError>false</spotbugs.failOnError>
+        <spotbugs.onlyAnalyze>org.eclipse.jetty.*</spotbugs.onlyAnalyze>
+        <spotbugs.skip>false</spotbugs.skip>
+        <!-- Defines a SpotBugs threshold. Use "Low" to discover low-priority bugs -->
+        <spotbugs.threshold>Medium</spotbugs.threshold>
+        <surefire.rerunFailingTestsCount>0</surefire.rerunFailingTestsCount>
       </properties>
       <build>
         <pluginManagement>
@@ -2122,18 +2290,6 @@
         </pluginManagement>
         <plugins>
           <plugin>
-            <groupId>org.apache.maven.plugins</groupId>
-            <artifactId>maven-javadoc-plugin</artifactId>
-            <executions>
-              <execution>
-                <phase>package</phase>
-                <goals>
-                  <goal>javadoc-no-fork</goal>
-                </goals>
-              </execution>
-            </executions>
-          </plugin>
-          <plugin>
             <groupId>com.github.spotbugs</groupId>
             <artifactId>spotbugs-maven-plugin</artifactId>
             <executions>
@@ -2154,6 +2310,18 @@
               </execution>
             </executions>
           </plugin>
+          <plugin>
+            <groupId>org.apache.maven.plugins</groupId>
+            <artifactId>maven-javadoc-plugin</artifactId>
+            <executions>
+              <execution>
+                <goals>
+                  <goal>javadoc-no-fork</goal>
+                </goals>
+                <phase>package</phase>
+              </execution>
+            </executions>
+          </plugin>
         </plugins>
       </build>
     </profile>
@@ -2167,11 +2335,11 @@
             <executions>
               <execution>
                 <id>gen-versiontxt</id>
-                <phase>generate-resources</phase>
                 <goals>
                   <goal>update-version-text</goal>
                   <goal>tag</goal>
                 </goals>
+                <phase>generate-resources</phase>
                 <configuration>
                   <refreshTags>true</refreshTags>
                   <copyGenerated>true</copyGenerated>
@@ -2212,10 +2380,10 @@
             <executions>
               <execution>
                 <id>root-report</id>
-                <phase>validate</phase>
                 <goals>
                   <goal>dependency-updates-aggregate-report</goal>
                 </goals>
+                <phase>validate</phase>
                 <configuration>
                   <formats>
                     <format>html</format>
@@ -2276,6 +2444,15 @@
       <properties>
         <cbi-plugins.version>1.4.2</cbi-plugins.version>
       </properties>
+      <pluginRepositories>
+        <pluginRepository>
+          <snapshots>
+            <enabled>false</enabled>
+          </snapshots>
+          <id>cbi-releases</id>
+          <url>https://repo.eclipse.org/content/repositories/cbi-releases/</url>
+        </pluginRepository>
+      </pluginRepositories>
       <build>
         <plugins>
           <plugin>
@@ -2286,24 +2463,15 @@
             <executions>
               <execution>
                 <id>sign</id>
-                <phase>package</phase>
                 <goals>
                   <goal>sign</goal>
                 </goals>
+                <phase>package</phase>
               </execution>
             </executions>
           </plugin>
         </plugins>
       </build>
-      <pluginRepositories>
-        <pluginRepository>
-          <id>cbi-releases</id>
-          <url>https://repo.eclipse.org/content/repositories/cbi-releases/</url>
-          <snapshots>
-            <enabled>false</enabled>
-          </snapshots>
-        </pluginRepository>
-      </pluginRepositories>
     </profile>
     <profile>
       <id>snapshot-repositories</id>
@@ -2312,147 +2480,40 @@
       </activation>
       <repositories>
         <repository>
+          <releases>
+            <enabled>false</enabled>
+          </releases>
+          <snapshots>
+            <enabled>true</enabled>
+          </snapshots>
           <id>jetty-snapshots</id>
           <name>jetty-snapshots</name>
           <url>https://oss.sonatype.org/content/repositories/jetty-snapshots</url>
-          <snapshots>
-            <enabled>true</enabled>
-          </snapshots>
+        </repository>
+        <repository>
           <releases>
             <enabled>false</enabled>
           </releases>
-        </repository>
-        <repository>
+          <snapshots>
+            <enabled>true</enabled>
+          </snapshots>
           <id>oss.snapshots</id>
           <name>OSS Snapshots</name>
           <url>https://oss.sonatype.org/content/repositories/snapshots</url>
-          <releases>
-            <enabled>false</enabled>
-          </releases>
-          <snapshots>
-            <enabled>true</enabled>
-          </snapshots>
         </repository>
       </repositories>
     </profile>
     <profile>
       <id>fast</id>
       <properties>
-        <skipTests>true</skipTests>
         <asciidoctor.skip>true</asciidoctor.skip>
         <checkstyle.skip>true</checkstyle.skip>
         <enforcer.skip>true</enforcer.skip>
         <license.skip>true</license.skip>
+        <skipTests>true</skipTests>
         <spotbugs.skip>true</spotbugs.skip>
       </properties>
     </profile>
   </profiles>
-
-  <issueManagement>
-    <system>github</system>
-    <url>https://github.com/eclipse/jetty.project/issues</url>
-  </issueManagement>
-
-  <mailingLists>
-    <mailingList>
-      <name>Jetty Developer Mailing List</name>
-      <archive>https://www.eclipse.org/lists/jetty-dev/</archive>
-      <subscribe>https://accounts.eclipse.org/mailing-list/jetty-dev</subscribe>
-    </mailingList>
-    <mailingList>
-      <name>Jetty Users Mailing List</name>
-      <archive>https://www.eclipse.org/lists/jetty-users/</archive>
-      <subscribe>https://accounts.eclipse.org/mailing-list/jetty-users</subscribe>
-    </mailingList>
-    <mailingList>
-      <name>Jetty Announce Mailing List</name>
-      <archive>https://www.eclipse.org/lists/jetty-announce/</archive>
-      <subscribe>https://accounts.eclipse.org/mailing-list/jetty-announce</subscribe>
-    </mailingList>
-  </mailingLists>
-
-  <developers>
-    <developer>
-      <id>gregw</id>
-      <name>Greg Wilkins</name>
-      <email>gregw@webtide.com</email>
-      <organization>Webtide, LLC</organization>
-      <organizationUrl>https://webtide.com</organizationUrl>
-      <timezone>10</timezone>
-    </developer>
-    <developer>
-      <id>janb</id>
-      <name>Jan Bartel</name>
-      <email>janb@webtide.com</email>
-      <organization>Webtide, LLC</organization>
-      <organizationUrl>https://webtide.com</organizationUrl>
-      <timezone>10</timezone>
-    </developer>
-    <developer>
-      <id>jesse</id>
-      <name>Jesse McConnell</name>
-      <email>jesse.mcconnell@gmail.com</email>
-      <organization>Webtide, LLC</organization>
-      <organizationUrl>https://webtide.com</organizationUrl>
-      <timezone>-6</timezone>
-    </developer>
-    <developer>
-      <id>joakime</id>
-      <name>Joakim Erdfelt</name>
-      <email>joakim.erdfelt@gmail.com</email>
-      <organization>Webtide, LLC</organization>
-      <organizationUrl>https://webtide.com</organizationUrl>
-      <timezone>-6</timezone>
-    </developer>
-    <developer>
-      <id>sbordet</id>
-      <name>Simone Bordet</name>
-      <email>simone.bordet@gmail.com</email>
-      <organization>Webtide, LLC</organization>
-      <organizationUrl>https://webtide.com</organizationUrl>
-      <timezone>1</timezone>
-    </developer>
-    <developer>
-      <id>djencks</id>
-      <name>David Jencks</name>
-      <email>david.a.jencks@gmail.com</email>
-      <organization>IBM</organization>
-      <timezone>-8</timezone>
-    </developer>
-    <developer>
-      <id>olamy</id>
-      <name>Olivier Lamy</name>
-      <email>oliver.lamy@gmail.com</email>
-      <organization>Webtide, LLC</organization>
-      <organizationUrl>https://webtide.com</organizationUrl>
-      <timezone>Australia/Brisbane</timezone>
-    </developer>
-    <developer>
-      <id>lorban</id>
-      <name>Ludovic Orban</name>
-      <email>lorban@bitronix.be</email>
-      <organization>Webtide, LLC</organization>
-      <organizationUrl>https://webtide.com</organizationUrl>
-      <timezone>1</timezone>
-    </developer>
-  </developers>
-
-  <organization>
-    <name>Webtide</name>
-    <url>https://webtide.com</url>
-  </organization>
-
-  <distributionManagement>
-    <repository>
-      <id>oss.sonatype.org</id>
-      <name>Jetty Staging Repository</name>
-      <url>https://oss.sonatype.org/service/local/staging/deploy/maven2/</url>
-    </repository>
-    <snapshotRepository>
-      <id>oss.sonatype.org</id>
-      <name>Jetty Snapshot Repository</name>
-      <url>https://oss.sonatype.org/content/repositories/jetty-snapshots/</url>
-    </snapshotRepository>
-  </distributionManagement>
 
 </project>
