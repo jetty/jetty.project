@@ -401,8 +401,17 @@ public abstract class QuicSession extends ContainerLifeCycle
         if (LOG.isDebugEnabled())
             LOG.debug("outward closing 0x{}/{} on {}", Long.toHexString(error), reason, this);
         quicheConnection.close(error, reason);
-        // Flushing will eventually forward the outward close to the connection.
-        flush();
+        try
+        {
+            // Flushing will eventually forward the outward close to the connection.
+            flush();
+        }
+        catch (IllegalStateException ise)
+        {
+            // Flusher already is in CLOSED state, nothing else to do.
+            if (LOG.isDebugEnabled())
+                LOG.debug("IllegalStateException caught while flushing, flusher={} {}", flusher, this, ise);
+        }
     }
 
     private void finishOutwardClose(Throwable failure)
