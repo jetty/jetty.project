@@ -51,14 +51,14 @@ public class JDBCSessionDataStoreTest extends AbstractSessionDataStoreTest
     @Override
     public SessionDataStoreFactory createSessionDataStoreFactory()
     {
-        return JdbcTestHelper.newSessionDataStoreFactory(sessionTableName);
+        return JdbcTestHelper.newSessionDataStoreFactory(sessionTableName, false);
     }
 
     @Override
     public void persistSession(SessionData data)
         throws Exception
     {
-        JdbcTestHelper.insertSession(data, sessionTableName);
+        JdbcTestHelper.insertSession(data, sessionTableName, false);
     }
 
     @Override
@@ -89,7 +89,7 @@ public class JDBCSessionDataStoreTest extends AbstractSessionDataStoreTest
         Thread.currentThread().setContextClassLoader(_contextClassLoader);
         try
         {
-            return JdbcTestHelper.checkSessionPersisted(data, sessionTableName);
+            return JdbcTestHelper.checkSessionPersisted(data, sessionTableName, false);
         }
         finally
         {

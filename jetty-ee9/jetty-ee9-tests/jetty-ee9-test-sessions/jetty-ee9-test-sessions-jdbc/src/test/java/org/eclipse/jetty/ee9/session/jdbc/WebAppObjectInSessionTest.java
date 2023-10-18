@@ -40,7 +40,7 @@ public class WebAppObjectInSessionTest extends AbstractWebAppObjectInSessionTest
     @Override
     public SessionDataStoreFactory createSessionDataStoreFactory()
     {
-        return JdbcTestHelper.newSessionDataStoreFactory(sessionTableName);
+        return JdbcTestHelper.newSessionDataStoreFactory(sessionTableName, false);
     }
 
     @Test
