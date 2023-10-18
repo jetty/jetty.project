@@ -58,7 +58,7 @@ public class Negotiated
             UrlEncoded.decodeUtf8To(rawQuery, fields);
             for (Fields.Field field : fields)
             {
-                map.put(field.getValue(), Collections.unmodifiableList(field.getValues()));
+                map.put(field.getName(), Collections.unmodifiableList(field.getValues()));
             }
         }
         this.parameterMap = Collections.unmodifiableMap(map);
