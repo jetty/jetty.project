@@ -241,10 +241,10 @@ public class DoSFilter implements Filter
         setInsertHeaders(parameter == null || Boolean.parseBoolean(parameter));
 
         parameter = filterConfig.getInitParameter(TRACK_SESSIONS_INIT_PARAM);
-        setTrackSessions(parameter == null || Boolean.parseBoolean(parameter));
+        setTrackSessions(Boolean.parseBoolean(parameter));
 
         parameter = filterConfig.getInitParameter(REMOTE_PORT_INIT_PARAM);
-        setRemotePort(parameter != null && Boolean.parseBoolean(parameter));
+        setRemotePort(Boolean.parseBoolean(parameter));
 
         parameter = filterConfig.getInitParameter(ENABLED_INIT_PARAM);
         setEnabled(parameter == null || Boolean.parseBoolean(parameter));
