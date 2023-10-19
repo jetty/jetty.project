@@ -226,7 +226,7 @@ testFileSystemPermissions()
 
   # Don't test if JETTY_USER is specified
   # as the Jetty process will switch to a different user id on startup
-  if [ -n "$JETTY_USER"] ; then
+  if [ -n "$JETTY_USER" ] ; then
     (( DEBUG )) && echo "Not testing file system permissions: JETTY_USER=$JETTY_USER"
     return 0
   fi
@@ -568,15 +568,7 @@ then
 fi
 
 # Collect the dry-run (of opts,path,main,args) from the jetty.base configuration
-if (( DEBUG ))
-then
-  echo "WITH-AT:" "$JAVA" -jar "$JETTY_START" --dry-run=opts,path,main,args ${JETTY_ARGS[@]} ${JAVA_OPTIONS[*]}
-  echo "-----"
-  echo "WITH-GLOB:" "$JAVA" -jar "$JETTY_START" --dry-run=opts,path,main,args ${JETTY_ARGS[*]} ${JAVA_OPTIONS[*]}
-  echo "-----"
-  echo "WITHOUT-GLOB:" "$JAVA" -jar "$JETTY_START" --dry-run=opts,path,main,args ${JETTY_ARGS} ${JAVA_OPTIONS[*]}
-fi
-JETTY_DRY_RUN=$("$JAVA" -jar "$JETTY_START" --dry-run=opts,path,main,args ${JETTY_ARGS[*]} ${JAVA_OPTIONS[*]})
+JETTY_DRY_RUN=$(echo "${JETTY_ARGS[*]} ${JAVA_OPTIONS[*]}" | xargs "$JAVA" -jar "$JETTY_START" --dry-run=opts,path,main,args)
 RUN_ARGS=($JETTY_SYS_PROPS ${JETTY_DRY_RUN[@]})
 
 if (( DEBUG ))

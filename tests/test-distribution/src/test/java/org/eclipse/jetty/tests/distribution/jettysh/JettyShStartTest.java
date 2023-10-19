@@ -20,7 +20,6 @@ import java.util.ArrayList;
 import java.util.List;
 import java.util.stream.Stream;
 
-import com.github.dockerjava.api.DockerClient;
 import org.awaitility.Awaitility;
 import org.eclipse.jetty.client.api.ContentResponse;
 import org.eclipse.jetty.http.HttpStatus;
@@ -34,8 +33,6 @@ import org.junit.jupiter.params.provider.MethodSource;
 import org.testcontainers.containers.Container;
 import org.testcontainers.containers.GenericContainer;
 import org.testcontainers.containers.startupcheck.IsRunningStartupCheckStrategy;
-import org.testcontainers.containers.startupcheck.StartupCheckStrategy;
-import org.testcontainers.containers.wait.strategy.DockerHealthcheckWaitStrategy;
 import org.testcontainers.containers.wait.strategy.ShellStrategy;
 import org.testcontainers.images.builder.ImageFromDockerfile;
 
@@ -71,95 +68,14 @@ public class JettyShStartTest extends AbstractJettyHomeTest
         jettyHomePath = homeTester.getJettyHome();
     }
 
-    private static ImageFromDockerfile getUbuntuOSImage()
-    {
-        return new ImageFromDSL(JETTY_REGISTRY + "jetty-sh:ubuntu-22.04")
-            .withDockerfileFromBuilder(builder ->
-                builder
-                    .from("ubuntu:22.04")
-                    .run("apt update ; " +
-                        "apt -y upgrade ; " +
-                        "apt install -y openjdk-17-jdk-headless ; " +
-                        "apt install -y curl vim net-tools ")
-                    .env("TEST_DIR", "/var/test")
-                    .env("JETTY_HOME", "$TEST_DIR/jetty-home")
-                    .env("JETTY_BASE", "$TEST_DIR/jetty-base")
-                    .env("PATH", "$PATH:${JETTY_HOME}/bin/")
-                    .user("root")
-                    // Configure /etc/default/jetty
-                    .run("echo \"JETTY_HOME=${JETTY_HOME}\" > /etc/default/jetty ; " +
-                        "echo \"JETTY_BASE=${JETTY_BASE}\" >> /etc/default/jetty ; " +
-                        "echo \"JETTY_RUN=${JETTY_BASE}\" >> /etc/default/jetty ; " +
-                        (DEBUG_JETTY_SH ? " ; echo \"DEBUG=0\" >> /etc/default/jetty" : ""))
-                    // setup Jetty Home
-                    .copy("/opt/jetty/", "${JETTY_HOME}/")
-                    .env("PATH", "$PATH:${JETTY_HOME}/bin/")
-                    .run("chmod ugo+x ${JETTY_HOME}/bin/jetty.sh")
-                    .build())
-            .withFileFromFile("/opt/jetty/", jettyHomePath.toFile());
-    }
-
-    /**
-     * A docker image with no JETTY_USER set, everything executes as `root`.
-     */
-    private static ImageFromDockerfile buildWithRootNoUserChange(ImageFromDockerfile osImage)
-    {
-        String name = osImage.get();
-        System.out.println("buildWithRootNoUserChange: name=" + name);
-
-        return new ImageFromDSL(osImage.getDockerImageName() + "-no-user-change")
-            .withDockerfileFromBuilder(builder ->
-                builder
-                    .from(osImage.getDockerImageName())
-                    .label(JETTY_MODE, MODE_ROOT_ONLY)
-                    .run("mkdir -p ${JETTY_BASE} ; " +
-                        "chmod u+x ${JETTY_HOME}/bin/jetty.sh ; " +
-                        "chmod a+w ${JETTY_BASE}")
-                    // Configure Jetty Base
-                    .workDir("${JETTY_BASE}")
-                    .build());
-    }
-
-    /**
-     * A docker image with JETTY_USER set to id `jetty`.
-     * JETTY_HOME is owned by `root`.
-     * JETTY_BASE is owned by `jetty`
-     */
-    private static ImageFromDockerfile buildWithUserChangeToJettyId(ImageFromDockerfile osImage)
-    {
-        String name = osImage.get();
-        System.out.println("buildWithUserChangeToJettyUser: name=" + name);
-
-        return new ImageFromDSL(osImage.getDockerImageName() + "-user-change")
-            .withDockerfileFromBuilder(builder ->
-                builder
-                    .from(osImage.getDockerImageName())
-                    .label(JETTY_MODE, MODE_USER_CHANGE)
-                    // setup "jetty" user and Jetty Base directory
-                    .run("chmod ugo+x ${JETTY_HOME}/bin/jetty.sh ; " +
-                        "mkdir -p ${JETTY_BASE} ; " +
-                        "useradd --home-dir=${JETTY_BASE} --shell=/bin/bash jetty ; " +
-                        "chown jetty:jetty ${JETTY_BASE} ; " +
-                        "chmod a+w ${JETTY_BASE} ; " +
-                        "echo \"JETTY_USER=jetty\" > /etc/default/jetty") // user change
-                    .user("jetty")
-                    // Configure Jetty Base
-                    .workDir("${JETTY_BASE}")
-                    .build());
-    }
-
     public static Stream<Arguments> jettyImages()
     {
         List<Arguments> images = new ArrayList<>();
 
-        List<ImageFromDockerfile> osImages = List.of(
-            getUbuntuOSImage()
-        );
-
-        for (ImageFromDockerfile osImage : osImages)
+        for (ImageOS osImage : List.of(new ImageOSUbuntuJammyLTS()))
         {
-            images.add(Arguments.of(buildWithRootNoUserChange(osImage)));
-            images.add(Arguments.of(buildWithUserChangeToJettyId(osImage)));
+            images.add(Arguments.of(new ImageUserRootOnly(osImage)));
+            images.add(Arguments.of(new ImageUserChange(osImage)));
         }
 
         return images.stream();
@@ -172,23 +88,20 @@ public class JettyShStartTest extends AbstractJettyHomeTest
         String name = jettyImage.get();
         System.out.println("testStartStopBasicJettyBase: name=" + name);
 
-        ImageFromDockerfile image = new ImageFromDSL(jettyImage.getDockerImageName() + "-basic-base")
-            .withDockerfileFromBuilder(builder ->
-                builder
-                    .from(jettyImage.getDockerImageName())
-                    .label(JETTY_BASE_MODE, "basic")
-                    // Create a basic configuration of jetty-base
-                    .run("java -jar ${JETTY_HOME}/start.jar --add-modules=http,deploy")
-                    .entryPoint("/bin/sh", "-c", "while true; do pwd | nc -l -p 80; done")
-                    .build());
+        ImageFromDockerfile image = new ImageFromDSL(jettyImage, "basic-base", builder ->
+            builder
+                .from(jettyImage.getDockerImageName())
+                .label(JETTY_BASE_MODE, "basic")
+                // Create a basic configuration of jetty-base
+                .run("java -jar ${JETTY_HOME}/start.jar --add-modules=http,deploy")
+                .build());
 
         try (GenericContainer<?> genericContainer = new GenericContainer<>(image))
         {
             genericContainer.setWaitStrategy(new ShellStrategy().withCommand("id"));
-            // genericContainer.setWaitStrategy(new DockerHealthcheckWaitStrategy());
 
             genericContainer.withExposedPorts(80, 8080) // jetty
-                // .withCommand("/bin/sh", "-c", "while true; do pwd | nc -l -p 80; done")
+                .withCommand("/bin/sh", "-c", "while true; do pwd | nc -l -p 80; done")
                 .withStartupAttempts(2)
                 .withStartupCheckStrategy(new IsRunningStartupCheckStrategy())
                 .start();
@@ -239,15 +152,24 @@ public class JettyShStartTest extends AbstractJettyHomeTest
         Path basesWithSpaces = MavenPaths.findTestResourceDir("bases/spaces-with-conf");
         System.out.println("basesWithSpaces (src): " + basesWithSpaces);
 
-        ImageFromDockerfile image = new ImageFromDSL(jettyImage.getDockerImageName() + "-complex-base")
-            .withDockerfileFromBuilder(builder ->
-                builder
-                    .from(jettyImage.getDockerImageName())
-                    .label(JETTY_BASE_MODE, "basic")
-                    // Create a basic configuration of jetty-base
-                    .run("java -jar ${JETTY_HOME}/start.jar --add-modules=http,deploy")
-                    .copy("/tests/bases-with-spaces/", "${JETTY_BASE}/")
-                    .build())
+        ImageFromDockerfile image = new ImageFromDSL(jettyImage, "complex-base", builder ->
+        {
+            builder
+                .from(jettyImage.getDockerImageName())
+                .label(JETTY_BASE_MODE, "complex")
+                // Create a basic configuration of jetty-base
+                .run("java -jar ${JETTY_HOME}/start.jar --add-modules=http,deploy ; " +
+                    "mkdir /tmp/logs")
+                .copy("/tests/bases-with-spaces/", "${JETTY_BASE}/");
+            if (jettyImage instanceof ImageUserChange)
+            {
+                builder.user("root")
+                    .run("chown -R jetty:jetty $JETTY_BASE")
+                    .user("jetty");
+            }
+            builder.build();
+        }
+        )
             .withFileFromFile("/tests/bases-with-spaces/", basesWithSpaces.toFile());
 
         try (GenericContainer<?> genericContainer = new GenericContainer<>(image))
@@ -255,6 +177,7 @@ public class JettyShStartTest extends AbstractJettyHomeTest
             genericContainer.setWaitStrategy(new ShellStrategy().withCommand("id"));
 
             genericContainer.withExposedPorts(8080) // jetty
+                .withCommand("/bin/sh", "-c", "while true; do pwd | nc -l -p 80; done")
                 .withStartupAttempts(2)
                 .withStartupCheckStrategy(new IsRunningStartupCheckStrategy())
                 .start();
@@ -294,14 +217,4 @@ public class JettyShStartTest extends AbstractJettyHomeTest
                 containsString("Jetty running pid"));
         }
     }
-
-    static class NoopStartupCheckStrategy extends StartupCheckStrategy
-    {
-        @Override
-        public StartupStatus checkStartupState(DockerClient dockerClient, String containerId)
-        {
-            return StartupStatus.SUCCESSFUL;
-        }
-    }
-
 }

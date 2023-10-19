@@ -15,29 +15,15 @@ package org.eclipse.jetty.tests.distribution.jettysh;
 
 import java.util.function.Consumer;
 
-import org.testcontainers.images.builder.ImageFromDockerfile;
 import org.testcontainers.images.builder.dockerfile.DockerfileBuilder;
 
-/**
- * Simple ImageFromDSL that has a toString that reports the docker image name.
- * (so that test case execution makes sense)
- */
-public class ImageFromDSL extends ImageFromDockerfile
+public abstract class ImageOS extends ImageFromDSL
 {
-    public ImageFromDSL(ImageFromDockerfile baseImage, String suffix, Consumer<DockerfileBuilder> builderConsumer)
-    {
-        this(baseImage.getDockerImageName() + "-" + suffix, builderConsumer);
-    }
+    public static final String REGISTRY = "registry.jetty.org";
+    public static final String REPOSITORY = REGISTRY + "/jetty-sh";
 
-    public ImageFromDSL(String name, Consumer<DockerfileBuilder> builderConsumer)
+    public ImageOS(String osid, Consumer<DockerfileBuilder> builderConsumer)
     {
-        super(name, false);
-        withDockerfileFromBuilder(builderConsumer);
-    }
-
-    @Override
-    public String toString()
-    {
-        return getDockerImageName();
+        super(REPOSITORY + ":" + osid, builderConsumer);
     }
 }
