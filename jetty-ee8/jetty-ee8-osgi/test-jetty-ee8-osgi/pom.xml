@@ -30,6 +30,8 @@
     <jstl.groupId>jakarta.servlet.jsp.jstl</jstl.groupId>
     <maven.deploy.skip>true</maven.deploy.skip>
     <maven.javadoc.skip>true</maven.javadoc.skip>
+    <pax.exam.LEVEL>WARN</pax.exam.LEVEL>
+    <pax.exam.debug.port>-1</pax.exam.debug.port>
     <pax.exam.version>4.13.5</pax.exam.version>
     <pax.url.version>2.6.14</pax.url.version>
     <servlet.artifactId>jetty-servlet-api</servlet.artifactId>
@@ -558,6 +560,8 @@
               <jstl.artifactId>${jstl.artifactId}</jstl.artifactId>
               <jstl.groupId>${jstl.groupId}</jstl.groupId>
               <mavenRepoPath>${session.repositorySession.localRepository.basedir.absolutePath}</mavenRepoPath>
+              <pax.exam.debug.port>${pax.exam.debug.port}</pax.exam.debug.port>
+              <pax.exam.LEVEL>${pax.exam.LEVEL}</pax.exam.LEVEL>
               <settingsFilePath>${env.GLOBAL_MVN_SETTINGS}</settingsFilePath>
               <servlet.artifactId>${servlet.artifactId}</servlet.artifactId>
               <inject.groupId>${inject.groupId}</inject.groupId>
