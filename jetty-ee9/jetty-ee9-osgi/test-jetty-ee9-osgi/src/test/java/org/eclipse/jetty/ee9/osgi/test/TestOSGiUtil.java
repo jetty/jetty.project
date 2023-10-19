@@ -38,6 +38,7 @@ import org.osgi.framework.ServiceReference;
 
 import static org.junit.Assert.assertNull;
 import static org.junit.Assert.assertTrue;
+import static org.ops4j.pax.exam.Constants.START_LEVEL_SYSTEM_BUNDLES;
 import static org.ops4j.pax.exam.CoreOptions.mavenBundle;
 import static org.ops4j.pax.exam.CoreOptions.systemProperty;
 
@@ -138,7 +139,7 @@ public class TestOSGiUtil
             res.add(systemProperty("org.ops4j.pax.url.mvn.settings").value(System.getProperty("settingsFilePath")));
         }
 
-        res.add(mavenBundle().groupId("org.slf4j").artifactId("slf4j-api").version("1.7.36").noStart()); //.versionAsInProject().noStart());
+        res.add(mavenBundle().groupId("org.slf4j").artifactId("slf4j-api").version("1.7.36").startLevel(START_LEVEL_SYSTEM_BUNDLES)); //.versionAsInProject().noStart());
 
         /*
          * Jetty 11 uses slf4j 2.0.0 by default, however we want to test with slf4j 1.7.30 for backwards compatibility.
@@ -154,7 +155,7 @@ public class TestOSGiUtil
         simpleLoggingPropertiesBundle.set(Constants.FRAGMENT_HOST, "slf4j-simple");
         simpleLoggingPropertiesBundle.add(FragmentActivator.class);
         res.add(CoreOptions.streamBundle(simpleLoggingPropertiesBundle.build()).noStart());
-        res.add(mavenBundle().groupId("org.slf4j").artifactId("slf4j-simple").version("1.7.36").noStart()); // .versionAsInProject()
+        res.add(mavenBundle().groupId("org.slf4j").artifactId("slf4j-simple").version("1.7.36").startLevel(START_LEVEL_SYSTEM_BUNDLES)); // .versionAsInProject()
 
         // END - slf4j 1.7.x
 
