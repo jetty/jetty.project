@@ -401,17 +401,8 @@ public abstract class QuicSession extends ContainerLifeCycle
         if (LOG.isDebugEnabled())
             LOG.debug("outward closing 0x{}/{} on {}", Long.toHexString(error), reason, this);
         quicheConnection.close(error, reason);
-        try
-        {
-            // Flushing will eventually forward the outward close to the connection.
-            flush();
-        }
-        catch (IllegalStateException ise)
-        {
-            // Flusher already is in CLOSED state, nothing else to do.
-            if (LOG.isDebugEnabled())
-                LOG.debug("IllegalStateException caught while flushing, flusher={} {}", flusher, this, ise);
-        }
+        // Flushing will eventually forward the outward close to the connection.
+        flush();
     }
 
     private void finishOutwardClose(Throwable failure)
@@ -419,7 +410,6 @@ public abstract class QuicSession extends ContainerLifeCycle
         try
         {
             endPoints.clear();
-            flusher.close();
             getQuicConnection().outwardClose(this, failure);
         }
         finally
@@ -462,13 +452,6 @@ public abstract class QuicSession extends ContainerLifeCycle
                     getExecutor().execute(() -> iterate());
                 }
             };
-        }
-
-        @Override
-        public void close()
-        {
-            super.close();
-            timeout.destroy();
         }
 
         @Override
@@ -523,8 +506,7 @@ public abstract class QuicSession extends ContainerLifeCycle
         {
             if (LOG.isDebugEnabled())
                 LOG.debug("connection closed {}", QuicSession.this);
-            byteBufferPool.release(cipherBuffer);
-            finishOutwardClose(new ClosedChannelException());
+            finish(new ClosedChannelException());
         }
 
         @Override
@@ -532,8 +514,14 @@ public abstract class QuicSession extends ContainerLifeCycle
         {
             if (LOG.isDebugEnabled())
                 LOG.debug("failed to write cipher bytes, closing session on {}", QuicSession.this, failure);
+            finish(failure);
+        }
+
+        private void finish(Throwable failure)
+        {
             byteBufferPool.release(cipherBuffer);
             finishOutwardClose(failure);
+            timeout.destroy();
         }
     }
 
