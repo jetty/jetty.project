@@ -14,11 +14,16 @@
 package org.eclipse.jetty.ee10.webapp;
 
 import java.io.File;
+import java.lang.reflect.InvocationTargetException;
 import java.nio.file.Path;
 import java.util.Arrays;
 import java.util.Map;
 import java.util.concurrent.TimeUnit;
 
+import org.eclipse.jetty.ee10.servlet.DefaultServlet;
+import org.eclipse.jetty.ee10.servlet.ServletHolder;
+import org.eclipse.jetty.ee10.servlet.ServletMapping;
+import org.eclipse.jetty.logging.StacklessLogging;
 import org.eclipse.jetty.server.Server;
 import org.eclipse.jetty.toolchain.test.MavenTestingUtils;
 import org.eclipse.jetty.toolchain.test.jupiter.WorkDir;
@@ -31,8 +36,12 @@ import org.junit.jupiter.api.extension.ExtendWith;
 import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.Matchers.containsInAnyOrder;
 import static org.hamcrest.Matchers.equalToIgnoringCase;
+import static org.hamcrest.Matchers.not;
+import static org.hamcrest.Matchers.nullValue;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
+import static org.junit.jupiter.api.Assertions.assertNotNull;
+import static org.junit.jupiter.api.Assertions.assertThrows;
 
 @ExtendWith(WorkDirExtension.class)
 public class StandardDescriptorProcessorTest
@@ -51,6 +60,126 @@ public class StandardDescriptorProcessorTest
     public void afterEach() throws Exception
     {
         _server.stop();
+    }
+
+    @Test
+    public void testJettyApiDefaults(WorkDir workDir) throws Exception
+    {
+        //Test that the DefaultServlet named "default" defined by jetty api is not redefined by webdefault-ee10.xml
+        Path docroot = workDir.getEmptyPathDir();
+        WebAppContext wac = new WebAppContext();
+        wac.setServer(_server);
+        wac.setBaseResourceAsPath(docroot);
+        ServletHolder defaultServlet = new ServletHolder(DefaultServlet.class);
+        defaultServlet.setName("default");
+        defaultServlet.setInitParameter("acceptRanges", "false");
+        defaultServlet.setInitParameter("dirAllowed", "false");
+        defaultServlet.setInitParameter("welcomeServlets", "true");
+        defaultServlet.setInitParameter("redirectWelcome", "true");
+        defaultServlet.setInitParameter("maxCacheSize", "10");
+        defaultServlet.setInitParameter("maxCachedFileSize", "1");
+        defaultServlet.setInitParameter("maxCacheFiles", "10");
+        defaultServlet.setInitParameter("etags", "true");
+        defaultServlet.setInitParameter("useFileMappedBuffer", "false");
+        defaultServlet.setInitOrder(2);
+        defaultServlet.setRunAsRole("foo");
+        wac.getServletHandler().addServletWithMapping(defaultServlet, "/");
+        wac.start();
+
+        ServletHolder[] holders = wac.getServletHandler().getServlets();
+        ServletHolder holder = null;
+        for (ServletHolder h:holders)
+        {
+            if ("default".equals(h.getName()))
+            {
+                assertThat(holder, nullValue());
+                holder = h;
+            }
+        }
+        assertNotNull(holder);
+        assertEquals("false", holder.getInitParameter("acceptRanges"));
+        assertEquals("false", holder.getInitParameter("dirAllowed"));
+        assertEquals("true", holder.getInitParameter("welcomeServlets"));
+        assertEquals("true", holder.getInitParameter("redirectWelcome"));
+        assertEquals("10", holder.getInitParameter("maxCacheSize"));
+        assertEquals("1", holder.getInitParameter("maxCachedFileSize"));
+        assertEquals("10", holder.getInitParameter("maxCacheFiles"));
+        assertEquals("true", holder.getInitParameter("etags"));
+        assertEquals("false", holder.getInitParameter("useFileMappedBuffer"));
+        assertEquals(2, holder.getInitOrder());
+        assertEquals("foo", holder.getRunAsRole());
+    }
+
+    @Test
+    public void testDuplicateServletMappingsFromJettyApi(WorkDir workDir) throws Exception
+    {
+        //Test that an embedded mapping overrides one from webdefault-ee10.xml
+        Path docroot = workDir.getEmptyPathDir();
+        WebAppContext wac = new WebAppContext();
+        wac.setServer(_server);
+        wac.setBaseResourceAsPath(docroot);
+        wac.setThrowUnavailableOnStartupException(true);
+        ServletHolder defaultServlet = new ServletHolder(DefaultServlet.class);
+        defaultServlet.setName("noname");
+        wac.getServletHandler().addServletWithMapping(defaultServlet, "/");
+        wac.start();
+
+        ServletMapping[] mappings = wac.getServletHandler().getServletMappings();
+        ServletMapping mapping = null;
+        for (ServletMapping m : mappings)
+        {
+            assertThat(m.getServletName(), not(equals("default")));
+            if (m.containsPathSpec("/"))
+            {
+                assertThat(mapping, nullValue());
+                mapping = m;
+            }
+        }
+        assertNotNull(mapping);
+        assertEquals("noname", mapping.getServletName());
+    }
+
+    @Test
+    public void testDuplicateServletMappingsFromDescriptors(WorkDir workDir) throws Exception
+    {
+        //Test that the DefaultServlet mapping from webdefault-ee10.xml can be overridden in web.xml
+        Path docroot = workDir.getEmptyPathDir();
+        File webXml = MavenTestingUtils.getTestResourceFile("web-redefine-mapping.xml");
+        WebAppContext wac = new WebAppContext();
+        wac.setServer(_server);
+        wac.setBaseResourceAsPath(docroot);
+        wac.setDescriptor(webXml.toURI().toURL().toString());
+        wac.start();
+        ServletMapping[] mappings = wac.getServletHandler().getServletMappings();
+        ServletMapping mapping = null;
+        for (ServletMapping m : mappings)
+        {
+            assertThat(m.getServletName(), not(equals("default")));
+            if (m.containsPathSpec("/"))
+            {
+                assertThat(mapping, nullValue());
+                mapping = m;
+            }
+        }
+        assertNotNull(mapping);
+        assertEquals("other", mapping.getServletName());
+    }
+
+    @Test
+    public void testBadDuplicateServletMappingsFromDescriptors(WorkDir workDir) throws Exception
+    {
+        //Test that the same mapping cannot be redefined to a different servlet in the same (non-default) descriptor
+        Path docroot = workDir.getEmptyPathDir();
+        File webXml = MavenTestingUtils.getTestResourceFile("web-redefine-mapping-fail.xml");
+        WebAppContext wac = new WebAppContext();
+        wac.setServer(_server);
+        wac.setBaseResourceAsPath(docroot);
+        wac.setDescriptor(webXml.toURI().toURL().toString());
+        wac.setThrowUnavailableOnStartupException(true);
+        try (StacklessLogging ignored = new StacklessLogging(WebAppContext.class))
+        {
+            assertThrows(InvocationTargetException.class, () -> wac.start());
+        }
     }
 
     @Test
@@ -118,7 +247,6 @@ public class StandardDescriptorProcessorTest
 
         //test the attributes on SessionHandler do NOT contain the name
         Map<String, String> sessionAttributes = wac.getSessionHandler().getSessionCookieAttributes();
-        sessionAttributes.keySet().forEach(System.err::println);
         assertThat(sessionAttributes.keySet(),
             containsInAnyOrder(Arrays.asList(
                 equalToIgnoringCase("comment"),
