@@ -19,6 +19,7 @@ import java.util.Collection;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.function.ToIntFunction;
 
@@ -26,6 +27,7 @@ import org.junit.jupiter.api.Test;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.MethodSource;
 
+import static org.awaitility.Awaitility.await;
 import static org.eclipse.jetty.util.ConcurrentPool.StrategyType.FIRST;
 import static org.eclipse.jetty.util.ConcurrentPool.StrategyType.RANDOM;
 import static org.eclipse.jetty.util.ConcurrentPool.StrategyType.ROUND_ROBIN;
@@ -620,34 +622,54 @@ public class ConcurrentPoolTest
 
         // not keeping a hard ref onto the entry that is enabled & not acquired makes it survive
         pool.reserve().enable(new AtomicInteger(1), false);
-        System.gc();
-        assertThat(pool.sweep(), is(0));
+        await().atMost(5, TimeUnit.SECONDS).until(() ->
+        {
+            System.gc();
+            return pool.sweep();
+        }, is(0));
         assertThat(pool.size(), is(1));
 
         // not keeping a hard ref onto the entry that is enabled & acquired makes it die
         pool.reserve().enable(new AtomicInteger(2), true);
         assertThat(pool.size(), is(2));
-        System.gc();
-        assertThat(pool.sweep(), is(1));
+        await().atMost(5, TimeUnit.SECONDS).until(() ->
+        {
+            System.gc();
+            return pool.sweep();
+        }, is(1));
         assertThat(pool.sweep(), is(0));
         assertThat(pool.size(), is(1));
 
         // releasing after nulling the pool object makes the entry die
         Pool.Entry<AtomicInteger> entryOne = pool.acquire();
         AtomicInteger one = entryOne.getPooled();
-        System.gc();
-        assertThat(pool.sweep(), is(0));
+        await().atMost(5, TimeUnit.SECONDS).until(() ->
+        {
+            System.gc();
+            return pool.sweep();
+        }, is(0));
+
+        // This fence is needed otherwise the JIT may optimize out the null assignment,
+        // notice 'one' isn't used anymore right after its assignment and let it be
+        // garbage collected before entryOne.release() is called.
+        Reference.reachabilityFence(one);
         one = null;
-        System.gc();
-        assertThat(pool.sweep(), is(1));
+        await().atMost(5, TimeUnit.SECONDS).until(() ->
+        {
+            System.gc();
+            return pool.sweep();
+        }, is(1));
         assertThat(pool.size(), is(0));
 
         // releasing before nulling the pool object makes the entry survive
         pool.reserve().enable(new AtomicInteger(3), false);
         Pool.Entry<AtomicInteger> entryThree = pool.acquire();
         AtomicInteger three = entryOne.getPooled();
-        System.gc();
-        assertThat(pool.sweep(), is(0));
+        await().atMost(5, TimeUnit.SECONDS).until(() ->
+        {
+            System.gc();
+            return pool.sweep();
+        }, is(0));
         assertThat(pool.size(), is(1));
         entryThree.release();
 
@@ -655,10 +677,12 @@ public class ConcurrentPoolTest
         // notice 'three' isn't used anymore right after its assignment and let it be
         // garbage collected before entryThree.release() is called.
         Reference.reachabilityFence(three);
-
         three = null;
-        System.gc();
-        assertThat(pool.sweep(), is(0));
+        await().atMost(5, TimeUnit.SECONDS).until(() ->
+        {
+            System.gc();
+            return pool.sweep();
+        }, is(0));
         assertThat(pool.size(), is(1));
     }
 }

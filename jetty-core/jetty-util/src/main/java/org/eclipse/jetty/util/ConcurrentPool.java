@@ -72,7 +72,7 @@ public class ConcurrentPool<P> implements Pool<P>, Dumpable
     private final AutoLock lock = new AutoLock();
     private final AtomicInteger nextIndex;
     private final ToIntFunction<P> maxMultiplex;
-    private final boolean weakEntries;
+    private final boolean weak;
     private volatile boolean terminated;
 
     /**
@@ -112,7 +112,17 @@ public class ConcurrentPool<P> implements Pool<P>, Dumpable
         this(strategyType, maxSize, cache, maxMultiplex, false);
     }
 
-    public ConcurrentPool(StrategyType strategyType, int maxSize, boolean cache, ToIntFunction<P> maxMultiplex, boolean weakEntries)
+    /**
+     * <p>Creates an instance with the specified strategy, an optional {@link ThreadLocal} cache.
+     * and a function that returns the max multiplex count for a given pooled object.</p>
+     *
+     * @param strategyType the strategy to used to lookup entries
+     * @param maxSize the maximum number of pooled entries
+     * @param cache whether a {@link ThreadLocal} cache should be used for the most recently released entry
+     * @param maxMultiplex a function that given the pooled object returns the max multiplex count
+     * @param weak true if the pooled objects should be weakly referenced when acquired, false otherwise
+     */
+    public ConcurrentPool(StrategyType strategyType, int maxSize, boolean cache, ToIntFunction<P> maxMultiplex, boolean weak)
     {
         if (maxSize > OPTIMAL_MAX_SIZE && LOG.isDebugEnabled())
             LOG.debug("{} configured with max size {} which is above the recommended value {}", getClass().getSimpleName(), maxSize, OPTIMAL_MAX_SIZE);
@@ -121,7 +131,7 @@ public class ConcurrentPool<P> implements Pool<P>, Dumpable
         this.cache = cache ? new ThreadLocal<>() : null;
         this.nextIndex = strategyType == StrategyType.ROUND_ROBIN ? new AtomicInteger() : null;
         this.maxMultiplex = Objects.requireNonNull(maxMultiplex);
-        this.weakEntries = weakEntries;
+        this.weak = weak;
     }
 
     public int getTerminatedCount()
@@ -345,6 +355,11 @@ public class ConcurrentPool<P> implements Pool<P>, Dumpable
             new DumpableCollection("entries", entries));
     }
 
+    /**
+     * Scans the pool to remove the entries of all pooled objects which have
+     * been garbage collected but whose entity has not been released.
+     * @return the removed entries count.
+     */
     public int sweep()
     {
         List<Entry<P>> toRemove = new ArrayList<>();
@@ -371,7 +386,7 @@ public class ConcurrentPool<P> implements Pool<P>, Dumpable
             size(),
             getMaxSize(),
             isTerminated(),
-            weakEntries);
+            weak);
     }
 
     /**
@@ -459,7 +474,7 @@ public class ConcurrentPool<P> implements Pool<P>, Dumpable
 
             if (tryEnable(acquire))
             {
-                if (pool.weakEntries && acquire)
+                if (pool.weak && acquire)
                     this.released = null;
                 if (LOG.isDebugEnabled())
                     LOG.debug("enabled {} for {}", this, pool);
@@ -477,7 +492,7 @@ public class ConcurrentPool<P> implements Pool<P>, Dumpable
         public E getPooled()
         {
             E ref = pooled == null ? null : pooled.get();
-            if (pool.weakEntries)
+            if (pool.weak)
                 this.released = null;
             return ref;
         }
@@ -563,7 +578,7 @@ public class ConcurrentPool<P> implements Pool<P>, Dumpable
                 int newMultiplexCount = multiplexCount - 1;
                 if (state.compareAndSet(encoded, 0, newMultiplexCount))
                 {
-                    if (pool.weakEntries && newMultiplexCount == 0)
+                    if (pool.weak && newMultiplexCount == 0)
                         this.released = pooled.get();
                     return true;
                 }

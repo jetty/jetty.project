@@ -135,6 +135,7 @@ public class ArrayByteBufferPool implements ByteBufferPool, Dumpable
      * @param maxDirectMemory the max direct memory in bytes, -1 for unlimited memory or 0 to use default heuristic
      * @param bucketIndexFor a {@link IntUnaryOperator} that takes a capacity and returns a bucket index
      * @param bucketCapacity a {@link IntUnaryOperator} that takes a bucket index and returns a capacity
+     * @param weakPool true if the underlying pool should weakly reference pooled buffers when they are acquired, false otherwise
      */
     protected ArrayByteBufferPool(int minCapacity, int factor, int maxCapacity, int maxBucketSize, long maxHeapMemory, long maxDirectMemory, IntUnaryOperator bucketIndexFor, IntUnaryOperator bucketCapacity, boolean weakPool)
     {
