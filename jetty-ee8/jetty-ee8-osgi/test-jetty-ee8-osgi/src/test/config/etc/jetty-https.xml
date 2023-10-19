@@ -16,13 +16,13 @@
       </New>
     </Arg>
   </Call>
-        <Call name="addEventListener">
-          <Arg>
-            <New class="org.eclipse.jetty.ee8.osgi.boot.utils.ServerConnectorListener">
-              <Set name="sysPropertyName">boot.https.port</Set>
-            </New>
-          </Arg>
-        </Call>
+  <Call name="addEventListener">
+    <Arg>
+      <New class="org.eclipse.jetty.osgi.util.ServerConnectorListener">
+        <Set name="sysPropertyName">boot.https.port</Set>
+      </New>
+    </Arg>
+  </Call>
   <Call name="addConnectionFactory">
     <Arg>
       <New class="org.eclipse.jetty.server.HttpConnectionFactory">
