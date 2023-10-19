@@ -138,7 +138,7 @@ public class TestOSGiUtil
             res.add(systemProperty("org.ops4j.pax.url.mvn.settings").value(System.getProperty("settingsFilePath")));
         }
 
-        res.add(mavenBundle().groupId("org.slf4j").artifactId("slf4j-api").versionAsInProject().noStart());
+        res.add(mavenBundle().groupId("org.slf4j").artifactId("slf4j-api").version("1.7.6").noStart());//.versionAsInProject().noStart());
 
         /*
          * Jetty 11 uses slf4j 2.0.0 by default, however we want to test with slf4j 1.7.30 for backwards compatibility.
