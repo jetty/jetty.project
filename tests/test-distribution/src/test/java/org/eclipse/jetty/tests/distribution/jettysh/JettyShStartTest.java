@@ -35,6 +35,7 @@ import org.testcontainers.containers.Container;
 import org.testcontainers.containers.GenericContainer;
 import org.testcontainers.containers.startupcheck.IsRunningStartupCheckStrategy;
 import org.testcontainers.containers.startupcheck.StartupCheckStrategy;
+import org.testcontainers.containers.wait.strategy.DockerHealthcheckWaitStrategy;
 import org.testcontainers.containers.wait.strategy.ShellStrategy;
 import org.testcontainers.images.builder.ImageFromDockerfile;
 
@@ -87,7 +88,8 @@ public class JettyShStartTest extends AbstractJettyHomeTest
                     .user("root")
                     // Configure /etc/default/jetty
                     .run("echo \"JETTY_HOME=${JETTY_HOME}\" > /etc/default/jetty ; " +
-                        "echo \"JETTY_BASE=${JETTY_BASE}\" >> /etc/default/jetty" +
+                        "echo \"JETTY_BASE=${JETTY_BASE}\" >> /etc/default/jetty ; " +
+                        "echo \"JETTY_RUN=${JETTY_BASE}\" >> /etc/default/jetty ; " +
                         (DEBUG_JETTY_SH ? " ; echo \"DEBUG=0\" >> /etc/default/jetty" : ""))
                     // setup Jetty Home
                     .copy("/opt/jetty/", "${JETTY_HOME}/")
@@ -177,13 +179,16 @@ public class JettyShStartTest extends AbstractJettyHomeTest
                     .label(JETTY_BASE_MODE, "basic")
                     // Create a basic configuration of jetty-base
                     .run("java -jar ${JETTY_HOME}/start.jar --add-modules=http,deploy")
+                    .entryPoint("/bin/sh", "-c", "while true; do pwd | nc -l -p 80; done")
                     .build());
 
         try (GenericContainer<?> genericContainer = new GenericContainer<>(image))
         {
             genericContainer.setWaitStrategy(new ShellStrategy().withCommand("id"));
+            // genericContainer.setWaitStrategy(new DockerHealthcheckWaitStrategy());
 
-            genericContainer.withExposedPorts(8080) // jetty
+            genericContainer.withExposedPorts(80, 8080) // jetty
+                // .withCommand("/bin/sh", "-c", "while true; do pwd | nc -l -p 80; done")
                 .withStartupAttempts(2)
                 .withStartupCheckStrategy(new IsRunningStartupCheckStrategy())
                 .start();
@@ -232,6 +237,7 @@ public class JettyShStartTest extends AbstractJettyHomeTest
         System.out.println("testStartStopComplexJettyBase: name=" + name);
 
         Path basesWithSpaces = MavenPaths.findTestResourceDir("bases/spaces-with-conf");
+        System.out.println("basesWithSpaces (src): " + basesWithSpaces);
 
         ImageFromDockerfile image = new ImageFromDSL(jettyImage.getDockerImageName() + "-complex-base")
             .withDockerfileFromBuilder(builder ->
