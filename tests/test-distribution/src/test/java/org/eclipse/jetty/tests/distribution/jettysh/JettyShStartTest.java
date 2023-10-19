@@ -32,7 +32,6 @@ import org.testcontainers.containers.Container;
 import org.testcontainers.containers.GenericContainer;
 import org.testcontainers.containers.startupcheck.IsRunningStartupCheckStrategy;
 import org.testcontainers.containers.wait.strategy.ShellStrategy;
-import org.testcontainers.images.builder.ImageFromDockerfile;
 
 import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.Matchers.allOf;
@@ -47,32 +46,61 @@ public class JettyShStartTest extends AbstractJettyHomeTest
 {
     public static Stream<Arguments> jettyImages()
     {
-        List<Arguments> images = new ArrayList<>();
+        List<ImageFromDSL> images = new ArrayList<>();
 
+        // Loop through all OS images
         for (ImageOS osImage : List.of(new ImageOSUbuntuJammyLTS()))
         {
-            images.add(Arguments.of(new ImageUserRootOnly(osImage)));
-            images.add(Arguments.of(new ImageUserChange(osImage)));
+            // Establish user Images based on OS Image
+            List<ImageFromDSL> userImages = new ArrayList<>();
+            userImages.add(new ImageUserRootOnly(osImage));
+            userImages.add(new ImageUserChange(osImage));
+
+            // Loop through user Images to establish various JETTY_BASE configurations
+            for (ImageFromDSL userImage: userImages)
+            {
+                // Basic JETTY_BASE
+                images.add(new ImageFromDSL(userImage, "base-basic", builder ->
+                    builder
+                        .from(userImage.getDockerImageName())
+                        // Create a basic configuration of jetty-base
+                        .run("java -jar ${JETTY_HOME}/start.jar --add-modules=http,deploy")
+                        .build()));
+
+                // Complex JETTY_BASE with spaces
+                Path basesWithSpaces = MavenPaths.findTestResourceDir("bases/spaces-with-conf");
+                ImageFromDSL baseComplexWithSpacesImage = new ImageFromDSL(userImage, "base-complex-with-spaces", builder ->
+                {
+                    builder
+                        .from(userImage.getDockerImageName())
+                        // Create a basic configuration of jetty-base
+                        .run("java -jar ${JETTY_HOME}/start.jar --add-modules=http,deploy")
+                        .copy("/tests/bases-with-spaces/", "${JETTY_BASE}/");
+                    if (userImage instanceof ImageUserChange)
+                    {
+                        // Make sure we change the ownership of JETTY_BASE if we are testing a user change mode
+                        builder.user("root")
+                            .run("chown -R jetty:jetty $JETTY_BASE")
+                            .user("jetty");
+                    }
+                    builder.build();
+                });
+                baseComplexWithSpacesImage.withFileFromFile("/tests/bases-with-spaces/", basesWithSpaces.toFile());
+                images.add(baseComplexWithSpacesImage);
+            }
         }
 
-        return images.stream();
+        return images.stream().map(Arguments::of);
     }
 
     @ParameterizedTest
     @MethodSource("jettyImages")
-    public void testStartStopBasicJettyBase(ImageFromDockerfile jettyImage) throws Exception
+    public void testStartStopJettyBase(ImageFromDSL jettyImage) throws Exception
     {
         String name = jettyImage.get();
-        System.out.println("testStartStopBasicJettyBase: name=" + name);
+        System.out.println("testStartStopJettyBase: name=" + name);
 
-        ImageFromDockerfile image = new ImageFromDSL(jettyImage, "basic-base", builder ->
-            builder
-                .from(jettyImage.getDockerImageName())
-                // Create a basic configuration of jetty-base
-                .run("java -jar ${JETTY_HOME}/start.jar --add-modules=http,deploy")
-                .build());
-
-        try (GenericContainer<?> genericContainer = new GenericContainer<>(image))
+        try (GenericContainer<?> genericContainer = new GenericContainer<>(jettyImage))
         {
             genericContainer.setWaitStrategy(new ShellStrategy().withCommand("id"));
 
@@ -82,82 +110,7 @@ public class JettyShStartTest extends AbstractJettyHomeTest
                 .withStartupCheckStrategy(new IsRunningStartupCheckStrategy())
                 .start();
 
-            System.out.println("Started: " + image.getDockerImageName());
-
-            System.err.println("== jetty.sh start ==");
-            Container.ExecResult result = genericContainer.execInContainer("/var/test/jetty-home/bin/jetty.sh", "start");
-            assertThat(result.getExitCode(), is(0));
-            /*
-             * Example successful output
-             * ----
-             * STDOUT:
-             * Starting Jetty: . started
-             * OK Wed Oct 18 19:29:35 UTC 2023
-             * ----
-             */
-            Awaitility.await().atMost(Duration.ofSeconds(5)).until(result::getStdout,
-                allOf(
-                    containsString("Starting Jetty:"),
-                    containsString("\nOK ")
-                ));
-
-            startHttpClient();
-
-            URI containerUriRoot = URI.create("http://" + genericContainer.getHost() + ":" + genericContainer.getMappedPort(8080) + "/");
-            System.err.printf("Container URI Root: %s%n", containerUriRoot);
-
-            ContentResponse response = client.GET(containerUriRoot);
-            assertEquals(HttpStatus.NOT_FOUND_404, response.getStatus(), new ResponseDetails(response));
-            assertThat(response.getContentAsString(), containsString("Powered by Eclipse Jetty:// Server"));
-
-            System.err.println("== jetty.sh status ==");
-            result = genericContainer.execInContainer("/var/test/jetty-home/bin/jetty.sh", "status");
-            assertThat(result.getExitCode(), is(0));
-            Awaitility.await().atMost(Duration.ofSeconds(5)).until(result::getStdout,
-                containsString("Jetty running pid"));
-        }
-    }
-
-    @ParameterizedTest
-    @MethodSource("jettyImages")
-    public void testStartStopComplexJettyBase(ImageFromDockerfile jettyImage) throws Exception
-    {
-        String name = jettyImage.get();
-        System.out.println("testStartStopComplexJettyBase: name=" + name);
-
-        Path basesWithSpaces = MavenPaths.findTestResourceDir("bases/spaces-with-conf");
-        System.out.println("basesWithSpaces (src): " + basesWithSpaces);
-
-        ImageFromDockerfile image = new ImageFromDSL(jettyImage, "complex-base", builder ->
-        {
-            builder
-                .from(jettyImage.getDockerImageName())
-                // Create a basic configuration of jetty-base
-                .run("java -jar ${JETTY_HOME}/start.jar --add-modules=http,deploy ; " +
-                    "mkdir /tmp/logs")
-                .copy("/tests/bases-with-spaces/", "${JETTY_BASE}/");
-            if (jettyImage instanceof ImageUserChange)
-            {
-                builder.user("root")
-                    .run("chown -R jetty:jetty $JETTY_BASE")
-                    .user("jetty");
-            }
-            builder.build();
-        }
-        )
-            .withFileFromFile("/tests/bases-with-spaces/", basesWithSpaces.toFile());
-
-        try (GenericContainer<?> genericContainer = new GenericContainer<>(image))
-        {
-            genericContainer.setWaitStrategy(new ShellStrategy().withCommand("id"));
-
-            genericContainer.withExposedPorts(8080) // jetty
-                .withCommand("/bin/sh", "-c", "while true; do pwd | nc -l -p 80; done")
-                .withStartupAttempts(2)
-                .withStartupCheckStrategy(new IsRunningStartupCheckStrategy())
-                .start();
-
-            System.out.println("Started: " + image.getDockerImageName());
+            System.out.println("Started: " + jettyImage.getDockerImageName());
 
             System.err.println("== jetty.sh start ==");
             Container.ExecResult result = genericContainer.execInContainer("/var/test/jetty-home/bin/jetty.sh", "start");
