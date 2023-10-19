@@ -66,7 +66,9 @@ import org.slf4j.LoggerFactory;
  * cache.</p>
  * <p>If the init param useQueryInKey is set, then the query string is used as
  * as part of the key to identify a resource</p>
+ * @deprecated no replacement for this deprecated http feature
  */
+@Deprecated
 @ManagedObject("Push cache based on the HTTP 'Referer' header")
 public class PushCacheFilter implements Filter
 {
@@ -79,6 +81,11 @@ public class PushCacheFilter implements Filter
     private int _maxAssociations = 16;
     private long _renew = NanoTime.now();
     private boolean _useQueryInKey;
+
+    public PushCacheFilter()
+    {
+        LOG.warn(PushCacheFilter.class.getSimpleName() + " is an example class not suitable for production.");
+    }
 
     @Override
     public void init(FilterConfig config) throws ServletException
