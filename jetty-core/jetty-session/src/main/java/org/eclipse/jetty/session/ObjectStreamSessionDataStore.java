@@ -27,13 +27,13 @@ public abstract class ObjectStreamSessionDataStore extends AbstractSessionDataSt
     /**
      * Get an ObjectOutputStream suitable to serialize SessionData objects
      * into the provided OutputStream.
-     * </br>
+     * <br/>
      * By default, an ObjectObjectStream is returned.
-     * </br>
+     * <br/>
      * Override this method to provide a custom ObjectOutputStream, and/or to
      * chain other OutputStreams to perform such tasks as compressing the serialized
      * data, for example:
-     * </br>
+     * <br/>
      * <code>
      * GZIPOutputStream gos = new GZIPOutputStream(os);
      * return new ObjectOutputStream(gos);
@@ -50,11 +50,11 @@ public abstract class ObjectStreamSessionDataStore extends AbstractSessionDataSt
     /**
      * Get an ObjectInputStream that is capable of deserializing the session data
      * present in the provided InputStream.
-     * </br>
+     * <br/>
      * By default, a Classloader-aware ObjectInputStream is used, however, you
      * can return your own specialized ObjectInputStream, or chain other InputStreams
      * together to perform such tasks as data decompression, for example:
-     * </br>
+     * <br/>
      * <code>
      * GZIPInputStream gis = new GZIPInputStream(is);
      * return new ClassLoadingObjectInputStream(is)
