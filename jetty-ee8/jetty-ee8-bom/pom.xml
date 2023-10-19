@@ -1,16 +1,138 @@
+<?xml version="1.0" encoding="UTF-8"?>
 <project xmlns="http://maven.apache.org/POM/4.0.0" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/maven-v4_0_0.xsd">
   <modelVersion>4.0.0</modelVersion>
 
   <parent>
     <groupId>org.eclipse.jetty.ee8</groupId>
     <artifactId>jetty-ee8</artifactId>
-    <version>12.0.2-SNAPSHOT</version>
+    <version>12.0.3-SNAPSHOT</version>
   </parent>
 
   <artifactId>jetty-ee8-bom</artifactId>
+  <packaging>pom</packaging>
   <name>EE8 :: BOM</name>
   <description>Jetty EE8 APIs BOM artifact</description>
-  <packaging>pom</packaging>
+
+  <dependencyManagement>
+    <dependencies>
+      <!-- Jetty EE 8 Dependencies -->
+      <dependency>
+        <groupId>org.eclipse.jetty.ee8</groupId>
+        <artifactId>jetty-ee8-annotations</artifactId>
+        <version>12.0.3-SNAPSHOT</version>
+      </dependency>
+      <dependency>
+        <groupId>org.eclipse.jetty.ee8</groupId>
+        <artifactId>jetty-ee8-apache-jsp</artifactId>
+        <version>12.0.3-SNAPSHOT</version>
+      </dependency>
+      <dependency>
+        <groupId>org.eclipse.jetty.ee8</groupId>
+        <artifactId>jetty-ee8-glassfish-jstl</artifactId>
+        <version>12.0.3-SNAPSHOT</version>
+      </dependency>
+      <dependency>
+        <groupId>org.eclipse.jetty.ee8</groupId>
+        <artifactId>jetty-ee8-jndi</artifactId>
+        <version>12.0.3-SNAPSHOT</version>
+      </dependency>
+      <dependency>
+        <groupId>org.eclipse.jetty.ee8</groupId>
+        <artifactId>jetty-ee8-nested</artifactId>
+        <version>12.0.3-SNAPSHOT</version>
+      </dependency>
+      <dependency>
+        <groupId>org.eclipse.jetty.ee8</groupId>
+        <artifactId>jetty-ee8-openid</artifactId>
+        <version>12.0.3-SNAPSHOT</version>
+      </dependency>
+      <dependency>
+        <groupId>org.eclipse.jetty.ee8</groupId>
+        <artifactId>jetty-ee8-plus</artifactId>
+        <version>12.0.3-SNAPSHOT</version>
+      </dependency>
+      <dependency>
+        <groupId>org.eclipse.jetty.ee8</groupId>
+        <artifactId>jetty-ee8-proxy</artifactId>
+        <version>12.0.3-SNAPSHOT</version>
+      </dependency>
+      <dependency>
+        <groupId>org.eclipse.jetty.ee8</groupId>
+        <artifactId>jetty-ee8-quickstart</artifactId>
+        <version>12.0.3-SNAPSHOT</version>
+      </dependency>
+      <dependency>
+        <groupId>org.eclipse.jetty.ee8</groupId>
+        <artifactId>jetty-ee8-security</artifactId>
+        <version>12.0.3-SNAPSHOT</version>
+      </dependency>
+      <dependency>
+        <groupId>org.eclipse.jetty.ee8</groupId>
+        <artifactId>jetty-ee8-servlet</artifactId>
+        <version>12.0.3-SNAPSHOT</version>
+      </dependency>
+      <dependency>
+        <groupId>org.eclipse.jetty.ee8</groupId>
+        <artifactId>jetty-ee8-servlets</artifactId>
+        <version>12.0.3-SNAPSHOT</version>
+      </dependency>
+      <dependency>
+        <groupId>org.eclipse.jetty.ee8</groupId>
+        <artifactId>jetty-ee8-webapp</artifactId>
+        <version>12.0.3-SNAPSHOT</version>
+      </dependency>
+      <dependency>
+        <groupId>org.eclipse.jetty.ee8.websocket</groupId>
+        <artifactId>jetty-ee8-websocket-javax-client</artifactId>
+        <version>12.0.3-SNAPSHOT</version>
+      </dependency>
+      <dependency>
+        <groupId>org.eclipse.jetty.ee8.websocket</groupId>
+        <artifactId>jetty-ee8-websocket-javax-client-webapp</artifactId>
+        <version>12.0.3-SNAPSHOT</version>
+      </dependency>
+      <dependency>
+        <groupId>org.eclipse.jetty.ee8.websocket</groupId>
+        <artifactId>jetty-ee8-websocket-javax-common</artifactId>
+        <version>12.0.3-SNAPSHOT</version>
+      </dependency>
+      <dependency>
+        <groupId>org.eclipse.jetty.ee8.websocket</groupId>
+        <artifactId>jetty-ee8-websocket-javax-server</artifactId>
+        <version>12.0.3-SNAPSHOT</version>
+      </dependency>
+      <dependency>
+        <groupId>org.eclipse.jetty.ee8.websocket</groupId>
+        <artifactId>jetty-ee8-websocket-jetty-api</artifactId>
+        <version>12.0.3-SNAPSHOT</version>
+      </dependency>
+      <dependency>
+        <groupId>org.eclipse.jetty.ee8.websocket</groupId>
+        <artifactId>jetty-ee8-websocket-jetty-client</artifactId>
+        <version>12.0.3-SNAPSHOT</version>
+      </dependency>
+      <dependency>
+        <groupId>org.eclipse.jetty.ee8.websocket</groupId>
+        <artifactId>jetty-ee8-websocket-jetty-client-webapp</artifactId>
+        <version>12.0.3-SNAPSHOT</version>
+      </dependency>
+      <dependency>
+        <groupId>org.eclipse.jetty.ee8.websocket</groupId>
+        <artifactId>jetty-ee8-websocket-jetty-common</artifactId>
+        <version>12.0.3-SNAPSHOT</version>
+      </dependency>
+      <dependency>
+        <groupId>org.eclipse.jetty.ee8.websocket</groupId>
+        <artifactId>jetty-ee8-websocket-jetty-server</artifactId>
+        <version>12.0.3-SNAPSHOT</version>
+      </dependency>
+      <dependency>
+        <groupId>org.eclipse.jetty.ee8.websocket</groupId>
+        <artifactId>jetty-ee8-websocket-servlet</artifactId>
+        <version>12.0.3-SNAPSHOT</version>
+      </dependency>
+    </dependencies>
+  </dependencyManagement>
 
   <build>
     <plugins>
@@ -19,142 +141,21 @@
         <artifactId>flatten-maven-plugin</artifactId>
         <executions>
           <execution>
-            <id>flatten</id>
-            <goals>
-              <goal>flatten</goal>
-            </goals>
-            <phase>process-resources</phase>
-          </execution>
-          <execution>
             <id>flatten-clean</id>
             <goals>
               <goal>clean</goal>
             </goals>
             <phase>clean</phase>
           </execution>
+          <execution>
+            <id>flatten</id>
+            <goals>
+              <goal>flatten</goal>
+            </goals>
+            <phase>process-resources</phase>
+          </execution>
         </executions>
       </plugin>
     </plugins>
   </build>
-
-  <dependencyManagement>
-    <dependencies>
-      <!-- Jetty EE 8 Dependencies -->
-      <dependency>
-        <groupId>org.eclipse.jetty.ee8</groupId>
-        <artifactId>jetty-ee8-annotations</artifactId>
-        <version>12.0.2-SNAPSHOT</version>
-      </dependency>
-      <dependency>
-        <groupId>org.eclipse.jetty.ee8</groupId>
-        <artifactId>jetty-ee8-apache-jsp</artifactId>
-        <version>12.0.2-SNAPSHOT</version>
-      </dependency>
-      <dependency>
-        <groupId>org.eclipse.jetty.ee8</groupId>
-        <artifactId>jetty-ee8-glassfish-jstl</artifactId>
-        <version>12.0.2-SNAPSHOT</version>
-      </dependency>
-      <dependency>
-        <groupId>org.eclipse.jetty.ee8</groupId>
-        <artifactId>jetty-ee8-jndi</artifactId>
-        <version>12.0.2-SNAPSHOT</version>
-      </dependency>
-      <dependency>
-        <groupId>org.eclipse.jetty.ee8</groupId>
-        <artifactId>jetty-ee8-nested</artifactId>
-        <version>12.0.2-SNAPSHOT</version>
-      </dependency>
-      <dependency>
-        <groupId>org.eclipse.jetty.ee8</groupId>
-        <artifactId>jetty-ee8-openid</artifactId>
-        <version>12.0.2-SNAPSHOT</version>
-      </dependency>
-      <dependency>
-        <groupId>org.eclipse.jetty.ee8</groupId>
-        <artifactId>jetty-ee8-plus</artifactId>
-        <version>12.0.2-SNAPSHOT</version>
-      </dependency>
-      <dependency>
-        <groupId>org.eclipse.jetty.ee8</groupId>
-        <artifactId>jetty-ee8-proxy</artifactId>
-        <version>12.0.2-SNAPSHOT</version>
-      </dependency>
-      <dependency>
-        <groupId>org.eclipse.jetty.ee8</groupId>
-        <artifactId>jetty-ee8-quickstart</artifactId>
-        <version>12.0.2-SNAPSHOT</version>
-      </dependency>
-      <dependency>
-        <groupId>org.eclipse.jetty.ee8</groupId>
-        <artifactId>jetty-ee8-security</artifactId>
-        <version>12.0.2-SNAPSHOT</version>
-      </dependency>
-      <dependency>
-        <groupId>org.eclipse.jetty.ee8</groupId>
-        <artifactId>jetty-ee8-servlet</artifactId>
-        <version>12.0.2-SNAPSHOT</version>
-      </dependency>
-      <dependency>
-        <groupId>org.eclipse.jetty.ee8</groupId>
-        <artifactId>jetty-ee8-servlets</artifactId>
-        <version>12.0.2-SNAPSHOT</version>
-      </dependency>
-      <dependency>
-        <groupId>org.eclipse.jetty.ee8</groupId>
-        <artifactId>jetty-ee8-webapp</artifactId>
-        <version>12.0.2-SNAPSHOT</version>
-      </dependency>
-      <dependency>
-        <groupId>org.eclipse.jetty.ee8.websocket</groupId>
-        <artifactId>jetty-ee8-websocket-javax-client</artifactId>
-        <version>12.0.2-SNAPSHOT</version>
-      </dependency>
-      <dependency>
-        <groupId>org.eclipse.jetty.ee8.websocket</groupId>
-        <artifactId>jetty-ee8-websocket-javax-client-webapp</artifactId>
-        <version>12.0.2-SNAPSHOT</version>
-      </dependency>
-      <dependency>
-        <groupId>org.eclipse.jetty.ee8.websocket</groupId>
-        <artifactId>jetty-ee8-websocket-javax-common</artifactId>
-        <version>12.0.2-SNAPSHOT</version>
-      </dependency>
-      <dependency>
-        <groupId>org.eclipse.jetty.ee8.websocket</groupId>
-        <artifactId>jetty-ee8-websocket-javax-server</artifactId>
-        <version>12.0.2-SNAPSHOT</version>
-      </dependency>
-      <dependency>
-        <groupId>org.eclipse.jetty.ee8.websocket</groupId>
-        <artifactId>jetty-ee8-websocket-jetty-api</artifactId>
-        <version>12.0.2-SNAPSHOT</version>
-      </dependency>
-      <dependency>
-        <groupId>org.eclipse.jetty.ee8.websocket</groupId>
-        <artifactId>jetty-ee8-websocket-jetty-client</artifactId>
-        <version>12.0.2-SNAPSHOT</version>
-      </dependency>
-      <dependency>
-        <groupId>org.eclipse.jetty.ee8.websocket</groupId>
-        <artifactId>jetty-ee8-websocket-jetty-client-webapp</artifactId>
-        <version>12.0.2-SNAPSHOT</version>
-      </dependency>
-      <dependency>
-        <groupId>org.eclipse.jetty.ee8.websocket</groupId>
-        <artifactId>jetty-ee8-websocket-jetty-common</artifactId>
-        <version>12.0.2-SNAPSHOT</version>
-      </dependency>
-      <dependency>
-        <groupId>org.eclipse.jetty.ee8.websocket</groupId>
-        <artifactId>jetty-ee8-websocket-jetty-server</artifactId>
-        <version>12.0.2-SNAPSHOT</version>
-      </dependency>
-      <dependency>
-        <groupId>org.eclipse.jetty.ee8.websocket</groupId>
-        <artifactId>jetty-ee8-websocket-servlet</artifactId>
-        <version>12.0.2-SNAPSHOT</version>
-      </dependency>
-    </dependencies>
-  </dependencyManagement>
 </project>

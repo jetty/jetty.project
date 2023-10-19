@@ -4,55 +4,37 @@
   <parent>
     <groupId>org.eclipse.jetty.ee9.demos</groupId>
     <artifactId>jetty-ee9-demos</artifactId>
-    <version>12.0.2-SNAPSHOT</version>
+    <version>12.0.3-SNAPSHOT</version>
   </parent>
   <artifactId>jetty-ee9-demo-jndi-webapp</artifactId>
-  <name>EE9 :: Demo :: JNDI WebApp</name>
   <packaging>war</packaging>
+  <name>EE9 :: Demo :: JNDI WebApp</name>
   <properties>
     <bundle-symbolic-name>${project.groupId}.jndi</bundle-symbolic-name>
   </properties>
+  <dependencies>
+    <dependency>
+      <groupId>jakarta.transaction</groupId>
+      <artifactId>jakarta.transaction-api</artifactId>
+      <scope>provided</scope>
+    </dependency>
+    <dependency>
+      <groupId>org.eclipse.jetty.ee9.demos</groupId>
+      <artifactId>jetty-ee9-demo-mock-resources</artifactId>
+      <scope>provided</scope>
+    </dependency>
+    <dependency>
+      <groupId>org.eclipse.jetty.orbit</groupId>
+      <artifactId>javax.mail.glassfish</artifactId>
+      <scope>provided</scope>
+    </dependency>
+    <dependency>
+      <groupId>org.eclipse.jetty.toolchain</groupId>
+      <artifactId>jetty-jakarta-servlet-api</artifactId>
+      <scope>provided</scope>
+    </dependency>
+  </dependencies>
   <build>
-    <plugins>
-      <plugin>
-        <artifactId>maven-antrun-plugin</artifactId>
-        <executions>
-          <execution>
-            <id>generate-xml-files</id>
-            <phase>process-resources</phase>
-            <configuration>
-              <target>
-                <concat destfile="${project.build.directory}/plugin-context.xml">
-                  <filelist dir="src/main/templates/" files="plugin-context-header.xml,env-definitions.xml" />
-                </concat>
-                <concat destfile="${project.build.directory}/test-jndi.xml">
-                  <filelist dir="src/main/templates/" files="jetty-test-jndi-header.xml,env-definitions.xml" />
-                </concat>
-              </target>
-            </configuration>
-            <goals>
-              <goal>run</goal>
-            </goals>
-          </execution>
-        </executions>
-      </plugin>
-      <plugin>
-        <groupId>org.apache.maven.plugins</groupId>
-        <artifactId>maven-dependency-plugin</artifactId>
-        <executions>
-          <execution>
-            <phase>package</phase>
-            <goals>
-              <goal>copy-dependencies</goal>
-            </goals>
-            <configuration>
-              <includeArtifactIds>jakarta.transaction-api,ee9-demo-mock-resources</includeArtifactIds>
-              <outputDirectory>${project.build.directory}/lib/jndi</outputDirectory>
-            </configuration>
-          </execution>
-        </executions>
-      </plugin>
-    </plugins>
     <pluginManagement>
       <plugins>
         <plugin>
@@ -77,27 +59,45 @@
         </plugin>
       </plugins>
     </pluginManagement>
+    <plugins>
+      <plugin>
+        <artifactId>maven-antrun-plugin</artifactId>
+        <executions>
+          <execution>
+            <id>generate-xml-files</id>
+            <goals>
+              <goal>run</goal>
+            </goals>
+            <phase>process-resources</phase>
+            <configuration>
+              <target>
+                <concat destfile="${project.build.directory}/plugin-context.xml">
+                  <filelist dir="src/main/templates/" files="plugin-context-header.xml,env-definitions.xml"></filelist>
+                </concat>
+                <concat destfile="${project.build.directory}/test-jndi.xml">
+                  <filelist dir="src/main/templates/" files="jetty-test-jndi-header.xml,env-definitions.xml"></filelist>
+                </concat>
+              </target>
+            </configuration>
+          </execution>
+        </executions>
+      </plugin>
+      <plugin>
+        <groupId>org.apache.maven.plugins</groupId>
+        <artifactId>maven-dependency-plugin</artifactId>
+        <executions>
+          <execution>
+            <goals>
+              <goal>copy-dependencies</goal>
+            </goals>
+            <phase>package</phase>
+            <configuration>
+              <includeArtifactIds>jakarta.transaction-api,ee9-demo-mock-resources</includeArtifactIds>
+              <outputDirectory>${project.build.directory}/lib/jndi</outputDirectory>
+            </configuration>
+          </execution>
+        </executions>
+      </plugin>
+    </plugins>
   </build>
-  <dependencies>
-    <dependency>
-      <groupId>org.eclipse.jetty.ee9.demos</groupId>
-      <artifactId>jetty-ee9-demo-mock-resources</artifactId>
-      <scope>provided</scope>
-    </dependency>
-    <dependency>
-      <groupId>jakarta.transaction</groupId>
-      <artifactId>jakarta.transaction-api</artifactId>
-      <scope>provided</scope>
-    </dependency>
-    <dependency>
-      <groupId>org.eclipse.jetty.toolchain</groupId>
-      <artifactId>jetty-jakarta-servlet-api</artifactId>
-      <scope>provided</scope>
-    </dependency>
-    <dependency>
-      <groupId>org.eclipse.jetty.orbit</groupId>
-      <artifactId>javax.mail.glassfish</artifactId>
-      <scope>provided</scope>
-    </dependency>
-  </dependencies>
 </project>

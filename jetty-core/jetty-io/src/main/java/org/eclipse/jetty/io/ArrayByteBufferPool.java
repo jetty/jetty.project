@@ -204,7 +204,8 @@ public class ArrayByteBufferPool implements ByteBufferPool, Dumpable
                 buffer = newRetainableByteBuffer(bucket._capacity, direct, retainedBuffer ->
                 {
                     BufferUtil.reset(retainedBuffer.getByteBuffer());
-                    reservedEntry.release();
+                    if (!reservedEntry.release())
+                        reservedEntry.remove();
                 });
                 reservedEntry.enable(buffer, true);
                 if (direct)
@@ -360,8 +361,13 @@ public class ArrayByteBufferPool implements ByteBufferPool, Dumpable
             {
                 if (entry.remove())
                 {
-                    memoryCounter.addAndGet(-entry.getPooled().capacity());
-                    removed(entry.getPooled());
+                    RetainableByteBuffer pooled = entry.getPooled();
+                    // Calling getPooled can return null if the entry was not yet enabled.
+                    if (pooled != null)
+                    {
+                        memoryCounter.addAndGet(-pooled.capacity());
+                        removed(pooled);
+                    }
                 }
             });
         }
@@ -479,10 +485,10 @@ public class ArrayByteBufferPool implements ByteBufferPool, Dumpable
         private RetainedBucket(int capacity, int poolSize)
         {
             if (poolSize <= ConcurrentPool.OPTIMAL_MAX_SIZE)
-                _pool = new ConcurrentPool<>(ConcurrentPool.StrategyType.THREAD_ID, poolSize, true);
+                _pool = new ConcurrentPool<>(ConcurrentPool.StrategyType.THREAD_ID, poolSize, false);
             else
                 _pool = new CompoundPool<>(
-                    new ConcurrentPool<>(ConcurrentPool.StrategyType.THREAD_ID, ConcurrentPool.OPTIMAL_MAX_SIZE, true),
+                    new ConcurrentPool<>(ConcurrentPool.StrategyType.THREAD_ID, ConcurrentPool.OPTIMAL_MAX_SIZE, false),
                     new QueuedPool<>(poolSize - ConcurrentPool.OPTIMAL_MAX_SIZE)
                 );
             _capacity = capacity;

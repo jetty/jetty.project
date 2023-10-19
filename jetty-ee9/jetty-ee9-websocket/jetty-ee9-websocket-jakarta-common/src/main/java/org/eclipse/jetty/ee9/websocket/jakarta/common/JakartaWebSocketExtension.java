@@ -104,7 +104,7 @@ public class JakartaWebSocketExtension implements Extension
     @Override
     public int hashCode()
     {
-        return name != null ? name.hashCode() : 0;
+        return name != null ? name.hashCode() : 79;
     }
 
     @Override
