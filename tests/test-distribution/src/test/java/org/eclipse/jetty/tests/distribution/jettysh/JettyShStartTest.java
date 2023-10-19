@@ -18,6 +18,7 @@ import java.nio.file.Path;
 import java.time.Duration;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Stack;
 import java.util.stream.Stream;
 
 import org.awaitility.Awaitility;
@@ -28,10 +29,13 @@ import org.eclipse.jetty.toolchain.test.MavenPaths;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.Arguments;
 import org.junit.jupiter.params.provider.MethodSource;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import org.testcontainers.containers.Container;
 import org.testcontainers.containers.GenericContainer;
 import org.testcontainers.containers.startupcheck.IsRunningStartupCheckStrategy;
 import org.testcontainers.containers.wait.strategy.ShellStrategy;
+import org.testcontainers.images.PullPolicy;
 
 import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.Matchers.allOf;
@@ -44,12 +48,14 @@ import static org.junit.jupiter.api.Assertions.assertEquals;
  */
 public class JettyShStartTest extends AbstractJettyHomeTest
 {
+    private static final Logger LOG = LoggerFactory.getLogger(JettyShStartTest.class);
+
     public static Stream<Arguments> jettyImages()
     {
         List<ImageFromDSL> images = new ArrayList<>();
 
         // Loop through all OS images
-        for (ImageOS osImage : List.of(new ImageOSUbuntuJammyLTS()))
+        for (ImageOS osImage : List.of(new ImageOSUbuntuJammyLTS(), new ImageOSAmazonCorretto11()))
         {
             // Establish user Images based on OS Image
             List<ImageFromDSL> userImages = new ArrayList<>();
@@ -57,7 +63,7 @@ public class JettyShStartTest extends AbstractJettyHomeTest
             userImages.add(new ImageUserChange(osImage));
 
             // Loop through user Images to establish various JETTY_BASE configurations
-            for (ImageFromDSL userImage: userImages)
+            for (ImageFromDSL userImage : userImages)
             {
                 // Basic JETTY_BASE
                 images.add(new ImageFromDSL(userImage, "base-basic", builder ->
@@ -97,11 +103,11 @@ public class JettyShStartTest extends AbstractJettyHomeTest
     @MethodSource("jettyImages")
     public void testStartStopJettyBase(ImageFromDSL jettyImage) throws Exception
     {
-        String name = jettyImage.get();
-        System.out.println("testStartStopJettyBase: name=" + name);
+        ensureParentImagesExist(jettyImage);
 
         try (GenericContainer<?> genericContainer = new GenericContainer<>(jettyImage))
         {
+            genericContainer.withImagePullPolicy(PullPolicy.defaultPolicy());
             genericContainer.setWaitStrategy(new ShellStrategy().withCommand("id"));
 
             genericContainer.withExposedPorts(80, 8080) // jetty
@@ -110,7 +116,7 @@ public class JettyShStartTest extends AbstractJettyHomeTest
                 .withStartupCheckStrategy(new IsRunningStartupCheckStrategy())
                 .start();
 
-            System.out.println("Started: " + jettyImage.getDockerImageName());
+            LOG.info("Started: " + jettyImage.getDockerImageName());
 
             System.err.println("== jetty.sh start ==");
             Container.ExecResult result = genericContainer.execInContainer("/var/test/jetty-home/bin/jetty.sh", "start");
@@ -132,7 +138,7 @@ public class JettyShStartTest extends AbstractJettyHomeTest
             startHttpClient();
 
             URI containerUriRoot = URI.create("http://" + genericContainer.getHost() + ":" + genericContainer.getMappedPort(8080) + "/");
-            System.err.printf("Container URI Root: %s%n", containerUriRoot);
+            LOG.debug("Container URI Root: {}", containerUriRoot);
 
             ContentResponse response = client.GET(containerUriRoot);
             assertEquals(HttpStatus.NOT_FOUND_404, response.getStatus(), new ResponseDetails(response));
@@ -143,6 +149,34 @@ public class JettyShStartTest extends AbstractJettyHomeTest
             assertThat(result.getExitCode(), is(0));
             Awaitility.await().atMost(Duration.ofSeconds(5)).until(result::getStdout,
                 containsString("Jetty running pid"));
+        }
+    }
+
+    private void ensureParentImagesExist(ImageFromDSL jettyImage)
+    {
+        // The build stack for images
+        Stack<ImageFromDSL> images = new Stack<>();
+
+        ImageFromDSL parent = jettyImage;
+        while ((parent = parent.getParentImage()) != null)
+        {
+            images.push(parent);
+        }
+
+        // Create the images (allowing testcontainers cache to do its thing)
+        while (!images.isEmpty())
+        {
+            ImageFromDSL image = images.pop();
+            createImage(image);
+        }
+    }
+
+    private void createImage(ImageFromDSL image)
+    {
+        LOG.debug("Create Image: {}", image.getDockerImageName());
+        try (GenericContainer<?> container = new GenericContainer<>(image))
+        {
+            container.start();
         }
     }
 }

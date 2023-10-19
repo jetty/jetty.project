@@ -24,15 +24,23 @@ import org.testcontainers.images.builder.dockerfile.DockerfileBuilder;
  */
 public class ImageFromDSL extends ImageFromDockerfile
 {
-    public ImageFromDSL(ImageFromDockerfile baseImage, String suffix, Consumer<DockerfileBuilder> builderConsumer)
+    private ImageFromDSL parentImage;
+
+    public ImageFromDSL(ImageFromDSL baseImage, String suffix, Consumer<DockerfileBuilder> builderConsumer)
     {
         this(baseImage.getDockerImageName() + "-" + suffix, builderConsumer);
+        this.parentImage = baseImage;
     }
 
     public ImageFromDSL(String name, Consumer<DockerfileBuilder> builderConsumer)
     {
         super(name, false);
         withDockerfileFromBuilder(builderConsumer);
+    }
+
+    public ImageFromDSL getParentImage()
+    {
+        return parentImage;
     }
 
     @Override
