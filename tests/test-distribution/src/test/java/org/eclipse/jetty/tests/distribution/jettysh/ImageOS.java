@@ -13,8 +13,11 @@
 
 package org.eclipse.jetty.tests.distribution.jettysh;
 
+import java.io.File;
+import java.nio.file.Path;
 import java.util.function.Consumer;
 
+import org.eclipse.jetty.tests.hometester.JettyHomeTester;
 import org.testcontainers.images.builder.dockerfile.DockerfileBuilder;
 
 public abstract class ImageOS extends ImageFromDSL
@@ -22,8 +25,31 @@ public abstract class ImageOS extends ImageFromDSL
     public static final String REGISTRY = "registry.jetty.org";
     public static final String REPOSITORY = REGISTRY + "/jetty-sh";
 
+    private Path jettyHomePath;
+
     public ImageOS(String osid, Consumer<DockerfileBuilder> builderConsumer)
     {
         super(REPOSITORY + ":" + osid, builderConsumer);
+    }
+
+    protected File getJettyHomeDir()
+    {
+        if (jettyHomePath == null)
+        {
+            String jettyVersion = System.getProperty("jettyVersion");
+            try
+            {
+                JettyHomeTester homeTester = JettyHomeTester.Builder.newInstance()
+                    .jettyVersion(jettyVersion)
+                    .mavenLocalRepository(System.getProperty("mavenRepoPath"))
+                    .build();
+                jettyHomePath = homeTester.getJettyHome();
+            }
+            catch (Exception e)
+            {
+                throw new RuntimeException("Unable to get unpacked JETTY_HOME dir", e);
+            }
+        }
+        return jettyHomePath.toFile();
     }
 }

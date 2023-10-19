@@ -24,9 +24,7 @@ import org.awaitility.Awaitility;
 import org.eclipse.jetty.client.api.ContentResponse;
 import org.eclipse.jetty.http.HttpStatus;
 import org.eclipse.jetty.tests.distribution.AbstractJettyHomeTest;
-import org.eclipse.jetty.tests.hometester.JettyHomeTester;
 import org.eclipse.jetty.toolchain.test.MavenPaths;
-import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.Arguments;
 import org.junit.jupiter.params.provider.MethodSource;
@@ -47,27 +45,6 @@ import static org.junit.jupiter.api.Assertions.assertEquals;
  */
 public class JettyShStartTest extends AbstractJettyHomeTest
 {
-    private static final String JETTY_REGISTRY = "registry.jetty.org/";
-
-    private static final String JETTY_MODE = "jetty-mode";
-    private static final String MODE_USER_CHANGE = "user-change";
-    private static final String MODE_ROOT_ONLY = "root-only";
-    private static final String JETTY_BASE_MODE = "jetty-base-mode";
-    private static final boolean DEBUG_JETTY_SH = false;
-
-    private static Path jettyHomePath;
-
-    @BeforeAll
-    public static void initJettyHome() throws Exception
-    {
-        String jettyVersion = System.getProperty("jettyVersion");
-        JettyHomeTester homeTester = JettyHomeTester.Builder.newInstance()
-            .jettyVersion(jettyVersion)
-            .mavenLocalRepository(System.getProperty("mavenRepoPath"))
-            .build();
-        jettyHomePath = homeTester.getJettyHome();
-    }
-
     public static Stream<Arguments> jettyImages()
     {
         List<Arguments> images = new ArrayList<>();
@@ -91,7 +68,6 @@ public class JettyShStartTest extends AbstractJettyHomeTest
         ImageFromDockerfile image = new ImageFromDSL(jettyImage, "basic-base", builder ->
             builder
                 .from(jettyImage.getDockerImageName())
-                .label(JETTY_BASE_MODE, "basic")
                 // Create a basic configuration of jetty-base
                 .run("java -jar ${JETTY_HOME}/start.jar --add-modules=http,deploy")
                 .build());
@@ -156,7 +132,6 @@ public class JettyShStartTest extends AbstractJettyHomeTest
         {
             builder
                 .from(jettyImage.getDockerImageName())
-                .label(JETTY_BASE_MODE, "complex")
                 // Create a basic configuration of jetty-base
                 .run("java -jar ${JETTY_HOME}/start.jar --add-modules=http,deploy ; " +
                     "mkdir /tmp/logs")
@@ -186,7 +161,7 @@ public class JettyShStartTest extends AbstractJettyHomeTest
 
             System.err.println("== jetty.sh start ==");
             Container.ExecResult result = genericContainer.execInContainer("/var/test/jetty-home/bin/jetty.sh", "start");
-//            assertThat(result.getExitCode(), is(0));
+            assertThat(result.getExitCode(), is(0));
             /*
              * Example successful output
              * ----

@@ -40,5 +40,6 @@ public class ImageOSUbuntuJammyLTS extends ImageOS
                     .run("chmod ugo+x ${JETTY_HOME}/bin/jetty.sh")
                     .build()
         );
+        withFileFromFile("/opt/jetty/", getJettyHomeDir());
     }
 }
