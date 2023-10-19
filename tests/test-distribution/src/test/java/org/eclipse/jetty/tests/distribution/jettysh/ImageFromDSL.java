@@ -19,8 +19,8 @@ import org.testcontainers.images.builder.ImageFromDockerfile;
 import org.testcontainers.images.builder.dockerfile.DockerfileBuilder;
 
 /**
- * Simple ImageFromDSL that has a toString that reports the docker image name.
- * (so that test case execution makes sense)
+ * Simplify the use of {@link ImageFromDockerfile} to get some sanity in naming convention
+ * and {@link #toString()} behaviors so that Test execution makes sense.
  */
 public class ImageFromDSL extends ImageFromDockerfile
 {
