@@ -141,6 +141,7 @@
             https://issues.apache.org/jira/browse/FELIX-1571
             -->
             <Bundle-ClassPath>.,WEB-INF/classes</Bundle-ClassPath>
+            <Jetty-Environment>ee8</Jetty-Environment>
           </instructions>
         </configuration>
       </plugin>

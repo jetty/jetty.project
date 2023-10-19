@@ -50,6 +50,7 @@
             <Export-Package>!org.example.*</Export-Package>
             <Web-ContextPath>/ee8-demo-jsp</Web-ContextPath>
             <Bundle-ClassPath>.,WEB-INF/classes</Bundle-ClassPath>
+            <Jetty-Environment>ee8</Jetty-Environment>
           </instructions>
         </configuration>
       </plugin>
