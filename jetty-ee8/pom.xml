@@ -242,6 +242,11 @@
       </dependency>
       <dependency>
         <groupId>org.mortbay.jasper</groupId>
+        <artifactId>apache-el</artifactId>
+        <version>${jsp.impl.version}</version>
+      </dependency>
+      <dependency>
+        <groupId>org.mortbay.jasper</groupId>
         <artifactId>apache-jsp</artifactId>
         <version>${jsp.impl.version}</version>
       </dependency>

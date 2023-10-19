@@ -16,8 +16,8 @@
     <bundle-symbolic-name>${project.groupId}.boot.test.osgi</bundle-symbolic-name>
     <bundle.debug>true</bundle.debug>
     <ee9.module>jetty-ee9-osgi/test-jetty-ee9-osgi</ee9.module>
-    <el.artifactId>jakarta.el-api</el.artifactId>
-    <el.groupId>jakarta.el</el.groupId>
+    <el.artifactId>apache-el</el.artifactId>
+    <el.groupId>org.mortbay.jasper</el.groupId>
     <enterprise.artifactId>jakarta.enterprise.cdi-api</enterprise.artifactId>
     <enterprise.groupId>jakarta.enterprise</enterprise.groupId>
     <inject.artifactId>jakarta.inject-api</inject.artifactId>
@@ -96,7 +96,6 @@
     <dependency>
       <groupId>org.mortbay.jasper</groupId>
       <artifactId>apache-el</artifactId>
-      <version>9.0.52</version>
     </dependency>
     <dependency>
       <groupId>org.mortbay.jasper</groupId>
