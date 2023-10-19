@@ -1602,6 +1602,11 @@ public interface HttpFields extends Iterable<HttpField>, Supplier<HttpFields>
                 return true;
             }
 
+            public HttpField onReplaceField(HttpField oldField, HttpField newField)
+            {
+                return newField;
+            }
+
             @Override
             public int size()
             {
@@ -1623,8 +1628,44 @@ public interface HttpFields extends Iterable<HttpField>, Supplier<HttpFields>
                 {
                     field = onAddField(field);
                     if (field != null)
-                        return _fields.add(field);
+                        _fields.add(field);
                 }
+                return this;
+            }
+
+            @Override
+            public Mutable put(HttpField field)
+            {
+                // rewrite put to ensure that removes are called before replace
+                int put = -1;
+                ListIterator<HttpField> i = _fields.listIterator();
+                while (i.hasNext())
+                {
+                    HttpField f = i.next();
+                    if (f.isSameName(field))
+                    {
+                        if (put < 0)
+                            put = i.previousIndex();
+                        else if (onRemoveField(f))
+                            i.remove();
+                    }
+                }
+
+                if (put < 0)
+                {
+                    field = onAddField(field);
+                    if (field != null)
+                        add(field);
+                }
+                else
+                {
+                    i = _fields.listIterator(put);
+                    HttpField old = i.next();
+                    field = onReplaceField(old, field);
+                    if (field != null)
+                        i.set(field);
+                }
+
                 return this;
             }
 
@@ -1702,9 +1743,9 @@ public interface HttpFields extends Iterable<HttpField>, Supplier<HttpFields>
                         }
                         else
                         {
-                            if (last != null && onRemoveField(last))
+                            if (last != null)
                             {
-                                field = onAddField(field);
+                                field = onReplaceField(last, field);
                                 if (field != null)
                                 {
                                     last = null;

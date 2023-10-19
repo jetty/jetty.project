@@ -34,9 +34,11 @@ import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.Test;
 
 import static org.hamcrest.MatcherAssert.assertThat;
+import static org.hamcrest.Matchers.containsString;
 import static org.hamcrest.Matchers.endsWith;
 import static org.hamcrest.Matchers.equalTo;
 import static org.hamcrest.Matchers.is;
+import static org.hamcrest.Matchers.not;
 import static org.hamcrest.Matchers.nullValue;
 
 public class ResponseHeadersTest
@@ -445,6 +447,44 @@ public class ResponseHeadersTest
     }
 
     @Test
+    public void testSetIntHeader() throws Exception
+    {
+        ServletContextHandler contextHandler = new ServletContextHandler();
+        contextHandler.setContextPath("/");
+        HttpServlet addHeaderServlet = new HttpServlet()
+        {
+            @Override
+            protected void doGet(HttpServletRequest request, HttpServletResponse response) throws ServletException, IOException
+            {
+                response.addIntHeader("X-Foo", 10);
+                response.setIntHeader("X-Foo", 20);
+
+                PrintWriter writer = response.getWriter();
+                writer.println("Done");
+            }
+        };
+
+        contextHandler.addServlet(addHeaderServlet, "/add-intheader/*");
+        startServer(contextHandler);
+
+        HttpTester.Request request = new HttpTester.Request();
+        request.setMethod("GET");
+        request.setURI("/add-intheader/");
+        request.setVersion(HttpVersion.HTTP_1_1);
+        request.setHeader("Connection", "close");
+        request.setHeader("Host", "test");
+
+        ByteBuffer responseBuffer = connector.getResponse(request.generate());
+        // System.err.println(BufferUtil.toUTF8String(responseBuffer));
+        HttpTester.Response response = HttpTester.parseResponse(responseBuffer);
+
+        // Now test for properly formatted HTTP Response Headers.
+        assertThat("Response Code", response.getStatus(), is(200));
+        // The X-Foo header should be present an unchanged
+        assertThat("Response Header X-Foo", response.getField("X-Foo").getIntValue(), is(20));
+    }
+
+    @Test
     public void testFlushPrintWriter() throws Exception
     {
         ServletContextHandler contextHandler = new ServletContextHandler();
@@ -479,5 +519,162 @@ public class ResponseHeadersTest
 
         assertThat("Response Code", response.getStatus(), is(200));
         assertThat(response.getContent(), equalTo("Hello\nWorld\n"));
+    }
+
+    @Test
+    public void testContentTypeAfterWriterBeforeWrite() throws Exception
+    {
+        ServletContextHandler contextHandler = new ServletContextHandler();
+        contextHandler.setContextPath("/");
+        HttpServlet contentTypeServlet = new HttpServlet()
+        {
+            @Override
+            protected void doGet(HttpServletRequest request, HttpServletResponse response) throws ServletException, IOException
+            {
+                response.setContentType("text/xml;charset=ISO-8859-7");
+                PrintWriter pw = response.getWriter();
+                response.setContentType("text/html;charset=UTF-8");
+
+                PrintWriter writer = response.getWriter();
+                writer.println("Hello");
+            }
+        };
+
+        contextHandler.addServlet(contentTypeServlet, "/content/*");
+        startServer(contextHandler);
+
+        HttpTester.Request request = new HttpTester.Request();
+        request.setMethod("GET");
+        request.setURI("/content");
+        request.setVersion(HttpVersion.HTTP_1_1);
+        request.setHeader("Connection", "close");
+        request.setHeader("Host", "test");
+
+        ByteBuffer responseBuffer = connector.getResponse(request.generate());
+        HttpTester.Response response = HttpTester.parseResponse(responseBuffer);
+
+        assertThat("Response Code", response.getStatus(), is(200));
+        assertThat("Content Type", response.getField("Content-Type").getValue(), containsString("text/html;charset=ISO-8859-7"));
+        assertThat(response.getContent(), containsString("Hello"));
+    }
+
+    @Test
+    public void testContentTypeNoCharset() throws Exception
+    {
+        ServletContextHandler contextHandler = new ServletContextHandler();
+        contextHandler.setContextPath("/");
+        HttpServlet contentTypeServlet = new HttpServlet()
+        {
+            @Override
+            protected void doGet(HttpServletRequest request, HttpServletResponse response) throws ServletException, IOException
+            {
+                response.setContentType("text/html;charset=Shift_Jis");
+                response.setContentType("text/xml");
+
+                PrintWriter pw = response.getWriter();
+                pw.println("Hello");
+            }
+        };
+
+        contextHandler.addServlet(contentTypeServlet, "/content/*");
+        startServer(contextHandler);
+
+        HttpTester.Request request = new HttpTester.Request();
+        request.setMethod("GET");
+        request.setURI("/content");
+        request.setVersion(HttpVersion.HTTP_1_1);
+        request.setHeader("Connection", "close");
+        request.setHeader("Host", "test");
+
+        ByteBuffer responseBuffer = connector.getResponse(request.generate());
+        HttpTester.Response response = HttpTester.parseResponse(responseBuffer);
+
+        assertThat("Response Code", response.getStatus(), is(200));
+        assertThat("Content Type", response.getField("Content-Type").getValue(), containsString("text/xml;charset=Shift_Jis"));
+        assertThat(response.getContent(), containsString("Hello"));
+    }
+
+    @Test
+    public void testContentTypeNull() throws Exception
+    {
+        ServletContextHandler contextHandler = new ServletContextHandler();
+        contextHandler.setContextPath("/");
+        HttpServlet contentTypeServlet = new HttpServlet()
+        {
+            @Override
+            protected void doGet(HttpServletRequest request, HttpServletResponse response) throws ServletException, IOException
+            {
+                response.setContentType("text/html;charset=Shift_Jis");
+                response.setContentType(null);
+
+                PrintWriter pw = response.getWriter();
+                assertThat(response.getCharacterEncoding(), not(is("Shift_Jis")));
+                pw.println("Hello");
+            }
+        };
+
+        contextHandler.addServlet(contentTypeServlet, "/content/*");
+        startServer(contextHandler);
+
+        HttpTester.Request request = new HttpTester.Request();
+        request.setMethod("GET");
+        request.setURI("/content");
+        request.setVersion(HttpVersion.HTTP_1_1);
+        request.setHeader("Connection", "close");
+        request.setHeader("Host", "test");
+
+        ByteBuffer responseBuffer = connector.getResponse(request.generate());
+        HttpTester.Response response = HttpTester.parseResponse(responseBuffer);
+
+        assertThat("Response Code", response.getStatus(), is(200));
+        assertThat("Content Type", response.getField("Content-Type"), nullValue());
+        assertThat(response.getContent(), containsString("Hello"));
+    }
+
+    @Test
+    public void testCommittedNoop() throws Exception
+    {
+        ServletContextHandler contextHandler = new ServletContextHandler();
+        contextHandler.setContextPath("/");
+        HttpServlet addHeaderServlet = new HttpServlet()
+        {
+            @Override
+            protected void doGet(HttpServletRequest request, HttpServletResponse response) throws ServletException, IOException
+            {
+                response.setHeader("Test", "Before");
+                response.setHeader("Content-Length", "2");
+                response.setHeader("Content-Type", "text/html");
+
+                response.getOutputStream().print("OK");
+                response.flushBuffer();
+
+                // These should be silently ignored
+                response.setHeader("Test", "After");
+                response.setHeader("Content-Length", "10");
+                response.setHeader("Content-Type", "text/xml");
+
+                assertThat(response.getHeader("Test"), is("Before"));
+                assertThat(response.getContentType(), is("text/html"));
+                assertThat(response.getHeader("Content-Length"), is("2"));
+            }
+        };
+
+        contextHandler.addServlet(addHeaderServlet, "/test/*");
+        startServer(contextHandler);
+
+        HttpTester.Request request = new HttpTester.Request();
+        request.setMethod("GET");
+        request.setURI("/test/");
+        request.setVersion(HttpVersion.HTTP_1_1);
+        request.setHeader("Connection", "close");
+        request.setHeader("Host", "test");
+
+        ByteBuffer responseBuffer = connector.getResponse(request.generate());
+        HttpTester.Response response = HttpTester.parseResponse(responseBuffer);
+
+        assertThat(response.getStatus(), is(200));
+        assertThat(response.getField("Test").getValue(), is("Before"));
+        assertThat(response.getField("Content-Type").getValue(), is("text/html"));
+        assertThat(response.getContent(), is("OK"));
     }
 }
