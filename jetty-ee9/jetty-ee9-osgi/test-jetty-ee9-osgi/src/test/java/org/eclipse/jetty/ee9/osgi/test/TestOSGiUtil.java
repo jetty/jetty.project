@@ -146,7 +146,7 @@ public class TestOSGiUtil
          * file available so that jetty logging can be configured
          */
         // BEGIN - slf4j 1.7.x
-        /* slf4j-simple conflicts with both slf4j 1.7.x, and jetty-slf4j-impl. (but in different ways)
+        /* slf4j-simple conflicts with both slf4j 1.7.x, and jetty-slf4j-impl. (but in different ways) */
 
         TinyBundle simpleLoggingPropertiesBundle = TinyBundles.bundle();
         simpleLoggingPropertiesBundle.add("simplelogger.properties", ClassLoader.getSystemResource("simplelogger.properties"));
@@ -154,21 +154,21 @@ public class TestOSGiUtil
         simpleLoggingPropertiesBundle.set(Constants.FRAGMENT_HOST, "slf4j-simple");
         simpleLoggingPropertiesBundle.add(FragmentActivator.class);
         res.add(CoreOptions.streamBundle(simpleLoggingPropertiesBundle.build()).noStart());
-        res.add(mavenBundle().groupId("org.slf4j").artifactId("slf4j-simple").versionAsInProject().noStart());
-         */
+        res.add(mavenBundle().groupId("org.slf4j").artifactId("slf4j-simple").version("1.7.6").noStart()); // .versionAsInProject()
+
         // END - slf4j 1.7.x
 
         /*
          * When running with slf4j >= 2.0.0, remove the slf4j simple logger above and uncomment the following lines
          */
         // BEGIN - slf4j 2.x
-        TinyBundle loggingPropertiesBundle = TinyBundles.bundle();
-        loggingPropertiesBundle.add("jetty-logging.properties", ClassLoader.getSystemResource("jetty-logging.properties"));
-        loggingPropertiesBundle.set(Constants.BUNDLE_SYMBOLICNAME, "jetty-logging-properties");
-        loggingPropertiesBundle.set(Constants.FRAGMENT_HOST, "org.eclipse.jetty.logging");
-        loggingPropertiesBundle.add(FragmentActivator.class);
-        res.add(CoreOptions.streamBundle(loggingPropertiesBundle.build()).noStart());
-        res.add(mavenBundle().groupId("org.eclipse.jetty").artifactId("jetty-slf4j-impl").versionAsInProject().start());
+//        TinyBundle loggingPropertiesBundle = TinyBundles.bundle();
+//        loggingPropertiesBundle.add("jetty-logging.properties", ClassLoader.getSystemResource("jetty-logging.properties"));
+//        loggingPropertiesBundle.set(Constants.BUNDLE_SYMBOLICNAME, "jetty-logging-properties");
+//        loggingPropertiesBundle.set(Constants.FRAGMENT_HOST, "org.eclipse.jetty.logging");
+//        loggingPropertiesBundle.add(FragmentActivator.class);
+//        res.add(CoreOptions.streamBundle(loggingPropertiesBundle.build()).noStart());
+//        res.add(mavenBundle().groupId("org.eclipse.jetty").artifactId("jetty-slf4j-impl").versionAsInProject().start());
         // END - slf4j 2.x
         String servletGroupId = System.getProperty("servlet.groupId", "org.eclipse.jetty.toolchain");
         String servletArtifactId = System.getProperty("servlet.artifactId", "jetty-jakarta-servlet-api");
