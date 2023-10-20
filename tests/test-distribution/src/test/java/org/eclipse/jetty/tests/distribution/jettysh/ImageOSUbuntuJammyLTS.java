@@ -13,6 +13,9 @@
 
 package org.eclipse.jetty.tests.distribution.jettysh;
 
+/**
+ * An OS Image of Ubuntu Linux 22.04, it comes with start-stop-daemon installed
+ */
 public class ImageOSUbuntuJammyLTS extends ImageOS
 {
     public ImageOSUbuntuJammyLTS()

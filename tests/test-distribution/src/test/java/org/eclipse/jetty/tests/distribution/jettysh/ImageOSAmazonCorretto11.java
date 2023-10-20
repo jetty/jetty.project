@@ -13,6 +13,12 @@
 
 package org.eclipse.jetty.tests.distribution.jettysh;
 
+/**
+ * An OS Image of linux specific for running on Amazon AWS.
+ * This is based on Amazon Linux 2 (which is based on Alpine 3)
+ * This image does NOT come with start-stop-daemon installed.
+ * Instead of apt, it uses yum (the redhat package manager)
+ */
 public class ImageOSAmazonCorretto11 extends ImageOS
 {
     public ImageOSAmazonCorretto11()
