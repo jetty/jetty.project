@@ -42,13 +42,8 @@ import javax.management.MBeanParameterInfo;
 import javax.management.ObjectName;
 import javax.management.ReflectionException;
 import javax.management.modelmbean.ModelMBean;
-import javax.management.openmbean.CompositeDataSupport;
-import javax.management.openmbean.CompositeType;
 import javax.management.openmbean.OpenDataException;
-import javax.management.openmbean.OpenType;
-import javax.management.openmbean.SimpleType;
 
-import org.eclipse.jetty.util.Attributes;
 import org.eclipse.jetty.util.annotation.ManagedAttribute;
 import org.eclipse.jetty.util.annotation.ManagedObject;
 import org.eclipse.jetty.util.annotation.ManagedOperation;
@@ -247,9 +242,6 @@ class MetaData
 
             if (clazz.isArray() && clazz.getComponentType().isAnnotationPresent(ManagedObject.class))
                 return ObjectName[].class;
-
-            if (Attributes.class.isAssignableFrom(clazz))
-                return CompositeType.class;
         }
 
         if (type instanceof ParameterizedType parameterizedType &&
@@ -297,28 +289,6 @@ class MetaData
             }
 
             return null;
-        }
-
-        if (CompositeType.class.equals(to) && object instanceof Attributes attributes)
-        {
-            String[] names = attributes.getAttributeNameSet().toArray(new String[0]);
-            String[] values = new String[names.length];
-            OpenType<?>[] types = new OpenType[names.length];
-            for (int i = 0; i < names.length; i++)
-            {
-                values[i] = String.valueOf(attributes.getAttribute(names[i]));
-                types[i] = SimpleType.STRING;
-            }
-
-            CompositeType compositeType = new CompositeType(
-                "Attributes",
-                "Attributes",
-                names,
-                names,
-                types
-            );
-
-            return new CompositeDataSupport(compositeType, names, values);
         }
 
         if (String.class.equals(to))
