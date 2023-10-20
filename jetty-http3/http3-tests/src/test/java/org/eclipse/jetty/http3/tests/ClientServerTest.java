@@ -519,10 +519,10 @@ public class ClientServerTest extends AbstractClientServerTest
                     @Override
                     public void onDataAvailable(Stream.Server stream)
                     {
-                        // TODO: we should not be needing this!!!
+                        // Calling readData() triggers the read+parse
+                        // of the trailer, and returns no data.
                         Stream.Data data = stream.readData();
                         assertNull(data);
-                        stream.demand();
                     }
 
                     @Override
