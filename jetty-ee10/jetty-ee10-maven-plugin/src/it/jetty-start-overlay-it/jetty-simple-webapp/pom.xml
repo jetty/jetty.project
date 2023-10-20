@@ -75,6 +75,7 @@
                 <includes>
                   <include>index.html</include>
                   <include>base/**</include>
+                  <include>WEB-INF/**</include>
                 </includes>
               </overlay>
               <overlay/>
