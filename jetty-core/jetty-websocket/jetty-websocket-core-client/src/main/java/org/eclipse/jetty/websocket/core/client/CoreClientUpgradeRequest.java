@@ -247,9 +247,19 @@ public abstract class CoreClientUpgradeRequest implements Response.CompleteListe
         }
 
         URI requestURI = result.getRequest().getURI();
+        Request request = result.getRequest();
         Response response = result.getResponse();
-        int responseStatusCode = response.getStatus();
-        String responseLine = responseStatusCode + " " + response.getReason();
+        int status = response.getStatus();
+        String responseLine = status + " " + response.getReason();
+
+        if ((request.getVersion() == HttpVersion.HTTP_2 && status != HttpStatus.OK_200) ||
+            (request.getVersion() == HttpVersion.HTTP_1_1 && status != HttpStatus.SWITCHING_PROTOCOLS_101))
+        {
+            // We have failed to upgrade but have received a response, so notify the listener.
+            Throwable listenerError = notifyUpgradeListeners((listener) -> listener.onHandshakeResponse(request, response));
+            if (listenerError != null)
+                LOG.warn("error from listener", listenerError);
+        }
 
         if (result.isFailed())
         {
@@ -266,15 +276,15 @@ public abstract class CoreClientUpgradeRequest implements Response.CompleteListe
             Throwable failure = result.getFailure();
             boolean wrapFailure = !(failure instanceof IOException) && !(failure instanceof UpgradeException);
             if (wrapFailure)
-                failure = new UpgradeException(requestURI, responseStatusCode, responseLine, failure);
+                failure = new UpgradeException(requestURI, status, responseLine, failure);
             handleException(failure);
             return;
         }
 
-        if (responseStatusCode != HttpStatus.SWITCHING_PROTOCOLS_101)
+        if (status != HttpStatus.SWITCHING_PROTOCOLS_101)
         {
             // Failed to upgrade (other reason)
-            handleException(new UpgradeException(requestURI, responseStatusCode,
+            handleException(new UpgradeException(requestURI, status,
                 "Failed to upgrade to websocket: Unexpected HTTP Response Status Code: " + responseLine));
         }
     }
