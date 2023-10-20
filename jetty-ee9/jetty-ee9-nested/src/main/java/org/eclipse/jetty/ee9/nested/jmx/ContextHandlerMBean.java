@@ -44,6 +44,12 @@ public class ContextHandlerMBean extends AbstractHandlerMBean
         return map;
     }
 
+    @ManagedAttribute("Map of context attributes")
+    public Attributes getAttributes()
+    {
+        return ((ContextHandler)_managed).getAttributes();
+    }
+
     @ManagedOperation(value = "Set context attribute", impact = "ACTION")
     public void setContextAttribute(@Name(value = "name", description = "attribute name") String name, @Name(value = "value", description = "attribute value") Object value)
     {

@@ -19,11 +19,16 @@ import java.lang.reflect.Constructor;
 import java.lang.reflect.InvocationTargetException;
 import java.lang.reflect.Method;
 import java.lang.reflect.Modifier;
+import java.lang.reflect.ParameterizedType;
+import java.lang.reflect.Type;
 import java.util.Arrays;
+import java.util.Collection;
 import java.util.HashMap;
+import java.util.HashSet;
 import java.util.List;
 import java.util.Locale;
 import java.util.Map;
+import java.util.Set;
 import java.util.stream.Collectors;
 import javax.management.Attribute;
 import javax.management.AttributeNotFoundException;
@@ -37,7 +42,13 @@ import javax.management.MBeanParameterInfo;
 import javax.management.ObjectName;
 import javax.management.ReflectionException;
 import javax.management.modelmbean.ModelMBean;
+import javax.management.openmbean.CompositeDataSupport;
+import javax.management.openmbean.CompositeType;
+import javax.management.openmbean.OpenDataException;
+import javax.management.openmbean.OpenType;
+import javax.management.openmbean.SimpleType;
 
+import org.eclipse.jetty.util.Attributes;
 import org.eclipse.jetty.util.annotation.ManagedAttribute;
 import org.eclipse.jetty.util.annotation.ManagedObject;
 import org.eclipse.jetty.util.annotation.ManagedOperation;
@@ -224,19 +235,96 @@ class MetaData
         return attributeName.substring(0, 1).toLowerCase(Locale.ENGLISH) + attributeName.substring(1);
     }
 
-    private static boolean isManagedObject(Class<?> klass)
+    private static Type getManagedType(Type type)
     {
-        if (klass.isArray())
-            klass = klass.getComponentType();
-        if (klass.isPrimitive())
-            return false;
-        while (klass != null)
+        if (type == null || Void.TYPE.equals(type))
+            return Void.TYPE;
+
+        if (type instanceof Class<?> clazz)
         {
-            if (klass.isAnnotationPresent(ManagedObject.class))
-                return true;
-            klass = klass.getSuperclass();
+            if (clazz.isAnnotationPresent(ManagedObject.class))
+                return ObjectName.class;
+
+            if (clazz.isArray() && clazz.getComponentType().isAnnotationPresent(ManagedObject.class))
+                return ObjectName[].class;
+
+            if (Attributes.class.isAssignableFrom(clazz))
+                return CompositeType.class;
         }
-        return false;
+
+        if (type instanceof ParameterizedType parameterizedType &&
+            parameterizedType.getRawType() instanceof Class<?> clazz &&
+            Collection.class.isAssignableFrom(clazz))
+        {
+            Type[] genArgs = parameterizedType.getActualTypeArguments();
+            if (genArgs.length == 1 && genArgs[0] instanceof Class<?> klass && klass.isAnnotationPresent(ManagedObject.class))
+                return ObjectName[].class;
+        }
+
+        if (type.getTypeName().startsWith("org.eclipse.jetty."))
+            return String.class;
+
+        return type;
+    }
+
+    private static Object convertToManagedType(MBeanContainer mBeanContainer, Object object, Class<?> from, Type to) throws OpenDataException
+    {
+        if (object == null)
+            return null;
+
+        if (ObjectName.class.equals(to))
+            return mBeanContainer.findMBean(object);
+
+        if (ObjectName[].class.equals(to))
+        {
+            if (object instanceof Collection<?> collection)
+            {
+                int length = collection.size();
+                ObjectName[] names = new ObjectName[length];
+                int i = 0;
+                for (Object o : collection)
+                    names[i++] = mBeanContainer.findMBean(o);
+                return names;
+            }
+
+            if (from.isArray())
+            {
+                int length = Array.getLength(object);
+                ObjectName[] names = new ObjectName[length];
+                for (int i = 0; i < length; ++i)
+                    names[i] = mBeanContainer.findMBean(Array.get(object, i));
+                return names;
+            }
+
+            return null;
+        }
+
+        if (CompositeType.class.equals(to) && object instanceof Attributes attributes)
+        {
+            String[] names = attributes.getAttributeNameSet().toArray(new String[0]);
+            String[] values = new String[names.length];
+            OpenType<?>[] types = new OpenType[names.length];
+            for (int i = 0; i < names.length; i++)
+            {
+                values[i] = String.valueOf(attributes.getAttribute(names[i]));
+                types[i] = SimpleType.STRING;
+            }
+
+            CompositeType compositeType = new CompositeType(
+                "Attributes",
+                "Attributes",
+                names,
+                names,
+                types
+            );
+
+            return new CompositeDataSupport(compositeType, names, values);
+        }
+
+        if (String.class.equals(to))
+            return String.valueOf(object);
+
+        return object;
     }
 
     private static String signature(String name, String[] params)
@@ -336,7 +424,7 @@ class MetaData
         private final Method _getter;
         private final Method _setter;
         private final boolean _proxied;
-        private final boolean _convert;
+        private final Type _convert;
         private final MBeanAttributeInfo _info;
 
         private AttributeInfo(ManagedAttribute attribute, Method getter)
@@ -353,13 +441,8 @@ class MetaData
 
             _proxied = attribute.proxied();
 
-            Class<?> returnType = getter.getReturnType();
-            _convert = isManagedObject(returnType);
-            String signature = _convert
-                ? returnType.isArray()
-                ? ObjectName[].class.getName()
-                : ObjectName.class.getName()
-                : returnType.getName();
+            _convert = getManagedType(getter.getGenericReturnType());
+            String signature = _convert.getTypeName();
 
             String description = attribute.value();
             _info = new MBeanAttributeInfo(name, signature, description, true,
@@ -374,19 +457,8 @@ class MetaData
                 if (_proxied || _getter.getDeclaringClass().isInstance(mbean))
                     target = mbean;
                 Object result = _getter.invoke(target);
-                if (result == null)
-                    return null;
-                if (!_convert)
-                    return result;
-                if (!_getter.getReturnType().isArray())
-                    return mbean.findObjectName(result);
-                int length = Array.getLength(result);
-                ObjectName[] names = new ObjectName[length];
-                for (int i = 0; i < length; ++i)
-                {
-                    names[i] = mbean.findObjectName(Array.get(result, i));
-                }
-                return names;
+
+                return convertToManagedType(mbean.getMBeanContainer(), result, _getter.getReturnType(), _convert);
             }
             catch (InvocationTargetException x)
             {
@@ -409,24 +481,28 @@ class MetaData
                 Object target = mbean.getManagedObject();
                 if (_proxied || _setter.getDeclaringClass().isInstance(mbean))
                     target = mbean;
-                if (!_convert || value == null)
-                {
-                    _setter.invoke(target, value);
-                    return;
-                }
-                if (!_getter.getReturnType().isArray())
+
+                if (ObjectName.class.equals(_convert))
                 {
                     value = mbean.findBean((ObjectName)value);
-                    _setter.invoke(target, value);
-                    return;
                 }
-                ObjectName[] names = (ObjectName[])value;
-                Object result = new Object[names.length];
-                for (int i = 0; i < names.length; ++i)
+
+                if (ObjectName[].class.equals(_convert))
                 {
-                    Array.set(result, i, mbean.findBean(names[i]));
+                    ObjectName[] names = (ObjectName[])value;
+                    Object[] objects = new Object[names.length];
+                    for (int i = 0; i < names.length; ++i)
+                        objects[i] = mbean.findBean(names[i]);
+
+                    if (List.class.isAssignableFrom(_setter.getReturnType()))
+                        value = Arrays.asList(objects);
+                    else if (Set.class.isAssignableFrom(_setter.getReturnType()))
+                        value = new HashSet<>(Arrays.asList(objects));
+                    else
+                        value = objects;
                 }
-                _setter.invoke(target, result);
+
+                _setter.invoke(target, value);
             }
             catch (InvocationTargetException x)
             {
@@ -479,7 +555,7 @@ class MetaData
         private final String _name;
         private final Method _method;
         private final boolean _proxied;
-        private final boolean _convert;
+        private final Type _convert;
         private final MBeanOperationInfo _info;
 
         private OperationInfo(ManagedOperation operation, Method method)
@@ -490,13 +566,8 @@ class MetaData
 
             _proxied = operation.proxied();
 
-            Class<?> returnType = method.getReturnType();
-            _convert = isManagedObject(returnType);
-            String returnSignature = _convert
-                ? returnType.isArray()
-                ? ObjectName[].class.getName()
-                : ObjectName.class.getName()
-                : returnType.getName();
+            _convert = getManagedType(method.getGenericReturnType());
+            String returnSignature = _convert.getTypeName();
 
             String impactName = operation.impact();
             int impact = MBeanOperationInfo.UNKNOWN;
@@ -522,19 +593,8 @@ class MetaData
                 if (_proxied || _method.getDeclaringClass().isInstance(mbean))
                     target = mbean;
                 Object result = _method.invoke(target, args);
-                if (result == null)
-                    return null;
-                if (!_convert)
-                    return result;
-                if (!_method.getReturnType().isArray())
-                    return mbean.findObjectName(result);
-                int length = Array.getLength(result);
-                ObjectName[] names = new ObjectName[length];
-                for (int i = 0; i < length; ++i)
-                {
-                    names[i] = mbean.findObjectName(Array.get(result, i));
-                }
-                return names;
+
+                return convertToManagedType(mbean.getMBeanContainer(), result, _method.getReturnType(), _convert);
             }
             catch (InvocationTargetException x)
             {
@@ -556,9 +616,8 @@ class MetaData
                 Annotation[] parameterAnnotations = parametersAnnotations[i];
                 for (Annotation parameterAnnotation : parameterAnnotations)
                 {
-                    if (parameterAnnotation instanceof Name)
+                    if (parameterAnnotation instanceof Name name)
                     {
-                        Name name = (Name)parameterAnnotation;
                         info = result[i] = new MBeanParameterInfo(name.value(), typeName, name.description());
                         break;
                     }
