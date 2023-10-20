@@ -578,31 +578,33 @@ public class AnnotationParser
      */
     protected void parseDir(Set<? extends Handler> handlers, Resource dirResource) throws Exception
     {
-        Path dir = dirResource.getPath();
-
         if (LOG.isDebugEnabled())
-            LOG.debug("Scanning dir {}", dir.toUri());
-
+            LOG.debug("Scanning dir {}", dirResource);
         ExceptionUtil.MultiException multiException = new ExceptionUtil.MultiException();
-        try (Stream<Path> classStream = Files.walk(dir))
+        for (Resource r : dirResource)
         {
-            classStream
-                .filter(Files::isRegularFile)
-                .filter((path) -> !FileID.isHidden(dir, path))
-                .filter(FileID::isNotMetaInfVersions)
-                .filter(FileID::isNotModuleInfoClass)
-                .filter(FileID::isClassFile)
-                .forEach(classFile ->
-                {
-                    try
+            Path dir = r.getPath();
+
+            try (Stream<Path> classStream = Files.walk(dir))
+            {
+                classStream
+                    .filter(Files::isRegularFile)
+                    .filter((path) -> !FileID.isHidden(dir, path))
+                    .filter(FileID::isNotMetaInfVersions)
+                    .filter(FileID::isNotModuleInfoClass)
+                    .filter(FileID::isClassFile)
+                    .forEach(classFile ->
                     {
-                        parseClass(handlers, dirResource, classFile);
-                    }
-                    catch (Exception ex)
-                    {
-                        multiException.add(new RuntimeException("Error scanning entry " + ex, ex));
-                    }
-                });
+                        try
+                        {
+                            parseClass(handlers, dirResource, classFile);
+                        }
+                        catch (Exception ex)
+                        {
+                            multiException.add(new RuntimeException("Error scanning entry " + ex, ex));
+                        }
+                    });
+            }
         }
 
         multiException.ifExceptionThrow();

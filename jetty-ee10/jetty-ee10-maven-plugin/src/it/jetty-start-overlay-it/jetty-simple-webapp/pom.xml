@@ -72,10 +72,6 @@
               <overlay>
                 <groupId>org.eclipse.jetty.ee10.its.jetty-start-overlay-it</groupId>
                 <artifactId>jetty-simple-base-webapp</artifactId>
-                <!-- excludes>
-                    <exclude>META-INF/**</exclude>
-                    <exclude>WEB-INF/**</exclude>
-                </excludes -->
                 <includes>
                   <include>index.html</include>
                   <include>base/**</include>
