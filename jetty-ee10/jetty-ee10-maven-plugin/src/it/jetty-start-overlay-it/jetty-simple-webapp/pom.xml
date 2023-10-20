@@ -72,8 +72,13 @@
               <overlay>
                 <groupId>org.eclipse.jetty.ee10.its.jetty-start-overlay-it</groupId>
                 <artifactId>jetty-simple-base-webapp</artifactId>
+                <!-- excludes>
+                    <exclude>META-INF/**</exclude>
+                    <exclude>WEB-INF/**</exclude>
+                </excludes -->
                 <includes>
                   <include>index.html</include>
+                  <include>base/**</include>
                 </includes>
               </overlay>
               <overlay/>
@@ -100,8 +105,8 @@
           <systemPropertyVariables>
             <jetty.port.file>${jetty.port.file}</jetty.port.file>
             <context.path>/setbycontextxml</context.path>
-            <contentCheck>Simple Base Webapp Index</contentCheck>
-            <pathToCheck>/index.html</pathToCheck>
+            <contentCheck>Base Index</contentCheck>
+            <pathToCheck>/base/index.html</pathToCheck>
             <maven.it.name>${project.groupId}:${project.artifactId}</maven.it.name>
           </systemPropertyVariables>
           <dependenciesToScan>
