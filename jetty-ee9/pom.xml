@@ -69,7 +69,7 @@
     <!-- FIXME we need a separate property for this one -->
     <jetty.servlet.api.version>5.0.2</jetty.servlet.api.version>
 
-    <jsp.impl.version>10.0.27-SNAPSHOT</jsp.impl.version>
+    <jsp.impl.version>10.0.14</jsp.impl.version>
 
     <sonar.skip>true</sonar.skip>
     <weld.version>4.0.3.Final</weld.version>
