@@ -144,43 +144,36 @@
     <dependency>
       <groupId>org.wildfly.security</groupId>
       <artifactId>wildfly-elytron-sasl-digest</artifactId>
-      <version>2.2.2.Final</version>
       <scope>test</scope>
     </dependency>
     <dependency>
       <groupId>org.wildfly.security</groupId>
       <artifactId>wildfly-elytron-sasl-external</artifactId>
-      <version>2.2.2.Final</version>
       <scope>test</scope>
     </dependency>
     <dependency>
       <groupId>org.wildfly.security</groupId>
       <artifactId>wildfly-elytron-sasl-gs2</artifactId>
-      <version>2.2.2.Final</version>
       <scope>test</scope>
     </dependency>
     <dependency>
       <groupId>org.wildfly.security</groupId>
       <artifactId>wildfly-elytron-sasl-gssapi</artifactId>
-      <version>2.2.2.Final</version>
       <scope>test</scope>
     </dependency>
     <dependency>
       <groupId>org.wildfly.security</groupId>
       <artifactId>wildfly-elytron-sasl-oauth2</artifactId>
-      <version>2.2.2.Final</version>
       <scope>test</scope>
     </dependency>
     <dependency>
       <groupId>org.wildfly.security</groupId>
       <artifactId>wildfly-elytron-sasl-plain</artifactId>
-      <version>2.2.2.Final</version>
       <scope>test</scope>
     </dependency>
     <dependency>
       <groupId>org.wildfly.security</groupId>
       <artifactId>wildfly-elytron-sasl-scram</artifactId>
-      <version>2.2.2.Final</version>
       <scope>test</scope>
     </dependency>
 
