@@ -42,7 +42,6 @@ import javax.management.MBeanParameterInfo;
 import javax.management.ObjectName;
 import javax.management.ReflectionException;
 import javax.management.modelmbean.ModelMBean;
-import javax.management.openmbean.OpenDataException;
 
 import org.eclipse.jetty.util.annotation.ManagedAttribute;
 import org.eclipse.jetty.util.annotation.ManagedObject;
@@ -58,6 +57,8 @@ class MetaData
     private static final MBeanConstructorInfo[] NO_CONSTRUCTORS = new MBeanConstructorInfo[0];
     private static final MBeanOperationInfo[] NO_OPERATIONS = new MBeanOperationInfo[0];
     private static final MBeanNotificationInfo[] NO_NOTIFICATIONS = new MBeanNotificationInfo[0];
+    private static final String[] NO_PARAMETERS = new String[0];
+    private static final Object[] NO_ARGUMENTS = new Object[0];
 
     private final Map<String, AttributeInfo> _attributes = new HashMap<>();
     private final Map<String, OperationInfo> _operations = new HashMap<>();
@@ -259,13 +260,13 @@ class MetaData
         return type;
     }
 
-    private static Object convertToManagedType(MBeanContainer mBeanContainer, Object object, Class<?> from, Type to) throws OpenDataException
+    private static Object convertToManagedType(MBeanContainer mbeanContainer, Object object, Class<?> from, Type to)
     {
         if (object == null)
             return null;
 
         if (ObjectName.class.equals(to))
-            return mBeanContainer.findMBean(object);
+            return mbeanContainer.findMBean(object);
 
         if (ObjectName[].class.equals(to))
         {
@@ -275,7 +276,7 @@ class MetaData
                 ObjectName[] names = new ObjectName[length];
                 int i = 0;
                 for (Object o : collection)
-                    names[i++] = mBeanContainer.findMBean(o);
+                    names[i++] = mbeanContainer.findMBean(o);
                 return names;
             }
 
@@ -284,7 +285,7 @@ class MetaData
                 int length = Array.getLength(object);
                 ObjectName[] names = new ObjectName[length];
                 for (int i = 0; i < length; ++i)
-                    names[i] = mBeanContainer.findMBean(Array.get(object, i));
+                    names[i] = mbeanContainer.findMBean(Array.get(object, i));
                 return names;
             }
 
@@ -299,7 +300,7 @@ class MetaData
 
     private static String signature(String name, String[] params)
     {
-        return String.format("%s(%s)", name, String.join(",", params));
+        return String.format("%s(%s)", name, String.join(",", params != null ? params : NO_PARAMETERS));
     }
 
     private static String signature(Method method)
@@ -427,7 +428,6 @@ class MetaData
                 if (_proxied || _getter.getDeclaringClass().isInstance(mbean))
                     target = mbean;
                 Object result = _getter.invoke(target);
-
                 return convertToManagedType(mbean.getMBeanContainer(), result, _getter.getReturnType(), _convert);
             }
             catch (InvocationTargetException x)
@@ -453,9 +453,7 @@ class MetaData
                     target = mbean;
 
                 if (ObjectName.class.equals(_convert))
-                {
                     value = mbean.findBean((ObjectName)value);
-                }
 
                 if (ObjectName[].class.equals(_convert))
                 {
@@ -555,6 +553,7 @@ class MetaData
 
         public Object invoke(Object[] args, ObjectMBean mbean) throws ReflectionException, MBeanException
         {
+            args = args != null ? args : NO_ARGUMENTS;
             if (LOG.isDebugEnabled())
                 LOG.debug("invoke {}.{}({}) {}", mbean, _info.getName(), Arrays.asList(args), _info);
             try
@@ -563,7 +562,6 @@ class MetaData
                 if (_proxied || _method.getDeclaringClass().isInstance(mbean))
                     target = mbean;
                 Object result = _method.invoke(target, args);
-
                 return convertToManagedType(mbean.getMBeanContainer(), result, _method.getReturnType(), _convert);
             }
             catch (InvocationTargetException x)
