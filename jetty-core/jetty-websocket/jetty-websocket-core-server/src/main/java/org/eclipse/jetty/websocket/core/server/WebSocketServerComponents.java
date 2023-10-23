@@ -18,7 +18,9 @@ import java.util.concurrent.Executor;
 import org.eclipse.jetty.io.ByteBufferPool;
 import org.eclipse.jetty.server.Server;
 import org.eclipse.jetty.server.handler.ContextHandler;
+import org.eclipse.jetty.util.Attributes;
 import org.eclipse.jetty.util.DecoratedObjectFactory;
+import org.eclipse.jetty.util.component.ContainerLifeCycle;
 import org.eclipse.jetty.util.component.LifeCycle;
 import org.eclipse.jetty.util.compression.DeflaterPool;
 import org.eclipse.jetty.util.compression.InflaterPool;
@@ -28,7 +30,7 @@ import org.eclipse.jetty.websocket.core.WebSocketExtensionRegistry;
 /**
  * A collection of components which are the resources needed for websockets such as
  * {@link ByteBufferPool}, {@link WebSocketExtensionRegistry}, and {@link DecoratedObjectFactory}.
- *
+ * <p>
  * These components should be accessed through {@link WebSocketServerComponents#getWebSocketComponents} so that
  * the instance can be shared by being stored as a bean on the ContextHandler.
  */
@@ -62,28 +64,58 @@ public class WebSocketServerComponents extends WebSocketComponents
      */
     public static WebSocketComponents ensureWebSocketComponents(Server server, ContextHandler contextHandler)
     {
-        ContextHandler.ScopedContext context = contextHandler.getContext();
-        WebSocketComponents components = (WebSocketComponents)context.getAttribute(WEBSOCKET_COMPONENTS_ATTRIBUTE);
+        return ensureWebSocketComponents(server, contextHandler.getContext(), contextHandler);
+    }
+
+    /**
+     * <p>
+     * This ensures a {@link WebSocketComponents} is available on the {@link Server} attribute {@link #WEBSOCKET_COMPONENTS_ATTRIBUTE}.
+     * </p>
+     * <p>
+     * This should be called when the server is starting.
+     * </p>
+     * <p>
+     * Server attributes can be set with {@link #WEBSOCKET_BUFFER_POOL_ATTRIBUTE}, {@link #WEBSOCKET_INFLATER_POOL_ATTRIBUTE}
+     * and {@link #WEBSOCKET_DEFLATER_POOL_ATTRIBUTE} to override the {@link ByteBufferPool}, {@link DeflaterPool} or
+     * {@link InflaterPool} used by the components, otherwise this will try to use the pools shared on the {@link Server}.
+     * </p>
+     * @param server the server.
+     * @return the WebSocketComponents that was created or found.
+     */
+    public static WebSocketComponents ensureWebSocketComponents(Server server)
+    {
+        return ensureWebSocketComponents(server, server, server);
+    }
+
+    /**
+     * @param server the server.
+     * @param attributes the attributes where the websocket components can be found.
+     * @param container the container to manage the lifecycle of the WebSocketComponents instance.
+     * @return the WebSocketComponents that was created or found.
+     */
+    private static WebSocketComponents ensureWebSocketComponents(Server server, Attributes attributes, ContainerLifeCycle container)
+    {
+        WebSocketComponents components = (WebSocketComponents)attributes.getAttribute(WEBSOCKET_COMPONENTS_ATTRIBUTE);
         if (components != null)
             return components;
 
-        InflaterPool inflaterPool = (InflaterPool)context.getAttribute(WEBSOCKET_INFLATER_POOL_ATTRIBUTE);
+        InflaterPool inflaterPool = (InflaterPool)attributes.getAttribute(WEBSOCKET_INFLATER_POOL_ATTRIBUTE);
         if (inflaterPool == null)
             inflaterPool = InflaterPool.ensurePool(server);
 
-        DeflaterPool deflaterPool = (DeflaterPool)context.getAttribute(WEBSOCKET_DEFLATER_POOL_ATTRIBUTE);
+        DeflaterPool deflaterPool = (DeflaterPool)attributes.getAttribute(WEBSOCKET_DEFLATER_POOL_ATTRIBUTE);
         if (deflaterPool == null)
             deflaterPool = DeflaterPool.ensurePool(server);
 
-        ByteBufferPool bufferPool = (ByteBufferPool)context.getAttribute(WEBSOCKET_BUFFER_POOL_ATTRIBUTE);
+        ByteBufferPool bufferPool = (ByteBufferPool)attributes.getAttribute(WEBSOCKET_BUFFER_POOL_ATTRIBUTE);
         if (bufferPool == null)
             bufferPool = server.getByteBufferPool();
 
-        Executor executor = (Executor)context.getAttribute("org.eclipse.jetty.server.Executor");
+        Executor executor = (Executor)attributes.getAttribute("org.eclipse.jetty.server.Executor");
         if (executor == null)
             executor = server.getThreadPool();
 
-        DecoratedObjectFactory objectFactory = (DecoratedObjectFactory)context.getAttribute(DecoratedObjectFactory.ATTR);
+        DecoratedObjectFactory objectFactory = (DecoratedObjectFactory)attributes.getAttribute(DecoratedObjectFactory.ATTR);
         WebSocketComponents serverComponents = new WebSocketServerComponents(inflaterPool, deflaterPool, bufferPool, objectFactory, executor);
         if (objectFactory != null)
             serverComponents.unmanage(objectFactory);
@@ -100,18 +132,18 @@ public class WebSocketServerComponents extends WebSocketComponents
             serverComponents.unmanage(executor);
 
         // Set to be managed as persistent attribute and bean on ContextHandler.
-        contextHandler.addManaged(serverComponents);
-        contextHandler.setAttribute(WEBSOCKET_COMPONENTS_ATTRIBUTE, serverComponents);
+        container.addManaged(serverComponents);
+        attributes.setAttribute(WEBSOCKET_COMPONENTS_ATTRIBUTE, serverComponents);
 
         // Stop the WebSocketComponents when the ContextHandler stops and remove the WebSocketComponents attribute.
-        contextHandler.addEventListener(new LifeCycle.Listener()
+        container.addEventListener(new LifeCycle.Listener()
         {
             @Override
             public void lifeCycleStopping(LifeCycle event)
             {
-                contextHandler.removeAttribute(WEBSOCKET_COMPONENTS_ATTRIBUTE);
-                contextHandler.removeBean(serverComponents);
-                contextHandler.removeEventListener(this);
+                attributes.removeAttribute(WEBSOCKET_COMPONENTS_ATTRIBUTE);
+                container.removeBean(serverComponents);
+                container.removeEventListener(this);
             }
 
             @Override
@@ -127,6 +159,15 @@ public class WebSocketServerComponents extends WebSocketComponents
     public static WebSocketComponents getWebSocketComponents(ContextHandler contextHandler)
     {
         WebSocketComponents components = (WebSocketComponents)contextHandler.getAttribute(WEBSOCKET_COMPONENTS_ATTRIBUTE);
+        if (components == null)
+            throw new IllegalStateException("WebSocketComponents has not been created");
+
+        return components;
+    }
+
+    public static WebSocketComponents getWebSocketComponents(Server server)
+    {
+        WebSocketComponents components = (WebSocketComponents)server.getAttribute(WEBSOCKET_COMPONENTS_ATTRIBUTE);
         if (components == null)
             throw new IllegalStateException("WebSocketComponents has not been created");
 

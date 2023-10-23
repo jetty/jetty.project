@@ -21,7 +21,6 @@ import java.util.concurrent.TimeUnit;
 
 import org.eclipse.jetty.server.Server;
 import org.eclipse.jetty.server.ServerConnector;
-import org.eclipse.jetty.server.handler.ContextHandler;
 import org.eclipse.jetty.websocket.api.Callback;
 import org.eclipse.jetty.websocket.client.ClientUpgradeRequest;
 import org.eclipse.jetty.websocket.client.WebSocketClient;
@@ -61,18 +60,15 @@ public class MaxOutgoingFramesTest
         connector = new ServerConnector(server);
         server.addConnector(connector);
 
-        ContextHandler context = new ContextHandler("/");
-
-        WebSocketUpgradeHandler wsHandler = WebSocketUpgradeHandler.from(server, context);
-        context.setHandler(wsHandler);
+        WebSocketUpgradeHandler wsHandler = WebSocketUpgradeHandler.from(server);
         wsHandler.configure(container ->
         {
             container.addMapping("/", (rq, rs, cb) -> serverSocket);
-            WebSocketComponents components = WebSocketServerComponents.getWebSocketComponents(context);
+            WebSocketComponents components = WebSocketServerComponents.getWebSocketComponents(server);
             components.getExtensionRegistry().register(BlockingOutgoingExtension.class.getName(), BlockingOutgoingExtension.class);
         });
 
-        server.setHandler(context);
+        server.setHandler(wsHandler);
         server.start();
 
         client = new WebSocketClient();

@@ -106,6 +106,11 @@ public class ServerWebSocketContainer extends ContainerLifeCycle implements WebS
     private final FrameHandlerFactory factory;
     private InvocationType invocationType = InvocationType.BLOCKING;
 
+    public ServerWebSocketContainer()
+    {
+        this(new WebSocketMappings());
+    }
+
     ServerWebSocketContainer(WebSocketMappings mappings)
     {
         this.mappings = mappings;

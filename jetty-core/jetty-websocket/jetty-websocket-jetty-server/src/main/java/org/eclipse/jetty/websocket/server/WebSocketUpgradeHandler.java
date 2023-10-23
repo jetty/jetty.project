@@ -93,7 +93,28 @@ public class WebSocketUpgradeHandler extends Handler.Wrapper
         return wsHandler;
     }
 
+    /**
+     * <p>Creates a new {@link WebSocketUpgradeHandler}.</p>
+     *
+     * @param server the {@link Server} object used to lookup common WebSocket components
+     * @return a new {@link WebSocketUpgradeHandler}
+     * @see #configure(Consumer)
+     */
+    public static WebSocketUpgradeHandler from(Server server)
+    {
+        WebSocketComponents components = WebSocketServerComponents.ensureWebSocketComponents(server);
+        WebSocketMappings mappings = new WebSocketMappings(components);
+        ServerWebSocketContainer container = new ServerWebSocketContainer(mappings);
+
+        return new WebSocketUpgradeHandler(container);
+    }
+
     private final ServerWebSocketContainer _container;
+
+    public WebSocketUpgradeHandler()
+    {
+        this(new ServerWebSocketContainer());
+    }
 
     public WebSocketUpgradeHandler(ServerWebSocketContainer container)
     {
