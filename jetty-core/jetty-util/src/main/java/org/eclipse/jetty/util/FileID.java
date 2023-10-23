@@ -19,6 +19,7 @@ import java.net.URI;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.util.Locale;
+import java.util.regex.Pattern;
 
 /**
  * Simple, yet surprisingly common utility methods for identifying various file types commonly seen and worked with in a
@@ -26,6 +27,8 @@ import java.util.Locale;
  */
 public class FileID
 {
+    private static final Pattern NUMBER = Pattern.compile("[0-9]+");
+
     /**
      * Retrieve the basename of a path. This is the name of the
      * last segment of the path, with any dot suffix (e.g. ".war") removed
@@ -356,20 +359,23 @@ public class FileID
     }
 
     /**
-     * Predicate to select all class files
+     * Predicate to test for class files
      *
      * @param path the path to test
      * @return true if the filename ends with {@code .class}
      */
     public static boolean isClassFile(Path path)
     {
+        if (!Files.isRegularFile(path))
+            return false;
+
         Path fileNamePath = path.getFileName();
         if (fileNamePath == null)
             return false;
         
         String filename = fileNamePath.toString();
         // has to end in ".class"
-        if (!filename.toLowerCase(Locale.ENGLISH).endsWith(".class"))
+        if (!StringUtil.asciiEndsWithIgnoreCase(filename, ".class"))
             return false;
         // is it a valid class filename?
         int start = 0;
@@ -492,13 +498,13 @@ public class FileID
         if (path.getNameCount() < 3)
             return false;
 
-        Path path0 = path.getName(0);
-        Path path1 = path.getName(1);
-        Path path2 = path.getName(2);
+        if (!"META-INF".equals(path.getName(0).toString()))
+            return false;
 
-        return (path0.toString().equals("META-INF") &&
-            path1.toString().equals("versions") &&
-            path2.getFileName().toString().matches("[0-9]+"));
+        if (!"versions".equals(path.getName(1).toString()))
+            return false;
+
+        return NUMBER.matcher(path.getName(2).getFileName().toString()).matches();
     }
 
     /**

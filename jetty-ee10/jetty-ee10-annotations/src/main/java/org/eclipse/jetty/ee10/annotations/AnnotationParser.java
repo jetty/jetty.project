@@ -590,6 +590,7 @@ public class AnnotationParser
         // TODO might be more space efficient to have a walk semantic on Resource
         for (Resource candidate : dirResource.getAllResources())
         {
+            // Skip directories
             if (candidate.isDirectory())
                 continue;
 
@@ -598,20 +599,15 @@ public class AnnotationParser
             if (FileID.isHidden(relative))
                 continue;
 
-            // Non directories should all have paths
-            Path path = candidate.getPath();
-            if (path == null)
-                continue;
-
             // select only class files that are not modules nor versions
-            if (FileID.isMetaInfVersions(path) ||
-                FileID.isNotModuleInfoClass(path) ||
-                FileID.isClassFile(path))
+            if (FileID.isMetaInfVersions(relative) ||
+                FileID.isNotModuleInfoClass(relative) ||
+                FileID.isClassFile(relative))
                 continue;
 
             try
             {
-                parseClass(handlers, dirResource, path);
+                parseClass(handlers, dirResource, candidate.getPath());
             }
             catch (Exception ex)
             {
