@@ -599,8 +599,8 @@ public class AnnotationParser
             // select only non-hidden class files that are not modules nor versions
             if (FileID.isHidden(relative) ||
                 FileID.isMetaInfVersions(relative) ||
-                FileID.isNotModuleInfoClass(relative) ||
-                FileID.isClassFile(relative))
+                FileID.isModuleInfoClass(relative) ||
+                !FileID.isClassFile(relative))
                 continue;
 
             try

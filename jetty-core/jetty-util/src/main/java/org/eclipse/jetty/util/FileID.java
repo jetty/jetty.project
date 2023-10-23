@@ -366,9 +366,6 @@ public class FileID
      */
     public static boolean isClassFile(Path path)
     {
-        if (!Files.isRegularFile(path))
-            return false;
-
         Path fileNamePath = path.getFileName();
         if (fileNamePath == null)
             return false;
