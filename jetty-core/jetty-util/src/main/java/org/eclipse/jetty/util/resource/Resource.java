@@ -101,7 +101,7 @@ public abstract class Resource implements Iterable<Resource>
     {
         Path thisPath = getPath();
         if (thisPath == null)
-            throw new UnsupportedOperationException("Resources without a Path must implement contains");
+            throw new UnsupportedOperationException("Resources without a Path must implement getPathTo");
 
         Path otherPath = other.getPath();
         if (otherPath == null)
@@ -178,7 +178,7 @@ public abstract class Resource implements Iterable<Resource>
     /**
      * The full name of the resource.
      *
-     * @return the full name of the resource, or null if not backed by a Path
+     * @return the full name of the resource, or null if there is no name for the resource.
      */
     public abstract String getName();
 
@@ -268,8 +268,6 @@ public abstract class Resource implements Iterable<Resource>
 
     /**
      * Copy the Resource to the new destination file.
-     * <p>
-     * Will not replace existing destination file.
      *
      * @param destination the destination file to create
      * @throws IOException if unable to copy the resource
@@ -284,10 +282,7 @@ public abstract class Resource implements Iterable<Resource>
         Path src = getPath();
         if (src != null)
         {
-            // TODO ATOMIC_MOVE seems useless for a copy and REPLACE_EXISTING contradicts the
-            //  javadoc that explicitly states "Will not replace existing destination file."
-            Files.copy(src, destination,
-                StandardCopyOption.ATOMIC_MOVE, StandardCopyOption.COPY_ATTRIBUTES, StandardCopyOption.REPLACE_EXISTING);
+            Files.copy(src, destination, StandardCopyOption.COPY_ATTRIBUTES, StandardCopyOption.REPLACE_EXISTING);
             return;
         }
 
@@ -310,18 +305,12 @@ public abstract class Resource implements Iterable<Resource>
         {
             List<Resource> children = list();
             if (children == null || children.isEmpty())
-                return children;
+                return List.of();
 
             boolean noDepth = true;
-            for (Resource r: children)
-            {
-                if (r.isDirectory())
-                {
-                    noDepth = false;
-                    break;
-                }
-            }
 
+            for (Iterator<Resource> i = children.iterator(); noDepth && i.hasNext(); )
+                noDepth = !i.next().isDirectory();
             if (noDepth)
                 return children;
 
