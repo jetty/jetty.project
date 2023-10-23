@@ -148,10 +148,10 @@ public class MetaInfConfiguration extends AbstractConfiguration
         // Scan for META-INF/*.tld entries
         metaInfTlds.addAll(scanTlds(streamTargets(containerTargets, webappTargets, true), metaInfTldCache));
 
-        boolean scanWebAppTargets = needsServlet3FeatureScan(context);
-
         // Scan for META-INF/resources/ entries
-        metaInfResources.addAll(scanMetaInfResources(streamTargets(containerTargets, webappTargets, scanWebAppTargets), metaInfResourceCache));
+        metaInfResources.addAll(scanMetaInfResources(streamTargets(containerTargets, webappTargets, true), metaInfResourceCache));
+
+        boolean scanWebAppTargets = needsServlet3FeatureScan(context);
 
         // Scan for META-INF/web-fragment.xml entries
         metaInfFragments.putAll(scanMetaInfFragments(streamTargets(containerTargets, webappTargets, scanWebAppTargets), metaInfFragmentCache));

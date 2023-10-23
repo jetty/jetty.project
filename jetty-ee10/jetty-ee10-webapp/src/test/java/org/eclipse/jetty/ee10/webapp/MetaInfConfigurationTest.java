@@ -25,6 +25,7 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
+import java.util.stream.Stream;
 
 import org.eclipse.jetty.server.Server;
 import org.eclipse.jetty.toolchain.test.FS;
@@ -135,9 +136,9 @@ public class MetaInfConfigurationTest
                 .map(URI::toASCIIString)
                 .toList();
             String[] expectedWebInfResources = {
-                fooFragmentJar.toUri().toASCIIString(),
-                barResourceJar.toUri().toASCIIString(),
-                zedTldJar.toUri().toASCIIString()
+                URIUtil.toJarFileUri(fooFragmentJar.toUri()).toASCIIString(),
+                URIUtil.toJarFileUri(barResourceJar.toUri()).toASCIIString(),
+                URIUtil.toJarFileUri(zedTldJar.toUri()).toASCIIString()
             };
             assertThat("Discovered WEB-INF resources", discoveredWebInfResources, hasItems(expectedWebInfResources));
 
@@ -246,9 +247,9 @@ public class MetaInfConfigurationTest
                 .map(URI::toASCIIString)
                 .toList();
             String[] expectedWebInfResources = {
-                fooFragmentJar.toUri().toASCIIString(),
-                barResourceJar.toUri().toASCIIString(),
-                zedTldJar.toUri().toASCIIString()
+                URIUtil.toJarFileUri(fooFragmentJar.toUri()).toASCIIString(),
+                URIUtil.toJarFileUri(barResourceJar.toUri()).toASCIIString(),
+                URIUtil.toJarFileUri(zedTldJar.toUri()).toASCIIString()
             };
             assertThat("Discovered WEB-INF resources", discoveredWebInfResources, hasItems(expectedWebInfResources));
 
@@ -364,9 +365,9 @@ public class MetaInfConfigurationTest
                 .map(URI::toASCIIString)
                 .toList();
             String[] expectedWebInfResources = {
-                fooFragmentJar.toUri().toASCIIString(),
-                barResourceJar.toUri().toASCIIString(),
-                zedTldJar.toUri().toASCIIString()
+                URIUtil.toJarFileUri(fooFragmentJar.toUri()).toASCIIString(),
+                URIUtil.toJarFileUri(barResourceJar.toUri()).toASCIIString(),
+                URIUtil.toJarFileUri(zedTldJar.toUri()).toASCIIString()
             };
             assertThat("Discovered WEB-INF resources", discoveredWebInfResources, hasItems(expectedWebInfResources));
 
@@ -481,9 +482,9 @@ public class MetaInfConfigurationTest
                 .map(URI::toASCIIString)
                 .toList();
             String[] expectedWebInfResources = {
-                fooFragmentJar.toUri().toASCIIString(),
-                barResourceJar.toUri().toASCIIString(),
-                zedTldJar.toUri().toASCIIString()
+                URIUtil.toJarFileUri(fooFragmentJar.toUri()).toASCIIString(),
+                URIUtil.toJarFileUri(barResourceJar.toUri()).toASCIIString(),
+                URIUtil.toJarFileUri(zedTldJar.toUri()).toASCIIString()
             };
             assertThat("Discovered WEB-INF resources", discoveredWebInfResources, hasItems(expectedWebInfResources));
 
@@ -561,10 +562,11 @@ public class MetaInfConfigurationTest
                 .toList();
             // we "correct" the bad file URLs that come from the ClassLoader
             // to be the same as what comes from every non-classloader URL/URI.
-            String[] expectedContainerResources = {
-                URIUtil.correctFileURI(janbUri).toASCIIString(),
-                URIUtil.correctFileURI(servletUri).toASCIIString()
-            };
+            String[] expectedContainerResources = Stream.of(janbUri, servletUri)
+                .map(URIUtil::correctFileURI)
+                .map(URIUtil::toJarFileUri)
+                .map(URI::toASCIIString)
+                .toList().toArray(new String[2]);
             assertThat("Discovered Container resources", discoveredContainerResources, hasItems(expectedContainerResources));
         }
         finally
