@@ -12,6 +12,8 @@
       <includes>
         <include>**</include>
       </includes>
+      <fileMode>644</fileMode>
+      <directoryMode>755</directoryMode>
     </fileSet>
   </fileSets>
 </assembly>
