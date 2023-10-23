@@ -587,20 +587,18 @@ public class AnnotationParser
 
         ExceptionUtil.MultiException multiException = new ExceptionUtil.MultiException();
 
-        // TODO might be more space efficient to have a walk semantic on Resource
         for (Resource candidate : dirResource.getAllResources())
         {
             // Skip directories
             if (candidate.isDirectory())
                 continue;
 
-            // Skip any hidden resources
+            // Get the path relative to the base resource
             Path relative = dirResource.getPathTo(candidate);
-            if (FileID.isHidden(relative))
-                continue;
 
-            // select only class files that are not modules nor versions
-            if (FileID.isMetaInfVersions(relative) ||
+            // select only non-hidden class files that are not modules nor versions
+            if (FileID.isHidden(relative) ||
+                FileID.isMetaInfVersions(relative) ||
                 FileID.isNotModuleInfoClass(relative) ||
                 FileID.isClassFile(relative))
                 continue;
