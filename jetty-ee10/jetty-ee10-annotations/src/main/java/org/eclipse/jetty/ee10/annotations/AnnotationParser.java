@@ -24,7 +24,6 @@ import java.util.Map;
 import java.util.Optional;
 import java.util.Set;
 import java.util.concurrent.ConcurrentHashMap;
-import java.util.stream.Stream;
 
 import org.eclipse.jetty.util.ExceptionUtil;
 import org.eclipse.jetty.util.FileID;
@@ -133,7 +132,7 @@ public class AnnotationParser
      * Convert internal names to simple names.
      *
      * @param list the list of internal names
-     * @return the list of simple names
+     * @return the array of simple names
      */
     public static String[] normalize(String[] list)
     {
@@ -584,30 +583,39 @@ public class AnnotationParser
         if (LOG.isDebugEnabled())
             LOG.debug("Scanning dir {}", dirResource);
 
-        ExceptionUtil.MultiException multiException = new ExceptionUtil.MultiException();
-        for (Resource r : dirResource)
-        {
-            Path dir = r.getPath();
+        assert dirResource.isDirectory();
 
-            try (Stream<Path> classStream = Files.walk(dir))
+        ExceptionUtil.MultiException multiException = new ExceptionUtil.MultiException();
+
+        // TODO might be more space efficient to have a walk semantic on Resource
+        for (Resource candidate : dirResource.getAllResources())
+        {
+            if (candidate.isDirectory())
+                continue;
+
+            // Skip any hidden resources
+            Path relative = dirResource.getPathTo(candidate);
+            if (FileID.isHidden(relative))
+                continue;
+
+            // Non directories should all have paths
+            Path path = candidate.getPath();
+            if (path == null)
+                continue;
+
+            // select only class files that are not modules nor versions
+            if (FileID.isMetaInfVersions(path) ||
+                FileID.isNotModuleInfoClass(path) ||
+                FileID.isClassFile(path))
+                continue;
+
+            try
             {
-                classStream
-                    .filter(Files::isRegularFile)
-                    .filter((path) -> !FileID.isHidden(dir, path))
-                    .filter(FileID::isNotMetaInfVersions)
-                    .filter(FileID::isNotModuleInfoClass)
-                    .filter(FileID::isClassFile)
-                    .forEach(classFile ->
-                    {
-                        try
-                        {
-                            parseClass(handlers, dirResource, classFile);
-                        }
-                        catch (Exception ex)
-                        {
-                            multiException.add(new RuntimeException("Error scanning entry " + ex, ex));
-                        }
-                    });
+                parseClass(handlers, dirResource, path);
+            }
+            catch (Exception ex)
+            {
+                multiException.add(new RuntimeException("Error scanning entry " + ex, ex));
             }
         }
 

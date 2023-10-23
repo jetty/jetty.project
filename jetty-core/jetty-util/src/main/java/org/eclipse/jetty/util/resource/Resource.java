@@ -54,7 +54,7 @@ public abstract class Resource implements Iterable<Resource>
     /**
      * Return the Path corresponding to this resource.
      *
-     * @return the path.
+     * @return the path or null if there is no Path representation.
      */
     public abstract Path getPath();
 
@@ -62,10 +62,53 @@ public abstract class Resource implements Iterable<Resource>
      * Return true if this resource is contained in the Resource r, either because
      * r is a folder or a jar file or any form of resource capable of containing other resources.
      *
-     * @param r the containing resource
+     * @param container the containing resource
      * @return true if this Resource is contained, false otherwise
+     * @see #contains(Resource)
      */
-    public abstract boolean isContainedIn(Resource r);
+    public boolean isContainedIn(Resource container)
+    {
+        return container != null && container.contains(this);
+    }
+
+    /**
+     * Return true if this resource deeply contains the other Resource.  This resource must be
+     * a directory or a jar file or any form of resource capable of containing other resources.
+     *
+     * @param other the resource
+     * @return true if this Resource is deeply contains the other Resource, false otherwise
+     * @see #isContainedIn(Resource)
+     */
+    public boolean contains(Resource other)
+    {
+        if (other == null)
+            return false;
+
+        Path thisPath = getPath();
+        if (thisPath == null)
+            throw new UnsupportedOperationException("Resources without a Path must implement contains");
+
+        Path otherPath = other.getPath();
+        return otherPath != null && otherPath.startsWith(thisPath);
+    }
+
+    /**
+     * Get the relative path from this Resource to a possibly contained resource.
+     * @param other The other resource that may be contained in this resource
+     * @return a relative Path representing the path from this resource to the other resource.
+     */
+    public Path getPathTo(Resource other)
+    {
+        Path thisPath = getPath();
+        if (thisPath == null)
+            throw new UnsupportedOperationException("Resources without a Path must implement contains");
+
+        Path otherPath = other.getPath();
+        if (otherPath == null)
+            return null;
+
+        return thisPath.relativize(otherPath);
+    }
 
     /**
      * <p>Return an Iterator of all Resource's referenced in this Resource.</p>
@@ -254,6 +297,10 @@ public abstract class Resource implements Iterable<Resource>
         }
     }
 
+    /**
+     * Get a deep collection of contained resources.
+     * @return A collection of all Resources deeply contained within this resource
+     */
     public Collection<Resource> getAllResources()
     {
         try

@@ -211,7 +211,7 @@ public class ResourceFactoryTest
                 }
 
                 @Override
-                public boolean isContainedIn(Resource r)
+                public boolean isContainedIn(Resource container)
                 {
                     return false;
                 }

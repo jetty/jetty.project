@@ -343,14 +343,6 @@ public class PathResource extends Resource
         }
     }
 
-    @Override
-    public boolean isContainedIn(Resource r)
-    {
-        if (r == null)
-            return false;
-        return r.getClass() == PathResource.class && path.startsWith(r.getPath());
-    }
-
     /**
      * <p>
      * Perform a check of the original Path and as-requested URI to determine

@@ -46,6 +46,8 @@ import static org.hamcrest.Matchers.empty;
 import static org.hamcrest.Matchers.endsWith;
 import static org.hamcrest.Matchers.instanceOf;
 import static org.hamcrest.Matchers.is;
+import static org.hamcrest.Matchers.notNullValue;
+import static org.hamcrest.Matchers.nullValue;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertNull;
@@ -340,6 +342,76 @@ public class CombinedResourceTest
         Resource rc = resourceFactory.newResource(uris);
         assertThat(getContent(rc, "test.txt"), is("Test inside lib-foo.jar"));
         assertThat(getContent(rc, "testZed.txt"), is("TestZed inside lib-zed.jar"));
+    }
+
+    @Test
+    public void testContainsAndPathTo() throws Exception
+    {
+        Path one = MavenTestingUtils.getTestResourcePathDir("org/eclipse/jetty/util/resource/one");
+        Path two = MavenTestingUtils.getTestResourcePathDir("org/eclipse/jetty/util/resource/two");
+        Path three = MavenTestingUtils.getTestResourcePathDir("org/eclipse/jetty/util/resource/three");
+        Path four = MavenTestingUtils.getTestResourcePathDir("org/eclipse/jetty/util/resource/four");
+
+        Resource composite = ResourceFactory.combine(
+            List.of(
+                resourceFactory.newResource(one),
+                resourceFactory.newResource(two),
+                resourceFactory.newResource(three)
+            )
+        );
+
+        Resource compositeAlt = ResourceFactory.combine(
+            List.of(
+                resourceFactory.newResource(one),
+                resourceFactory.newResource(four)
+            )
+        );
+
+        Resource fourth = resourceFactory.newResource(four);
+
+        Resource oneTxt = composite.resolve("1.txt");
+        assertThat(oneTxt, notNullValue());
+        assertThat(composite.contains(oneTxt), is(true));
+
+        Path rel = composite.getPathTo(oneTxt);
+        assertThat(rel, notNullValue());
+        assertThat(rel.getNameCount(), is(1));
+        assertThat(rel.getName(0).toString(), is("1.txt"));
+
+        Resource dir = composite.resolve("dir");
+        assertThat(dir, notNullValue());
+        assertThat(composite.contains(dir), is(true));
+
+        rel = composite.getPathTo(dir);
+        assertThat(rel, notNullValue());
+        assertThat(rel.getNameCount(), is(1));
+        assertThat(rel.getName(0).toString(), is("dir"));
+
+        Resource threeTxt = composite.resolve("dir/3.txt");
+        assertThat(oneTxt, notNullValue());
+        assertThat(composite.contains(threeTxt), is(true));
+        assertThat(dir.contains(threeTxt), is(true));
+
+        rel = composite.getPathTo(threeTxt);
+        assertThat(rel, notNullValue());
+        assertThat(rel.getNameCount(), is(2));
+        assertThat(rel.getName(0).toString(), is("dir"));
+        assertThat(rel.getName(1).toString(), is("3.txt"));
+
+        // some negations
+        assertThat(oneTxt.contains(composite), is(false));
+        assertThat(threeTxt.contains(composite), is(false));
+        assertThat(oneTxt.contains(dir), is(false));
+        assertThat(threeTxt.contains(dir), is(false));
+        assertThat(dir.contains(composite), is(false));
+
+        assertThat(composite.contains(fourth), is(false));
+        assertThat(dir.contains(fourth), is(false));
+
+        Resource dirAlt = compositeAlt.resolve("dir");
+        assertThat(compositeAlt.contains(dirAlt), is(true));
+        assertThat(composite.contains(dirAlt), is(false));
+        assertThat(composite.getPathTo(dirAlt), nullValue());
     }
 
     private void createJar(Path outputJar, String entryName, String entryContents) throws IOException

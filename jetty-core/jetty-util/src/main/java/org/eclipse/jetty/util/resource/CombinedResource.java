@@ -302,9 +302,74 @@ public class CombinedResource extends Resource
     }
 
     @Override
-    public boolean isContainedIn(Resource r)
+    public boolean contains(Resource other)
     {
-        // TODO could look at implementing the semantic of is this collection a subset of the Resource r?
-        return false;
+        Path otherPath = other.getPath();
+
+        // If the other resource has a single Path
+        if (otherPath != null)
+        {
+            // return true if any of our resources contains it.
+            for (Resource r : _resources)
+            {
+                if (otherPath.startsWith(r.getPath()))
+                    return true;
+            }
+            return false;
+        }
+
+        // otherwise the other resource must also be some kind of combined resource.
+        // So every resource in the other combined must be contained in at least
+        // one of our combined resources
+        loop : for (Resource o : other)
+        {
+            for (Resource r : _resources)
+            {
+                if (o.getPath().startsWith(r.getPath()))
+                    continue loop;
+            }
+            return false;
+        }
+        return true;
+    }
+
+    @Override
+    public Path getPathTo(Resource other)
+    {
+        Path otherPath = other.getPath();
+
+        // If the other resource has a single Path
+        if (otherPath != null)
+        {
+            // return true it's relative location to the first matching resource.
+            for (Resource r : _resources)
+            {
+                Path path = r.getPath();
+                if (otherPath.startsWith(path))
+                    return path.relativize(otherPath);
+            }
+            return null;
+        }
+
+        // otherwise the other resource must also be some kind of combined resource.
+        // So every resource in the other combined must have the same relative relationship to us
+        Path relative = null;
+        loop : for (Resource o : other)
+        {
+            for (Resource r : _resources)
+            {
+                if (o.getPath().startsWith(r.getPath()))
+                {
+                    Path rel = r.getPath().relativize(o.getPath());
+                    if (relative == null)
+                        relative = rel;
+                    else if (!relative.equals(rel))
+                        return null;
+                    continue loop;
+                }
+            }
+            return null;
+        }
+        return relative;
     }
 }

@@ -395,20 +395,16 @@ public class FileID
      * Predicate useful for {@code Stream<Path>} to exclude hidden paths following
      * filesystem rules for hidden directories and files.
      *
-     * @param base the base path to search from (anything above this path is not evaluated)
-     * @param path the path to evaluate
+     * @param path the possibly relative path to evaluate
      * @return true if hidden by FileSystem rules, false if not
      * @see Files#isHidden(Path)
      */
-    public static boolean isHidden(Path base, Path path)
+    public static boolean isHidden(Path path)
     {
-        // Work with the path in relative form, from the base onwards to the path
-        Path relative = base.relativize(path);
-
-        int count = relative.getNameCount();
+        int count = path.getNameCount();
         for (int i = 0; i < count; i++)
         {
-            Path segment = relative.getName(i);
+            Path segment = path.getName(i);
 
             String segmentName = segment.toString();
 
@@ -430,8 +426,22 @@ public class FileID
                 // ignore, if filesystem gives us an error, we cannot make the call on hidden status
             }
         }
-
         return false;
+    }
+
+    /**
+     * Predicate useful for {@code Stream<Path>} to exclude hidden paths following
+     * filesystem rules for hidden directories and files.
+     *
+     * @param base the base path to search from (anything above this path is not evaluated)
+     * @param path the path to evaluate
+     * @return true if hidden by FileSystem rules, false if not
+     * @see Files#isHidden(Path)
+     */
+    public static boolean isHidden(Path base, Path path)
+    {
+        // Work with the path in relative form, from the base onwards to the path
+        return isHidden(base.relativize(path));
     }
 
     /**
@@ -516,13 +526,28 @@ public class FileID
      * @param path the path to test
      * @return true if not a {@code module-info.class} file
      */
-    public static boolean isNotModuleInfoClass(Path path)
+    public static boolean isModuleInfoClass(Path path)
     {
         Path filenameSegment = path.getFileName();
         if (filenameSegment == null)
-            return true;
+            return false;
 
-        return !filenameSegment.toString().equalsIgnoreCase("module-info.class");
+        return filenameSegment.toString().equalsIgnoreCase("module-info.class");
+    }
+
+    /**
+     * Predicate to skip {@code module-info.class} files.
+     *
+     * <p>
+     * This is a simple test against the last path segment using {@link Path#getFileName()}
+     * </p>
+     *
+     * @param path the path to test
+     * @return true if not a {@code module-info.class} file
+     */
+    public static boolean isNotModuleInfoClass(Path path)
+    {
+        return !isModuleInfoClass(path);
     }
 
     /**
