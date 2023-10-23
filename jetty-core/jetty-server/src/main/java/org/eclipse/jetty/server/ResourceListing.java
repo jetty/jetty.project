@@ -99,7 +99,7 @@ public class ResourceListing
         {
             case "M" -> ResourceCollators.byLastModified(sortOrderAscending);
             case "S" -> ResourceCollators.bySize(sortOrderAscending);
-            default -> ResourceCollators.byName(sortOrderAscending);
+            default -> ResourceCollators.byFileName(sortOrderAscending);
         };
         listing.sort(sort);
 
