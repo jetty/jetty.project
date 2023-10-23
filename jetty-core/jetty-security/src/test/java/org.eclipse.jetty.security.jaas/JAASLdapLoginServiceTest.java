@@ -45,12 +45,15 @@ import org.eclipse.jetty.ee10.servlet.security.authentication.BasicAuthenticator
 import org.eclipse.jetty.server.LocalConnector;
 import org.eclipse.jetty.server.Server;
 import org.junit.Test;
+import org.junit.jupiter.api.condition.EnabledForJreRange;
+import org.junit.jupiter.api.condition.JRE;
 import org.junit.runner.RunWith;
 
 import static java.nio.charset.StandardCharsets.ISO_8859_1;
 import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.Matchers.startsWith;
 
+@EnabledForJreRange(max = JRE.JAVA_17, disabledReason = "sun.security.x509.X509CertInfo.set not present in Java 21, needs a Java 21 compatible version of Apache Directory Server")
 @RunWith(FrameworkRunner.class)
 @CreateLdapServer(transports = {@CreateTransport(protocol = "LDAP")})
 @CreateDS(allowAnonAccess = false, partitions = {
@@ -170,7 +173,7 @@ public class JAASLdapLoginServiceTest
     private Server _server;
     private LocalConnector _connector;
     private ServletContextHandler _context;
-    
+
     public void setUp() throws Exception
     {
         _server = new Server();
@@ -198,14 +201,14 @@ public class JAASLdapLoginServiceTest
     {
         JAASLoginService ls = jaasLoginService("foo");
         _server.addBean(ls, true);
-        
+
         _context.setServletHandler(new ServletHandler());
         ServletHolder holder = new ServletHolder();
         holder.setServlet(new TestServlet(hasRoles, hasntRoles));
         _context.getServletHandler().addServletWithMapping(holder, "/");
-        
+
         _server.start();
-        
+
         return _connector.getResponse("GET /ctx/test HTTP/1.0\n" + "Authorization: Basic " +
             Base64.getEncoder().encodeToString((username + ":" + password).getBytes(ISO_8859_1)) + "\n\n");
     }
@@ -218,28 +221,28 @@ public class JAASLdapLoginServiceTest
         ServletHolder holder = new ServletHolder();
         holder.setServlet(new TestServlet(Arrays.asList("developers", "admin"), Arrays.asList("blabla")));
         _context.getServletHandler().addServletWithMapping(holder, "/");
-        
+
         JAASLoginService ls = new JAASLoginService("foo");
         ls.setCallbackHandlerClass("org.eclipse.jetty.ee10.jaas.callback.DefaultCallbackHandler");
         ls.setIdentityService(new DefaultIdentityService());
         ls.setConfiguration(new TestConfiguration(false));
-        
+
         _server.addBean(ls, true);
         _server.start();
-        
+
         String response = _connector.getResponse("GET /ctx/test HTTP/1.0\n" + "Authorization: Basic " +
             Base64.getEncoder().encodeToString("someone:complicatedpassword".getBytes(ISO_8859_1)) + "\n\n");
         assertThat(response, startsWith("HTTP/1.1 200 OK"));
-        
+
         _server.stop();
-        
+
         _context.setServletHandler(new ServletHandler());
         holder = new ServletHolder();
         holder.setServlet(new TestServlet(Arrays.asList("admin"), Arrays.asList("developers, blabla")));
         _context.getServletHandler().addServletWithMapping(holder, "/");
-        
+
         _server.start();
-        
+
         response = _connector.getResponse("GET /ctx/test HTTP/1.0\n" + "Authorization: Basic " +
             Base64.getEncoder().encodeToString("someoneelse:verycomplicatedpassword".getBytes(ISO_8859_1)) + "\n\n");
         assertThat(response, startsWith("HTTP/1.1 200 OK"));
@@ -259,8 +262,8 @@ public class JAASLdapLoginServiceTest
         ls.setConfiguration(new TestConfiguration(true));
         _server.addBean(ls, true);
         _server.start();
-        
-        
+
+
         String response = _connector.getResponse("GET /ctx/test HTTP/1.0\n" + "Authorization: Basic " +
             Base64.getEncoder().encodeToString("someone:complicatedpassword".getBytes(ISO_8859_1)) + "\n\n");
         assertThat(response, startsWith("HTTP/1.1 200 OK"));
@@ -276,10 +279,10 @@ public class JAASLdapLoginServiceTest
                     if (req.getUserPrincipal() == null)
                         req.authenticate(resp);
                 }
-            
+
             }, "/");
         _server.start();
-        
+
         //TODO this test shows response already committed!
         response = _connector.getResponse("GET /ctx/test HTTP/1.0\n" + "Authorization: Basic " +
             Base64.getEncoder().encodeToString("someone:wrongpassword".getBytes(ISO_8859_1)) + "\n\n");
@@ -312,6 +315,5 @@ public class JAASLdapLoginServiceTest
         String response = doLogin("ambiguousone", "barfoo", null, null);
         assertThat(response, startsWith("HTTP/1.1 " + HttpServletResponse.SC_UNAUTHORIZED));
     }
-
-     */
+    */
 }

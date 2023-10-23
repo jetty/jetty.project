@@ -25,7 +25,9 @@ public class HttpStatus
     public static final int CONTINUE_100 = 100;
     public static final int SWITCHING_PROTOCOLS_101 = 101;
     public static final int PROCESSING_102 = 102;
+    @Deprecated(forRemoval = true)
     public static final int EARLY_HINT_103 = 103;
+    public static final int EARLY_HINTS_103 = 103;
 
     public static final int OK_200 = 200;
     public static final int CREATED_201 = 201;
@@ -104,7 +106,9 @@ public class HttpStatus
         CONTINUE(CONTINUE_100, "Continue"),
         SWITCHING_PROTOCOLS(SWITCHING_PROTOCOLS_101, "Switching Protocols"),
         PROCESSING(PROCESSING_102, "Processing"),
+        @Deprecated(forRemoval = true)
         EARLY_HINT(EARLY_HINT_103, "Early Hint"),
+        EARLY_HINTS(EARLY_HINTS_103, "Early Hints"),
 
         OK(OK_200, "OK"),
         CREATED(CREATED_201, "Created"),
@@ -123,7 +127,7 @@ public class HttpStatus
         NOT_MODIFIED(NOT_MODIFIED_304, "Not Modified"),
         USE_PROXY(USE_PROXY_305, "Use Proxy"),
         TEMPORARY_REDIRECT(TEMPORARY_REDIRECT_307, "Temporary Redirect"),
-        // Keeping the typo for backward compatibility for a while
+        @Deprecated(forRemoval = true)
         PERMANET_REDIRECT(PERMANENT_REDIRECT_308, "Permanent Redirect"),
         PERMANENT_REDIRECT(PERMANENT_REDIRECT_308, "Permanent Redirect"),
 

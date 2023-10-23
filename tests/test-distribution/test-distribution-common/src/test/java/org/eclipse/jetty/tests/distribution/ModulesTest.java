@@ -56,7 +56,6 @@ public class ModulesTest
         String jettyVersion = System.getProperty("jettyVersion");
         JettyHomeTester distribution = JettyHomeTester.Builder.newInstance()
             .jettyVersion(jettyVersion)
-            .mavenLocalRepository(System.getProperty("mavenRepoPath"))
             .build();
 
         // Add module.
@@ -83,7 +82,6 @@ public class ModulesTest
         String jettyVersion = System.getProperty("jettyVersion");
         JettyHomeTester distribution = JettyHomeTester.Builder.newInstance()
             .jettyVersion(jettyVersion)
-            .mavenLocalRepository(System.getProperty("mavenRepoPath"))
             .build();
 
         // Add module.
@@ -108,7 +106,6 @@ public class ModulesTest
         String jettyVersion = System.getProperty("jettyVersion");
         JettyHomeTester distribution = JettyHomeTester.Builder.newInstance()
             .jettyVersion(jettyVersion)
-            .mavenLocalRepository(System.getProperty("mavenRepoPath"))
             .build();
 
         // Add module.

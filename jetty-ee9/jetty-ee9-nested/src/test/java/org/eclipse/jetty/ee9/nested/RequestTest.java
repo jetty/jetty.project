@@ -88,6 +88,7 @@ import org.eclipse.jetty.util.IO;
 import org.eclipse.jetty.util.NanoTime;
 import org.hamcrest.Matchers;
 import org.junit.jupiter.api.AfterEach;
+import org.junit.jupiter.api.Assertions;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
@@ -1776,7 +1777,7 @@ public class RequestTest
      * Test that multiple requests on the same connection with different cookies
      * do not bleed cookies.
      *
-     * @throws Exception
+     * @throws Exception if there is an unspecified problem
      */
     @Test
     public void testDifferentCookies() throws Exception
@@ -1946,6 +1947,7 @@ public class RequestTest
         String uri = "http://host/foo/something";
         HttpChannel httpChannel = new HttpChannel(_context, new MockConnectionMetaData(_connector));
         Request request = new MockRequest(httpChannel, new HttpInput(httpChannel));
+        request.getResponse().onResponse(HttpFields.build());
         request.getResponse().getHttpFields().add(new HttpCookieUtils.SetCookieHttpField(HttpCookie.from("good", "thumbsup", Map.of(HttpCookie.MAX_AGE_ATTRIBUTE, Long.toString(100))), CookieCompliance.RFC6265));
         request.getResponse().getHttpFields().add(new HttpCookieUtils.SetCookieHttpField(HttpCookie.from("bonza", "bewdy", Map.of(HttpCookie.MAX_AGE_ATTRIBUTE, Long.toString(1))), CookieCompliance.RFC6265));
         request.getResponse().getHttpFields().add(new HttpCookieUtils.SetCookieHttpField(HttpCookie.from("bad", "thumbsdown", Map.of(HttpCookie.MAX_AGE_ATTRIBUTE, Long.toString(0))), CookieCompliance.RFC6265));
@@ -1995,6 +1997,7 @@ public class RequestTest
         };
         HttpFields.Mutable fields = HttpFields.build();
         request.onRequest(new TestCoreRequest(uri, fields));
+        request.getResponse().onResponse(HttpFields.build());
         assertTrue(request.isPushSupported());
         PushBuilder builder = request.newPushBuilder();
         assertNotNull(builder);
@@ -2490,5 +2493,53 @@ public class RequestTest
                 assertThat(response, not(containsString(notContainsCookie)));
             }
         }
+    }
+
+    @Test
+    public void testGetCharacterEncoding() throws Exception
+    {
+        _handler._checker = (request, response) ->
+        {
+            // No character encoding specified
+            request.getReader();
+            // Try setting after read has been obtained
+            request.setCharacterEncoding("ISO-8859-2");
+            assertThat(request.getCharacterEncoding(), nullValue());
+            return true;
+        };
+
+        String rawResponse = _connector.getResponse(
+            """
+                GET /test HTTP/1.1\r
+                Host: host\r
+                Connection: close\r
+                \r
+                """);
+        HttpTester.Response response = HttpTester.parseResponse(rawResponse);
+        assertThat(response.getStatus(), is(HttpStatus.OK_200));
+    }
+
+    @Test
+    public void testUnknownCharacterEncoding() throws Exception
+    {
+        _handler._checker = (request, response) ->
+        {
+            assertThat(request.getCharacterEncoding(), is("Unknown"));
+            Assertions.assertThrows(UnsupportedEncodingException.class, request::getReader);
+            return true;
+        };
+
+        String rawResponse = _connector.getResponse(
+            """
+                POST /test HTTP/1.1\r
+                Host: host\r
+                Content-Type:multipart/form-data; charset=Unknown\r
+                Content-Length: 10\r
+                Connection: close\r
+                \r
+                1234567890\r
+                """);
+        HttpTester.Response response = HttpTester.parseResponse(rawResponse);
+        assertThat(response.getStatus(), is(HttpStatus.OK_200));
     }
 }

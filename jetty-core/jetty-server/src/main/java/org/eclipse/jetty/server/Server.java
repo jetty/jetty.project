@@ -31,15 +31,14 @@ import java.util.concurrent.TimeUnit;
 
 import org.eclipse.jetty.http.DateGenerator;
 import org.eclipse.jetty.http.HttpField;
-import org.eclipse.jetty.http.HttpGenerator;
 import org.eclipse.jetty.http.HttpHeader;
 import org.eclipse.jetty.http.MimeTypes;
-import org.eclipse.jetty.http.PreEncodedHttpField;
 import org.eclipse.jetty.io.ArrayByteBufferPool;
 import org.eclipse.jetty.io.ByteBufferPool;
 import org.eclipse.jetty.io.Connection;
 import org.eclipse.jetty.server.handler.ContextHandler;
 import org.eclipse.jetty.server.handler.ErrorHandler;
+import org.eclipse.jetty.server.internal.ResponseHttpFields;
 import org.eclipse.jetty.util.Attributes;
 import org.eclipse.jetty.util.Callback;
 import org.eclipse.jetty.util.DecoratedObjectFactory;
@@ -49,6 +48,7 @@ import org.eclipse.jetty.util.Jetty;
 import org.eclipse.jetty.util.NanoTime;
 import org.eclipse.jetty.util.Uptime;
 import org.eclipse.jetty.util.annotation.ManagedAttribute;
+import org.eclipse.jetty.util.annotation.ManagedObject;
 import org.eclipse.jetty.util.annotation.Name;
 import org.eclipse.jetty.util.component.AttributeContainerMap;
 import org.eclipse.jetty.util.component.ClassLoaderDump;
@@ -70,6 +70,7 @@ import org.eclipse.jetty.util.thread.ThreadPool;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+@ManagedObject
 public class Server extends Handler.Wrapper implements Attributes
 {
     private static final Logger LOG = LoggerFactory.getLogger(Server.class);
@@ -174,7 +175,8 @@ public class Server extends Handler.Wrapper implements Attributes
     public boolean handle(Request request, Response response, Callback callback) throws Exception
     {
         // Handle either with normal handler or default handler
-        return super.handle(request, response, callback) || _defaultHandler != null && _defaultHandler.handle(request, response, callback);
+        Handler next = getHandler();
+        return next != null && next.handle(request, response, callback) || _defaultHandler != null && _defaultHandler.handle(request, response, callback);
     }
 
     public String getServerInfo()
@@ -218,7 +220,7 @@ public class Server extends Handler.Wrapper implements Attributes
      * @see #getContext()
      * @see Context#getTempDirectory()
      */
-    @ManagedAttribute("temporary directory")
+    @ManagedAttribute(value = "The server temporary directory", readonly = true)
     public File getTempDirectory()
     {
         return _tempDirectory;
@@ -229,6 +231,18 @@ public class Server extends Handler.Wrapper implements Attributes
         _serverInfo = serverInfo;
     }
 
+    /**
+     * Get the {@link Context} associated with all {@link Request}s prior to being handled by a
+     * {@link ContextHandler}. A {@code Server}'s {@link Context}:
+     * <ul>
+     *     <li>has a {@code null} {@link Context#getContextPath() context path}</li>
+     *     <li>returns the {@link ClassLoader} that loaded the {@link Server} from {@link Context#getClassLoader()}.</li>
+     *     <li>is an {@link java.util.concurrent.Executor} that delegates to the {@link Server#getThreadPool() Server ThreadPool}</li>
+     *     <li>is a {@link org.eclipse.jetty.util.Decorator} using the {@link DecoratedObjectFactory} found
+     *     as a {@link #getBean(Class) bean} of the {@link Server}</li>
+     *     <li>has the same {@link #getTempDirectory() temporary director} of the {@link Server#getTempDirectory() server}</li>
+     * </ul>
+     */
     public Context getContext()
     {
         return _serverContext;
@@ -292,7 +306,7 @@ public class Server extends Handler.Wrapper implements Attributes
         _errorHandler = errorHandler;
     }
 
-    @ManagedAttribute("version of this server")
+    @ManagedAttribute("The version of this server")
     public static String getVersion()
     {
         return Jetty.VERSION;
@@ -413,17 +427,19 @@ public class Server extends Handler.Wrapper implements Attributes
     /**
      * @return Returns the threadPool.
      */
-    @ManagedAttribute("the server thread pool")
+    @ManagedAttribute("The server Thread pool")
     public ThreadPool getThreadPool()
     {
         return _threadPool;
     }
 
+    @ManagedAttribute("The server Scheduler")
     public Scheduler getScheduler()
     {
         return _scheduler;
     }
 
+    @ManagedAttribute("The server ByteBuffer pool")
     public ByteBufferPool getByteBufferPool()
     {
         return _bufferPool;
@@ -432,13 +448,14 @@ public class Server extends Handler.Wrapper implements Attributes
     /**
      * @return true if {@link #dumpStdErr()} is called after starting
      */
-    @ManagedAttribute("dump state to stderr after start")
+    @ManagedAttribute("Whether to dump the server to stderr after start")
     public boolean isDumpAfterStart()
     {
         return _dumpAfterStart;
     }
 
     /**
+     * Set true if {@link #dumpStdErr()} is called after starting.
      * @param dumpAfterStart true if {@link #dumpStdErr()} is called after starting
      */
     public void setDumpAfterStart(boolean dumpAfterStart)
@@ -449,13 +466,14 @@ public class Server extends Handler.Wrapper implements Attributes
     /**
      * @return true if {@link #dumpStdErr()} is called before stopping
      */
-    @ManagedAttribute("dump state to stderr before stop")
+    @ManagedAttribute("Whether to dump the server to stderr before stop")
     public boolean isDumpBeforeStop()
     {
         return _dumpBeforeStop;
     }
 
     /**
+     * Set true if {@link #dumpStdErr()} is called before stopping.
      * @param dumpBeforeStop true if {@link #dumpStdErr()} is called before stopping
      */
     public void setDumpBeforeStop(boolean dumpBeforeStop)
@@ -463,6 +481,11 @@ public class Server extends Handler.Wrapper implements Attributes
         _dumpBeforeStop = dumpBeforeStop;
     }
 
+    /**
+     * @return A {@link HttpField} instance efficiently recording the current time to a second resolution,
+     * that cannot be cleared from a {@link ResponseHttpFields} instance.
+     * @see ResponseHttpFields.PersistentPreEncodedHttpField
+     */
     public HttpField getDateField()
     {
         long now = System.currentTimeMillis();
@@ -476,7 +499,7 @@ public class Server extends Handler.Wrapper implements Attributes
                 df = _dateField;
                 if (df == null || df._seconds != seconds)
                 {
-                    HttpField field = new PreEncodedHttpField(HttpHeader.DATE, DateGenerator.formatDate(now));
+                    HttpField field = new ResponseHttpFields.PersistentPreEncodedHttpField(HttpHeader.DATE, DateGenerator.formatDate(now));
                     _dateField = new DateField(seconds, field);
                     return field;
                 }
@@ -514,8 +537,6 @@ public class Server extends Handler.Wrapper implements Attributes
                 LOG.warn("THIS IS NOT A STABLE RELEASE! DO NOT USE IN PRODUCTION!");
                 LOG.warn("Download a stable release from https://download.eclipse.org/jetty/");
             }
-
-            HttpGenerator.setJettyVersion(HttpConfiguration.SERVER_VERSION);
 
             final ExceptionUtil.MultiException multiException = new ExceptionUtil.MultiException();
 

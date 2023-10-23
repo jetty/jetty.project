@@ -1177,6 +1177,7 @@ public class HttpChannelTest
                 request.addFailureListener(t -> error.set(null));
                 request.addFailureListener(t -> error.compareAndSet(null, t));
                 request.addFailureListener(t -> error.compareAndSet(null, new Throwable("WRONG")));
+                request.addFailureListener(callback::failed);
                 return true;
             }
         };

@@ -30,7 +30,7 @@ $ java -jar $JETTY_HOME/start.jar jetty.deploy.scanInterval=0
 To make _static_ deployment persistent, you need to edit the `deploy` module configuration file, `$JETTY_BASE/start.d/deploy.ini`, uncomment the module property `jetty.deploy.scanInterval` and change its value to `0`:
 
 .deploy.ini
-[source,subs=quotes]
+[source,subs="verbatim,quotes"]
 ----
 --module=deploy
 #jetty.deploy.scanInterval=0#

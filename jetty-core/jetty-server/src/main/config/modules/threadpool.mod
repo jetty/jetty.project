@@ -25,7 +25,7 @@ etc/jetty-threadpool.xml
 #jetty.threadPool.reservedThreads=-1
 
 ## Whether to use virtual threads, if the runtime supports them.
-## Deprecated, use Jetty module 'threadpool-virtual-preview' instead.
+## Deprecated, use Jetty module 'threadpool-virtual' instead.
 #jetty.threadPool.useVirtualThreads=false
 
 ## Thread idle timeout (in milliseconds).

@@ -40,7 +40,6 @@ public class OpenIdTests extends AbstractJettyHomeTest
         JettyHomeTester distribution = JettyHomeTester.Builder.newInstance()
             .jettyVersion(jettyVersion)
             .jettyBase(jettyBase)
-            .mavenLocalRepository(System.getProperty("mavenRepoPath"))
             .build();
 
         String[] args1 = {

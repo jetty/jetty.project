@@ -199,13 +199,13 @@ public class MessageHandler implements FrameHandler
 
             if (frame.isFin())
             {
-                onText(textBuffer.takeCompleteString(() -> new BadPayloadException("Invalid UTF-8")), callback);
+                onText(textBuffer.takeCompleteString(BadPayloadException.InvalidUtf8::new), callback);
                 textBuffer.reset();
             }
             else
             {
                 if (textBuffer.hasCodingErrors())
-                    throw new BadPayloadException("Invalid UTF-8");
+                    throw new BadPayloadException.InvalidUtf8();
                 else
                     callback.succeeded();
             }

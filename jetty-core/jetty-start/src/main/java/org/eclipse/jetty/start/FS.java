@@ -23,12 +23,9 @@ import java.nio.file.FileSystems;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.attribute.FileTime;
-import java.util.HashMap;
 import java.util.Iterator;
-import java.util.List;
 import java.util.Locale;
 import java.util.Map;
-import java.util.stream.Collectors;
 import java.util.stream.Stream;
 
 import org.eclipse.jetty.util.FileID;
@@ -130,7 +127,7 @@ public class FS
         if (!Files.isDirectory(path))
         {
             // not a directory (as expected)
-            StartLog.warn("Not a directory: " + path);
+            StartLog.warn("Not a directory: %s", path);
             return false;
         }
 

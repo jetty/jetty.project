@@ -43,7 +43,7 @@ When you enable the `logging-jetty` module -- either directly or by transitive d
 $ java -jar $JETTY_HOME/start.jar --add-modules=http
 ----
 
-[source,subs=quotes,options=nowrap]
+[source,options=nowrap,subs="verbatim,quotes"]
 ----
 include::jetty[args="--add-modules=http",highlight="(logging-jetty *transitively enabled|copy.*\.properties)"]
 ----

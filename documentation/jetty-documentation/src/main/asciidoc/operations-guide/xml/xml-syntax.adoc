@@ -193,7 +193,7 @@ The `class` attribute (or `<Class>` element) can also be used to specify the Jav
 This is necessary when the object in scope, onto which the `<Call>` would be applied, is an instance of a class that is not visible to Jetty classes, or not accessible because it is not `public`.
 For example:
 
-[source,xml,subs=normal]
+[source,xml,subs="verbatim,quotes"]
 ----
 <?xml version="1.0" encoding="UTF-8"?>
 <!DOCTYPE Configure PUBLIC "-//Jetty//Configure//EN" "https://eclipse.dev/jetty/configure_10_0.dtd">
@@ -378,7 +378,7 @@ The `default` attribute allows you to specify a default value for the property, 
 
 For example, you may want to configure the context path of your web application in this way:
 
-[source,xml,subs=normal]
+[source,xml,subs="verbatim,quotes"]
 ----
 <?xml version="1.0" encoding="UTF-8"?>
 <!DOCTYPE Configure PUBLIC "-//Jetty//Configure//EN" "https://eclipse.dev/jetty/configure_10_0.dtd">

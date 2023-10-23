@@ -174,7 +174,7 @@ public interface HttpCookie
 
         public Wrapper(HttpCookie wrapped)
         {
-            this.wrapped = wrapped;
+            this.wrapped = Objects.requireNonNull(wrapped);
         }
 
         public HttpCookie getWrapped()
@@ -534,8 +534,40 @@ public interface HttpCookie
 
         public Builder attribute(String name, String value)
         {
-            _attributes = lazyAttributePut(_attributes, name, value);
+            if (name == null)
+                return this;
+            // Sanity checks on the values, expensive but necessary to avoid to store garbage.
+            switch (name.toLowerCase(Locale.ENGLISH))
+            {
+                case "expires" -> expires(parseExpires(value));
+                case "httponly" ->
+                {
+                    if (!isTruthy(value))
+                        throw new IllegalArgumentException("Invalid HttpOnly attribute");
+                    httpOnly(true);
+                }
+                case "max-age" -> maxAge(Long.parseLong(value));
+                case "samesite" ->
+                {
+                    SameSite sameSite = SameSite.from(value);
+                    if (sameSite == null)
+                        throw new IllegalArgumentException("Invalid SameSite attribute");
+                    sameSite(sameSite);
+                }
+                case "secure" ->
+                {
+                    if (!isTruthy(value))
+                        throw new IllegalArgumentException("Invalid Secure attribute");
+                    secure(true);
+                }
+                default -> _attributes = lazyAttributePut(_attributes, name, value);
+            }
             return this;
+        }
+
+        private boolean isTruthy(String value)
+        {
+            return value != null && (value.isEmpty() || "true".equalsIgnoreCase(value));
         }
 
         public Builder comment(String comment)
@@ -818,26 +850,19 @@ public interface HttpCookie
         return obj1.equalsIgnoreCase(obj2);
     }
 
-    /**
-     * <p>Formats this cookie into a string suitable to be used
-     * in {@code Cookie} or {@code Set-Cookie} headers.</p>
-     *
-     * @param httpCookie the cookie to format
-     * @return a header string representation of the cookie
-     */
     private static String asString(HttpCookie httpCookie)
     {
         StringBuilder builder = new StringBuilder();
         builder.append(httpCookie.getName()).append("=").append(httpCookie.getValue());
-        int version = httpCookie.getVersion();
-        if (version > 0)
-            builder.append(";Version=").append(version);
-        String domain = httpCookie.getDomain();
-        if (domain != null)
-            builder.append(";Domain=").append(domain);
-        String path = httpCookie.getPath();
-        if (path != null)
-            builder.append(";Path=").append(path);
+        Map<String, String> attributes = httpCookie.getAttributes();
+        if (!attributes.isEmpty())
+        {
+            for (Map.Entry<String, String> entry : attributes.entrySet())
+            {
+                builder.append("; ");
+                builder.append(entry.getKey()).append("=").append(entry.getValue());
+            }
+        }
         return builder.toString();
     }
 

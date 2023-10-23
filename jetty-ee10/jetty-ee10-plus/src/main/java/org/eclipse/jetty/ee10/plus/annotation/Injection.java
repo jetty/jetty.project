@@ -131,6 +131,7 @@ public class Injection
     }
 
     /**
+     * Get the jndiName.
      * @return the jndiName
      */
     public String getJndiName()
@@ -148,6 +149,7 @@ public class Injection
     }
 
     /**
+     * Get the target.
      * @return the target
      */
     public Member getTarget()

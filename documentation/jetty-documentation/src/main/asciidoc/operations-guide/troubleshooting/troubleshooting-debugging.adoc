@@ -46,7 +46,7 @@ $ java -jar $JETTY_HOME/start.jar --add-modules=server,remote-debug
 
 The command above minimally adds a Jetty server without connectors (via the `server` Jetty module) and the `remote-debug` Jetty module, and produces the following `$JETTY_BASE` directory structure:
 
-[source,subs=normal]
+[source,subs="verbatim,quotes"]
 ----
 $JETTY_BASE
 ├── modules
@@ -64,7 +64,7 @@ Alternatively, you can enable the `remote-debug` module on the command line, as 
 
 Starting the Jetty server with the `remote-debug` module enabled yields:
 
-[source,subs=quotes,options=nowrap]
+[source,options=nowrap,subs="verbatim,quotes"]
 ----
 include::jetty[setupModules="src/main/asciidoc/operations-guide/troubleshooting/remote-debug.mod",setupArgs="--add-modules=server,remote-debug",highlight="5005"]
 ----

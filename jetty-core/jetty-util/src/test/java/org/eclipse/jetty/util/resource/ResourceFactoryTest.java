@@ -19,19 +19,116 @@ import java.net.MalformedURLException;
 import java.net.URI;
 import java.net.URL;
 import java.nio.file.Path;
+import java.util.ArrayList;
+import java.util.List;
 
 import org.junit.jupiter.api.Assumptions;
 import org.junit.jupiter.api.Test;
+import org.junit.jupiter.params.ParameterizedTest;
+import org.junit.jupiter.params.provider.MethodSource;
+import org.junit.jupiter.params.provider.ValueSource;
 
 import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.Matchers.containsString;
 import static org.hamcrest.Matchers.greaterThan;
 import static org.hamcrest.Matchers.is;
+import static org.junit.jupiter.api.Assertions.assertNotNull;
 import static org.junit.jupiter.api.Assertions.assertNull;
 import static org.junit.jupiter.api.Assertions.assertThrows;
+import static org.junit.jupiter.api.Assertions.assertTrue;
 
 public class ResourceFactoryTest
 {
+    @ParameterizedTest
+    @ValueSource(strings = {
+        "keystore.p12", "/keystore.p12",
+        "TestData/alphabet.txt", "/TestData/alphabet.txt",
+        "TestData/", "/TestData/", "TestData", "/TestData"
+    })
+    public void testNewClassLoaderResourceExists(String reference)
+    {
+        try (ResourceFactory.Closeable resourceFactory = ResourceFactory.closeable())
+        {
+            Resource resource = resourceFactory.newClassLoaderResource(reference);
+            assertNotNull(resource, "Reference [" + reference + "] should be found");
+            assertTrue(resource.exists(), "Reference [" + reference + "] -> Resource[" + resource + "] should exist");
+        }
+    }
+
+    @ParameterizedTest
+    @ValueSource(strings = {"does-not-exist.dat", "non-existent/dir/contents.txt", "/../"})
+    public void testNewClassLoaderResourceDoesNotExists(String reference)
+    {
+        try (ResourceFactory.Closeable resourceFactory = ResourceFactory.closeable())
+        {
+            Resource resource = resourceFactory.newClassLoaderResource(reference);
+            assertNull(resource, "Reference [" + reference + "] should not be found");
+        }
+    }
+
+    public static List<String> badReferenceNamesSource()
+    {
+        List<String> names = new ArrayList<>();
+        names.add(null);
+        names.add("");
+        names.add(" ");
+        names.add("\r");
+        names.add("\r\n");
+        names.add("  \t  ");
+        return names;
+    }
+
+    @ParameterizedTest
+    @MethodSource("badReferenceNamesSource")
+    public void testNewClassLoaderResourceDoesBadInput(String reference)
+    {
+        try (ResourceFactory.Closeable resourceFactory = ResourceFactory.closeable())
+        {
+            assertThrows(IllegalArgumentException.class,
+                () -> resourceFactory.newClassLoaderResource(reference),
+                "Bad Reference [" + reference + "] should have failed");
+        }
+    }
+
+    @ParameterizedTest
+    @ValueSource(strings = {
+        "keystore.p12", "/keystore.p12",
+        "TestData/alphabet.txt", "/TestData/alphabet.txt",
+        "TestData/", "/TestData/", "TestData", "/TestData"
+    })
+    public void testNewClassPathResourceExists(String reference)
+    {
+        try (ResourceFactory.Closeable resourceFactory = ResourceFactory.closeable())
+        {
+            Resource resource = resourceFactory.newClassPathResource(reference);
+            assertNotNull(resource, "Reference [" + reference + "] should be found");
+            assertTrue(resource.exists(), "Reference [" + reference + "] -> Resource[" + resource + "] should exist");
+        }
+    }
+
+    @ParameterizedTest
+    @ValueSource(strings = {"does-not-exist.dat", "non-existent/dir/contents.txt", "/../"})
+    public void testNewClassPathResourceDoesNotExists(String reference)
+    {
+        try (ResourceFactory.Closeable resourceFactory = ResourceFactory.closeable())
+        {
+            Resource resource = resourceFactory.newClassPathResource(reference);
+            assertNull(resource, "Reference [" + reference + "] should not be found");
+        }
+    }
+
+    @ParameterizedTest
+    @MethodSource("badReferenceNamesSource")
+    public void testNewClassPathResourceDoesBadInput(String reference)
+    {
+        try (ResourceFactory.Closeable resourceFactory = ResourceFactory.closeable())
+        {
+            assertThrows(IllegalArgumentException.class,
+                () -> resourceFactory.newClassPathResource(reference),
+                "Bad Reference [" + reference + "] should have failed");
+        }
+    }
+
     @Test
     public void testCustomUriSchemeNotRegistered()
     {

@@ -20,14 +20,14 @@ Clear text HTTP/1.1 is enabled with the `http` Jetty module with the following c
 $ java -jar $JETTY_HOME/start.jar --add-modules=http
 ----
 
-[source,subs=quotes,options=nowrap]
+[source,options=nowrap]
 ----
 include::jetty[setupArgs="--add-modules=http"]
 ----
 
 After having enabled the `http` module, the `$JETTY_BASE` directory looks like this:
 
-[source,subs=quotes]
+[source,subs="verbatim,quotes"]
 ----
 JETTY_BASE
 ├── resources

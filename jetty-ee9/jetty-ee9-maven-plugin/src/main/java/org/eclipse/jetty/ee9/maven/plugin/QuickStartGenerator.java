@@ -49,6 +49,7 @@ public class QuickStartGenerator
     }
 
     /**
+     * Get the webApp.
      * @return the webApp
      */
     public MavenWebAppContext getWebApp()
@@ -57,6 +58,7 @@ public class QuickStartGenerator
     }
 
     /**
+     * Get the quickstartXml.
      * @return the quickstartXml
      */
     public Path getQuickstartXml()
@@ -65,6 +67,7 @@ public class QuickStartGenerator
     }
     
     /**
+     * Get the server.
      * @return the server
      */
     public Server getServer()
@@ -73,6 +76,7 @@ public class QuickStartGenerator
     }
 
     /**
+     * Set the server to use.
      * @param server the server to use
      */
     public void setServer(Server server)
@@ -86,6 +90,7 @@ public class QuickStartGenerator
     }
 
     /**
+     * Set properties file describing the webapp.
      * @param webAppPropsFile properties file describing the webapp
      */
     public void setWebAppPropsFile(Path webAppPropsFile)
@@ -99,6 +104,7 @@ public class QuickStartGenerator
     }
 
     /**
+     * Set a context xml file to apply to the webapp.
      * @param contextXml a context xml file to apply to the webapp
      */
     public void setContextXml(String contextXml)
@@ -109,7 +115,7 @@ public class QuickStartGenerator
     /**
      * Configure the webapp in preparation for quickstart generation.
      * 
-     * @throws Exception
+     * @throws Exception if there is an unspecified problem
      */
     private void prepareWebApp()
         throws Exception
@@ -127,7 +133,7 @@ public class QuickStartGenerator
      * Run enough of jetty to generate a full quickstart xml file for the 
      * webapp. The tmp directory is persisted.
      * 
-     * @throws Exception
+     * @throws Exception if there is an unspecified problem
      */
     public void generate()
         throws Exception

@@ -30,6 +30,7 @@ import org.junit.jupiter.params.provider.Arguments;
 import org.junit.jupiter.params.provider.MethodSource;
 
 import static org.hamcrest.MatcherAssert.assertThat;
+import static org.hamcrest.Matchers.containsString;
 import static org.hamcrest.Matchers.equalTo;
 import static org.hamcrest.Matchers.is;
 import static org.junit.jupiter.api.Assertions.assertEquals;
@@ -42,7 +43,7 @@ import static org.junit.jupiter.api.Assertions.fail;
 public class Utf8StringBuilderTest
 {
     @Test
-    public void testUtf() throws Exception
+    public void testUtf()
     {
         String source = "abcd012345\n\r\u0000¤჻\ufffdjetty";
         byte[] bytes = source.getBytes(StandardCharsets.UTF_8);
@@ -56,7 +57,7 @@ public class Utf8StringBuilderTest
     }
 
     @Test
-    public void testUtf8WithMissingByte() throws Exception
+    public void testUtf8WithMissingByte()
     {
         String source = "abc჻";
         byte[] bytes = source.getBytes(StandardCharsets.UTF_8);
@@ -71,7 +72,7 @@ public class Utf8StringBuilderTest
     }
 
     @Test
-    public void testUtf8WithAdditionalByte() throws Exception
+    public void testUtf8WithAdditionalByte()
     {
         String source = "abcXX";
         byte[] bytes = source.getBytes(StandardCharsets.UTF_8);
@@ -88,7 +89,7 @@ public class Utf8StringBuilderTest
     }
 
     @Test
-    public void testUTF32codes() throws Exception
+    public void testUTF32codes()
     {
         String source = "\uD842\uDF9F";
         byte[] bytes = source.getBytes(StandardCharsets.UTF_8);
@@ -103,7 +104,7 @@ public class Utf8StringBuilderTest
     }
 
     @Test
-    public void testGermanUmlauts() throws Exception
+    public void testGermanUmlauts()
     {
         byte[] bytes = new byte[6];
         bytes[0] = (byte)0xC3;
@@ -121,7 +122,7 @@ public class Utf8StringBuilderTest
     }
 
     @Test
-    public void testInvalidUTF8() throws Exception
+    public void testInvalidUTF8()
     {
         Utf8StringBuilder utf8 = new Utf8StringBuilder();
         utf8.append((byte)0xC2); // start of sequence
@@ -129,10 +130,19 @@ public class Utf8StringBuilderTest
         assertThat(utf8.toPartialString(), equalTo("�")); // only first sequence is reported as BAD
         assertThat(utf8.toCompleteString(), equalTo("��")); // now both sequences are reported as BAD
         assertThrows(CharacterCodingException.class, utf8::build);
+
+        try
+        {
+            utf8.build();
+        }
+        catch (Throwable t)
+        {
+            assertThat(t.toString(), containsString("Invalid UTF-8"));
+        }
     }
 
     @Test
-    public void testInvalidZeroUTF8() throws Exception
+    public void testInvalidZeroUTF8()
     {
         // From https://datatracker.ietf.org/doc/html/rfc3629#section-10
         Utf8StringBuilder utf8 = new Utf8StringBuilder();
@@ -144,7 +154,7 @@ public class Utf8StringBuilderTest
     }
 
     @Test
-    public void testInvalidAlternateDotEncodingUTF8() throws Exception
+    public void testInvalidAlternateDotEncodingUTF8()
     {
         // From https://datatracker.ietf.org/doc/html/rfc3629#section-10
         Utf8StringBuilder utf8 = new Utf8StringBuilder();
@@ -160,7 +170,7 @@ public class Utf8StringBuilderTest
     }
 
     @Test
-    public void testFastFail1() throws Exception
+    public void testFastFail1()
     {
         byte[] part1 = StringUtil.fromHexString("cebae1bdb9cf83cebcceb5");
         byte[] part2 = StringUtil.fromHexString("f4908080"); // INVALID
@@ -178,7 +188,7 @@ public class Utf8StringBuilderTest
     }
 
     @Test
-    public void testFastFail2() throws Exception
+    public void testFastFail2()
     {
         byte[] part1 = StringUtil.fromHexString("cebae1bdb9cf83cebcceb5f4");
         byte[] part2 = StringUtil.fromHexString("90"); // INVALID
@@ -196,7 +206,7 @@ public class Utf8StringBuilderTest
     }
 
     @Test
-    public void testPartialSplitSingleCodepoint() throws Exception
+    public void testPartialSplitSingleCodepoint()
     {
         // GOTHIC LETTER HWAIR
         final String gothicUnicode = "𐍈";
@@ -223,7 +233,7 @@ public class Utf8StringBuilderTest
     }
 
     @Test
-    public void testPartialUnsplitCodepoint() throws Exception
+    public void testPartialUnsplitCodepoint()
     {
         Utf8StringBuilder utf8 = new Utf8StringBuilder();
 
@@ -245,7 +255,7 @@ public class Utf8StringBuilderTest
     }
 
     @Test
-    public void testPartialSplitCodepoint() throws Exception
+    public void testPartialSplitCodepoint()
     {
         Utf8StringBuilder utf8 = new Utf8StringBuilder();
 
@@ -267,7 +277,7 @@ public class Utf8StringBuilderTest
     }
 
     @Test
-    public void testPartialSplitCodepointWithNoBuf() throws Exception
+    public void testPartialSplitCodepointWithNoBuf()
     {
         Utf8StringBuilder utf8 = new Utf8StringBuilder();
 

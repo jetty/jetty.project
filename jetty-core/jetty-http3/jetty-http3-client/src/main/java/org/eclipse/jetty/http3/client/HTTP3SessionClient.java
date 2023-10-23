@@ -93,7 +93,7 @@ public class HTTP3SessionClient extends HTTP3Session implements Session.Client
     @Override
     public CompletableFuture<Stream> newRequest(HeadersFrame frame, Stream.Client.Listener listener)
     {
-        long streamId = getProtocolSession().getQuicSession().newStreamId(StreamType.CLIENT_BIDIRECTIONAL);
+        long streamId = getProtocolSession().newStreamId(StreamType.CLIENT_BIDIRECTIONAL);
         return newRequest(streamId, frame, listener);
     }
 

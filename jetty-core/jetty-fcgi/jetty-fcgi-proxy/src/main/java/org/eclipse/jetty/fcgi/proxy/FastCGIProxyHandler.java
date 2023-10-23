@@ -104,6 +104,7 @@ public class FastCGIProxyHandler extends ProxyHandler.Reverse
     }
 
     /**
+     * Get the root directory path of the FastCGI files.
      * @return the root directory path of the FastCGI files
      */
     public String getScriptRoot()

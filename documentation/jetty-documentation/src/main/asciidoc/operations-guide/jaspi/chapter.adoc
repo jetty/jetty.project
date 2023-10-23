@@ -35,7 +35,7 @@ include::{jetty-home}/modules/{ee-current}-jaspi.mod[]
 
 Activate either the `ee9-jaspi` or `{ee-current}-jaspi` module, whichever matches your EE platform version.
 
-[subs=attributes]
+[source,subs="verbatim,attributes"]
 ----
 $ java -jar $JETTY_HOME/start.jar --add-modules={ee-current}-jaspi
 ----

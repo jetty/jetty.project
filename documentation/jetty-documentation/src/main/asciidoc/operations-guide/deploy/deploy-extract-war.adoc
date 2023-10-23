@@ -21,7 +21,7 @@ The web application resources are served by Jetty from the files extracted in th
 If you do not want Jetty to extract the `+*.war+` files, you can disable this feature, for example:
 
 .mywebapp.xml
-[source,xml,highlight=8,subs="verbatim,attributes"]
+[source,xml,subs="verbatim,attributes,quotes"]
 ----
 <?xml version="1.0" encoding="UTF-8"?>
 <!DOCTYPE Configure PUBLIC "-//Jetty//Configure//EN" "https://eclipse.dev/jetty/configure_10_0.dtd">
@@ -29,6 +29,6 @@ If you do not want Jetty to extract the `+*.war+` files, you can disable this fe
 <Configure class="org.eclipse.jetty.{ee-current}.webapp.WebAppContext">
   <Set name="contextPath">/mywebapp</Set>
   <Set name="war">/opt/webapps/mywebapp.war</Set>
-  <Set name="extractWAR">false</Set>
+  #<Set name="extractWAR">false</Set>#
 </Configure>
 ----

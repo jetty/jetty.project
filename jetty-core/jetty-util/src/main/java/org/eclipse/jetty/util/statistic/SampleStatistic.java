@@ -66,6 +66,7 @@ public class SampleStatistic
     }
 
     /**
+     * Get the max value of the recorded samples.
      * @return the max value of the recorded samples
      */
     public long getMax()
@@ -74,6 +75,7 @@ public class SampleStatistic
     }
 
     /**
+     * Get the sum of all the recorded samples.
      * @return the sum of all the recorded samples
      */
     public long getTotal()
@@ -82,6 +84,7 @@ public class SampleStatistic
     }
 
     /**
+     * Get the number of samples recorded.
      * @return the number of samples recorded
      */
     public long getCount()
@@ -90,6 +93,7 @@ public class SampleStatistic
     }
 
     /**
+     * Get the average value of the samples recorded, or zero if there are no samples.
      * @return the average value of the samples recorded, or zero if there are no samples
      */
     public double getMean()
@@ -99,6 +103,7 @@ public class SampleStatistic
     }
 
     /**
+     * Get the variance of the samples recorded, or zero if there are less than 2 samples.
      * @return the variance of the samples recorded, or zero if there are less than 2 samples
      */
     public double getVariance()
@@ -109,6 +114,7 @@ public class SampleStatistic
     }
 
     /**
+     * Get the standard deviation of the samples recorded.
      * @return the standard deviation of the samples recorded
      */
     public double getStdDev()
@@ -119,6 +125,6 @@ public class SampleStatistic
     @Override
     public String toString()
     {
-        return String.format("%s@%x{count=%d,max=%d,mean=%f,total=%d,stddev=%f}", getClass().getSimpleName(), hashCode(), getCount(), getMax(), getMean(), getTotal(), getStdDev());
+        return String.format("%s@%x{count=%d,max=%d,mean=%f,total=%d,variance=%f,stddev=%f}", getClass().getSimpleName(), hashCode(), getCount(), getMax(), getMean(), getTotal(), getVariance(), getStdDev());
     }
 }

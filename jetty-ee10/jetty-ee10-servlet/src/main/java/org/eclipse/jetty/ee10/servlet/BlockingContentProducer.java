@@ -159,7 +159,11 @@ class BlockingContentProducer implements ContentProducer
         // Do not release the semaphore if we are not unready, as certain protocols may call this method
         // just after having received the request, not only when they have read all the available content.
         if (unready)
+        {
+            // Call nextChunk() to switch the input state back to IDLE, otherwise we would stay UNREADY.
+            _asyncContentProducer.nextChunk();
             _semaphore.release();
+        }
         return false;
     }
 }

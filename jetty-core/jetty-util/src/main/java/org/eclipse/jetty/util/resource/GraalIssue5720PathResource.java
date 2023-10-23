@@ -50,8 +50,7 @@ final class GraalIssue5720PathResource extends PathResource
     /**
      * Checks if the given resource URL is affected by Graal issue 5720.
      * 
-     * @param url
-     *            The URL to check.
+     * @param url The URL to check.
      * @return {@code true} if affected.
      */
     static boolean isAffectedURL(URL url)
@@ -101,8 +100,7 @@ final class GraalIssue5720PathResource extends PathResource
     /**
      * Corrects any bad {@code resource} based URIs, such as those starting with {@code resource:file:///resources!}.
      * 
-     * @param uri
-     *            The URI to correct.
+     * @param uri The URI to correct.
      * @return the corrected URI, or the original URI.
      * @see <a href="https://github.com/oracle/graal/issues/5720">Graal issue 5720</a>
      */

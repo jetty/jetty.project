@@ -208,6 +208,7 @@ public class SecureRequestCustomizer implements HttpConfiguration.Customizer
     }
 
     /**
+     * Set whether the {@code includeSubdomains} attribute is sent with the Strict-Transport-Security response header.
      * @param stsIncludeSubDomains whether the {@code includeSubdomains} attribute is sent with the Strict-Transport-Security response header
      */
     public void setStsIncludeSubDomains(boolean stsIncludeSubDomains)

@@ -72,9 +72,9 @@
         <artifactId>jetty-ee10-maven-plugin</artifactId>
         <dependencies>
           <dependency>
-              <groupId>org.eclipse.jetty</groupId>
-              <artifactId>jetty-slf4j-impl</artifactId>
-              <version>${jetty.version}</version>
+            <groupId>org.eclipse.jetty</groupId>
+            <artifactId>jetty-slf4j-impl</artifactId>
+            <version>${jetty.version}</version>
           </dependency>
         </dependencies>
         <executions>

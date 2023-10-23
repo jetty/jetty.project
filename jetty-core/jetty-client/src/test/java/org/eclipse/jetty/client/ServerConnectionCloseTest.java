@@ -19,6 +19,7 @@ import java.io.OutputStream;
 import java.net.ServerSocket;
 import java.net.Socket;
 import java.nio.charset.StandardCharsets;
+import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.TimeUnit;
 
 import org.eclipse.jetty.client.transport.HttpClientTransportOverHTTP;
@@ -95,8 +96,7 @@ public class ServerConnectionCloseTest
             startClient();
 
             Request request = client.newRequest("localhost", port).path("/ctx/path");
-            FutureResponseListener listener = new FutureResponseListener(request);
-            request.send(listener);
+            CompletableFuture<ContentResponse> completable = new CompletableResponseListener(request).send();
 
             try (Socket socket = server.accept())
             {
@@ -134,7 +134,7 @@ public class ServerConnectionCloseTest
                 if (shutdownOutput)
                     socket.shutdownOutput();
 
-                ContentResponse response = listener.get(5, TimeUnit.SECONDS);
+                ContentResponse response = completable.get(5, TimeUnit.SECONDS);
                 assertEquals(HttpStatus.OK_200, response.getStatus());
 
                 // Give some time to process the connection.

@@ -119,6 +119,7 @@ public class CachingHttpContentFactory implements HttpContent.Factory
     }
 
     /**
+     * Get the max number of cached files..
      * @return the max number of cached files.
      */
     public int getMaxCachedFiles()
@@ -127,6 +128,7 @@ public class CachingHttpContentFactory implements HttpContent.Factory
     }
 
     /**
+     * Set the max number of cached files..
      * @param maxCachedFiles the max number of cached files.
      */
     public void setMaxCachedFiles(int maxCachedFiles)

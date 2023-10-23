@@ -20,25 +20,31 @@ import java.util.concurrent.Executor;
 import org.eclipse.jetty.http.MimeTypes;
 import org.eclipse.jetty.server.handler.ContextHandler;
 import org.eclipse.jetty.util.Attributes;
+import org.eclipse.jetty.util.DecoratedObjectFactory;
 import org.eclipse.jetty.util.Decorator;
 import org.eclipse.jetty.util.resource.Resource;
 
 /**
- * <p>The context for handling an HTTP request.</p>
- * <p>Every request has a non-{@code null} context, which may initially
+ * <p>A context for handling an {@link Request}.
+ * Every request has a non-{@code null} context, which may initially
  * be the {@link Server#getContext() server context}, or
- * a context provided by a {@link ContextHandler}.</p>
- * <p>A context is also an {@link Executor}, which allows tasks to be run by a
- * thread pool, but scoped to the ClassLoader and any other context property.</p>
- * <p>Method {@link #run(Runnable)} is also provided to allow the current thread
- * to be scoped to the context for the execution of the task.</p>
- * <p>A Context is also a {@link Decorator}, allowing objects to be decorated
- * in a context scope.</p>
+ * a context provided by a {@link ContextHandler}.
+ * A {@code Context}:</p>
+ * <ul>
+ *     <li>has an optional {@link #getContextPath() context path} that is a prefix to all URIs handled by the {@code Context}</li>
+ *     <li>has an optional list of {@link #getVirtualHosts() virtual hosts} that the {@code Context} is applicable to.</li>
+ *     <li>has an optional {@link ClassLoader} that that is set as the {@link Thread#setContextClassLoader(ClassLoader) Thread context ClassLoader}
+ *         for {@link Thread}s handling the request.</li>
+ *     <li>is an {@link java.util.concurrent.Executor} that can execute jobs in with the {@link Thread#setContextClassLoader(ClassLoader) Thread context ClassLoader}</li>
+ *     <li>is a {@link org.eclipse.jetty.util.Decorator} using the {@link DecoratedObjectFactory } that can create objects specific to the context.</li>
+ *     <li>has the same {@link #getTempDirectory() temporary director} specific to the context.</li>
+ * </ul>
+ * @see Server#getContext()
  */
 public interface Context extends Attributes, Decorator, Executor
 {
     /**
-     * @return the encoded context path of this Context
+     * @return the encoded context path of this {@code Context} or {@code null}
      */
     String getContextPath();
 

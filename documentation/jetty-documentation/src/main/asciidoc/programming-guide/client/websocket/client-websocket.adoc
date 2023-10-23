@@ -23,7 +23,7 @@ Since the first step of establishing a WebSocket communication is an HTTP reques
 
 The Maven artifact coordinates are the following:
 
-[source,xml,subs=normal]
+[source,xml,subs="verbatim,attributes"]
 ----
 <dependency>
   <groupId>org.eclipse.jetty.websocket</groupId>

@@ -758,7 +758,7 @@ public class PlusDescriptorProcessor extends IterativeDescriptorProcessor
      * @param name the name field of the env-entry
      * @param type the type field of the env-entry
      * @param value the value field of the env-entry
-     * @throws Exception
+     * @throws Exception if there is an unspecified problem
      */
     public void makeEnvEntryInjectionsAndBindings(WebAppContext context, Descriptor descriptor, XmlParser.Node node, String name, String type, String value) throws Exception
     {

@@ -23,7 +23,7 @@ Similarly, from a different terminal, you can exit the Jetty JVM using `kill -IN
 In the three cases above, the JVM is exited, but by default Jetty components are not stopped.
 If you want to stop the Jetty components, to stop Jetty more gracefully, you can start Jetty with this property:
 
-[source,subs=quotes]
+[source,subs="verbatim,quotes"]
 ----
 $ java -jar $JETTY_HOME/start.jar ##jetty.server.stopAtShutdown=true##
 ----
@@ -45,12 +45,12 @@ You can start Jetty with the following properties:
 * `stop.port`, the port number Jetty will listen to for stop commands. Defaults to `-1`, which means that Jetty will not listen to any port.
 * `stop.key`, the password to verify when a stop command is received. Defaults to a password that is randomly generated and printed when Jetty starts.
 
-[source,subs=quotes]
+[source,subs="verbatim,quotes"]
 ----
 $ java -jar $JETTY_HOME/start.jar ##stop.port=8181##
 ----
 
-[source,subs=quotes,options=nowrap]
+[source,options=nowrap,subs="verbatim,quotes"]
 ----
 include::jetty[setupArgs="--add-modules=http",args="stop.port=8181",highlight="(?i)stop.key"]
 ----
@@ -61,7 +61,7 @@ CAUTION: You can choose your own `stop.key`, but make sure it's a strong passwor
 
 A remote client can now use the Jetty start mechanism to stop the remote Jetty server:
 
-[source,subs=normal]
+[source,subs="verbatim,quotes"]
 ----
 $ java -jar $JETTY_HOME/start.jar ##--stop## stop.port=8181 stop.key=<stop.key>
 ----

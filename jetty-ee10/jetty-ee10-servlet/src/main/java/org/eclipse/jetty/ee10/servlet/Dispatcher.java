@@ -13,6 +13,7 @@
 
 package org.eclipse.jetty.ee10.servlet;
 
+import java.io.Closeable;
 import java.io.IOException;
 import java.io.OutputStream;
 import java.io.OutputStreamWriter;
@@ -41,6 +42,7 @@ import org.eclipse.jetty.ee10.servlet.util.ServletOutputStreamWrapper;
 import org.eclipse.jetty.http.HttpURI;
 import org.eclipse.jetty.http.pathmap.MatchedResource;
 import org.eclipse.jetty.io.WriterOutputStream;
+import org.eclipse.jetty.util.IO;
 import org.eclipse.jetty.util.MultiMap;
 import org.eclipse.jetty.util.StringUtil;
 import org.eclipse.jetty.util.UrlEncoded;
@@ -122,16 +124,18 @@ public class Dispatcher implements RequestDispatcher
         _mappedServlet.handle(_servletHandler, _decodedPathInContext, new ForwardRequest(httpRequest), httpResponse);
 
         // If we are not async and not closed already, then close via the possibly wrapped response.
-        if (!servletContextRequest.getState().isAsync() && !servletContextRequest.getHttpOutput().isClosed())
+        if (!servletContextRequest.getState().isAsync() && !servletContextRequest.getServletContextResponse().hasLastWrite())
         {
+            Closeable closeable;
             try
             {
-                response.getOutputStream().close();
+                closeable = response.getOutputStream();
             }
             catch (IllegalStateException e)
             {
-                response.getWriter().close();
+                closeable = response.getWriter();
             }
+            IO.close(closeable);
         }
     }
 
@@ -621,6 +625,24 @@ public class Dispatcher implements RequestDispatcher
 
         @Override
         public void setStatus(int sc)
+        {
+            // NOOP for include.
+        }
+
+        @Override
+        public void sendError(int sc, String msg) throws IOException
+        {
+            // NOOP for include.
+        }
+
+        @Override
+        public void sendError(int sc) throws IOException
+        {
+            // NOOP for include.
+        }
+
+        @Override
+        public void sendRedirect(String location) throws IOException
         {
             // NOOP for include.
         }

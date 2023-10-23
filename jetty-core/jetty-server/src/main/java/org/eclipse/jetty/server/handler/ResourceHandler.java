@@ -183,6 +183,7 @@ public class ResourceHandler extends Handler.Wrapper
     }
 
     /**
+     * Get the cacheControl header to set on all static content..
      * @return the cacheControl header to set on all static content.
      */
     public String getCacheControl()
@@ -284,6 +285,7 @@ public class ResourceHandler extends Handler.Wrapper
     }
 
     /**
+     * Set the cacheControl header to set on all static content..
      * @param cacheControl the cacheControl header to set on all static content.
      */
     public void setCacheControl(String cacheControl)
@@ -308,6 +310,7 @@ public class ResourceHandler extends Handler.Wrapper
     }
 
     /**
+     * Set file extensions that signify that a file is gzip compressed. Eg ".svgz".
      * @param gzipEquivalentFileExtensions file extensions that signify that a file is gzip compressed. Eg ".svgz"
      */
     public void setGzipEquivalentFileExtensions(List<String> gzipEquivalentFileExtensions)
@@ -388,14 +391,7 @@ public class ResourceHandler extends Handler.Wrapper
         protected void rehandleWelcome(Request request, Response response, Callback callback, String welcomeTarget) throws Exception
         {
             HttpURI newHttpURI = HttpURI.build(request.getHttpURI()).pathQuery(welcomeTarget);
-            Request newRequest = new Request.Wrapper(request)
-            {
-                @Override
-                public HttpURI getHttpURI()
-                {
-                    return newHttpURI;
-                }
-            };
+            Request newRequest = Request.serveAs(request, newHttpURI);
 
             if (getServer().handle(newRequest, response, callback))
                 return;

@@ -31,7 +31,7 @@ Starting Jetty yields:
 $ java -jar $JETTY_HOME/start.jar
 ----
 
-[source,subs=quotes,options=nowrap]
+[source,options=nowrap,subs="verbatim,quotes"]
 ----
 include::jetty[setupArgs="--add-modules=http,http2c",highlight="(\{.+:8080})"]
 ----

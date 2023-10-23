@@ -324,6 +324,7 @@ public class HttpConfiguration implements Dumpable
     }
 
     /**
+     * Set if true, delays the application dispatch until content is available (defaults to true).
      * @param delay if true, delays the application dispatch until content is available (defaults to true)
      */
     public void setDelayDispatchUntilContent(boolean delay)
@@ -338,6 +339,7 @@ public class HttpConfiguration implements Dumpable
     }
 
     /**
+     * Set whether to use direct ByteBuffers for reading.
      * @param useInputDirectByteBuffers whether to use direct ByteBuffers for reading
      */
     public void setUseInputDirectByteBuffers(boolean useInputDirectByteBuffers)
@@ -352,6 +354,7 @@ public class HttpConfiguration implements Dumpable
     }
 
     /**
+     * Set whether to use direct ByteBuffers for writing.
      * @param useOutputDirectByteBuffers whether to use direct ByteBuffers for writing
      */
     public void setUseOutputDirectByteBuffers(boolean useOutputDirectByteBuffers)
@@ -621,6 +624,7 @@ public class HttpConfiguration implements Dumpable
     }
 
     /**
+     * Set whether remote errors, when detected, are notified to async applications.
      * @param notifyRemoteAsyncErrors whether remote errors, when detected, are notified to async applications
      */
     public void setNotifyRemoteAsyncErrors(boolean notifyRemoteAsyncErrors)

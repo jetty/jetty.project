@@ -17,12 +17,15 @@ import org.eclipse.jetty.ee10.servlet.DecoratingListener;
 import org.eclipse.jetty.ee10.servlet.ServletContextHandler;
 
 /**
- * A DecoratingListener that listens for "org.eclipse.jetty.ee10.cdi.decorator"
+ * A DecoratingListener that listens for "org.eclipse.jetty.cdi.decorator"
  */
 public class CdiDecoratingListener extends DecoratingListener
 {
     public static final String MODE = "CdiDecoratingListener";
-    public static final String ATTRIBUTE = "org.eclipse.jetty.ee10.cdi.decorator";
+    /**
+     * Attribute used by Weld to communicate to Jetty that it has created a WeldDecorator
+     */
+    public static final String ATTRIBUTE = "org.eclipse.jetty.cdi.decorator";
 
     public CdiDecoratingListener(ServletContextHandler contextHandler)
     {

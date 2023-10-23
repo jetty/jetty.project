@@ -118,6 +118,7 @@ public class RateStatistic
     }
 
     /**
+     * Get the number of records in the current period.
      * @return the number of records in the current period
      */
     public int getRate()
@@ -130,6 +131,7 @@ public class RateStatistic
     }
 
     /**
+     * Get the max number of samples per period..
      * @return the max number of samples per period.
      */
     public long getMax()
@@ -156,6 +158,7 @@ public class RateStatistic
     }
 
     /**
+     * Get the number of samples recorded.
      * @return the number of samples recorded
      */
     public long getCount()

@@ -22,7 +22,6 @@ import org.eclipse.jetty.client.Connection;
 import org.eclipse.jetty.client.Destination;
 import org.eclipse.jetty.client.HttpClient;
 import org.eclipse.jetty.client.HttpClientTransport;
-import org.eclipse.jetty.client.Request;
 import org.eclipse.jetty.client.transport.HttpClientTransportOverHTTP;
 import org.eclipse.jetty.client.transport.HttpExchange;
 import org.eclipse.jetty.client.transport.internal.HttpChannelOverHTTP;
@@ -209,9 +208,9 @@ public class HttpChannelAssociationTest extends AbstractTest
                         return new HttpConnectionOverFCGI(endPoint, destination, promise)
                         {
                             @Override
-                            protected HttpChannelOverFCGI newHttpChannel(Request request)
+                            protected HttpChannelOverFCGI newHttpChannel()
                             {
-                                return new HttpChannelOverFCGI(this, getFlusher(), request.getIdleTimeout())
+                                return new HttpChannelOverFCGI(this)
                                 {
                                     @Override
                                     public boolean associate(HttpExchange exchange)

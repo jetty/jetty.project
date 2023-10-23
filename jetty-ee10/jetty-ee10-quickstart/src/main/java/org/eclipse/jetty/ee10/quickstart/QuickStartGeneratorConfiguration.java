@@ -110,6 +110,7 @@ public class QuickStartGeneratorConfiguration extends AbstractConfiguration
     }
 
     /**
+     * Get the originAttribute.
      * @return the originAttribute
      */
     public String getOriginAttribute()

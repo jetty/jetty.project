@@ -207,6 +207,7 @@ public class SessionData implements Serializable
     }
 
     /**
+     * Get time at which session was last written out.
      * @return time at which session was last written out
      */
     public long getLastSaved()
@@ -246,6 +247,7 @@ public class SessionData implements Serializable
     }
 
     /**
+     * Set true means non-attribute data has changed.
      * @param metaDataDirty true means non-attribute data has changed
      */
     public void setMetaDataDirty(boolean metaDataDirty)
@@ -311,6 +313,7 @@ public class SessionData implements Serializable
     }
 
     /**
+     * Get the id of the session.
      * @return the id of the session
      */
     public String getId()
@@ -324,6 +327,7 @@ public class SessionData implements Serializable
     }
 
     /**
+     * Get the context path associated with this session.
      * @return the context path associated with this session
      */
     public String getContextPath()
@@ -337,6 +341,7 @@ public class SessionData implements Serializable
     }
 
     /**
+     * Get virtual host of context associated with session.
      * @return virtual host of context associated with session
      */
     public String getVhost()
@@ -350,6 +355,7 @@ public class SessionData implements Serializable
     }
 
     /**
+     * Get last node to manage the session.
      * @return last node to manage the session
      */
     public String getLastNode()
@@ -363,6 +369,7 @@ public class SessionData implements Serializable
     }
 
     /**
+     * Get time at which session expires.
      * @return time at which session expires
      */
     public long getExpiry()
@@ -408,6 +415,7 @@ public class SessionData implements Serializable
     }
 
     /**
+     * Get time cookie was set.
      * @return time cookie was set
      */
     public long getCookieSet()
@@ -421,6 +429,7 @@ public class SessionData implements Serializable
     }
 
     /**
+     * Get time session was accessed.
      * @return time session was accessed
      */
     public long getAccessed()
@@ -434,6 +443,7 @@ public class SessionData implements Serializable
     }
 
     /**
+     * Get previous time session was accessed.
      * @return previous time session was accessed
      */
     public long getLastAccessed()

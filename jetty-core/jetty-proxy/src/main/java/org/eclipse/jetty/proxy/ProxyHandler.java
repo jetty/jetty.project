@@ -101,6 +101,7 @@ public abstract class ProxyHandler extends Handler.Abstract
     }
 
     /**
+     * Get the proxy-to-server {@code Host} header value.
      * @return the proxy-to-server {@code Host} header value
      */
     public String getProxyToServerHost()
@@ -120,6 +121,7 @@ public abstract class ProxyHandler extends Handler.Abstract
     }
 
     /**
+     * Get the value to use for the {@code Via} header.
      * @return the value to use for the {@code Via} header
      */
     public String getViaHost()
@@ -460,7 +462,7 @@ public abstract class ProxyHandler extends Handler.Abstract
     {
         if (LOG.isDebugEnabled())
             LOG.debug("{} P2C 103 interim response {}", requestId(clientToProxyRequest), serverToProxyResponseHeaders);
-        proxyToClientResponse.writeInterim(HttpStatus.EARLY_HINT_103, serverToProxyResponseHeaders);
+        proxyToClientResponse.writeInterim(HttpStatus.EARLY_HINTS_103, serverToProxyResponseHeaders);
     }
 
     protected void onProxyToClientResponseComplete(Request clientToProxyRequest, org.eclipse.jetty.client.Request proxyToServerRequest, org.eclipse.jetty.client.Response serverToProxyResponse, Response proxyToClientResponse, Callback proxyToClientCallback)

@@ -274,6 +274,7 @@ public class HttpChannel implements Runnable, HttpOutput.Interceptor
     }
 
     /**
+     * Get the number of requests handled by this connection.
      * @return the number of requests handled by this connection
      */
     public long getRequests()
@@ -454,6 +455,7 @@ public class HttpChannel implements Runnable, HttpOutput.Interceptor
     }
 
     /**
+     * Get return the HttpConfiguration server authority override.
      * @return return the HttpConfiguration server authority override
      */
     public HostPort getServerAuthority()
@@ -510,7 +512,7 @@ public class HttpChannel implements Runnable, HttpOutput.Interceptor
     {
         try
         {
-            _coreResponse.writeInterim(HttpStatus.EARLY_HINT_103, headers).get();
+            _coreResponse.writeInterim(HttpStatus.EARLY_HINTS_103, headers).get();
         }
         catch (Throwable x)
         {
@@ -696,10 +698,6 @@ public class HttpChannel implements Runnable, HttpOutput.Interceptor
                             if (sendErrorOrAbort("Insufficient content written"))
                                 break;
                         }
-
-                        // If send error is called we need to break.
-                        if (checkAndPrepareUpgrade())
-                            break;
 
                         // Set a close callback on the HttpOutput to make it an async callback
                         _response.completeOutput(Callback.from(NON_BLOCKING, () -> _state.completed(null), _state::completed));
@@ -942,8 +940,7 @@ public class HttpChannel implements Runnable, HttpOutput.Interceptor
     {
         _coreResponse = coreResponse;
         _coreCallback = coreCallback;
-
-        long idleTO = _configuration.getIdleTimeout();
+        _response.onResponse(coreResponse.getHeaders());
 
         if (LOG.isDebugEnabled())
         {
@@ -982,20 +979,6 @@ public class HttpChannel implements Runnable, HttpOutput.Interceptor
             LOG.debug("onRequestComplete {}", this);
         boolean result = eof();
         _combinedListener.onRequestEnd(_request);
-    }
-
-    /**
-     * <p>Checks whether the processing of the request resulted in an upgrade,
-     * and if so performs upgrade preparation steps <em>before</em> the upgrade
-     * response is sent back to the client.</p>
-     * <p>This avoids a race where the server is unprepared if the client sends
-     * data immediately after having received the upgrade response.</p>
-     * @return true if the channel is not complete and more processing is required,
-     * typically because sendError has been called.
-     */
-    protected boolean checkAndPrepareUpgrade()
-    {
-        return false;
     }
 
     public void onCompleted()
@@ -1099,7 +1082,6 @@ public class HttpChannel implements Runnable, HttpOutput.Interceptor
             if (response == null)
                 response = _response.newResponseMetaData();
             commit(response);
-            _request.onResponseCommit();
 
             // wrap callback to process informational responses
             final int status = response.getStatus();
@@ -1126,10 +1108,7 @@ public class HttpChannel implements Runnable, HttpOutput.Interceptor
     {
         if (response != null)
         {
-            // TODO: why can't we just do _coreResponse.setMetaData(response), without copying?
             _coreResponse.setStatus(response.getStatus());
-            // TODO: at least avoid copying the headers?
-            _coreResponse.getHeaders().add(response.getHttpFields());
             _coreResponse.setTrailersSupplier(response.getTrailersSupplier());
         }
         _coreResponse.write(complete, content, callback);

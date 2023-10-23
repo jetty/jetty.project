@@ -126,6 +126,7 @@ public class PropertyUserStore extends UserStore implements Scanner.DiscreteList
     }
 
     /**
+     * Get the period in seconds to scan for property file changes, or 0 for no scanning.
      * @return the period in seconds to scan for property file changes, or 0 for no scanning
      */
     public int getReloadInterval()

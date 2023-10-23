@@ -73,7 +73,14 @@ public class ExternalServerTest
         client.start();
         try
         {
-            HostPort hostPort = new HostPort("maven-central-eu.storage-download.googleapis.com:443");
+            // Well-known HTTP/3 servers to try.
+//            HostPort hostPort = new HostPort("maven-central-eu.storage-download.googleapis.com:443");
+            HostPort hostPort = new HostPort("google.com:443");
+//            HostPort hostPort = new HostPort("nghttp2.org:4433");
+//            HostPort hostPort = new HostPort("http3check.net:443");
+//            HostPort hostPort = new HostPort("quic.tech:8443");
+//            HostPort hostPort = new HostPort("h2o.examp1e.net:443");
+//            HostPort hostPort = new HostPort("test.privateoctopus.com:4433");
             Session.Client session = client.connect(new InetSocketAddress(hostPort.getHost(), hostPort.getPort()), new Session.Client.Listener() {})
                 .get(5, TimeUnit.SECONDS);
 

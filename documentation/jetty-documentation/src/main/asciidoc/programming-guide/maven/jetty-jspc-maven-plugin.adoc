@@ -21,12 +21,12 @@ This plugin will help you pre-compile your JSP and works in conjunction with the
 
 Here's the basic setup required to put the jspc plugin into your build:
 
-[source,xml]
+[source,xml,subs="verbatim,attributes"]
 ----
 <plugin>
   <groupId>org.eclipse.jetty</groupId>
    <artifactId>jetty-jspc-maven-plugin</artifactId>
-   <version>{VERSION}</version>
+   <version>{version}</version>
    <executions>
      <execution>
        <id>jspc</id>
@@ -43,32 +43,32 @@ Here's the basic setup required to put the jspc plugin into your build:
 The configurable parameters are as follows:
 
 webXmlFragment::
-Default value: `$\{project.basedir}/target/webfrag.xml`
+Default value: `${project.basedir}/target/webfrag.xml`
 +
 File into which to generate the servlet declarations.
 Will be merged with an existing `web.xml`.
 webAppSourceDirectory::
-Default value: `$\{project.basedir}/src/main/webapp`
+Default value: `${project.basedir}/src/main/webapp`
 +
 Root of resources directory where jsps, tags etc are located.
 webXml::
-Default value: `$\{project.basedir}/src/main/webapp/WEB-INF/web.xml`
+Default value: `${project.basedir}/src/main/webapp/WEB-INF/web.xml`
 +
 The web.xml file to use to merge with the generated fragments.
 includes::
-Default value: `**\/*.jsp, **\/*.jspx`
+Default value: `+**/*.jsp, **/*.jspx+`
 +
 The comma separated list of patterns for file extensions to be processed.
 excludes::
-Default value: `**\/.svn\/**`
+Default value: `+**/.svn/**+`
 +
 The comma separated list of patterns for file extensions to be skipped.
 classesDirectory::
-Default value: `$\{project.build.outputDirectory}`
+Default value: `${project.build.outputDirectory}`
 +
 Location of classes for the webapp.
 generatedClasses::
-Default value: `$\{project.build.outputDirectory}`
+Default value: `${project.build.outputDirectory}`
 +
 Location to put the generated classes for the jsps.
 insertionMarker::
@@ -109,7 +109,7 @@ Introduced in Jetty 9.3.6.
 Java version of class files generated from jsps.
 Defaults to 1.7.
 tldJarNamePatterns::
-Default value: `.*taglibs[^/]*\.jar|.*jstl-impl[^/]*\.jar$`
+Default value: `+.*taglibs[^/]*\.jar|.*jstl[^/]*\.jar$+`
 +
 Patterns of jars on the 'system' (ie container) path that contain tlds.
 Use | to separate each pattern.
@@ -140,31 +140,31 @@ As compiling jsps is usually done during preparation for a production release an
 
 For example, the following profile will only be invoked if the flag `-Dprod` is present on the run line:
 
-[source,xml]
+[source,xml,subs="verbatim,attributes"]
 ----
 <profiles>
-    <profile>
-      <id>prod</id>
-      <activation>
-        <property><name>prod</name></property>
-      </activation>
-      <build>
-      <plugins>
-        <plugin>
-          <groupId>org.eclipse.jetty</groupId>
-          <artifactId>jetty-jspc-maven-plugin</artifactId>
-          <version>{VERSION}</version>
-          <!-- put your configuration in here -->
-        </plugin>
-        <plugin>
-          <groupId>org.apache.maven.plugins</groupId>
-          <artifactId>maven-war-plugin</artifactId>
-          <!-- put your configuration in here -->
-        </plugin>
-      </plugins>
-      </build>
-    </profile>
-  </profiles>
+  <profile>
+    <id>prod</id>
+    <activation>
+      <property><name>prod</name></property>
+    </activation>
+    <build>
+    <plugins>
+      <plugin>
+        <groupId>org.eclipse.jetty</groupId>
+        <artifactId>jetty-jspc-maven-plugin</artifactId>
+        <version>{version}</version>
+        <!-- put your configuration in here -->
+      </plugin>
+      <plugin>
+        <groupId>org.apache.maven.plugins</groupId>
+        <artifactId>maven-war-plugin</artifactId>
+        <!-- put your configuration in here -->
+      </plugin>
+    </plugins>
+    </build>
+  </profile>
+</profiles>
 ----
 
 The following invocation would cause your code to be compiled, the jsps to be compiled, the <servlet> and <servlet-mapping>s inserted in the `web.xml` and your webapp assembled into a war:
@@ -188,33 +188,33 @@ Here's an example configuration of the war plugin that separate those phases int
 [source,xml]
 ----
 <plugin>
-    <artifactId>maven-war-plugin</artifactId>
-    <executions>
-      <execution>
-        <id>unpack</id>
-        <goals><goal>exploded</goal></goals>
-        <phase>generate-resources</phase>
-        <configuration>
-          <webappDirectory>target/foo</webappDirectory>
-          <overlays>
-            <overlay />
-            <overlay>
-              <groupId>org.eclipse.jetty.demos</groupId>
-              <artifactId>demo-jetty-webapp</artifactId>
-            </overlay>
-          </overlays>
-        </configuration>
-      </execution>
-      <execution>
-        <id>pack</id>
-        <goals><goal>war</goal></goals>
-        <phase>package</phase>
-        <configuration>
-          <warSourceDirectory>target/foo</warSourceDirectory>
-          <webXml>target/web.xml</webXml>
-        </configuration>
-      </execution>
-    </executions>
+  <artifactId>maven-war-plugin</artifactId>
+  <executions>
+    <execution>
+      <id>unpack</id>
+      <goals><goal>exploded</goal></goals>
+      <phase>generate-resources</phase>
+      <configuration>
+        <webappDirectory>target/foo</webappDirectory>
+        <overlays>
+          <overlay />
+          <overlay>
+            <groupId>org.eclipse.jetty.demos</groupId>
+            <artifactId>demo-jetty-webapp</artifactId>
+          </overlay>
+        </overlays>
+      </configuration>
+    </execution>
+    <execution>
+      <id>pack</id>
+      <goals><goal>war</goal></goals>
+      <phase>package</phase>
+      <configuration>
+        <warSourceDirectory>target/foo</warSourceDirectory>
+        <webXml>target/web.xml</webXml>
+      </configuration>
+    </execution>
+  </executions>
 </plugin>
 ----
 
@@ -222,24 +222,24 @@ Now you also need to configure the `jetty-jspc-maven-plugin` so that it can use 
 This is in `target/foo/WEB-INF/web.xml`.
 Using the default settings, the `web.xml` merged with the jsp servlet definitions will be put into `target/web.xml`.
 
-[source,xml]
+[source,xml,subs="verbatim,attributes"]
 ----
 <plugin>
-    <groupId>org.eclipse.jetty</groupId>
-     <artifactId>jetty-jspc-maven-plugin</artifactId>
-     <version>{VERSION}</version>
-     <executions>
-       <execution>
-         <id>jspc</id>
-         <goals>
-           <goal>jspc</goal>
-         </goals>
-         <configuration>
-            <webXml>target/foo/WEB-INF/web.xml</webXml>
-            <includes>**/*.foo</includes>
-            <excludes>**/*.fff</excludes>
-        </configuration>
-      </execution>
-    </executions>
+  <groupId>org.eclipse.jetty</groupId>
+   <artifactId>jetty-jspc-maven-plugin</artifactId>
+   <version>{version}</version>
+   <executions>
+     <execution>
+       <id>jspc</id>
+       <goals>
+         <goal>jspc</goal>
+       </goals>
+       <configuration>
+          <webXml>target/foo/WEB-INF/web.xml</webXml>
+          <includes>**/*.foo</includes>
+          <excludes>**/*.fff</excludes>
+      </configuration>
+    </execution>
+  </executions>
 </plugin>
 ----

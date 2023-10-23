@@ -18,7 +18,7 @@ A web application may _reference_ a JNDI entry, such as a JDBC `DataSource` from
 The JNDI entry must be _defined_ in a xref:og-jndi-xml[Jetty XML file], for example a context XML like so:
 
 .mywebapp.xml
-[source,xml,subs="verbatim,attributes"]
+[source,xml,subs="verbatim,attributes,quotes"]
 ----
 <?xml version="1.0" encoding="UTF-8"?>
 <!DOCTYPE Configure PUBLIC "-//Jetty//Configure//EN" "https://eclipse.dev/jetty/configure_10_0.dtd">
@@ -26,7 +26,7 @@ The JNDI entry must be _defined_ in a xref:og-jndi-xml[Jetty XML file], for exam
 <Configure id="wac" class="org.eclipse.jetty.{ee-current}.webapp.WebAppContext">
   <Set name="contextPath">/mywebapp</Set>
   <Set name="war">/opt/webapps/mywebapp.war</Set>
-#&nbsp;&nbsp;<New class="org.eclipse.jetty.plus.jndi.Resource">
+    #<New class="org.eclipse.jetty.plus.jndi.Resource">
     <Arg><Ref refid="wac"/></Arg>
     <Arg>jdbc/myds</Arg>
      <Arg>

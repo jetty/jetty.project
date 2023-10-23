@@ -186,7 +186,7 @@ public class JettyHomeForker extends AbstractForker
         //add any args to the jvm
         if (StringUtil.isNotBlank(jvmArgs))
         {
-            Arrays.stream(jvmArgs.split(" ")).filter(a -> StringUtil.isNotBlank(a)).forEach((a) -> cmd.add(a.trim()));
+            Arrays.stream(jvmArgs.split(" ")).filter(StringUtil::isNotBlank).forEach((a) -> cmd.add(a.trim()));
         }
 
         cmd.add("-jar");
@@ -225,7 +225,7 @@ public class JettyHomeForker extends AbstractForker
         //put any other jetty options onto the command line
         if (StringUtil.isNotBlank(jettyOptions))
         {
-            Arrays.stream(jettyOptions.split(" ")).filter(a -> StringUtil.isNotBlank(a)).forEach((a) -> cmd.add(a.trim()));
+            Arrays.stream(jettyOptions.split(" ")).filter(StringUtil::isNotBlank).forEach((a) -> cmd.add(a.trim()));
         }
 
         //put any jetty properties onto the command line

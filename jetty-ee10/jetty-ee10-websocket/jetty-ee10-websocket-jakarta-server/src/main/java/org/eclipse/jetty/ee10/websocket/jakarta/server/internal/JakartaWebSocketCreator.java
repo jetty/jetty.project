@@ -189,7 +189,7 @@ public class JakartaWebSocketCreator implements WebSocketCreator
     @Override
     public int hashCode()
     {
-        return (baseConfig != null ? baseConfig.hashCode() : 0);
+        return (baseConfig != null ? baseConfig.hashCode() : 47);
     }
 
     @Override

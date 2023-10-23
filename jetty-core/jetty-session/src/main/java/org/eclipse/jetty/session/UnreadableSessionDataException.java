@@ -26,6 +26,7 @@ public class UnreadableSessionDataException extends Exception
     private SessionContext _sessionContext;
 
     /**
+     * Get the session id.
      * @return the session id
      */
     public String getId()
@@ -34,6 +35,7 @@ public class UnreadableSessionDataException extends Exception
     }
 
     /**
+     * Get the SessionContext to which the unreadable session belongs.
      * @return the SessionContext to which the unreadable session belongs
      */
     public SessionContext getSessionContext()

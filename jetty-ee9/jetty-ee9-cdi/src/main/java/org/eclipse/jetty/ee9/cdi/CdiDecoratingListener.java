@@ -17,12 +17,12 @@ import org.eclipse.jetty.ee9.servlet.DecoratingListener;
 import org.eclipse.jetty.ee9.servlet.ServletContextHandler;
 
 /**
- * A DecoratingListener that listens for "org.eclipse.jetty.ee9.cdi.decorator"
+ * A DecoratingListener that listens for "org.eclipse.jetty.cdi.decorator"
  */
 public class CdiDecoratingListener extends DecoratingListener
 {
     public static final String MODE = "CdiDecoratingListener";
-    public static final String ATTRIBUTE = "org.eclipse.jetty.ee9.cdi.decorator";
+    public static final String ATTRIBUTE = "org.eclipse.jetty.cdi.decorator";
 
     public CdiDecoratingListener(ServletContextHandler contextHandler)
     {

@@ -84,10 +84,10 @@ public class PartialStringMessageSinkTest
         // Check decoding
         Utf8StringBuilder check = new Utf8StringBuilder();
         check.append(utf8Bytes, 0, 2);
-        String partial = check.takePartialString(IllegalStateException::new);
+        String partial = check.takePartialString(Utf8StringBuilder.Utf8CharacterCodingException::new);
         assertThat(partial, equalTo(""));
         check.append(utf8Bytes, 2, 2);
-        String complete = check.takeCompleteString(IllegalStateException::new);
+        String complete = check.takeCompleteString(Utf8StringBuilder.Utf8CharacterCodingException::new);
         assertThat(complete, equalTo(gothicUnicode));
 
         FutureCallback callback = new FutureCallback();
@@ -142,7 +142,7 @@ public class PartialStringMessageSinkTest
 
     public static class OnMessageEndpoint
     {
-        private BlockingArrayQueue<List<String>> messages;
+        private final BlockingArrayQueue<List<String>> messages;
 
         public OnMessageEndpoint()
         {

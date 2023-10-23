@@ -1,0 +1,8 @@
+<?xml version="1.0"?>
+<!DOCTYPE Configure PUBLIC "-//Jetty//Configure//EN" "https://www.eclipse.org/jetty/configure_10_0.dtd">
+
+<Configure>
+  <Call class="org.eclipse.jetty.util.PidFile" name="create">
+    <Arg name="file"><Property name="jetty.pid" default="jetty.pid"/></Arg>
+  </Call>
+</Configure>

@@ -40,29 +40,34 @@ This allows the XML file to reference the `+*.war+` file and avoid that the web 
 [[og-deploy-rules-environment]]
 ===== Environment Resolution
 
-A web application is always deployed to a specific environment.
+A web application is always deployed to a specific environment, which is either configured for the deployed application or set to the default environment.
 
-If you enabled only one specific deployer module, for example `{ee-current}-deploy`, then the web applications and the Jetty context XML files in `$JETTY_BASE/webapps` will be deployed to the `{ee-current}` environment.
+If only a single specific deployer module is enabled, for example `{ee-current}-deploy`, then it is the default environment and applications will be deployed to it without any additional configuration.
 
-You can enable simultaneously multiple deployer modules if you need to deploy multiple web applications each to a specific environment.
+If multiple deployer modules are enabled, then the default environment is:
 
-For example, you have an `old-ee9.war` web application that you want to deploy to the Jakarta EE 9 environment, and a `new-{ee-current}.war` web application that you want to deploy to the Jakarta {ee-current-caps} environment.
-First, you must enable both the `ee9-deploy` and the `{ee-current}-deploy` modules.
-Then, you add a `+*.properties+` file with the same name of the web application, in the example above `$JETTY_BASE/webapps/old-ee9.properties`, with the following content:
+* The most recent Jakarta EE environment of the `{ee-all}-deploy` modules that are enabled.
+* Otherwise, the `core` environment, if the `core-deploy` module is enabled.
+* Otherwise, no deployer environment has been enabled, and therefore no application can be deployed.
 
-.old-ee9.properties
+For example, if `core-deploy`, `ee9-deploy` and the `{ee-current}-deploy` modules are enabled, then `{ee-current}` is the default environment, to which applications will be deployed unless otherwise configured (see below).
+
+To configure a specific environment for an application, you add a `+*.properties+` file with the same name of the web application.
+For example, an application deployed to `$JETTY_BASE/webapps/my-ee9-app.war` is configured with the file `$JETTY_BASE/webapps/my-ee9-app.properties`, with the following content:
+
+.my-ee9-app.properties
 [source,properties]
 ----
 environment=ee9
 ----
 
-In case of simultaneous multiple environments, it is good practice to always specify the `+*.properties+` file for your web applications.
+In case of simultaneous multiple deployer environments, it is good practice to always specify the `+*.properties+` file for your web applications.
 
 [CAUTION]
 ====
-If you do *not* specify the `+*.properties+` file for your web applications, then the deployer for the most recent EE version will be used.
+If you do *not* specify the `+*.properties+` file for your web applications, then the deployer for the default environment will be used.
 
-For example, if you have enabled the EE deployer Jetty module for all EE versions, and you deploy an EE 9 web application _without_ the `+*.properties+` file, then it will be deployed by the {ee-current-caps} deployer, with unspecified results.
+For example, if you have enabled the deployer Jetty module for all Jakarta EE versions, and you deploy an EE 9 web application _without_ the `+*.properties+` file, then it will be deployed by the {ee-current-caps} deployer, with unspecified results.
 
 This unspecified deployment may not work as the EE 9 web application may use APIs that have been removed in {ee-current-caps}, causing an error at runtime.
 ====

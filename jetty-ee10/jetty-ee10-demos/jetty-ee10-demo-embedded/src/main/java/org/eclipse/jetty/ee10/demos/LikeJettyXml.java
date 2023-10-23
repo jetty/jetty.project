@@ -146,7 +146,9 @@ public class LikeJettyXml
         Path testWebapp = webappsDir.resolve("test.war");
         if (!Files.exists(testWebapp))
         {
-            Path testWebappSrc = JettyDemos.find("jetty-ee10-demo-simple-webapp/target/jetty-ee10-demo-simple-webapp-@VER@.war");
+            JettyDemos.MavenCoordinate mavenCoordinate = new JettyDemos.MavenCoordinate("org.eclipse.jetty.ee10.demos",
+                    "jetty-ee10-demo-simple-webapp", "", "war");
+            Path testWebappSrc = JettyDemos.find("jetty-ee10-demo-simple-webapp/target/jetty-ee10-demo-simple-webapp-@VER@.war", mavenCoordinate);
             Files.copy(testWebappSrc, testWebapp);
         }
 

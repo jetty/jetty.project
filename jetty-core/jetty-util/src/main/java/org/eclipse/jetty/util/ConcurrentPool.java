@@ -221,7 +221,7 @@ public class ConcurrentPool<P> implements Pool<P>, Dumpable
             case FIRST -> 0;
             case RANDOM -> ThreadLocalRandom.current().nextInt(size);
             case ROUND_ROBIN -> nextIndex.getAndUpdate(c -> Math.max(0, c + 1)) % size;
-            case THREAD_ID -> (int)(Thread.currentThread().getId() % size);
+            case THREAD_ID -> (int)((Thread.currentThread().getId() * 31) % size);
         };
     }
 

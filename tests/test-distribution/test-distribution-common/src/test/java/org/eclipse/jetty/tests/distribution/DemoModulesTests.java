@@ -26,6 +26,7 @@ import org.eclipse.jetty.http.HttpStatus;
 import org.eclipse.jetty.tests.hometester.JettyHomeTester;
 import org.eclipse.jetty.toolchain.test.jupiter.WorkDirExtension;
 import org.eclipse.jetty.util.Fields;
+import org.junit.jupiter.api.Tag;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.junit.jupiter.params.ParameterizedTest;
@@ -58,7 +59,6 @@ public class DemoModulesTests extends AbstractJettyHomeTest
         JettyHomeTester distribution = JettyHomeTester.Builder.newInstance()
             .jettyVersion(jettyVersion)
             .jettyBase(jettyBase)
-            .mavenLocalRepository(System.getProperty("mavenRepoPath"))
             .build();
 
         int httpPort = distribution.freePort();
@@ -107,7 +107,6 @@ public class DemoModulesTests extends AbstractJettyHomeTest
         JettyHomeTester distribution = JettyHomeTester.Builder.newInstance()
             .jettyVersion(jettyVersion)
             .jettyBase(jettyBase)
-            .mavenLocalRepository(System.getProperty("mavenRepoPath"))
             .build();
 
         String[] argsConfig = {
@@ -147,7 +146,6 @@ public class DemoModulesTests extends AbstractJettyHomeTest
         JettyHomeTester distribution = JettyHomeTester.Builder.newInstance()
             .jettyVersion(jettyVersion)
             .jettyBase(jettyBase)
-            .mavenLocalRepository(System.getProperty("mavenRepoPath"))
             .build();
 
         int httpPort = distribution.freePort();
@@ -194,7 +192,6 @@ public class DemoModulesTests extends AbstractJettyHomeTest
         JettyHomeTester distribution = JettyHomeTester.Builder.newInstance()
                 .jettyVersion(jettyVersion)
                 .jettyBase(jettyBase)
-                .mavenLocalRepository(System.getProperty("mavenRepoPath"))
                 .build();
 
         int httpPort = distribution.freePort();
@@ -242,7 +239,6 @@ public class DemoModulesTests extends AbstractJettyHomeTest
         JettyHomeTester distribution = JettyHomeTester.Builder.newInstance()
                 .jettyVersion(jettyVersion)
                 .jettyBase(jettyBase)
-                .mavenLocalRepository(System.getProperty("mavenRepoPath"))
                 .build();
 
         int httpPort = distribution.freePort();
@@ -284,6 +280,7 @@ public class DemoModulesTests extends AbstractJettyHomeTest
 
     @ParameterizedTest
     @MethodSource("provideEnvironmentsToTest")
+    @Tag("external")
     public void testAsyncRest(String env) throws Exception
     {
         Path jettyBase = newTestJettyBaseDirectory();
@@ -291,7 +288,6 @@ public class DemoModulesTests extends AbstractJettyHomeTest
         JettyHomeTester distribution = JettyHomeTester.Builder.newInstance()
             .jettyVersion(jettyVersion)
             .jettyBase(jettyBase)
-            .mavenLocalRepository(System.getProperty("mavenRepoPath"))
             .build();
 
         int httpPort = distribution.freePort();
@@ -348,7 +344,6 @@ public class DemoModulesTests extends AbstractJettyHomeTest
         JettyHomeTester distribution = JettyHomeTester.Builder.newInstance()
             .jettyVersion(jettyVersion)
             .jettyBase(jettyBase)
-            .mavenLocalRepository(System.getProperty("mavenRepoPath"))
             .build();
 
         int httpPort = distribution.freePort();
@@ -405,7 +400,6 @@ public class DemoModulesTests extends AbstractJettyHomeTest
         JettyHomeTester distribution = JettyHomeTester.Builder.newInstance()
             .jettyVersion(jettyVersion)
             .jettyBase(jettyBase)
-            .mavenLocalRepository(System.getProperty("mavenRepoPath"))
             .build();
 
         int httpPort = distribution.freePort();
@@ -454,7 +448,6 @@ public class DemoModulesTests extends AbstractJettyHomeTest
         JettyHomeTester distribution = JettyHomeTester.Builder.newInstance()
             .jettyVersion(jettyVersion)
             .jettyBase(jettyBase)
-            .mavenLocalRepository(System.getProperty("mavenRepoPath"))
             .build();
 
         String[] argsConfig = {
@@ -522,7 +515,6 @@ public class DemoModulesTests extends AbstractJettyHomeTest
         JettyHomeTester distribution = JettyHomeTester.Builder.newInstance()
             .jettyVersion(jettyVersion)
             .jettyBase(jettyBase)
-            .mavenLocalRepository(System.getProperty("mavenRepoPath"))
             .build();
 
         String[] argsConfig = {
@@ -567,7 +559,6 @@ public class DemoModulesTests extends AbstractJettyHomeTest
         JettyHomeTester distribution = JettyHomeTester.Builder.newInstance()
                 .jettyVersion(jettyVersion)
                 .jettyBase(jettyBase)
-                .mavenLocalRepository(System.getProperty("mavenRepoPath"))
                 .build();
 
         int httpPort = distribution.freePort();
@@ -611,7 +602,6 @@ public class DemoModulesTests extends AbstractJettyHomeTest
         JettyHomeTester distribution = JettyHomeTester.Builder.newInstance()
             .jettyVersion(jettyVersion)
             .jettyBase(jettyBase)
-            .mavenLocalRepository(System.getProperty("mavenRepoPath"))
             .build();
 
         int httpPort = distribution.freePort();
@@ -664,4 +654,48 @@ public class DemoModulesTests extends AbstractJettyHomeTest
             }
         }
     }
+
+    @ParameterizedTest
+    @MethodSource("provideEnvironmentsToTest")
+    public void testJettyDemo(String env) throws Exception
+    {
+        Path jettyBase = newTestJettyBaseDirectory();
+        String jettyVersion = System.getProperty("jettyVersion");
+        JettyHomeTester distribution = JettyHomeTester.Builder.newInstance()
+            .jettyVersion(jettyVersion)
+            .jettyBase(jettyBase)
+            .build();
+
+        int httpPort = distribution.freePort();
+        int sslPort = distribution.freePort();
+
+        String[] argsConfig = {
+            "--add-modules=http," + toEnvironment("demos", env)
+        };
+
+        try (JettyHomeTester.Run runConfig = distribution.start(argsConfig))
+        {
+            assertTrue(runConfig.awaitFor(START_TIMEOUT, TimeUnit.SECONDS));
+            assertEquals(0, runConfig.getExitValue());
+
+            String[] argsStart = {
+                "jetty.http.port=" + httpPort,
+                "jetty.ssl.port=" + sslPort,
+                "jetty.server.dumpAfterStart=true"
+            };
+
+            try (JettyHomeTester.Run runStart = distribution.start(argsStart))
+            {
+                assertTrue(runStart.awaitConsoleLogsFor("Started oejs.Server@", START_TIMEOUT, TimeUnit.SECONDS));
+                startHttpClient();
+                String baseURI = "http://localhost:%d/%s-test".formatted(httpPort, env);
+
+                ContentResponse response = client.POST(baseURI + "/dump/info").send();
+                assertEquals(HttpStatus.OK_200, response.getStatus(), new ResponseDetails(response));
+                assertThat(response.getContentAsString(), containsString("Dump Servlet"));
+                assertThat(response.getContentAsString(), containsString("context-override-example:&nbsp;</th><td>a context value"));
+            }
+        }
+    }
+
 }

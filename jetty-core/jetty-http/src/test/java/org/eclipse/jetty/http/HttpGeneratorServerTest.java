@@ -214,55 +214,6 @@ public class HttpGeneratorServerTest
     }
 
     @Test
-    public void testSendServerXPoweredBy() throws Exception
-    {
-        ByteBuffer header = BufferUtil.allocate(8096);
-        HttpFields.Mutable fields1 = HttpFields.build();
-        MetaData.Response info = new MetaData.Response(200, null, HttpVersion.HTTP_1_1, fields1);
-        HttpFields.Mutable fields2 = HttpFields.build();
-        fields2.add(HttpHeader.SERVER, "SomeServer");
-        fields2.add(HttpHeader.X_POWERED_BY, "SomePower");
-        MetaData.Response infoF = new MetaData.Response(200, null, HttpVersion.HTTP_1_1, fields2);
-        String head;
-
-        HttpGenerator gen = new HttpGenerator(true, true);
-        gen.generateResponse(info, false, header, null, null, true);
-        head = BufferUtil.toString(header);
-        BufferUtil.clear(header);
-        assertThat(head, containsString("HTTP/1.1 200 OK"));
-        assertThat(head, containsString("Server: Jetty(10.x.x)"));
-        assertThat(head, containsString("X-Powered-By: Jetty(10.x.x)"));
-        gen.reset();
-        gen.generateResponse(infoF, false, header, null, null, true);
-        head = BufferUtil.toString(header);
-        BufferUtil.clear(header);
-        assertThat(head, containsString("HTTP/1.1 200 OK"));
-        assertThat(head, not(containsString("Server: Jetty(10.x.x)")));
-        assertThat(head, containsString("Server: SomeServer"));
-        assertThat(head, containsString("X-Powered-By: Jetty(10.x.x)"));
-        assertThat(head, containsString("X-Powered-By: SomePower"));
-        gen.reset();
-
-        gen = new HttpGenerator(false, false);
-        gen.generateResponse(info, false, header, null, null, true);
-        head = BufferUtil.toString(header);
-        BufferUtil.clear(header);
-        assertThat(head, containsString("HTTP/1.1 200 OK"));
-        assertThat(head, not(containsString("Server: Jetty(10.x.x)")));
-        assertThat(head, not(containsString("X-Powered-By: Jetty(10.x.x)")));
-        gen.reset();
-        gen.generateResponse(infoF, false, header, null, null, true);
-        head = BufferUtil.toString(header);
-        BufferUtil.clear(header);
-        assertThat(head, containsString("HTTP/1.1 200 OK"));
-        assertThat(head, not(containsString("Server: Jetty(10.x.x)")));
-        assertThat(head, containsString("Server: SomeServer"));
-        assertThat(head, not(containsString("X-Powered-By: Jetty(10.x.x)")));
-        assertThat(head, containsString("X-Powered-By: SomePower"));
-        gen.reset();
-    }
-
-    @Test
     public void testResponseIncorrectContentLength() throws Exception
     {
         ByteBuffer header = BufferUtil.allocate(8096);

@@ -884,6 +884,7 @@ public class ServletHolder extends Holder<Servlet> implements UserIdentityScope,
     }
 
     /**
+     * Get the package for all jsps.
      * @return the package for all jsps
      */
     public String getJspPackagePrefix()

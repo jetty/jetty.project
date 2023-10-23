@@ -19,6 +19,7 @@ import java.util.EnumSet;
 import java.util.HashSet;
 import java.util.Iterator;
 import java.util.List;
+import java.util.ListIterator;
 import java.util.Set;
 import java.util.stream.Stream;
 
@@ -121,12 +122,6 @@ public class Http3Fields implements HttpFields
     }
 
     @Override
-    public HttpFields takeAsImmutable()
-    {
-        return asImmutable();
-    }
-
-    @Override
     public HttpField getField(int index)
     {
         return stream().skip(index).findFirst().orElse(null);
@@ -135,6 +130,7 @@ public class Http3Fields implements HttpFields
     @Override
     public int size()
     {
+        // TODO this is very inefficient
         return Math.toIntExact(stream().count());
     }
 
@@ -145,22 +141,7 @@ public class Http3Fields implements HttpFields
         if (httpFields == null)
             return pseudoHeadersStream;
 
-        Stream<HttpField> httpFieldStream = httpFields.stream().filter(field ->
-        {
-            HttpHeader header = field.getHeader();
-
-            // If the header is specifically ignored skip it (Connection Specific Headers).
-            if (header != null && IGNORED_HEADERS.contains(header))
-                return false;
-
-            // If this is the TE header field it can only have the value "trailers".
-            if ((header == HttpHeader.TE) && !field.contains("trailers"))
-                return false;
-
-            // Remove the headers nominated by the Connection header field.
-            String name = field.getLowerCaseName();
-            return hopHeaders == null || !hopHeaders.contains(name);
-        });
+        Stream<HttpField> httpFieldStream = httpFields.stream().filter(this::filterIgnored);
 
         if (contentLengthHeader != null)
             return Stream.concat(pseudoHeadersStream, Stream.concat(httpFieldStream, Stream.of(contentLengthHeader)));
@@ -168,9 +149,33 @@ public class Http3Fields implements HttpFields
             return Stream.concat(pseudoHeadersStream, httpFieldStream);
     }
 
+    private boolean filterIgnored(HttpField field)
+    {
+        HttpHeader header = field.getHeader();
+
+        // If the header is specifically ignored skip it (Connection Specific Headers).
+        if (header != null && IGNORED_HEADERS.contains(header))
+            return false;
+
+        // If this is the TE header field it can only have the value "trailers".
+        if ((header == HttpHeader.TE) && !field.contains("trailers"))
+            return false;
+
+        // Remove the headers nominated by the Connection header field.
+        String name = field.getLowerCaseName();
+        return hopHeaders == null || !hopHeaders.contains(name);
+    }
+
     @Override
     public Iterator<HttpField> iterator()
     {
         return stream().iterator();
+    }
+
+    @Override
+    public ListIterator<HttpField> listIterator(int index)
+    {
+        // TODO this is very inefficient and toList returns an unmodifiable list
+        return stream().toList().listIterator(index);
     }
 }

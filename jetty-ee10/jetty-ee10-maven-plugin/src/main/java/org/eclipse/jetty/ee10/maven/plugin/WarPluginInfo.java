@@ -54,6 +54,7 @@ public class WarPluginInfo
     }
 
     /**
+     * Get the project.
      * @return the project
      */
     public MavenProject getProject()

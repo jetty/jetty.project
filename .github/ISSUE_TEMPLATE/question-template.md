@@ -7,9 +7,12 @@ assignees: ''
 
 ---
 
-**Jetty version**
+**Jetty Version**
 
-**Java version**
+**Jetty Environment**
+<!-- Applicable only for jetty-12, choose: core, ee8, ee9, ee10 -->
+
+**Java Version**
 
 **Question**
 

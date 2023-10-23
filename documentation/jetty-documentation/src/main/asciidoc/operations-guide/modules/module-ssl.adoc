@@ -53,7 +53,7 @@ Among the configurable properties, the most relevant are:
 The KeyStore path on the file system, either an absolute path or a relative path to `$JETTY_BASE` -- defaults to `$JETTY_BASE/etc/keystore.p12`.
 `jetty.sslContext.keyStorePassword`::
 The KeyStore password, which you want to explicitly configure.
-The password may be obfuscated with the xref:og-password[Jetty Password Tool].
+The password may be obfuscated with the xref:og-tools-password[Jetty Password tool].
 
 If you need to configure client certificate authentication, you want to configure one of these properties (they are mutually exclusive):
 

@@ -136,7 +136,13 @@ public class GzipResponseAndCallback extends Response.Wrapper implements Callbac
             case NOT_COMPRESSING -> super.write(last, content, callback);
             case COMMITTING -> callback.failed(new WritePendingException());
             case COMPRESSING -> gzip(last, callback, content);
-            default -> callback.failed(new IllegalStateException("state=" + _state.get()));
+            default ->
+            {
+                if (BufferUtil.isEmpty(content))
+                    callback.succeeded();
+                else
+                    callback.failed(new IllegalStateException("state=" + _state.get()));
+            }
         }
     }
 
@@ -193,7 +199,7 @@ public class GzipResponseAndCallback extends Response.Wrapper implements Callbac
         String ct = response.getHeaders().get(HttpHeader.CONTENT_TYPE);
         if (ct != null)
         {
-            String baseType = HttpField.valueParameters(ct, null);
+            String baseType = HttpField.getValueParameters(ct, null);
             if (!_factory.isMimeTypeDeflatable(baseType))
             {
                 LOG.debug("{} exclude by mimeType {}", this, ct);

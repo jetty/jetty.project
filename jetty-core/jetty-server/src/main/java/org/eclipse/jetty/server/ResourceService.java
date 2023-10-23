@@ -18,6 +18,7 @@ import java.nio.ByteBuffer;
 import java.nio.channels.ReadableByteChannel;
 import java.nio.charset.Charset;
 import java.nio.charset.StandardCharsets;
+import java.nio.file.Path;
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.Collections;
@@ -130,6 +131,7 @@ public class ResourceService
     }
 
     /**
+     * Get the cacheControl header to set on all static content..
      * @return the cacheControl header to set on all static content.
      */
     public String getCacheControl()
@@ -145,12 +147,17 @@ public class ResourceService
         return _gzipEquivalentFileExtensions;
     }
 
-    public void doGet(Request request, Response response, Callback callback, HttpContent content) throws Exception
+    public void doGet(Request request, Response response, Callback callback, HttpContent content)
     {
         String pathInContext = Request.getPathInContext(request);
 
         // Is this a Range request?
         List<String> reqRanges = request.getHeaders().getValuesList(HttpHeader.RANGE.asString());
+        if (!_acceptRanges && !reqRanges.isEmpty())
+        {
+            reqRanges = List.of();
+            response.getHeaders().add(HttpHeader.ACCEPT_RANGES.asString(), "none");
+        }
 
         boolean endsWithSlash = pathInContext.endsWith("/");
 
@@ -523,7 +530,7 @@ public class ResourceService
                 // TODO : check conditional headers.
                 serveWelcome(request, response, callback, welcomeAction.target);
             case REHANDLE -> rehandleWelcome(request, response, callback, welcomeAction.target);
-        };
+        }
     }
 
     /**
@@ -635,7 +642,7 @@ public class ResourceService
         response.write(true, ByteBuffer.wrap(data), callback);
     }
 
-    private void sendData(Request request, Response response, Callback callback, HttpContent content, List<String> reqRanges)
+    private void sendData(Request request, Response response, Callback callback, HttpContent content, List<String> reqRanges) throws IOException
     {
         if (LOG.isDebugEnabled())
         {
@@ -678,19 +685,29 @@ public class ResourceService
             putHeaders(response, content, range.getLength());
             response.setStatus(HttpStatus.PARTIAL_CONTENT_206);
             response.getHeaders().put(HttpHeader.CONTENT_RANGE, range.toHeaderValue(contentLength));
-            Content.copy(new MultiPartByteRanges.PathContentSource(content.getResource().getPath(), range), response, callback);
+
+            // Try using the resource's path if possible, as the nio API is async and helps to avoid buffer copies.
+            Path path = content.getResource().getPath();
+            Content.Source source;
+            if (path != null)
+                source = new MultiPartByteRanges.PathContentSource(path, range);
+            else
+                source = new MultiPartByteRanges.InputStreamContentSource(content.getResource().newInputStream(), range);
+
+            Content.copy(source, response, callback);
             return;
         }
 
         // There are multiple non-overlapping ranges, send a multipart/byteranges 206 response.
-        putHeaders(response, content, NO_CONTENT_LENGTH);
         response.setStatus(HttpStatus.PARTIAL_CONTENT_206);
         String contentType = "multipart/byteranges; boundary=";
         String boundary = MultiPart.generateBoundary(null, 24);
-        response.getHeaders().put(HttpHeader.CONTENT_TYPE, contentType + boundary);
         MultiPartByteRanges.ContentSource byteRanges = new MultiPartByteRanges.ContentSource(boundary);
-        ranges.forEach(range -> byteRanges.addPart(new MultiPartByteRanges.Part(content.getContentTypeValue(), content.getResource().getPath(), range, contentLength)));
+        ranges.forEach(range -> byteRanges.addPart(new MultiPartByteRanges.Part(content.getContentTypeValue(), content.getResource(), range, contentLength)));
         byteRanges.close();
+        long partsContentLength = byteRanges.getLength();
+        putHeaders(response, content, partsContentLength);
+        response.getHeaders().put(HttpHeader.CONTENT_TYPE, contentType + boundary);
         Content.copy(byteRanges, response, callback);
     }
 
@@ -815,6 +832,7 @@ public class ResourceService
     }
 
     /**
+     * Set the cacheControl header to set on all static content..
      * @param cacheControl the cacheControl header to set on all static content.
      */
     public void setCacheControl(String cacheControl)
@@ -839,6 +857,7 @@ public class ResourceService
     }
 
     /**
+     * Set file extensions that signify that a file is gzip compressed. Eg ".svgz".
      * @param gzipEquivalentFileExtensions file extensions that signify that a file is gzip compressed. Eg ".svgz"
      */
     public void setGzipEquivalentFileExtensions(List<String> gzipEquivalentFileExtensions)

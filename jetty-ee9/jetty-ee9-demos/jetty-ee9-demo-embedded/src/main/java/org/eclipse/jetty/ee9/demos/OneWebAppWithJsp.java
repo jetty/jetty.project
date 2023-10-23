@@ -44,7 +44,9 @@ public class OneWebAppWithJsp
         // the webapp will unpack itself.
         WebAppContext webapp = new WebAppContext();
         webapp.setContextPath("/");
-        Path warFile = JettyDemos.find("jetty-ee9-demo-jsp-webapp/target/jetty-ee9-demo-jsp-webapp-@VER@.war");
+        JettyDemos.MavenCoordinate mavenCoordinate = new JettyDemos.MavenCoordinate("org.eclipse.jetty.ee9.demos",
+                "jetty-ee9-demo-jsp-webapp", "", "war");
+        Path warFile = JettyDemos.find("jetty-ee9-demo-jsp-webapp/target/jetty-ee9-demo-jsp-webapp-@VER@.war", mavenCoordinate);
         webapp.setWarResource(webapp.getResourceFactory().newResource(warFile));
         webapp.setExtractWAR(true);
 
@@ -75,7 +77,7 @@ public class OneWebAppWithJsp
         // can be started and stopped according to the lifecycle of the server
         // itself.
         String realmResourceName = "etc/realm.properties";
-        Resource realmResource = webapp.getResourceFactory().newClassPathResource(realmResourceName);
+        Resource realmResource = webapp.getResourceFactory().newClassLoaderResource(realmResourceName, false);
         if (realmResource == null)
             throw new FileNotFoundException("Unable to find " + realmResourceName);
 

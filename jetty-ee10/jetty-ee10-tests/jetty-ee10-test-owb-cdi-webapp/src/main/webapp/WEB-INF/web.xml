@@ -5,11 +5,19 @@
   version="6.0">
   <display-name>OWB CDI Integration Test WebApp</display-name>
 
-  <!-- Required by org.apache.webbeans.servlet.WebBeansConfigurationListener$Auto -->
-  <context-param>
+  <!--  This will be required by the SCI org.apache.webbeans.servlet.WebBeansConfigurationListener$Auto 
+        however, the current release of OWB has not renamed their META-INF/services to jakarta.servlet
+        so this SCI will not be found.
+  -->
+  <!-- context-param>
     <param-name>openwebbeans.web.sci.active</param-name>
     <param-value>true</param-value>
-  </context-param>
+  </context-param -->
+
+  <!-- Remove in favour of SCI when it has been fixed -->
+  <listener>
+    <listener-class>org.apache.webbeans.servlet.WebBeansConfigurationListener</listener-class>
+  </listener>
 
   <resource-env-ref>
     <description>Object factory for the CDI Bean Manager</description>

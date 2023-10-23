@@ -191,7 +191,7 @@ public class DebugListener extends AbstractLifeCycle implements ServletContextLi
         long now = System.currentTimeMillis();
         long ms = now % 1000;
         if (_out != null)
-            _out.printf("%s.%03d:%s%n", __date.formatNow(now), ms, s);
+            _out.printf("%s.%03d:%s%n", __date.format(now), ms, s);
         if (LOG.isDebugEnabled())
             LOG.debug(s);
     }

@@ -386,7 +386,7 @@ public class MultiPartFormInputStream
      * @param in Request input stream
      * @param contentType Content-Type header
      * @param config MultipartConfigElement
-     * @param contextTmpDir javax.servlet.context.tempdir
+     * @param contextTmpDir {@value jakarta.servlet.ServletContext#TEMPDIR}
      */
     public MultiPartFormInputStream(InputStream in, String contentType, MultipartConfigElement config, File contextTmpDir)
     {
@@ -397,7 +397,8 @@ public class MultiPartFormInputStream
      * @param in Request input stream
      * @param contentType Content-Type header
      * @param config MultipartConfigElement
-     * @param contextTmpDir javax.servlet.context.tempdir
+     * @param contextTmpDir {@value jakarta.servlet.ServletContext#TEMPDIR}
+     * @param maxParts the maximum number of parts that can be parsed from the multipart content (0 for no parts allowed, -1 for unlimited parts).
      */
     public MultiPartFormInputStream(InputStream in, String contentType, MultipartConfigElement config, File contextTmpDir, int maxParts)
     {
@@ -917,6 +918,7 @@ public class MultiPartFormInputStream
     }
 
     /**
+     * Get the size of buffer used to read data from the input stream.
      * @return the size of buffer used to read data from the input stream
      */
     public int getBufferSize()
@@ -925,6 +927,7 @@ public class MultiPartFormInputStream
     }
 
     /**
+     * Set the size of buffer used to read data from the input stream.
      * @param bufferSize the size of buffer used to read data from the input stream
      */
     public void setBufferSize(int bufferSize)

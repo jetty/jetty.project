@@ -16,6 +16,7 @@ package org.eclipse.jetty.http2.frames;
 import java.nio.ByteBuffer;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.concurrent.atomic.AtomicBoolean;
 
 import org.eclipse.jetty.http.HostPortHttpField;
 import org.eclipse.jetty.http.HttpField;
@@ -32,6 +33,8 @@ import org.eclipse.jetty.io.ArrayByteBufferPool;
 import org.eclipse.jetty.io.ByteBufferPool;
 import org.junit.jupiter.api.Test;
 
+import static org.hamcrest.MatcherAssert.assertThat;
+import static org.hamcrest.Matchers.greaterThan;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertNull;
 import static org.junit.jupiter.api.Assertions.assertTrue;
@@ -41,7 +44,7 @@ public class ContinuationParseTest
     @Test
     public void testParseOneByteAtATime() throws Exception
     {
-        ByteBufferPool bufferPool = new ArrayByteBufferPool();
+        ArrayByteBufferPool.Tracking bufferPool = new ArrayByteBufferPool.Tracking();
         HeadersGenerator generator = new HeadersGenerator(new HeaderGenerator(bufferPool), new HpackEncoder());
 
         final List<HeadersFrame> frames = new ArrayList<>();
@@ -137,6 +140,7 @@ public class ContinuationParseTest
                     parser.parse(ByteBuffer.wrap(new byte[]{buffer.get()}));
                 }
             }
+            accumulator.release();
 
             assertEquals(1, frames.size());
             HeadersFrame frame = frames.get(0);
@@ -152,6 +156,56 @@ public class ContinuationParseTest
             }
             PriorityFrame priority = frame.getPriority();
             assertNull(priority);
+
+            assertEquals(0, bufferPool.getLeaks().size(), bufferPool.dumpLeaks());
         }
+    }
+
+    @Test
+    public void testLargeHeadersBlock() throws Exception
+    {
+        // Use a ByteBufferPool with a small factor, so that the accumulation buffer is not too large.
+        ByteBufferPool bufferPool = new ArrayByteBufferPool(0, 128, -1);
+        // A small max headers size, used for both accumulation and decoding.
+        int maxHeadersSize = 512;
+        Parser parser = new Parser(bufferPool, maxHeadersSize);
+        // Specify headers block size to generate CONTINUATION frames.
+        int maxHeadersBlockFragment = 128;
+        HeadersGenerator generator = new HeadersGenerator(new HeaderGenerator(bufferPool), new HpackEncoder(), maxHeadersBlockFragment);
+
+        int streamId = 13;
+        HttpFields fields = HttpFields.build()
+            .put("Accept", "text/html")
+            // Large header that generates a large headers block.
+            .put("User-Agent", "Jetty".repeat(256));
+        MetaData.Request metaData = new MetaData.Request("GET", HttpScheme.HTTP.asString(), new HostPortHttpField("localhost:8080"), "/path", HttpVersion.HTTP_2, fields, -1);
+
+        ByteBufferPool.Accumulator accumulator = new ByteBufferPool.Accumulator();
+        generator.generateHeaders(accumulator, streamId, metaData, null, true);
+        List<ByteBuffer> byteBuffers = accumulator.getByteBuffers();
+        assertThat(byteBuffers.stream().mapToInt(ByteBuffer::remaining).sum(), greaterThan(maxHeadersSize));
+
+        AtomicBoolean failed = new AtomicBoolean();
+        parser.init(new Parser.Listener()
+        {
+            @Override
+            public void onConnectionFailure(int error, String reason)
+            {
+                failed.set(true);
+            }
+        });
+        // Set a large max headers size for decoding, to ensure
+        // the failure is due to accumulation, not decoding.
+        parser.getHpackDecoder().setMaxHeaderListSize(10 * maxHeadersSize);
+
+        for (ByteBuffer byteBuffer : byteBuffers)
+        {
+            parser.parse(byteBuffer);
+            if (failed.get())
+                break;
+        }
+        accumulator.release();
+
+        assertTrue(failed.get());
     }
 }

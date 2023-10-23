@@ -17,6 +17,9 @@ import java.io.FileNotFoundException;
 import java.nio.file.Path;
 import javax.naming.NamingException;
 
+import org.eclipse.jetty.ee9.plus.jndi.EnvEntry;
+import org.eclipse.jetty.ee9.plus.jndi.Resource;
+import org.eclipse.jetty.ee9.plus.jndi.Transaction;
 import org.eclipse.jetty.ee9.plus.webapp.EnvConfiguration;
 import org.eclipse.jetty.ee9.plus.webapp.PlusConfiguration;
 import org.eclipse.jetty.ee9.webapp.WebAppContext;
@@ -35,7 +38,9 @@ public class ServerWithJNDI
         // Create a WebApp
         WebAppContext webapp = new WebAppContext();
         webapp.setContextPath("/");
-        Path testJndiWar = JettyDemos.find("jetty-ee9-demo-jndi-webapp/target/jetty-ee9-demo-jndi-webapp-@VER@.war");
+        JettyDemos.MavenCoordinate mavenCoordinate = new JettyDemos.MavenCoordinate("org.eclipse.jetty.ee9.demos",
+                "jetty-ee9-demo-jndi-webapp", "", "war");
+        Path testJndiWar = JettyDemos.find("jetty-ee9-demo-jndi-webapp/target/jetty-ee9-demo-jndi-webapp-@VER@.war", mavenCoordinate);
         webapp.setWarResource(webapp.getResourceFactory().newResource(testJndiWar));
         server.setHandler(webapp);
 
@@ -44,9 +49,7 @@ public class ServerWithJNDI
 
         // Register new transaction manager in JNDI
         // At runtime, the webapp accesses this as java:comp/UserTransaction
-        new org.eclipse.jetty.ee9.plus.jndi.Transaction(
-            "ee9",
-            new org.example.MockUserTransaction());
+        new Transaction("ee9", new org.example.MockUserTransaction());
 
         // Define an env entry with ee9 scope.
         // At runtime, the webapp accesses this as java:comp/env/woggle
@@ -56,7 +59,7 @@ public class ServerWithJNDI
         // <env-entry-type>java.lang.Integer</env-entry-type>
         // <env-entry-value>4000</env-entry-value>
         // </env-entry>
-        new org.eclipse.jetty.ee9.plus.jndi.EnvEntry("ee9", "woggle", 4000, false);
+        new EnvEntry("ee9", "woggle", 4000, false);
 
         // Define an env entry with webapp scope.
         // At runtime, the webapp accesses this as java:comp/env/wiggle
@@ -69,7 +72,7 @@ public class ServerWithJNDI
         // Note that the last arg of "true" means that this definition for
         // "wiggle" would override an entry of the
         // same name in web.xml
-        new org.eclipse.jetty.ee9.plus.jndi.EnvEntry(webapp, "wiggle", 100d, true);
+        new EnvEntry(webapp, "wiggle", 100d, true);
 
         // Register a mock DataSource scoped to the webapp
         // This must be linked to the webapp via an entry in web.xml:
@@ -80,8 +83,7 @@ public class ServerWithJNDI
         // </resource-ref>
         // At runtime the webapp accesses this as
         // java:comp/env/jdbc/mydatasource
-        new org.eclipse.jetty.ee9.plus.jndi.Resource(
-            webapp, "jdbc/mydatasource", new org.example.MockDataSource());
+        new Resource(webapp, "jdbc/mydatasource", new org.example.MockDataSource());
         return server;
     }
 

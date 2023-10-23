@@ -118,6 +118,7 @@ public class VirtualThreads
     }
 
     /**
+     * Get a default virtual thread per task {@code Executor}.
      * @return a default virtual thread per task {@code Executor}
      */
     public static Executor getDefaultVirtualThreadsExecutor()

@@ -13,14 +13,13 @@
 
 package org.eclipse.jetty.fcgi.client.transport.internal;
 
-import java.io.EOFException;
 import java.nio.ByteBuffer;
 import java.nio.channels.AsynchronousCloseException;
 import java.util.Collections;
 import java.util.Iterator;
-import java.util.LinkedList;
 import java.util.concurrent.TimeoutException;
 import java.util.concurrent.atomic.AtomicBoolean;
+import java.util.concurrent.atomic.AtomicInteger;
 
 import org.eclipse.jetty.client.Connection;
 import org.eclipse.jetty.client.Destination;
@@ -49,7 +48,6 @@ import org.eclipse.jetty.io.RetainableByteBuffer;
 import org.eclipse.jetty.util.Attachable;
 import org.eclipse.jetty.util.BufferUtil;
 import org.eclipse.jetty.util.Promise;
-import org.eclipse.jetty.util.thread.AutoLock;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -58,18 +56,19 @@ public class HttpConnectionOverFCGI extends AbstractConnection implements IConne
     private static final Logger LOG = LoggerFactory.getLogger(HttpConnectionOverFCGI.class);
 
     private final ByteBufferPool networkByteBufferPool;
-    private final AutoLock lock = new AutoLock();
-    private final LinkedList<Integer> requests = new LinkedList<>();
+    private final AtomicInteger requests = new AtomicInteger();
     private final AtomicBoolean closed = new AtomicBoolean();
     private final HttpDestination destination;
     private final Promise<Connection> promise;
     private final Flusher flusher;
     private final Delegate delegate;
     private final ClientParser parser;
-    private HttpChannelOverFCGI channel;
+    private final HttpChannelOverFCGI channel;
     private RetainableByteBuffer networkBuffer;
     private Object attachment;
     private Runnable action;
+    private long idleTimeout;
+    private boolean shutdown;
 
     public HttpConnectionOverFCGI(EndPoint endPoint, Destination destination, Promise<Connection> promise)
     {
@@ -79,7 +78,7 @@ public class HttpConnectionOverFCGI extends AbstractConnection implements IConne
         this.flusher = new Flusher(endPoint);
         this.delegate = new Delegate(destination);
         this.parser = new ClientParser(new ResponseListener());
-        requests.addLast(0);
+        this.channel = newHttpChannel();
         HttpClient client = destination.getHttpClient();
         this.networkByteBufferPool = client.getByteBufferPool();
     }
@@ -207,13 +206,18 @@ public class HttpConnectionOverFCGI extends AbstractConnection implements IConne
 
     private void shutdown()
     {
-        // Close explicitly only if we are idle, since the request may still
-        // be in progress, otherwise close only if we can fail the responses.
-        HttpChannelOverFCGI channel = this.channel;
-        if (channel == null || channel.getRequest() == 0)
-            close();
-        else
-            failAndClose(new EOFException(String.valueOf(getEndPoint())));
+        // Mark this receiver as shutdown, so that we can
+        // close the connection when the exchange terminates.
+        // We cannot close the connection from here because
+        // the request may still be in process.
+        shutdown = true;
+        if (!parser.eof())
+            channel.eof();
+    }
+
+    boolean isShutdown()
+    {
+        return shutdown;
     }
 
     @Override
@@ -226,27 +230,11 @@ public class HttpConnectionOverFCGI extends AbstractConnection implements IConne
         return false;
     }
 
-    protected void release(HttpChannelOverFCGI channel)
+    protected void release()
     {
-        HttpChannelOverFCGI existing = this.channel;
-        if (existing == channel)
-        {
-            channel.setRequest(0);
-            // Recycle only non-failed channels.
-            if (channel.isFailed())
-            {
-                channel.destroy();
-                this.channel = null;
-            }
-            destination.release(this);
-        }
-        else
-        {
-            if (existing == null)
-                channel.destroy();
-            else
-                throw new UnsupportedOperationException("FastCGI Multiplex");
-        }
+        // Restore idle timeout
+        getEndPoint().setIdleTimeout(idleTimeout);
+        destination.release(this);
     }
 
     @Override
@@ -260,9 +248,8 @@ public class HttpConnectionOverFCGI extends AbstractConnection implements IConne
         if (closed.compareAndSet(false, true))
         {
             getHttpDestination().remove(this);
-
             abort(failure);
-
+            channel.destroy();
             getEndPoint().shutdownOutput();
             if (LOG.isDebugEnabled())
                 LOG.debug("Shutdown {}", this);
@@ -290,62 +277,25 @@ public class HttpConnectionOverFCGI extends AbstractConnection implements IConne
         return attachment;
     }
 
-    protected boolean closeByHTTP(HttpFields fields)
+    protected boolean isCloseByHTTP(HttpFields fields)
     {
-        if (!fields.contains(HttpHeader.CONNECTION, HttpHeaderValue.CLOSE.asString()))
-            return false;
-        close();
-        return true;
+        return fields.contains(HttpHeader.CONNECTION, HttpHeaderValue.CLOSE.asString());
     }
 
     protected void abort(Throwable failure)
     {
-        HttpChannelOverFCGI channel = this.channel;
-        if (channel != null)
-        {
-            HttpExchange exchange = channel.getHttpExchange();
-            if (exchange != null)
-                exchange.getRequest().abort(failure);
-            channel.destroy();
-            this.channel = null;
-        }
+        HttpExchange exchange = channel.getHttpExchange();
+        if (exchange != null)
+            exchange.getRequest().abort(failure);
     }
 
     private void failAndClose(Throwable failure)
     {
-        HttpChannelOverFCGI channel = this.channel;
-        if (channel != null)
+        channel.responseFailure(failure, Promise.from(failed ->
         {
-            channel.responseFailure(failure, Promise.from(failed ->
-            {
-                channel.destroy();
-                if (failed)
-                    close(failure);
-            }, x ->
-            {
-                channel.destroy();
+            if (failed)
                 close(failure);
-            }));
-        }
-    }
-
-    private int acquireRequest()
-    {
-        try (AutoLock ignored = lock.lock())
-        {
-            int last = requests.getLast();
-            int request = last + 1;
-            requests.addLast(request);
-            return request;
-        }
-    }
-
-    private void releaseRequest(int request)
-    {
-        try (AutoLock ignored = lock.lock())
-        {
-            requests.removeFirstOccurrence(request);
-        }
+        }, x -> close(failure)));
     }
 
     private Runnable getAndSetAction(Runnable action)
@@ -355,17 +305,9 @@ public class HttpConnectionOverFCGI extends AbstractConnection implements IConne
         return r;
     }
 
-    protected HttpChannelOverFCGI acquireHttpChannel(int id, Request request)
+    protected HttpChannelOverFCGI newHttpChannel()
     {
-        if (channel == null)
-            channel = newHttpChannel(request);
-        channel.setRequest(id);
-        return channel;
-    }
-
-    protected HttpChannelOverFCGI newHttpChannel(Request request)
-    {
-        return new HttpChannelOverFCGI(this, getFlusher(), request.getIdleTimeout());
+        return new HttpChannelOverFCGI(this);
     }
 
     @Override
@@ -388,8 +330,7 @@ public class HttpConnectionOverFCGI extends AbstractConnection implements IConne
         @Override
         protected Iterator<HttpChannel> getHttpChannels()
         {
-            HttpChannel channel = HttpConnectionOverFCGI.this.channel;
-            return channel == null ? Collections.emptyIterator() : Collections.singleton(channel).iterator();
+            return Collections.<HttpChannel>singleton(channel).iterator();
         }
 
         @Override
@@ -398,9 +339,14 @@ public class HttpConnectionOverFCGI extends AbstractConnection implements IConne
             HttpRequest request = exchange.getRequest();
             normalizeRequest(request);
 
-            int id = acquireRequest();
-            HttpChannelOverFCGI channel = acquireHttpChannel(id, request);
+            // Save the old idle timeout to restore it.
+            EndPoint endPoint = getEndPoint();
+            idleTimeout = endPoint.getIdleTimeout();
+            long requestIdleTimeout = request.getIdleTimeout();
+            if (requestIdleTimeout >= 0)
+                endPoint.setIdleTimeout(requestIdleTimeout);
 
+            channel.setRequest(requests.incrementAndGet());
             return send(channel, exchange);
         }
 
@@ -431,11 +377,7 @@ public class HttpConnectionOverFCGI extends AbstractConnection implements IConne
         {
             if (LOG.isDebugEnabled())
                 LOG.debug("onBegin r={},c={},reason={}", request, code, reason);
-            HttpChannelOverFCGI channel = HttpConnectionOverFCGI.this.channel;
-            if (channel != null)
-                channel.responseBegin(code, reason);
-            else
-                noChannel(request);
+            channel.responseBegin(code, reason);
         }
 
         @Override
@@ -443,11 +385,7 @@ public class HttpConnectionOverFCGI extends AbstractConnection implements IConne
         {
             if (LOG.isDebugEnabled())
                 LOG.debug("onHeader r={},f={}", request, field);
-            HttpChannelOverFCGI channel = HttpConnectionOverFCGI.this.channel;
-            if (channel != null)
-                channel.responseHeader(field);
-            else
-                noChannel(request);
+            channel.responseHeader(field);
         }
 
         @Override
@@ -455,15 +393,9 @@ public class HttpConnectionOverFCGI extends AbstractConnection implements IConne
         {
             if (LOG.isDebugEnabled())
                 LOG.debug("onHeaders r={} {}", request, networkBuffer);
-            HttpChannelOverFCGI channel = HttpConnectionOverFCGI.this.channel;
-            if (channel != null)
-            {
-                if (getAndSetAction(channel::responseHeaders) != null)
-                    throw new IllegalStateException();
-                return true;
-            }
-            noChannel(request);
-            return false;
+            if (getAndSetAction(channel::responseHeaders) != null)
+                throw new IllegalStateException();
+            return true;
         }
 
         @Override
@@ -475,21 +407,13 @@ public class HttpConnectionOverFCGI extends AbstractConnection implements IConne
             {
                 case STD_OUT ->
                 {
-                    HttpChannelOverFCGI channel = HttpConnectionOverFCGI.this.channel;
-                    if (channel != null)
-                    {
-                        // No need to call networkBuffer.retain() here, since we know
-                        // that the action will be run before releasing the networkBuffer.
-                        // The receiver of the chunk decides whether to consume/retain it.
-                        Content.Chunk chunk = Content.Chunk.asChunk(buffer, false, networkBuffer);
-                        if (getAndSetAction(() -> channel.content(chunk)) == null)
-                            return true;
-                        throw new IllegalStateException();
-                    }
-                    else
-                    {
-                        noChannel(request);
-                    }
+                    // No need to call networkBuffer.retain() here, since we know
+                    // that the action will be run before releasing the networkBuffer.
+                    // The receiver of the chunk decides whether to consume/retain it.
+                    Content.Chunk chunk = Content.Chunk.asChunk(buffer, false, networkBuffer);
+                    if (getAndSetAction(() -> channel.content(chunk)) == null)
+                        return true;
+                    throw new IllegalStateException();
                 }
                 case STD_ERR -> LOG.info(BufferUtil.toUTF8String(buffer));
                 default -> throw new IllegalArgumentException();
@@ -502,16 +426,7 @@ public class HttpConnectionOverFCGI extends AbstractConnection implements IConne
         {
             if (LOG.isDebugEnabled())
                 LOG.debug("onEnd r={}", request);
-            HttpChannelOverFCGI channel = HttpConnectionOverFCGI.this.channel;
-            if (channel != null)
-            {
-                releaseRequest(request);
-                channel.end();
-            }
-            else
-            {
-                noChannel(request);
-            }
+            channel.end();
         }
 
         @Override
@@ -519,25 +434,7 @@ public class HttpConnectionOverFCGI extends AbstractConnection implements IConne
         {
             if (LOG.isDebugEnabled())
                 LOG.debug("onFailure request={}", request, failure);
-            HttpChannelOverFCGI channel = HttpConnectionOverFCGI.this.channel;
-            if (channel != null)
-            {
-                channel.responseFailure(failure, Promise.from(failed ->
-                {
-                    if (failed)
-                        releaseRequest(request);
-                }, x -> releaseRequest(request)));
-            }
-            else
-            {
-                noChannel(request);
-            }
-        }
-
-        private void noChannel(int request)
-        {
-            if (LOG.isDebugEnabled())
-                LOG.debug("Channel not found for request {}", request);
+            failAndClose(failure);
         }
     }
 }

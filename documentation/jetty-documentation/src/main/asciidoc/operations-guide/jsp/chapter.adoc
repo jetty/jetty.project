@@ -16,7 +16,7 @@
 
 Jetty supports JSP via the `{ee-all}-jsp` modules, which are based on Apache Jasper:
 
-[subs=attributes]
+[source,subs="verbatim,attributes"]
 ----
 include::{jetty-home}/modules/{ee-current}-jsp.mod[]
 ----
@@ -45,7 +45,7 @@ You can change to a different servlet, change or add ``<init-param>``s or add ex
 
 Here's an example of adding an `<init-param>` to augment the definitions from the standard `webdefault.xml` file:
 
-[source,xml,subs=verbatim]
+[source,xml]
 ----
 <servlet id="jsp">  <!--1-->
   <servlet-name>jsp</servlet-name> <!--2-->
@@ -62,7 +62,7 @@ Here's an example of adding an `<init-param>` to augment the definitions from th
 
 Another element you might consider adding to the default setup is `async-supported`:
 
-[source,xml,subs=verbatim]
+[source,xml]
 ----
 <servlet id="jsp">  <!--1-->
   <servlet-name>jsp</servlet-name>  <!--2-->
@@ -175,7 +175,7 @@ If the value you set doesn't take effect, try using all lower case instead of ca
 
 The JavaServer Pages Standard Tag Library (JSTL) is part of the Jetty distribution, and is available via the `{ee-all}-jstl` modules:
 
-[subs=attributes]
+[source,subs="verbatim,attributes"]
 ----
 include::{jetty-home}/modules/{ee-current}-jstl.mod[]
 ----
@@ -194,7 +194,7 @@ You will need to preserve the existing value of the attribute, and add in your e
 
 Here's an example of using a context xml file to add in a pattern to match files starting with `jsf-`, which contain the `+*.tld+` files:
 
-[source,xml,subs=verbatim]
+[source,xml]
 ----
 <?xml version="1.0"?>
 <!DOCTYPE Configure PUBLIC "-//Jetty//Configure//EN" "https://eclipse.dev/jetty/configure_10_0.dtd">

@@ -151,10 +151,8 @@ public class WebAppClassLoader extends URLClassLoader implements ClassVisibility
      * Constructor.
      *
      * @param context the context for this classloader
-     * @throws IOException if unable to initialize from context
      */
     public WebAppClassLoader(Context context)
-        throws IOException
     {
         this(null, context);
     }
@@ -164,10 +162,8 @@ public class WebAppClassLoader extends URLClassLoader implements ClassVisibility
      *
      * @param parent the parent classloader
      * @param context the context for this classloader
-     * @throws IOException if unable to initialize classloader
      */
     public WebAppClassLoader(ClassLoader parent, Context context)
-        throws IOException
     {
         super(new URL[]{}, parent != null ? parent
             : (Thread.currentThread().getContextClassLoader() != null ? Thread.currentThread().getContextClassLoader()
@@ -197,6 +193,7 @@ public class WebAppClassLoader extends URLClassLoader implements ClassVisibility
     }
 
     /**
+     * Get the name of the classloader.
      * @return the name of the classloader
      */
     public String getName()
@@ -205,6 +202,7 @@ public class WebAppClassLoader extends URLClassLoader implements ClassVisibility
     }
 
     /**
+     * Set the name of the classloader.
      * @param name the name of the classloader
      */
     public void setName(String name)
@@ -595,11 +593,7 @@ public class WebAppClassLoader extends URLClassLoader implements ClassVisibility
 
             return defineClass(name, bytes, 0, bytes.length);
         }
-        catch (IOException e)
-        {
-            throw new ClassNotFoundException(name, e);
-        }
-        catch (IllegalClassFormatException e)
+        catch (IOException | IllegalClassFormatException e)
         {
             throw new ClassNotFoundException(name, e);
         }

@@ -80,6 +80,7 @@ public class MetaData implements Iterable<HttpField>
     }
 
     /**
+     * Get the HTTP protocol version.
      * @return the HTTP protocol version
      */
     public HttpVersion getHttpVersion()
@@ -88,6 +89,7 @@ public class MetaData implements Iterable<HttpField>
     }
 
     /**
+     * Get the HTTP headers or HTTP trailers.
      * @return the HTTP headers or HTTP trailers
      */
     public HttpFields getHttpFields()
@@ -104,6 +106,7 @@ public class MetaData implements Iterable<HttpField>
     }
 
     /**
+     * Get the length of the content in bytes.
      * @return the length of the content in bytes
      */
     public long getContentLength()

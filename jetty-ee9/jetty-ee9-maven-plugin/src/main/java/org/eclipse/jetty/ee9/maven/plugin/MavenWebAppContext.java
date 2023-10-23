@@ -192,6 +192,7 @@ public class MavenWebAppContext extends WebAppContext
     }
 
     /**
+     * Get the originAttribute.
      * @return the originAttribute
      */
     public String getOriginAttribute()

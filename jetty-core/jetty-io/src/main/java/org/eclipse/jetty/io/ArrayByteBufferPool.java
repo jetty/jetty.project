@@ -14,11 +14,19 @@
 package org.eclipse.jetty.io;
 
 import java.io.IOException;
+import java.io.PrintWriter;
+import java.io.StringWriter;
 import java.nio.ByteBuffer;
+import java.time.Instant;
 import java.util.Arrays;
+import java.util.List;
+import java.util.Set;
+import java.util.concurrent.ConcurrentHashMap;
+import java.util.concurrent.CopyOnWriteArrayList;
 import java.util.concurrent.atomic.AtomicLong;
 import java.util.function.Consumer;
 import java.util.function.IntUnaryOperator;
+import java.util.stream.Collectors;
 
 import org.eclipse.jetty.io.internal.CompoundPool;
 import org.eclipse.jetty.io.internal.QueuedPool;
@@ -196,7 +204,8 @@ public class ArrayByteBufferPool implements ByteBufferPool, Dumpable
                 buffer = newRetainableByteBuffer(bucket._capacity, direct, retainedBuffer ->
                 {
                     BufferUtil.reset(retainedBuffer.getByteBuffer());
-                    reservedEntry.release();
+                    if (!reservedEntry.release())
+                        reservedEntry.remove();
                 });
                 reservedEntry.enable(buffer, true);
                 if (direct)
@@ -352,8 +361,13 @@ public class ArrayByteBufferPool implements ByteBufferPool, Dumpable
             {
                 if (entry.remove())
                 {
-                    memoryCounter.addAndGet(-entry.getPooled().capacity());
-                    removed(entry.getPooled());
+                    RetainableByteBuffer pooled = entry.getPooled();
+                    // Calling getPooled can return null if the entry was not yet enabled.
+                    if (pooled != null)
+                    {
+                        memoryCounter.addAndGet(-pooled.capacity());
+                        removed(pooled);
+                    }
                 }
             });
         }
@@ -471,10 +485,10 @@ public class ArrayByteBufferPool implements ByteBufferPool, Dumpable
         private RetainedBucket(int capacity, int poolSize)
         {
             if (poolSize <= ConcurrentPool.OPTIMAL_MAX_SIZE)
-                _pool = new ConcurrentPool<>(ConcurrentPool.StrategyType.THREAD_ID, poolSize, true);
+                _pool = new ConcurrentPool<>(ConcurrentPool.StrategyType.THREAD_ID, poolSize, false);
             else
                 _pool = new CompoundPool<>(
-                    new ConcurrentPool<>(ConcurrentPool.StrategyType.THREAD_ID, ConcurrentPool.OPTIMAL_MAX_SIZE, true),
+                    new ConcurrentPool<>(ConcurrentPool.StrategyType.THREAD_ID, ConcurrentPool.OPTIMAL_MAX_SIZE, false),
                     new QueuedPool<>(poolSize - ConcurrentPool.OPTIMAL_MAX_SIZE)
                 );
             _capacity = capacity;
@@ -562,6 +576,144 @@ public class ArrayByteBufferPool implements ByteBufferPool, Dumpable
                 c -> 32 - Integer.numberOfLeadingZeros(c - 1),
                 i -> 1 << i
             );
+        }
+    }
+
+    /**
+     * <p>A variant of {@link ArrayByteBufferPool} that tracks buffer
+     * acquires/releases, useful to identify buffer leaks.</p>
+     * <p>Use {@link #getLeaks()} when the system is idle to get
+     * the {@link Buffer}s that have been leaked, which contain
+     * the stack trace information of where the buffer was acquired.</p>
+     */
+    public static class Tracking extends ArrayByteBufferPool
+    {
+        private static final Logger LOG = LoggerFactory.getLogger(Tracking.class);
+
+        private final Set<Buffer> buffers = ConcurrentHashMap.newKeySet();
+
+        public Tracking()
+        {
+            this(0, -1, Integer.MAX_VALUE);
+        }
+
+        public Tracking(int minCapacity, int maxCapacity, int maxBucketSize)
+        {
+            this(minCapacity, maxCapacity, maxBucketSize, -1L, -1L);
+        }
+
+        public Tracking(int minCapacity, int maxCapacity, int maxBucketSize, long maxHeapMemory, long maxDirectMemory)
+        {
+            super(minCapacity, -1, maxCapacity, maxBucketSize, maxHeapMemory, maxDirectMemory);
+        }
+
+        @Override
+        public RetainableByteBuffer acquire(int size, boolean direct)
+        {
+            RetainableByteBuffer buffer = super.acquire(size, direct);
+            Buffer wrapper = new Buffer(buffer, size);
+            if (LOG.isDebugEnabled())
+                LOG.debug("acquired {}", wrapper);
+            buffers.add(wrapper);
+            return wrapper;
+        }
+
+        public Set<Buffer> getLeaks()
+        {
+            return buffers;
+        }
+
+        public String dumpLeaks()
+        {
+            return getLeaks().stream()
+                .map(Buffer::dump)
+                .collect(Collectors.joining(System.lineSeparator()));
+        }
+
+        public class Buffer extends RetainableByteBuffer.Wrapper
+        {
+            private final int size;
+            private final Instant acquireInstant;
+            private final Throwable acquireStack;
+            private final List<Throwable> retainStacks = new CopyOnWriteArrayList<>();
+            private final List<Throwable> releaseStacks = new CopyOnWriteArrayList<>();
+            private final List<Throwable> overReleaseStacks = new CopyOnWriteArrayList<>();
+
+            private Buffer(RetainableByteBuffer wrapped, int size)
+            {
+                super(wrapped);
+                this.size = size;
+                this.acquireInstant = Instant.now();
+                this.acquireStack = new Throwable();
+            }
+
+            public int getSize()
+            {
+                return size;
+            }
+
+            public Instant getAcquireInstant()
+            {
+                return acquireInstant;
+            }
+
+            public Throwable getAcquireStack()
+            {
+                return acquireStack;
+            }
+
+            @Override
+            public void retain()
+            {
+                super.retain();
+                retainStacks.add(new Throwable());
+            }
+
+            @Override
+            public boolean release()
+            {
+                try
+                {
+                    boolean released = super.release();
+                    if (released)
+                    {
+                        buffers.remove(this);
+                        if (LOG.isDebugEnabled())
+                            LOG.debug("released {}", this);
+                    }
+                    releaseStacks.add(new Throwable());
+                    return released;
+                }
+                catch (IllegalStateException e)
+                {
+                    buffers.add(this);
+                    overReleaseStacks.add(new Throwable());
+                    throw e;
+                }
+            }
+
+            public String dump()
+            {
+                StringWriter w = new StringWriter();
+                PrintWriter pw = new PrintWriter(w);
+                getAcquireStack().printStackTrace(pw);
+                pw.println("\n" + retainStacks.size() + " retain(s)");
+                for (Throwable retainStack : retainStacks)
+                {
+                    retainStack.printStackTrace(pw);
+                }
+                pw.println("\n" + releaseStacks.size() + " release(s)");
+                for (Throwable releaseStack : releaseStacks)
+                {
+                    releaseStack.printStackTrace(pw);
+                }
+                pw.println("\n" + overReleaseStacks.size() + " over-release(s)");
+                for (Throwable overReleaseStack : overReleaseStacks)
+                {
+                    overReleaseStack.printStackTrace(pw);
+                }
+                return "%s@%x of %d bytes on %s wrapping %s acquired at %s".formatted(getClass().getSimpleName(), hashCode(), getSize(), getAcquireInstant(), getWrapped(), w);
+            }
         }
     }
 }

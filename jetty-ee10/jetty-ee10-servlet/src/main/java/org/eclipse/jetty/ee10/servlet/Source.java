@@ -77,6 +77,7 @@ public class Source
     }
 
     /**
+     * Get the origin.
      * @return the origin
      */
     public Origin getOrigin()
@@ -85,6 +86,7 @@ public class Source
     }
 
     /**
+     * Get the resource.
      * @return the resource
      */
     public Resource getResource()
@@ -93,6 +95,7 @@ public class Source
     }
 
     /**
+     * Get the name.
      * @return the name
      */
     public String getName()

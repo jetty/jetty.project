@@ -16,6 +16,8 @@ package org.eclipse.jetty.ee10.servlet;
 import java.io.IOException;
 import java.io.InputStream;
 import java.io.OutputStream;
+import java.io.PrintWriter;
+import java.net.URI;
 import java.net.URL;
 import java.net.URLClassLoader;
 import java.nio.file.Files;
@@ -52,6 +54,7 @@ import org.eclipse.jetty.session.ManagedSession;
 import org.eclipse.jetty.session.NullSessionDataStore;
 import org.eclipse.jetty.session.NullSessionDataStoreFactory;
 import org.eclipse.jetty.session.SessionCache;
+import org.eclipse.jetty.session.SessionConfig;
 import org.eclipse.jetty.session.SessionData;
 import org.eclipse.jetty.session.SessionDataStoreFactory;
 import org.eclipse.jetty.toolchain.test.IO;
@@ -359,6 +362,163 @@ public class SessionHandlerTest
         }
     }
 
+    @Test
+    public void testRequestedSessionIdFromCookie() throws Exception
+    {
+        String contextPath = "/";
+        String servletMapping = "/server";
+
+        Server server = new Server();
+        ServerConnector connector = new ServerConnector(server);
+        server.addConnector(connector);
+
+        DefaultSessionIdManager sessionIdManager = new DefaultSessionIdManager(server);
+        server.addBean(sessionIdManager, true);
+        DefaultSessionCacheFactory cacheFactory = new DefaultSessionCacheFactory();
+        cacheFactory.setEvictionPolicy(SessionCache.NEVER_EVICT);
+        server.addBean(cacheFactory);
+
+        SessionDataStoreFactory storeFactory = new NullSessionDataStoreFactory();
+        server.addBean(storeFactory);
+
+        HouseKeeper housekeeper = new HouseKeeper();
+        housekeeper.setIntervalSec(-1); //turn off scavenging
+        sessionIdManager.setSessionHouseKeeper(housekeeper);
+
+        ServletContextHandler context = new ServletContextHandler();
+        context.setContextPath(contextPath);
+        server.setHandler(context);
+        SessionHandler sessionHandler = new SessionHandler();
+        sessionHandler.setSessionIdManager(sessionIdManager);
+        sessionHandler.setMaxInactiveInterval(-1); //immortal session
+        context.setSessionHandler(sessionHandler);
+
+        TestRequestedSessionIdServlet servlet = new TestRequestedSessionIdServlet();
+        ServletHolder holder = new ServletHolder(servlet);
+        context.addServlet(holder, servletMapping);
+
+        server.start();
+        int port = connector.getLocalPort();
+        try (StacklessLogging stackless = new StacklessLogging(SessionHandlerTest.class.getPackage()))
+        {
+            HttpClient client = new HttpClient();
+            client.start();
+
+            //test with no session cookie
+            String path = contextPath + (contextPath.endsWith("/") && servletMapping.startsWith("/") ? servletMapping.substring(1) : servletMapping);
+            String url = "http://localhost:" + port + path;
+            ContentResponse response = client.GET(url);
+            assertEquals(HttpServletResponse.SC_OK, response.getStatus());
+            assertThat(response.getContentAsString(), containsString("valid=false"));
+
+            //test with a cookie for non-existant session
+            URI uri = URI.create(url);
+            HttpCookie cookie = HttpCookie.build(SessionHandler.__DefaultSessionCookie, "123456789").path("/").domain("localhost").build();
+            client.getHttpCookieStore().add(uri, cookie);
+            response = client.GET(url);
+            assertEquals(HttpServletResponse.SC_OK, response.getStatus());
+            String content = response.getContentAsString();
+            assertThat(content, containsString("requestedId=123456789"));
+            assertThat(content, containsString("valid=false"));
+
+            //Get rid of fake cookie
+            client.getHttpCookieStore().clear();
+
+            //Make a real session
+            response = client.GET(url + "?action=create");
+            assertEquals(HttpServletResponse.SC_OK, response.getStatus());
+            assertNotNull(response.getHeaders().get("Set-Cookie"));
+
+            //Check the requestedSessionId is valid
+            response = client.GET(url);
+            assertEquals(HttpServletResponse.SC_OK, response.getStatus());
+            content = response.getContentAsString();
+            assertThat(content, containsString("valid=true"));
+        }
+        finally
+        {
+            server.stop();
+        }
+    }
+
+    @Test
+    public void testRequestedSessionIdFromURL() throws Exception
+    {
+        String contextPath = "/";
+        String servletMapping = "/server";
+
+        Server server = new Server();
+        ServerConnector connector = new ServerConnector(server);
+        server.addConnector(connector);
+
+        DefaultSessionIdManager sessionIdManager = new DefaultSessionIdManager(server);
+        server.addBean(sessionIdManager, true);
+        DefaultSessionCacheFactory cacheFactory = new DefaultSessionCacheFactory();
+        cacheFactory.setEvictionPolicy(SessionCache.NEVER_EVICT);
+        server.addBean(cacheFactory);
+
+        SessionDataStoreFactory storeFactory = new NullSessionDataStoreFactory();
+        server.addBean(storeFactory);
+
+        HouseKeeper housekeeper = new HouseKeeper();
+        housekeeper.setIntervalSec(-1); //turn off scavenging
+        sessionIdManager.setSessionHouseKeeper(housekeeper);
+
+        ServletContextHandler context = new ServletContextHandler();
+        context.setContextPath(contextPath);
+        server.setHandler(context);
+        SessionHandler sessionHandler = new SessionHandler();
+        sessionHandler.setUsingCookies(false);
+        sessionHandler.setUsingUriParameters(true);
+        sessionHandler.setSessionIdManager(sessionIdManager);
+        sessionHandler.setMaxInactiveInterval(-1); //immortal session
+        context.setSessionHandler(sessionHandler);
+
+        TestRequestedSessionIdServlet servlet = new TestRequestedSessionIdServlet();
+        ServletHolder holder = new ServletHolder(servlet);
+        context.addServlet(holder, servletMapping);
+
+        server.start();
+        int port = connector.getLocalPort();
+        try (StacklessLogging stackless = new StacklessLogging(SessionHandlerTest.class.getPackage()))
+        {
+            HttpClient client = new HttpClient();
+            client.start();
+
+            //test with no session cookie
+            String path = contextPath + (contextPath.endsWith("/") && servletMapping.startsWith("/") ? servletMapping.substring(1) : servletMapping);
+            String url = "http://localhost:" + port + path;
+            ContentResponse response = client.GET(url);
+            assertEquals(HttpServletResponse.SC_OK, response.getStatus());
+            assertThat(response.getContentAsString(), containsString("valid=false"));
+
+            //test with id for non-existent session
+            response = client.GET(url + ";" + SessionConfig.__DefaultSessionIdPathParameterName + "=" + "123456789");
+            assertEquals(HttpServletResponse.SC_OK, response.getStatus());
+            String content = response.getContentAsString();
+            assertThat(content, containsString("requestedId=123456789"));
+            assertThat(content, containsString("valid=false"));
+
+            //Make a real session
+            response = client.GET(url + "?action=create");
+            assertEquals(HttpServletResponse.SC_OK, response.getStatus());
+            content = response.getContentAsString();
+            assertThat(content, containsString("createdId="));
+            String sessionId = content.substring(content.indexOf("createdId=") + 10);
+            sessionId = sessionId.trim();
+
+            //Check the requestedSessionId is valid
+            response = client.GET(url + ";" + SessionConfig.__DefaultSessionIdPathParameterName + "=" + sessionId);
+            assertEquals(HttpServletResponse.SC_OK, response.getStatus());
+            content = response.getContentAsString();
+            assertThat(content, containsString("valid=true"));
+        }
+        finally
+        {
+            server.stop();
+        }
+    }
+
     public static class TestServlet extends HttpServlet
     {
         private static final long serialVersionUID = 1L;
@@ -386,6 +546,26 @@ public class SessionHandlerTest
         }
     }
 
+    public static class TestRequestedSessionIdServlet extends HttpServlet
+    {
+        private static final long serialVersionUID = 1L;
+        public String _id = null;
+
+        @Override
+        protected void doGet(HttpServletRequest request, HttpServletResponse response) throws ServletException, IOException
+        {
+            PrintWriter writer = response.getWriter();
+            writer.println("requestedId=" + request.getRequestedSessionId());
+            writer.println("valid=" + request.isRequestedSessionIdValid());
+
+            if ("create".equals(request.getParameter("action")))
+            {
+                HttpSession session = request.getSession(true);
+                writer.println("createdId=" + session.getId());
+            }
+        }
+    }
+
     public class MockSessionCache extends AbstractSessionCache
     {
 
@@ -395,8 +575,9 @@ public class SessionHandlerTest
         }
 
         @Override
-        public void shutdown()
+        public ManagedSession doDelete(String key)
         {
+            return null;
         }
 
         @Override
@@ -412,12 +593,6 @@ public class SessionHandlerTest
         }
 
         @Override
-        public ManagedSession doDelete(String key)
-        {
-            return null;
-        }
-
-        @Override
         public boolean doReplace(String id, ManagedSession oldValue, ManagedSession newValue)
         {
             return false;
@@ -427,6 +602,11 @@ public class SessionHandlerTest
         public ManagedSession newSession(SessionData data)
         {
             return null;
+        }
+
+        @Override
+        public void shutdown()
+        {
         }
 
         @Override
@@ -499,6 +679,50 @@ public class SessionHandlerTest
 
         String cookieStr = HttpCookieUtils.getRFC6265SetCookie(cookie);
         assertThat(cookieStr, containsString("; SameSite=Strict; ham=cheese"));
+    }
+
+    @Test
+    public void testSessionCookieConfigByInitParam() throws Exception
+    {
+        Server server = new Server();
+        ServletContextHandler contextHandler = new ServletContextHandler();
+        contextHandler.setContextPath("/test");
+        SessionHandler sessionHandler = new SessionHandler();
+        contextHandler.setHandler(sessionHandler);
+        server.setHandler(contextHandler);
+        server.start();
+
+        assertEquals(SessionConfig.__DefaultSessionCookie, sessionHandler.getSessionCookie());
+        assertEquals(null, sessionHandler.getSessionDomain());
+        assertEquals(SessionConfig.__DefaultSessionIdPathParameterName, sessionHandler.getSessionIdPathParameterName());
+        assertEquals("/test", sessionHandler.getSessionPath());
+        assertEquals(-1, sessionHandler.getMaxCookieAge());
+        assertEquals(false, sessionHandler.isCheckingRemoteSessionIdEncoding());
+
+        server.stop();
+
+        //make a new ContextHandler and SessionHandler that can be configured
+        contextHandler = new ServletContextHandler();
+        contextHandler.setContextPath("/test");
+        sessionHandler = new SessionHandler();
+        contextHandler.setHandler(sessionHandler);
+        server.setHandler(contextHandler);
+
+        contextHandler.setInitParameter(SessionConfig.__SessionCookieProperty, "TEST_SESSION_COOKIE");
+        contextHandler.setInitParameter(SessionConfig.__SessionDomainProperty, "TEST_DOMAIN");
+        contextHandler.setInitParameter(SessionConfig.__SessionIdPathParameterNameProperty, "TEST_SESSION_ID_PATH_PARAM");
+        contextHandler.setInitParameter(SessionConfig.__SessionPathProperty, "/mypath");
+        contextHandler.setInitParameter(SessionConfig.__MaxAgeProperty, "1000");
+        contextHandler.setInitParameter(SessionConfig.__CheckRemoteSessionEncodingProperty, "true");
+
+        server.start();
+
+        assertEquals("TEST_SESSION_COOKIE", sessionHandler.getSessionCookie());
+        assertEquals("TEST_DOMAIN", sessionHandler.getSessionDomain());
+        assertEquals("TEST_SESSION_ID_PATH_PARAM", sessionHandler.getSessionIdPathParameterName());
+        assertEquals("/mypath", sessionHandler.getSessionPath());
+        assertEquals(1000, sessionHandler.getMaxCookieAge());
+        assertEquals(true, sessionHandler.isCheckingRemoteSessionIdEncoding());
     }
 
     @Test

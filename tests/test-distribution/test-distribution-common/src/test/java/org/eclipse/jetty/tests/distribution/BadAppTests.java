@@ -51,7 +51,6 @@ public class BadAppTests extends AbstractJettyHomeTest
         String jettyVersion = System.getProperty("jettyVersion");
         JettyHomeTester distribution = JettyHomeTester.Builder.newInstance()
             .jettyVersion(jettyVersion)
-            .mavenLocalRepository(System.getProperty("mavenRepoPath"))
             .build();
 
         try (JettyHomeTester.Run run1 = distribution.start("--add-modules=http," + toEnvironment("deploy", env)))
@@ -91,7 +90,6 @@ public class BadAppTests extends AbstractJettyHomeTest
         String jettyVersion = System.getProperty("jettyVersion");
         JettyHomeTester distribution = JettyHomeTester.Builder.newInstance()
             .jettyVersion(jettyVersion)
-            .mavenLocalRepository(System.getProperty("mavenRepoPath"))
             .build();
 
         try (JettyHomeTester.Run run1 = distribution.start("--add-modules=http," + toEnvironment("deploy", env)))
@@ -134,7 +132,6 @@ public class BadAppTests extends AbstractJettyHomeTest
         String jettyVersion = System.getProperty("jettyVersion");
         JettyHomeTester distribution = JettyHomeTester.Builder.newInstance()
             .jettyVersion(jettyVersion)
-            .mavenLocalRepository(System.getProperty("mavenRepoPath"))
             .build();
 
         try (JettyHomeTester.Run run1 = distribution.start("--add-modules=http," + toEnvironment("deploy", env)))
@@ -166,7 +163,6 @@ public class BadAppTests extends AbstractJettyHomeTest
         String jettyVersion = System.getProperty("jettyVersion");
         JettyHomeTester distribution = JettyHomeTester.Builder.newInstance()
             .jettyVersion(jettyVersion)
-            .mavenLocalRepository(System.getProperty("mavenRepoPath"))
             .build();
         String mods = "resources,server,http," + 
             toEnvironment("webapp", env) + "," +

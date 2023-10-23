@@ -37,6 +37,7 @@ public class HuffmanDecoder
     private int _bits = 0;
 
     /**
+     * Set in bytes of the huffman data..
      * @param length in bytes of the huffman data.
      */
     public void setLength(int length)

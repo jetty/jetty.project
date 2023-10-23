@@ -17,10 +17,11 @@ import java.nio.ByteBuffer;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.util.Random;
+import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.TimeUnit;
 
+import org.eclipse.jetty.client.CompletableResponseListener;
 import org.eclipse.jetty.client.ContentResponse;
-import org.eclipse.jetty.client.FutureResponseListener;
 import org.eclipse.jetty.client.HttpClient;
 import org.eclipse.jetty.fcgi.FCGI;
 import org.eclipse.jetty.fcgi.server.ServerFCGIConnectionFactory;
@@ -175,10 +176,9 @@ public class FastCGIProxyHandlerTest
                 }
             })
             .path(proxyContext.getContextPath() + path);
-        FutureResponseListener listener = new FutureResponseListener(request, length);
-        request.send(listener);
+        CompletableFuture<ContentResponse> completable = new CompletableResponseListener(request, length).send();
 
-        ContentResponse response = listener.get(30, TimeUnit.SECONDS);
+        ContentResponse response = completable.get(30, TimeUnit.SECONDS);
 
         assertEquals(200, response.getStatus());
         assertArrayEquals(data, response.getContent());

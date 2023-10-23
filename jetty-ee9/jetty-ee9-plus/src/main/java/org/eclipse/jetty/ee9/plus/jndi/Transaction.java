@@ -51,8 +51,8 @@ public class Transaction extends NamingEntry
 
     /** 
      * @param scope the environment in which to bind the UserTransaction
-     * @param userTransaction
-     * @throws NamingException
+     * @param userTransaction The {@link UserTransaction}
+     * @throws NamingException if there was a problem re
      */
     public Transaction(String scope, UserTransaction userTransaction)
         throws NamingException

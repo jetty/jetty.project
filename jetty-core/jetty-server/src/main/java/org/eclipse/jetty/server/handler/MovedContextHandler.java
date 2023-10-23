@@ -42,6 +42,7 @@ public class MovedContextHandler extends ContextHandler
     }
 
     /**
+     * Get the redirect status code, by default 303.
      * @return the redirect status code, by default 303
      */
     public int getStatusCode()
@@ -61,6 +62,7 @@ public class MovedContextHandler extends ContextHandler
     }
 
     /**
+     * Get the URI to redirect to.
      * @return the URI to redirect to
      */
     public String getRedirectURI()
@@ -124,6 +126,7 @@ public class MovedContextHandler extends ContextHandler
     }
 
     /**
+     * Get the {@code Cache-Control} header value or {@code null}.
      * @return the {@code Cache-Control} header value or {@code null}
      */
     public String getCacheControl()
@@ -132,6 +135,7 @@ public class MovedContextHandler extends ContextHandler
     }
 
     /**
+     * Set the {@code Cache-Control} header value or {@code null}.
      * @param cacheControl the {@code Cache-Control} header value or {@code null}
      */
     public void setCacheControl(String cacheControl)

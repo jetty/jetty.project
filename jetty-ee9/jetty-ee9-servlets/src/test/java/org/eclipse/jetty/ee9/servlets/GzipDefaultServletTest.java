@@ -76,6 +76,7 @@ public class GzipDefaultServletTest extends AbstractGzipTest
         gzipHandler.setIncludedMethods("POST", "WIBBLE", "GET", "HEAD");
 
         server = new Server();
+        server.setStopTimeout(1000);
         LocalConnector localConnector = new LocalConnector(server);
         server.addConnector(localConnector);
 

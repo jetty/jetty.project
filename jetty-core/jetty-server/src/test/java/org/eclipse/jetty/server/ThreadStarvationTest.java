@@ -32,12 +32,13 @@ import javax.net.ssl.HttpsURLConnection;
 import javax.net.ssl.SSLContext;
 
 import org.eclipse.jetty.io.ArrayByteBufferPool;
-import org.eclipse.jetty.io.ByteBufferPool;
 import org.eclipse.jetty.toolchain.test.MavenTestingUtils;
 import org.eclipse.jetty.util.Callback;
 import org.eclipse.jetty.util.IO;
+import org.eclipse.jetty.util.component.LifeCycle;
 import org.eclipse.jetty.util.ssl.SslContextFactory;
 import org.eclipse.jetty.util.thread.QueuedThreadPool;
+import org.hamcrest.Matchers;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.Disabled;
 import org.junit.jupiter.params.ParameterizedTest;
@@ -72,7 +73,12 @@ public class ThreadStarvationTest
         List<Scenario> params = new ArrayList<>();
 
         // HTTP
-        ConnectorProvider http = ServerConnector::new;
+        ConnectorProvider http = (server, acceptors, selectors) ->
+        {
+            ArrayByteBufferPool.Tracking pool = new ArrayByteBufferPool.Tracking();
+            HttpConnectionFactory httpConnectionFactory = new HttpConnectionFactory();
+            return new ServerConnector(server, null, null, pool, acceptors, selectors, httpConnectionFactory);
+        };
         ClientSocketProvider httpClient = Socket::new;
         params.add(new Scenario("http", http, httpClient));
 
@@ -83,9 +89,7 @@ public class ThreadStarvationTest
             SslContextFactory.Server sslContextFactory = new SslContextFactory.Server();
             sslContextFactory.setKeyStorePath(keystorePath.toString());
             sslContextFactory.setKeyStorePassword("storepwd");
-            // TODO: restore leak tracking.
-//            ByteBufferPool pool = new LeakTrackingByteBufferPool(new MappedByteBufferPool.Tagged());
-            ByteBufferPool pool = new ArrayByteBufferPool();
+            ArrayByteBufferPool.Tracking pool = new ArrayByteBufferPool.Tracking();
 
             HttpConnectionFactory httpConnectionFactory = new HttpConnectionFactory();
             ServerConnector connector = new ServerConnector(server, null, null, pool, acceptors, selectors,
@@ -147,7 +151,15 @@ public class ThreadStarvationTest
     @AfterEach
     public void dispose() throws Exception
     {
-        _server.stop();
+        ArrayByteBufferPool.Tracking byteBufferPool = (ArrayByteBufferPool.Tracking)_server.getConnectors()[0].getByteBufferPool();
+        try
+        {
+            assertThat("Server Leaks: " + byteBufferPool.dumpLeaks(), byteBufferPool.getLeaks().size(), Matchers.is(0));
+        }
+        finally
+        {
+            LifeCycle.stop(_server);
+        }
     }
 
     @ParameterizedTest

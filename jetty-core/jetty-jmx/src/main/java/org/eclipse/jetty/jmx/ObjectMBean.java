@@ -56,6 +56,7 @@ public class ObjectMBean implements DynamicMBean
     }
 
     /**
+     * Get the managed object.
      * @return the managed object
      */
     public Object getManagedObject()

@@ -13,14 +13,11 @@
 
 package org.eclipse.jetty.docs.programming.server.websocket;
 
-import java.io.IOException;
 import java.util.List;
 import java.util.Map;
 
 import jakarta.servlet.ServletException;
 import jakarta.servlet.http.HttpServlet;
-import jakarta.servlet.http.HttpServletRequest;
-import jakarta.servlet.http.HttpServletResponse;
 import jakarta.websocket.DeploymentException;
 import jakarta.websocket.server.ServerContainer;
 import jakarta.websocket.server.ServerEndpoint;
@@ -28,15 +25,18 @@ import jakarta.websocket.server.ServerEndpointConfig;
 import org.eclipse.jetty.ee10.servlet.ServletContextHandler;
 import org.eclipse.jetty.ee10.webapp.WebAppContext;
 import org.eclipse.jetty.ee10.websocket.jakarta.server.config.JakartaWebSocketServletContainerInitializer;
-import org.eclipse.jetty.ee10.websocket.server.JettyWebSocketCreator;
-import org.eclipse.jetty.ee10.websocket.server.JettyWebSocketServerContainer;
-import org.eclipse.jetty.ee10.websocket.server.JettyWebSocketServlet;
-import org.eclipse.jetty.ee10.websocket.server.JettyWebSocketServletFactory;
-import org.eclipse.jetty.ee10.websocket.server.config.JettyWebSocketServletContainerInitializer;
+import org.eclipse.jetty.http.HttpStatus;
 import org.eclipse.jetty.http.pathmap.PathSpec;
 import org.eclipse.jetty.http.pathmap.UriTemplatePathSpec;
+import org.eclipse.jetty.server.Handler;
+import org.eclipse.jetty.server.Request;
+import org.eclipse.jetty.server.Response;
 import org.eclipse.jetty.server.Server;
+import org.eclipse.jetty.server.handler.ContextHandler;
+import org.eclipse.jetty.util.Callback;
 import org.eclipse.jetty.websocket.api.annotations.WebSocket;
+import org.eclipse.jetty.websocket.server.ServerWebSocketContainer;
+import org.eclipse.jetty.websocket.server.WebSocketUpgradeHandler;
 
 @SuppressWarnings("unused")
 public class WebSocketServerDocs
@@ -162,180 +162,109 @@ public class WebSocketServerDocs
         // end::standardContainerAndEndpoints[]
     }
 
-    public void jettyContainerServletContextHandler() throws Exception
+    public void jettyContainerWithUpgradeHandler() throws Exception
     {
-        // tag::jettyContainerServletContextHandler[]
+        // tag::jettyContainerWithUpgradeHandler[]
         // Create a Server with a ServerConnector listening on port 8080.
         Server server = new Server(8080);
 
-        // Create a ServletContextHandler with the given context path.
-        ServletContextHandler handler = new ServletContextHandler("/ctx");
-        server.setHandler(handler);
+        // Create a ContextHandler with the given context path.
+        ContextHandler contextHandler = new ContextHandler("/ctx");
+        server.setHandler(contextHandler);
 
-        // Ensure that JettyWebSocketServletContainerInitializer is initialized,
-        // to setup the JettyWebSocketServerContainer for this web application context.
-        JettyWebSocketServletContainerInitializer.configure(handler, null);
+        // Create a WebSocketUpgradeHandler that implicitly creates a ServerWebSocketContainer.
+        WebSocketUpgradeHandler webSocketHandler = WebSocketUpgradeHandler.from(server, contextHandler);
+        contextHandler.setHandler(webSocketHandler);
 
-        // Starting the Server will start the ServletContextHandler.
-        server.start();
-        // end::jettyContainerServletContextHandler[]
-    }
-
-    public void jettyEndpointsInitialization() throws Exception
-    {
-        // tag::jettyEndpointsInitialization[]
-        // Create a Server with a ServerConnector listening on port 8080.
-        Server server = new Server(8080);
-
-        // Create a ServletContextHandler with the given context path.
-        ServletContextHandler handler = new ServletContextHandler("/ctx");
-        server.setHandler(handler);
-
-        // Ensure that JettyWebSocketServletContainerInitializer is initialized,
-        // to setup the JettyWebSocketServerContainer for this web application context.
-        JettyWebSocketServletContainerInitializer.configure(handler, null);
-
-        // Add a WebSocket-initializer Servlet to register WebSocket endpoints.
-        handler.addServlet(MyJettyWebSocketInitializerServlet.class, "/*");
-
-        // Starting the Server will start the ServletContextHandler.
-        server.start();
-        // end::jettyEndpointsInitialization[]
-    }
-
-    @SuppressWarnings("InnerClassMayBeStatic")
-    // tag::jettyWebSocketInitializerServlet[]
-    public class MyJettyWebSocketInitializerServlet extends HttpServlet
-    {
-        @Override
-        public void init() throws ServletException
+        // Here you can access the ServerWebSocketContainer through the WebSocketUpgradeHandler APIs.
+        webSocketHandler.configure(container ->
         {
-            // Retrieve the JettyWebSocketServerContainer.
-            JettyWebSocketServerContainer container = JettyWebSocketServerContainer.getContainer(getServletContext());
-
-            // Configure the JettyWebSocketServerContainer.
+            // Configure the ServerWebSocketContainer.
             container.setMaxTextMessageSize(128 * 1024);
 
-            // Simple registration of your WebSocket endpoints.
-            container.addMapping("/ws/myURI", MyJettyWebSocketEndPoint.class);
+            // Map a request URI to a WebSocket endpoint, for example using a regexp.
+            container.addMapping("regex|/ws/v\\d+/echo", (rq, rs, cb) -> new EchoEndPoint());
 
-            // Advanced registration of your WebSocket endpoints.
-            container.addMapping("/ws/myOtherURI", (upgradeRequest, upgradeResponse) ->
-                new MyOtherJettyWebSocketEndPoint()
-            );
-        }
-    }
-    // end::jettyWebSocketInitializerServlet[]
-
-    public void jettyContainerAndEndpoints() throws Exception
-    {
-        // tag::jettyContainerAndEndpoints[]
-        // Create a Server with a ServerConnector listening on port 8080.
-        Server server = new Server(8080);
-
-        // Create a ServletContextHandler with the given context path.
-        ServletContextHandler handler = new ServletContextHandler("/ctx");
-        server.setHandler(handler);
-
-        // Setup the JettyWebSocketServerContainer and the WebSocket endpoints for this web application context.
-        JettyWebSocketServletContainerInitializer.configure(handler, (servletContext, container) ->
-        {
-            // Configure the ServerContainer.
-            container.setMaxTextMessageSize(128 * 1024);
-
-            // Add your WebSocket endpoint(s) to the JettyWebSocketServerContainer.
-            container.addMapping("/ws/myURI", MyJettyWebSocketEndPoint.class);
-
-            // Use JettyWebSocketCreator to have more control on the WebSocket endpoint creation.
-            container.addMapping("/ws/myOtherURI", (upgradeRequest, upgradeResponse) ->
+            // Advanced registration of a WebSocket endpoint.
+            container.addMapping("/ws/adv", (rq, rs, cb) ->
             {
-                // Possibly inspect the upgrade request and modify the upgrade response.
-                upgradeResponse.setAcceptedSubProtocol("my-ws-protocol");
-
-                // Create the new WebSocket endpoint.
-                return new MyOtherJettyWebSocketEndPoint();
+                List<String> subProtocols = rq.getSubProtocols();
+                if (subProtocols.contains("my-ws-protocol"))
+                    return new MyJettyWebSocketEndPoint();
+                return null;
             });
         });
 
-        // Starting the Server will start the ServletContextHandler.
+        // Starting the Server will start the ContextHandler and the WebSocketUpgradeHandler,
+        // which would run the configuration of the ServerWebSocketContainer.
         server.start();
-        // end::jettyContainerAndEndpoints[]
+        // end::jettyContainerWithUpgradeHandler[]
     }
 
-    @SuppressWarnings("InnerClassMayBeStatic")
-    // tag::jettyContainerUpgrade[]
-    public class ProgrammaticWebSocketUpgradeServlet extends HttpServlet
+    private static class EchoEndPoint
     {
-        @Override
-        protected void doGet(HttpServletRequest request, HttpServletResponse response) throws IOException
-        {
-            if (requiresWebSocketUpgrade(request))
-            {
-                // Retrieve the JettyWebSocketServerContainer.
-                JettyWebSocketServerContainer container = JettyWebSocketServerContainer.getContainer(getServletContext());
-
-                // Use a JettyWebSocketCreator to inspect the upgrade request,
-                // possibly modify the upgrade response, and create the WebSocket endpoint.
-                JettyWebSocketCreator creator = (upgradeRequest, upgradeResponse) -> new MyJettyWebSocketEndPoint();
-
-                // Perform the direct WebSocket upgrade.
-                container.upgrade(creator, request, response);
-            }
-            else
-            {
-                // Normal handling of the HTTP request/response.
-            }
-        }
-    }
-    // end::jettyContainerUpgrade[]
-
-    private boolean requiresWebSocketUpgrade(HttpServletRequest request)
-    {
-        return false;
     }
 
-    public void jettyWebSocketServletMain() throws Exception
+    public void jettyContainerWithContainer() throws Exception
     {
-        // tag::jettyWebSocketServletMain[]
+        // tag::jettyContainerWithContainer[]
         // Create a Server with a ServerConnector listening on port 8080.
         Server server = new Server(8080);
 
-        // Create a ServletContextHandler with the given context path.
-        ServletContextHandler handler = new ServletContextHandler("/ctx");
-        server.setHandler(handler);
+        // Create a ContextHandler with the given context path.
+        ContextHandler contextHandler = new ContextHandler("/ctx");
+        server.setHandler(contextHandler);
 
-        // Setup the JettyWebSocketServerContainer to initialize WebSocket components.
-        JettyWebSocketServletContainerInitializer.configure(handler, null);
+        // Create a ServerWebSocketContainer, which is also stored as an attribute in the context.
+        ServerWebSocketContainer container = ServerWebSocketContainer.ensure(server, contextHandler);
 
-        // Add your WebSocketServlet subclass to the ServletContextHandler.
-        handler.addServlet(MyJettyWebSocketServlet.class, "/ws/*");
+        // You can use WebSocketUpgradeHandler if you want, but it is not necessary.
+        // You can ignore the line below, it is shown only for reference.
+        WebSocketUpgradeHandler webSocketHandler = new WebSocketUpgradeHandler(container);
 
-        // Starting the Server will start the ServletContextHandler.
-        server.start();
-        // end::jettyWebSocketServletMain[]
-    }
-
-    @SuppressWarnings("InnerClassMayBeStatic")
-    // tag::jettyWebSocketServlet[]
-    public class MyJettyWebSocketServlet extends JettyWebSocketServlet
-    {
-        @Override
-        protected void configure(JettyWebSocketServletFactory factory)
+        // You can directly use ServerWebSocketContainer from any Handler.
+        contextHandler.setHandler(new Handler.Abstract()
         {
-            // At most 1 MiB text messages.
-            factory.setMaxTextMessageSize(1048576);
-
-            // Add the WebSocket endpoint.
-            factory.addMapping("/ws/someURI", (upgradeRequest, upgradeResponse) ->
+            @Override
+            public boolean handle(Request request, Response response, Callback callback)
             {
-                // Possibly inspect the upgrade request and modify the upgrade response.
+                // Retrieve the ServerWebSocketContainer.
+                ServerWebSocketContainer container = ServerWebSocketContainer.get(request.getContext());
 
-                // Create the new WebSocket endpoint.
-                return new MyJettyWebSocketEndPoint();
-            });
-        }
+                // Verify special conditions for which a request should be upgraded to WebSocket.
+                String pathInContext = Request.getPathInContext(request);
+                if (pathInContext.startsWith("/ws/echo") && request.getHeaders().contains("X-WS", "true"))
+                {
+                    try
+                    {
+                        // This is a WebSocket upgrade request, perform a direct upgrade.
+                        boolean upgraded = container.upgrade((rq, rs, cb) -> new EchoEndPoint(), request, response, callback);
+                        if (upgraded)
+                            return true;
+                        // This was supposed to be a WebSocket upgrade request, but something went wrong.
+                        Response.writeError(request, response, callback, HttpStatus.UPGRADE_REQUIRED_426);
+                        return true;
+                    }
+                    catch (Exception x)
+                    {
+                        Response.writeError(request, response, callback, HttpStatus.UPGRADE_REQUIRED_426, "failed to upgrade", x);
+                        return true;
+                    }
+                }
+                else
+                {
+                    // Handle a normal HTTP request.
+                    response.setStatus(HttpStatus.OK_200);
+                    callback.succeeded();
+                    return true;
+                }
+            }
+        });
+
+        // Starting the Server will start the ContextHandler.
+        server.start();
+        // end::jettyContainerWithContainer[]
     }
-    // end::jettyWebSocketServlet[]
 
     @ServerEndpoint("/ws")
     private static class MyJavaxWebSocketEndPoint
@@ -347,29 +276,29 @@ public class WebSocketServerDocs
     {
     }
 
-    @WebSocket
-    private static class MyOtherJettyWebSocketEndPoint
-    {
-    }
-
     public void uriTemplatePathSpec()
     {
+        // tag::uriTemplatePathSpec[]
         Server server = new Server(8080);
 
-        // tag::uriTemplatePathSpec[]
-        ServletContextHandler handler = new ServletContextHandler("/ctx");
-        server.setHandler(handler);
+        ContextHandler contextHandler = new ContextHandler("/ctx");
+        server.setHandler(contextHandler);
 
-        // Configure the JettyWebSocketServerContainer.
-        JettyWebSocketServletContainerInitializer.configure(handler, (servletContext, container) ->
+        // Create a WebSocketUpgradeHandler.
+        WebSocketUpgradeHandler webSocketHandler = WebSocketUpgradeHandler.from(server, contextHandler);
+        contextHandler.setHandler(webSocketHandler);
+
+        // Here you can access the ServerWebSocketContainer through the WebSocketUpgradeHandler APIs.
+        webSocketHandler.configure(container ->
         {
-            container.addMapping("/ws/chat/{room}", (upgradeRequest, upgradeResponse) ->
+            container.addMapping("/ws/chat/{room}", (upgradeRequest, upgradeResponse, callback) ->
             {
                 // Retrieve the URI template.
-                UriTemplatePathSpec pathSpec = (UriTemplatePathSpec)upgradeRequest.getServletAttribute(PathSpec.class.getName());
+                UriTemplatePathSpec pathSpec = (UriTemplatePathSpec)upgradeRequest.getAttribute(PathSpec.class.getName());
 
                 // Match the URI template.
-                Map<String, String> params = pathSpec.getPathParams(upgradeRequest.getRequestPath());
+                String pathInContext = Request.getPathInContext(upgradeRequest);
+                Map<String, String> params = pathSpec.getPathParams(pathInContext);
                 String room = params.get("room");
 
                 // Create the new WebSocket endpoint with the URI template information.

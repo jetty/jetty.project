@@ -28,9 +28,9 @@ import java.util.Set;
 
 import org.eclipse.jetty.server.Server;
 import org.eclipse.jetty.toolchain.test.FS;
-import org.eclipse.jetty.toolchain.test.MavenTestingUtils;
 import org.eclipse.jetty.toolchain.test.jupiter.WorkDir;
 import org.eclipse.jetty.toolchain.test.jupiter.WorkDirExtension;
+import org.eclipse.jetty.util.TypeUtil;
 import org.eclipse.jetty.util.URIUtil;
 import org.eclipse.jetty.util.component.LifeCycle;
 import org.eclipse.jetty.util.resource.FileSystemPool;
@@ -40,20 +40,18 @@ import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
+import org.junit.jupiter.api.parallel.Isolated;
 
 import static org.hamcrest.MatcherAssert.assertThat;
-import static org.hamcrest.Matchers.contains;
 import static org.hamcrest.Matchers.empty;
 import static org.hamcrest.Matchers.hasItems;
 import static org.hamcrest.Matchers.is;
-import static org.junit.jupiter.api.Assertions.assertEquals;
-import static org.junit.jupiter.api.Assertions.assertNotNull;
-import static org.junit.jupiter.api.Assertions.assertTrue;
-import static org.junit.jupiter.api.Assertions.fail;
 
 @ExtendWith(WorkDirExtension.class)
+@Isolated("Access static method of FileSystemPool")
 public class MetaInfConfigurationTest
 {
+
     @BeforeEach
     public void beforeEach()
     {
@@ -69,7 +67,8 @@ public class MetaInfConfigurationTest
     /**
      * Test of a MetaInf scan of a Servlet 2.5 webapp, where
      * {@link WebAppContext#setConfigurationDiscovered(boolean)} set to {@code false},
-     * thus not performing any Servlet 3.0+ discovery steps ({@code META-INF/web-fragment.xml} and {@code META-INF/resources})
+     * thus not performing any Servlet 3.0+ discovery steps for {@code META-INF/web-fragment.xml}.
+     * Scanning for {@code META-INF/resources} is unaffected by configuration.
      */
     @Test
     public void testScanServlet25ConfigurationDiscoveredOff(WorkDir workDir) throws Exception
@@ -117,6 +116,7 @@ public class MetaInfConfigurationTest
         }
 
         WebAppContext context = new WebAppContext();
+        context.setServer(new Server());
         try
         {
             context.setBaseResource(context.getResourceFactory().newResource(webappDir));
@@ -135,19 +135,28 @@ public class MetaInfConfigurationTest
                 .map(URI::toASCIIString)
                 .toList();
             String[] expectedWebInfResources = {
-                URIUtil.toJarFileUri(fooFragmentJar.toUri()).toASCIIString(),
-                URIUtil.toJarFileUri(barResourceJar.toUri()).toASCIIString(),
-                URIUtil.toJarFileUri(zedTldJar.toUri()).toASCIIString()
+                fooFragmentJar.toUri().toASCIIString(),
+                barResourceJar.toUri().toASCIIString(),
+                zedTldJar.toUri().toASCIIString()
             };
-            assertThat(discoveredWebInfResources, hasItems(expectedWebInfResources));
+            assertThat("Discovered WEB-INF resources", discoveredWebInfResources, hasItems(expectedWebInfResources));
 
             // Since this is Servlet 2.5, and we have configuration-discovered turned off, we shouldn't see any web fragments
             Map<Resource, Resource> fragmentMap = getDiscoveredMetaInfFragments(context);
-            assertThat(fragmentMap.size(), is(0));
+            assertThat("META-INF/web-fragment.xml discovered (servlet 2.5 and configuration-discovered turned off)", fragmentMap.size(), is(0));
 
-            // Since this is Servlet 2.5, and we have configuration-discovered turned off, we shouldn't see any META-INF/resources/
+            // Even on Servlet 2.5, when we have configuration-discovered turned off, we should still see the META-INF/resources/
             Set<Resource> resourceSet = getDiscoveredMetaInfResource(context);
-            assertThat(resourceSet.size(), is(0));
+            assertThat(resourceSet.size(), is(1));
+            List<String> discoveredResources = resourceSet
+                .stream()
+                .map(Resource::getURI)
+                .map(URI::toASCIIString)
+                .toList();
+            String[] expectedResources = {
+                URIUtil.toJarFileUri(barResourceJar.toUri()).toASCIIString() + "META-INF/resources/"
+            };
+            assertThat("META-INF/resources discovered (servlet 2.5 and configuration-discovered turned off)", discoveredResources, hasItems(expectedResources));
 
             // TLDs discovered
             Set<URL> tldSet = getDiscoveredMetaInfTlds(context);
@@ -159,7 +168,7 @@ public class MetaInfConfigurationTest
             String[] expectedTlds = {
                 URIUtil.toJarFileUri(zedTldJar.toUri()).toASCIIString() + "META-INF/zed.tld"
             };
-            assertThat(discoveredTlds, hasItems(expectedTlds));
+            assertThat("Discovered TLDs", discoveredTlds, hasItems(expectedTlds));
         }
         finally
         {
@@ -170,7 +179,7 @@ public class MetaInfConfigurationTest
     /**
      * Test of a MetaInf scan of a Servlet 2.5 webapp, where
      * {@link WebAppContext#setConfigurationDiscovered(boolean)} is left at default (@{code true})
-     * allowing the performing of Servlet 3.0+ discovery steps ({@code META-INF/web-fragment.xml} and {@code META-INF/resources})
+     * allowing the performing of Servlet 3.0+ discovery steps for {@code META-INF/web-fragment.xml} and {@code META-INF/resources}
      */
     @Test
     public void testScanServlet25ConfigurationDiscoveredDefault(WorkDir workDir) throws Exception
@@ -218,6 +227,7 @@ public class MetaInfConfigurationTest
         }
 
         WebAppContext context = new WebAppContext();
+        context.setServer(new Server());
         try
         {
             context.setBaseResource(context.getResourceFactory().newResource(webappDir));
@@ -236,10 +246,11 @@ public class MetaInfConfigurationTest
                 .map(URI::toASCIIString)
                 .toList();
             String[] expectedWebInfResources = {
-                URIUtil.toJarFileUri(fooFragmentJar.toUri()).toASCIIString(),
-                URIUtil.toJarFileUri(barResourceJar.toUri()).toASCIIString()
+                fooFragmentJar.toUri().toASCIIString(),
+                barResourceJar.toUri().toASCIIString(),
+                zedTldJar.toUri().toASCIIString()
             };
-            assertThat(discoveredWebInfResources, hasItems(expectedWebInfResources));
+            assertThat("Discovered WEB-INF resources", discoveredWebInfResources, hasItems(expectedWebInfResources));
 
             // Since this is Servlet 2.5, and we have configuration-discovered turned on, we should see the META-INF/web-fragment.xml entries
             Map<Resource, Resource> fragmentMap = getDiscoveredMetaInfFragments(context);
@@ -251,7 +262,7 @@ public class MetaInfConfigurationTest
             String[] expectedFragments = {
                 URIUtil.toJarFileUri(fooFragmentJar.toUri()).toASCIIString() + "META-INF/web-fragment.xml"
             };
-            assertThat(discoveredFragments, hasItems(expectedFragments));
+            assertThat("META-INF/web-fragment.xml discovered (servlet 2.5 and configuration-discovered=true)", discoveredFragments, hasItems(expectedFragments));
 
             // Since this is Servlet 2.5, and we have configuration-discovered turned on, we should see the META-INF/resources/
             Set<Resource> resourceSet = getDiscoveredMetaInfResource(context);
@@ -264,7 +275,7 @@ public class MetaInfConfigurationTest
             String[] expectedResources = {
                 URIUtil.toJarFileUri(barResourceJar.toUri()).toASCIIString() + "META-INF/resources/"
             };
-            assertThat(discoveredResources, hasItems(expectedResources));
+            assertThat("META-INF/resources discovered (servlet 2.5 and configuration-discovered=true)", discoveredResources, hasItems(expectedResources));
 
             // TLDs discovered
             Set<URL> tldSet = getDiscoveredMetaInfTlds(context);
@@ -276,7 +287,7 @@ public class MetaInfConfigurationTest
             String[] expectedTlds = {
                 URIUtil.toJarFileUri(zedTldJar.toUri()).toASCIIString() + "META-INF/zed.tld"
             };
-            assertThat(discoveredTlds, hasItems(expectedTlds));
+            assertThat("Discovered TLDs", discoveredTlds, hasItems(expectedTlds));
         }
         finally
         {
@@ -334,6 +345,7 @@ public class MetaInfConfigurationTest
         }
 
         WebAppContext context = new WebAppContext();
+        context.setServer(new Server());
         try
         {
             context.setBaseResource(context.getResourceFactory().newResource(webappDir));
@@ -352,10 +364,11 @@ public class MetaInfConfigurationTest
                 .map(URI::toASCIIString)
                 .toList();
             String[] expectedWebInfResources = {
-                URIUtil.toJarFileUri(fooFragmentJar.toUri()).toASCIIString(),
-                URIUtil.toJarFileUri(barResourceJar.toUri()).toASCIIString()
+                fooFragmentJar.toUri().toASCIIString(),
+                barResourceJar.toUri().toASCIIString(),
+                zedTldJar.toUri().toASCIIString()
             };
-            assertThat(discoveredWebInfResources, hasItems(expectedWebInfResources));
+            assertThat("Discovered WEB-INF resources", discoveredWebInfResources, hasItems(expectedWebInfResources));
 
             // Since this is Servlet 3.0, and we have configuration-discovered turned on, we should see the META-INF/web-fragment.xml entries
             Map<Resource, Resource> fragmentMap = getDiscoveredMetaInfFragments(context);
@@ -367,9 +380,9 @@ public class MetaInfConfigurationTest
             String[] expectedFragments = {
                 URIUtil.toJarFileUri(fooFragmentJar.toUri()).toASCIIString() + "META-INF/web-fragment.xml"
             };
-            assertThat(discoveredFragments, hasItems(expectedFragments));
+            assertThat("META-INF/web-fragment.xml discovered (servlet 3.0, and metadata-complete=false, and configuration-discovered=true)", discoveredFragments, hasItems(expectedFragments));
 
-            // Since this is Servlet 2.5, and we have configuration-discovered turned on, we should see the META-INF/resources/
+            // Since this is Servlet 3.0, and we have configuration-discovered turned on, we should see the META-INF/resources/
             Set<Resource> resourceSet = getDiscoveredMetaInfResource(context);
             assertThat(resourceSet.size(), is(1));
             List<String> discoveredResources = resourceSet
@@ -380,7 +393,7 @@ public class MetaInfConfigurationTest
             String[] expectedResources = {
                 URIUtil.toJarFileUri(barResourceJar.toUri()).toASCIIString() + "META-INF/resources/"
             };
-            assertThat(discoveredResources, hasItems(expectedResources));
+            assertThat("META-INF/resources discovered (servlet 3.0, and metadata-complete=false, and configuration-discovered=true)", discoveredResources, hasItems(expectedResources));
 
             // TLDs discovered
             Set<URL> tldSet = getDiscoveredMetaInfTlds(context);
@@ -392,7 +405,7 @@ public class MetaInfConfigurationTest
             String[] expectedTlds = {
                 URIUtil.toJarFileUri(zedTldJar.toUri()).toASCIIString() + "META-INF/zed.tld"
             };
-            assertThat(discoveredTlds, hasItems(expectedTlds));
+            assertThat("Discovered TLDs", discoveredTlds, hasItems(expectedTlds));
         }
         finally
         {
@@ -450,6 +463,7 @@ public class MetaInfConfigurationTest
         }
 
         WebAppContext context = new WebAppContext();
+        context.setServer(new Server());
         try
         {
             context.setBaseResource(context.getResourceFactory().newResource(webappDir));
@@ -467,18 +481,28 @@ public class MetaInfConfigurationTest
                 .map(URI::toASCIIString)
                 .toList();
             String[] expectedWebInfResources = {
-                URIUtil.toJarFileUri(fooFragmentJar.toUri()).toASCIIString(),
-                URIUtil.toJarFileUri(barResourceJar.toUri()).toASCIIString()
+                fooFragmentJar.toUri().toASCIIString(),
+                barResourceJar.toUri().toASCIIString(),
+                zedTldJar.toUri().toASCIIString()
             };
-            assertThat(discoveredWebInfResources, hasItems(expectedWebInfResources));
+            assertThat("Discovered WEB-INF resources", discoveredWebInfResources, hasItems(expectedWebInfResources));
 
-            // Since this is Servlet 3.1, and we have metadata-complete=false, we should see no fragments
+            // Since this is Servlet 3.1, and we have metadata-complete=true, we should see no fragments
             Map<Resource, Resource> fragmentMap = getDiscoveredMetaInfFragments(context);
-            assertThat(fragmentMap.size(), is(0));
+            assertThat("META-INF/web-fragment.xml discovered (servlet 3.1, and metadata-complete=true)", fragmentMap.size(), is(0));
 
-            // Since this is Servlet 3.1, and we have metadata-complete=false, we should no META-INF/resources/
+            // Even on Servlet 3.1, with metadata-complete=true, we should still see the META-INF/resources/
             Set<Resource> resourceSet = getDiscoveredMetaInfResource(context);
-            assertThat(resourceSet.size(), is(0));
+            assertThat(resourceSet.size(), is(1));
+            List<String> discoveredResources = resourceSet
+                .stream()
+                .map(Resource::getURI)
+                .map(URI::toASCIIString)
+                .toList();
+            String[] expectedResources = {
+                URIUtil.toJarFileUri(barResourceJar.toUri()).toASCIIString() + "META-INF/resources/"
+            };
+            assertThat("META-INF/resources discovered (servlet 3.1 and metadata-complete=true)", discoveredResources, hasItems(expectedResources));
 
             // TLDs discovered
             Set<URL> tldSet = getDiscoveredMetaInfTlds(context);
@@ -490,7 +514,7 @@ public class MetaInfConfigurationTest
             String[] expectedTlds = {
                 URIUtil.toJarFileUri(zedTldJar.toUri()).toASCIIString() + "META-INF/zed.tld"
             };
-            assertThat(discoveredTlds, hasItems(expectedTlds));
+            assertThat("Discovered TLDs", discoveredTlds, hasItems(expectedTlds));
         }
         finally
         {
@@ -517,20 +541,31 @@ public class MetaInfConfigurationTest
         MetaInfConfiguration config = new MetaInfConfiguration();
         WebAppContext context = new WebAppContext();
         context.setServer(new Server());
-        config.preConfigure(context);
         try
         {
             context.setAttribute(MetaInfConfiguration.CONTAINER_JAR_PATTERN, ".*servlet-api-[^/]*\\.jar$|.*/foo-bar-janb.jar");
             WebAppClassLoader loader = new WebAppClassLoader(context);
             context.setClassLoader(loader);
-            List<Resource> containerResources = config.getContainerPaths(context);
+            config.preConfigure(context);
 
-            assertEquals(2, containerResources.size());
-            for (Resource r : containerResources)
-            {
-                String s = r.toString();
-                assertTrue(s.endsWith("foo-bar-janb.jar!/") || s.contains("servlet-api"));
-            }
+            Class janbClazz = Class.forName("foo.bar.janb.What", false, loader);
+            URI janbUri = TypeUtil.getLocationOfClass(janbClazz);
+            Class servletClazz = Class.forName("jakarta.servlet.Servlet", false, loader);
+            URI servletUri = TypeUtil.getLocationOfClass(servletClazz);
+
+            List<String> discoveredContainerResources = context.getMetaData().getContainerResources()
+                .stream()
+                .sorted(ResourceCollators.byName(true))
+                .map(Resource::getURI)
+                .map(URI::toASCIIString)
+                .toList();
+            // we "correct" the bad file URLs that come from the ClassLoader
+            // to be the same as what comes from every non-classloader URL/URI.
+            String[] expectedContainerResources = {
+                URIUtil.correctFileURI(janbUri).toASCIIString(),
+                URIUtil.correctFileURI(servletUri).toASCIIString()
+            };
+            assertThat("Discovered Container resources", discoveredContainerResources, hasItems(expectedContainerResources));
         }
         finally
         {

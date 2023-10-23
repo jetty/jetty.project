@@ -49,7 +49,7 @@ The `Server.dump()` operation may also be invoked just after the `Server` starts
 
 You can temporarily enable the Jetty Server Dump at start time by overriding the `jetty.server.dumpAfterStart` property on the command line:
 
-[source,subs=quotes]
+[source,subs="verbatim,quotes"]
 ----
 $ java -jar $JETTY_HOME/start.jar *jetty.server.dumpAfterStart=true*
 ----
@@ -71,7 +71,7 @@ Detailed thread pool information can also be turned on/off on-the-fly via JMX, b
 
 Below you can find a simple example of a Jetty Server Dump, with annotations for the principal components:
 
-[source,subs=verbatim,role=small,options=nowrap]
+[source,role=small,options=nowrap]
 ----
 include::jetty[setupArgs="--add-modules=http",args="jetty.http.selectors=1 jetty.http.acceptors=1 jetty.threadPool.minThreads=4 jetty.server.dumpAfterStart=true",delete="^[0-9]{4}",callouts=" <$N>,Server@,= QueuedThreadPool,HandlerList@,= ServerConnector,ManagedSelector@,keys @,startJarLoader@,unmanaged"]
 ----

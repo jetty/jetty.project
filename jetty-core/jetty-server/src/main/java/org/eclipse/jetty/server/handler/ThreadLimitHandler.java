@@ -13,7 +13,6 @@
 
 package org.eclipse.jetty.server.handler;
 
-import java.net.InetAddress;
 import java.net.InetSocketAddress;
 import java.nio.ByteBuffer;
 import java.nio.channels.WritePendingException;
@@ -37,8 +36,6 @@ import org.eclipse.jetty.server.Handler;
 import org.eclipse.jetty.server.Request;
 import org.eclipse.jetty.server.Response;
 import org.eclipse.jetty.util.Callback;
-import org.eclipse.jetty.util.IncludeExcludeSet;
-import org.eclipse.jetty.util.InetAddressSet;
 import org.eclipse.jetty.util.StringUtil;
 import org.eclipse.jetty.util.annotation.ManagedAttribute;
 import org.eclipse.jetty.util.annotation.ManagedOperation;
@@ -50,30 +47,27 @@ import org.slf4j.LoggerFactory;
 /**
  * <p>Handler to limit the threads per IP address for DOS protection</p>
  * <p>The ThreadLimitHandler applies a limit to the number of Threads
- * that can be used simultaneously per remote IP address.
- * </p>
+ * that can be used simultaneously per remote IP address.</p>
  * <p>The handler makes a determination of the remote IP separately to
- * any that may be made by the {@link ForwardedRequestCustomizer} or similar:
+ * any that may be made by the {@link ForwardedRequestCustomizer} or similar:</p>
  * <ul>
- * <li>This handler will use either only a single style
- * of forwarded header.   This is on the assumption that a trusted local proxy
+ * <li>This handler will use only a single style of forwarded header.
+ * This is on the assumption that a trusted local proxy
  * will produce only a single forwarded header and that any additional
  * headers are likely from untrusted client side proxies.</li>
  * <li>If multiple instances of a forwarded header are provided, this
  * handler will use the right-most instance, which will have been set from
  * the trusted local proxy</li>
  * </ul>
- * Requests in excess of the limit will be asynchronously suspended until
- * a thread is available.
- * <p>This is a simpler alternative to DosFilter</p>
+ * <p>Requests in excess of the limit will be asynchronously suspended until
+ * a thread is available.</p>
  */
-public class ThreadLimitHandler extends Handler.Wrapper
+public class ThreadLimitHandler extends ConditionalHandler.Abstract
 {
     private static final Logger LOG = LoggerFactory.getLogger(ThreadLimitHandler.class);
 
     private final boolean _rfc7239;
     private final String _forwardedHeader;
-    private final IncludeExcludeSet<String, InetAddress> _includeExcludeSet = new IncludeExcludeSet<>(InetAddressSet.class);
     private final ConcurrentMap<String, Remote> _remotes = new ConcurrentHashMap<>();
     private volatile boolean _enabled;
     private int _threadLimit = 10;
@@ -105,7 +99,7 @@ public class ThreadLimitHandler extends Handler.Wrapper
     protected void doStart() throws Exception
     {
         super.doStart();
-        LOG.info(String.format("ThreadLimitHandler enable=%b limit=%d include=%s", _enabled, _threadLimit, _includeExcludeSet));
+        LOG.info(String.format("ThreadLimitHandler enable=%b limit=%d", _enabled, _threadLimit));
     }
 
     @ManagedAttribute("true if this handler is enabled")
@@ -117,7 +111,7 @@ public class ThreadLimitHandler extends Handler.Wrapper
     public void setEnabled(boolean enabled)
     {
         _enabled = enabled;
-        LOG.info(String.format("ThreadLimitHandler enable=%b limit=%d include=%s", _enabled, _threadLimit, _includeExcludeSet));
+        LOG.info(String.format("ThreadLimitHandler enable=%b limit=%d", _enabled, _threadLimit));
     }
 
     @ManagedAttribute("The maximum threads that can be dispatched per remote IP")
@@ -128,21 +122,6 @@ public class ThreadLimitHandler extends Handler.Wrapper
 
     protected int getThreadLimit(String ip)
     {
-        if (!_includeExcludeSet.isEmpty())
-        {
-            try
-            {
-                if (!_includeExcludeSet.test(InetAddress.getByName(ip)))
-                {
-                    LOG.debug("excluded {}", ip);
-                    return 0;
-                }
-            }
-            catch (Exception e)
-            {
-                LOG.trace("IGNORED", e);
-            }
-        }
         return _threadLimit;
     }
 
@@ -156,17 +135,17 @@ public class ThreadLimitHandler extends Handler.Wrapper
     @ManagedOperation("Include IP in thread limits")
     public void include(String inetAddressPattern)
     {
-        _includeExcludeSet.include(inetAddressPattern);
+        includeInetAddressPattern(inetAddressPattern);
     }
 
     @ManagedOperation("Exclude IP from thread limits")
     public void exclude(String inetAddressPattern)
     {
-        _includeExcludeSet.exclude(inetAddressPattern);
+        excludeInetAddressPattern(inetAddressPattern);
     }
 
     @Override
-    public boolean handle(Request request, Response response, Callback callback) throws Exception
+    public boolean onConditionsMet(Request request, Response response, Callback callback) throws Exception
     {
         Handler next = getHandler();
         if (next == null)
@@ -187,6 +166,12 @@ public class ThreadLimitHandler extends Handler.Wrapper
         LimitedRequest limitedRequest = new LimitedRequest(remote, next, request, response, callback);
         limitedRequest.handle();
         return true;
+    }
+
+    @Override
+    protected boolean onConditionsNotMet(Request request, Response response, Callback callback) throws Exception
+    {
+        return nextHandler(request, response, callback);
     }
 
     private Remote getRemote(Request baseRequest)

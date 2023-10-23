@@ -54,6 +54,7 @@ public class RedirectPatternRule extends PatternRule
     }
 
     /**
+     * Set the location to redirect..
      * @param value the location to redirect.
      */
     public void setLocation(String value)
@@ -67,6 +68,7 @@ public class RedirectPatternRule extends PatternRule
     }
 
     /**
+     * Set the 3xx redirect status code.
      * @param statusCode the 3xx redirect status code
      */
     public void setStatusCode(int statusCode)
@@ -82,7 +84,7 @@ public class RedirectPatternRule extends PatternRule
         return new Handler(input)
         {
             @Override
-            public boolean handle(Response response, Callback callback)
+            protected boolean handle(Response response, Callback callback)
             {
                 String location = getLocation();
                 response.setStatus(getStatusCode());

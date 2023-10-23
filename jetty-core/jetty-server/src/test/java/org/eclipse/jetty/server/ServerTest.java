@@ -385,6 +385,7 @@ public class ServerTest
                 request.addFailureListener(t ->
                 {
                     assertThat(ContextHandler.getCurrentContext(), sameInstance(_context.getContext()));
+                    callback.failed(t);
                     latch.countDown();
                 });
                 return true;

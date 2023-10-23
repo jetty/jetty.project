@@ -30,7 +30,9 @@ import static org.hamcrest.Matchers.instanceOf;
 import static org.hamcrest.Matchers.notNullValue;
 import static org.hamcrest.Matchers.nullValue;
 import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertNull;
+import static org.junit.jupiter.api.Assertions.assertTrue;
 
 // @checkstyle-disable-check :  AvoidEscapedUnicodeCharactersCheck
 public class PathMappingsTest
@@ -42,6 +44,7 @@ public class PathMappingsTest
         assertThat(msg, matched, notNullValue());
         String actualMatch = matched.getResource();
         assertEquals(expectedValue, actualMatch, msg);
+        assertTrue(pathmap.test(path));
     }
 
     /**
@@ -411,9 +414,13 @@ public class PathMappingsTest
 
         MatchedResource<String> match = p.getMatched(path);
         if (matched == null)
+        {
+            assertFalse(p.test(path));
             assertThat(match, nullValue());
+        }
         else
         {
+            assertTrue(p.test(path));
             assertThat(match, notNullValue());
             assertThat(p.getMatched(path).getResource(), equalTo(matched));
         }

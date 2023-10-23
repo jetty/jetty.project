@@ -207,7 +207,7 @@ public class BaseBuilder
                 List<String> startLines = new ArrayList<>();
                 for (Path path : paths)
                 {
-                    StartLog.info("copy " + baseHome.toShortForm(path) + " into " + baseHome.toShortForm(startini));
+                    StartLog.info("copy %s into %s", baseHome.toShortForm(path), baseHome.toShortForm(startini));
                     startLines.add("");
                     startLines.add("# Config from " + baseHome.toShortForm(path));
                     startLines.addAll(Files.readAllLines(path));
@@ -250,7 +250,7 @@ public class BaseBuilder
 
             if (FS.ensureDirectoryExists(startd))
             {
-                StartLog.info("mkdir " + baseHome.toShortForm(startd));
+                StartLog.info("mkdir %s", baseHome.toShortForm(startd));
                 modified.set(true);
             }
 

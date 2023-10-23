@@ -5,4 +5,4 @@
 :ee-current-caps: EE 10
 :experimental:
 :imagesdir: images
-:jetty-home: ../../../../../../../jetty-home/target/jetty-home
+:jetty-home: ../../../../../target/jetty-home-{version}

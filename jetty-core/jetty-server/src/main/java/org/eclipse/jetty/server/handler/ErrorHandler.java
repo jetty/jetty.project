@@ -223,7 +223,7 @@ public class ErrorHandler implements Request.Handler
                     switch (type)
                     {
                         case TEXT_HTML -> writeErrorHtml(request, writer, charset, code, message, cause, showStacks);
-                        case TEXT_JSON -> writeErrorJson(request, writer, code, message, cause, showStacks);
+                        case TEXT_JSON, APPLICATION_JSON -> writeErrorJson(request, writer, code, message, cause, showStacks);
                         case TEXT_PLAIN -> writeErrorPlain(request, writer, code, message, cause, showStacks);
                         default -> throw new IllegalStateException();
                     }
@@ -368,7 +368,7 @@ public class ErrorHandler implements Request.Handler
         }
     }
 
-    private void writeErrorJson(Request request, PrintWriter writer, int code, String message, Throwable cause, boolean showStacks)
+    protected void writeErrorJson(Request request, PrintWriter writer, int code, String message, Throwable cause, boolean showStacks)
     {
         Map<String, String> json = new HashMap<>();
 
@@ -481,6 +481,7 @@ public class ErrorHandler implements Request.Handler
     }
 
     /**
+     * Set if true, the error message appears in page title.
      * @param showMessageInTitle if true, the error message appears in page title
      */
     public void setShowMessageInTitle(boolean showMessageInTitle)

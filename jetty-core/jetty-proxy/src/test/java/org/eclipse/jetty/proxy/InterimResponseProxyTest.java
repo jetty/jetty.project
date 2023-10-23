@@ -46,7 +46,7 @@ public class InterimResponseProxyTest extends AbstractProxyTest
                 CompletableFuture<Void> completable = response.writeInterim(HttpStatus.CONTINUE_100, HttpFields.EMPTY)
                     .thenCompose(ignored -> Promise.Completable.<String>with(p -> Content.Source.asString(request, StandardCharsets.UTF_8, p)))
                     .thenCompose(content -> response.writeInterim(HttpStatus.PROCESSING_102, HttpFields.EMPTY).thenApply(ignored -> content))
-                    .thenCompose(content -> response.writeInterim(HttpStatus.EARLY_HINT_103, HttpFields.EMPTY).thenApply(ignored -> content))
+                    .thenCompose(content -> response.writeInterim(HttpStatus.EARLY_HINTS_103, HttpFields.EMPTY).thenApply(ignored -> content))
                     .thenCompose(content -> Callback.Completable.with(c -> Content.Sink.write(response, true, content, c)));
                 callback.completeWith(completable);
                 return true;

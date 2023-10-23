@@ -41,4 +41,9 @@ The time, in milliseconds, after which an idle thread is released from the pool 
 `jetty.threadPool.maxThreads`::
 The max number of threads pooled by the thread pool -- defaults to 200.
 
-If you want to use virtual threads, introduced as a preview feature in Java 19, use the xref:og-module-threadpool-virtual-preview[`threadpool-virtual-preview`] Jetty module instead (see also the xref:og-server-threadpool[section about configuring the thread pool]).
+If you want to use virtual threads, introduced as a preview feature in Java 19 and Java 20, and become an official feature since Java 21, use the following modules:
+
+* The xref:og-module-threadpool-virtual[`threadpool-virtual`] Jetty module for Java 21 or later.
+* The xref:og-module-threadpool-virtual-preview[`threadpool-virtual-preview`] Jetty module for Java 19 and Java 20.
+
+See also the xref:og-server-threadpool[section about configuring the thread pool].

@@ -55,7 +55,7 @@ NOTE: If you want to enable support for protocols like secure HTTP/1.1 or HTTP/2
 $ java -jar $JETTY_HOME/start.jar --add-modules=http
 ----
 
-[source,subs=quotes,options=nowrap]
+[source,options=nowrap,subs="verbatim,quotes"]
 ----
 include::jetty[args="--add-modules=http",highlight="([a-z\-]+ *transitively enabled)"]
 ----
@@ -68,7 +68,7 @@ You can now start Jetty:
 $ java -jar $JETTY_HOME/start.jar
 ----
 
-[source,subs=quotes,options=nowrap]
+[source,options=nowrap,subs="verbatim,quotes"]
 ----
 include::jetty[args="--module=http",highlight="(\{.*:8080})"]
 ----
@@ -78,7 +78,7 @@ But since it has no web applications deployed, it will just reply with `404 Not 
 
 Before you xref:og-begin-deploy[deploy your first web application], take a moment to see what happened to the `$JETTY_BASE` directory once you enabled the `http` module:
 
-[source,subs=verbatim]
+[source]
 ----
 $JETTY_BASE
 ├── resources
@@ -100,7 +100,7 @@ To manually configure such modules, you should activate them directly via Jetty'
 In the `http.ini` file you can find the following (among other contents):
 
 .http.ini
-[source,subs=verbatim]
+[source]
 ----
 --module=http <1>
 # jetty.http.port=8080 <2>
@@ -126,7 +126,7 @@ If you restart Jetty, it will use this new value:
 $ java -jar $JETTY_HOME/start.jar
 ----
 
-[source,subs=quotes,options=nowrap]
+[source,options=nowrap,subs="verbatim,quotes"]
 ----
 include::jetty[args="--module=http jetty.http.port=9999",highlight="(\{.*:9999})"]
 ----
@@ -138,7 +138,7 @@ A property value specified on the command-line in this way will *override* the v
 $ java -jar $JETTY_HOME/start.jar jetty.http.port=8080
 ----
 
-[source,subs=quotes,options=nowrap]
+[source,options=nowrap,subs="verbatim,quotes"]
 ----
 include::jetty[args="--module=http jetty.http.port=8080",highlight="(\{.*:8080})"]
 ----

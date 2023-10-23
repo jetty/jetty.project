@@ -36,6 +36,7 @@ public class AtomicBiInteger extends AtomicLong
     }
 
     /**
+     * Get the hi value.
      * @return the hi value
      */
     public int getHi()
@@ -55,6 +56,7 @@ public class AtomicBiInteger extends AtomicLong
     }
 
     /**
+     * Get the lo value.
      * @return the lo value
      */
     public int getLo()

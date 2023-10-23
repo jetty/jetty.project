@@ -20,6 +20,7 @@ import org.eclipse.jetty.http.HttpException;
 import org.eclipse.jetty.http.HttpField;
 import org.eclipse.jetty.http.HttpFields;
 import org.eclipse.jetty.http.HttpHeader;
+import org.eclipse.jetty.http.HttpStatus;
 import org.eclipse.jetty.http.MetaData;
 import org.eclipse.jetty.io.Content;
 import org.eclipse.jetty.util.Callback;
@@ -59,8 +60,12 @@ public class SizeLimitHandler extends Handler.Wrapper
         if (contentLengthField != null)
         {
             long contentLength = contentLengthField.getLongValue();
-            if (contentLength > _requestLimit)
-                throw new BadMessageException(413, "Request body is too large: " + contentLength + ">" + _requestLimit);
+            if (_requestLimit >= 0 && contentLength > _requestLimit)
+            {
+                String s = "Request body is too large: " + contentLength + ">" + _requestLimit;
+                Response.writeError(request, response, callback, HttpStatus.PAYLOAD_TOO_LARGE_413, s);
+                return true;
+            }
         }
 
         HttpFields.Mutable.Wrapper httpFields = new HttpFields.Mutable.Wrapper(response.getHeaders())
@@ -71,8 +76,8 @@ public class SizeLimitHandler extends Handler.Wrapper
                 if (field.getHeader().is(HttpHeader.CONTENT_LENGTH.asString()))
                 {
                     long contentLength = field.getLongValue();
-                    if (contentLength > _responseLimit)
-                        throw new HttpException.RuntimeException(500, "Response body is too large: " + contentLength + ">" + _responseLimit);
+                    if (_responseLimit >= 0 && contentLength > _responseLimit)
+                        throw new HttpException.RuntimeException(HttpStatus.INTERNAL_SERVER_ERROR_500, "Response body is too large: " + contentLength + ">" + _responseLimit);
                 }
                 return super.onAddField(field);
             }
@@ -105,7 +110,7 @@ public class SizeLimitHandler extends Handler.Wrapper
                     _read += content.remaining();
                     if (_requestLimit >= 0 && _read > _requestLimit)
                     {
-                        BadMessageException e = new BadMessageException(413, "Request body is too large: " + _read + ">" + _requestLimit);
+                        BadMessageException e = new BadMessageException(HttpStatus.PAYLOAD_TOO_LARGE_413, "Request body is too large: " + _read + ">" + _requestLimit);
                         request.fail(e);
                         return null;
                     }
@@ -122,7 +127,7 @@ public class SizeLimitHandler extends Handler.Wrapper
                 {
                     if (_responseLimit >= 0 && (_written + content.remaining())  > _responseLimit)
                     {
-                        callback.failed(new HttpException.RuntimeException(500, "Response body is too large: " +
+                        callback.failed(new HttpException.RuntimeException(HttpStatus.INTERNAL_SERVER_ERROR_500, "Response body is too large: " +
                             _written + content.remaining() + ">" + _responseLimit));
                         return;
                     }

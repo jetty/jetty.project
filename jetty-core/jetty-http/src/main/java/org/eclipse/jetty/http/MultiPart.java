@@ -92,7 +92,7 @@ public class MultiPart
     public static String extractBoundary(String contentType)
     {
         Map<String, String> parameters = new HashMap<>();
-        HttpField.valueParameters(contentType, parameters);
+        HttpField.getValueParameters(contentType, parameters);
         return CONTENT_DISPOSITION_TOKENIZER.unquote(parameters.get("boundary"));
     }
 
@@ -656,7 +656,7 @@ public class MultiPart
         @Override
         public long getLength()
         {
-            // TODO: it is difficult to calculate the length because
+            // TODO: #10307 it is difficult to calculate the length because
             //  we need to allow for customization of the headers from
             //  subclasses, and then serialize all the headers to get
             //  their length (handling UTF-8 values) and we don't want
@@ -1665,7 +1665,8 @@ public class MultiPart
             this.name = null;
             String fileName = getFileName();
             this.fileName = null;
-            HttpFields headers = fields.takeAsImmutable();
+            HttpFields headers = fields.asImmutable();
+            fields.clear();
             notifyPart(name, fileName, headers);
         }
 

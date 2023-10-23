@@ -42,12 +42,14 @@ import org.eclipse.jetty.io.content.PathContentSource;
 import org.eclipse.jetty.toolchain.test.MavenTestingUtils;
 import org.eclipse.jetty.util.BufferUtil;
 import org.eclipse.jetty.util.Callback;
+import org.eclipse.jetty.util.CompletableTask;
 import org.eclipse.jetty.util.FutureCallback;
 import org.eclipse.jetty.util.FuturePromise;
 import org.eclipse.jetty.util.IO;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.MethodSource;
+import org.junit.jupiter.params.provider.ValueSource;
 
 import static java.nio.charset.StandardCharsets.UTF_8;
 import static org.hamcrest.MatcherAssert.assertThat;
@@ -104,7 +106,9 @@ public class ContentSourceTest
         return List.of(asyncSource, byteBufferSource, transformerSource, pathSource, inputSource, inputSource2);
     }
 
-    /** Get the next chunk, blocking if necessary
+    /**
+     * Get the next chunk, blocking if necessary
+     *
      * @param source The source to get the next chunk from
      * @return A non null chunk
      */
@@ -113,8 +117,7 @@ public class ContentSourceTest
         Content.Chunk chunk = source.read();
         if (chunk != null)
             return chunk;
-        FuturePromise<Content.Chunk> next = new FuturePromise<>();
-        Runnable getNext = new Runnable()
+        CompletableTask<Content.Chunk> task = new CompletableTask<>()
         {
             @Override
             public void run()
@@ -122,18 +125,12 @@ public class ContentSourceTest
                 Content.Chunk chunk = source.read();
                 if (chunk == null)
                     source.demand(this);
-                next.succeeded(chunk);
+                else
+                    complete(chunk);
             }
         };
-        source.demand(getNext);
-        try
-        {
-            return next.get();
-        }
-        catch (Exception e)
-        {
-            throw new RuntimeException(e);
-        }
+        source.demand(task);
+        return task.join();
     }
 
     @ParameterizedTest
@@ -141,8 +138,7 @@ public class ContentSourceTest
     public void testRead(Content.Source source) throws Exception
     {
         StringBuilder builder = new StringBuilder();
-        CountDownLatch eof = new CountDownLatch(1);
-        source.demand(new Runnable()
+        var task = new CompletableTask<>()
         {
             @Override
             public void run()
@@ -162,14 +158,14 @@ public class ContentSourceTest
 
                     if (chunk.isLast())
                     {
-                        eof.countDown();
+                        complete(null);
                         break;
                     }
                 }
             }
-        });
-
-        assertTrue(eof.await(10, TimeUnit.SECONDS));
+        };
+        source.demand(task);
+        task.get(10, TimeUnit.SECONDS);
         assertThat(builder.toString(), is("onetwo"));
     }
 
@@ -514,6 +510,102 @@ public class ContentSourceTest
 
         assertNotNull(throwable.get());
         assertThat(out.toString(UTF_8), equalTo("hello"));
+    }
+
+    @ParameterizedTest
+    @ValueSource(booleans = {true, false})
+    public void testInputStreamCloseWithAvailableEOF(boolean eofAvailable) throws Exception
+    {
+        AtomicReference<Throwable> failed = new AtomicReference<>();
+        TestContentSource source = new TestContentSource()
+        {
+            @Override
+            public void fail(Throwable failure)
+            {
+                failed.set(failure);
+            }
+        };
+
+        InputStream in = Content.Source.asInputStream(source);
+        source.add("hello", false);
+        AtomicReference<Throwable> throwable = new AtomicReference<>();
+        CountDownLatch complete = new CountDownLatch(1);
+        new Thread(() ->
+        {
+            try
+            {
+                byte[] buffer = new byte[5];
+                assertThat(in.read(buffer), is(5));
+                String input = new String(buffer, StandardCharsets.ISO_8859_1);
+                assertThat(input, is("hello"));
+                if (eofAvailable)
+                    source.add(Content.Chunk.EOF);
+                in.close();
+            }
+            catch (Throwable t)
+            {
+                throwable.set(t);
+            }
+            finally
+            {
+                complete.countDown();
+            }
+        }).start();
+
+        Runnable todo = source.takeDemand();
+        assertNull(todo);
+        assertTrue(complete.await(10, TimeUnit.SECONDS));
+        assertNull(throwable.get());
+        if (eofAvailable)
+            assertNull(failed.get());
+        else
+            assertThat(failed.get(), instanceOf(IOException.class));
+    }
+
+    @Test
+    public void testInputStreamCloseWithContentAvailable() throws Exception
+    {
+        AtomicReference<Throwable> failed = new AtomicReference<>();
+        TestContentSource source = new TestContentSource()
+        {
+            @Override
+            public void fail(Throwable failure)
+            {
+                failed.set(failure);
+            }
+        };
+
+        InputStream in = Content.Source.asInputStream(source);
+        source.add("hello", false);
+        AtomicReference<Throwable> throwable = new AtomicReference<>();
+        CountDownLatch complete = new CountDownLatch(1);
+        new Thread(() ->
+        {
+            try
+            {
+                byte[] buffer = new byte[5];
+                assertThat(in.read(buffer), is(5));
+                String input = new String(buffer, StandardCharsets.ISO_8859_1);
+                assertThat(input, is("hello"));
+                source.add("extra", false);
+                source.add(Content.Chunk.EOF);
+                in.close();
+            }
+            catch (Throwable t)
+            {
+                throwable.set(t);
+            }
+            finally
+            {
+                complete.countDown();
+            }
+        }).start();
+
+        Runnable todo = source.takeDemand();
+        assertNull(todo);
+        assertTrue(complete.await(10, TimeUnit.SECONDS));
+        assertNull(throwable.get());
+        assertThat(failed.get(), instanceOf(IOException.class));
     }
 
     private static class TestContentSource implements Content.Source

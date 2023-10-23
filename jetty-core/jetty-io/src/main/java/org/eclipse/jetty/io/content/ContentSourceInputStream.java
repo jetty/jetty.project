@@ -57,7 +57,7 @@ public class ContentSourceInputStream extends InputStream
                 if (Content.Chunk.isFailure(chunk))
                 {
                     Content.Chunk c = chunk;
-                    chunk = null;
+                    chunk = Content.Chunk.next(c);
                     throw IO.rethrow(c.getFailure());
                 }
 
@@ -98,23 +98,49 @@ public class ContentSourceInputStream extends InputStream
     }
 
     @Override
-    public void close()
+    public void close() throws IOException
     {
         // If we have already reached a real EOF or a persistent failure, close is a noop.
         if (chunk == Content.Chunk.EOF || Content.Chunk.isFailure(chunk, true))
             return;
 
+        boolean contentSkipped = false;
+
         // If we have a chunk here, then it needs to be released
         if (chunk != null)
         {
+            contentSkipped = chunk.hasRemaining();
             chunk.release();
-
-            // if the chunk was a last chunk (but not an instanceof EOF), then nothing more to do
-            if (chunk.isLast())
-                return;
+            chunk = Content.Chunk.next(chunk);
         }
 
-        // This is an abnormal close before EOF
+        // If we don't have a chunk and have not skipped content, try one read looking for EOF
+        if (!contentSkipped && chunk == null)
+        {
+            chunk = content.read();
+
+            // If we read a chunk
+            if (chunk != null)
+            {
+                // Handle a failure as read would
+                if (Content.Chunk.isFailure(chunk))
+                {
+                    Content.Chunk c = chunk;
+                    chunk = Content.Chunk.next(c);
+                    throw IO.rethrow(c.getFailure());
+                }
+
+                contentSkipped = chunk.hasRemaining();
+                chunk.release();
+                chunk = Content.Chunk.next(chunk);
+            }
+        }
+
+        // if we are now really at EOF without skipping content, then nothing more to do
+        if (!contentSkipped && chunk != null && chunk.isLast())
+            return;
+
+        // Otherwise this is an abnormal close before EOF
         Throwable closed = new IOException("closed before EOF");
         chunk = Content.Chunk.from(closed);
         content.fail(closed);

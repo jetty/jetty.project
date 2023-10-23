@@ -123,7 +123,7 @@ public class OverlayManager
      * 
      * @param overlay the war overlay to unpack
      * @return the location to which it was unpacked
-     * @throws IOException
+     * @throws IOException if there is an IO problem
      */
     protected  Resource unpackOverlay(Overlay overlay)
         throws IOException

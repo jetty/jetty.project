@@ -13,45 +13,33 @@
 
 package org.eclipse.jetty.fcgi.client.transport.internal;
 
-import java.util.concurrent.TimeoutException;
-
 import org.eclipse.jetty.client.Result;
 import org.eclipse.jetty.client.transport.HttpChannel;
 import org.eclipse.jetty.client.transport.HttpExchange;
 import org.eclipse.jetty.client.transport.HttpReceiver;
 import org.eclipse.jetty.client.transport.HttpSender;
-import org.eclipse.jetty.fcgi.generator.Flusher;
 import org.eclipse.jetty.http.HttpField;
 import org.eclipse.jetty.http.HttpFields;
 import org.eclipse.jetty.http.HttpVersion;
 import org.eclipse.jetty.io.ByteBufferPool;
 import org.eclipse.jetty.io.Content;
-import org.eclipse.jetty.io.IdleTimeout;
 import org.eclipse.jetty.util.Callback;
 import org.eclipse.jetty.util.Promise;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
 
 public class HttpChannelOverFCGI extends HttpChannel
 {
-    private static final Logger LOG = LoggerFactory.getLogger(HttpChannelOverFCGI.class);
-
     private final HttpConnectionOverFCGI connection;
-    private final Flusher flusher;
     private final HttpSenderOverFCGI sender;
     private final HttpReceiverOverFCGI receiver;
-    private final FCGIIdleTimeout idle;
     private int request;
     private HttpVersion version;
 
-    public HttpChannelOverFCGI(HttpConnectionOverFCGI connection, Flusher flusher, long idleTimeout)
+    public HttpChannelOverFCGI(HttpConnectionOverFCGI connection)
     {
         super(connection.getHttpDestination());
         this.connection = connection;
-        this.flusher = flusher;
         this.sender = new HttpSenderOverFCGI(this);
         this.receiver = new HttpReceiverOverFCGI(this);
-        this.idle = new FCGIIdleTimeout(connection, idleTimeout);
     }
 
     public HttpConnectionOverFCGI getHttpConnection()
@@ -81,28 +69,21 @@ public class HttpChannelOverFCGI extends HttpChannel
         return receiver;
     }
 
-    public boolean isFailed()
-    {
-        return sender.isFailed() || receiver.isFailed();
-    }
-
     @Override
     public void send(HttpExchange exchange)
     {
         version = exchange.getRequest().getVersion();
-        idle.onOpen();
         sender.send(exchange);
     }
 
     @Override
     public void release()
     {
-        connection.release(this);
+        connection.release();
     }
 
     protected void responseBegin(int code, String reason)
     {
-        idle.notIdle();
         HttpExchange exchange = getHttpExchange();
         if (exchange == null)
             return;
@@ -119,7 +100,6 @@ public class HttpChannelOverFCGI extends HttpChannel
 
     protected void responseHeaders()
     {
-        idle.notIdle();
         HttpExchange exchange = getHttpExchange();
         if (exchange != null)
             receiver.responseHeaders(exchange);
@@ -127,7 +107,6 @@ public class HttpChannelOverFCGI extends HttpChannel
 
     protected void content(Content.Chunk chunk)
     {
-        idle.notIdle();
         HttpExchange exchange = getHttpExchange();
         if (exchange != null)
             receiver.content(chunk);
@@ -135,7 +114,6 @@ public class HttpChannelOverFCGI extends HttpChannel
 
     protected void end()
     {
-        idle.notIdle();
         HttpExchange exchange = getHttpExchange();
         if (exchange != null)
             receiver.end(exchange);
@@ -150,67 +128,33 @@ public class HttpChannelOverFCGI extends HttpChannel
             promise.succeeded(false);
     }
 
+    void eof()
+    {
+        HttpExchange exchange = getHttpExchange();
+        if (exchange == null)
+            connection.close();
+    }
+
     @Override
     public void exchangeTerminated(HttpExchange exchange, Result result)
     {
         super.exchangeTerminated(exchange, result);
-        idle.onClose();
         HttpFields responseHeaders = result.getResponse().getHeaders();
         if (result.isFailed())
             connection.close(result.getFailure());
-        else if (!connection.closeByHTTP(responseHeaders))
+        else if (connection.isShutdown() || connection.isCloseByHTTP(responseHeaders))
+            connection.close();
+        else
             release();
     }
 
     protected void flush(ByteBufferPool.Accumulator accumulator, Callback callback)
     {
-        flusher.flush(accumulator, callback);
+        connection.getFlusher().flush(accumulator, callback);
     }
 
     void receive()
     {
         receiver.receive();
-    }
-
-    private class FCGIIdleTimeout extends IdleTimeout
-    {
-        private final HttpConnectionOverFCGI connection;
-        private boolean open;
-
-        public FCGIIdleTimeout(HttpConnectionOverFCGI connection, long idleTimeout)
-        {
-            super(connection.getHttpDestination().getHttpClient().getScheduler());
-            this.connection = connection;
-            setIdleTimeout(idleTimeout >= 0 ? idleTimeout : connection.getEndPoint().getIdleTimeout());
-        }
-
-        @Override
-        public void onOpen()
-        {
-            open = true;
-            notIdle();
-            super.onOpen();
-        }
-
-        @Override
-        public void onClose()
-        {
-            super.onClose();
-            open = false;
-        }
-
-        @Override
-        protected void onIdleExpired(TimeoutException timeout)
-        {
-            if (LOG.isDebugEnabled())
-                LOG.debug("Idle timeout for request {}", request);
-            connection.abort(timeout);
-        }
-
-        @Override
-        public boolean isOpen()
-        {
-            return open;
-        }
     }
 }

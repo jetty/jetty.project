@@ -77,6 +77,7 @@ public class SPNEGOAuthentication extends AbstractAuthentication
     }
 
     /**
+     * Get the user name of the user to login.
      * @return the user name of the user to login
      */
     public String getUserName()
@@ -85,6 +86,7 @@ public class SPNEGOAuthentication extends AbstractAuthentication
     }
 
     /**
+     * Set user name of the user to login.
      * @param userName user name of the user to login
      */
     public void setUserName(String userName)
@@ -93,6 +95,7 @@ public class SPNEGOAuthentication extends AbstractAuthentication
     }
 
     /**
+     * Get the password of the user to login.
      * @return the password of the user to login
      */
     public String getUserPassword()
@@ -110,6 +113,7 @@ public class SPNEGOAuthentication extends AbstractAuthentication
     }
 
     /**
+     * Get the path of the keyTab file with the user credentials.
      * @return the path of the keyTab file with the user credentials
      */
     public Path getUserKeyTabPath()
@@ -127,6 +131,7 @@ public class SPNEGOAuthentication extends AbstractAuthentication
     }
 
     /**
+     * Get the name of the service to use.
      * @return the name of the service to use
      */
     public String getServiceName()
@@ -135,6 +140,7 @@ public class SPNEGOAuthentication extends AbstractAuthentication
     }
 
     /**
+     * Set the name of the service to use.
      * @param serviceName the name of the service to use
      */
     public void setServiceName(String serviceName)
@@ -160,6 +166,7 @@ public class SPNEGOAuthentication extends AbstractAuthentication
     }
 
     /**
+     * Get the path of the ticket cache file.
      * @return the path of the ticket cache file
      */
     public Path getTicketCachePath()
@@ -185,6 +192,7 @@ public class SPNEGOAuthentication extends AbstractAuthentication
     }
 
     /**
+     * Set whether to renew the ticket granting ticket.
      * @param renewTGT whether to renew the ticket granting ticket
      */
     public void setRenewTGT(boolean renewTGT)

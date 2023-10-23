@@ -93,13 +93,11 @@ public class SSLEngineTest
      * The expected response.
      */
     private static final String RESPONSE0 = "HTTP/1.1 200 OK\n" +
-        "Server: Jetty(" + JETTY_VERSION + ")\n" +
         "Content-Length: " + HELLO_WORLD.length() + "\n" +
         '\n' +
         HELLO_WORLD;
 
     private static final String RESPONSE1 = "HTTP/1.1 200 OK\n" +
-        "Server: Jetty(" + JETTY_VERSION + ")\n" +
         "Content-Length: " + HELLO_WORLD.length() + "\n" +
         "Connection: close\n" +
         '\n' +
@@ -121,6 +119,7 @@ public class SSLEngineTest
         HttpConnectionFactory http = new HttpConnectionFactory();
         http.setInputBufferSize(512);
         http.getHttpConfiguration().setRequestHeaderSize(512);
+        http.getHttpConfiguration().setSendServerVersion(false);
         connector = new ServerConnector(server, sslContextFactory, http);
         connector.setPort(0);
         connector.getConnectionFactory(HttpConnectionFactory.class).getHttpConfiguration().setSendDateHeader(false);

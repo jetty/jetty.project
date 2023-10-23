@@ -174,7 +174,7 @@ public class ServletTest
             String request = """
                 GET /ctx/get HTTP/1.1
                 Host: local
-                            
+                     
                 """;
             endPoint.addInput(request);
             String response = endPoint.getResponse();

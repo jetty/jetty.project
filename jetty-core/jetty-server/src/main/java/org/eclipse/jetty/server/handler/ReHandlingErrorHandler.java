@@ -57,7 +57,7 @@ public abstract class ReHandlingErrorHandler extends ErrorHandler
             {
                 request.setAttribute(ReHandlingErrorHandler.class.getName(), pathInContext);
                 HttpURI uri = Request.newHttpURIFrom(request, pathInContext);
-                ReHandleRequestWrapper reRequest = new ReHandleRequestWrapper(request, uri);
+                Request reRequest = Request.serveAs(request, uri);
 
                 try
                 {
@@ -69,8 +69,7 @@ public abstract class ReHandlingErrorHandler extends ErrorHandler
                 {
                     if (LOG.isDebugEnabled())
                         LOG.debug("Unable to process error {}", reRequest, e);
-                    if (ExceptionUtil.areNotAssociated(cause, e))
-                        cause.addSuppressed(e);
+                    ExceptionUtil.addSuppressedIfNotAssociated(cause, e);
                     response.setStatus(code);
                 }
             }
@@ -111,23 +110,6 @@ public abstract class ReHandlingErrorHandler extends ErrorHandler
         public String remove(int code)
         {
             return _statusMap.remove(code);
-        }
-    }
-
-    private static class ReHandleRequestWrapper extends Request.Wrapper
-    {
-        private final HttpURI _uri;
-
-        public ReHandleRequestWrapper(Request request, HttpURI uri)
-        {
-            super(request);
-            _uri = uri;
-        }
-
-        @Override
-        public HttpURI getHttpURI()
-        {
-            return _uri;
         }
     }
 }

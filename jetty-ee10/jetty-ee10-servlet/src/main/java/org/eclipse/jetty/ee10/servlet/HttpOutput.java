@@ -36,6 +36,7 @@ import org.eclipse.jetty.io.Content;
 import org.eclipse.jetty.io.EofException;
 import org.eclipse.jetty.io.RetainableByteBuffer;
 import org.eclipse.jetty.server.HttpConfiguration;
+import org.eclipse.jetty.server.Response;
 import org.eclipse.jetty.util.Blocker;
 import org.eclipse.jetty.util.BufferUtil;
 import org.eclipse.jetty.util.Callback;
@@ -125,7 +126,7 @@ public class HttpOutput extends ServletOutputStream implements Runnable
     private static final ThreadLocal<CharsetEncoder> _encoder = new ThreadLocal<>();
 
     private final ServletChannel _servletChannel;
-    private final ServletRequestState _channelState;
+    private final ServletChannelState _channelState;
     private final Blocker.Shared _writeBlocker;
     private ApiState _apiState = ApiState.BLOCKING;
     private State _state = State.OPEN;
@@ -154,12 +155,20 @@ public class HttpOutput extends ServletOutputStream implements Runnable
             _commitSize = _bufferSize;
         }
     }
-    
+
+    /**
+     * @return True if any content has been written via the {@link jakarta.servlet.http.HttpServletResponse} API.
+     */
     public boolean isWritten()
     {
         return _written > 0;
     }
 
+    /**
+     * @return The bytes written via the {@link jakarta.servlet.http.HttpServletResponse} API.  This
+     * may differ from the bytes reported by {@link org.eclipse.jetty.server.Response#getContentBytesWritten(Response)}
+     * due to buffering, compression, other interception or writes that bypass the servlet API.
+     */
     public long getWritten()
     {
         return _written;
@@ -312,13 +321,16 @@ public class HttpOutput extends ServletOutputStream implements Runnable
         }
     }
 
+    /**
+     * This method is invoked for the COMPLETE action handling in
+     * HttpChannel.handle.  The callback passed typically will call completed
+     * to finish the request cycle and so may need to asynchronously wait for:
+     * a pending/blocked operation to finish and then either an async close or
+     * wait for an application close to complete.
+     * @param callback The callback to complete when writing the output is complete.
+     */
     public void complete(Callback callback)
     {
-        // This method is invoked for the COMPLETE action handling in
-        // HttpChannel.handle.  The callback passed typically will call completed
-        // to finish the request cycle and so may need to asynchronously wait for:
-        // a pending/blocked operation to finish and then either an async close or
-        // wait for an application close to complete.
         boolean succeeded = false;
         Throwable error = null;
         ByteBuffer content = null;
@@ -445,6 +457,9 @@ public class HttpOutput extends ServletOutputStream implements Runnable
         Blocker.Callback blocker = null;
         try (AutoLock l = _channelState.lock())
         {
+            if (_softClose)
+                return;
+
             if (_onError != null)
             {
                 if (_onError instanceof IOException)
@@ -1456,8 +1471,7 @@ public class HttpOutput extends ServletOutputStream implements Runnable
             }
             catch (Throwable t)
             {
-                if (ExceptionUtil.areNotAssociated(e, t))
-                    e.addSuppressed(t);
+                ExceptionUtil.addSuppressedIfNotAssociated(e, t);
             }
             finally
             {

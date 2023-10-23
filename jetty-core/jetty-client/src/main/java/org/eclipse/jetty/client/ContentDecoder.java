@@ -30,6 +30,16 @@ import org.eclipse.jetty.io.RetainableByteBuffer;
 public interface ContentDecoder
 {
     /**
+     * <p>Processes the response just before the decoding of the response content.</p>
+     * <p>Typical processing may involve modifying the response headers, for example
+     * by temporarily removing the {@code Content-Length} header, or modifying the
+     * {@code Content-Encoding} header.</p>
+     */
+    public default void beforeDecoding(Response response)
+    {
+    }
+
+    /**
      * <p>Decodes the bytes in the given {@code buffer} and returns the decoded bytes.</p>
      * <p>The returned {@link RetainableByteBuffer} containing the decoded bytes may
      * be empty and <b>must</b> be released via {@link RetainableByteBuffer#release()}.</p>
@@ -38,6 +48,16 @@ public interface ContentDecoder
      * @return a buffer containing decoded bytes that must be released
      */
     public abstract RetainableByteBuffer decode(ByteBuffer buffer);
+
+    /**
+     * <p>Processes the exchange after the response content has been decoded.</p>
+     * <p>Typical processing may involve modifying the response headers, for example
+     * updating the {@code Content-Length} header to the length of the decoded
+     * response content.
+     */
+    public default void afterDecoding(Response response)
+    {
+    }
 
     /**
      * Factory for {@link ContentDecoder}s; subclasses must implement {@link #newContentDecoder()}.
@@ -70,9 +90,8 @@ public interface ContentDecoder
         {
             if (this == obj)
                 return true;
-            if (!(obj instanceof Factory))
+            if (!(obj instanceof Factory that))
                 return false;
-            Factory that = (Factory)obj;
             return encoding.equals(that.encoding);
         }
 

@@ -41,6 +41,7 @@ public class JDBCSessionDataStoreFactory extends AbstractSessionDataStoreFactory
     }
 
     /**
+     * Set the {@link DatabaseAdaptor} to set.
      * @param adaptor the {@link DatabaseAdaptor} to set
      */
     public void setDatabaseAdaptor(DatabaseAdaptor adaptor)
@@ -49,6 +50,7 @@ public class JDBCSessionDataStoreFactory extends AbstractSessionDataStoreFactory
     }
 
     /**
+     * Set the {@link JDBCSessionDataStoreFactory} to set.
      * @param schema the {@link JDBCSessionDataStoreFactory} to set
      */
     public void setSessionTableSchema(JDBCSessionDataStore.SessionTableSchema schema)

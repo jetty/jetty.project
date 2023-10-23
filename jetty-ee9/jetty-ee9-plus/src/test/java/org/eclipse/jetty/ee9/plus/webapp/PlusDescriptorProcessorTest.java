@@ -179,7 +179,7 @@ public class PlusDescriptorProcessorTest
      * 
      * @param envCtx the java:comp/env context
      * @param envEntry the EnvEntry
-     * @throws Exception
+     * @throws Exception if there is an unspecified problem
      */
     private void doEnvConfiguration(Context envCtx, EnvEntry envEntry) throws Exception
     {

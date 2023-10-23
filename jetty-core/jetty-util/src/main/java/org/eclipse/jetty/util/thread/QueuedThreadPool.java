@@ -430,6 +430,7 @@ public class QueuedThreadPool extends ContainerLifeCycle implements ThreadFactor
     }
 
     /**
+     * Set number of reserved threads or -1 for heuristically determined.
      * @param reservedThreads number of reserved threads or -1 for heuristically determined
      */
     public void setReservedThreads(int reservedThreads)
@@ -470,6 +471,7 @@ public class QueuedThreadPool extends ContainerLifeCycle implements ThreadFactor
     }
 
     /**
+     * Set the priority of the pool threads.
      * @param priority the priority of the pool threads
      */
     public void setThreadsPriority(int priority)

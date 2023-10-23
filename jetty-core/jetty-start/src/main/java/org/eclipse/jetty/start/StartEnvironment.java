@@ -231,9 +231,9 @@ public class StartEnvironment
         StartLog.debug("Expanding Libs");
         for (String rawlibref : _libRefs)
         {
-            StartLog.debug("rawlibref = " + rawlibref);
+            StartLog.debug("rawlibref = %s", rawlibref);
             String libref = getProperties().expand(rawlibref);
-            StartLog.debug("expanded = " + libref);
+            StartLog.debug("expanded = %s", libref);
 
             // perform path escaping (needed by windows)
             libref = libref.replaceAll("\\\\([^\\\\])", "\\\\\\\\$1");

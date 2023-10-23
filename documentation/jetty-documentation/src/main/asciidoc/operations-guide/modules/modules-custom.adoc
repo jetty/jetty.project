@@ -68,7 +68,7 @@ CAUTION: The cipher list used above may not be secure -- it's just an example.
 Then write your custom module in the `$JETTY_BASE/modules/custom-ssl.mod` file:
 
 .custom-ssl.mod
-[source,subs=verbatim]
+[source]
 ----
 [description]
 Customizes the standard ssl module.
@@ -104,7 +104,7 @@ $ java -jar $JETTY_HOME/start.jar --add-modules=https,custom-ssl
 
 The command above will produce the following `$JETTY_BASE` directory structure:
 
-[source,subs=normal]
+[source,subs="verbatim,quotes"]
 ----
 $JETTY_BASE
 ├── etc
@@ -131,12 +131,12 @@ In the cases where you need to enhance Jetty with a custom functionality, you ca
 For example, let's assume that you need to add a custom auditing component that integrates with the auditing tools used by your company.
 This custom auditing component should measure the HTTP request processing times and record them (how they are recorded is irrelevant here -- could be in a local log file or sent via network to an external service).
 
-The Jetty libraries already provide a way to measure HTTP request processing times via xref:{prog-guide}#pg-server-http-channel-events[`HttpChannel` events]: you write a custom component that implements the `HttpChannel.Listener` interface and add it as a bean to the server `Connector` that receives the HTTP requests.
+The Jetty libraries already provide a way to measure HTTP request processing times via xref:{prog-guide}#pg-server-http-handler-use-events[`EventsHandler`]: you write a custom `EventsHandler` subclass that overrides the methods corresponding to the events you are interested in.
 
 The steps to create a Jetty module are similar to those necessary to xref:og-modules-custom-modify[modify an existing module]:
 
 * Write the auditing component and package it into a `+*.jar+` file.
-* Write a custom Jetty XML file that wires the auditing component to the `ServerConnector`.
+* Write a custom Jetty XML file that wires the auditing component to the `Handler` tree.
 * Write a custom Jetty module file that puts everything together.
 
 Let's start with the auditing component, sketched below:
@@ -145,7 +145,7 @@ Let's start with the auditing component, sketched below:
 ----
 package com.acme.audit;
 
-public class AuditingHttpChannelListener implements HttpChannel.Listener {
+public class AuditingEventsHandler extends EventsHandler {
     // Auditing is implemented here.
 }
 ----
@@ -156,15 +156,15 @@ Both `+*.jar+` files will be put in the `$JETTY_BASE/lib/` directory.
 Next, let's write the Jetty XML file that wires the auditing component to the `ServerConnector`, `$JETTY_BASE/etc/acme-audit.xml`:
 
 .acme-audit.xml
-[source,xml,subs=verbatim,options=nowrap]
+[source,xml,options=nowrap]
 ----
 <?xml version="1.0" encoding="UTF-8"?>
 <!DOCTYPE Configure PUBLIC "-//Jetty//Configure//EN" "https://eclipse.dev/jetty/configure_10_0.dtd">
 <Configure>
-  <Ref refid="httpConnector"> <!--1-->
-    <Call name="addBean"> <!--2-->
+  <Ref refid="Server"> <!--1-->
+    <Call name="insertHandler"> <!--2-->
       <Arg>
-        <New class="com.acme.audit.AuditingHttpChannelListener"> <!--3-->
+        <New class="com.acme.audit.AuditingEventsHandler"> <!--3-->
           <Set name="someProperty">
             <Property name="com.acme.audit.some.property" default="42" /> <!--4-->
           </Set>
@@ -173,10 +173,9 @@ Next, let's write the Jetty XML file that wires the auditing component to the `S
     </Call>
   </Ref>
 </Configure>
-
 ----
-<1> Reference the existing clear-text HTTP `ServerConnector` object created by the standard `http` module.
-<2> Call `addBean()` on the `ServerConnector` to wire the auditing component.
+<1> Reference `Server` instance.
+<2> Call `insertHandler()` on the `Server` so that the auditing component will be inserted just after the `Server` and just before its child `Handler`.
 <3> Instantiate the auditing component.
 <4> Configure the auditing component with a property.
 
@@ -185,14 +184,14 @@ The last step is to create the custom Jetty module file for the auditing compone
 .acme-audit.mod
 ----
 [description]
-Adds auditing to the clear-text HTTP connector
+Adds ACME auditing to the Jetty Server.
 
 [tags] <1>
 acme
 audit
 
 [depends] <2>
-http
+server
 
 [libs] <3>
 lib/acme-audit.jar
@@ -206,20 +205,21 @@ etc/acme-audit.xml
 # com.acme.audit.some.property=42
 ----
 <1> The tags that characterize this custom module (see xref:og-modules-directive-tags[here]).
-<2> This custom module depends on the standard `http` module.
+<2> This custom module depends on the standard `server` module.
 <3> The `+*.jar+` files that contains the custom auditing component, and its dependencies.
 <4> The custom Jetty XML file from above.
 <5> The text that will be copied in the `acme-audit.ini` file when this custom module will be enabled.
 
 Now you can xref:og-start-configure-enable[enable] the custom auditing module with the following command issued from the `$JETTY_BASE` directory:
 
+[source]
 ----
 $ java -jar $JETTY_HOME/start.jar --add-modules=http,acme-audit
 ----
 
 The command above will produce the following `$JETTY_BASE` directory structure:
 
-[source,subs=normal]
+[source,subs="verbatim,quotes"]
 ----
 $JETTY_BASE
 ├── etc

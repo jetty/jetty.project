@@ -30,7 +30,6 @@ import java.util.Set;
 import java.util.function.Predicate;
 
 import org.eclipse.jetty.util.IO;
-import org.eclipse.jetty.util.StringUtil;
 import org.eclipse.jetty.util.component.Destroyable;
 import org.eclipse.jetty.util.component.LifeCycle;
 import org.eclipse.jetty.util.thread.AutoLock;
@@ -175,6 +174,7 @@ public class ShutdownMonitor
     }
 
     /**
+     * Set true to exit the VM on shutdown.
      * @param exitVm true to exit the VM on shutdown
      */
     public void setExitVm(boolean exitVm)

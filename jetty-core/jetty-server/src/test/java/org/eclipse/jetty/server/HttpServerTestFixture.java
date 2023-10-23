@@ -18,8 +18,11 @@ import java.net.URI;
 import java.nio.ByteBuffer;
 import java.nio.charset.Charset;
 import java.nio.charset.StandardCharsets;
+import java.util.concurrent.TimeUnit;
 
+import org.awaitility.Awaitility;
 import org.eclipse.jetty.http.HttpHeader;
+import org.eclipse.jetty.io.ArrayByteBufferPool;
 import org.eclipse.jetty.io.Content;
 import org.eclipse.jetty.util.Blocker;
 import org.eclipse.jetty.util.BufferUtil;
@@ -27,8 +30,12 @@ import org.eclipse.jetty.util.Callback;
 import org.eclipse.jetty.util.Fields;
 import org.eclipse.jetty.util.Promise;
 import org.eclipse.jetty.util.thread.QueuedThreadPool;
+import org.eclipse.jetty.util.thread.ScheduledExecutorScheduler;
+import org.hamcrest.Matchers;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
+
+import static org.junit.jupiter.api.Assertions.fail;
 
 // @checkstyle-disable-check : AvoidEscapedUnicodeCharactersCheck
 public class HttpServerTestFixture
@@ -38,6 +45,7 @@ public class HttpServerTestFixture
 
     protected QueuedThreadPool _threadPool;
     protected Server _server;
+    protected ArrayByteBufferPool.Tracking _bufferPool;
     protected URI _serverURI;
     protected HttpConfiguration _httpConfiguration;
     protected ServerConnector _connector;
@@ -55,7 +63,8 @@ public class HttpServerTestFixture
     public void before()
     {
         _threadPool = new QueuedThreadPool();
-        _server = new Server(_threadPool);
+        _bufferPool = new ArrayByteBufferPool.Tracking();
+        _server = new Server(_threadPool, new ScheduledExecutorScheduler(), _bufferPool);
     }
 
     protected void initServer(ServerConnector connector) throws Exception
@@ -63,15 +72,25 @@ public class HttpServerTestFixture
         _connector = connector;
         _httpConfiguration = _connector.getConnectionFactory(HttpConnectionFactory.class).getHttpConfiguration();
         _httpConfiguration.setSendDateHeader(false);
+        _httpConfiguration.setSendServerVersion(false);
         _server.addConnector(_connector);
     }
 
     @AfterEach
     public void stopServer() throws Exception
     {
-        _server.stop();
-        _server.join();
-        _server.setConnectors(new Connector[]{});
+        try
+        {
+            Awaitility.await().atMost(5, TimeUnit.SECONDS).until(() -> _bufferPool.getLeaks().size(), Matchers.is(0));
+        }
+        catch (Exception e)
+        {
+            fail(e.getMessage() + "\n---\nServer Leaks: " + _bufferPool.dumpLeaks() + "---\n");
+        }
+        finally
+        {
+            _server.stop();
+        }
     }
 
     protected void startServer(Handler handler) throws Exception

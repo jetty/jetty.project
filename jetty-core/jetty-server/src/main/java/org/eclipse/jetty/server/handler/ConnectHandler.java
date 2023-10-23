@@ -113,6 +113,7 @@ public class ConnectHandler extends Handler.Wrapper
     }
 
     /**
+     * Get the timeout, in milliseconds, to connect to the remote server.
      * @return the timeout, in milliseconds, to connect to the remote server
      */
     public long getConnectTimeout()
@@ -121,6 +122,7 @@ public class ConnectHandler extends Handler.Wrapper
     }
 
     /**
+     * Set the timeout, in milliseconds, to connect to the remote server.
      * @param connectTimeout the timeout, in milliseconds, to connect to the remote server
      */
     public void setConnectTimeout(long connectTimeout)
@@ -129,6 +131,7 @@ public class ConnectHandler extends Handler.Wrapper
     }
 
     /**
+     * Get the idle timeout, in milliseconds.
      * @return the idle timeout, in milliseconds
      */
     public long getIdleTimeout()
@@ -137,6 +140,7 @@ public class ConnectHandler extends Handler.Wrapper
     }
 
     /**
+     * Set the idle timeout, in milliseconds.
      * @param idleTimeout the idle timeout, in milliseconds
      */
     public void setIdleTimeout(long idleTimeout)

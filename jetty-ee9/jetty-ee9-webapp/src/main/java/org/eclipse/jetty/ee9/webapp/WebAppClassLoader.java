@@ -124,7 +124,6 @@ public class WebAppClassLoader extends URLClassLoader implements ClassVisibility
      * <p>Run the passed {@link PrivilegedExceptionAction} with the classloader
      * configured so as to allow server classes to be visible</p>
      *
-     * @param <T> The type returned by the action
      * @param action The action to run
      * @param <T> the type of PrivilegedExceptionAction
      * @return The return from the action
@@ -197,6 +196,7 @@ public class WebAppClassLoader extends URLClassLoader implements ClassVisibility
     }
 
     /**
+     * Get the name of the classloader.
      * @return the name of the classloader
      */
     public String getName()
@@ -205,6 +205,7 @@ public class WebAppClassLoader extends URLClassLoader implements ClassVisibility
     }
 
     /**
+     * Set the name of the classloader.
      * @param name the name of the classloader
      */
     public void setName(String name)
@@ -312,8 +313,7 @@ public class WebAppClassLoader extends URLClassLoader implements ClassVisibility
     public PermissionCollection getPermissions(CodeSource cs)
     {
         PermissionCollection permissions = _context.getPermissions();
-        PermissionCollection pc = (permissions == null) ? super.getPermissions(cs) : permissions;
-        return pc;
+        return (permissions == null) ? super.getPermissions(cs) : permissions;
     }
 
     @Override
@@ -359,7 +359,7 @@ public class WebAppClassLoader extends URLClassLoader implements ClassVisibility
 
     /**
      * Get a resource from the classloader
-     *
+     * <p>
      * NOTE: this method provides a convenience of hacking off a leading /
      * should one be present. This is non-standard and it is recommended
      * to not rely on this behavior
@@ -428,8 +428,8 @@ public class WebAppClassLoader extends URLClassLoader implements ClassVisibility
         synchronized (getClassLoadingLock(name))
         {
             ClassNotFoundException ex = null;
-            Class<?> parentClass = null;
-            Class<?> webappClass = null;
+            Class<?> parentClass;
+            Class<?> webappClass;
 
             // Has this loader loaded the class already?
             webappClass = findLoadedClass(name);
@@ -595,11 +595,7 @@ public class WebAppClassLoader extends URLClassLoader implements ClassVisibility
 
             return defineClass(name, bytes, 0, bytes.length);
         }
-        catch (IOException e)
-        {
-            throw new ClassNotFoundException(name, e);
-        }
-        catch (IllegalClassFormatException e)
+        catch (IOException | IllegalClassFormatException e)
         {
             throw new ClassNotFoundException(name, e);
         }

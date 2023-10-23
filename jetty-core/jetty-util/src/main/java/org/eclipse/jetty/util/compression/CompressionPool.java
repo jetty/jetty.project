@@ -83,6 +83,7 @@ public abstract class CompressionPool<T> extends ContainerLifeCycle
     }
 
     /**
+     * Release an Entry.
      * @param entry returns this Object to the pool or calls {@link #end(Object)} if the pool is full.
      */
     public void release(Entry entry)

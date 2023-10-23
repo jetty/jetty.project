@@ -14,7 +14,8 @@
 package org.eclipse.jetty.util.jmh;
 
 import java.time.Instant;
-import java.util.Date;
+import java.time.format.DateTimeFormatter;
+import java.util.TimeZone;
 import java.util.concurrent.TimeUnit;
 
 import org.eclipse.jetty.util.DateCache;
@@ -38,29 +39,22 @@ import org.openjdk.jmh.runner.options.TimeValue;
 @Measurement(iterations = 7, time = 500, timeUnit = TimeUnit.MILLISECONDS)
 public class DateCacheBenchmark
 {
-
-    DateCache dateCache = new DateCache();
-    long timestamp = Instant.now().toEpochMilli();
+    TimeZone timeZone = TimeZone.getDefault();
+    DateTimeFormatter formatter = DateTimeFormatter.ofPattern(DateCache.DEFAULT_FORMAT + " SSS").withZone(timeZone.toZoneId());
+    DateCache dateCache = new DateCache(DateCache.DEFAULT_FORMAT + " SSS", null, timeZone, true);
 
     @Benchmark
     @BenchmarkMode(Mode.Throughput)
-    public void testDateCacheTimestamp()
+    public void testDateTimeFormatter()
     {
-        dateCache.format(timestamp);
+        formatter.format(Instant.now());
     }
 
     @Benchmark
     @BenchmarkMode(Mode.Throughput)
-    public void testDateCacheNow()
+    public void testDateCache()
     {
-        dateCache.format(new Date());
-    }
-
-    @Benchmark
-    @BenchmarkMode(Mode.Throughput)
-    public void testDateCacheFormatNow()
-    {
-        dateCache.formatNow(System.currentTimeMillis());
+        dateCache.format(System.currentTimeMillis());
     }
 
     public static void main(String[] args) throws RunnerException

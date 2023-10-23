@@ -22,7 +22,9 @@ import org.slf4j.LoggerFactory;
 /**
  * A LifeCycle Listener that writes state changes to a file.
  * <p>This can be used with the jetty.sh script to wait for successful startup.
+ * @deprecated use {@code org.eclipse.jetty.server.StateLifeCycleListener} instead
  */
+@Deprecated
 public class FileNoticeLifeCycleListener implements LifeCycle.Listener
 {
     private static final Logger LOG = LoggerFactory.getLogger(FileNoticeLifeCycleListener.class);

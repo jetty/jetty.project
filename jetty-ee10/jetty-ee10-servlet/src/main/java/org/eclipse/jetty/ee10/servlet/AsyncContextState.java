@@ -27,16 +27,16 @@ import jakarta.servlet.http.HttpServletResponse;
 
 public class AsyncContextState implements AsyncContext
 {
-    volatile ServletRequestState _state;
+    volatile ServletChannelState _state;
 
-    public AsyncContextState(ServletRequestState state)
+    public AsyncContextState(ServletChannelState state)
     {
         _state = state;
     }
 
-    ServletRequestState state()
+    ServletChannelState state()
     {
-        ServletRequestState state = _state;
+        ServletChannelState state = _state;
         if (state == null)
             throw new IllegalStateException("AsyncContext completed and/or Request lifecycle recycled");
         return state;
@@ -147,11 +147,6 @@ public class AsyncContextState implements AsyncContext
     public void reset()
     {
         _state = null;
-    }
-
-    public ServletRequestState getServletChannelState()
-    {
-        return state();
     }
 
     public static class WrappedAsyncListener implements AsyncListener

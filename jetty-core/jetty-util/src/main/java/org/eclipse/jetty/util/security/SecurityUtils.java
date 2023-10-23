@@ -77,6 +77,7 @@ public class SecurityUtils
     }
 
     /**
+     * Get the current security manager, if available.
      * @return the current security manager, if available
      */
     public static Object getSecurityManager()

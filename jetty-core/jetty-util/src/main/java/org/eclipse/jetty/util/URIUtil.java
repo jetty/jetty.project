@@ -1837,8 +1837,7 @@ public final class URIUtil
         Objects.requireNonNull(resource);
 
         // Only try URI for string for known schemes, otherwise assume it is a Path
-        ResourceFactory resourceFactory = ResourceFactory.getBestByScheme(resource);
-        return (resourceFactory != null)
+        return (ResourceFactory.isSupported(resource))
             ? correctFileURI(URI.create(resource))
             : Paths.get(resource).toUri();
     }

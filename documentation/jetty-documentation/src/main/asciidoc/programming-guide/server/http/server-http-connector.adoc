@@ -20,8 +20,10 @@ The available implementations are:
 
 * `org.eclipse.jetty.server.ServerConnector`, for TCP/IP sockets.
 * `org.eclipse.jetty.unixdomain.server.UnixDomainServerConnector` for Unix-Domain sockets (requires Java 16 or later).
+* `org.eclipse.jetty.quic.server.QuicServerConnector`, for the low-level QUIC protocol.
+* `org.eclipse.jetty.http3.server.HTTP3ServerConnector` for the HTTP/3 protocol.
 
-Both use a `java.nio.channels.ServerSocketChannel` to listen to a socket address and to accept socket connections.
+The first two use a `java.nio.channels.ServerSocketChannel` to listen to a socket address and to accept socket connections, while last two use a `java.nio.channels.DatagramChannel`.
 
 Since `ServerConnector` wraps a `ServerSocketChannel`, it can be configured in a similar way, for example the IP port to listen to, the IP address to bind to, etc.:
 
@@ -30,7 +32,7 @@ Since `ServerConnector` wraps a `ServerSocketChannel`, it can be configured in a
 include::../../{doc_code}/org/eclipse/jetty/docs/programming/server/http/HTTPServerDocs.java[tags=configureConnector]
 ----
 
-Likewise, `UnixDomainServerConnector` also wraps a `ServerSocketChannel` and can be configured with the Unix-Domain path to listen to:
+`UnixDomainServerConnector` also wraps a `ServerSocketChannel` and can be configured with the Unix-Domain path to listen to:
 
 [source,java,indent=0]
 ----
@@ -41,6 +43,13 @@ include::../../{doc_code}/org/eclipse/jetty/docs/programming/server/http/HTTPSer
 ====
 You can use Unix-Domain sockets support only when you run your server with Java 16 or later.
 ====
+
+`QuicServerConnector` and its extension `HTTP3ServerConnector` wrap a `DatagramChannel` and can be configured in a similar way:
+
+[source,java,indent=0]
+----
+include::../../{doc_code}/org/eclipse/jetty/docs/programming/server/http/HTTPServerDocs.java[tags=configureConnectorQuic]
+----
 
 The _acceptors_ are threads (typically only one) that compete to accept socket connections.
 When a connection is accepted, `ServerConnector` wraps the accepted `SocketChannel` and passes it to the xref:pg-arch-io-selector-manager[`SelectorManager`].
@@ -53,12 +62,17 @@ The _selectors_ are components that manage a set of connected sockets, implement
 Each selector requires one thread and uses the Java NIO mechanism to efficiently handle a set of connected sockets.
 As a rule of thumb, a single selector can easily manage up to 1000-5000 sockets, although the number may vary greatly depending on the application.
 
-For example, web site applications tend to use sockets for one or more HTTP requests to retrieve resources and then the socket is idle for most of the time.
+For example, web applications for websites tend to use sockets for one or more HTTP requests to retrieve resources and then the socket is idle for most of the time.
 In this case a single selector may be able to manage many sockets because chances are that they will be idle most of the time.
-On the contrary, web messaging applications tend to send many small messages at a very high frequency so that sockets are rarely idle.
-In this case a single selector may be able to manage less sockets because chances are that many of them will be active at the same time.
+On the contrary, web messaging applications or REST applications tend to send many small messages at a very high frequency so that sockets are rarely idle.
+In this case a single selector may be able to manage less sockets because chances are that many of them will be active at the same time, so you may need more than one.
 
-It is possible to configure more than one `ServerConnector` (each listening on a different port), or more than one `UnixDomainServerConnector` (each listening on a different path), or ``ServerConnector``s and ``UnixDomainServerConnector``s, for example:
+It is possible to configure more than one `Connector` per `Server`.
+Typical cases are a `ServerConnector` for clear-text HTTP, and another `ServerConnector` for secure HTTP.
+Another case could be a publicly exposed `ServerConnector` for secure HTTP, and an internally exposed `UnixDomainServerConnector` for clear-text HTTP.
+Yet another example could be a `ServerConnector` for clear-text HTTP, a `ServerConnector` for secure HTTP/2, and an `HTTP3ServerConnector` for QUIC+HTTP/3.
+
+For example:
 
 [source,java,indent=0]
 ----

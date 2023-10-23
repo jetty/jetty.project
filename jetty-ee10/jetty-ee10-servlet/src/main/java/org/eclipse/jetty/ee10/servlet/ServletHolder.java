@@ -855,6 +855,7 @@ public class ServletHolder extends Holder<Servlet> implements Comparable<Servlet
     }
 
     /**
+     * Get the package for all jsps.
      * @return the package for all jsps
      */
     public String getJspPackagePrefix()

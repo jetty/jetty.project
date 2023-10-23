@@ -28,7 +28,7 @@ public class ExampleServerXml
         // Find Jetty XML (in classpath) that configures and starts Server.
         // See src/main/resources/exampleserver.xml
         ResourceFactory.LifeCycle resourceFactory = ResourceFactory.lifecycle();
-        Resource serverXml = resourceFactory.newSystemResource("exampleserver.xml");
+        Resource serverXml = resourceFactory.newClassLoaderResource("exampleserver.xml");
         XmlConfiguration xml = new XmlConfiguration(serverXml);
         xml.getProperties().put("http.port", Integer.toString(port));
         Server server = (Server)xml.configure();

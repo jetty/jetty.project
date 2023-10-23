@@ -45,7 +45,7 @@ $ java -jar $JETTY_HOME/start.jar --add-modules=jmx-remote
 
 This command creates the `jmx-remote.ini` file:
 
-[source,subs=quotes]
+[source,subs="verbatim,quotes"]
 ----
 JETTY_BASE
 └── start.d
@@ -63,7 +63,7 @@ service:jmx:rmi://<rmi_server_host>:<rmi_server_port>/jndi/rmi://<rmi_registry_h
 
 Below you can find examples of ``JMXServiceURL``s:
 
-[source,subs=quotes]
+[source,subs="verbatim,quotes"]
 ----
 *service:jmx:rmi:///jndi/rmi:///jmxrmi*
 where:

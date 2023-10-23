@@ -379,6 +379,12 @@ public interface Request
     Request onResponseHeader(Response.HeaderListener listener);
 
     /**
+     * <p>Registers a listener for the headers event.</p>
+     * <p>Note that the response headers at this event
+     * may be different from the headers received in
+     * {@link #onResponseHeader(Response.HeaderListener)}
+     * as specified in {@link Response#getHeaders()}.</p>
+     *
      * @param listener a listener for response headers event
      * @return this request object
      */

@@ -17,15 +17,12 @@ import java.io.IOException;
 import java.io.InputStream;
 import java.io.OutputStream;
 import java.net.Socket;
-import java.nio.ByteBuffer;
 import java.nio.channels.Channel;
 import java.nio.charset.StandardCharsets;
-import java.util.Arrays;
 import java.util.concurrent.Exchanger;
 import java.util.concurrent.TimeUnit;
 import javax.net.ssl.SSLHandshakeException;
 
-import org.eclipse.jetty.http.HttpHeader;
 import org.eclipse.jetty.io.ByteBufferAccumulator;
 import org.eclipse.jetty.io.Content;
 import org.eclipse.jetty.io.EndPoint;
@@ -551,33 +548,6 @@ public abstract class ConnectorTimeoutTest extends HttpServerTestFixture
         }
     }
 
-    protected static class HugeResponseHandler extends Handler.Abstract
-    {
-        private final int iterations;
-
-        public HugeResponseHandler(int iterations)
-        {
-            this.iterations = iterations;
-        }
-
-        @Override
-        public boolean handle(Request request, Response response, Callback callback) throws Exception
-        {
-            response.setStatus(200);
-            // Create a big single buffer
-            byte[] buffer = new byte[iterations * 1024 * 1024];
-            Arrays.fill(buffer, (byte)'x');
-            // Toss in an LF after every iteration
-            for (int i = 0; i < iterations * 1024; i++)
-            {
-                buffer[i * 1024 + 1023] = '\n';
-            }
-            // Write it as a single buffer
-            response.write(true, ByteBuffer.wrap(buffer), callback);
-            return true;
-        }
-    }
-
     protected static class WaitHandler extends Handler.Abstract
     {
         @Override
@@ -616,7 +586,7 @@ public abstract class ConnectorTimeoutTest extends HttpServerTestFixture
         @Override
         public boolean handle(Request request, Response response, Callback callback) throws Exception
         {
-            long expectedContentLength = request.getHeaders().getLongField(HttpHeader.CONTENT_LENGTH);
+            long expectedContentLength = request.getLength();
             if (expectedContentLength <= 0)
             {
                 callback.succeeded();

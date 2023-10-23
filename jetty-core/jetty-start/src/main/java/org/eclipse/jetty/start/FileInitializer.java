@@ -14,14 +14,10 @@
 package org.eclipse.jetty.start;
 
 import java.io.IOException;
-import java.io.InputStream;
-import java.net.HttpURLConnection;
 import java.net.URI;
-import java.net.URLConnection;
 import java.nio.file.DirectoryStream;
 import java.nio.file.Files;
 import java.nio.file.Path;
-import java.nio.file.StandardCopyOption;
 import java.util.HashSet;
 import java.util.Set;
 
@@ -167,7 +163,7 @@ public abstract class FileInitializer
                 {
                     if (FS.ensureDirectoryExists(to))
                     {
-                        StartLog.info("mkdir " + _basehome.toShortForm(to));
+                        StartLog.info("mkdir %s", _basehome.toShortForm(to));
                         modified = true;
                     }
 

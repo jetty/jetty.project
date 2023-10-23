@@ -40,7 +40,7 @@ public class HttpInput extends ServletInputStream implements Runnable
      */
     final AutoLock _lock = new AutoLock();
     private final ServletChannel _servletChannel;
-    private final ServletRequestState _channelState;
+    private final ServletChannelState _channelState;
     private final byte[] _oneByteBuffer = new byte[1];
     private final BlockingContentProducer _blockingContentProducer;
     private final AsyncContentProducer _asyncContentProducer;

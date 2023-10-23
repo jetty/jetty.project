@@ -93,14 +93,14 @@ public class HttpInterimResponseTest extends AbstractTest
                     {
                         HttpFields.Mutable hints = HttpFields.build();
                         hints.put(HttpHeader.LINK, "</main.css>; rel=preload");
-                        return response.writeInterim(HttpStatus.EARLY_HINT_103, hints)
+                        return response.writeInterim(HttpStatus.EARLY_HINTS_103, hints)
                             .thenApply(i -> hints);
                     })
                     .thenCompose(hints1 ->
                     {
                         HttpFields.Mutable hints = HttpFields.build();
                         hints.put(HttpHeader.LINK, "</style.css>; rel=preload");
-                        return response.writeInterim(HttpStatus.EARLY_HINT_103, hints)
+                        return response.writeInterim(HttpStatus.EARLY_HINTS_103, hints)
                             .thenApply(i -> HttpFields.build(hints1).add(hints));
                     })
                     .thenCompose(hints ->

@@ -33,7 +33,7 @@ import org.eclipse.jetty.ee10.websocket.server.internal.DelegatedServerUpgradeRe
 import org.eclipse.jetty.ee10.websocket.server.internal.JettyServerFrameHandlerFactory;
 import org.eclipse.jetty.ee10.websocket.servlet.WebSocketUpgradeFilter;
 import org.eclipse.jetty.http.pathmap.PathSpec;
-import org.eclipse.jetty.util.FutureCallback;
+import org.eclipse.jetty.util.Blocker;
 import org.eclipse.jetty.util.component.ContainerLifeCycle;
 import org.eclipse.jetty.util.component.Dumpable;
 import org.eclipse.jetty.util.component.LifeCycle;
@@ -46,7 +46,6 @@ import org.eclipse.jetty.websocket.core.Configuration;
 import org.eclipse.jetty.websocket.core.WebSocketComponents;
 import org.eclipse.jetty.websocket.core.WebSocketConstants;
 import org.eclipse.jetty.websocket.core.exception.WebSocketException;
-import org.eclipse.jetty.websocket.core.server.Handshaker;
 import org.eclipse.jetty.websocket.core.server.WebSocketCreator;
 import org.eclipse.jetty.websocket.core.server.WebSocketMappings;
 import org.eclipse.jetty.websocket.core.server.WebSocketNegotiator;
@@ -218,29 +217,24 @@ public class JettyWebSocketServerContainer extends ContainerLifeCycle implements
         ServletContextResponse servletContextResponse = servletContextRequest.getServletContextResponse();
 
         WebSocketNegotiator negotiator = WebSocketNegotiator.from(coreCreator, frameHandlerFactory);
-        Handshaker handshaker = webSocketMappings.getHandshaker();
 
-        FutureCallback callback = new FutureCallback();
-        try
+        // Set the wrapped req and resp as attributes on the ServletContext Request/Response, so they
+        // are accessible when websocket-core calls back the Jetty WebSocket creator.
+        servletContextRequest.setAttribute(WebSocketConstants.WEBSOCKET_WRAPPED_REQUEST_ATTRIBUTE, request);
+        servletContextRequest.setAttribute(WebSocketConstants.WEBSOCKET_WRAPPED_RESPONSE_ATTRIBUTE, response);
+
+        try (Blocker.Callback callback = Blocker.callback())
         {
-            // Set the wrapped req and resp as attributes on the ServletContext Request/Response, so they
-            // are accessible when websocket-core calls back the Jetty WebSocket creator.
-            servletContextRequest.setAttribute(WebSocketConstants.WEBSOCKET_WRAPPED_REQUEST_ATTRIBUTE, request);
-            servletContextRequest.setAttribute(WebSocketConstants.WEBSOCKET_WRAPPED_RESPONSE_ATTRIBUTE, response);
-
-            if (handshaker.upgradeRequest(negotiator, servletContextRequest, servletContextResponse, callback, components, customizer))
-            {
+            boolean upgraded = webSocketMappings.upgrade(negotiator, servletContextRequest, servletContextResponse, callback, customizer);
+            if (upgraded)
                 callback.block();
-                return true;
-            }
+            return upgraded;
         }
         finally
         {
             servletContextRequest.removeAttribute(WebSocketConstants.WEBSOCKET_WRAPPED_REQUEST_ATTRIBUTE);
             servletContextRequest.removeAttribute(WebSocketConstants.WEBSOCKET_WRAPPED_RESPONSE_ATTRIBUTE);
         }
-
-        return false;
     }
 
     @Override

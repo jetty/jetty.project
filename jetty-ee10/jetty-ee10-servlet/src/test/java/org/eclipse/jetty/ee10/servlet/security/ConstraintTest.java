@@ -42,7 +42,6 @@ import org.eclipse.jetty.ee10.servlet.ServletContextHandler;
 import org.eclipse.jetty.ee10.servlet.ServletHandler;
 import org.eclipse.jetty.ee10.servlet.ServletHolder;
 import org.eclipse.jetty.ee10.servlet.SessionHandler;
-import org.eclipse.jetty.ee10.servlet.security.ConstraintMapping;
 import org.eclipse.jetty.http.HttpHeader;
 import org.eclipse.jetty.http.HttpStatus;
 import org.eclipse.jetty.http.HttpTester;
@@ -55,6 +54,7 @@ import org.eclipse.jetty.server.HttpConfiguration;
 import org.eclipse.jetty.server.HttpConnectionFactory;
 import org.eclipse.jetty.server.LocalConnector;
 import org.eclipse.jetty.server.Server;
+import org.eclipse.jetty.session.ManagedSession;
 import org.eclipse.jetty.util.StringUtil;
 import org.eclipse.jetty.util.TypeUtil;
 import org.eclipse.jetty.util.security.Password;
@@ -92,6 +92,7 @@ public class ConstraintTest
     private LocalConnector _connector;
     private ConstraintSecurityHandler _security;
     private HttpConfiguration _config;
+    private SessionHandler _sessionHandler;
     private ServletContextHandler _servletContextHandler;
     private Constraint.Builder _forbidConstraint;
     private Constraint.Builder _relaxConstraint;
@@ -109,8 +110,8 @@ public class ConstraintTest
         _servletContextHandler.setContextPath("/ctx");
         _server.setHandler(_servletContextHandler);
 
-        SessionHandler sessionHandler = _servletContextHandler.getSessionHandler();
-        _servletContextHandler.setHandler(sessionHandler);
+        _sessionHandler = _servletContextHandler.getSessionHandler();
+        _servletContextHandler.setHandler(_sessionHandler);
 
         TestLoginService loginService = new TestLoginService(TEST_REALM);
         loginService.putUser("user0", new Password("password"), new String[]{});
@@ -123,7 +124,7 @@ public class ConstraintTest
 
         _security = (ConstraintSecurityHandler)_servletContextHandler.getSecurityHandler();
         _security.setConstraintMappings(getConstraintMappings(), getKnownRoles());
-        sessionHandler.setHandler(_security);
+        _sessionHandler.setHandler(_security);
 
         ServletHandler servletHandler = _servletContextHandler.getServletHandler();
         _security.setHandler(servletHandler);
@@ -1165,6 +1166,92 @@ public class ConstraintTest
         assertThat(response, startsWith("HTTP/1.1 403"));
         assertThat(response, containsString("!authorized"));
         assertThat(response, not(containsString("JSESSIONID=" + session)));
+    }
+
+    public static Stream<Arguments> onAuthenticationTests()
+    {
+        return Stream.of(
+            Arguments.of(false, 0),
+            Arguments.of(false, -1),
+            Arguments.of(false, 2400),
+            Arguments.of(true, 0),
+            Arguments.of(true, -1),
+            Arguments.of(true, 2400)
+        );
+    }
+
+    @ParameterizedTest
+    @MethodSource("onAuthenticationTests")
+    public void testSessionOnAuthentication(boolean sessionRenewOnAuthentication, int sessionMaxInactiveIntervalOnAuthentication) throws Exception
+    {
+        final int UNAUTH_SECONDS = 1200;
+
+        // Use a FormAuthenticator as an example of session authentication
+        _security.setAuthenticator(new FormAuthenticator("/testLoginPage", "/testErrorPage", false));
+
+        _sessionHandler.setMaxInactiveInterval(UNAUTH_SECONDS);
+        _security.setSessionRenewedOnAuthentication(sessionRenewOnAuthentication);
+        _security.setSessionMaxInactiveIntervalOnAuthentication(sessionMaxInactiveIntervalOnAuthentication);
+        _server.start();
+
+        String response;
+
+        response = _connector.getResponse("GET /ctx/auth/info HTTP/1.0\r\n\r\n");
+        assertThat(response, containsString(" 302 Found"));
+        assertThat(response, containsString("/ctx/testLoginPage"));
+        assertThat(response, containsString("JSESSIONID="));
+        String sessionId = response.substring(response.indexOf("JSESSIONID=") + 11, response.indexOf("; Path=/ctx"));
+
+        response = _connector.getResponse("GET /ctx/testLoginPage HTTP/1.0\r\n" +
+            "Cookie: JSESSIONID=" + sessionId + "\r\n" +
+            "\r\n");
+        assertThat(response, containsString(" 200 OK"));
+        assertThat(response, containsString("URI=/ctx/testLoginPage"));
+        assertThat(response, not(containsString("JSESSIONID=" + sessionId)));
+
+        response = _connector.getResponse("POST /ctx/j_security_check HTTP/1.0\r\n" +
+            "Cookie: JSESSIONID=" + sessionId + "\r\n" +
+            "Content-Type: application/x-www-form-urlencoded\r\n" +
+            "Content-Length: 35\r\n" +
+            "\r\n" +
+            "j_username=user&j_password=password");
+        assertThat(response, startsWith("HTTP/1.1 302 "));
+        assertThat(response, containsString("Location"));
+        assertThat(response, containsString("/ctx/auth/info"));
+
+        if (sessionRenewOnAuthentication)
+        {
+            // check session ID has changed.
+            assertNull(_sessionHandler.getManagedSession(sessionId));
+            assertThat(response, containsString("Set-Cookie:"));
+            assertThat(response, containsString("JSESSIONID="));
+            assertThat(response, not(containsString("JSESSIONID=" + sessionId)));
+            sessionId = response.substring(response.indexOf("JSESSIONID=") + 11, response.indexOf("; Path=/ctx"));
+        }
+        else
+        {
+            // check session ID has not changed.
+            assertThat(response, not(containsString("Set-Cookie:")));
+            assertThat(response, not(containsString("JSESSIONID=")));
+        }
+
+        ManagedSession session = _sessionHandler.getManagedSession(sessionId);
+        if (sessionMaxInactiveIntervalOnAuthentication == 0)
+        {
+            // check max interval has not been updated
+            assertThat(session.getMaxInactiveInterval(), is(UNAUTH_SECONDS));
+        }
+        else
+        {
+            // check max interval has not been updated
+            assertThat(session.getMaxInactiveInterval(), is(sessionMaxInactiveIntervalOnAuthentication));
+        }
+
+        // check session still there.
+        response = _connector.getResponse("GET /ctx/auth/info HTTP/1.0\r\n" +
+            "Cookie: JSESSIONID=" + sessionId + "\r\n" +
+            "\r\n");
+        assertThat(response, startsWith("HTTP/1.1 200 OK"));
     }
 
     @Test

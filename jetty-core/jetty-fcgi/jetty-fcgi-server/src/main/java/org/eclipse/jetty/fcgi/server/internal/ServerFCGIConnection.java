@@ -36,7 +36,6 @@ import org.eclipse.jetty.server.Connector;
 import org.eclipse.jetty.server.HttpChannel;
 import org.eclipse.jetty.server.HttpConfiguration;
 import org.eclipse.jetty.util.Attributes;
-import org.eclipse.jetty.util.HostPort;
 import org.eclipse.jetty.util.StringUtil;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -69,6 +68,11 @@ public class ServerFCGIConnection extends AbstractConnection implements Connecti
         this.sendStatus200 = sendStatus200;
         this.parser = new ServerParser(new ServerListener());
         this.id = StringUtil.randomAlphaNumeric(16);
+    }
+
+    public long getBeginNanoTime()
+    {
+        return parser.getBeginNanoTime();
     }
 
     Flusher getFlusher()
@@ -154,12 +158,6 @@ public class ServerFCGIConnection extends AbstractConnection implements Connecti
     public SocketAddress getLocalSocketAddress()
     {
         return getEndPoint().getLocalSocketAddress();
-    }
-
-    @Override
-    public HostPort getServerAuthority()
-    {
-        return ConnectionMetaData.getServerAuthority(configuration, this);
     }
 
     @Override
@@ -270,6 +268,8 @@ public class ServerFCGIConnection extends AbstractConnection implements Connecti
 
     private void releaseInputBuffer()
     {
+        if (networkBuffer == null)
+            return;
         boolean released = networkBuffer.release();
         if (LOG.isDebugEnabled())
             LOG.debug("releaseInputBuffer {} {}", released, this);
@@ -327,6 +327,9 @@ public class ServerFCGIConnection extends AbstractConnection implements Connecti
     @Override
     public boolean onIdleExpired(TimeoutException timeoutException)
     {
+        HttpStreamOverFCGI stream = this.stream;
+        if (stream == null)
+            return true;
         Runnable task = stream.getHttpChannel().onIdleTimeout(timeoutException);
         if (task != null)
             getExecutor().execute(task);

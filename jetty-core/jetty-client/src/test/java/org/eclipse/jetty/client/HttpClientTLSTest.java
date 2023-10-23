@@ -88,6 +88,7 @@ import static org.hamcrest.Matchers.instanceOf;
 import static org.hamcrest.Matchers.is;
 import static org.junit.jupiter.api.Assertions.assertArrayEquals;
 import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertInstanceOf;
 import static org.junit.jupiter.api.Assertions.assertNotNull;
 import static org.junit.jupiter.api.Assertions.assertNull;
 import static org.junit.jupiter.api.Assertions.assertThrows;
@@ -600,16 +601,17 @@ public class HttpClientTLSTest
         startClient(clientTLSFactory);
 
         CountDownLatch latch = new CountDownLatch(1);
+        AtomicReference<Throwable> throwableRef = new AtomicReference<>();
         client.newRequest("localhost", connector.getLocalPort())
             .scheme(HttpScheme.HTTPS.asString())
             .send(result ->
             {
-                Throwable failure = result.getFailure();
-                if (failure instanceof SSLPeerUnverifiedException)
-                    latch.countDown();
+                throwableRef.set(result.getRequestFailure());
+                latch.countDown();
             });
 
         assertTrue(latch.await(10, TimeUnit.SECONDS));
+        assertInstanceOf(SSLPeerUnverifiedException.class, throwableRef.get());
     }
 
     @Test

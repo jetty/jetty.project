@@ -437,7 +437,7 @@ public class MultiPartRequestContentTest extends AbstractHttpClientServerTest
 
             Path tmpDir = MavenTestingUtils.getTargetTestingPath();
             String contentType = request.getHeaders().get(HttpHeader.CONTENT_TYPE);
-            assertEquals("multipart/form-data", HttpField.valueParameters(contentType, null));
+            assertEquals("multipart/form-data", HttpField.getValueParameters(contentType, null));
             String boundary = MultiPart.extractBoundary(contentType);
             MultiPartFormData.Parser formData = new MultiPartFormData.Parser(boundary);
             formData.setFilesDirectory(tmpDir);

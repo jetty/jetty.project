@@ -133,7 +133,7 @@ Starting Jetty yields:
 $ java -jar $JETTY_HOME/start.jar
 ----
 
-[source,subs=quotes,options=nowrap]
+[source,options=nowrap,subs="verbatim,quotes"]
 ----
 include::jetty[args="--module=proxy-protocol",highlight="(\{.*:8080})"]
 ----
@@ -166,7 +166,7 @@ Starting Jetty yields:
 $ java -jar $JETTY_HOME/start.jar
 ----
 
-[source,subs=quotes,options=nowrap]
+[source,options=nowrap,subs="verbatim,quotes"]
 ----
 include::jetty[setupArgs="--add-modules=https,test-keystore,proxy-protocol-ssl",highlight="(\{.*:8443})"]
 ----
@@ -197,7 +197,7 @@ Now you can create the HAProxy configuration file (in Linux it's typically `/etc
 This is a minimal configuration:
 
 .haproxy.cfg
-[source,subs=verbatim]
+[source]
 ----
 global
 tune.ssl.default-dh-param 1024

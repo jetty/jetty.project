@@ -13,8 +13,10 @@
 
 package org.eclipse.jetty.io.content;
 
+import java.io.IOException;
 import java.io.InputStream;
 import java.nio.ByteBuffer;
+import java.util.Objects;
 
 import org.eclipse.jetty.io.ByteBufferPool;
 import org.eclipse.jetty.io.Content;
@@ -50,7 +52,7 @@ public class InputStreamContentSource implements Content.Source
 
     public InputStreamContentSource(InputStream inputStream, ByteBufferPool bufferPool)
     {
-        this.inputStream = inputStream;
+        this.inputStream = Objects.requireNonNull(inputStream);
         this.bufferPool = bufferPool != null ? bufferPool : new ByteBufferPool.NonPooling();
     }
 
@@ -79,7 +81,7 @@ public class InputStreamContentSource implements Content.Source
         try
         {
             ByteBuffer buffer = streamBuffer.getByteBuffer();
-            int read = inputStream.read(buffer.array(), buffer.arrayOffset(), buffer.capacity());
+            int read = fillBufferFromInputStream(inputStream, buffer.array());
             if (read < 0)
             {
                 streamBuffer.release();
@@ -97,6 +99,11 @@ public class InputStreamContentSource implements Content.Source
             streamBuffer.release();
             return failure(x);
         }
+    }
+
+    protected int fillBufferFromInputStream(InputStream inputStream, byte[] buffer) throws IOException
+    {
+        return inputStream.read(buffer, 0, buffer.length);
     }
 
     private void close()

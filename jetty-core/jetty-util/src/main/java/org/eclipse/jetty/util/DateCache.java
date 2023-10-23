@@ -15,55 +15,83 @@ package org.eclipse.jetty.util;
 
 import java.time.Instant;
 import java.time.ZoneId;
-import java.time.ZonedDateTime;
 import java.time.format.DateTimeFormatter;
 import java.util.Date;
 import java.util.Locale;
 import java.util.TimeZone;
 
 /**
- * Date Format Cache.
- * Computes String representations of Dates and caches
- * the results so that subsequent requests within the same second
- * will be fast.
- *
- * Only format strings that contain either "ss".  Sub second formatting is
- * not handled.
- *
- * The timezone of the date may be included as an ID with the "zzz"
- * format string or as an offset with the "ZZZ" format string.
- *
+ * Computes String representations of Dates then caches the results so
+ * that subsequent requests within the same second will be fast.
+ * <p>
  * If consecutive calls are frequently very different, then this
  * may be a little slower than a normal DateFormat.
+ * <p>
+ * @see DateTimeFormatter for date formatting patterns.
  */
 public class DateCache
 {
     public static final String DEFAULT_FORMAT = "EEE MMM dd HH:mm:ss zzz yyyy";
 
     private final String _formatString;
-    private final String _tzFormatString;
-    private final DateTimeFormatter _tzFormat;
-    private final Locale _locale;
+    private final DateTimeFormatter _tzFormat1;
+    private final DateTimeFormatter _tzFormat2;
     private final ZoneId _zoneId;
 
-    private volatile Tick _tick;
+    private volatile TickHolder _tickHolder;
+
+    private static class TickHolder
+    {
+        public TickHolder(Tick t1, Tick t2)
+        {
+            tick1 = t1;
+            tick2 = t2;
+        }
+
+        final Tick tick1;
+        final Tick tick2;
+    }
 
     public static class Tick
     {
-        final long _seconds;
-        final String _string;
+        private final long _seconds;
+        private final String _prefix;
+        private final String _suffix;
 
-        public Tick(long seconds, String string)
+        public Tick(long seconds, String prefix, String suffix)
         {
             _seconds = seconds;
-            _string = string;
+            _prefix = prefix;
+            _suffix = suffix;
+        }
+
+        public long getSeconds()
+        {
+            return _seconds;
+        }
+
+        public String format(long inDate)
+        {
+            if (_suffix == null)
+                return _prefix;
+
+            long ms = inDate % 1000;
+            StringBuilder sb = new StringBuilder();
+            sb.append(_prefix);
+            if (ms < 10)
+                sb.append("00").append(ms);
+            else if (ms < 100)
+                sb.append('0').append(ms);
+            else
+                sb.append(ms);
+            sb.append(_suffix);
+            return sb.toString();
         }
     }
 
     /**
-     * Constructor.
-     * Make a DateCache that will use a default format. The default format
-     * generates the same results as Date.toString().
+     * Make a DateCache that will use a default format.
+     * The default format generates the same results as Date.toString().
      */
     public DateCache()
     {
@@ -71,8 +99,7 @@ public class DateCache
     }
 
     /**
-     * Constructor.
-     * Make a DateCache that will use the given format
+     * Make a DateCache that will use the given format.
      *
      * @param format the format to use
      */
@@ -93,59 +120,44 @@ public class DateCache
 
     public DateCache(String format, Locale l, TimeZone tz)
     {
+        this(format, l, tz, true);
+    }
+
+    public DateCache(String format, Locale l, TimeZone tz, boolean subSecondPrecision)
+    {
+        format = format.replaceFirst("S+", "SSS");
         _formatString = format;
-        _locale = l;
-
-        int zIndex = _formatString.indexOf("ZZZ");
-        if (zIndex >= 0)
-        {
-            final String ss1 = _formatString.substring(0, zIndex);
-            final String ss2 = _formatString.substring(zIndex + 3);
-            int tzOffset = tz.getRawOffset();
-
-            StringBuilder sb = new StringBuilder(_formatString.length() + 10);
-            sb.append(ss1);
-            sb.append("'");
-            if (tzOffset >= 0)
-                sb.append('+');
-            else
-            {
-                tzOffset = -tzOffset;
-                sb.append('-');
-            }
-
-            int raw = tzOffset / (1000 * 60);             // Convert to seconds
-            int hr = raw / 60;
-            int min = raw % 60;
-
-            if (hr < 10)
-                sb.append('0');
-            sb.append(hr);
-            if (min < 10)
-                sb.append('0');
-            sb.append(min);
-            sb.append('\'');
-
-            sb.append(ss2);
-            _tzFormatString = sb.toString();
-        }
-        else
-            _tzFormatString = _formatString;
-
         _zoneId = tz.toZoneId();
-        if (_locale != null)
+
+        String format1 = format;
+        String format2 = null;
+        boolean subSecond;
+        if (subSecondPrecision)
         {
-            _tzFormat = DateTimeFormatter
-                    .ofPattern(_tzFormatString, _locale)
-                    .withZone(_zoneId);
+            int msIndex = format.indexOf("SSS");
+            subSecond = (msIndex >= 0);
+            if (subSecond)
+            {
+                format1 = format.substring(0, msIndex);
+                format2 = format.substring(msIndex + 3);
+            }
         }
         else
         {
-            _tzFormat = DateTimeFormatter
-                    .ofPattern(_tzFormatString)
-                    .withZone(_zoneId);
+            subSecond = false;
+            format1 = format.replace("SSS", "000");
         }
-        _tick = null;
+
+        _tzFormat1 = createFormatter(format1, l, _zoneId);
+        _tzFormat2 = subSecond ? createFormatter(format2, l, _zoneId) : null;
+    }
+
+    private DateTimeFormatter createFormatter(String format, Locale locale, ZoneId zoneId)
+    {
+        if (locale == null)
+            return DateTimeFormatter.ofPattern(format).withZone(zoneId);
+        else
+            return DateTimeFormatter.ofPattern(format, locale).withZone(zoneId);
     }
 
     public TimeZone getTimeZone()
@@ -155,92 +167,62 @@ public class DateCache
 
     /**
      * Format a date according to our stored formatter.
+     * If it happens to be in the same second as the last
+     * formatNow call, then the format is reused.
      *
-     * @param inDate the Date
-     * @return Formatted date
+     * @param inDate the Date.
+     * @return Formatted date.
      */
     public String format(Date inDate)
     {
-        long seconds = inDate.getTime() / 1000;
-
-        Tick tick = _tick;
-
-        // Is this the cached time
-        if (tick == null || seconds != tick._seconds)
-        {
-            return ZonedDateTime.ofInstant(inDate.toInstant(), _zoneId).format(_tzFormat);
-        }
-
-        return tick._string;
+        return format(inDate.getTime());
     }
 
     /**
      * Format a date according to our stored formatter.
-     * If it happens to be in the same second as the last formatNow
-     * call, then the format is reused.
+     * If it happens to be in the same second as the last
+     * formatNow call, then the format is reused.
      *
-     * @param inDate the date in milliseconds since unix epoch
-     * @return Formatted date
+     * @param inDate the date in milliseconds since unix epoch.
+     * @return Formatted date.
      */
     public String format(long inDate)
     {
-        long seconds = inDate / 1000;
-
-        Tick tick = _tick;
-
-        // Is this the cached time
-        if (tick == null || seconds != tick._seconds)
-        {
-            // It's a cache miss
-            return ZonedDateTime.ofInstant(Instant.ofEpochMilli(inDate), _zoneId).format(_tzFormat);
-        }
-
-        return tick._string;
+        return formatTick(inDate).format(inDate);
     }
 
     /**
-     * Format a date according to our stored formatter.
-     * The passed time is expected to be close to the current time, so it is
-     * compared to the last value passed and if it is within the same second,
-     * the format is reused.  Otherwise a new cached format is created.
+     * Format a date according to supplied formatter.
      *
-     * @param now the milliseconds since unix epoch
-     * @return Formatted date
+     * @param inDate the date in milliseconds since unix epoch.
+     * @return Formatted date.
      */
-    public String formatNow(long now)
+    protected String doFormat(long inDate, DateTimeFormatter formatter)
     {
-        long seconds = now / 1000;
-
-        Tick tick = _tick;
-
-        // Is this the cached time
-        if (tick != null && tick._seconds == seconds)
-            return tick._string;
-        return formatTick(now)._string;
+        if (formatter == null)
+            return null;
+        return formatter.format(Instant.ofEpochMilli(inDate));
     }
 
-    public String now()
+    protected Tick formatTick(long inDate)
     {
-        return formatNow(System.currentTimeMillis());
-    }
+        long seconds = inDate / 1000;
 
-    public Tick tick()
-    {
-        return formatTick(System.currentTimeMillis());
-    }
-
-    protected Tick formatTick(long now)
-    {
-        long seconds = now / 1000;
-
-        Tick tick = _tick;
-        // recheck the tick, to save multiple formats
-        if (tick == null || tick._seconds != seconds)
+        // Two Ticks are cached so that for monotonically increasing times to not see any jitter from multiple cores.
+        // The ticks are kept in a volatile field, so there a small risk of inconsequential multiple recalculations
+        TickHolder holder = _tickHolder;
+        if (holder != null)
         {
-            String s = ZonedDateTime.ofInstant(Instant.ofEpochMilli(now), _zoneId).format(_tzFormat);
-            _tick = new Tick(seconds, s);
-            tick = _tick;
+            if (holder.tick1 != null && holder.tick1.getSeconds() == seconds)
+                return holder.tick1;
+            if (holder.tick2 != null && holder.tick2.getSeconds() == seconds)
+                return holder.tick2;
         }
+
+        String prefix = doFormat(inDate, _tzFormat1);
+        String suffix = doFormat(inDate, _tzFormat2);
+        Tick tick = new Tick(seconds, prefix, suffix);
+        _tickHolder = new TickHolder(tick, (holder == null) ? null : holder.tick1);
         return tick;
     }
 
