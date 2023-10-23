@@ -14,13 +14,15 @@
 package org.eclipse.jetty.tests.distribution.jettysh;
 
 /**
- * An OS Image of Ubuntu Linux 22.04, it comes with start-stop-daemon installed
+ * An OS Image of Ubuntu Linux 22.04,
+ * Adding JDK17 toolchain.
+ * it comes with start-stop-daemon installed
  */
-public class ImageOSUbuntuJammyLTS extends ImageOS
+public class ImageOSUbuntuJammyJDK17 extends ImageOS
 {
-    public ImageOSUbuntuJammyLTS()
+    public ImageOSUbuntuJammyJDK17()
     {
-        super("ubuntu-22.04",
+        super("ubuntu-22.04-jdk17",
             builder ->
                 builder
                     .from("ubuntu:22.04")

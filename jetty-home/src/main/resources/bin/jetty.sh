@@ -679,7 +679,7 @@ case "$ACTION" in
     fi
 
     # Stopping service started with start-stop-daemon
-    if [ $UID -eq 0 ] && type start-stop-daemon > /dev/null 2>&1; then
+    if (( USE_START_STOP_DAEMON )) ; then
       (( DEBUG )) && echo "Issuing HUP to $PID"
       start-stop-daemon --stop \
          --pid "$PID" \

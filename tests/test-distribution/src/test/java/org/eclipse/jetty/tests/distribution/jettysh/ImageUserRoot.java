@@ -16,11 +16,11 @@ package org.eclipse.jetty.tests.distribution.jettysh;
 /**
  * A docker image with no JETTY_USER set, everything executes as `root`.
  */
-public class ImageUserRootOnly extends ImageFromDSL
+public class ImageUserRoot extends ImageFromDSL
 {
-    public ImageUserRootOnly(ImageOS osImage)
+    public ImageUserRoot(ImageOS osImage)
     {
-        super(osImage, "user-root-only", builder ->
+        super(osImage, "user-root", builder ->
             builder
                 .from(osImage.getDockerImageName())
                 .run("mkdir -p ${JETTY_BASE} ; " +

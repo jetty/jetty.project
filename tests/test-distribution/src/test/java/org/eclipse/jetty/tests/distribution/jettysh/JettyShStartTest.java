@@ -61,11 +61,11 @@ public class JettyShStartTest extends AbstractJettyHomeTest
         List<ImageFromDSL> images = new ArrayList<>();
 
         // Loop through all OS images
-        for (ImageOS osImage : List.of(new ImageOSUbuntuJammyLTS(), new ImageOSAmazonCorretto11()))
+        for (ImageOS osImage : List.of(new ImageOSUbuntuJammyJDK17(), new ImageOSAmazonCorretto11()))
         {
             // Establish user Images based on OS Image
             List<ImageFromDSL> userImages = new ArrayList<>();
-            userImages.add(new ImageUserRootOnly(osImage));
+            userImages.add(new ImageUserRoot(osImage));
             userImages.add(new ImageUserChange(osImage));
 
             // Loop through user Images to establish various JETTY_BASE configurations
@@ -163,11 +163,11 @@ public class JettyShStartTest extends AbstractJettyHomeTest
             /* Looking for output from jetty.sh indicating a stopped jetty.
              * STDOUT Example 1
              * ----
-             * Stopped Jetty: OK\n
+             * Stopping Jetty: OK\n
              * ----
              * STOUT Example 2
              * ----
-             * Stopped Jetty: .Killed 12345\n
+             * Stopping Jetty: .Killed 12345\n
              * OK\n
              * ----
              */
