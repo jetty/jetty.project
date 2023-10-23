@@ -158,7 +158,7 @@ public class WebSocketServerComponents extends WebSocketComponents
 
     public static WebSocketComponents getWebSocketComponents(ContextHandler contextHandler)
     {
-        WebSocketComponents components = (WebSocketComponents)contextHandler.getAttribute(WEBSOCKET_COMPONENTS_ATTRIBUTE);
+        WebSocketComponents components = (WebSocketComponents)contextHandler.getContext().getAttribute(WEBSOCKET_COMPONENTS_ATTRIBUTE);
         if (components == null)
             throw new IllegalStateException("WebSocketComponents has not been created");
 
