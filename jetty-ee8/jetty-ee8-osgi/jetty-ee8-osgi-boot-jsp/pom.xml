@@ -113,7 +113,7 @@
               org.apache.taglibs.standard.tag.rt.xml;version="1.2";resolution:=optional,
               org.apache.taglibs.standard.tei;version="1.2";resolution:=optional,
               org.apache.taglibs.standard.tlv;version="1.2";resolution:=optional,
-              org.apache.tomcat;version="[10,11)";resolution:=optional,
+              org.apache.tomcat;version="[$(version;==;${jspImpl.osgiVersion}),$(version;+;${jspImpl.osgiVersion}))";resolution:=optional,
               org.eclipse.jetty.ee8.jsp;version="[$(version;===;${parsedVersion.osgiVersion}),$(version;==+;${parsedVersion.osgiVersion}))";resolution:=optional,
               org.osgi.*,
               org.xml.*;resolution:=optional,
