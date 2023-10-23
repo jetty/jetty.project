@@ -24,7 +24,6 @@ import java.util.Map;
 import java.util.Optional;
 import java.util.Set;
 import java.util.concurrent.ConcurrentHashMap;
-import java.util.stream.Stream;
 
 import org.eclipse.jetty.util.ExceptionUtil;
 import org.eclipse.jetty.util.FileID;
@@ -580,30 +579,34 @@ public class AnnotationParser
     {
         if (LOG.isDebugEnabled())
             LOG.debug("Scanning dir {}", dirResource);
-        ExceptionUtil.MultiException multiException = new ExceptionUtil.MultiException();
-        for (Resource r : dirResource)
-        {
-            Path dir = r.getPath();
 
-            try (Stream<Path> classStream = Files.walk(dir))
+        assert dirResource.isDirectory();
+
+        ExceptionUtil.MultiException multiException = new ExceptionUtil.MultiException();
+
+        for (Resource candidate : dirResource.getAllResources())
+        {
+            // Skip directories
+            if (candidate.isDirectory())
+                continue;
+
+            // Get the path relative to the base resource
+            Path relative = dirResource.getPathTo(candidate);
+
+            // select only non-hidden class files that are not modules nor versions
+            if (FileID.isHidden(relative) ||
+                FileID.isMetaInfVersions(relative) ||
+                FileID.isModuleInfoClass(relative) ||
+                !FileID.isClassFile(relative))
+                continue;
+
+            try
             {
-                classStream
-                    .filter(Files::isRegularFile)
-                    .filter((path) -> !FileID.isHidden(dir, path))
-                    .filter(FileID::isNotMetaInfVersions)
-                    .filter(FileID::isNotModuleInfoClass)
-                    .filter(FileID::isClassFile)
-                    .forEach(classFile ->
-                    {
-                        try
-                        {
-                            parseClass(handlers, dirResource, classFile);
-                        }
-                        catch (Exception ex)
-                        {
-                            multiException.add(new RuntimeException("Error scanning entry " + ex, ex));
-                        }
-                    });
+                parseClass(handlers, dirResource, candidate.getPath());
+            }
+            catch (Exception ex)
+            {
+                multiException.add(new RuntimeException("Error scanning entry " + ex, ex));
             }
         }
 

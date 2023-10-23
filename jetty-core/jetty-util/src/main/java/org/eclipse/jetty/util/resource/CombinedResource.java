@@ -32,7 +32,10 @@ import java.util.stream.Collectors;
 import org.eclipse.jetty.util.URIUtil;
 
 /**
- * Multiple resource directories presented as a single Resource.
+ * Multiple {@link Resource} directories presented as a single overlayed {@link Resource} directory.
+ * <p>This class differs from a {@link List}&lt;{@link Resource}&gt;, as a relative path can {@link #resolve(String) resolve}
+ * to only a single {@link Resource} in a {@code CombinedResource}, whilst it may resolve to multiple in a
+ * {@link List}&lt;{@link Resource}&gt;.</p>
  */
 public class CombinedResource extends Resource
 {
