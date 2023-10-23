@@ -21,7 +21,9 @@ import java.util.ArrayList;
 import java.util.Collections;
 import java.util.Iterator;
 import java.util.List;
+import java.util.Map;
 import java.util.Objects;
+import java.util.TreeMap;
 import java.util.stream.Collectors;
 
 import org.eclipse.jetty.util.URIUtil;
@@ -252,15 +254,18 @@ public class CombinedResource extends Resource
     @Override
     public List<Resource> list()
     {
-        List<Resource> result = new ArrayList<>();
-        for (Resource r : _resources)
+        Map<String, Resource> results = new TreeMap<>();
+        for (Resource base : _resources)
         {
-            if (r.isDirectory())
-                result.addAll(r.list());
-            else
-                result.add(r);
+            for (Resource r : base.list())
+            {
+                if (r.isDirectory())
+                    results.computeIfAbsent(r.getFileName(), this::resolve);
+                else
+                    results.putIfAbsent(r.getFileName(), r);
+            }
         }
-        return result;
+        return new ArrayList<>(results.values());
     }
 
     @Override

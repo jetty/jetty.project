@@ -112,7 +112,8 @@ public abstract class Resource implements Iterable<Resource>
 
     /**
      * <p>Return an Iterator of all Resource's referenced in this Resource.</p>
-     * <p>This is meaningful if you have a Composite Resource, otherwise it will be a single entry Iterator of this resource.</p>
+     * <p>This is meaningful if you have a {@link CombinedResource},
+     * otherwise it will be a single entry Iterator of this resource.</p>
      *
      * @return the iterator of Resources.
      */
@@ -170,7 +171,7 @@ public abstract class Resource implements Iterable<Resource>
     /**
      * URI representing the resource.
      *
-     * @return a URI representing the given resource
+     * @return a URI representing the given resource, or null if there is no URI representation of the resource.
      */
     public abstract URI getURI();
 
@@ -186,7 +187,8 @@ public abstract class Resource implements Iterable<Resource>
      *
      * <p>This is the last segment of the path.</p>
      *
-     * @return the filename of the resource, or "" if there are no path segments (eg: path of "/"), or null if resource has no path.
+     * @return the filename of the resource, or "" if there are no path segments (eg: path of "/"), or null if resource
+     *         cannot determine a filename.
      * @see Path#getFileName()
      */
     public abstract String getFileName();
@@ -299,19 +301,36 @@ public abstract class Resource implements Iterable<Resource>
 
     /**
      * Get a deep collection of contained resources.
-     * @return A collection of all Resources deeply contained within this resource
+     * @return A collection of all Resources deeply contained within this resource if it is a directory,
+     * otherwise an empty collection is returned.
      */
     public Collection<Resource> getAllResources()
     {
         try
         {
-            ArrayList<Resource> deep = new ArrayList<>();
-            for (Resource r: list())
+            List<Resource> children = list();
+            if (children == null || children.isEmpty())
+                return children;
+
+            boolean noDepth = true;
+            for (Resource r: children)
             {
                 if (r.isDirectory())
+                {
+                    noDepth = false;
+                    break;
+                }
+            }
+
+            if (noDepth)
+                return children;
+
+            ArrayList<Resource> deep = new ArrayList<>();
+            for (Resource r: children)
+            {
+                deep.add(r);
+                if (r.isDirectory())
                     deep.addAll(r.getAllResources());
-                else
-                    deep.add(r);
             }
             return deep;
         }

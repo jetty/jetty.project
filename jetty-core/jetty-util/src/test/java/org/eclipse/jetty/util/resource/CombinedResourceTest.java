@@ -25,7 +25,6 @@ import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
-import java.util.function.Function;
 
 import org.eclipse.jetty.toolchain.test.FS;
 import org.eclipse.jetty.toolchain.test.MavenTestingUtils;
@@ -51,7 +50,6 @@ import static org.hamcrest.Matchers.nullValue;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertNull;
-import static org.junit.jupiter.api.Assertions.assertTrue;
 
 @ExtendWith(WorkDirExtension.class)
 public class CombinedResourceTest
@@ -77,7 +75,6 @@ public class CombinedResourceTest
     @Test
     public void testList() throws Exception
     {
-        Path testBaseDir = MavenTestingUtils.getTestResourcePathDir("org/eclipse/jetty/util/resource");
         Path one = MavenTestingUtils.getTestResourcePathDir("org/eclipse/jetty/util/resource/one");
         Path two = MavenTestingUtils.getTestResourcePathDir("org/eclipse/jetty/util/resource/two");
         Path three = MavenTestingUtils.getTestResourcePathDir("org/eclipse/jetty/util/resource/three");
@@ -88,33 +85,38 @@ public class CombinedResourceTest
             resourceFactory.newResource(three)
         );
 
-        Function<Resource, String> relativizeToTestResources = (r) -> testBaseDir.toUri().relativize(r.getURI()).toASCIIString();
-
         List<Resource> listing = rc.list();
-        List<String> listingFilenames = listing.stream().map(relativizeToTestResources).toList();
+        List<String> relative = listing.stream()
+            .map(rc::getPathTo)
+            .map(Path::toString)
+            .toList();
 
         String[] expected = new String[] {
-            "one/dir/",
-            "one/1.txt",
-            "two/2.txt",
-            "two/dir/",
-            "two/1.txt",
-            "three/3.txt",
-            "three/2.txt",
-            "three/dir/"
+            "1.txt",
+            "2.txt",
+            "3.txt",
+            "dir"
         };
+        assertThat(relative, containsInAnyOrder(expected));
 
-        assertThat(listingFilenames, containsInAnyOrder(expected));
+        for (Resource r : listing)
+        {
+            if ("dir".equals(r.getFileName()))
+                assertThat(r, instanceOf(CombinedResource.class));
+        }
 
-        listingFilenames = rc.resolve("dir").list().stream().map(relativizeToTestResources).toList();
+        relative = rc.resolve("dir").list().stream()
+            .map(rc::getPathTo)
+            .map(Path::toString)
+            .toList();
 
         expected = new String[] {
-            "one/dir/1.txt",
-            "two/dir/2.txt",
-            "three/dir/3.txt"
+            "dir/1.txt",
+            "dir/2.txt",
+            "dir/3.txt"
         };
 
-        assertThat(listingFilenames, containsInAnyOrder(expected));
+        assertThat(relative, containsInAnyOrder(expected));
 
         Resource unk = rc.resolve("unknown");
         assertNull(unk);
@@ -139,11 +141,10 @@ public class CombinedResourceTest
 
         // This should return a ResourceCollection with 3 `/dir/` sub-directories.
         Resource r = rc.resolve("dir");
-        assertTrue(r instanceof CombinedResource);
-        rc = (CombinedResource)r;
-        assertEquals(getContent(rc, "1.txt"), "1 - one (in dir)");
-        assertEquals(getContent(rc, "2.txt"), "2 - two (in dir)");
-        assertEquals(getContent(rc, "3.txt"), "3 - three (in dir)");
+        assertThat(r, instanceOf(CombinedResource.class));
+        assertEquals(getContent(r, "1.txt"), "1 - one (in dir)");
+        assertEquals(getContent(r, "2.txt"), "2 - two (in dir)");
+        assertEquals(getContent(r, "3.txt"), "3 - three (in dir)");
     }
 
     @Test
@@ -345,7 +346,7 @@ public class CombinedResourceTest
     }
 
     @Test
-    public void testContainsAndPathTo() throws Exception
+    public void testContainsAndPathTo()
     {
         Path one = MavenTestingUtils.getTestResourcePathDir("org/eclipse/jetty/util/resource/one");
         Path two = MavenTestingUtils.getTestResourcePathDir("org/eclipse/jetty/util/resource/two");
@@ -412,6 +413,52 @@ public class CombinedResourceTest
         assertThat(compositeAlt.contains(dirAlt), is(true));
         assertThat(composite.contains(dirAlt), is(false));
         assertThat(composite.getPathTo(dirAlt), nullValue());
+    }
+
+    @Test
+    public void testGetFileName()
+    {
+        Path one = MavenTestingUtils.getTestResourcePathDir("org/eclipse/jetty/util/resource/one");
+        Path two = MavenTestingUtils.getTestResourcePathDir("org/eclipse/jetty/util/resource/two");
+        Path three = MavenTestingUtils.getTestResourcePathDir("org/eclipse/jetty/util/resource/three");
+
+        Resource composite = ResourceFactory.combine(
+            List.of(
+                resourceFactory.newResource(one),
+                resourceFactory.newResource(two),
+                resourceFactory.newResource(three)
+            )
+        );
+
+        assertThat(composite.getFileName(), nullValue());
+        Resource dir = composite.resolve("dir");
+        assertThat(dir.getFileName(), is("dir"));
+    }
+
+    @Test
+    public void testGetAllResources()
+    {
+        Path one = MavenTestingUtils.getTestResourcePathDir("org/eclipse/jetty/util/resource/one");
+        Path two = MavenTestingUtils.getTestResourcePathDir("org/eclipse/jetty/util/resource/two");
+        Path three = MavenTestingUtils.getTestResourcePathDir("org/eclipse/jetty/util/resource/three");
+
+        Resource composite = ResourceFactory.combine(
+            List.of(
+                resourceFactory.newResource(one),
+                resourceFactory.newResource(two),
+                resourceFactory.newResource(three)
+            )
+        );
+
+        assertThat(composite.getAllResources().stream().map(composite::getPathTo).map(Path::toString).toList(), containsInAnyOrder(
+            "1.txt",
+            "2.txt",
+            "3.txt",
+            "dir",
+            "dir/1.txt",
+            "dir/2.txt",
+            "dir/3.txt"
+        ));
     }
 
     private void createJar(Path outputJar, String entryName, String entryContents) throws IOException

@@ -199,7 +199,7 @@ public class MountedPathResourceTest
     }
 
     @Test
-    public void testJarFileGetAllResoures()
+    public void testJarFileGetAllResources()
         throws Exception
     {
         Path testZip = MavenTestingUtils.getTestResourcePathFile("TestData/test.zip");
@@ -210,7 +210,14 @@ public class MountedPathResourceTest
             Resource r = resourceFactory.newResource(uri);
             Collection<Resource> deep = r.getAllResources();
 
-            assertEquals(4, deep.size());
+            assertThat(deep.stream().map(r::getPathTo).map(Path::toString).toList(),
+                containsInAnyOrder(
+                    "numbers",
+                    "subsubdir",
+                    "subsubdir/numbers",
+                    "subsubdir/alphabet",
+                    "alphabet"
+                ));
         }
     }
 
