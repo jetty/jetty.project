@@ -89,6 +89,33 @@ public class RequestTest
     }
 
     @Test
+    public void testIsSecure() throws Exception
+    {
+        final AtomicReference<Boolean> resultIsSecure = new AtomicReference<>();
+
+        startServer(new HttpServlet()
+        {
+            @Override
+            protected void service(HttpServletRequest request, HttpServletResponse resp)
+            {
+                resultIsSecure.set(request.isSecure());
+            }
+        });
+
+        String rawResponse = _connector.getResponse(
+            """
+                GET / HTTP/1.1
+                Host: local
+                Connection: close
+                X-Forwarded-Proto: https
+                
+                """);
+        HttpTester.Response response = HttpTester.parseResponse(rawResponse);
+        assertThat(response.getStatus(), is(HttpStatus.OK_200));
+        assertThat("request.isSecure", resultIsSecure.get(), is(true));
+    }
+
+    @Test
     public void testConnectRequestURLSameAsHost() throws Exception
     {
         final AtomicReference<String> resultRequestURL = new AtomicReference<>();
