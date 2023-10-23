@@ -87,6 +87,7 @@ public class WebSocketUpgradeHandler extends Handler.Wrapper
         WebSocketComponents components = WebSocketServerComponents.ensureWebSocketComponents(server, context);
         WebSocketMappings mappings = new WebSocketMappings(components);
         ServerWebSocketContainer container = new ServerWebSocketContainer(mappings);
+        container.addManaged(mappings);
 
         WebSocketUpgradeHandler wsHandler = new WebSocketUpgradeHandler(container);
         context.getContext().setAttribute(WebSocketContainer.class.getName(), wsHandler._container);
@@ -94,24 +95,38 @@ public class WebSocketUpgradeHandler extends Handler.Wrapper
     }
 
     private final ServerWebSocketContainer _container;
+    private Consumer<ServerWebSocketContainer> _configurator;
 
     public WebSocketUpgradeHandler(ServerWebSocketContainer container)
     {
         _container = container;
-        addBean(container);
+        addManaged(container);
     }
 
     /**
      * <p>Configures the {@link ServerWebSocketContainer} associated with this
      * {@link WebSocketUpgradeHandler}.</p>
+     * <p>The configurator is run during {@link #doStart()}, all mappings are cleared on {@link #doStop()}.</p>
      *
      * @param configurator the configuration code
      * @return this {@link WebSocketUpgradeHandler}
      */
     public WebSocketUpgradeHandler configure(Consumer<ServerWebSocketContainer> configurator)
     {
-        configurator.accept(_container);
+        _configurator = configurator;
         return this;
+    }
+
+    public ServerWebSocketContainer getContainer()
+    {
+        return _container;
+    }
+
+    @Override
+    protected void doStart() throws Exception
+    {
+        _configurator.accept(_container);
+        super.doStart();
     }
 
     @Override

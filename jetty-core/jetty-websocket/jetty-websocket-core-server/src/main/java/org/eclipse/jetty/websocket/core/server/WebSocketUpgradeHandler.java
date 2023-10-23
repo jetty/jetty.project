@@ -35,6 +35,7 @@ public class WebSocketUpgradeHandler extends Handler.Wrapper
     public WebSocketUpgradeHandler(WebSocketComponents components)
     {
         this.mappings = new WebSocketMappings(components);
+        addManaged(mappings);
         setHandler(new Handler.Abstract.NonBlocking()
         {
             @Override

@@ -80,6 +80,7 @@ public class ServerWebSocketContainer extends ContainerLifeCycle implements WebS
             WebSocketComponents components = WebSocketServerComponents.ensureWebSocketComponents(server, contextHandler);
             WebSocketMappings mappings = new WebSocketMappings(components);
             container = new ServerWebSocketContainer(mappings);
+            container.addManaged(mappings);
             context.setAttribute(WebSocketContainer.class.getName(), container);
         }
         return container;
