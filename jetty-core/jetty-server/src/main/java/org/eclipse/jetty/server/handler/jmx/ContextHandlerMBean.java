@@ -38,15 +38,12 @@ public class ContextHandlerMBean extends Handler.AbstractMBean
     }
 
     @ManagedAttribute("Map of context attributes")
-    public Map<String, Object> getContextAttributes()
+    public Map<String, String> getContextAttributes()
     {
-        Map<String, Object> map = new TreeMap<>();
+        Map<String, String> map = new TreeMap<>();
         ContextHandler.ScopedContext context = getManagedObject().getContext();
         for (String name : context.getAttributeNameSet())
-        {
-            Object value = context.getAttribute(name);
-            map.put(name, value);
-        }
+            map.put(name, String.valueOf(context.getAttribute(name)));
         return map;
     }
 

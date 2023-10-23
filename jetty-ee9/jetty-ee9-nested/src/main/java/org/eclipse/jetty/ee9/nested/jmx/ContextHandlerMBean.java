@@ -32,15 +32,12 @@ public class ContextHandlerMBean extends AbstractHandlerMBean
     }
 
     @ManagedAttribute("Map of context attributes")
-    public Map<String, Object> getContextAttributes()
+    public Map<String, String> getContextAttributes()
     {
-        Map<String, Object> map = new HashMap<String, Object>();
+        Map<String, String> map = new HashMap<>();
         Attributes attrs = ((ContextHandler)_managed).getAttributes();
         for (String name : attrs.getAttributeNameSet())
-        {
-            Object value = attrs.getAttribute(name);
-            map.put(name, value);
-        }
+            map.put(name, String.valueOf(attrs.getAttribute(name)));
         return map;
     }
 
