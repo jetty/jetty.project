@@ -220,7 +220,6 @@ public class NetworkFuzzer extends Fuzzer.Adapter implements Fuzzer, AutoCloseab
         private CoreSession coreSession;
         private final AutoLock lock = new AutoLock();
 
-
         public void setEndPoint(EndPoint endpoint)
         {
             this.endPoint = endpoint;
