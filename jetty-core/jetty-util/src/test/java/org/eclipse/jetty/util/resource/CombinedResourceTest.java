@@ -54,7 +54,6 @@ import static org.junit.jupiter.api.Assertions.assertNull;
 @ExtendWith(WorkDirExtension.class)
 public class CombinedResourceTest
 {
-
     public WorkDir workDir;
 
     private final ResourceFactory.Closeable resourceFactory = ResourceFactory.closeable();
@@ -170,6 +169,63 @@ public class CombinedResourceTest
         assertEquals(getContent(r, "1.txt"), "1 - one (in dir)");
         assertEquals(getContent(r, "2.txt"), "2 - two (in dir)");
         assertEquals(getContent(r, "3.txt"), "3 - three (in dir)");
+    }
+
+    /**
+     * Test of CombinedResource.copyTo(Resource) where the CombinedResource is a mix
+     * of FileSystem types.
+     */
+    @Test
+    public void testCopyToDifferentFileSystem() throws Exception
+    {
+        Path testDir = workDir.getEmptyPathDir();
+
+        // Create a JAR file with contents
+        Path testJar = testDir.resolve("test.jar");
+
+        Map<String, String> env = new HashMap<>();
+        env.put("create", "true");
+
+        URI jarUri = URIUtil.uriJarPrefix(testJar.toUri(), "!/");
+        try (FileSystem zipfs = FileSystems.newFileSystem(jarUri, env))
+        {
+            Path root = zipfs.getPath("/");
+            Files.writeString(root.resolve("test.txt"), "Contents of test.txt", StandardCharsets.UTF_8);
+            Path deepDir = root.resolve("deep/dir/foo");
+            Files.createDirectories(deepDir);
+            Files.writeString(deepDir.resolve("foo.txt"), "Contents of foo.txt", StandardCharsets.UTF_8);
+        }
+
+        try (ResourceFactory.Closeable resourceFactory = ResourceFactory.closeable())
+        {
+            Resource archiveResource = resourceFactory.newResource(jarUri);
+            Path one = MavenTestingUtils.getTestResourcePathDir("org/eclipse/jetty/util/resource/one");
+            Path two = MavenTestingUtils.getTestResourcePathDir("org/eclipse/jetty/util/resource/two");
+            Path three = MavenTestingUtils.getTestResourcePathDir("org/eclipse/jetty/util/resource/three");
+
+            // A CombinedResource that has a mix of FileSystem types
+            Resource rc = ResourceFactory.combine(
+                archiveResource,
+                resourceFactory.newResource(one),
+                resourceFactory.newResource(two),
+                resourceFactory.newResource(three)
+            );
+
+            Path destDir = testDir.resolve("dest");
+            Files.createDirectory(destDir);
+            rc.copyTo(destDir);
+
+            Resource r = resourceFactory.newResource(destDir);
+            // copy of "/1.txt" was last written from oejur.two/1.txt
+            assertEquals(getContent(r, "1.txt"), "1 - two");
+            // copy of "/2.txt" was last written from oejur.three/2.txt
+            assertEquals(getContent(r, "2.txt"), "2 - three");
+            assertEquals(getContent(r, "3.txt"), "3 - three");
+            r = r.resolve("dir");
+            assertEquals(getContent(r, "1.txt"), "1 - one (in dir)");
+            assertEquals(getContent(r, "2.txt"), "2 - two (in dir)");
+            assertEquals(getContent(r, "3.txt"), "3 - three (in dir)");
+        }
     }
 
     @Test
