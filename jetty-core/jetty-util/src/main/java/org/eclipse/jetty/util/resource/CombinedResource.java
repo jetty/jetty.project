@@ -274,9 +274,11 @@ public class CombinedResource extends Resource
     @Override
     public void copyTo(Path destination) throws IOException
     {
-        for (Resource r : getResources())
+        // Copy resources in reverse to get proper overlay behavior
+        List<Resource> entries = getResources();
+        for (int r = entries.size(); r-- > 0; )
         {
-            r.copyTo(destination);
+            entries.get(r).copyTo(destination);
         }
     }
 

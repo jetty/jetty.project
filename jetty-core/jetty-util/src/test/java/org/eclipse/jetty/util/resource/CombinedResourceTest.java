@@ -162,10 +162,8 @@ public class CombinedResourceTest
         rc.copyTo(destDir);
 
         Resource r = resourceFactory.newResource(destDir);
-        // copy of "/1.txt" was last written from oejur.two/1.txt
-        assertEquals(getContent(r, "1.txt"), "1 - two");
-        // copy of "/2.txt" was last written from oejur.three/2.txt
-        assertEquals(getContent(r, "2.txt"), "2 - three");
+        assertEquals(getContent(r, "1.txt"), "1 - one");
+        assertEquals(getContent(r, "2.txt"), "2 - two");
         assertEquals(getContent(r, "3.txt"), "3 - three");
         r = r.resolve("dir");
         assertEquals(getContent(r, "1.txt"), "1 - one (in dir)");
@@ -218,10 +216,8 @@ public class CombinedResourceTest
             rc.copyTo(destDir);
 
             Resource r = resourceFactory.newResource(destDir);
-            // copy of "/1.txt" was last written from oejur.two/1.txt
-            assertEquals(getContent(r, "1.txt"), "1 - two");
-            // copy of "/2.txt" was last written from oejur.three/2.txt
-            assertEquals(getContent(r, "2.txt"), "2 - three");
+            assertEquals(getContent(r, "1.txt"), "1 - one");
+            assertEquals(getContent(r, "2.txt"), "2 - two");
             assertEquals(getContent(r, "3.txt"), "3 - three");
             r = r.resolve("dir");
             assertEquals(getContent(r, "1.txt"), "1 - one (in dir)");
