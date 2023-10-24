@@ -28,6 +28,7 @@ import java.util.ArrayList;
 import java.util.Collection;
 import java.util.Iterator;
 import java.util.List;
+import java.util.Objects;
 
 import org.eclipse.jetty.util.IO;
 import org.eclipse.jetty.util.StringUtil;
@@ -97,7 +98,7 @@ public abstract class Resource implements Iterable<Resource>
             return false;
 
         // Different authorities? not a valid contains() check
-        if (!StringUtil.equals(thisURI.getAuthority(), otherURI.getAuthority()))
+        if (!Objects.equals(thisURI.getAuthority(), otherURI.getAuthority()))
             return false;
 
         // Ensure that if `file` scheme is used, it's using a consistent convention to allow for startsWith check

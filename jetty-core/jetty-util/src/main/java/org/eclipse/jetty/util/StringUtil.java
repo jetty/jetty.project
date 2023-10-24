@@ -260,23 +260,6 @@ public class StringUtil
     }
 
     /**
-     * Check for string equality.
-     * @param string The string to check
-     * @param other The other string to check
-     * @return true if the strings are equal.
-     */
-    public static boolean equals(String string, String other)
-    {
-        if (string == null)
-            return other == null;
-
-        if (other == null)
-            return false;
-
-        return string.equals(other);
-    }
-
-    /**
      * Check for a string prefix, ignoring {@link StandardCharsets#US_ASCII} case differences.
      * @param string The string to check
      * @param prefix The sub string to look for as a prefix
