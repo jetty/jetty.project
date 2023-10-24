@@ -14,7 +14,7 @@
 [[http2-configuring-push]]
 === Configuring HTTP/2 Push
 
-HTTP/2 Push is a mechanism that allows the server to send multiple resources to the client for a single client request.
+HTTP/2 Push is a spec deprecated mechanism that allows the server to send multiple resources to the client for a single client request.
 This will reduce the amount of round-trips necessary to retrieve all the resources that make up a web page and can significantly improve the page load time.
 
 HTTP/2 Push can be automated in your application by configuring a link:{JDURL}/org/eclipse/jetty/servlets/PushCacheFilter.html[`PushCacheFilter`] in the `web.xml`, in this way:

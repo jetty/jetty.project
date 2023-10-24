@@ -66,7 +66,7 @@ import org.slf4j.LoggerFactory;
  * cache.</p>
  * <p>If the init param useQueryInKey is set, then the query string is used as
  * as part of the key to identify a resource</p>
- * @deprecated no replacement for this deprecated http feature
+ * @deprecated no replacement for this deprecated http feature (will be removed in Jetty 12)
  */
 @Deprecated
 @ManagedObject("Push cache based on the HTTP 'Referer' header")
