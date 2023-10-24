@@ -145,6 +145,95 @@ public class PathResourceTest
     }
 
     @Test
+    public void testContains(WorkDir workDir) throws IOException
+    {
+        Path testPath = workDir.getEmptyPathDir();
+        Path fooJar = testPath.resolve("foo.jar");
+        Path barJar = testPath.resolve("bar.jar");
+
+        Map<String, String> env = new HashMap<>();
+        env.put("create", "true");
+        URI fooJarUri = URIUtil.uriJarPrefix(fooJar.toUri(), "!/");
+        try (FileSystem zipfs = FileSystems.newFileSystem(fooJarUri, env))
+        {
+            Path root = zipfs.getPath("/");
+            Path dir = root.resolve("deep/dir");
+            Files.createDirectories(dir);
+            Files.writeString(dir.resolve("foo.txt"), "Contents of foo.txt in foo.jar", StandardCharsets.UTF_8);
+        }
+
+        URI barJarUri = URIUtil.uriJarPrefix(barJar.toUri(), "!/");
+        try (FileSystem zipfs = FileSystems.newFileSystem(barJarUri, env))
+        {
+            Path root = zipfs.getPath("/");
+            Path dir = root.resolve("deep/dir");
+            Files.createDirectories(dir);
+            Files.writeString(dir.resolve("bar.txt"), "Contents of bar.txt in bar.jar", StandardCharsets.UTF_8);
+        }
+
+        try (ResourceFactory.Closeable resourceFactory = ResourceFactory.closeable())
+        {
+            Resource fooResource = resourceFactory.newResource(fooJarUri);
+            Resource barResource = resourceFactory.newResource(barJarUri);
+
+            Resource fooText = fooResource.resolve("deep/dir/foo.txt");
+            assertTrue(fooResource.contains(fooText));
+
+            Resource barText = barResource.resolve("deep/dir/bar.txt");
+            assertTrue(barResource.contains(barText));
+
+            assertFalse(fooResource.contains(barText));
+            assertFalse(barResource.contains(fooText));
+        }
+    }
+
+    @Test
+    public void testGetPathTo(WorkDir workDir) throws IOException
+    {
+        Path testPath = workDir.getEmptyPathDir();
+        Path fooJar = testPath.resolve("foo.jar");
+        Path barJar = testPath.resolve("bar.jar");
+
+        Map<String, String> env = new HashMap<>();
+        env.put("create", "true");
+        URI fooJarUri = URIUtil.uriJarPrefix(fooJar.toUri(), "!/");
+        try (FileSystem zipfs = FileSystems.newFileSystem(fooJarUri, env))
+        {
+            Path root = zipfs.getPath("/");
+            Path dir = root.resolve("deep/dir");
+            Files.createDirectories(dir);
+            Files.writeString(dir.resolve("foo.txt"), "Contents of foo.txt in foo.jar", StandardCharsets.UTF_8);
+        }
+
+        URI barJarUri = URIUtil.uriJarPrefix(barJar.toUri(), "!/");
+        try (FileSystem zipfs = FileSystems.newFileSystem(barJarUri, env))
+        {
+            Path root = zipfs.getPath("/");
+            Path dir = root.resolve("deep/dir");
+            Files.createDirectories(dir);
+            Files.writeString(dir.resolve("bar.txt"), "Contents of bar.txt in bar.jar", StandardCharsets.UTF_8);
+        }
+
+        try (ResourceFactory.Closeable resourceFactory = ResourceFactory.closeable())
+        {
+            Resource fooResource = resourceFactory.newResource(fooJarUri);
+            Resource barResource = resourceFactory.newResource(barJarUri);
+
+            Resource fooText = fooResource.resolve("deep/dir/foo.txt");
+            Path fooPathRel = fooResource.getPathTo(fooText);
+            assertThat(fooPathRel.toString(), is("deep/dir/foo.txt"));
+
+            Resource barText = barResource.resolve("deep/dir/bar.txt");
+            Path barPathRel = barResource.getPathTo(barText);
+            assertThat(barPathRel.toString(), is("deep/dir/bar.txt"));
+
+            // Attempt to getPathTo cross Resource will return null.
+            Path crossPathText = fooResource.getPathTo(barText);
+            assertNull(crossPathText);
+        }
+    }
+
+    @Test
     public void testJarFileIsAliasFile(WorkDir workDir) throws IOException
     {
         Path tmpPath = workDir.getEmptyPathDir();

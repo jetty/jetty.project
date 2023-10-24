@@ -30,6 +30,8 @@ import java.util.Iterator;
 import java.util.List;
 
 import org.eclipse.jetty.util.IO;
+import org.eclipse.jetty.util.StringUtil;
+import org.eclipse.jetty.util.URIUtil;
 
 /**
  * <p>
@@ -84,18 +86,29 @@ public abstract class Resource implements Iterable<Resource>
         if (other == null)
             return false;
 
-        Path thisPath = getPath();
-        if (thisPath == null)
-            throw new UnsupportedOperationException("Resources without a Path must implement contains");
+        URI thisURI = getURI();
+        URI otherURI = other.getURI();
 
-        Path otherPath = other.getPath();
-        return otherPath != null && otherPath.startsWith(thisPath);
+        // Different schemes? not a chance it contains the other
+        if (!StringUtil.asciiEqualsIgnoreCase(thisURI.getScheme(), otherURI.getScheme()))
+            return false;
+
+        // Different authorities? not a valid contains() check
+        if (!StringUtil.equals(thisURI.getAuthority(), otherURI.getAuthority()))
+            return false;
+
+        // Ensure that if `file` scheme is used, it's using a consistent convention to allow for startsWith check
+        thisURI = URIUtil.correctFileURI(thisURI);
+        otherURI = URIUtil.correctFileURI(otherURI);
+
+        return otherURI.toASCIIString().startsWith(thisURI.toASCIIString());
     }
 
     /**
      * Get the relative path from this Resource to a possibly contained resource.
      * @param other The other resource that may be contained in this resource
-     * @return a relative Path representing the path from this resource to the other resource.
+     * @return a relative Path representing the path from this resource to the other resource,
+     *   or null if not able to represent other resources as relative to this resource
      */
     public Path getPathTo(Resource other)
     {
@@ -103,10 +116,14 @@ public abstract class Resource implements Iterable<Resource>
         if (thisPath == null)
             throw new UnsupportedOperationException("Resources without a Path must implement getPathTo");
 
+        if (!contains(other))
+            return null;
+
         Path otherPath = other.getPath();
         if (otherPath == null)
             return null;
 
+        // TODO: should probably not allow results like "../../path/to/other/location.txt"
         return thisPath.relativize(otherPath);
     }
 

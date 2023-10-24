@@ -229,6 +229,70 @@ public class CombinedResourceTest
     }
 
     @Test
+    public void testMixedResourceCollectionGetPathTo() throws IOException
+    {
+        Path testDir = workDir.getEmptyPathDir();
+
+        // Create a JAR file with contents
+        Path testJar = testDir.resolve("test.jar");
+
+        Map<String, String> env = new HashMap<>();
+        env.put("create", "true");
+
+        URI jarUri = URIUtil.uriJarPrefix(testJar.toUri(), "!/");
+        try (FileSystem zipfs = FileSystems.newFileSystem(jarUri, env))
+        {
+            Path root = zipfs.getPath("/");
+            Files.writeString(root.resolve("3.txt"), "Contents of 3.txt from JAR", StandardCharsets.UTF_8);
+            Files.writeString(root.resolve("4.txt"), "Contents of 4.txt from JAR", StandardCharsets.UTF_8);
+            Path dir = root.resolve("dir");
+            Files.createDirectories(dir);
+            Files.writeString(dir.resolve("2.txt"), "Contents of dir/2.txt from JAR", StandardCharsets.UTF_8);
+        }
+
+        try (ResourceFactory.Closeable resourceFactory = ResourceFactory.closeable())
+        {
+            Resource archiveResource = resourceFactory.newResource(jarUri);
+            Path one = MavenTestingUtils.getTestResourcePathDir("org/eclipse/jetty/util/resource/one");
+            Path two = MavenTestingUtils.getTestResourcePathDir("org/eclipse/jetty/util/resource/two");
+            Path three = MavenTestingUtils.getTestResourcePathDir("org/eclipse/jetty/util/resource/three");
+
+            // A CombinedResource that has a mix of FileSystem types
+            Resource rc = ResourceFactory.combine(
+                resourceFactory.newResource(one),
+                resourceFactory.newResource(two),
+                resourceFactory.newResource(three),
+                archiveResource
+            );
+
+            List<String> actual = new ArrayList<>();
+
+            for (Resource candidate : rc.getAllResources())
+            {
+                // Skip directories
+                if (candidate.isDirectory())
+                    continue;
+
+                // Get the path relative to the base resource
+                Path relative = rc.getPathTo(candidate); // should not throw an exception
+                actual.add(relative.toString());
+            }
+
+            String[] expected = {
+                "1.txt",
+                "2.txt",
+                "3.txt",
+                "4.txt",
+                "dir/1.txt",
+                "dir/2.txt",
+                "dir/3.txt"
+            };
+
+            assertThat(actual, contains(expected));
+        }
+    }
+
+    @Test
     public void testResourceCollectionInResourceCollection()
     {
         Path one = MavenTestingUtils.getTestResourcePathDir("org/eclipse/jetty/util/resource/one");
