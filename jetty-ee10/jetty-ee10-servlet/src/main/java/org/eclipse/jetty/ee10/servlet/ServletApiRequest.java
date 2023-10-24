@@ -1156,7 +1156,7 @@ public class ServletApiRequest implements HttpServletRequest
     @Override
     public boolean isSecure()
     {
-        return getRequest().getConnectionMetaData().isSecure();
+        return getRequest().isSecure();
     }
 
     @Override
