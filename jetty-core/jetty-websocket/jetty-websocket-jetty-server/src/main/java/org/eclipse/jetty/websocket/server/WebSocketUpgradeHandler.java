@@ -87,7 +87,7 @@ public class WebSocketUpgradeHandler extends Handler.Wrapper
         WebSocketComponents components = WebSocketServerComponents.ensureWebSocketComponents(server, context);
         WebSocketMappings mappings = new WebSocketMappings(components);
         ServerWebSocketContainer container = new ServerWebSocketContainer(mappings);
-        container.addManaged(mappings);
+        container.addBean(mappings);
 
         WebSocketUpgradeHandler wsHandler = new WebSocketUpgradeHandler(container);
         context.getContext().setAttribute(WebSocketContainer.class.getName(), wsHandler._container);
@@ -125,7 +125,8 @@ public class WebSocketUpgradeHandler extends Handler.Wrapper
     @Override
     protected void doStart() throws Exception
     {
-        _configurator.accept(_container);
+        if (_configurator != null)
+            _configurator.accept(_container);
         super.doStart();
     }
 

@@ -45,7 +45,8 @@ public class RestartTest
         _server.addConnector(_connector);
 
         upgradeHandler = new WebSocketUpgradeHandler();
-        upgradeHandler.addMapping("/", (req, resp, cb) -> new EchoFrameHandler());
+        upgradeHandler.configure(handler ->
+            handler.addMapping("/", (req, resp, cb) -> new EchoFrameHandler()));
         _server.setHandler(upgradeHandler);
 
         _server.start();

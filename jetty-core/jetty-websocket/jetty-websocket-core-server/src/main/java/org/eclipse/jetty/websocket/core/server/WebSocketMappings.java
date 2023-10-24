@@ -26,7 +26,6 @@ import org.eclipse.jetty.server.Request;
 import org.eclipse.jetty.server.Response;
 import org.eclipse.jetty.server.handler.ContextHandler;
 import org.eclipse.jetty.util.Callback;
-import org.eclipse.jetty.util.component.AbstractLifeCycle;
 import org.eclipse.jetty.util.component.Dumpable;
 import org.eclipse.jetty.util.component.LifeCycle;
 import org.eclipse.jetty.websocket.core.Configuration;
@@ -49,7 +48,7 @@ import org.slf4j.LoggerFactory;
  * wrap that POJO with a {@link FrameHandler} and the customizer is used to configure the resulting
  * {@link CoreSession}.</p>
  */
-public class WebSocketMappings extends AbstractLifeCycle implements Dumpable
+public class WebSocketMappings implements Dumpable, LifeCycle.Listener
 {
     private static final Logger LOG = LoggerFactory.getLogger(WebSocketMappings.class);
     public static final String WEBSOCKET_MAPPING_ATTRIBUTE = WebSocketMappings.class.getName();
@@ -66,7 +65,7 @@ public class WebSocketMappings extends AbstractLifeCycle implements Dumpable
         {
             mappings = new WebSocketMappings(WebSocketServerComponents.getWebSocketComponents(contextHandler));
             contextHandler.setAttribute(WEBSOCKET_MAPPING_ATTRIBUTE, mappings);
-            contextHandler.addManaged(mappings);
+            contextHandler.addBean(mappings);
             WebSocketMappings m = mappings;
             contextHandler.addEventListener(new LifeCycle.Listener()
             {
@@ -147,10 +146,14 @@ public class WebSocketMappings extends AbstractLifeCycle implements Dumpable
     }
 
     @Override
-    protected void doStop() throws Exception
+    public void lifeCycleStopping(LifeCycle event)
+    {
+        clear();
+    }
+
+    public void clear()
     {
         mappings.reset();
-        super.doStop();
     }
 
     @Override

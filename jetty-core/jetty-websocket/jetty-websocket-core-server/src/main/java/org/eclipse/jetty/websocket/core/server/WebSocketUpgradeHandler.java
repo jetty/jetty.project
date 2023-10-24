@@ -13,6 +13,8 @@
 
 package org.eclipse.jetty.websocket.core.server;
 
+import java.util.function.Consumer;
+
 import org.eclipse.jetty.http.HttpStatus;
 import org.eclipse.jetty.http.pathmap.PathSpec;
 import org.eclipse.jetty.server.Handler;
@@ -24,8 +26,9 @@ import org.eclipse.jetty.websocket.core.WebSocketComponents;
 
 public class WebSocketUpgradeHandler extends Handler.Wrapper
 {
-    private final WebSocketMappings mappings;
-    private final Configuration.ConfigurationCustomizer customizer = new Configuration.ConfigurationCustomizer();
+    private final WebSocketMappings _mappings;
+    private final Configuration.ConfigurationCustomizer _customizer = new Configuration.ConfigurationCustomizer();
+    private Consumer<WebSocketUpgradeHandler> _configurator;
 
     public WebSocketUpgradeHandler()
     {
@@ -34,8 +37,8 @@ public class WebSocketUpgradeHandler extends Handler.Wrapper
 
     public WebSocketUpgradeHandler(WebSocketComponents components)
     {
-        this.mappings = new WebSocketMappings(components);
-        addManaged(mappings);
+        _mappings = new WebSocketMappings(components);
+        addBean(_mappings);
         setHandler(new Handler.Abstract.NonBlocking()
         {
             @Override
@@ -49,17 +52,37 @@ public class WebSocketUpgradeHandler extends Handler.Wrapper
 
     public void addMapping(String pathSpec, WebSocketNegotiator negotiator)
     {
-        mappings.addMapping(WebSocketMappings.parsePathSpec(pathSpec), negotiator);
+        _mappings.addMapping(WebSocketMappings.parsePathSpec(pathSpec), negotiator);
     }
 
     public void addMapping(PathSpec pathSpec, WebSocketNegotiator negotiator)
     {
-        mappings.addMapping(pathSpec, negotiator);
+        _mappings.addMapping(pathSpec, negotiator);
+    }
+
+    /**
+     * Runs the provided configurator every time the Handler is starting.
+     * All mappings are automatically cleared when the Handler is stopped.
+     * @param configurator the configurator to run when starting the Handler.
+     * @return this {@link WebSocketUpgradeHandler}
+     */
+    public WebSocketUpgradeHandler configure(Consumer<WebSocketUpgradeHandler> configurator)
+    {
+        _configurator = configurator;
+        return this;
+    }
+
+    @Override
+    protected void doStart() throws Exception
+    {
+        if (_configurator != null)
+            _configurator.accept(this);
+        super.doStart();
     }
 
     public Configuration getConfiguration()
     {
-        return customizer;
+        return _customizer;
     }
 
     @Override
@@ -67,7 +90,7 @@ public class WebSocketUpgradeHandler extends Handler.Wrapper
     {
         try
         {
-            if (mappings.upgrade(request, response, callback, customizer))
+            if (_mappings.upgrade(request, response, callback, _customizer))
                 return true;
             return super.handle(request, response, callback);
         }

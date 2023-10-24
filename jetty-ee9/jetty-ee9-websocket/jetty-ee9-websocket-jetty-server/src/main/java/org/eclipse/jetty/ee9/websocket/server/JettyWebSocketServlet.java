@@ -34,7 +34,6 @@ import org.eclipse.jetty.server.Request;
 import org.eclipse.jetty.server.Response;
 import org.eclipse.jetty.util.Callback;
 import org.eclipse.jetty.util.FutureCallback;
-import org.eclipse.jetty.util.component.LifeCycle;
 import org.eclipse.jetty.websocket.core.Configuration;
 import org.eclipse.jetty.websocket.core.WebSocketComponents;
 import org.eclipse.jetty.websocket.core.WebSocketConstants;
@@ -137,7 +136,6 @@ public abstract class JettyWebSocketServlet extends HttpServlet
             ContextHandler contextHandler = Objects.requireNonNull(ContextHandler.getContextHandler(servletContext));
             components = WebSocketServerComponents.getWebSocketComponents(contextHandler.getCoreContextHandler());
             mappings = new WebSocketMappings(components);
-            mappings.start();
 
             String max = getInitParameter("idleTimeout");
             if (max == null)
@@ -186,7 +184,7 @@ public abstract class JettyWebSocketServlet extends HttpServlet
     @Override
     public void destroy()
     {
-        LifeCycle.stop(mappings);
+        mappings.clear();
         super.destroy();
     }
 
