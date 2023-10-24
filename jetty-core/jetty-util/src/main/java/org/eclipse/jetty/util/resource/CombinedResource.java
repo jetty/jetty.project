@@ -311,28 +311,11 @@ public class CombinedResource extends Resource
     @Override
     public boolean contains(Resource other)
     {
-        Path otherPath = other.getPath();
-
-        // If the other resource has a single Path
-        if (otherPath != null)
-        {
-            // return true if any of our resources contains it.
-            for (Resource r : _resources)
-            {
-                if (otherPath.startsWith(r.getPath()))
-                    return true;
-            }
-            return false;
-        }
-
-        // otherwise the other resource must also be some kind of combined resource.
-        // So every resource in the other combined must be contained in at least
-        // one of our combined resources
-        loop : for (Resource o : other)
+        loop: for (Resource o : other)
         {
             for (Resource r : _resources)
             {
-                if (o.getPath().startsWith(r.getPath()))
+                if (r.contains(o))
                     continue loop;
             }
             return false;

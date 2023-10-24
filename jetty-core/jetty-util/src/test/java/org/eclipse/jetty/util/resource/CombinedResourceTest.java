@@ -162,8 +162,10 @@ public class CombinedResourceTest
         rc.copyTo(destDir);
 
         Resource r = resourceFactory.newResource(destDir);
-        assertEquals(getContent(r, "1.txt"), "1 - one");
-        assertEquals(getContent(r, "2.txt"), "2 - two");
+        // copy of "/1.txt" was last written from oejur.two/1.txt
+        assertEquals(getContent(r, "1.txt"), "1 - two");
+        // copy of "/2.txt" was last written from oejur.three/2.txt
+        assertEquals(getContent(r, "2.txt"), "2 - three");
         assertEquals(getContent(r, "3.txt"), "3 - three");
         r = r.resolve("dir");
         assertEquals(getContent(r, "1.txt"), "1 - one (in dir)");
@@ -464,6 +466,238 @@ public class CombinedResourceTest
         assertThat(getContent(rc, "test.txt"), is("Test inside lib-foo.jar"));
         assertThat(getContent(rc, "testZed.txt"), is("TestZed inside lib-zed.jar"));
     }
+
+    /**
+     * Tests of {@link CombinedResource#contains(Resource)} consisting of only simple PathResources,
+     * where the "other" Resource is a simple Resource (like a PathResource)
+     */
+    @Test
+    public void testContainsSimple()
+    {
+        Path one = MavenTestingUtils.getTestResourcePathDir("org/eclipse/jetty/util/resource/one");
+        Path two = MavenTestingUtils.getTestResourcePathDir("org/eclipse/jetty/util/resource/two");
+        Path three = MavenTestingUtils.getTestResourcePathDir("org/eclipse/jetty/util/resource/three");
+        Path four = MavenTestingUtils.getTestResourcePathDir("org/eclipse/jetty/util/resource/four");
+
+        Resource composite = ResourceFactory.combine(
+            List.of(
+                resourceFactory.newResource(one),
+                resourceFactory.newResource(two),
+                resourceFactory.newResource(three)
+            )
+        );
+
+        Resource oneTxt = composite.resolve("1.txt");
+        assertThat(oneTxt, notNullValue());
+        assertThat(composite.contains(oneTxt), is(true));
+
+        Resource dir = composite.resolve("dir");
+        assertThat(dir, notNullValue());
+        assertThat(composite.contains(dir), is(true));
+
+        Resource threeTxt = composite.resolve("dir/3.txt");
+        assertThat(oneTxt, notNullValue());
+        assertThat(composite.contains(threeTxt), is(true));
+        assertThat(dir.contains(threeTxt), is(true));
+
+        Resource fourth = resourceFactory.newResource(four);
+
+        // some negations
+        assertThat(oneTxt.contains(composite), is(false));
+        assertThat(threeTxt.contains(composite), is(false));
+        assertThat(oneTxt.contains(dir), is(false));
+        assertThat(threeTxt.contains(dir), is(false));
+        assertThat(dir.contains(composite), is(false));
+
+        assertThat(composite.contains(fourth), is(false));
+        assertThat(dir.contains(fourth), is(false));
+    }
+
+    /**
+     * Tests of {@link CombinedResource#contains(Resource)} consisting of mixed PathResources types (file system and jars),
+     * testing against "other" single Resource (not a CombinedResource)
+     */
+    @Test
+    public void testMixedContainsSimple() throws IOException
+    {
+        Path testDir = workDir.getEmptyPathDir();
+
+        // Create a JAR file with contents
+        Path testJar = testDir.resolve("test.jar");
+
+        Map<String, String> env = new HashMap<>();
+        env.put("create", "true");
+
+        URI jarUri = URIUtil.uriJarPrefix(testJar.toUri(), "!/");
+        try (FileSystem zipfs = FileSystems.newFileSystem(jarUri, env))
+        {
+            Path root = zipfs.getPath("/");
+            Files.writeString(root.resolve("1.txt"), "Contents of 1.txt from TEST JAR", StandardCharsets.UTF_8);
+            Path dir = root.resolve("dir");
+            Files.createDirectories(dir);
+            Files.writeString(dir.resolve("2.txt"), "Contents of 2.txt from TEST JAR", StandardCharsets.UTF_8);
+        }
+
+        // Create a JAR that is never part of the CombinedResource.
+        Path unusedJar = testDir.resolve("unused.jar");
+        URI unusedJarURI = URIUtil.uriJarPrefix(unusedJar.toUri(), "!/");
+        try (FileSystem zipfs = FileSystems.newFileSystem(unusedJarURI, env))
+        {
+            Path root = zipfs.getPath("/");
+            Files.writeString(root.resolve("unused.txt"), "Contents of unused.txt from UNUSED JAR", StandardCharsets.UTF_8);
+        }
+
+        try (ResourceFactory.Closeable resourceFactory = ResourceFactory.closeable())
+        {
+            Resource archiveResource = resourceFactory.newResource(jarUri);
+            Path one = MavenTestingUtils.getTestResourcePathDir("org/eclipse/jetty/util/resource/one");
+            Path two = MavenTestingUtils.getTestResourcePathDir("org/eclipse/jetty/util/resource/two");
+            Path three = MavenTestingUtils.getTestResourcePathDir("org/eclipse/jetty/util/resource/three");
+            Path four = MavenTestingUtils.getTestResourcePathDir("org/eclipse/jetty/util/resource/four");
+
+            Resource composite = ResourceFactory.combine(
+                List.of(
+                    resourceFactory.newResource(one),
+                    resourceFactory.newResource(two),
+                    resourceFactory.newResource(three),
+                    archiveResource
+                )
+            );
+
+            Resource oneTxt = composite.resolve("1.txt");
+            assertThat(oneTxt, notNullValue());
+            assertThat(composite.contains(oneTxt), is(true));
+
+            Resource dir = composite.resolve("dir");
+            assertThat(dir, notNullValue());
+            assertThat(composite.contains(dir), is(true));
+
+            Resource threeTxt = composite.resolve("dir/3.txt");
+            assertThat(oneTxt, notNullValue());
+            assertThat(composite.contains(threeTxt), is(true));
+            assertThat(dir.contains(threeTxt), is(true));
+
+            // some negations
+            Resource fourth = resourceFactory.newResource(four);
+            Resource fourText = fourth.resolve("four.txt");
+
+
+            assertThat(oneTxt.contains(composite), is(false));
+            assertThat(threeTxt.contains(composite), is(false));
+            assertThat(oneTxt.contains(dir), is(false));
+            assertThat(threeTxt.contains(dir), is(false));
+            assertThat(dir.contains(composite), is(false));
+
+            assertThat(composite.contains(fourth), is(false));
+            assertThat(composite.contains(fourText), is(false));
+            assertThat(dir.contains(fourth), is(false));
+
+            Resource unused = resourceFactory.newResource(unusedJarURI);
+            assertThat(composite.contains(unused), is(false));
+            Resource unusedText = unused.resolve("unused.txt");
+            assertThat(composite.contains(unusedText), is(false));
+        }
+    }
+
+    /**
+     * Tests of {@link CombinedResource#contains(Resource)} consisting of mixed PathResources types (file system and jars),
+     * testing against "other" which are CombinedResource instances of their own.
+     */
+    @Test
+    public void testMixedContainsOtherCombinedResource() throws IOException
+    {
+        Path testDir = workDir.getEmptyPathDir();
+
+        // Create a JAR file with contents
+        Path testJar = testDir.resolve("test.jar");
+
+        Map<String, String> env = new HashMap<>();
+        env.put("create", "true");
+
+        URI jarUri = URIUtil.uriJarPrefix(testJar.toUri(), "!/");
+        try (FileSystem zipfs = FileSystems.newFileSystem(jarUri, env))
+        {
+            Path root = zipfs.getPath("/");
+            Files.writeString(root.resolve("1.txt"), "Contents of 1.txt from TEST JAR", StandardCharsets.UTF_8);
+            Path dir = root.resolve("dir");
+            Files.createDirectories(dir);
+            Files.writeString(dir.resolve("2.txt"), "Contents of dir/2.txt from TEST JAR", StandardCharsets.UTF_8);
+        }
+
+        // Create a JAR that is never part of the CombinedResource.
+        Path unusedJar = testDir.resolve("unused.jar");
+        URI unusedJarURI = URIUtil.uriJarPrefix(unusedJar.toUri(), "!/");
+        try (FileSystem zipfs = FileSystems.newFileSystem(unusedJarURI, env))
+        {
+            Path root = zipfs.getPath("/");
+            Files.writeString(root.resolve("unused.txt"), "Contents of unused.txt from UNUSED JAR", StandardCharsets.UTF_8);
+            Path dir = root.resolve("dir");
+            Files.createDirectories(dir);
+            Files.writeString(dir.resolve("un.txt"), "Contents of dir/un.txt from TEST JAR", StandardCharsets.UTF_8);
+        }
+
+        try (ResourceFactory.Closeable resourceFactory = ResourceFactory.closeable())
+        {
+            Resource archiveResource = resourceFactory.newResource(jarUri);
+            Resource unused = resourceFactory.newResource(unusedJarURI);
+            Resource one = resourceFactory.newResource(MavenTestingUtils.getTestResourcePathDir("org/eclipse/jetty/util/resource/one"));
+            Resource two = resourceFactory.newResource(MavenTestingUtils.getTestResourcePathDir("org/eclipse/jetty/util/resource/two"));
+            Resource three = resourceFactory.newResource(MavenTestingUtils.getTestResourcePathDir("org/eclipse/jetty/util/resource/three"));
+            Resource four = resourceFactory.newResource(MavenTestingUtils.getTestResourcePathDir("org/eclipse/jetty/util/resource/four"));
+
+            Resource composite = ResourceFactory.combine(
+                List.of(
+                    one,
+                    two,
+                    three,
+                    archiveResource
+                )
+            );
+
+            Resource other = ResourceFactory.combine(
+                List.of(
+                    one.resolve("dir"),
+                    two.resolve("dir"),
+                    three.resolve("dir")
+                )
+            );
+
+            assertThat(composite.contains(other), is(true));
+
+            other = ResourceFactory.combine(
+                List.of(
+                    one.resolve("dir"),
+                    two.resolve("dir"),
+                    three.resolve("dir"),
+                    archiveResource.resolve("dir")
+                )
+            );
+
+            assertThat(composite.contains(other), is(true));
+
+            // some negations
+
+            other = ResourceFactory.combine(
+                List.of(
+                    one.resolve("dir"),
+                    four.resolve("dir") // not in composite
+                )
+            );
+
+            assertThat(composite.contains(other), is(false));
+
+
+            other = ResourceFactory.combine(
+                List.of(
+                    archiveResource.resolve("dir"),
+                    unused.resolve("dir")
+                )
+            );
+
+            assertThat(composite.contains(other), is(false));
+        }
+    }
+
 
     @Test
     public void testContainsAndPathTo()

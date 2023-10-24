@@ -89,6 +89,9 @@ public abstract class Resource implements Iterable<Resource>
         URI thisURI = getURI();
         URI otherURI = other.getURI();
 
+        if (otherURI == null)
+            return false;
+
         // Different schemes? not a chance it contains the other
         if (!StringUtil.asciiEqualsIgnoreCase(thisURI.getScheme(), otherURI.getScheme()))
             return false;
