@@ -698,7 +698,6 @@ public class CombinedResourceTest
         }
     }
 
-
     @Test
     public void testContainsAndPathTo()
     {
