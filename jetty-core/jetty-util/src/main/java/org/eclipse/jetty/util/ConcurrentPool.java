@@ -14,6 +14,7 @@
 package org.eclipse.jetty.util;
 
 import java.io.IOException;
+import java.lang.ref.WeakReference;
 import java.util.Collection;
 import java.util.List;
 import java.util.Objects;
@@ -55,7 +56,7 @@ public class ConcurrentPool<P> implements Pool<P>, Dumpable
 
     private static final Logger LOG = LoggerFactory.getLogger(ConcurrentPool.class);
 
-    private final List<Entry<P>> entries = new CopyOnWriteArrayList<>();
+    private final List<Holder<P>> entries = new CopyOnWriteArrayList<>();
     private final int maxSize;
     private final StrategyType strategyType;
     /*
@@ -66,7 +67,7 @@ public class ConcurrentPool<P> implements Pool<P>, Dumpable
      * When an entry can't be found in the cache, the global list is iterated
      * with the configured strategy so the cache has no visible effect besides performance.
      */
-    private final ThreadLocal<Entry<P>> cache;
+    private final ThreadLocal<Entry<P>> cache; // TODO does this make sense anymore?
     private final AutoLock lock = new AutoLock();
     private final AtomicInteger nextIndex;
     private final ToIntFunction<P> maxMultiplex;
@@ -117,7 +118,10 @@ public class ConcurrentPool<P> implements Pool<P>, Dumpable
 
     public int getTerminatedCount()
     {
-        return (int)entries.stream().filter(Entry::isTerminated).count();
+        return (int)entries.stream()
+            .map(Holder::getEntry)
+            .filter(Objects::nonNull)
+            .filter(Entry::isTerminated).count();
     }
 
     /**
@@ -155,7 +159,7 @@ public class ConcurrentPool<P> implements Pool<P>, Dumpable
             }
 
             ConcurrentEntry<P> entry = new ConcurrentEntry<>(this);
-            entries.add(entry);
+            entries.add(entry.getHolder());
             if (LOG.isDebugEnabled())
                 LOG.debug("returning reserved entry {} for {}", entry, this);
             return entry;
@@ -189,12 +193,26 @@ public class ConcurrentPool<P> implements Pool<P>, Dumpable
         {
             try
             {
-                ConcurrentEntry<P> entry = (ConcurrentEntry<P>)entries.get(index);
-                if (entry != null && entry.tryAcquire())
+                Holder<P> holder = entries.get(index);
+                if (holder != null)
                 {
-                    if (LOG.isDebugEnabled())
-                        LOG.debug("returning entry {} for {}", entry, this);
-                    return entry;
+
+                    ConcurrentEntry<P> entry = (ConcurrentEntry<P>)holder.getEntry();
+                    if (entry == null)
+                    {
+                        if (LOG.isDebugEnabled())
+                            LOG.warn("LEAK!!!");
+                        entries.remove(index);
+                        continue;
+                    }
+
+                    if (entry.tryAcquire())
+                    {
+                        if (LOG.isDebugEnabled())
+                            LOG.debug("returning entry {} for {}", entry, this);
+                        holder.free();
+                        return entry;
+                    }
                 }
             }
             catch (IndexOutOfBoundsException e)
@@ -247,7 +265,8 @@ public class ConcurrentPool<P> implements Pool<P>, Dumpable
 
         // No need to lock, no race with reserve()
         // and the race with terminate() is harmless.
-        boolean evicted = entries.remove(entry);
+        Holder<P> holder = ((ConcurrentEntry<P>)entry).getHolder();
+        boolean evicted = holder != null && entries.remove(holder);
         if (LOG.isDebugEnabled())
             LOG.debug("evicted {} {} for {}", evicted, entry, this);
 
@@ -272,7 +291,10 @@ public class ConcurrentPool<P> implements Pool<P>, Dumpable
             // Field this.terminated must be modified with the lock held
             // because the list of entries is modified, see reserve().
             terminated = true;
-            copy = List.copyOf(entries);
+            copy = entries.stream()
+                .map(Holder::getEntry)
+                .filter(Objects::nonNull)
+                .toList();
             entries.clear();
         }
 
@@ -309,7 +331,7 @@ public class ConcurrentPool<P> implements Pool<P>, Dumpable
     @Override
     public Stream<Entry<P>> stream()
     {
-        return entries.stream();
+        return entries.stream().map(Holder::getEntry).filter(Objects::nonNull);
     }
 
     @Override
@@ -386,10 +408,17 @@ public class ConcurrentPool<P> implements Pool<P>, Dumpable
         // Other threads accessing must check the state field above first, so a good before/after
         // relationship exists to make a memory barrier.
         private E pooled;
+        private final WeakReference<Holder<E>> holder;
 
         public ConcurrentEntry(ConcurrentPool<E> pool)
         {
             this.pool = pool;
+            holder = new WeakReference<>(new Holder<>(this));
+        }
+
+        private Holder<E> getHolder()
+        {
+            return holder.get();
         }
 
         @Override
@@ -504,7 +533,12 @@ public class ConcurrentPool<P> implements Pool<P>, Dumpable
                     return false;
                 int newMultiplexCount = multiplexCount - 1;
                 if (state.compareAndSet(encoded, 0, newMultiplexCount))
+                {
+                    Holder<E> holder = getHolder();
+                    if (holder != null && !holder.hold())
+                        continue;
                     return true;
+                }
             }
         }
 
@@ -595,6 +629,34 @@ public class ConcurrentPool<P> implements Pool<P>, Dumpable
                 AtomicBiInteger.getHi(encoded) < 0,
                 AtomicBiInteger.getLo(encoded),
                 getPooled());
+        }
+    }
+
+    private static class Holder<P>
+    {
+        private final WeakReference<Entry<P>> _weak;
+        private volatile Entry<P> _hard;
+
+        Holder(Entry<P> entry)
+        {
+            _weak = new WeakReference<>(entry);
+            _hard = entry;
+        }
+
+        Entry<P> getEntry()
+        {
+            return _weak.get();
+        }
+
+        public boolean hold()
+        {
+            _hard = _weak.get();
+            return _hard != null;
+        }
+
+        public void free()
+        {
+            _hard = null;
         }
     }
 }
