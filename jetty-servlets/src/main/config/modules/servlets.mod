@@ -2,8 +2,9 @@
 
 [description]
 Adds Jetty utility servlets and filters available to a webapp.
-Puts org.eclipse.jetty.servlets on the server classpath (CGI, CrossOriginFilter, DosFilter,
-MultiPartFilter, PushCacheFilter, QoSFilter, etc.) for use by all webapplications.
+Puts org.eclipse.jetty.servlets on the server classpath
+(CrossOriginFilter, DosFilter, MultiPartFilter, QoSFilter, etc.)
+for use by all web applications.
 
 [depend]
 servlet

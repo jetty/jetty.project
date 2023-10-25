@@ -51,6 +51,10 @@ import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
+/**
+ * @deprecated no replacement for this deprecated http feature (will be removed in Jetty 12)
+ */
+@Deprecated
 public class PushCacheFilterTest extends AbstractTest
 {
     private String contextPath = "/push";
