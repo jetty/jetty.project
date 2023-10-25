@@ -401,24 +401,19 @@ public class MetaData
      */
     private Resource getEnclosingResource(List<Resource> resources, Resource resource)
     {
-        Resource enclosingResource = null;
         try
         {
             for (Resource r : resources)
             {
-                if (resource.isContainedIn(r))
-                {
-                    enclosingResource = r;
-                    break;
-                }
+                if (r.contains(resource))
+                    return r;
             }
-            return enclosingResource;
         }
         catch (Exception e)
         {
             LOG.warn("Not contained within?", e);
-            return null;
         }
+        return null;
     }
 
     public void addDescriptorProcessor(DescriptorProcessor p)

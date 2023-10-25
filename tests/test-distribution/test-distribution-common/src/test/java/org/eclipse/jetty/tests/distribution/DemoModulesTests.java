@@ -26,6 +26,7 @@ import org.eclipse.jetty.http.HttpStatus;
 import org.eclipse.jetty.tests.hometester.JettyHomeTester;
 import org.eclipse.jetty.toolchain.test.jupiter.WorkDirExtension;
 import org.eclipse.jetty.util.Fields;
+import org.junit.jupiter.api.Tag;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.junit.jupiter.params.ParameterizedTest;
@@ -279,6 +280,7 @@ public class DemoModulesTests extends AbstractJettyHomeTest
 
     @ParameterizedTest
     @MethodSource("provideEnvironmentsToTest")
+    @Tag("external")
     public void testAsyncRest(String env) throws Exception
     {
         Path jettyBase = newTestJettyBaseDirectory();

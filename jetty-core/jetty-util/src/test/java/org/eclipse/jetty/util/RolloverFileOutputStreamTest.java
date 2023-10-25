@@ -36,7 +36,10 @@ import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 
 import static org.hamcrest.MatcherAssert.assertThat;
+import static org.hamcrest.Matchers.containsString;
+import static org.hamcrest.Matchers.instanceOf;
 import static org.hamcrest.Matchers.is;
+import static org.junit.jupiter.api.Assertions.assertNotNull;
 
 @ExtendWith(WorkDirExtension.class)
 public class RolloverFileOutputStreamTest
@@ -181,6 +184,25 @@ public class RolloverFileOutputStreamTest
 
         assertSequence(midnight, expected);
     }
+
+    @Test
+    public void testMissingDirectory()
+    {
+        String templateString = "missingDir/test-rofos-yyyy_mm_dd.log";
+        Throwable error;
+        try (RolloverFileOutputStream ignored = new RolloverFileOutputStream(templateString))
+        {
+            throw new IllegalStateException();
+        }
+        catch (Throwable  t)
+        {
+            error = t;
+        }
+        assertNotNull(error);
+        assertThat(error, instanceOf(IOException.class));
+        error.getMessage();
+        assertThat(error.getMessage(), containsString("Log directory does not exist."));
+    }        
 
     @Test
     public void testFileHandling() throws Exception

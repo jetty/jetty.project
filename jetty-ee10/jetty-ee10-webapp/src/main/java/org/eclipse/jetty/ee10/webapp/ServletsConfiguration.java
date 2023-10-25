@@ -33,9 +33,6 @@ public class ServletsConfiguration extends AbstractConfiguration
             .addDependencies(WebXmlConfiguration.class, MetaInfConfiguration.class, WebInfConfiguration.class, WebAppConfiguration.class)
             .addDependents(JettyWebXmlConfiguration.class)
             .protectAndExpose()
-            .protect("org.eclipse.jetty.ee10.servlets.PushCacheFilter", //must be loaded by container classpath
-                "org.eclipse.jetty.ee10.servlets.PushSessionCacheFilter" //must be loaded by container classpath
-            )
             .expose("org.eclipse.jetty.ee10.servlets.")); // don't hide jetty servlets
     }
 
@@ -44,7 +41,7 @@ public class ServletsConfiguration extends AbstractConfiguration
     {
         try
         {
-            return Loader.loadClass("org.eclipse.jetty.ee10.servlets.PushCacheFilter") != null;
+            return Loader.loadClass("org.eclipse.jetty.ee10.servlets.DoSFilter") != null;
         }
         catch (Throwable e)
         {

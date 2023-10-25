@@ -21,6 +21,9 @@ import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
+import java.util.TreeSet;
+import java.util.stream.Collectors;
+import java.util.stream.Stream;
 
 import org.eclipse.jetty.server.Handler;
 import org.eclipse.jetty.server.Request;
@@ -28,6 +31,7 @@ import org.eclipse.jetty.server.Response;
 import org.eclipse.jetty.util.ArrayUtil;
 import org.eclipse.jetty.util.Callback;
 import org.eclipse.jetty.util.Index;
+import org.eclipse.jetty.util.annotation.ManagedAttribute;
 import org.eclipse.jetty.util.annotation.ManagedObject;
 import org.eclipse.jetty.util.annotation.ManagedOperation;
 import org.eclipse.jetty.util.thread.SerializedExecutor;
@@ -73,7 +77,7 @@ public class ContextHandlerCollection extends Handler.Sequence
      * This method is mutually excluded from {@link #deployHandler(Handler, Callback)} and
      * {@link #undeployHandler(Handler, Callback)}
      */
-    @ManagedOperation("Update the mapping of context path to context")
+    @ManagedOperation(value = "Update the mapping of context path to context", impact = "ACTION")
     public void mapContexts()
     {
         _serializedExecutor.execute(() ->
@@ -187,6 +191,23 @@ public class ContextHandlerCollection extends Handler.Sequence
             limit = l - 2;
         }
         return false;
+    }
+
+    @ManagedAttribute("The paths of the contexts in this collection")
+    public Set<String> getContextPaths()
+    {
+        List<Handler> handlers = getHandlers();
+        if (handlers instanceof Mapping mapping)
+        {
+            Index<Map.Entry<String, Branch[]>> index = mapping._pathBranches;
+            return index.keySet().stream()
+                .map(index::get)
+                .map(Map.Entry::getValue)
+                .flatMap(Stream::of)
+                .flatMap(b -> b.getContextPaths().stream())
+                .collect(Collectors.toCollection(TreeSet::new));
+        }
+        return Set.of();
     }
 
     /**

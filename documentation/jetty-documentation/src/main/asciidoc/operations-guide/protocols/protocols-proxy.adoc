@@ -43,7 +43,7 @@ Apache HTTP Server and Nginx can only speak HTTP/1.1 to backend servers such as 
 ====
 
 In these setups, typically the proxy performs TLS offloading, and the communication with backend servers happens in clear-text.
-It is possible, however, to configure the proxy so that all the bytes arriving from the client are tunnelled opaquely to the backend Jetty server (that therefore needs to perform the TLS offloading) and viceversa the bytes arriving from the Jetty server are tunnelled opaquely to the client.
+It is possible, however, to configure the proxy so that all the bytes arriving from the client are tunnelled opaquely to the backend Jetty server (that therefore needs to perform the TLS offloading) and vice versa the bytes arriving from the Jetty server are tunnelled opaquely to the client.
 
 Also in these setups, the TCP/IP connection terminating on the Jetty servers does not originate from the client, but from the proxy, so that the remote IP address and port number may be reported incorrectly in backend server logs, or worse applications may not work because they need to be able to differentiate different clients based on the client IP address.
 

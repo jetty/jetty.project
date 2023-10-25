@@ -238,8 +238,6 @@ jetty-12.0.0.beta2 - 16 June 2023
    after response committed
  + 9650 jetty-12 ee10 `ServletApiResponse.resetBuffer` does not check for
    response being committed
- + 9655 Flaky test in jetty-12
-   org.eclipse.jetty.test.client.transport.HttpClientLoadTest#testIterative
  + 9657 jetty-12 ee9 & ee10 Request.upgrade returns null
  + 9680 Jetty-12 QuickStartTest leaking resources
  + 9682 A possible native memory leak through RetainableByteBuffers
@@ -251,8 +249,6 @@ jetty-12.0.0.beta2 - 16 June 2023
  + 9750 jetty-12 ee10 wrong authType for CLIENT-CERT
  + 9760 jetty-12 ee9 Omnibus tck failure analysis
  + 9762 jetty-12 ee9 Double parsing of cookies
- + 9765 Flaky test  testBlockingReadInADifferentThread â
-   org.eclipse.jetty.http3.tests.DataDemandTest
  + 9766 jetty-12 ee9 ServerPush failures
  + 9767 jetty-12 ee10 ServerPush failures
  + 9770 Pictures are missed in documentation

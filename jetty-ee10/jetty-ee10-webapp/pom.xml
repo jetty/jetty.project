@@ -87,7 +87,7 @@
         <artifactId>maven-surefire-plugin</artifactId>
         <configuration>
           <argLine>@{argLine} ${jetty.surefire.argLine}
-            --add-exports org.eclipse.jetty.ee10.webapp/org.acme.webapp=org.eclipse.jetty.ee10.servlet</argLine>
+            --add-exports org.eclipse.jetty.ee10.webapp/org.acme.webapp=org.eclipse.jetty.ee10.servlet --add-reads org.eclipse.jetty.ee10.webapp=org.eclipse.jetty.logging</argLine>
           <useManifestOnlyJar>false</useManifestOnlyJar>
           <additionalClasspathElements>
             <additionalClasspathElement>${basedir}/src/test/resources/mods/foo-bar-janb.jar</additionalClasspathElement>
