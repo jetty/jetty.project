@@ -408,17 +408,17 @@ public class ConcurrentPool<P> implements Pool<P>, Dumpable
         // Other threads accessing must check the state field above first, so a good before/after
         // relationship exists to make a memory barrier.
         private E pooled;
-        private final WeakReference<Holder<E>> holder;
+        private final Holder<E> holder;
 
         public ConcurrentEntry(ConcurrentPool<E> pool)
         {
             this.pool = pool;
-            holder = new WeakReference<>(new Holder<>(this));
+            holder = new Holder<>(this);
         }
 
         private Holder<E> getHolder()
         {
-            return holder.get();
+            return holder;
         }
 
         @Override
