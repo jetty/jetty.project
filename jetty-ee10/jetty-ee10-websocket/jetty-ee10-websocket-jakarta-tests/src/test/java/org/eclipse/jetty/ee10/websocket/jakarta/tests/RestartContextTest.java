@@ -106,15 +106,12 @@ public class RestartContextTest
 
         // Start server
         server.start();
-        server.dumpStdErr();
-        System.err.println("\n\n\n");
 
         // verify functionality
         verifyWebSocketEcho(server.getURI().resolve("/echo"));
 
         // Stop server
         server.stop();
-        server.dumpStdErr();
 
         // Start server (again)
         server.start();

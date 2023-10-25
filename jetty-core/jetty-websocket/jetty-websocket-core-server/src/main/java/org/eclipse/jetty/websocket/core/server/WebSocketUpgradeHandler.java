@@ -28,16 +28,27 @@ public class WebSocketUpgradeHandler extends Handler.Wrapper
 {
     private final WebSocketMappings _mappings;
     private final Configuration.ConfigurationCustomizer _customizer = new Configuration.ConfigurationCustomizer();
-    private Consumer<WebSocketUpgradeHandler> _configurator;
+    private final Consumer<WebSocketUpgradeHandler> _configurator;
 
     public WebSocketUpgradeHandler()
     {
-        this(new WebSocketComponents());
+        this(null, null);
     }
 
     public WebSocketUpgradeHandler(WebSocketComponents components)
     {
-        _mappings = new WebSocketMappings(components);
+        this(components, null);
+    }
+
+    public WebSocketUpgradeHandler(Consumer<WebSocketUpgradeHandler> configurator)
+    {
+        this(null, configurator);
+    }
+
+    public WebSocketUpgradeHandler(WebSocketComponents components, Consumer<WebSocketUpgradeHandler> configurator)
+    {
+        _mappings = new WebSocketMappings(components == null ? new WebSocketComponents() : components);
+        _configurator = configurator;
         addBean(_mappings);
         setHandler(new Handler.Abstract.NonBlocking()
         {
@@ -58,18 +69,6 @@ public class WebSocketUpgradeHandler extends Handler.Wrapper
     public void addMapping(PathSpec pathSpec, WebSocketNegotiator negotiator)
     {
         _mappings.addMapping(pathSpec, negotiator);
-    }
-
-    /**
-     * Runs the provided configurator every time the Handler is starting.
-     * All mappings are automatically cleared when the Handler is stopped.
-     * @param configurator the configurator to run when starting the Handler.
-     * @return this {@link WebSocketUpgradeHandler}
-     */
-    public WebSocketUpgradeHandler configure(Consumer<WebSocketUpgradeHandler> configurator)
-    {
-        _configurator = configurator;
-        return this;
     }
 
     @Override

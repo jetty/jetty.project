@@ -35,7 +35,7 @@ public class RestartTest
     private Server _server;
     private ServerConnector _connector;
     private WebSocketCoreClient _client;
-    private WebSocketUpgradeHandler upgradeHandler;
+    private WebSocketUpgradeHandler _upgradeHandler;
 
     @BeforeEach
     public void before() throws Exception
@@ -44,10 +44,9 @@ public class RestartTest
         _connector = new ServerConnector(_server);
         _server.addConnector(_connector);
 
-        upgradeHandler = new WebSocketUpgradeHandler();
-        upgradeHandler.configure(handler ->
+        _upgradeHandler = new WebSocketUpgradeHandler(handler ->
             handler.addMapping("/", (req, resp, cb) -> new EchoFrameHandler()));
-        _server.setHandler(upgradeHandler);
+        _server.setHandler(_upgradeHandler);
 
         _server.start();
 
@@ -67,7 +66,7 @@ public class RestartTest
     {
         testEcho();
         _server.stop();
-        assertThat(upgradeHandler.dump(), containsString("PathMappings[size=0]"));
+        assertThat(_upgradeHandler.dump(), containsString("PathMappings[size=0]"));
         _server.start();
         testEcho();
     }

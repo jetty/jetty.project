@@ -84,36 +84,61 @@ public class WebSocketUpgradeHandler extends Handler.Wrapper
      */
     public static WebSocketUpgradeHandler from(Server server, ContextHandler context)
     {
+        return from(server, context, null);
+    }
+
+    /**
+     * <p>Creates a new {@link WebSocketUpgradeHandler}.</p>
+     * <p>The {@link WebSocketUpgradeHandler} is not yet linked to the given
+     * {@link ContextHandler}, therefore the caller code must ensure that
+     * the returned {@link WebSocketUpgradeHandler} is a descendant of the
+     * given {@link ContextHandler}.</p>
+     *
+     * @param server the {@link Server} object used to lookup common WebSocket components
+     * @param context the {@link ContextHandler} ancestor of the returned {@link WebSocketUpgradeHandler}
+     * @param configurator a {@link Consumer} that is called to allow the {@link ServerWebSocketContainer} to
+     * be configured during the starting phase of the {@link WebSocketUpgradeHandler}.
+     * @return a new {@link WebSocketUpgradeHandler}
+     */
+    public static WebSocketUpgradeHandler from(Server server, ContextHandler context, Consumer<ServerWebSocketContainer> configurator)
+    {
         WebSocketComponents components = WebSocketServerComponents.ensureWebSocketComponents(server, context);
         WebSocketMappings mappings = new WebSocketMappings(components);
         ServerWebSocketContainer container = new ServerWebSocketContainer(mappings);
         container.addBean(mappings);
 
-        WebSocketUpgradeHandler wsHandler = new WebSocketUpgradeHandler(container);
+        WebSocketUpgradeHandler wsHandler = new WebSocketUpgradeHandler(container, configurator);
         context.getContext().setAttribute(WebSocketContainer.class.getName(), wsHandler._container);
         return wsHandler;
     }
 
     private final ServerWebSocketContainer _container;
-    private Consumer<ServerWebSocketContainer> _configurator;
+    private final Consumer<ServerWebSocketContainer> _configurator;
 
     public WebSocketUpgradeHandler(ServerWebSocketContainer container)
     {
+        this(container, null);
+    }
+
+    public WebSocketUpgradeHandler(ServerWebSocketContainer container, Consumer<ServerWebSocketContainer> configurator)
+    {
         _container = container;
+        _configurator = configurator;
         addManaged(container);
     }
 
     /**
      * <p>Configures the {@link ServerWebSocketContainer} associated with this
      * {@link WebSocketUpgradeHandler}.</p>
-     * <p>The configurator is run during {@link #doStart()}, all mappings are cleared on {@link #doStop()}.</p>
+     * <p>This configuration is applied immediately and lost after a server restart.</p>
      *
      * @param configurator the configuration code
      * @return this {@link WebSocketUpgradeHandler}
+     * @deprecated use {@link #getContainer()} or {@link #from(Server, ContextHandler, Consumer)}.
      */
     public WebSocketUpgradeHandler configure(Consumer<ServerWebSocketContainer> configurator)
     {
-        _configurator = configurator;
+        configurator.accept(_container);
         return this;
     }
 
