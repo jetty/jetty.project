@@ -216,6 +216,46 @@ pidKill()
   fi
 }
 
+testFileSystemPermissions()
+{
+  # Don't test file system permissions if user is root
+  if [ $UID -eq 0 ] ; then
+    (( DEBUG )) && echo "Not testing file system permissions: uid is 0"
+    return 0
+  fi
+
+  # Don't test if JETTY_USER is specified
+  # as the Jetty process will switch to a different user id on startup
+  if [ -n "$JETTY_USER" ] ; then
+    (( DEBUG )) && echo "Not testing file system permissions: JETTY_USER=$JETTY_USER"
+    return 0
+  fi
+
+  # Don't test if setuid is specified
+  # as the Jetty process will switch to a different user id on startup
+  if expr "${JETTY_ARGS[*]}" : '.*setuid.*' >/dev/null
+  then
+    (( DEBUG )) && echo "Not testing file system permissions: setuid in use"
+    return 0
+  fi
+
+  # Test if PID can be written from this userid
+  if ! touch "$JETTY_PID"
+  then
+    echo "** ERROR: Unable to touch file: $JETTY_PID"
+    echo "          Correct issues preventing use of \$JETTY_PID and try again."
+    exit 1
+  fi
+
+  # Test if STATE can be written from this userid
+  if ! touch "$JETTY_STATE"
+  then
+    echo "** ERROR: Unable to touch file: $JETTY_STATE"
+    echo "          Correct issues preventing use of \$JETTY_STATE and try again."
+    exit 1
+  fi
+}
+
 readConfig()
 {
   (( DEBUG )) && echo "Reading $1.."
@@ -240,6 +280,10 @@ dumpEnv()
   echo "JETTY_START_TIMEOUT   =  $JETTY_START_TIMEOUT"
   echo "JETTY_SYS_PROPS       =  $JETTY_SYS_PROPS"
   echo "RUN_ARGS              =  ${RUN_ARGS[*]}"
+  echo "ID                    =  $(id)"
+  echo "JETTY_USER            =  $JETTY_USER"
+  echo "USE_START_STOP_DAEMON =  $USE_START_STOP_DAEMON"
+  echo "START_STOP_DAEMON     =  $START_STOP_DAEMON_AVAILABLE"
 }
 
 
@@ -249,6 +293,7 @@ dumpEnv()
 CONFIGS=()
 NO_START=0
 DEBUG=0
+USE_START_STOP_DAEMON=1
 
 while [[ $1 = -* ]]; do
   case $1 in
@@ -404,7 +449,6 @@ case "`uname`" in
 CYGWIN*) JETTY_STATE="`cygpath -w $JETTY_STATE`";;
 esac
 
-
 JETTY_ARGS=(${JETTY_ARGS[*]} "jetty.state=$JETTY_STATE" "jetty.pid=$JETTY_PID")
 
 ##################################################
@@ -412,6 +456,7 @@ JETTY_ARGS=(${JETTY_ARGS[*]} "jetty.state=$JETTY_STATE" "jetty.pid=$JETTY_PID")
 ##################################################
 if [ -f "$JETTY_CONF" ] && [ -r "$JETTY_CONF" ]
 then
+  (( DEBUG )) && echo "$JETTY_CONF: (begin read) JETTY_ARGS.length=${#JETTY_ARGS[@]}"
   while read -r CONF
   do
     if expr "$CONF" : '#' >/dev/null ; then
@@ -427,16 +472,17 @@ then
       do
         if [ -r "$XMLFILE" ] && [ -f "$XMLFILE" ]
         then
-          JETTY_ARGS=(${JETTY_ARGS[*]} "$XMLFILE")
+          JETTY_ARGS[${#JETTY_ARGS[@]}]=$XMLFILE
         else
           echo "** WARNING: Cannot read '$XMLFILE' specified in '$JETTY_CONF'"
         fi
       done
     else
       # assume it's a command line parameter (let start.jar deal with its validity)
-      JETTY_ARGS=(${JETTY_ARGS[*]} "$CONF")
+      JETTY_ARGS[${#JETTY_ARGS[@]}]=$CONF
     fi
   done < "$JETTY_CONF"
+  (( DEBUG )) && echo "$JETTY_CONF: (finished read) JETTY_ARGS.length=${#JETTY_ARGS[@]}"
 fi
 
 ##################################################
@@ -507,8 +553,22 @@ case "`uname`" in
 CYGWIN*) JETTY_START="`cygpath -w $JETTY_START`";;
 esac
 
+# Determine if we can use start-stop-daemon or not
+START_STOP_DAEMON_AVAILABLE=0
+
+if (( USE_START_STOP_DAEMON ))
+then
+  # only if root user is executing jetty.sh, and the start-stop-daemon exists
+  if [ $UID -eq 0 ] && type start-stop-daemon > /dev/null 2>&1
+  then
+    START_STOP_DAEMON_AVAILABLE=1
+  else
+    USE_START_STOP_DAEMON=0
+  fi
+fi
+
 # Collect the dry-run (of opts,path,main,args) from the jetty.base configuration
-JETTY_DRY_RUN=$("$JAVA" -jar "$JETTY_START" --dry-run=opts,path,main,args,envs ${JETTY_ARGS[*]} ${JAVA_OPTIONS[*]})
+JETTY_DRY_RUN=$(echo "${JETTY_ARGS[*]} ${JAVA_OPTIONS[*]}" | xargs "$JAVA" -jar "$JETTY_START" --dry-run=opts,path,main,args,envs)
 RUN_ARGS=($JETTY_SYS_PROPS ${JETTY_DRY_RUN[@]})
 
 if (( DEBUG ))
@@ -531,24 +591,12 @@ case "$ACTION" in
       exit
     fi
 
-    if ! touch "$JETTY_PID"
-    then
-      echo "** ERROR: Unable to touch file: $JETTY_PID"
-      echo "          Correct issues preventing use of \$JETTY_PID and try again."
-      exit 1
-    fi
-
-    if ! touch "$JETTY_STATE"
-    then
-      echo "** ERROR: Unable to touch file: $JETTY_STATE"
-      echo "          Correct issues preventing use of \$JETTY_STATE and try again."
-      exit 1
-    fi
+    testFileSystemPermissions
 
     echo -n "Starting Jetty: "
 
     # Startup from a service file
-    if [ $UID -eq 0 ] && type start-stop-daemon > /dev/null 2>&1
+    if (( USE_START_STOP_DAEMON ))
     then
       unset CH_USER
       if [ -n "$JETTY_USER" ]
@@ -556,13 +604,14 @@ case "$ACTION" in
         CH_USER="--chuid $JETTY_USER"
       fi
 
-      echo ${RUN_ARGS[@]} --start-log-file="$JETTY_START_LOG" | xargs start-stop-daemon \
+      # use of --pidfile /dev/null disables internal pidfile
+      # management of the start-stop-daemon (see man page)
+      echo ${RUN_ARGS[@]} | xargs start-stop-daemon \
        --start $CH_USER \
-       --pidfile "$JETTY_PID" \
+       --pidfile /dev/null \
        --chdir "$JETTY_BASE" \
        --background \
-       --output "${JETTY_RUN}/start-stop.log"
-       --make-pidfile \
+       --output "${JETTY_RUN}/start-stop.log" \
        --startas "$JAVA" \
        --
       (( DEBUG )) && echo "Starting: start-stop-daemon"
@@ -618,25 +667,41 @@ case "$ACTION" in
 
   stop)
     echo -n "Stopping Jetty: "
-    # Stop from a service file
-    if [ $UID -eq 0 ] && type start-stop-daemon > /dev/null 2>&1; then
-      start-stop-daemon -K -p"$JETTY_PID" -d"$JETTY_HOME" -a "$JAVA" -s HUP
+    if [ ! -r "$JETTY_PID" ] ; then
+      echo "** ERROR: no pid found at $JETTY_PID"
+      exit 1
+    fi
+
+    PID=$(tail -1 "$JETTY_PID")
+    if [ -z "$PID" ] ; then
+      echo "** ERROR: no pid found in $JETTY_PID"
+      exit 1
+    fi
+
+    # Stopping service started with start-stop-daemon
+    if (( USE_START_STOP_DAEMON )) ; then
+      (( DEBUG )) && echo "Issuing HUP to $PID"
+      start-stop-daemon --stop \
+         --pid "$PID" \
+         --chdir "$JETTY_BASE" \
+         --startas "$JAVA" \
+         --signal HUP
 
       TIMEOUT=30
       while running "$JETTY_PID"; do
+        (( DEBUG )) && echo "Issuing KILL to $PID"
         if (( TIMEOUT-- == 0 )); then
-          start-stop-daemon -K -p"$JETTY_PID" -d"$JETTY_HOME" -a "$JAVA" -s KILL
+          start-stop-daemon --stop \
+            --pid "$PID" \
+            --chdir "$JETTY_BASE" \
+            --startas "$JAVA" \
+            --signal KILL
         fi
 
         sleep 1
       done
     else
-      # Stop from a non-service path
-      if [ ! -r "$JETTY_PID" ] ; then
-        echo "** ERROR: no pid found at $JETTY_PID"
-        exit 1
-      fi
-
+      # Stopping from non-service start
       pidKill "$JETTY_PID" 30
     fi
 

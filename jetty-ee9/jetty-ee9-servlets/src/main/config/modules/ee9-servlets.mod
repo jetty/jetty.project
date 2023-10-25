@@ -2,8 +2,9 @@
 
 [description]
 Adds Jetty EE9 utility servlets and filters available to a webapp.
-Puts org.eclipse.jetty.ee9.servlets on the server classpath (CrossOriginFilter, DosFilter,
-MultiPartFilter, PushCacheFilter, QoSFilter, etc.) for use by all webapplications.
+Puts org.eclipse.jetty.ee9.servlets on the server classpath
+(CrossOriginFilter, DosFilter, MultiPartFilter, QoSFilter, etc.)
+for use by all web applications.
 
 [environment]
 ee9

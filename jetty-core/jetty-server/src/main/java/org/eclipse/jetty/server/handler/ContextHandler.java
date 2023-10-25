@@ -866,7 +866,7 @@ public class ContextHandler extends Handler.Wrapper implements Attributes, Alias
     /**
      * @return Returns the base resource as a string.
      */
-    @ManagedAttribute("document root for context")
+    @ManagedAttribute(value = "document root for context", readonly = true)
     public Resource getBaseResource()
     {
         return _baseResource;

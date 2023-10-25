@@ -13,6 +13,7 @@
 
   <modules>
     <module>jetty-test-client-transports</module>
+    <module>jetty-test-jmx</module>
   </modules>
 
   <properties>
