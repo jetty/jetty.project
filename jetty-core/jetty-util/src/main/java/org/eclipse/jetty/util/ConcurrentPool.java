@@ -153,9 +153,21 @@ public class ConcurrentPool<P> implements Pool<P>, Dumpable
             int entriesSize = entries.size();
             if (maxSize > 0 && entriesSize >= maxSize)
             {
-                if (LOG.isDebugEnabled())
-                    LOG.debug("no space: {} >= {}, cannot reserve entry for {}", entriesSize, maxSize, this);
-                return null;
+                // Sweep for collected entries
+                // TODO this could be better?
+                for (int i = 0; i < entries.size(); i++)
+                {
+                    Holder<P> holder = entries.get(i);
+                    if (holder.getEntry() == null)
+                        entries.remove(holder);
+                }
+                entriesSize = entries.size();
+                if (maxSize > 0 && entriesSize >= maxSize)
+                {
+                    if (LOG.isDebugEnabled())
+                        LOG.debug("no space: {} >= {}, cannot reserve entry for {}", entriesSize, maxSize, this);
+                    return null;
+                }
             }
 
             ConcurrentEntry<P> entry = new ConcurrentEntry<>(this);
@@ -438,6 +450,8 @@ public class ConcurrentPool<P> implements Pool<P>, Dumpable
             {
                 if (LOG.isDebugEnabled())
                     LOG.debug("enabled {} for {}", this, pool);
+                if (acquire)
+                    getHolder().free();
                 return true;
             }
 
