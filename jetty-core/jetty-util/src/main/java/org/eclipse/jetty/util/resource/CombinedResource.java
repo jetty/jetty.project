@@ -14,6 +14,8 @@
 package org.eclipse.jetty.util.resource;
 
 import java.io.IOException;
+import java.io.InputStream;
+import java.io.OutputStream;
 import java.net.URI;
 import java.nio.file.Files;
 import java.nio.file.Path;
@@ -29,6 +31,7 @@ import java.util.Objects;
 import java.util.TreeMap;
 import java.util.stream.Collectors;
 
+import org.eclipse.jetty.util.IO;
 import org.eclipse.jetty.util.URIUtil;
 
 /**
@@ -297,9 +300,20 @@ public class CombinedResource extends Resource
             }
             else
             {
-                Path pathFrom = r.getPath();
                 ensureDirExists(pathTo.getParent());
-                Files.copy(pathFrom, pathTo, StandardCopyOption.COPY_ATTRIBUTES, StandardCopyOption.REPLACE_EXISTING);
+                Path pathFrom = r.getPath();
+                if (pathFrom != null)
+                {
+                    Files.copy(pathFrom, pathTo, StandardCopyOption.COPY_ATTRIBUTES, StandardCopyOption.REPLACE_EXISTING);
+                }
+                else
+                {
+                    // use old school stream based copy
+                    try (InputStream in = r.newInputStream(); OutputStream out = Files.newOutputStream(pathTo))
+                    {
+                        IO.copy(in, out);
+                    }
+                }
             }
         }
     }

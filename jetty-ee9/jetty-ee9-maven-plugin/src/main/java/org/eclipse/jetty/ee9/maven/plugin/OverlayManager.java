@@ -24,6 +24,7 @@ import java.util.Set;
 
 import org.apache.maven.artifact.Artifact;
 import org.eclipse.jetty.util.URIUtil;
+import org.eclipse.jetty.util.resource.MountedPathResource;
 import org.eclipse.jetty.util.resource.Resource;
 import org.eclipse.jetty.util.resource.ResourceFactory;
 
@@ -136,6 +137,8 @@ public class OverlayManager
 
         //Get the name of the overlayed war and unpack it to a dir of the
         //same name in the temporary directory
+        //We know it is a war because it came from the maven repo
+        assert overlay.getResource() instanceof MountedPathResource;
         Path p = Paths.get(URIUtil.unwrapContainer(overlay.getResource().getURI()));
         String name = p.getName(p.getNameCount() - 1).toString();
         name = name.replace('.', '_');
