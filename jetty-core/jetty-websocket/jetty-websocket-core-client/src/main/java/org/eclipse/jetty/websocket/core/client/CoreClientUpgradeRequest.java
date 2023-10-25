@@ -84,6 +84,7 @@ public abstract class CoreClientUpgradeRequest implements Response.CompleteListe
     private final Configuration.ConfigurationCustomizer customizer = new Configuration.ConfigurationCustomizer();
     private final List<UpgradeListener> upgradeListeners = new ArrayList<>();
     private List<ExtensionConfig> requestedExtensions = new ArrayList<>();
+    private boolean upgraded = false;
 
     public CoreClientUpgradeRequest(WebSocketCoreClient webSocketClient, URI requestURI)
     {
@@ -242,9 +243,7 @@ public abstract class CoreClientUpgradeRequest implements Response.CompleteListe
     public void onComplete(Result result)
     {
         if (LOG.isDebugEnabled())
-        {
             LOG.debug("onComplete() - {}", result);
-        }
 
         URI requestURI = result.getRequest().getURI();
         Request request = result.getRequest();
@@ -252,8 +251,7 @@ public abstract class CoreClientUpgradeRequest implements Response.CompleteListe
         int status = response.getStatus();
         String responseLine = status + " " + response.getReason();
 
-        if ((request.getVersion() == HttpVersion.HTTP_2 && status != HttpStatus.OK_200) ||
-            (request.getVersion() == HttpVersion.HTTP_1_1 && status != HttpStatus.SWITCHING_PROTOCOLS_101))
+        if (!upgraded)
         {
             // We have failed to upgrade but have received a response, so notify the listener.
             Throwable listenerError = notifyUpgradeListeners((listener) -> listener.onHandshakeResponse(request, response));
@@ -492,6 +490,7 @@ public abstract class CoreClientUpgradeRequest implements Response.CompleteListe
         WebSocketConnection wsConnection = new WebSocketConnection(endPoint, httpClient.getExecutor(), httpClient.getScheduler(), bufferPool, coreSession);
         coreSession.setWebSocketConnection(wsConnection);
         wsClient.getEventListeners().forEach(wsConnection::addEventListener);
+        upgraded = true;
         Throwable listenerError = notifyUpgradeListeners((listener) -> listener.onHandshakeResponse(request, response));
         if (listenerError != null)
             throw new WebSocketException("onHandshakeResponse error", listenerError);
