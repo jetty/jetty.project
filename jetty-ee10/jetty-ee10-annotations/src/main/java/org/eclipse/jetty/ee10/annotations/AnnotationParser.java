@@ -452,7 +452,7 @@ public class AnnotationParser
     public static class MyClassVisitor extends ClassVisitor
     {
         final int _asmVersion;
-        final Resource _containingResource;
+        final Resource _containingResource; //resource containing the class to parse
         final Set<? extends Handler> _handlers;
         ClassInfo _ci;
 
@@ -472,6 +472,12 @@ public class AnnotationParser
                           final String superName,
                           final String[] interfaces)
         {
+            //Check that the named class exists in the containingResource at the correct location.
+            //eg given the class with name "com.foo.Acme" and the containingResource "jar:file://some/place/something.jar!/"
+            //then the file "jar:file://some/place/something.jar!/com/foo/Acme.class" must exist.
+            if (_containingResource.resolve(name + ".class") == null)
+                throw new IllegalStateException("Class " + name + " not in correct location in " + _containingResource);
+
             _ci = new ClassInfo(_containingResource, normalize(name), version, access, signature, normalize(superName), normalize(interfaces));
             for (Handler h : _handlers)
             {
@@ -656,7 +662,6 @@ public class AnnotationParser
             LOG.debug("Parse class from {}", classFile.toUri());
 
         URI location = classFile.toUri();
-
         try (InputStream in = Files.newInputStream(classFile))
         {
             ClassReader reader = new ClassReader(in);

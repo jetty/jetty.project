@@ -29,11 +29,13 @@ import java.util.Map;
 import java.util.Set;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.CopyOnWriteArrayList;
+import java.util.jar.JarFile;
 
 import org.eclipse.jetty.toolchain.test.FS;
 import org.eclipse.jetty.toolchain.test.MavenTestingUtils;
 import org.eclipse.jetty.toolchain.test.jupiter.WorkDir;
 import org.eclipse.jetty.toolchain.test.jupiter.WorkDirExtension;
+import org.eclipse.jetty.util.IO;
 import org.eclipse.jetty.util.TypeUtil;
 import org.eclipse.jetty.util.resource.Resource;
 import org.eclipse.jetty.util.resource.ResourceFactory;
@@ -46,10 +48,12 @@ import static org.hamcrest.Matchers.containsInAnyOrder;
 import static org.hamcrest.Matchers.containsString;
 import static org.hamcrest.Matchers.in;
 import static org.hamcrest.Matchers.is;
+import static org.hamcrest.Matchers.not;
 import static org.hamcrest.Matchers.notNullValue;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertNotEquals;
 import static org.junit.jupiter.api.Assertions.assertNotNull;
+import static org.junit.jupiter.api.Assertions.assertThrows;
 
 @ExtendWith(WorkDirExtension.class)
 public class TestAnnotationParser
@@ -193,9 +197,34 @@ public class TestAnnotationParser
 
         try (ResourceFactory.Closeable resourceFactory = ResourceFactory.closeable())
         {
-            parser.parse(emptySet, resourceFactory.newResource(badClassesJar));
-            // only the valid classes inside bad-classes.jar should be parsed. If any invalid classes are parsed and exception would be thrown here
+            //Check class file in wrong location causes error
+            assertThrows(RuntimeException.class, () -> parser.parse(emptySet, resourceFactory.newResource(badClassesJar)));
         }
+        //Check hidden and non classfiles skipped
+        assertThat(parser.getParsedClassNames().keySet(), containsInAnyOrder("Top", "com.acme.Foo"));
+    }
+
+    @Test
+    public void testHiddenAndBadFilesInDir() throws Exception
+    {
+        AnnotationParser parser = new AnnotationParser();
+        Set<AnnotationParser.Handler> emptySet = Collections.emptySet();
+
+        Path badClassesPath = MavenTestingUtils.getTestResourcePathFile("bad-classes.jar");
+
+        try (ResourceFactory.Closeable resourceFactory = ResourceFactory.closeable())
+        {
+            Path dir = MavenTestingUtils.getTargetTestingPath("baddir");
+            IO.delete(dir.toFile());
+            Resource badClassesJar = resourceFactory.newJarFileResource(badClassesPath.toUri());
+            badClassesJar.copyTo(dir);
+
+            //check class file in wrong location in jar causes error
+            assertThrows(RuntimeException.class, () -> parser.parse(emptySet, resourceFactory.newResource(dir)));
+        }
+
+        //Check hidden and non classfiles skipped
+        assertThat(parser.getParsedClassNames().keySet(), containsInAnyOrder("Top", "com.acme.Foo"));
     }
 
     @Test
@@ -210,6 +239,7 @@ public class TestAnnotationParser
             parser.parse(emptySet, resourceFactory.newResource(badClassesJar));
             // Should throw no exceptions, and happily skip the module-info.class files
         }
+        assertThat(parser.getParsedClassNames().keySet(), not(containsInAnyOrder("module-info")));
     }
 
     @Test
