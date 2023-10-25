@@ -162,13 +162,7 @@ public class ConcurrentPool<P> implements Pool<P>, Dumpable
             if (maxSize > 0 && entriesSize >= maxSize)
             {
                 // Sweep for collected entries
-                // TODO this could be better?
-                for (int i = 0; i < entries.size(); i++)
-                {
-                    Holder<P> holder = entries.get(i);
-                    if (holder.getEntry() == null)
-                        entries.remove(holder);
-                }
+                sweep();
                 entriesSize = entries.size();
                 if (maxSize > 0 && entriesSize >= maxSize)
                 {
@@ -183,6 +177,17 @@ public class ConcurrentPool<P> implements Pool<P>, Dumpable
             if (LOG.isDebugEnabled())
                 LOG.debug("returning reserved entry {} for {}", entry, this);
             return entry;
+        }
+    }
+
+    void sweep()
+    {
+        // TODO this could be better?
+        for (int i = 0; i < entries.size(); i++)
+        {
+            Holder<P> holder = entries.get(i);
+            if (holder.getEntry() == null)
+                entries.remove(holder);
         }
     }
 

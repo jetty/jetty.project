@@ -611,4 +611,70 @@ public class ConcurrentPoolTest
         assertThat(e3.getPooled().get(), greaterThan(10));
         assertThat(e4.getPooled().get(), greaterThan(10));
     }
+
+    @ParameterizedTest
+    @MethodSource(value = "factories")
+    public void testLeak(Factory factory)
+    {
+        ConcurrentPool<String> pool = factory.newPool(10);
+        pool.reserve().enable("idle", false);
+        assertThat(pool.size(), is(1));
+        assertThat(pool.getReservedCount(), is(0));
+        assertThat(pool.getIdleCount(), is(1));
+        assertThat(pool.getInUseCount(), is(0));
+
+        Pool.Entry<String> e1 = pool.reserve();
+        e1.enable("held", true);
+        assertThat(e1.getPooled(), equalTo("held"));
+        assertThat(pool.size(), is(2));
+        assertThat(pool.getReservedCount(), is(0));
+        assertThat(pool.getIdleCount(), is(1));
+        assertThat(pool.getInUseCount(), is(1));
+
+        Pool.Entry<String> e2 = pool.reserve();
+        e2.enable("leaked", true);
+        assertThat(e2.getPooled(), equalTo("leaked"));
+        assertThat(pool.size(), is(3));
+        assertThat(pool.getReservedCount(), is(0));
+        assertThat(pool.getIdleCount(), is(1));
+        assertThat(pool.getInUseCount(), is(2));
+        e2 = null;
+        System.gc();
+        System.gc();
+        System.gc();
+        pool.sweep();
+
+        assertThat(pool.size(), is(2));
+        assertThat(pool.getReservedCount(), is(0));
+        assertThat(pool.getIdleCount(), is(1));
+        assertThat(pool.getInUseCount(), is(1));
+
+        e1 = null;
+        System.gc();
+        System.gc();
+        System.gc();
+        pool.sweep();
+
+        assertThat(pool.size(), is(1));
+        assertThat(pool.getReservedCount(), is(0));
+        assertThat(pool.getIdleCount(), is(1));
+        assertThat(pool.getInUseCount(), is(0));
+
+        Pool.Entry<String> e0 = pool.acquire();
+        assertThat(e0.getPooled(), equalTo("idle"));
+        assertThat(pool.size(), is(1));
+        assertThat(pool.getReservedCount(), is(0));
+        assertThat(pool.getIdleCount(), is(0));
+        assertThat(pool.getInUseCount(), is(1));
+
+        e0 = null;
+        System.gc();
+        System.gc();
+        System.gc();
+        pool.sweep();
+        assertThat(pool.size(), is(0));
+        assertThat(pool.getReservedCount(), is(0));
+        assertThat(pool.getIdleCount(), is(0));
+        assertThat(pool.getInUseCount(), is(0));
+    }
 }
