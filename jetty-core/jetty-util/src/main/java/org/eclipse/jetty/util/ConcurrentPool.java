@@ -59,22 +59,13 @@ public class ConcurrentPool<P> implements Pool<P>, Dumpable
     private final List<Holder<P>> entries = new CopyOnWriteArrayList<>();
     private final int maxSize;
     private final StrategyType strategyType;
-    /*
-     * The cache is used to avoid hammering on the first index of the entry list.
-     * Caches can become poisoned (i.e.: containing entries that are in use) when
-     * the release isn't done by the acquiring thread or when the entry pool is
-     * undersized compared to the load applied on it.
-     * When an entry can't be found in the cache, the global list is iterated
-     * with the configured strategy so the cache has no visible effect besides performance.
-     */
-    private final ThreadLocal<Entry<P>> cache; // TODO does this make sense anymore?
     private final AutoLock lock = new AutoLock();
     private final AtomicInteger nextIndex;
     private final ToIntFunction<P> maxMultiplex;
     private volatile boolean terminated;
 
     /**
-     * <p>Creates an instance with the specified strategy and no {@link ThreadLocal} cache.</p>
+     * <p>Creates an instance with the specified strategy.</p>
      *
      * @param strategyType the strategy to used to lookup entries
      * @param maxSize the maximum number of pooled entries
@@ -85,33 +76,50 @@ public class ConcurrentPool<P> implements Pool<P>, Dumpable
     }
 
     /**
-     * <p>Creates an instance with the specified strategy and an optional {@link ThreadLocal} cache.</p>
+     * <p>Creates an instance with the specified strategy.</p>
      *
      * @param strategyType the strategy to used to lookup entries
      * @param maxSize the maximum number of pooled entries
      * @param cache whether a {@link ThreadLocal} cache should be used for the most recently released entry
+     * @deprecated cache is no longer supported. Use {@link StrategyType#THREAD_ID}
      */
+    @Deprecated
     public ConcurrentPool(StrategyType strategyType, int maxSize, boolean cache)
     {
         this(strategyType, maxSize, cache, pooled -> 1);
     }
 
+
     /**
-     * <p>Creates an instance with the specified strategy, an optional {@link ThreadLocal} cache.
+     * <p>Creates an instance with the specified strategy.
      * and a function that returns the max multiplex count for a given pooled object.</p>
      *
      * @param strategyType the strategy to used to lookup entries
      * @param maxSize the maximum number of pooled entries
      * @param cache whether a {@link ThreadLocal} cache should be used for the most recently released entry
      * @param maxMultiplex a function that given the pooled object returns the max multiplex count
+     * @deprecated cache is no longer supported. Use {@link StrategyType#THREAD_ID}
      */
+    @Deprecated
     public ConcurrentPool(StrategyType strategyType, int maxSize, boolean cache, ToIntFunction<P> maxMultiplex)
+    {
+        this(strategyType, maxSize, maxMultiplex);
+    }
+
+    /**
+     * <p>Creates an instance with the specified strategy.
+     * and a function that returns the max multiplex count for a given pooled object.</p>
+     *
+     * @param strategyType the strategy to used to lookup entries
+     * @param maxSize the maximum number of pooled entries
+     * @param maxMultiplex a function that given the pooled object returns the max multiplex count
+     */
+    public ConcurrentPool(StrategyType strategyType, int maxSize, ToIntFunction<P> maxMultiplex)
     {
         if (maxSize > OPTIMAL_MAX_SIZE && LOG.isDebugEnabled())
             LOG.debug("{} configured with max size {} which is above the recommended value {}", getClass().getSimpleName(), maxSize, OPTIMAL_MAX_SIZE);
         this.maxSize = maxSize;
         this.strategyType = Objects.requireNonNull(strategyType);
-        this.cache = cache ? new ThreadLocal<>() : null;
         this.nextIndex = strategyType == StrategyType.ROUND_ROBIN ? new AtomicInteger() : null;
         this.maxMultiplex = Objects.requireNonNull(maxMultiplex);
     }
@@ -188,17 +196,6 @@ public class ConcurrentPool<P> implements Pool<P>, Dumpable
         if (size == 0)
             return null;
 
-        if (cache != null)
-        {
-            Entry<P> entry = cache.get();
-            if (entry != null && ((ConcurrentEntry<P>)entry).tryAcquire())
-            {
-                if (LOG.isDebugEnabled())
-                    LOG.debug("returning cached entry {} for {}", entry, this);
-                return entry;
-            }
-        }
-
         int index = startIndex(size);
 
         for (int tries = size; tries-- > 0; )
@@ -258,8 +255,6 @@ public class ConcurrentPool<P> implements Pool<P>, Dumpable
     private boolean release(Entry<P> entry)
     {
         boolean released = ((ConcurrentEntry<P>)entry).tryRelease();
-        if (released && cache != null)
-            cache.set(entry);
         if (LOG.isDebugEnabled())
             LOG.debug("released {} {} for {}", released, entry, this);
         return released;
@@ -268,8 +263,6 @@ public class ConcurrentPool<P> implements Pool<P>, Dumpable
     private boolean remove(Entry<P> entry)
     {
         boolean removed = ((ConcurrentEntry<P>)entry).tryRemove();
-        if (cache != null)
-            cache.set(null);
         if (LOG.isDebugEnabled())
             LOG.debug("removed {} {} for {}", removed, entry, this);
         if (!removed)
@@ -318,8 +311,6 @@ public class ConcurrentPool<P> implements Pool<P>, Dumpable
     private boolean terminate(Entry<P> entry)
     {
         boolean terminated = ((ConcurrentEntry<P>)entry).tryTerminate();
-        if (cache != null)
-            cache.set(null);
         if (!terminated)
         {
             if (LOG.isDebugEnabled())
@@ -385,9 +376,7 @@ public class ConcurrentPool<P> implements Pool<P>, Dumpable
 
         /**
          * A strategy that uses the {@link Thread#getId()} of the current thread
-         * to select a starting point for an entry search.  Whilst not as performant as
-         * using the {@link ThreadLocal} cache, it may be suitable when the pool is
-         * substantially smaller than the number of available threads.
+         * to select a starting point for an entry search.
          * No entries are favoured and contention is reduced.
          */
         THREAD_ID,
