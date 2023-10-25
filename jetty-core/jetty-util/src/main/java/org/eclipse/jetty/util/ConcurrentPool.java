@@ -187,7 +187,10 @@ public class ConcurrentPool<P> implements Pool<P>, Dumpable
         {
             Holder<P> holder = entries.get(i);
             if (holder.getEntry() == null)
+            {
+                LOG.warn("LEAKED {}", holder);
                 entries.remove(holder);
+            }
         }
     }
 
@@ -210,12 +213,11 @@ public class ConcurrentPool<P> implements Pool<P>, Dumpable
                 Holder<P> holder = entries.get(index);
                 if (holder != null)
                 {
-
                     ConcurrentEntry<P> entry = (ConcurrentEntry<P>)holder.getEntry();
                     if (entry == null)
                     {
                         if (LOG.isDebugEnabled())
-                            LOG.warn("LEAK!!!");
+                            LOG.warn("LEAKED {}", holder);
                         entries.remove(index);
                         continue;
                     }
