@@ -110,12 +110,13 @@ public class MountedPathResourceTest
     public void testZipFileName()
     {
         Path testZip = MavenTestingUtils.getTestResourcePathFile("TestData/test.zip");
-        String s = "jar:" + testZip.toUri().toASCIIString() + "!/subdir/numbers";
-        URI uri = URI.create(s);
+        URI uri = testZip.toUri();
         try (ResourceFactory.Closeable resourceFactory = ResourceFactory.closeable())
         {
-            Resource r = resourceFactory.newResource(uri);
+            Resource r = resourceFactory.newJarFileResource(uri);
+            assertThat(r.getFileName(), is(""));
 
+            r = r.resolve("subdir/numbers");
             assertTrue(Resources.isReadableFile(r));
             assertThat(r.getFileName(), is("numbers"));
         }
@@ -125,12 +126,13 @@ public class MountedPathResourceTest
     public void testJarFileName()
     {
         Path testZip = MavenPaths.findTestResourceFile("jar-file-resource.jar");
-        String s = "jar:" + testZip.toUri().toASCIIString() + "!/rez/deep/zzz";
-        URI uri = URI.create(s);
+        URI uri = testZip.toUri();
         try (ResourceFactory.Closeable resourceFactory = ResourceFactory.closeable())
         {
-            Resource r = resourceFactory.newResource(uri);
+            Resource r = resourceFactory.newJarFileResource(uri);
+            assertThat(r.getFileName(), is(""));
 
+            r = r.resolve("rez/deep/zzz");
             assertTrue(Resources.isReadableFile(r));
             assertThat(r.getFileName(), is("zzz"));
         }

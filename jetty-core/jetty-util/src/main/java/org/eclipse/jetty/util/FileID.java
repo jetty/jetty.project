@@ -495,10 +495,10 @@ public class FileID
         if (path.getNameCount() < 3)
             return false;
 
-        if (!"META-INF".equals(path.getName(0).toString()))
+        if (!StringUtil.asciiEqualsIgnoreCase("META-INF", path.getName(0).toString()))
             return false;
 
-        if (!"versions".equals(path.getName(1).toString()))
+        if (!StringUtil.asciiEqualsIgnoreCase("version", path.getName(1).toString()))
             return false;
 
         return NUMBER.matcher(path.getName(2).getFileName().toString()).matches();
