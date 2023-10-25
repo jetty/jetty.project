@@ -498,7 +498,7 @@ public class FileID
         if (!StringUtil.asciiEqualsIgnoreCase("META-INF", path.getName(0).toString()))
             return false;
 
-        if (!StringUtil.asciiEqualsIgnoreCase("version", path.getName(1).toString()))
+        if (!StringUtil.asciiEqualsIgnoreCase("versions", path.getName(1).toString()))
             return false;
 
         return NUMBER.matcher(path.getName(2).getFileName().toString()).matches();
