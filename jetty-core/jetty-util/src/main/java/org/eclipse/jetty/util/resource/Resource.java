@@ -29,10 +29,14 @@ import java.util.Collection;
 import java.util.Iterator;
 import java.util.List;
 import java.util.Objects;
+import java.util.function.BiFunction;
+import java.util.stream.Stream;
 
 import org.eclipse.jetty.util.IO;
 import org.eclipse.jetty.util.StringUtil;
 import org.eclipse.jetty.util.URIUtil;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 /**
  * <p>
@@ -44,6 +48,7 @@ import org.eclipse.jetty.util.URIUtil;
  */
 public abstract class Resource implements Iterable<Resource>
 {
+    private static final Logger LOG = LoggerFactory.getLogger(Resource.class);
     private static final LinkOption[] NO_FOLLOW_LINKS = new LinkOption[]{LinkOption.NOFOLLOW_LINKS};
 
     public static String dump(Resource resource)
@@ -88,8 +93,10 @@ public abstract class Resource implements Iterable<Resource>
             return false;
 
         URI thisURI = getURI();
-        URI otherURI = other.getURI();
+        if (thisURI == null)
+            throw new UnsupportedOperationException("Resources without a URI must implement contains");
 
+        URI otherURI = other.getURI();
         if (otherURI == null)
             return false;
 
@@ -102,10 +109,11 @@ public abstract class Resource implements Iterable<Resource>
             return false;
 
         // Ensure that if `file` scheme is used, it's using a consistent convention to allow for startsWith check
-        thisURI = URIUtil.correctFileURI(thisURI);
-        otherURI = URIUtil.correctFileURI(otherURI);
+        String thisURIString = URIUtil.correctFileURI(thisURI).toASCIIString();
+        String otherURIString = URIUtil.correctFileURI(otherURI).toASCIIString();
 
-        return otherURI.toASCIIString().startsWith(thisURI.toASCIIString());
+        return otherURIString.startsWith(thisURIString) &&
+            (thisURIString.length() == otherURIString.length() || otherURIString.charAt(thisURIString.length()) == '/');
     }
 
     /**
@@ -127,7 +135,6 @@ public abstract class Resource implements Iterable<Resource>
         if (otherPath == null)
             return null;
 
-        // TODO: should probably not allow results like "../../path/to/other/location.txt"
         return thisPath.relativize(otherPath);
     }
 
@@ -288,31 +295,98 @@ public abstract class Resource implements Iterable<Resource>
     }
 
     /**
-     * Copy the Resource to the new destination file.
+     * Copy the Resource to the new destination file or directory
      *
-     * @param destination the destination file to create
+     * @param destination the destination file to create or directory to use.
      * @throws IOException if unable to copy the resource
      */
     public void copyTo(Path destination)
         throws IOException
     {
-        if (Files.exists(destination))
-            throw new IllegalArgumentException(destination + " exists");
-
-        // attempt simple file copy
         Path src = getPath();
-        if (src != null)
+        if (src == null)
         {
-            Files.copy(src, destination, StandardCopyOption.COPY_ATTRIBUTES, StandardCopyOption.REPLACE_EXISTING);
+            if (!isDirectory())
+            {
+                // use old school stream based copy
+                try (InputStream in = newInputStream(); OutputStream out = Files.newOutputStream(destination))
+                {
+                    IO.copy(in, out);
+                }
+                return;
+            }
+            throw new UnsupportedOperationException("Directory Resources without a Path must implement copyTo");
+        }
+
+        // Do we have to copy a single file?
+        if (Files.isRegularFile(src))
+        {
+            // Is the destination a directory?
+            if (Files.isDirectory(destination))
+            {
+                // to a directory, preserve the filename
+                Path destPath = destination.resolve(src.getFileName().toString());
+                Files.copy(src, destPath, StandardCopyOption.COPY_ATTRIBUTES, StandardCopyOption.REPLACE_EXISTING);
+            }
+            else
+            {
+                // to a file, use destination as-is
+                Files.copy(src, destination, StandardCopyOption.COPY_ATTRIBUTES, StandardCopyOption.REPLACE_EXISTING);
+            }
             return;
         }
 
-        // use old school stream based copy
-        try (InputStream in = newInputStream();
-             OutputStream out = Files.newOutputStream(destination))
+        // At this point this PathResource is a directory.
+        assert isDirectory();
+
+        BiFunction<Path, Path, Path> resolver = src.getFileSystem().equals(destination.getFileSystem())
+            ? Path::resolve
+            : Resource::resolveDifferentFileSystem;
+
+        try (Stream<Path> entriesStream = Files.walk(src))
         {
-            IO.copy(in, out);
+            for (Iterator<Path> pathIterator = entriesStream.iterator(); pathIterator.hasNext();)
+            {
+                Path path = pathIterator.next();
+                if (src.equals(path))
+                    continue;
+
+                Path relative = src.relativize(path);
+                Path destPath = resolver.apply(destination, relative);
+
+                if (LOG.isDebugEnabled())
+                    LOG.debug("CopyTo: {} > {}", path, destPath);
+                if (Files.isDirectory(path))
+                {
+                    ensureDirExists(destPath);
+                }
+                else
+                {
+                    ensureDirExists(destPath.getParent());
+                    Files.copy(path, destPath, StandardCopyOption.COPY_ATTRIBUTES, StandardCopyOption.REPLACE_EXISTING);
+                }
+            }
         }
+    }
+
+    static Path resolveDifferentFileSystem(Path path, Path relative)
+    {
+        for (Path segment : relative)
+            path = path.resolve(segment.toString());
+        return path;
+    }
+
+    void ensureDirExists(Path dir) throws IOException
+    {
+        if (Files.exists(dir))
+        {
+            if (!Files.isDirectory(dir))
+            {
+                throw new IOException("Conflict, unable to create directory where file exists: " + dir);
+            }
+            return;
+        }
+        Files.createDirectories(dir);
     }
 
     /**

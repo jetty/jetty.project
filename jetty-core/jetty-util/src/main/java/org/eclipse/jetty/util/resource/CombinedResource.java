@@ -15,9 +15,12 @@ package org.eclipse.jetty.util.resource;
 
 import java.io.IOException;
 import java.net.URI;
+import java.nio.file.Files;
 import java.nio.file.Path;
+import java.nio.file.StandardCopyOption;
 import java.time.Instant;
 import java.util.ArrayList;
+import java.util.Collection;
 import java.util.Collections;
 import java.util.Iterator;
 import java.util.List;
@@ -274,11 +277,30 @@ public class CombinedResource extends Resource
     @Override
     public void copyTo(Path destination) throws IOException
     {
-        // Copy resources in reverse to get proper overlay behavior
-        List<Resource> entries = getResources();
-        for (int r = entries.size(); r-- > 0; )
+        // This method could be implemented with the simple:
+        //     List<Resource> entries = getResources();
+        //     for (int r = entries.size(); r-- > 0; )
+        //       entries.get(r).copyTo(destination);
+        // However, that may copy large overlayed resources. The implementation below avoids that:
+
+        Collection<Resource> all = getAllResources();
+        for (Resource r : all)
         {
-            entries.get(r).copyTo(destination);
+            Path relative = getPathTo(r);
+            Path pathTo = Objects.equals(relative.getFileSystem(), destination.getFileSystem())
+                ? destination.resolve(relative)
+                : resolveDifferentFileSystem(destination, relative);
+
+            if (r.isDirectory())
+            {
+                ensureDirExists(pathTo);
+            }
+            else
+            {
+                Path pathFrom = r.getPath();
+                ensureDirExists(pathTo.getParent());
+                Files.copy(pathFrom, pathTo, StandardCopyOption.COPY_ATTRIBUTES, StandardCopyOption.REPLACE_EXISTING);
+            }
         }
     }
 
@@ -313,13 +335,16 @@ public class CombinedResource extends Resource
     @Override
     public boolean contains(Resource other)
     {
+        // Every resource from the (possibly combined) other resource ...
         loop: for (Resource o : other)
         {
+            // Must be contained in at least one of this resources
             for (Resource r : _resources)
             {
                 if (r.contains(o))
                     continue loop;
             }
+            // A resource of the other did not match any in this
             return false;
         }
         return true;

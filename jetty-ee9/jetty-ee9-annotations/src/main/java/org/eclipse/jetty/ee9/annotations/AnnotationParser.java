@@ -592,11 +592,10 @@ public class AnnotationParser
 
             // Get the path relative to the base resource
             Path relative = dirResource.getPathTo(candidate);
-            if (relative == null)
-                continue; // skip if unable to get a relative path
 
-            // select only non-hidden class files that are not modules nor versions
-            if (FileID.isHidden(relative) ||
+            // select only relative non-hidden class files that are not modules nor versions
+            if (relative == null ||
+                FileID.isHidden(relative) ||
                 FileID.isMetaInfVersions(relative) ||
                 FileID.isModuleInfoClass(relative) ||
                 !FileID.isClassFile(relative))

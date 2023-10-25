@@ -13,7 +13,6 @@
 
 package org.eclipse.jetty.util.resource;
 
-import java.io.File;
 import java.io.IOException;
 import java.net.URI;
 import java.nio.file.DirectoryIteratorException;
@@ -21,11 +20,9 @@ import java.nio.file.Files;
 import java.nio.file.LinkOption;
 import java.nio.file.Path;
 import java.nio.file.Paths;
-import java.nio.file.StandardCopyOption;
 import java.nio.file.attribute.FileTime;
 import java.time.Instant;
 import java.util.ArrayList;
-import java.util.Iterator;
 import java.util.List;
 import java.util.Objects;
 import java.util.stream.Collectors;
@@ -201,6 +198,22 @@ public class PathResource extends Resource
     public Path getPath()
     {
         return path;
+    }
+
+    @Override
+    public boolean contains(Resource other)
+    {
+        if (other == null)
+            return false;
+
+        Path thisPath = getPath();
+        if (thisPath == null)
+            throw new UnsupportedOperationException("Resources without a Path must implement contains");
+
+        Path otherPath = other.getPath();
+        return otherPath != null &&
+            otherPath.getFileSystem().equals(thisPath.getFileSystem()) &&
+            otherPath.startsWith(thisPath);
     }
 
     public Path getRealPath()
@@ -478,90 +491,6 @@ public class PathResource extends Resource
              */
             alias = !isSameName(path, realPath) || !Objects.equals(uri, toUri(realPath));
         }
-    }
-
-    /**
-     * FileSystem neutral copyTo, so that even copyTo from different FileSystem types
-     * can be performed.
-     *
-     * @param destination the destination to copy to.
-     * @throws IOException if unable to copy to
-     */
-    @Override
-    public void copyTo(Path destination) throws IOException
-    {
-        Path src = getPath();
-
-        // Do we have to copy a single file?
-        if (Files.isRegularFile(src))
-        {
-            // Is the destination a directory?
-            if (Files.isDirectory(destination))
-            {
-                // to a directory, preserve the filename
-                Path destFile = destination.resolve(src.getFileName().toString());
-                Files.copy(src, destFile, StandardCopyOption.COPY_ATTRIBUTES, StandardCopyOption.REPLACE_EXISTING);
-            }
-            else
-            {
-                // to a file, use destination as-is
-                Files.copy(src, destination, StandardCopyOption.COPY_ATTRIBUTES, StandardCopyOption.REPLACE_EXISTING);
-            }
-            return;
-        }
-
-        // At this point this PathResource is a directory.
-        URI srcURI = src.toUri();
-        String srcURIStr = srcURI.toASCIIString();
-        if (!srcURIStr.endsWith("/"))
-            srcURIStr += "/";
-        int srcURISubIndex = srcURI.toASCIIString().length();
-        URI destURI = destination.toUri();
-
-        try (Stream<Path> entriesStream = Files.walk(src))
-        {
-            Iterator<Path> pathIterator = entriesStream
-                .filter((path) -> !path.equals(src))
-                .iterator();
-            while (pathIterator.hasNext())
-            {
-                Path path = pathIterator.next();
-                // Since we might be copying across FileSystem Providers, we use URIs to
-                // calculate the output path we need to use.
-                URI entryURI = path.toUri();
-                String subURI = entryURI.toASCIIString().substring(srcURISubIndex);
-
-                if (Files.isDirectory(path))
-                    subURI += File.separator;
-
-                URI outputPathURI = URIUtil.addPath(destURI, subURI);
-                Path outputPath = Path.of(outputPathURI);
-                if (LOG.isDebugEnabled())
-                    LOG.debug("CopyTo: {} > {}", path, outputPath);
-                if (Files.isDirectory(path))
-                {
-                    ensureDirExists(path);
-                }
-                else
-                {
-                    ensureDirExists(outputPath.getParent());
-                    Files.copy(path, outputPath, StandardCopyOption.COPY_ATTRIBUTES, StandardCopyOption.REPLACE_EXISTING);
-                }
-            }
-        }
-    }
-
-    private void ensureDirExists(Path dir) throws IOException
-    {
-        if (Files.exists(dir))
-        {
-            if (!Files.isDirectory(dir))
-            {
-                throw new IOException("Conflict, unable to create directory where file exists: " + dir);
-            }
-            return;
-        }
-        Files.createDirectories(dir);
     }
 
     /**
