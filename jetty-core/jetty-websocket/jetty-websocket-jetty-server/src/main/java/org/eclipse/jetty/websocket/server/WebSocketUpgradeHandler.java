@@ -136,6 +136,7 @@ public class WebSocketUpgradeHandler extends Handler.Wrapper
      * @return this {@link WebSocketUpgradeHandler}
      * @deprecated use {@link #getContainer()} or {@link #from(Server, ContextHandler, Consumer)}.
      */
+    @Deprecated
     public WebSocketUpgradeHandler configure(Consumer<ServerWebSocketContainer> configurator)
     {
         configurator.accept(_container);

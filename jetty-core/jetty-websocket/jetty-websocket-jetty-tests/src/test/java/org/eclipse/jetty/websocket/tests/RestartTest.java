@@ -46,10 +46,10 @@ public class RestartTest
         _server.addConnector(_connector);
 
         ContextHandler contextHandler = new ContextHandler("/");
-        upgradeHandler = WebSocketUpgradeHandler.from(_server, contextHandler);
+        upgradeHandler = WebSocketUpgradeHandler.from(_server, contextHandler,
+            container -> container.addMapping("/", (req, resp, cb) -> new EchoSocket()));
         contextHandler.setHandler(upgradeHandler);
         _server.setHandler(contextHandler);
-        upgradeHandler.configure(container -> container.addMapping("/", (req, resp, cb) -> new EchoSocket()));
 
         _server.start();
 
