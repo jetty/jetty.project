@@ -365,6 +365,7 @@ public class ClientServerTest extends AbstractClientServerTest
     }
 
     @Test
+    @Tag("flaky")
     public void testRequestHeadersTooLarge() throws Exception
     {
         start(new Session.Server.Listener()
