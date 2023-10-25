@@ -16,14 +16,10 @@ package org.eclipse.jetty.util.resource;
 import java.io.IOException;
 import java.net.URI;
 import java.nio.file.DirectoryIteratorException;
-import java.nio.file.FileVisitResult;
 import java.nio.file.Files;
 import java.nio.file.LinkOption;
 import java.nio.file.Path;
 import java.nio.file.Paths;
-import java.nio.file.SimpleFileVisitor;
-import java.nio.file.StandardCopyOption;
-import java.nio.file.attribute.BasicFileAttributes;
 import java.nio.file.attribute.FileTime;
 import java.time.Instant;
 import java.util.ArrayList;
@@ -204,6 +200,22 @@ public class PathResource extends Resource
         return path;
     }
 
+    @Override
+    public boolean contains(Resource other)
+    {
+        if (other == null)
+            return false;
+
+        Path thisPath = getPath();
+        if (thisPath == null)
+            throw new UnsupportedOperationException("Resources without a Path must implement contains");
+
+        Path otherPath = other.getPath();
+        return otherPath != null &&
+            otherPath.getFileSystem().equals(thisPath.getFileSystem()) &&
+            otherPath.startsWith(thisPath);
+    }
+
     public Path getRealPath()
     {
         resolveAlias();
@@ -341,14 +353,6 @@ public class PathResource extends Resource
             // in case of error, use Files.size() logic of 0L
             return 0L;
         }
-    }
-
-    @Override
-    public boolean isContainedIn(Resource r)
-    {
-        if (r == null)
-            return false;
-        return r.getClass() == PathResource.class && path.startsWith(r.getPath());
     }
 
     /**
@@ -489,16 +493,6 @@ public class PathResource extends Resource
         }
     }
 
-    @Override
-    public void copyTo(Path destination) throws IOException
-    {
-        // TODO reconcile this impl with super's
-        if (isDirectory())
-            Files.walkFileTree(this.path, new TreeCopyFileVisitor(this.path, destination));
-        else
-            Files.copy(this.path, destination);
-    }
-
     /**
      * Ensure Path to URI is sane when it returns a directory reference.
      *
@@ -546,40 +540,5 @@ public class PathResource extends Resource
     public String toString()
     {
         return this.uri.toASCIIString();
-    }
-
-    private static class TreeCopyFileVisitor extends SimpleFileVisitor<Path>
-    {
-        private final String relativeTo;
-        private final Path target;
-
-        public TreeCopyFileVisitor(Path relativeTo, Path target)
-        {
-            this.relativeTo = relativeTo.getRoot().relativize(relativeTo).toString();
-            this.target = target;
-        }
-
-        @Override
-        public FileVisitResult preVisitDirectory(Path dir, BasicFileAttributes attrs) throws IOException
-        {
-            Path resolvedTarget = target.resolve(dir.getRoot().resolve(relativeTo).relativize(dir).toString());
-            if (Files.notExists(resolvedTarget))
-                Files.createDirectories(resolvedTarget);
-            return FileVisitResult.CONTINUE;
-        }
-
-        @Override
-        public FileVisitResult visitFile(Path file, BasicFileAttributes attrs) throws IOException
-        {
-            Path resolvedTarget = target.resolve(file.getRoot().resolve(relativeTo).relativize(file).toString());
-            Files.copy(file, resolvedTarget, StandardCopyOption.REPLACE_EXISTING);
-            return FileVisitResult.CONTINUE;
-        }
-
-        @Override
-        public FileVisitResult visitFileFailed(Path file, IOException exc)
-        {
-            return FileVisitResult.CONTINUE;
-        }
     }
 }

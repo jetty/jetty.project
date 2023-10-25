@@ -24,7 +24,6 @@ import java.util.Map;
 import java.util.Optional;
 import java.util.Set;
 import java.util.concurrent.ConcurrentHashMap;
-import java.util.stream.Stream;
 
 import org.eclipse.jetty.util.ExceptionUtil;
 import org.eclipse.jetty.util.FileID;
@@ -578,31 +577,38 @@ public class AnnotationParser
      */
     protected void parseDir(Set<? extends Handler> handlers, Resource dirResource) throws Exception
     {
-        Path dir = dirResource.getPath();
-
         if (LOG.isDebugEnabled())
-            LOG.debug("Scanning dir {}", dir.toUri());
+            LOG.debug("Scanning dir {}", dirResource);
+
+        assert dirResource.isDirectory();
 
         ExceptionUtil.MultiException multiException = new ExceptionUtil.MultiException();
-        try (Stream<Path> classStream = Files.walk(dir))
+
+        for (Resource candidate : dirResource.getAllResources())
         {
-            classStream
-                .filter(Files::isRegularFile)
-                .filter((path) -> !FileID.isHidden(dir, path))
-                .filter(FileID::isNotMetaInfVersions)
-                .filter(FileID::isNotModuleInfoClass)
-                .filter(FileID::isClassFile)
-                .forEach(classFile ->
-                {
-                    try
-                    {
-                        parseClass(handlers, dirResource, classFile);
-                    }
-                    catch (Exception ex)
-                    {
-                        multiException.add(new RuntimeException("Error scanning entry " + ex, ex));
-                    }
-                });
+            // Skip directories
+            if (candidate.isDirectory())
+                continue;
+
+            // Get the path relative to the base resource
+            Path relative = dirResource.getPathTo(candidate);
+
+            // select only relative non-hidden class files that are not modules nor versions
+            if (relative == null ||
+                FileID.isHidden(relative) ||
+                FileID.isMetaInfVersions(relative) ||
+                FileID.isModuleInfoClass(relative) ||
+                !FileID.isClassFile(relative))
+                continue;
+
+            try
+            {
+                parseClass(handlers, dirResource, candidate.getPath());
+            }
+            catch (Exception ex)
+            {
+                multiException.add(new RuntimeException("Error scanning entry " + ex, ex));
+            }
         }
 
         multiException.ifExceptionThrow();

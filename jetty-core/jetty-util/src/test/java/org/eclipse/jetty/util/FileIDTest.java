@@ -419,7 +419,9 @@ public class FileIDTest
         "/META-INF/versions/9/foo.txt",
         "/META-INF/versions/17/org/eclipse/demo/Util.class",
         "/META-INF/versions/17/WEB-INF/web.xml",
-        "/META-INF/versions/10/module-info.class"
+        "/META-INF/versions/10/module-info.class",
+        "/meta-inf/versions/10/Foo.class",
+        "/meta-inf/VERSIONS/10/Zed.class",
     })
     public void testIsMetaInfVersions(String input) throws IOException
     {
@@ -510,8 +512,6 @@ public class FileIDTest
         "/META-INF/services/versions/foo.txt",
         "/META-INF/versions/", // root, no version
         "/META-INF/versions/Zed.class", // root, no version
-        "/meta-inf/versions/10/Foo.class", // not following case sensitivity rules in Java spec
-        "/meta-inf/VERSIONS/10/Zed.class", // not following case sensitivity rules in Java spec
     })
     public void testNotMetaInfVersions(String input) throws IOException
     {

@@ -15,12 +15,16 @@ package org.eclipse.jetty.ee9.maven.plugin;
 
 import java.io.File;
 import java.io.IOException;
+import java.nio.file.Path;
+import java.nio.file.Paths;
 import java.util.ArrayList;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Set;
 
 import org.apache.maven.artifact.Artifact;
+import org.eclipse.jetty.util.URIUtil;
+import org.eclipse.jetty.util.resource.MountedPathResource;
 import org.eclipse.jetty.util.resource.Resource;
 import org.eclipse.jetty.util.resource.ResourceFactory;
 
@@ -133,9 +137,12 @@ public class OverlayManager
 
         //Get the name of the overlayed war and unpack it to a dir of the
         //same name in the temporary directory
-        String name = overlay.getResource().getFileName();
+        //We know it is a war because it came from the maven repo
+        assert overlay.getResource() instanceof MountedPathResource;
+        Path p = Paths.get(URIUtil.unwrapContainer(overlay.getResource().getURI()));
+        String name = p.getName(p.getNameCount() - 1).toString();
         name = name.replace('.', '_');
- 
+
         File overlaysDir = new File(warPlugin.getProject().getBuild().getDirectory(), "jetty_overlays");
         File dir = new File(overlaysDir, name);
 

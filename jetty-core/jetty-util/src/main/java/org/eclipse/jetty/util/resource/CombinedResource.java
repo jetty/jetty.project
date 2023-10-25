@@ -14,20 +14,31 @@
 package org.eclipse.jetty.util.resource;
 
 import java.io.IOException;
+import java.io.InputStream;
+import java.io.OutputStream;
 import java.net.URI;
+import java.nio.file.Files;
 import java.nio.file.Path;
+import java.nio.file.StandardCopyOption;
 import java.time.Instant;
 import java.util.ArrayList;
+import java.util.Collection;
 import java.util.Collections;
 import java.util.Iterator;
 import java.util.List;
+import java.util.Map;
 import java.util.Objects;
+import java.util.TreeMap;
 import java.util.stream.Collectors;
 
+import org.eclipse.jetty.util.IO;
 import org.eclipse.jetty.util.URIUtil;
 
 /**
- * Multiple resource directories presented as a single Resource.
+ * Multiple {@link Resource} directories presented as a single overlayed {@link Resource} directory.
+ * <p>This class differs from a {@link List}&lt;{@link Resource}&gt;, as a relative path can {@link #resolve(String) resolve}
+ * to only a single {@link Resource} in a {@code CombinedResource}, whilst it may resolve to multiple in a
+ * {@link List}&lt;{@link Resource}&gt;.</p>
  */
 public class CombinedResource extends Resource
 {
@@ -252,24 +263,58 @@ public class CombinedResource extends Resource
     @Override
     public List<Resource> list()
     {
-        List<Resource> result = new ArrayList<>();
-        for (Resource r : _resources)
+        Map<String, Resource> results = new TreeMap<>();
+        for (Resource base : _resources)
         {
-            if (r.isDirectory())
-                result.addAll(r.list());
-            else
-                result.add(r);
+            for (Resource r : base.list())
+            {
+                if (r.isDirectory())
+                    results.computeIfAbsent(r.getFileName(), this::resolve);
+                else
+                    results.putIfAbsent(r.getFileName(), r);
+            }
         }
-        return result;
+        return new ArrayList<>(results.values());
     }
 
     @Override
     public void copyTo(Path destination) throws IOException
     {
-        // Copy in reverse order
-        for (int r = _resources.size(); r-- > 0; )
+        // This method could be implemented with the simple:
+        //     List<Resource> entries = getResources();
+        //     for (int r = entries.size(); r-- > 0; )
+        //       entries.get(r).copyTo(destination);
+        // However, that may copy large overlayed resources. The implementation below avoids that:
+
+        Collection<Resource> all = getAllResources();
+        for (Resource r : all)
         {
-            _resources.get(r).copyTo(destination);
+            Path relative = getPathTo(r);
+            Path pathTo = Objects.equals(relative.getFileSystem(), destination.getFileSystem())
+                ? destination.resolve(relative)
+                : resolveDifferentFileSystem(destination, relative);
+
+            if (r.isDirectory())
+            {
+                ensureDirExists(pathTo);
+            }
+            else
+            {
+                ensureDirExists(pathTo.getParent());
+                Path pathFrom = r.getPath();
+                if (pathFrom != null)
+                {
+                    Files.copy(pathFrom, pathTo, StandardCopyOption.COPY_ATTRIBUTES, StandardCopyOption.REPLACE_EXISTING);
+                }
+                else
+                {
+                    // use old school stream based copy
+                    try (InputStream in = r.newInputStream(); OutputStream out = Files.newOutputStream(pathTo))
+                    {
+                        IO.copy(in, out);
+                    }
+                }
+            }
         }
     }
 
@@ -302,9 +347,60 @@ public class CombinedResource extends Resource
     }
 
     @Override
-    public boolean isContainedIn(Resource r)
+    public boolean contains(Resource other)
     {
-        // TODO could look at implementing the semantic of is this collection a subset of the Resource r?
-        return false;
+        // Every resource from the (possibly combined) other resource ...
+        loop: for (Resource o : other)
+        {
+            // Must be contained in at least one of this resources
+            for (Resource r : _resources)
+            {
+                if (r.contains(o))
+                    continue loop;
+            }
+            // A resource of the other did not match any in this
+            return false;
+        }
+        return true;
+    }
+
+    @Override
+    public Path getPathTo(Resource other)
+    {
+        Path otherPath = other.getPath();
+
+        // If the other resource has a single Path
+        if (otherPath != null)
+        {
+            // return true it's relative location to the first matching resource.
+            for (Resource r : _resources)
+            {
+                Path path = r.getPath();
+                if (otherPath.startsWith(path))
+                    return path.relativize(otherPath);
+            }
+            return null;
+        }
+
+        // otherwise the other resource must also be some kind of combined resource.
+        // So every resource in the other combined must have the same relative relationship to us
+        Path relative = null;
+        loop : for (Resource o : other)
+        {
+            for (Resource r : _resources)
+            {
+                if (o.getPath().startsWith(r.getPath()))
+                {
+                    Path rel = r.getPath().relativize(o.getPath());
+                    if (relative == null)
+                        relative = rel;
+                    else if (!relative.equals(rel))
+                        return null;
+                    continue loop;
+                }
+            }
+            return null;
+        }
+        return relative;
     }
 }

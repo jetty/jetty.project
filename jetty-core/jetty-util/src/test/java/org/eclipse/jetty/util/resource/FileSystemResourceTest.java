@@ -359,6 +359,9 @@ public class FileSystemResourceTest
         Resource base = ResourceFactory.root().newResource(dir);
         Resource res = base.resolve("foo");
         assertThat("is contained in", res.isContainedIn(base), is(true));
+        assertThat(base.contains(res), is(true));
+        assertThat(base.getPathTo(res).getNameCount(), is(1));
+        assertThat(base.getPathTo(res).getName(0).toString(), is("foo"));
     }
 
     @Test
