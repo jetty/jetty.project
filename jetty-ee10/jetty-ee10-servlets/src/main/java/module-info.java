@@ -22,7 +22,7 @@ module org.eclipse.jetty.ee10.servlets
 
     // Only required if using CloseableDoSFilter.
     requires static org.eclipse.jetty.io;
-    // Only required if using DoSFilter, PushCacheFilter, etc.
+    // Only required if using DoSFilter, IncludeExcludeBasedFilter, etc.
     requires static org.eclipse.jetty.http;
     requires static org.eclipse.jetty.server;
     // Only required if using CrossOriginFilter, DoSFilter, etc.
