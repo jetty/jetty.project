@@ -84,7 +84,7 @@ public class WebSocketServerComponents extends WebSocketComponents
      */
     public static WebSocketComponents ensureWebSocketComponents(Server server)
     {
-        return ensureWebSocketComponents(server, server, server);
+        return ensureWebSocketComponents(server, server.getContext(), server);
     }
 
     /**
@@ -158,16 +158,17 @@ public class WebSocketServerComponents extends WebSocketComponents
 
     public static WebSocketComponents getWebSocketComponents(ContextHandler contextHandler)
     {
-        WebSocketComponents components = (WebSocketComponents)contextHandler.getContext().getAttribute(WEBSOCKET_COMPONENTS_ATTRIBUTE);
-        if (components == null)
-            throw new IllegalStateException("WebSocketComponents has not been created");
-
-        return components;
+        return getWebSocketComponents(contextHandler.getContext());
     }
 
     public static WebSocketComponents getWebSocketComponents(Server server)
     {
-        WebSocketComponents components = (WebSocketComponents)server.getAttribute(WEBSOCKET_COMPONENTS_ATTRIBUTE);
+        return getWebSocketComponents(server.getContext());
+    }
+
+    private static WebSocketComponents getWebSocketComponents(Attributes attributes)
+    {
+        WebSocketComponents components = (WebSocketComponents)attributes.getAttribute(WEBSOCKET_COMPONENTS_ATTRIBUTE);
         if (components == null)
             throw new IllegalStateException("WebSocketComponents has not been created");
 

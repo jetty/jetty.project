@@ -111,11 +111,6 @@ public class WebSocketUpgradeHandler extends Handler.Wrapper
 
     private final ServerWebSocketContainer _container;
 
-    public WebSocketUpgradeHandler()
-    {
-        this(new ServerWebSocketContainer());
-    }
-
     public WebSocketUpgradeHandler(ServerWebSocketContainer container)
     {
         _container = container;
