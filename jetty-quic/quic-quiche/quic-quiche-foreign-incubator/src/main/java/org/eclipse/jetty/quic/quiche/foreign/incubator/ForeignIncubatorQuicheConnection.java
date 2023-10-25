@@ -29,8 +29,8 @@ import jdk.incubator.foreign.MemoryAddress;
 import jdk.incubator.foreign.MemorySegment;
 import jdk.incubator.foreign.ResourceScope;
 import org.eclipse.jetty.quic.quiche.Quiche;
-import org.eclipse.jetty.quic.quiche.Quiche.quiche_error;
 import org.eclipse.jetty.quic.quiche.Quiche.quic_error;
+import org.eclipse.jetty.quic.quiche.Quiche.quiche_error;
 import org.eclipse.jetty.quic.quiche.QuicheConfig;
 import org.eclipse.jetty.quic.quiche.QuicheConnection;
 import org.eclipse.jetty.util.BufferUtil;
@@ -865,7 +865,12 @@ public class ForeignIncubatorQuicheConnection extends QuicheConnection
             }
 
             if (written == quiche_error.QUICHE_ERR_DONE)
+            {
+                int rc = quiche_h.quiche_conn_stream_writable(quicheConn, streamId, buffer.remaining());
+                if (rc < 0)
+                    throw new IOException("failed to write to stream " + streamId + "; quiche_err=" + quiche_error.errToString(rc));
                 return 0;
+            }
             if (written < 0L)
                 throw new IOException("failed to write to stream " + streamId + "; quiche_err=" + quiche_error.errToString(written));
             buffer.position((int)(buffer.position() + written));
