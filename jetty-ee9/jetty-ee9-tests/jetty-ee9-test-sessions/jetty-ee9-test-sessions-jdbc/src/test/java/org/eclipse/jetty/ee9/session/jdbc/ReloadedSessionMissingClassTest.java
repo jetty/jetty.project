@@ -97,7 +97,7 @@ public class ReloadedSessionMissingClassTest
 
         DefaultSessionCacheFactory cacheFactory = new DefaultSessionCacheFactory();
         cacheFactory.setEvictionPolicy(SessionCache.NEVER_EVICT);
-        SessionDataStoreFactory storeFactory = JdbcTestHelper.newSessionDataStoreFactory(sessionTableName);
+        SessionDataStoreFactory storeFactory = JdbcTestHelper.newSessionDataStoreFactory(sessionTableName, false);
         ((AbstractSessionDataStoreFactory)storeFactory).setGracePeriodSec(SessionTestSupport.DEFAULT_SCAVENGE_SEC);
 
         SessionTestSupport server1 = new SessionTestSupport(0, SessionTestSupport.DEFAULT_MAX_INACTIVE, SessionTestSupport.DEFAULT_SCAVENGE_SEC, cacheFactory, storeFactory);
