@@ -148,7 +148,8 @@ public class ManagedSelector extends ContainerLifeCycle implements Dumpable
     @ManagedAttribute(value = "Total number of keys", readonly = true)
     public int getTotalKeys()
     {
-        return _selector.keys().size();
+        Selector selector = _selector;
+        return selector == null ? 0 : selector.keys().size();
     }
 
     @ManagedAttribute(value = "Average number of selected keys", readonly = true)
@@ -555,15 +556,16 @@ public class ManagedSelector extends ContainerLifeCycle implements Dumpable
             if (LOG.isDebugEnabled())
                 LOG.debug("updateable {}", _updateable.size());
 
+            Selector selector = _selector;
             for (SelectorUpdate update : _updateable)
             {
-                if (_selector == null)
+                if (selector == null)
                     break;
                 try
                 {
                     if (LOG.isDebugEnabled())
                         LOG.debug("update {}", update);
-                    update.update(_selector);
+                    update.update(selector);
                 }
                 catch (Throwable x)
                 {
@@ -572,13 +574,13 @@ public class ManagedSelector extends ContainerLifeCycle implements Dumpable
             }
             _updateable.clear();
 
-            Selector selector;
             int updates;
             try (AutoLock l = _lock.lock())
             {
                 updates = _updates.size();
                 _selecting = updates == 0;
-                selector = _selecting ? null : _selector;
+                if (_selecting)
+                    selector = null;
             }
 
             if (LOG.isDebugEnabled())
