@@ -261,6 +261,8 @@ public class HttpConnectionOverFCGI extends AbstractConnection implements IConne
             getEndPoint().close();
             if (LOG.isDebugEnabled())
                 LOG.debug("Closed {}", this);
+
+            delegate.destroy();
         }
     }
 
@@ -387,7 +389,6 @@ public class HttpConnectionOverFCGI extends AbstractConnection implements IConne
         public void close()
         {
             HttpConnectionOverFCGI.this.close();
-            destroy();
         }
 
         protected void close(Throwable failure)

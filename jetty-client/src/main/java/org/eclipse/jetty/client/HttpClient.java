@@ -255,10 +255,7 @@ public class HttpClient extends ContainerLifeCycle
         decoderFactories.clear();
         handlers.clear();
 
-        for (HttpDestination destination : destinations.values())
-        {
-            destination.close();
-        }
+        destinations.values().forEach(HttpDestination::close);
         destinations.clear();
 
         requestListeners.clear();

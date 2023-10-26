@@ -308,7 +308,7 @@ public abstract class HttpConnection implements IConnection, Attachable
         return attachment;
     }
 
-    protected void destroy()
+    public void destroy()
     {
         requestTimeouts.destroy();
     }
