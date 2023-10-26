@@ -31,7 +31,7 @@ public class ImageUserChange extends ImageFromDSL
                     "useradd --home-dir=${JETTY_BASE} --shell=/bin/bash jetty ; " +
                     "chown jetty:jetty ${JETTY_BASE} ; " +
                     "chmod a+w ${JETTY_BASE} ; " +
-                    "echo \"JETTY_USER=jetty\" > /etc/default/jetty") // user change
+                    "echo \"JETTY_USER=jetty\" >> /etc/default/jetty") // user change
                 .user("jetty")
                 // Configure Jetty Base
                 .workDir("${JETTY_BASE}")
