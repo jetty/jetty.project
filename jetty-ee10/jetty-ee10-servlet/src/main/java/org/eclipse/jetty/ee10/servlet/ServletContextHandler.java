@@ -1660,26 +1660,7 @@ public class ServletContextHandler extends ContextHandler
         else if (handler instanceof ServletHandler)
             setServletHandler((ServletHandler)handler);
         else
-        {
-            Singleton tail = handler.getTail();
-            if (tail.getHandler() != null)
-                throw new IllegalArgumentException("bad tail of inserted wrapper chain");
-
-            // Skip any injected handlers
-            Singleton h = this;
-            while (h.getHandler() instanceof Singleton wrapper)
-            {
-                if (wrapper instanceof SessionHandler ||
-                    wrapper instanceof SecurityHandler ||
-                    wrapper instanceof ServletHandler)
-                    break;
-                h = wrapper;
-            }
-
-            Handler next = h.getHandler();
-            doSetHandler(h, handler);
-            doSetHandler(tail, next);
-        }
+            super.insertHandler(handler);
         relinkHandlers();
     }
 

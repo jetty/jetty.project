@@ -16,6 +16,7 @@ package org.eclipse.jetty.server;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
+import java.util.Objects;
 import java.util.function.Supplier;
 
 import org.eclipse.jetty.util.Callback;
@@ -325,8 +326,8 @@ public interface Handler extends LifeCycle, Destroyable, Request.Handler
         }
 
         /**
-         * <p>Inserts the given {@code Handler} (and its chain of {@code Handler}s)
-         * in front of the child of this {@code Handler}.</p>
+         * <p>Inserts the given {@code Handler} (and possible chain of {@code Handler}s)
+         * between this {@code Handler} and its current {@link #getHandler() child}.
          * <p>For example, if this {@code Handler} {@code A} has a child {@code B},
          * inserting {@code Handler} {@code X} built as a chain {@code Handler}s
          * {@code X-Y-Z} results in the structure {@code A-X-Y-Z-B}.</p>
@@ -335,11 +336,7 @@ public interface Handler extends LifeCycle, Destroyable, Request.Handler
          */
         default void insertHandler(Singleton handler)
         {
-            Singleton tail = handler;
-            while (tail.getHandler() instanceof Wrapper)
-            {
-                tail = (Wrapper)tail.getHandler();
-            }
+            Singleton tail = Objects.requireNonNull(handler).getTail();
             if (tail.getHandler() != null)
                 throw new IllegalArgumentException("bad tail of inserted wrapper chain");
 
