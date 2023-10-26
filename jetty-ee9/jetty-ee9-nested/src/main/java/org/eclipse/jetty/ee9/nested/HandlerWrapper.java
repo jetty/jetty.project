@@ -82,6 +82,20 @@ public class HandlerWrapper extends AbstractHandlerContainer
     }
 
     /**
+     * Get the tail of a chain of {@link HandlerWrapper}s.
+     * @return The last {@link HandlerWrapper} in a chain of {@link HandlerWrapper}s
+     */
+    public HandlerWrapper getTail()
+    {
+        HandlerWrapper tail = this;
+        while (tail.getHandler() instanceof HandlerWrapper)
+            tail = (HandlerWrapper)tail.getHandler();
+        if (tail.getHandler() != null)
+            throw new IllegalArgumentException("bad tail of inserted wrapper chain");
+        return tail;
+    }
+
+    /**
      * Replace the current handler with another HandlerWrapper
      * linked to the current handler.
      * <p>
@@ -98,13 +112,7 @@ public class HandlerWrapper extends AbstractHandlerContainer
         if (wrapper == null)
             throw new IllegalArgumentException();
 
-        HandlerWrapper tail = wrapper;
-        while (tail.getHandler() instanceof HandlerWrapper)
-        {
-            tail = (HandlerWrapper)tail.getHandler();
-        }
-        if (tail.getHandler() != null)
-            throw new IllegalArgumentException("bad tail of inserted wrapper chain");
+        HandlerWrapper tail = getTail();
 
         Handler next = getHandler();
         setHandler(wrapper);

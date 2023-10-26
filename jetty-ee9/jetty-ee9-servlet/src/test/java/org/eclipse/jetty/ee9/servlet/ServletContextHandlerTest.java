@@ -60,9 +60,9 @@ import jakarta.servlet.http.HttpSessionEvent;
 import jakarta.servlet.http.HttpSessionIdListener;
 import jakarta.servlet.http.HttpSessionListener;
 import org.eclipse.jetty.ee9.nested.ContextHandler;
+import org.eclipse.jetty.ee9.nested.Handler;
 import org.eclipse.jetty.ee9.nested.HandlerWrapper;
 import org.eclipse.jetty.ee9.nested.Request;
-import org.eclipse.jetty.ee9.nested.ResourceHandler;
 import org.eclipse.jetty.ee9.nested.Response;
 import org.eclipse.jetty.ee9.nested.SessionHandler;
 import org.eclipse.jetty.ee9.security.RoleInfo;
@@ -90,6 +90,7 @@ import static org.hamcrest.Matchers.containsString;
 import static org.hamcrest.Matchers.instanceOf;
 import static org.hamcrest.Matchers.notNullValue;
 import static org.hamcrest.Matchers.nullValue;
+import static org.hamcrest.Matchers.sameInstance;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertNotNull;
@@ -1827,9 +1828,10 @@ public class ServletContextHandlerTest
     }
 
     @Test
-    public void testReplaceHandler() throws Exception
+    public void testInsertHandler() throws Exception
     {
-        ServletContextHandler servletContextHandler = new ServletContextHandler();
+        ServletContextHandler servletContextHandler = new ServletContextHandler(ServletContextHandler.SESSIONS | ServletContextHandler.SECURITY);
+        servletContextHandler.setBaseResourceAsString(".");
         ServletHolder sh = new ServletHolder(new TestServlet());
         servletContextHandler.addServlet(sh, "/foo");
         final AtomicBoolean contextInit = new AtomicBoolean(false);
@@ -1837,7 +1839,6 @@ public class ServletContextHandlerTest
 
         servletContextHandler.addEventListener(new ServletContextListener()
         {
-
             @Override
             public void contextInitialized(ServletContextEvent sce)
             {
@@ -1852,14 +1853,23 @@ public class ServletContextHandlerTest
                     contextDestroy.set(true);
             }
         });
-        ServletHandler shandler = servletContextHandler.getServletHandler();
 
-        ResourceHandler rh = new ResourceHandler();
+        org.eclipse.jetty.server.handler.ResourceHandler coreResourceHandler = new org.eclipse.jetty.server.handler.ResourceHandler();
+        HandlerWrapper nestedHandler = new HandlerWrapper();
+        Handler last = new HandlerWrapper();
 
-        servletContextHandler.insertHandler(rh);
-        assertEquals(shandler, servletContextHandler.getServletHandler());
-        assertEquals(rh, servletContextHandler.getHandler());
-        assertEquals(rh.getHandler(), shandler);
+        servletContextHandler.insertHandler(coreResourceHandler);
+        servletContextHandler.insertHandler(nestedHandler);
+        servletContextHandler.getTail().setHandler(last);
+
+        assertThat(servletContextHandler.getCoreContextHandler().getHandler(), sameInstance(coreResourceHandler));
+        assertThat(coreResourceHandler.getHandler().toString(), containsString("CoreToNestedHandler@"));
+        assertThat(servletContextHandler.getHandler(), sameInstance(nestedHandler));
+        assertThat(nestedHandler.getHandler(), instanceOf(SessionHandler.class));
+        assertThat(servletContextHandler.getSessionHandler().getHandler(), instanceOf(SecurityHandler.class));
+        assertThat(servletContextHandler.getSecurityHandler().getHandler(), instanceOf(ServletHandler.class));
+        assertThat(servletContextHandler.getServletHandler().getHandler(), sameInstance(last));
+
         _server.setHandler(servletContextHandler);
         _server.start();
         assertTrue(contextInit.get());
