@@ -61,7 +61,7 @@ public class JettyShStartTest extends AbstractJettyHomeTest
         List<ImageFromDSL> images = new ArrayList<>();
 
         // Loop through all OS images
-        for (ImageOS osImage : List.of(new ImageOSUbuntuJammyJDK17(), new ImageOSAmazonCorretto11()))
+        for (ImageOS osImage : List.of(new ImageOSUbuntuJammyJDK17(), new ImageOSAmazonCorretto17()))
         {
             // Establish user Images based on OS Image
             List<ImageFromDSL> userImages = new ArrayList<>();
