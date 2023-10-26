@@ -78,6 +78,7 @@ import org.junit.jupiter.api.Disabled;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.Arguments;
+import org.junit.jupiter.params.provider.CsvSource;
 import org.junit.jupiter.params.provider.MethodSource;
 import org.junit.jupiter.params.provider.ValueSource;
 
@@ -183,18 +184,25 @@ public class ContextHandlerTest
         assertThat(BufferUtil.toString(stream.getResponseContent()), equalTo(helloHandler.getMessage()));
     }
 
-    @Test
-    public void testNullPath() throws Exception
+    @ParameterizedTest
+    @CsvSource({
+        "http://localhost/ctx,/ctx/",
+        "http://localhost/ctx;a=b,/ctx/;a=b",
+        "http://localhost/ctx?a=b,/ctx/?a=b",
+        "http://localhost/ctx?a=b/c/d,/ctx/?a=b/c/d",
+    })
+    public void testContextMovedPermanently(String requestUri, String expectedLocation) throws Exception
     {
         HelloHandler helloHandler = new HelloHandler();
         _contextHandler.setHandler(helloHandler);
         _server.start();
 
+        // First request is assuming contextHandler.setAllowNullPathInContext(false)
         ConnectionMetaData connectionMetaData = new MockConnectionMetaData(new MockConnector(_server));
         HttpChannel channel = new HttpChannelState(connectionMetaData);
         MockHttpStream stream = new MockHttpStream(channel);
         HttpFields fields = HttpFields.build().add(HttpHeader.HOST, "localhost").asImmutable();
-        MetaData.Request request = new MetaData.Request("GET", HttpURI.from("http://localhost/ctx"), HttpVersion.HTTP_1_1, fields, 0);
+        MetaData.Request request = new MetaData.Request("GET", HttpURI.from(requestUri), HttpVersion.HTTP_1_1, fields, 0);
         Runnable task = channel.onRequest(request);
         task.run();
 
@@ -202,15 +210,17 @@ public class ContextHandlerTest
         assertThat(stream.getFailure(), nullValue());
         assertThat(stream.getResponse(), notNullValue());
         assertThat(stream.getResponse().getStatus(), equalTo(301));
-        assertThat(stream.getResponseHeaders().get(HttpHeader.LOCATION), equalTo("/ctx/"));
+        assertThat(stream.getResponseHeaders().get(HttpHeader.LOCATION), equalTo(expectedLocation));
 
         _contextHandler.stop();
+
+        // Next request is assuming contextHandler.setAllowNullPathInContext(true)
         _contextHandler.setAllowNullPathInContext(true);
         _contextHandler.start();
 
         stream = new MockHttpStream(channel);
         fields = HttpFields.build().add(HttpHeader.HOST, "localhost").asImmutable();
-        request = new MetaData.Request("GET", HttpURI.from("http://localhost/ctx"), HttpVersion.HTTP_1_1, fields, 0);
+        request = new MetaData.Request("GET", HttpURI.from(requestUri), HttpVersion.HTTP_1_1, fields, 0);
         task = channel.onRequest(request);
         task.run();
 
