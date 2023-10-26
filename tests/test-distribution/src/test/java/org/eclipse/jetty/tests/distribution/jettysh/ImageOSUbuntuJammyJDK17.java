@@ -22,7 +22,7 @@ public class ImageOSUbuntuJammyJDK17 extends ImageOS
 {
     public ImageOSUbuntuJammyJDK17()
     {
-        super("ubuntu-22.04-jdk17",
+        super("ubuntu-22.04-jdk17-jetty11",
             builder ->
                 builder
                     .from("ubuntu:22.04")
