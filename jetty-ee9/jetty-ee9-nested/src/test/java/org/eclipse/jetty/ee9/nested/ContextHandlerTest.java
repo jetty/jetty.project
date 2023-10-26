@@ -32,9 +32,12 @@ import org.eclipse.jetty.http.HttpTester;
 import org.eclipse.jetty.http.MimeTypes;
 import org.eclipse.jetty.logging.StacklessLogging;
 import org.eclipse.jetty.server.Context;
+import org.eclipse.jetty.server.Handler;
 import org.eclipse.jetty.server.LocalConnector;
+import org.eclipse.jetty.server.Response;
 import org.eclipse.jetty.server.Server;
 import org.eclipse.jetty.server.handler.ContextHandlerCollection;
+import org.eclipse.jetty.util.Callback;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.Assertions;
 import org.junit.jupiter.api.BeforeEach;
@@ -61,7 +64,6 @@ public class ContextHandlerTest
         _server = new Server();
         _connector = new LocalConnector(_server);
         _server.addConnector(_connector);
-
 
         _contextHandler = new ContextHandler();
         _server.setHandler(_contextHandler);
@@ -810,6 +812,44 @@ public class ContextHandlerTest
             "Handling",
             "EE9 exit /",
             "Core exit http://0.0.0.0/"));
+    }
+
+    @Test
+    public void testInsertHandler() throws Exception
+    {
+        _contextHandler.setHandler(new HelloHandler());
+        _contextHandler.getCoreContextHandler().insertHandler(new Handler.Wrapper()
+        {
+            @Override
+            public boolean handle(org.eclipse.jetty.server.Request request, Response response, Callback callback) throws Exception
+            {
+                response.getHeaders().put("Core", "Inserted");
+                return super.handle(request, response, callback);
+            }
+        });
+        _contextHandler.insertHandler(new HandlerWrapper()
+        {
+            @Override
+            public void handle(String target, Request baseRequest, HttpServletRequest request, HttpServletResponse response) throws IOException, ServletException
+            {
+                response.setHeader("Nested", "Inserted");
+                super.handle(target, baseRequest, request, response);
+            }
+        });
+        _server.start();
+
+        String rawResponse = _connector.getResponse("""
+            GET / HTTP/1.0
+            
+            """);
+
+        HttpTester.Response response = HttpTester.parseResponse(rawResponse);
+
+        assertThat(response.getStatus(), is(200));
+        assertThat(response.getField(HttpHeader.CONTENT_LENGTH).getIntValue(), greaterThan(0));
+        assertThat(response.getContent(), containsString("Hello"));
+        assertThat(response.get("Core"), is("Inserted"));
+        assertThat(response.get("Nested"), is("Inserted"));
     }
 
     private static class TestErrorHandler extends ErrorHandler implements ErrorHandler.ErrorPageMapper

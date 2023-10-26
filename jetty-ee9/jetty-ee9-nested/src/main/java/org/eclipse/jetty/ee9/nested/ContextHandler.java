@@ -2605,6 +2605,18 @@ public class ContextHandler extends ScopedHandler implements Attributes, Supplie
         }
 
         @Override
+        public void insertHandler(Singleton handler)
+        {
+            // reimplemented insertHandler so we can directly call super.setHandler
+            Singleton tail = handler.getTail();
+            if (tail.getHandler() != null)
+                throw new IllegalArgumentException("bad tail of inserted wrapper chain");
+
+            tail.setHandler(getHandler());
+            super.setHandler(handler);
+        }
+
+        @Override
         public void setHandler(Handler handler)
         {
             throw new UnsupportedOperationException();
