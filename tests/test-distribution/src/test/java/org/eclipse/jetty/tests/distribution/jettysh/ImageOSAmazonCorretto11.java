@@ -24,7 +24,7 @@ public class ImageOSAmazonCorretto11 extends ImageOS
 {
     public ImageOSAmazonCorretto11()
     {
-        super("amazoncorretto-jdk11",
+        super("amazoncorretto-jdk11-jetty10",
             builder ->
                 builder
                     .from("amazoncorretto:11.0.20")
