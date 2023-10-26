@@ -614,7 +614,32 @@ public class ConcurrentPoolTest
 
     @ParameterizedTest
     @MethodSource(value = "factories")
-    public void testLeak(Factory factory)
+    public void testLeakReserved(Factory factory)
+    {
+        ConcurrentPool<String> pool = factory.newPool(3);
+        Pool.Entry<String> e0 = pool.reserve();
+        Pool.Entry<String> e1 = pool.reserve();
+        Pool.Entry<String> e2 = pool.reserve();
+
+        assertThat(pool.reserve(), nullValue());
+        assertThat(pool.size(), is(3));
+        assertThat(pool.getReservedCount(), is(3));
+        assertThat(pool.getIdleCount(), is(0));
+        assertThat(pool.getInUseCount(), is(0));
+
+        e0 = null;
+        System.gc();
+        pool.sweep();
+
+        assertThat(pool.size(), is(2));
+        assertThat(pool.getReservedCount(), is(2));
+        assertThat(pool.getIdleCount(), is(0));
+        assertThat(pool.getInUseCount(), is(0));
+    }
+
+    @ParameterizedTest
+    @MethodSource(value = "factories")
+    public void testLeakEnabled(Factory factory)
     {
         ConcurrentPool<String> pool = factory.newPool(10);
         pool.reserve().enable("idle", false);
@@ -640,8 +665,6 @@ public class ConcurrentPoolTest
         assertThat(pool.getInUseCount(), is(2));
         e2 = null;
         System.gc();
-        System.gc();
-        System.gc();
         pool.sweep();
 
         assertThat(pool.size(), is(2));
@@ -650,8 +673,6 @@ public class ConcurrentPoolTest
         assertThat(pool.getInUseCount(), is(1));
 
         e1 = null;
-        System.gc();
-        System.gc();
         System.gc();
         pool.sweep();
 
@@ -669,12 +690,43 @@ public class ConcurrentPoolTest
 
         e0 = null;
         System.gc();
-        System.gc();
-        System.gc();
         pool.sweep();
         assertThat(pool.size(), is(0));
         assertThat(pool.getReservedCount(), is(0));
         assertThat(pool.getIdleCount(), is(0));
         assertThat(pool.getInUseCount(), is(0));
+    }
+
+    @ParameterizedTest
+    @MethodSource(value = "factories")
+    public void testSweepOnReserve(Factory factory)
+    {
+        ConcurrentPool<String> pool = factory.newPool(3);
+        Pool.Entry<String> e0 = pool.reserve();
+        assertThat(e0, notNullValue());
+        Pool.Entry<String> e1 = pool.reserve();
+        assertThat(e1, notNullValue());
+        Pool.Entry<String> e2 = pool.reserve();
+        assertThat(e2, notNullValue());
+
+        assertThat(pool.reserve(), nullValue());
+        assertThat(pool.size(), is(3));
+        assertThat(pool.getReservedCount(), is(3));
+        assertThat(pool.getIdleCount(), is(0));
+        assertThat(pool.getInUseCount(), is(0));
+
+        e0 = null;
+        System.gc();
+
+        Pool.Entry<String> e3 = pool.reserve();
+        assertThat(e3, notNullValue());
+
+        e1.enable("one", false);
+        e2.enable("two", false);
+        e3.enable("three", true);
+        assertThat(pool.size(), is(3));
+        assertThat(pool.getReservedCount(), is(0));
+        assertThat(pool.getIdleCount(), is(2));
+        assertThat(pool.getInUseCount(), is(1));
     }
 }

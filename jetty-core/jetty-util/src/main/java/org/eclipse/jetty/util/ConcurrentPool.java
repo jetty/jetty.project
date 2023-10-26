@@ -182,14 +182,13 @@ public class ConcurrentPool<P> implements Pool<P>, Dumpable
 
     void sweep()
     {
-        // TODO this could be better?
         for (int i = 0; i < entries.size(); i++)
         {
             Holder<P> holder = entries.get(i);
             if (holder.getEntry() == null)
             {
                 LOG.warn("LEAKED {}", holder);
-                entries.remove(holder);
+                entries.remove(i--);
             }
         }
     }
@@ -446,8 +445,8 @@ public class ConcurrentPool<P> implements Pool<P>, Dumpable
             {
                 if (LOG.isDebugEnabled())
                     LOG.debug("enabled {} for {}", this, pool);
-                if (acquire)
-                    getHolder().free();
+                if (!acquire)
+                    getHolder().hold();
                 return true;
             }
 
@@ -650,7 +649,7 @@ public class ConcurrentPool<P> implements Pool<P>, Dumpable
         Holder(Entry<P> entry)
         {
             _weak = new WeakReference<>(entry);
-            _hard = entry;
+            _hard = null;
         }
 
         Entry<P> getEntry()
