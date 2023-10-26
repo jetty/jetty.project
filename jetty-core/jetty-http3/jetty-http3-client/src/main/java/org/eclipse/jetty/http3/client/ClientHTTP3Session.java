@@ -184,7 +184,7 @@ public class ClientHTTP3Session extends ClientProtocolSession
             else if (key == SettingsFrame.MAX_FIELD_SECTION_SIZE)
             {
                 // Must cap the maxHeaderSize to avoid large allocations.
-                int maxHeadersSize = (int)Math.min(value, configuration.getMaxResponseHeadersSize());
+                int maxHeadersSize = (int)Math.min(value, configuration.getMaxRequestHeadersSize());
                 encoder.setMaxHeadersSize(maxHeadersSize);
             }
             else if (key == SettingsFrame.MAX_BLOCKED_STREAMS)

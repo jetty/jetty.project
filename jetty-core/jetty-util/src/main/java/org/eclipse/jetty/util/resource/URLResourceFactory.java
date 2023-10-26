@@ -155,7 +155,7 @@ public class URLResourceFactory implements ResourceFactory
         }
 
         @Override
-        public boolean isContainedIn(Resource r)
+        public boolean isContainedIn(Resource container)
         {
             // compare starting URIs?
             return false;

@@ -242,6 +242,7 @@ public class HttpConnectionOverHTTP extends AbstractConnection implements IConne
             getEndPoint().close();
             if (LOG.isDebugEnabled())
                 LOG.debug("Closed {}", this);
+            delegate.destroy();
         }
     }
 
@@ -343,7 +344,6 @@ public class HttpConnectionOverHTTP extends AbstractConnection implements IConne
         public void close()
         {
             HttpConnectionOverHTTP.this.close();
-            destroy();
         }
 
         @Override

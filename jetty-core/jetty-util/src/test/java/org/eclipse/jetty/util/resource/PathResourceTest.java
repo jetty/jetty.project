@@ -24,7 +24,9 @@ import java.nio.file.FileSystems;
 import java.nio.file.Files;
 import java.nio.file.InvalidPathException;
 import java.nio.file.Path;
+import java.util.Collection;
 import java.util.HashMap;
+import java.util.List;
 import java.util.Map;
 
 import org.eclipse.jetty.toolchain.test.FS;
@@ -41,6 +43,7 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import static org.hamcrest.MatcherAssert.assertThat;
+import static org.hamcrest.Matchers.containsInAnyOrder;
 import static org.hamcrest.Matchers.empty;
 import static org.hamcrest.Matchers.equalTo;
 import static org.hamcrest.Matchers.is;
@@ -142,6 +145,95 @@ public class PathResourceTest
 
         assertThat("Resource.getName", resource.getName(), is(exampleJar.toAbsolutePath().toString()));
         assertThat("Resource.getFileName", resource.getFileName(), is("example.jar"));
+    }
+
+    @Test
+    public void testContains(WorkDir workDir) throws IOException
+    {
+        Path testPath = workDir.getEmptyPathDir();
+        Path fooJar = testPath.resolve("foo.jar");
+        Path barJar = testPath.resolve("bar.jar");
+
+        Map<String, String> env = new HashMap<>();
+        env.put("create", "true");
+        URI fooJarUri = URIUtil.uriJarPrefix(fooJar.toUri(), "!/");
+        try (FileSystem zipfs = FileSystems.newFileSystem(fooJarUri, env))
+        {
+            Path root = zipfs.getPath("/");
+            Path dir = root.resolve("deep/dir");
+            Files.createDirectories(dir);
+            Files.writeString(dir.resolve("foo.txt"), "Contents of foo.txt in foo.jar", StandardCharsets.UTF_8);
+        }
+
+        URI barJarUri = URIUtil.uriJarPrefix(barJar.toUri(), "!/");
+        try (FileSystem zipfs = FileSystems.newFileSystem(barJarUri, env))
+        {
+            Path root = zipfs.getPath("/");
+            Path dir = root.resolve("deep/dir");
+            Files.createDirectories(dir);
+            Files.writeString(dir.resolve("bar.txt"), "Contents of bar.txt in bar.jar", StandardCharsets.UTF_8);
+        }
+
+        try (ResourceFactory.Closeable resourceFactory = ResourceFactory.closeable())
+        {
+            Resource fooResource = resourceFactory.newResource(fooJarUri);
+            Resource barResource = resourceFactory.newResource(barJarUri);
+
+            Resource fooText = fooResource.resolve("deep/dir/foo.txt");
+            assertTrue(fooResource.contains(fooText));
+
+            Resource barText = barResource.resolve("deep/dir/bar.txt");
+            assertTrue(barResource.contains(barText));
+
+            assertFalse(fooResource.contains(barText));
+            assertFalse(barResource.contains(fooText));
+        }
+    }
+
+    @Test
+    public void testGetPathTo(WorkDir workDir) throws IOException
+    {
+        Path testPath = workDir.getEmptyPathDir();
+        Path fooJar = testPath.resolve("foo.jar");
+        Path barJar = testPath.resolve("bar.jar");
+
+        Map<String, String> env = new HashMap<>();
+        env.put("create", "true");
+        URI fooJarUri = URIUtil.uriJarPrefix(fooJar.toUri(), "!/");
+        try (FileSystem zipfs = FileSystems.newFileSystem(fooJarUri, env))
+        {
+            Path root = zipfs.getPath("/");
+            Path dir = root.resolve("deep/dir");
+            Files.createDirectories(dir);
+            Files.writeString(dir.resolve("foo.txt"), "Contents of foo.txt in foo.jar", StandardCharsets.UTF_8);
+        }
+
+        URI barJarUri = URIUtil.uriJarPrefix(barJar.toUri(), "!/");
+        try (FileSystem zipfs = FileSystems.newFileSystem(barJarUri, env))
+        {
+            Path root = zipfs.getPath("/");
+            Path dir = root.resolve("deep/dir");
+            Files.createDirectories(dir);
+            Files.writeString(dir.resolve("bar.txt"), "Contents of bar.txt in bar.jar", StandardCharsets.UTF_8);
+        }
+
+        try (ResourceFactory.Closeable resourceFactory = ResourceFactory.closeable())
+        {
+            Resource fooResource = resourceFactory.newResource(fooJarUri);
+            Resource barResource = resourceFactory.newResource(barJarUri);
+
+            Resource fooText = fooResource.resolve("deep/dir/foo.txt");
+            Path fooPathRel = fooResource.getPathTo(fooText);
+            assertThat(fooPathRel.toString(), is("deep/dir/foo.txt"));
+
+            Resource barText = barResource.resolve("deep/dir/bar.txt");
+            Path barPathRel = barResource.getPathTo(barText);
+            assertThat(barPathRel.toString(), is("deep/dir/bar.txt"));
+
+            // Attempt to getPathTo cross Resource will return null.
+            Path crossPathText = fooResource.getPathTo(barText);
+            assertNull(crossPathText);
+        }
     }
 
     @Test
@@ -442,6 +534,62 @@ public class PathResourceTest
         {
             // this file system does allow null char ending filenames
             LOG.trace("IGNORED", e);
+        }
+    }
+
+    /**
+     * Test to ensure that a symlink loop will not trip up the Resource.getAllResources() implementation.
+     */
+    @Test
+    public void testGetAllResourcesSymlinkLoop(WorkDir workDir) throws Exception
+    {
+        Path testPath = workDir.getEmptyPathDir();
+
+        Path base = testPath.resolve("base");
+        Path deep = base.resolve("deep");
+        Path deeper = deep.resolve("deeper");
+
+        FS.ensureDirExists(deeper);
+
+        Files.writeString(deeper.resolve("test.txt"), "This is the deeper TEST TXT", StandardCharsets.UTF_8);
+        Files.writeString(base.resolve("foo.txt"), "This is the FOO TXT in the Base dir", StandardCharsets.UTF_8);
+
+        boolean symlinkSupported;
+        try
+        {
+            Path bar = deeper.resolve("bar");
+            // Create symlink from ${base}/deep/deeper/bar/ to ${base}/deep/
+            Files.createSymbolicLink(bar, deep);
+
+            symlinkSupported = true;
+        }
+        catch (UnsupportedOperationException | FileSystemException e)
+        {
+            symlinkSupported = false;
+        }
+
+        assumeTrue(symlinkSupported, "Symlink not supported");
+
+        try (ResourceFactory.Closeable resourceFactory = ResourceFactory.closeable())
+        {
+            Resource resource = resourceFactory.newResource(base);
+
+            Collection<Resource> allResources = resource.getAllResources();
+
+            Resource[] expected = {
+                resource.resolve("deep/"),
+                resource.resolve("deep/deeper/"),
+                resource.resolve("deep/deeper/bar/"),
+                resource.resolve("deep/deeper/test.txt"),
+                resource.resolve("foo.txt")
+            };
+
+            List<String> actual = allResources.stream()
+                    .map(Resource::getURI)
+                    .map(URI::toASCIIString)
+                    .toList();
+
+            assertThat(allResources, containsInAnyOrder(expected));
         }
     }
 

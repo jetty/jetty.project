@@ -117,7 +117,7 @@ public interface Handler extends LifeCycle, Destroyable, Request.Handler
     /**
      * @return the {@code Server} associated with this {@code Handler}
      */
-    @ManagedAttribute(value = "the Server instance associated to this Handler", readonly = true)
+    @ManagedAttribute(value = "The Server instance associated to this Handler", readonly = true)
     Server getServer();
 
     /**
