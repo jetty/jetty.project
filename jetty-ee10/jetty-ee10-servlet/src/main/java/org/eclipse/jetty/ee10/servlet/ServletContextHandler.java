@@ -1660,7 +1660,15 @@ public class ServletContextHandler extends ContextHandler
         else if (handler instanceof ServletHandler)
             setServletHandler((ServletHandler)handler);
         else
-            super.insertHandler(handler);
+        {
+            // We cannot call super.insertHandler here, because it uses this.setHandler
+            // which gives a warning.  This is the same code, but uses super.setHandler
+            Singleton tail = Objects.requireNonNull(handler).getTail();
+            if (tail.getHandler() != null)
+                throw new IllegalArgumentException("bad tail of inserted wrapper chain");
+            tail.setHandler(getHandler());
+            super.setHandler(handler);
+        }
         relinkHandlers();
     }
 
