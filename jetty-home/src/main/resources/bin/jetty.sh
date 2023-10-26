@@ -635,18 +635,17 @@ case "$ACTION" in
         chown "$JETTY_USER" "$JETTY_PID"
         su - "$JETTY_USER" $SU_SHELL -c "
           cd \"$JETTY_BASE\"
-          echo ${RUN_ARGS[*]} --start-log-file=\"$JETTY_START_LOG\" | xargs ${JAVA} > /dev/null &
+          echo ${RUN_ARGS[*]} | xargs ${JAVA} > /dev/null &
           PID=\$!
           disown \$PID"
         (( DEBUG )) && echo "Starting: su shell (w/user $JETTY_USER) on PID $PID"
       else
         # Startup if not switching users
-        echo ${RUN_ARGS[*]} --start-log-file="${JETTY_START_LOG}" | xargs ${JAVA} > /dev/null &
+        echo ${RUN_ARGS[*]} | xargs ${JAVA} > /dev/null &
         PID=$!
         disown $PID
         (( DEBUG )) && echo "Starting: java command on PID $PID"
       fi
-
     fi
 
     if expr "${JETTY_ARGS[*]}" : '.*jetty\.state=.*' >/dev/null
