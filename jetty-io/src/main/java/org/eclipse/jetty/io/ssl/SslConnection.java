@@ -1546,7 +1546,7 @@ public class SslConnection extends AbstractConnection implements Connection.Upgr
                     if (LOG.isDebugEnabled())
                         LOG.debug("{} stored {} exception", this, context, x);
                 }
-                else if (x != _failure)
+                else if (x != _failure && x.getCause() != _failure)
                 {
                     _failure.addSuppressed(x);
                     if (LOG.isDebugEnabled())
