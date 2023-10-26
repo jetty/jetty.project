@@ -54,6 +54,7 @@ public class ConcurrentPool<P> implements Pool<P>, Dumpable
      */
     public static final int OPTIMAL_MAX_SIZE = 256;
 
+    private static final boolean STRONG_DEFAULT = Boolean.getBoolean(ConcurrentPool.class.getName() + ".STRONG_DEFAULT");
     private static final Logger LOG = LoggerFactory.getLogger(ConcurrentPool.class);
 
     private final List<Holder<P>> entries = new CopyOnWriteArrayList<>();
@@ -90,7 +91,6 @@ public class ConcurrentPool<P> implements Pool<P>, Dumpable
         this(strategyType, maxSize, cache, pooled -> 1);
     }
 
-
     /**
      * <p>Creates an instance with the specified strategy.
      * and a function that returns the max multiplex count for a given pooled object.</p>
@@ -117,7 +117,7 @@ public class ConcurrentPool<P> implements Pool<P>, Dumpable
      */
     public ConcurrentPool(StrategyType strategyType, int maxSize, ToIntFunction<P> maxMultiplex)
     {
-        this(strategyType, maxSize, maxMultiplex, false);
+        this(strategyType, maxSize, maxMultiplex, !STRONG_DEFAULT);
     }
 
     /**
@@ -198,13 +198,16 @@ public class ConcurrentPool<P> implements Pool<P>, Dumpable
 
     void sweep()
     {
-        for (int i = 0; i < entries.size(); i++)
+        if (weak)
         {
-            Holder<P> holder = entries.get(i);
-            if (holder.getEntry() == null)
+            for (int i = 0; i < entries.size(); i++)
             {
-                LOG.warn("LEAKED {}", holder);
-                entries.remove(i--);
+                Holder<P> holder = entries.get(i);
+                if (holder.getEntry() == null)
+                {
+                    LOG.warn("LEAKED {}", holder);
+                    entries.remove(i--);
+                }
             }
         }
     }
@@ -436,7 +439,7 @@ public class ConcurrentPool<P> implements Pool<P>, Dumpable
         public ConcurrentEntry(ConcurrentPool<E> pool)
         {
             this.pool = pool;
-            holder = new Holder<>(this, pool.weak);
+            holder = pool.weak ? new WeakHolder<>(this) : new StrongHolder<>(this);
         }
 
         private Holder<E> getHolder()
@@ -541,10 +544,6 @@ public class ConcurrentPool<P> implements Pool<P>, Dumpable
                     {
                         // We have acquired the entry for the first time, but might be racing with a previous release
                         // to hold it, so we spin wait to ensure it is held before we free it.
-                        // The spin must end because the count is 1 after being incremented, so some other thread must
-                        // have decremented it to 0 and will have either called free() or is just about to (see tryRelease)
-                        while (!getHolder().held())
-                            Thread.onSpinWait();
                         getHolder().free();
                     }
                     return true;
@@ -676,48 +675,87 @@ public class ConcurrentPool<P> implements Pool<P>, Dumpable
         }
     }
 
-    private static class Holder<P>
+    public interface Holder<P>
     {
-        private final WeakReference<ConcurrentEntry<P>> _weak;
-        private volatile ConcurrentEntry<P> _hard;
+        Pool.Entry<P> getEntry();
 
-        Holder(ConcurrentEntry<P> entry, boolean weak)
+        void hold();
+
+        void free();
+    }
+
+    private static class StrongHolder<P> implements Holder<P>
+    {
+        private final ConcurrentEntry<P> _strong;
+
+        StrongHolder(ConcurrentEntry<P> entry)
         {
-            _weak = weak ? new WeakReference<>(entry) : null;
-            _hard = weak ? null : entry;
+            _strong = entry;
         }
 
-        Entry<P> getEntry()
+        @Override
+        public Entry<P> getEntry()
         {
-            return _weak == null ? _hard : _weak.get();
+            return _strong;
         }
 
+        @Override
         public void hold()
         {
-            if (_weak == null)
-                return;
-            ConcurrentEntry<P> hard = _weak.get();
-            _hard = hard;
-            if (hard == null && LOG.isDebugEnabled())
-                LOG.warn("LEAKED {}", this);
         }
 
-        public boolean held()
-        {
-            return _hard != null;
-        }
-
+        @Override
         public void free()
         {
-            if (_weak == null)
-                return;
-            _hard = null;
         }
 
         @Override
         public String toString()
         {
-            return "%s@%x{%s,%s}".formatted(this.getClass().getSimpleName(), hashCode(), _weak == null ? "hard" : _weak.get(), _hard);
+            return "%s@%x{%s}".formatted(this.getClass().getSimpleName(), hashCode(), _strong);
+        }
+    }
+
+    private static class WeakHolder<P> implements Holder<P>
+    {
+        private final WeakReference<ConcurrentEntry<P>> _weak;
+        private volatile ConcurrentEntry<P> _strong;
+
+        WeakHolder(ConcurrentEntry<P> entry)
+        {
+            _weak = new WeakReference<>(entry);
+        }
+
+        @Override
+        public Entry<P> getEntry()
+        {
+            return _weak.get();
+        }
+
+        @Override
+        public void hold()
+        {
+            ConcurrentEntry<P> hard = _weak.get();
+            _strong = hard;
+            if (hard == null && LOG.isDebugEnabled())
+                LOG.warn("LEAKED {}", this);
+        }
+
+        @Override
+        public void free()
+        {
+            // Free must only be called when we know the holder will be held.
+            // The spin must end because the count is 1 after being incremented, so some other thread must
+            // have decremented it to 0 and will have either called free() or is just about to (see tryRelease)
+            while (_strong == null)
+                Thread.onSpinWait();
+            _strong = null;
+        }
+
+        @Override
+        public String toString()
+        {
+            return "%s@%x{%s,%s}".formatted(this.getClass().getSimpleName(), hashCode(), _weak.get(), _strong);
         }
     }
 }
