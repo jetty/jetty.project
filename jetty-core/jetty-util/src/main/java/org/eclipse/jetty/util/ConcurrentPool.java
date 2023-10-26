@@ -62,6 +62,7 @@ public class ConcurrentPool<P> implements Pool<P>, Dumpable
     private final AutoLock lock = new AutoLock();
     private final AtomicInteger nextIndex;
     private final ToIntFunction<P> maxMultiplex;
+    private final boolean weak;
     private volatile boolean terminated;
 
     /**
@@ -116,12 +117,27 @@ public class ConcurrentPool<P> implements Pool<P>, Dumpable
      */
     public ConcurrentPool(StrategyType strategyType, int maxSize, ToIntFunction<P> maxMultiplex)
     {
+        this(strategyType, maxSize, maxMultiplex, false);
+    }
+
+    /**
+     * <p>Creates an instance with the specified strategy.
+     * and a function that returns the max multiplex count for a given pooled object.</p>
+     *
+     * @param strategyType the strategy to used to lookup entries
+     * @param maxSize the maximum number of pooled entries
+     * @param maxMultiplex a function that given the pooled object returns the max multiplex count
+     * @param weak true if the pooled buffers should be weakly referenced upon acquisition, false otherwise
+     */
+    public ConcurrentPool(StrategyType strategyType, int maxSize, ToIntFunction<P> maxMultiplex, boolean weak)
+    {
         if (maxSize > OPTIMAL_MAX_SIZE && LOG.isDebugEnabled())
             LOG.debug("{} configured with max size {} which is above the recommended value {}", getClass().getSimpleName(), maxSize, OPTIMAL_MAX_SIZE);
         this.maxSize = maxSize;
         this.strategyType = Objects.requireNonNull(strategyType);
         this.nextIndex = strategyType == StrategyType.ROUND_ROBIN ? new AtomicInteger() : null;
         this.maxMultiplex = Objects.requireNonNull(maxMultiplex);
+        this.weak = weak;
     }
 
     public int getTerminatedCount()
@@ -164,7 +180,7 @@ public class ConcurrentPool<P> implements Pool<P>, Dumpable
                 // Sweep for collected entries
                 sweep();
                 entriesSize = entries.size();
-                if (maxSize > 0 && entriesSize >= maxSize)
+                if (entriesSize >= maxSize)
                 {
                     if (LOG.isDebugEnabled())
                         LOG.debug("no space: {} >= {}, cannot reserve entry for {}", entriesSize, maxSize, this);
@@ -239,7 +255,7 @@ public class ConcurrentPool<P> implements Pool<P>, Dumpable
                 if (size == 0)
                     break;
             }
-            if (++index == size)
+            if (++index >= size)
                 index = 0;
         }
 
@@ -352,12 +368,13 @@ public class ConcurrentPool<P> implements Pool<P>, Dumpable
     @Override
     public String toString()
     {
-        return String.format("%s@%x[inUse=%d,size=%d,max=%d,terminated=%b]",
+        return String.format("%s@%x[inUse=%d,size=%d,max=%d,weak=%b,terminated=%b]",
             getClass().getSimpleName(),
             hashCode(),
             getInUseCount(),
             size(),
             getMaxSize(),
+            weak,
             isTerminated());
     }
 
@@ -419,7 +436,7 @@ public class ConcurrentPool<P> implements Pool<P>, Dumpable
         public ConcurrentEntry(ConcurrentPool<E> pool)
         {
             this.pool = pool;
-            holder = new Holder<>(this);
+            holder = new Holder<>(this, pool.weak);
         }
 
         private Holder<E> getHolder()
@@ -661,23 +678,25 @@ public class ConcurrentPool<P> implements Pool<P>, Dumpable
 
     private static class Holder<P>
     {
-        private final WeakReference<Entry<P>> _weak;
-        private volatile Entry<P> _hard;
+        private final WeakReference<ConcurrentEntry<P>> _weak;
+        private volatile ConcurrentEntry<P> _hard;
 
-        Holder(Entry<P> entry)
+        Holder(ConcurrentEntry<P> entry, boolean weak)
         {
-            _weak = new WeakReference<>(entry);
-            _hard = null;
+            _weak = weak ? new WeakReference<>(entry) : null;
+            _hard = weak ? null : entry;
         }
 
         Entry<P> getEntry()
         {
-            return _weak.get();
+            return _weak == null ? _hard : _weak.get();
         }
 
         public void hold()
         {
-            Entry<P> hard = _weak.get();
+            if (_weak == null)
+                return;
+            ConcurrentEntry<P> hard = _weak.get();
             _hard = hard;
             if (hard == null && LOG.isDebugEnabled())
                 LOG.warn("LEAKED {}", this);
@@ -690,13 +709,15 @@ public class ConcurrentPool<P> implements Pool<P>, Dumpable
 
         public void free()
         {
+            if (_weak == null)
+                return;
             _hard = null;
         }
 
         @Override
         public String toString()
         {
-            return "%s@%x{%s,%s}".formatted(this.getClass().getSimpleName(), hashCode(), _weak.get(), _hard);
+            return "%s@%x{%s,%s}".formatted(this.getClass().getSimpleName(), hashCode(), _weak == null ? "hard" : _weak.get(), _hard);
         }
     }
 }
