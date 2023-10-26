@@ -88,10 +88,8 @@ public class HandlerWrapper extends AbstractHandlerContainer
     public HandlerWrapper getTail()
     {
         HandlerWrapper tail = this;
-        while (tail.getHandler() instanceof HandlerWrapper)
-            tail = (HandlerWrapper)tail.getHandler();
-        if (tail.getHandler() != null)
-            throw new IllegalArgumentException("bad tail of inserted wrapper chain");
+        while (tail.getHandler() instanceof HandlerWrapper handlerWrapper)
+            tail = handlerWrapper;
         return tail;
     }
 
@@ -112,8 +110,7 @@ public class HandlerWrapper extends AbstractHandlerContainer
         if (wrapper == null)
             throw new IllegalArgumentException();
 
-        HandlerWrapper tail = getTail();
-
+        HandlerWrapper tail = wrapper.getTail();
         Handler next = getHandler();
         setHandler(wrapper);
         tail.setHandler(next);

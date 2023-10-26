@@ -285,6 +285,15 @@ public class ContextHandler extends ScopedHandler implements Attributes, Supplie
         return _coreContextHandler;
     }
 
+    /**
+     * Insert a handler between the {@link #getCoreContextHandler()} and this handler.
+     * @param coreHandler A core handler to insert
+     */
+    public void insertHandler(org.eclipse.jetty.server.Handler.Singleton coreHandler)
+    {
+        getCoreContextHandler().insertHandler(coreHandler);
+    }
+
     @Override
     public void dump(Appendable out, String indent) throws IOException
     {

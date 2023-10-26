@@ -51,6 +51,7 @@ import static org.hamcrest.Matchers.greaterThan;
 import static org.hamcrest.Matchers.is;
 import static org.hamcrest.Matchers.not;
 import static org.hamcrest.Matchers.notNullValue;
+import static org.hamcrest.Matchers.sameInstance;
 
 public class ContextHandlerTest
 {
@@ -817,8 +818,9 @@ public class ContextHandlerTest
     @Test
     public void testInsertHandler() throws Exception
     {
-        _contextHandler.setHandler(new HelloHandler());
-        _contextHandler.getCoreContextHandler().insertHandler(new Handler.Wrapper()
+        HelloHandler helloHandler = new HelloHandler();
+        _contextHandler.setHandler(helloHandler);
+        Handler.Wrapper coreHandler = new Handler.Wrapper()
         {
             @Override
             public boolean handle(org.eclipse.jetty.server.Request request, Response response, Callback callback) throws Exception
@@ -826,8 +828,10 @@ public class ContextHandlerTest
                 response.getHeaders().put("Core", "Inserted");
                 return super.handle(request, response, callback);
             }
-        });
-        _contextHandler.insertHandler(new HandlerWrapper()
+        };
+        _contextHandler.insertHandler(coreHandler);
+
+        HandlerWrapper nestedHandler = new HandlerWrapper()
         {
             @Override
             public void handle(String target, Request baseRequest, HttpServletRequest request, HttpServletResponse response) throws IOException, ServletException
@@ -835,7 +839,14 @@ public class ContextHandlerTest
                 response.setHeader("Nested", "Inserted");
                 super.handle(target, baseRequest, request, response);
             }
-        });
+        };
+        _contextHandler.insertHandler(nestedHandler);
+
+        assertThat(_contextHandler.getCoreContextHandler().getHandler(), sameInstance(coreHandler));
+        assertThat(coreHandler.getHandler().toString(), containsString("CoreToNestedHandler"));
+        assertThat(_contextHandler.getHandler(), sameInstance(nestedHandler));
+        assertThat(nestedHandler.getHandler(), sameInstance(helloHandler));
+
         _server.start();
 
         String rawResponse = _connector.getResponse("""
