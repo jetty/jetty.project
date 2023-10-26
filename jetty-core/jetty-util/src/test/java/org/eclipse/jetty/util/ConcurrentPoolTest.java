@@ -56,11 +56,10 @@ public class ConcurrentPoolTest
     public static List<Factory> factories()
     {
         return List.of(
-            (maxEntries, maxMultiplex) -> new ConcurrentPool<>(FIRST, maxEntries, false, maxMultiplex),
-            (maxEntries, maxMultiplex) -> new ConcurrentPool<>(FIRST, maxEntries, true, maxMultiplex),
-            (maxEntries, maxMultiplex) -> new ConcurrentPool<>(RANDOM, maxEntries, false, maxMultiplex),
-            (maxEntries, maxMultiplex) -> new ConcurrentPool<>(THREAD_ID, maxEntries, false, maxMultiplex),
-            (maxEntries, maxMultiplex) -> new ConcurrentPool<>(ROUND_ROBIN, maxEntries, false, maxMultiplex)
+            (maxEntries, maxMultiplex) -> new ConcurrentPool<>(FIRST, maxEntries, maxMultiplex),
+            (maxEntries, maxMultiplex) -> new ConcurrentPool<>(RANDOM, maxEntries, maxMultiplex),
+            (maxEntries, maxMultiplex) -> new ConcurrentPool<>(THREAD_ID, maxEntries, maxMultiplex),
+            (maxEntries, maxMultiplex) -> new ConcurrentPool<>(ROUND_ROBIN, maxEntries, maxMultiplex)
         );
     }
 
@@ -620,6 +619,9 @@ public class ConcurrentPoolTest
         Pool.Entry<String> e0 = pool.reserve();
         Pool.Entry<String> e1 = pool.reserve();
         Pool.Entry<String> e2 = pool.reserve();
+        assertThat(e0, notNullValue());
+        assertThat(e1, notNullValue());
+        assertThat(e2, notNullValue());
 
         assertThat(pool.reserve(), nullValue());
         assertThat(pool.size(), is(3));
@@ -635,6 +637,8 @@ public class ConcurrentPoolTest
         assertThat(pool.getReservedCount(), is(2));
         assertThat(pool.getIdleCount(), is(0));
         assertThat(pool.getInUseCount(), is(0));
+
+        assertThat(e0, nullValue());
     }
 
     @ParameterizedTest
@@ -695,6 +699,10 @@ public class ConcurrentPoolTest
         assertThat(pool.getReservedCount(), is(0));
         assertThat(pool.getIdleCount(), is(0));
         assertThat(pool.getInUseCount(), is(0));
+
+        assertThat(e0, nullValue());
+        assertThat(e1, nullValue());
+        assertThat(e2, nullValue());
     }
 
     @ParameterizedTest
@@ -728,5 +736,7 @@ public class ConcurrentPoolTest
         assertThat(pool.getReservedCount(), is(0));
         assertThat(pool.getIdleCount(), is(2));
         assertThat(pool.getInUseCount(), is(1));
+
+        assertThat(e0, nullValue());
     }
 }

@@ -225,7 +225,6 @@ public class ConcurrentPool<P> implements Pool<P>, Dumpable
                     {
                         if (LOG.isDebugEnabled())
                             LOG.debug("returning entry {} for {}", entry, this);
-                        holder.free();
                         return entry;
                     }
                 }
@@ -445,8 +444,6 @@ public class ConcurrentPool<P> implements Pool<P>, Dumpable
             {
                 if (LOG.isDebugEnabled())
                     LOG.debug("enabled {} for {}", this, pool);
-                if (!acquire)
-                    getHolder().hold();
                 return true;
             }
 
@@ -487,7 +484,10 @@ public class ConcurrentPool<P> implements Pool<P>, Dumpable
          */
         private boolean tryEnable(boolean acquire)
         {
+            if (!acquire)
+                getHolder().hold();
             return state.compareAndSet(0, 0, -1, acquire ? 1 : 0);
+
         }
 
         /**
@@ -519,7 +519,19 @@ public class ConcurrentPool<P> implements Pool<P>, Dumpable
                     return false;
 
                 if (state.compareAndSet(encoded, 0, newMultiplexCount))
+                {
+                    if (newMultiplexCount == 1)
+                    {
+                        // We have acquired the entry for the first time, but might be racing with a previous release
+                        // to hold it, so we spin wait to ensure it is held before we free it.
+                        // The spin must end because the count is 1 after being incremented, so some other thread must
+                        // have decremented it to 0 and will have either called free() or is just about to (see tryRelease)
+                        while (!getHolder().held())
+                            Thread.onSpinWait();
+                        getHolder().free();
+                    }
                     return true;
+                }
             }
         }
 
@@ -543,9 +555,8 @@ public class ConcurrentPool<P> implements Pool<P>, Dumpable
                 int newMultiplexCount = multiplexCount - 1;
                 if (state.compareAndSet(encoded, 0, newMultiplexCount))
                 {
-                    Holder<E> holder = getHolder();
-                    if (holder != null && !holder.hold())
-                        continue;
+                    if (newMultiplexCount == 0)
+                        getHolder().hold();
                     return true;
                 }
             }
@@ -587,7 +598,12 @@ public class ConcurrentPool<P> implements Pool<P>, Dumpable
                 boolean result = newMultiplexCount <= 0;
                 removed = result ? -2 : -1;
                 if (state.compareAndSet(encoded, removed, newMultiplexCount))
+                {
+                    // Hold the entry if count is zero to make sure any spinning tryAcquires do not loop forever
+                    if (newMultiplexCount == 0)
+                        getHolder().hold();
                     return result;
+                }
             }
         }
 
@@ -595,6 +611,8 @@ public class ConcurrentPool<P> implements Pool<P>, Dumpable
         {
             while (true)
             {
+                // Hold the entry to make sure any spinning tryAcquires do not loop forever
+                getHolder().hold();
                 long encoded = state.get();
                 if (AtomicBiInteger.getHi(encoded) < 0)
                     return false;
@@ -657,15 +675,28 @@ public class ConcurrentPool<P> implements Pool<P>, Dumpable
             return _weak.get();
         }
 
-        public boolean hold()
+        public void hold()
         {
-            _hard = _weak.get();
+            Entry<P> hard = _weak.get();
+            _hard = hard;
+            if (hard == null && LOG.isDebugEnabled())
+                LOG.warn("LEAKED {}", this);
+        }
+
+        public boolean held()
+        {
             return _hard != null;
         }
 
         public void free()
         {
             _hard = null;
+        }
+
+        @Override
+        public String toString()
+        {
+            return "%s@%x{%s,%s}".formatted(this.getClass().getSimpleName(), hashCode(), _weak.get(), _hard);
         }
     }
 }
