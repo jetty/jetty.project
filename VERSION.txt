@@ -1,3 +1,5 @@
+jetty-10.0.19-SNAPSHOT
+
 jetty-10.0.18 - 26 October 2023
  + 1256 DoSFilter leaks USER_AUTH entries
  + 10390 Jetty HTTP/3 Client fails when connecting to `nghttpx` server
