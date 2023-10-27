@@ -112,7 +112,8 @@ public class ServletChannel
     /**
      * Associate this channel with a specific request.
      * This method is called by the {@link ServletContextHandler} when a core {@link Request} is accepted and associated with
-     * a servlet mapping. The association remains until {@link #recycle()} is called.
+     * a servlet mapping. The association remains functional until {@link #recycle()} is called,
+     * and it remains readable until a subsequent call to {@code associate}.
      * @param servletContextRequest The servlet context request to associate
      * @see #recycle()
      */
@@ -447,10 +448,7 @@ public class ServletChannel
         _state.recycle();
         _httpInput.recycle();
         _httpOutput.recycle();
-        _request = _servletContextRequest = null;
-        _response = null;
         _callback = null;
-        _expects100Continue = false;
     }
 
     /**
