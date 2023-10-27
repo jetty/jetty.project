@@ -1,4 +1,15 @@
-jetty-10.0.18-SNAPSHOT
+jetty-10.0.18 - 26 October 2023
+ + 1256 DoSFilter leaks USER_AUTH entries
+ + 10390 Jetty HTTP/3 Client fails when connecting to `nghttpx` server
+ + 10519 java.lang.IllegalStateException: Flusher when using HTTP/3 with Spring
+   Boot 3.2 
+ + 10537 HTTP/3: Incomplete Data Transfer When Used with Spring Boot WebFlux
+ + 10696 jetty.sh doesn't work with JETTY_USER in Jetty 10.0.17 thru Jetty
+   12.0.2
+ + 10705 Creating a `HTTP3ServerConnector` with a `SslContextFactory` that has
+   a non-null `SSLContext` makes the server fail to start with an unclear error
+   message
+ + 10786 TLS handshake failures leak HttpConnection.RequestTimeouts tasks
 
 jetty-10.0.17 - 09 October 2023
  + 9777 CrossOriginFilter does not return Vary header on no-cors mode
