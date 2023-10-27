@@ -716,9 +716,12 @@ public interface Request extends Attributes, Content.Source
      */
     class Wrapper extends Attributes.Wrapper implements Request
     {
+        private final Request request;
+
         public Wrapper(Request wrapped)
         {
             super(wrapped);
+            this.request = wrapped;
         }
 
         @Override
@@ -856,7 +859,8 @@ public interface Request extends Attributes, Content.Source
         @Override
         public Request getWrapped()
         {
-            return (Request)super.getWrapped();
+            // Identical to (Request)super.getWrapped() except that the cast is costly here.
+            return request;
         }
     }
 
