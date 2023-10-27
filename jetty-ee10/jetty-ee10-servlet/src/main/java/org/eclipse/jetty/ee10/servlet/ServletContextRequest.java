@@ -483,7 +483,7 @@ public class ServletContextRequest extends ContextRequest implements ServletCont
 
         HttpCookie cookie = _sessionManager.getSessionCookie(_managedSession, isSecure());
         if (cookie != null)
-            Response.replaceCookie(_response, cookie);
+            Response.addCookie(_response, cookie);
 
         return _managedSession;
     }

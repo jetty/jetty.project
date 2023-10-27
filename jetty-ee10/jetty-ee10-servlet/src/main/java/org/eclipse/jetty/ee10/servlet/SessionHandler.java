@@ -38,7 +38,6 @@ import jakarta.servlet.http.HttpSessionIdListener;
 import jakarta.servlet.http.HttpSessionListener;
 import org.eclipse.jetty.http.HttpCookie;
 import org.eclipse.jetty.http.HttpCookie.SameSite;
-import org.eclipse.jetty.http.Syntax;
 import org.eclipse.jetty.server.Handler;
 import org.eclipse.jetty.server.Request;
 import org.eclipse.jetty.server.Response;
@@ -687,7 +686,7 @@ public class SessionHandler extends AbstractSessionManager implements Handler.Si
         if (cookie != null)
         {
             ServletContextResponse servletContextResponse = servletContextRequest.getServletContextResponse();
-            Response.replaceCookie(servletContextResponse, cookie);
+            Response.addCookie(servletContextResponse, cookie);
         }
 
         return next.handle(request, response, callback);
