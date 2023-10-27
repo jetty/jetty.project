@@ -29,6 +29,7 @@ import java.util.Objects;
 import java.util.Queue;
 import java.util.Set;
 import java.util.concurrent.ConcurrentLinkedQueue;
+import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicInteger;
@@ -1782,6 +1783,7 @@ public class ServletContextHandlerTest
     {
         ServletContextHandler context = new ServletContextHandler(ServletContextHandler.SESSIONS);
         Queue<String> history = new ConcurrentLinkedQueue<>();
+        CountDownLatch complete = new CountDownLatch(2);
 
         Handler.Singleton extra = new Handler.Wrapper()
         {
@@ -1827,6 +1829,7 @@ public class ServletContextHandlerTest
                 history.add(String.valueOf(httpServletResponse.getStatus()));
                 history.add(String.valueOf(httpServletResponse.getContentType()));
                 history.add(String.valueOf(httpServletResponse.getHeader("Server")));
+                complete.countDown();
             }
         };
 
@@ -1846,6 +1849,8 @@ public class ServletContextHandlerTest
 
         String response = _connector.getResponse(request);
         assertThat("Response", response, containsString("Test"));
+
+        assertTrue(complete.await(10, TimeUnit.SECONDS));
         assertThat(history, contains(
             "onCallbackCompleting",
             "/test",
