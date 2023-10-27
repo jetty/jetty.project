@@ -290,7 +290,7 @@
     <mina.core.version>2.2.3</mina.core.version>
     <mongo.docker.version>3.2.20</mongo.docker.version>
     <mongodb.version>3.12.11</mongodb.version>
-    <netty.version>4.1.97.Final</netty.version>
+    <netty.version>4.1.100.Final</netty.version>
     <openpojo.version>0.9.1</openpojo.version>
     <org.osgi.annotation.version>8.1.0</org.osgi.annotation.version>
     <org.osgi.core.version>8.0.0</org.osgi.core.version>
