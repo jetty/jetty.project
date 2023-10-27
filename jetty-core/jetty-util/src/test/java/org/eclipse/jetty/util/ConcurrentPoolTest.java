@@ -18,13 +18,16 @@ import java.util.Collection;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicInteger;
+import java.util.concurrent.atomic.AtomicReference;
 import java.util.function.ToIntFunction;
 
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.MethodSource;
 
+import static org.awaitility.Awaitility.await;
 import static org.eclipse.jetty.util.ConcurrentPool.StrategyType.FIRST;
 import static org.eclipse.jetty.util.ConcurrentPool.StrategyType.RANDOM;
 import static org.eclipse.jetty.util.ConcurrentPool.StrategyType.ROUND_ROBIN;
@@ -611,6 +614,16 @@ public class ConcurrentPoolTest
         assertThat(e4.getPooled().get(), greaterThan(10));
     }
 
+    private void waitForGC(ConcurrentPool<String> pool, int size)
+    {
+        await().atMost(5, TimeUnit.SECONDS).until(() ->
+        {
+            System.gc();
+            pool.sweep();
+            return pool.size();
+        }, is(size));
+    }
+
     @ParameterizedTest
     @MethodSource(value = "factories")
     public void testLeakReserved(Factory factory)
@@ -630,9 +643,7 @@ public class ConcurrentPoolTest
         assertThat(pool.getInUseCount(), is(0));
 
         e0 = null;
-        System.gc();
-        pool.sweep();
-
+        waitForGC(pool, 2);
         assertThat(pool.size(), is(2));
         assertThat(pool.getReservedCount(), is(2));
         assertThat(pool.getIdleCount(), is(0));
@@ -668,8 +679,7 @@ public class ConcurrentPoolTest
         assertThat(pool.getIdleCount(), is(1));
         assertThat(pool.getInUseCount(), is(2));
         e2 = null;
-        System.gc();
-        pool.sweep();
+        waitForGC(pool, 2);
 
         assertThat(pool.size(), is(2));
         assertThat(pool.getReservedCount(), is(0));
@@ -677,9 +687,7 @@ public class ConcurrentPoolTest
         assertThat(pool.getInUseCount(), is(1));
 
         e1 = null;
-        System.gc();
-        pool.sweep();
-
+        waitForGC(pool, 1);
         assertThat(pool.size(), is(1));
         assertThat(pool.getReservedCount(), is(0));
         assertThat(pool.getIdleCount(), is(1));
@@ -693,8 +701,7 @@ public class ConcurrentPoolTest
         assertThat(pool.getInUseCount(), is(1));
 
         e0 = null;
-        System.gc();
-        pool.sweep();
+        waitForGC(pool, 0);
         assertThat(pool.size(), is(0));
         assertThat(pool.getReservedCount(), is(0));
         assertThat(pool.getIdleCount(), is(0));
@@ -724,9 +731,15 @@ public class ConcurrentPoolTest
         assertThat(pool.getInUseCount(), is(0));
 
         e0 = null;
-        System.gc();
+        AtomicReference<Pool.Entry<String>> entry = new AtomicReference<>();
+        await().atMost(5, TimeUnit.SECONDS).until(() ->
+        {
+            System.gc();
+            entry.set(pool.reserve());
+            return entry.get();
+        }, notNullValue());
 
-        Pool.Entry<String> e3 = pool.reserve();
+        Pool.Entry<String> e3 = entry.get();
         assertThat(e3, notNullValue());
 
         e1.enable("one", false);
