@@ -253,7 +253,7 @@
     <kerb-simplekdc.version>2.0.3</kerb-simplekdc.version>
     <license.maven.plugin.version>4.1</license.maven.plugin.version>
     <localRepoPath>${project.build.directory}/local-repo</localRepoPath>
-    <log4j2.version>2.20.0</log4j2.version>
+    <log4j2.version>2.21.1</log4j2.version>
     <logback.version>1.4.11</logback.version>
     <mariadb.docker.version>10.3.6</mariadb.docker.version>
     <mariadb.version>3.2.0</mariadb.version>
