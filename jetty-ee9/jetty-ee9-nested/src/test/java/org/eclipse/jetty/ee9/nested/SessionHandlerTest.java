@@ -124,6 +124,7 @@ public class SessionHandlerTest
                             if (session == null)
                                 throw new IllegalStateException("No Session");
                             session.invalidate();
+                            session = null;
                         }
 
                         case "change" ->
@@ -432,6 +433,16 @@ public class SessionHandlerTest
             """.formatted(id));
         response = HttpTester.parseResponse(endPoint.getResponse());
         assertThat(response.getContent(), containsString("requestedSessionIdValid=true"));
+
+        //Invalidate and check requestedSessionId is invalid
+        endPoint.addInput("""
+            GET /invalidate HTTP/1.1
+            Host: localhost
+            Cookie: JSESSIONID=%s
+                        
+            """.formatted(id));
+        response = HttpTester.parseResponse(endPoint.getResponse());
+        assertThat(response.getContent(), containsString("requestedSessionIdValid=false"));
     }
 
     @Test

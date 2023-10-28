@@ -420,7 +420,7 @@ public class ServletApiRequest implements HttpServletRequest
     public boolean isRequestedSessionIdValid()
     {
         AbstractSessionManager.RequestedSession requestedSession = getServletRequestInfo().getRequestedSession();
-        return requestedSession != null && requestedSession.sessionId() != null && requestedSession.session() != null;
+        return requestedSession != null && requestedSession.sessionId() != null && requestedSession.session() != null && requestedSession.session().isValid();
     }
 
     @Override
