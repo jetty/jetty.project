@@ -83,6 +83,7 @@ import org.eclipse.jetty.server.Response;
 import org.eclipse.jetty.server.Session;
 import org.eclipse.jetty.session.AbstractSessionManager;
 import org.eclipse.jetty.session.ManagedSession;
+import org.eclipse.jetty.session.SessionManager;
 import org.eclipse.jetty.util.Callback;
 import org.eclipse.jetty.util.Fields;
 import org.eclipse.jetty.util.HostPort;
@@ -161,9 +162,9 @@ public class ServletApiRequest implements HttpServletRequest
 
     /**
      * @return The core {@link Request} associated with the servlet API request. This may differ
-     *         from {@link ServletContextRequest} as wrapped by the {@link ServletContextHandler} as it
-     *         may have been further wrapped before being passed
-     *         to {@link ServletChannel#associate(Request, Response, Callback)}.
+     * from {@link ServletContextRequest} as wrapped by the {@link ServletContextHandler} as it
+     * may have been further wrapped before being passed
+     * to {@link ServletChannel#associate(Request, Response, Callback)}.
      * @see #getServletRequestInfo()
      * @see ServletChannel#associate(Request, Response, Callback)
      */
@@ -421,11 +422,13 @@ public class ServletApiRequest implements HttpServletRequest
     {
         AbstractSessionManager.RequestedSession requestedSession = getServletRequestInfo().getRequestedSession();
         HttpSession session = getSession(false);
+        SessionManager manager = getServletRequestInfo().getSessionManager();
         return requestedSession != null &&
             requestedSession.sessionId() != null &&
             requestedSession.session() != null &&
             requestedSession.session().isValid() &&
-           getServletRequestInfo().getSessionManager().getSessionIdManager().getId(requestedSession.sessionId()).equals(session.getId());
+            manager != null &&
+            manager.getSessionIdManager().getId(requestedSession.sessionId()).equals(session.getId());
     }
 
     @Override
@@ -1054,7 +1057,6 @@ public class ServletApiRequest implements HttpServletRequest
                 if (charset == null)
                     charset = StandardCharsets.ISO_8859_1;
             }
-
         }
         catch (IllegalCharsetNameException | UnsupportedCharsetException e)
         {
@@ -1339,7 +1341,9 @@ public class ServletApiRequest implements HttpServletRequest
             _cookies = new Cookie[_httpCookies.size()];
             int i = 0;
             for (HttpCookie httpCookie : _httpCookies)
+            {
                 _cookies[i++] = convertCookie(httpCookie, compliance);
+            }
         }
 
         @Override
