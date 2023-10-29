@@ -614,12 +614,7 @@ public class ConcurrentPool<P> implements Pool<P>, Dumpable
                 boolean result = newMultiplexCount <= 0;
                 removed = result ? -2 : -1;
                 if (state.compareAndSet(encoded, removed, newMultiplexCount))
-                {
-                    // Hold the entry if count is zero to make sure any spinning tryAcquires do not loop forever
-                    if (newMultiplexCount == 0)
-                        getHolder().hold();
                     return result;
-                }
             }
         }
 
@@ -627,8 +622,6 @@ public class ConcurrentPool<P> implements Pool<P>, Dumpable
         {
             while (true)
             {
-                // Hold the entry to make sure any spinning tryAcquires do not loop forever
-                getHolder().hold();
                 long encoded = state.get();
                 if (AtomicBiInteger.getHi(encoded) < 0)
                     return false;
@@ -735,19 +728,31 @@ public class ConcurrentPool<P> implements Pool<P>, Dumpable
         @Override
         public void hold()
         {
-            ConcurrentEntry<P> hard = _weak.get();
-            _strong = hard;
-            if (hard == null && LOG.isDebugEnabled())
+            ConcurrentEntry<P> entry = _weak.get();
+            if (entry == null)
+            {
                 LOG.warn("LEAKED {}", this);
+                return;
+            }
+
+            // hold must only be called when we know the holder will is free.
+            while (_strong != null && !entry.isTerminated())
+                Thread.onSpinWait();
+            _strong = entry;
         }
 
         @Override
         public void free()
         {
+            ConcurrentEntry<P> entry = _weak.get();
+            if (entry == null)
+            {
+                LOG.warn("LEAKED {}", this);
+                return;
+            }
+
             // Free must only be called when we know the holder will be held.
-            // The spin must end because the count is 1 after being incremented, so some other thread must
-            // have decremented it to 0 and will have either called free() or is just about to (see tryRelease)
-            while (_strong == null)
+            while (_strong == null && !entry.isTerminated())
                 Thread.onSpinWait();
             _strong = null;
         }
