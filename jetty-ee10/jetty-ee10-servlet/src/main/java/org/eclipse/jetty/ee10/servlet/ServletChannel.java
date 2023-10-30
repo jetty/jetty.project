@@ -450,6 +450,7 @@ public class ServletChannel
         _request = null;
         _response = null;
         _callback = null;
+        _expects100Continue = false;
     }
 
     /**
