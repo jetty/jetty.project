@@ -78,6 +78,7 @@ import org.eclipse.jetty.http.pathmap.MatchedResource;
 import org.eclipse.jetty.security.SecurityHandler;
 import org.eclipse.jetty.server.Context;
 import org.eclipse.jetty.server.Handler;
+import org.eclipse.jetty.server.HttpStream;
 import org.eclipse.jetty.server.Request;
 import org.eclipse.jetty.server.Response;
 import org.eclipse.jetty.server.handler.ContextHandler;
@@ -1155,8 +1156,26 @@ public class ServletContextHandler extends ContextHandler
             cache.setAttribute(ServletChannel.class.getName(), servletChannel);
         }
 
+
         ServletContextRequest servletContextRequest = newServletContextRequest(servletChannel, request, response, decodedPathInContext, matchedResource);
         servletChannel.associate(servletContextRequest);
+
+        request.addHttpStreamWrapper(s -> new HttpStream.Wrapper(s)
+        {
+            @Override
+            public void succeeded()
+            {
+                servletChannel.recycle();
+                super.succeeded();
+            }
+
+            @Override
+            public void failed(Throwable x)
+            {
+                servletChannel.recycle();
+                super.failed(x);
+            }
+        });
         return servletContextRequest;
     }
 

@@ -113,16 +113,12 @@ public class ServletChannel
      * Associate this channel with a specific request.
      * This method is called by the {@link ServletContextHandler} when a core {@link Request} is accepted and associated with
      * a servlet mapping. The association remains functional until {@link #recycle()} is called,
-     * and it remains readable until a subsequent call to {@code associate}.
+     * and it remains readable until a call to {@link #recycle()} or a subsequent call to {@code associate}.
      * @param servletContextRequest The servlet context request to associate
      * @see #recycle()
      */
     public void associate(ServletContextRequest servletContextRequest)
     {
-        // We need to recycle here sometimes as requests that are handled before the
-        // ServletHandler (e.g. by SecurityHandler) are not recycled.
-        if (_servletContextRequest != null)
-            recycle();
         _httpInput.reopen();
         _request = _servletContextRequest = servletContextRequest;
         _response = _servletContextRequest.getServletContextResponse();
@@ -443,11 +439,14 @@ public class ServletChannel
     /**
      * @see #associate(ServletContextRequest)
      */
-    private void recycle()
+    void recycle()
     {
         _state.recycle();
         _httpInput.recycle();
         _httpOutput.recycle();
+        _servletContextRequest = null;
+        _request = null;
+        _response = null;
         _callback = null;
     }
 
@@ -815,16 +814,7 @@ public class ServletChannel
         // Callback will either be succeeded here or failed in abort().
         Callback callback = _callback;
         if (_state.completeResponse())
-        {
-            // Must recycle before callback notification to allow for reuse.
-            recycle();
             callback.succeeded();
-        }
-        else
-        {
-            // Recycle always done here even if an abort is called.
-            recycle();
-        }
     }
 
     public boolean isCommitted()
