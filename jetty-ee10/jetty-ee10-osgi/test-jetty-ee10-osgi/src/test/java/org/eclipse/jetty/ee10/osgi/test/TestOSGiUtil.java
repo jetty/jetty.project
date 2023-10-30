@@ -25,6 +25,7 @@ import org.eclipse.jetty.util.StringUtil;
 import org.eclipse.jetty.util.ssl.SslContextFactory;
 import org.ops4j.pax.exam.CoreOptions;
 import org.ops4j.pax.exam.Option;
+import org.ops4j.pax.exam.options.extra.VMOption;
 import org.ops4j.pax.tinybundles.core.TinyBundle;
 import org.ops4j.pax.tinybundles.core.TinyBundles;
 import org.osgi.framework.Bundle;
@@ -103,6 +104,11 @@ public class TestOSGiUtil
         options.add(systemProperty("pax.exam.logging").value("none"));
         String paxExamLogLevel = System.getProperty("pax.exam.LEVEL", "WARN");
         options.add(systemProperty("org.ops4j.pax.logging.DefaultServiceLog.level").value(paxExamLogLevel));
+        int debugPort = Integer.getInteger("pax.exam.debug.port", -1);
+        if (debugPort > 0)
+        {
+            options.add(new VMOption("-Xrunjdwp:transport=dt_socket,server=y,suspend=y,address=" + debugPort));
+        }
         return options;
     }
 

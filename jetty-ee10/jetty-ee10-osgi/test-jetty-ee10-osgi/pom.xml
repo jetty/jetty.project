@@ -12,8 +12,11 @@
   <properties>
     <assembly-directory>target/distribution</assembly-directory>
     <bundle-symbolic-name>${project.groupId}.boot.test.osgi</bundle-symbolic-name>
+    <bundle.debug>false</bundle.debug>
     <maven.deploy.skip>true</maven.deploy.skip>
     <maven.javadoc.skip>true</maven.javadoc.skip>
+    <pax.exam.LEVEL>WARN</pax.exam.LEVEL>
+    <pax.exam.debug.port>0</pax.exam.debug.port>
   </properties>
   <dependencies>
     <dependency>
@@ -519,7 +522,10 @@
           <configuration>
             <skipTests>${skipTests}</skipTests>
             <systemPropertyVariables>
+              <bundle.debug>${bundle.debug}</bundle.debug>
               <mavenRepoPath>${session.repositorySession.localRepository.basedir.absolutePath}</mavenRepoPath>
+              <pax.exam.debug.port>${pax.exam.debug.port}</pax.exam.debug.port>
+              <pax.exam.LEVEL>${pax.exam.LEVEL}</pax.exam.LEVEL>
               <settingsFilePath>${env.GLOBAL_MVN_SETTINGS}</settingsFilePath>
             </systemPropertyVariables>
             <argLine>-Dconscrypt-version=${conscrypt.version}</argLine>
