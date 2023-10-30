@@ -10,7 +10,7 @@ jetty-12.0.3 - 26 October 2023
  + 10555 Re-introduce a more complete set of stats in `StatisticsHandler`
  + 10582 NPE when including a directory that should be resolved with
    servlet-mapped welcome file
- + 10656 EE10 `ServletRequest.getProtocolRequestId()` impl not spec compliant 
+ + 10656 EE10 `ServletRequest.getProtocolRequestId()` impl not spec compliant
    when protocol is H1
  + 10661 Ensure jetty api servlets/filters take precedence over
    `webdefault.xml` declarations.
@@ -112,6 +112,21 @@ jetty-12.0.1 - 29 August 2023
  + 10411 Review deployment of Jetty Context XML files
  + 10416 EE9 Copies HttpFields in response
 
+jetty-11.0.18 - 26 October 2023
+ + 1256 DoSFilter leaks USER_AUTH entries
+ + 10390 Jetty HTTP/3 Client fails when connecting to `nghttpx` server
+ + 10519 java.lang.IllegalStateException: Flusher when using HTTP/3 with Spring
+   Boot 3.2
+ + 10537 HTTP/3: Incomplete Data Transfer When Used with Spring Boot WebFlux
+ + 10696 jetty.sh doesn't work with JETTY_USER in Jetty 10.0.17 thru Jetty
+   12.0.2
+ + 10705 Creating a `HTTP3ServerConnector` with a `SslContextFactory` that has
+   a non-null `SSLContext` makes the server fail to start with an unclear error
+   message
+ + 10731 org.eclipse.jetty.server.Request uses wrong context attribute name
+   javax.servlet instead of jakarta.servlet
+ + 10786 TLS handshake failures leak HttpConnection.RequestTimeouts tasks
+
 jetty-11.0.17 - 09 October 2023
  + 9777 CrossOriginFilter does not return Vary header on no-cors mode
  + 9928 Backport `Request.getBeginNanoTime()`
@@ -120,6 +135,19 @@ jetty-11.0.17 - 09 October 2023
    start of Jetty
  + 10547 Cannot customize Executor on WebSocketClient
  + 10679 Review HTTP/2 rate control (CVE-2023-44487)
+
+jetty-10.0.18 - 26 October 2023
+ + 1256 DoSFilter leaks USER_AUTH entries
+ + 10390 Jetty HTTP/3 Client fails when connecting to `nghttpx` server
+ + 10519 java.lang.IllegalStateException: Flusher when using HTTP/3 with Spring
+   Boot 3.2
+ + 10537 HTTP/3: Incomplete Data Transfer When Used with Spring Boot WebFlux
+ + 10696 jetty.sh doesn't work with JETTY_USER in Jetty 10.0.17 thru Jetty
+   12.0.2
+ + 10705 Creating a `HTTP3ServerConnector` with a `SslContextFactory` that has
+   a non-null `SSLContext` makes the server fail to start with an unclear error
+   message
+ + 10786 TLS handshake failures leak HttpConnection.RequestTimeouts tasks
 
 jetty-10.0.17 - 09 October 2023
  + 9777 CrossOriginFilter does not return Vary header on no-cors mode
@@ -1723,8 +1751,6 @@ jetty-11.0.0.beta1 - 10 July 2020
    SETTINGS Frame.
  + 4903 Give better errors for non public Websocket Endpoints
  + 4904 WebsocketClient creates more connections than needed
- + 4907 
-   org.eclipse.jetty.websocket.tests.SuspendResumeTest#testSuspendAfterClose
  + 4920 Restore ability to delete sessions on stop
  + 4921 Quickstart run improperly runs dynamically added context initializers
  + 4923 SecureRequestCustomizer.SslAttributes does not cache cert chain like
