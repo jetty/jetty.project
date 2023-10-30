@@ -68,6 +68,12 @@
   </dependencies>
 
   <build>
+    <testResources>
+      <testResource>
+        <targetPath>jar</targetPath>
+        <directory>src/test/jar</directory>
+      </testResource>
+    </testResources>
     <plugins>
       <plugin>
         <groupId>org.apache.felix</groupId>
@@ -86,21 +92,6 @@
         <groupId>org.apache.maven.plugins</groupId>
         <artifactId>maven-resources-plugin</artifactId>
         <executions>
-          <execution>
-            <id>copy-ee8-test-jar-resources</id>
-            <goals>
-              <goal>copy-resources</goal>
-            </goals>
-            <phase>generate-test-resources</phase>
-            <configuration>
-              <outputDirectory>${project.build.testOutputDirectory}/jar</outputDirectory>
-              <resources>
-                <resource>
-                  <directory>${maven.multiModuleProjectDirectory}/jetty-ee9/${ee9.module}/src/test/jar</directory>
-                </resource>
-              </resources>
-            </configuration>
-          </execution>
           <execution>
             <id>copy-ee8-test-resources</id>
             <goals>
