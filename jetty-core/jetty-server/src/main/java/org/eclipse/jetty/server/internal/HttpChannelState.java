@@ -15,7 +15,9 @@ package org.eclipse.jetty.server.internal;
 
 import java.io.IOException;
 import java.nio.ByteBuffer;
+import java.util.ArrayList;
 import java.util.HashMap;
+import java.util.List;
 import java.util.Objects;
 import java.util.Set;
 import java.util.concurrent.CompletableFuture;
@@ -777,6 +779,7 @@ public class HttpChannelState implements HttpChannel, Components
         private HttpChannelState _httpChannelState;
         private Request _loggedRequest;
         private HttpFields _trailers;
+        private List<Consumer<Throwable>> _onCompletion;
 
         ChannelRequest(HttpChannelState httpChannelState, MetaData.Request metaData)
         {
@@ -1099,6 +1102,55 @@ public class HttpChannelState implements HttpChannel, Components
         public void addHttpStreamWrapper(Function<HttpStream, HttpStream> wrapper)
         {
             getHttpChannelState().addHttpStreamWrapper(wrapper);
+        }
+
+        public void addCompletionListener(Consumer<Throwable> listener)
+        {
+            if (_onCompletion == null)
+            {
+                _onCompletion = new ArrayList<>();
+                addHttpStreamWrapper(stream -> new HttpStream.Wrapper(stream)
+                {
+                    @Override
+                    public void succeeded()
+                    {
+                        if (LOG.isDebugEnabled())
+                            LOG.debug("succeeded {}", this);
+                        onCompletion(null);
+                        super.succeeded();
+                    }
+
+                    @Override
+                    public void failed(Throwable x)
+                    {
+                        if (LOG.isDebugEnabled())
+                            LOG.debug("failed {}", this, x);
+                        onCompletion(x);
+                        super.failed(x);
+                    }
+
+                    private void onCompletion(Throwable x)
+                    {
+                        List<Consumer<Throwable>> onCompletion = _onCompletion;
+                        _onCompletion = null;
+                        // completion events in reverse order
+                        for (int i = onCompletion.size(); i-- > 0;)
+                        {
+                            Consumer<Throwable> r = onCompletion.get(i);
+                            try
+                            {
+                                r.accept(x);
+                            }
+                            catch (Throwable t)
+                            {
+                                ExceptionUtil.addSuppressedIfNotAssociated(x, t);
+                                LOG.warn("{} threw", r, t);
+                            }
+                        }
+                    }
+                });
+            }
+            _onCompletion.add(listener);
         }
 
         @Override

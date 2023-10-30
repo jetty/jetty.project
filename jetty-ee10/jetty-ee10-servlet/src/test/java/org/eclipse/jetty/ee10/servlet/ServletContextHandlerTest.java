@@ -75,7 +75,6 @@ import org.eclipse.jetty.logging.StacklessLogging;
 import org.eclipse.jetty.security.Constraint;
 import org.eclipse.jetty.security.SecurityHandler;
 import org.eclipse.jetty.server.Handler;
-import org.eclipse.jetty.server.HttpStream;
 import org.eclipse.jetty.server.LocalConnector;
 import org.eclipse.jetty.server.Request;
 import org.eclipse.jetty.server.Response;
@@ -1793,15 +1792,7 @@ public class ServletContextHandlerTest
                 if (request instanceof ServletContextRequest servletContextRequest)
                 {
                     ServletApiRequest httpServletRequest = servletContextRequest.getServletApiRequest();
-                    request.addHttpStreamWrapper(stream -> new HttpStream.Wrapper(stream)
-                    {
-                        @Override
-                        public void succeeded()
-                        {
-                            onStreamCompleting(httpServletRequest);
-                            getWrapped().succeeded();
-                        }
-                    });
+                    Request.addCompletionListener(request, x -> onStreamCompleting(httpServletRequest));
                     return super.handle(request, response, Callback.from(() -> onCallbackCompleting(httpServletRequest), callback));
                 }
                 return false;

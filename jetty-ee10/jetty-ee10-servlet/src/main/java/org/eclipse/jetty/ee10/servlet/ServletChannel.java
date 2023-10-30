@@ -439,7 +439,7 @@ public class ServletChannel
     /**
      * @see #associate(ServletContextRequest)
      */
-    void recycle()
+    void recycle(Throwable x)
     {
         _state.recycle();
         _httpInput.recycle();
