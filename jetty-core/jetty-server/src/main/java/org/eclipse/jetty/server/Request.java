@@ -25,7 +25,9 @@ import java.security.Principal;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Locale;
+import java.util.Map;
 import java.util.Objects;
+import java.util.Set;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.TimeoutException;
 import java.util.function.Consumer;
@@ -714,14 +716,13 @@ public interface Request extends Attributes, Content.Source
     /**
      * <p>A wrapper for {@code Request} instances.</p>
      */
-    class Wrapper extends Attributes.Wrapper implements Request
+    class Wrapper implements Request, Attributes
     {
-        private final Request request;
+        private final Request wrapped;
 
         public Wrapper(Request wrapped)
         {
-            super(wrapped);
-            this.request = wrapped;
+            this.wrapped = Objects.requireNonNull(wrapped);
         }
 
         @Override
@@ -857,10 +858,44 @@ public interface Request extends Attributes, Content.Source
         }
 
         @Override
+        public Object removeAttribute(String name)
+        {
+            return getWrapped().removeAttribute(name);
+        }
+
+        @Override
+        public Object setAttribute(String name, Object attribute)
+        {
+            return getWrapped().setAttribute(name, attribute);
+        }
+
+        @Override
+        public Object getAttribute(String name)
+        {
+            return getWrapped().getAttribute(name);
+        }
+
+        @Override
+        public Set<String> getAttributeNameSet()
+        {
+            return getWrapped().getAttributeNameSet();
+        }
+
+        @Override
+        public Map<String, Object> asAttributeMap()
+        {
+            return getWrapped().asAttributeMap();
+        }
+
+        @Override
+        public void clearAttributes()
+        {
+            getWrapped().clearAttributes();
+        }
+
         public Request getWrapped()
         {
-            // Identical to (Request)super.getWrapped() except that the cast is costly here.
-            return request;
+            return wrapped;
         }
     }
 
