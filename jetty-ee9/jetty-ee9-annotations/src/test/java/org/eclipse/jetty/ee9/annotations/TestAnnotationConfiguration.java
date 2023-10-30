@@ -84,7 +84,7 @@ public class TestAnnotationConfiguration
         assertTrue(Files.exists(web31true), web31true + " should exist");
 
         // prepare an sci that will be on the webapp's classpath
-        jarDir = MavenTestingUtils.getProjectDirPath("src/test/jar");
+        jarDir = MavenPaths.targetTestDir("jar");
         testSciJar = jarDir.resolve("test-sci.jar");
         assertTrue(Files.exists(testSciJar));
 
