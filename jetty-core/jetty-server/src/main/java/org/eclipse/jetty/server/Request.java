@@ -339,6 +339,7 @@ public interface Request extends Attributes, Content.Source
      */
     static void addCompletionListener(Request request, Consumer<Throwable> listener)
     {
+        // Look for a ChannelRequest to use its optimized addCompletionLister
         HttpChannelState.ChannelRequest channelRequest = as(request, HttpChannelState.ChannelRequest.class);
         if (channelRequest != null)
         {
@@ -346,6 +347,7 @@ public interface Request extends Attributes, Content.Source
         }
         else
         {
+            // No ChannelRequest, so directly implement listener with a stream wrapper.
             request.addHttpStreamWrapper(s -> new HttpStream.Wrapper(s)
             {
                 @Override
