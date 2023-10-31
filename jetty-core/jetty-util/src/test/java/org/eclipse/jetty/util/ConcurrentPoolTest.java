@@ -771,7 +771,7 @@ public class ConcurrentPoolTest
             ConcurrentPool<String> pool = new ConcurrentPool<>(RANDOM, 10, p -> 1, true)
             {
                 @Override
-                protected void leaked(Holder<String> holder)
+                void leaked(Holder<String> holder)
                 {
                     if (holder instanceof ConcurrentPool.DebugWeakHolder<String> debugWeakHolder)
                     {
