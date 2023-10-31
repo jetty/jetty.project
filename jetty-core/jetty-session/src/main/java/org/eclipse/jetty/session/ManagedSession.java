@@ -610,7 +610,7 @@ public class ManagedSession implements Session
         }
 
         if (response != null && isSetCookieNeeded())
-            Response.addCookie(response, getSessionManager().getSessionCookie(this, request.isSecure()));
+            Response.putCookie(response, getSessionManager().getSessionCookie(this, request.isSecure()));
         if (LOG.isDebugEnabled())
             LOG.debug("renew {}->{}", oldId, newId);
     }

@@ -324,13 +324,35 @@ public interface Response extends Content.Sink
 
     /**
      * <p>Adds an HTTP {@link HttpHeader#SET_COOKIE} header to the response.</p>
+     *
+     * @param response the HTTP response
+     * @param cookie the HTTP cookie to add
+     * @see #putCookie(Response, HttpCookie)
+     */
+    static void addCookie(Response response, HttpCookie cookie)
+    {
+        if (StringUtil.isBlank(cookie.getName()))
+            throw new IllegalArgumentException("Cookie.name cannot be blank/null");
+
+        Request request = response.getRequest();
+        CookieCompliance compliance = request.getConnectionMetaData().getHttpConfiguration().getResponseCookieCompliance();
+        response.getHeaders().add(new HttpCookieUtils.SetCookieHttpField(HttpCookieUtils.checkSameSite(cookie, request.getContext()), compliance));
+
+        // Expire responses with set-cookie headers, so they do not get cached.
+        if (!response.getHeaders().contains(HttpHeader.EXPIRES))
+            response.getHeaders().add(HttpFields.EXPIRES_01JAN1970);
+    }
+
+    /**
+     * <p>Put a HTTP {@link HttpHeader#SET_COOKIE} header to the response.</p>
      * <p>If a matching {@link HttpHeader#SET_COOKIE} already exists for matching name, path, domain etc.
      * then it will be replaced.</p>
      *
      * @param response the HTTP response
      * @param cookie the HTTP cookie to add
+     * @see #addCookie(Response, HttpCookie)
      */
-    static void addCookie(Response response, HttpCookie cookie)
+    static void putCookie(Response response, HttpCookie cookie)
     {
         if (StringUtil.isBlank(cookie.getName()))
             throw new IllegalArgumentException("Cookie.name cannot be blank/null");
@@ -384,16 +406,19 @@ public interface Response extends Content.Sink
 
         // Expire responses with set-cookie headers, so they do not get cached.
         if (!expires)
-            response.getHeaders().put(HttpFields.EXPIRES_01JAN1970);
+            response.getHeaders().add(HttpFields.EXPIRES_01JAN1970);
     }
 
     /**
-     * @deprecated use {@link #addCookie(Response, HttpCookie)}
+     * Replace a cookie
+     * @param response the HTTP response
+     * @param cookie the HTTP cookie to add
+     * @deprecated use {@link #putCookie(Response, HttpCookie)}
      */
     @Deprecated
     static void replaceCookie(Response response, HttpCookie cookie)
     {
-        addCookie(response, cookie);
+        putCookie(response, cookie);
     }
 
     /**

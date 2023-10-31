@@ -686,7 +686,7 @@ public class SessionHandler extends AbstractSessionManager implements Handler.Si
         if (cookie != null)
         {
             ServletContextResponse servletContextResponse = servletContextRequest.getServletContextResponse();
-            Response.addCookie(servletContextResponse, cookie);
+            Response.putCookie(servletContextResponse, cookie);
         }
 
         return next.handle(request, response, callback);
