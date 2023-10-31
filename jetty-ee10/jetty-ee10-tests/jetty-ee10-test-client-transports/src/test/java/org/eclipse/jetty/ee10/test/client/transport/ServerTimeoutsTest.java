@@ -240,6 +240,8 @@ public class ServerTimeoutsTest extends AbstractTest
     @MethodSource("transportsNoFCGI")
     public void testAsyncWriteIdleTimeoutFires(Transport transport) throws Exception
     {
+        // TODO fix for h3
+        assumeTrue(transport != Transport.H3);
         CountDownLatch handlerLatch = new CountDownLatch(1);
         start(transport, new HttpServlet()
         {

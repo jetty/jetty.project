@@ -28,6 +28,7 @@ import java.util.Locale;
 import java.util.Objects;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.TimeoutException;
+import java.util.concurrent.atomic.AtomicReference;
 import java.util.function.Consumer;
 import java.util.function.Function;
 import java.util.function.Predicate;
@@ -332,6 +333,9 @@ public interface Request extends Attributes, Content.Source
      * Adds a completion listener that is an optimized equivalent to overriding the
      * {@link HttpStream#succeeded()} and {@link HttpStream#failed(Throwable)} methods
      * of a {@link HttpStream.Wrapper} created by a call to {@link #addHttpStreamWrapper(Function)}.
+     * In the case of a failure, the {@link Throwable} cause is passed to the listener, but unlike
+     * {@link #addFailureListener(Consumer)} listeners, which are called when the failure occurs, completion
+     * listeners are called only once the {@link HttpStream} is completed at the very end of processing.
      *
      * @param listener A {@link Consumer} of {@link Throwable} to call when the request handling is complete. The
      * listener is passed a null {@link Throwable} on success.
@@ -348,6 +352,7 @@ public interface Request extends Attributes, Content.Source
         else
         {
             // No ChannelRequest, so directly implement listener with a stream wrapper.
+            AtomicReference<Consumer<Throwable>> onCompletion = new AtomicReference<>(listener);
             request.addHttpStreamWrapper(s -> new HttpStream.Wrapper(s)
             {
                 @Override
@@ -366,14 +371,18 @@ public interface Request extends Attributes, Content.Source
 
                 private void onCompletion(Throwable x)
                 {
-                    try
+                    Consumer<Throwable> l = onCompletion.getAndSet(null);
+                    if (l != null)
                     {
-                        listener.accept(x);
-                    }
-                    catch (Throwable t)
-                    {
-                        ExceptionUtil.addSuppressedIfNotAssociated(x, t);
-                        LOG.warn("{} threw", listener, t);
+                        try
+                        {
+                            l.accept(x);
+                        }
+                        catch (Throwable t)
+                        {
+                            ExceptionUtil.addSuppressedIfNotAssociated(x, t);
+                            LOG.warn("{} threw", l, t);
+                        }
                     }
                 }
             });

@@ -244,12 +244,6 @@ public class HttpOutput extends ServletOutputStream implements Runnable
 
         try
         {
-            // TODO We should not abort here as we have passed the exception to the application with the updateApiState(failure)
-            //      By aborting, we make the application get an ISE when it calls AsyncContext.complete, or a NPE when accessing
-            //      the ServletApiRequest
-//            if (failure != null)
-//                _servletChannel.abort(failure);
-
             if (closedCallback != null)
             {
                 if (failure == null)

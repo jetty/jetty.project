@@ -29,6 +29,7 @@ import jakarta.servlet.ServletOutputStream;
 import jakarta.servlet.http.HttpServlet;
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletResponse;
+import org.eclipse.jetty.util.IO;
 import org.eclipse.jetty.util.thread.AutoLock;
 
 /**
@@ -201,17 +202,7 @@ public abstract class EventSourceServlet extends HttpServlet
             }
             catch (Throwable x)
             {
-                try
-                {
-                    // The other peer closed the connection
-                    close();
-                }
-                catch (Throwable t)
-                {
-                    if (t != x)
-                        x.addSuppressed(t);
-                    getServletContext().log("failure", x);
-                }
+                IO.close(this::close);
 
                 try
                 {
