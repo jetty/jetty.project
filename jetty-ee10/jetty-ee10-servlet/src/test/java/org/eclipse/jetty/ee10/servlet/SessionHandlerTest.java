@@ -434,6 +434,12 @@ public class SessionHandlerTest
             assertEquals(HttpServletResponse.SC_OK, response.getStatus());
             content = response.getContentAsString();
             assertThat(content, containsString("valid=true"));
+
+            //Invalidate it
+            response = client.GET(url + "?action=invalidate");
+            assertEquals(HttpServletResponse.SC_OK, response.getStatus());
+            content = response.getContentAsString();
+            assertThat(content, containsString("valid=false"));
         }
         finally
         {
@@ -504,7 +510,10 @@ public class SessionHandlerTest
             assertEquals(HttpServletResponse.SC_OK, response.getStatus());
             content = response.getContentAsString();
             assertThat(content, containsString("createdId="));
-            String sessionId = content.substring(content.indexOf("createdId=") + 10);
+            int i = content.indexOf("createdId=");
+            String sessionId = content.substring(i + 10);
+            i = sessionId.indexOf("\n");
+            sessionId = sessionId.substring(0, i);
             sessionId = sessionId.trim();
 
             //Check the requestedSessionId is valid
@@ -512,6 +521,12 @@ public class SessionHandlerTest
             assertEquals(HttpServletResponse.SC_OK, response.getStatus());
             content = response.getContentAsString();
             assertThat(content, containsString("valid=true"));
+
+            //Invalidate it
+            response = client.GET(url + "?action=invalidate;" + SessionConfig.__DefaultSessionIdPathParameterName + "=" + sessionId);
+            assertEquals(HttpServletResponse.SC_OK, response.getStatus());
+            content = response.getContentAsString();
+            assertThat(content, containsString("valid=false"));
         }
         finally
         {
@@ -556,13 +571,18 @@ public class SessionHandlerTest
         {
             PrintWriter writer = response.getWriter();
             writer.println("requestedId=" + request.getRequestedSessionId());
-            writer.println("valid=" + request.isRequestedSessionIdValid());
 
             if ("create".equals(request.getParameter("action")))
             {
                 HttpSession session = request.getSession(true);
                 writer.println("createdId=" + session.getId());
             }
+            else if ("invalidate".equals(request.getParameter("action")))
+            {
+                HttpSession session = request.getSession(false);
+                session.invalidate();
+            }
+            writer.println("valid=" + request.isRequestedSessionIdValid());
         }
     }
 

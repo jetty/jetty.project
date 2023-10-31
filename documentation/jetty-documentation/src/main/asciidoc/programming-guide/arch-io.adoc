@@ -271,9 +271,9 @@ include::{doc_code}/org/eclipse/jetty/docs/programming/ContentDocs.java[tags=asy
 
 Note how the reads do not happen in a loop, and therefore backpressure is applied to the reads, because there is not a next read until the chunk from the previous read has been consumed (and this may take time).
 
-You can use `Content.Source` static methods to conveniently read (in a blocking way or non-blocking way), for example via `static Content.Source.asStringAsync(Content.Source, Charset)`, or via an `InputStream` using `static Content.Source.asInputStream(Content.Source source)`.
+Since the `Chunk` is consumed asynchronously, you may need to retain it to extend its lifecycle, as explained in xref:pg-arch-io-content-source-chunk[this section].
 
-For
+You can use `Content.Source` static methods to conveniently read (in a blocking way or non-blocking way), for example via `static Content.Source.asStringAsync(Content.Source, Charset)`, or via an `InputStream` using `static Content.Source.asInputStream(Content.Source source)`.
 
 Refer to the `Content.Source` link:{javadoc-url}/org/eclipse/jetty/io/Content.Source.html[`javadocs`] for further details.
 
