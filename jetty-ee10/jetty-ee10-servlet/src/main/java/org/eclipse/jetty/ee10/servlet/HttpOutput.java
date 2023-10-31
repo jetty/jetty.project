@@ -244,8 +244,9 @@ public class HttpOutput extends ServletOutputStream implements Runnable
 
         try
         {
-            if (failure != null)
-                _servletChannel.abort(failure);
+            // TODO is this necessary?
+            // if (failure != null)
+            //    _servletChannel.abort(failure);
 
             if (closedCallback != null)
             {
