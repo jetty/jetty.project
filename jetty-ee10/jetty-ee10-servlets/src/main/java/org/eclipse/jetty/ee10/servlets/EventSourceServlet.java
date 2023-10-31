@@ -199,17 +199,30 @@ public abstract class EventSourceServlet extends HttpServlet
                 // We could write, reschedule heartbeat
                 scheduleHeartBeat();
             }
-            catch (IOException x)
+            catch (Throwable x)
             {
                 try
                 {
                     // The other peer closed the connection
                     close();
+                }
+                catch (Throwable t)
+                {
+                    if (t != x)
+                        x.addSuppressed(t);
+                    getServletContext().log("failure", x);
+                }
+
+                try
+                {
+                    // The other peer closed the connection
                     eventSource.onClose();
                 }
                 catch (Throwable t)
                 {
-                    t.printStackTrace();
+                    if (t != x)
+                        x.addSuppressed(t);
+                    getServletContext().log("failure", x);
                 }
             }
         }

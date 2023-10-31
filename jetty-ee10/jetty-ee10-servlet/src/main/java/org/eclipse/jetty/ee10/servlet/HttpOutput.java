@@ -1762,7 +1762,7 @@ public class HttpOutput extends ServletOutputStream implements Runnable
         public void failed(Throwable x)
         {
             // TODO this is horrid
-            HttpOutput.this._servletChannel.abort(x);
+            // HttpOutput.this._servletChannel.abort(x);
             onWriteComplete(true, x);
         }
 
