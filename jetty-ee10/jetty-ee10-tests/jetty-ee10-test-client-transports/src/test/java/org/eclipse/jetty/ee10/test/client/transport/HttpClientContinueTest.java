@@ -677,6 +677,57 @@ public class HttpClientContinueTest extends AbstractTest
     }
 
     @Test
+    public void test100ContinueThenTimeout() throws Exception
+    {
+        Transport transport = Transport.HTTP;
+        long idleTimeout = 1000;
+
+        CountDownLatch serverLatch = new CountDownLatch(1);
+        start(transport, new HttpServlet()
+        {
+            @Override
+            protected void service(HttpServletRequest request, HttpServletResponse response) throws IOException
+            {
+                // Send the 100 Continue.
+                ServletInputStream input = request.getInputStream();
+                try
+                {
+                    // Echo the content.
+                    IO.copy(input, response.getOutputStream());
+                }
+                catch (IOException x)
+                {
+                    response.sendError(HttpStatus.IM_A_TEAPOT_418);
+                    serverLatch.countDown();
+                }
+            }
+        });
+
+        startClient(transport, httpClient -> httpClient.setIdleTimeout(idleTimeout));
+
+        byte[] content = new byte[1024];
+        new Random().nextBytes(content);
+        int chunk1 = content.length / 2;
+        AsyncRequestContent requestContent = new AsyncRequestContent();
+        requestContent.write(ByteBuffer.wrap(content, 0, chunk1), Callback.NOOP);
+        CountDownLatch clientLatch = new CountDownLatch(1);
+        client.newRequest(newURI(transport))
+            .headers(headers -> headers.put(HttpHeader.EXPECT, HttpHeaderValue.CONTINUE.asString()))
+            .body(requestContent)
+            .send(result ->
+            {
+                if (result.isFailed())
+                    clientLatch.countDown();
+            });
+
+        // Wait more than the idle timeout to break the connection.
+        Thread.sleep(2 * idleTimeout);
+
+        assertTrue(serverLatch.await(5, TimeUnit.SECONDS));
+        assertTrue(clientLatch.await(5, TimeUnit.SECONDS));
+    }
+
+    @Test
     public void testExpect100ContinueWithTwoResponsesInOneRead() throws Exception
     {
         // There is a chance that the server replies with the 100 Continue response
