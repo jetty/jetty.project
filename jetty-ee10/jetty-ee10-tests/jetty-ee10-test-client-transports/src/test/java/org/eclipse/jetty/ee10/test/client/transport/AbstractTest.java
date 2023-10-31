@@ -21,6 +21,7 @@ import java.security.KeyStore;
 import java.util.Collection;
 import java.util.EnumSet;
 import java.util.List;
+import java.util.concurrent.CopyOnWriteArrayList;
 import java.util.function.Consumer;
 
 import jakarta.servlet.http.HttpServlet;
@@ -72,6 +73,7 @@ public class AbstractTest
     public WorkDir workDir;
 
     protected final HttpConfiguration httpConfig = new HttpConfiguration();
+    protected List<Throwable> jobFailures;
     protected SslContextFactory.Server sslContextFactoryServer;
     protected Server server;
     protected AbstractConnector connector;
@@ -144,7 +146,16 @@ public class AbstractTest
 
     protected Server newServer()
     {
-        QueuedThreadPool serverThreads = new QueuedThreadPool();
+        jobFailures = new CopyOnWriteArrayList<>();
+        QueuedThreadPool serverThreads = new QueuedThreadPool()
+        {
+            @Override
+            protected void onJobFailure(Throwable x)
+            {
+                super.onJobFailure(x);
+                jobFailures.add(x);
+            }
+        };
         serverThreads.setName("server");
         return new Server(serverThreads);
     }

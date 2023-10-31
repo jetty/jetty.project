@@ -56,6 +56,8 @@ import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.MethodSource;
 
 import static org.awaitility.Awaitility.await;
+import static org.hamcrest.MatcherAssert.assertThat;
+import static org.hamcrest.Matchers.empty;
 import static org.junit.jupiter.api.Assertions.assertArrayEquals;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
@@ -683,7 +685,7 @@ public class HttpClientContinueTest extends AbstractTest
         long idleTimeout = 1000;
 
         CountDownLatch serverLatch = new CountDownLatch(1);
-        start(transport, new HttpServlet()
+        startServer(transport, new HttpServlet()
         {
             @Override
             protected void service(HttpServletRequest request, HttpServletResponse response) throws IOException
@@ -702,14 +704,10 @@ public class HttpClientContinueTest extends AbstractTest
                 }
             }
         });
-
         startClient(transport, httpClient -> httpClient.setIdleTimeout(idleTimeout));
 
-        byte[] content = new byte[1024];
-        new Random().nextBytes(content);
-        int chunk1 = content.length / 2;
         AsyncRequestContent requestContent = new AsyncRequestContent();
-        requestContent.write(ByteBuffer.wrap(content, 0, chunk1), Callback.NOOP);
+        requestContent.write(ByteBuffer.wrap(new byte[512]), Callback.NOOP);
         CountDownLatch clientLatch = new CountDownLatch(1);
         client.newRequest(newURI(transport))
             .headers(headers -> headers.put(HttpHeader.EXPECT, HttpHeaderValue.CONTINUE.asString()))
@@ -725,6 +723,7 @@ public class HttpClientContinueTest extends AbstractTest
 
         assertTrue(serverLatch.await(5, TimeUnit.SECONDS));
         assertTrue(clientLatch.await(5, TimeUnit.SECONDS));
+        assertThat(jobFailures, empty());
     }
 
     @Test
