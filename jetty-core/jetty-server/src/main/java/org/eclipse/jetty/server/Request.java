@@ -719,12 +719,12 @@ public interface Request extends Attributes, Content.Source
     class Wrapper implements Request, Attributes
     {
         /**
-         * Implementation note: Request.Wrapper does not extend from Attributes.Wrapper
-         * as getWrapped() would either need to be implemented as {@code return (Request)getWrapped()}
-         * which would requiring a cast from one interface type to another, spoiling the
-         * secondary_super_cache, or by storing the same {@code _wrapped} object in two fields
-         * (one in Attributes.Wrapper as type Attributes and one in Request.Wrapper as type Request)
-         * to save the costly cast.
+         * Implementation note: {@link Request.Wrapper} does not extend from {@link Attributes.Wrapper}
+         * as {@link #getWrapped()} would either need to be implemented as {@code return (Request)getWrapped()}
+         * which would require a cast from one interface type to another, spoiling the JVM's
+         * {@code secondary_super_cache}, or by storing the same {@code _wrapped} object in two fields
+         * (one in {@link Attributes.Wrapper} as type {@link Attributes} and one in {@link Request.Wrapper} as
+         * type {@link Request}) to save the costly cast from interface type to another.
          */
         private final Request _wrapped;
 
