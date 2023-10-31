@@ -484,9 +484,8 @@ public class ServerTimeoutsTest extends AbstractTest
                         //      but the write/send for that fails with the same timeout exception.   Thus the 500 is never
                         //      sent and the connection is just closed.
                         //      This was not apparent until the change in HttpOutput#onWriteComplete to not always abort on
-                        //      failure (as this prevents async handling completing on its own terms).  The current "fix"
-                        //      is to move the abort to HttpOutput.WriteCompleteCB.failed, as this aborts only if the final
-                        //      write fails.
+                        //      failure (as this prevents async handling completing on its own terms).
+                        //      We can "fix" this here by doing a response.sendError(-1);
                         asyncContext.complete();
                     }
                 });
