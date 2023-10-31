@@ -29,6 +29,7 @@ import org.eclipse.jetty.io.EndPoint;
 import org.eclipse.jetty.util.BufferUtil;
 import org.eclipse.jetty.util.Callback;
 import org.eclipse.jetty.util.FutureCallback;
+import org.eclipse.jetty.util.thread.AutoLock;
 import org.eclipse.jetty.websocket.core.Behavior;
 import org.eclipse.jetty.websocket.core.CloseStatus;
 import org.eclipse.jetty.websocket.core.CoreSession;
@@ -214,9 +215,10 @@ public class NetworkFuzzer extends Fuzzer.Adapter implements Fuzzer, AutoCloseab
     public static class FrameCapture implements FrameHandler
     {
         private final BlockingQueue<Frame> receivedFrames = new LinkedBlockingQueue<>();
+        private final CountDownLatch openLatch = new CountDownLatch(1);
         private EndPoint endPoint;
-        private CountDownLatch openLatch = new CountDownLatch(1);
         private CoreSession coreSession;
+        private final AutoLock lock = new AutoLock();
 
         public void setEndPoint(EndPoint endpoint)
         {
@@ -235,8 +237,11 @@ public class NetworkFuzzer extends Fuzzer.Adapter implements Fuzzer, AutoCloseab
         @Override
         public void onFrame(Frame frame, Callback callback)
         {
-            receivedFrames.offer(Frame.copy(frame));
-            callback.succeeded();
+            try (AutoLock ignored = lock.lock())
+            {
+                receivedFrames.add(Frame.copy(frame));
+                callback.succeeded();
+            }
             coreSession.demand();
         }
 
@@ -263,7 +268,7 @@ public class NetworkFuzzer extends Fuzzer.Adapter implements Fuzzer, AutoCloseab
                 throw new IOException(e);
             }
 
-            synchronized (this)
+            try (AutoLock ignored = lock.lock())
             {
                 FutureCallback callback = new FutureCallback();
                 endPoint.write(callback, buffer);

@@ -67,7 +67,7 @@ public class TestJettyOSGiAnnotationParser
         options.add(mavenBundle().groupId("org.eclipse.jetty").artifactId("jetty-alpn-client").versionAsInProject().start());
 
         //get a reference to a pre-prepared module-info
-        Path path = Paths.get("src", "test", "resources", "module-info.clazz");
+        Path path = Paths.get("target", "test-classes", "module-info.clazz");
         File moduleInfo = path.toFile();
         assertTrue(moduleInfo.exists());
         

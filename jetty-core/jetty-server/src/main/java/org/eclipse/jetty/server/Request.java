@@ -51,6 +51,8 @@ import org.eclipse.jetty.util.NanoTime;
 import org.eclipse.jetty.util.StringUtil;
 import org.eclipse.jetty.util.URIUtil;
 import org.eclipse.jetty.util.UrlEncoded;
+import org.eclipse.jetty.util.annotation.ManagedAttribute;
+import org.eclipse.jetty.util.annotation.ManagedObject;
 import org.eclipse.jetty.util.thread.Invocable;
 
 /**
@@ -660,6 +662,7 @@ public interface Request extends Attributes, Content.Source
      * <p>A handler for an HTTP request and response.</p>
      * <p>The handling typically involves reading the request content (if any) and producing a response.</p>
      */
+    @ManagedObject
     @FunctionalInterface
     interface Handler extends Invocable
     {
@@ -699,6 +702,13 @@ public interface Request extends Attributes, Content.Source
          *                   called and thus should attempt to complete the request as if a false had been returned.
          */
         boolean handle(Request request, Response response, Callback callback) throws Exception;
+
+        @Override
+        @ManagedAttribute("The InvocationType of this Handler")
+        default InvocationType getInvocationType()
+        {
+            return InvocationType.BLOCKING;
+        }
     }
 
     /**

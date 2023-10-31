@@ -42,7 +42,6 @@ public class ServerConnectorListener extends AbstractLifeCycleListener
             {
                 Files.deleteIfExists(_filePath);
                 writer.write(((ServerConnector)event).getLocalPort());
-                writer.close();
             }
             catch (Exception e)
             {

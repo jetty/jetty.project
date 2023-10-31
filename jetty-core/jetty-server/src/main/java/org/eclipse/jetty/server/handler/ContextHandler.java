@@ -828,11 +828,12 @@ public class ContextHandler extends Handler.Wrapper implements Attributes, Alias
 
     protected void handleMovedPermanently(Request request, Response response, Callback callback)
     {
+        // TODO: should this be a fully qualified URI? (with scheme and host?)
         String location = _contextPath + "/";
         if (request.getHttpURI().getParam() != null)
             location += ";" + request.getHttpURI().getParam();
         if (request.getHttpURI().getQuery() != null)
-            location += ";" + request.getHttpURI().getQuery();
+            location += "?" + request.getHttpURI().getQuery();
 
         response.setStatus(HttpStatus.MOVED_PERMANENTLY_301);
         response.getHeaders().add(new HttpField(HttpHeader.LOCATION, location));
@@ -866,7 +867,7 @@ public class ContextHandler extends Handler.Wrapper implements Attributes, Alias
     /**
      * @return Returns the base resource as a string.
      */
-    @ManagedAttribute("document root for context")
+    @ManagedAttribute(value = "document root for context", readonly = true)
     public Resource getBaseResource()
     {
         return _baseResource;

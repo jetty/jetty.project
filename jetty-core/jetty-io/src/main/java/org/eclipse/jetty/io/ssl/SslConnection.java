@@ -40,6 +40,7 @@ import org.eclipse.jetty.io.RetainableByteBuffer;
 import org.eclipse.jetty.io.WriteFlusher;
 import org.eclipse.jetty.util.BufferUtil;
 import org.eclipse.jetty.util.Callback;
+import org.eclipse.jetty.util.ExceptionUtil;
 import org.eclipse.jetty.util.IO;
 import org.eclipse.jetty.util.StringUtil;
 import org.eclipse.jetty.util.thread.AutoLock;
@@ -1541,9 +1542,9 @@ public class SslConnection extends AbstractConnection implements Connection.Upgr
                     if (LOG.isDebugEnabled())
                         LOG.debug("{} stored {} exception", this, context, x);
                 }
-                else if (x != _failure)
+                else
                 {
-                    _failure.addSuppressed(x);
+                    ExceptionUtil.addSuppressedIfNotAssociated(_failure, x);
                     if (LOG.isDebugEnabled())
                         LOG.debug("{} suppressed {} exception", this, context, x);
                 }

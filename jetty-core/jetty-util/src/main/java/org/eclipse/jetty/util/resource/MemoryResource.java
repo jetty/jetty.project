@@ -75,7 +75,7 @@ public class MemoryResource extends Resource
     }
 
     @Override
-    public boolean isContainedIn(Resource r)
+    public boolean isContainedIn(Resource container)
     {
         // memory resource can never be contained in another memory resource
         return false;

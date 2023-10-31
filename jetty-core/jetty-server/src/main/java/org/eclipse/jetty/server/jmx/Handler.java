@@ -18,7 +18,6 @@ import java.util.List;
 import org.eclipse.jetty.jmx.ObjectMBean;
 import org.eclipse.jetty.server.Server;
 import org.eclipse.jetty.server.handler.ContextHandler;
-import org.eclipse.jetty.util.annotation.ManagedAttribute;
 import org.eclipse.jetty.util.annotation.ManagedObject;
 
 public class Handler
@@ -45,9 +44,7 @@ public class Handler
                 String contextName = getContextName(contextHandler);
                 if (contextName == null)
                     contextName = contextHandler.getDisplayName();
-                if (contextName != null)
-                    return contextName;
-                return null;
+                return contextName;
             }
             else
             {
@@ -85,12 +82,6 @@ public class Handler
                 name = "\"%s@%s\"".formatted(name, vhosts.get(0));
 
             return name;
-        }
-
-        @ManagedAttribute("The invocation type")
-        public String getInvocationType()
-        {
-            return getManagedObject().getInvocationType().name();
         }
     }
 }

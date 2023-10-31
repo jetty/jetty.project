@@ -49,6 +49,8 @@ import org.eclipse.jetty.server.Server;
 import org.eclipse.jetty.util.BufferUtil;
 import org.eclipse.jetty.util.Callback;
 import org.eclipse.jetty.util.StringUtil;
+import org.eclipse.jetty.util.annotation.ManagedAttribute;
+import org.eclipse.jetty.util.annotation.ManagedObject;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -58,6 +60,7 @@ import org.slf4j.LoggerFactory;
  * It is called by the {@link Response#writeError(Request, Response, Callback, int, String)}
  * to generate an error page.
  */
+@ManagedObject
 public class ErrorHandler implements Request.Handler
 {
     // TODO This classes API needs to be majorly refactored/cleanup in jetty-10
@@ -69,7 +72,6 @@ public class ErrorHandler implements Request.Handler
     public static final Set<String> ERROR_METHODS = Set.of("GET", "POST", "HEAD");
     public static final HttpField ERROR_CACHE_CONTROL = new PreEncodedHttpField(HttpHeader.CACHE_CONTROL, "must-revalidate,no-cache,no-store");
 
-    boolean _showServlet = true;
     boolean _showStacks = true;
     boolean _showMessageInTitle = true;
     HttpField _cacheControl = new PreEncodedHttpField(HttpHeader.CACHE_CONTROL, "must-revalidate,no-cache,no-store");
@@ -211,7 +213,7 @@ public class ErrorHandler implements Request.Handler
         {
             // write into the response aggregate buffer and flush it asynchronously.
             // Looping to reduce size if buffer overflows
-            boolean showStacks = _showStacks;
+            boolean showStacks = isShowStacks();
             while (true)
             {
                 try
@@ -294,7 +296,7 @@ public class ErrorHandler implements Request.Handler
         writer.write("<title>Error ");
         String status = Integer.toString(code);
         writer.write(status);
-        if (message != null && !message.equals(status))
+        if (isShowMessageInTitle() && message != null && !message.equals(status))
         {
             writer.write(' ');
             writer.write(StringUtil.sanitizeXmlString(message));
@@ -353,8 +355,11 @@ public class ErrorHandler implements Request.Handler
     {
         writer.write("HTTP ERROR ");
         writer.write(Integer.toString(code));
-        writer.write(' ');
-        writer.write(StringUtil.sanitizeXmlString(message));
+        if (isShowMessageInTitle())
+        {
+            writer.write(' ');
+            writer.write(StringUtil.sanitizeXmlString(message));
+        }
         writer.write("\n");
         writer.printf("URI: %s%n", request.getHttpURI());
         writer.printf("STATUS: %s%n", code);
@@ -433,6 +438,7 @@ public class ErrorHandler implements Request.Handler
      *
      * @return the cacheControl header to set on error responses.
      */
+    @ManagedAttribute("The value of the Cache-Control response header")
     public String getCacheControl()
     {
         return _cacheControl == null ? null : _cacheControl.getValue();
@@ -449,24 +455,9 @@ public class ErrorHandler implements Request.Handler
     }
 
     /**
-     * @return True if the error page will show the Servlet that generated the error
-     */
-    public boolean isShowServlet()
-    {
-        return _showServlet;
-    }
-
-    /**
-     * @param showServlet True if the error page will show the Servlet that generated the error
-     */
-    public void setShowServlet(boolean showServlet)
-    {
-        _showServlet = showServlet;
-    }
-
-    /**
      * @return True if stack traces are shown in the error pages
      */
+    @ManagedAttribute("Whether the error page shows the stack trace")
     public boolean isShowStacks()
     {
         return _showStacks;
@@ -480,6 +471,12 @@ public class ErrorHandler implements Request.Handler
         _showStacks = showStacks;
     }
 
+    @ManagedAttribute("Whether the error message is shown in the error page title")
+    public boolean isShowMessageInTitle()
+    {
+        return _showMessageInTitle;
+    }
+
     /**
      * Set if true, the error message appears in page title.
      * @param showMessageInTitle if true, the error message appears in page title
@@ -487,11 +484,6 @@ public class ErrorHandler implements Request.Handler
     public void setShowMessageInTitle(boolean showMessageInTitle)
     {
         _showMessageInTitle = showMessageInTitle;
-    }
-
-    public boolean getShowMessageInTitle()
-    {
-        return _showMessageInTitle;
     }
 
     protected void write(Writer writer, String string) throws IOException
