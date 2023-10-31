@@ -939,23 +939,6 @@ public class ServletContextHandler extends ContextHandler
         return false;
     }
 
-    @Override
-    public void setHandler(Handler handler)
-    {
-        if (handler instanceof SessionHandler)
-            setSessionHandler((SessionHandler)handler);
-        else if (handler instanceof SecurityHandler)
-            setSecurityHandler((SecurityHandler)handler);
-        else if (handler instanceof ServletHandler)
-            setServletHandler((ServletHandler)handler);
-        else
-        {
-            if (handler != null)
-                LOG.warn("ServletContextHandler.setHandler should not be called directly. Use insertHandler or setSessionHandler etc.");
-            super.setHandler(handler);
-        }
-    }
-
     private void doSetHandler(Singleton wrapper, Handler handler)
     {
         if (wrapper == this)
@@ -1128,7 +1111,7 @@ public class ServletContextHandler extends ContextHandler
     }
 
     @Override
-    protected ServletContextRequest wrapRequest(Request request, Response response)
+    protected ContextRequest wrapRequest(Request request, Response response)
     {
         // Need to ask directly to the Context for the pathInContext, rather than using
         // Request.getPathInContext(), as the request is not yet wrapped in this Context.
@@ -1136,10 +1119,10 @@ public class ServletContextHandler extends ContextHandler
 
         MatchedResource<ServletHandler.MappedServlet> matchedResource = _servletHandler.getMatchedServlet(decodedPathInContext);
         if (matchedResource == null)
-            return null;
+            return wrapNoServlet(request, response);
         ServletHandler.MappedServlet mappedServlet = matchedResource.getResource();
         if (mappedServlet == null)
-            return null;
+            return wrapNoServlet(request, response);
 
         // Get a servlet request, possibly from a cached version in the channel attributes.
         Attributes cache = request.getComponents().getCache();
@@ -1160,12 +1143,20 @@ public class ServletContextHandler extends ContextHandler
         return servletContextRequest;
     }
 
+    private ContextRequest wrapNoServlet(Request request, Response response)
+    {
+        Handler next = getServletHandler().getHandler();
+        if (next == null)
+            return null;
+        return super.wrapRequest(request, response);
+    }
+
     @Override
     protected ContextResponse wrapResponse(ContextRequest request, Response response)
     {
         if (request instanceof ServletContextRequest servletContextRequest)
             return servletContextRequest.getServletContextResponse();
-        throw new IllegalArgumentException();
+        return super.wrapResponse(request, response);
     }
 
     @Override
@@ -1646,6 +1637,19 @@ public class ServletContextHandler extends ContextHandler
         relinkHandlers();
     }
 
+    @Override
+    public void setHandler(Handler handler)
+    {
+        if (handler instanceof SessionHandler)
+            setSessionHandler((SessionHandler)handler);
+        else if (handler instanceof SecurityHandler)
+            setSecurityHandler((SecurityHandler)handler);
+        else if (handler instanceof ServletHandler)
+            setServletHandler((ServletHandler)handler);
+        else
+            getServletHandler().setHandler(handler);
+    }
+
     /**
      * Insert a HandlerWrapper before the first Session, Security or ServletHandler
      * but after any other HandlerWrappers.
@@ -1662,7 +1666,9 @@ public class ServletContextHandler extends ContextHandler
         else
         {
             // We cannot call super.insertHandler here, because it uses this.setHandler
-            // which gives a warning.  This is the same code, but uses super.setHandler
+            // which sets the servletHandlers next handler.
+            // This is the same insert code, but uses super.setHandler, which sets this
+            // handlers next handler.
             Singleton tail = handler.getTail();
             if (tail.getHandler() != null)
                 throw new IllegalArgumentException("bad tail of inserted wrapper chain");

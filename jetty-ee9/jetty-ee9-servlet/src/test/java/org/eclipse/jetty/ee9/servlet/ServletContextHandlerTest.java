@@ -1860,7 +1860,7 @@ public class ServletContextHandlerTest
 
         servletContextHandler.insertHandler(coreResourceHandler);
         servletContextHandler.insertHandler(nestedHandler);
-        servletContextHandler.getTail().setHandler(last);
+        servletContextHandler.setHandler(last);
 
         assertThat(servletContextHandler.getCoreContextHandler().getHandler(), sameInstance(coreResourceHandler));
         assertThat(coreResourceHandler.getHandler().toString(), containsString("CoreToNestedHandler@"));
