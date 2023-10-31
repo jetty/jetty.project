@@ -54,6 +54,7 @@ public class ConcurrentPool<P> implements Pool<P>, Dumpable
      */
     public static final int OPTIMAL_MAX_SIZE = 256;
 
+    // TODO replace with explicit configuration
     private static final boolean STRONG_DEFAULT = Boolean.getBoolean(ConcurrentPool.class.getName() + ".STRONG_DEFAULT");
     private static final Logger LOG = LoggerFactory.getLogger(ConcurrentPool.class);
 
@@ -159,6 +160,17 @@ public class ConcurrentPool<P> implements Pool<P>, Dumpable
         return maxMultiplex.applyAsInt(pooled);
     }
 
+    protected void leaked(Holder<P> holder)
+    {
+        if (LOG.isDebugEnabled())
+        {
+            if (holder instanceof ConcurrentPool.DebugWeakHolder<P> debugWeakHolder)
+                LOG.warn("LEAKED {}", this, debugWeakHolder.getLastFreed());
+            else
+                LOG.warn("LEAKED {}", this);
+        }
+    }
+
     @Override
     public Entry<P> reserve()
     {
@@ -205,7 +217,7 @@ public class ConcurrentPool<P> implements Pool<P>, Dumpable
                 Holder<P> holder = entries.get(i);
                 if (holder.getEntry() == null)
                 {
-                    LOG.warn("LEAKED {}", holder);
+                    leaked(holder);
                     entries.remove(i--);
                 }
             }
@@ -234,8 +246,7 @@ public class ConcurrentPool<P> implements Pool<P>, Dumpable
                     ConcurrentEntry<P> entry = (ConcurrentEntry<P>)holder.getEntry();
                     if (entry == null)
                     {
-                        if (LOG.isDebugEnabled())
-                            LOG.warn("LEAKED {}", holder);
+                        leaked(holder);
                         entries.remove(index);
                         continue;
                     }
@@ -439,7 +450,9 @@ public class ConcurrentPool<P> implements Pool<P>, Dumpable
         public ConcurrentEntry(ConcurrentPool<E> pool)
         {
             this.pool = pool;
-            holder = pool.weak ? new WeakHolder<>(this) : new StrongHolder<>(this);
+            holder = pool.weak
+                ? (LOG.isDebugEnabled() ? new DebugWeakHolder<>(pool, this) : new WeakHolder<>(this))
+                : new StrongHolder<>(this);
         }
 
         private Holder<E> getHolder()
@@ -459,6 +472,8 @@ public class ConcurrentPool<P> implements Pool<P>, Dumpable
                 throw new IllegalStateException("Entry already enabled " + this + " for " + pool);
             }
             this.pooled = pooled;
+            if (LOG.isDebugEnabled() && getHolder() instanceof ConcurrentPool.DebugWeakHolder<E> debugWeakHolder)
+                debugWeakHolder.update();
 
             if (tryEnable(acquire))
             {
@@ -668,7 +683,7 @@ public class ConcurrentPool<P> implements Pool<P>, Dumpable
         }
     }
 
-    public interface Holder<P>
+    protected interface Holder<P>
     {
         Pool.Entry<P> getEntry();
 
@@ -677,11 +692,11 @@ public class ConcurrentPool<P> implements Pool<P>, Dumpable
         void free();
     }
 
-    private static class StrongHolder<P> implements Holder<P>
+    protected static class StrongHolder<P> implements Holder<P>
     {
         private final ConcurrentEntry<P> _strong;
 
-        StrongHolder(ConcurrentEntry<P> entry)
+        protected StrongHolder(ConcurrentEntry<P> entry)
         {
             _strong = entry;
         }
@@ -709,12 +724,12 @@ public class ConcurrentPool<P> implements Pool<P>, Dumpable
         }
     }
 
-    private static class WeakHolder<P> implements Holder<P>
+    protected static class WeakHolder<P> implements Holder<P>
     {
         private final WeakReference<ConcurrentEntry<P>> _weak;
         private volatile ConcurrentEntry<P> _strong;
 
-        WeakHolder(ConcurrentEntry<P> entry)
+        protected WeakHolder(ConcurrentEntry<P> entry)
         {
             _weak = new WeakReference<>(entry);
         }
@@ -728,17 +743,7 @@ public class ConcurrentPool<P> implements Pool<P>, Dumpable
         @Override
         public void hold()
         {
-            ConcurrentEntry<P> entry = _weak.get();
-            if (entry == null)
-            {
-                LOG.warn("LEAKED {}", this);
-                return;
-            }
-
-            // hold must only be called when we know the holder will is free.
-            while (_strong != null && !entry.isTerminated())
-                Thread.onSpinWait();
-            _strong = entry;
+            _strong = _weak.get();
         }
 
         @Override
@@ -746,10 +751,7 @@ public class ConcurrentPool<P> implements Pool<P>, Dumpable
         {
             ConcurrentEntry<P> entry = _weak.get();
             if (entry == null)
-            {
-                LOG.warn("LEAKED {}", this);
                 return;
-            }
 
             // Free must only be called when we know the holder will be held.
             while (_strong == null && !entry.isTerminated())
@@ -761,6 +763,54 @@ public class ConcurrentPool<P> implements Pool<P>, Dumpable
         public String toString()
         {
             return "%s@%x{%s,%s}".formatted(this.getClass().getSimpleName(), hashCode(), _weak.get(), _strong);
+        }
+    }
+
+    protected static class DebugWeakHolder<P> extends WeakHolder<P>
+    {
+        private final ConcurrentPool<P> _pool;
+        private Throwable _lastFreed;
+
+        protected DebugWeakHolder(ConcurrentPool<P> pool, ConcurrentEntry<P> entry)
+        {
+            super(entry);
+            _pool = pool;
+            update();
+        }
+
+        public void update()
+        {
+            _lastFreed = new Throwable(Thread.currentThread().getName() + ":" + getEntry());
+        }
+
+        Throwable getLastFreed()
+        {
+            return _lastFreed;
+        }
+
+        @Override
+        public void hold()
+        {
+            if (getEntry() == null)
+                _pool.leaked(this);
+            super.hold();
+        }
+
+        @Override
+        public void free()
+        {
+            update();
+            Entry<P> entry = getEntry();
+            if (entry == null)
+                _pool.leaked(this);
+            else
+                super.free();
+        }
+
+        @Override
+        public String toString()
+        {
+            return "%s@%x{%s,%s}".formatted(this.getClass().getSimpleName(), hashCode(), getEntry(), _lastFreed.getMessage());
         }
     }
 }

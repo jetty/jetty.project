@@ -18,14 +18,18 @@ import java.util.Collection;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.concurrent.CopyOnWriteArrayList;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.concurrent.atomic.AtomicReference;
 import java.util.function.ToIntFunction;
 
+import org.eclipse.jetty.logging.JettyLevel;
+import org.eclipse.jetty.logging.JettyLogger;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.MethodSource;
+import org.slf4j.LoggerFactory;
 
 import static org.awaitility.Awaitility.await;
 import static org.eclipse.jetty.util.ConcurrentPool.StrategyType.FIRST;
@@ -33,6 +37,7 @@ import static org.eclipse.jetty.util.ConcurrentPool.StrategyType.RANDOM;
 import static org.eclipse.jetty.util.ConcurrentPool.StrategyType.ROUND_ROBIN;
 import static org.eclipse.jetty.util.ConcurrentPool.StrategyType.THREAD_ID;
 import static org.hamcrest.MatcherAssert.assertThat;
+import static org.hamcrest.Matchers.containsString;
 import static org.hamcrest.Matchers.equalTo;
 import static org.hamcrest.Matchers.greaterThan;
 import static org.hamcrest.Matchers.is;
@@ -751,5 +756,55 @@ public class ConcurrentPoolTest
         assertThat(pool.getInUseCount(), is(1));
 
         assertThat(e0, nullValue());
+    }
+
+    @Test
+    public void testLeakDebug()
+    {
+        if (LoggerFactory.getLogger(ConcurrentPool.class) instanceof JettyLogger jettyLogger)
+        {
+            jettyLogger.setLevel(JettyLevel.DEBUG);
+            jettyLogger.setHideStacks(true);
+
+            List<Throwable> history = new CopyOnWriteArrayList<>();
+
+            ConcurrentPool<String> pool = new ConcurrentPool<>(RANDOM, 10, p -> 1, true)
+            {
+                @Override
+                protected void leaked(Holder<String> holder)
+                {
+                    if (holder instanceof ConcurrentPool.DebugWeakHolder<String> debugWeakHolder)
+                    {
+                        history.add(debugWeakHolder.getLastFreed());
+                    }
+                }
+            };
+            Pool.Entry<String> e0 = pool.reserve();
+            Pool.Entry<String> e1 = pool.reserve();
+            e1.enable("test", true);
+            assertThat(e0, notNullValue());
+            assertThat(e1, notNullValue());
+
+            assertThat(pool.size(), is(2));
+            assertThat(pool.getReservedCount(), is(1));
+            assertThat(pool.getIdleCount(), is(0));
+            assertThat(pool.getInUseCount(), is(1));
+
+            e0 = null;
+            e1 = null;
+            waitForGC(pool, 0);
+            assertThat(pool.size(), is(0));
+            assertThat(pool.getReservedCount(), is(0));
+            assertThat(pool.getIdleCount(), is(0));
+            assertThat(pool.getInUseCount(), is(0));
+            assertThat(e0, nullValue());
+            assertThat(e1, nullValue());
+
+            assertThat(history.size(), is(2));
+            assertThat(history.toString(), containsString("pooled=null"));
+            assertThat(history.toString(), containsString("pooled=test"));
+            assertThat(history.toString(), containsString(Thread.currentThread().getName() + ":"));
+            jettyLogger.setLevel(JettyLevel.WARN);
+        }
     }
 }
