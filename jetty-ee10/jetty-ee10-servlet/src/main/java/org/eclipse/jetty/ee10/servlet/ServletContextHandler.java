@@ -1663,7 +1663,7 @@ public class ServletContextHandler extends ContextHandler
         {
             // We cannot call super.insertHandler here, because it uses this.setHandler
             // which gives a warning.  This is the same code, but uses super.setHandler
-            Singleton tail = Objects.requireNonNull(handler).getTail();
+            Singleton tail = handler.getTail();
             if (tail.getHandler() != null)
                 throw new IllegalArgumentException("bad tail of inserted wrapper chain");
             tail.setHandler(getHandler());

@@ -16,7 +16,6 @@ package org.eclipse.jetty.server;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
-import java.util.Objects;
 import java.util.function.Supplier;
 
 import org.eclipse.jetty.util.Callback;
@@ -336,7 +335,7 @@ public interface Handler extends LifeCycle, Destroyable, Request.Handler
          */
         default void insertHandler(Singleton handler)
         {
-            Singleton tail = Objects.requireNonNull(handler).getTail();
+            Singleton tail = handler.getTail();
             if (tail.getHandler() != null)
                 throw new IllegalArgumentException("bad tail of inserted wrapper chain");
 
