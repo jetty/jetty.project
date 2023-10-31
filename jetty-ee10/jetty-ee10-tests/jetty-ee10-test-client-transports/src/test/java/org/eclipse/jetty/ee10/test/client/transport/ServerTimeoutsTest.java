@@ -479,6 +479,14 @@ public class ServerTimeoutsTest extends AbstractTest
                             handlerLatch.countDown();
                         }
 
+                        // TODO the problem here is that timeout failures are currently persistent and affect reads
+                        //      and writes.  So after the 500 is set above, the complete below tries to commit the response,
+                        //      but the write/send for that fails with the same timeout exception.   Thus the 500 is never
+                        //      sent and the connection is just closed.
+                        //      This was not apparent until the change in HttpOutput#onWriteComplete to not always abort on
+                        //      failure (as this prevents async handling completing on its own terms).  The current "fix"
+                        //      is to move the abort to HttpOutput.WriteCompleteCB.failed, as this aborts only if the final
+                        //      write fails.
                         asyncContext.complete();
                     }
                 });
