@@ -11,7 +11,7 @@ directory, additional configuration may be specified and hot deployments
 detected.
 ===================================================================== -->
 
-<Configure class="org.eclipse.jetty.ee9.webapp.WebAppContext">
+<Configure class="org.eclipse.jetty.ee8.webapp.WebAppContext">
 
   <!-- - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -->
   <!-- Required minimal context configuration :                        -->
@@ -19,15 +19,15 @@ detected.
   <!--  + war OR baseResource                                          -->
   <!-- - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -->
   <Set name="contextPath">/</Set>
-  <Set name="war"><SystemProperty name="jetty.home" default="."/>/webapps/ee9-demo-jetty.war</Set>
+  <Set name="war"><SystemProperty name="jetty.home" default="."/>/webapps/ee8-demo-jetty.war</Set>
 
   <!-- - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -->
   <!-- Optional context configuration                                  -->
   <!-- - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -->
   <Set name="extractWAR">true</Set>
   <Set name="copyWebDir">false</Set>
-  <Set name="defaultsDescriptor"><SystemProperty name="jetty.home" default="."/>/etc/webdefault-ee9.xml</Set>
-  <Set name="overrideDescriptor"><SystemProperty name="jetty.base" default="."/>/etc/ee9-demo-override-web.xml</Set>
+  <Set name="defaultsDescriptor"><SystemProperty name="jetty.home" default="."/>/etc/webdefault-ee8.xml</Set>
+  <Set name="overrideDescriptor"><SystemProperty name="jetty.base" default="."/>/etc/ee8-demo-override-web.xml</Set>
 
   <!-- virtual hosts
   <Set name="virtualHosts">
