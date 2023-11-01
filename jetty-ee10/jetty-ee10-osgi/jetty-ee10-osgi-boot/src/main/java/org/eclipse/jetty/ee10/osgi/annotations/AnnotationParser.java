@@ -123,7 +123,7 @@ public class AnnotationParser extends org.eclipse.jetty.ee10.annotations.Annotat
 
         if (FileID.isClassFile(r.getPath()))
         {
-            parseClass(handlers, null, r.getPath());
+            parseClass(handlers, null, r);
         }
 
         //Not already parsed, it could be a file that actually is compressed but does not have

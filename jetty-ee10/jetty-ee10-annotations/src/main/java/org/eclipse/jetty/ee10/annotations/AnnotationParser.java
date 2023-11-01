@@ -18,16 +18,21 @@ import java.io.InputStream;
 import java.net.URI;
 import java.nio.file.Files;
 import java.nio.file.Path;
+import java.nio.file.Paths;
 import java.util.Arrays;
 import java.util.Collections;
+import java.util.Iterator;
 import java.util.Map;
 import java.util.Optional;
 import java.util.Set;
+import java.util.StringTokenizer;
 import java.util.concurrent.ConcurrentHashMap;
+import java.util.stream.Stream;
 
 import org.eclipse.jetty.util.ExceptionUtil;
 import org.eclipse.jetty.util.FileID;
 import org.eclipse.jetty.util.StringUtil;
+import org.eclipse.jetty.util.URIUtil;
 import org.eclipse.jetty.util.resource.Resource;
 import org.eclipse.jetty.util.resource.ResourceFactory;
 import org.objectweb.asm.AnnotationVisitor;
@@ -453,15 +458,17 @@ public class AnnotationParser
     {
         final int _asmVersion;
         final Resource _containingResource; //resource containing the class to parse
+        final Resource _classResource; //resource of the class being parsed
         final Set<? extends Handler> _handlers;
         ClassInfo _ci;
 
-        public MyClassVisitor(Set<? extends Handler> handlers, Resource containingResource, int asmVersion)
+        public MyClassVisitor(Set<? extends Handler> handlers, Resource containingResource, Resource classResource, int asmVersion)
         {
             super(asmVersion);
             _asmVersion = asmVersion;
             _handlers = handlers;
             _containingResource = containingResource;
+            _classResource = classResource;
         }
 
         @Override
@@ -475,8 +482,10 @@ public class AnnotationParser
             //Check that the named class exists in the containingResource at the correct location.
             //eg given the class with name "com.foo.Acme" and the containingResource "jar:file://some/place/something.jar!/"
             //then the file "jar:file://some/place/something.jar!/com/foo/Acme.class" must exist.
-            if (_containingResource.resolve(name + ".class") == null)
+            if (_containingResource != null && !checkClassContainment(_containingResource, _classResource, name))
+            {
                 throw new IllegalStateException("Class " + name + " not in correct location in " + _containingResource);
+            }
 
             _ci = new ClassInfo(_containingResource, normalize(name), version, access, signature, normalize(superName), normalize(interfaces));
             for (Handler h : _handlers)
@@ -526,6 +535,44 @@ public class AnnotationParser
         }
     }
 
+    /**
+     * Check whether the classname is located inside its containingResource at
+     * the location that matches its package. The comparison accounts for classes
+     * located within WEB-INF/classes.
+     * @param containingResource the Resource that contains the class
+     * @param classResource the Resource representing the class
+     * @param classname the package-qualified name of the class
+     * @return true if the containingResource contains a class file at the location matching the package name of the class
+     */
+    public static boolean checkClassContainment(Resource containingResource, Resource classResource, String classname)
+    {
+        if (containingResource == null || classResource == null)
+            return false;
+        Path relative = containingResource.getPathTo(classResource);
+        if (relative == null)
+            return false; //unable to be verified
+
+        StringTokenizer tokenizer = new StringTokenizer(classname, "/", false);
+
+        for (int i = 0; i < relative.getNameCount(); i++)
+        {
+            String s = relative.getName(i).toString();
+            if (i == 0 && "WEB-INF".equalsIgnoreCase(s))
+                continue;
+            if (i == 1 && "classes".equalsIgnoreCase(s))
+                continue;
+            if (i == relative.getNameCount() - 1)
+            {
+                if ("class".equals(FileID.getExtension(s)))
+                    s = s.substring(0, s.length() - 6);
+            }
+
+            if (!tokenizer.nextToken().equalsIgnoreCase(s))
+                return false;
+        }
+        return true;
+    }
+
     public AnnotationParser()
     {
         this(ASM_VERSION);
@@ -570,7 +617,7 @@ public class AnnotationParser
 
         if (FileID.isClassFile(r.getPath()))
         {
-            parseClass(handlers, null, r.getPath());
+            parseClass(handlers, null, r);
         }
 
         if (LOG.isDebugEnabled())
@@ -612,7 +659,7 @@ public class AnnotationParser
 
             try
             {
-                parseClass(handlers, dirResource, candidate.getPath());
+                parseClass(handlers, dirResource, candidate);
             }
             catch (Exception ex)
             {
@@ -653,28 +700,28 @@ public class AnnotationParser
      *
      * @param handlers the handlers to look for classes in
      * @param containingResource the dir or jar that the class is contained within, can be null if not known
-     * @param classFile the class file to parse
+     * @param classResource the class file to parse
      * @throws IOException if unable to parse
      */
-    protected void parseClass(Set<? extends Handler> handlers, Resource containingResource, Path classFile) throws IOException
+    protected void parseClass(Set<? extends Handler> handlers, Resource containingResource, Resource classResource) throws IOException
     {
         if (LOG.isDebugEnabled())
-            LOG.debug("Parse class from {}", classFile.toUri());
+            LOG.debug("Parse class from {}", classResource);
 
-        URI location = classFile.toUri();
-        try (InputStream in = Files.newInputStream(classFile))
+        try (InputStream in = Files.newInputStream(classResource.getPath()))
         {
             ClassReader reader = new ClassReader(in);
-            reader.accept(new MyClassVisitor(handlers, containingResource, _asmVersion), ClassReader.SKIP_CODE | ClassReader.SKIP_DEBUG | ClassReader.SKIP_FRAMES);
+            reader.accept(new MyClassVisitor(handlers, containingResource, classResource, _asmVersion), ClassReader.SKIP_CODE | ClassReader.SKIP_DEBUG | ClassReader.SKIP_FRAMES);
 
             String classname = normalize(reader.getClassName());
+            URI location = classResource.getPath().toUri();
             URI existing = _parsedClassNames.putIfAbsent(classname, location);
             if (existing != null)
                 LOG.warn("{} scanned from multiple locations: {}, {}", classname, existing, location);
         }
         catch (IllegalArgumentException | IOException e)
         {
-            throw new IOException("Unable to parse class: " + classFile.toUri(), e);
+            throw new IOException("Unable to parse class: " + classResource.getURI(), e);
         }
     }
     
