@@ -57,7 +57,7 @@ We recommend either the traditional link:{DISTGUIDE}[distribution] deployment ap
 [[get-up-and-running]]
 ==== Get Up and Running
 
-Since Jetty 12, Jetty Maven plugin is repackaged for corresponding Jakarta EE version with an `eeX` classifier in the groupId and artifactId. The `eeX` can be `ee8`,`ee9` and `ee10`, stands for Jakarta EE 8, 9 and 10.
+Since Jetty 12, Jetty Maven plugin is repackaged for corresponding Jakarta EE version with an `eeX` classifier in the groupId and artifactId. The `eeX` can be `ee8`,`ee9` or `ee10`, which stands for Jakarta EE 8, 9 and 10 respectively.
 
 First, add `jetty-ee{8,9,10}-maven-plugin` to your `pom.xml` definition:
 
