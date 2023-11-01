@@ -26,7 +26,10 @@ import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
 import java.util.Objects;
+import java.util.Queue;
 import java.util.Set;
+import java.util.concurrent.ConcurrentLinkedQueue;
+import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicInteger;
@@ -82,6 +85,7 @@ import org.eclipse.jetty.server.handler.ResourceHandler;
 import org.eclipse.jetty.util.Callback;
 import org.eclipse.jetty.util.DecoratedObjectFactory;
 import org.eclipse.jetty.util.Decorator;
+import org.eclipse.jetty.util.Jetty;
 import org.eclipse.jetty.util.component.AbstractLifeCycle;
 import org.eclipse.jetty.util.resource.ResourceFactory;
 import org.hamcrest.Matchers;
@@ -94,6 +98,7 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import static org.hamcrest.MatcherAssert.assertThat;
+import static org.hamcrest.Matchers.contains;
 import static org.hamcrest.Matchers.containsInAnyOrder;
 import static org.hamcrest.Matchers.containsString;
 import static org.hamcrest.Matchers.instanceOf;
@@ -1770,6 +1775,91 @@ public class ServletContextHandlerTest
         assertThat("Response", response, containsString("Test"));
 
         assertEquals(extra, context.getSessionHandler().getHandler());
+    }
+
+    @Test
+    public void testAfterRecycleBeforeReuse() throws Exception
+    {
+        ServletContextHandler context = new ServletContextHandler(ServletContextHandler.SESSIONS);
+        Queue<String> history = new ConcurrentLinkedQueue<>();
+        CountDownLatch complete = new CountDownLatch(2);
+
+        Handler.Singleton extra = new Handler.Wrapper()
+        {
+            @Override
+            public boolean handle(Request request, Response response, Callback callback) throws Exception
+            {
+                if (request instanceof ServletContextRequest servletContextRequest)
+                {
+                    ServletApiRequest httpServletRequest = servletContextRequest.getServletApiRequest();
+                    Request.addCompletionListener(request, x -> onStreamCompleting(httpServletRequest));
+                    return super.handle(request, response, Callback.from(() -> onCallbackCompleting(httpServletRequest), callback));
+                }
+                return false;
+            }
+
+            private void onCallbackCompleting(ServletApiRequest httpServletRequest)
+            {
+                history.add("onCallbackCompleting");
+                onCompleting(httpServletRequest);
+            }
+
+            private void onStreamCompleting(ServletApiRequest httpServletRequest)
+            {
+                history.add("onStreamCompleting");
+                onCompleting(httpServletRequest);
+            }
+
+            private void onCompleting(ServletApiRequest httpServletRequest)
+            {
+                history.add(httpServletRequest.getRequestURI());
+                history.add(httpServletRequest.getHeader("Test"));
+                history.add(httpServletRequest.getParameter("param"));
+                history.add(String.valueOf(httpServletRequest.getUserPrincipal()));
+                HttpServletResponse httpServletResponse = httpServletRequest.getServletRequestInfo().getServletChannel().getServletContextResponse().getServletApiResponse();
+                history.add(String.valueOf(httpServletResponse.getStatus()));
+                history.add(String.valueOf(httpServletResponse.getContentType()));
+                history.add(String.valueOf(httpServletResponse.getHeader("Server")));
+                complete.countDown();
+            }
+        };
+
+        context.getSessionHandler().insertHandler(extra);
+
+        context.addServlet(TestServlet.class, "/test");
+        context.setContextPath("/");
+        _server.setHandler(context);
+        _server.start();
+
+        String request = """
+            GET /test?param=query HTTP/1.0
+            Host: localhost
+            Test: header
+
+            """;
+
+        String response = _connector.getResponse(request);
+        assertThat("Response", response, containsString("Test"));
+
+        assertTrue(complete.await(10, TimeUnit.SECONDS));
+        assertThat(history, contains(
+            "onCallbackCompleting",
+            "/test",
+            "header",
+            "query",
+            "null",
+            "200",
+            "null",
+            "Jetty(" + Jetty.VERSION + ")",
+            "onStreamCompleting",
+            "/test",
+            "header",
+            "query",
+            "null",
+            "200",
+            "null",
+            "Jetty(" + Jetty.VERSION + ")"
+        ));
     }
 
     @Test
