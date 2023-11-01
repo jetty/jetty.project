@@ -14,9 +14,7 @@
 package org.eclipse.jetty.io;
 
 import java.io.Closeable;
-import java.net.SocketAddress;
 import java.nio.channels.CancelledKeyException;
-import java.nio.channels.NetworkChannel;
 import java.nio.channels.SelectableChannel;
 import java.nio.channels.SelectionKey;
 import java.nio.channels.Selector;
@@ -38,8 +36,6 @@ public abstract class SelectableChannelEndPoint extends AbstractEndPoint impleme
     private final AutoLock _lock = new AutoLock();
     private final SelectableChannel _channel;
     private final ManagedSelector _selector;
-    private final SocketAddress _localSocketAddress;
-    private final SocketAddress _remoteSocketAddress;
     private SelectionKey _key;
     private boolean _updatePending;
     // The current value for interestOps.
@@ -108,18 +104,12 @@ public abstract class SelectableChannelEndPoint extends AbstractEndPoint impleme
         }
     };
 
-    public SelectableChannelEndPoint(Scheduler scheduler, SelectableChannel channel, ManagedSelector selector, SelectionKey selectionKey)
+    public SelectableChannelEndPoint(Scheduler scheduler, SelectableChannel channel, SocketAddressSupplier local, SocketAddressSupplier remote, ManagedSelector selector, SelectionKey selectionKey)
     {
-        super(scheduler);
+        super(scheduler, local, remote);
         _channel = channel;
         _selector = selector;
         _key = selectionKey;
-        /* Cache the local and remote Socket Address in this EndPoint class.
-         * as they are inaccessible once the EndPoint is closed.
-         * This helps RequestLog to access the remote and local addresses, even on a closed connection.
-         */
-        _localSocketAddress = getLocalSocketAddress();
-        _remoteSocketAddress = getRemoteSocketAddress();
     }
 
     public SelectableChannel getChannel()
@@ -131,37 +121,6 @@ public abstract class SelectableChannelEndPoint extends AbstractEndPoint impleme
     public Object getTransport()
     {
         return getChannel();
-    }
-
-    @Override
-    public SocketAddress getRemoteSocketAddress()
-    {
-        if (_remoteSocketAddress != null)
-            return _remoteSocketAddress;
-
-        return super.getRemoteSocketAddress();
-    }
-
-    @Override
-    public SocketAddress getLocalSocketAddress()
-    {
-        if (_localSocketAddress != null)
-            return _localSocketAddress;
-
-        try
-        {
-            SelectableChannel channel = getChannel();
-            if (channel instanceof NetworkChannel)
-            {
-                return ((NetworkChannel)channel).getLocalAddress();
-            }
-            return super.getLocalSocketAddress();
-        }
-        catch (Throwable x)
-        {
-            LOG.trace("Could not retrieve local socket address", x);
-            return null;
-        }
     }
 
     @Override

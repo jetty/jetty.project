@@ -34,6 +34,8 @@ public abstract class AbstractEndPoint extends IdleTimeout implements EndPoint
 {
     private static final Logger LOG = LoggerFactory.getLogger(AbstractEndPoint.class);
 
+    private final SocketAddress _localSocketAddress;
+    private final SocketAddress _remoteSocketAddress;
     private final AtomicReference<State> _state = new AtomicReference<>(State.OPEN);
     private final long _created = System.currentTimeMillis();
     private volatile Connection _connection;
@@ -54,39 +56,65 @@ public abstract class AbstractEndPoint extends IdleTimeout implements EndPoint
         }
     };
 
-    protected AbstractEndPoint(Scheduler scheduler)
+    @FunctionalInterface
+    public interface SocketAddressSupplier
+    {
+        SocketAddress get() throws IOException;
+    }
+
+    protected static SocketAddress getAddress(SocketAddressSupplier supplier)
+    {
+        try
+        {
+            return supplier.get();
+        }
+        catch (Throwable x)
+        {
+            if (LOG.isTraceEnabled())
+                LOG.trace("Could not retrieve socket address", x);
+        }
+        return null;
+    }
+
+    protected AbstractEndPoint(Scheduler scheduler, SocketAddress local, SocketAddress remote)
     {
         super(scheduler);
+        _localSocketAddress = local;
+        _remoteSocketAddress = remote;
+    }
+
+    protected AbstractEndPoint(Scheduler scheduler)
+    {
+        this(scheduler, null, (SocketAddress)null);
+    }
+
+    protected AbstractEndPoint(Scheduler scheduler, SocketAddressSupplier local, SocketAddressSupplier remote)
+    {
+        this(scheduler, getAddress(local), getAddress(remote));
     }
 
     @Override
     public InetSocketAddress getLocalAddress()
     {
-        SocketAddress local = getLocalSocketAddress();
-        if (local instanceof InetSocketAddress)
-            return (InetSocketAddress)local;
-        return null;
+        return getLocalSocketAddress() instanceof InetSocketAddress isa ? isa : null;
     }
 
     @Override
     public SocketAddress getLocalSocketAddress()
     {
-        return null;
+        return _localSocketAddress;
     }
 
     @Override
     public InetSocketAddress getRemoteAddress()
     {
-        SocketAddress remote = getRemoteSocketAddress();
-        if (remote instanceof InetSocketAddress)
-            return (InetSocketAddress)remote;
-        return null;
+        return getRemoteSocketAddress() instanceof InetSocketAddress isa ? isa : null;
     }
 
     @Override
     public SocketAddress getRemoteSocketAddress()
     {
-        return null;
+        return _remoteSocketAddress;
     }
 
     protected final void shutdownInput()

@@ -37,7 +37,7 @@ public class DatagramChannelEndPoint extends SelectableChannelEndPoint
 
     public DatagramChannelEndPoint(DatagramChannel channel, ManagedSelector selector, SelectionKey key, Scheduler scheduler)
     {
-        super(scheduler, channel, selector, key);
+        super(scheduler, channel, channel::getLocalAddress, channel::getRemoteAddress, selector, key);
     }
 
     @Override

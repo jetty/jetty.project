@@ -14,7 +14,6 @@
 package org.eclipse.jetty.io.ssl;
 
 import java.io.IOException;
-import java.net.SocketAddress;
 import java.nio.ByteBuffer;
 import java.util.ArrayList;
 import java.util.List;
@@ -491,7 +490,7 @@ public class SslConnection extends AbstractConnection implements Connection.Upgr
         public SslEndPoint()
         {
             // Disable idle timeout checking: no scheduler and -1 timeout for this instance.
-            super(null);
+            super(null, SslConnection.this.getEndPoint()::getLocalSocketAddress, SslConnection.this.getEndPoint()::getRemoteSocketAddress);
             super.setIdleTimeout(-1);
         }
 
@@ -517,18 +516,6 @@ public class SslConnection extends AbstractConnection implements Connection.Upgr
         public boolean isOpen()
         {
             return getEndPoint().isOpen();
-        }
-
-        @Override
-        public SocketAddress getLocalSocketAddress()
-        {
-            return getEndPoint().getLocalSocketAddress();
-        }
-
-        @Override
-        public SocketAddress getRemoteSocketAddress()
-        {
-            return getEndPoint().getRemoteSocketAddress();
         }
 
         @Override

@@ -103,7 +103,7 @@ public class ByteArrayEndPoint extends AbstractEndPoint
 
     public ByteArrayEndPoint(Scheduler timer, long idleTimeoutMs, ByteBuffer input, ByteBuffer output)
     {
-        super(timer);
+        super(timer, NO_SOCKET_ADDRESS, NO_SOCKET_ADDRESS);
         if (BufferUtil.hasContent(input))
             addInput(input);
         _outputSize = (output == null) ? 1024 : output.capacity();

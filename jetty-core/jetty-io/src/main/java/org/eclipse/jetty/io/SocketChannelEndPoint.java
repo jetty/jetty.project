@@ -14,7 +14,6 @@
 package org.eclipse.jetty.io;
 
 import java.io.IOException;
-import java.net.SocketAddress;
 import java.nio.ByteBuffer;
 import java.nio.channels.SelectionKey;
 import java.nio.channels.SocketChannel;
@@ -33,33 +32,13 @@ public class SocketChannelEndPoint extends SelectableChannelEndPoint
 
     public SocketChannelEndPoint(SocketChannel channel, ManagedSelector selector, SelectionKey key, Scheduler scheduler)
     {
-        super(scheduler, channel, selector, key);
+        super(scheduler, channel, channel::getLocalAddress, channel::getRemoteAddress, selector, key);
     }
 
     @Override
     public SocketChannel getChannel()
     {
         return (SocketChannel)super.getChannel();
-    }
-
-    @Override
-    public SocketAddress getRemoteSocketAddress()
-    {
-        SocketAddress socketAddress = super.getRemoteSocketAddress();
-
-        if (socketAddress != null)
-            return socketAddress;
-
-        try
-        {
-            return getChannel().getRemoteAddress();
-        }
-        catch (Throwable x)
-        {
-            if (LOG.isTraceEnabled())
-                LOG.trace("Could not retrieve remote socket address", x);
-            return null;
-        }
     }
 
     @Override

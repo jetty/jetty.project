@@ -14,7 +14,6 @@
 package org.eclipse.jetty.quic.common;
 
 import java.io.IOException;
-import java.net.SocketAddress;
 import java.nio.ByteBuffer;
 import java.util.List;
 import java.util.stream.IntStream;
@@ -45,7 +44,7 @@ public class QuicStreamEndPoint extends AbstractEndPoint
 
     public QuicStreamEndPoint(Scheduler scheduler, QuicSession session, long streamId)
     {
-        super(scheduler);
+        super(scheduler, session.getLocalAddress(), session.getRemoteAddress());
         this.session = session;
         this.streamId = streamId;
     }
@@ -76,18 +75,6 @@ public class QuicStreamEndPoint extends AbstractEndPoint
     public long getStreamId()
     {
         return streamId;
-    }
-
-    @Override
-    public SocketAddress getLocalSocketAddress()
-    {
-        return session.getLocalAddress();
-    }
-
-    @Override
-    public SocketAddress getRemoteSocketAddress()
-    {
-        return session.getRemoteAddress();
     }
 
     public boolean isStreamFinished()
