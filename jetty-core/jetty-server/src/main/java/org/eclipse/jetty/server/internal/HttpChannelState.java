@@ -15,11 +15,14 @@ package org.eclipse.jetty.server.internal;
 
 import java.io.IOException;
 import java.nio.ByteBuffer;
+import java.util.ArrayList;
 import java.util.HashMap;
+import java.util.List;
 import java.util.Objects;
 import java.util.Set;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.TimeoutException;
+import java.util.concurrent.atomic.AtomicReference;
 import java.util.concurrent.atomic.LongAdder;
 import java.util.function.Consumer;
 import java.util.function.Function;
@@ -774,6 +777,7 @@ public class HttpChannelState implements HttpChannel, Components
         private final AutoLock _lock;
         private final LongAdder _contentBytesRead = new LongAdder();
         private final Attributes _attributes = new Attributes.Lazy();
+        private final AtomicReference<List<Consumer<Throwable>>> _onCompletion = new AtomicReference<>();
         private HttpChannelState _httpChannelState;
         private Request _loggedRequest;
         private HttpFields _trailers;
@@ -1099,6 +1103,60 @@ public class HttpChannelState implements HttpChannel, Components
         public void addHttpStreamWrapper(Function<HttpStream, HttpStream> wrapper)
         {
             getHttpChannelState().addHttpStreamWrapper(wrapper);
+        }
+
+        public void addCompletionListener(Consumer<Throwable> listener)
+        {
+            List<Consumer<Throwable>> listeners = _onCompletion.updateAndGet(list -> list == null ? new ArrayList<>() : list);
+            if (listeners.isEmpty())
+            {
+                addHttpStreamWrapper(stream -> new HttpStream.Wrapper(stream)
+                {
+                    @Override
+                    public void succeeded()
+                    {
+                        if (LOG.isDebugEnabled())
+                            LOG.debug("succeeded {}", this);
+                        onCompletion(null);
+                        super.succeeded();
+                    }
+
+                    @Override
+                    public void failed(Throwable x)
+                    {
+                        if (LOG.isDebugEnabled())
+                            LOG.debug("failed {}", this, x);
+                        onCompletion(x);
+                        super.failed(x);
+                    }
+
+                    private void onCompletion(Throwable x)
+                    {
+                        List<Consumer<Throwable>> onCompletion = _onCompletion.getAndSet(null);
+                        if (onCompletion == null)
+                        {
+                            if (LOG.isDebugEnabled())
+                               LOG.warn("onCompletion called twice", new IllegalStateException(Thread.currentThread().getName()));
+                            return;
+                        }
+                        // completion events in reverse order
+                        for (int i = onCompletion.size(); i-- > 0;)
+                        {
+                            Consumer<Throwable> r = onCompletion.get(i);
+                            try
+                            {
+                                r.accept(x);
+                            }
+                            catch (Throwable t)
+                            {
+                                ExceptionUtil.addSuppressedIfNotAssociated(x, t);
+                                LOG.warn("{} threw", r, t);
+                            }
+                        }
+                    }
+                });
+            }
+            listeners.add(listener);
         }
 
         @Override

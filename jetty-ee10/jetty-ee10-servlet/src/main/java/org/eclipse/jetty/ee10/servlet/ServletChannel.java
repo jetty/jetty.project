@@ -59,7 +59,7 @@ import static org.eclipse.jetty.util.thread.Invocable.InvocationType.NON_BLOCKIN
  * {@link jakarta.servlet.ServletInputStream}.
  * <p>
  * This class is reusable over multiple requests for the same {@link ServletContextHandler}
- * and is {@link #recycle() recycled} after each use before being
+ * and is {@link #recycle(Throwable) recycled} after each use before being
  * {@link #associate(ServletContextRequest) associated} with a new {@link ServletContextRequest}
  * and then {@link #associate(Request, Response, Callback) associated} with possibly wrapped
  * request, response and callback.
@@ -112,16 +112,13 @@ public class ServletChannel
     /**
      * Associate this channel with a specific request.
      * This method is called by the {@link ServletContextHandler} when a core {@link Request} is accepted and associated with
-     * a servlet mapping. The association remains until {@link #recycle()} is called.
+     * a servlet mapping. The association remains functional until {@link #recycle(Throwable)} is called,
+     * and it remains readable until a call to {@link #recycle(Throwable)} or a subsequent call to {@code associate}.
      * @param servletContextRequest The servlet context request to associate
-     * @see #recycle()
+     * @see #recycle(Throwable)
      */
     public void associate(ServletContextRequest servletContextRequest)
     {
-        // We need to recycle here sometimes as requests that are handled before the
-        // ServletHandler (e.g. by SecurityHandler) are not recycled.
-        if (_servletContextRequest != null)
-            recycle();
         _httpInput.reopen();
         _request = _servletContextRequest = servletContextRequest;
         _response = _servletContextRequest.getServletContextResponse();
@@ -440,14 +437,17 @@ public class ServletChannel
     }
 
     /**
+     * Prepare to be reused.
+     * @param x Any completion exception, or null for successful completion.
      * @see #associate(ServletContextRequest)
      */
-    private void recycle()
+    void recycle(Throwable x)
     {
         _state.recycle();
         _httpInput.recycle();
         _httpOutput.recycle();
-        _request = _servletContextRequest = null;
+        _servletContextRequest = null;
+        _request = null;
         _response = null;
         _callback = null;
         _expects100Continue = false;
@@ -817,16 +817,7 @@ public class ServletChannel
         // Callback will either be succeeded here or failed in abort().
         Callback callback = _callback;
         if (_state.completeResponse())
-        {
-            // Must recycle before callback notification to allow for reuse.
-            recycle();
             callback.succeeded();
-        }
-        else
-        {
-            // Recycle always done here even if an abort is called.
-            recycle();
-        }
     }
 
     public boolean isCommitted()
