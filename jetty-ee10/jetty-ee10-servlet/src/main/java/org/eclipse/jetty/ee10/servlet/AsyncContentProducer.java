@@ -51,6 +51,11 @@ class AsyncContentProducer implements ContentProducer
         _lock = lock;
     }
 
+    public ServletChannel getServletChannel()
+    {
+        return _servletChannel;
+    }
+
     @Override
     public void recycle()
     {

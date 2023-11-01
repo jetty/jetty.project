@@ -160,8 +160,8 @@ class BlockingContentProducer implements ContentProducer
         // just after having received the request, not only when they have read all the available content.
         if (unready)
         {
-            // Call nextChunk() to switch the input state back to IDLE, otherwise we would stay UNREADY.
-            _asyncContentProducer.nextChunk();
+            // switch the input state back to IDLE, otherwise we would stay UNREADY.
+            _asyncContentProducer.getServletChannel().getServletRequestState().onReadIdle();
             _semaphore.release();
         }
         return false;

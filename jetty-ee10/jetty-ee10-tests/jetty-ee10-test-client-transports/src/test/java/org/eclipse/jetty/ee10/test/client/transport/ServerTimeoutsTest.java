@@ -52,6 +52,7 @@ import org.junit.jupiter.params.provider.MethodSource;
 import static org.junit.jupiter.api.Assertions.assertArrayEquals;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
+import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.junit.jupiter.api.Assumptions.assumeTrue;
 
@@ -413,8 +414,6 @@ public class ServerTimeoutsTest extends AbstractTest
     @MethodSource("transportsNoFCGI")
     public void testBlockingReadHttpIdleTimeoutOverridesIdleTimeout(Transport transport) throws Exception
     {
-        assumeTrue(transport != Transport.H3); // TODO Fix H3
-
         long httpIdleTimeout = 2500;
         long idleTimeout = 3 * httpIdleTimeout;
         httpConfig.setIdleTimeout(httpIdleTimeout);
@@ -642,19 +641,13 @@ public class ServerTimeoutsTest extends AbstractTest
         }
 
         @Override
-        protected void service(HttpServletRequest request, HttpServletResponse response) throws ServletException, IOException
+        protected void service(HttpServletRequest request, HttpServletResponse response) throws IOException
         {
             ServletInputStream input = request.getInputStream();
             assertEquals(0, input.read());
-            try
-            {
-                input.read();
-            }
-            catch (IOException x)
-            {
-                handlerLatch.countDown();
-                throw x;
-            }
+            IOException x = assertThrows(IOException.class, input::read);
+            handlerLatch.countDown();
+            throw x;
         }
     }
 }
