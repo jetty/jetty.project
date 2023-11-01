@@ -365,17 +365,10 @@ public class HttpChannelState implements HttpChannel, Components
                 Runnable invokeWriteFailure = _response.lockedFailWrite(t);
 
                 // If demand was in process, then arrange for the next read to return the idle timeout, if no other error
-                // TODO to make IO timeouts transient, remove the invokeWriteFailure test below.
-                //      Probably writes cannot be made transient as it will be unclear how much of the buffer has actually
-                //      been written.  So write timeouts might always be persistent... but then we should call the listener
-                //      before calling lockedFailedWrite above.
-                if (invokeOnContentAvailable != null || invokeWriteFailure != null)
+                if (invokeOnContentAvailable != null)
                 {
-                    // TODO The chunk here should be last==false, so that IO timeout is a transient failure.
-                    //      However AsyncContentProducer has been written on the assumption of no transient
-                    //      failures, so it needs to be updated before we can make timeouts transients.
-                    //      See ServerTimeoutTest.testAsyncReadHttpIdleTimeoutOverridesIdleTimeout
-                    _failure = Content.Chunk.from(t, true);
+                    _failure = Content.Chunk.from(t, false);
+                    System.err.println("failure chunk " + _failure);
                 }
 
                 // If there was an IO operation, just deliver the idle timeout via them
