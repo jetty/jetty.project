@@ -44,16 +44,15 @@ public class MavenMetaInfConfiguration extends MetaInfConfiguration
     }
 
     /**
-     * Get the jars to examine from the files from which we have
+     * Get the webapp paths (jars &amp; dirs) to examine from the files from which we have
      * synthesized the classpath. Note that the classpath is not
      * set at this point, so we cannot get them from the classpath.
      *
      * @param context the web app context
-     * @return the list of jars found
+     * @return the list of webapp resources found
      */
     @Override
-    protected List<Resource> findJars(WebAppContext context)
-        throws Exception
+    protected List<Resource> getWebAppPaths(WebAppContext context) throws Exception
     {
         List<Resource> list = new ArrayList<>();
         MavenWebAppContext jwac = (MavenWebAppContext)context;
@@ -77,7 +76,7 @@ public class MavenMetaInfConfiguration extends MetaInfConfiguration
             });
         }
 
-        List<Resource> superList = super.findJars(context);
+        List<Resource> superList = super.getWebAppPaths(context);
         if (superList != null)
             list.addAll(superList);
         return list;

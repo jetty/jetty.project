@@ -541,77 +541,9 @@ public class MetaInfConfiguration extends AbstractConfiguration
         if (webInfClasses != null)
             classDirs.add(webInfClasses);
 
-        classDirs.addAll(findExtraClasspathDirs(context));
+        classDirs.addAll(getExtraClasspathDirs(context));
 
         return classDirs;
-    }
-
-    /**
-     * Look for jars that should be treated as if they are in WEB-INF/lib
-     *
-     * @param context the context to find the jars in
-     * @return the list of jar resources found within context
-     * @throws Exception if unable to find the jars
-     */
-    protected List<Resource> findJars(WebAppContext context)
-        throws Exception
-    {
-        List<Resource> jarResources = new ArrayList<>(findWebInfLibJars(context));
-        List<Resource> extraClasspathJars = findExtraClasspathJars(context);
-        if (extraClasspathJars != null)
-            jarResources.addAll(extraClasspathJars);
-        return jarResources;
-    }
-
-    /**
-     * Look for jars in {@code WEB-INF/lib}
-     *
-     * @param context the context to find the lib jars in
-     * @return the list of jars as {@link Resource}
-     * @throws Exception if unable to scan for lib jars
-     */
-    protected List<Resource> findWebInfLibJars(WebAppContext context)
-        throws Exception
-    {
-        if (context == null)
-            return List.of();
-
-        Resource webInf = context.getWebInf();
-        if (webInf == null || !webInf.exists() || !webInf.isDirectory())
-            return List.of();
-
-        Resource webInfLib = webInf.resolve("lib");
-
-        if (Resources.isReadableDirectory(webInfLib))
-        {
-            return webInfLib.list().stream()
-                .filter((lib) -> FileID.isLibArchive(lib.getFileName()))
-                .map(r -> toDirectoryResource(context, r))
-                .sorted(ResourceCollators.byName(true))
-                .collect(Collectors.toList());
-        }
-        else
-        {
-            return List.of();
-        }
-    }
-
-    /**
-     * Get jars from WebAppContext.getExtraClasspath as resources
-     *
-     * @param context the context to find extra classpath jars in
-     * @return the list of Resources with the extra classpath, or null if not found
-     */
-    protected List<Resource> findExtraClasspathJars(WebAppContext context)
-    {
-        if (context == null || context.getExtraClasspath() == null)
-            return null;
-
-        return context.getExtraClasspath()
-            .stream()
-            .filter(r -> FileID.isLibArchive(r.getURI()))
-            .map(r -> toDirectoryResource(context, r))
-            .collect(Collectors.toList());
     }
 
     /**
@@ -646,7 +578,7 @@ public class MetaInfConfiguration extends AbstractConfiguration
      * @param context the context to look for extra classpaths in
      * @return the list of Resources to the extra classpath
      */
-    protected List<Resource> findExtraClasspathDirs(WebAppContext context)
+    protected List<Resource> getExtraClasspathDirs(WebAppContext context)
     {
         if (context == null || context.getExtraClasspath() == null)
             return List.of();
