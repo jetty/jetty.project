@@ -28,7 +28,6 @@ import java.util.concurrent.atomic.AtomicInteger;
 import org.eclipse.jetty.http.HttpStatus;
 import org.eclipse.jetty.io.CyclicTimeouts;
 import org.eclipse.jetty.server.Handler;
-import org.eclipse.jetty.server.HttpStream;
 import org.eclipse.jetty.server.Request;
 import org.eclipse.jetty.server.Response;
 import org.eclipse.jetty.util.Callback;
@@ -263,7 +262,7 @@ public class QoSHandler extends ConditionalHandler.Abstract
     {
         if (LOG.isDebugEnabled())
             LOG.debug("{} forwarding {}", this, request);
-        request.addHttpStreamWrapper(stream -> new Resumer(stream, request));
+        Request.addCompletionListener(request, this::resume);
         return nextHandler(request, response, callback);
     }
 
@@ -286,14 +285,14 @@ public class QoSHandler extends ConditionalHandler.Abstract
         timeouts.schedule(entry);
     }
 
-    private void resume()
+    private void resume(Throwable x)
     {
         // See correspondent state machine logic in handle() and expire().
         int permits = state.getAndIncrement();
         if (permits >= 0)
         {
             if (LOG.isDebugEnabled())
-                LOG.debug("{} no suspended requests to resume", this);
+                LOG.debug("{} no suspended requests to resume", this, x);
             return;
         }
 
@@ -388,33 +387,6 @@ public class QoSHandler extends ConditionalHandler.Abstract
                     LOG.debug("{} failed {}", QoSHandler.this, request, x);
                 failSuspended(request, response, callback, HttpStatus.INTERNAL_SERVER_ERROR_500, x);
             }
-        }
-    }
-
-    private class Resumer extends HttpStream.Wrapper
-    {
-        private final Request request;
-
-        private Resumer(HttpStream wrapped, Request request)
-        {
-            super(wrapped);
-            this.request = request;
-        }
-
-        @Override
-        public void succeeded()
-        {
-            if (LOG.isDebugEnabled())
-                LOG.debug("{} succeeded {}", QoSHandler.this, request);
-            resume();
-        }
-
-        @Override
-        public void failed(Throwable x)
-        {
-            if (LOG.isDebugEnabled())
-                LOG.debug("{} failed {}", QoSHandler.this, request, x);
-            resume();
         }
     }
 

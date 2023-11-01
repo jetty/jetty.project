@@ -339,17 +339,12 @@ public class ContextHandlerTest
             {
                 assertInContext(request);
                 scopeListener.assertInContext(request.getContext(), request);
-
-                request.addHttpStreamWrapper(s -> new HttpStream.Wrapper(s)
+                Request.addCompletionListener(request, x ->
                 {
-                    @Override
-                    public void succeeded()
-                    {
-                        assertInContext(request);
-                        scopeListener.assertInContext(request.getContext(), request);
-                        super.succeeded();
-                    }
+                    assertInContext(request);
+                    scopeListener.assertInContext(request.getContext(), request);
                 });
+
                 request.demand(() ->
                 {
                     assertInContext(request);
