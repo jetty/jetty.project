@@ -463,7 +463,8 @@ public class ServerTimeoutsTest extends AbstractTest
                     @Override
                     public void onDataAvailable() throws IOException
                     {
-                        assertEquals(0, input.read());
+                        while (input.isReady())
+                            assertEquals(0, input.read());
                         assertFalse(input.isReady());
                     }
 
@@ -477,17 +478,10 @@ public class ServerTimeoutsTest extends AbstractTest
                     {
                         if (failure instanceof TimeoutException)
                         {
-                            response.setStatus(HttpStatus.INTERNAL_SERVER_ERROR_500);
+                            response.setStatus(HttpStatus.GATEWAY_TIMEOUT_504);
                             handlerLatch.countDown();
                         }
 
-                        // TODO the problem here is that timeout failures are currently persistent and affect reads
-                        //      and writes.  So after the 500 is set above, the complete below tries to commit the response,
-                        //      but the write/send for that fails with the same timeout exception.   Thus the 500 is never
-                        //      sent and the connection is just closed.
-                        //      This was not apparent until the change in HttpOutput#onWriteComplete to not always abort on
-                        //      failure (as this prevents async handling completing on its own terms).
-                        //      We can "fix" this here by doing a response.sendError(-1);
                         asyncContext.complete();
                     }
                 });
@@ -501,7 +495,7 @@ public class ServerTimeoutsTest extends AbstractTest
             .body(content)
             .send(result ->
             {
-                if (result.getResponse().getStatus() == HttpStatus.INTERNAL_SERVER_ERROR_500)
+                if (result.getResponse().getStatus() == HttpStatus.GATEWAY_TIMEOUT_504)
                     resultLatch.countDown();
             });
 

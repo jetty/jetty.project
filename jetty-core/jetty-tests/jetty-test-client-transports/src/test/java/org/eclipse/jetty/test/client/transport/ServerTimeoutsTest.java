@@ -42,6 +42,7 @@ import static org.hamcrest.Matchers.instanceOf;
 import static org.hamcrest.Matchers.is;
 import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertNotNull;
+import static org.junit.jupiter.api.Assertions.assertNull;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
 public class ServerTimeoutsTest extends AbstractTest
@@ -75,7 +76,10 @@ public class ServerTimeoutsTest extends AbstractTest
             {
 
                 if (listener)
+                {
                     request.addIdleTimeoutListener(t -> listenerCalled.compareAndSet(false, true));
+                    request.addFailureListener(callback::failed);
+                }
 
                 // Do not complete the callback, so it idle times out.
                 return true;
@@ -130,15 +134,13 @@ public class ServerTimeoutsTest extends AbstractTest
 
         // Reads should yield the idle timeout.
         Content.Chunk chunk = requestRef.get().read();
-        // TODO change last to false in the next line if timeouts are transients
-        assertTrue(Content.Chunk.isFailure(chunk, true));
+        assertTrue(Content.Chunk.isFailure(chunk, false));
         Throwable cause = chunk.getFailure();
         assertThat(cause, instanceOf(TimeoutException.class));
 
-        /* TODO if transient timeout failures are supported then add this check
         // Can read again
         assertNull(requestRef.get().read());
-        */
+
 
         // Complete the callback as the error listener promised.
         callbackRef.get().failed(cause);
@@ -198,6 +200,7 @@ public class ServerTimeoutsTest extends AbstractTest
             public boolean handle(Request request, Response response, Callback callback)
             {
                 request.addIdleTimeoutListener(t -> error.getAndSet(t) != null);
+                request.addFailureListener(callback::failed);
                 return true;
             }
         });

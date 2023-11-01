@@ -200,7 +200,11 @@ class AsyncContentProducer implements ContentProducer
         if (LOG.isDebugEnabled())
             LOG.debug("nextChunk = {} {}", chunk, this);
         if (chunk != null)
+        {
             _servletChannel.getServletRequestState().onReadIdle();
+            if (Content.Chunk.isFailure(chunk, false))
+                _chunk = Content.Chunk.next(chunk);
+        }
         return chunk;
     }
 
@@ -267,7 +271,7 @@ class AsyncContentProducer implements ContentProducer
         {
             if (_chunk != null)
             {
-                if (_chunk.isLast() || _chunk.hasRemaining())
+                if (_chunk.isLast() || _chunk.hasRemaining() || Content.Chunk.isFailure(_chunk, false))
                 {
                     if (LOG.isDebugEnabled())
                         LOG.debug("chunk not yet depleted, returning it {}", this);
@@ -292,10 +296,9 @@ class AsyncContentProducer implements ContentProducer
                         LOG.debug("channel has no new chunk {}", this);
                     return null;
                 }
-                else
-                {
-                    _servletChannel.getServletRequestState().onContentAdded();
-                }
+                _servletChannel.getServletRequestState().onContentAdded();
+                if (Content.Chunk.isFailure(_chunk, false))
+                    return _chunk;
             }
 
             // Release the chunk immediately, if it is empty.

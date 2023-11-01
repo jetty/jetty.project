@@ -361,15 +361,12 @@ public class HttpChannelState implements HttpChannel, Components
                 Runnable invokeOnContentAvailable = _onContentAvailable;
                 _onContentAvailable = null;
 
-                // If a write call is in progress, take the writeCallback to fail below
-                Runnable invokeWriteFailure = _response.lockedFailWrite(t);
-
                 // If demand was in process, then arrange for the next read to return the idle timeout, if no other error
                 if (invokeOnContentAvailable != null)
-                {
                     _failure = Content.Chunk.from(t, false);
-                    System.err.println("failure chunk " + _failure);
-                }
+
+                // If a write call is in progress, take the writeCallback to fail below
+                Runnable invokeWriteFailure = _response.lockedFailWrite(t);
 
                 // If there was an IO operation, just deliver the idle timeout via them
                 if (invokeOnContentAvailable != null || invokeWriteFailure != null)
