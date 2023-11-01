@@ -25,7 +25,9 @@ import java.security.Principal;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Locale;
+import java.util.Map;
 import java.util.Objects;
+import java.util.Set;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.TimeoutException;
 import java.util.concurrent.atomic.AtomicReference;
@@ -785,11 +787,21 @@ public interface Request extends Attributes, Content.Source
     /**
      * <p>A wrapper for {@code Request} instances.</p>
      */
-    class Wrapper extends Attributes.Wrapper implements Request
+    class Wrapper implements Request, Attributes
     {
+        /**
+         * Implementation note: {@link Request.Wrapper} does not extend from {@link Attributes.Wrapper}
+         * as {@link #getWrapped()} would either need to be implemented as {@code return (Request)getWrapped()}
+         * which would require a cast from one interface type to another, spoiling the JVM's
+         * {@code secondary_super_cache}, or by storing the same {@code _wrapped} object in two fields
+         * (one in {@link Attributes.Wrapper} as type {@link Attributes} and one in {@link Request.Wrapper} as
+         * type {@link Request}) to save the costly cast from interface type to another.
+         */
+        private final Request _wrapped;
+
         public Wrapper(Request wrapped)
         {
-            super(wrapped);
+            _wrapped = Objects.requireNonNull(wrapped);
         }
 
         @Override
@@ -925,9 +937,44 @@ public interface Request extends Attributes, Content.Source
         }
 
         @Override
+        public Object removeAttribute(String name)
+        {
+            return getWrapped().removeAttribute(name);
+        }
+
+        @Override
+        public Object setAttribute(String name, Object attribute)
+        {
+            return getWrapped().setAttribute(name, attribute);
+        }
+
+        @Override
+        public Object getAttribute(String name)
+        {
+            return getWrapped().getAttribute(name);
+        }
+
+        @Override
+        public Set<String> getAttributeNameSet()
+        {
+            return getWrapped().getAttributeNameSet();
+        }
+
+        @Override
+        public Map<String, Object> asAttributeMap()
+        {
+            return getWrapped().asAttributeMap();
+        }
+
+        @Override
+        public void clearAttributes()
+        {
+            getWrapped().clearAttributes();
+        }
+
         public Request getWrapped()
         {
-            return (Request)super.getWrapped();
+            return _wrapped;
         }
     }
 
