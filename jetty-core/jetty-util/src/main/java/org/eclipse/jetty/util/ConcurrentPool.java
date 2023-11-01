@@ -89,7 +89,7 @@ public class ConcurrentPool<P> implements Pool<P>, Dumpable
     @Deprecated
     public ConcurrentPool(StrategyType strategyType, int maxSize, boolean cache)
     {
-        this(strategyType, maxSize, cache, pooled -> 1);
+        this(strategyType, maxSize, pooled -> 1);
     }
 
     /**
@@ -126,21 +126,6 @@ public class ConcurrentPool<P> implements Pool<P>, Dumpable
         this.maxMultiplex = Objects.requireNonNull(maxMultiplex);
     }
 
-    /**
-     * <p>Creates an instance with the specified strategy.
-     * and a function that returns the max multiplex count for a given pooled object.</p>
-     *
-     * @param strategyType the strategy to used to lookup entries
-     * @param maxSize the maximum number of pooled entries
-     * @param maxMultiplex a function that given the pooled object returns the max multiplex count
-     * @param weak true if the pooled buffers should be weakly referenced upon acquisition, false otherwise
-     */
-    @Deprecated
-    public ConcurrentPool(StrategyType strategyType, int maxSize, ToIntFunction<P> maxMultiplex, boolean weak)
-    {
-        this(strategyType, maxSize, maxMultiplex);
-    }
-
     @ManagedAttribute("number of entries leaked (not released nor referenced)")
     public long getLeaked()
     {
@@ -158,11 +143,11 @@ public class ConcurrentPool<P> implements Pool<P>, Dumpable
         return maxMultiplex.applyAsInt(pooled);
     }
 
-    void leaked(Holder<P> holder)
+    private void leaked(Holder<P> holder)
     {
         leaked.increment();
-        if (holder instanceof ConcurrentPool.DebugWeakHolder<P> debugWeakHolder)
-            LOG.warn("LEAKED {}", this, debugWeakHolder.getLastFreed());
+        if (LOG.isDebugEnabled())
+            LOG.debug("Leaked " + holder);
     }
 
     @Override
@@ -440,7 +425,7 @@ public class ConcurrentPool<P> implements Pool<P>, Dumpable
         public ConcurrentEntry(ConcurrentPool<E> pool)
         {
             this.pool = pool;
-            holder = LOG.isDebugEnabled() ? new DebugWeakHolder<>(this) : new Holder<>(this);
+            holder = new Holder<>(this);
         }
 
         private Holder<E> getHolder()
@@ -460,8 +445,6 @@ public class ConcurrentPool<P> implements Pool<P>, Dumpable
                 throw new IllegalStateException("Entry already enabled " + this + " for " + pool);
             }
             this.pooled = pooled;
-            if (LOG.isDebugEnabled() && getHolder() instanceof ConcurrentPool.DebugWeakHolder<E> debugWeakHolder)
-                debugWeakHolder.update();
 
             if (tryEnable(acquire))
             {
@@ -670,7 +653,7 @@ public class ConcurrentPool<P> implements Pool<P>, Dumpable
         }
     }
 
-    static class Holder<P>
+    private static class Holder<P>
     {
         private final WeakReference<ConcurrentEntry<P>> _weak;
         private volatile ConcurrentEntry<P> _strong;
@@ -706,46 +689,6 @@ public class ConcurrentPool<P> implements Pool<P>, Dumpable
         public String toString()
         {
             return "%s@%x{%s,%s}".formatted(this.getClass().getSimpleName(), hashCode(), _weak.get(), _strong);
-        }
-    }
-
-    static class DebugWeakHolder<P> extends Holder<P>
-    {
-        private Throwable _lastFreed;
-
-        protected DebugWeakHolder(ConcurrentEntry<P> entry)
-        {
-            super(entry);
-            update();
-        }
-
-        public void update()
-        {
-            _lastFreed = new Throwable(Thread.currentThread().getName() + ":" + getEntry());
-        }
-
-        Throwable getLastFreed()
-        {
-            return _lastFreed;
-        }
-
-        @Override
-        public void hold()
-        {
-            super.hold();
-        }
-
-        @Override
-        public void free()
-        {
-            update();
-            super.free();
-        }
-
-        @Override
-        public String toString()
-        {
-            return "%s@%x{%s,%s}".formatted(this.getClass().getSimpleName(), hashCode(), getEntry(), _lastFreed.getMessage());
         }
     }
 }

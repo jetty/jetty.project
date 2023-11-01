@@ -506,10 +506,10 @@ public class ArrayByteBufferPool implements ByteBufferPool, Dumpable
         private RetainedBucket(int capacity, int poolSize, boolean weakPool)
         {
             if (poolSize <= ConcurrentPool.OPTIMAL_MAX_SIZE)
-                _pool = new ConcurrentPool<>(ConcurrentPool.StrategyType.THREAD_ID, poolSize, e -> 1, weakPool);
+                _pool = new ConcurrentPool<>(ConcurrentPool.StrategyType.THREAD_ID, poolSize, e -> 1);
             else
                 _pool = new CompoundPool<>(
-                    new ConcurrentPool<>(ConcurrentPool.StrategyType.THREAD_ID, ConcurrentPool.OPTIMAL_MAX_SIZE, e -> 1, weakPool),
+                    new ConcurrentPool<>(ConcurrentPool.StrategyType.THREAD_ID, ConcurrentPool.OPTIMAL_MAX_SIZE, e -> 1),
                     new QueuedPool<>(poolSize - ConcurrentPool.OPTIMAL_MAX_SIZE)
                 );
             _capacity = capacity;
