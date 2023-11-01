@@ -64,8 +64,8 @@ First, add `jetty-ee{8,9,10}-maven-plugin` to your `pom.xml` definition. Here's 
 [source,xml,subs="verbatim,attributes"]
 ----
 <plugin>
-  <groupId>org.eclipse.jetty.ee{8,9,10}</groupId>
-  <artifactId>jetty-ee{8,9,10}-maven-plugin</artifactId>
+  <groupId>org.eclipse.jetty.ee10</groupId>
+  <artifactId>jetty-ee10-maven-plugin</artifactId>
   <version>{version}</version>
 </plugin>
 ----
