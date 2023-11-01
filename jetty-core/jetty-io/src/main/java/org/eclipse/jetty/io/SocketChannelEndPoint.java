@@ -16,7 +16,6 @@ package org.eclipse.jetty.io;
 import java.io.IOException;
 import java.net.SocketAddress;
 import java.nio.ByteBuffer;
-import java.nio.channels.ClosedChannelException;
 import java.nio.channels.SelectionKey;
 import java.nio.channels.SocketChannel;
 
@@ -46,17 +45,14 @@ public class SocketChannelEndPoint extends SelectableChannelEndPoint
     @Override
     public SocketAddress getRemoteSocketAddress()
     {
+        SocketAddress socketAddress = super.getRemoteSocketAddress();
+
+        if (socketAddress != null)
+            return socketAddress;
+
         try
         {
             return getChannel().getRemoteAddress();
-        }
-        catch (ClosedChannelException e)
-        {
-            if (_remoteSocketAddress != null)
-                return _remoteSocketAddress;
-            if (LOG.isTraceEnabled())
-                LOG.trace("Could not retrieve remote socket address on closed channel", e);
-            return null;
         }
         catch (Throwable x)
         {

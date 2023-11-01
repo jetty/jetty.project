@@ -415,7 +415,7 @@ public class RequestLogTest
                         EndPoint endPoint = request.getConnectionMetaData().getConnection().getEndPoint();
                         // Close connection
                         endPoint.close();
-                        // Wait for a bit
+                        // Wait for endpoint to be closed
                         Awaitility.await().atMost(Duration.ofSeconds(5)).until(() -> !endPoint.isOpen());
                     });
                     Content.Sink.write(response, true, msg, testCallback);
