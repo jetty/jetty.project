@@ -678,10 +678,10 @@ public class HttpClientContinueTest extends AbstractTest
         assertTrue(latch.await(5, TimeUnit.SECONDS));
     }
 
-    @Test
-    public void test100ContinueThenTimeout() throws Exception
+    @ParameterizedTest
+    @MethodSource("transportsNoFCGI")
+    public void test100ContinueThenTimeoutThenSendError(Transport transport) throws Exception
     {
-        Transport transport = Transport.HTTP;
         long idleTimeout = 1000;
 
         CountDownLatch serverLatch = new CountDownLatch(1);
@@ -699,6 +699,8 @@ public class HttpClientContinueTest extends AbstractTest
                 }
                 catch (IOException x)
                 {
+                    // The copy failed b/c of idle timeout, time to try
+                    // to send an error which should have no effect.
                     response.sendError(HttpStatus.IM_A_TEAPOT_418);
                     serverLatch.countDown();
                 }
@@ -714,7 +716,7 @@ public class HttpClientContinueTest extends AbstractTest
             .body(requestContent)
             .send(result ->
             {
-                if (result.isFailed())
+                if (result.isFailed() && result.getResponse().getStatus() == HttpStatus.CONTINUE_100)
                     clientLatch.countDown();
             });
 
