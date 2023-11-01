@@ -149,10 +149,9 @@ class BlockingContentProducer implements ContentProducer
         // This is why this method always returns false.
         // But async errors can occur while the dispatched thread is NOT blocked reading (i.e.: in state WAITING),
         // so the WAITING to WOKEN transition must be done by the error-notifying thread which then has to reschedule
-        // the dispatched thread after HttpChannelState.asyncError() is called.
+        // the dispatched thread.
         // Calling _asyncContentProducer.onContentProducible() changes the channel state from WAITING to WOKEN which
-        // would prevent the subsequent call to HttpChannelState.asyncError() from rescheduling the thread.
-        // AsyncServletTest.testStartAsyncThenClientStreamIdleTimeout() tests this.
+        // would prevent the async error thread from noticing that a redispatching is needed.
         boolean unready = _asyncContentProducer.isUnready();
         if (LOG.isDebugEnabled())
             LOG.debug("onContentProducible releasing semaphore {} unready={}", _semaphore, unready);
@@ -160,7 +159,7 @@ class BlockingContentProducer implements ContentProducer
         // just after having received the request, not only when they have read all the available content.
         if (unready)
         {
-            // switch the input state back to IDLE, otherwise we would stay UNREADY.
+            // Switch the input state back to IDLE, otherwise we would stay UNREADY.
             _asyncContentProducer.getServletChannel().getServletRequestState().onReadIdle();
             _semaphore.release();
         }

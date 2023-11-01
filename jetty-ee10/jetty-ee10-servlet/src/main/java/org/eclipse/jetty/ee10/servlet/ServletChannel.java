@@ -76,7 +76,7 @@ public class ServletChannel
     private final ServletContextHandler.ServletContextApi _servletContextApi;
     private final ConnectionMetaData _connectionMetaData;
     private final AtomicLong _requests = new AtomicLong();
-    private final HttpInput _httpInput;
+    final HttpInput _httpInput;
     private final HttpOutput _httpOutput;
     private ServletContextRequest _servletContextRequest;
     private Request _request;

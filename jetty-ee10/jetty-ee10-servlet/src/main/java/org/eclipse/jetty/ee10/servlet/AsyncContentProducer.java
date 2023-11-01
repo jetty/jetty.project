@@ -51,7 +51,7 @@ class AsyncContentProducer implements ContentProducer
         _lock = lock;
     }
 
-    public ServletChannel getServletChannel()
+    ServletChannel getServletChannel()
     {
         return _servletChannel;
     }
