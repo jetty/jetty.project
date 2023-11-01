@@ -457,33 +457,19 @@ public class HttpChannelState implements HttpChannel, Components
                 Runnable invokeWriteFailure = _response.lockedFailWrite(x);
 
                 // Create runnable to invoke any onError listeners
-                ChannelRequest request = _request;
-                Runnable invokeOnFailureListeners = () ->
-                {
-                    Consumer<Throwable> onFailure;
-                    try (AutoLock ignore = _lock.lock())
-                    {
-                        onFailure = _onFailure;
-                    }
 
+                Consumer<Throwable> onFailure = _onFailure;
+                Runnable invokeOnFailureListeners = onFailure == null ? null : () ->
+                {
                     try
                     {
                         if (LOG.isDebugEnabled())
                             LOG.debug("invokeListeners {} {}", HttpChannelState.this, onFailure, x);
-                        if (onFailure != null)
-                            onFailure.accept(x);
+                        onFailure.accept(x);
                     }
                     catch (Throwable throwable)
                     {
                         ExceptionUtil.addSuppressedIfNotAssociated(x, throwable);
-                    }
-
-                    // If the application has not been otherwise informed of the failure
-                    if (invokeOnContentAvailable == null && invokeWriteFailure == null && onFailure == null)
-                    {
-                        if (LOG.isDebugEnabled())
-                            LOG.debug("failing callback in {}", this, x);
-                        request._callback.failed(x);
                     }
                 };
 
