@@ -19,6 +19,7 @@ import org.eclipse.jetty.ee10.webapp.Configuration;
 import org.eclipse.jetty.ee10.webapp.WebAppClassLoader;
 import org.eclipse.jetty.ee10.webapp.WebAppContext;
 import org.eclipse.jetty.ee10.webapp.WebInfConfiguration;
+import org.eclipse.jetty.util.URIUtil;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -59,7 +60,28 @@ public class MavenWebInfConfiguration extends WebInfConfiguration
                 LOG.debug("Setting up classpath ...");
             for (URI uri : jwac.getClassPathUris())
             {
-                loader.addClassPath(uri.toASCIIString());
+                // Not all Resource types supported by Jetty can be supported by WebAppClassLoader
+                String scheme = uri.getScheme();
+                if (scheme == null || scheme.equals("file"))
+                {
+                    // no scheme? or "file" scheme, assume it is just a path.
+                    loader.addClassPath(uri.getPath());
+                    continue;
+                }
+
+                if (scheme.equals("jar"))
+                {
+                    URI container = URIUtil.unwrapContainer(uri);
+                    if (container.getScheme().equals("file"))
+                    {
+                        // Just add a reference to the
+                        loader.addClassPath(container.getPath());
+                        continue;
+                    }
+                }
+
+                // Anything else is a warning
+                LOG.warn("Skipping unsupported URI on ClassPath: {}", uri);
             }
         }
 
