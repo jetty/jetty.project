@@ -71,8 +71,6 @@ public class ServletContextRequest extends ContextRequest implements ServletCont
     static final Fields NO_PARAMS = new Fields(Collections.emptyMap());
     static final Fields BAD_PARAMS = new Fields(Collections.emptyMap());
 
-    private static final Object NULL_VALUE = "REMOVED_ATTR_VALUE";
-
     public static ServletContextRequest getServletContextRequest(ServletRequest request)
     {
         if (request instanceof ServletApiRequest servletApiRequest &&
@@ -270,10 +268,19 @@ public class ServletContextRequest extends ContextRequest implements ServletCont
         return _queryEncoding;
     }
 
+    private static final Object REMOVED = new Object()
+    {
+        @Override
+        public String toString()
+        {
+            return "REMOVED";
+        }
+    };
+
     private <S> Object getSyntheticAttribute(String name, S source, Function<S, Object> getter)
     {
         Object value = super.getAttribute(name);
-        if (value == NULL_VALUE)
+        if (value == REMOVED)
             return null;
         if (value != null)
             return value;
@@ -284,13 +291,14 @@ public class ServletContextRequest extends ContextRequest implements ServletCont
 
     private <S> Object removeSyntheticAttribute(String name, S source, Function<S, Object> getter)
     {
-        return notNullValue(source != null && getter.apply(source) != null ? super.setAttribute(name, NULL_VALUE) : super.removeAttribute(name));
+        Object o = source != null && getter.apply(source) != null ? super.setAttribute(name, REMOVED) : super.removeAttribute(name);
+        return o == REMOVED ? null : o;
     }
 
     private <S> void updateSyntheticAttributeNameSet(Set<String> names, String name, S source, Function<S, Object> getter)
     {
         Object value = super.getAttribute(name);
-        if (value == NULL_VALUE)
+        if (value == REMOVED)
             names.remove(name);
         else if (value != null || source != null && getter.apply(source) != null)
             names.add(name);
@@ -298,14 +306,8 @@ public class ServletContextRequest extends ContextRequest implements ServletCont
 
     private <S> Object setSyntheticAttribute(String name, S source, Function<S, Object> getter, Object value)
     {
-        if (value == null)
-            return notNullValue(removeSyntheticAttribute(name, source, getter));
-        return notNullValue(super.setAttribute(name, value));
-    }
-
-    private Object notNullValue(Object o)
-    {
-        return o == NULL_VALUE ? null : o;
+        Object o = value == null ? removeSyntheticAttribute(name, source, getter) : super.setAttribute(name, value);
+        return o == REMOVED ? null : o;
     }
 
     @Override
