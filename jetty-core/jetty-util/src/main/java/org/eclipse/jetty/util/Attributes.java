@@ -18,6 +18,7 @@ import java.util.AbstractMap;
 import java.util.AbstractSet;
 import java.util.Collection;
 import java.util.Collections;
+import java.util.HashMap;
 import java.util.HashSet;
 import java.util.Iterator;
 import java.util.Map;
@@ -135,6 +136,34 @@ public interface Attributes
         return attributes;
     }
 
+    static int hashCode(Attributes attributes)
+    {
+        int hash = 113;
+        for (String name : attributes.getAttributeNameSet())
+            hash += name.hashCode() ^ attributes.getAttribute(name).hashCode();
+        return hash;
+    }
+
+    static boolean equals(Attributes attributes, Object o)
+    {
+        if (o instanceof Attributes a)
+        {
+            Set<String> ours = attributes.getAttributeNameSet();
+            Set<String> theirs = attributes.getAttributeNameSet();
+            if (!ours.equals(theirs))
+                return false;
+
+            for (String s : ours)
+            {
+                if (!Objects.equals(attributes.getAttribute(s), a.getAttribute(s)))
+                    return false;
+            }
+            return true;
+        }
+        return false;
+    }
+
+
     /** Unwrap attributes to a specific attribute  {@link Wrapper}.
      * @param attributes The attributes to unwrap, which may be a {@link Wrapper}
      * @param target The target  {@link Wrapper} class.
@@ -203,20 +232,17 @@ public interface Attributes
             getWrapped().clearAttributes();
         }
 
-        // TODO: remove? or fix (don't want the wrapped and wrapper to match)
         @Override
         public int hashCode()
         {
-            return getWrapped().hashCode();
+            return Attributes.hashCode(this);
         }
 
-        // TODO: remove? or fix (don't want the wrapped and wrapper to match)
         @Override
-        public boolean equals(Object obj)
+        public boolean equals(Object o)
         {
-            return getWrapped().equals(obj);
+            return o instanceof Attributes && Attributes.equals(this, o);
         }
-
     }
 
     /**
@@ -306,28 +332,16 @@ public interface Attributes
             return _map.entrySet();
         }
 
-        // TODO: remove? or fix (don't want the wrapped and wrapper to match)
         @Override
         public int hashCode()
         {
-            return _map.hashCode();
+            return Attributes.hashCode(this);
         }
 
-        // TODO: remove? or fix (don't want the wrapped and wrapper to match)
         @Override
         public boolean equals(Object o)
         {
-            if (o instanceof Attributes)
-            {
-                Attributes a = (Attributes)o;
-                for (Map.Entry<String, Object> e : _map.entrySet())
-                {
-                    if (!Objects.equals(e.getValue(), a.getAttribute(e.getKey())))
-                        return false;
-                }
-                return true;
-            }
-            return false;
+            return o instanceof Attributes && Attributes.equals(this, o);
         }
     }
 
@@ -443,14 +457,25 @@ public interface Attributes
         {
             Dumpable.dumpObjects(out, indent, String.format("%s@%x", this.getClass().getSimpleName(), hashCode()), map());
         }
+
+        @Override
+        public int hashCode()
+        {
+            return Attributes.hashCode(this);
+        }
+
+        @Override
+        public boolean equals(Object o)
+        {
+            return o instanceof Attributes && Attributes.equals(this, o);
+        }
     }
 
     /**
      * An {@link Attributes} implementation backed by another {@link Attributes} instance, which is treated as immutable, but with a
      * ConcurrentHashMap used as a mutable layer over it.
-     * // TODO: can we extend Wrapper with a contains wrapped?
      */
-    class Layer implements Attributes
+    class Layer extends Wrapper
     {
         private static final Object REMOVED = new Object()
         {
@@ -461,7 +486,6 @@ public interface Attributes
             }
         };
 
-        private final Attributes _persistent;
         private final Attributes _layer;
 
         public Layer(Attributes persistent)
@@ -471,19 +495,19 @@ public interface Attributes
 
         public Layer(Attributes persistent, Attributes layer)
         {
-            _persistent = persistent;
+            super(persistent);
             _layer = layer;
         }
 
         public Attributes getPersistentAttributes()
         {
-            return _persistent;
+            return getWrapped();
         }
 
         @Override
         public Object removeAttribute(String name)
         {
-            Object p = _persistent.getAttribute(name);
+            Object p = super.getAttribute(name);
             try
             {
                 Object v = _layer.setAttribute(name, REMOVED);
@@ -515,13 +539,13 @@ public interface Attributes
             Object v = _layer.getAttribute(name);
             if (v != null)
                 return v == REMOVED ? null : v;
-            return _persistent.getAttribute(name);
+            return super.getAttribute(name);
         }
 
         @Override
         public Set<String> getAttributeNameSet()
         {
-            Set<String> names = new HashSet<>(_persistent.getAttributeNameSet());
+            Set<String> names = new HashSet<>(super.getAttributeNameSet());
 
             for (String name : _layer.getAttributeNameSet())
             {
@@ -537,40 +561,111 @@ public interface Attributes
         public void clearAttributes()
         {
             _layer.clearAttributes();
-            for (String name : _persistent.getAttributeNameSet())
+            for (String name : super.getAttributeNameSet())
                 _layer.setAttribute(name, REMOVED);
         }
+    }
 
-        // TODO: remove? or fix (don't want the wrapped and wrapper to match)
-        @Override
-        public int hashCode()
+    /**
+     *
+     */
+    abstract class Synthetic extends Wrapper
+    {
+        private static final Object REMOVED = new Object()
         {
-            int hash = 113;
-            for (String name : getAttributeNameSet())
-                hash += name.hashCode() ^ getAttribute(name).hashCode();
-            return hash;
+            @Override
+            public String toString()
+            {
+                return "REMOVED";
+            }
+        };
+
+        private Map<String, Object> _layer;
+
+        protected Synthetic(Attributes base)
+        {
+            super(base);
         }
 
-        // TODO: remove? or fix (don't want the wrapped and wrapper to match)
-        @Override
-        public boolean equals(Object o)
-        {
-            if (o instanceof Attributes)
-            {
-                Attributes a = (Attributes)o;
-                Set<String> ours = getAttributeNameSet();
-                Set<String> theirs = getAttributeNameSet();
-                if (!ours.equals(theirs))
-                    return false;
+        protected abstract Object getSyntheticAttribute(String name);
 
-                for (String s : ours)
+        protected abstract Set<String> getSyntheticNameSet();
+
+        @Override
+        public Object getAttribute(String name)
+        {
+            Object l = _layer == null ? null : _layer.get(name);
+            if (l == REMOVED)
+                return null;
+            if (l != null)
+                return l;
+
+            Object s = getSyntheticAttribute(name);
+            if (s == null)
+                return super.getAttribute(name);
+            return s;
+        }
+
+        @Override
+        public Object setAttribute(String name, Object value)
+        {
+            if (value == null)
+                return removeAttribute(name);
+
+            if (!getSyntheticNameSet().contains(name))
+                return super.setAttribute(name, value);
+
+            if (_layer == null)
+                _layer = new HashMap<>();
+
+            Object old = _layer.put(name, value);
+            return old == REMOVED ? null : old == null ? getSyntheticAttribute(name) : old;
+        }
+
+        @Override
+        public Object removeAttribute(String name)
+        {
+            if (!getSyntheticNameSet().contains(name))
+                return super.removeAttribute(name);
+
+            if (_layer == null)
+                _layer = new HashMap<>();
+
+            Object old = _layer.put(name, REMOVED);
+            return old == REMOVED ? null : old == null ? getSyntheticAttribute(name) : old;
+        }
+
+        @Override
+        public Set<String> getAttributeNameSet()
+        {
+            Set<String> names = new HashSet<>(super.getAttributeNameSet());
+
+            for (String s : getSyntheticNameSet())
+            {
+                if (_layer != null)
                 {
-                    if (!Objects.equals(getAttribute(s), a.getAttribute(s)))
-                        return false;
+                    Object l = _layer.get(s);
+                    if (l == REMOVED)
+                        names.remove(s);
+                    else if (l != null || getSyntheticAttribute(s) != null)
+                        names.add(s);
                 }
-                return true;
+                else if (getSyntheticAttribute(s) != null)
+                {
+                    names.add(s);
+                }
             }
-            return false;
+            return Collections.unmodifiableSet(names);
+        }
+
+        @Override
+        public void clearAttributes()
+        {
+            super.clearAttributes();
+            if (_layer == null)
+                _layer = new HashMap<>();
+            for (String s : getSyntheticNameSet())
+                _layer.put(s, REMOVED);
         }
     }
 
@@ -609,6 +704,18 @@ public interface Attributes
         public Map<String, Object> asAttributeMap()
         {
             return Collections.emptyMap();
+        }
+
+        @Override
+        public int hashCode()
+        {
+            return Attributes.hashCode(this);
+        }
+
+        @Override
+        public boolean equals(Object o)
+        {
+            return o instanceof Attributes && Attributes.equals(this, o);
         }
     };
 }

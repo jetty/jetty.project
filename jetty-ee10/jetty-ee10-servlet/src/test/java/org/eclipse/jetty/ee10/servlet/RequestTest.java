@@ -346,20 +346,20 @@ public class RequestTest
                 Set<String> names = new HashSet<>(Collections.list(request.getAttributeNames()));
                 assertThat(names, containsInAnyOrder(
                     SecureRequestCustomizer.SSL_SESSION_DATA_ATTRIBUTE,
-                    ServletContextRequest.JAKARTA_SERVLET_REQUEST_CIPHER_SUITE,
-                    ServletContextRequest.JAKARTA_SERVLET_REQUEST_KEY_SIZE,
-                    ServletContextRequest.JAKARTA_SERVLET_REQUEST_SSL_SESSION_ID,
-                    ServletContextRequest.JAKARTA_SERVLET_REQUEST_X_509_CERTIFICATE,
+                    ServletContextRequest.SSL_CIPHER_SUITE,
+                    ServletContextRequest.SSL_KEY_SIZE,
+                    ServletContextRequest.SSL_SESSION_ID,
+                    ServletContextRequest.X_509_CERTIFICATE,
                     FormFields.MAX_FIELDS_ATTRIBUTE,
                     FormFields.MAX_LENGTH_ATTRIBUTE,
                     ServletContextRequest.MULTIPART_CONFIG_ELEMENT
                 ));
 
                 // check we can get the expected values
-                assertThat(request.getAttribute(ServletContextRequest.JAKARTA_SERVLET_REQUEST_CIPHER_SUITE), is("quantumKnowledge"));
-                assertThat(request.getAttribute(ServletContextRequest.JAKARTA_SERVLET_REQUEST_KEY_SIZE), is(42));
-                assertThat(request.getAttribute(ServletContextRequest.JAKARTA_SERVLET_REQUEST_SSL_SESSION_ID), is("identity"));
-                assertThat(request.getAttribute(ServletContextRequest.JAKARTA_SERVLET_REQUEST_X_509_CERTIFICATE), sameInstance(certificate));
+                assertThat(request.getAttribute(ServletContextRequest.SSL_CIPHER_SUITE), is("quantumKnowledge"));
+                assertThat(request.getAttribute(ServletContextRequest.SSL_KEY_SIZE), is(42));
+                assertThat(request.getAttribute(ServletContextRequest.SSL_SESSION_ID), is("identity"));
+                assertThat(request.getAttribute(ServletContextRequest.X_509_CERTIFICATE), sameInstance(certificate));
                 assertThat(request.getAttribute(ServletContextRequest.MULTIPART_CONFIG_ELEMENT), notNullValue());
                 int maxFormKeys = ServletContextHandler.getServletContextHandler(request.getServletContext()).getMaxFormKeys();
                 assertThat(request.getAttribute(FormFields.MAX_FIELDS_ATTRIBUTE), is(maxFormKeys));
@@ -367,19 +367,19 @@ public class RequestTest
                 assertThat(request.getAttribute(FormFields.MAX_LENGTH_ATTRIBUTE), is(maxFormContentSize));
 
                 // check we can set all those attributes in the servlet API
-                request.setAttribute(ServletContextRequest.JAKARTA_SERVLET_REQUEST_CIPHER_SUITE, "piglatin");
-                request.setAttribute(ServletContextRequest.JAKARTA_SERVLET_REQUEST_KEY_SIZE, 3);
-                request.setAttribute(ServletContextRequest.JAKARTA_SERVLET_REQUEST_SSL_SESSION_ID, "other");
-                request.setAttribute(ServletContextRequest.JAKARTA_SERVLET_REQUEST_X_509_CERTIFICATE, "certificate");
+                request.setAttribute(ServletContextRequest.SSL_CIPHER_SUITE, "piglatin");
+                request.setAttribute(ServletContextRequest.SSL_KEY_SIZE, 3);
+                request.setAttribute(ServletContextRequest.SSL_SESSION_ID, "other");
+                request.setAttribute(ServletContextRequest.X_509_CERTIFICATE, "certificate");
                 request.setAttribute(ServletContextRequest.MULTIPART_CONFIG_ELEMENT, "config2");
                 request.setAttribute(FormFields.MAX_FIELDS_ATTRIBUTE, 101);
                 request.setAttribute(FormFields.MAX_LENGTH_ATTRIBUTE, 102);
 
                 // check we can get the updated values
-                assertThat(request.getAttribute(ServletContextRequest.JAKARTA_SERVLET_REQUEST_CIPHER_SUITE), is("piglatin"));
-                assertThat(request.getAttribute(ServletContextRequest.JAKARTA_SERVLET_REQUEST_KEY_SIZE), is(3));
-                assertThat(request.getAttribute(ServletContextRequest.JAKARTA_SERVLET_REQUEST_SSL_SESSION_ID), is("other"));
-                assertThat(request.getAttribute(ServletContextRequest.JAKARTA_SERVLET_REQUEST_X_509_CERTIFICATE), is("certificate"));
+                assertThat(request.getAttribute(ServletContextRequest.SSL_CIPHER_SUITE), is("piglatin"));
+                assertThat(request.getAttribute(ServletContextRequest.SSL_KEY_SIZE), is(3));
+                assertThat(request.getAttribute(ServletContextRequest.SSL_SESSION_ID), is("other"));
+                assertThat(request.getAttribute(ServletContextRequest.X_509_CERTIFICATE), is("certificate"));
                 assertThat(request.getAttribute(ServletContextRequest.MULTIPART_CONFIG_ELEMENT), is("config2"));
                 assertThat(request.getAttribute(FormFields.MAX_FIELDS_ATTRIBUTE), is(101));
                 assertThat(request.getAttribute(FormFields.MAX_LENGTH_ATTRIBUTE), is(102));
@@ -390,10 +390,10 @@ public class RequestTest
                 assertThat(ServletContextHandler.getServletContextHandler(request.getServletContext()).getMaxFormContentSize(), is(maxFormContentSize));
 
                 // Check we can remove all the attributes
-                request.removeAttribute(ServletContextRequest.JAKARTA_SERVLET_REQUEST_CIPHER_SUITE);
-                request.removeAttribute(ServletContextRequest.JAKARTA_SERVLET_REQUEST_KEY_SIZE);
-                request.removeAttribute(ServletContextRequest.JAKARTA_SERVLET_REQUEST_SSL_SESSION_ID);
-                request.setAttribute(ServletContextRequest.JAKARTA_SERVLET_REQUEST_X_509_CERTIFICATE, null);
+                request.removeAttribute(ServletContextRequest.SSL_CIPHER_SUITE);
+                request.removeAttribute(ServletContextRequest.SSL_KEY_SIZE);
+                request.removeAttribute(ServletContextRequest.SSL_SESSION_ID);
+                request.setAttribute(ServletContextRequest.X_509_CERTIFICATE, null);
                 request.removeAttribute(ServletContextRequest.MULTIPART_CONFIG_ELEMENT);
                 request.removeAttribute(FormFields.MAX_FIELDS_ATTRIBUTE);
                 request.removeAttribute(FormFields.MAX_LENGTH_ATTRIBUTE);

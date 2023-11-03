@@ -17,10 +17,8 @@ import java.nio.charset.Charset;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.EventListener;
-import java.util.HashSet;
 import java.util.List;
 import java.util.Set;
-import java.util.function.Function;
 
 import jakarta.servlet.AsyncListener;
 import jakarta.servlet.ServletRequest;
@@ -43,6 +41,7 @@ import org.eclipse.jetty.server.handler.ContextRequest;
 import org.eclipse.jetty.session.AbstractSessionManager;
 import org.eclipse.jetty.session.ManagedSession;
 import org.eclipse.jetty.session.SessionManager;
+import org.eclipse.jetty.util.Attributes;
 import org.eclipse.jetty.util.Fields;
 import org.eclipse.jetty.util.URIUtil;
 
@@ -57,12 +56,20 @@ import org.eclipse.jetty.util.URIUtil;
  */
 public class ServletContextRequest extends ContextRequest implements ServletContextHandler.ServletRequestInfo, Request.ServeAs
 {
-    public static final String JAKARTA_SERVLET_REQUEST_PREFIX = "jakarta.servlet.request.";
     public static final String MULTIPART_CONFIG_ELEMENT = "org.eclipse.jetty.multipartConfig";
-    public static final String JAKARTA_SERVLET_REQUEST_CIPHER_SUITE = "jakarta.servlet.request.cipher_suite";
-    public static final String JAKARTA_SERVLET_REQUEST_KEY_SIZE = "jakarta.servlet.request.key_size";
-    public static final String JAKARTA_SERVLET_REQUEST_SSL_SESSION_ID = "jakarta.servlet.request.ssl_session_id";
-    public static final String JAKARTA_SERVLET_REQUEST_X_509_CERTIFICATE = "jakarta.servlet.request.X509Certificate";
+    public static final String SSL_CIPHER_SUITE = "jakarta.servlet.request.cipher_suite";
+    public static final String SSL_KEY_SIZE = "jakarta.servlet.request.key_size";
+    public static final String SSL_SESSION_ID = "jakarta.servlet.request.ssl_session_id";
+    public static final String X_509_CERTIFICATE = "jakarta.servlet.request.X509Certificate";
+
+    private static final Set<String> ATTRIBUTES = Set.of(
+        SSL_CIPHER_SUITE,
+        SSL_KEY_SIZE,
+        SSL_SESSION_ID,
+        X_509_CERTIFICATE,
+        MULTIPART_CONFIG_ELEMENT,
+        FormFields.MAX_FIELDS_ATTRIBUTE,
+        FormFields.MAX_LENGTH_ATTRIBUTE);
 
     static final int INPUT_NONE = 0;
     static final int INPUT_STREAM = 1;
@@ -99,6 +106,8 @@ public class ServletContextRequest extends ContextRequest implements ServletCont
     private final String _decodedPathInContext;
     private final ServletChannel _servletChannel;
     private final SessionManager _sessionManager;
+    private final Attributes _attributes;
+
     private List<ServletRequestAttributeListener> _requestAttributeListeners;
     private Charset _queryEncoding;
     private HttpFields _trailers;
@@ -122,6 +131,30 @@ public class ServletContextRequest extends ContextRequest implements ServletCont
         _decodedPathInContext = decodedPathInContext;
         _response =  newServletContextResponse(response);
         _sessionManager = sessionManager;
+        _attributes = new Attributes.Synthetic(request)
+        {
+            @Override
+            protected Object getSyntheticAttribute(String name)
+            {
+                return switch (name)
+                {
+                    case SSL_CIPHER_SUITE -> super.getAttribute(SslSessionData.ATTRIBUTE) instanceof SslSessionData data ? data.cipherSuite() : null;
+                    case SSL_KEY_SIZE -> super.getAttribute(SslSessionData.ATTRIBUTE) instanceof SslSessionData data ? data.keySize() : null;
+                    case SSL_SESSION_ID -> super.getAttribute(SslSessionData.ATTRIBUTE) instanceof SslSessionData data ? data.sessionId() : null;
+                    case X_509_CERTIFICATE -> super.getAttribute(SslSessionData.ATTRIBUTE) instanceof SslSessionData data ? data.peerCertificates() : null;
+                    case ServletContextRequest.MULTIPART_CONFIG_ELEMENT -> _matchedResource.getResource().getServletHolder().getMultipartConfigElement();
+                    case FormFields.MAX_FIELDS_ATTRIBUTE -> getServletContext().getServletContextHandler().getMaxFormKeys();
+                    case FormFields.MAX_LENGTH_ATTRIBUTE -> getServletContext().getServletContextHandler().getMaxFormContentSize();
+                    default -> null;
+                };
+            }
+
+            @Override
+            protected Set<String> getSyntheticNameSet()
+            {
+                return ATTRIBUTES;
+            }
+        };
         addIdleTimeoutListener(_servletChannel.getServletRequestState()::onIdleTimeout);
     }
 
@@ -268,114 +301,28 @@ public class ServletContextRequest extends ContextRequest implements ServletCont
         return _queryEncoding;
     }
 
-    private static final Object REMOVED = new Object()
-    {
-        @Override
-        public String toString()
-        {
-            return "REMOVED";
-        }
-    };
-
-    private <S> Object getSyntheticAttribute(String name, S source, Function<S, Object> getter)
-    {
-        Object value = super.getAttribute(name);
-        if (value == REMOVED)
-            return null;
-        if (value != null)
-            return value;
-        if (source == null)
-            return null;
-        return getter == null ? null : getter.apply(source);
-    }
-
-    private <S> Object removeSyntheticAttribute(String name, S source, Function<S, Object> getter)
-    {
-        Object o = source != null && getter.apply(source) != null ? super.setAttribute(name, REMOVED) : super.removeAttribute(name);
-        return o == REMOVED ? null : o;
-    }
-
-    private <S> void updateSyntheticAttributeNameSet(Set<String> names, String name, S source, Function<S, Object> getter)
-    {
-        Object value = super.getAttribute(name);
-        if (value == REMOVED)
-            names.remove(name);
-        else if (value != null || source != null && getter.apply(source) != null)
-            names.add(name);
-    }
-
-    private <S> Object setSyntheticAttribute(String name, S source, Function<S, Object> getter, Object value)
-    {
-        Object o = value == null ? removeSyntheticAttribute(name, source, getter) : super.setAttribute(name, value);
-        return o == REMOVED ? null : o;
-    }
-
     @Override
     public Object getAttribute(String name)
     {
-        SslSessionData sslSessionData = (name.startsWith(JAKARTA_SERVLET_REQUEST_PREFIX) && super.getAttribute(SslSessionData.ATTRIBUTE) instanceof SslSessionData data) ? data : null;
-
-        return switch (name)
-        {
-            case JAKARTA_SERVLET_REQUEST_CIPHER_SUITE -> getSyntheticAttribute(name, sslSessionData, SslSessionData::cipherSuite);
-            case JAKARTA_SERVLET_REQUEST_KEY_SIZE -> getSyntheticAttribute(name, sslSessionData, SslSessionData::keySize);
-            case JAKARTA_SERVLET_REQUEST_SSL_SESSION_ID -> getSyntheticAttribute(name, sslSessionData, SslSessionData::sessionId);
-            case JAKARTA_SERVLET_REQUEST_X_509_CERTIFICATE -> getSyntheticAttribute(name, sslSessionData, SslSessionData::peerCertificates);
-            case ServletContextRequest.MULTIPART_CONFIG_ELEMENT -> getSyntheticAttribute(name, _matchedResource.getResource().getServletHolder(), ServletHolder::getMultipartConfigElement);
-            case FormFields.MAX_FIELDS_ATTRIBUTE -> getSyntheticAttribute(name, getServletContext().getServletContextHandler(), ServletContextHandler::getMaxFormKeys);
-            case FormFields.MAX_LENGTH_ATTRIBUTE -> getSyntheticAttribute(name, getServletContext().getServletContextHandler(), ServletContextHandler::getMaxFormContentSize);
-            default -> super.getAttribute(name);
-        };
+        return _attributes.getAttribute(name);
     }
 
     @Override
     public Object removeAttribute(String name)
     {
-        SslSessionData sslSessionData = (name.startsWith(JAKARTA_SERVLET_REQUEST_PREFIX) && super.getAttribute(SslSessionData.ATTRIBUTE) instanceof SslSessionData data) ? data : null;
-
-        return switch (name)
-        {
-            case JAKARTA_SERVLET_REQUEST_CIPHER_SUITE -> removeSyntheticAttribute(name, sslSessionData, SslSessionData::cipherSuite);
-            case JAKARTA_SERVLET_REQUEST_KEY_SIZE -> removeSyntheticAttribute(name, sslSessionData, SslSessionData::keySize);
-            case JAKARTA_SERVLET_REQUEST_SSL_SESSION_ID -> removeSyntheticAttribute(name, sslSessionData, SslSessionData::sessionId);
-            case JAKARTA_SERVLET_REQUEST_X_509_CERTIFICATE -> removeSyntheticAttribute(name, sslSessionData, SslSessionData::peerCertificates);
-            case ServletContextRequest.MULTIPART_CONFIG_ELEMENT -> removeSyntheticAttribute(name, _matchedResource.getResource().getServletHolder(), ServletHolder::getMultipartConfigElement);
-            case FormFields.MAX_FIELDS_ATTRIBUTE -> removeSyntheticAttribute(name, getServletContext().getServletContextHandler(), ServletContextHandler::getMaxFormKeys);
-            case FormFields.MAX_LENGTH_ATTRIBUTE -> removeSyntheticAttribute(name, getServletContext().getServletContextHandler(), ServletContextHandler::getMaxFormContentSize);
-            default -> super.removeAttribute(name);
-        };
+        return _attributes.removeAttribute(name);
     }
 
     @Override
     public Object setAttribute(String name, Object value)
     {
-        SslSessionData sslSessionData = (name.startsWith(JAKARTA_SERVLET_REQUEST_PREFIX) && super.getAttribute(SslSessionData.ATTRIBUTE) instanceof SslSessionData data) ? data : null;
-        return switch (name)
-        {
-            case JAKARTA_SERVLET_REQUEST_CIPHER_SUITE -> setSyntheticAttribute(name, sslSessionData, SslSessionData::cipherSuite, value);
-            case JAKARTA_SERVLET_REQUEST_KEY_SIZE -> setSyntheticAttribute(name, sslSessionData, SslSessionData::keySize, value);
-            case JAKARTA_SERVLET_REQUEST_SSL_SESSION_ID -> setSyntheticAttribute(name, sslSessionData, SslSessionData::sessionId, value);
-            case JAKARTA_SERVLET_REQUEST_X_509_CERTIFICATE -> setSyntheticAttribute(name, sslSessionData, SslSessionData::peerCertificates, value);
-            case ServletContextRequest.MULTIPART_CONFIG_ELEMENT -> setSyntheticAttribute(name, _matchedResource.getResource().getServletHolder(), ServletHolder::getMultipartConfigElement, value);
-            case FormFields.MAX_FIELDS_ATTRIBUTE -> setSyntheticAttribute(name, getServletContext().getServletContextHandler(), ServletContextHandler::getMaxFormKeys, value);
-            case FormFields.MAX_LENGTH_ATTRIBUTE -> setSyntheticAttribute(name, getServletContext().getServletContextHandler(), ServletContextHandler::getMaxFormContentSize, value);
-            default -> super.setAttribute(name, value);
-        };
+        return _attributes.setAttribute(name, value);
     }
 
     @Override
     public Set<String> getAttributeNameSet()
     {
-        Set<String> names = new HashSet<>(super.getAttributeNameSet());
-        SslSessionData sslSessionData = super.getAttribute(SslSessionData.ATTRIBUTE) instanceof SslSessionData data ? data : null;
-        updateSyntheticAttributeNameSet(names, JAKARTA_SERVLET_REQUEST_CIPHER_SUITE, sslSessionData, SslSessionData::cipherSuite);
-        updateSyntheticAttributeNameSet(names, JAKARTA_SERVLET_REQUEST_KEY_SIZE, sslSessionData, SslSessionData::keySize);
-        updateSyntheticAttributeNameSet(names, JAKARTA_SERVLET_REQUEST_SSL_SESSION_ID, sslSessionData, SslSessionData::sessionId);
-        updateSyntheticAttributeNameSet(names, JAKARTA_SERVLET_REQUEST_X_509_CERTIFICATE, sslSessionData, SslSessionData::peerCertificates);
-        updateSyntheticAttributeNameSet(names, ServletContextRequest.MULTIPART_CONFIG_ELEMENT, _matchedResource.getResource().getServletHolder(), ServletHolder::getMultipartConfigElement);
-        updateSyntheticAttributeNameSet(names, FormFields.MAX_FIELDS_ATTRIBUTE, getServletContext().getServletContextHandler(), ServletContextHandler::getMaxFormKeys);
-        updateSyntheticAttributeNameSet(names, FormFields.MAX_LENGTH_ATTRIBUTE, getServletContext().getServletContextHandler(), ServletContextHandler::getMaxFormContentSize);
-        return names;
+        return _attributes.getAttributeNameSet();
     }
 
     /**

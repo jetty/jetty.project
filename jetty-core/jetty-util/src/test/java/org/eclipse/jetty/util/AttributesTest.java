@@ -13,8 +13,11 @@
 
 package org.eclipse.jetty.util;
 
+import java.util.Set;
+import java.util.concurrent.atomic.AtomicReference;
 import java.util.stream.Stream;
 
+import org.junit.jupiter.api.Assumptions;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.MethodSource;
@@ -28,13 +31,40 @@ import static org.hamcrest.Matchers.nullValue;
 
 public class AttributesTest
 {
+    static Set<String> __syntheticAttributes = Set.of("Roy", "Pris", "Zhora", "Leon");
+    static AtomicReference<Object> __roy = new AtomicReference<>();
+    static AtomicReference<Object> __pris = new AtomicReference<>();
+    static AtomicReference<Object> __zhora = new AtomicReference<>();
+    static AtomicReference<Object> __leon = new AtomicReference<>();
+
     public static Stream<Attributes> attributes()
     {
         return Stream.of(
             new Attributes.Mapped(),
             new Attributes.Wrapper(new Attributes.Mapped()),
             new Attributes.Layer(new Attributes.Mapped()),
-            new AttributesMap()
+            new AttributesMap(),
+            new Attributes.Synthetic(new Attributes.Mapped())
+            {
+                @Override
+                protected Object getSyntheticAttribute(String name)
+                {
+                    return switch (name)
+                    {
+                        case "Roy" -> __roy.get();
+                        case "Pris" -> __pris.get();
+                        case "Zhora" -> __zhora.get();
+                        case "Leon" -> __leon.get();
+                        default -> null;
+                    };
+                }
+
+                @Override
+                protected Set<String> getSyntheticNameSet()
+                {
+                    return __syntheticAttributes;
+                }
+            }
         );
     }
 
@@ -135,4 +165,53 @@ public class AttributesTest
         testAttributes(layer);
     }
 
+    @ParameterizedTest
+    @MethodSource("attributes")
+    public void testSynthetic(Attributes attributes)
+    {
+        Assumptions.assumeTrue(attributes instanceof Attributes.Synthetic);
+
+        assertThat(attributes.getAttributeNameSet(), empty());
+        __roy.set("Batty");
+        __leon.set("Kowalski");
+
+        assertThat(attributes.getAttribute("Leon"), equalTo("Kowalski"));
+        assertThat(attributes.getAttribute("Zhora"), nullValue());
+        assertThat(attributes.getAttribute("Pris"), nullValue());
+        assertThat(attributes.getAttribute("Roy"), equalTo("Batty"));
+        assertThat(attributes.getAttribute("A"), nullValue());
+
+        assertThat(attributes.getAttributeNameSet(), containsInAnyOrder("Roy", "Leon"));
+
+        assertThat(attributes.setAttribute("A", "1"), nullValue());
+        assertThat(attributes.setAttribute("Pris", "Unknown"), nullValue());
+
+        assertThat(attributes.getAttribute("Leon"), equalTo("Kowalski"));
+        assertThat(attributes.getAttribute("Pris"), equalTo("Unknown"));
+        assertThat(attributes.getAttribute("Roy"), equalTo("Batty"));
+        assertThat(attributes.getAttribute("A"), equalTo("1"));
+        assertThat(attributes.getAttributeNameSet(), containsInAnyOrder("Roy", "Leon", "A", "Pris"));
+
+        assertThat(attributes.setAttribute("Leon", "retired"), equalTo("Kowalski"));
+        assertThat(attributes.setAttribute("Zhora", "retired"), nullValue());
+        assertThat(attributes.setAttribute("A", "2"), equalTo("1"));
+
+        assertThat(attributes.getAttribute("Leon"), equalTo("retired"));
+        assertThat(attributes.getAttribute("Zhora"), equalTo("retired"));
+        assertThat(attributes.getAttribute("Pris"), equalTo("Unknown"));
+        assertThat(attributes.getAttribute("Roy"), equalTo("Batty"));
+        assertThat(attributes.getAttribute("A"), equalTo("2"));
+        assertThat(attributes.getAttributeNameSet(), containsInAnyOrder("Roy", "Leon", "A", "Pris", "Zhora"));
+
+        assertThat(attributes.removeAttribute("Leon"), equalTo("retired"));
+        assertThat(attributes.removeAttribute("Zhora"), equalTo("retired"));
+        assertThat(attributes.removeAttribute("Pris"), equalTo("Unknown"));
+
+        assertThat(attributes.getAttribute("Roy"), equalTo("Batty"));
+        assertThat(attributes.getAttribute("A"), equalTo("2"));
+        assertThat(attributes.getAttributeNameSet(), containsInAnyOrder("Roy", "A"));
+
+        attributes.clearAttributes();
+        assertThat(attributes.getAttributeNameSet(), empty());
+    }
 }

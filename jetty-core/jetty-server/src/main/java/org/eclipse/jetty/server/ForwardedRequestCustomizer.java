@@ -609,6 +609,9 @@ public class ForwardedRequestCustomizer implements HttpConfiguration.Customizer
             ? request.getHeaders()
             : HttpFields.build(request.getHeaders(), authority);
 
+        if (forwarded._sslSessionData != null)
+            request.setAttribute(SslSessionData.ATTRIBUTE, forwarded._sslSessionData);
+
         return new Request.Wrapper(request)
         {
             @Override
