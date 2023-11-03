@@ -31,11 +31,11 @@ import org.eclipse.jetty.http.HttpMethod;
 import org.eclipse.jetty.http.HttpURI;
 import org.eclipse.jetty.http.UriCompliance;
 import org.eclipse.jetty.http.pathmap.MatchedResource;
+import org.eclipse.jetty.io.EndPoint;
 import org.eclipse.jetty.server.FormFields;
 import org.eclipse.jetty.server.Request;
 import org.eclipse.jetty.server.Response;
 import org.eclipse.jetty.server.Session;
-import org.eclipse.jetty.server.SslSessionData;
 import org.eclipse.jetty.server.handler.ContextHandler;
 import org.eclipse.jetty.server.handler.ContextRequest;
 import org.eclipse.jetty.session.AbstractSessionManager;
@@ -138,10 +138,10 @@ public class ServletContextRequest extends ContextRequest implements ServletCont
             {
                 return switch (name)
                 {
-                    case SSL_CIPHER_SUITE -> super.getAttribute(SslSessionData.ATTRIBUTE) instanceof SslSessionData data ? data.cipherSuite() : null;
-                    case SSL_KEY_SIZE -> super.getAttribute(SslSessionData.ATTRIBUTE) instanceof SslSessionData data ? data.keySize() : null;
-                    case SSL_SESSION_ID -> super.getAttribute(SslSessionData.ATTRIBUTE) instanceof SslSessionData data ? data.sessionId() : null;
-                    case X_509_CERTIFICATE -> super.getAttribute(SslSessionData.ATTRIBUTE) instanceof SslSessionData data ? data.peerCertificates() : null;
+                    case SSL_CIPHER_SUITE -> super.getAttribute(EndPoint.SslSessionData.ATTRIBUTE) instanceof EndPoint.SslSessionData data ? data.cipherSuite() : null;
+                    case SSL_KEY_SIZE -> super.getAttribute(EndPoint.SslSessionData.ATTRIBUTE) instanceof EndPoint.SslSessionData data ? data.keySize() : null;
+                    case SSL_SESSION_ID -> super.getAttribute(EndPoint.SslSessionData.ATTRIBUTE) instanceof EndPoint.SslSessionData data ? data.sessionId() : null;
+                    case X_509_CERTIFICATE -> super.getAttribute(EndPoint.SslSessionData.ATTRIBUTE) instanceof EndPoint.SslSessionData data ? data.peerCertificates() : null;
                     case ServletContextRequest.MULTIPART_CONFIG_ELEMENT -> _matchedResource.getResource().getServletHolder().getMultipartConfigElement();
                     case FormFields.MAX_FIELDS_ATTRIBUTE -> getServletContext().getServletContextHandler().getMaxFormKeys();
                     case FormFields.MAX_LENGTH_ATTRIBUTE -> getServletContext().getServletContextHandler().getMaxFormContentSize();

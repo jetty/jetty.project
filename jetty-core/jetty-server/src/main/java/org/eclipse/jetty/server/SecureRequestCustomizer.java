@@ -16,10 +16,10 @@ package org.eclipse.jetty.server;
 import java.security.cert.Certificate;
 import java.security.cert.X509Certificate;
 import java.util.HashSet;
+import java.util.Objects;
 import java.util.Set;
 import java.util.concurrent.TimeUnit;
 import javax.net.ssl.SSLContext;
-import javax.net.ssl.SSLEngine;
 import javax.net.ssl.SSLSession;
 
 import org.eclipse.jetty.http.BadMessageException;
@@ -28,9 +28,6 @@ import org.eclipse.jetty.http.HttpFields;
 import org.eclipse.jetty.http.HttpHeader;
 import org.eclipse.jetty.http.PreEncodedHttpField;
 import org.eclipse.jetty.io.EndPoint;
-import org.eclipse.jetty.io.ssl.SslConnection;
-import org.eclipse.jetty.io.ssl.SslConnection.SslEndPoint;
-import org.eclipse.jetty.util.StringUtil;
 import org.eclipse.jetty.util.annotation.Name;
 import org.eclipse.jetty.util.ssl.SslContextFactory;
 import org.eclipse.jetty.util.ssl.X509;
@@ -50,7 +47,7 @@ public class SecureRequestCustomizer implements HttpConfiguration.Customizer
      */
     public static final String X509_ATTRIBUTE = "org.eclipse.jetty.server.x509";
     public static final String SSL_SESSION_ATTRIBUTE = "org.eclipse.jetty.server.SslSession";
-    public static final String SSL_SESSION_DATA_ATTRIBUTE = "org.eclipse.jetty.server.SslSessionData";
+    public static final String SSL_SESSION_DATA_ATTRIBUTE = EndPoint.SslSessionData.ATTRIBUTE;
 
     private static final Logger LOG = LoggerFactory.getLogger(SecureRequestCustomizer.class);
 
@@ -198,15 +195,9 @@ public class SecureRequestCustomizer implements HttpConfiguration.Customizer
     public Request customize(Request request, HttpFields.Mutable responseHeaders)
     {
         EndPoint endPoint = request.getConnectionMetaData().getConnection().getEndPoint();
-        if (endPoint instanceof SslEndPoint sslEndPoint)
+        if (endPoint instanceof EndPoint.Secure secureEndPoint)
         {
-            SslConnection sslConnection = sslEndPoint.getSslConnection();
-            SSLEngine sslEngine = sslConnection.getSSLEngine();
-            request = newSecureRequest(request, sslEngine);
-        }
-        else if (endPoint instanceof ProxyConnectionFactory.ProxyEndPoint proxyEndPoint)
-        {
-            SslSessionData sslSessionData = proxyEndPoint.getSslSessionData();
+            EndPoint.SslSessionData sslSessionData = secureEndPoint.getSslSessionData();
             if (sslSessionData != null)
                 request = newSecureRequest(request, sslSessionData);
         }
@@ -217,54 +208,11 @@ public class SecureRequestCustomizer implements HttpConfiguration.Customizer
         return request;
     }
 
-    protected Request newSecureRequest(Request request, SSLEngine sslEngine)
+    protected Request newSecureRequest(Request request, EndPoint.SslSessionData sslSessionData)
     {
-        SSLSession sslSession = sslEngine.getSession();
-        checkSni(request, sslSession);
-
-        String key = SslSessionData.class.getName();
-        SslSessionData sslSessionData = (SslSessionData)sslSession.getValue(key);
-        if (sslSessionData == null)
-        {
-            try
-            {
-                String cipherSuite = sslSession.getCipherSuite();
-                int keySize = SslContextFactory.deduceKeyLength(cipherSuite);
-
-                X509Certificate[] peerCertificates = getCertChain(request.getConnectionMetaData().getConnector(), sslSession);
-
-                byte[] bytes = sslSession.getId();
-                String idStr = StringUtil.toHexString(bytes);
-
-                sslSessionData = new SslSessionData(idStr, cipherSuite, keySize > 0 ? keySize : null, peerCertificates);
-                sslSession.putValue(key, sslSessionData);
-            }
-            catch (Exception e)
-            {
-                LOG.warn("Unable to get secure details ", e);
-            }
-        }
-        return new SecureRequestWithSslSessionData(request, sslSession, sslSessionData);
-    }
-
-    protected Request newSecureRequest(Request request, SslSessionData sslSessionData)
-    {
-        return new SecureRequestWithSslSessionData(request, null, sslSessionData);
-    }
-
-    private X509Certificate[] getCertChain(Connector connector, SSLSession sslSession)
-    {
-        // The in-use SslContextFactory should be present in the Connector's SslConnectionFactory
-        SslConnectionFactory sslConnectionFactory = connector.getConnectionFactory(SslConnectionFactory.class);
-        if (sslConnectionFactory != null)
-        {
-            SslContextFactory sslContextFactory = sslConnectionFactory.getSslContextFactory();
-            if (sslContextFactory != null)
-                return sslContextFactory.getX509CertChain(sslSession);
-        }
-
-        // Fallback, either no SslConnectionFactory or no SslContextFactory instance found
-        return SslContextFactory.getCertChain(sslSession);
+        if (sslSessionData.sslSession() != null)
+            checkSni(request, sslSessionData.sslSession());
+        return new SecureRequestWithSslSessionData(request, sslSessionData);
     }
 
     @Deprecated
@@ -282,7 +230,7 @@ public class SecureRequestCustomizer implements HttpConfiguration.Customizer
     @Deprecated
     public String getSslSessionDataAttribute()
     {
-        return SslSessionData.ATTRIBUTE;
+        return EndPoint.SslSessionData.ATTRIBUTE;
     }
 
     protected void checkSni(Request request, SSLSession session)
@@ -342,14 +290,12 @@ public class SecureRequestCustomizer implements HttpConfiguration.Customizer
 
     protected class SecureRequestWithSslSessionData extends SecureRequest
     {
-        private final SSLSession _sslSession;
-        private final SslSessionData _sslSessionData;
+        private final EndPoint.SslSessionData _sslSessionData;
 
-        public SecureRequestWithSslSessionData(Request request, SSLSession sslSession, SslSessionData sslSessionData)
+        public SecureRequestWithSslSessionData(Request request, EndPoint.SslSessionData sslSessionData)
         {
             super(request);
-            _sslSession = sslSession;
-            _sslSessionData = sslSessionData;
+            _sslSessionData = Objects.requireNonNull(sslSessionData);
         }
 
         @Override
@@ -357,9 +303,9 @@ public class SecureRequestCustomizer implements HttpConfiguration.Customizer
         {
             return switch (name)
             {
-                case SSL_SESSION_ATTRIBUTE -> _sslSession;
+                case SSL_SESSION_ATTRIBUTE -> _sslSessionData.sslSession();
                 case SSL_SESSION_DATA_ATTRIBUTE -> _sslSessionData;
-                case X509_ATTRIBUTE -> getX509(_sslSession);
+                case X509_ATTRIBUTE -> getX509(_sslSessionData.sslSession());
                 default -> super.getAttribute(name);
             };
         }
@@ -369,14 +315,13 @@ public class SecureRequestCustomizer implements HttpConfiguration.Customizer
         {
             Set<String> names = new HashSet<>(super.getAttributeNameSet());
 
-            if (_sslSession != null)
+            if (_sslSessionData.sslSession() != null)
             {
                 names.add(SSL_SESSION_ATTRIBUTE);
-                if (getX509(_sslSession) != null)
+                if (getX509(_sslSessionData.sslSession()) != null)
                     names.add(X509_ATTRIBUTE);
             }
-            if (_sslSessionData != null)
-                names.add(SSL_SESSION_DATA_ATTRIBUTE);
+            names.add(SSL_SESSION_DATA_ATTRIBUTE);
 
             return names;
         }

@@ -20,6 +20,8 @@ import java.net.SocketAddress;
 import java.nio.ByteBuffer;
 import java.nio.channels.ReadPendingException;
 import java.nio.channels.WritePendingException;
+import java.security.cert.X509Certificate;
+import javax.net.ssl.SSLSession;
 
 import org.eclipse.jetty.util.Callback;
 import org.eclipse.jetty.util.FutureCallback;
@@ -324,5 +326,30 @@ public interface EndPoint extends Closeable
      *
      * @param newConnection the connection to upgrade to
      */
-    public void upgrade(Connection newConnection);
+    void upgrade(Connection newConnection);
+
+    interface Secure extends EndPoint
+    {
+        SslSessionData getSslSessionData();
+    }
+
+    /**
+     * A bundle of available SSL data, any field of which may be null
+     */
+    record SslSessionData(SSLSession sslSession, String sessionId, String cipherSuite, Integer keySize, X509Certificate[] peerCertificates)
+    {
+        public static final String ATTRIBUTE = "org.eclipse.jetty.io.Endpoint.SslSessionData";
+
+        public static SslSessionData from(SslSessionData baseData, SSLSession sslSession, String sessionId, String cipherSuite, Integer keySize, X509Certificate[] peerCertificates)
+        {
+            return (baseData == null)
+                ? new SslSessionData(sslSession, sessionId, cipherSuite, keySize, peerCertificates)
+                : new SslSessionData(
+                    sslSession != null ? sslSession : baseData.sslSession,
+                    sessionId != null ? sessionId : baseData.sessionId,
+                    cipherSuite != null ? cipherSuite : baseData.cipherSuite,
+                    keySize != null && keySize > 0 ? keySize : baseData.keySize,
+                    peerCertificates != null ? peerCertificates : baseData.peerCertificates());
+        }
+    }
 }

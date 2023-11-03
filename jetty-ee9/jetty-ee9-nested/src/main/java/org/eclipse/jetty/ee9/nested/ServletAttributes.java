@@ -16,7 +16,7 @@ package org.eclipse.jetty.ee9.nested;
 import java.util.Set;
 
 import jakarta.servlet.AsyncContext;
-import org.eclipse.jetty.server.SslSessionData;
+import org.eclipse.jetty.io.EndPoint;
 import org.eclipse.jetty.util.Attributes;
 
 /**
@@ -59,10 +59,10 @@ public class ServletAttributes extends Attributes.Synthetic
     {
         return switch (name)
         {
-            case Request.SSL_CIPHER_SUITE -> getWrapped().getAttribute(SslSessionData.ATTRIBUTE) instanceof SslSessionData sslSessionData ? sslSessionData.cipherSuite() : null;
-            case Request.SSL_KEY_SIZE -> getWrapped().getAttribute(SslSessionData.ATTRIBUTE) instanceof SslSessionData sslSessionData ? sslSessionData.keySize() : null;
-            case Request.SSL_SESSION_ID -> getWrapped().getAttribute(SslSessionData.ATTRIBUTE) instanceof SslSessionData sslSessionData ? sslSessionData.sessionId() : null;
-            case Request.X_509_CERTIFICATE -> getWrapped().getAttribute(SslSessionData.ATTRIBUTE) instanceof SslSessionData sslSessionData ? sslSessionData.peerCertificates() : null;
+            case Request.SSL_CIPHER_SUITE -> getWrapped().getAttribute(EndPoint.SslSessionData.ATTRIBUTE) instanceof EndPoint.SslSessionData sslSessionData ? sslSessionData.cipherSuite() : null;
+            case Request.SSL_KEY_SIZE -> getWrapped().getAttribute(EndPoint.SslSessionData.ATTRIBUTE) instanceof EndPoint.SslSessionData sslSessionData ? sslSessionData.keySize() : null;
+            case Request.SSL_SESSION_ID -> getWrapped().getAttribute(EndPoint.SslSessionData.ATTRIBUTE) instanceof EndPoint.SslSessionData sslSessionData ? sslSessionData.sessionId() : null;
+            case Request.X_509_CERTIFICATE -> getWrapped().getAttribute(EndPoint.SslSessionData.ATTRIBUTE) instanceof EndPoint.SslSessionData sslSessionData ? sslSessionData.peerCertificates() : null;
             case AsyncContext.ASYNC_REQUEST_URI -> _async == null ? null : _async.requestURI;
             case AsyncContext.ASYNC_CONTEXT_PATH -> _async == null ? null : _async.contextPath;
             case AsyncContext.ASYNC_SERVLET_PATH -> _async == null ? null : _async.mapping == null ? null : _async.mapping.getServletPath();

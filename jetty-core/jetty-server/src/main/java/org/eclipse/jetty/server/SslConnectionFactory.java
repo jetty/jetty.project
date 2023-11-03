@@ -167,7 +167,7 @@ public class SslConnectionFactory extends AbstractConnectionFactory implements C
     protected SslConnection newSslConnection(Connector connector, EndPoint endPoint, SSLEngine engine)
     {
         ByteBufferPool byteBufferPool = connector.getByteBufferPool();
-        return new SslConnection(byteBufferPool, connector.getExecutor(), endPoint, engine, isDirectBuffersForEncryption(), isDirectBuffersForDecryption());
+        return new SslConnection(byteBufferPool, connector.getExecutor(), endPoint, engine, _sslContextFactory, isDirectBuffersForEncryption(), isDirectBuffersForDecryption());
     }
 
     @Override

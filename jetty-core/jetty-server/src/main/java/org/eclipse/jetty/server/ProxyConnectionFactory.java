@@ -743,7 +743,7 @@ public class ProxyConnectionFactory extends DetectorConnectionFactory
         }
     }
 
-    public static class ProxyEndPoint implements EndPoint, EndPoint.Wrapper
+    public static class ProxyEndPoint implements EndPoint, EndPoint.Wrapper, EndPoint.Secure
     {
         private static final int PP2_TYPE_ALPN = 0x01;
         private static final int PP2_TYPE_AUTHORITY = 0x02;
@@ -777,10 +777,11 @@ public class ProxyConnectionFactory extends DetectorConnectionFactory
             _remote = remote;
         }
 
+        @Override
         public SslSessionData getSslSessionData()
         {
-            // TODO
-            return null;
+            // TODO more fields!
+            return _tlsVersion == null ? null : new SslSessionData(null, null, null, null, null);
         }
 
         public void setTlsVersion(String version)

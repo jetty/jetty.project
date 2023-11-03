@@ -33,6 +33,7 @@ import jakarta.servlet.http.HttpServletResponse;
 import org.eclipse.jetty.http.HttpStatus;
 import org.eclipse.jetty.http.HttpTester;
 import org.eclipse.jetty.http.UriCompliance;
+import org.eclipse.jetty.io.EndPoint;
 import org.eclipse.jetty.server.FormFields;
 import org.eclipse.jetty.server.ForwardedRequestCustomizer;
 import org.eclipse.jetty.server.HttpConnectionFactory;
@@ -40,7 +41,6 @@ import org.eclipse.jetty.server.LocalConnector;
 import org.eclipse.jetty.server.Request;
 import org.eclipse.jetty.server.SecureRequestCustomizer;
 import org.eclipse.jetty.server.Server;
-import org.eclipse.jetty.server.SslSessionData;
 import org.eclipse.jetty.util.component.LifeCycle;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.Assertions;
@@ -340,7 +340,7 @@ public class RequestTest
                 // Set some fake SSL attributes
                 X509Certificate[] certificate = new X509Certificate[0];
                 coreRequest.setAttribute(SecureRequestCustomizer.SSL_SESSION_DATA_ATTRIBUTE,
-                    new SslSessionData("identity", "quantumKnowledge", 42, certificate));
+                    new EndPoint.SslSessionData(null, "identity", "quantumKnowledge", 42, certificate));
 
                 // Check we have all the attribute names in servlet API
                 Set<String> names = new HashSet<>(Collections.list(request.getAttributeNames()));
@@ -397,7 +397,7 @@ public class RequestTest
                 request.removeAttribute(ServletContextRequest.MULTIPART_CONFIG_ELEMENT);
                 request.removeAttribute(FormFields.MAX_FIELDS_ATTRIBUTE);
                 request.removeAttribute(FormFields.MAX_LENGTH_ATTRIBUTE);
-                request.removeAttribute(SslSessionData.ATTRIBUTE);
+                request.removeAttribute(EndPoint.SslSessionData.ATTRIBUTE);
 
                 assertThat(Collections.list(request.getAttributeNames()), empty());
 

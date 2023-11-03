@@ -27,6 +27,7 @@ import org.eclipse.jetty.http.HttpHeader;
 import org.eclipse.jetty.http.HttpScheme;
 import org.eclipse.jetty.http.HttpURI;
 import org.eclipse.jetty.http.QuotedCSVParser;
+import org.eclipse.jetty.io.EndPoint;
 import org.eclipse.jetty.server.internal.HttpConnection;
 import org.eclipse.jetty.util.HostPort;
 import org.eclipse.jetty.util.Index;
@@ -610,7 +611,7 @@ public class ForwardedRequestCustomizer implements HttpConfiguration.Customizer
             : HttpFields.build(request.getHeaders(), authority);
 
         if (forwarded._sslSessionData != null)
-            request.setAttribute(SslSessionData.ATTRIBUTE, forwarded._sslSessionData);
+            request.setAttribute(EndPoint.SslSessionData.ATTRIBUTE, forwarded._sslSessionData);
 
         return new Request.Wrapper(request)
         {
@@ -827,7 +828,7 @@ public class ForwardedRequestCustomizer implements HttpConfiguration.Customizer
         Source _protoSource = Source.UNSET;
         Boolean _secure;
         boolean _secureScheme = false;
-        SslSessionData _sslSessionData;
+        EndPoint.SslSessionData _sslSessionData;
 
         public Forwarded(Request request, HttpConfiguration config)
         {
@@ -876,7 +877,7 @@ public class ForwardedRequestCustomizer implements HttpConfiguration.Customizer
          */
         public void handleCipherSuite(HttpField field)
         {
-            _sslSessionData = SslSessionData.from(_sslSessionData, null, field.getValue(), null, null);
+            _sslSessionData = EndPoint.SslSessionData.from(_sslSessionData, null, null, field.getValue(), null, null);
 
             // Is ForwardingRequestCustomizer configured to trigger isSecure and scheme change on this header?
             if (isSslIsSecure())
@@ -892,7 +893,7 @@ public class ForwardedRequestCustomizer implements HttpConfiguration.Customizer
          */
         public void handleSslSessionId(HttpField field)
         {
-            _sslSessionData = SslSessionData.from(_sslSessionData, field.getValue(), null, null, null);
+            _sslSessionData = EndPoint.SslSessionData.from(_sslSessionData, null, field.getValue(), null, null, null);
 
             // Is ForwardingRequestCustomizer configured to trigger isSecure and scheme change on this header?
             if (isSslIsSecure())

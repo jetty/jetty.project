@@ -632,7 +632,7 @@ public class HttpClientTLSTest
             @Override
             protected SslConnection newSslConnection(Connector connector, EndPoint endPoint, SSLEngine engine)
             {
-                return new SslConnection(connector.getByteBufferPool(), connector.getExecutor(), endPoint, engine, isDirectBuffersForEncryption(), isDirectBuffersForDecryption())
+                return new SslConnection(connector.getByteBufferPool(), connector.getExecutor(), endPoint, engine, getSslContextFactory(), isDirectBuffersForEncryption(), isDirectBuffersForDecryption())
                 {
                     @Override
                     protected int networkFill(ByteBuffer input) throws IOException
@@ -671,7 +671,7 @@ public class HttpClientTLSTest
                     @Override
                     protected SslConnection newSslConnection(ByteBufferPool bufferPool, Executor executor, EndPoint endPoint, SSLEngine engine)
                     {
-                        return new SslConnection(bufferPool, executor, endPoint, engine, isDirectBuffersForEncryption(), isDirectBuffersForDecryption())
+                        return new SslConnection(bufferPool, executor, endPoint, engine, getSslContextFactory(), isDirectBuffersForEncryption(), isDirectBuffersForDecryption())
                         {
                             @Override
                             protected int networkFill(ByteBuffer input) throws IOException
@@ -724,7 +724,7 @@ public class HttpClientTLSTest
             protected SslConnection newSslConnection(Connector connector, EndPoint endPoint, SSLEngine engine)
             {
                 ByteBufferPool bufferPool = connector.getByteBufferPool();
-                return new SslConnection(bufferPool, connector.getExecutor(), endPoint, engine, isDirectBuffersForEncryption(), isDirectBuffersForDecryption())
+                return new SslConnection(bufferPool, connector.getExecutor(), endPoint, engine, getSslContextFactory(), isDirectBuffersForEncryption(), isDirectBuffersForDecryption())
                 {
                     @Override
                     protected int networkFill(ByteBuffer input) throws IOException
@@ -801,7 +801,7 @@ public class HttpClientTLSTest
             protected SslConnection newSslConnection(Connector connector, EndPoint endPoint, SSLEngine engine)
             {
                 ByteBufferPool bufferPool = connector.getByteBufferPool();
-                return new SslConnection(bufferPool, connector.getExecutor(), endPoint, engine, isDirectBuffersForEncryption(), isDirectBuffersForDecryption())
+                return new SslConnection(bufferPool, connector.getExecutor(), endPoint, engine, getSslContextFactory(), isDirectBuffersForEncryption(), isDirectBuffersForDecryption())
                 {
                     @Override
                     protected boolean networkFlush(ByteBuffer output) throws IOException
@@ -872,7 +872,7 @@ public class HttpClientTLSTest
             protected SslConnection newSslConnection(Connector connector, EndPoint endPoint, SSLEngine engine)
             {
                 ByteBufferPool bufferPool = connector.getByteBufferPool();
-                return new SslConnection(bufferPool, connector.getExecutor(), endPoint, engine, isDirectBuffersForEncryption(), isDirectBuffersForDecryption())
+                return new SslConnection(bufferPool, connector.getExecutor(), endPoint, engine, getSslContextFactory(), isDirectBuffersForEncryption(), isDirectBuffersForDecryption())
                 {
                     @Override
                     protected boolean networkFlush(ByteBuffer output) throws IOException
@@ -957,7 +957,7 @@ public class HttpClientTLSTest
             protected SslConnection newSslConnection(Connector connector, EndPoint endPoint, SSLEngine engine)
             {
                 ByteBufferPool bufferPool = connector.getByteBufferPool();
-                return new SslConnection(bufferPool, connector.getExecutor(), endPoint, engine, isDirectBuffersForEncryption(), isDirectBuffersForDecryption())
+                return new SslConnection(bufferPool, connector.getExecutor(), endPoint, engine, getSslContextFactory(), isDirectBuffersForEncryption(), isDirectBuffersForDecryption())
                 {
                     @Override
                     protected boolean networkFlush(ByteBuffer output) throws IOException
@@ -1019,7 +1019,7 @@ public class HttpClientTLSTest
             @Override
             protected SslConnection newSslConnection(Connector connector, EndPoint endPoint, SSLEngine engine)
             {
-                return new SslConnection(connector.getByteBufferPool(), connector.getExecutor(), endPoint, engine, isDirectBuffersForEncryption(), isDirectBuffersForDecryption())
+                return new SslConnection(connector.getByteBufferPool(), connector.getExecutor(), endPoint, engine, getSslContextFactory(), isDirectBuffersForEncryption(), isDirectBuffersForDecryption())
                 {
                     @Override
                     protected int networkFill(ByteBuffer input) throws IOException
@@ -1059,7 +1059,7 @@ public class HttpClientTLSTest
                     @Override
                     protected SslConnection newSslConnection(ByteBufferPool bufferPool, Executor executor, EndPoint endPoint, SSLEngine engine)
                     {
-                        return new SslConnection(bufferPool, executor, endPoint, engine, isDirectBuffersForEncryption(), isDirectBuffersForDecryption())
+                        return new SslConnection(bufferPool, executor, endPoint, engine, getSslContextFactory(), isDirectBuffersForEncryption(), isDirectBuffersForDecryption())
                         {
                             @Override
                             protected int networkFill(ByteBuffer input) throws IOException
@@ -1121,7 +1121,7 @@ public class HttpClientTLSTest
                     @Override
                     protected SslConnection newSslConnection(ByteBufferPool bufferPool, Executor executor, EndPoint endPoint, SSLEngine engine)
                     {
-                        return new SslConnection(bufferPool, executor, endPoint, engine, isDirectBuffersForEncryption(), isDirectBuffersForDecryption())
+                        return new SslConnection(bufferPool, executor, endPoint, engine, getSslContextFactory(), isDirectBuffersForEncryption(), isDirectBuffersForDecryption())
                         {
                             @Override
                             protected SSLEngineResult wrap(SSLEngine sslEngine, ByteBuffer[] input, ByteBuffer output) throws SSLException
@@ -1160,7 +1160,7 @@ public class HttpClientTLSTest
             @Override
             protected SslConnection newSslConnection(Connector connector, EndPoint endPoint, SSLEngine engine)
             {
-                return new SslConnection(connector.getByteBufferPool(), connector.getExecutor(), endPoint, engine, isDirectBuffersForEncryption(), isDirectBuffersForDecryption())
+                return new SslConnection(connector.getByteBufferPool(), connector.getExecutor(), endPoint, engine, getSslContextFactory(), isDirectBuffersForEncryption(), isDirectBuffersForDecryption())
                 {
                     @Override
                     protected SSLEngineResult unwrap(SSLEngine sslEngine, ByteBuffer input, ByteBuffer output) throws SSLException
@@ -1196,12 +1196,13 @@ public class HttpClientTLSTest
             {
                 if (sslContextFactory == null)
                     sslContextFactory = getSslContextFactory();
-                return new SslClientConnectionFactory(sslContextFactory, getByteBufferPool(), getExecutor(), connectionFactory)
+                SslContextFactory scf = sslContextFactory;
+                return new SslClientConnectionFactory(scf, getByteBufferPool(), getExecutor(), connectionFactory)
                 {
                     @Override
                     protected SslConnection newSslConnection(ByteBufferPool bufferPool, Executor executor, EndPoint endPoint, SSLEngine engine)
                     {
-                        return new SslConnection(bufferPool, executor, endPoint, engine, isDirectBuffersForEncryption(), isDirectBuffersForDecryption())
+                        return new SslConnection(bufferPool, executor, endPoint, engine, scf, isDirectBuffersForEncryption(), isDirectBuffersForDecryption())
                         {
                             @Override
                             protected SSLEngineResult wrap(SSLEngine sslEngine, ByteBuffer[] input, ByteBuffer output) throws SSLException

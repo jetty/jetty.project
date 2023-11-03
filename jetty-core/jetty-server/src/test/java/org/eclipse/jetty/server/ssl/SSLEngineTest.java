@@ -45,7 +45,6 @@ import org.eclipse.jetty.server.Response;
 import org.eclipse.jetty.server.Server;
 import org.eclipse.jetty.server.ServerConnector;
 import org.eclipse.jetty.server.SslConnectionFactory;
-import org.eclipse.jetty.server.SslSessionData;
 import org.eclipse.jetty.toolchain.test.MavenTestingUtils;
 import org.eclipse.jetty.util.BufferUtil;
 import org.eclipse.jetty.util.Callback;
@@ -202,7 +201,7 @@ public class SSLEngineTest
             @Override
             protected SslConnection newSslConnection(Connector connector, EndPoint endPoint, SSLEngine engine)
             {
-                return new SslConnection(connector.getByteBufferPool(), connector.getExecutor(), endPoint, engine, isDirectBuffersForEncryption(), isDirectBuffersForDecryption())
+                return new SslConnection(connector.getByteBufferPool(), connector.getExecutor(), endPoint, engine, getSslContextFactory(), isDirectBuffersForEncryption(), isDirectBuffersForDecryption())
                 {
                     @Override
                     protected SSLEngineResult unwrap(SSLEngine sslEngine, ByteBuffer input, ByteBuffer output) throws SSLException
@@ -368,7 +367,7 @@ public class SSLEngineTest
         @Override
         public boolean handle(Request request, Response response, Callback callback) throws Exception
         {
-            SslSessionData sslData = (SslSessionData)request.getAttribute(SslSessionData.ATTRIBUTE);
+            EndPoint.SslSessionData sslData = (EndPoint.SslSessionData)request.getAttribute(EndPoint.SslSessionData.ATTRIBUTE);
             String sslId = sslData.sessionId();
             assertNotNull(sslId);
 

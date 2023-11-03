@@ -101,7 +101,7 @@ public class TLSHandshakeFailureTest extends AbstractTest
                     @Override
                     protected SslConnection newSslConnection(ByteBufferPool byteBufferPool, Executor executor, EndPoint endPoint, SSLEngine engine)
                     {
-                        return new SslConnection(byteBufferPool, executor, endPoint, engine, isDirectBuffersForEncryption(), isDirectBuffersForDecryption())
+                        return new SslConnection(byteBufferPool, executor, endPoint, engine, getSslContextFactory(), isDirectBuffersForEncryption(), isDirectBuffersForDecryption())
                         {
                             private final AtomicInteger wraps = new AtomicInteger();
 
@@ -177,7 +177,7 @@ public class TLSHandshakeFailureTest extends AbstractTest
                     @Override
                     protected SslConnection newSslConnection(ByteBufferPool byteBufferPool, Executor executor, EndPoint endPoint, SSLEngine engine)
                     {
-                        return new SslConnection(byteBufferPool, executor, endPoint, engine, isDirectBuffersForEncryption(), isDirectBuffersForDecryption())
+                        return new SslConnection(byteBufferPool, executor, endPoint, engine, getSslContextFactory(), isDirectBuffersForEncryption(), isDirectBuffersForDecryption())
                         {
                             private final AtomicInteger unwraps = new AtomicInteger();
 
