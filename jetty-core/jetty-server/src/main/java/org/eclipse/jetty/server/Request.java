@@ -797,11 +797,11 @@ public interface Request extends Attributes, Content.Source
          * (one in {@link Attributes.Wrapper} as type {@link Attributes} and one in {@link Request.Wrapper} as
          * type {@link Request}) to save the costly cast from interface type to another.
          */
-        private final Request _wrapped;
+        private final Request _request;
 
         public Wrapper(Request wrapped)
         {
-            _wrapped = Objects.requireNonNull(wrapped);
+            _request = Objects.requireNonNull(wrapped);
         }
 
         @Override
@@ -974,7 +974,7 @@ public interface Request extends Attributes, Content.Source
 
         public Request getWrapped()
         {
-            return _wrapped;
+            return _request;
         }
     }
 

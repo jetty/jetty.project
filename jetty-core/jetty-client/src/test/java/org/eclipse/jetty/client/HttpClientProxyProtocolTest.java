@@ -186,7 +186,7 @@ public class HttpClientProxyProtocolTest
                 if (Request.getPathInContext(request).equals("/tls_version"))
                 {
                     assertNotNull(proxyEndPoint.getTLV(typeTLS));
-                    assertEquals(tlsVersion, proxyEndPoint.getAttribute(ProxyConnectionFactory.TLS_VERSION));
+                    assertEquals(tlsVersion, proxyEndPoint.getTlsVersion());
                 }
                 response.getHeaders().put(HttpHeader.CONTENT_TYPE, MimeTypes.Type.TEXT_PLAIN.asString());
                 Content.Sink.write(response, true, String.valueOf(Request.getRemotePort(request)), callback);

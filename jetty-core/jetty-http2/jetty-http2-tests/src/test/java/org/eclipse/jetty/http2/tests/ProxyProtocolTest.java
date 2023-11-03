@@ -137,7 +137,7 @@ public class ProxyProtocolTest
                 EndPoint endPoint = request.getConnectionMetaData().getConnection().getEndPoint();
                 assertThat(endPoint, instanceOf(ProxyConnectionFactory.ProxyEndPoint.class));
                 ProxyConnectionFactory.ProxyEndPoint proxyEndPoint = (ProxyConnectionFactory.ProxyEndPoint)endPoint;
-                assertNotNull(proxyEndPoint.getAttribute(ProxyConnectionFactory.TLS_VERSION));
+                assertNotNull(proxyEndPoint.getTlsVersion());
                 callback.succeeded();
                 return true;
             }

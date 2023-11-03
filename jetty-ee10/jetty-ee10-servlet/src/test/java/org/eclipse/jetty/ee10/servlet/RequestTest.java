@@ -15,6 +15,7 @@ package org.eclipse.jetty.ee10.servlet;
 
 import java.io.IOException;
 import java.io.UnsupportedEncodingException;
+import java.security.cert.X509Certificate;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collections;
@@ -39,6 +40,7 @@ import org.eclipse.jetty.server.LocalConnector;
 import org.eclipse.jetty.server.Request;
 import org.eclipse.jetty.server.SecureRequestCustomizer;
 import org.eclipse.jetty.server.Server;
+import org.eclipse.jetty.server.SslSessionData;
 import org.eclipse.jetty.util.component.LifeCycle;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.Assertions;
@@ -334,38 +336,30 @@ public class RequestTest
                 ServletContextRequest servletContextRequest = ServletContextRequest.getServletContextRequest(request);
                 Request coreRequest = servletContextRequest.getRequest();
 
+
                 // Set some fake SSL attributes
-                Object certificate = new Object();
-                coreRequest.setAttribute(SecureRequestCustomizer.CIPHER_SUITE_ATTRIBUTE, "quantumKnowledge");
-                coreRequest.setAttribute(SecureRequestCustomizer.KEY_SIZE_ATTRIBUTE, 42);
-                coreRequest.setAttribute(SecureRequestCustomizer.SSL_SESSION_ID_ATTRIBUTE, "identity");
-                coreRequest.setAttribute(SecureRequestCustomizer.PEER_CERTIFICATES_ATTRIBUTE, certificate);
+                X509Certificate[] certificate = new X509Certificate[0];
+                coreRequest.setAttribute(SecureRequestCustomizer.SSL_SESSION_DATA_ATTRIBUTE,
+                    new SslSessionData("identity", "quantumKnowledge", 42, certificate));
 
                 // Check we have all the attribute names in servlet API
                 Set<String> names = new HashSet<>(Collections.list(request.getAttributeNames()));
                 assertThat(names, containsInAnyOrder(
-                    SecureRequestCustomizer.CIPHER_SUITE_ATTRIBUTE,
-                    "jakarta.servlet.request.cipher_suite",
-                    SecureRequestCustomizer.KEY_SIZE_ATTRIBUTE,
-                    "jakarta.servlet.request.key_size",
-                    SecureRequestCustomizer.SSL_SESSION_ID_ATTRIBUTE,
-                    "jakarta.servlet.request.ssl_session_id",
-                    SecureRequestCustomizer.PEER_CERTIFICATES_ATTRIBUTE,
-                    "jakarta.servlet.request.X509Certificate",
+                    SecureRequestCustomizer.SSL_SESSION_DATA_ATTRIBUTE,
+                    ServletContextRequest.JAKARTA_SERVLET_REQUEST_CIPHER_SUITE,
+                    ServletContextRequest.JAKARTA_SERVLET_REQUEST_KEY_SIZE,
+                    ServletContextRequest.JAKARTA_SERVLET_REQUEST_SSL_SESSION_ID,
+                    ServletContextRequest.JAKARTA_SERVLET_REQUEST_X_509_CERTIFICATE,
                     FormFields.MAX_FIELDS_ATTRIBUTE,
                     FormFields.MAX_LENGTH_ATTRIBUTE,
                     ServletContextRequest.MULTIPART_CONFIG_ELEMENT
                 ));
 
                 // check we can get the expected values
-                assertThat(request.getAttribute(SecureRequestCustomizer.CIPHER_SUITE_ATTRIBUTE), is("quantumKnowledge"));
-                assertThat(request.getAttribute("jakarta.servlet.request.cipher_suite"), is("quantumKnowledge"));
-                assertThat(request.getAttribute(SecureRequestCustomizer.KEY_SIZE_ATTRIBUTE), is(42));
-                assertThat(request.getAttribute("jakarta.servlet.request.key_size"), is(42));
-                assertThat(request.getAttribute(SecureRequestCustomizer.SSL_SESSION_ID_ATTRIBUTE), is("identity"));
-                assertThat(request.getAttribute("jakarta.servlet.request.ssl_session_id"), is("identity"));
-                assertThat(request.getAttribute(SecureRequestCustomizer.PEER_CERTIFICATES_ATTRIBUTE), sameInstance(certificate));
-                assertThat(request.getAttribute("jakarta.servlet.request.X509Certificate"), sameInstance(certificate));
+                assertThat(request.getAttribute(ServletContextRequest.JAKARTA_SERVLET_REQUEST_CIPHER_SUITE), is("quantumKnowledge"));
+                assertThat(request.getAttribute(ServletContextRequest.JAKARTA_SERVLET_REQUEST_KEY_SIZE), is(42));
+                assertThat(request.getAttribute(ServletContextRequest.JAKARTA_SERVLET_REQUEST_SSL_SESSION_ID), is("identity"));
+                assertThat(request.getAttribute(ServletContextRequest.JAKARTA_SERVLET_REQUEST_X_509_CERTIFICATE), sameInstance(certificate));
                 assertThat(request.getAttribute(ServletContextRequest.MULTIPART_CONFIG_ELEMENT), notNullValue());
                 int maxFormKeys = ServletContextHandler.getServletContextHandler(request.getServletContext()).getMaxFormKeys();
                 assertThat(request.getAttribute(FormFields.MAX_FIELDS_ATTRIBUTE), is(maxFormKeys));
@@ -373,23 +367,19 @@ public class RequestTest
                 assertThat(request.getAttribute(FormFields.MAX_LENGTH_ATTRIBUTE), is(maxFormContentSize));
 
                 // check we can set all those attributes in the servlet API
-                request.setAttribute("jakarta.servlet.request.cipher_suite", "piglatin");
-                request.setAttribute(SecureRequestCustomizer.KEY_SIZE_ATTRIBUTE, 3);
-                request.setAttribute(SecureRequestCustomizer.SSL_SESSION_ID_ATTRIBUTE, "other");
-                request.setAttribute("jakarta.servlet.request.X509Certificate", "certificate");
+                request.setAttribute(ServletContextRequest.JAKARTA_SERVLET_REQUEST_CIPHER_SUITE, "piglatin");
+                request.setAttribute(ServletContextRequest.JAKARTA_SERVLET_REQUEST_KEY_SIZE, 3);
+                request.setAttribute(ServletContextRequest.JAKARTA_SERVLET_REQUEST_SSL_SESSION_ID, "other");
+                request.setAttribute(ServletContextRequest.JAKARTA_SERVLET_REQUEST_X_509_CERTIFICATE, "certificate");
                 request.setAttribute(ServletContextRequest.MULTIPART_CONFIG_ELEMENT, "config2");
                 request.setAttribute(FormFields.MAX_FIELDS_ATTRIBUTE, 101);
                 request.setAttribute(FormFields.MAX_LENGTH_ATTRIBUTE, 102);
 
                 // check we can get the updated values
-                assertThat(request.getAttribute(SecureRequestCustomizer.CIPHER_SUITE_ATTRIBUTE), is("piglatin"));
-                assertThat(request.getAttribute("jakarta.servlet.request.cipher_suite"), is("piglatin"));
-                assertThat(request.getAttribute(SecureRequestCustomizer.KEY_SIZE_ATTRIBUTE), is(3));
-                assertThat(request.getAttribute("jakarta.servlet.request.key_size"), is(3));
-                assertThat(request.getAttribute(SecureRequestCustomizer.SSL_SESSION_ID_ATTRIBUTE), is("other"));
-                assertThat(request.getAttribute("jakarta.servlet.request.ssl_session_id"), is("other"));
-                assertThat(request.getAttribute(SecureRequestCustomizer.PEER_CERTIFICATES_ATTRIBUTE), is("certificate"));
-                assertThat(request.getAttribute("jakarta.servlet.request.X509Certificate"), is("certificate"));
+                assertThat(request.getAttribute(ServletContextRequest.JAKARTA_SERVLET_REQUEST_CIPHER_SUITE), is("piglatin"));
+                assertThat(request.getAttribute(ServletContextRequest.JAKARTA_SERVLET_REQUEST_KEY_SIZE), is(3));
+                assertThat(request.getAttribute(ServletContextRequest.JAKARTA_SERVLET_REQUEST_SSL_SESSION_ID), is("other"));
+                assertThat(request.getAttribute(ServletContextRequest.JAKARTA_SERVLET_REQUEST_X_509_CERTIFICATE), is("certificate"));
                 assertThat(request.getAttribute(ServletContextRequest.MULTIPART_CONFIG_ELEMENT), is("config2"));
                 assertThat(request.getAttribute(FormFields.MAX_FIELDS_ATTRIBUTE), is(101));
                 assertThat(request.getAttribute(FormFields.MAX_LENGTH_ATTRIBUTE), is(102));
@@ -400,13 +390,14 @@ public class RequestTest
                 assertThat(ServletContextHandler.getServletContextHandler(request.getServletContext()).getMaxFormContentSize(), is(maxFormContentSize));
 
                 // Check we can remove all the attributes
-                request.removeAttribute("jakarta.servlet.request.cipher_suite");
-                request.removeAttribute(SecureRequestCustomizer.KEY_SIZE_ATTRIBUTE);
-                request.setAttribute(SecureRequestCustomizer.SSL_SESSION_ID_ATTRIBUTE, null);
-                request.setAttribute("jakarta.servlet.request.X509Certificate", null);
+                request.removeAttribute(ServletContextRequest.JAKARTA_SERVLET_REQUEST_CIPHER_SUITE);
+                request.removeAttribute(ServletContextRequest.JAKARTA_SERVLET_REQUEST_KEY_SIZE);
+                request.removeAttribute(ServletContextRequest.JAKARTA_SERVLET_REQUEST_SSL_SESSION_ID);
+                request.setAttribute(ServletContextRequest.JAKARTA_SERVLET_REQUEST_X_509_CERTIFICATE, null);
                 request.removeAttribute(ServletContextRequest.MULTIPART_CONFIG_ELEMENT);
                 request.removeAttribute(FormFields.MAX_FIELDS_ATTRIBUTE);
                 request.removeAttribute(FormFields.MAX_LENGTH_ATTRIBUTE);
+                request.removeAttribute(SslSessionData.ATTRIBUTE);
 
                 assertThat(Collections.list(request.getAttributeNames()), empty());
 

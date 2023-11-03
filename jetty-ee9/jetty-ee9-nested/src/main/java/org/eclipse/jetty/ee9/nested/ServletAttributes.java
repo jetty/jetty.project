@@ -16,7 +16,7 @@ package org.eclipse.jetty.ee9.nested;
 import java.util.HashSet;
 import java.util.Set;
 
-import org.eclipse.jetty.server.SecureRequestCustomizer;
+import org.eclipse.jetty.server.SslSessionData;
 import org.eclipse.jetty.util.Attributes;
 import org.eclipse.jetty.util.AttributesMap;
 
@@ -88,29 +88,38 @@ public class ServletAttributes implements Attributes
         @Override
         public Object getAttribute(String name)
         {
-            return switch (name)
+            if (name.startsWith("jakarta.servlet.request.") && super.getAttribute(SslSessionData.ATTRIBUTE) instanceof SslSessionData sslSessionData)
             {
-                case "jakarta.servlet.request.cipher_suite" -> super.getAttribute(SecureRequestCustomizer.CIPHER_SUITE_ATTRIBUTE);
-                case "jakarta.servlet.request.key_size" -> super.getAttribute(SecureRequestCustomizer.KEY_SIZE_ATTRIBUTE);
-                case "jakarta.servlet.request.ssl_session_id" -> super.getAttribute(SecureRequestCustomizer.SSL_SESSION_ID_ATTRIBUTE);
-                case "jakarta.servlet.request.X509Certificate" -> super.getAttribute(SecureRequestCustomizer.PEER_CERTIFICATES_ATTRIBUTE);
-                default -> super.getAttribute(name);
-            };
+                return switch (name)
+                {
+                    case "jakarta.servlet.request.cipher_suite" -> sslSessionData.cipherSuite();
+                    case "jakarta.servlet.request.key_size" -> sslSessionData.keySize();
+                    case "jakarta.servlet.request.ssl_session_id" -> sslSessionData.sessionId();
+                    case "jakarta.servlet.request.X509Certificate" -> sslSessionData.peerCertificates();
+                    default -> super.getAttribute(name);
+                };
+            }
+
+            return super.getAttribute(name);
         }
 
         @Override
         public Set<String> getAttributeNameSet()
         {
-            Set<String> names = new HashSet<>(super.getAttributeNameSet());
-            if (names.contains(SecureRequestCustomizer.CIPHER_SUITE_ATTRIBUTE))
-                names.add("jakarta.servlet.request.cipher_suite");
-            if (names.contains(SecureRequestCustomizer.KEY_SIZE_ATTRIBUTE))
-                names.add("jakarta.servlet.request.key_size");
-            if (names.contains(SecureRequestCustomizer.SSL_SESSION_ID_ATTRIBUTE))
-                names.add("jakarta.servlet.request.ssl_session_id");
-            if (names.contains(SecureRequestCustomizer.PEER_CERTIFICATES_ATTRIBUTE))
-                names.add("jakarta.servlet.request.X509Certificate");
-            return names;
+            if (super.getAttribute(SslSessionData.ATTRIBUTE) instanceof SslSessionData sslSessionData)
+            {
+                Set<String> names = new HashSet<>(super.getAttributeNameSet());
+                if (sslSessionData.cipherSuite() != null)
+                    names.add("jakarta.servlet.request.cipher_suite");
+                if (sslSessionData.keySize() > 0)
+                    names.add("jakarta.servlet.request.key_size");
+                if (sslSessionData.sessionId() != null)
+                    names.add("jakarta.servlet.request.ssl_session_id");
+                if (sslSessionData.peerCertificates() != null)
+                    names.add("jakarta.servlet.request.X509Certificate");
+                return names;
+            }
+            return getAttributeNameSet();
         }
     }
 }

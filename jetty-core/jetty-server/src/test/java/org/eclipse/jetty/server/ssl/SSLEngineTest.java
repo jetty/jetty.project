@@ -42,10 +42,10 @@ import org.eclipse.jetty.server.Handler;
 import org.eclipse.jetty.server.HttpConnectionFactory;
 import org.eclipse.jetty.server.Request;
 import org.eclipse.jetty.server.Response;
-import org.eclipse.jetty.server.SecureRequestCustomizer;
 import org.eclipse.jetty.server.Server;
 import org.eclipse.jetty.server.ServerConnector;
 import org.eclipse.jetty.server.SslConnectionFactory;
+import org.eclipse.jetty.server.SslSessionData;
 import org.eclipse.jetty.toolchain.test.MavenTestingUtils;
 import org.eclipse.jetty.util.BufferUtil;
 import org.eclipse.jetty.util.Callback;
@@ -368,9 +368,7 @@ public class SSLEngineTest
         @Override
         public boolean handle(Request request, Response response, Callback callback) throws Exception
         {
-            // System.err.println("HANDLE "+request.getRequestURI());
-            SecureRequestCustomizer.SslSessionData sslData = (SecureRequestCustomizer.SslSessionData)
-                request.getAttribute(SecureRequestCustomizer.DEFAULT_SSL_SESSION_DATA_ATTRIBUTE);
+            SslSessionData sslData = (SslSessionData)request.getAttribute(SslSessionData.ATTRIBUTE);
             String sslId = sslData.sessionId();
             assertNotNull(sslId);
 

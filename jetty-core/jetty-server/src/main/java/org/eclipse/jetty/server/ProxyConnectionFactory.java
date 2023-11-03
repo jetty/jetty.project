@@ -30,7 +30,6 @@ import org.eclipse.jetty.io.AbstractConnection;
 import org.eclipse.jetty.io.Connection;
 import org.eclipse.jetty.io.EndPoint;
 import org.eclipse.jetty.io.RetainableByteBuffer;
-import org.eclipse.jetty.util.Attributes;
 import org.eclipse.jetty.util.BufferUtil;
 import org.eclipse.jetty.util.Callback;
 import org.eclipse.jetty.util.StringUtil;
@@ -46,7 +45,6 @@ import org.slf4j.LoggerFactory;
  */
 public class ProxyConnectionFactory extends DetectorConnectionFactory
 {
-    public static final String TLS_VERSION = "TLS_VERSION";
     private static final Logger LOG = LoggerFactory.getLogger(ProxyConnectionFactory.class);
 
     public ProxyConnectionFactory()
@@ -649,7 +647,7 @@ public class ProxyConnectionFactory extends DetectorConnectionFactory
                         if (type == ProxyEndPoint.PP2_TYPE_SSL)
                         {
                             int client = value[0] & 0xFF;
-                            if (client == ProxyEndPoint.PP2_TYPE_SSL_PP2_CLIENT_SSL)
+                            if (client == ProxyEndPoint.PP2_TYPE_ALPN)
                             {
                                 int i = 5; // Index of the first sub_tlv, after verify.
                                 while (i < length)
@@ -660,10 +658,7 @@ public class ProxyConnectionFactory extends DetectorConnectionFactory
                                     System.arraycopy(value, i, subValue, 0, subLength);
                                     i += subLength;
                                     if (subType == ProxyEndPoint.PP2_SUBTYPE_SSL_VERSION)
-                                    {
-                                        String tlsVersion = new String(subValue, StandardCharsets.US_ASCII);
-                                        proxyEndPoint.setAttribute(TLS_VERSION, tlsVersion);
-                                    }
+                                        proxyEndPoint.setTlsVersion(new String(subValue, StandardCharsets.US_ASCII));
                                 }
                             }
                         }
@@ -748,17 +743,26 @@ public class ProxyConnectionFactory extends DetectorConnectionFactory
         }
     }
 
-    public static class ProxyEndPoint extends Attributes.Lazy implements EndPoint, EndPoint.Wrapper
+    public static class ProxyEndPoint implements EndPoint, EndPoint.Wrapper
     {
+        private static final int PP2_TYPE_ALPN = 0x01;
+        private static final int PP2_TYPE_AUTHORITY = 0x02;
+        private static final int PP2_TYPE_CRC32C = 0x03;
         private static final int PP2_TYPE_NOOP = 0x04;
+        private static final int PP2_TYPE_UNIQUE_ID = 0x05;
         private static final int PP2_TYPE_SSL = 0x20;
-        private static final int PP2_TYPE_SSL_PP2_CLIENT_SSL = 0x01;
         private static final int PP2_SUBTYPE_SSL_VERSION = 0x21;
+        private static final int PP2_SUBTYPE_SSL_CN = 0x22;
+        private static final int PP2_SUBTYPE_SSL_CIPHER = 0x23;
+        private static final int PP2_SUBTYPE_SSL_SIG_ALG = 0x24;
+        private static final int PP2_SUBTYPE_SSL_KEY_ALG = 0x25;
+        private static final int PP2_TYPE_NETNS = 0x30;
 
         private final EndPoint _endPoint;
         private final SocketAddress _local;
         private final SocketAddress _remote;
         private Map<Integer, byte[]> _tlvs;
+        private String _tlsVersion;
 
         @Deprecated
         public ProxyEndPoint(EndPoint endPoint, InetSocketAddress remote, InetSocketAddress local)
@@ -771,6 +775,22 @@ public class ProxyConnectionFactory extends DetectorConnectionFactory
             _endPoint = endPoint;
             _local = local;
             _remote = remote;
+        }
+
+        public SslSessionData getSslSessionData()
+        {
+            // TODO
+            return null;
+        }
+
+        public void setTlsVersion(String version)
+        {
+            _tlsVersion = version;
+        }
+
+        public String getTlsVersion()
+        {
+            return _tlsVersion;
         }
 
         public EndPoint unwrap()

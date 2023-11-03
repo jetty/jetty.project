@@ -105,6 +105,12 @@ import org.slf4j.LoggerFactory;
 public class Request implements HttpServletRequest
 {
     public static final String __MULTIPART_CONFIG_ELEMENT = "org.eclipse.jetty.multipartConfig";
+    public static final String JAKARTA_SERVLET_REQUEST_PREFIX = "jakarta.servlet.request.";
+    public static final String MULTIPART_CONFIG_ELEMENT = "org.eclipse.jetty.multipartConfig";
+    public static final String JAKARTA_SERVLET_REQUEST_CIPHER_SUITE = "jakarta.servlet.request.cipher_suite";
+    public static final String JAKARTA_SERVLET_REQUEST_KEY_SIZE = "jakarta.servlet.request.key_size";
+    public static final String JAKARTA_SERVLET_REQUEST_SSL_SESSION_ID = "jakarta.servlet.request.ssl_session_id";
+    public static final String JAKARTA_SERVLET_REQUEST_X_509_CERTIFICATE = "jakarta.servlet.request.X509Certificate";
 
     private static final Logger LOG = LoggerFactory.getLogger(Request.class);
     private static final SetCookieParser SET_COOKIE_PARSER = SetCookieParser.newInstance();

@@ -824,6 +824,7 @@ public class ForwardedRequestCustomizer implements HttpConfiguration.Customizer
         Source _protoSource = Source.UNSET;
         Boolean _secure;
         boolean _secureScheme = false;
+        SslSessionData _sslSessionData;
 
         public Forwarded(Request request, HttpConfiguration config)
         {
@@ -872,7 +873,7 @@ public class ForwardedRequestCustomizer implements HttpConfiguration.Customizer
          */
         public void handleCipherSuite(HttpField field)
         {
-            _request.setAttribute("jakarta.servlet.request.cipher_suite", field.getValue());
+            _sslSessionData = SslSessionData.from(_sslSessionData, null, field.getValue(), null, null);
 
             // Is ForwardingRequestCustomizer configured to trigger isSecure and scheme change on this header?
             if (isSslIsSecure())
@@ -888,7 +889,7 @@ public class ForwardedRequestCustomizer implements HttpConfiguration.Customizer
          */
         public void handleSslSessionId(HttpField field)
         {
-            _request.setAttribute("jakarta.servlet.request.ssl_session_id", field.getValue());
+            _sslSessionData = SslSessionData.from(_sslSessionData, field.getValue(), null, null, null);
 
             // Is ForwardingRequestCustomizer configured to trigger isSecure and scheme change on this header?
             if (isSslIsSecure())

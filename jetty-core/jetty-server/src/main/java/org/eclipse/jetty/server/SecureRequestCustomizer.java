@@ -16,7 +16,6 @@ package org.eclipse.jetty.server;
 import java.security.cert.Certificate;
 import java.security.cert.X509Certificate;
 import java.util.HashSet;
-import java.util.Objects;
 import java.util.Set;
 import java.util.concurrent.TimeUnit;
 import javax.net.ssl.SSLContext;
@@ -46,46 +45,15 @@ import org.slf4j.LoggerFactory;
 public class SecureRequestCustomizer implements HttpConfiguration.Customizer
 {
     /**
-     * <p>The request attribute name to use to obtain the cipher suite name.</p>
-     */
-    public static final String CIPHER_SUITE_ATTRIBUTE = "org.eclipse.jetty.server.cipher";
-    /**
-     * <p>The request attribute name to use to obtain the key size.</p>
-     */
-    public static final String KEY_SIZE_ATTRIBUTE = "org.eclipse.jetty.server.keySize";
-    /**
-     * <p>The request attribute name to use to obtain the {@link SSLSession#getId()}.</p>
-     */
-    public static final String SSL_SESSION_ID_ATTRIBUTE = "org.eclipse.jetty.server.sslSessionId";
-    /**
-     * <p>The request attribute name to use to obtain the peer certificate
-     * chain as an array of {@link X509Certificate} objects.</p>
-     */
-    public static final String PEER_CERTIFICATES_ATTRIBUTE = "org.eclipse.jetty.server.peerCertificates";
-    /**
      * <p>The request attribute name to use to obtain the local certificate
      * as an {@link X509} object.</p>
      */
     public static final String X509_ATTRIBUTE = "org.eclipse.jetty.server.x509";
-    /**
-     * <p>The default value of the request attribute name to use to obtain
-     * the {@link SSLSession} object.</p>
-     *
-     * @see #setSslSessionAttribute(String)
-     */
-    public static final String DEFAULT_SSL_SESSION_ATTRIBUTE = "org.eclipse.jetty.server.sslSession";
-    /**
-     * <p>The default value of the request attribute name to use to obtain
-     * the {@link SslSessionData} object.</p>
-     *
-     * @see #getSslSessionDataAttribute()
-     */
-    public static final String DEFAULT_SSL_SESSION_DATA_ATTRIBUTE = newSslSessionDataAttribute(DEFAULT_SSL_SESSION_ATTRIBUTE);
+    public static final String SSL_SESSION_ATTRIBUTE = "org.eclipse.jetty.server.SslSession";
+    public static final String SSL_SESSION_DATA_ATTRIBUTE = "org.eclipse.jetty.server.SslSessionData";
 
     private static final Logger LOG = LoggerFactory.getLogger(SecureRequestCustomizer.class);
 
-    private String _sslSessionAttribute = DEFAULT_SSL_SESSION_ATTRIBUTE;
-    private String _sslSessionDataAttribute = DEFAULT_SSL_SESSION_DATA_ATTRIBUTE;
     private boolean _sniRequired;
     private boolean _sniHostCheck;
     private long _stsMaxAge;
@@ -238,8 +206,9 @@ public class SecureRequestCustomizer implements HttpConfiguration.Customizer
         }
         else if (endPoint instanceof ProxyConnectionFactory.ProxyEndPoint proxyEndPoint)
         {
-            if (proxyEndPoint.getAttribute(ProxyConnectionFactory.TLS_VERSION) != null)
-                request = newSecureRequest(request, null);
+            SslSessionData sslSessionData = proxyEndPoint.getSslSessionData();
+            if (sslSessionData != null)
+                request = newSecureRequest(request, sslSessionData);
         }
 
         if (_stsField != null)
@@ -250,10 +219,37 @@ public class SecureRequestCustomizer implements HttpConfiguration.Customizer
 
     protected Request newSecureRequest(Request request, SSLEngine sslEngine)
     {
-        if (sslEngine != null)
-            return new SecureRequestWithTLSData(request, sslEngine);
-        else
-            return new SecureRequest(request);
+        SSLSession sslSession = sslEngine.getSession();
+        checkSni(request, sslSession);
+
+        String key = SslSessionData.class.getName();
+        SslSessionData sslSessionData = (SslSessionData)sslSession.getValue(key);
+        if (sslSessionData == null)
+        {
+            try
+            {
+                String cipherSuite = sslSession.getCipherSuite();
+                int keySize = SslContextFactory.deduceKeyLength(cipherSuite);
+
+                X509Certificate[] peerCertificates = getCertChain(request.getConnectionMetaData().getConnector(), sslSession);
+
+                byte[] bytes = sslSession.getId();
+                String idStr = StringUtil.toHexString(bytes);
+
+                sslSessionData = new SslSessionData(idStr, cipherSuite, keySize > 0 ? keySize : null, peerCertificates);
+                sslSession.putValue(key, sslSessionData);
+            }
+            catch (Exception e)
+            {
+                LOG.warn("Unable to get secure details ", e);
+            }
+        }
+        return new SecureRequestWithSslSessionData(request, sslSession, sslSessionData);
+    }
+
+    protected Request newSecureRequest(Request request, SslSessionData sslSessionData)
+    {
+        return new SecureRequestWithSslSessionData(request, null, sslSessionData);
     }
 
     private X509Certificate[] getCertChain(Connector connector, SSLSession sslSession)
@@ -271,29 +267,22 @@ public class SecureRequestCustomizer implements HttpConfiguration.Customizer
         return SslContextFactory.getCertChain(sslSession);
     }
 
+    @Deprecated
     public void setSslSessionAttribute(String attribute)
     {
-        Objects.requireNonNull(attribute);
-        _sslSessionAttribute = attribute;
-        _sslSessionDataAttribute = newSslSessionDataAttribute(attribute);
+        throw new UnsupportedOperationException();
     }
 
+    @Deprecated
     public String getSslSessionAttribute()
     {
-        return _sslSessionAttribute;
+        return SSL_SESSION_ATTRIBUTE;
     }
 
-    /**
-     * @return {@link #getSslSessionAttribute()} {@code + "Data"}
-     */
+    @Deprecated
     public String getSslSessionDataAttribute()
     {
-        return _sslSessionDataAttribute;
-    }
-
-    private static String newSslSessionDataAttribute(String sslSessionAttribute)
-    {
-        return sslSessionAttribute + "Data";
+        return SslSessionData.ATTRIBUTE;
     }
 
     protected void checkSni(Request request, SSLSession session)
@@ -351,60 +340,25 @@ public class SecureRequestCustomizer implements HttpConfiguration.Customizer
         }
     }
 
-    protected class SecureRequestWithTLSData extends SecureRequest
+    protected class SecureRequestWithSslSessionData extends SecureRequest
     {
         private final SSLSession _sslSession;
         private final SslSessionData _sslSessionData;
 
-        public SecureRequestWithTLSData(Request request, SSLEngine sslEngine)
+        public SecureRequestWithSslSessionData(Request request, SSLSession sslSession, SslSessionData sslSessionData)
         {
             super(request);
-            _sslSession = sslEngine.getSession();
-            checkSni(request, _sslSession);
-
-            String key = SslSessionData.class.getName();
-            SslSessionData sslSessionData = (SslSessionData)_sslSession.getValue(key);
-            if (sslSessionData == null)
-            {
-                try
-                {
-                    String cipherSuite = _sslSession.getCipherSuite();
-                    int keySize = SslContextFactory.deduceKeyLength(cipherSuite);
-
-                    X509Certificate[] peerCertificates = getCertChain(getConnectionMetaData().getConnector(), _sslSession);
-
-                    byte[] bytes = _sslSession.getId();
-                    String idStr = StringUtil.toHexString(bytes);
-
-                    sslSessionData = new SslSessionData(idStr, cipherSuite, keySize, peerCertificates);
-                    _sslSession.putValue(key, sslSessionData);
-                }
-                catch (Exception e)
-                {
-                    LOG.warn("Unable to get secure details ", e);
-                }
-            }
+            _sslSession = sslSession;
             _sslSessionData = sslSessionData;
         }
 
         @Override
         public Object getAttribute(String name)
         {
-            String sessionAttribute = getSslSessionAttribute();
-            if (StringUtil.isNotBlank(sessionAttribute) && name.startsWith(sessionAttribute))
-            {
-                if (name.equals(sessionAttribute))
-                    return _sslSession;
-                if (name.equals(getSslSessionDataAttribute()))
-                    return _sslSessionData;
-            }
-
             return switch (name)
             {
-                case CIPHER_SUITE_ATTRIBUTE -> _sslSessionData != null ? _sslSessionData.cipherSuite() : null;
-                case KEY_SIZE_ATTRIBUTE -> _sslSessionData != null ? _sslSessionData.keySize() : null;
-                case SSL_SESSION_ID_ATTRIBUTE -> _sslSessionData != null ? _sslSessionData.sessionId() : null;
-                case PEER_CERTIFICATES_ATTRIBUTE -> _sslSessionData != null ? _sslSessionData.peerCertificates() : null;
+                case SSL_SESSION_ATTRIBUTE -> _sslSession;
+                case SSL_SESSION_DATA_ATTRIBUTE -> _sslSessionData;
                 case X509_ATTRIBUTE -> getX509(_sslSession);
                 default -> super.getAttribute(name);
             };
@@ -414,29 +368,17 @@ public class SecureRequestCustomizer implements HttpConfiguration.Customizer
         public Set<String> getAttributeNameSet()
         {
             Set<String> names = new HashSet<>(super.getAttributeNameSet());
-            if (getX509(_sslSession) != null)
-                names.add(X509_ATTRIBUTE);
-            String sessionAttribute = getSslSessionAttribute();
-            if (!StringUtil.isNotBlank(sessionAttribute))
+
+            if (_sslSession != null)
             {
-                names.add(sessionAttribute);
-                if (_sslSessionData != null)
-                {
-                    names.add(getSslSessionDataAttribute());
-                    names.add(CIPHER_SUITE_ATTRIBUTE);
-                    names.add(KEY_SIZE_ATTRIBUTE);
-                    names.add(SSL_SESSION_ID_ATTRIBUTE);
-                    names.add(PEER_CERTIFICATES_ATTRIBUTE);
-                }
+                names.add(SSL_SESSION_ATTRIBUTE);
+                if (getX509(_sslSession) != null)
+                    names.add(X509_ATTRIBUTE);
             }
+            if (_sslSessionData != null)
+                names.add(SSL_SESSION_DATA_ATTRIBUTE);
+
             return names;
         }
-    }
-
-    /**
-     * Simple bundle of data that is cached in the SSLSession.
-     */
-    public record SslSessionData(String sessionId, String cipherSuite, int keySize, X509Certificate[] peerCertificates)
-    {
     }
 }

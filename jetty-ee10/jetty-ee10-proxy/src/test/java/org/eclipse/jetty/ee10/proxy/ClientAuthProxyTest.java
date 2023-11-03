@@ -39,6 +39,7 @@ import org.eclipse.jetty.client.HttpClientTransport;
 import org.eclipse.jetty.client.Request;
 import org.eclipse.jetty.client.transport.HttpClientTransportDynamic;
 import org.eclipse.jetty.ee10.servlet.ServletContextHandler;
+import org.eclipse.jetty.ee10.servlet.ServletContextRequest;
 import org.eclipse.jetty.ee10.servlet.ServletHolder;
 import org.eclipse.jetty.http.HttpScheme;
 import org.eclipse.jetty.http.HttpStatus;
@@ -140,7 +141,7 @@ public class ClientAuthProxyTest
             @Override
             public boolean handle(org.eclipse.jetty.server.Request request, Response response, Callback callback)
             {
-                X509Certificate[] certificates = (X509Certificate[])request.getAttribute(SecureRequestCustomizer.PEER_CERTIFICATES_ATTRIBUTE);
+                X509Certificate[] certificates = (X509Certificate[])request.getAttribute(ServletContextRequest.JAKARTA_SERVLET_REQUEST_X_509_CERTIFICATE);
                 Assertions.assertNotNull(certificates);
                 X509Certificate certificate = certificates[0];
                 X500Principal principal = certificate.getSubjectX500Principal();
@@ -213,7 +214,7 @@ public class ClientAuthProxyTest
 
     private static String retrieveUser(HttpServletRequest request)
     {
-        X509Certificate[] certificates = (X509Certificate[])request.getAttribute(SecureRequestCustomizer.PEER_CERTIFICATES_ATTRIBUTE);
+        X509Certificate[] certificates = (X509Certificate[])request.getAttribute(ServletContextRequest.JAKARTA_SERVLET_REQUEST_X_509_CERTIFICATE);
         String clientName = certificates[0].getSubjectX500Principal().getName();
         Matcher matcher = Pattern.compile("CN=([^,]+)").matcher(clientName);
         if (matcher.find())
@@ -467,9 +468,9 @@ public class ClientAuthProxyTest
             @Override
             protected void service(HttpServletRequest request, HttpServletResponse response)
             {
-                Assertions.assertNotNull(request.getAttribute("jakarta.servlet.request.cipher_suite"));
-                Assertions.assertNotNull(request.getAttribute("jakarta.servlet.request.key_size"));
-                Assertions.assertNotNull(request.getAttribute("jakarta.servlet.request.ssl_session_id"));
+                Assertions.assertNotNull(request.getAttribute(ServletContextRequest.JAKARTA_SERVLET_REQUEST_CIPHER_SUITE));
+                Assertions.assertNotNull(request.getAttribute(ServletContextRequest.JAKARTA_SERVLET_REQUEST_KEY_SIZE));
+                Assertions.assertNotNull(request.getAttribute(ServletContextRequest.JAKARTA_SERVLET_REQUEST_SSL_SESSION_ID));
                 Assertions.assertNotNull(request.getAttribute("jakarta.servlet.request.X509Certificate"));
                 // Do not proxy these requests, we just want to verify the attributes.
                 response.setStatus(HttpStatus.OK_200);

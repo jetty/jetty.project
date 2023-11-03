@@ -25,8 +25,7 @@ import org.eclipse.jetty.security.ServerAuthException;
 import org.eclipse.jetty.security.UserIdentity;
 import org.eclipse.jetty.server.Request;
 import org.eclipse.jetty.server.Response;
-import org.eclipse.jetty.server.SecureRequestCustomizer;
-import org.eclipse.jetty.server.SecureRequestCustomizer.SslSessionData;
+import org.eclipse.jetty.server.SslSessionData;
 import org.eclipse.jetty.util.Callback;
 import org.eclipse.jetty.util.ssl.SslContextFactory;
 
@@ -56,7 +55,7 @@ public class SslClientCertAuthenticator extends LoginAuthenticator
     @Override
     public AuthenticationState validateRequest(Request req, Response res, Callback callback) throws ServerAuthException
     {
-        SslSessionData sslSessionData = (SslSessionData)req.getAttribute(SecureRequestCustomizer.DEFAULT_SSL_SESSION_DATA_ATTRIBUTE);
+        SslSessionData sslSessionData = (SslSessionData)req.getAttribute(SslSessionData.ATTRIBUTE);
         if (sslSessionData == null)
         {
             Response.writeError(req, res, callback, HttpStatus.FORBIDDEN_403);

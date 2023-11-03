@@ -37,6 +37,7 @@ import org.eclipse.jetty.server.Request;
 import org.eclipse.jetty.server.Response;
 import org.eclipse.jetty.server.SecureRequestCustomizer;
 import org.eclipse.jetty.server.ServerConnector;
+import org.eclipse.jetty.server.SslSessionData;
 import org.eclipse.jetty.server.handler.HelloHandler;
 import org.eclipse.jetty.toolchain.test.MavenTestingUtils;
 import org.eclipse.jetty.util.Callback;
@@ -79,7 +80,6 @@ public class ServerConnectorSslServerTest extends HttpServerTestBase
         HttpConnectionFactory httpConnectionFactory = new HttpConnectionFactory();
         ServerConnector connector = new ServerConnector(_server, null, null, trackingBufferPool, 1, 1, AbstractConnectionFactory.getFactories(sslContextFactory, httpConnectionFactory));
         SecureRequestCustomizer secureRequestCustomer = new SecureRequestCustomizer();
-        secureRequestCustomer.setSslSessionAttribute("SSL_SESSION");
         httpConnectionFactory.getHttpConfiguration().addCustomizer(secureRequestCustomer);
 
         initServer(connector);
@@ -223,7 +223,7 @@ public class ServerConnectorSslServerTest extends HttpServerTestBase
             StringBuilder out = new StringBuilder();
             SSLSession session = (SSLSession)request.getAttribute("SSL_SESSION");
 
-            SecureRequestCustomizer.SslSessionData data = (SecureRequestCustomizer.SslSessionData)request.getAttribute("SSL_SESSIONData");
+            SslSessionData data = (SslSessionData)request.getAttribute("SSL_SESSIONData");
 
             out.append("Hello world").append('\n');
             out.append("scheme='").append(request.getHttpURI().getScheme()).append("'").append('\n');

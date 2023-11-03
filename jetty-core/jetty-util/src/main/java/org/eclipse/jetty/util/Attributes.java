@@ -224,6 +224,7 @@ public interface Attributes
      */
     class Mapped implements Attributes
     {
+        private static final Object NULL_VALUE = new Object();
         private final Map<String, Object> _map;
         private final Set<String> _names;
 
