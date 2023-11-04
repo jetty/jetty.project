@@ -1,3 +1,4 @@
+
 <project xmlns="http://maven.apache.org/POM/4.0.0" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/maven-v4_0_0.xsd">
   <parent>
     <groupId>org.eclipse.jetty</groupId>
@@ -16,26 +17,6 @@
     <apache.directory.api.version>2.1.5</apache.directory.api.version>
     <spotbugs.onlyAnalyze>org.eclipse.jetty.jaas.*</spotbugs.onlyAnalyze>
   </properties>
-
-  <build>
-    <plugins>
-      <!-- always include the sources to be able to prepare the eclipse-jetty-SDK feature
-      with a snapshot. -->
-      <plugin>
-        <groupId>org.apache.maven.plugins</groupId>
-        <artifactId>maven-source-plugin</artifactId>
-      </plugin>
-      <plugin>
-        <groupId>org.apache.maven.plugins</groupId>
-        <artifactId>maven-surefire-plugin</artifactId>
-        <configuration>
-          <failIfNoSpecifiedTests>false</failIfNoSpecifiedTests>
-          <failIfNoTests>false</failIfNoTests>
-          <testFailureIgnore>true</testFailureIgnore>
-        </configuration>
-      </plugin>
-    </plugins>
-  </build>
 
   <dependencies>
     <dependency>
@@ -136,13 +117,6 @@
       <artifactId>api-asn1-api</artifactId>
       <version>${apache.directory.api.version}</version>
     </dependency>
-    <!-- because directory server do not have yet junit5 extensions -->
-    <dependency>
-      <groupId>org.junit.vintage</groupId>
-      <artifactId>junit-vintage-engine</artifactId>
-      <version>${junit.version}</version>
-      <scope>test</scope>
-    </dependency>
 
   </dependencies>
 
@@ -160,28 +134,6 @@
               <artifactId>maven-surefire-plugin</artifactId>
               <configuration>
                 <argLine>--add-opens java.base/sun.security.x509=ALL-UNNAMED --add-opens java.base/sun.security.util=ALL-UNNAMED</argLine>
-              </configuration>
-            </plugin>
-          </plugins>
-        </pluginManagement>
-      </build>
-    </profile>
-    <profile>
-      <id>jdk20</id>
-      <activation>
-        <jdk>[20,)</jdk>
-      </activation>
-      <build>
-        <pluginManagement>
-          <plugins>
-            <plugin>
-              <groupId>org.apache.maven.plugins</groupId>
-              <artifactId>maven-surefire-plugin</artifactId>
-              <configuration>
-                <excludes>
-                  <!-- sun.security.x509.X509CertInfo.set not present in Java 20, needs a Java 20 compatible version of Apache Directory Server -->
-                  <exclude>**/JAASLdapLoginServiceTest*</exclude>
-                </excludes>
               </configuration>
             </plugin>
           </plugins>
