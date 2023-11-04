@@ -340,7 +340,7 @@ public class RequestTest
                 // Set some fake SSL attributes
                 X509Certificate[] certificate = new X509Certificate[0];
                 coreRequest.setAttribute(SecureRequestCustomizer.SSL_SESSION_DATA_ATTRIBUTE,
-                    new EndPoint.SslSessionData(null, "identity", "quantumKnowledge", 42, certificate));
+                    new EndPoint.SslSessionData(null, "identity", "quantum_42_Knowledge", certificate));
 
                 // Check we have all the attribute names in servlet API
                 Set<String> names = new HashSet<>(Collections.list(request.getAttributeNames()));
@@ -356,7 +356,7 @@ public class RequestTest
                 ));
 
                 // check we can get the expected values
-                assertThat(request.getAttribute(ServletContextRequest.SSL_CIPHER_SUITE), is("quantumKnowledge"));
+                assertThat(request.getAttribute(ServletContextRequest.SSL_CIPHER_SUITE), is("quantum_42_Knowledge"));
                 assertThat(request.getAttribute(ServletContextRequest.SSL_KEY_SIZE), is(42));
                 assertThat(request.getAttribute(ServletContextRequest.SSL_SESSION_ID), is("identity"));
                 assertThat(request.getAttribute(ServletContextRequest.X_509_CERTIFICATE), sameInstance(certificate));
@@ -367,7 +367,7 @@ public class RequestTest
                 assertThat(request.getAttribute(FormFields.MAX_LENGTH_ATTRIBUTE), is(maxFormContentSize));
 
                 // check we can set all those attributes in the servlet API
-                request.setAttribute(ServletContextRequest.SSL_CIPHER_SUITE, "piglatin");
+                request.setAttribute(ServletContextRequest.SSL_CIPHER_SUITE, "pig_33_latin");
                 request.setAttribute(ServletContextRequest.SSL_KEY_SIZE, 3);
                 request.setAttribute(ServletContextRequest.SSL_SESSION_ID, "other");
                 request.setAttribute(ServletContextRequest.X_509_CERTIFICATE, "certificate");
@@ -376,7 +376,7 @@ public class RequestTest
                 request.setAttribute(FormFields.MAX_LENGTH_ATTRIBUTE, 102);
 
                 // check we can get the updated values
-                assertThat(request.getAttribute(ServletContextRequest.SSL_CIPHER_SUITE), is("piglatin"));
+                assertThat(request.getAttribute(ServletContextRequest.SSL_CIPHER_SUITE), is("pig_33_latin"));
                 assertThat(request.getAttribute(ServletContextRequest.SSL_KEY_SIZE), is(3));
                 assertThat(request.getAttribute(ServletContextRequest.SSL_SESSION_ID), is("other"));
                 assertThat(request.getAttribute(ServletContextRequest.X_509_CERTIFICATE), is("certificate"));

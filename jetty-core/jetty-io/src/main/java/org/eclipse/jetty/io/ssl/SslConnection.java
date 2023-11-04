@@ -492,8 +492,11 @@ public class SslConnection extends AbstractConnection implements Connection.Upgr
         return getEndPoint().flush(output);
     }
 
-    public class SslEndPoint extends AbstractEndPoint implements EndPoint.Wrapper, EndPoint.Secure
+    public class SslEndPoint extends AbstractEndPoint implements EndPoint.Wrapper, EndPoint.Securable
     {
+        // This is not a simple EndPoint.Wrapper because it has another set of the machinery
+        // from AbstractEndPoint for fillInterest and write flushing, separate to the wrapped EndPoint
+
         private final Callback _incompleteWriteCallback = new IncompleteWriteCallback();
         private Throwable _failure;
 
@@ -1642,7 +1645,6 @@ public class SslConnection extends AbstractConnection implements Connection.Upgr
             if (sslSessionData == null)
             {
                 String cipherSuite = sslSession.getCipherSuite();
-                int keySize = SslContextFactory.deduceKeyLength(cipherSuite);
 
                 X509Certificate[] peerCertificates = _sslContextFactory != null
                     ? _sslContextFactory.getX509CertChain(sslSession)
@@ -1651,7 +1653,7 @@ public class SslConnection extends AbstractConnection implements Connection.Upgr
                 byte[] bytes = sslSession.getId();
                 String idStr = StringUtil.toHexString(bytes);
 
-                sslSessionData = new SslSessionData(sslSession, idStr, cipherSuite, keySize >= 0 ? keySize : null, peerCertificates);
+                sslSessionData = new SslSessionData(sslSession, idStr, cipherSuite, peerCertificates);
                 sslSession.putValue(SslSessionData.ATTRIBUTE, sslSessionData);
             }
             return sslSessionData;

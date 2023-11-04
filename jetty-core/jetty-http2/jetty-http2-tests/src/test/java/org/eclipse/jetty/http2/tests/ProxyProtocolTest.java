@@ -36,6 +36,7 @@ import org.eclipse.jetty.server.HttpConfiguration;
 import org.eclipse.jetty.server.ProxyConnectionFactory;
 import org.eclipse.jetty.server.Request;
 import org.eclipse.jetty.server.Response;
+import org.eclipse.jetty.server.SecureRequestCustomizer;
 import org.eclipse.jetty.server.Server;
 import org.eclipse.jetty.server.ServerConnector;
 import org.eclipse.jetty.util.Callback;
@@ -61,6 +62,7 @@ public class ProxyProtocolTest
     {
         server = new Server();
         HttpConfiguration configuration = new HttpConfiguration();
+        configuration.addCustomizer(new SecureRequestCustomizer());
         connector = new ServerConnector(server, new ProxyConnectionFactory(), new HTTP2CServerConnectionFactory(configuration));
         server.addConnector(connector);
         server.setHandler(handler);
@@ -130,6 +132,8 @@ public class ProxyProtocolTest
             @Override
             public boolean handle(Request request, Response response, Callback callback)
             {
+                assertTrue(request.isSecure());
+                assertTrue(request.getConnectionMetaData().isSecure());
                 assertEquals("10.0.0.4", Request.getRemoteAddr(request));
                 assertEquals(33824, Request.getRemotePort(request));
                 assertEquals("10.0.0.5", Request.getLocalAddr(request));

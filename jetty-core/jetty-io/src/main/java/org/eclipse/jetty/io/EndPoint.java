@@ -94,7 +94,7 @@ public interface EndPoint extends Closeable
     /**
      * Marks an {@code EndPoint} that wraps another {@code EndPoint}.
      */
-    public interface Wrapper
+    interface Wrapper
     {
         /**
          * @return The wrapped {@code EndPoint}
@@ -328,27 +328,42 @@ public interface EndPoint extends Closeable
      */
     void upgrade(Connection newConnection);
 
-    interface Secure extends EndPoint
+    interface Securable extends EndPoint
     {
+        /**
+         * Get the SslSessionData of a secure end point.
+         * @return A {@link SslSessionData} instance (with possibly null field values) if secure, else {@code null}.
+         */
         SslSessionData getSslSessionData();
+
+        default boolean isSecure()
+        {
+            return getSslSessionData() != null;
+        }
     }
 
     /**
-     * A bundle of available SSL data, any field of which may be null
+     * Bundle of SSLSession associated data that may be known from an {@link SSLSession} or determined otherwise in the
+     * absence of an {@link SSLSession}.  All fields may be {@code null}, and typically it is the presence of a non
+     * {@code null} instance that indicates a {@link Connection} and/or request is secure.
+     * @param sslSession The {@link SSLSession} itself, if known, else {@code null}
+     * @param sessionId The {@link SSLSession#getId()} rendered as a hex string, if known, else {@code null}
+     * @param cipherSuite The {@link SSLSession#getCipherSuite()} if known, else {@code null}
+     * @param peerCertificates The {@link SSLSession#getPeerCertificates()}s converted to {@link X509Certificate}, if known
+     *                         else {@code null}.
      */
-    record SslSessionData(SSLSession sslSession, String sessionId, String cipherSuite, Integer keySize, X509Certificate[] peerCertificates)
+    record SslSessionData(SSLSession sslSession, String sessionId, String cipherSuite, X509Certificate[] peerCertificates)
     {
         public static final String ATTRIBUTE = "org.eclipse.jetty.io.Endpoint.SslSessionData";
 
-        public static SslSessionData from(SslSessionData baseData, SSLSession sslSession, String sessionId, String cipherSuite, Integer keySize, X509Certificate[] peerCertificates)
+        public static SslSessionData from(SslSessionData baseData, SSLSession sslSession, String sessionId, String cipherSuite, X509Certificate[] peerCertificates)
         {
             return (baseData == null)
-                ? new SslSessionData(sslSession, sessionId, cipherSuite, keySize, peerCertificates)
+                ? new SslSessionData(sslSession, sessionId, cipherSuite, peerCertificates)
                 : new SslSessionData(
                     sslSession != null ? sslSession : baseData.sslSession,
                     sessionId != null ? sessionId : baseData.sessionId,
                     cipherSuite != null ? cipherSuite : baseData.cipherSuite,
-                    keySize != null && keySize > 0 ? keySize : baseData.keySize,
                     peerCertificates != null ? peerCertificates : baseData.peerCertificates());
         }
     }

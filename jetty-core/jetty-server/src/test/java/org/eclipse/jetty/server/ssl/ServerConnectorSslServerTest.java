@@ -231,7 +231,7 @@ public class ServerConnectorSslServerTest extends HttpServerTestBase
             out.append("isSecure='").append(request.isSecure()).append("'").append('\n');
             out.append("X509Certificate='").append(data == null ? "" : data.peerCertificates()).append("'").append('\n');
             out.append("cipher_suite='").append(session == null ? "" : session.getCipherSuite()).append("'").append('\n');
-            out.append("key_size='").append(data == null ? "" : data.keySize()).append("'").append('\n');
+            out.append("key_size='").append(data == null ? "" : SslContextFactory.deduceKeyLength(data.cipherSuite())).append("'").append('\n');
             out.append("ssl_session_id='").append(data == null ? "" : data.sessionId()).append("'").append('\n');
             out.append("ssl_session='").append(session).append("'").append('\n');
             Content.Sink.write(response, true, out.toString(), callback);

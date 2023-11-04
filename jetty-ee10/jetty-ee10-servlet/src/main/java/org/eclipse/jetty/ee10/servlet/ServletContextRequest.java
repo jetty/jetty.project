@@ -44,6 +44,7 @@ import org.eclipse.jetty.session.SessionManager;
 import org.eclipse.jetty.util.Attributes;
 import org.eclipse.jetty.util.Fields;
 import org.eclipse.jetty.util.URIUtil;
+import org.eclipse.jetty.util.ssl.SslContextFactory;
 
 /**
  * A core request wrapper that carries the servlet related request state,
@@ -139,7 +140,7 @@ public class ServletContextRequest extends ContextRequest implements ServletCont
                 return switch (name)
                 {
                     case SSL_CIPHER_SUITE -> super.getAttribute(EndPoint.SslSessionData.ATTRIBUTE) instanceof EndPoint.SslSessionData data ? data.cipherSuite() : null;
-                    case SSL_KEY_SIZE -> super.getAttribute(EndPoint.SslSessionData.ATTRIBUTE) instanceof EndPoint.SslSessionData data ? data.keySize() : null;
+                    case SSL_KEY_SIZE -> super.getAttribute(EndPoint.SslSessionData.ATTRIBUTE) instanceof EndPoint.SslSessionData data ? SslContextFactory.deduceKeyLength(data.cipherSuite()) : null;
                     case SSL_SESSION_ID -> super.getAttribute(EndPoint.SslSessionData.ATTRIBUTE) instanceof EndPoint.SslSessionData data ? data.sessionId() : null;
                     case X_509_CERTIFICATE -> super.getAttribute(EndPoint.SslSessionData.ATTRIBUTE) instanceof EndPoint.SslSessionData data ? data.peerCertificates() : null;
                     case ServletContextRequest.MULTIPART_CONFIG_ELEMENT -> _matchedResource.getResource().getServletHolder().getMultipartConfigElement();

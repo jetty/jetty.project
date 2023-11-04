@@ -378,6 +378,23 @@ public class ProxyConnectionFactory extends DetectorConnectionFactory
             0x0D, 0x0A, 0x0D, 0x0A, 0x00, 0x0D, 0x0A, 0x51, 0x55, 0x49, 0x54, 0x0A
         };
 
+        private static final int PP2_TYPE_ALPN = 0x01;
+        private static final int PP2_TYPE_AUTHORITY = 0x02;
+        private static final int PP2_TYPE_CRC32C = 0x03;
+        private static final int PP2_TYPE_NOOP = 0x04;
+        private static final int PP2_TYPE_UNIQUE_ID = 0x05;
+        private static final int PP2_TYPE_SSL = 0x20;
+        private static final int PP2_SUBTYPE_SSL_VERSION = 0x21;
+        private static final int PP2_SUBTYPE_SSL_CN = 0x22;
+        private static final int PP2_SUBTYPE_SSL_CIPHER = 0x23;
+        private static final int PP2_SUBTYPE_SSL_SIG_ALG = 0x24;
+        private static final int PP2_SUBTYPE_SSL_KEY_ALG = 0x25;
+        private static final int PP2_TYPE_NETNS = 0x30;
+
+        private static final int PP2_CLIENT_SSL = 0x01;
+        private static final int PP2_CLIENT_CERT_CONN = 0x02;
+        private static final int PP2_CLIENT_CERT_SESS = 0x04;
+
         private final String _nextProtocol;
         private int _maxProxyHeader = 1024;
 
@@ -641,26 +658,36 @@ public class ProxyConnectionFactory extends DetectorConnectionFactory
                             LOG.debug(String.format("Proxy v2 T=%x L=%d V=%s for %s", type, length, StringUtil.toHexString(value), this));
 
                         // PP2_TYPE_NOOP is only used for byte alignment, skip them.
-                        if (type != ProxyEndPoint.PP2_TYPE_NOOP)
+                        if (type != PP2_TYPE_NOOP)
                             proxyEndPoint.putTLV(type, value);
 
-                        if (type == ProxyEndPoint.PP2_TYPE_SSL)
+                        if (type == PP2_TYPE_SSL)
                         {
                             int client = value[0] & 0xFF;
-                            if (client == ProxyEndPoint.PP2_TYPE_ALPN)
+                            boolean verified = value[1] == 0 && value[2] == 0 && value[3] == 0 && value[4] == 0;
+                            String version = null;
+                            String distinguishedName = null;
+                            String cipher = null;
+                            int i = 5; // Index of the first sub_tlv, after verify.
+                            while (i < length)
                             {
-                                int i = 5; // Index of the first sub_tlv, after verify.
-                                while (i < length)
+                                int subType = value[i++] & 0xFF;
+                                int subLength = (value[i++] & 0xFF) * 256 + (value[i++] & 0xFF);
+                                byte[] subValue = new byte[subLength];
+                                System.arraycopy(value, i, subValue, 0, subLength);
+                                i += subLength;
+                                switch (subType)
                                 {
-                                    int subType = value[i++] & 0xFF;
-                                    int subLength = (value[i++] & 0xFF) * 256 + (value[i++] & 0xFF);
-                                    byte[] subValue = new byte[subLength];
-                                    System.arraycopy(value, i, subValue, 0, subLength);
-                                    i += subLength;
-                                    if (subType == ProxyEndPoint.PP2_SUBTYPE_SSL_VERSION)
-                                        proxyEndPoint.setTlsVersion(new String(subValue, StandardCharsets.US_ASCII));
+                                    case PP2_SUBTYPE_SSL_VERSION -> version = new String(subValue, StandardCharsets.US_ASCII);
+                                    case PP2_SUBTYPE_SSL_CN -> distinguishedName = new String(subValue, StandardCharsets.UTF_8);
+                                    case PP2_SUBTYPE_SSL_CIPHER -> cipher = new String(subValue, StandardCharsets.US_ASCII);
                                 }
                             }
+
+                            // TODO should client certificate information be passed? For now we just check there is a client value
+                            //      and the certificate has been verified
+                            if (client != 0 && verified)
+                                proxyEndPoint.setSecure(version, distinguishedName, cipher);
                         }
                     }
 
@@ -743,26 +770,14 @@ public class ProxyConnectionFactory extends DetectorConnectionFactory
         }
     }
 
-    public static class ProxyEndPoint implements EndPoint, EndPoint.Wrapper, EndPoint.Secure
+    public static class ProxyEndPoint implements EndPoint, EndPoint.Wrapper, EndPoint.Securable
     {
-        private static final int PP2_TYPE_ALPN = 0x01;
-        private static final int PP2_TYPE_AUTHORITY = 0x02;
-        private static final int PP2_TYPE_CRC32C = 0x03;
-        private static final int PP2_TYPE_NOOP = 0x04;
-        private static final int PP2_TYPE_UNIQUE_ID = 0x05;
-        private static final int PP2_TYPE_SSL = 0x20;
-        private static final int PP2_SUBTYPE_SSL_VERSION = 0x21;
-        private static final int PP2_SUBTYPE_SSL_CN = 0x22;
-        private static final int PP2_SUBTYPE_SSL_CIPHER = 0x23;
-        private static final int PP2_SUBTYPE_SSL_SIG_ALG = 0x24;
-        private static final int PP2_SUBTYPE_SSL_KEY_ALG = 0x25;
-        private static final int PP2_TYPE_NETNS = 0x30;
-
         private final EndPoint _endPoint;
         private final SocketAddress _local;
         private final SocketAddress _remote;
         private Map<Integer, byte[]> _tlvs;
         private String _tlsVersion;
+        private SslSessionData _sslSessionData;
 
         @Deprecated
         public ProxyEndPoint(EndPoint endPoint, InetSocketAddress remote, InetSocketAddress local)
@@ -780,13 +795,14 @@ public class ProxyConnectionFactory extends DetectorConnectionFactory
         @Override
         public SslSessionData getSslSessionData()
         {
-            // TODO more fields!
-            return _tlsVersion == null ? null : new SslSessionData(null, null, null, null, null);
+            return _sslSessionData;
         }
 
-        public void setTlsVersion(String version)
+        public void setSecure(String version, String distinguishedName, String cipher)
         {
-            _tlsVersion = version;
+            _tlsVersion = version; // TODO should this be part of the SslSessionData?
+            // TODO should distinguishedName be part of the SslSessionData for SNI checks?
+            _sslSessionData = new SslSessionData(null, null, cipher, null);
         }
 
         public String getTlsVersion()

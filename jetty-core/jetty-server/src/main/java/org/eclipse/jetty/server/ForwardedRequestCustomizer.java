@@ -877,7 +877,7 @@ public class ForwardedRequestCustomizer implements HttpConfiguration.Customizer
          */
         public void handleCipherSuite(HttpField field)
         {
-            _sslSessionData = EndPoint.SslSessionData.from(_sslSessionData, null, null, field.getValue(), null, null);
+            _sslSessionData = EndPoint.SslSessionData.from(_sslSessionData, null, null, field.getValue(), null);
 
             // Is ForwardingRequestCustomizer configured to trigger isSecure and scheme change on this header?
             if (isSslIsSecure())
@@ -893,7 +893,7 @@ public class ForwardedRequestCustomizer implements HttpConfiguration.Customizer
          */
         public void handleSslSessionId(HttpField field)
         {
-            _sslSessionData = EndPoint.SslSessionData.from(_sslSessionData, null, field.getValue(), null, null, null);
+            _sslSessionData = EndPoint.SslSessionData.from(_sslSessionData, null, field.getValue(), null, null);
 
             // Is ForwardingRequestCustomizer configured to trigger isSecure and scheme change on this header?
             if (isSslIsSecure())

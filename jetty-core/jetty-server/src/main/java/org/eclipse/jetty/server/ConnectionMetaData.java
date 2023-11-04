@@ -18,6 +18,7 @@ import java.net.SocketAddress;
 
 import org.eclipse.jetty.http.HttpVersion;
 import org.eclipse.jetty.io.Connection;
+import org.eclipse.jetty.io.EndPoint;
 import org.eclipse.jetty.util.Attributes;
 import org.eclipse.jetty.util.HostPort;
 
@@ -43,7 +44,10 @@ public interface ConnectionMetaData extends Attributes
 
     boolean isPersistent();
 
-    boolean isSecure();
+    default boolean isSecure()
+    {
+        return getConnection().getEndPoint() instanceof EndPoint.Securable securable && securable.isSecure();
+    }
 
     /**
      * @return whether the functionality of pushing resources is supported
