@@ -35,16 +35,18 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 /**
- * <p>Customizer that extracts the attribute from an {@link SSLContext}
- * and sets them on the request with {@link Request#setAttribute(String, Object)}
- * according to Servlet Specification Requirements.</p>
+ * <p>Customizer that extracts the attribute of an {@link SSLContext}
+ * and makes them available via {@link Request#getAttribute(String)}
+ * using the names:
+ * <ul>
+ *     <li>{@link #SSL_SESSION_ATTRIBUTE} for the {@link SSLSession} itself</li>
+ *     <li>{@link #SSL_SESSION_DATA_ATTRIBUTE} for {@link SSLSession} metadata</li>
+ *     <li>{@link #X509_ATTRIBUTE} for the local certificate as a {@link X509} instance</li>
+ * </ul>
+ * @see EndPoint.SslSessionData
  */
 public class SecureRequestCustomizer implements HttpConfiguration.Customizer
 {
-    /**
-     * <p>The request attribute name to use to obtain the local certificate
-     * as an {@link X509} object.</p>
-     */
     public static final String X509_ATTRIBUTE = "org.eclipse.jetty.server.x509";
     public static final String SSL_SESSION_ATTRIBUTE = "org.eclipse.jetty.server.SslSession";
     public static final String SSL_SESSION_DATA_ATTRIBUTE = EndPoint.SslSessionData.ATTRIBUTE;
