@@ -567,7 +567,16 @@ public interface Attributes
     }
 
     /**
-     *
+     * An abstract implementation of {@link Attributes.Wrapper} that provides a mechanism
+     * for synthetic attributes that can be modified or deleted.  A synthetic attribute
+     * is one whose value is not stored in the normal map backing the {@link Attributes} instance,
+     * but is instead calculated as needed. Modifications to synthetic attributes are maintained
+     * in a separate layer and no modifications are made to the backing {@link Attributes}.
+     * <p>
+     * Non synthetic attributes are handled normally by the backing {@link Attributes}
+     * <p>
+     * Uses of this class must provide implementations for
+     * {@link #getSyntheticNameSet()} amd {@link #getSyntheticAttribute(String)}.
      */
     abstract class Synthetic extends Wrapper
     {
@@ -587,83 +596,131 @@ public interface Attributes
             super(base);
         }
 
+        /**
+         * Get the value of a specific synthetic attribute.
+         * @param name The name of the attribute
+         * @return The value for the attribute, which may be computed on request, or {@code null}
+         */
         protected abstract Object getSyntheticAttribute(String name);
 
+        /**
+         * Get the list of known synthetic attribute names, including those
+         * that currently have a null value.
+         * @return A {@link Set} of known synthetic attributes names.
+         */
         protected abstract Set<String> getSyntheticNameSet();
 
         @Override
         public Object getAttribute(String name)
         {
-            Object l = _layer == null ? null : _layer.get(name);
-            if (l == REMOVED)
-                return null;
-            if (l != null)
-                return l;
+            // Has the attribute been modified in the layer?
+            if (_layer != null)
+            {
+                // Only synthetic attributes can be in the layer.
+                Object l = _layer.get(name);
+                // Has it been removed?
+                if (l == REMOVED)
+                    return null;
+                // or has it been replaced?
+                if (l != null)
+                    return l;
+            }
 
+            // Is there a synthetic value for the attribute? We just as for the value rather than checking the name.
             Object s = getSyntheticAttribute(name);
-            if (s == null)
-                return super.getAttribute(name);
-            return s;
+            if (s != null)
+                return s;
+
+            // otherwise get the attribute normally.
+            return super.getAttribute(name);
         }
 
         @Override
         public Object setAttribute(String name, Object value)
         {
+            // setting a null value is equivalent to removal
             if (value == null)
                 return removeAttribute(name);
 
-            if (!getSyntheticNameSet().contains(name))
-                return super.setAttribute(name, value);
+            // is the attribute known to be synthetic?
+            if (getSyntheticNameSet().contains(name))
+            {
+                // We will need a layer to record modifications to a synthetic attribute
+                if (_layer == null)
+                    _layer = new HashMap<>();
 
-            if (_layer == null)
-                _layer = new HashMap<>();
+                // update the attribute in the layer
+                Object old = _layer.put(name, value);
+                // return the old value, which if not remove and not in the layer, is the synthetic attribute itself
+                return old == REMOVED ? null : old != null ? old : getSyntheticAttribute(name);
+            }
 
-            Object old = _layer.put(name, value);
-            return old == REMOVED ? null : old == null ? getSyntheticAttribute(name) : old;
+            // handle non-synthetic attribute
+            return super.setAttribute(name, value);
         }
 
         @Override
         public Object removeAttribute(String name)
         {
-            if (!getSyntheticNameSet().contains(name))
-                return super.removeAttribute(name);
+            // is the attribute known to be synthetic?
+            if (getSyntheticNameSet().contains(name))
+            {
+                // We will need a layer to record modifications to a synthetic attribute
+                if (_layer == null)
+                    _layer = new HashMap<>();
 
-            if (_layer == null)
-                _layer = new HashMap<>();
+                // Mark the attribute as removed in the layer
+                Object old = _layer.put(name, REMOVED);
+                // return the old value, which if not removed and not in the layer, is the synthetic attribute itself
+                return old == REMOVED ? null : old != null ? old : getSyntheticAttribute(name);
+            }
 
-            Object old = _layer.put(name, REMOVED);
-            return old == REMOVED ? null : old == null ? getSyntheticAttribute(name) : old;
+            // handle non-synthetic attribute
+            return super.removeAttribute(name);
         }
 
         @Override
         public Set<String> getAttributeNameSet()
         {
+            // Get the non-synthetic attribute names
             Set<String> names = new HashSet<>(super.getAttributeNameSet());
 
-            for (String s : getSyntheticNameSet())
+            // Have there been any modifications to the synthetic attributes
+            if (_layer == null)
             {
-                if (_layer != null)
+                // no, so we just add the names for which there are values
+                for (String s : getSyntheticNameSet())
+                    if (getSyntheticAttribute(s) != null)
+                        names.add(s);
+            }
+            else
+            {
+                // otherwise for each known synthetic name
+                for (String s : getSyntheticNameSet())
                 {
+                    // has the attribute been modified in the layer?
                     Object l = _layer.get(s);
                     if (l == REMOVED)
+                        // it has been removed
                         names.remove(s);
                     else if (l != null || getSyntheticAttribute(s) != null)
+                        // else it was modified or has an original value
                         names.add(s);
                 }
-                else if (getSyntheticAttribute(s) != null)
-                {
-                    names.add(s);
-                }
             }
+
             return Collections.unmodifiableSet(names);
         }
 
         @Override
         public void clearAttributes()
         {
+            // Clear the base attributes
             super.clearAttributes();
+            // We will need a layer to remove the synthetic attributes
             if (_layer == null)
                 _layer = new HashMap<>();
+            // remove all known synthetic attributes
             for (String s : getSyntheticNameSet())
                 _layer.put(s, REMOVED);
         }

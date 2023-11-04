@@ -1196,13 +1196,12 @@ public class HttpClientTLSTest
             {
                 if (sslContextFactory == null)
                     sslContextFactory = getSslContextFactory();
-                SslContextFactory scf = sslContextFactory;
-                return new SslClientConnectionFactory(scf, getByteBufferPool(), getExecutor(), connectionFactory)
+                return new SslClientConnectionFactory(sslContextFactory, getByteBufferPool(), getExecutor(), connectionFactory)
                 {
                     @Override
                     protected SslConnection newSslConnection(ByteBufferPool bufferPool, Executor executor, EndPoint endPoint, SSLEngine engine)
                     {
-                        return new SslConnection(bufferPool, executor, endPoint, engine, scf, isDirectBuffersForEncryption(), isDirectBuffersForDecryption())
+                        return new SslConnection(bufferPool, executor, endPoint, engine, getSslContextFactory(), isDirectBuffersForEncryption(), isDirectBuffersForDecryption())
                         {
                             @Override
                             protected SSLEngineResult wrap(SSLEngine sslEngine, ByteBuffer[] input, ByteBuffer output) throws SSLException
