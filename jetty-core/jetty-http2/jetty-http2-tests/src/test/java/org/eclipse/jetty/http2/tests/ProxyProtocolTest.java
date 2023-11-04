@@ -201,6 +201,7 @@ public class ProxyProtocolTest
                 EndPoint.SslSessionData sslSessionData = proxyEndPoint.getSslSessionData();
                 assertThat(sslSessionData, notNullValue());
                 assertThat(sslSessionData.cipherSuite(), equalTo("TEST_128_XYZ"));
+                assertThat(sslSessionData.sessionId(), equalTo(StringUtil.toHexString("FooBar".getBytes(StandardCharsets.US_ASCII))));
                 assertThat(request.getAttribute(EndPoint.SslSessionData.ATTRIBUTE), sameInstance(sslSessionData));
                 callback.succeeded();
                 return true;
@@ -212,7 +213,7 @@ public class ProxyProtocolTest
             "0D0A0D0A000D0A515549540A" + // MAGIC
             "21" +          // Version | Command = PROXY
             "11" +          // FAM = AF_INET | PROT = STREAM
-            "0029" +        // length = 4+4+2+2+1+2+26
+            "0032" +        // length = 4+4+2+2+1+2+26+9
             "0A000004" +    // SRC_ADDR 10.0.0.4
             "0A000005" +    // DST_ADDR 10.0.0.5
             "8420" +        // SRC_PORT 33824
@@ -226,7 +227,12 @@ public class ProxyProtocolTest
             "312E32" +      // version string "1.2"
             "23" +          // type PP2_SUBTYPE_SSL_CIPHER
             "000C" +        // length = 12
-            "544553545F3132385F58595A"; // cipher "TEST_128_XYZ"
+            "544553545F3132385F58595A" + // cipher "TEST_128_XYZ"
+            "05" +          // type PP2_TYPE_UNIQUE_ID
+            "0006" +        // length = 6
+            "466f6f426172"  // value "FooBar" in hex
+            ;
+
         SocketChannel channel = SocketChannel.open();
         channel.connect(new InetSocketAddress("localhost", connector.getLocalPort()));
         channel.write(ByteBuffer.wrap(StringUtil.fromHexString(request1)));

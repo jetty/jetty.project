@@ -646,6 +646,13 @@ public class ProxyConnectionFactory extends DetectorConnectionFactory
                     }
                     proxyEndPoint = new ProxyEndPoint(endPoint, local, remote);
 
+                    int client = 0;
+                    boolean sslVerified = false;
+                    String sslVersion = null;
+                    String sslDistinguishedName = null;
+                    String sslCipher = null;
+                    String uniqueId = null;
+
                     // Any additional info?
                     while (byteBuffer.remaining() > nonProxyRemaining)
                     {
@@ -661,13 +668,16 @@ public class ProxyConnectionFactory extends DetectorConnectionFactory
                         if (type != PP2_TYPE_NOOP)
                             proxyEndPoint.putTLV(type, value);
 
+                        if (type == PP2_TYPE_UNIQUE_ID)
+                            uniqueId = StringUtil.toHexString(value);
+
                         if (type == PP2_TYPE_SSL)
                         {
-                            int client = value[0] & 0xFF;
-                            boolean verified = value[1] == 0 && value[2] == 0 && value[3] == 0 && value[4] == 0;
-                            String version = null;
-                            String distinguishedName = null;
-                            String cipher = null;
+                            client = value[0] & 0xFF;
+                            sslVerified = value[1] == 0 && value[2] == 0 && value[3] == 0 && value[4] == 0;
+                            sslVersion = null;
+                            sslDistinguishedName = null;
+                            sslCipher = null;
                             int i = 5; // Index of the first sub_tlv, after verify.
                             while (i < length)
                             {
@@ -678,18 +688,18 @@ public class ProxyConnectionFactory extends DetectorConnectionFactory
                                 i += subLength;
                                 switch (subType)
                                 {
-                                    case PP2_SUBTYPE_SSL_VERSION -> version = new String(subValue, StandardCharsets.US_ASCII);
-                                    case PP2_SUBTYPE_SSL_CN -> distinguishedName = new String(subValue, StandardCharsets.UTF_8);
-                                    case PP2_SUBTYPE_SSL_CIPHER -> cipher = new String(subValue, StandardCharsets.US_ASCII);
+                                    case PP2_SUBTYPE_SSL_VERSION -> sslVersion = new String(subValue, StandardCharsets.US_ASCII);
+                                    case PP2_SUBTYPE_SSL_CN -> sslDistinguishedName = new String(subValue, StandardCharsets.UTF_8);
+                                    case PP2_SUBTYPE_SSL_CIPHER -> sslCipher = new String(subValue, StandardCharsets.US_ASCII);
                                 }
                             }
-
-                            // TODO should client certificate information be passed? For now we just check there is a client value
-                            //      and the certificate has been verified
-                            if (client != 0 && verified)
-                                proxyEndPoint.setSecure(version, distinguishedName, cipher);
                         }
                     }
+
+                    // TODO should client certificate information be passed? For now we just check there is a client value
+                    //      and the certificate has been verified
+                    if (client != 0 && sslVerified)
+                        proxyEndPoint.setSecure(sslVersion, uniqueId, sslDistinguishedName, sslCipher);
 
                     if (LOG.isDebugEnabled())
                         LOG.debug("Proxy v2 {} {}", endPoint, proxyEndPoint);
@@ -798,11 +808,12 @@ public class ProxyConnectionFactory extends DetectorConnectionFactory
             return _sslSessionData;
         }
 
-        public void setSecure(String version, String distinguishedName, String cipher)
+        public void setSecure(String version, String id, String distinguishedName, String cipher)
         {
+            // TODO is using the unique ID as a SessionID OK?
             _tlsVersion = version; // TODO should this be part of the SslSessionData?
             // TODO should distinguishedName be part of the SslSessionData for SNI checks?
-            _sslSessionData = new SslSessionData(null, null, cipher, null);
+            _sslSessionData = new SslSessionData(null, id, cipher, null);
         }
 
         public String getTlsVersion()
