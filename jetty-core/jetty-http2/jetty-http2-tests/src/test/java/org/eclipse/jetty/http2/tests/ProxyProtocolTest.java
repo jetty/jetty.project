@@ -208,7 +208,6 @@ public class ProxyProtocolTest
             }
         });
 
-        // String is: " PP2_TYPE_SSL LEN CLIENT VERIFY PP2_SUBTYPE_SSL_VERSION LEN 1.2"
         String request1 =
             "0D0A0D0A000D0A515549540A" + // MAGIC
             "21" +          // Version | Command = PROXY

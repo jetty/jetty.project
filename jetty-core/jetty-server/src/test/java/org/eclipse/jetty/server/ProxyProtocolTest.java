@@ -143,14 +143,16 @@ public class ProxyProtocolTest
                 return true;
             }
 
-            private boolean validateEndPoint(Request request) 
+            private boolean validateEndPoint(Request request)
             {
-                HttpConnection con = (HttpConnection)request.getAttribute(HttpConnection.class.getName());
-                EndPoint endPoint = con.getEndPoint();
-                ProxyConnectionFactory.ProxyEndPoint proxyEndPoint = (ProxyConnectionFactory.ProxyEndPoint)endPoint;
-                return Arrays.equals(customE0, proxyEndPoint.getTLV(0xE0)) &&
-                       Arrays.equals(customE1, proxyEndPoint.getTLV(0xE1)) &&
-                       proxyEndPoint.getTLV(0xE2) == null;
+                if (request.getConnectionMetaData().getConnection() instanceof HttpConnection con)
+                {                EndPoint endPoint = con.getEndPoint();
+                    ProxyConnectionFactory.ProxyEndPoint proxyEndPoint = (ProxyConnectionFactory.ProxyEndPoint)endPoint;
+                    return Arrays.equals(customE0, proxyEndPoint.getTLV(0xE0)) &&
+                        Arrays.equals(customE1, proxyEndPoint.getTLV(0xE1)) &&
+                        proxyEndPoint.getTLV(0xE2) == null;
+                }
+                return false;
             }
         });
 
