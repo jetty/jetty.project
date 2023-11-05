@@ -29,6 +29,7 @@ import jakarta.servlet.ServletOutputStream;
 import jakarta.servlet.http.HttpServlet;
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletResponse;
+import org.eclipse.jetty.util.ExceptionUtil;
 import org.eclipse.jetty.util.IO;
 import org.eclipse.jetty.util.thread.AutoLock;
 
@@ -211,8 +212,7 @@ public abstract class EventSourceServlet extends HttpServlet
                 }
                 catch (Throwable t)
                 {
-                    if (t != x)
-                        x.addSuppressed(t);
+                    ExceptionUtil.addSuppressedIfNotAssociated(x, t);
                     getServletContext().log("failure", x);
                 }
             }
