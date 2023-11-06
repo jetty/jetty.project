@@ -698,7 +698,7 @@ public class SessionHandler extends AbstractSessionManager implements Handler.Si
         // Handle changed ID or max-age refresh, but only if this is not a redispatched request
         HttpCookie cookie = access(requestedSession.session(), request.getConnectionMetaData().isSecure());
         if (cookie != null)
-            Response.replaceCookie(response, cookie);
+            Response.putCookie(response, cookie);
 
         return next.handle(request, response, callback);
     }

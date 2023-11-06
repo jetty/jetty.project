@@ -323,10 +323,11 @@ public interface Response extends Content.Sink
     }
 
     /**
-     * <p>Adds an HTTP cookie to the response.</p>
+     * <p>Adds an HTTP {@link HttpHeader#SET_COOKIE} header to the response.</p>
      *
      * @param response the HTTP response
      * @param cookie the HTTP cookie to add
+     * @see #putCookie(Response, HttpCookie)
      */
     static void addCookie(Response response, HttpCookie cookie)
     {
@@ -334,52 +335,90 @@ public interface Response extends Content.Sink
             throw new IllegalArgumentException("Cookie.name cannot be blank/null");
 
         Request request = response.getRequest();
-        response.getHeaders().add(new HttpCookieUtils.SetCookieHttpField(HttpCookieUtils.checkSameSite(cookie, request.getContext()),
-            request.getConnectionMetaData().getHttpConfiguration().getResponseCookieCompliance()));
+        CookieCompliance compliance = request.getConnectionMetaData().getHttpConfiguration().getResponseCookieCompliance();
+        response.getHeaders().add(new HttpCookieUtils.SetCookieHttpField(HttpCookieUtils.checkSameSite(cookie, request.getContext()), compliance));
 
-        // Expire responses with set-cookie headers so they do not get cached.
-        response.getHeaders().put(HttpFields.EXPIRES_01JAN1970);
+        // Expire responses with set-cookie headers, so they do not get cached.
+        if (!response.getHeaders().contains(HttpHeader.EXPIRES))
+            response.getHeaders().add(HttpFields.EXPIRES_01JAN1970);
     }
 
     /**
-     * <p>Replaces (if already exists, otherwise adds) an HTTP cookie to the response.</p>
+     * <p>Put a HTTP {@link HttpHeader#SET_COOKIE} header to the response.</p>
+     * <p>If a matching {@link HttpHeader#SET_COOKIE} already exists for matching name, path, domain etc.
+     * then it will be replaced.</p>
      *
      * @param response the HTTP response
-     * @param cookie the HTTP cookie to replace or add
+     * @param cookie the HTTP cookie to add
+     * @see #addCookie(Response, HttpCookie)
      */
-    static void replaceCookie(Response response, HttpCookie cookie)
+    static void putCookie(Response response, HttpCookie cookie)
     {
         if (StringUtil.isBlank(cookie.getName()))
             throw new IllegalArgumentException("Cookie.name cannot be blank/null");
 
         Request request = response.getRequest();
         HttpConfiguration httpConfiguration = request.getConnectionMetaData().getHttpConfiguration();
+        CookieCompliance compliance = httpConfiguration.getResponseCookieCompliance();
+        HttpField setCookie = new HttpCookieUtils.SetCookieHttpField(HttpCookieUtils.checkSameSite(cookie, request.getContext()), compliance);
+
+        boolean expires = false;
 
         for (ListIterator<HttpField> i = response.getHeaders().listIterator(); i.hasNext(); )
         {
             HttpField field = i.next();
+            HttpHeader header = field.getHeader();
+            if (header == null)
+                continue;
 
-            if (field.getHeader() == HttpHeader.SET_COOKIE)
+            switch (header)
             {
-                CookieCompliance compliance = httpConfiguration.getResponseCookieCompliance();
-                if (field instanceof HttpCookieUtils.SetCookieHttpField)
+                case SET_COOKIE ->
                 {
-                    if (!HttpCookieUtils.match(((HttpCookieUtils.SetCookieHttpField)field).getHttpCookie(), cookie.getName(), cookie.getDomain(), cookie.getPath()))
-                        continue;
-                }
-                else
-                {
-                    if (!HttpCookieUtils.match(field.getValue(), cookie.getName(), cookie.getDomain(), cookie.getPath()))
-                        continue;
+                    if (field instanceof HttpCookieUtils.SetCookieHttpField setCookieHttpField)
+                    {
+                        if (!HttpCookieUtils.match(setCookieHttpField.getHttpCookie(), cookie.getName(), cookie.getDomain(), cookie.getPath()))
+                            continue;
+                    }
+                    else
+                    {
+                        if (!HttpCookieUtils.match(field.getValue(), cookie.getName(), cookie.getDomain(), cookie.getPath()))
+                            continue;
+                    }
+
+                    if (setCookie == null)
+                    {
+                        i.remove();
+                    }
+                    else
+                    {
+                        i.set(setCookie);
+                        setCookie = null;
+                    }
                 }
 
-                i.set(new HttpCookieUtils.SetCookieHttpField(HttpCookieUtils.checkSameSite(cookie, request.getContext()), compliance));
-                return;
+                case EXPIRES -> expires = true;
             }
         }
 
-        // Not replaced, so add normally
-        addCookie(response, cookie);
+        if (setCookie != null)
+            response.getHeaders().add(setCookie);
+
+        // Expire responses with set-cookie headers, so they do not get cached.
+        if (!expires)
+            response.getHeaders().add(HttpFields.EXPIRES_01JAN1970);
+    }
+
+    /**
+     * Replace a cookie
+     * @param response the HTTP response
+     * @param cookie the HTTP cookie to add
+     * @deprecated use {@link #putCookie(Response, HttpCookie)}
+     */
+    @Deprecated
+    static void replaceCookie(Response response, HttpCookie cookie)
+    {
+        putCookie(response, cookie);
     }
 
     /**
