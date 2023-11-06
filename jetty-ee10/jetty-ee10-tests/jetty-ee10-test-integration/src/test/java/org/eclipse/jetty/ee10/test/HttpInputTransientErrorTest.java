@@ -28,11 +28,14 @@ import jakarta.servlet.http.HttpServletResponse;
 import org.eclipse.jetty.ee10.servlet.ServletContextHandler;
 import org.eclipse.jetty.ee10.servlet.ServletHolder;
 import org.eclipse.jetty.http.HttpHeader;
+import org.eclipse.jetty.http.HttpStatus;
 import org.eclipse.jetty.http.HttpTester;
+import org.eclipse.jetty.io.ArrayByteBufferPool;
 import org.eclipse.jetty.server.HttpConnectionFactory;
 import org.eclipse.jetty.server.LocalConnector;
 import org.eclipse.jetty.server.Server;
 import org.eclipse.jetty.util.IO;
+import org.eclipse.jetty.util.component.LifeCycle;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.Test;
 
@@ -47,17 +50,26 @@ public class HttpInputTransientErrorTest
 
     private LocalConnector connector;
     private Server server;
+    private ArrayByteBufferPool.Tracking bufferPool;
 
     @AfterEach
-    public void tearDown() throws Exception
+    public void tearDown()
     {
-        if (server != null)
-            server.stop();
+        try
+        {
+            if (bufferPool != null)
+                assertThat("Server leaks: " + bufferPool.dumpLeaks(), bufferPool.getLeaks().size(), is(0));
+        }
+        finally
+        {
+            LifeCycle.stop(server);
+        }
     }
 
     private void startServer(HttpServlet servlet) throws Exception
     {
-        server = new Server();
+        bufferPool = new ArrayByteBufferPool.Tracking();
+        server = new Server(null, null, bufferPool);
         connector = new LocalConnector(server, new HttpConnectionFactory());
         connector.setIdleTimeout(IDLE_TIMEOUT);
         server.addConnector(connector);
@@ -72,7 +84,7 @@ public class HttpInputTransientErrorTest
     }
 
     @Test
-    public void testAsyncServlet() throws Exception
+    public void testAsyncServletHandleError() throws Exception
     {
         AtomicReference<Throwable> failure = new AtomicReference<>();
         startServer(new HttpServlet()
@@ -105,7 +117,7 @@ public class HttpInputTransientErrorTest
                     @Override
                     public void onAllDataRead() throws IOException
                     {
-                        resp.setStatus(200);
+                        resp.setStatus(HttpStatus.OK_200);
                         resp.setContentType("text/plain;charset=UTF-8");
                         resp.getWriter().println("read=" + counter.get());
                         asyncContext.complete();
@@ -151,7 +163,7 @@ public class HttpInputTransientErrorTest
             localEndPoint.addInput("1234567890\n");
             HttpTester.Response response = HttpTester.parseResponse(localEndPoint.getResponse(false, 5, TimeUnit.SECONDS));
 
-            assertThat("Unexpected response status\n" + response + response.getContent(), response.getStatus(), is(200));
+            assertThat("Unexpected response status\n" + response + response.getContent(), response.getStatus(), is(HttpStatus.OK_200));
             assertThat(response.get(HttpHeader.CONTENT_TYPE), is("text/plain;charset=UTF-8"));
             assertThat(response.getContent(), containsString("read=10"));
             assertInstanceOf(TimeoutException.class, failure.get());
@@ -159,7 +171,70 @@ public class HttpInputTransientErrorTest
     }
 
     @Test
-    public void testBlockingServlet() throws Exception
+    public void testAsyncServletStopOnError() throws Exception
+    {
+        AtomicReference<Throwable> failure = new AtomicReference<>();
+        startServer(new HttpServlet()
+        {
+            @Override
+            protected void doPost(HttpServletRequest req, HttpServletResponse resp) throws IOException
+            {
+                AsyncContext asyncContext = req.startAsync(req, resp);
+                asyncContext.setTimeout(0);
+                resp.setContentType("text/plain;charset=UTF-8");
+
+                req.getInputStream().setReadListener(new ReadListener() {
+                    @Override
+                    public void onDataAvailable()
+                    {
+                        throw new AssertionError();
+                    }
+
+                    @Override
+                    public void onAllDataRead()
+                    {
+                        throw new AssertionError();
+                    }
+
+                    @Override
+                    public void onError(Throwable t)
+                    {
+                        if (failure.compareAndSet(null, t))
+                        {
+                            resp.setStatus(HttpStatus.IM_A_TEAPOT_418);
+                            asyncContext.complete();
+                        }
+                        else
+                        {
+                            resp.setStatus(599);
+                            t.printStackTrace();
+                            asyncContext.complete();
+                        }
+                    }
+                });
+            }
+        });
+
+        try (LocalConnector.LocalEndPoint localEndPoint = connector.connect())
+        {
+            String request = """
+                POST /ctx/post HTTP/1.1
+                Host: local
+                Content-Length: 10
+                            
+                """;
+            localEndPoint.addInput(request);
+            Thread.sleep(IDLE_TIMEOUT * 2);
+            localEndPoint.addInput("1234567890\n");
+            HttpTester.Response response = HttpTester.parseResponse(localEndPoint.getResponse(false, 5, TimeUnit.SECONDS));
+
+            assertThat("Unexpected response status\n" + response + response.getContent(), response.getStatus(), is(HttpStatus.IM_A_TEAPOT_418));
+            assertInstanceOf(TimeoutException.class, failure.get());
+        }
+    }
+
+    @Test
+    public void testBlockingServletHandleError() throws Exception
     {
         AtomicReference<Throwable> failure = new AtomicReference<>();
         startServer(new HttpServlet()
@@ -177,7 +252,7 @@ public class HttpInputTransientErrorTest
                 }
 
                 String content = IO.toString(req.getInputStream());
-                resp.setStatus(200);
+                resp.setStatus(HttpStatus.OK_200);
                 resp.setContentType("text/plain;charset=UTF-8");
                 resp.getWriter().println("read=" + content.length());
             }
@@ -196,9 +271,49 @@ public class HttpInputTransientErrorTest
             localEndPoint.addInput("1234567890\n");
             HttpTester.Response response = HttpTester.parseResponse(localEndPoint.getResponse(false, 5, TimeUnit.SECONDS));
 
-            assertThat("Unexpected response status\n" + response + response.getContent(), response.getStatus(), is(200));
+            assertThat("Unexpected response status\n" + response + response.getContent(), response.getStatus(), is(HttpStatus.OK_200));
             assertThat(response.get(HttpHeader.CONTENT_TYPE), is("text/plain;charset=UTF-8"));
             assertThat(response.getContent(), containsString("read=10"));
+            assertInstanceOf(IOException.class, failure.get());
+            assertInstanceOf(TimeoutException.class, failure.get().getCause());
+        }
+    }
+
+    @Test
+    public void testBlockingServletStopOnError() throws Exception
+    {
+        AtomicReference<Throwable> failure = new AtomicReference<>();
+        startServer(new HttpServlet()
+        {
+            @Override
+            protected void doPost(HttpServletRequest req, HttpServletResponse resp)
+            {
+                try
+                {
+                    IO.toString(req.getInputStream());
+                }
+                catch (IOException e)
+                {
+                    failure.set(e);
+                    resp.setStatus(HttpStatus.IM_A_TEAPOT_418);
+                }
+            }
+        });
+
+        try (LocalConnector.LocalEndPoint localEndPoint = connector.connect())
+        {
+            String request = """
+                POST /ctx/post HTTP/1.1
+                Host: local
+                Content-Length: 10
+                            
+                """;
+            localEndPoint.addInput(request);
+            Thread.sleep(IDLE_TIMEOUT * 2);
+            localEndPoint.addInput("1234567890\n");
+            HttpTester.Response response = HttpTester.parseResponse(localEndPoint.getResponse(false, 5, TimeUnit.SECONDS));
+
+            assertThat("Unexpected response status\n" + response + response.getContent(), response.getStatus(), is(HttpStatus.IM_A_TEAPOT_418));
             assertInstanceOf(IOException.class, failure.get());
             assertInstanceOf(TimeoutException.class, failure.get().getCause());
         }
