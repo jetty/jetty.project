@@ -41,6 +41,7 @@ import org.eclipse.jetty.ee10.servlet.ServletContextRequest;
 import org.eclipse.jetty.ee10.servlet.ServletHolder;
 import org.eclipse.jetty.http.HttpVersion;
 import org.eclipse.jetty.http2.server.HTTP2CServerConnectionFactory;
+import org.eclipse.jetty.io.ArrayByteBufferPool;
 import org.eclipse.jetty.server.Connector;
 import org.eclipse.jetty.server.HttpConfiguration;
 import org.eclipse.jetty.server.HttpConnectionFactory;
@@ -53,7 +54,9 @@ import org.eclipse.jetty.server.ServerConnector;
 import org.eclipse.jetty.server.SslConnectionFactory;
 import org.eclipse.jetty.util.BufferUtil;
 import org.eclipse.jetty.util.IO;
+import org.eclipse.jetty.util.component.LifeCycle;
 import org.eclipse.jetty.util.ssl.SslContextFactory;
+import org.hamcrest.Matchers;
 import org.junit.jupiter.api.AfterAll;
 import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.params.ParameterizedTest;
@@ -61,6 +64,7 @@ import org.junit.jupiter.params.provider.Arguments;
 import org.junit.jupiter.params.provider.MethodSource;
 
 import static org.awaitility.Awaitility.await;
+import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.Matchers.not;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertTrue;
@@ -76,13 +80,15 @@ public class HttpInputIntegrationTest
     private static Server __server;
     private static HttpConfiguration __config;
     private static SslContextFactory.Server __sslContextFactory;
+    private static ArrayByteBufferPool.Tracking __bufferPool;
 
     @BeforeAll
     public static void beforeClass() throws Exception
     {
         __config = new HttpConfiguration();
 
-        __server = new Server();
+        __bufferPool = new ArrayByteBufferPool.Tracking();
+        __server = new Server(null, null, __bufferPool);
         LocalConnector local = new LocalConnector(__server, new HttpConnectionFactory(__config));
         local.setIdleTimeout(4000);
         __server.addConnector(local);
@@ -130,9 +136,16 @@ public class HttpInputIntegrationTest
     }
 
     @AfterAll
-    public static void afterClass() throws Exception
+    public static void afterClass()
     {
-        __server.stop();
+        try
+        {
+            assertThat("Server leaks: " + __bufferPool.dumpLeaks(), __bufferPool.getLeaks().size(), Matchers.is(0));
+        }
+        finally
+        {
+            LifeCycle.stop(__server);
+        }
     }
 
     interface TestClient
