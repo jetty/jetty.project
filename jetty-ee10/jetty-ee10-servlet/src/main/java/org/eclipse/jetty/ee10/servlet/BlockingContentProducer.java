@@ -103,7 +103,7 @@ class BlockingContentProducer implements ContentProducer
             if (chunk != null)
                 return chunk;
 
-            // IFF isReady() returns false then HttpChannel.needContent() has been called,
+            // IFF isReady() returns false then Request.demand() has been called,
             // thus we know that eventually a call to onContentProducible will come.
             if (_asyncContentProducer.isReady())
             {

@@ -34,7 +34,10 @@ import jakarta.servlet.ServletInputStream;
 import jakarta.servlet.http.HttpServlet;
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletResponse;
+import org.eclipse.jetty.ee10.servlet.ServletApiRequest;
+import org.eclipse.jetty.ee10.servlet.ServletChannelState;
 import org.eclipse.jetty.ee10.servlet.ServletContextHandler;
+import org.eclipse.jetty.ee10.servlet.ServletContextRequest;
 import org.eclipse.jetty.ee10.servlet.ServletHolder;
 import org.eclipse.jetty.http.HttpVersion;
 import org.eclipse.jetty.http2.server.HTTP2CServerConnectionFactory;
@@ -44,7 +47,6 @@ import org.eclipse.jetty.server.HttpConnectionFactory;
 import org.eclipse.jetty.server.LocalConnector;
 import org.eclipse.jetty.server.LocalConnector.LocalEndPoint;
 import org.eclipse.jetty.server.NetworkConnector;
-import org.eclipse.jetty.server.Request;
 import org.eclipse.jetty.server.SecureRequestCustomizer;
 import org.eclipse.jetty.server.Server;
 import org.eclipse.jetty.server.ServerConnector;
@@ -54,7 +56,6 @@ import org.eclipse.jetty.util.IO;
 import org.eclipse.jetty.util.ssl.SslContextFactory;
 import org.junit.jupiter.api.AfterAll;
 import org.junit.jupiter.api.BeforeAll;
-import org.junit.jupiter.api.Disabled;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.Arguments;
 import org.junit.jupiter.params.provider.MethodSource;
@@ -63,7 +64,6 @@ import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.junit.jupiter.api.Assertions.fail;
 
-@Disabled //TODO needs investigation
 public class HttpInputIntegrationTest
 {
     enum Mode
@@ -199,7 +199,7 @@ public class HttpInputIntegrationTest
         return tests.stream().map(Arguments::of);
     }
 
-    private static void runMode(Mode mode, Request request, Runnable test)
+    private static void runMode(Mode mode, ServletContextRequest request, Runnable test)
     {
         switch (mode)
         {
@@ -237,8 +237,8 @@ public class HttpInputIntegrationTest
             case ASYNC_OTHER_WAIT:
             {
                 CountDownLatch latch = new CountDownLatch(1);
-                //TODO
-                /*                HttpChannel.State state = request.getHttpChannelState().getState();
+                ServletChannelState servletRequestState = request.getServletChannel().getServletRequestState();
+                ServletChannelState.State state = servletRequestState.getState();
                 new Thread(() ->
                 {
                     try
@@ -246,10 +246,10 @@ public class HttpInputIntegrationTest
                         if (!latch.await(5, TimeUnit.SECONDS))
                             fail("latch expired");
                 
-                        // Spin until state change
-                        while (request.getHttpChannelState().getState() == state)
+                        // Spin until the state changes.
+                        while (servletRequestState.getState() == state)
                         {
-                            Thread.yield();
+                            Thread.onSpinWait();
                         }
                         test.run();
                     }
@@ -257,7 +257,7 @@ public class HttpInputIntegrationTest
                     {
                         e.printStackTrace();
                     }
-                }).start();*/
+                }).start();
                 // ensure other thread running before trying to return
                 latch.countDown();
                 break;
@@ -384,12 +384,12 @@ public class HttpInputIntegrationTest
                 AsyncContext context = req.startAsync();
                 context.setTimeout(10000);
                 ServletInputStream in = req.getInputStream();
-                //TODO
-                //Request request = Request.getBaseRequest(req);
+                // TODO unwrap the request?
+                ServletContextRequest request = (ServletContextRequest)((ServletApiRequest)req).getRequest();
                 AtomicInteger read = new AtomicInteger(0);
                 AtomicInteger sum = new AtomicInteger(0);
 
-                runMode(mode, /* request */ null, () -> in.setReadListener(new ReadListener()
+                runMode(mode, request, () -> in.setReadListener(new ReadListener()
                 {
                     @Override
                     public void onError(Throwable t)
@@ -397,7 +397,7 @@ public class HttpInputIntegrationTest
                         t.printStackTrace();
                         try
                         {
-                            resp.sendError(500);
+                            resp.sendError(599);
                         }
                         catch (IOException e)
                         {
@@ -410,7 +410,7 @@ public class HttpInputIntegrationTest
                     @Override
                     public void onDataAvailable()
                     {
-                        runMode(mode, /* request */ null, () ->
+                        runMode(mode, request, () ->
                         {
                             while (in.isReady() && !in.isFinished())
                             {

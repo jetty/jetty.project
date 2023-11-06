@@ -106,7 +106,7 @@ class AsyncContentProducer implements ContentProducer
     public boolean isError()
     {
         assertLocked();
-        boolean failure = Content.Chunk.isFailure(_chunk);
+        boolean failure = Content.Chunk.isFailure(_chunk, true);
         if (LOG.isDebugEnabled())
             LOG.debug("isFailure = {} {}", failure, this);
         return failure;
@@ -253,6 +253,9 @@ class AsyncContentProducer implements ContentProducer
         {
             if (LOG.isDebugEnabled())
                 LOG.debug("isReady() demand callback {}", this);
+            // We could call this.onContentProducible() directly but this
+            // would mean we would need to take the lock here while it
+            // is the responsibility of the HttpInput to take it.
             if (_servletChannel.getHttpInput().onContentProducible())
                 _servletChannel.handle();
         });

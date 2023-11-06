@@ -21,7 +21,6 @@ import java.util.function.Consumer;
 import org.eclipse.jetty.io.Content;
 import org.eclipse.jetty.io.EofException;
 import org.eclipse.jetty.util.thread.AutoLock;
-import org.junit.jupiter.api.Assertions;
 import org.junit.jupiter.api.Test;
 
 import static java.nio.charset.StandardCharsets.US_ASCII;
@@ -32,6 +31,7 @@ import static org.hamcrest.Matchers.is;
 import static org.hamcrest.Matchers.lessThanOrEqualTo;
 import static org.hamcrest.Matchers.notNullValue;
 import static org.hamcrest.Matchers.nullValue;
+import static org.junit.jupiter.api.Assertions.fail;
 
 public class BlockingContentProducerTest extends AbstractContentProducerTest
 {
@@ -51,7 +51,7 @@ public class BlockingContentProducerTest extends AbstractContentProducerTest
 
         Throwable error = readAndAssertContent(contentProducer, servletChannel.getLock(),
             totalContentBytesCount, originalContentString,
-            chunks.size(), Assertions::fail);
+            chunks.size(), c -> fail(c.getFailure()));
         assertThat(error, nullValue());
     }
 
@@ -72,7 +72,7 @@ public class BlockingContentProducerTest extends AbstractContentProducerTest
 
         Throwable error = readAndAssertContent(contentProducer, servletChannel.getLock(),
             totalContentBytesCount, originalContentString,
-            chunks.size(), Assertions::fail);
+            chunks.size(), c -> fail(c.getFailure()));
         assertThat(error, nullValue());
     }
 
@@ -94,7 +94,7 @@ public class BlockingContentProducerTest extends AbstractContentProducerTest
 
         Throwable error = readAndAssertContent(contentProducer, servletChannel.getLock(),
             totalContentBytesCount, originalContentString,
-            chunks.size(), Assertions::fail);
+            chunks.size(), c -> fail(c.getFailure()));
         assertThat(error, is(expectedError));
     }
 
@@ -123,17 +123,27 @@ public class BlockingContentProducerTest extends AbstractContentProducerTest
                 int counter;
 
                 @Override
-                public void accept(Throwable x)
+                public void accept(Content.Chunk chunk)
                 {
+                    assertThat(chunk.isLast(), is(false));
+                    assertThat(Content.Chunk.isFailure(chunk, true), is(false));
+                    assertThat(Content.Chunk.isFailure(chunk, false), is(true));
+
+                    Throwable x = chunk.getFailure();
                     assertThat(x, instanceOf(TimeoutException.class));
                     assertThat(x.getMessage(), equalTo("timeout " + ++counter));
                     assertThat(counter, lessThanOrEqualTo(3));
+
+                    try (AutoLock ignore = servletChannel.getLock().lock())
+                    {
+                        assertThat(contentProducer.isError(), is(false));
+                    }
                 }
             });
         assertThat(error, nullValue());
     }
 
-    private Throwable readAndAssertContent(ContentProducer contentProducer, AutoLock lock, int totalContentBytesCount, String originalContentString, int totalContentCount, Consumer<Throwable> transientErrorConsumer)
+    private Throwable readAndAssertContent(ContentProducer contentProducer, AutoLock lock, int totalContentBytesCount, String originalContentString, int totalContentCount, Consumer<Content.Chunk> transientErrorConsumer)
     {
         int readBytes = 0;
         String consumedString = "";
@@ -151,7 +161,7 @@ public class BlockingContentProducerTest extends AbstractContentProducerTest
             assertThat(content, notNullValue());
 
             if (Content.Chunk.isFailure(content, false))
-                transientErrorConsumer.accept(content.getFailure());
+                transientErrorConsumer.accept(content);
 
             byte[] b = new byte[content.remaining()];
             readBytes += b.length;
