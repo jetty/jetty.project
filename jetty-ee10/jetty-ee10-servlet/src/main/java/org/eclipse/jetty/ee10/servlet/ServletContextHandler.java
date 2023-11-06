@@ -1641,14 +1641,17 @@ public class ServletContextHandler extends ContextHandler
     @Override
     public void setHandler(Handler handler)
     {
-        if (handler instanceof SessionHandler)
+        if (handler instanceof SessionHandler && getHandler() instanceof SessionHandler)
             setSessionHandler((SessionHandler)handler);
-        else if (handler instanceof SecurityHandler)
+        else if (handler instanceof SecurityHandler && getHandler() instanceof SecurityHandler)
             setSecurityHandler((SecurityHandler)handler);
-        else if (handler instanceof ServletHandler)
+        else if (handler instanceof ServletHandler && getHandler() instanceof ServletHandler)
             setServletHandler((ServletHandler)handler);
         else
-            getServletHandler().setHandler(handler);
+        {
+            LOG.warn("setHandler should not be used. Use explicit setters or insertHandler");
+            super.setHandler(handler);
+        }
     }
 
     /**
@@ -1669,7 +1672,7 @@ public class ServletContextHandler extends ContextHandler
             // We cannot call super.insertHandler here, because it uses this.setHandler
             // which sets the servletHandlers next handler.
             // This is the same insert code, but uses super.setHandler, which sets this
-            // handlers next handler.
+            // handler's next handler.
             Singleton tail = handler.getTail();
             if (tail.getHandler() != null)
                 throw new IllegalArgumentException("bad tail of inserted wrapper chain");

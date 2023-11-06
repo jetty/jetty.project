@@ -1977,7 +1977,6 @@ public class ServletContextHandlerTest
 
         servletContextHandler.addEventListener(new ServletContextListener()
         {
-
             @Override
             public void contextInitialized(ServletContextEvent sce)
             {
@@ -1999,12 +1998,12 @@ public class ServletContextHandlerTest
         Handler last = new Handler.Abstract()
         {
             @Override
-            public boolean handle(Request request, Response response, Callback callback) throws Exception
+            public boolean handle(Request request, Response response, Callback callback)
             {
                 return false;
             }
         };
-        servletContextHandler.setHandler(last);
+        servletContextHandler.getServletHandler().setHandler(last);
 
         assertThat(servletContextHandler.getHandler(), sameInstance(rh));
         assertThat(rh.getHandler(), instanceOf(SessionHandler.class));
