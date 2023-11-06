@@ -349,7 +349,8 @@ public class HttpInput extends ServletInputStream implements Runnable
             if (LOG.isDebugEnabled())
                 LOG.debug("running failure={} {}", failure, this);
             // TODO is this necessary to add here?
-            _servletChannel.getServletContextResponse().getHeaders().add(HttpFields.CONNECTION_CLOSE);
+            if (chunk.isLast())
+                _servletChannel.getServletContextResponse().getHeaders().add(HttpFields.CONNECTION_CLOSE);
             _readListener.onError(failure);
         }
         else if (chunk.isLast() && !chunk.hasRemaining())

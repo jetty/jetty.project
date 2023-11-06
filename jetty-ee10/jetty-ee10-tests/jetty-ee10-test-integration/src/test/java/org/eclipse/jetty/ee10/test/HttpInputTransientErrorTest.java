@@ -179,6 +179,7 @@ public class HttpInputTransientErrorTest
             HttpTester.Response response = HttpTester.parseResponse(localEndPoint.getResponse(false, 5, TimeUnit.SECONDS));
 
             assertThat("Unexpected response status\n" + response + response.getContent(), response.getStatus(), is(HttpStatus.OK_200));
+            assertThat(response.get(HttpHeader.CONNECTION), nullValue());
             assertThat(response.get(HttpHeader.CONTENT_TYPE), is("text/plain;charset=UTF-8"));
             assertThat(response.getContent(), containsString("read=10"));
             assertInstanceOf(TimeoutException.class, failure.get());
