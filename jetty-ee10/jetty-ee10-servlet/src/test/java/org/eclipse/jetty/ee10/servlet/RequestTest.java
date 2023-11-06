@@ -336,11 +336,10 @@ public class RequestTest
                 ServletContextRequest servletContextRequest = ServletContextRequest.getServletContextRequest(request);
                 Request coreRequest = servletContextRequest.getRequest();
 
-
                 // Set some fake SSL attributes
-                X509Certificate[] certificate = new X509Certificate[0];
+                X509Certificate[] certificates = new X509Certificate[0];
                 coreRequest.setAttribute(SecureRequestCustomizer.SSL_SESSION_DATA_ATTRIBUTE,
-                    new EndPoint.SslSessionData(null, "identity", "quantum_42_Knowledge", certificate));
+                    EndPoint.SslSessionData.from(null, "identity", "quantum_42_Knowledge", certificates));
 
                 // Check we have all the attribute names in servlet API
                 Set<String> names = new HashSet<>(Collections.list(request.getAttributeNames()));
@@ -359,7 +358,7 @@ public class RequestTest
                 assertThat(request.getAttribute(ServletContextRequest.SSL_CIPHER_SUITE), is("quantum_42_Knowledge"));
                 assertThat(request.getAttribute(ServletContextRequest.SSL_KEY_SIZE), is(42));
                 assertThat(request.getAttribute(ServletContextRequest.SSL_SESSION_ID), is("identity"));
-                assertThat(request.getAttribute(ServletContextRequest.X_509_CERTIFICATES), sameInstance(certificate));
+                assertThat(request.getAttribute(ServletContextRequest.X_509_CERTIFICATES), sameInstance(certificates));
                 assertThat(request.getAttribute(ServletContextRequest.MULTIPART_CONFIG_ELEMENT), notNullValue());
                 int maxFormKeys = ServletContextHandler.getServletContextHandler(request.getServletContext()).getMaxFormKeys();
                 assertThat(request.getAttribute(FormFields.MAX_FIELDS_ATTRIBUTE), is(maxFormKeys));

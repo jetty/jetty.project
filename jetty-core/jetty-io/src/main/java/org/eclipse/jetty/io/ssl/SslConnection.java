@@ -1660,7 +1660,7 @@ public class SslConnection extends AbstractConnection implements Connection.Upgr
                 byte[] bytes = sslSession.getId();
                 String idStr = StringUtil.toHexString(bytes);
 
-                sslSessionData = new SslSessionData(sslSession, idStr, cipherSuite, peerCertificates);
+                sslSessionData = SslSessionData.from(sslSession, idStr, cipherSuite, peerCertificates);
                 sslSession.putValue(SslSessionData.ATTRIBUTE, sslSessionData);
             }
             return sslSessionData;

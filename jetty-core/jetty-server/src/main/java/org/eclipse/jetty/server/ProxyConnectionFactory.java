@@ -813,7 +813,7 @@ public class ProxyConnectionFactory extends DetectorConnectionFactory
             // TODO is using the unique ID as a SessionID OK?
             _tlsVersion = version; // TODO should this be part of the SslSessionData?
             // TODO should distinguishedName be part of the SslSessionData for SNI checks?
-            _sslSessionData = new SslSessionData(null, id, cipher, null);
+            _sslSessionData = SslSessionData.from(null, id, cipher, null);
         }
 
         public String getTLSVersion()
