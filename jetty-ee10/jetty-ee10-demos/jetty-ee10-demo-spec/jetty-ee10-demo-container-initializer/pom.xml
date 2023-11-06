@@ -34,6 +34,7 @@
             <Provide-Capability>osgi.serviceloader; osgi.serviceloader=jakarta.servlet.ServletContainerInitializer</Provide-Capability>
             <Export-Package>org.example.initializer;version="${parsedVersion.majorVersion}.${parsedVersion.minorVersion}.${parsedVersion.incrementalVersion}"</Export-Package>
             <_nouses>true</_nouses>
+            <Jetty-Environment>ee10</Jetty-Environment>
           </instructions>
         </configuration>
       </plugin>
