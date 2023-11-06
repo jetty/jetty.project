@@ -175,7 +175,7 @@ To allow the greatest degree of flexibility in using JAAS with web applications,
 Note that you don't ordinarily need to set these explicitly, as Jetty has defaults which will work in 99% of cases.
 However, should you need to, you can configure:
 
-* a CallbackHandler (Default: `org.eclipse.jetty.jaas.callback.DefaultCallbackHandler`)
+* a CallbackHandler (Default: `org.eclipse.jetty.security.jaas.callback.DefaultCallbackHandler`)
 * a list of classnames for the Principal implementation that equate to a user role (Default: `org.eclipse.jetty.jaas.JAASRole`)
 
 Here's an example of setting each of these (to their default values):
@@ -186,7 +186,7 @@ Here's an example of setting each of these (to their default values):
   <Set name="Name">Test JAAS Realm</Set>
   <Set name="LoginModuleName">xyz</Set>
   <Set name="CallbackHandlerClass">
-       org.eclipse.jetty.jaas.callback.DefaultCallbackHandler
+       org.eclipse.jetty.security.jaas.callback.DefaultCallbackHandler
   </Set>
   <Set name="roleClassNames">
     <Array type="java.lang.String">
