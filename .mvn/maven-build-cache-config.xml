@@ -90,6 +90,7 @@
             <reconcile propertyName="skipExec" skipValue="true"/>
             <reconcile propertyName="skipTests" skipValue="true"/>
             <reconcile propertyName="testFailureIgnore" skipValue="true"/>
+            <reconcile propertyName="test" skipValue="true"/>
           </reconciles>
           <nologs>
             <nolog propertyName="systemPropertyVariables"/>
