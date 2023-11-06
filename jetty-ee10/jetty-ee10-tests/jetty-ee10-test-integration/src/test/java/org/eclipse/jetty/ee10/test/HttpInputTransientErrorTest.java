@@ -96,7 +96,8 @@ public class HttpInputTransientErrorTest
                 asyncContext.setTimeout(0);
                 resp.setContentType("text/plain;charset=UTF-8");
 
-                req.getInputStream().setReadListener(new ReadListener() {
+                req.getInputStream().setReadListener(new ReadListener()
+                {
                     final AtomicInteger counter = new AtomicInteger();
                     @Override
                     public void onDataAvailable() throws IOException
@@ -183,7 +184,8 @@ public class HttpInputTransientErrorTest
                 asyncContext.setTimeout(0);
                 resp.setContentType("text/plain;charset=UTF-8");
 
-                req.getInputStream().setReadListener(new ReadListener() {
+                req.getInputStream().setReadListener(new ReadListener()
+                {
                     @Override
                     public void onDataAvailable()
                     {
