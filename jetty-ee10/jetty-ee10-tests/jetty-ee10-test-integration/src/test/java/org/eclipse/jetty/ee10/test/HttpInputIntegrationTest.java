@@ -60,6 +60,8 @@ import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.Arguments;
 import org.junit.jupiter.params.provider.MethodSource;
 
+import static org.awaitility.Awaitility.await;
+import static org.hamcrest.Matchers.not;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.junit.jupiter.api.Assertions.fail;
@@ -246,11 +248,8 @@ public class HttpInputIntegrationTest
                         if (!latch.await(5, TimeUnit.SECONDS))
                             fail("latch expired");
                 
-                        // Spin until the state changes.
-                        while (servletRequestState.getState() == state)
-                        {
-                            Thread.onSpinWait();
-                        }
+                        // Wait until the state changes.
+                        await().atMost(5, TimeUnit.SECONDS).until(servletRequestState::getState, not(state));
                         test.run();
                     }
                     catch (Exception e)
@@ -423,9 +422,7 @@ public class HttpInputIntegrationTest
                                     int i = read.getAndIncrement();
                                     if (b != expected.charAt(i))
                                     {
-                                        /*System.err.printf("XXX '%c'!='%c' at %d%n", expected.charAt(i), (char)b, i);
-                                        System.err.println("    " + request.getHttpChannel());
-                                        System.err.println("    " + request.getHttpChannel().getHttpTransport());*/
+                                        onError(new AssertionError("'%c'!='%c' at %d".formatted(expected.charAt(i), (char)b, i)));
                                     }
                                 }
                                 catch (IOException e)
