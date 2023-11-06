@@ -59,6 +59,7 @@ import org.eclipse.jetty.util.ssl.SslContextFactory;
 import org.hamcrest.Matchers;
 import org.junit.jupiter.api.AfterAll;
 import org.junit.jupiter.api.BeforeAll;
+import org.junit.jupiter.api.Tag;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.Arguments;
 import org.junit.jupiter.params.provider.MethodSource;
@@ -260,7 +261,7 @@ public class HttpInputIntegrationTest
                     {
                         if (!latch.await(5, TimeUnit.SECONDS))
                             fail("latch expired");
-                
+
                         // Wait until the state changes.
                         await().atMost(5, TimeUnit.SECONDS).until(servletRequestState::getState, not(state));
                         test.run();
@@ -303,6 +304,7 @@ public class HttpInputIntegrationTest
         assertTrue(response.contains("sum=" + sum));
     }
 
+    @Tag("stress")
     @ParameterizedTest(name = "[{index}] STRESS {0}")
     @MethodSource("scenarios")
     public void testStress(Scenario scenario) throws Exception
@@ -385,7 +387,7 @@ public class HttpInputIntegrationTest
                 catch (Exception e)
                 {
                     e.printStackTrace();
-                    resp.setStatus(500);
+                    resp.setStatus(599);
                     resp.getWriter().println("read=" + e);
                     resp.getWriter().println("sum=-1");
                 }
@@ -396,7 +398,6 @@ public class HttpInputIntegrationTest
                 AsyncContext context = req.startAsync();
                 context.setTimeout(10000);
                 ServletInputStream in = req.getInputStream();
-                // TODO unwrap the request?
                 ServletContextRequest request = (ServletContextRequest)((ServletApiRequest)req).getRequest();
                 AtomicInteger read = new AtomicInteger(0);
                 AtomicInteger sum = new AtomicInteger(0);
