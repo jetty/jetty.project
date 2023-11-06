@@ -14,6 +14,9 @@
 package org.eclipse.jetty.ee10.test;
 
 import java.io.IOException;
+import java.util.List;
+import java.util.concurrent.CopyOnWriteArrayList;
+import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.TimeoutException;
 import java.util.concurrent.atomic.AtomicInteger;
@@ -40,10 +43,13 @@ import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.Test;
 
 import static org.hamcrest.MatcherAssert.assertThat;
+import static org.hamcrest.Matchers.contains;
 import static org.hamcrest.Matchers.containsString;
 import static org.hamcrest.Matchers.is;
+import static org.hamcrest.Matchers.nullValue;
 import static org.junit.jupiter.api.Assertions.assertInstanceOf;
 
+//TODO test all protocols
 public class HttpInputTransientErrorTest
 {
     private static final int IDLE_TIMEOUT = 250;
@@ -86,6 +92,7 @@ public class HttpInputTransientErrorTest
     @Test
     public void testAsyncServletHandleError() throws Exception
     {
+        List<String> events = new CopyOnWriteArrayList<>();
         AtomicReference<Throwable> failure = new AtomicReference<>();
         startServer(new HttpServlet()
         {
@@ -96,9 +103,14 @@ public class HttpInputTransientErrorTest
                 asyncContext.setTimeout(0);
                 resp.setContentType("text/plain;charset=UTF-8");
 
+                // Since the client sends a request with a content-length header, but sends
+                // the content only after idle timeout expired, this ReadListener will have
+                // onError() executed first, then since onError() charges on and reads the content,
+                // onDataAvailable and onAllDataRead are called afterwards.
                 req.getInputStream().setReadListener(new ReadListener()
                 {
                     final AtomicInteger counter = new AtomicInteger();
+
                     @Override
                     public void onDataAvailable() throws IOException
                     {
@@ -118,6 +130,7 @@ public class HttpInputTransientErrorTest
                     @Override
                     public void onAllDataRead() throws IOException
                     {
+                        events.add("onAllDataRead");
                         resp.setStatus(HttpStatus.OK_200);
                         resp.setContentType("text/plain;charset=UTF-8");
                         resp.getWriter().println("read=" + counter.get());
@@ -127,6 +140,7 @@ public class HttpInputTransientErrorTest
                     @Override
                     public void onError(Throwable t)
                     {
+                        events.add("onError");
                         if (failure.compareAndSet(null, t))
                         {
                             try
@@ -160,14 +174,106 @@ public class HttpInputTransientErrorTest
                             
                 """;
             localEndPoint.addInput(request);
-            Thread.sleep(IDLE_TIMEOUT * 2);
-            localEndPoint.addInput("1234567890\n");
+            Thread.sleep((long)(IDLE_TIMEOUT * 1.5));
+            localEndPoint.addInput("1234567890");
             HttpTester.Response response = HttpTester.parseResponse(localEndPoint.getResponse(false, 5, TimeUnit.SECONDS));
 
             assertThat("Unexpected response status\n" + response + response.getContent(), response.getStatus(), is(HttpStatus.OK_200));
             assertThat(response.get(HttpHeader.CONTENT_TYPE), is("text/plain;charset=UTF-8"));
             assertThat(response.getContent(), containsString("read=10"));
             assertInstanceOf(TimeoutException.class, failure.get());
+            assertThat(events, contains("onError", "onAllDataRead"));
+        }
+    }
+
+    @Test
+    public void testAsyncTimeoutThenSetReadListenerThenRead() throws Exception
+    {
+        CountDownLatch doPostlatch = new CountDownLatch(1);
+
+        AtomicReference<Throwable> failure = new AtomicReference<>();
+        startServer(new HttpServlet()
+        {
+            @Override
+            protected void doPost(HttpServletRequest req, HttpServletResponse resp)
+            {
+                AsyncContext asyncContext = req.startAsync(req, resp);
+                asyncContext.setTimeout(0);
+                resp.setContentType("text/plain;charset=UTF-8");
+
+                // Not calling setReadListener will make Jetty set the ServletChannelState
+                // in state WAITING upon doPost return, so idle timeouts are ignored.
+                new Thread(() ->
+                {
+                    try
+                    {
+                        doPostlatch.await(5, TimeUnit.SECONDS);
+
+                        req.getInputStream().setReadListener(new ReadListener()
+                        {
+                            final AtomicInteger counter = new AtomicInteger();
+
+                            @Override
+                            public void onDataAvailable() throws IOException
+                            {
+                                ServletInputStream input = req.getInputStream();
+                                while (true)
+                                {
+                                    if (!input.isReady())
+                                        break;
+                                    int read = input.read();
+                                    if (read < 0)
+                                        break;
+                                    else
+                                        counter.incrementAndGet();
+                                }
+                            }
+
+                            @Override
+                            public void onAllDataRead() throws IOException
+                            {
+                                resp.setStatus(HttpStatus.OK_200);
+                                resp.setContentType("text/plain;charset=UTF-8");
+                                resp.getWriter().println("read=" + counter.get());
+                                asyncContext.complete();
+                            }
+
+                            @Override
+                            public void onError(Throwable t)
+                            {
+                                failure.set(t);
+                                resp.setStatus(598);
+                                t.printStackTrace();
+                                asyncContext.complete();
+                            }
+                        });
+                    }
+                    catch (Exception e)
+                    {
+                        throw new AssertionError(e);
+                    }
+                }).start();
+            }
+        });
+
+        try (LocalConnector.LocalEndPoint localEndPoint = connector.connect())
+        {
+            String request = """
+                POST /ctx/post HTTP/1.1
+                Host: local
+                Content-Length: 10
+                            
+                """;
+            localEndPoint.addInput(request);
+            Thread.sleep((long)(IDLE_TIMEOUT * 1.5));
+            localEndPoint.addInput("1234567890");
+            doPostlatch.countDown();
+            HttpTester.Response response = HttpTester.parseResponse(localEndPoint.getResponse(false, 5, TimeUnit.SECONDS));
+
+            assertThat("Unexpected response status\n" + response + response.getContent(), response.getStatus(), is(HttpStatus.OK_200));
+            assertThat(response.get(HttpHeader.CONTENT_TYPE), is("text/plain;charset=UTF-8"));
+            assertThat(response.getContent(), containsString("read=10"));
+            assertThat(failure.get(), nullValue());
         }
     }
 
@@ -226,8 +332,8 @@ public class HttpInputTransientErrorTest
                             
                 """;
             localEndPoint.addInput(request);
-            Thread.sleep(IDLE_TIMEOUT * 2);
-            localEndPoint.addInput("1234567890\n");
+            Thread.sleep((long)(IDLE_TIMEOUT * 1.5));
+            localEndPoint.addInput("1234567890");
             HttpTester.Response response = HttpTester.parseResponse(localEndPoint.getResponse(false, 5, TimeUnit.SECONDS));
 
             assertThat("Unexpected response status\n" + response + response.getContent(), response.getStatus(), is(HttpStatus.IM_A_TEAPOT_418));
@@ -269,8 +375,8 @@ public class HttpInputTransientErrorTest
                             
                 """;
             localEndPoint.addInput(request);
-            Thread.sleep(IDLE_TIMEOUT * 2);
-            localEndPoint.addInput("1234567890\n");
+            Thread.sleep((long)(IDLE_TIMEOUT * 1.5));
+            localEndPoint.addInput("1234567890");
             HttpTester.Response response = HttpTester.parseResponse(localEndPoint.getResponse(false, 5, TimeUnit.SECONDS));
 
             assertThat("Unexpected response status\n" + response + response.getContent(), response.getStatus(), is(HttpStatus.OK_200));
@@ -311,8 +417,8 @@ public class HttpInputTransientErrorTest
                             
                 """;
             localEndPoint.addInput(request);
-            Thread.sleep(IDLE_TIMEOUT * 2);
-            localEndPoint.addInput("1234567890\n");
+            Thread.sleep((long)(IDLE_TIMEOUT * 1.5));
+            localEndPoint.addInput("1234567890");
             HttpTester.Response response = HttpTester.parseResponse(localEndPoint.getResponse(false, 5, TimeUnit.SECONDS));
 
             assertThat("Unexpected response status\n" + response + response.getContent(), response.getStatus(), is(HttpStatus.IM_A_TEAPOT_418));
