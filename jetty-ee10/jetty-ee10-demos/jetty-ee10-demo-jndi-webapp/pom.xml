@@ -33,18 +33,23 @@
     <pluginManagement>
       <plugins>
         <plugin>
-          <groupId>org.eclipse.jetty</groupId>
-          <artifactId>jetty-maven-plugin</artifactId>
+          <groupId>org.eclipse.jetty.ee10</groupId>
+          <artifactId>jetty-ee10-maven-plugin</artifactId>
           <version>${project.version}</version>
           <configuration>
-            <contextXml>${project.build.directory}/plugin-context.xml</contextXml>
+            <contextXml>src/main/templates/plugin-context.xml</contextXml>
             <webApp>
               <war>src/main/webapp</war>
               <descriptor>src/main/webapp/WEB-INF/web.xml</descriptor>
-              <contextPath>/test-jndi</contextPath>
+              <contextPath>/ee10-demo-jndi</contextPath>
             </webApp>
           </configuration>
           <dependencies>
+            <dependency>
+              <groupId>org.eclipse.jetty.ee10</groupId>
+              <artifactId>jetty-ee10-jndi</artifactId>
+              <version>${project.version}</version>
+            </dependency>
             <dependency>
               <groupId>org.eclipse.jetty.ee10.demos</groupId>
               <artifactId>jetty-ee10-demo-mock-resources</artifactId>
@@ -55,28 +60,6 @@
       </plugins>
     </pluginManagement>
     <plugins>
-      <plugin>
-        <artifactId>maven-antrun-plugin</artifactId>
-        <executions>
-          <execution>
-            <id>generate-xml-files</id>
-            <goals>
-              <goal>run</goal>
-            </goals>
-            <phase>process-resources</phase>
-            <configuration>
-              <target>
-                <concat destfile="${project.build.directory}/plugin-context.xml">
-                  <filelist dir="src/main/templates/" files="plugin-context-header.xml,env-definitions.xml"></filelist>
-                </concat>
-                <concat destfile="${project.build.directory}/test-jndi.xml">
-                  <filelist dir="src/main/templates/" files="jetty-test-jndi-header.xml,env-definitions.xml"></filelist>
-                </concat>
-              </target>
-            </configuration>
-          </execution>
-        </executions>
-      </plugin>
       <plugin>
         <groupId>org.apache.maven.plugins</groupId>
         <artifactId>maven-dependency-plugin</artifactId>
