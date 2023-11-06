@@ -349,7 +349,7 @@ public class RequestTest
                     ServletContextRequest.SSL_CIPHER_SUITE,
                     ServletContextRequest.SSL_KEY_SIZE,
                     ServletContextRequest.SSL_SESSION_ID,
-                    ServletContextRequest.X_509_CERTIFICATE,
+                    ServletContextRequest.X_509_CERTIFICATES,
                     FormFields.MAX_FIELDS_ATTRIBUTE,
                     FormFields.MAX_LENGTH_ATTRIBUTE,
                     ServletContextRequest.MULTIPART_CONFIG_ELEMENT
@@ -359,7 +359,7 @@ public class RequestTest
                 assertThat(request.getAttribute(ServletContextRequest.SSL_CIPHER_SUITE), is("quantum_42_Knowledge"));
                 assertThat(request.getAttribute(ServletContextRequest.SSL_KEY_SIZE), is(42));
                 assertThat(request.getAttribute(ServletContextRequest.SSL_SESSION_ID), is("identity"));
-                assertThat(request.getAttribute(ServletContextRequest.X_509_CERTIFICATE), sameInstance(certificate));
+                assertThat(request.getAttribute(ServletContextRequest.X_509_CERTIFICATES), sameInstance(certificate));
                 assertThat(request.getAttribute(ServletContextRequest.MULTIPART_CONFIG_ELEMENT), notNullValue());
                 int maxFormKeys = ServletContextHandler.getServletContextHandler(request.getServletContext()).getMaxFormKeys();
                 assertThat(request.getAttribute(FormFields.MAX_FIELDS_ATTRIBUTE), is(maxFormKeys));
@@ -370,7 +370,7 @@ public class RequestTest
                 request.setAttribute(ServletContextRequest.SSL_CIPHER_SUITE, "pig_33_latin");
                 request.setAttribute(ServletContextRequest.SSL_KEY_SIZE, 3);
                 request.setAttribute(ServletContextRequest.SSL_SESSION_ID, "other");
-                request.setAttribute(ServletContextRequest.X_509_CERTIFICATE, "certificate");
+                request.setAttribute(ServletContextRequest.X_509_CERTIFICATES, "certificate");
                 request.setAttribute(ServletContextRequest.MULTIPART_CONFIG_ELEMENT, "config2");
                 request.setAttribute(FormFields.MAX_FIELDS_ATTRIBUTE, 101);
                 request.setAttribute(FormFields.MAX_LENGTH_ATTRIBUTE, 102);
@@ -379,7 +379,7 @@ public class RequestTest
                 assertThat(request.getAttribute(ServletContextRequest.SSL_CIPHER_SUITE), is("pig_33_latin"));
                 assertThat(request.getAttribute(ServletContextRequest.SSL_KEY_SIZE), is(3));
                 assertThat(request.getAttribute(ServletContextRequest.SSL_SESSION_ID), is("other"));
-                assertThat(request.getAttribute(ServletContextRequest.X_509_CERTIFICATE), is("certificate"));
+                assertThat(request.getAttribute(ServletContextRequest.X_509_CERTIFICATES), is("certificate"));
                 assertThat(request.getAttribute(ServletContextRequest.MULTIPART_CONFIG_ELEMENT), is("config2"));
                 assertThat(request.getAttribute(FormFields.MAX_FIELDS_ATTRIBUTE), is(101));
                 assertThat(request.getAttribute(FormFields.MAX_LENGTH_ATTRIBUTE), is(102));
@@ -393,7 +393,7 @@ public class RequestTest
                 request.removeAttribute(ServletContextRequest.SSL_CIPHER_SUITE);
                 request.removeAttribute(ServletContextRequest.SSL_KEY_SIZE);
                 request.removeAttribute(ServletContextRequest.SSL_SESSION_ID);
-                request.setAttribute(ServletContextRequest.X_509_CERTIFICATE, null);
+                request.setAttribute(ServletContextRequest.X_509_CERTIFICATES, null);
                 request.removeAttribute(ServletContextRequest.MULTIPART_CONFIG_ELEMENT);
                 request.removeAttribute(FormFields.MAX_FIELDS_ATTRIBUTE);
                 request.removeAttribute(FormFields.MAX_LENGTH_ATTRIBUTE);

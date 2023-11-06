@@ -114,7 +114,7 @@ public abstract class SslContextFactory extends ContainerLifeCycle implements Du
 
     private static final Logger LOG = LoggerFactory.getLogger(SslContextFactory.class);
     private static final Logger LOG_CONFIG = LoggerFactory.getLogger(LOG.getName() + ".config");
-    private static final Pattern DASH_DIGITS_DASH = Pattern.compile("_(\\d+)_");
+    private static final Pattern KEY_SIZE_PATTERN = Pattern.compile("_(\\d+)_");
 
     /**
      * Default Excluded Protocols List
@@ -136,7 +136,7 @@ public abstract class SslContextFactory extends ContainerLifeCycle implements Du
         "^.*_NULL_.*$",
         "^.*_anon_.*$"
     };
-    public static final String X_509 = "X.509";
+    private static final String X_509 = "X.509";
 
     private final AutoLock _lock = new AutoLock();
     private final Set<String> _excludeProtocols = new LinkedHashSet<>();
@@ -1931,7 +1931,19 @@ public abstract class SslContextFactory extends ContainerLifeCycle implements Du
         return getX509CertChain(_x509CertificateFactory, sslSession);
     }
 
-    public static X509Certificate[] getX509CertChain(CertificateFactory certificateFactory, SSLSession sslSession)
+    /**
+     * Obtain the X509 Certificate Chain from the provided SSLSession using this
+     * SslContextFactory's optional Provider specific {@link CertificateFactory}.
+     *
+     * @param sslSession the session to use for active peer certificates
+     * @return the certificate chain
+     */
+    public static X509Certificate[] getCertChain(SSLSession sslSession)
+    {
+        return getX509CertChain(null, sslSession);
+    }
+
+    private static X509Certificate[] getX509CertChain(CertificateFactory certificateFactory, SSLSession sslSession)
     {
         try
         {
@@ -2004,7 +2016,7 @@ public abstract class SslContextFactory extends ContainerLifeCycle implements Du
         else if (cipherSuite.contains("WITH_DES_CBC_"))
             return 56;
 
-        Matcher matcher = DASH_DIGITS_DASH.matcher(cipherSuite);
+        Matcher matcher = KEY_SIZE_PATTERN.matcher(cipherSuite);
         if (matcher.find())
         {
             String keyLengthString = matcher.group(1);

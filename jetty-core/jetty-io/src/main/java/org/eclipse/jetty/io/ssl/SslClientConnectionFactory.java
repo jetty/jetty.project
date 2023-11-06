@@ -132,7 +132,7 @@ public class SslClientConnectionFactory implements ClientConnectionFactory
 
     protected SslConnection newSslConnection(ByteBufferPool byteBufferPool, Executor executor, EndPoint endPoint, SSLEngine engine)
     {
-        return new SslConnection(byteBufferPool, executor, endPoint, engine, _sslContextFactory, isDirectBuffersForEncryption(), isDirectBuffersForDecryption());
+        return new SslConnection(byteBufferPool, executor, _sslContextFactory, endPoint, engine, isDirectBuffersForEncryption(), isDirectBuffersForDecryption());
     }
 
     @Override

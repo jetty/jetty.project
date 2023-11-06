@@ -780,7 +780,7 @@ public class ProxyConnectionFactory extends DetectorConnectionFactory
         }
     }
 
-    public static class ProxyEndPoint implements EndPoint, EndPoint.Wrapper, EndPoint.Securable
+    public static class ProxyEndPoint implements EndPoint, EndPoint.Wrapper
     {
         private final EndPoint _endPoint;
         private final SocketAddress _local;
@@ -816,7 +816,7 @@ public class ProxyConnectionFactory extends DetectorConnectionFactory
             _sslSessionData = new SslSessionData(null, id, cipher, null);
         }
 
-        public String getTlsVersion()
+        public String getTLSVersion()
         {
             return _tlsVersion;
         }

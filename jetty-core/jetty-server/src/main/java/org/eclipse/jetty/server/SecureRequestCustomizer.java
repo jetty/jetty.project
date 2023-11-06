@@ -197,12 +197,9 @@ public class SecureRequestCustomizer implements HttpConfiguration.Customizer
     public Request customize(Request request, HttpFields.Mutable responseHeaders)
     {
         EndPoint endPoint = request.getConnectionMetaData().getConnection().getEndPoint();
-        if (endPoint instanceof EndPoint.Securable securableEndPoint)
-        {
-            EndPoint.SslSessionData sslSessionData = securableEndPoint.getSslSessionData();
-            if (sslSessionData != null)
-                request = newSecureRequest(request, sslSessionData);
-        }
+        EndPoint.SslSessionData sslSessionData = endPoint != null ? endPoint.getSslSessionData() : null;
+        if (sslSessionData != null)
+            request = newSecureRequest(request, sslSessionData);
 
         if (_stsField != null)
             responseHeaders.add(_stsField);

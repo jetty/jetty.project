@@ -169,18 +169,25 @@ public class SslConnection extends AbstractConnection implements Connection.Upgr
         }
     };
 
+    @Deprecated
     public SslConnection(ByteBufferPool byteBufferPool, Executor executor, EndPoint endPoint, SSLEngine sslEngine)
     {
-        this(byteBufferPool, executor, endPoint, sslEngine, null, false, false);
+        this(byteBufferPool, executor, null, endPoint, sslEngine, false, false);
     }
 
-    public SslConnection(ByteBufferPool byteBufferPool, Executor executor, EndPoint endPoint, SSLEngine sslEngine, SslContextFactory sslContextFactory)
+    public SslConnection(ByteBufferPool byteBufferPool, Executor executor, SslContextFactory sslContextFactory, EndPoint endPoint, SSLEngine sslEngine)
     {
-        this(byteBufferPool, executor, endPoint, sslEngine, sslContextFactory, false, false);
+        this(byteBufferPool, executor, sslContextFactory, endPoint, sslEngine, false, false);
     }
 
-    public SslConnection(ByteBufferPool byteBufferPool, Executor executor, EndPoint endPoint, SSLEngine sslEngine,
-                         SslContextFactory sslContextFactory, boolean useDirectBuffersForEncryption, boolean useDirectBuffersForDecryption)
+    @Deprecated
+    public SslConnection(ByteBufferPool byteBufferPool, Executor executor, EndPoint endPoint, SSLEngine sslEngine, boolean useDirectBuffersForEncryption, boolean useDirectBuffersForDecryption)
+    {
+        this(byteBufferPool, executor, null, endPoint, sslEngine, useDirectBuffersForEncryption, useDirectBuffersForDecryption);
+    }
+
+    public SslConnection(ByteBufferPool byteBufferPool, Executor executor, SslContextFactory sslContextFactory, EndPoint endPoint, SSLEngine sslEngine,
+                         boolean useDirectBuffersForEncryption, boolean useDirectBuffersForDecryption)
     {
         // This connection does not execute calls to onFillable(), so they will be called by the selector thread.
         // onFillable() does not block and will only wakeup another thread to do the actual reading and handling.
@@ -492,7 +499,7 @@ public class SslConnection extends AbstractConnection implements Connection.Upgr
         return getEndPoint().flush(output);
     }
 
-    public class SslEndPoint extends AbstractEndPoint implements EndPoint.Wrapper, EndPoint.Securable
+    public class SslEndPoint extends AbstractEndPoint implements EndPoint.Wrapper
     {
         // This is not a simple EndPoint.Wrapper because it has another set of the machinery
         // from AbstractEndPoint for fillInterest and write flushing, separate to the wrapped EndPoint
@@ -1648,7 +1655,7 @@ public class SslConnection extends AbstractConnection implements Connection.Upgr
 
                 X509Certificate[] peerCertificates = _sslContextFactory != null
                     ? _sslContextFactory.getX509CertChain(sslSession)
-                    : SslContextFactory.getX509CertChain(null, sslSession);
+                    : SslContextFactory.getCertChain(sslSession);
 
                 byte[] bytes = sslSession.getId();
                 String idStr = StringUtil.toHexString(bytes);

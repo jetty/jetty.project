@@ -146,7 +146,8 @@ public class ProxyProtocolTest
             private boolean validateEndPoint(Request request)
             {
                 if (request.getConnectionMetaData().getConnection() instanceof HttpConnection con)
-                {                EndPoint endPoint = con.getEndPoint();
+                {
+                    EndPoint endPoint = con.getEndPoint();
                     ProxyConnectionFactory.ProxyEndPoint proxyEndPoint = (ProxyConnectionFactory.ProxyEndPoint)endPoint;
                     return Arrays.equals(customE0, proxyEndPoint.getTLV(0xE0)) &&
                         Arrays.equals(customE1, proxyEndPoint.getTLV(0xE1)) &&

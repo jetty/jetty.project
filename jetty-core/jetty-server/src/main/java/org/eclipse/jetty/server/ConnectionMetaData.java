@@ -46,7 +46,8 @@ public interface ConnectionMetaData extends Attributes
 
     default boolean isSecure()
     {
-        return getConnection().getEndPoint() instanceof EndPoint.Securable securable && securable.isSecure();
+        EndPoint endPoint = getConnection().getEndPoint();
+        return endPoint != null && endPoint.isSecure();
     }
 
     /**

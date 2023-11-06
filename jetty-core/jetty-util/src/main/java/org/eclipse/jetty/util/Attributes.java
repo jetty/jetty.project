@@ -149,7 +149,7 @@ public interface Attributes
         if (o instanceof Attributes a)
         {
             Set<String> ours = attributes.getAttributeNameSet();
-            Set<String> theirs = attributes.getAttributeNameSet();
+            Set<String> theirs = a.getAttributeNameSet();
             if (!ours.equals(theirs))
                 return false;
 
@@ -589,7 +589,7 @@ public interface Attributes
             }
         };
 
-        private Map<String, Object> _layer;
+        private final AtomicReference<Map<String, Object>> _layer = new AtomicReference<>();
 
         protected Synthetic(Attributes base)
         {
@@ -614,10 +614,11 @@ public interface Attributes
         public Object getAttribute(String name)
         {
             // Has the attribute been modified in the layer?
-            if (_layer != null)
+            Map<String, Object> layer = _layer.get();
+            if (layer != null)
             {
                 // Only synthetic attributes can be in the layer.
-                Object l = _layer.get(name);
+                Object l = layer.get(name);
                 // Has it been removed?
                 if (l == REMOVED)
                     return null;
@@ -646,11 +647,10 @@ public interface Attributes
             if (getSyntheticNameSet().contains(name))
             {
                 // We will need a layer to record modifications to a synthetic attribute
-                if (_layer == null)
-                    _layer = new HashMap<>();
+                Map<String, Object> layer = _layer.updateAndGet(m -> m == null ? new HashMap<>() : m);
 
                 // update the attribute in the layer
-                Object old = _layer.put(name, value);
+                Object old = layer.put(name, value);
                 // return the old value, which if not remove and not in the layer, is the synthetic attribute itself
                 return old == REMOVED ? null : old != null ? old : getSyntheticAttribute(name);
             }
@@ -666,11 +666,10 @@ public interface Attributes
             if (getSyntheticNameSet().contains(name))
             {
                 // We will need a layer to record modifications to a synthetic attribute
-                if (_layer == null)
-                    _layer = new HashMap<>();
+                Map<String, Object> layer = _layer.updateAndGet(m -> m == null ? new HashMap<>() : m);
 
                 // Mark the attribute as removed in the layer
-                Object old = _layer.put(name, REMOVED);
+                Object old = layer.put(name, REMOVED);
                 // return the old value, which if not removed and not in the layer, is the synthetic attribute itself
                 return old == REMOVED ? null : old != null ? old : getSyntheticAttribute(name);
             }
@@ -686,7 +685,8 @@ public interface Attributes
             Set<String> names = new HashSet<>(super.getAttributeNameSet());
 
             // Have there been any modifications to the synthetic attributes
-            if (_layer == null)
+            Map<String, Object> layer = _layer.get();
+            if (layer == null)
             {
                 // no, so we just add the names for which there are values
                 for (String s : getSyntheticNameSet())
@@ -699,7 +699,7 @@ public interface Attributes
                 for (String s : getSyntheticNameSet())
                 {
                     // has the attribute been modified in the layer?
-                    Object l = _layer.get(s);
+                    Object l = layer.get(s);
                     if (l == REMOVED)
                         // it has been removed
                         names.remove(s);
@@ -718,11 +718,10 @@ public interface Attributes
             // Clear the base attributes
             super.clearAttributes();
             // We will need a layer to remove the synthetic attributes
-            if (_layer == null)
-                _layer = new HashMap<>();
+            Map<String, Object> layer = _layer.updateAndGet(m -> m == null ? new HashMap<>() : m);
             // remove all known synthetic attributes
             for (String s : getSyntheticNameSet())
-                _layer.put(s, REMOVED);
+                layer.put(s, REMOVED);
         }
     }
 
