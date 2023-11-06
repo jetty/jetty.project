@@ -14,6 +14,7 @@
 package org.eclipse.jetty.server.internal;
 
 import java.io.IOException;
+import java.net.SocketAddress;
 import java.nio.ByteBuffer;
 import java.util.ArrayList;
 import java.util.HashMap;
@@ -646,8 +647,11 @@ public class HttpChannelState implements HttpChannel, Components
                     customized = next == null ? customized : next;
                 }
 
-                if (customized != request && server.getRequestLog() != null)
+                if (server.getRequestLog() != null)
+                {
+                    customized = new RequestLogWrapper(customized);
                     request.setLoggedRequest(customized);
+                }
 
                 if (!server.handle(customized, response, request._callback))
                     Response.writeError(customized, response, request._callback, HttpStatus.NOT_FOUND_404);
@@ -1838,6 +1842,40 @@ public class HttpChannelState implements HttpChannel, Components
                 if (ExceptionUtil.areNotAssociated(cause, failure))
                     error.getFailure().addSuppressed(failure);
             }
+        }
+    }
+
+    private static class RequestLogWrapper extends Request.Wrapper
+    {
+        private final ConnectionMetaData logConnectionMetadata;
+
+        public RequestLogWrapper(Request wrapped)
+        {
+            super(wrapped);
+
+            ConnectionMetaData connectionMetaData = wrapped.getConnectionMetaData();
+            SocketAddress localAddress = connectionMetaData.getLocalSocketAddress();
+            SocketAddress remoteAddress = connectionMetaData.getRemoteSocketAddress();
+            this.logConnectionMetadata = new ConnectionMetaData.Wrapper(connectionMetaData)
+            {
+                @Override
+                public SocketAddress getLocalSocketAddress()
+                {
+                    return localAddress;
+                }
+
+                @Override
+                public SocketAddress getRemoteSocketAddress()
+                {
+                    return remoteAddress;
+                }
+            };
+        }
+
+        @Override
+        public ConnectionMetaData getConnectionMetaData()
+        {
+            return logConnectionMetadata;
         }
     }
 }
