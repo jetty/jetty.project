@@ -1179,9 +1179,15 @@
         <version>${slf4j.version}</version>
       </dependency>
       <dependency>
-        <groupId>org.wildfly.security</groupId>
-        <artifactId>wildfly-elytron</artifactId>
-        <version>${wildfly.elytron.version}</version>
+        <groupId>org.testcontainers</groupId>
+        <artifactId>testcontainers</artifactId>
+        <version>${testcontainers.version}</version>
+        <exclusions>
+          <exclusion>
+            <groupId>org.hamcrest</groupId>
+            <artifactId>hamcrest-core</artifactId>
+          </exclusion>
+        </exclusions>
       </dependency>
       <dependency>
         <groupId>org.apache.maven.plugin-tools</groupId>
@@ -1211,6 +1217,48 @@
         <groupId>org.osgi</groupId>
         <artifactId>org.osgi.util.xml</artifactId>
         <version>${osgi-util-xml-version}</version>
+        <scope>test</scope>
+      </dependency>
+      <dependency>
+        <groupId>org.wildfly.security</groupId>
+        <artifactId>wildfly-elytron-sasl-digest</artifactId>
+        <version>2.2.2.Final</version>
+        <scope>test</scope>
+      </dependency>
+      <dependency>
+        <groupId>org.wildfly.security</groupId>
+        <artifactId>wildfly-elytron-sasl-external</artifactId>
+        <version>2.2.2.Final</version>
+        <scope>test</scope>
+      </dependency>
+      <dependency>
+        <groupId>org.wildfly.security</groupId>
+        <artifactId>wildfly-elytron-sasl-gs2</artifactId>
+        <version>2.2.2.Final</version>
+        <scope>test</scope>
+      </dependency>
+      <dependency>
+        <groupId>org.wildfly.security</groupId>
+        <artifactId>wildfly-elytron-sasl-gssapi</artifactId>
+        <version>2.2.2.Final</version>
+        <scope>test</scope>
+      </dependency>
+      <dependency>
+        <groupId>org.wildfly.security</groupId>
+        <artifactId>wildfly-elytron-sasl-oauth2</artifactId>
+        <version>2.2.2.Final</version>
+        <scope>test</scope>
+      </dependency>
+      <dependency>
+        <groupId>org.wildfly.security</groupId>
+        <artifactId>wildfly-elytron-sasl-plain</artifactId>
+        <version>2.2.2.Final</version>
+        <scope>test</scope>
+      </dependency>
+      <dependency>
+        <groupId>org.wildfly.security</groupId>
+        <artifactId>wildfly-elytron-sasl-scram</artifactId>
+        <version>2.2.2.Final</version>
         <scope>test</scope>
       </dependency>
     </dependencies>
@@ -2298,6 +2346,45 @@
                   <goal>javadoc-no-fork</goal>
                 </goals>
                 <phase>package</phase>
+              </execution>
+            </executions>
+          </plugin>
+          <plugin>
+            <groupId>org.basepom.maven</groupId>
+            <artifactId>duplicate-finder-maven-plugin</artifactId>
+            <version>2.0.0</version>
+            <executions>
+              <execution>
+                <id>default</id>
+                <goals>
+                  <goal>check</goal>
+                </goals>
+                <phase>verify</phase>
+                <configuration>
+                  <!--                  <failBuildInCaseOfConflict>true</failBuildInCaseOfConflict>-->
+                  <failBuildInCaseOfDifferentContentConflict>true</failBuildInCaseOfDifferentContentConflict>
+                  <ignoredResourcePatterns>
+                    <ignoredResourcePattern>about.html</ignoredResourcePattern>
+                    <ignoredResourcePattern>.api_description</ignoredResourcePattern>
+                    <ignoredResourcePattern>about_files/LICENSE-2.0.txt</ignoredResourcePattern>
+                    <!-- maybe we should not ignore but fix it as it makes logging configuration possibly random -->
+                    <ignoredResourcePattern>jetty-logging.properties</ignoredResourcePattern>
+                    <ignoredResourcePattern>features.xml</ignoredResourcePattern>
+                    <ignoredResourcePattern>plugin.properties</ignoredResourcePattern>
+                    <ignoredResourcePattern>plugin.xml</ignoredResourcePattern>
+                  </ignoredResourcePatterns>
+                  <ignoredClassPatterns>
+                    <!-- some classes with different content are in osgi-core AND osgi tracker -->
+                    <ignoredClassPattern>org.osgi.util.tracker.*</ignoredClassPattern>
+                    <!--
+                    no idea which one is to use so ignore the warning...
+[WARNING] Found duplicate and different classes in [org.infinispan:infinispan-commons:11.0.17.Final, org.infinispan:infinispan-objectfilter:11.0.17.Final]:
+[WARNING]   org.infinispan.commons.util.CloseableIterator
+[WARNING] Found duplicate classes/resources in compile classpath.
+                    -->
+                    <ignoredClassPattern>org.infinispan.commons.util.CloseableIterator</ignoredClassPattern>
+                  </ignoredClassPatterns>
+                </configuration>
               </execution>
             </executions>
           </plugin>
