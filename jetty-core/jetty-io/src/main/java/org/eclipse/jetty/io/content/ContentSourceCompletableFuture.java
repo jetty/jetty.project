@@ -83,9 +83,17 @@ public abstract class ContentSourceCompletableFuture<X> extends CompletableFutur
             }
             if (Content.Chunk.isFailure(chunk))
             {
-                if (!chunk.isLast() && onTransientFailure(chunk.getFailure()))
-                    continue;
-                completeExceptionally(chunk.getFailure());
+                if (chunk.isLast())
+                {
+                    completeExceptionally(chunk.getFailure());
+                }
+                else
+                {
+                    if (onTransientFailure(chunk.getFailure()))
+                        continue;
+                    completeExceptionally(chunk.getFailure());
+                    _content.fail(chunk.getFailure());
+                }
                 return;
             }
 

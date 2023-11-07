@@ -191,6 +191,8 @@ public class ChunkAccumulator
                 if (Chunk.isFailure(chunk))
                 {
                     completeExceptionally(chunk.getFailure());
+                    if (!chunk.isLast())
+                        _source.fail(chunk.getFailure());
                     break;
                 }
 

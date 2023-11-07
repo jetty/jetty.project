@@ -1100,7 +1100,17 @@ public class HttpConnection extends AbstractConnection implements Runnable, Writ
                 BadMessageException bad = new BadMessageException("Early EOF");
 
                 if (Content.Chunk.isFailure(stream._chunk))
-                    stream._chunk.getFailure().addSuppressed(bad);
+                {
+                    if (stream._chunk.isLast())
+                    {
+                        stream._chunk.getFailure().addSuppressed(bad);
+                    }
+                    else
+                    {
+                        bad.addSuppressed(stream._chunk.getFailure());
+                        stream._chunk = Content.Chunk.from(bad);
+                    }
+                }
                 else
                 {
                     if (stream._chunk != null)

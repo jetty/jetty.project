@@ -159,7 +159,11 @@ public class GzipRequest extends Request.Wrapper
             if (_chunk == null)
                 return null;
             if (Content.Chunk.isFailure(_chunk))
-                return _chunk;
+            {
+                Content.Chunk failure = _chunk;
+                _chunk = Content.Chunk.next(failure);
+                return failure;
+            }
             if (_chunk.isLast() && !_chunk.hasRemaining())
                 return Content.Chunk.EOF;
 

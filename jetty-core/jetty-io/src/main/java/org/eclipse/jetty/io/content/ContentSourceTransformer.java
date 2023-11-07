@@ -66,7 +66,12 @@ public abstract class ContentSourceTransformer implements Content.Source
             }
 
             if (Content.Chunk.isFailure(rawChunk))
-                return rawChunk;
+            {
+                Content.Chunk failure = rawChunk;
+                rawChunk = Content.Chunk.next(rawChunk);
+                needsRawRead = rawChunk == null;
+                return failure;
+            }
 
             if (Content.Chunk.isFailure(transformedChunk))
                 return transformedChunk;

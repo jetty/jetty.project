@@ -20,7 +20,6 @@ import java.util.concurrent.atomic.LongAdder;
 
 import jakarta.servlet.ReadListener;
 import jakarta.servlet.ServletInputStream;
-import org.eclipse.jetty.http.HttpFields;
 import org.eclipse.jetty.io.Content;
 import org.eclipse.jetty.server.Context;
 import org.eclipse.jetty.util.thread.AutoLock;
@@ -348,9 +347,6 @@ public class HttpInput extends ServletInputStream implements Runnable
             Throwable failure = chunk.getFailure();
             if (LOG.isDebugEnabled())
                 LOG.debug("running failure={} {}", failure, this);
-            // TODO is this necessary to add here?
-            if (chunk.isLast())
-                _servletChannel.getServletContextResponse().getHeaders().add(HttpFields.CONNECTION_CLOSE);
             _readListener.onError(failure);
         }
         else if (chunk.isLast() && !chunk.hasRemaining())
