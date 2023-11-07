@@ -11,7 +11,26 @@
 // ========================================================================
 //
 
+package org.eclipse.jetty.plus.jndi;
+
+import javax.naming.NamingException;
+
 /**
- * Jetty Plus : Limited JEE Jndi Support
+ * Resource
  */
-package org.eclipse.jetty.ee9.plus.jndi;
+public class Resource extends NamingEntry
+{
+    public Resource(Object scope, String jndiName, Object objToBind)
+        throws NamingException
+    {
+        super(scope, jndiName);
+        save(objToBind);
+    }
+
+    public Resource(String jndiName, Object objToBind)
+        throws NamingException
+    {
+        super(jndiName);
+        save(objToBind);
+    }
+}

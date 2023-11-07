@@ -11,7 +11,7 @@
 // ========================================================================
 //
 
-package org.eclipse.jetty.ee9.plus.jndi;
+package org.eclipse.jetty.plus.jndi;
 
 import javax.naming.Context;
 import javax.naming.InitialContext;
@@ -20,7 +20,7 @@ import javax.naming.Name;
 import javax.naming.NameParser;
 import javax.naming.NamingException;
 
-import org.eclipse.jetty.jndi.NamingUtil;
+import org.eclipse.jetty.util.jndi.NamingUtil;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 

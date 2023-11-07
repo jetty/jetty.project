@@ -11,16 +11,12 @@
 // ========================================================================
 //
 
-module org.eclipse.jetty.ee9.jndi
+module org.eclipse.jetty.plus
 {
+    requires org.eclipse.jetty.util;
     requires org.slf4j;
 
-    requires org.eclipse.jetty.plus;
-    requires transitive org.eclipse.jetty.util;
     requires transitive java.naming;
 
-    // Only required if using MailSessionReference.
-    requires static jakarta.mail;
-
-    exports org.eclipse.jetty.ee9.jndi.factories;
+    exports org.eclipse.jetty.plus.jndi;
 }

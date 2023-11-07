@@ -11,7 +11,7 @@
 // ========================================================================
 //
 
-package org.eclipse.jetty.jndi;
+package org.eclipse.jetty.util.jndi;
 
 import java.util.Iterator;
 import javax.naming.Binding;

@@ -7,13 +7,13 @@
     <artifactId>jetty-core</artifactId>
     <version>12.0.4-SNAPSHOT</version>
   </parent>
-  <artifactId>jetty-jndi</artifactId>
-  <name>Core :: JNDI</name>
-  <description>JNDI spi impl for java namespace.</description>
+  <artifactId>jetty-plus</artifactId>
+  <name>Core :: Plus</name>
+  <description>JNDI support</description>
 
   <properties>
-    <bundle-symbolic-name>${project.groupId}.jndi</bundle-symbolic-name>
-    <spotbugs.onlyAnalyze>org.eclipse.jetty.jndi.*</spotbugs.onlyAnalyze>
+    <bundle-symbolic-name>${project.groupId}.plus</bundle-symbolic-name>
+    <spotbugs.onlyAnalyze>org.eclipse.jetty.plus.*</spotbugs.onlyAnalyze>
   </properties>
 
   <dependencies>
@@ -27,11 +27,6 @@
     </dependency>
     <dependency>
       <groupId>org.eclipse.jetty</groupId>
-      <artifactId>jetty-server</artifactId>
-      <scope>provided</scope>
-    </dependency>
-    <dependency>
-      <groupId>org.eclipse.jetty</groupId>
       <artifactId>jetty-slf4j-impl</artifactId>
       <scope>test</scope>
     </dependency>
@@ -41,19 +36,4 @@
       <scope>test</scope>
     </dependency>
   </dependencies>
-
-  <build>
-    <plugins>
-      <plugin>
-        <groupId>org.apache.felix</groupId>
-        <artifactId>maven-bundle-plugin</artifactId>
-        <extensions>true</extensions>
-        <configuration>
-          <instructions>
-            <Import-Package>${osgi.slf4j.import.packages},jakarta.mail.*;resolution:=optional,*</Import-Package>
-          </instructions>
-        </configuration>
-      </plugin>
-    </plugins>
-  </build>
 </project>

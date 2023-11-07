@@ -15,6 +15,7 @@ package org.eclipse.jetty.ee9.plus.jndi;
 
 import javax.naming.NamingException;
 
+import org.eclipse.jetty.plus.jndi.NamingEntryUtil;
 import org.junit.jupiter.api.Test;
 
 import static org.junit.jupiter.api.Assertions.assertThrows;
