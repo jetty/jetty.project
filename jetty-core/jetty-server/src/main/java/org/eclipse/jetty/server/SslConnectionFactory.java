@@ -21,7 +21,6 @@ import javax.net.ssl.SSLSession;
 
 import org.eclipse.jetty.http.HttpVersion;
 import org.eclipse.jetty.io.AbstractConnection;
-import org.eclipse.jetty.io.ByteBufferPool;
 import org.eclipse.jetty.io.Connection;
 import org.eclipse.jetty.io.EndPoint;
 import org.eclipse.jetty.io.ssl.SslConnection;
@@ -166,8 +165,7 @@ public class SslConnectionFactory extends AbstractConnectionFactory implements C
 
     protected SslConnection newSslConnection(Connector connector, EndPoint endPoint, SSLEngine engine)
     {
-        ByteBufferPool byteBufferPool = connector.getByteBufferPool();
-        return new SslConnection(byteBufferPool, connector.getExecutor(), _sslContextFactory, endPoint, engine, isDirectBuffersForEncryption(), isDirectBuffersForDecryption());
+        return new SslConnection(connector.getByteBufferPool(), connector.getExecutor(), getSslContextFactory(), endPoint, engine, isDirectBuffersForEncryption(), isDirectBuffersForDecryption());
     }
 
     @Override

@@ -368,7 +368,7 @@ public class SSLEngineTest
         public boolean handle(Request request, Response response, Callback callback) throws Exception
         {
             EndPoint.SslSessionData sslData = (EndPoint.SslSessionData)request.getAttribute(EndPoint.SslSessionData.ATTRIBUTE);
-            String sslId = sslData.sessionId();
+            String sslId = sslData.sslSessionId();
             assertNotNull(sslId);
 
             Fields fields = Request.extractQueryParameters(request);

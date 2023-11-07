@@ -60,13 +60,13 @@ public class ServletContextRequest extends ContextRequest implements ServletCont
     public static final String SSL_CIPHER_SUITE = "jakarta.servlet.request.cipher_suite";
     public static final String SSL_KEY_SIZE = "jakarta.servlet.request.key_size";
     public static final String SSL_SESSION_ID = "jakarta.servlet.request.ssl_session_id";
-    public static final String X_509_CERTIFICATES = "jakarta.servlet.request.X509Certificate";
+    public static final String PEER_CERTIFICATES = "jakarta.servlet.request.X509Certificate";
 
     private static final Set<String> ATTRIBUTES = Set.of(
         SSL_CIPHER_SUITE,
         SSL_KEY_SIZE,
         SSL_SESSION_ID,
-        X_509_CERTIFICATES,
+        PEER_CERTIFICATES,
         MULTIPART_CONFIG_ELEMENT,
         FormFields.MAX_FIELDS_ATTRIBUTE,
         FormFields.MAX_LENGTH_ATTRIBUTE);
@@ -140,8 +140,8 @@ public class ServletContextRequest extends ContextRequest implements ServletCont
                 {
                     case SSL_CIPHER_SUITE -> super.getAttribute(EndPoint.SslSessionData.ATTRIBUTE) instanceof EndPoint.SslSessionData data ? data.cipherSuite() : null;
                     case SSL_KEY_SIZE -> super.getAttribute(EndPoint.SslSessionData.ATTRIBUTE) instanceof EndPoint.SslSessionData data ? data.keySize() : null;
-                    case SSL_SESSION_ID -> super.getAttribute(EndPoint.SslSessionData.ATTRIBUTE) instanceof EndPoint.SslSessionData data ? data.sessionId() : null;
-                    case X_509_CERTIFICATES -> super.getAttribute(EndPoint.SslSessionData.ATTRIBUTE) instanceof EndPoint.SslSessionData data ? data.peerCertificates() : null;
+                    case SSL_SESSION_ID -> super.getAttribute(EndPoint.SslSessionData.ATTRIBUTE) instanceof EndPoint.SslSessionData data ? data.sslSessionId() : null;
+                    case PEER_CERTIFICATES -> super.getAttribute(EndPoint.SslSessionData.ATTRIBUTE) instanceof EndPoint.SslSessionData data ? data.peerCertificates() : null;
                     case ServletContextRequest.MULTIPART_CONFIG_ELEMENT -> _matchedResource.getResource().getServletHolder().getMultipartConfigElement();
                     case FormFields.MAX_FIELDS_ATTRIBUTE -> getServletContext().getServletContextHandler().getMaxFormKeys();
                     case FormFields.MAX_LENGTH_ATTRIBUTE -> getServletContext().getServletContextHandler().getMaxFormContentSize();

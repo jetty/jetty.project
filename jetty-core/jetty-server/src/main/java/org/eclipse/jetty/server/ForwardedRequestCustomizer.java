@@ -893,7 +893,7 @@ public class ForwardedRequestCustomizer implements HttpConfiguration.Customizer
          */
         public void handleSslSessionId(HttpField field)
         {
-            _sslSessionData = EndPoint.SslSessionData.withSessionId(_sslSessionData, field.getValue());
+            _sslSessionData = EndPoint.SslSessionData.withSslSessionId(_sslSessionData, field.getValue());
 
             // Is ForwardingRequestCustomizer configured to trigger isSecure and scheme change on this header?
             if (isSslIsSecure())

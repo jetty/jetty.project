@@ -118,7 +118,7 @@ public class Request implements HttpServletRequest
     public static final String SSL_CIPHER_SUITE = "jakarta.servlet.request.cipher_suite";
     public static final String SSL_KEY_SIZE = "jakarta.servlet.request.key_size";
     public static final String SSL_SESSION_ID = "jakarta.servlet.request.ssl_session_id";
-    public static final String X_509_CERTIFICATES = "jakarta.servlet.request.X509Certificate";
+    public static final String PEER_CERTIFICATES = "jakarta.servlet.request.X509Certificate";
 
     private static final Logger LOG = LoggerFactory.getLogger(Request.class);
     private static final SetCookieParser SET_COOKIE_PARSER = SetCookieParser.newInstance();

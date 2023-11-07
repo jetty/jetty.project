@@ -338,6 +338,9 @@ public interface EndPoint extends Closeable
         return null;
     }
 
+    /**
+     * @return whether this EndPoint represents a secure communication.
+     */
     default boolean isSecure()
     {
         return getSslSessionData() != null;
@@ -362,7 +365,7 @@ public interface EndPoint extends Closeable
         /**
          * @return The {@link SSLSession#getId()} rendered as a hex string, if known, else {@code null}.
          */
-        String sessionId();
+        String sslSessionId();
 
         /**
          * @return The {@link SSLSession#getCipherSuite()} if known, else {@code null}.
@@ -384,7 +387,7 @@ public interface EndPoint extends Closeable
             return cipherSuite == null ? 0 : SslContextFactory.deduceKeyLength(cipherSuite);
         }
 
-        static SslSessionData from(SSLSession sslSession, String sessionId, String cipherSuite, X509Certificate[] peerCertificates)
+        static SslSessionData from(SSLSession sslSession, String sslSessionId, String cipherSuite, X509Certificate[] peerCertificates)
         {
             return new SslSessionData()
             {
@@ -395,9 +398,9 @@ public interface EndPoint extends Closeable
                 }
 
                 @Override
-                public String sessionId()
+                public String sslSessionId()
                 {
-                    return sessionId;
+                    return sslSessionId;
                 }
 
                 @Override
@@ -420,18 +423,18 @@ public interface EndPoint extends Closeable
                 ? from(null, null, cipherSuite, null)
                 : from(
                     baseData.sslSession(),
-                    baseData.sessionId(),
+                    baseData.sslSessionId(),
                     cipherSuite != null ? cipherSuite : baseData.cipherSuite(),
                     baseData.peerCertificates());
         }
 
-        static SslSessionData withSessionId(SslSessionData baseData, String sessionId)
+        static SslSessionData withSslSessionId(SslSessionData baseData, String sslSessionId)
         {
             return (baseData == null)
-                ? from(null, sessionId, null, null)
+                ? from(null, sslSessionId, null, null)
                 : from(
                     baseData.sslSession(),
-                    sessionId != null ? sessionId : baseData.sessionId(),
+                    sslSessionId != null ? sslSessionId : baseData.sslSessionId(),
                     baseData.cipherSuite(),
                     baseData.peerCertificates());
         }

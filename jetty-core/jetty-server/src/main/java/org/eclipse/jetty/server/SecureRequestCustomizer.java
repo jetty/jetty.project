@@ -62,7 +62,7 @@ public class SecureRequestCustomizer implements HttpConfiguration.Customizer
     @Deprecated(forRemoval = true)
     public static final String KEY_SIZE_ATTRIBUTE = "org.eclipse.jetty.server.keySize";
     /**
-     * @deprecated use {@link EndPoint.SslSessionData#ATTRIBUTE} attribute with {@link EndPoint.SslSessionData#sessionId()}
+     * @deprecated use {@link EndPoint.SslSessionData#ATTRIBUTE} attribute with {@link EndPoint.SslSessionData#sslSessionId()}
      */
     @Deprecated(forRemoval = true)
     public static final String SSL_SESSION_ID_ATTRIBUTE = "org.eclipse.jetty.server.sslSessionId";
@@ -359,7 +359,7 @@ public class SecureRequestCustomizer implements HttpConfiguration.Customizer
                         case X509_ATTRIBUTE -> getX509(_sslSessionData.sslSession());
                         case CIPHER_SUITE_ATTRIBUTE -> legacyAttributes ? sslSessionData.cipherSuite() : null;
                         case KEY_SIZE_ATTRIBUTE -> legacyAttributes ? sslSessionData.keySize() : null;
-                        case SSL_SESSION_ID_ATTRIBUTE -> legacyAttributes ? sslSessionData.sessionId() : null;
+                        case SSL_SESSION_ID_ATTRIBUTE -> legacyAttributes ? sslSessionData.sslSessionId() : null;
                         case PEER_CERTIFICATES_ATTRIBUTE -> legacyAttributes ? sslSessionData.peerCertificates() : null;
                         default -> null;
                     };

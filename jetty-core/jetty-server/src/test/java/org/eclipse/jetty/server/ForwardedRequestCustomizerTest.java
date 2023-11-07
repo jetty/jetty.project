@@ -133,7 +133,7 @@ public class ForwardedRequestCustomizerTest
             actual.wasSecure.set(request.isSecure());
             if (request.getAttribute(EndPoint.SslSessionData.ATTRIBUTE) instanceof EndPoint.SslSessionData sslSessionData)
             {
-                actual.sslSession.set(sslSessionData.sessionId());
+                actual.sslSession.set(sslSessionData.sslSessionId());
                 actual.sslCertificate.set(sslSessionData.cipherSuite());
             }
             actual.scheme.set(request.getHttpURI().getScheme());

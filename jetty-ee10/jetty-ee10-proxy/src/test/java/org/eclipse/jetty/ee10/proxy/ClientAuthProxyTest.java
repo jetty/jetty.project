@@ -219,7 +219,7 @@ public class ClientAuthProxyTest
 
     private static String retrieveUser(HttpServletRequest request)
     {
-        X509Certificate[] certificates = (X509Certificate[])request.getAttribute(ServletContextRequest.X_509_CERTIFICATES);
+        X509Certificate[] certificates = (X509Certificate[])request.getAttribute(ServletContextRequest.PEER_CERTIFICATES);
         String clientName = certificates[0].getSubjectX500Principal().getName();
         Matcher matcher = Pattern.compile("CN=([^,]+)").matcher(clientName);
         if (matcher.find())
