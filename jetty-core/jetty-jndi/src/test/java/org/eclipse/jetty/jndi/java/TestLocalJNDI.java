@@ -26,7 +26,7 @@ import javax.naming.Referenceable;
 import javax.naming.StringRefAddr;
 import javax.naming.spi.ObjectFactory;
 
-import org.eclipse.jetty.util.jndi.NamingUtil;
+import org.eclipse.jetty.plus.jndi.NamingUtil;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.Test;
 

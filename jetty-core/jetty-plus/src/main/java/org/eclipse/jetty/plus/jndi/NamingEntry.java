@@ -20,7 +20,6 @@ import javax.naming.Name;
 import javax.naming.NameParser;
 import javax.naming.NamingException;
 
-import org.eclipse.jetty.util.jndi.NamingUtil;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 

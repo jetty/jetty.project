@@ -23,7 +23,7 @@ import javax.naming.Reference;
 import javax.naming.StringRefAddr;
 
 import org.eclipse.jetty.jndi.ContextFactory;
-import org.eclipse.jetty.util.jndi.NamingContext;
+import org.eclipse.jetty.plus.jndi.NamingContext;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 

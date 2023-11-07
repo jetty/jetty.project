@@ -17,6 +17,7 @@ module org.eclipse.jetty.plus
     requires org.slf4j;
 
     requires transitive java.naming;
+    requires transitive java.sql;
 
     exports org.eclipse.jetty.plus.jndi;
 }

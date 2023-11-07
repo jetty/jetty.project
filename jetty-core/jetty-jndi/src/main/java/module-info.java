@@ -16,6 +16,7 @@ module org.eclipse.jetty.jndi
     requires org.slf4j;
 
     requires transitive java.naming;
+    requires org.eclipse.jetty.plus;
     requires transitive org.eclipse.jetty.server;
 
     // Only required if using DataSourceCloser.
