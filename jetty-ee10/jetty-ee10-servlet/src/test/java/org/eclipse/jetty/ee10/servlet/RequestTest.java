@@ -39,7 +39,6 @@ import org.eclipse.jetty.server.ForwardedRequestCustomizer;
 import org.eclipse.jetty.server.HttpConnectionFactory;
 import org.eclipse.jetty.server.LocalConnector;
 import org.eclipse.jetty.server.Request;
-import org.eclipse.jetty.server.SecureRequestCustomizer;
 import org.eclipse.jetty.server.Server;
 import org.eclipse.jetty.util.component.LifeCycle;
 import org.junit.jupiter.api.AfterEach;
@@ -338,13 +337,13 @@ public class RequestTest
 
                 // Set some fake SSL attributes
                 X509Certificate[] certificates = new X509Certificate[0];
-                coreRequest.setAttribute(SecureRequestCustomizer.SSL_SESSION_DATA_ATTRIBUTE,
+                coreRequest.setAttribute(EndPoint.SslSessionData.ATTRIBUTE,
                     EndPoint.SslSessionData.from(null, "identity", "quantum_42_Knowledge", certificates));
 
                 // Check we have all the attribute names in servlet API
                 Set<String> names = new HashSet<>(Collections.list(request.getAttributeNames()));
                 assertThat(names, containsInAnyOrder(
-                    SecureRequestCustomizer.SSL_SESSION_DATA_ATTRIBUTE,
+                    EndPoint.SslSessionData.ATTRIBUTE,
                     ServletContextRequest.SSL_CIPHER_SUITE,
                     ServletContextRequest.SSL_KEY_SIZE,
                     ServletContextRequest.SSL_SESSION_ID,
