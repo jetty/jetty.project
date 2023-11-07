@@ -48,7 +48,9 @@ import org.eclipse.jetty.io.Content;
  *     }
  * }
  * 
- * new CompletableUTF8String(source).thenAccept(System.err::println);
+ * CompletableUTF8String cs = new CompletableUTF8String(source);
+ * cs.parse();
+ * String s = cs.get();
  * }</pre>
  */
 public abstract class ContentSourceCompletableFuture<X> extends CompletableFuture<X>

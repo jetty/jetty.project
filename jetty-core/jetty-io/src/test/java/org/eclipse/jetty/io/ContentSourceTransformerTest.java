@@ -14,10 +14,12 @@
 package org.eclipse.jetty.io;
 
 import java.io.IOException;
+import java.nio.ByteBuffer;
 import java.util.ArrayDeque;
 import java.util.List;
 import java.util.Locale;
 import java.util.Queue;
+import java.util.concurrent.TimeoutException;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicInteger;
 
@@ -32,6 +34,8 @@ import org.junit.jupiter.params.provider.ValueSource;
 import static java.nio.charset.StandardCharsets.UTF_8;
 import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.Matchers.empty;
+import static org.hamcrest.Matchers.is;
+import static org.hamcrest.Matchers.sameInstance;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertNotNull;
@@ -310,6 +314,91 @@ public class ContentSourceTransformerTest
         // Trying to read again returns the error again.
         chunk = transformer.read();
         assertTrue(Content.Chunk.isFailure(chunk, true));
+    }
+
+    @Test
+    public void testTransientFailuresFromOriginalSourceAreReturned()
+    {
+        TimeoutException originalFailure1 = new TimeoutException("timeout 1");
+        TimeoutException originalFailure2 = new TimeoutException("timeout 2");
+        TestSource originalSource = new TestSource(
+            Content.Chunk.from(ByteBuffer.wrap(new byte[]{'A'}), false),
+            Content.Chunk.from(originalFailure1, false),
+            Content.Chunk.from(ByteBuffer.wrap(new byte[]{'B'}), false),
+            Content.Chunk.from(originalFailure2, false),
+            Content.Chunk.from(ByteBuffer.wrap(new byte[]{'C'}), true)
+        );
+
+        WordSplitLowCaseTransformer transformer = new WordSplitLowCaseTransformer(originalSource);
+
+        assertEquals('a', (char)transformer.read().getByteBuffer().get());
+        Content.Chunk chunk = transformer.read();
+        assertThat(chunk.getFailure(), sameInstance(originalFailure1));
+        assertThat(chunk.isLast(), is(false));
+        assertEquals('b', (char)transformer.read().getByteBuffer().get());
+        chunk = transformer.read();
+        assertThat(chunk.getFailure(), sameInstance(originalFailure2));
+        assertThat(chunk.isLast(), is(false));
+        assertEquals('c', (char)transformer.read().getByteBuffer().get());
+        chunk = transformer.read();
+        assertThat(chunk.hasRemaining(), is(false));
+        assertThat(chunk.isLast(), is(true));
+        assertThat(Content.Chunk.isFailure(chunk), is(false));
+
+        chunk = originalSource.read();
+        assertThat(chunk.isLast(), is(true));
+        assertThat(chunk.hasRemaining(), is(false));
+        assertThat(Content.Chunk.isFailure(chunk), is(false));
+    }
+
+    @Test
+    public void testTransientFailuresFromTransformationAreReturned()
+    {
+        TimeoutException originalFailure1 = new TimeoutException("timeout 1");
+        TimeoutException originalFailure2 = new TimeoutException("timeout 2");
+        TestSource originalSource = new TestSource(
+            Content.Chunk.from(ByteBuffer.wrap(new byte[]{'A'}), false),
+            Content.Chunk.from(ByteBuffer.wrap(new byte[]{'B'}), false),
+            Content.Chunk.from(ByteBuffer.wrap(new byte[]{'C'}), false),
+            Content.Chunk.from(ByteBuffer.wrap(new byte[]{'D'}), false),
+            Content.Chunk.from(ByteBuffer.wrap(new byte[]{'E'}), true)
+        );
+
+        ContentSourceTransformer transformer = new ContentSourceTransformer(originalSource)
+        {
+            @Override
+            protected Content.Chunk transform(Content.Chunk rawChunk)
+            {
+                if (rawChunk == null)
+                    return null;
+                String decoded = UTF_8.decode(rawChunk.getByteBuffer().duplicate()).toString();
+                return switch (decoded)
+                {
+                    case "B" -> Content.Chunk.from(originalFailure1, false);
+                    case "D" -> Content.Chunk.from(originalFailure2, false);
+                    default -> Content.Chunk.from(rawChunk.getByteBuffer(), rawChunk.isLast());
+                };
+            }
+        };
+
+        assertEquals('A', (char)transformer.read().getByteBuffer().get());
+        Content.Chunk chunk = transformer.read();
+        assertThat(chunk.getFailure(), sameInstance(originalFailure1));
+        assertThat(chunk.isLast(), is(false));
+        assertEquals('C', (char)transformer.read().getByteBuffer().get());
+        chunk = transformer.read();
+        assertThat(chunk.getFailure(), sameInstance(originalFailure2));
+        assertThat(chunk.isLast(), is(false));
+        assertEquals('E', (char)transformer.read().getByteBuffer().get());
+        chunk = transformer.read();
+        assertThat(chunk.hasRemaining(), is(false));
+        assertThat(chunk.isLast(), is(true));
+        assertThat(Content.Chunk.isFailure(chunk), is(false));
+
+        chunk = originalSource.read();
+        assertThat(chunk.isLast(), is(true));
+        assertThat(chunk.hasRemaining(), is(false));
+        assertThat(Content.Chunk.isFailure(chunk), is(false));
     }
 
     private static class WordSplitLowCaseTransformer extends ContentSourceTransformer
