@@ -57,13 +57,15 @@ We recommend either the traditional link:{DISTGUIDE}[distribution] deployment ap
 [[get-up-and-running]]
 ==== Get Up and Running
 
-First, add `jetty-maven-plugin` to your `pom.xml` definition:
+Since Jetty 12, Jetty Maven plugin is repackaged for corresponding Jakarta EE version with an `eeX` classifier in the groupId and artifactId. The `eeX` can be `ee8`,`ee9` or `ee10`, which stands for Jakarta EE 8, 9 and 10 respectively.
+
+First, add `jetty-ee10-maven-plugin` to your `pom.xml` definition. Here's an example of how to do that for EE10:
 
 [source,xml,subs="verbatim,attributes"]
 ----
 <plugin>
-  <groupId>org.eclipse.jetty</groupId>
-  <artifactId>jetty-maven-plugin</artifactId>
+  <groupId>org.eclipse.jetty.ee10</groupId>
+  <artifactId>jetty-ee10-maven-plugin</artifactId>
   <version>{version}</version>
 </plugin>
 ----
@@ -323,8 +325,8 @@ Here is an example, which turns on scanning for changes every ten seconds, and s
 [source,xml,subs="verbatim,attributes"]
 ----
 <plugin>
-  <groupId>org.eclipse.jetty</groupId>
-  <artifactId>jetty-maven-plugin</artifactId>
+  <groupId>org.eclipse.jetty.ee10</groupId>
+  <artifactId>jetty-ee10-maven-plugin</artifactId>
   <version>{version}</version>
   <configuration>
     <scan>10</scan>
@@ -421,8 +423,8 @@ Here is an example of a pom configuration for the plugin with the `run` goal:
   <plugins>
     ...
     <plugin>
-      <groupId>org.eclipse.jetty</groupId>
-      <artifactId>jetty-maven-plugin</artifactId>
+      <groupId>org.eclipse.jetty.ee10</groupId>
+      <artifactId>jetty-ee10-maven-plugin</artifactId>
       <version>{version}</version>
       <configuration>
         <webApp>
@@ -532,8 +534,8 @@ Here's an example of using the `pre-integration-test` and `post-integration-test
 [source,xml,subs="verbatim,attributes"]
 ----
 <plugin>
-  <groupId>org.eclipse.jetty</groupId>
-  <artifactId>jetty-maven-plugin</artifactId>
+  <groupId>org.eclipse.jetty.ee10</groupId>
+  <artifactId>jetty-ee10-maven-plugin</artifactId>
   <version>{version}</version>
   <configuration>
     <stopKey>foo</stopKey>
@@ -724,8 +726,8 @@ Here's a configuration example:
 [source,xml,subs="verbatim,attributes"]
 ----
 <plugin>
-  <groupId>org.eclipse.jetty</groupId>
-  <artifactId>jetty-maven-plugin</artifactId>
+  <groupId>org.eclipse.jetty.ee10</groupId>
+  <artifactId>jetty-ee10-maven-plugin</artifactId>
   <version>{version}</version>
   <configuration>
     <stopPort>9966</stopPort>
@@ -890,7 +892,7 @@ They are configured for the http://maven.apache.org/plugins/maven-war-plugin/ove
 
 Then executing jetty:run would yield the following ordering of resources: `com.acme.X.war : com.acme.Y.war: ${project.basedir}/src/main/webapp`.
 Note that the current project's resources are placed last in the ordering due to the empty <overlay/> element in the maven-war-plugin.
-You can either use that, or specify the `<baseAppFirst>false</baseAppFirst>` parameter to the jetty-maven-plugin.
+You can either use that, or specify the `<baseAppFirst>false</baseAppFirst>` parameter to the jetty-ee10-maven-plugin.
 
 Moreover, due to the `exclusions` specified above, a request for the resource ` bar.jsp` would only be satisfied from `com.acme.Y.war.`
 Similarly as `baz.jsp` is excluded, a request for it would result in a 404 error.
@@ -953,8 +955,8 @@ Here's an example of setting up the HashLoginService for a webapp:
 [source,xml,subs="verbatim,attributes"]
 ----
 <plugin>
-  <groupId>org.eclipse.jetty</groupId>
-  <artifactId>jetty-maven-plugin</artifactId>
+  <groupId>org.eclipse.jetty.ee10</groupId>
+  <artifactId>jetty-ee10-maven-plugin</artifactId>
   <version>{version}</version>
   <configuration>
     <scan>10</scan>
@@ -1007,8 +1009,8 @@ Putting the configuration in webapp A's `pom.xml`:
 [source,xml,subs="verbatim,attributes"]
 ----
 <plugin>
-  <groupId>org.eclipse.jetty</groupId>
-  <artifactId>jetty-maven-plugin</artifactId>
+  <groupId>org.eclipse.jetty.ee10</groupId>
+  <artifactId>jetty-ee10-maven-plugin</artifactId>
   <version>{version}</version>
   <configuration>
     <scan>10</scan>
@@ -1016,11 +1018,11 @@ Putting the configuration in webapp A's `pom.xml`:
       <contextPath>/test</contextPath>
     </webApp>
     <contextHandlers>
-      <contextHandler implementation="org.eclipse.jetty.maven.plugin.MavenWebAppContext">
+      <contextHandler implementation="org.eclipse.jetty.ee10.maven.plugin.MavenWebAppContext">
         <war>${project.basedir}../../B.war</war>
         <contextPath>/B</contextPath>
       </contextHandler>
-      <contextHandler implementation="org.eclipse.jetty.maven.plugin.MavenWebAppContext">
+      <contextHandler implementation="org.eclipse.jetty.ee10.maven.plugin.MavenWebAppContext">
         <war>${project.basedir}../../C.war</war>
         <contextPath>/C</contextPath>
       </contextHandler>
@@ -1031,7 +1033,7 @@ Putting the configuration in webapp A's `pom.xml`:
 
 [IMPORTANT]
 ====
-If the `ContextHandler` you are deploying is a webapp, it is *essential* that you use an `org.eclipse.jetty.maven.plugin.MavenWebAppContext` instance rather than a standard `org.eclipse.jetty.ee9.webapp.WebAppContext` instance.
+If the `ContextHandler` you are deploying is a webapp, it is *essential* that you use an `org.eclipse.jetty.ee10.maven.plugin.MavenWebAppContext` instance rather than a standard `org.eclipse.jetty.ee10.webapp.WebAppContext` instance.
 Only the former will allow the webapp to function correctly in the maven environment.
 ====
 
@@ -1043,7 +1045,7 @@ Copy the `jetty.xml` file from the Jetty distribution, and then add WebAppContex
 <Ref refid="Contexts">
   <Call name="addHandler">
     <Arg>
-      <New class="org.eclipse.jetty.maven.plugin.MavenWebAppContext">
+      <New class="org.eclipse.jetty.ee10.maven.plugin.MavenWebAppContext">
         <Set name="contextPath">/B</Set>
         <Set name="war">../../B.war</Set>
       </New>
@@ -1051,7 +1053,7 @@ Copy the `jetty.xml` file from the Jetty distribution, and then add WebAppContex
   </Call>
   <Call>
     <Arg>
-      <New class="org.eclipse.jetty.maven.plugin.MavenWebAppContext">
+      <New class="org.eclipse.jetty.ee10.maven.plugin.MavenWebAppContext">
         <Set name="contextPath">/C</Set>
         <Set name="war">../../C.war</Set>
       </New>
@@ -1065,8 +1067,8 @@ Then configure the location of this `jetty.xml` file into webapp A's jetty plugi
 [source,xml,subs="verbatim,attributes"]
 ----
 <plugin>
-  <groupId>org.eclipse.jetty</groupId>
-  <artifactId>jetty-maven-plugin</artifactId>
+  <groupId>org.eclipse.jetty.ee10</groupId>
+  <artifactId>jetty-ee10-maven-plugin</artifactId>
   <version>{version}</version>
   <configuration>
     <scan>10</scan>
@@ -1127,8 +1129,8 @@ Here's an example of how to specify System properties in the POM:
 [source,xml]
 ----
 <plugin>
-  <groupId>org.eclipse.jetty</groupId>
-  <artifactId>jetty-maven-plugin</artifactId>
+  <groupId>org.eclipse.jetty.ee10</groupId>
+  <artifactId>jetty-ee10-maven-plugin</artifactId>
   <configuration>
     <systemProperties>
         <fooprop>222</fooprop>
@@ -1157,8 +1159,8 @@ This can be configured on the plugin like so:
 [source,xml]
 ----
 <plugin>
-  <groupId>org.eclipse.jetty</groupId>
-  <artifactId>jetty-maven-plugin</artifactId>
+  <groupId>org.eclipse.jetty.ee10</groupId>
+  <artifactId>jetty-ee10-maven-plugin</artifactId>
   <configuration>
     <systemPropertiesFile>${project.basedir}/mysys.props</systemPropertiesFile>
     <webApp>
