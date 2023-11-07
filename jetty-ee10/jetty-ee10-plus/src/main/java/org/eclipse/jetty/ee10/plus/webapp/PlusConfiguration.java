@@ -27,7 +27,7 @@ import org.eclipse.jetty.ee10.webapp.JettyWebXmlConfiguration;
 import org.eclipse.jetty.ee10.webapp.MetaInfConfiguration;
 import org.eclipse.jetty.ee10.webapp.WebAppContext;
 import org.eclipse.jetty.ee10.webapp.WebXmlConfiguration;
-import org.eclipse.jetty.jndi.NamingContext;
+import org.eclipse.jetty.plus.jndi.NamingContext;
 import org.eclipse.jetty.util.NanoTime;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
