@@ -62,6 +62,12 @@
     <dependency>
       <groupId>org.eclipse.jetty.ee9</groupId>
       <artifactId>jetty-ee9-plus</artifactId>
+      <exclusions>
+        <exclusion>
+          <groupId>jakarta.el</groupId>
+          <artifactId>jakarta.el-api</artifactId>
+        </exclusion>
+      </exclusions>
     </dependency>
     <dependency>
       <groupId>org.eclipse.jetty.ee9</groupId>
@@ -85,15 +91,6 @@
       <version>${project.version}</version>
       <type>war</type>
     </dependency>
-    <!-- sounds cyclic -->
-    <!--
-    <dependency>
-      <groupId>org.eclipse.jetty</groupId>
-      <artifactId>jetty-home</artifactId>
-      <type>zip</type>
-      <scope>test</scope>
-    </dependency>
-    -->
     <dependency>
       <groupId>org.eclipse.jetty.ee9.demos</groupId>
       <artifactId>jetty-ee9-demo-jndi-webapp</artifactId>
