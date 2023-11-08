@@ -164,7 +164,9 @@ For more information about the configuration of the `ssl-reload` Jetty module, s
 [[og-protocols-ssl-conscrypt]]
 ===== Using Conscrypt as SSL/TLS Provider
 
-By default, the standard TLS provider that comes with the JDK is used.
+If not explicitly configured, the TLS implementation is provided by the JDK you are using at runtime.
+
+OpenJDK's vendors may replace the default TLS provider with their own, but you can also explicitly configure an alternative TLS provider.
 
 The standard TLS provider from OpenJDK is implemented in Java (no native code), and its performance is not optimal, both in CPU usage and memory usage.
 
