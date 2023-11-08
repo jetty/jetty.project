@@ -14,7 +14,7 @@
     </Arg>
   </New>
 
-  <New id="maxAmount" class="org.eclipse.jetty.ee10.plus.jndi.EnvEntry">
+  <New id="maxAmount" class="org.eclipse.jetty.plus.jndi.EnvEntry">
     <Arg>
       <Ref refid='wac' />
     </Arg>
@@ -23,7 +23,7 @@
     <Arg type="boolean">true</Arg>
   </New>
 
-  <New id="mydatasource" class="org.eclipse.jetty.ee10.plus.jndi.Resource">
+  <New id="mydatasource" class="org.eclipse.jetty.plus.jndi.Resource">
     <Arg><Ref refid='wac'/></Arg>
     <Arg>jdbc/mydatasource</Arg>
     <Arg>

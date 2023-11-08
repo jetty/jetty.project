@@ -33,6 +33,12 @@
     <dependency>
       <groupId>org.infinispan</groupId>
       <artifactId>infinispan-client-hotrod</artifactId>
+      <exclusions>
+        <exclusion>
+          <groupId>org.wildfly.security</groupId>
+          <artifactId>wildfly-elytron</artifactId>
+        </exclusion>
+      </exclusions>
     </dependency>
     <dependency>
       <groupId>org.infinispan</groupId>

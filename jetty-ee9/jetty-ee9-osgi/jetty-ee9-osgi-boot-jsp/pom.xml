@@ -40,6 +40,12 @@
       <groupId>org.eclipse.jetty.ee9.osgi</groupId>
       <artifactId>jetty-ee9-osgi-boot</artifactId>
       <scope>provided</scope>
+      <exclusions>
+        <exclusion>
+          <groupId>jakarta.el</groupId>
+          <artifactId>jakarta.el-api</artifactId>
+        </exclusion>
+      </exclusions>
     </dependency>
   </dependencies>
 

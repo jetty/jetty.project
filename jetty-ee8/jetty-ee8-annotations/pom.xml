@@ -22,6 +22,10 @@
       <artifactId>jakarta.annotation-api</artifactId>
     </dependency>
     <dependency>
+      <groupId>org.eclipse.jetty</groupId>
+      <artifactId>jetty-plus</artifactId>
+    </dependency>
+    <dependency>
       <groupId>org.eclipse.jetty.ee8</groupId>
       <artifactId>jetty-ee8-plus</artifactId>
     </dependency>
