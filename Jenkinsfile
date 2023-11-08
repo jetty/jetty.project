@@ -34,7 +34,7 @@ pipeline {
               recordIssues id: "jdk17", name: "Static Analysis jdk17", aggregatingResults: true, enabledForFailure: true,
                             tools: [mavenConsole(), java(), checkStyle(), errorProne(), spotBugs(), javaDoc()],
                             skipPublishingChecks: true, blameDisabled: true
-              recordCoverage(id: "coverage-jdk17", tools: [[parser: 'JACOCO']], sourceCodeRetention: 'MODIFIED', sourceDirectories: [[path: 'src/main/java'], [path: 'target/generated-sources/ee8']])
+              recordCoverage(name: "Coverage jdk17", id: "coverage-jdk17", tools: [[parser: 'JACOCO']], sourceCodeRetention: 'MODIFIED', sourceDirectories: [[path: 'src/main/java'], [path: 'target/generated-sources/ee8']])
             }
           }
         }
