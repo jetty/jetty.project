@@ -18,8 +18,8 @@ import javax.naming.NamingException;
 import jakarta.annotation.Resource;
 import jakarta.annotation.Resources;
 import org.eclipse.jetty.ee9.annotations.AnnotationIntrospector.AbstractIntrospectableAnnotationHandler;
-import org.eclipse.jetty.ee9.plus.jndi.NamingEntryUtil;
 import org.eclipse.jetty.ee9.webapp.WebAppContext;
+import org.eclipse.jetty.plus.jndi.NamingEntryUtil;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
