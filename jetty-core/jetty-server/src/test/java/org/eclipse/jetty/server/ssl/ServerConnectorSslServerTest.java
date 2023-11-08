@@ -56,6 +56,7 @@ import static org.hamcrest.Matchers.emptyOrNullString;
 import static org.hamcrest.Matchers.is;
 import static org.hamcrest.Matchers.not;
 import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertNotNull;
 
 /**
  * HttpServer Tester for SSL based ServerConnector
@@ -223,21 +224,21 @@ public class ServerConnectorSslServerTest extends HttpServerTestBase
         {
             response.setStatus(200);
             assertThat(request.getAttributeNameSet(), containsInAnyOrder(
-                SecureRequestCustomizer.SSL_SESSION_ATTRIBUTE,
-                SecureRequestCustomizer.SSL_SESSION_DATA_ATTRIBUTE,
+                EndPoint.SslSessionData.ATTRIBUTE,
                 SecureRequestCustomizer.X509_ATTRIBUTE));
 
             StringBuilder out = new StringBuilder();
-            SSLSession session = (SSLSession)request.getAttribute(SecureRequestCustomizer.SSL_SESSION_ATTRIBUTE);
             EndPoint.SslSessionData data = (EndPoint.SslSessionData)request.getAttribute(EndPoint.SslSessionData.ATTRIBUTE);
+            assertNotNull(data);
+            SSLSession session = data.sslSession();
 
             out.append("Hello world").append('\n');
             out.append("scheme='").append(request.getHttpURI().getScheme()).append("'").append('\n');
             out.append("isSecure='").append(request.isSecure()).append("'").append('\n');
-            out.append("X509Certificate='").append(data == null ? "" : (data.peerCertificates() != null)).append("'").append('\n');
+            out.append("X509Certificate='").append(data.peerCertificates() != null).append("'").append('\n');
             out.append("cipher_suite='").append(session == null ? "" : session.getCipherSuite()).append("'").append('\n');
-            out.append("key_size='").append(data == null ? "" : data.keySize()).append("'").append('\n');
-            out.append("ssl_session_id='").append(data == null ? "" : data.sslSessionId()).append("'").append('\n');
+            out.append("key_size='").append(data.keySize()).append("'").append('\n');
+            out.append("ssl_session_id='").append(data.sslSessionId()).append("'").append('\n');
             out.append("ssl_session='").append(session).append("'").append('\n');
 
             Content.Sink.write(response, true, out.toString(), callback);

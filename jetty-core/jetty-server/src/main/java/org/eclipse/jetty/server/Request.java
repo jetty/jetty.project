@@ -1067,12 +1067,17 @@ public interface Request extends Attributes, Content.Source
     }
 
     /**
-     * A {@link Request.Wrapper} that also wraps the request {@link Attributes}
+     * <p>A {@link Request.Wrapper} that separately provides the request {@link Attributes}.</p>
+     * <p>The provided {@link Attributes} should be an {@link Attributes.Wrapper} over the request.</p>
      */
     class AttributesWrapper extends Wrapper
     {
         private final Attributes _attributes;
 
+        /**
+         * @param wrapped the request to wrap
+         * @param attributes the provided request attributes, typically a {@link Attributes.Wrapper} over the request
+         */
         public AttributesWrapper(Request wrapped, Attributes attributes)
         {
             super(wrapped);

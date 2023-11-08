@@ -37,8 +37,7 @@ import org.slf4j.LoggerFactory;
  * and makes them available via {@link Request#getAttribute(String)}
  * using the names:
  * <ul>
- *     <li>{@link #SSL_SESSION_ATTRIBUTE} for the {@link SSLSession} itself</li>
- *     <li>{@link EndPoint.SslSessionData#ATTRIBUTE} for {@link SSLSession} metadata</li>
+ *     <li>{@link EndPoint.SslSessionData#ATTRIBUTE} for {@link EndPoint.SslSessionData}</li>
  *     <li>{@link #X509_ATTRIBUTE} for the local certificate as a {@link X509} instance</li>
  * </ul>
  * @see EndPoint.SslSessionData
@@ -46,8 +45,6 @@ import org.slf4j.LoggerFactory;
 public class SecureRequestCustomizer implements HttpConfiguration.Customizer
 {
     public static final String X509_ATTRIBUTE = "org.eclipse.jetty.server.x509";
-    public static final String SSL_SESSION_ATTRIBUTE = "org.eclipse.jetty.server.SslSession";
-    public static final String SSL_SESSION_DATA_ATTRIBUTE = EndPoint.SslSessionData.ATTRIBUTE;
 
     private static final Logger LOG = LoggerFactory.getLogger(SecureRequestCustomizer.class);
 
@@ -212,24 +209,6 @@ public class SecureRequestCustomizer implements HttpConfiguration.Customizer
         return new SecureRequestWithSslSessionData(request, sslSessionData);
     }
 
-    @Deprecated
-    public void setSslSessionAttribute(String attribute)
-    {
-        throw new UnsupportedOperationException();
-    }
-
-    @Deprecated
-    public String getSslSessionAttribute()
-    {
-        return SSL_SESSION_ATTRIBUTE;
-    }
-
-    @Deprecated
-    public String getSslSessionDataAttribute()
-    {
-        return EndPoint.SslSessionData.ATTRIBUTE;
-    }
-
     protected void checkSni(Request request, SSLSession session)
     {
         if (isSniRequired() || isSniHostCheck())
@@ -288,7 +267,6 @@ public class SecureRequestCustomizer implements HttpConfiguration.Customizer
     protected class SecureRequestWithSslSessionData extends Request.AttributesWrapper
     {
         private static final Set<String> ATTRIBUTES = Set.of(
-            SSL_SESSION_ATTRIBUTE,
             EndPoint.SslSessionData.ATTRIBUTE,
             X509_ATTRIBUTE
         );
@@ -302,7 +280,6 @@ public class SecureRequestCustomizer implements HttpConfiguration.Customizer
                 {
                     return switch (name)
                     {
-                        case SSL_SESSION_ATTRIBUTE -> sslSessionData.sslSession();
                         case EndPoint.SslSessionData.ATTRIBUTE -> sslSessionData;
                         case X509_ATTRIBUTE -> getX509(sslSessionData.sslSession());
                         default -> null;
