@@ -88,12 +88,14 @@ include::../../{doc_code}/org/eclipse/jetty/docs/programming/server/http/HTTPSer
 [[pg-server-http-connector-protocol-http11-tls]]
 ====== Encrypted HTTP/1.1 (https)
 
-Supporting encrypted HTTP/1.1 (that is, requests with the `https` scheme) is supported by configuring an `SslContextFactory` that has access to the keyStore containing the private server key and public server certificate, in this way:
+Supporting encrypted HTTP/1.1 (that is, requests with the `https` scheme) is supported by configuring an `SslContextFactory` that has access to the KeyStore containing the private server key and public server certificate, in this way:
 
 [source,java,indent=0]
 ----
 include::../../{doc_code}/org/eclipse/jetty/docs/programming/server/http/HTTPServerDocs.java[tags=tlsHttp11]
 ----
+
+You can customize the SSL/TLS provider as explained in xref:pg-server-http-connector-protocol-tls-conscrypt[this section].
 
 [[pg-server-http-connector-protocol-http2]]
 ====== Clear-Text HTTP/2
@@ -139,6 +141,8 @@ The fact that the HTTP/2 protocol comes before the HTTP/1.1 protocol indicates t
 
 Note also that the default protocol set in the ALPN ``ConnectionFactory``, which is used in case ALPN is not supported by the client, is HTTP/1.1 -- if the client does not support ALPN is probably an old client so HTTP/1.1 is the safest choice.
 
+You can customize the SSL/TLS provider as explained in xref:pg-server-http-connector-protocol-tls-conscrypt[this section].
+
 [[pg-server-http-connector-protocol-http3]]
 ====== HTTP/3
 
@@ -182,6 +186,28 @@ To setup HTTP/3, for example on port `843`, you need the following code (some of
 [source,java,indent=0]
 ----
 include::../../{doc_code}/org/eclipse/jetty/docs/programming/server/http/HTTPServerDocs.java[tags=h3]
+----
+
+[[pg-server-http-connector-protocol-tls-conscrypt]]
+====== Using Conscrypt as SSL/TLS Provider
+
+If not explicitly configured, the TLS implementation is provided by the JDK you are using at runtime.
+
+OpenJDK's vendors may replace the default TLS provider with their own, but you can also explicitly configure an alternative TLS provider.
+
+The standard TLS provider from OpenJDK is implemented in Java (no native code), and its performance is not optimal, both in CPU usage and memory usage.
+
+A faster alternative, implemented natively, is Google's link:https://github.com/google/conscrypt/[Conscrypt], which is built on link:https://boringssl.googlesource.com/boringssl/[BoringSSL], which is Google's fork of link:https://www.openssl.org/[OpenSSL].
+
+CAUTION: As Conscrypt eventually binds to a native library, there is a higher risk that a bug in Conscrypt or in the native library causes a JVM crash, while the Java implementation will not cause a JVM crash.
+
+To use Conscrypt as TLS provider, you must have the Conscrypt jar and the Jetty dependency `jetty-alpn-conscrypt-server-{version}.jar` in the class-path or module-path.
+
+Then, you must configure the JDK with the Conscrypt provider, and configure Jetty to use the Conscrypt provider, in this way:
+
+[source,java,indent=0]
+----
+include::../../{doc_code}/org/eclipse/jetty/docs/programming/server/http/HTTPServerDocs.java[tags=conscrypt]
 ----
 
 [[pg-server-http-connector-protocol-proxy-http11]]
