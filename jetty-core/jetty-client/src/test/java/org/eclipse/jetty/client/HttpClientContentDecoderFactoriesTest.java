@@ -55,9 +55,6 @@ public class HttpClientContentDecoderFactoriesTest extends AbstractHttpClientSer
             {
                 return byteBuffer ->
                 {
-                    if (!byteBuffer.hasRemaining())
-                        return null;
-
                     byte b = byteBuffer.get();
                     if (b == '*')
                         return bufferPool.acquire(0, true);
@@ -100,8 +97,6 @@ public class HttpClientContentDecoderFactoriesTest extends AbstractHttpClientSer
             {
                 return byteBuffer ->
                 {
-                    if (!byteBuffer.hasRemaining())
-                        return null;
                     String uppercase = US_ASCII.decode(byteBuffer).toString();
                     String lowercase = StringUtil.asciiToLowerCase(uppercase);
                     return RetainableByteBuffer.wrap(ByteBuffer.wrap(lowercase.getBytes(US_ASCII)));

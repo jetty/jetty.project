@@ -621,12 +621,11 @@ public abstract class HttpReceiver
                     }
                     else
                     {
-                        // User-code returned a zero-byte decodedBuffer, replace it with EMPTY as
+                        // User-code returned a zero-byte decodedBuffer, release it now as
                         // all internal code assumes an empty buffer doesn't need to be released.
                         if (LOG.isDebugEnabled())
                             LOG.debug("returning empty decoded content");
                         decodedBuffer.release();
-                        return Content.Chunk.EMPTY;
                     }
                 }
 

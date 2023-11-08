@@ -45,8 +45,7 @@ public interface ContentDecoder
      * {@link RetainableByteBuffer#release()} by the code that called this method.</p>
      *
      * @param buffer the buffer containing encoded bytes
-     * @return a buffer containing decoded bytes or null if there is nothing more
-     * to be decoded from the given buffer
+     * @return a buffer containing decoded bytes
      */
     public abstract RetainableByteBuffer decode(ByteBuffer buffer);
 
