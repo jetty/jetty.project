@@ -11,13 +11,16 @@
 // ========================================================================
 //
 
-package org.eclipse.jetty.io;
+package org.eclipse.jetty.io.internal;
 
 import java.nio.ByteBuffer;
+import java.util.List;
 import java.util.concurrent.ExecutionException;
 import java.util.concurrent.TimeoutException;
 
-import org.eclipse.jetty.io.internal.ContentSourceConsumer;
+import org.eclipse.jetty.io.Content;
+import org.eclipse.jetty.io.TestSink;
+import org.eclipse.jetty.io.TestSource;
 import org.eclipse.jetty.util.Callback;
 import org.junit.jupiter.api.Test;
 
@@ -25,7 +28,7 @@ import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.Matchers.is;
 import static org.hamcrest.Matchers.sameInstance;
 
-public class ContentSourceConsumerTest
+public class ContentCopierTest
 {
     @Test
     public void testTransientErrorsBecomeTerminalErrors() throws Exception
@@ -41,8 +44,9 @@ public class ContentSourceConsumerTest
         );
 
         Callback.Completable callback = new Callback.Completable();
-        ContentSourceConsumer contentSourceConsumer = new ContentSourceConsumer(originalSource, callback);
-        contentSourceConsumer.run();
+        TestSink resultSink = new TestSink();
+        ContentCopier contentCopier = new ContentCopier(originalSource, resultSink, null, callback);
+        contentCopier.iterate();
         try
         {
             callback.get();
@@ -51,6 +55,11 @@ public class ContentSourceConsumerTest
         {
             assertThat(e.getCause(), sameInstance(originalFailure));
         }
+
+        List<Content.Chunk> accumulatedChunks = resultSink.takeAccumulatedChunks();
+        assertThat(accumulatedChunks.size(), is(1));
+        assertThat(accumulatedChunks.get(0).isLast(), is(false));
+        assertThat(accumulatedChunks.get(0).getByteBuffer().get(), is((byte)1));
 
         Content.Chunk chunk = originalSource.read();
         assertThat(chunk.isLast(), is(true));

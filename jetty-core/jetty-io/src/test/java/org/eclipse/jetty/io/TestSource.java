@@ -19,7 +19,7 @@ import java.util.List;
 import java.util.Queue;
 import java.util.concurrent.ConcurrentLinkedQueue;
 
-class TestSource implements Content.Source
+public class TestSource implements Content.Source
 {
     private static final Content.Chunk SPURIOUS_WAKEUP = new Content.Chunk()
     {
