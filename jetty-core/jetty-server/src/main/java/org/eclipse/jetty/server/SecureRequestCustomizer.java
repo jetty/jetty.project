@@ -15,7 +15,6 @@ package org.eclipse.jetty.server;
 
 import java.security.cert.Certificate;
 import java.security.cert.X509Certificate;
-import java.util.Objects;
 import java.util.Set;
 import java.util.concurrent.TimeUnit;
 import javax.net.ssl.SSLContext;
@@ -27,7 +26,6 @@ import org.eclipse.jetty.http.HttpFields;
 import org.eclipse.jetty.http.HttpHeader;
 import org.eclipse.jetty.http.PreEncodedHttpField;
 import org.eclipse.jetty.io.EndPoint;
-import org.eclipse.jetty.util.Attributes;
 import org.eclipse.jetty.util.annotation.Name;
 import org.eclipse.jetty.util.ssl.SslContextFactory;
 import org.eclipse.jetty.util.ssl.X509;
@@ -51,27 +49,6 @@ public class SecureRequestCustomizer implements HttpConfiguration.Customizer
     public static final String SSL_SESSION_ATTRIBUTE = "org.eclipse.jetty.server.SslSession";
     public static final String SSL_SESSION_DATA_ATTRIBUTE = EndPoint.SslSessionData.ATTRIBUTE;
 
-    /**
-     * @deprecated use {@link EndPoint.SslSessionData#ATTRIBUTE} attribute with {@link EndPoint.SslSessionData#cipherSuite()}
-     */
-    @Deprecated(forRemoval = true)
-    public static final String CIPHER_SUITE_ATTRIBUTE = "org.eclipse.jetty.server.cipher";
-    /**
-     * @deprecated use {@link EndPoint.SslSessionData#ATTRIBUTE} attribute with {@link EndPoint.SslSessionData#keySize()}
-     */
-    @Deprecated(forRemoval = true)
-    public static final String KEY_SIZE_ATTRIBUTE = "org.eclipse.jetty.server.keySize";
-    /**
-     * @deprecated use {@link EndPoint.SslSessionData#ATTRIBUTE} attribute with {@link EndPoint.SslSessionData#sslSessionId()}
-     */
-    @Deprecated(forRemoval = true)
-    public static final String SSL_SESSION_ID_ATTRIBUTE = "org.eclipse.jetty.server.sslSessionId";
-    /**
-     * @deprecated use {@link EndPoint.SslSessionData#ATTRIBUTE} attribute with {@link EndPoint.SslSessionData#peerCertificates()}
-     */
-    @Deprecated(forRemoval = true)
-    public static final String PEER_CERTIFICATES_ATTRIBUTE = "org.eclipse.jetty.server.peerCertificates";
-
     private static final Logger LOG = LoggerFactory.getLogger(SecureRequestCustomizer.class);
 
     private boolean _sniRequired;
@@ -79,7 +56,6 @@ public class SecureRequestCustomizer implements HttpConfiguration.Customizer
     private long _stsMaxAge;
     private boolean _stsIncludeSubDomains;
     private HttpField _stsField;
-    private final boolean _legacyAttributes;
 
     public SecureRequestCustomizer()
     {
@@ -116,29 +92,10 @@ public class SecureRequestCustomizer implements HttpConfiguration.Customizer
         @Name("stsMaxAgeSeconds") long stsMaxAgeSeconds,
         @Name("stsIncludeSubdomains") boolean stsIncludeSubdomains)
     {
-        this(sniRequired, sniHostCheck, stsMaxAgeSeconds, stsIncludeSubdomains, true);
-    }
-
-    /**
-     * @param sniRequired True if a SNI certificate is required.
-     * @param sniHostCheck True if the SNI Host name must match.
-     * @param stsMaxAgeSeconds The max age in seconds for a Strict-Transport-Security response header. If set less than zero then no header is sent.
-     * @param stsIncludeSubdomains If true, a include subdomain property is sent with any Strict-Transport-Security header
-     * @param legacyAttributes If true, the deprecated legacy attributes are supported.
-     */
-    @Deprecated(forRemoval = true)
-    public SecureRequestCustomizer(
-        @Name("sniRequired") boolean sniRequired,
-        @Name("sniHostCheck") boolean sniHostCheck,
-        @Name("stsMaxAgeSeconds") long stsMaxAgeSeconds,
-        @Name("stsIncludeSubdomains") boolean stsIncludeSubdomains,
-        boolean legacyAttributes)
-    {
         _sniRequired = sniRequired;
         _sniHostCheck = sniHostCheck;
         _stsMaxAge = stsMaxAgeSeconds;
         _stsIncludeSubDomains = stsIncludeSubdomains;
-        _legacyAttributes = legacyAttributes;
         formatSTS();
     }
 
@@ -252,7 +209,7 @@ public class SecureRequestCustomizer implements HttpConfiguration.Customizer
     {
         if (sslSessionData.sslSession() != null)
             checkSni(request, sslSessionData.sslSession());
-        return new SecureRequestWithSslSessionData(request, sslSessionData, _legacyAttributes);
+        return new SecureRequestWithSslSessionData(request, sslSessionData);
     }
 
     @Deprecated
@@ -328,39 +285,26 @@ public class SecureRequestCustomizer implements HttpConfiguration.Customizer
         }
     }
 
-    protected class SecureRequestWithSslSessionData extends SecureRequest
+    protected class SecureRequestWithSslSessionData extends Request.AttributesWrapper
     {
         private static final Set<String> ATTRIBUTES = Set.of(
             SSL_SESSION_ATTRIBUTE,
             EndPoint.SslSessionData.ATTRIBUTE,
-            X509_ATTRIBUTE,
-            CIPHER_SUITE_ATTRIBUTE,
-            KEY_SIZE_ATTRIBUTE,
-            SSL_SESSION_ID_ATTRIBUTE,
-            PEER_CERTIFICATES_ATTRIBUTE
+            X509_ATTRIBUTE
         );
 
-        private final Attributes.Synthetic _secureAttributes;
-        private final EndPoint.SslSessionData _sslSessionData;
-
-        protected SecureRequestWithSslSessionData(Request request, EndPoint.SslSessionData sslSessionData, boolean legacyAttributes)
+        protected SecureRequestWithSslSessionData(Request request, EndPoint.SslSessionData sslSessionData)
         {
-            super(request);
-            _sslSessionData = Objects.requireNonNull(sslSessionData);
-            _secureAttributes = new Synthetic(request)
+            super(request, new Synthetic(request)
             {
                 @Override
                 protected Object getSyntheticAttribute(String name)
                 {
                     return switch (name)
                     {
-                        case SSL_SESSION_ATTRIBUTE -> _sslSessionData.sslSession();
-                        case EndPoint.SslSessionData.ATTRIBUTE -> _sslSessionData;
-                        case X509_ATTRIBUTE -> getX509(_sslSessionData.sslSession());
-                        case CIPHER_SUITE_ATTRIBUTE -> legacyAttributes ? sslSessionData.cipherSuite() : null;
-                        case KEY_SIZE_ATTRIBUTE -> legacyAttributes ? sslSessionData.keySize() : null;
-                        case SSL_SESSION_ID_ATTRIBUTE -> legacyAttributes ? sslSessionData.sslSessionId() : null;
-                        case PEER_CERTIFICATES_ATTRIBUTE -> legacyAttributes ? sslSessionData.peerCertificates() : null;
+                        case SSL_SESSION_ATTRIBUTE -> sslSessionData.sslSession();
+                        case EndPoint.SslSessionData.ATTRIBUTE -> sslSessionData;
+                        case X509_ATTRIBUTE -> getX509(sslSessionData.sslSession());
                         default -> null;
                     };
                 }
@@ -370,37 +314,13 @@ public class SecureRequestCustomizer implements HttpConfiguration.Customizer
                 {
                     return ATTRIBUTES;
                 }
-            };
+            });
         }
 
         @Override
-        public Object removeAttribute(String name)
+        public boolean isSecure()
         {
-            return _secureAttributes.removeAttribute(name);
-        }
-
-        @Override
-        public Object setAttribute(String name, Object attribute)
-        {
-            return _secureAttributes.setAttribute(name, attribute);
-        }
-
-        @Override
-        public Object getAttribute(String name)
-        {
-            return _secureAttributes.getAttribute(name);
-        }
-
-        @Override
-        public Set<String> getAttributeNameSet()
-        {
-            return _secureAttributes.getAttributeNameSet();
-        }
-
-        @Override
-        public void clearAttributes()
-        {
-            _secureAttributes.clearAttributes();
+            return true;
         }
     }
 }

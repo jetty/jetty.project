@@ -144,7 +144,7 @@ public class ProxyProtocolTest
                 EndPoint endPoint = request.getConnectionMetaData().getConnection().getEndPoint();
                 assertThat(endPoint, instanceOf(ProxyConnectionFactory.ProxyEndPoint.class));
                 ProxyConnectionFactory.ProxyEndPoint proxyEndPoint = (ProxyConnectionFactory.ProxyEndPoint)endPoint;
-                assertNotNull(proxyEndPoint.getTLSVersion());
+                assertNotNull(proxyEndPoint.getSslSessionData());
                 callback.succeeded();
                 return true;
             }
@@ -196,7 +196,6 @@ public class ProxyProtocolTest
                 EndPoint endPoint = request.getConnectionMetaData().getConnection().getEndPoint();
                 assertThat(endPoint, instanceOf(ProxyConnectionFactory.ProxyEndPoint.class));
                 ProxyConnectionFactory.ProxyEndPoint proxyEndPoint = (ProxyConnectionFactory.ProxyEndPoint)endPoint;
-                assertNotNull(proxyEndPoint.getTLSVersion());
                 EndPoint.SslSessionData sslSessionData = proxyEndPoint.getSslSessionData();
                 assertThat(sslSessionData, notNullValue());
                 assertThat(sslSessionData.cipherSuite(), equalTo("TEST_128_XYZ"));

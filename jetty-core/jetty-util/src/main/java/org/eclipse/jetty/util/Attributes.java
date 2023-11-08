@@ -16,7 +16,6 @@ package org.eclipse.jetty.util;
 import java.io.IOException;
 import java.util.AbstractMap;
 import java.util.AbstractSet;
-import java.util.Collection;
 import java.util.Collections;
 import java.util.HashMap;
 import java.util.HashSet;
@@ -123,6 +122,12 @@ public interface Attributes
             removeAttribute(name);
     }
 
+    @Override
+    int hashCode();
+
+    @Override
+    boolean equals(Object o);
+
     /** Unwrap all  {@link Wrapper}s of the attributes
      * @param attributes The attributes to unwrap, which may be a  {@link Wrapper}.
      * @return The core attributes
@@ -138,9 +143,9 @@ public interface Attributes
 
     static int hashCode(Attributes attributes)
     {
-        int hash = 113;
+        int hash = 0;
         for (String name : attributes.getAttributeNameSet())
-            hash += name.hashCode() ^ attributes.getAttribute(name).hashCode();
+            hash = hash * 31 + Objects.hash(name, attributes.getAttribute(name));
         return hash;
     }
 
@@ -250,7 +255,6 @@ public interface Attributes
      */
     class Mapped implements Attributes
     {
-        private static final Object NULL_VALUE = new Object();
         private final Map<String, Object> _map;
         private final Set<String> _names;
 
@@ -267,8 +271,7 @@ public interface Attributes
 
         public Mapped(Mapped attributes)
         {
-            this();
-            _map.putAll(attributes._map);
+            this(new ConcurrentHashMap<>(attributes._map));
         }
 
         @Override
@@ -325,11 +328,6 @@ public interface Attributes
         {
             for (String name : attributes.getAttributeNameSet())
                 setAttribute(name, attributes.getAttribute(name));
-        }
-
-        public Set<Map.Entry<String, Object>> getAttributeEntrySet()
-        {
-            return _map.entrySet();
         }
 
         @Override
@@ -400,11 +398,6 @@ public interface Attributes
         {
             Map<String, Object> map = map();
             return map == null ? null : map.get(name);
-        }
-
-        public Collection<Object> getAttributeEntriesSet()
-        {
-            return map().values();
         }
 
         @Override

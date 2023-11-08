@@ -644,14 +644,10 @@ public class ProxyConnectionFactory extends DetectorConnectionFactory
                         }
                         default -> throw new IllegalStateException("Unsupported family " + _family);
                     }
-                    proxyEndPoint = new ProxyEndPoint(endPoint, local, remote);
 
                     int client = 0;
-                    boolean sslVerified = false;
-                    String sslVersion = null;
-                    String sslDistinguishedName = null;
                     String sslCipher = null;
-                    String uniqueId = null;
+                    Map<Integer, byte[]> tlvs = null;
 
                     // Any additional info?
                     while (byteBuffer.remaining() > nonProxyRemaining)
@@ -666,17 +662,15 @@ public class ProxyConnectionFactory extends DetectorConnectionFactory
 
                         // PP2_TYPE_NOOP is only used for byte alignment, skip them.
                         if (type != PP2_TYPE_NOOP)
-                            proxyEndPoint.putTLV(type, value);
-
-                        if (type == PP2_TYPE_UNIQUE_ID)
-                            uniqueId = StringUtil.toHexString(value);
+                        {
+                            if (tlvs == null)
+                                tlvs = new HashMap<>();
+                            tlvs.put(type, value);
+                        }
 
                         if (type == PP2_TYPE_SSL)
                         {
                             client = value[0] & 0xFF;
-                            sslVerified = value[1] == 0 && value[2] == 0 && value[3] == 0 && value[4] == 0;
-                            sslVersion = null;
-                            sslDistinguishedName = null;
                             sslCipher = null;
                             int i = 5; // Index of the first sub_tlv, after verify.
                             while (i < length)
@@ -685,21 +679,15 @@ public class ProxyConnectionFactory extends DetectorConnectionFactory
                                 int subLength = (value[i++] & 0xFF) * 256 + (value[i++] & 0xFF);
                                 byte[] subValue = new byte[subLength];
                                 System.arraycopy(value, i, subValue, 0, subLength);
+                                tlvs.put(subType, subValue);
                                 i += subLength;
-                                switch (subType)
-                                {
-                                    case PP2_SUBTYPE_SSL_VERSION -> sslVersion = new String(subValue, StandardCharsets.US_ASCII);
-                                    case PP2_SUBTYPE_SSL_CN -> sslDistinguishedName = new String(subValue, StandardCharsets.UTF_8);
-                                    case PP2_SUBTYPE_SSL_CIPHER -> sslCipher = new String(subValue, StandardCharsets.US_ASCII);
-                                }
+                                if (subType == PP2_SUBTYPE_SSL_CIPHER)
+                                    sslCipher = new String(subValue, StandardCharsets.US_ASCII);
                             }
                         }
                     }
 
-                    // TODO should client certificate information be passed? For now we just check there is a client value
-                    //      and the certificate has been verified
-                    if (client != 0 && sslVerified)
-                        proxyEndPoint.setSecure(sslVersion, uniqueId, sslDistinguishedName, sslCipher);
+                    proxyEndPoint = new ProxyEndPoint(endPoint, local, remote, tlvs, client == 0 ? null : EndPoint.SslSessionData.from(null, null, sslCipher, null));
 
                     if (LOG.isDebugEnabled())
                         LOG.debug("Proxy v2 {} {}", endPoint, proxyEndPoint);
@@ -785,21 +773,21 @@ public class ProxyConnectionFactory extends DetectorConnectionFactory
         private final EndPoint _endPoint;
         private final SocketAddress _local;
         private final SocketAddress _remote;
-        private Map<Integer, byte[]> _tlvs;
-        private String _tlsVersion;
-        private SslSessionData _sslSessionData;
-
-        @Deprecated
-        public ProxyEndPoint(EndPoint endPoint, InetSocketAddress remote, InetSocketAddress local)
-        {
-            this(endPoint, (SocketAddress)local, remote);
-        }
+        private final Map<Integer, byte[]> _tlvs;
+        private final SslSessionData _sslSessionData;
 
         public ProxyEndPoint(EndPoint endPoint, SocketAddress local, SocketAddress remote)
+        {
+            this(endPoint, local, remote, null, null);
+        }
+
+        public ProxyEndPoint(EndPoint endPoint, SocketAddress local, SocketAddress remote, Map<Integer, byte[]> tlvs, SslSessionData sslSessionData)
         {
             _endPoint = endPoint;
             _local = local;
             _remote = remote;
+            _tlvs = tlvs;
+            _sslSessionData = sslSessionData;
         }
 
         @Override
@@ -808,41 +796,15 @@ public class ProxyConnectionFactory extends DetectorConnectionFactory
             return _sslSessionData;
         }
 
-        public void setSecure(String version, String id, String distinguishedName, String cipher)
-        {
-            // TODO is using the unique ID as a SessionID OK?
-            _tlsVersion = version; // TODO should this be part of the SslSessionData?
-            // TODO should distinguishedName be part of the SslSessionData for SNI checks?
-            _sslSessionData = SslSessionData.from(null, id, cipher, null);
-        }
-
-        public String getTLSVersion()
-        {
-            return _tlsVersion;
-        }
-
         public EndPoint unwrap()
         {
             return _endPoint;
         }
         
         /**
-         * <p>Sets a TLV vector, see section 2.2.7 of the PROXY protocol specification.</p>
-         * 
-         * @param type the TLV type
-         * @param value the TLV value
-         */
-        private void putTLV(int type, byte[] value)
-        {
-            if (_tlvs == null)
-                _tlvs = new HashMap<>();
-            _tlvs.put(type, value);
-        }
-        
-        /**
          * <p>Gets a TLV vector, see section 2.2.7 of the PROXY protocol specification.</p>
          *
-         * @param type the TLV type
+         * @param type the TLV type or subtype
          * @return the TLV value or null if not present.
          */
         public byte[] getTLV(int type)

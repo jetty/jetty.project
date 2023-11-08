@@ -17,7 +17,6 @@ import java.util.Set;
 import java.util.concurrent.atomic.AtomicReference;
 import java.util.stream.Stream;
 
-import org.junit.jupiter.api.Assumptions;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.MethodSource;
@@ -139,56 +138,52 @@ public class AttributesTest
         testAttributes(layer);
     }
 
-    @ParameterizedTest
-    @MethodSource("attributes")
-    public void testSynthetic(Attributes attributes)
+    @Test
+    public void testSynthetic()
     {
-        Assumptions.assumeTrue(attributes instanceof Attributes.Synthetic);
-        if (attributes instanceof TestSynthetic synthetic)
-        {
-            assertThat(attributes.getAttributeNameSet(), empty());
-            synthetic._roy.set("Batty");
-            synthetic._leon.set("Kowalski");
+        TestSynthetic attributes = new TestSynthetic(new Attributes.Mapped());
+        assertThat(attributes.getAttributeNameSet(), empty());
+        attributes._roy.set("Batty");
+        attributes._leon.set("Kowalski");
 
-            assertThat(attributes.getAttribute("Leon"), equalTo("Kowalski"));
-            assertThat(attributes.getAttribute("Zhora"), nullValue());
-            assertThat(attributes.getAttribute("Pris"), nullValue());
-            assertThat(attributes.getAttribute("Roy"), equalTo("Batty"));
-            assertThat(attributes.getAttribute("A"), nullValue());
+        assertThat(attributes.getAttribute("Leon"), equalTo("Kowalski"));
+        assertThat(attributes.getAttribute("Zhora"), nullValue());
+        assertThat(attributes.getAttribute("Pris"), nullValue());
+        assertThat(attributes.getAttribute("Roy"), equalTo("Batty"));
+        assertThat(attributes.getAttribute("A"), nullValue());
 
-            assertThat(attributes.getAttributeNameSet(), containsInAnyOrder("Roy", "Leon"));
+        assertThat(attributes.getAttributeNameSet(), containsInAnyOrder("Roy", "Leon"));
 
-            assertThat(attributes.setAttribute("A", "1"), nullValue());
-            assertThat(attributes.setAttribute("Pris", "Unknown"), nullValue());
+        assertThat(attributes.setAttribute("A", "1"), nullValue());
+        assertThat(attributes.setAttribute("Pris", "Unknown"), nullValue());
 
-            assertThat(attributes.getAttribute("Leon"), equalTo("Kowalski"));
-            assertThat(attributes.getAttribute("Pris"), equalTo("Unknown"));
-            assertThat(attributes.getAttribute("Roy"), equalTo("Batty"));
-            assertThat(attributes.getAttribute("A"), equalTo("1"));
-            assertThat(attributes.getAttributeNameSet(), containsInAnyOrder("Roy", "Leon", "A", "Pris"));
+        assertThat(attributes.getAttribute("Leon"), equalTo("Kowalski"));
+        assertThat(attributes.getAttribute("Pris"), equalTo("Unknown"));
+        assertThat(attributes.getAttribute("Roy"), equalTo("Batty"));
+        assertThat(attributes.getAttribute("A"), equalTo("1"));
+        assertThat(attributes.getAttributeNameSet(), containsInAnyOrder("Roy", "Leon", "A", "Pris"));
 
-            assertThat(attributes.setAttribute("Leon", "retired"), equalTo("Kowalski"));
-            assertThat(attributes.setAttribute("Zhora", "retired"), nullValue());
-            assertThat(attributes.setAttribute("A", "2"), equalTo("1"));
+        assertThat(attributes.setAttribute("Leon", "retired"), equalTo("Kowalski"));
+        assertThat(attributes.setAttribute("Zhora", "retired"), nullValue());
+        assertThat(attributes.setAttribute("A", "2"), equalTo("1"));
 
-            assertThat(attributes.getAttribute("Leon"), equalTo("retired"));
-            assertThat(attributes.getAttribute("Zhora"), equalTo("retired"));
-            assertThat(attributes.getAttribute("Pris"), equalTo("Unknown"));
-            assertThat(attributes.getAttribute("Roy"), equalTo("Batty"));
-            assertThat(attributes.getAttribute("A"), equalTo("2"));
-            assertThat(attributes.getAttributeNameSet(), containsInAnyOrder("Roy", "Leon", "A", "Pris", "Zhora"));
+        assertThat(attributes.getAttribute("Leon"), equalTo("retired"));
+        assertThat(attributes.getAttribute("Zhora"), equalTo("retired"));
+        assertThat(attributes.getAttribute("Pris"), equalTo("Unknown"));
+        assertThat(attributes.getAttribute("Roy"), equalTo("Batty"));
+        assertThat(attributes.getAttribute("A"), equalTo("2"));
+        assertThat(attributes.getAttributeNameSet(), containsInAnyOrder("Roy", "Leon", "A", "Pris", "Zhora"));
 
-            assertThat(attributes.removeAttribute("Leon"), equalTo("retired"));
-            assertThat(attributes.removeAttribute("Zhora"), equalTo("retired"));
-            assertThat(attributes.removeAttribute("Pris"), equalTo("Unknown"));
+        assertThat(attributes.removeAttribute("Leon"), equalTo("retired"));
+        assertThat(attributes.removeAttribute("Zhora"), equalTo("retired"));
+        assertThat(attributes.removeAttribute("Pris"), equalTo("Unknown"));
 
-            assertThat(attributes.getAttribute("Roy"), equalTo("Batty"));
-            assertThat(attributes.getAttribute("A"), equalTo("2"));
-            assertThat(attributes.getAttributeNameSet(), containsInAnyOrder("Roy", "A"));
+        assertThat(attributes.getAttribute("Roy"), equalTo("Batty"));
+        assertThat(attributes.getAttribute("A"), equalTo("2"));
+        assertThat(attributes.getAttributeNameSet(), containsInAnyOrder("Roy", "A"));
 
-            attributes.clearAttributes();
-            assertThat(attributes.getAttributeNameSet(), empty());
-        }
+        attributes.clearAttributes();
+        assertThat(attributes.getAttributeNameSet(), empty());
     }
 
     private static class TestSynthetic extends Attributes.Synthetic

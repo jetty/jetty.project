@@ -48,8 +48,6 @@ import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.Assumptions;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
-import org.junit.jupiter.params.ParameterizedTest;
-import org.junit.jupiter.params.provider.ValueSource;
 
 import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.Matchers.containsInAnyOrder;
@@ -175,15 +173,10 @@ public class ServerConnectorSslServerTest extends HttpServerTestBase
         Assumptions.assumeFalse(_serverURI.getScheme().equals("https"), "SSLSocket.shutdownOutput() is not supported, but shutdownOutput() is needed by the test");
     }
 
-    @ParameterizedTest
-    @ValueSource(booleans = {true, false})
-    public void testSecureRequestCustomizer(boolean legacyAttributes) throws Exception
+    @Test
+    public void testSecureRequestCustomizer() throws Exception
     {
-        _httpConfiguration.removeCustomizer(_httpConfiguration.getCustomizer(SecureRequestCustomizer.class));
-        SecureRequestCustomizer secureRequestCustomer = new SecureRequestCustomizer(false, false, -1, false, legacyAttributes);
-        _httpConfiguration.addCustomizer(secureRequestCustomer);
-
-        startServer(new SecureRequestHandler(legacyAttributes));
+        startServer(new SecureRequestHandler());
 
         try (Socket client = newSocket(_serverURI.getHost(), _serverURI.getPort()))
         {
@@ -225,31 +218,14 @@ public class ServerConnectorSslServerTest extends HttpServerTestBase
 
     public static class SecureRequestHandler extends Handler.Abstract
     {
-        private final boolean _legacyAttributes;
-
-        public SecureRequestHandler(boolean legacyAttributes)
-        {
-            _legacyAttributes = legacyAttributes;
-        }
-
         @Override
         public boolean handle(Request request, Response response, Callback callback) throws Exception
         {
             response.setStatus(200);
-            if (_legacyAttributes)
-                assertThat(request.getAttributeNameSet(), containsInAnyOrder(
-                    SecureRequestCustomizer.SSL_SESSION_ATTRIBUTE,
-                    SecureRequestCustomizer.SSL_SESSION_DATA_ATTRIBUTE,
-                    SecureRequestCustomizer.X509_ATTRIBUTE,
-                    SecureRequestCustomizer.CIPHER_SUITE_ATTRIBUTE,
-                    SecureRequestCustomizer.SSL_SESSION_ID_ATTRIBUTE,
-                    SecureRequestCustomizer.KEY_SIZE_ATTRIBUTE
-                ));
-            else
-                assertThat(request.getAttributeNameSet(), containsInAnyOrder(
-                    SecureRequestCustomizer.SSL_SESSION_ATTRIBUTE,
-                    SecureRequestCustomizer.SSL_SESSION_DATA_ATTRIBUTE,
-                    SecureRequestCustomizer.X509_ATTRIBUTE));
+            assertThat(request.getAttributeNameSet(), containsInAnyOrder(
+                SecureRequestCustomizer.SSL_SESSION_ATTRIBUTE,
+                SecureRequestCustomizer.SSL_SESSION_DATA_ATTRIBUTE,
+                SecureRequestCustomizer.X509_ATTRIBUTE));
 
             StringBuilder out = new StringBuilder();
             SSLSession session = (SSLSession)request.getAttribute(SecureRequestCustomizer.SSL_SESSION_ATTRIBUTE);

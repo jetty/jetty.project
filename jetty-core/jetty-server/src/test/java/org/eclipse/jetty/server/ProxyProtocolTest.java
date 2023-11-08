@@ -24,7 +24,6 @@ import java.nio.charset.StandardCharsets;
 import java.util.Arrays;
 
 import org.eclipse.jetty.io.EndPoint;
-import org.eclipse.jetty.server.internal.HttpConnection;
 import org.eclipse.jetty.util.Callback;
 import org.eclipse.jetty.util.StringUtil;
 import org.junit.jupiter.api.AfterEach;
@@ -95,7 +94,7 @@ public class ProxyProtocolTest
             InputStream input = socket.getInputStream();
             BufferedReader reader = new BufferedReader(new InputStreamReader(input, StandardCharsets.UTF_8));
             String response1 = reader.readLine();
-            assertTrue(response1.startsWith("HTTP/1.1 200 "));
+            assertThat(response1, startsWith("HTTP/1.1 200 "));
             while (true)
             {
                 if (reader.readLine().isEmpty())
@@ -145,15 +144,11 @@ public class ProxyProtocolTest
 
             private boolean validateEndPoint(Request request)
             {
-                if (request.getConnectionMetaData().getConnection() instanceof HttpConnection con)
-                {
-                    EndPoint endPoint = con.getEndPoint();
-                    ProxyConnectionFactory.ProxyEndPoint proxyEndPoint = (ProxyConnectionFactory.ProxyEndPoint)endPoint;
-                    return Arrays.equals(customE0, proxyEndPoint.getTLV(0xE0)) &&
-                        Arrays.equals(customE1, proxyEndPoint.getTLV(0xE1)) &&
-                        proxyEndPoint.getTLV(0xE2) == null;
-                }
-                return false;
+                EndPoint endPoint = request.getConnectionMetaData().getConnection().getEndPoint();
+                ProxyConnectionFactory.ProxyEndPoint proxyEndPoint = (ProxyConnectionFactory.ProxyEndPoint)endPoint;
+                return Arrays.equals(customE0, proxyEndPoint.getTLV(0xE0)) &&
+                    Arrays.equals(customE1, proxyEndPoint.getTLV(0xE1)) &&
+                    proxyEndPoint.getTLV(0xE2) == null;
             }
         });
 

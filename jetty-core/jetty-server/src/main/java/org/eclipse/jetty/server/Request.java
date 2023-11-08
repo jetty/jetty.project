@@ -1065,4 +1065,54 @@ public interface Request extends Attributes, Content.Source
             return null;
         }
     }
+
+    /**
+     * A {@link Request.Wrapper} that also wraps the request {@link Attributes}
+     */
+    class AttributesWrapper extends Wrapper
+    {
+        private final Attributes _attributes;
+
+        public AttributesWrapper(Request wrapped, Attributes attributes)
+        {
+            super(wrapped);
+            _attributes = Objects.requireNonNull(attributes);
+        }
+
+        @Override
+        public Map<String, Object> asAttributeMap()
+        {
+            return _attributes.asAttributeMap();
+        }
+
+        @Override
+        public void clearAttributes()
+        {
+            _attributes.clearAttributes();
+        }
+
+        @Override
+        public Object removeAttribute(String name)
+        {
+            return _attributes.removeAttribute(name);
+        }
+
+        @Override
+        public Object setAttribute(String name, Object attribute)
+        {
+            return _attributes.setAttribute(name, attribute);
+        }
+
+        @Override
+        public Object getAttribute(String name)
+        {
+            return _attributes.getAttribute(name);
+        }
+
+        @Override
+        public Set<String> getAttributeNameSet()
+        {
+            return _attributes.getAttributeNameSet();
+        }
+    }
 }
