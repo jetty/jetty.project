@@ -622,7 +622,7 @@ public abstract class HttpReceiver
                     else
                     {
                         if (LOG.isDebugEnabled())
-                            LOG.debug("returning empty decoded content");
+                            LOG.debug("releasing empty decoded content");
                         decodedBuffer.release();
                     }
                 }
