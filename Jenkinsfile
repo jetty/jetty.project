@@ -31,31 +31,10 @@ pipeline {
             timeout( time: 180, unit: 'MINUTES' ) {
               checkout scm
               mavenBuild( "jdk17", "clean install -Perrorprone", "maven3") // javadoc:javadoc
-              // Collect up the jacoco execution results (only on main build)
-              jacoco inclusionPattern: '**/org/eclipse/jetty/**/*.class',
-                     exclusionPattern: '' +
-                             // build tools
-                             '**/org/eclipse/jetty/ant/**' +
-                             ',*/org/eclipse/jetty/maven/its/**' +
-                             ',**/org/eclipse/jetty/its/**' +
-                             // example code / documentation
-                             ',**/org/eclipse/jetty/embedded/**' +
-                             ',**/org/eclipse/jetty/asyncrest/**' +
-                             ',**/org/eclipse/jetty/demo/**' +
-                             // special environments / late integrations
-                             ',**/org/eclipse/jetty/gcloud/**' +
-                             ',**/org/eclipse/jetty/infinispan/**' +
-                             ',**/org/eclipse/jetty/osgi/**' +
-                             ',**/org/eclipse/jetty/http/spi/**' +
-                             // test classes
-                             ',**/org/eclipse/jetty/tests/**' +
-                             ',**/org/eclipse/jetty/test/**',
-                     execPattern: '**/target/jacoco.exec',
-                     classPattern: '**/target/classes',
-                     sourcePattern: '**/src/main/java'
               recordIssues id: "jdk17", name: "Static Analysis jdk17", aggregatingResults: true, enabledForFailure: true,
                             tools: [mavenConsole(), java(), checkStyle(), errorProne(), spotBugs(), javaDoc()],
                             skipPublishingChecks: true, blameDisabled: true
+              recordCoverage(id: "jdk17", tools: [[parser: 'JACOCO']], sourceCodeRetention: 'MODIFIED', sourceDirectories: [[path: 'src/main/java'], [path: 'target/generated-sources/ee8']])
             }
           }
         }
