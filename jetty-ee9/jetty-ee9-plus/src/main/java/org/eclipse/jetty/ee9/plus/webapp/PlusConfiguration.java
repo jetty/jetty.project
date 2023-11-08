@@ -95,7 +95,14 @@ public class PlusConfiguration extends AbstractConfiguration
         }
         catch (NameNotFoundException e)
         {
-            LOG.debug("No Transaction manager found - if your webapp requires one, please configure one.");
+            try
+            {
+                org.eclipse.jetty.plus.jndi.Transaction.bindTransactionToENC(ContextHandler.ENVIRONMENT.getName());
+            }
+            catch (NameNotFoundException x)
+            {
+                LOG.debug("No Transaction manager found - if your webapp requires one, please configure one.");
+            }
         }
     }
 

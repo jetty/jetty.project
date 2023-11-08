@@ -12,13 +12,6 @@
     </Arg>
   </New>
 
-  <Set name="contextPath">/ee10-test-jndi</Set>
-  <Set name="war"><Property name="jetty.webapps" default="." />/ee10-demo-jndi.war
-  </Set>
-  <Set name="extractWAR">true</Set>
-  <Set name="copyWebDir">false</Set>
-  <Set name="configurationDiscovered">true</Set>
-
   <!-- Define an env entry with ee10 environment scope for java:comp/env                   -->
   <New id="woggle" class="org.eclipse.jetty.plus.jndi.EnvEntry">
     <Arg>
