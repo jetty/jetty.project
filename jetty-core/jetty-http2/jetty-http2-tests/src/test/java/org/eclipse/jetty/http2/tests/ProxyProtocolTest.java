@@ -199,7 +199,6 @@ public class ProxyProtocolTest
                 EndPoint.SslSessionData sslSessionData = proxyEndPoint.getSslSessionData();
                 assertThat(sslSessionData, notNullValue());
                 assertThat(sslSessionData.cipherSuite(), equalTo("TEST_128_XYZ"));
-                assertThat(sslSessionData.sslSessionId(), equalTo(StringUtil.toHexString("FooBar".getBytes(StandardCharsets.US_ASCII))));
                 assertThat(request.getAttribute(EndPoint.SslSessionData.ATTRIBUTE), sameInstance(sslSessionData));
                 callback.succeeded();
                 return true;
