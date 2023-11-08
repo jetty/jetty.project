@@ -1,14 +1,10 @@
 <?xml version="1.0"?>
-<!DOCTYPE Configure PUBLIC "-//Jetty//Configure//EN" "https://eclipse.dev/jetty/configure_10_0.dtd">
+<!DOCTYPE Configure PUBLIC "-//Jetty//Configure//EN" "https://www.eclipse.org/jetty/configure_10_0.dtd">
 
-<Configure id="wac" class="org.eclipse.jetty.ee8.webapp.WebAppContext">
-  <Set name="contextPath">/ee8-test-spec</Set>
-  <Set name="war"><Property name="jetty.webapps" />/ee8-demo-spec.war
-  </Set>
-  <Set name="configurationDiscovered">true</Set>
+<Configure id="wac" class="org.eclipse.jetty.ee9.webapp.WebAppContext">
 
   <New id="tx" class="org.eclipse.jetty.plus.jndi.Transaction">
-    <Arg><Property name="environment" default="ee"/></Arg>
+    <Arg><Property name="environment" default="ee9"/></Arg>
     <Arg>
       <New class="org.example.MockUserTransaction" />
     </Arg>

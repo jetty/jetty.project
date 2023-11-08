@@ -8,7 +8,7 @@
     <Arg>true</Arg>
   </Call>
 
-  <New id="BeanManager" class="org.eclipse.jetty.ee10.plus.jndi.Resource">
+  <New id="BeanManager" class="org.eclipse.jetty.plus.jndi.Resource">
     <Arg>
       <Ref refid="webAppCtx" />
     </Arg>

@@ -39,20 +39,6 @@
       <scope>provided</scope>
     </dependency>
 
-    <!-- deliberately old version to test classloading -->
-    <!-- TODO uncomment and update the following once 9.4.19 is released with a fix for #3726
-    <dependency>
-      <groupId>org.eclipse.jetty</groupId>
-      <artifactId>jetty-util</artifactId>
-      <version>9.4.19.vXXXXXXXX</version>
-      <exclusions>
-        <exclusion>
-          <groupId>jakarta.servlet</groupId>
-          <artifactId>jakarta.servlet-api</artifactId>
-        </exclusion>
-      </exclusions>
-    </dependency>
- -->
   </dependencies>
   <build>
     <pluginManagement>
@@ -63,7 +49,7 @@
           <version>${project.version}</version>
           <configuration>
             <scan>10</scan>
-            <contextXml>${project.build.directory}/plugin-context.xml</contextXml>
+            <contextXml>src/main/templates/plugin-context.xml</contextXml>
             <webApp>
               <war>src/main/webapp</war>
               <descriptor>src/main/webapp/WEB-INF/web.xml</descriptor>
