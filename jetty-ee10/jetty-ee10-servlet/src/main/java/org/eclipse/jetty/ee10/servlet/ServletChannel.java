@@ -324,18 +324,9 @@ public class ServletChannel
      */
     public String getLocalName()
     {
-        HttpConfiguration httpConfiguration = getHttpConfiguration();
-        if (httpConfiguration != null)
-        {
-            SocketAddress localAddress = httpConfiguration.getLocalAddress();
-            if (localAddress instanceof InetSocketAddress)
-                return ((InetSocketAddress)localAddress).getHostName();
-        }
-
         InetSocketAddress local = getLocalAddress();
         if (local != null)
-            return local.getHostString();
-
+            return Request.getHostName(local);
         return null;
     }
 
@@ -358,40 +349,20 @@ public class ServletChannel
      */
     public int getLocalPort()
     {
-        HttpConfiguration httpConfiguration = getHttpConfiguration();
-        if (httpConfiguration != null)
-        {
-            SocketAddress localAddress = httpConfiguration.getLocalAddress();
-            if (localAddress instanceof InetSocketAddress)
-                return ((InetSocketAddress)localAddress).getPort();
-        }
-
         InetSocketAddress local = getLocalAddress();
         return local == null ? 0 : local.getPort();
     }
 
     public InetSocketAddress getLocalAddress()
     {
-        HttpConfiguration httpConfiguration = getHttpConfiguration();
-        if (httpConfiguration != null)
-        {
-            SocketAddress localAddress = httpConfiguration.getLocalAddress();
-            if (localAddress instanceof InetSocketAddress)
-                return ((InetSocketAddress)localAddress);
-        }
-
-        SocketAddress local = getEndPoint().getLocalSocketAddress();
-        if (local instanceof InetSocketAddress)
-            return (InetSocketAddress)local;
-        return null;
+        return getRequest().getConnectionMetaData().getLocalSocketAddress() instanceof InetSocketAddress inetSocketAddress
+            ? inetSocketAddress : null;
     }
 
     public InetSocketAddress getRemoteAddress()
     {
-        SocketAddress remote = getEndPoint().getRemoteSocketAddress();
-        if (remote instanceof InetSocketAddress)
-            return (InetSocketAddress)remote;
-        return null;
+        return getRequest().getConnectionMetaData().getRemoteSocketAddress() instanceof InetSocketAddress inetSocketAddress
+            ? inetSocketAddress : null;
     }
 
     /**

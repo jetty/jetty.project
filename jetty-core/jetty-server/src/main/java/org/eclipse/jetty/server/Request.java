@@ -435,19 +435,25 @@ public interface Request extends Attributes, Content.Source
         };
     }
 
+    static String getHostName(InetSocketAddress inetSocketAddress)
+    {
+        if (inetSocketAddress.isUnresolved())
+            return inetSocketAddress.getHostString();
+
+        InetAddress address = inetSocketAddress.getAddress();
+        String result = address == null
+            ? inetSocketAddress.getHostString()
+            : address.getHostAddress();
+        return HostPort.normalizeHost(result);
+    }
+
     static String getLocalAddr(Request request)
     {
         if (request == null)
             return null;
         SocketAddress local = request.getConnectionMetaData().getLocalSocketAddress();
-        if (local instanceof InetSocketAddress)
-        {
-            InetAddress address = ((InetSocketAddress)local).getAddress();
-            String result = address == null
-                ? ((InetSocketAddress)local).getHostString()
-                : address.getHostAddress();
-            return HostPort.normalizeHost(result);
-        }
+        if (local instanceof InetSocketAddress inetSocketAddress)
+            return getHostName(inetSocketAddress);
         return local == null ? null : local.toString();
     }
 
@@ -467,16 +473,7 @@ public interface Request extends Attributes, Content.Source
             return null;
         SocketAddress remote = request.getConnectionMetaData().getRemoteSocketAddress();
         if (remote instanceof InetSocketAddress inetSocketAddress)
-        {
-            if (inetSocketAddress.isUnresolved())
-                return inetSocketAddress.getHostString();
-
-            InetAddress address = inetSocketAddress.getAddress();
-            String result = address == null
-                ? inetSocketAddress.getHostString()
-                : address.getHostAddress();
-            return HostPort.normalizeHost(result);
-        }
+            return getHostName(inetSocketAddress);
         return remote == null ? null : remote.toString();
     }
 
