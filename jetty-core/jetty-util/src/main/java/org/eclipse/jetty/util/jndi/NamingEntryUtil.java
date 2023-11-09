@@ -34,7 +34,7 @@ public class NamingEntryUtil
     private static final Logger LOG = LoggerFactory.getLogger(NamingEntryUtil.class);
 
     /**
-     * Link a name in a webapp's java:/comp/evn namespace to a pre-existing
+     * Link a name in a webapp's java:/comp/env namespace to a pre-existing
      * resource. The pre-existing resource can be either in the webapp's
      * naming environment, or in the container's naming environment. Webapp's
      * environment takes precedence over the server's namespace.
@@ -207,13 +207,6 @@ public class NamingEntryUtil
             name.add(canonicalizeScope(scope));
         }
         return (Context)ic.lookup(name);
-    }
-
-    public static Context getContextForNamingEntries(Object scope)
-        throws NamingException
-    {
-        Context scopeContext = getContextForScope(scope);
-        return (Context)scopeContext.lookup(NamingEntry.__contextName);
     }
 
     private static String canonicalizeScope(Object scope)

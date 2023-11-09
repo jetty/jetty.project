@@ -186,7 +186,7 @@ public class EnvConfiguration extends AbstractConfiguration
                 Collections.reverse(bindings);
                 for (Bound b : bindings)
                 {
-                    b._context.destroySubcontext(b._name);
+                    b.context.destroySubcontext(b.name);
                 }
             }
         }
@@ -285,15 +285,7 @@ public class EnvConfiguration extends AbstractConfiguration
         }
     }
 
-    private static class Bound
-    {
-        final NamingContext _context;
-        final String _name;
-
-        Bound(NamingContext context, String name)
-        {
-            _context = context;
-            _name = name;
-        }
-    }
+   record Bound(Context context, String name)
+   {
+   }
 }
