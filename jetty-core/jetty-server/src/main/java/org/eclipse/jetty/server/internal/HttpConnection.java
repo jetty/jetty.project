@@ -264,12 +264,6 @@ public class HttpConnection extends AbstractConnection implements Runnable, Writ
     }
 
     @Override
-    public boolean isSecure()
-    {
-        return getEndPoint() instanceof SslConnection.SslEndPoint;
-    }
-
-    @Override
     public SocketAddress getRemoteSocketAddress()
     {
         return getEndPoint().getRemoteSocketAddress();

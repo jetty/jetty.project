@@ -48,7 +48,7 @@ public class JDK9HTTP2ClientTest
         HTTP2Client client = new HTTP2Client();
         try
         {
-            SslContextFactory sslContextFactory = new SslContextFactory.Client();
+            SslContextFactory.Client sslContextFactory = new SslContextFactory.Client();
             client.addBean(sslContextFactory);
             client.start();
 

@@ -24,7 +24,6 @@ import java.nio.charset.Charset;
 import java.nio.charset.StandardCharsets;
 import java.util.Collections;
 import java.util.HashMap;
-import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
 import java.util.Objects;
@@ -46,6 +45,7 @@ import org.eclipse.jetty.io.RetainableByteBuffer;
 import org.eclipse.jetty.server.Request;
 import org.eclipse.jetty.server.Response;
 import org.eclipse.jetty.server.Server;
+import org.eclipse.jetty.util.Attributes;
 import org.eclipse.jetty.util.BufferUtil;
 import org.eclipse.jetty.util.Callback;
 import org.eclipse.jetty.util.StringUtil;
@@ -504,18 +504,32 @@ public class ErrorHandler implements Request.Handler
         return errorHandler;
     }
 
-    public static class ErrorRequest extends Request.Wrapper
+    public static class ErrorRequest extends Request.AttributesWrapper
     {
-        private final int _status;
-        private final String _message;
-        private final Throwable _cause;
+        private static final Set<String> ATTRIBUTES = Set.of(ERROR_MESSAGE, ERROR_EXCEPTION, ERROR_STATUS);
 
         public ErrorRequest(Request request, int status, String message, Throwable cause)
         {
-            super(request);
-            _status = status;
-            _message = message;
-            _cause = cause;
+            super(request, new Attributes.Synthetic(request)
+            {
+                @Override
+                protected Object getSyntheticAttribute(String name)
+                {
+                    return switch (name)
+                    {
+                        case ERROR_MESSAGE -> message;
+                        case ERROR_EXCEPTION -> cause;
+                        case ERROR_STATUS -> status;
+                        default -> null;
+                    };
+                }
+
+                @Override
+                protected Set<String> getSyntheticNameSet()
+                {
+                    return ATTRIBUTES;
+                }
+            });
         }
 
         @Override
@@ -528,31 +542,6 @@ public class ErrorHandler implements Request.Handler
         public void demand(Runnable demandCallback)
         {
             demandCallback.run();
-        }
-
-        @Override
-        public Object getAttribute(String name)
-        {
-            return switch (name)
-            {
-                case ERROR_MESSAGE -> _message;
-                case ERROR_EXCEPTION -> _cause;
-                case ERROR_STATUS -> _status;
-                default -> super.getAttribute(name);
-            };
-        }
-
-        @Override
-        public Set<String> getAttributeNameSet()
-        {
-            Set<String> names = new HashSet<>(super.getAttributeNameSet());
-            if (_message != null)
-                names.add(ERROR_MESSAGE);
-            if (_status > 0)
-                names.add(ERROR_STATUS);
-            if (_cause != null)
-                names.add(ERROR_EXCEPTION);
-            return names;
         }
 
         @Override
