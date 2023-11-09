@@ -75,7 +75,7 @@ public class ConcurrentPool<P> implements Pool<P>, Dumpable
      */
     public ConcurrentPool(StrategyType strategyType, int maxSize)
     {
-        this(strategyType, maxSize, false);
+        this(strategyType, maxSize, pooled -> 1);
     }
 
     /**
@@ -490,9 +490,10 @@ public class ConcurrentPool<P> implements Pool<P>, Dumpable
          */
         private boolean tryEnable(boolean acquire)
         {
-            if (!acquire)
+            boolean enabled = state.compareAndSet(0, 0, -1, acquire ? 1 : 0);
+            if (enabled && !acquire)
                 getHolder().hold();
-            return state.compareAndSet(0, 0, -1, acquire ? 1 : 0);
+            return enabled;
         }
 
         /**
@@ -526,11 +527,7 @@ public class ConcurrentPool<P> implements Pool<P>, Dumpable
                 if (state.compareAndSet(encoded, 0, newMultiplexCount))
                 {
                     if (newMultiplexCount == 1)
-                    {
-                        // We have acquired the entry for the first time, but might be racing with a previous release
-                        // to hold it, so we spin wait to ensure it is held before we free it.
                         getHolder().free();
-                    }
                     return true;
                 }
             }
@@ -653,6 +650,20 @@ public class ConcurrentPool<P> implements Pool<P>, Dumpable
         }
     }
 
+    /**
+     * <p>Holds a strong and a weak reference to an {@link Entry} to avoid holding
+     * on to entries that are not released, so that they can be garbage collected.</p>
+     * <p>Methods {@link #hold()} and {@link #free()} work together to clear the
+     * strong reference when the entry is acquired, and assign it when the entry
+     * is released.</p>
+     * <p>This class handles a race condition happening when an entry is being
+     * released with multiplex count going {@code 1 -> 0} by one thread that
+     * has not yet called {@link #hold()}, and immediately acquired by another
+     * thread that is calling {@link #free()}.
+     * The call to {@link #free()} spin loops until {@link #hold()} returns.</p>
+     *
+     * @param <P>
+     */
     private static class Holder<P>
     {
         private final WeakReference<ConcurrentEntry<P>> _weak;
@@ -668,11 +679,17 @@ public class ConcurrentPool<P> implements Pool<P>, Dumpable
             return _weak.get();
         }
 
+        /**
+         * <p>Called when an entry is released to the pool with multiplex count going from {@code 1} to {@code 0}.</p>
+         */
         public void hold()
         {
             _strong = _weak.get();
         }
 
+        /**
+         * <p>Called when an entry is acquired from the pool with multiplex count going from {@code 0} to {@code 1}.</p>
+         */
         public void free()
         {
             ConcurrentEntry<P> entry = _weak.get();

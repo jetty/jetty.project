@@ -70,8 +70,7 @@ public class ArrayByteBufferPool implements ByteBufferPool, Dumpable
 
     /**
      * Creates a new ArrayByteBufferPool with a default configuration.
-     * Both {@code maxHeapMemory} and {@code maxDirectMemory} default to 0 to use default heuristic;
-     * pooled buffers are hard-referenced at all times.
+     * Both {@code maxHeapMemory} and {@code maxDirectMemory} default to 0 to use default heuristic.
      */
     public ArrayByteBufferPool()
     {
@@ -80,8 +79,7 @@ public class ArrayByteBufferPool implements ByteBufferPool, Dumpable
 
     /**
      * Creates a new ArrayByteBufferPool with the given configuration.
-     * Both {@code maxHeapMemory} and {@code maxDirectMemory} default to 0 to use default heuristic;
-     * pooled buffers are hard-referenced at all times.
+     * Both {@code maxHeapMemory} and {@code maxDirectMemory} default to 0 to use default heuristic.
      *
      * @param minCapacity the minimum ByteBuffer capacity
      * @param factor the capacity factor
@@ -94,8 +92,7 @@ public class ArrayByteBufferPool implements ByteBufferPool, Dumpable
 
     /**
      * Creates a new ArrayByteBufferPool with the given configuration.
-     * Both {@code maxHeapMemory} and {@code maxDirectMemory} default to 0 to use default heuristic;
-     * pooled buffers are hard-referenced at all times.
+     * Both {@code maxHeapMemory} and {@code maxDirectMemory} default to 0 to use default heuristic.
      *
      * @param minCapacity the minimum ByteBuffer capacity
      * @param factor the capacity factor
@@ -109,7 +106,6 @@ public class ArrayByteBufferPool implements ByteBufferPool, Dumpable
 
     /**
      * Creates a new ArrayByteBufferPool with the given configuration.
-     * Pooled buffers are hard-referenced at all times.
      *
      * @param minCapacity the minimum ByteBuffer capacity
      * @param factor the capacity factor
@@ -120,23 +116,7 @@ public class ArrayByteBufferPool implements ByteBufferPool, Dumpable
      */
     public ArrayByteBufferPool(int minCapacity, int factor, int maxCapacity, int maxBucketSize, long maxHeapMemory, long maxDirectMemory)
     {
-        this(minCapacity, factor, maxCapacity, maxBucketSize, maxHeapMemory, maxDirectMemory, null, null, false);
-    }
-
-    /**
-     * Creates a new ArrayByteBufferPool with the given configuration.
-     *
-     * @param minCapacity the minimum ByteBuffer capacity
-     * @param factor the capacity factor
-     * @param maxCapacity the maximum ByteBuffer capacity
-     * @param maxBucketSize the maximum number of ByteBuffers for each bucket
-     * @param maxHeapMemory the max heap memory in bytes, -1 for unlimited memory or 0 to use default heuristic
-     * @param maxDirectMemory the max direct memory in bytes, -1 for unlimited memory or 0 to use default heuristic
-     * @param weakPool true if the pooled buffers should be weakly referenced upon acquisition, false otherwise
-     */
-    public ArrayByteBufferPool(int minCapacity, int factor, int maxCapacity, int maxBucketSize, long maxHeapMemory, long maxDirectMemory, boolean weakPool)
-    {
-        this(minCapacity, factor, maxCapacity, maxBucketSize, maxHeapMemory, maxDirectMemory, null, null, weakPool);
+        this(minCapacity, factor, maxCapacity, maxBucketSize, maxHeapMemory, maxDirectMemory, null, null);
     }
 
     /**
@@ -150,9 +130,8 @@ public class ArrayByteBufferPool implements ByteBufferPool, Dumpable
      * @param maxDirectMemory the max direct memory in bytes, -1 for unlimited memory or 0 to use default heuristic
      * @param bucketIndexFor a {@link IntUnaryOperator} that takes a capacity and returns a bucket index
      * @param bucketCapacity a {@link IntUnaryOperator} that takes a bucket index and returns a capacity
-     * @param weakPool true if the underlying pool should weakly reference pooled buffers when they are acquired, false otherwise
      */
-    protected ArrayByteBufferPool(int minCapacity, int factor, int maxCapacity, int maxBucketSize, long maxHeapMemory, long maxDirectMemory, IntUnaryOperator bucketIndexFor, IntUnaryOperator bucketCapacity, boolean weakPool)
+    protected ArrayByteBufferPool(int minCapacity, int factor, int maxCapacity, int maxBucketSize, long maxHeapMemory, long maxDirectMemory, IntUnaryOperator bucketIndexFor, IntUnaryOperator bucketCapacity)
     {
         if (minCapacity <= 0)
             minCapacity = 0;
@@ -174,8 +153,8 @@ public class ArrayByteBufferPool implements ByteBufferPool, Dumpable
         for (int i = 0; i < directArray.length; i++)
         {
             int capacity = Math.min(bucketCapacity.applyAsInt(i), maxCapacity);
-            directArray[i] = new RetainedBucket(capacity, maxBucketSize, weakPool);
-            indirectArray[i] = new RetainedBucket(capacity, maxBucketSize, weakPool);
+            directArray[i] = new RetainedBucket(capacity, maxBucketSize);
+            indirectArray[i] = new RetainedBucket(capacity, maxBucketSize);
         }
 
         _minCapacity = minCapacity;
@@ -503,7 +482,7 @@ public class ArrayByteBufferPool implements ByteBufferPool, Dumpable
         private final Pool<RetainableByteBuffer> _pool;
         private final int _capacity;
 
-        private RetainedBucket(int capacity, int poolSize, boolean weakPool)
+        private RetainedBucket(int capacity, int poolSize)
         {
             if (poolSize <= ConcurrentPool.OPTIMAL_MAX_SIZE)
                 _pool = new ConcurrentPool<>(ConcurrentPool.StrategyType.THREAD_ID, poolSize, e -> 1);
@@ -588,11 +567,6 @@ public class ArrayByteBufferPool implements ByteBufferPool, Dumpable
 
         public Quadratic(int minCapacity, int maxCapacity, int maxBucketSize, long maxHeapMemory, long maxDirectMemory)
         {
-            this(minCapacity, maxCapacity, maxBucketSize, maxHeapMemory, maxDirectMemory, false);
-        }
-
-        public Quadratic(int minCapacity, int maxCapacity, int maxBucketSize, long maxHeapMemory, long maxDirectMemory, boolean weakPool)
-        {
             super(minCapacity,
                 -1,
                 maxCapacity,
@@ -600,8 +574,7 @@ public class ArrayByteBufferPool implements ByteBufferPool, Dumpable
                 maxHeapMemory,
                 maxDirectMemory,
                 c -> 32 - Integer.numberOfLeadingZeros(c - 1),
-                i -> 1 << i,
-                weakPool
+                i -> 1 << i
             );
         }
     }

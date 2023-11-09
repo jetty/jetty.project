@@ -46,7 +46,7 @@ import static org.junit.jupiter.api.Assertions.assertThrows;
 
 public class ConcurrentPoolTest
 {
-    interface Factory
+    public interface Factory
     {
         default ConcurrentPool<String> newPool(int maxEntries)
         {
