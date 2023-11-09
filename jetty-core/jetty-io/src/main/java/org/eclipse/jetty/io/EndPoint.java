@@ -20,10 +20,13 @@ import java.net.SocketAddress;
 import java.nio.ByteBuffer;
 import java.nio.channels.ReadPendingException;
 import java.nio.channels.WritePendingException;
+import java.security.cert.X509Certificate;
+import javax.net.ssl.SSLSession;
 
 import org.eclipse.jetty.util.Callback;
 import org.eclipse.jetty.util.FutureCallback;
 import org.eclipse.jetty.util.IteratingCallback;
+import org.eclipse.jetty.util.ssl.SslContextFactory;
 import org.eclipse.jetty.util.thread.Invocable;
 
 /**
@@ -92,7 +95,7 @@ public interface EndPoint extends Closeable
     /**
      * Marks an {@code EndPoint} that wraps another {@code EndPoint}.
      */
-    public interface Wrapper
+    interface Wrapper
     {
         /**
          * @return The wrapped {@code EndPoint}
@@ -324,5 +327,116 @@ public interface EndPoint extends Closeable
      *
      * @param newConnection the connection to upgrade to
      */
-    public void upgrade(Connection newConnection);
+    void upgrade(Connection newConnection);
+
+    /**
+     * Get the SslSessionData of a secure end point.
+     * @return A {@link SslSessionData} instance (with possibly null field values) if secure, else {@code null}.
+     */
+    default SslSessionData getSslSessionData()
+    {
+        return null;
+    }
+
+    /**
+     * @return whether this EndPoint represents a secure communication.
+     */
+    default boolean isSecure()
+    {
+        return getSslSessionData() != null;
+    }
+
+    /**
+     * Interface representing bundle of SSLSession associated data.
+     */
+    interface SslSessionData
+    {
+        /**
+         * The name at which an {@code SslSessionData} instance may be found as a request
+         * {@link org.eclipse.jetty.util.Attributes Attribute} or from {@link SSLSession#getValue(String)}.
+         */
+        String ATTRIBUTE = "org.eclipse.jetty.io.Endpoint.SslSessionData";
+
+        /**
+         * @return The {@link SSLSession} itself, if known, else {@code null}.
+         */
+        SSLSession sslSession();
+
+        /**
+         * @return The {@link SSLSession#getId()} rendered as a hex string, if known, else {@code null}.
+         */
+        String sslSessionId();
+
+        /**
+         * @return The {@link SSLSession#getCipherSuite()} if known, else {@code null}.
+         */
+        String cipherSuite();
+
+        /**
+         * @return The {@link SSLSession#getPeerCertificates()}s converted to {@link X509Certificate}, if known, else {@code null}.
+         */
+        X509Certificate[] peerCertificates();
+
+        /**
+         * Calculates the key size based on the cipher suite.
+         * @return the key size.
+         */
+        default int keySize()
+        {
+            String cipherSuite = cipherSuite();
+            return cipherSuite == null ? 0 : SslContextFactory.deduceKeyLength(cipherSuite);
+        }
+
+        static SslSessionData from(SSLSession sslSession, String sslSessionId, String cipherSuite, X509Certificate[] peerCertificates)
+        {
+            return new SslSessionData()
+            {
+                @Override
+                public SSLSession sslSession()
+                {
+                    return sslSession;
+                }
+
+                @Override
+                public String sslSessionId()
+                {
+                    return sslSessionId;
+                }
+
+                @Override
+                public String cipherSuite()
+                {
+                    return cipherSuite;
+                }
+
+                @Override
+                public X509Certificate[] peerCertificates()
+                {
+                    return peerCertificates;
+                }
+            };
+        }
+
+        static SslSessionData withCipherSuite(SslSessionData baseData, String cipherSuite)
+        {
+            return (baseData == null)
+                ? from(null, null, cipherSuite, null)
+                : from(
+                    baseData.sslSession(),
+                    baseData.sslSessionId(),
+                    cipherSuite != null ? cipherSuite : baseData.cipherSuite(),
+                    baseData.peerCertificates());
+        }
+
+        static SslSessionData withSslSessionId(SslSessionData baseData, String sslSessionId)
+        {
+            return (baseData == null)
+                ? from(null, sslSessionId, null, null)
+                : from(
+                    baseData.sslSession(),
+                    sslSessionId != null ? sslSessionId : baseData.sslSessionId(),
+                    baseData.cipherSuite(),
+                    baseData.peerCertificates());
+        }
+    }
 }

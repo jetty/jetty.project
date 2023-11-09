@@ -46,6 +46,7 @@ import org.eclipse.jetty.io.ClientConnectionFactory;
 import org.eclipse.jetty.io.ClientConnector;
 import org.eclipse.jetty.io.Connection;
 import org.eclipse.jetty.io.Content;
+import org.eclipse.jetty.io.EndPoint;
 import org.eclipse.jetty.io.ssl.SslClientConnectionFactory;
 import org.eclipse.jetty.server.Handler;
 import org.eclipse.jetty.server.HttpConfiguration;
@@ -140,13 +141,17 @@ public class ClientAuthProxyTest
             @Override
             public boolean handle(org.eclipse.jetty.server.Request request, Response response, Callback callback)
             {
-                X509Certificate[] certificates = (X509Certificate[])request.getAttribute(SecureRequestCustomizer.PEER_CERTIFICATES_ATTRIBUTE);
-                Assertions.assertNotNull(certificates);
-                X509Certificate certificate = certificates[0];
-                X500Principal principal = certificate.getSubjectX500Principal();
-                String body = "%s\r\n%d\r\n".formatted(principal.toString(), org.eclipse.jetty.server.Request.getRemotePort(request));
-                Content.Sink.write(response, true, body, callback);
-                return true;
+                if (request.getAttribute(EndPoint.SslSessionData.ATTRIBUTE) instanceof EndPoint.SslSessionData sslSessionData)
+                {
+                    X509Certificate[] certificates = sslSessionData.peerCertificates();
+                    Assertions.assertNotNull(certificates);
+                    X509Certificate certificate = certificates[0];
+                    X500Principal principal = certificate.getSubjectX500Principal();
+                    String body = "%s\r\n%d\r\n".formatted(principal.toString(), org.eclipse.jetty.server.Request.getRemotePort(request));
+                    Content.Sink.write(response, true, body, callback);
+                    return true;
+                }
+                return false;
             }
         });
     }
@@ -213,7 +218,7 @@ public class ClientAuthProxyTest
 
     private static String retrieveUser(HttpServletRequest request)
     {
-        X509Certificate[] certificates = (X509Certificate[])request.getAttribute(SecureRequestCustomizer.PEER_CERTIFICATES_ATTRIBUTE);
+        X509Certificate[] certificates = (X509Certificate[])request.getAttribute(org.eclipse.jetty.ee9.nested.Request.PEER_CERTIFICATES);
         String clientName = certificates[0].getSubjectX500Principal().getName();
         Matcher matcher = Pattern.compile("CN=([^,]+)").matcher(clientName);
         if (matcher.find())
