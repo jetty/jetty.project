@@ -640,7 +640,7 @@ public class SocketChannelEndPointTest
         {
             SSLEngine engine = _sslCtxFactory.newSSLEngine();
             engine.setUseClientMode(false);
-            SslConnection sslConnection = new SslConnection(_bufferPool, executor, endpoint, engine);
+            SslConnection sslConnection = new SslConnection(_bufferPool, executor, _sslCtxFactory, endpoint, engine);
             sslConnection.setRenegotiationAllowed(_sslCtxFactory.isRenegotiationAllowed());
             sslConnection.setRenegotiationLimit(_sslCtxFactory.getRenegotiationLimit());
             SslConnection.SslEndPoint sslEndPoint = sslConnection.getSslEndPoint();
