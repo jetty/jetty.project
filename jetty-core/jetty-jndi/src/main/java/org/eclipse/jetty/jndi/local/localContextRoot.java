@@ -32,7 +32,7 @@ import javax.naming.Reference;
 import javax.naming.Referenceable;
 import javax.naming.spi.NamingManager;
 
-import org.eclipse.jetty.plus.jndi.NamingContext;
+import org.eclipse.jetty.util.jndi.NamingContext;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 

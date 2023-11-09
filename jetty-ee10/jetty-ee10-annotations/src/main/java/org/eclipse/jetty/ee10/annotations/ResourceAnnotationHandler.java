@@ -30,7 +30,7 @@ import org.eclipse.jetty.ee10.plus.annotation.InjectionCollection;
 import org.eclipse.jetty.ee10.servlet.ServletContextHandler;
 import org.eclipse.jetty.ee10.webapp.MetaData;
 import org.eclipse.jetty.ee10.webapp.WebAppContext;
-import org.eclipse.jetty.plus.jndi.NamingEntryUtil;
+import org.eclipse.jetty.util.jndi.NamingEntryUtil;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 

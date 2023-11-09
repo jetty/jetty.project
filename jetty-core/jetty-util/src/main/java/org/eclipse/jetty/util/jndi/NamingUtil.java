@@ -11,7 +11,7 @@
 // ========================================================================
 //
 
-package org.eclipse.jetty.plus.jndi;
+package org.eclipse.jetty.util.jndi;
 
 import java.util.HashMap;
 import java.util.Map;

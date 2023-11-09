@@ -16,8 +16,8 @@ module org.eclipse.jetty.jndi
     requires org.slf4j;
 
     requires transitive java.naming;
-    requires org.eclipse.jetty.plus;
     requires transitive org.eclipse.jetty.server;
+    requires transitive org.eclipse.jetty.util;
 
     // Only required if using DataSourceCloser.
     requires static java.sql;

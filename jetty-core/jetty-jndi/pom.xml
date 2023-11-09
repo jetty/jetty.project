@@ -19,10 +19,6 @@
   <dependencies>
     <dependency>
       <groupId>org.eclipse.jetty</groupId>
-      <artifactId>jetty-plus</artifactId>
-    </dependency>
-    <dependency>
-      <groupId>org.eclipse.jetty</groupId>
       <artifactId>jetty-util</artifactId>
     </dependency>
     <dependency>
@@ -54,7 +50,7 @@
         <extensions>true</extensions>
         <configuration>
           <instructions>
-            <Import-Package>${osgi.slf4j.import.packages},jakarta.mail.*;resolution:=optional,*</Import-Package>
+            <Import-Package>${osgi.slf4j.import.packages},*</Import-Package>
           </instructions>
         </configuration>
       </plugin>

@@ -4,7 +4,7 @@
 Adds the Jetty Plus JNDI support to the classpath.
 
 [depend]
-
+server
 
 [lib]
 lib/jetty-plus-${jetty.version}.jar

@@ -20,9 +20,9 @@ import javax.naming.NameNotFoundException;
 import javax.naming.NamingException;
 
 import jakarta.transaction.UserTransaction;
-import org.eclipse.jetty.plus.jndi.NamingEntry;
-import org.eclipse.jetty.plus.jndi.NamingEntryUtil;
-import org.eclipse.jetty.plus.jndi.NamingUtil;
+import org.eclipse.jetty.util.jndi.NamingEntry;
+import org.eclipse.jetty.util.jndi.NamingEntryUtil;
+import org.eclipse.jetty.util.jndi.NamingUtil;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 

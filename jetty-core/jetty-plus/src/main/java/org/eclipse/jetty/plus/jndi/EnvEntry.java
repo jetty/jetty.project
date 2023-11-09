@@ -15,6 +15,8 @@ package org.eclipse.jetty.plus.jndi;
 
 import javax.naming.NamingException;
 
+import org.eclipse.jetty.util.jndi.NamingEntry;
+
 /**
  * EnvEntry
  */
