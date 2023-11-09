@@ -18,7 +18,9 @@ import java.util.ArrayList;
 import java.util.Base64;
 import java.util.List;
 import java.util.Objects;
+import java.util.Queue;
 import java.util.Set;
+import java.util.concurrent.ConcurrentLinkedQueue;
 import java.util.concurrent.TimeoutException;
 
 import org.eclipse.jetty.http.BadMessageException;
@@ -60,12 +62,14 @@ public class HTTP2ServerConnection extends HTTP2Connection implements Connection
     private static final Logger LOG = LoggerFactory.getLogger(HTTP2ServerConnection.class);
 
     private final HttpChannel.Factory httpChannelFactory = new HttpChannel.DefaultFactory();
+    private final Queue<HttpChannel> httpChannels = new ConcurrentLinkedQueue<>();
     private final Attributes attributes = new Lazy();
     private final List<Frame> upgradeFrames = new ArrayList<>();
     private final Connector connector;
     private final ServerSessionListener listener;
     private final HttpConfiguration httpConfig;
     private final String id;
+    private boolean recycleHttpChannels = true;
 
     public HTTP2ServerConnection(Connector connector, EndPoint endPoint, HttpConfiguration httpConfig, HTTP2ServerSession session, int inputBufferSize, ServerSessionListener listener)
     {
@@ -118,7 +122,7 @@ public class HTTP2ServerConnection extends HTTP2Connection implements Connection
         if (LOG.isDebugEnabled())
             LOG.debug("Processing {} on {}", frame, stream);
 
-        HttpChannel httpChannel = httpChannelFactory.newHttpChannel(this);
+        HttpChannel httpChannel = pollHttpChannel();
         HttpStreamOverHTTP2 httpStream = new HttpStreamOverHTTP2(this, httpChannel, stream);
         httpChannel.setHttpStream(httpStream);
         stream.setAttachment(httpStream);
@@ -223,7 +227,7 @@ public class HTTP2ServerConnection extends HTTP2Connection implements Connection
         if (LOG.isDebugEnabled())
             LOG.debug("Processing push {} on {}", request, stream);
 
-        HttpChannel httpChannel = httpChannelFactory.newHttpChannel(this);
+        HttpChannel httpChannel = pollHttpChannel();
         HttpStreamOverHTTP2 httpStream = new HttpStreamOverHTTP2(this, httpChannel, stream);
         httpChannel.setHttpStream(httpStream);
         Runnable task = httpStream.onPushRequest(request);
@@ -231,11 +235,19 @@ public class HTTP2ServerConnection extends HTTP2Connection implements Connection
             offerTask(task, true);
     }
 
-/*
-    // TODO: re-instate recycle channel functionality, but using Pool.
-    private final AutoLock lock = new AutoLock();
-    private final Queue<HttpChannelOverHTTP2> channels = new ArrayDeque<>();
-    private boolean recycleHttpChannels = true;
+    private HttpChannel pollHttpChannel()
+    {
+        HttpChannel httpChannel = isRecycleHttpChannels() ? httpChannels.poll() : null;
+        if (httpChannel == null)
+            httpChannel = httpChannelFactory.newHttpChannel(this);
+        return httpChannel;
+    }
+
+    void offerHttpChannel(HttpChannel channel)
+    {
+        if (isRecycleHttpChannels())
+            httpChannels.offer(channel);
+    }
 
     public boolean isRecycleHttpChannels()
     {
@@ -246,60 +258,6 @@ public class HTTP2ServerConnection extends HTTP2Connection implements Connection
     {
         this.recycleHttpChannels = recycleHttpChannels;
     }
-
-    private HttpChannelOverHTTP2 provideHttpChannel(Connector connector, IStream stream)
-    {
-        HttpChannelOverHTTP2 channel = pollHttpChannel();
-        if (channel != null)
-        {
-            channel.getHttpTransport().setStream(stream);
-            if (LOG.isDebugEnabled())
-                LOG.debug("Recycling channel {} for {}", channel, this);
-        }
-        else
-        {
-            HttpTransportOverHTTP2 transport = new HttpTransportOverHTTP2(connector, this);
-            transport.setStream(stream);
-            channel = newServerHttpChannelOverHTTP2(connector, httpConfig, transport);
-            channel.setUseOutputDirectByteBuffers(isUseOutputDirectByteBuffers());
-            if (LOG.isDebugEnabled())
-                LOG.debug("Creating channel {} for {}", channel, this);
-        }
-        stream.setAttachment(channel);
-        return channel;
-    }
-
-    protected ServerHttpChannelOverHTTP2 newServerHttpChannelOverHTTP2(Connector connector, HttpConfiguration httpConfig, HttpTransportOverHTTP2 transport)
-    {
-        return new ServerHttpChannelOverHTTP2(connector, httpConfig, getEndPoint(), transport);
-    }
-
-    private void offerHttpChannel(HttpChannelOverHTTP2 channel)
-    {
-        if (isRecycleHttpChannels())
-        {
-            try (AutoLock l = lock.lock())
-            {
-                channels.offer(channel);
-            }
-        }
-    }
-
-    private HttpChannelOverHTTP2 pollHttpChannel()
-    {
-        if (isRecycleHttpChannels())
-        {
-            try (AutoLock l = lock.lock())
-            {
-                return channels.poll();
-            }
-        }
-        else
-        {
-            return null;
-        }
-    }
-*/
 
     public boolean upgrade(Request request, HttpFields.Mutable responseFields)
     {
