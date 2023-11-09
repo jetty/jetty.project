@@ -39,6 +39,12 @@
       <artifactId>jetty-infinispan-common</artifactId>
       <scope>compile</scope>
       <optional>true</optional>
+      <exclusions>
+        <exclusion>
+          <groupId>org.wildfly.security</groupId>
+          <artifactId>wildfly-elytron</artifactId>
+        </exclusion>
+      </exclusions>
     </dependency>
     <dependency>
       <groupId>org.eclipse.jetty</groupId>
@@ -76,6 +82,12 @@
       <artifactId>infinispan-client-hotrod</artifactId>
       <scope>compile</scope>
       <optional>true</optional>
+      <exclusions>
+        <exclusion>
+          <groupId>org.wildfly.security</groupId>
+          <artifactId>wildfly-elytron</artifactId>
+        </exclusion>
+      </exclusions>
     </dependency>
     <dependency>
       <groupId>org.infinispan</groupId>

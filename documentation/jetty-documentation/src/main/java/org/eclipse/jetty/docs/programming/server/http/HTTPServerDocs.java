@@ -16,6 +16,7 @@ package org.eclipse.jetty.docs.programming.server.http;
 import java.io.IOException;
 import java.nio.ByteBuffer;
 import java.nio.file.Path;
+import java.security.Security;
 import java.time.Duration;
 import java.util.EnumSet;
 import java.util.List;
@@ -27,6 +28,7 @@ import jakarta.servlet.ServletInputStream;
 import jakarta.servlet.http.HttpServlet;
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletResponse;
+import org.conscrypt.OpenSSLProvider;
 import org.eclipse.jetty.alpn.server.ALPNServerConnectionFactory;
 import org.eclipse.jetty.ee10.servlet.DefaultServlet;
 import org.eclipse.jetty.ee10.servlet.FilterHolder;
@@ -437,6 +439,20 @@ public class HTTPServerDocs
 
         server.start();
         // end::h3[]
+    }
+
+    public void conscrypt()
+    {
+        // tag::conscrypt[]
+        // Configure the JDK with the Conscrypt provider.
+        Security.addProvider(new OpenSSLProvider());
+
+        SslContextFactory.Server sslContextFactory = new SslContextFactory.Server();
+        sslContextFactory.setKeyStorePath("/path/to/keystore");
+        sslContextFactory.setKeyStorePassword("secret");
+        // Configure Jetty's SslContextFactory to use Conscrypt.
+        sslContextFactory.setProvider("Conscrypt");
+        // end::conscrypt[]
     }
 
     public void handlerTree()

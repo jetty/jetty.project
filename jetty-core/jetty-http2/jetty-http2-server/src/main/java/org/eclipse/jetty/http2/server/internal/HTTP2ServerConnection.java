@@ -43,7 +43,6 @@ import org.eclipse.jetty.http2.parser.ServerParser;
 import org.eclipse.jetty.http2.parser.SettingsBodyParser;
 import org.eclipse.jetty.io.Connection;
 import org.eclipse.jetty.io.EndPoint;
-import org.eclipse.jetty.io.ssl.SslConnection;
 import org.eclipse.jetty.server.ConnectionMetaData;
 import org.eclipse.jetty.server.Connector;
 import org.eclipse.jetty.server.HttpChannel;
@@ -390,12 +389,6 @@ public class HTTP2ServerConnection extends HTTP2Connection implements Connection
     public boolean isPersistent()
     {
         return true;
-    }
-
-    @Override
-    public boolean isSecure()
-    {
-        return getEndPoint() instanceof SslConnection.SslEndPoint;
     }
 
     @Override

@@ -13,6 +13,8 @@
 
 package org.eclipse.jetty.util;
 
+import java.util.Set;
+import java.util.concurrent.atomic.AtomicReference;
 import java.util.stream.Stream;
 
 import org.junit.jupiter.api.Test;
@@ -34,6 +36,7 @@ public class AttributesTest
             new Attributes.Mapped(),
             new Attributes.Wrapper(new Attributes.Mapped()),
             new Attributes.Layer(new Attributes.Mapped()),
+            new TestSynthetic(new Attributes.Mapped()),
             new AttributesMap()
         );
     }
@@ -135,4 +138,84 @@ public class AttributesTest
         testAttributes(layer);
     }
 
+    @Test
+    public void testSynthetic()
+    {
+        TestSynthetic attributes = new TestSynthetic(new Attributes.Mapped());
+        assertThat(attributes.getAttributeNameSet(), empty());
+        attributes._roy.set("Batty");
+        attributes._leon.set("Kowalski");
+
+        assertThat(attributes.getAttribute("Leon"), equalTo("Kowalski"));
+        assertThat(attributes.getAttribute("Zhora"), nullValue());
+        assertThat(attributes.getAttribute("Pris"), nullValue());
+        assertThat(attributes.getAttribute("Roy"), equalTo("Batty"));
+        assertThat(attributes.getAttribute("A"), nullValue());
+
+        assertThat(attributes.getAttributeNameSet(), containsInAnyOrder("Roy", "Leon"));
+
+        assertThat(attributes.setAttribute("A", "1"), nullValue());
+        assertThat(attributes.setAttribute("Pris", "Unknown"), nullValue());
+
+        assertThat(attributes.getAttribute("Leon"), equalTo("Kowalski"));
+        assertThat(attributes.getAttribute("Pris"), equalTo("Unknown"));
+        assertThat(attributes.getAttribute("Roy"), equalTo("Batty"));
+        assertThat(attributes.getAttribute("A"), equalTo("1"));
+        assertThat(attributes.getAttributeNameSet(), containsInAnyOrder("Roy", "Leon", "A", "Pris"));
+
+        assertThat(attributes.setAttribute("Leon", "retired"), equalTo("Kowalski"));
+        assertThat(attributes.setAttribute("Zhora", "retired"), nullValue());
+        assertThat(attributes.setAttribute("A", "2"), equalTo("1"));
+
+        assertThat(attributes.getAttribute("Leon"), equalTo("retired"));
+        assertThat(attributes.getAttribute("Zhora"), equalTo("retired"));
+        assertThat(attributes.getAttribute("Pris"), equalTo("Unknown"));
+        assertThat(attributes.getAttribute("Roy"), equalTo("Batty"));
+        assertThat(attributes.getAttribute("A"), equalTo("2"));
+        assertThat(attributes.getAttributeNameSet(), containsInAnyOrder("Roy", "Leon", "A", "Pris", "Zhora"));
+
+        assertThat(attributes.removeAttribute("Leon"), equalTo("retired"));
+        assertThat(attributes.removeAttribute("Zhora"), equalTo("retired"));
+        assertThat(attributes.removeAttribute("Pris"), equalTo("Unknown"));
+
+        assertThat(attributes.getAttribute("Roy"), equalTo("Batty"));
+        assertThat(attributes.getAttribute("A"), equalTo("2"));
+        assertThat(attributes.getAttributeNameSet(), containsInAnyOrder("Roy", "A"));
+
+        attributes.clearAttributes();
+        assertThat(attributes.getAttributeNameSet(), empty());
+    }
+
+    private static class TestSynthetic extends Attributes.Synthetic
+    {
+        Set<String> _syntheticAttributes = Set.of("Roy", "Pris", "Zhora", "Leon");
+        AtomicReference<Object> _roy = new AtomicReference<>();
+        AtomicReference<Object> _pris = new AtomicReference<>();
+        AtomicReference<Object> _zhora = new AtomicReference<>();
+        AtomicReference<Object> _leon = new AtomicReference<>();
+
+        public TestSynthetic(Attributes attributes)
+        {
+            super(attributes);
+        }
+
+        @Override
+        protected Object getSyntheticAttribute(String name)
+        {
+            return switch (name)
+            {
+                case "Roy" -> _roy.get();
+                case "Pris" -> _pris.get();
+                case "Zhora" -> _zhora.get();
+                case "Leon" -> _leon.get();
+                default -> null;
+            };
+        }
+
+        @Override
+        protected Set<String> getSyntheticNameSet()
+        {
+            return _syntheticAttributes;
+        }
+    }
 }
