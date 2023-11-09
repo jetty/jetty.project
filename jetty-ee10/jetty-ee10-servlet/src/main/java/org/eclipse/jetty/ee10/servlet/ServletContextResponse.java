@@ -338,7 +338,7 @@ public class ServletContextResponse extends ContextResponse implements ServletCo
                 {
                     HttpCookie c = sh.getSessionCookie(managedSession, getRequest().isSecure());
                     if (c != null)
-                        Response.addCookie(getWrapped(), c);
+                        Response.putCookie(getWrapped(), c);
                 }
                 else
                 {

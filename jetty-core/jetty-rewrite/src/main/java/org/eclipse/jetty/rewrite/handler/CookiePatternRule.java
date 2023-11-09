@@ -95,7 +95,7 @@ public class CookiePatternRule extends PatternRule
             @Override
             protected boolean handle(Response response, Callback callback) throws Exception
             {
-                Response.addCookie(response, HttpCookie.from(_name, _value));
+                Response.putCookie(response, HttpCookie.from(_name, _value));
                 return super.handle(response, callback);
             }
         };

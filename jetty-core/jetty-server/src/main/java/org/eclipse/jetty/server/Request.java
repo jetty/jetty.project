@@ -25,9 +25,12 @@ import java.security.Principal;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Locale;
+import java.util.Map;
 import java.util.Objects;
+import java.util.Set;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.TimeoutException;
+import java.util.concurrent.atomic.AtomicReference;
 import java.util.function.Consumer;
 import java.util.function.Function;
 import java.util.function.Predicate;
@@ -45,6 +48,7 @@ import org.eclipse.jetty.io.Content;
 import org.eclipse.jetty.server.internal.HttpChannelState;
 import org.eclipse.jetty.util.Attributes;
 import org.eclipse.jetty.util.Callback;
+import org.eclipse.jetty.util.ExceptionUtil;
 import org.eclipse.jetty.util.Fields;
 import org.eclipse.jetty.util.HostPort;
 import org.eclipse.jetty.util.NanoTime;
@@ -54,6 +58,8 @@ import org.eclipse.jetty.util.UrlEncoded;
 import org.eclipse.jetty.util.annotation.ManagedAttribute;
 import org.eclipse.jetty.util.annotation.ManagedObject;
 import org.eclipse.jetty.util.thread.Invocable;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 /**
  * <p>The representation of an HTTP request, for any protocol version (HTTP/1.1, HTTP/2, HTTP/3).</p>
@@ -123,6 +129,8 @@ import org.eclipse.jetty.util.thread.Invocable;
  */
 public interface Request extends Attributes, Content.Source
 {
+    Logger LOG = LoggerFactory.getLogger(Request.class);
+
     String CACHE_ATTRIBUTE = Request.class.getCanonicalName() + ".CookieCache";
     String COOKIE_ATTRIBUTE = Request.class.getCanonicalName() + ".Cookies";
     List<Locale> DEFAULT_LOCALES = List.of(Locale.getDefault());
@@ -316,7 +324,72 @@ public interface Request extends Attributes, Content.Source
 
     TunnelSupport getTunnelSupport();
 
+    /**
+     * Add a {@link HttpStream.Wrapper} to the current {@link HttpStream}.
+     * @param wrapper A function that wraps the passed stream.
+     * @see #addCompletionListener(Request, Consumer)
+     */
     void addHttpStreamWrapper(Function<HttpStream, HttpStream> wrapper);
+
+    /**
+     * Adds a completion listener that is an optimized equivalent to overriding the
+     * {@link HttpStream#succeeded()} and {@link HttpStream#failed(Throwable)} methods
+     * of a {@link HttpStream.Wrapper} created by a call to {@link #addHttpStreamWrapper(Function)}.
+     * In the case of a failure, the {@link Throwable} cause is passed to the listener, but unlike
+     * {@link #addFailureListener(Consumer)} listeners, which are called when the failure occurs, completion
+     * listeners are called only once the {@link HttpStream} is completed at the very end of processing.
+     *
+     * @param listener A {@link Consumer} of {@link Throwable} to call when the request handling is complete. The
+     * listener is passed a null {@link Throwable} on success.
+     * @see #addHttpStreamWrapper(Function)
+     */
+    static void addCompletionListener(Request request, Consumer<Throwable> listener)
+    {
+        // Look for a ChannelRequest to use its optimized addCompletionLister
+        HttpChannelState.ChannelRequest channelRequest = as(request, HttpChannelState.ChannelRequest.class);
+        if (channelRequest != null)
+        {
+            channelRequest.addCompletionListener(listener);
+        }
+        else
+        {
+            // No ChannelRequest, so directly implement listener with a stream wrapper.
+            AtomicReference<Consumer<Throwable>> onCompletion = new AtomicReference<>(listener);
+            request.addHttpStreamWrapper(s -> new HttpStream.Wrapper(s)
+            {
+                @Override
+                public void succeeded()
+                {
+                    onCompletion(null);
+                    super.succeeded();
+                }
+
+                @Override
+                public void failed(Throwable x)
+                {
+                    onCompletion(x);
+                    super.failed(x);
+                }
+
+                private void onCompletion(Throwable x)
+                {
+                    Consumer<Throwable> l = onCompletion.getAndSet(null);
+                    if (l != null)
+                    {
+                        try
+                        {
+                            l.accept(x);
+                        }
+                        catch (Throwable t)
+                        {
+                            ExceptionUtil.addSuppressedIfNotAssociated(x, t);
+                            LOG.warn("{} threw", l, t);
+                        }
+                    }
+                }
+            });
+        }
+    }
 
     /**
      * <p>Get a {@link Session} associated with the request.
@@ -714,11 +787,21 @@ public interface Request extends Attributes, Content.Source
     /**
      * <p>A wrapper for {@code Request} instances.</p>
      */
-    class Wrapper extends Attributes.Wrapper implements Request
+    class Wrapper implements Request, Attributes
     {
+        /**
+         * Implementation note: {@link Request.Wrapper} does not extend from {@link Attributes.Wrapper}
+         * as {@link #getWrapped()} would either need to be implemented as {@code return (Request)getWrapped()}
+         * which would require a cast from one interface type to another, spoiling the JVM's
+         * {@code secondary_super_cache}, or by storing the same {@code _wrapped} object in two fields
+         * (one in {@link Attributes.Wrapper} as type {@link Attributes} and one in {@link Request.Wrapper} as
+         * type {@link Request}) to save the costly cast from interface type to another.
+         */
+        private final Request _request;
+
         public Wrapper(Request wrapped)
         {
-            super(wrapped);
+            _request = Objects.requireNonNull(wrapped);
         }
 
         @Override
@@ -854,9 +937,44 @@ public interface Request extends Attributes, Content.Source
         }
 
         @Override
+        public Object removeAttribute(String name)
+        {
+            return getWrapped().removeAttribute(name);
+        }
+
+        @Override
+        public Object setAttribute(String name, Object attribute)
+        {
+            return getWrapped().setAttribute(name, attribute);
+        }
+
+        @Override
+        public Object getAttribute(String name)
+        {
+            return getWrapped().getAttribute(name);
+        }
+
+        @Override
+        public Set<String> getAttributeNameSet()
+        {
+            return getWrapped().getAttributeNameSet();
+        }
+
+        @Override
+        public Map<String, Object> asAttributeMap()
+        {
+            return getWrapped().asAttributeMap();
+        }
+
+        @Override
+        public void clearAttributes()
+        {
+            getWrapped().clearAttributes();
+        }
+
         public Request getWrapped()
         {
-            return (Request)super.getWrapped();
+            return _request;
         }
     }
 
@@ -945,6 +1063,61 @@ public interface Request extends Attributes, Content.Source
         default Principal getUserPrincipal()
         {
             return null;
+        }
+    }
+
+    /**
+     * <p>A {@link Request.Wrapper} that separately provides the request {@link Attributes}.</p>
+     * <p>The provided {@link Attributes} should be an {@link Attributes.Wrapper} over the request.</p>
+     */
+    class AttributesWrapper extends Wrapper
+    {
+        private final Attributes _attributes;
+
+        /**
+         * @param wrapped the request to wrap
+         * @param attributes the provided request attributes, typically a {@link Attributes.Wrapper} over the request
+         */
+        public AttributesWrapper(Request wrapped, Attributes attributes)
+        {
+            super(wrapped);
+            _attributes = Objects.requireNonNull(attributes);
+        }
+
+        @Override
+        public Map<String, Object> asAttributeMap()
+        {
+            return _attributes.asAttributeMap();
+        }
+
+        @Override
+        public void clearAttributes()
+        {
+            _attributes.clearAttributes();
+        }
+
+        @Override
+        public Object removeAttribute(String name)
+        {
+            return _attributes.removeAttribute(name);
+        }
+
+        @Override
+        public Object setAttribute(String name, Object attribute)
+        {
+            return _attributes.setAttribute(name, attribute);
+        }
+
+        @Override
+        public Object getAttribute(String name)
+        {
+            return _attributes.getAttribute(name);
+        }
+
+        @Override
+        public Set<String> getAttributeNameSet()
+        {
+            return _attributes.getAttributeNameSet();
         }
     }
 }
