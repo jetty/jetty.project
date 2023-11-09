@@ -13,7 +13,6 @@
 
 package org.eclipse.jetty.fcgi.server.internal;
 
-import java.net.SocketAddress;
 import java.nio.ByteBuffer;
 import java.util.Set;
 import java.util.concurrent.TimeoutException;
@@ -25,12 +24,11 @@ import org.eclipse.jetty.fcgi.parser.ServerParser;
 import org.eclipse.jetty.http.BadMessageException;
 import org.eclipse.jetty.http.HttpField;
 import org.eclipse.jetty.http.HttpVersion;
-import org.eclipse.jetty.io.AbstractConnection;
 import org.eclipse.jetty.io.ByteBufferPool;
-import org.eclipse.jetty.io.Connection;
 import org.eclipse.jetty.io.Content;
 import org.eclipse.jetty.io.EndPoint;
 import org.eclipse.jetty.io.RetainableByteBuffer;
+import org.eclipse.jetty.server.AbstractMetaDataConnection;
 import org.eclipse.jetty.server.ConnectionMetaData;
 import org.eclipse.jetty.server.Connector;
 import org.eclipse.jetty.server.HttpChannel;
@@ -40,7 +38,7 @@ import org.eclipse.jetty.util.StringUtil;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-public class ServerFCGIConnection extends AbstractConnection implements ConnectionMetaData
+public class ServerFCGIConnection extends AbstractMetaDataConnection implements ConnectionMetaData
 {
     private static final Logger LOG = LoggerFactory.getLogger(ServerFCGIConnection.class);
 
@@ -60,7 +58,7 @@ public class ServerFCGIConnection extends AbstractConnection implements Connecti
 
     public ServerFCGIConnection(Connector connector, EndPoint endPoint, HttpConfiguration configuration, boolean sendStatus200)
     {
-        super(endPoint, connector.getExecutor());
+        super(connector, endPoint, connector.getExecutor(), configuration);
         this.connector = connector;
         this.networkByteBufferPool = connector.getByteBufferPool();
         this.flusher = new Flusher(endPoint);
@@ -107,12 +105,6 @@ public class ServerFCGIConnection extends AbstractConnection implements Connecti
     }
 
     @Override
-    public HttpConfiguration getHttpConfiguration()
-    {
-        return configuration;
-    }
-
-    @Override
     public HttpVersion getHttpVersion()
     {
         return HttpVersion.HTTP_1_1;
@@ -125,18 +117,6 @@ public class ServerFCGIConnection extends AbstractConnection implements Connecti
     }
 
     @Override
-    public Connection getConnection()
-    {
-        return this;
-    }
-
-    @Override
-    public Connector getConnector()
-    {
-        return connector;
-    }
-
-    @Override
     public boolean isPersistent()
     {
         return true;
@@ -146,18 +126,6 @@ public class ServerFCGIConnection extends AbstractConnection implements Connecti
     public boolean isSecure()
     {
         return false;
-    }
-
-    @Override
-    public SocketAddress getRemoteSocketAddress()
-    {
-        return getEndPoint().getRemoteSocketAddress();
-    }
-
-    @Override
-    public SocketAddress getLocalSocketAddress()
-    {
-        return getEndPoint().getLocalSocketAddress();
     }
 
     @Override
