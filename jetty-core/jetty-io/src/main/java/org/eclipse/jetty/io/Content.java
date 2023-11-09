@@ -859,9 +859,11 @@ public class Content
          */
         default Chunk asReadOnly()
         {
-            if (!canRetain())
+            if (getByteBuffer().isReadOnly())
                 return this;
-            return asChunk(getByteBuffer().asReadOnlyBuffer(), isLast(), this);
+            if (canRetain())
+                return asChunk(getByteBuffer().asReadOnlyBuffer(), isLast(), this);
+            return from(getByteBuffer().asReadOnlyBuffer(), isLast());
         }
 
         /**
