@@ -26,7 +26,6 @@ import org.eclipse.jetty.server.Response;
 import org.eclipse.jetty.server.Server;
 import org.eclipse.jetty.server.Session;
 import org.eclipse.jetty.util.Callback;
-import org.junit.Assert;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
@@ -39,6 +38,7 @@ import static org.hamcrest.Matchers.equalTo;
 import static org.hamcrest.Matchers.not;
 import static org.hamcrest.Matchers.nullValue;
 import static org.hamcrest.Matchers.startsWith;
+import static org.junit.jupiter.api.Assertions.assertNull;
 
 /**
  * SessionHandlerTest
@@ -656,7 +656,7 @@ public class SessionHandlerTest
             response = HttpTester.parseResponse(endPoint.getResponse());
             assertThat(response.getStatus(), equalTo(200));
 
-            Assert.assertNull(response.get(HttpHeader.SET_COOKIE));
+            assertNull(response.get(HttpHeader.SET_COOKIE));
 
             String content = response.getContent();
             assertThat(content, startsWith("Session="));
