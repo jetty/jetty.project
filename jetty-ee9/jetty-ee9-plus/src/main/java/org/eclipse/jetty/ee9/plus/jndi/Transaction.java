@@ -39,11 +39,11 @@ public class Transaction extends NamingEntry
     public static void bindTransactionToENC(String scope)
         throws NamingException
     {
-        Transaction txEntry = (Transaction)NamingEntryUtil.lookupNamingEntry(scope, Transaction.USER_TRANSACTION);
+        NamingEntry txEntry = NamingEntryUtil.lookupNamingEntry(scope, Transaction.USER_TRANSACTION);
 
-        if (txEntry != null)
+        if (txEntry instanceof Transaction)
         {
-            txEntry.bindToComp();
+            ((Transaction)txEntry).bindToComp();
         }
         else
         {
