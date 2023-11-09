@@ -87,7 +87,7 @@ public class SslConnectionTest
         {
             SSLEngine engine = _sslCtxFactory.newSSLEngine();
             engine.setUseClientMode(false);
-            SslConnection sslConnection = new SslConnection(_bufferPool, getExecutor(), endpoint, engine);
+            SslConnection sslConnection = new SslConnection(_bufferPool, getExecutor(), _sslCtxFactory, endpoint, engine);
             sslConnection.setRenegotiationAllowed(_sslCtxFactory.isRenegotiationAllowed());
             sslConnection.setRenegotiationLimit(_sslCtxFactory.getRenegotiationLimit());
             SslConnection.SslEndPoint sslEndPoint = sslConnection.getSslEndPoint();
