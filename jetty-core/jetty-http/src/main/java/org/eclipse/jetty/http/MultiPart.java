@@ -409,9 +409,10 @@ public class MultiPart
                 List<Content.Chunk> chunks = content.stream()
                     .map(chunk ->
                     {
-                        if (!chunk.getByteBuffer().isReadOnly())
-                            return Content.Chunk.from(chunk.getByteBuffer().slice(), chunk.isLast());
-                        return chunk;
+                        // TODO is this a reliable way to duplicate a chunk while eventually severing it from its retainable?
+                        if (Content.Chunk.isFailure(chunk))
+                            return chunk;
+                        return Content.Chunk.from(chunk.getByteBuffer().slice(), chunk.isLast());
                     })
                     .toList();
                 ChunksContentSource newContentSource = new ChunksContentSource(chunks);
