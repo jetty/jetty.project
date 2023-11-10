@@ -20,6 +20,7 @@ import java.net.URLClassLoader;
 import java.nio.file.Path;
 import java.util.ArrayList;
 import java.util.Collection;
+import java.util.Collections;
 import java.util.HashMap;
 import java.util.HashSet;
 import java.util.List;
@@ -32,7 +33,6 @@ import java.util.stream.Stream;
 
 import org.eclipse.jetty.server.Server;
 import org.eclipse.jetty.util.FileID;
-import org.eclipse.jetty.util.NullMap;
 import org.eclipse.jetty.util.StringUtil;
 import org.eclipse.jetty.util.URIUtil;
 import org.eclipse.jetty.util.UriPatternPredicate;
@@ -82,8 +82,8 @@ public class MetaInfConfiguration extends AbstractConfiguration
      */
     public static final String RESOURCE_DIRS = "org.eclipse.jetty.resources";
 
-    private static final Map<Resource, Resource> NOOP_RESOURCE_CACHE = new NullMap<>();
-    private static final Map<Resource, Collection<URL>> NOOP_TLD_CACHE = new NullMap<>();
+    private static final Map<Resource, Resource> NOOP_RESOURCE_CACHE = Collections.EMPTY_MAP;
+    private static final Map<Resource, Collection<URL>> NOOP_TLD_CACHE = Collections.EMPTY_MAP;
 
     public MetaInfConfiguration()
     {
