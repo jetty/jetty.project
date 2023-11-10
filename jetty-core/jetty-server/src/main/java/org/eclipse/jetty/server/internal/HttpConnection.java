@@ -135,7 +135,7 @@ public class HttpConnection extends AbstractMetaDataConnection implements Runnab
 
     public HttpConnection(HttpConfiguration configuration, Connector connector, EndPoint endPoint, boolean recordComplianceViolations)
     {
-        super(connector, endPoint, connector.getExecutor(), configuration);
+        super(connector, configuration, endPoint);
         _id = __connectionIdGenerator.getAndIncrement();
         _bufferPool = connector.getByteBufferPool();
         _generator = newHttpGenerator();

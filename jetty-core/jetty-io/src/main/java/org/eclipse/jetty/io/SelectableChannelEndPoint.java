@@ -131,8 +131,8 @@ public abstract class SelectableChannelEndPoint extends AbstractEndPoint impleme
         try
         {
             SelectableChannel channel = getChannel();
-            if (channel instanceof NetworkChannel)
-                return ((NetworkChannel)channel).getLocalAddress();
+            if (channel instanceof NetworkChannel networkChannel)
+                return networkChannel.getLocalAddress();
             return null;
         }
         catch (Throwable x)

@@ -58,7 +58,7 @@ public class ServerFCGIConnection extends AbstractMetaDataConnection implements 
 
     public ServerFCGIConnection(Connector connector, EndPoint endPoint, HttpConfiguration configuration, boolean sendStatus200)
     {
-        super(connector, endPoint, connector.getExecutor(), configuration);
+        super(connector, configuration, endPoint);
         this.connector = connector;
         this.networkByteBufferPool = connector.getByteBufferPool();
         this.flusher = new Flusher(endPoint);

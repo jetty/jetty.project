@@ -14,7 +14,6 @@
 package org.eclipse.jetty.server;
 
 import java.net.SocketAddress;
-import java.util.concurrent.Executor;
 
 import org.eclipse.jetty.io.AbstractConnection;
 import org.eclipse.jetty.io.Connection;
@@ -31,9 +30,9 @@ public abstract class AbstractMetaDataConnection extends AbstractConnection impl
     private final SocketAddress _localSocketAddress;
     private final SocketAddress _remoteSocketAddress;
 
-    public AbstractMetaDataConnection(Connector connector, EndPoint endPoint, Executor executor, HttpConfiguration httpConfiguration)
+    public AbstractMetaDataConnection(Connector connector, HttpConfiguration httpConfiguration, EndPoint endPoint)
     {
-        super(endPoint, executor);
+        super(endPoint, connector.getExecutor());
         _connector = connector;
         _httpConfiguration = httpConfiguration;
         _localSocketAddress = httpConfiguration.getLocalAddress() != null ? httpConfiguration.getLocalAddress() : endPoint.getLocalSocketAddress();
