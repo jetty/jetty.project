@@ -39,7 +39,8 @@ public class HttpClientContentDecoderFactoriesTest extends AbstractHttpClientSer
     public void testContentDecoderReturningEmptyRetainableDecodedBuffer(Scenario scenario) throws Exception
     {
         ArrayByteBufferPool.Tracking bufferPool = new ArrayByteBufferPool.Tracking();
-        start(scenario, new Handler.Abstract() {
+        start(scenario, new Handler.Abstract()
+        {
             @Override
             public boolean handle(Request request, Response response, Callback callback)
             {
@@ -49,7 +50,8 @@ public class HttpClientContentDecoderFactoriesTest extends AbstractHttpClientSer
             }
         });
 
-        client.getContentDecoderFactories().put(new ContentDecoder.Factory("UPPERCASE") {
+        client.getContentDecoderFactories().put(new ContentDecoder.Factory("UPPERCASE")
+        {
             @Override
             public ContentDecoder newContentDecoder()
             {
@@ -81,7 +83,8 @@ public class HttpClientContentDecoderFactoriesTest extends AbstractHttpClientSer
     @ArgumentsSource(ScenarioProvider.class)
     public void testContentDecoderReturningNonRetainableDecodedBuffer(Scenario scenario) throws Exception
     {
-        start(scenario, new Handler.Abstract() {
+        start(scenario, new Handler.Abstract()
+        {
             @Override
             public boolean handle(Request request, Response response, Callback callback)
             {
@@ -91,7 +94,8 @@ public class HttpClientContentDecoderFactoriesTest extends AbstractHttpClientSer
             }
         });
 
-        client.getContentDecoderFactories().put(new ContentDecoder.Factory("UPPERCASE") {
+        client.getContentDecoderFactories().put(new ContentDecoder.Factory("UPPERCASE")
+        {
             @Override
             public ContentDecoder newContentDecoder()
             {

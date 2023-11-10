@@ -37,7 +37,8 @@ public class HttpClientContentFailuresTest extends AbstractHttpClientServerTest
     @ArgumentsSource(ScenarioProvider.class)
     public void testTerminalFailureInContentMakesSendThrow(Scenario scenario) throws Exception
     {
-        start(scenario, new Handler.Abstract() {
+        start(scenario, new Handler.Abstract()
+        {
             @Override
             public boolean handle(Request request, Response response, Callback callback)
             {
@@ -76,7 +77,8 @@ public class HttpClientContentFailuresTest extends AbstractHttpClientServerTest
     @ArgumentsSource(ScenarioProvider.class)
     public void testTransientFailureInContentConsideredTerminalAndMakesSendThrow(Scenario scenario) throws Exception
     {
-        start(scenario, new Handler.Abstract() {
+        start(scenario, new Handler.Abstract()
+        {
             @Override
             public boolean handle(Request request, Response response, Callback callback)
             {
@@ -116,7 +118,8 @@ public class HttpClientContentFailuresTest extends AbstractHttpClientServerTest
     @ArgumentsSource(ScenarioProvider.class)
     public void testTransientTimeoutFailureMakesSendThrowTimeoutException(Scenario scenario) throws Exception
     {
-        start(scenario, new Handler.Abstract() {
+        start(scenario, new Handler.Abstract()
+        {
             @Override
             public boolean handle(Request request, Response response, Callback callback)
             {
@@ -156,7 +159,8 @@ public class HttpClientContentFailuresTest extends AbstractHttpClientServerTest
     @ArgumentsSource(ScenarioProvider.class)
     public void testTerminalTimeoutFailureMakesSendThrowTimeoutException(Scenario scenario) throws Exception
     {
-        start(scenario, new Handler.Abstract() {
+        start(scenario, new Handler.Abstract()
+        {
             @Override
             public boolean handle(Request request, Response response, Callback callback)
             {
