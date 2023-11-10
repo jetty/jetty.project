@@ -182,6 +182,11 @@ public class HttpConfiguration implements Dumpable
         return null;
     }
 
+    public boolean removeCustomizer(Customizer customizer)
+    {
+        return _customizers.remove(customizer);
+    }
+
     @ManagedAttribute("The size in bytes of the output buffer used to aggregate HTTP output")
     public int getOutputBufferSize()
     {

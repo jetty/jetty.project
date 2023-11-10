@@ -49,6 +49,7 @@ import java.util.Map;
 import java.util.Objects;
 import java.util.Set;
 import java.util.function.Consumer;
+import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 import java.util.stream.Collectors;
 import javax.net.ssl.CertPathTrustManagerParameters;
@@ -113,6 +114,8 @@ public abstract class SslContextFactory extends ContainerLifeCycle implements Du
 
     private static final Logger LOG = LoggerFactory.getLogger(SslContextFactory.class);
     private static final Logger LOG_CONFIG = LoggerFactory.getLogger(LOG.getName() + ".config");
+    private static final Pattern KEY_SIZE_PATTERN = Pattern.compile("_(\\d+)_");
+
     /**
      * Default Excluded Protocols List
      */
@@ -133,6 +136,7 @@ public abstract class SslContextFactory extends ContainerLifeCycle implements Du
         "^.*_NULL_.*$",
         "^.*_anon_.*$"
     };
+    private static final String X_509 = "X.509";
 
     private final AutoLock _lock = new AutoLock();
     private final Set<String> _excludeProtocols = new LinkedHashSet<>();
@@ -181,6 +185,7 @@ public abstract class SslContextFactory extends ContainerLifeCycle implements Du
     private Factory _factory;
     private PKIXCertPathChecker _pkixCertPathChecker;
     private HostnameVerifier _hostnameVerifier;
+    private CertificateFactory _x509CertificateFactory;
 
     /**
      * Construct an instance of SslContextFactory with the default configuration.
@@ -214,6 +219,7 @@ public abstract class SslContextFactory extends ContainerLifeCycle implements Du
         {
             load();
         }
+        _x509CertificateFactory = getCertificateFactoryInstance(X_509);
         checkConfiguration();
     }
 
@@ -302,7 +308,7 @@ public abstract class SslContextFactory extends ContainerLifeCycle implements Du
                     for (String alias : Collections.list(keyStore.aliases()))
                     {
                         Certificate certificate = keyStore.getCertificate(alias);
-                        if (certificate != null && "X.509".equals(certificate.getType()))
+                        if (certificate != null && X_509.equals(certificate.getType()))
                         {
                             X509Certificate x509C = (X509Certificate)certificate;
 
@@ -1914,15 +1920,15 @@ public abstract class SslContextFactory extends ContainerLifeCycle implements Du
     }
 
     /**
-     * Obtain the X509 Certificate Chain from the provided SSLSession using the
-     * default {@link CertificateFactory} behaviors
+     * Obtain the X509 Certificate Chain from the provided SSLSession using this
+     * SslContextFactory's optional Provider specific {@link CertificateFactory}.
      *
      * @param sslSession the session to use for active peer certificates
      * @return the certificate chain
      */
-    public static X509Certificate[] getCertChain(SSLSession sslSession)
+    public X509Certificate[] getX509CertChain(SSLSession sslSession)
     {
-        return getX509CertChain(null, sslSession);
+        return getX509CertChain(_x509CertificateFactory, sslSession);
     }
 
     /**
@@ -1932,15 +1938,17 @@ public abstract class SslContextFactory extends ContainerLifeCycle implements Du
      * @param sslSession the session to use for active peer certificates
      * @return the certificate chain
      */
-    public X509Certificate[] getX509CertChain(SSLSession sslSession)
+    public static X509Certificate[] getCertChain(SSLSession sslSession)
     {
-        return getX509CertChain(this, sslSession);
+        return getX509CertChain(null, sslSession);
     }
 
-    private static X509Certificate[] getX509CertChain(SslContextFactory sslContextFactory, SSLSession sslSession)
+    private static X509Certificate[] getX509CertChain(CertificateFactory certificateFactory, SSLSession sslSession)
     {
         try
         {
+            if (certificateFactory == null)
+                certificateFactory = CertificateFactory.getInstance(X_509);
             Certificate[] javaxCerts = sslSession.getPeerCertificates();
             if (javaxCerts == null || javaxCerts.length == 0)
                 return null;
@@ -1948,22 +1956,11 @@ public abstract class SslContextFactory extends ContainerLifeCycle implements Du
             int length = javaxCerts.length;
             X509Certificate[] javaCerts = new X509Certificate[length];
 
-            String type = "X.509";
-            CertificateFactory cf;
-            if (sslContextFactory != null)
-            {
-                cf = sslContextFactory.getCertificateFactoryInstance(type);
-            }
-            else
-            {
-                cf = CertificateFactory.getInstance(type);
-            }
-
             for (int i = 0; i < length; i++)
             {
                 byte[] bytes = javaxCerts[i].getEncoded();
                 ByteArrayInputStream stream = new ByteArrayInputStream(bytes);
-                javaCerts[i] = (X509Certificate)cf.generateCertificate(stream);
+                javaCerts[i] = (X509Certificate)certificateFactory.generateCertificate(stream);
             }
 
             return javaCerts;
@@ -1999,6 +1996,8 @@ public abstract class SslContextFactory extends ContainerLifeCycle implements Du
      *     DES_CBC      Block     56
      *     3DES_EDE_CBC Block    168
      * </pre>
+     * <p>
+     * For unknown ciphers, any substring of digits bounded by '_' is taken as the key length.
      *
      * @param cipherSuite String name of the TLS cipher suite.
      * @return int indicating the effective key entropy bit-length.
@@ -2008,26 +2007,30 @@ public abstract class SslContextFactory extends ContainerLifeCycle implements Du
         // Roughly ordered from most common to least common.
         if (cipherSuite == null)
             return 0;
-        else if (cipherSuite.contains("WITH_AES_256_"))
-            return 256;
-        else if (cipherSuite.contains("WITH_RC4_128_"))
-            return 128;
-        else if (cipherSuite.contains("WITH_AES_128_"))
-            return 128;
-        else if (cipherSuite.contains("WITH_RC4_40_"))
-            return 40;
-        else if (cipherSuite.contains("WITH_3DES_EDE_CBC_"))
+        if (cipherSuite.contains("WITH_3DES_EDE_CBC_"))
             return 168;
-        else if (cipherSuite.contains("WITH_IDEA_CBC_"))
+        if (cipherSuite.contains("WITH_IDEA_CBC_"))
             return 128;
-        else if (cipherSuite.contains("WITH_RC2_CBC_40_"))
-            return 40;
         else if (cipherSuite.contains("WITH_DES40_CBC_"))
             return 40;
         else if (cipherSuite.contains("WITH_DES_CBC_"))
             return 56;
-        else
-            return 0;
+
+        Matcher matcher = KEY_SIZE_PATTERN.matcher(cipherSuite);
+        if (matcher.find())
+        {
+            String keyLengthString = matcher.group(1);
+            try
+            {
+                return Integer.parseInt(keyLengthString);
+            }
+            catch (NumberFormatException e)
+            {
+                if (LOG.isTraceEnabled())
+                    LOG.trace("unknown key length", e);
+            }
+        }
+        return 0;
     }
 
     public void validateCerts(X509Certificate[] certs) throws Exception

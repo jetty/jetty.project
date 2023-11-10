@@ -797,11 +797,11 @@ public interface Request extends Attributes, Content.Source
          * (one in {@link Attributes.Wrapper} as type {@link Attributes} and one in {@link Request.Wrapper} as
          * type {@link Request}) to save the costly cast from interface type to another.
          */
-        private final Request _wrapped;
+        private final Request _request;
 
         public Wrapper(Request wrapped)
         {
-            _wrapped = Objects.requireNonNull(wrapped);
+            _request = Objects.requireNonNull(wrapped);
         }
 
         @Override
@@ -974,7 +974,7 @@ public interface Request extends Attributes, Content.Source
 
         public Request getWrapped()
         {
-            return _wrapped;
+            return _request;
         }
     }
 
@@ -1063,6 +1063,61 @@ public interface Request extends Attributes, Content.Source
         default Principal getUserPrincipal()
         {
             return null;
+        }
+    }
+
+    /**
+     * <p>A {@link Request.Wrapper} that separately provides the request {@link Attributes}.</p>
+     * <p>The provided {@link Attributes} should be an {@link Attributes.Wrapper} over the request.</p>
+     */
+    class AttributesWrapper extends Wrapper
+    {
+        private final Attributes _attributes;
+
+        /**
+         * @param wrapped the request to wrap
+         * @param attributes the provided request attributes, typically a {@link Attributes.Wrapper} over the request
+         */
+        public AttributesWrapper(Request wrapped, Attributes attributes)
+        {
+            super(wrapped);
+            _attributes = Objects.requireNonNull(attributes);
+        }
+
+        @Override
+        public Map<String, Object> asAttributeMap()
+        {
+            return _attributes.asAttributeMap();
+        }
+
+        @Override
+        public void clearAttributes()
+        {
+            _attributes.clearAttributes();
+        }
+
+        @Override
+        public Object removeAttribute(String name)
+        {
+            return _attributes.removeAttribute(name);
+        }
+
+        @Override
+        public Object setAttribute(String name, Object attribute)
+        {
+            return _attributes.setAttribute(name, attribute);
+        }
+
+        @Override
+        public Object getAttribute(String name)
+        {
+            return _attributes.getAttribute(name);
+        }
+
+        @Override
+        public Set<String> getAttributeNameSet()
+        {
+            return _attributes.getAttributeNameSet();
         }
     }
 }
