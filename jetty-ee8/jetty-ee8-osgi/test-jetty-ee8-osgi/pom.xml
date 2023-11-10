@@ -15,6 +15,7 @@
     <assembly-directory>target/distribution</assembly-directory>
     <bundle-symbolic-name>${project.groupId}.boot.test.osgi</bundle-symbolic-name>
     <bundle.debug>true</bundle.debug>
+    <cyclonedx.skip>true</cyclonedx.skip>
     <!-- too many duplicates with osgi jars... -->
     <duplicate-finder.skip>true</duplicate-finder.skip>
     <ee9.module>jetty-ee9-osgi/test-jetty-ee9-osgi</ee9.module>

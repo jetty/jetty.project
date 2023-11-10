@@ -13,6 +13,7 @@
 
   <properties>
     <checkstyle.skip>true</checkstyle.skip>
+    <cyclonedx.skip>true</cyclonedx.skip>
     <duplicate-finder.skip>true</duplicate-finder.skip>
     <maven.deploy.skip>true</maven.deploy.skip>
     <pmd.skip>true</pmd.skip>

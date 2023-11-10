@@ -11,6 +11,7 @@
   <name>Core :: HTTP2 :: Tests</name>
 
   <properties>
+    <cyclonedx.skip>true</cyclonedx.skip>
     <h2spec.skip>${skipTests}</h2spec.skip>
     <maven.deploy.skip>true</maven.deploy.skip>
   </properties>

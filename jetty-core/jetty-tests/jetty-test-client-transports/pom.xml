@@ -12,6 +12,7 @@
 
   <properties>
     <bundle-symbolic-name>${project.groupId}.test.client.transport</bundle-symbolic-name>
+    <cyclonedx.skip>true</cyclonedx.skip>
     <h3.test.enabled>false</h3.test.enabled>
     <maven.deploy.skip>true</maven.deploy.skip>
   </properties>

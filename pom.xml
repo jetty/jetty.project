@@ -174,6 +174,7 @@
     <compiler.source>17</compiler.source>
     <compiler.target>17</compiler.target>
     <conscrypt.version>2.5.2</conscrypt.version>
+    <cyclonedx.maven.plugin.version>2.7.10</cyclonedx.maven.plugin.version>
     <depends.maven.plugin.version>1.5.0</depends.maven.plugin.version>
     <disruptor.version>3.4.2</disruptor.version>
     <equinox-http-servlet-version>1.0.0-v20070606</equinox-http-servlet-version>
@@ -1662,6 +1663,38 @@
           </configuration>
         </plugin>
         <plugin>
+          <groupId>org.cyclonedx</groupId>
+          <artifactId>cyclonedx-maven-plugin</artifactId>
+          <version>${cyclonedx.maven.plugin.version}</version>
+          <configuration>
+            <includeCompileScope>true</includeCompileScope>
+            <includeProvidedScope>true</includeProvidedScope>
+            <includeRuntimeScope>true</includeRuntimeScope>
+            <includeSystemScope>true</includeSystemScope>
+            <includeTestScope>false</includeTestScope>
+          </configuration>
+          <executions>
+            <execution>
+              <id>cyclonedx-makeAggregateBom</id>
+              <goals>
+                <goal>makeAggregateBom</goal>
+              </goals>
+              <phase>package</phase>
+              <inherited>false</inherited>
+              <configuration>
+                <outputName>aggregate-bom</outputName>
+              </configuration>
+            </execution>
+            <execution>
+              <id>cyclonedx-makeBom</id>
+              <goals>
+                <goal>makeBom</goal>
+              </goals>
+              <phase>package</phase>
+            </execution>
+          </executions>
+        </plugin>
+        <plugin>
           <groupId>org.eclipse.jetty.toolchain</groupId>
           <artifactId>jetty-version-maven-plugin</artifactId>
           <version>${jetty-version.maven.plugin.version}</version>
@@ -1939,6 +1972,18 @@
               <goal>parse-version</goal>
             </goals>
             <phase>validate</phase>
+          </execution>
+        </executions>
+      </plugin>
+      <plugin>
+        <groupId>org.cyclonedx</groupId>
+        <artifactId>cyclonedx-maven-plugin</artifactId>
+        <executions>
+          <execution>
+            <goals>
+              <goal>makeBom</goal>
+            </goals>
+            <phase>package</phase>
           </execution>
         </executions>
       </plugin>

@@ -391,6 +391,25 @@
     </dependencies>
   </dependencyManagement>
 
+  <!--  <build>-->
+  <!--    <plugins>-->
+  <!--      <plugin>-->
+  <!--        <groupId>org.cyclonedx</groupId>-->
+  <!--        <artifactId>cyclonedx-maven-plugin</artifactId>-->
+  <!--        <executions>-->
+  <!--          <execution>-->
+  <!--            <id>cyclonedx-makeAggregateBom</id>-->
+  <!--            <goals>-->
+  <!--              <goal>makeAggregateBom</goal>-->
+  <!--            </goals>-->
+  <!--            <phase>package</phase>-->
+  <!--            <inherited>false</inherited>-->
+  <!--          </execution>-->
+  <!--        </executions>-->
+  <!--      </plugin>-->
+  <!--    </plugins>-->
+  <!--  </build>-->
+
   <profiles>
     <profile>
       <!--

@@ -12,6 +12,8 @@
   <properties>
     <assembly-directory>target/distribution</assembly-directory>
     <bundle-symbolic-name>${project.groupId}.boot.test.osgi</bundle-symbolic-name>
+    <cyclonedx.skip>true</cyclonedx.skip>
+    <cyclonedx.skip>true</cyclonedx.skip>
     <!-- too many duplicates with osgi jars... -->
     <duplicate-finder.skip>true</duplicate-finder.skip>
     <maven.deploy.skip>true</maven.deploy.skip>

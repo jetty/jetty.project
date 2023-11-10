@@ -12,6 +12,7 @@
 
   <properties>
     <bundle-symbolic-name>${project.groupId}.tests</bundle-symbolic-name>
+    <cyclonedx.skip>true</cyclonedx.skip>
     <ee9.module>jetty-ee9-websocket/jetty-ee9-websocket-jetty-tests</ee9.module>
     <maven.deploy.skip>true</maven.deploy.skip>
     <maven.javadoc.skip>true</maven.javadoc.skip>

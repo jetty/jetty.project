@@ -11,6 +11,7 @@
   <description>Test Jetty OSGi bundle with a Server</description>
   <properties>
     <bundle-symbolic-name>${project.groupId}.testserver</bundle-symbolic-name>
+    <cyclonedx.skip>true</cyclonedx.skip>
     <ee9.module>jetty-ee9-osgi/test-jetty-ee9-osgi-server</ee9.module>
     <maven.deploy.skip>true</maven.deploy.skip>
     <maven.javadoc.skip>true</maven.javadoc.skip>

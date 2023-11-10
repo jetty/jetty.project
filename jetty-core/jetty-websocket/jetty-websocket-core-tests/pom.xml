@@ -12,6 +12,7 @@
 
   <properties>
     <bundle-symbolic-name>${project.groupId}.core.tests</bundle-symbolic-name>
+    <cyclonedx.skip>true</cyclonedx.skip>
     <junit.jupiter.execution.parallel.enabled>false</junit.jupiter.execution.parallel.enabled>
     <maven.deploy.skip>true</maven.deploy.skip>
     <maven.javadoc.skip>true</maven.javadoc.skip>

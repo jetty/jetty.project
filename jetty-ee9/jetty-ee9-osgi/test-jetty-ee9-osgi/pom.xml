@@ -12,6 +12,7 @@
   <properties>
     <assembly-directory>target/distribution</assembly-directory>
     <bundle-symbolic-name>${project.groupId}.boot.test.osgi</bundle-symbolic-name>
+    <cyclonedx.skip>true</cyclonedx.skip>
     <!-- too many duplicates with osgi jars... -->
     <duplicate-finder.skip>true</duplicate-finder.skip>
     <injection.bundle.version>1.2</injection.bundle.version>

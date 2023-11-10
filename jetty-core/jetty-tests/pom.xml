@@ -17,6 +17,7 @@
   </modules>
 
   <properties>
+    <cyclonedx.skip>true</cyclonedx.skip>
     <maven.deploy.skip>true</maven.deploy.skip>
   </properties>
 

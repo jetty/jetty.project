@@ -11,6 +11,7 @@
   <name>Core :: HTTP3 :: Tests</name>
 
   <properties>
+    <cyclonedx.skip>true</cyclonedx.skip>
     <junit.jupiter.execution.parallel.config.fixed.parallelism>2</junit.jupiter.execution.parallel.config.fixed.parallelism>
     <!-- too flaky to support parallel tests in CI -->
     <junit.jupiter.execution.parallel.enabled>false</junit.jupiter.execution.parallel.enabled>

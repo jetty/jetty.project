@@ -11,6 +11,7 @@
   <description>Test Jetty OSGi Webapp Fragment bundle</description>
   <properties>
     <bundle-symbolic-name>${project.groupId}.webapp.fragment</bundle-symbolic-name>
+    <cyclonedx.skip>true</cyclonedx.skip>
     <maven.deploy.skip>true</maven.deploy.skip>
     <maven.javadoc.skip>true</maven.javadoc.skip>
   </properties>
