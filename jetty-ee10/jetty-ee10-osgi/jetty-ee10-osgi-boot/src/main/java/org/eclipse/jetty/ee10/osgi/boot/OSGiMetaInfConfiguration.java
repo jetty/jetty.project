@@ -156,7 +156,7 @@ public class OSGiMetaInfConfiguration extends MetaInfConfiguration
     {
         List<Resource> mergedResources = new ArrayList<Resource>();
         // get jars from WEB-INF/lib if there are any
-        List<Resource> webInfJars = getWebAppPaths(context);
+        List<Resource> webInfJars = super.getWebAppPaths(context);
         if (webInfJars != null)
             mergedResources.addAll(webInfJars);
 
