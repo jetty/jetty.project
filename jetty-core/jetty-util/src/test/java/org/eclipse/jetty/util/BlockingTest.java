@@ -16,13 +16,16 @@ package org.eclipse.jetty.util;
 import java.io.IOException;
 import java.io.InterruptedIOException;
 import java.util.concurrent.CountDownLatch;
+import java.util.concurrent.CyclicBarrier;
 import java.util.concurrent.TimeUnit;
 
 import org.junit.jupiter.api.Test;
 import org.slf4j.LoggerFactory;
 
+import static org.awaitility.Awaitility.await;
 import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.Matchers.greaterThan;
+import static org.hamcrest.Matchers.greaterThanOrEqualTo;
 import static org.hamcrest.Matchers.lessThan;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
@@ -36,43 +39,42 @@ public class BlockingTest
     @Test
     public void testRunBlock() throws Exception
     {
-        long start;
+        StopWatch stopWatch = new StopWatch();
         try (Blocker.Runnable runnable = Blocker.runnable())
         {
             runnable.run();
-            start = NanoTime.now();
+            stopWatch.reset();
             runnable.block();
         }
-        assertThat(NanoTime.millisSince(start), lessThan(500L));
+        assertThat(stopWatch.elapsed(), lessThan(500L));
     }
 
     @Test
     public void testBlockRun() throws Exception
     {
-        long start;
+        StopWatch stopWatch = new StopWatch();
         try (Blocker.Runnable runnable = Blocker.runnable())
         {
-            final CountDownLatch latch = new CountDownLatch(1);
-
+            CyclicBarrier barrier = new CyclicBarrier(2);
             new Thread(() ->
             {
-                latch.countDown();
                 try
                 {
-                    TimeUnit.MILLISECONDS.sleep(100);
+                    barrier.await(5, TimeUnit.SECONDS);
+                    stopWatch.sleep(100);
+                    runnable.run();
                 }
                 catch (Exception e)
                 {
-                    e.printStackTrace();
+                    throw new RuntimeException(e);
                 }
-                runnable.run();
             }).start();
 
-            latch.await();
-            start = NanoTime.now();
+            barrier.await(5, TimeUnit.SECONDS);
+            stopWatch.reset();
             runnable.block();
         }
-        long elapsed = NanoTime.millisSince(start);
+        long elapsed = stopWatch.elapsed();
         assertThat(elapsed, greaterThan(10L));
         assertThat(elapsed, lessThan(1000L));
     }
@@ -80,64 +82,62 @@ public class BlockingTest
     @Test
     public void testNoRun()
     {
-        long start;
+        StopWatch stopWatch = new StopWatch();
         try (Blocker.Runnable ignored = Blocker.runnable())
         {
-            start = NanoTime.now();
+            stopWatch.reset();
             LoggerFactory.getLogger(Blocker.class).info("expect WARN Blocking.Runnable incomplete");
         }
-        assertThat(NanoTime.millisSince(start), lessThan(500L));
+        assertThat(stopWatch.elapsed(), lessThan(500L));
     }
 
     @Test
     public void testSucceededBlock() throws Exception
     {
-        long start;
+        StopWatch stopWatch = new StopWatch();
         try (Blocker.Callback callback = Blocker.callback())
         {
             callback.succeeded();
-            start = NanoTime.now();
+            stopWatch.reset();
             callback.block();
         }
-        assertThat(NanoTime.millisSince(start), lessThan(500L));
+        assertThat(stopWatch.elapsed(), lessThan(500L));
     }
 
     @Test
     public void testBlockSucceeded() throws Exception
     {
-        long start;
+        StopWatch stopWatch = new StopWatch();
         try (Blocker.Callback callback = Blocker.callback())
         {
-            final CountDownLatch latch = new CountDownLatch(1);
-
+            CyclicBarrier barrier = new CyclicBarrier(2);
             new Thread(() ->
             {
-                latch.countDown();
                 try
                 {
-                    TimeUnit.MILLISECONDS.sleep(100);
+                    barrier.await(5, TimeUnit.SECONDS);
+                    stopWatch.sleep(100);
+                    callback.succeeded();
                 }
                 catch (Exception e)
                 {
-                    e.printStackTrace();
+                    throw new RuntimeException(e);
                 }
-                callback.succeeded();
             }).start();
 
-            latch.await();
-            start = NanoTime.now();
+            barrier.await(5, TimeUnit.SECONDS);
+            stopWatch.reset();
             callback.block();
         }
-        long elapsed = NanoTime.millisSince(start);
-        assertThat(elapsed, greaterThan(10L));
-        assertThat(elapsed, lessThan(1000L));
+        assertThat(stopWatch.elapsed(), greaterThan(10L));
+        assertThat(stopWatch.elapsed(), lessThan(1000L));
     }
 
     @Test
-    public void testFailedBlock() throws Exception
+    public void testFailedBlock()
     {
-        final Exception ex = new Exception("FAILED");
-        long start = Long.MIN_VALUE;
+        Exception ex = new Exception("FAILED");
+        StopWatch stopWatch = new StopWatch();
         try
         {
             try (Blocker.Callback callback = Blocker.callback())
@@ -149,40 +149,38 @@ public class BlockingTest
         }
         catch (IOException e)
         {
-            start = NanoTime.now();
+            stopWatch.reset();
             assertEquals(ex, e.getCause());
         }
-        assertThat(NanoTime.millisSince(start), lessThan(100L));
+        assertThat(stopWatch.elapsed(), lessThan(100L));
     }
 
     @Test
     public void testBlockFailed() throws Exception
     {
-        final Exception ex = new Exception("FAILED");
-        long start = Long.MIN_VALUE;
-        final CountDownLatch latch = new CountDownLatch(1);
-
+        Exception ex = new Exception("FAILED");
+        StopWatch stopWatch = new StopWatch();
+        CyclicBarrier barrier = new CyclicBarrier(2);
         try
         {
             try (Blocker.Callback callback = Blocker.callback())
             {
-
                 new Thread(() ->
                 {
-                    latch.countDown();
                     try
                     {
-                        TimeUnit.MILLISECONDS.sleep(100);
+                        barrier.await(5, TimeUnit.SECONDS);
+                        stopWatch.sleep(100);
+                        callback.failed(ex);
                     }
                     catch (Exception e)
                     {
-                        e.printStackTrace();
+                        throw new RuntimeException(e);
                     }
-                    callback.failed(ex);
                 }).start();
 
-                latch.await();
-                start = NanoTime.now();
+                barrier.await(5, TimeUnit.SECONDS);
+                stopWatch.reset();
                 callback.block();
             }
             fail("Should have thrown IOException");
@@ -191,65 +189,62 @@ public class BlockingTest
         {
             assertEquals(ex, e.getCause());
         }
-        long elapsed = NanoTime.millisSince(start);
-        assertThat(elapsed, greaterThan(10L));
-        assertThat(elapsed, lessThan(1000L));
+        assertThat(stopWatch.elapsed(), greaterThan(10L));
+        assertThat(stopWatch.elapsed(), lessThan(1000L));
     }
 
     @Test
     public void testSharedRunBlock() throws Exception
     {
-        long start;
+        StopWatch stopWatch = new StopWatch();
         try (Blocker.Runnable runnable = _shared.runnable())
         {
             runnable.run();
-            start = NanoTime.now();
+            stopWatch.reset();
             runnable.block();
         }
-        assertThat(NanoTime.millisSince(start), lessThan(500L));
+        assertThat(stopWatch.elapsed(), lessThan(500L));
     }
 
     @Test
     public void testSharedBlockRun() throws Exception
     {
-        long start;
+        StopWatch stopWatch = new StopWatch();
         try (Blocker.Runnable runnable = _shared.runnable())
         {
-            final CountDownLatch latch = new CountDownLatch(1);
-
+            CyclicBarrier barrier = new CyclicBarrier(2);
             new Thread(() ->
             {
-                latch.countDown();
                 try
                 {
-                    TimeUnit.MILLISECONDS.sleep(100);
+                    barrier.await(5, TimeUnit.SECONDS);
+                    stopWatch.sleep(100);
+                    runnable.run();
                 }
                 catch (Exception e)
                 {
-                    e.printStackTrace();
+                    throw new RuntimeException(e);
                 }
-                runnable.run();
             }).start();
 
-            latch.await();
-            start = NanoTime.now();
+            barrier.await(5, TimeUnit.SECONDS);
+            stopWatch.reset();
             runnable.block();
         }
-        long elapsed = NanoTime.millisSince(start);
-        assertThat(elapsed, greaterThan(10L));
-        assertThat(elapsed, lessThan(1000L));
+        assertThat(stopWatch.elapsed(), greaterThan(10L));
+        assertThat(stopWatch.elapsed(), lessThan(1000L));
     }
 
     @Test
     public void testSharedNoRun() throws Exception
     {
-        long start;
+        StopWatch stopWatch = new StopWatch();
         try (Blocker.Runnable ignored = _shared.runnable())
         {
-            start = NanoTime.now();
+            stopWatch.reset();
             LoggerFactory.getLogger(Blocker.class).info("expect WARN Blocking.Shared incomplete");
         }
-        assertThat(NanoTime.millisSince(start), lessThan(500L));
+        assertThat(stopWatch.elapsed(), lessThan(500L));
 
         // check it is still operating.
         try (Blocker.Runnable runnable = _shared.runnable())
@@ -262,52 +257,50 @@ public class BlockingTest
     @Test
     public void testSharedSucceededBlock() throws Exception
     {
-        long start;
+        StopWatch stopWatch = new StopWatch();
         try (Blocker.Callback callback = _shared.callback())
         {
             callback.succeeded();
-            start = NanoTime.now();
+            stopWatch.reset();
             callback.block();
         }
-        assertThat(NanoTime.millisSince(start), lessThan(500L));
+        assertThat(stopWatch.elapsed(), lessThan(500L));
     }
 
     @Test
     public void testSharedBlockSucceeded() throws Exception
     {
-        long start;
+        StopWatch stopWatch = new StopWatch();
         try (Blocker.Callback callback = _shared.callback())
         {
-            final CountDownLatch latch = new CountDownLatch(1);
-
+            CyclicBarrier barrier = new CyclicBarrier(2);
             new Thread(() ->
             {
-                latch.countDown();
                 try
                 {
-                    TimeUnit.MILLISECONDS.sleep(100);
+                    barrier.await(5, TimeUnit.SECONDS);
+                    stopWatch.sleep(100);
+                    callback.succeeded();
                 }
                 catch (Exception e)
                 {
-                    e.printStackTrace();
+                    throw new RuntimeException(e);
                 }
-                callback.succeeded();
             }).start();
 
-            latch.await();
-            start = NanoTime.now();
+            barrier.await(5, TimeUnit.SECONDS);
+            stopWatch.reset();
             callback.block();
         }
-        long elapsed = NanoTime.millisSince(start);
-        assertThat(elapsed, greaterThan(10L));
-        assertThat(elapsed, lessThan(1000L));
+        assertThat(stopWatch.elapsed(), greaterThan(10L));
+        assertThat(stopWatch.elapsed(), lessThan(1000L));
     }
 
     @Test
     public void testSharedFailedBlock()
     {
-        final Exception ex = new Exception("FAILED");
-        long start = Long.MIN_VALUE;
+        Exception ex = new Exception("FAILED");
+        StopWatch stopWatch = new StopWatch();
         try
         {
             try (Blocker.Callback callback = _shared.callback())
@@ -319,40 +312,39 @@ public class BlockingTest
         }
         catch (IOException e)
         {
-            start = NanoTime.now();
+            stopWatch.reset();
             assertEquals(ex, e.getCause());
         }
-        assertThat(NanoTime.millisSince(start), lessThan(100L));
+        assertThat(stopWatch.elapsed(), lessThan(100L));
     }
 
     @Test
     public void testSharedBlockFailed() throws Exception
     {
-        final Exception ex = new Exception("FAILED");
-        long start = Long.MIN_VALUE;
-        final CountDownLatch latch = new CountDownLatch(1);
+        Exception ex = new Exception("FAILED");
+        StopWatch stopWatch = new StopWatch();
+        CyclicBarrier barrier = new CyclicBarrier(2);
 
         try
         {
             try (Blocker.Callback callback = _shared.callback())
             {
-
                 new Thread(() ->
                 {
-                    latch.countDown();
                     try
                     {
-                        TimeUnit.MILLISECONDS.sleep(100);
+                        barrier.await(5, TimeUnit.SECONDS);
+                        stopWatch.sleep(100);
+                        callback.failed(ex);
                     }
                     catch (Exception e)
                     {
-                        e.printStackTrace();
+                        throw new RuntimeException(e);
                     }
-                    callback.failed(ex);
                 }).start();
 
-                latch.await();
-                start = NanoTime.now();
+                barrier.await(5, TimeUnit.SECONDS);
+                stopWatch.reset();
                 callback.block();
             }
             fail("Should have thrown IOException");
@@ -361,9 +353,8 @@ public class BlockingTest
         {
             assertEquals(ex, e.getCause());
         }
-        long elapsed = NanoTime.millisSince(start);
-        assertThat(elapsed, greaterThan(10L));
-        assertThat(elapsed, lessThan(1000L));
+        assertThat(stopWatch.elapsed(), greaterThan(10L));
+        assertThat(stopWatch.elapsed(), lessThan(1000L));
     }
 
     @Test
@@ -381,7 +372,7 @@ public class BlockingTest
             }
             catch (Exception e)
             {
-                e.printStackTrace();
+                throw new RuntimeException(e);
             }
         }).start();
         new Thread(() ->
@@ -394,7 +385,7 @@ public class BlockingTest
             }
             catch (Exception e)
             {
-                e.printStackTrace();
+                throw new RuntimeException(e);
             }
         }).start();
 
@@ -417,6 +408,28 @@ public class BlockingTest
         }
         catch (InterruptedIOException ignored)
         {
+        }
+    }
+
+    private static class StopWatch
+    {
+        private volatile long timestamp = NanoTime.now();
+
+        void reset()
+        {
+            timestamp = NanoTime.now();
+        }
+
+        long elapsed()
+        {
+            return NanoTime.millisSince(timestamp);
+        }
+
+        void sleep(long delayInMs)
+        {
+            if (delayInMs > 4000)
+                throw new IllegalArgumentException("Delay is too long for a test: " + delayInMs);
+            await().atMost(5, TimeUnit.SECONDS).until(() -> NanoTime.millisSince(timestamp), greaterThanOrEqualTo(delayInMs));
         }
     }
 }
