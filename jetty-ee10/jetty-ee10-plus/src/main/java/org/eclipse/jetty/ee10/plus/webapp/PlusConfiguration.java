@@ -28,7 +28,6 @@ import org.eclipse.jetty.ee10.webapp.MetaInfConfiguration;
 import org.eclipse.jetty.ee10.webapp.WebAppContext;
 import org.eclipse.jetty.ee10.webapp.WebXmlConfiguration;
 import org.eclipse.jetty.util.NanoTime;
-import org.eclipse.jetty.util.jndi.NamingContext;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -110,7 +109,7 @@ public class PlusConfiguration extends AbstractConfiguration
             Context context = new InitialContext();
             Context compCtx = (Context)context.lookup("java:comp");
             wac.setAttribute(LOCK_JNDI_KEY, key);
-            compCtx.addToEnvironment(NamingContext.LOCK_PROPERTY, key);
+            compCtx.addToEnvironment("org.eclipse.jetty.jndi.lock", key);
         }
         finally
         {

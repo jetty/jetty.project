@@ -20,8 +20,8 @@ import javax.naming.Name;
 import javax.naming.NameNotFoundException;
 import javax.naming.NamingException;
 
-import org.eclipse.jetty.util.jndi.NamingEntry;
-import org.eclipse.jetty.util.jndi.NamingEntryUtil;
+import org.eclipse.jetty.plus.jndi.NamingEntry;
+import org.eclipse.jetty.plus.jndi.NamingEntryUtil;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.parallel.Isolated;
 
@@ -42,8 +42,7 @@ public class TestNamingEntryUtil
         public MyNamingEntry(Object scope, String name, Object value)
             throws NamingException
         {
-            super(scope, name);
-            save(value);
+            super(scope, name, value);
         }
     }
 

@@ -32,10 +32,10 @@ import org.eclipse.jetty.ee10.webapp.Origin;
 import org.eclipse.jetty.ee10.webapp.WebAppContext;
 import org.eclipse.jetty.plus.jndi.EnvEntry;
 import org.eclipse.jetty.plus.jndi.Link;
+import org.eclipse.jetty.plus.jndi.NamingEntry;
+import org.eclipse.jetty.plus.jndi.NamingEntryUtil;
 import org.eclipse.jetty.util.StringUtil;
 import org.eclipse.jetty.util.TypeUtil;
-import org.eclipse.jetty.util.jndi.NamingEntry;
-import org.eclipse.jetty.util.jndi.NamingEntryUtil;
 import org.eclipse.jetty.util.jndi.NamingUtil;
 import org.eclipse.jetty.xml.XmlParser;
 import org.slf4j.Logger;
@@ -771,7 +771,7 @@ public class PlusDescriptorProcessor extends IterativeDescriptorProcessor
             {
                 //There is an empty or missing value in the env-entry:
                 //If there is an existing EnvEntry (eg from a declaration in jetty-env.xml) that is override=true, then
-                //we make the injection, but we can skip the rebinding becase we want to use the value already bound.
+                //we make the injection, but we can skip the rebinding because we want to use the value already bound.
                 //If there isn't an existing EnvEntry then there is nothing to do: according to the spec we do not make
                 //an injection if the env-entry value is missing, and of course there is no value to rebind.
                 if (envEntry != null && envEntry.isOverrideWebXml())

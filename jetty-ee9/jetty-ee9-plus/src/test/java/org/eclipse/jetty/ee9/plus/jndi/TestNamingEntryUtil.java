@@ -18,10 +18,12 @@ import javax.naming.Context;
 import javax.naming.InitialContext;
 import javax.naming.Name;
 import javax.naming.NameNotFoundException;
+import javax.naming.NameParser;
 import javax.naming.NamingException;
 
-import org.eclipse.jetty.util.jndi.NamingEntry;
-import org.eclipse.jetty.util.jndi.NamingEntryUtil;
+import org.eclipse.jetty.ee9.webapp.WebAppContext;
+import org.eclipse.jetty.plus.jndi.NamingEntry;
+import org.eclipse.jetty.plus.jndi.NamingEntryUtil;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.parallel.Isolated;
 
@@ -42,8 +44,7 @@ public class TestNamingEntryUtil
         public MyNamingEntry(Object scope, String name, Object value)
             throws NamingException
         {
-            super(scope, name);
-            save(value);
+            super(scope, name, value);
         }
     }
 
@@ -92,6 +93,22 @@ public class TestNamingEntryUtil
         {
             fail(e.getMessage());
         }
+    }
+
+    @Test
+    public void testDestroySubcontext() throws Exception
+    {
+        //create some NamingEntry in scope of a webapp
+        WebAppContext wac = new WebAppContext();
+        MyNamingEntry namingEntry1 = new MyNamingEntry(wac, "xxx", "111");
+        MyNamingEntry namingEntry2 = new MyNamingEntry(wac, "yyy", "222");
+
+        assertNotNull(NamingEntryUtil.lookupNamingEntry(wac, "xxx"));
+        assertNotNull(NamingEntryUtil.lookupNamingEntry(wac, "yyy"));
+
+        NamingEntryUtil.destroyContextForScope(wac);
+        assertNull(NamingEntryUtil.lookupNamingEntry(wac, "xxx"));
+        assertNull(NamingEntryUtil.lookupNamingEntry(wac, "yyy"));
     }
 
     @Test

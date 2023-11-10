@@ -16,7 +16,6 @@ import org.eclipse.jetty.ee9.plus.webapp.PlusConfiguration;
 
 module org.eclipse.jetty.ee9.plus
 {
-    requires org.eclipse.jetty.jndi;
     requires org.eclipse.jetty.util;
     requires org.slf4j;
 

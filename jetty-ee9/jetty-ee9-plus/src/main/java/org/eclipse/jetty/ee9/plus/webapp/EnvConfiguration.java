@@ -14,10 +14,8 @@
 package org.eclipse.jetty.ee9.plus.webapp;
 
 import java.net.URL;
-import java.util.ArrayList;
-import java.util.Collections;
-import java.util.List;
-import javax.naming.Binding;
+import java.util.Map;
+import java.util.Set;
 import javax.naming.Context;
 import javax.naming.InitialContext;
 import javax.naming.Name;
@@ -32,13 +30,10 @@ import org.eclipse.jetty.ee9.webapp.MetaInfConfiguration;
 import org.eclipse.jetty.ee9.webapp.WebAppClassLoader;
 import org.eclipse.jetty.ee9.webapp.WebAppContext;
 import org.eclipse.jetty.ee9.webapp.WebXmlConfiguration;
-import org.eclipse.jetty.jndi.ContextFactory;
-import org.eclipse.jetty.jndi.local.localContextRoot;
 import org.eclipse.jetty.plus.jndi.EnvEntry;
+import org.eclipse.jetty.plus.jndi.NamingEntryUtil;
 import org.eclipse.jetty.util.IO;
-import org.eclipse.jetty.util.jndi.NamingContext;
 import org.eclipse.jetty.util.jndi.NamingDump;
-import org.eclipse.jetty.util.jndi.NamingEntryUtil;
 import org.eclipse.jetty.util.jndi.NamingUtil;
 import org.eclipse.jetty.util.resource.Resource;
 import org.eclipse.jetty.util.resource.ResourceFactory;
@@ -111,41 +106,25 @@ public class EnvConfiguration extends AbstractConfiguration
 
         if (jettyEnvXmlResource != null)
         {
-            synchronized (localContextRoot.getRoot())
+            //need to parse jetty-env.xml, but we also need to be able to delete
+            //any NamingEntries that it creates when this WebAppContext is destroyed.
+            Set<String> boundNamesBefore = NamingUtil.flattenBindings(new InitialContext(), "").keySet();
+
+            try
             {
-                // create list and listener to remember the bindings we make.
-                final List<Bound> bindings = new ArrayList<Bound>();
-                NamingContext.Listener listener = new NamingContext.Listener()
+                XmlConfiguration configuration = new XmlConfiguration(jettyEnvXmlResource);
+                configuration.setJettyStandardIdsAndProperties(context.getServer(), null);
+                WebAppClassLoader.runWithServerClassAccess(() ->
                 {
-                    @Override
-                    public void unbind(NamingContext ctx, Binding binding)
-                    {
-                    }
-
-                    @Override
-                    public Binding bind(NamingContext ctx, Binding binding)
-                    {
-                        bindings.add(new Bound(ctx, binding.getName()));
-                        return binding;
-                    }
-                };
-
-                try
-                {
-                    localContextRoot.getRoot().addListener(listener);
-                    XmlConfiguration configuration = new XmlConfiguration(jettyEnvXmlResource);
-                    configuration.setJettyStandardIdsAndProperties(context.getServer(), null);
-                    WebAppClassLoader.runWithServerClassAccess(() ->
-                    {
-                        configuration.configure(context);
-                        return null;
-                    });
-                }
-                finally
-                {
-                    localContextRoot.getRoot().removeListener(listener);
-                    context.setAttribute(JETTY_ENV_BINDINGS, bindings);
-                }
+                    configuration.configure(context);
+                    return null;
+                });
+            }
+            finally
+            {
+                Set<String> boundNamesAfter = NamingUtil.flattenBindings(new InitialContext(), "").keySet();
+                boundNamesAfter.removeAll(boundNamesBefore);
+                context.setAttribute(JETTY_ENV_BINDINGS, boundNamesAfter);
             }
         }
 
@@ -170,7 +149,6 @@ public class EnvConfiguration extends AbstractConfiguration
         //get rid of any bindings for comp/env for webapp
         ClassLoader oldLoader = Thread.currentThread().getContextClassLoader();
         Thread.currentThread().setContextClassLoader(context.getClassLoader());
-        ContextFactory.associateClassLoader(context.getClassLoader());
         try
         {
             Context ic = new InitialContext();
@@ -179,14 +157,13 @@ public class EnvConfiguration extends AbstractConfiguration
 
             //unbind any NamingEntries that were configured in this webapp's name space
             @SuppressWarnings("unchecked")
-            List<Bound> bindings = (List<Bound>)context.getAttribute(JETTY_ENV_BINDINGS);
+            Set<String> jettyEnvBoundNames = (Set<String>)context.getAttribute(JETTY_ENV_BINDINGS);
             context.setAttribute(JETTY_ENV_BINDINGS, null);
-            if (bindings != null)
+            if (jettyEnvBoundNames != null)
             {
-                Collections.reverse(bindings);
-                for (Bound b : bindings)
+                for (String name : jettyEnvBoundNames)
                 {
-                    b.context.destroySubcontext(b.name);
+                    NamingUtil.unbind(ic, name, true);
                 }
             }
         }
@@ -196,7 +173,6 @@ public class EnvConfiguration extends AbstractConfiguration
         }
         finally
         {
-            ContextFactory.disassociateClassLoader();
             Thread.currentThread().setContextClassLoader(oldLoader);
             IO.close(_resourceFactory);
             _resourceFactory = null;
@@ -213,9 +189,8 @@ public class EnvConfiguration extends AbstractConfiguration
     {
         try
         {
-            //unbind any NamingEntries that were configured in this webapp's name space           
-            NamingContext scopeContext = (NamingContext)NamingEntryUtil.getContextForScope(context);
-            scopeContext.getParent().destroySubcontext(scopeContext.getName());
+            //unbind any NamingEntries that were configured in this webapp's name space
+            NamingEntryUtil.destroyContextForScope(context);
         }
         catch (NameNotFoundException e)
         {
@@ -271,7 +246,6 @@ public class EnvConfiguration extends AbstractConfiguration
     {
         ClassLoader oldLoader = Thread.currentThread().getContextClassLoader();
         Thread.currentThread().setContextClassLoader(wac.getClassLoader());
-        ContextFactory.associateClassLoader(wac.getClassLoader());
         try
         {
             Context context = new InitialContext();
@@ -280,12 +254,7 @@ public class EnvConfiguration extends AbstractConfiguration
         }
         finally
         {
-            ContextFactory.disassociateClassLoader();
             Thread.currentThread().setContextClassLoader(oldLoader);
         }
     }
-
-   record Bound(Context context, String name)
-   {
-   }
 }

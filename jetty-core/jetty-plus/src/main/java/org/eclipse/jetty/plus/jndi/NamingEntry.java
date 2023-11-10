@@ -11,8 +11,9 @@
 // ========================================================================
 //
 
-package org.eclipse.jetty.util.jndi;
+package org.eclipse.jetty.plus.jndi;
 
+import java.util.Set;
 import javax.naming.Context;
 import javax.naming.InitialContext;
 import javax.naming.LinkRef;
@@ -20,6 +21,7 @@ import javax.naming.Name;
 import javax.naming.NameParser;
 import javax.naming.NamingException;
 
+import org.eclipse.jetty.util.jndi.NamingUtil;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -44,22 +46,6 @@ public abstract class NamingEntry
     protected String _objectNameString; //the name of the object relative to the context it is stored in
 
     /**
-     * Create a naming entry.
-     *
-     * @param scope an object representing the scope of the name to be bound into jndi, where null means jvm scope.
-     * @param jndiName the name that will be associated with an object bound into jndi
-     * @throws NamingException if jndiName is null
-     */
-    protected NamingEntry(Object scope, String jndiName)
-        throws NamingException
-    {
-        if (jndiName == null)
-            throw new NamingException("jndi name is null");
-        this._scope = scope;
-        this._jndiName = jndiName;
-    }
-
-    /**
      * Create a NamingEntry.
      * A NamingEntry is a name associated with a value which can later
      * be looked up in JNDI by a webapp.
@@ -67,13 +53,21 @@ public abstract class NamingEntry
      * We create the NamingEntry and put it into JNDI where it can
      * be linked to the webapp's env-entry, resource-ref etc entries.
      *
-     * @param jndiName the name of the object which will eventually be in java:comp/env
-     * @throws NamingException if unable to create naming entry
+     * @param scope an object whose stringified form will be used as a node in the context tree under which the objectToBind will be bound
+     * @param jndiName the name associated with the objectToBind
+     * @param objectToBind the object to bind
+     * @throws NamingException if there is no name or no objectToBind
      */
-    protected NamingEntry(String jndiName)
+    protected NamingEntry(Object scope, String jndiName, Object objectToBind)
         throws NamingException
     {
-        this(null, jndiName);
+        if (jndiName == null)
+            throw new NamingException("jndi name is null");
+        if (objectToBind == null)
+            throw new NamingException("no object to bind");
+        this._scope = scope;
+        this._jndiName = jndiName;
+        save(objectToBind);
     }
 
     /**
@@ -152,6 +146,11 @@ public abstract class NamingEntry
     public String getJndiNameInScope()
     {
         return _objectNameString;
+    }
+
+    public String getNamingEntryNameInScope()
+    {
+        return _namingEntryNameString;
     }
 
     /**

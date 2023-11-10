@@ -11,7 +11,7 @@
 // ========================================================================
 //
 
-package org.eclipse.jetty.util.jndi;
+package org.eclipse.jetty.plus.jndi;
 
 import java.util.ArrayList;
 import java.util.Collections;
@@ -207,6 +207,18 @@ public class NamingEntryUtil
             name.add(canonicalizeScope(scope));
         }
         return (Context)ic.lookup(name);
+    }
+
+    public static void destroyContextForScope(Object scope)
+        throws NamingException
+    {
+        InitialContext ic = new InitialContext();
+        NameParser parser = ic.getNameParser("");
+        Name name = parser.parse("");
+        if (scope != null)
+        {
+            ic.destroySubcontext(name);
+        }
     }
 
     private static String canonicalizeScope(Object scope)

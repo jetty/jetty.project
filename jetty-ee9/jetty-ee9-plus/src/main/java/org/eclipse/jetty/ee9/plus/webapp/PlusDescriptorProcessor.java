@@ -32,10 +32,10 @@ import org.eclipse.jetty.ee9.webapp.Origin;
 import org.eclipse.jetty.ee9.webapp.WebAppContext;
 import org.eclipse.jetty.plus.jndi.EnvEntry;
 import org.eclipse.jetty.plus.jndi.Link;
+import org.eclipse.jetty.plus.jndi.NamingEntry;
+import org.eclipse.jetty.plus.jndi.NamingEntryUtil;
 import org.eclipse.jetty.util.StringUtil;
 import org.eclipse.jetty.util.TypeUtil;
-import org.eclipse.jetty.util.jndi.NamingEntry;
-import org.eclipse.jetty.util.jndi.NamingEntryUtil;
 import org.eclipse.jetty.util.jndi.NamingUtil;
 import org.eclipse.jetty.xml.XmlParser;
 import org.slf4j.Logger;
@@ -853,14 +853,13 @@ public class PlusDescriptorProcessor extends IterativeDescriptorProcessor
         Object scope = context;
         NamingEntry ne = NamingEntryUtil.lookupNamingEntry(scope, name);
 
-        if (ne != null && (ne instanceof Link))
+        if (ne instanceof Link)
         {
             //if we found a mapping, get out name it is mapped to in the environment
             nameInEnvironment = ((Link)ne).getLink();
         }
 
         //try finding that mapped name in the webapp's environment first
-        scope = context;
         bound = NamingEntryUtil.bindToENC(scope, name, nameInEnvironment);
 
         if (bound)
