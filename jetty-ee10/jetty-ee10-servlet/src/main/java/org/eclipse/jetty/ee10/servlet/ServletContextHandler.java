@@ -939,6 +939,23 @@ public class ServletContextHandler extends ContextHandler
         return false;
     }
 
+    @Override
+    public void setHandler(Handler handler)
+    {
+        if (handler instanceof SessionHandler)
+            setSessionHandler((SessionHandler)handler);
+        else if (handler instanceof SecurityHandler)
+            setSecurityHandler((SecurityHandler)handler);
+        else if (handler instanceof ServletHandler)
+            setServletHandler((ServletHandler)handler);
+        else
+        {
+            if (handler != null)
+                LOG.warn("ServletContextHandler.setHandler should not be called directly. Use insertHandler or setSessionHandler etc.");
+            super.setHandler(handler);
+        }
+    }
+
     private void doSetHandler(Singleton wrapper, Handler handler)
     {
         if (wrapper == this)
@@ -1636,22 +1653,6 @@ public class ServletContextHandler extends ContextHandler
         replaceHandler(_servletHandler, servletHandler);
         _servletHandler = servletHandler;
         relinkHandlers();
-    }
-
-    @Override
-    public void setHandler(Handler handler)
-    {
-        if (handler instanceof SessionHandler && getHandler() instanceof SessionHandler)
-            setSessionHandler((SessionHandler)handler);
-        else if (handler instanceof SecurityHandler && getHandler() instanceof SecurityHandler)
-            setSecurityHandler((SecurityHandler)handler);
-        else if (handler instanceof ServletHandler && getHandler() instanceof ServletHandler)
-            setServletHandler((ServletHandler)handler);
-        else
-        {
-            LOG.warn("setHandler should not be used. Use explicit setters or insertHandler");
-            super.setHandler(handler);
-        }
     }
 
     /**
