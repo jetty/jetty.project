@@ -1673,19 +1673,6 @@
             <includeSystemScope>true</includeSystemScope>
             <includeTestScope>false</includeTestScope>
           </configuration>
-          <executions>
-            <execution>
-              <id>cyclonedx-makeAggregateBom</id>
-              <goals>
-                <goal>makeAggregateBom</goal>
-              </goals>
-              <phase>package</phase>
-              <inherited>false</inherited>
-              <configuration>
-                <outputName>aggregate-bom</outputName>
-              </configuration>
-            </execution>
-          </executions>
         </plugin>
         <plugin>
           <groupId>org.eclipse.jetty.toolchain</groupId>
@@ -1973,10 +1960,15 @@
         <artifactId>cyclonedx-maven-plugin</artifactId>
         <executions>
           <execution>
+            <id>cyclonedx-makeAggregateBom</id>
             <goals>
-              <goal>makeBom</goal>
+              <goal>makeAggregateBom</goal>
             </goals>
             <phase>package</phase>
+            <inherited>false</inherited>
+            <!--            <configuration>-->
+            <!--              <outputName>aggregate-bom</outputName>-->
+            <!--            </configuration>-->
           </execution>
         </executions>
       </plugin>
