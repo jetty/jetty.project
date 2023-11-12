@@ -1685,13 +1685,6 @@
                 <outputName>aggregate-bom</outputName>
               </configuration>
             </execution>
-            <execution>
-              <id>cyclonedx-makeBom</id>
-              <goals>
-                <goal>makeBom</goal>
-              </goals>
-              <phase>package</phase>
-            </execution>
           </executions>
         </plugin>
         <plugin>
