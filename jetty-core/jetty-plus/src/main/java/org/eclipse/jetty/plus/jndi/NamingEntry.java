@@ -63,8 +63,6 @@ public abstract class NamingEntry
     {
         if (jndiName == null)
             throw new NamingException("jndi name is null");
-        if (objectToBind == null)
-            throw new NamingException("no object to bind");
         this._scope = scope;
         this._jndiName = jndiName;
         save(objectToBind);
