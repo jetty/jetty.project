@@ -597,6 +597,23 @@
           </execution>
         </executions>
       </plugin>
+      <plugin>
+        <groupId>org.cyclonedx</groupId>
+        <artifactId>cyclonedx-maven-plugin</artifactId>
+        <executions>
+          <execution>
+            <id>cyclonedx-makeAggregateBom</id>
+            <goals>
+              <goal>makeAggregateBom</goal>
+            </goals>
+            <phase>package</phase>
+            <inherited>false</inherited>
+            <!--            <configuration>-->
+            <!--              <outputName>aggregate-bom</outputName>-->
+            <!--            </configuration>-->
+          </execution>
+        </executions>
+      </plugin>
     </plugins>
   </build>
 </project>
