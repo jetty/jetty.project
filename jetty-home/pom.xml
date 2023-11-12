@@ -606,11 +606,11 @@
             <goals>
               <goal>makeAggregateBom</goal>
             </goals>
-            <phase>package</phase>
+            <phase>prepare-package</phase>
             <inherited>false</inherited>
-            <!--            <configuration>-->
-            <!--              <outputName>aggregate-bom</outputName>-->
-            <!--            </configuration>-->
+            <configuration>
+              <outputName>jetty-home-sbom</outputName>
+            </configuration>
           </execution>
         </executions>
       </plugin>
