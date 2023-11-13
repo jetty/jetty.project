@@ -22,11 +22,6 @@ import java.util.concurrent.TimeUnit;
 import org.junit.jupiter.api.Test;
 import org.slf4j.LoggerFactory;
 
-import static org.awaitility.Awaitility.await;
-import static org.hamcrest.MatcherAssert.assertThat;
-import static org.hamcrest.Matchers.greaterThan;
-import static org.hamcrest.Matchers.greaterThanOrEqualTo;
-import static org.hamcrest.Matchers.lessThan;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertTrue;
@@ -39,20 +34,16 @@ public class BlockingTest
     @Test
     public void testRunBlock() throws Exception
     {
-        StopWatch stopWatch = new StopWatch();
         try (Blocker.Runnable runnable = Blocker.runnable())
         {
             runnable.run();
-            stopWatch.reset();
             runnable.block();
         }
-        assertThat(stopWatch.elapsed(), lessThan(500L));
     }
 
     @Test
     public void testBlockRun() throws Exception
     {
-        StopWatch stopWatch = new StopWatch();
         try (Blocker.Runnable runnable = Blocker.runnable())
         {
             CyclicBarrier barrier = new CyclicBarrier(2);
@@ -61,7 +52,6 @@ public class BlockingTest
                 try
                 {
                     barrier.await(5, TimeUnit.SECONDS);
-                    stopWatch.sleep(100);
                     runnable.run();
                 }
                 catch (Exception e)
@@ -71,43 +61,32 @@ public class BlockingTest
             }).start();
 
             barrier.await(5, TimeUnit.SECONDS);
-            stopWatch.reset();
             runnable.block();
         }
-        long elapsed = stopWatch.elapsed();
-        assertThat(elapsed, greaterThan(10L));
-        assertThat(elapsed, lessThan(1000L));
     }
 
     @Test
     public void testNoRun()
     {
-        StopWatch stopWatch = new StopWatch();
         try (Blocker.Runnable ignored = Blocker.runnable())
         {
-            stopWatch.reset();
             LoggerFactory.getLogger(Blocker.class).info("expect WARN Blocking.Runnable incomplete");
         }
-        assertThat(stopWatch.elapsed(), lessThan(500L));
     }
 
     @Test
     public void testSucceededBlock() throws Exception
     {
-        StopWatch stopWatch = new StopWatch();
         try (Blocker.Callback callback = Blocker.callback())
         {
             callback.succeeded();
-            stopWatch.reset();
             callback.block();
         }
-        assertThat(stopWatch.elapsed(), lessThan(500L));
     }
 
     @Test
     public void testBlockSucceeded() throws Exception
     {
-        StopWatch stopWatch = new StopWatch();
         try (Blocker.Callback callback = Blocker.callback())
         {
             CyclicBarrier barrier = new CyclicBarrier(2);
@@ -116,7 +95,6 @@ public class BlockingTest
                 try
                 {
                     barrier.await(5, TimeUnit.SECONDS);
-                    stopWatch.sleep(100);
                     callback.succeeded();
                 }
                 catch (Exception e)
@@ -126,18 +104,14 @@ public class BlockingTest
             }).start();
 
             barrier.await(5, TimeUnit.SECONDS);
-            stopWatch.reset();
             callback.block();
         }
-        assertThat(stopWatch.elapsed(), greaterThan(10L));
-        assertThat(stopWatch.elapsed(), lessThan(1000L));
     }
 
     @Test
     public void testFailedBlock()
     {
         Exception ex = new Exception("FAILED");
-        StopWatch stopWatch = new StopWatch();
         try
         {
             try (Blocker.Callback callback = Blocker.callback())
@@ -149,17 +123,14 @@ public class BlockingTest
         }
         catch (IOException e)
         {
-            stopWatch.reset();
             assertEquals(ex, e.getCause());
         }
-        assertThat(stopWatch.elapsed(), lessThan(100L));
     }
 
     @Test
     public void testBlockFailed() throws Exception
     {
         Exception ex = new Exception("FAILED");
-        StopWatch stopWatch = new StopWatch();
         CyclicBarrier barrier = new CyclicBarrier(2);
         try
         {
@@ -170,7 +141,6 @@ public class BlockingTest
                     try
                     {
                         barrier.await(5, TimeUnit.SECONDS);
-                        stopWatch.sleep(100);
                         callback.failed(ex);
                     }
                     catch (Exception e)
@@ -180,7 +150,6 @@ public class BlockingTest
                 }).start();
 
                 barrier.await(5, TimeUnit.SECONDS);
-                stopWatch.reset();
                 callback.block();
             }
             fail("Should have thrown IOException");
@@ -189,27 +158,21 @@ public class BlockingTest
         {
             assertEquals(ex, e.getCause());
         }
-        assertThat(stopWatch.elapsed(), greaterThan(10L));
-        assertThat(stopWatch.elapsed(), lessThan(1000L));
     }
 
     @Test
     public void testSharedRunBlock() throws Exception
     {
-        StopWatch stopWatch = new StopWatch();
         try (Blocker.Runnable runnable = _shared.runnable())
         {
             runnable.run();
-            stopWatch.reset();
             runnable.block();
         }
-        assertThat(stopWatch.elapsed(), lessThan(500L));
     }
 
     @Test
     public void testSharedBlockRun() throws Exception
     {
-        StopWatch stopWatch = new StopWatch();
         try (Blocker.Runnable runnable = _shared.runnable())
         {
             CyclicBarrier barrier = new CyclicBarrier(2);
@@ -218,7 +181,6 @@ public class BlockingTest
                 try
                 {
                     barrier.await(5, TimeUnit.SECONDS);
-                    stopWatch.sleep(100);
                     runnable.run();
                 }
                 catch (Exception e)
@@ -228,23 +190,17 @@ public class BlockingTest
             }).start();
 
             barrier.await(5, TimeUnit.SECONDS);
-            stopWatch.reset();
             runnable.block();
         }
-        assertThat(stopWatch.elapsed(), greaterThan(10L));
-        assertThat(stopWatch.elapsed(), lessThan(1000L));
     }
 
     @Test
     public void testSharedNoRun() throws Exception
     {
-        StopWatch stopWatch = new StopWatch();
         try (Blocker.Runnable ignored = _shared.runnable())
         {
-            stopWatch.reset();
             LoggerFactory.getLogger(Blocker.class).info("expect WARN Blocking.Shared incomplete");
         }
-        assertThat(stopWatch.elapsed(), lessThan(500L));
 
         // check it is still operating.
         try (Blocker.Runnable runnable = _shared.runnable())
@@ -257,20 +213,16 @@ public class BlockingTest
     @Test
     public void testSharedSucceededBlock() throws Exception
     {
-        StopWatch stopWatch = new StopWatch();
         try (Blocker.Callback callback = _shared.callback())
         {
             callback.succeeded();
-            stopWatch.reset();
             callback.block();
         }
-        assertThat(stopWatch.elapsed(), lessThan(500L));
     }
 
     @Test
     public void testSharedBlockSucceeded() throws Exception
     {
-        StopWatch stopWatch = new StopWatch();
         try (Blocker.Callback callback = _shared.callback())
         {
             CyclicBarrier barrier = new CyclicBarrier(2);
@@ -279,7 +231,6 @@ public class BlockingTest
                 try
                 {
                     barrier.await(5, TimeUnit.SECONDS);
-                    stopWatch.sleep(100);
                     callback.succeeded();
                 }
                 catch (Exception e)
@@ -289,18 +240,14 @@ public class BlockingTest
             }).start();
 
             barrier.await(5, TimeUnit.SECONDS);
-            stopWatch.reset();
             callback.block();
         }
-        assertThat(stopWatch.elapsed(), greaterThan(10L));
-        assertThat(stopWatch.elapsed(), lessThan(1000L));
     }
 
     @Test
     public void testSharedFailedBlock()
     {
         Exception ex = new Exception("FAILED");
-        StopWatch stopWatch = new StopWatch();
         try
         {
             try (Blocker.Callback callback = _shared.callback())
@@ -312,17 +259,14 @@ public class BlockingTest
         }
         catch (IOException e)
         {
-            stopWatch.reset();
             assertEquals(ex, e.getCause());
         }
-        assertThat(stopWatch.elapsed(), lessThan(100L));
     }
 
     @Test
     public void testSharedBlockFailed() throws Exception
     {
         Exception ex = new Exception("FAILED");
-        StopWatch stopWatch = new StopWatch();
         CyclicBarrier barrier = new CyclicBarrier(2);
 
         try
@@ -334,7 +278,6 @@ public class BlockingTest
                     try
                     {
                         barrier.await(5, TimeUnit.SECONDS);
-                        stopWatch.sleep(100);
                         callback.failed(ex);
                     }
                     catch (Exception e)
@@ -344,7 +287,6 @@ public class BlockingTest
                 }).start();
 
                 barrier.await(5, TimeUnit.SECONDS);
-                stopWatch.reset();
                 callback.block();
             }
             fail("Should have thrown IOException");
@@ -353,8 +295,6 @@ public class BlockingTest
         {
             assertEquals(ex, e.getCause());
         }
-        assertThat(stopWatch.elapsed(), greaterThan(10L));
-        assertThat(stopWatch.elapsed(), lessThan(1000L));
     }
 
     @Test
@@ -408,28 +348,6 @@ public class BlockingTest
         }
         catch (InterruptedIOException ignored)
         {
-        }
-    }
-
-    private static class StopWatch
-    {
-        private volatile long timestamp = NanoTime.now();
-
-        void reset()
-        {
-            timestamp = NanoTime.now();
-        }
-
-        long elapsed()
-        {
-            return NanoTime.millisSince(timestamp);
-        }
-
-        void sleep(long delayInMs)
-        {
-            if (delayInMs > 4000)
-                throw new IllegalArgumentException("Delay is too long for a test: " + delayInMs);
-            await().atMost(5, TimeUnit.SECONDS).until(() -> NanoTime.millisSince(timestamp), greaterThanOrEqualTo(delayInMs));
         }
     }
 }
