@@ -18,13 +18,16 @@ import java.util.Collection;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicInteger;
+import java.util.concurrent.atomic.AtomicReference;
 import java.util.function.ToIntFunction;
 
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.MethodSource;
 
+import static org.awaitility.Awaitility.await;
 import static org.eclipse.jetty.util.ConcurrentPool.StrategyType.FIRST;
 import static org.eclipse.jetty.util.ConcurrentPool.StrategyType.RANDOM;
 import static org.eclipse.jetty.util.ConcurrentPool.StrategyType.ROUND_ROBIN;
@@ -43,7 +46,7 @@ import static org.junit.jupiter.api.Assertions.assertThrows;
 
 public class ConcurrentPoolTest
 {
-    interface Factory
+    public interface Factory
     {
         default ConcurrentPool<String> newPool(int maxEntries)
         {
@@ -56,11 +59,10 @@ public class ConcurrentPoolTest
     public static List<Factory> factories()
     {
         return List.of(
-            (maxEntries, maxMultiplex) -> new ConcurrentPool<>(FIRST, maxEntries, false, maxMultiplex),
-            (maxEntries, maxMultiplex) -> new ConcurrentPool<>(FIRST, maxEntries, true, maxMultiplex),
-            (maxEntries, maxMultiplex) -> new ConcurrentPool<>(RANDOM, maxEntries, false, maxMultiplex),
-            (maxEntries, maxMultiplex) -> new ConcurrentPool<>(THREAD_ID, maxEntries, false, maxMultiplex),
-            (maxEntries, maxMultiplex) -> new ConcurrentPool<>(ROUND_ROBIN, maxEntries, false, maxMultiplex)
+            (maxEntries, maxMultiplex) -> new ConcurrentPool<>(FIRST, maxEntries, maxMultiplex),
+            (maxEntries, maxMultiplex) -> new ConcurrentPool<>(RANDOM, maxEntries, maxMultiplex),
+            (maxEntries, maxMultiplex) -> new ConcurrentPool<>(THREAD_ID, maxEntries, maxMultiplex),
+            (maxEntries, maxMultiplex) -> new ConcurrentPool<>(ROUND_ROBIN, maxEntries, maxMultiplex)
         );
     }
 
@@ -610,5 +612,173 @@ public class ConcurrentPoolTest
         assertThat(e2.getPooled().get(), greaterThan(10));
         assertThat(e3.getPooled().get(), greaterThan(10));
         assertThat(e4.getPooled().get(), greaterThan(10));
+    }
+
+    private void waitForGC(ConcurrentPool<String> pool, int size)
+    {
+        await().atMost(5, TimeUnit.SECONDS).until(() ->
+        {
+            System.gc();
+            pool.sweep();
+            return pool.size();
+        }, is(size));
+    }
+
+    @ParameterizedTest
+    @MethodSource(value = "factories")
+    public void testLeakReserved(Factory factory)
+    {
+        ConcurrentPool<String> pool = factory.newPool(3);
+        Pool.Entry<String> e0 = pool.reserve();
+        Pool.Entry<String> e1 = pool.reserve();
+        Pool.Entry<String> e2 = pool.reserve();
+        assertThat(e0, notNullValue());
+        assertThat(e1, notNullValue());
+        assertThat(e2, notNullValue());
+
+        assertThat(pool.reserve(), nullValue());
+        assertThat(pool.size(), is(3));
+        assertThat(pool.getReservedCount(), is(3));
+        assertThat(pool.getIdleCount(), is(0));
+        assertThat(pool.getInUseCount(), is(0));
+
+        e0 = null;
+        waitForGC(pool, 2);
+        assertThat(pool.size(), is(2));
+        assertThat(pool.getReservedCount(), is(2));
+        assertThat(pool.getIdleCount(), is(0));
+        assertThat(pool.getInUseCount(), is(0));
+
+        assertThat(e0, nullValue());
+    }
+
+    @ParameterizedTest
+    @MethodSource(value = "factories")
+    public void testLeakEnabled(Factory factory)
+    {
+        ConcurrentPool<String> pool = factory.newPool(10);
+        pool.reserve().enable("idle", false);
+        assertThat(pool.size(), is(1));
+        assertThat(pool.getReservedCount(), is(0));
+        assertThat(pool.getIdleCount(), is(1));
+        assertThat(pool.getInUseCount(), is(0));
+
+        Pool.Entry<String> e1 = pool.reserve();
+        e1.enable("held", true);
+        assertThat(e1.getPooled(), equalTo("held"));
+        assertThat(pool.size(), is(2));
+        assertThat(pool.getReservedCount(), is(0));
+        assertThat(pool.getIdleCount(), is(1));
+        assertThat(pool.getInUseCount(), is(1));
+
+        Pool.Entry<String> e2 = pool.reserve();
+        e2.enable("leaked", true);
+        assertThat(e2.getPooled(), equalTo("leaked"));
+        assertThat(pool.size(), is(3));
+        assertThat(pool.getReservedCount(), is(0));
+        assertThat(pool.getIdleCount(), is(1));
+        assertThat(pool.getInUseCount(), is(2));
+        e2 = null;
+        waitForGC(pool, 2);
+
+        assertThat(pool.size(), is(2));
+        assertThat(pool.getReservedCount(), is(0));
+        assertThat(pool.getIdleCount(), is(1));
+        assertThat(pool.getInUseCount(), is(1));
+
+        e1 = null;
+        waitForGC(pool, 1);
+        assertThat(pool.size(), is(1));
+        assertThat(pool.getReservedCount(), is(0));
+        assertThat(pool.getIdleCount(), is(1));
+        assertThat(pool.getInUseCount(), is(0));
+
+        Pool.Entry<String> e0 = pool.acquire();
+        assertThat(e0.getPooled(), equalTo("idle"));
+        assertThat(pool.size(), is(1));
+        assertThat(pool.getReservedCount(), is(0));
+        assertThat(pool.getIdleCount(), is(0));
+        assertThat(pool.getInUseCount(), is(1));
+
+        e0 = null;
+        waitForGC(pool, 0);
+        assertThat(pool.size(), is(0));
+        assertThat(pool.getReservedCount(), is(0));
+        assertThat(pool.getIdleCount(), is(0));
+        assertThat(pool.getInUseCount(), is(0));
+
+        assertThat(e0, nullValue());
+        assertThat(e1, nullValue());
+        assertThat(e2, nullValue());
+    }
+
+    @ParameterizedTest
+    @MethodSource(value = "factories")
+    public void testSweepOnReserve(Factory factory)
+    {
+        ConcurrentPool<String> pool = factory.newPool(3);
+        Pool.Entry<String> e0 = pool.reserve();
+        assertThat(e0, notNullValue());
+        Pool.Entry<String> e1 = pool.reserve();
+        assertThat(e1, notNullValue());
+        Pool.Entry<String> e2 = pool.reserve();
+        assertThat(e2, notNullValue());
+
+        assertThat(pool.reserve(), nullValue());
+        assertThat(pool.size(), is(3));
+        assertThat(pool.getReservedCount(), is(3));
+        assertThat(pool.getIdleCount(), is(0));
+        assertThat(pool.getInUseCount(), is(0));
+
+        e0 = null;
+        AtomicReference<Pool.Entry<String>> entry = new AtomicReference<>();
+        await().atMost(5, TimeUnit.SECONDS).until(() ->
+        {
+            System.gc();
+            entry.set(pool.reserve());
+            return entry.get();
+        }, notNullValue());
+
+        Pool.Entry<String> e3 = entry.get();
+        assertThat(e3, notNullValue());
+
+        e1.enable("one", false);
+        e2.enable("two", false);
+        e3.enable("three", true);
+        assertThat(pool.size(), is(3));
+        assertThat(pool.getReservedCount(), is(0));
+        assertThat(pool.getIdleCount(), is(2));
+        assertThat(pool.getInUseCount(), is(1));
+
+        assertThat(e0, nullValue());
+    }
+
+    @ParameterizedTest
+    @MethodSource(value = "factories")
+    public void testLeakDebug(Factory factory)
+    {
+        ConcurrentPool<String> pool = factory.newPool(10);
+        Pool.Entry<String> e0 = pool.reserve();
+        Pool.Entry<String> e1 = pool.reserve();
+        e1.enable("test", true);
+        assertThat(e0, notNullValue());
+        assertThat(e1, notNullValue());
+
+        assertThat(pool.size(), is(2));
+        assertThat(pool.getReservedCount(), is(1));
+        assertThat(pool.getIdleCount(), is(0));
+        assertThat(pool.getInUseCount(), is(1));
+
+        e0 = null;
+        e1 = null;
+        waitForGC(pool, 0);
+        assertThat(pool.size(), is(0));
+        assertThat(pool.getReservedCount(), is(0));
+        assertThat(pool.getIdleCount(), is(0));
+        assertThat(pool.getInUseCount(), is(0));
+        assertThat(e0, nullValue());
+        assertThat(e1, nullValue());
+
+        assertThat(pool.getLeaked(), is(2L));
     }
 }
