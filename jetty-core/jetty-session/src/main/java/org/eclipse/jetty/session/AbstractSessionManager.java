@@ -415,7 +415,8 @@ public abstract class AbstractSessionManager extends ContainerLifeCycle implemen
                     }
                     catch (Exception e)
                     {
-                        LOG.warn("Invalidating session {} found to be expired when requested", id, e);
+                        if (LOG.isDebugEnabled())
+                            LOG.warn("Invalidating session {} found to be expired when requested", id, e);
                     }
 
                     return null;
