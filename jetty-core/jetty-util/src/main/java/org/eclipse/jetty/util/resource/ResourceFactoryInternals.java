@@ -244,7 +244,7 @@ class ResourceFactoryInternals
          *
          * @param uri The URI to mount that may require a FileSystem (e.g. "jar:file://tmp/some.jar!/directory/file.txt")
          * @return A reference counted {@link FileSystemPool.Mount} for that file system or null. Callers should call
-         * {@link FileSystemPool.Mount#close()} once they no longer require any resources from a mounted resource.
+         * {@link FileSystemPool.Mount#close()} once they no longer require this specific Mount.
          * @throws IllegalArgumentException If the uri could not be mounted.
          */
         private FileSystemPool.Mount mountIfNeeded(URI uri)

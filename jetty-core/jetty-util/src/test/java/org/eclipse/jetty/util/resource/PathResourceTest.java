@@ -250,22 +250,30 @@ public class PathResourceTest
         {
             Path root = zipfs.getPath("/");
             Files.writeString(root.resolve("test.txt"), "Contents of test.txt", StandardCharsets.UTF_8);
+
+            Path dir = root.resolve("datainf");
+            Files.createDirectory(dir);
+            Files.writeString(dir.resolve("info.txt"), "Contents of info.txt", StandardCharsets.UTF_8);
         }
 
         try (ResourceFactory.Closeable resourceFactory = ResourceFactory.closeable())
         {
+            // First reference to Resource in test.jar
             Resource resRoot = resourceFactory.newResource(jarUri);
             Resource resBadDir = resourceFactory.newResource(jarUri.toASCIIString() + "does-not-exist/");
             assertNull(resBadDir);
             Resource resBadFile = resourceFactory.newResource(jarUri.toASCIIString() + "bad/file.txt");
             assertNull(resBadFile);
+            // Second reference to Resource in test.jar
+            Resource resInfoTxt = resourceFactory.newResource(jarUri.toASCIIString() + "datainf/info.txt");
+            assertTrue(Resources.isReadableFile(resInfoTxt));
 
             if (resourceFactory instanceof ResourceFactoryInternals.Mountable mountable)
             {
                 List<FileSystemPool.Mount> mounts = mountable.getMounts();
-                assertThat(mounts.size(), is(1));
+                assertThat(mounts.size(), is(2));
             }
-        }
+        } // close dereferences both references to test.jar
     }
 
     @Test
