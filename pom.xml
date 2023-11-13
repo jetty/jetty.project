@@ -2365,6 +2365,7 @@
                   <!--                  <failBuildInCaseOfConflict>true</failBuildInCaseOfConflict>-->
                   <failBuildInCaseOfDifferentContentConflict>true</failBuildInCaseOfDifferentContentConflict>
                   <ignoredResourcePatterns>
+                    <ignoredResourcePattern>org/eclipse/jetty/version/build.properties</ignoredResourcePattern>
                     <ignoredResourcePattern>about.html</ignoredResourcePattern>
                     <ignoredResourcePattern>.api_description</ignoredResourcePattern>
                     <ignoredResourcePattern>about_files/LICENSE-2.0.txt</ignoredResourcePattern>
