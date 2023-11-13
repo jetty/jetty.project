@@ -406,22 +406,22 @@ public class MetaInfConfiguration extends AbstractConfiguration
             else
             {
                 // Resource represents a packed jar
-                URI uri = target.getURI();
-                resourcesDir = resourceFactory.newResource(URIUtil.uriJarPrefix(uri, "!/META-INF/resources"));
+                Resource jarFileResource = resourceFactory.newJarFileResource(target.getURI());
+                resourcesDir = jarFileResource.resolve("META-INF/resources");
             }
 
-            if (Resources.isReadableDirectory(resourcesDir) && (cache != null))
+            if (isEmptyResource(resourcesDir))
+            {
+                return;
+            }
+
+            if (cache != null)
             {
                 Resource old = cache.putIfAbsent(target, resourcesDir);
                 if (old != null)
                     resourcesDir = old;
                 else if (LOG.isDebugEnabled())
                     LOG.debug("{} META-INF/resources cache updated", target);
-            }
-
-            if (isEmptyResource(resourcesDir))
-            {
-                return;
             }
         }
 
@@ -474,15 +474,17 @@ public class MetaInfConfiguration extends AbstractConfiguration
                 LOG.debug("{} META-INF/web-fragment.xml checked", jar);
             if (jar.isDirectory())
             {
-                webFrag = resourceFactory.newResource(jar.getPath().resolve("META-INF/web-fragment.xml"));
+                webFrag = jar.resolve("META-INF/web-fragment.xml");
             }
             else
             {
-                URI uri = jar.getURI();
-                webFrag = resourceFactory.newResource(URIUtil.uriJarPrefix(uri, "!/META-INF/web-fragment.xml"));
+               webFrag = resourceFactory.newJarFileResource(jar.getURI()).resolve("META-INF/web-fragment.xml");
             }
 
-            if (Resources.isReadable(webFrag) && (cache != null))
+            if (isEmptyFragment(webFrag))
+                return;
+
+            if (cache != null)
             {
                 //web-fragment.xml doesn't exist: put token in cache to signal we've seen the jar
                 Resource old = cache.putIfAbsent(jar, webFrag);
@@ -491,9 +493,6 @@ public class MetaInfConfiguration extends AbstractConfiguration
                 else if (LOG.isDebugEnabled())
                     LOG.debug("{} META-INF/web-fragment.xml cache updated", jar);
             }
-
-            if (isEmptyFragment(webFrag))
-                return;
         }
 
         Map<Resource, Resource> fragments = (Map<Resource, Resource>)context.getAttribute(METAINF_FRAGMENTS);
@@ -627,20 +626,23 @@ public class MetaInfConfiguration extends AbstractConfiguration
     private Collection<URL> getTlds(WebAppContext context, URI uri) throws IOException
     {
         HashSet<URL> tlds = new HashSet<>();
-        Resource r = ResourceFactory.of(context).newResource(URIUtil.uriJarPrefix(uri, "!/"));
-        try (Stream<Path> stream = Files.walk(r.getPath()))
+        try (ResourceFactory.Closeable closeableResourceFactory = ResourceFactory.closeable())
         {
-            Iterator<Path> it = stream
-                .filter(Files::isRegularFile)
-                .filter(FileID::isTld)
-                .iterator();
-            while (it.hasNext())
+            Resource closeableResource = closeableResourceFactory.newJarFileResource(uri);
+            try (Stream<Path> stream = Files.walk(closeableResource.getPath()))
             {
-                Path entry = it.next();
-                tlds.add(entry.toUri().toURL());
+                Iterator<Path> it = stream
+                    .filter(Files::isRegularFile)
+                    .filter(FileID::isTld)
+                    .iterator();
+                while (it.hasNext())
+                {
+                    Path entry = it.next();
+                    tlds.add(entry.toUri().toURL());
+                }
             }
+            return tlds;
         }
-        return tlds;
     }
 
     protected List<Resource> findClassDirs(WebAppContext context)
