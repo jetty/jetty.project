@@ -279,19 +279,24 @@ class AsyncContentProducer implements ContentProducer
         {
             if (_chunk != null)
             {
-                if (_chunk.isLast() || _chunk.hasRemaining() || Content.Chunk.isFailure(_chunk, false))
+                if (Content.Chunk.isFailure(_chunk, false))
+                {
+                    // We return the transient failure here without _chunk = Content.Chunk.next(_chunk)
+                    // because this method may be called by available() or isReady(), which do not consume the
+                    // chunk.  Only a call from nextChunk() consumes the chunk produced here, so the call to next
+                    // is done there.
+                    return _chunk;
+                }
+                if (_chunk.isLast() || _chunk.hasRemaining())
                 {
                     if (LOG.isDebugEnabled())
                         LOG.debug("chunk not yet depleted, returning it {}", this);
                     return _chunk;
                 }
-                else
-                {
-                    if (LOG.isDebugEnabled())
-                        LOG.debug("current chunk depleted {}", this);
-                    _chunk.release();
-                    _chunk = null;
-                }
+                if (LOG.isDebugEnabled())
+                    LOG.debug("current chunk depleted {}", this);
+                _chunk.release();
+                _chunk = null;
             }
             else
             {
@@ -305,17 +310,6 @@ class AsyncContentProducer implements ContentProducer
                     return null;
                 }
                 _servletChannel.getServletRequestState().onContentAdded();
-                if (Content.Chunk.isFailure(_chunk, false))
-                    return _chunk;
-            }
-
-            // Release the chunk immediately, if it is empty.
-            if (_chunk != null && !_chunk.hasRemaining() && !_chunk.isLast())
-            {
-                if (LOG.isDebugEnabled())
-                    LOG.debug("releasing empty chunk {}", this);
-                _chunk.release();
-                _chunk = null;
             }
         }
     }
