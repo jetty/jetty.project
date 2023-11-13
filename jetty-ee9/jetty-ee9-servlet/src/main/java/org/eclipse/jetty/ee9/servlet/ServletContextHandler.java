@@ -213,23 +213,6 @@ public class ServletContextHandler extends ContextHandler
         return false;
     }
 
-    @Override
-    public void setHandler(Handler handler)
-    {
-        if (handler instanceof SessionHandler)
-            setSessionHandler((SessionHandler)handler);
-        else if (handler instanceof SecurityHandler)
-            setSecurityHandler((SecurityHandler)handler);
-        else if (handler instanceof ServletHandler)
-            setServletHandler((ServletHandler)handler);
-        else
-        {
-            if (handler != null)
-                LOG.warn("ServletContextHandler.setHandler should not be called directly. Use insertHandler or setSessionHandler etc.");
-            super.setHandler(handler);
-        }
-    }
-
     private void doSetHandler(HandlerWrapper wrapper, Handler handler)
     {
         if (wrapper == this)
@@ -683,6 +666,19 @@ public class ServletContextHandler extends ContextHandler
         relinkHandlers();
     }
 
+    @Override
+    public void setHandler(Handler handler)
+    {
+        if (handler instanceof SessionHandler)
+            setSessionHandler((SessionHandler)handler);
+        else if (handler instanceof SecurityHandler)
+            setSecurityHandler((SecurityHandler)handler);
+        else if (handler instanceof ServletHandler)
+            setServletHandler((ServletHandler)handler);
+        else
+            getServletHandler().setHandler(handler);
+    }
+
     /**
      * Insert a HandlerWrapper before the first Session, Security or ServletHandler
      * but after any other HandlerWrappers.
@@ -707,6 +703,8 @@ public class ServletContextHandler extends ContextHandler
                 throw new IllegalArgumentException("bad tail of inserted wrapper chain");
 
             // Skip any injected handlers
+            // This is not the best behavior, but is retained here for jetty-10/11 compatibility
+            // but is changed in ee10 and beyond
             HandlerWrapper h = this;
             while (h.getHandler() instanceof HandlerWrapper)
             {
