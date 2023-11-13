@@ -21,6 +21,6 @@ public class DuplexConnectionPool extends AbstractConnectionPool
 {
     public DuplexConnectionPool(Destination destination, int maxConnections)
     {
-        super(destination, () -> new ConcurrentPool<>(ConcurrentPool.StrategyType.FIRST, maxConnections, false), 1);
+        super(destination, () -> new ConcurrentPool<>(ConcurrentPool.StrategyType.FIRST, maxConnections), 1);
     }
 }

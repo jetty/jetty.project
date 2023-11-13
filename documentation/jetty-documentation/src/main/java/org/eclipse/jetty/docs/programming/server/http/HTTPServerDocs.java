@@ -435,6 +435,10 @@ public class HTTPServerDocs
         // Create and configure the HTTP/3 connector.
         HTTP3ServerConnector connector = new HTTP3ServerConnector(server, sslContextFactory, new HTTP3ServerConnectionFactory(httpConfig));
         connector.setPort(843);
+
+        // It is mandatory to set the PEM directory.
+        connector.getQuicConfiguration().setPemWorkDirectory(Path.of("/path/to/pem/dir"));
+
         server.addConnector(connector);
 
         server.start();

@@ -70,6 +70,8 @@ public class HTTP2ServerConnection extends HTTP2Connection implements Connection
     private final ServerSessionListener listener;
     private final HttpConfiguration httpConfig;
     private final String id;
+    private final SocketAddress localSocketAddress;
+    private final SocketAddress remoteSocketAddress;
 
     public HTTP2ServerConnection(Connector connector, EndPoint endPoint, HttpConfiguration httpConfig, HTTP2ServerSession session, int inputBufferSize, ServerSessionListener listener)
     {
@@ -78,6 +80,8 @@ public class HTTP2ServerConnection extends HTTP2Connection implements Connection
         this.listener = listener;
         this.httpConfig = httpConfig;
         this.id = StringUtil.randomAlphaNumeric(16);
+        localSocketAddress = httpConfig.getLocalAddress() != null ? httpConfig.getLocalAddress() : endPoint.getLocalSocketAddress();
+        remoteSocketAddress = endPoint.getRemoteSocketAddress();
     }
 
     @Override
@@ -347,13 +351,13 @@ public class HTTP2ServerConnection extends HTTP2Connection implements Connection
     @Override
     public SocketAddress getRemoteSocketAddress()
     {
-        return getEndPoint().getRemoteSocketAddress();
+        return remoteSocketAddress;
     }
 
     @Override
     public SocketAddress getLocalSocketAddress()
     {
-        return getEndPoint().getLocalSocketAddress();
+        return localSocketAddress;
     }
 
     @Override

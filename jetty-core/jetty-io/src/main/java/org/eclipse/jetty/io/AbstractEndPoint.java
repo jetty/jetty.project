@@ -69,10 +69,7 @@ public abstract class AbstractEndPoint extends IdleTimeout implements EndPoint
     }
 
     @Override
-    public SocketAddress getLocalSocketAddress()
-    {
-        return null;
-    }
+    public abstract SocketAddress getLocalSocketAddress();
 
     @Override
     public InetSocketAddress getRemoteAddress()
@@ -84,10 +81,7 @@ public abstract class AbstractEndPoint extends IdleTimeout implements EndPoint
     }
 
     @Override
-    public SocketAddress getRemoteSocketAddress()
-    {
-        return null;
-    }
+    public abstract SocketAddress getRemoteSocketAddress();
 
     protected final void shutdownInput()
     {
