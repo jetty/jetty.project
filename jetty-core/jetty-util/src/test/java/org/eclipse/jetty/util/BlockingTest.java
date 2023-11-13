@@ -13,23 +13,37 @@
 
 package org.eclipse.jetty.util;
 
+import java.io.Closeable;
 import java.io.IOException;
 import java.io.InterruptedIOException;
 import java.util.concurrent.CountDownLatch;
-import java.util.concurrent.CyclicBarrier;
 import java.util.concurrent.TimeUnit;
 
+import org.hamcrest.Matchers;
+import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.Timeout;
 import org.slf4j.LoggerFactory;
 
+import static org.awaitility.Awaitility.await;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
+import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.junit.jupiter.api.Assertions.fail;
 
+@Timeout(value = 10)
 public class BlockingTest
 {
     final Blocker.Shared _shared = new Blocker.Shared();
+
+    Thread main;
+
+    @BeforeEach
+    public void setUp()
+    {
+        main = Thread.currentThread();
+    }
 
     @Test
     public void testRunBlock() throws Exception
@@ -44,23 +58,14 @@ public class BlockingTest
     @Test
     public void testBlockRun() throws Exception
     {
-        try (Blocker.Runnable runnable = Blocker.runnable())
+        try (Blocker.Runnable runnable = Blocker.runnable();
+             AssertingThread thread = new AssertingThread(() ->
+             {
+                 await().atMost(5, TimeUnit.SECONDS).until(main::getState, Matchers.is(Thread.State.WAITING));
+                 runnable.run();
+             }))
         {
-            CyclicBarrier barrier = new CyclicBarrier(2);
-            new Thread(() ->
-            {
-                try
-                {
-                    barrier.await(5, TimeUnit.SECONDS);
-                    runnable.run();
-                }
-                catch (Exception e)
-                {
-                    throw new RuntimeException(e);
-                }
-            }).start();
-
-            barrier.await(5, TimeUnit.SECONDS);
+            thread.start();
             runnable.block();
         }
     }
@@ -87,23 +92,15 @@ public class BlockingTest
     @Test
     public void testBlockSucceeded() throws Exception
     {
-        try (Blocker.Callback callback = Blocker.callback())
+        try (Blocker.Callback callback = Blocker.callback();
+             AssertingThread thread = new AssertingThread(() ->
+             {
+                 await().atMost(5, TimeUnit.SECONDS).until(main::getState, Matchers.is(Thread.State.WAITING));
+                 callback.succeeded();
+             }))
         {
-            CyclicBarrier barrier = new CyclicBarrier(2);
-            new Thread(() ->
-            {
-                try
-                {
-                    barrier.await(5, TimeUnit.SECONDS);
-                    callback.succeeded();
-                }
-                catch (Exception e)
-                {
-                    throw new RuntimeException(e);
-                }
-            }).start();
+            thread.start();
 
-            barrier.await(5, TimeUnit.SECONDS);
             callback.block();
         }
     }
@@ -128,28 +125,20 @@ public class BlockingTest
     }
 
     @Test
-    public void testBlockFailed() throws Exception
+    public void testBlockFailed()
     {
         Exception ex = new Exception("FAILED");
-        CyclicBarrier barrier = new CyclicBarrier(2);
         try
         {
-            try (Blocker.Callback callback = Blocker.callback())
+            try (Blocker.Callback callback = Blocker.callback();
+                 AssertingThread thread = new AssertingThread(() ->
+                 {
+                     await().atMost(5, TimeUnit.SECONDS).until(main::getState, Matchers.is(Thread.State.WAITING));
+                     callback.failed(ex);
+                 }))
             {
-                new Thread(() ->
-                {
-                    try
-                    {
-                        barrier.await(5, TimeUnit.SECONDS);
-                        callback.failed(ex);
-                    }
-                    catch (Exception e)
-                    {
-                        throw new RuntimeException(e);
-                    }
-                }).start();
+                thread.start();
 
-                barrier.await(5, TimeUnit.SECONDS);
                 callback.block();
             }
             fail("Should have thrown IOException");
@@ -173,23 +162,15 @@ public class BlockingTest
     @Test
     public void testSharedBlockRun() throws Exception
     {
-        try (Blocker.Runnable runnable = _shared.runnable())
+        try (Blocker.Runnable runnable = _shared.runnable();
+             AssertingThread thread = new AssertingThread(() ->
+             {
+                 await().atMost(5, TimeUnit.SECONDS).until(main::getState, Matchers.is(Thread.State.WAITING));
+                 runnable.run();
+             }))
         {
-            CyclicBarrier barrier = new CyclicBarrier(2);
-            new Thread(() ->
-            {
-                try
-                {
-                    barrier.await(5, TimeUnit.SECONDS);
-                    runnable.run();
-                }
-                catch (Exception e)
-                {
-                    throw new RuntimeException(e);
-                }
-            }).start();
+            thread.start();
 
-            barrier.await(5, TimeUnit.SECONDS);
             runnable.block();
         }
     }
@@ -223,23 +204,15 @@ public class BlockingTest
     @Test
     public void testSharedBlockSucceeded() throws Exception
     {
-        try (Blocker.Callback callback = _shared.callback())
+        try (Blocker.Callback callback = _shared.callback();
+             AssertingThread thread = new AssertingThread(() ->
+             {
+                 await().atMost(5, TimeUnit.SECONDS).until(main::getState, Matchers.is(Thread.State.WAITING));
+                 callback.succeeded();
+             }))
         {
-            CyclicBarrier barrier = new CyclicBarrier(2);
-            new Thread(() ->
-            {
-                try
-                {
-                    barrier.await(5, TimeUnit.SECONDS);
-                    callback.succeeded();
-                }
-                catch (Exception e)
-                {
-                    throw new RuntimeException(e);
-                }
-            }).start();
+            thread.start();
 
-            barrier.await(5, TimeUnit.SECONDS);
             callback.block();
         }
     }
@@ -264,29 +237,20 @@ public class BlockingTest
     }
 
     @Test
-    public void testSharedBlockFailed() throws Exception
+    public void testSharedBlockFailed()
     {
         Exception ex = new Exception("FAILED");
-        CyclicBarrier barrier = new CyclicBarrier(2);
-
         try
         {
-            try (Blocker.Callback callback = _shared.callback())
+            try (Blocker.Callback callback = _shared.callback();
+                 AssertingThread thread = new AssertingThread(() ->
+                 {
+                     await().atMost(5, TimeUnit.SECONDS).until(main::getState, Matchers.is(Thread.State.WAITING));
+                     callback.failed(ex);
+                 }))
             {
-                new Thread(() ->
-                {
-                    try
-                    {
-                        barrier.await(5, TimeUnit.SECONDS);
-                        callback.failed(ex);
-                    }
-                    catch (Exception e)
-                    {
-                        throw new RuntimeException(e);
-                    }
-                }).start();
+                thread.start();
 
-                barrier.await(5, TimeUnit.SECONDS);
                 callback.block();
             }
             fail("Should have thrown IOException");
@@ -335,19 +299,53 @@ public class BlockingTest
         callback0.close();
         assertTrue(latch0.await(10, TimeUnit.SECONDS));
     }
-    
+
     @Test
     public void testInterruptedException() throws Exception
     {
-        try
+        Blocker.Callback callback = _shared.callback();
+        Thread.currentThread().interrupt();
+        assertThrows(InterruptedIOException.class, callback::block);
+    }
+
+    private static class AssertingThread extends Thread implements Closeable
+    {
+        private Throwable failure;
+
+        public AssertingThread(Runnable target)
         {
-            Blocker.Callback callback = _shared.callback();
-            Thread.currentThread().interrupt();
-            callback.block();
-            fail();
+            super(target);
         }
-        catch (InterruptedIOException ignored)
+
+        @Override
+        public void close() throws IOException
         {
+            try
+            {
+                join();
+            }
+            catch (InterruptedException e)
+            {
+                if (failure != null)
+                    failure.addSuppressed(e);
+                else
+                    failure = e;
+            }
+            if (failure != null)
+                throw new IOException(failure);
+        }
+
+        @Override
+        public final void run()
+        {
+            try
+            {
+                super.run();
+            }
+            catch (Throwable x)
+            {
+                failure = x;
+            }
         }
     }
 }
