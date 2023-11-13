@@ -953,6 +953,7 @@ public class ServletContextHandler extends ContextHandler
             if (handler != null)
                 LOG.warn("ServletContextHandler.setHandler should not be called directly. Use insertHandler or setSessionHandler etc.");
             super.setHandler(handler);
+            relinkHandlers();
         }
     }
 
@@ -1679,8 +1680,8 @@ public class ServletContextHandler extends ContextHandler
                 throw new IllegalArgumentException("bad tail of inserted wrapper chain");
             tail.setHandler(getHandler());
             super.setHandler(handler);
+            relinkHandlers();
         }
-        relinkHandlers();
     }
 
     /**
