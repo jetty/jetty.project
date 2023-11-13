@@ -30,7 +30,6 @@ import java.util.Objects;
 import java.util.Set;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.TimeoutException;
-import java.util.concurrent.atomic.AtomicReference;
 import java.util.function.Consumer;
 import java.util.function.Function;
 import java.util.function.Predicate;
@@ -45,10 +44,10 @@ import org.eclipse.jetty.http.MetaData;
 import org.eclipse.jetty.http.MimeTypes;
 import org.eclipse.jetty.http.Trailers;
 import org.eclipse.jetty.io.Content;
+import org.eclipse.jetty.server.internal.CompletionStreamWrapper;
 import org.eclipse.jetty.server.internal.HttpChannelState;
 import org.eclipse.jetty.util.Attributes;
 import org.eclipse.jetty.util.Callback;
-import org.eclipse.jetty.util.ExceptionUtil;
 import org.eclipse.jetty.util.Fields;
 import org.eclipse.jetty.util.HostPort;
 import org.eclipse.jetty.util.NanoTime;
@@ -345,50 +344,12 @@ public interface Request extends Attributes, Content.Source
      */
     static void addCompletionListener(Request request, Consumer<Throwable> listener)
     {
-        // Look for a ChannelRequest to use its optimized addCompletionLister
-        HttpChannelState.ChannelRequest channelRequest = as(request, HttpChannelState.ChannelRequest.class);
-        if (channelRequest != null)
+        request.addHttpStreamWrapper(stream ->
         {
-            channelRequest.addCompletionListener(listener);
-        }
-        else
-        {
-            // No ChannelRequest, so directly implement listener with a stream wrapper.
-            AtomicReference<Consumer<Throwable>> onCompletion = new AtomicReference<>(listener);
-            request.addHttpStreamWrapper(s -> new HttpStream.Wrapper(s)
-            {
-                @Override
-                public void succeeded()
-                {
-                    onCompletion(null);
-                    super.succeeded();
-                }
-
-                @Override
-                public void failed(Throwable x)
-                {
-                    onCompletion(x);
-                    super.failed(x);
-                }
-
-                private void onCompletion(Throwable x)
-                {
-                    Consumer<Throwable> l = onCompletion.getAndSet(null);
-                    if (l != null)
-                    {
-                        try
-                        {
-                            l.accept(x);
-                        }
-                        catch (Throwable t)
-                        {
-                            ExceptionUtil.addSuppressedIfNotAssociated(x, t);
-                            LOG.warn("{} threw", l, t);
-                        }
-                    }
-                }
-            });
-        }
+            if (stream instanceof CompletionStreamWrapper completionStreamWrapper)
+                return completionStreamWrapper.addListener(listener);
+            return new CompletionStreamWrapper(stream, listener);
+        });
     }
 
     /**
