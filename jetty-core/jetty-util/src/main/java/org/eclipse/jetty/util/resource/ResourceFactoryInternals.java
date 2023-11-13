@@ -127,7 +127,12 @@ class ResourceFactoryInternals
         return RESOURCE_FACTORIES.getBest(str) != null;
     }
 
-    static class Closeable implements ResourceFactory.Closeable
+    interface Mountable
+    {
+        List<FileSystemPool.Mount> getMounts();
+    }
+
+    static class Closeable implements ResourceFactory.Closeable, Mountable
     {
         private final CompositeResourceFactory _compositeResourceFactory = new CompositeResourceFactory();
 
@@ -143,6 +148,11 @@ class ResourceFactoryInternals
             for (FileSystemPool.Mount mount : _compositeResourceFactory.getMounts())
                 IO.close(mount);
             _compositeResourceFactory.clearMounts();
+        }
+
+        public List<FileSystemPool.Mount> getMounts()
+        {
+            return _compositeResourceFactory.getMounts();
         }
     }
 
@@ -210,8 +220,15 @@ class ResourceFactoryInternals
                     FileSystemPool.Mount mount = mountIfNeeded(uri);
                     if (mount != null)
                     {
+                        Resource res = resourceFactory.newResource(uri);
+                        if (res == null)
+                        {
+                            mount.close(); // decrement
+                            return null;
+                        }
                         _mounts.add(mount);
                         onMounted(mount, uri);
+                        return res;
                     }
                 }
                 return resourceFactory.newResource(uri);

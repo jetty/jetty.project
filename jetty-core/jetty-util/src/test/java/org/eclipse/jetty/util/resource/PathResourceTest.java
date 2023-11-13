@@ -237,6 +237,38 @@ public class PathResourceTest
     }
 
     @Test
+    public void testJarMountNonExistent(WorkDir workDir) throws IOException
+    {
+        Path tmpPath = workDir.getEmptyPathDir();
+        Path testJar = tmpPath.resolve("test.jar");
+
+        Map<String, String> env = new HashMap<>();
+        env.put("create", "true");
+
+        URI jarUri = URIUtil.uriJarPrefix(testJar.toUri(), "!/");
+        try (FileSystem zipfs = FileSystems.newFileSystem(jarUri, env))
+        {
+            Path root = zipfs.getPath("/");
+            Files.writeString(root.resolve("test.txt"), "Contents of test.txt", StandardCharsets.UTF_8);
+        }
+
+        try (ResourceFactory.Closeable resourceFactory = ResourceFactory.closeable())
+        {
+            Resource resRoot = resourceFactory.newResource(jarUri);
+            Resource resBadDir = resourceFactory.newResource(jarUri.toASCIIString() + "does-not-exist/");
+            assertNull(resBadDir);
+            Resource resBadFile = resourceFactory.newResource(jarUri.toASCIIString() + "bad/file.txt");
+            assertNull(resBadFile);
+
+            if (resourceFactory instanceof ResourceFactoryInternals.Mountable mountable)
+            {
+                List<FileSystemPool.Mount> mounts = mountable.getMounts();
+                assertThat(mounts.size(), is(1));
+            }
+        }
+    }
+
+    @Test
     public void testJarFileIsAliasFile(WorkDir workDir) throws IOException
     {
         Path tmpPath = workDir.getEmptyPathDir();
