@@ -46,6 +46,21 @@ public class DatagramChannelEndPoint extends SelectableChannelEndPoint
         return (DatagramChannel)super.getChannel();
     }
 
+    @Override
+    public SocketAddress getRemoteSocketAddress()
+    {
+        try
+        {
+            return getChannel().getRemoteAddress();
+        }
+        catch (Exception e)
+        {
+            if (LOG.isTraceEnabled())
+                LOG.trace("ignored", e);
+        }
+        return null;
+    }
+
     /**
      * <p>Receives data into the given buffer from the returned address.</p>
      * <p>This method should be used to receive UDP data.</p>
