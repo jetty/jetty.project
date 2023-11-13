@@ -62,6 +62,7 @@ public class HTTP2ServerConnection extends HTTP2Connection implements Connection
     private static final Logger LOG = LoggerFactory.getLogger(HTTP2ServerConnection.class);
 
     private final HttpChannel.Factory httpChannelFactory = new HttpChannel.DefaultFactory();
+    // This unbounded queue will always be limited by the max number of concurrent streams per connection.
     private final Queue<HttpChannel> httpChannels = new ConcurrentLinkedQueue<>();
     private final Attributes attributes = new Lazy();
     private final List<Frame> upgradeFrames = new ArrayList<>();
@@ -69,7 +70,6 @@ public class HTTP2ServerConnection extends HTTP2Connection implements Connection
     private final ServerSessionListener listener;
     private final HttpConfiguration httpConfig;
     private final String id;
-    private boolean recycleHttpChannels = true;
 
     public HTTP2ServerConnection(Connector connector, EndPoint endPoint, HttpConfiguration httpConfig, HTTP2ServerSession session, int inputBufferSize, ServerSessionListener listener)
     {
@@ -237,7 +237,7 @@ public class HTTP2ServerConnection extends HTTP2Connection implements Connection
 
     private HttpChannel pollHttpChannel()
     {
-        HttpChannel httpChannel = isRecycleHttpChannels() ? httpChannels.poll() : null;
+        HttpChannel httpChannel = httpChannels.poll();
         if (httpChannel == null)
             httpChannel = httpChannelFactory.newHttpChannel(this);
         return httpChannel;
@@ -245,18 +245,7 @@ public class HTTP2ServerConnection extends HTTP2Connection implements Connection
 
     void offerHttpChannel(HttpChannel channel)
     {
-        if (isRecycleHttpChannels())
-            httpChannels.offer(channel);
-    }
-
-    public boolean isRecycleHttpChannels()
-    {
-        return recycleHttpChannels;
-    }
-
-    public void setRecycleHttpChannels(boolean recycleHttpChannels)
-    {
-        this.recycleHttpChannels = recycleHttpChannels;
+        httpChannels.offer(channel);
     }
 
     public boolean upgrade(Request request, HttpFields.Mutable responseFields)
