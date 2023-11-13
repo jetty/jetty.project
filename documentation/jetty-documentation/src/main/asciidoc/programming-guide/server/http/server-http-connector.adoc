@@ -160,11 +160,14 @@ You can customize the SSL/TLS provider as explained in xref:pg-server-http-conne
 [[pg-server-http-connector-protocol-http3]]
 ====== HTTP/3
 
-HTTP/3 is based on UDP, differently from HTTP/1 and HTTP/2 that are based on TCP.
+The HTTP/3 protocol is layered on top of the link:https://datatracker.ietf.org/doc/html/rfc9000[QUIC] protocol, which is based on UDP.
+This is rather different with respect to HTTP/1 and HTTP/2, that are based on TCP.
 
-An HTTP/3 client may initiate a connection (using the QUIC protocol via UDP) on the canonical HTTP secure port `443`, but chances are that the connection may not succeed (for example, the server does not listen for UDP on port `443`, only listens for TCP).
+Jetty only implements the HTTP/3 layer in Java; the QUIC implementation is provided by the link:https://github.com/cloudflare/quiche[Quiche] native library, that Jetty calls via link:https://github.com/java-native-access/jna[JNA] (and possibly, in the future, via the link:https://openjdk.org/jeps/454[Foreign APIs]).
 
-For this reason, HTTP servers typically listen on the canonical HTTP secure port `443` for HTTP/1 and HTTP/2, and advertise the availability HTTP/3 as an link:https://datatracker.ietf.org/doc/html/rfc7838[_HTTP alternate service_] on a different port (and possibly a different host).
+NOTE: Jetty's HTTP/3 support can only be used on the platforms (OS and CPU) supported by the Quiche native library.
+
+HTTP/3 clients may not know in advance if the server supports QUIC (over UDP), but the server typically supports either HTTP/1 or HTTP/2 (over TCP) on the default HTTP secure port `443`, and advertises the availability HTTP/3 as an link:https://datatracker.ietf.org/doc/html/rfc7838[_HTTP alternate service_], possibly on a different port and/or on a different host.
 
 For example, an HTTP/2 response may include the following header:
 
@@ -173,8 +176,12 @@ For example, an HTTP/2 response may include the following header:
 Alt-Svc: h3=":843"
 ----
 
-The presence of this header indicates that protocol `h3` is available on the same host (since no host is defined before the port), but on port `843`.
+The presence of this header indicates that protocol `h3` is available on the same host (since no host is defined before the port), but on port `843` (although it may be the same port `443`).
 The HTTP/3 client may now initiate a QUIC connection on port `843` and make HTTP/3 requests.
+
+NOTE: It is nowadays common to use the same port `443` for both HTTP/2 and HTTP/3. This does not cause problems because HTTP/2 listens on the TCP port `443`, while QUIC listens on the UDP port `443`.
+
+It is therefore common for HTTP/3 clients to initiate connections using the HTTP/2 protocol over TCP, and if the server supports HTTP/3 switch to HTTP/3 as indicated by the server.
 
 [plantuml]
 ----
@@ -201,6 +208,16 @@ To setup HTTP/3, for example on port `843`, you need the following code (some of
 ----
 include::../../{doc_code}/org/eclipse/jetty/docs/programming/server/http/HTTPServerDocs.java[tags=h3]
 ----
+
+[IMPORTANT]
+====
+The use of the Quiche native library requires the private key and public certificate present in the KeyStore to be exported as PEM files for Quiche to use them.
+
+It is therefore mandatory to configure the PEM directory as shown above.
+
+The PEM directory must also be adequately protected using file system permissions, because it stores the private key PEM file.
+You want to grant as few permissions as possible, typically only the equivalent of POSIX `rwx` to the user that runs the Jetty process. Using `/tmp` or any other directory accessible by any user is not a secure choice.
+====
 
 [[pg-server-http-connector-protocol-tls-conscrypt]]
 ====== Using Conscrypt as SSL/TLS Provider

@@ -285,6 +285,15 @@ public class ContextHandler extends ScopedHandler implements Attributes, Supplie
         return _coreContextHandler;
     }
 
+    /**
+     * Insert a handler between the {@link #getCoreContextHandler()} and this handler.
+     * @param coreHandler A core handler to insert
+     */
+    public void insertHandler(org.eclipse.jetty.server.Handler.Singleton coreHandler)
+    {
+        getCoreContextHandler().insertHandler(coreHandler);
+    }
+
     @Override
     public void dump(Appendable out, String indent) throws IOException
     {
@@ -2607,6 +2616,8 @@ public class ContextHandler extends ScopedHandler implements Attributes, Supplie
         @Override
         public void insertHandler(Singleton handler)
         {
+            // We cannot call super.insertHandler here, because it uses this.setHandler
+            // which gives a warning.  This is the same code, but uses super.setHandler
             Singleton tail = handler.getTail();
             if (tail.getHandler() != null)
                 throw new IllegalArgumentException("bad tail of inserted wrapper chain");
