@@ -140,12 +140,20 @@ public class ResponseListenersTest
         assertThat(chunks.get(2).isLast(), is(false));
         assertThat(chunks.get(3).getByteBuffer().get(), is((byte)2));
         assertThat(chunks.get(3).isLast(), is(false));
+
+        // The failures are not alternated because when a ContentSourceDemultiplexer is failed,
+        // it immediately services demands, and this particular test does demand right after
+        // failing the source.
+        // Remember that when a ContentSourceDemultiplexer is failed, it does NOT forward the failure
+        // to its original source until ALL ContentSourceDemultiplexers are failed. But in the meantime,
+        // it remembers the failure and serves reads and demands with it; so this is the only case when
+        // reading from ContentSourceDemultiplexers does not alternate the responses.
         assertThat(Content.Chunk.isFailure(chunks.get(4), false), is(true));
         assertThat(chunks.get(4).getFailure(), instanceOf(TimeoutException.class));
-        assertThat(Content.Chunk.isFailure(chunks.get(5), false), is(true));
-        assertThat(chunks.get(5).getFailure(), instanceOf(TimeoutException.class));
-        assertThat(Content.Chunk.isFailure(chunks.get(6), true), is(true));
-        assertThat(chunks.get(6).getFailure(), instanceOf(NumberFormatException.class));
+        assertThat(Content.Chunk.isFailure(chunks.get(5), true), is(true));
+        assertThat(chunks.get(5).getFailure(), instanceOf(NumberFormatException.class));
+        assertThat(Content.Chunk.isFailure(chunks.get(6), false), is(true));
+        assertThat(chunks.get(6).getFailure(), instanceOf(TimeoutException.class));
         assertThat(Content.Chunk.isFailure(chunks.get(7), true), is(true));
         assertThat(chunks.get(7).getFailure(), instanceOf(NumberFormatException.class));
 
