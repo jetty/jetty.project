@@ -618,7 +618,7 @@ public class MetaInfConfiguration extends AbstractConfiguration
                 resourceDir = resource;
 
             Resource metaInf = resourceDir.resolve("META-INF");
-            if (!metaInf.isDirectory())
+            if (isEmptyResource(metaInf))
                 return tlds; //no tlds
 
             try (Stream<Path> stream = Files.walk(metaInf.getPath()))
