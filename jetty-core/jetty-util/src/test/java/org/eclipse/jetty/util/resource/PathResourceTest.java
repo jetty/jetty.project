@@ -18,6 +18,7 @@ import java.io.InputStream;
 import java.net.URI;
 import java.nio.channels.ReadableByteChannel;
 import java.nio.charset.StandardCharsets;
+import java.nio.file.ClosedFileSystemException;
 import java.nio.file.FileSystem;
 import java.nio.file.FileSystemException;
 import java.nio.file.FileSystems;
@@ -353,6 +354,9 @@ public class PathResourceTest
                 assertThat(tracking.getTrackingCount(), is(0));
             }
 
+            // Resource one still works because factory 2 is holding filesystem open
+            assertThat(IO.toString(oneTxt.newInputStream()), is("Contents of one.txt"));
+
             // should not be able to use closed ResourceFactory.Closable
             assertThrows(IllegalStateException.class, () -> resourceFactory1.newResource(jarUri.toASCIIString() + "one.txt"));
 
@@ -360,6 +364,15 @@ public class PathResourceTest
 
             Resource oneAlt = resourceFactory2.newResource(jarUri.toASCIIString() + "one.txt");
             assertTrue(Resources.isReadableFile(oneAlt));
+
+            // Close Resource Factory 2
+            resourceFactory2.close();
+
+            // Neither Resource one nor two  works because filesystem is now closed
+            assertThrows(ClosedFileSystemException.class, oneTxt::newInputStream);
+            assertThrows(ClosedFileSystemException.class, oneTxt2::newInputStream);
+
+            assertThat("Should see only 0 FS Mount", FileSystemPool.INSTANCE.mounts().size(), is(0));
         }
         finally
         {
