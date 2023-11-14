@@ -127,32 +127,36 @@ class ResourceFactoryInternals
         return RESOURCE_FACTORIES.getBest(str) != null;
     }
 
-    interface Mountable
+    interface Tracking
     {
-        List<FileSystemPool.Mount> getMounts();
+        int getTrackingCount();
     }
 
-    static class Closeable implements ResourceFactory.Closeable, Mountable
+    static class Closeable implements ResourceFactory.Closeable, Tracking
     {
+        private boolean closed = false;
         private final CompositeResourceFactory _compositeResourceFactory = new CompositeResourceFactory();
 
         @Override
         public Resource newResource(URI uri)
         {
+            if (closed)
+                throw new IllegalStateException("Unable to create new Resource on closed ResourceFactory");
             return _compositeResourceFactory.newResource(uri);
         }
 
         @Override
         public void close()
         {
+            closed = true;
             for (FileSystemPool.Mount mount : _compositeResourceFactory.getMounts())
                 IO.close(mount);
             _compositeResourceFactory.clearMounts();
         }
 
-        public List<FileSystemPool.Mount> getMounts()
+        public int getTrackingCount()
         {
-            return _compositeResourceFactory.getMounts();
+            return _compositeResourceFactory.getMounts().size();
         }
     }
 
@@ -163,6 +167,7 @@ class ResourceFactoryInternals
         @Override
         public Resource newResource(URI uri)
         {
+            // TODO: add check that LifeCycle is started before allowing this method to be used?
             return _compositeResourceFactory.newResource(uri);
         }
 

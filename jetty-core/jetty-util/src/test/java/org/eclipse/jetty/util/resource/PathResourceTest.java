@@ -54,6 +54,7 @@ import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertNotNull;
 import static org.junit.jupiter.api.Assertions.assertNull;
+import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.junit.jupiter.api.Assumptions.assumeTrue;
 
@@ -257,10 +258,9 @@ public class PathResourceTest
             Resource resBadFile = resourceFactory.newResource(jarUri.toASCIIString() + "bad/file.txt");
             assertNull(resBadFile);
 
-            if (resourceFactory instanceof ResourceFactoryInternals.Mountable mountable)
+            if (resourceFactory instanceof ResourceFactoryInternals.Tracking tracking)
             {
-                List<FileSystemPool.Mount> mounts = mountable.getMounts();
-                assertThat(mounts.size(), is(1));
+                assertThat(tracking.getTrackingCount(), is(1));
             }
         }
     }
@@ -292,11 +292,78 @@ public class PathResourceTest
             Resource twoTxt = resourceFactory.newResource(jarUri.toASCIIString() + "datainf/two.txt");
             assertTrue(Resources.isReadableFile(twoTxt));
 
-            if (resourceFactory instanceof ResourceFactoryInternals.Mountable mountable)
+            if (resourceFactory instanceof ResourceFactoryInternals.Tracking tracking)
             {
-                List<FileSystemPool.Mount> mounts = mountable.getMounts();
-                assertThat(mounts.size(), is(1));
+                assertThat(tracking.getTrackingCount(), is(1));
             }
+        }
+    }
+
+    @Test
+    public void testMountsForSameJarDifferentResourceFactories(WorkDir workDir) throws IOException
+    {
+        Path tmpPath = workDir.getEmptyPathDir();
+        Path testJar = tmpPath.resolve("test.jar");
+
+        Map<String, String> env = new HashMap<>();
+        env.put("create", "true");
+
+        URI jarUri = URIUtil.uriJarPrefix(testJar.toUri(), "!/");
+        try (FileSystem zipfs = FileSystems.newFileSystem(jarUri, env))
+        {
+            Path root = zipfs.getPath("/");
+            Files.writeString(root.resolve("one.txt"), "Contents of one.txt", StandardCharsets.UTF_8);
+
+            Path dir = root.resolve("datainf");
+            Files.createDirectory(dir);
+            Files.writeString(dir.resolve("two.txt"), "Contents of two.txt", StandardCharsets.UTF_8);
+        }
+
+        assertThat(FileSystemPool.INSTANCE.mounts(), is(empty()));
+
+        try (ResourceFactory.Closeable resourceFactory1 = ResourceFactory.closeable();
+             ResourceFactory.Closeable resourceFactory2 = ResourceFactory.closeable())
+        {
+            Resource oneTxt = resourceFactory1.newResource(jarUri.toASCIIString() + "one.txt");
+            assertTrue(Resources.isReadableFile(oneTxt));
+
+            Resource oneTxt2 = resourceFactory1.newResource(jarUri.toASCIIString() + "one.txt");
+            assertTrue(Resources.isReadableFile(oneTxt));
+
+            Resource twoTxt = resourceFactory2.newResource(jarUri.toASCIIString() + "datainf/two.txt");
+            assertTrue(Resources.isReadableFile(twoTxt));
+
+            assertThat("Should see only 1 FS Mount", FileSystemPool.INSTANCE.mounts().size(), is(1));
+
+            if (resourceFactory1 instanceof ResourceFactoryInternals.Tracking tracking)
+            {
+                assertThat(tracking.getTrackingCount(), is(1));
+            }
+
+            if (resourceFactory2 instanceof ResourceFactoryInternals.Tracking tracking)
+            {
+                assertThat(tracking.getTrackingCount(), is(1));
+            }
+
+            // Close Resource Factory 1
+            resourceFactory1.close();
+
+            if (resourceFactory1 instanceof ResourceFactoryInternals.Tracking tracking)
+            {
+                assertThat(tracking.getTrackingCount(), is(0));
+            }
+
+            // should not be able to use closed ResourceFactory.Closable
+            assertThrows(IllegalStateException.class, () -> resourceFactory1.newResource(jarUri.toASCIIString() + "one.txt"));
+
+            assertThat("Should see only 1 FS Mount", FileSystemPool.INSTANCE.mounts().size(), is(1));
+
+            Resource oneAlt = resourceFactory2.newResource(jarUri.toASCIIString() + "one.txt");
+            assertTrue(Resources.isReadableFile(oneAlt));
+        }
+        finally
+        {
+            assertThat(FileSystemPool.INSTANCE.mounts(), is(empty()));
         }
     }
 
