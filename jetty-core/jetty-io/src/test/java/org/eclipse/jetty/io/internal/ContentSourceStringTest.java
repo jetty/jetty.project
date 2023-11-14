@@ -57,5 +57,7 @@ public class ContentSourceStringTest
         Content.Chunk chunk = originalSource.read();
         assertThat(chunk.isLast(), is(true));
         assertThat(chunk.getFailure(), sameInstance(originalFailure));
+
+        originalSource.close();
     }
 }

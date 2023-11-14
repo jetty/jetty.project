@@ -1051,23 +1051,24 @@ public class HttpConnection extends AbstractMetaDataConnection implements Runnab
             if (stream != null)
             {
                 BadMessageException bad = new BadMessageException("Early EOF");
+                Content.Chunk chunk = stream._chunk;
 
-                if (Content.Chunk.isFailure(stream._chunk))
+                if (Content.Chunk.isFailure(chunk))
                 {
-                    if (stream._chunk.isLast())
+                    if (chunk.isLast())
                     {
-                        stream._chunk.getFailure().addSuppressed(bad);
+                        chunk.getFailure().addSuppressed(bad);
                     }
                     else
                     {
-                        bad.addSuppressed(stream._chunk.getFailure());
+                        bad.addSuppressed(chunk.getFailure());
                         stream._chunk = Content.Chunk.from(bad);
                     }
                 }
                 else
                 {
-                    if (stream._chunk != null)
-                        stream._chunk.release();
+                    if (chunk != null)
+                        chunk.release();
                     stream._chunk = Content.Chunk.from(bad);
                 }
 

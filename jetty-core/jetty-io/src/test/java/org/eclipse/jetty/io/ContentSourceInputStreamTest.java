@@ -86,6 +86,8 @@ public class ContentSourceInputStreamTest
         assertThat(Content.Chunk.isFailure(chunk), is(false));
 
         contentSourceInputStream.close();
+
+        originalSource.close();
     }
 
     @Test
@@ -119,5 +121,7 @@ public class ContentSourceInputStreamTest
         Content.Chunk chunk = originalSource.read();
         assertThat(chunk.isLast(), is(true));
         assertThat(chunk.getFailure(), sameInstance(originalFailure));
+
+        originalSource.close();
     }
 }

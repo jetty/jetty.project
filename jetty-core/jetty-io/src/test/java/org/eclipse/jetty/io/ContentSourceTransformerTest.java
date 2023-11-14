@@ -349,6 +349,8 @@ public class ContentSourceTransformerTest
         assertThat(chunk.isLast(), is(true));
         assertThat(chunk.hasRemaining(), is(false));
         assertThat(Content.Chunk.isFailure(chunk), is(false));
+
+        originalSource.close();
     }
 
     @Test
@@ -399,6 +401,8 @@ public class ContentSourceTransformerTest
         assertThat(chunk.isLast(), is(true));
         assertThat(chunk.hasRemaining(), is(false));
         assertThat(Content.Chunk.isFailure(chunk), is(false));
+
+        originalSource.close();
     }
 
     private static class WordSplitLowCaseTransformer extends ContentSourceTransformer

@@ -443,7 +443,19 @@ public class ServerTimeoutsTest extends AbstractTest
 
     @ParameterizedTest
     @MethodSource("transportsNoFCGI")
-    public void testAsyncReadHttpIdleTimeoutOverridesIdleTimeout(Transport transport) throws Exception
+    public void testAsyncReadHttpIdleTimeoutOverridesIdleTimeoutIsReadyFirst(Transport transport) throws Exception
+    {
+        testAsyncReadHttpIdleTimeoutOverridesIdleTimeout(transport, true);
+    }
+
+    @ParameterizedTest
+    @MethodSource("transportsNoFCGI")
+    public void testAsyncReadHttpIdleTimeoutOverridesIdleTimeoutReadFirst(Transport transport) throws Exception
+    {
+        testAsyncReadHttpIdleTimeoutOverridesIdleTimeout(transport, false);
+    }
+
+    private void testAsyncReadHttpIdleTimeoutOverridesIdleTimeout(Transport transport, boolean isReadyFirst) throws Exception
     {
         long httpIdleTimeout = 2000;
         long idleTimeout = 3 * httpIdleTimeout;
@@ -462,8 +474,9 @@ public class ServerTimeoutsTest extends AbstractTest
                     @Override
                     public void onDataAvailable() throws IOException
                     {
-                        while (input.isReady())
-                            assertEquals(0, input.read());
+                        if (isReadyFirst)
+                            assertTrue(input.isReady());
+                        assertEquals(0, input.read());
                         assertFalse(input.isReady());
                     }
 

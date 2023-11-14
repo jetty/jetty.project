@@ -43,6 +43,7 @@ public class AsyncContentListenerTest
         List<Content.Chunk> collectedChunks = new ArrayList<>();
         Response.AsyncContentListener asyncContentListener = (response, chunk, demander) ->
         {
+            chunk.retain();
             collectedChunks.add(chunk);
             demander.run();
         };
@@ -61,5 +62,8 @@ public class AsyncContentListenerTest
         Content.Chunk chunk = originalSource.read();
         assertThat(Content.Chunk.isFailure(chunk, true), is(true));
         assertThat(chunk.getFailure(), instanceOf(NumberFormatException.class));
+
+        collectedChunks.forEach(Content.Chunk::release);
+        originalSource.close();
     }
 }

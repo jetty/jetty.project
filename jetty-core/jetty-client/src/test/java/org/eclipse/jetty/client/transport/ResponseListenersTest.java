@@ -58,7 +58,6 @@ public class ResponseListenersTest
                         source.demand(this);
                         return;
                     }
-                    chunk.release();
                     if (!chunk.isLast())
                         source.demand(this);
                 }
@@ -84,6 +83,9 @@ public class ResponseListenersTest
         assertThat(chunks.get(4).getByteBuffer().get(), is((byte)3));
         assertThat(chunks.get(5).isLast(), is(true));
         assertThat(chunks.get(5).getByteBuffer().get(), is((byte)3));
+
+        chunks.forEach(Content.Chunk::release);
+        contentSource.close();
     }
 
     @Test
@@ -91,8 +93,11 @@ public class ResponseListenersTest
     {
         TestSource contentSource = new TestSource(
             Content.Chunk.from(ByteBuffer.wrap(new byte[]{1}), false),
+            null,
             Content.Chunk.from(ByteBuffer.wrap(new byte[]{2}), false),
+            null,
             Content.Chunk.from(new TimeoutException("timeout"), false),
+            null,
             Content.Chunk.from(ByteBuffer.wrap(new byte[]{3}), true)
         );
 
@@ -112,7 +117,6 @@ public class ResponseListenersTest
                         source.demand(this);
                         return;
                     }
-                    chunk.release();
                     if (Content.Chunk.isFailure(chunk, false))
                         source.fail(new NumberFormatException());
                     if (!chunk.isLast())
@@ -138,16 +142,19 @@ public class ResponseListenersTest
         assertThat(chunks.get(3).isLast(), is(false));
         assertThat(Content.Chunk.isFailure(chunks.get(4), false), is(true));
         assertThat(chunks.get(4).getFailure(), instanceOf(TimeoutException.class));
-        assertThat(Content.Chunk.isFailure(chunks.get(5), true), is(true));
-        assertThat(chunks.get(5).getFailure(), instanceOf(NumberFormatException.class));
-        assertThat(Content.Chunk.isFailure(chunks.get(6), false), is(true));
-        assertThat(chunks.get(6).getFailure(), instanceOf(TimeoutException.class));
+        assertThat(Content.Chunk.isFailure(chunks.get(5), false), is(true));
+        assertThat(chunks.get(5).getFailure(), instanceOf(TimeoutException.class));
+        assertThat(Content.Chunk.isFailure(chunks.get(6), true), is(true));
+        assertThat(chunks.get(6).getFailure(), instanceOf(NumberFormatException.class));
         assertThat(Content.Chunk.isFailure(chunks.get(7), true), is(true));
         assertThat(chunks.get(7).getFailure(), instanceOf(NumberFormatException.class));
 
         Content.Chunk chunk = contentSource.read();
         assertThat(Content.Chunk.isFailure(chunk, true), is(true));
         assertThat(chunk.getFailure(), instanceOf(NumberFormatException.class));
+
+        chunks.forEach(Content.Chunk::release);
+        contentSource.close();
     }
 
     @Test
@@ -155,7 +162,9 @@ public class ResponseListenersTest
     {
         TestSource contentSource = new TestSource(
             Content.Chunk.from(ByteBuffer.wrap(new byte[]{1}), false),
+            null,
             Content.Chunk.from(ByteBuffer.wrap(new byte[]{2}), false),
+            null,
             Content.Chunk.from(new IOException("boom"), true)
         );
 
@@ -175,7 +184,6 @@ public class ResponseListenersTest
                         source.demand(this);
                         return;
                     }
-                    chunk.release();
                     if (Content.Chunk.isFailure(chunk))
                         source.fail(new NumberFormatException());
                     if (!chunk.isLast())
@@ -199,7 +207,6 @@ public class ResponseListenersTest
         assertThat(chunks.get(2).isLast(), is(false));
         assertThat(chunks.get(3).getByteBuffer().get(), is((byte)2));
         assertThat(chunks.get(3).isLast(), is(false));
-
         assertThat(Content.Chunk.isFailure(chunks.get(4), true), is(true));
         assertThat(chunks.get(4).getFailure(), instanceOf(IOException.class));
         assertThat(Content.Chunk.isFailure(chunks.get(5), true), is(true));
@@ -208,5 +215,8 @@ public class ResponseListenersTest
         Content.Chunk chunk = contentSource.read();
         assertThat(Content.Chunk.isFailure(chunk, true), is(true));
         assertThat(chunk.getFailure(), instanceOf(NumberFormatException.class));
+
+        chunks.forEach(Content.Chunk::release);
+        contentSource.close();
     }
 }

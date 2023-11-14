@@ -769,7 +769,10 @@ public class MultiPart
                         yield null;
                     if (Content.Chunk.isFailure(chunk, true))
                     {
-                        errorChunk = chunk;
+                        try (AutoLock ignored = lock.lock())
+                        {
+                            errorChunk = chunk;
+                        }
                         yield chunk;
                     }
                     if (!chunk.isLast())

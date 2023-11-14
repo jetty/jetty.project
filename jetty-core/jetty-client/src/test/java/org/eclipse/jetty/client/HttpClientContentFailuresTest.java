@@ -71,6 +71,8 @@ public class HttpClientContentFailuresTest extends AbstractHttpClientServerTest
         Content.Chunk chunk = content.read();
         assertThat(Content.Chunk.isFailure(chunk, true), is(true));
         assertThat(chunk.getFailure(), sameInstance(failure));
+
+        content.close();
     }
 
     @ParameterizedTest
@@ -112,6 +114,8 @@ public class HttpClientContentFailuresTest extends AbstractHttpClientServerTest
         Content.Chunk chunk = content.read();
         assertThat(Content.Chunk.isFailure(chunk, true), is(true));
         assertThat(chunk.getFailure(), sameInstance(failure));
+
+        content.close();
     }
 
     @ParameterizedTest
@@ -153,6 +157,8 @@ public class HttpClientContentFailuresTest extends AbstractHttpClientServerTest
         Content.Chunk chunk = content.read();
         assertThat(Content.Chunk.isFailure(chunk, true), is(true));
         assertThat(chunk.getFailure(), sameInstance(failure));
+
+        content.close();
     }
 
     @ParameterizedTest
@@ -193,5 +199,7 @@ public class HttpClientContentFailuresTest extends AbstractHttpClientServerTest
         Content.Chunk chunk = content.read();
         assertThat(Content.Chunk.isFailure(chunk, true), is(true));
         assertThat(chunk.getFailure(), sameInstance(failure));
+
+        content.close();
     }
 }

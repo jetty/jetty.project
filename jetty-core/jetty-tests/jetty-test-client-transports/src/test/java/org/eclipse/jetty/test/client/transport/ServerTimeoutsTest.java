@@ -56,7 +56,7 @@ public class ServerTimeoutsTest extends AbstractTest
         setStreamIdleTimeout(IDLE_TIMEOUT);
     }
 
-    public static Stream<Arguments> transportsAndTrueIdleTimeoutListeners()
+    public static Stream<Arguments> transportsAndBooleans()
     {
         Collection<Transport> transports = transports();
         return Stream.concat(
@@ -65,7 +65,7 @@ public class ServerTimeoutsTest extends AbstractTest
     }
 
     @ParameterizedTest
-    @MethodSource("transportsAndTrueIdleTimeoutListeners")
+    @MethodSource("transportsAndBooleans")
     public void testIdleTimeout(Transport transport, boolean listener) throws Exception
     {
         AtomicBoolean listenerCalled = new AtomicBoolean();
@@ -97,7 +97,7 @@ public class ServerTimeoutsTest extends AbstractTest
     }
 
     @ParameterizedTest
-    @MethodSource("transportsAndTrueIdleTimeoutListeners")
+    @MethodSource("transportsAndBooleans")
     public void testIdleTimeoutWithDemand(Transport transport, boolean listener) throws Exception
     {
         AtomicBoolean listenerCalled = new AtomicBoolean();
@@ -140,7 +140,6 @@ public class ServerTimeoutsTest extends AbstractTest
 
         // Can read again
         assertNull(requestRef.get().read());
-
 
         // Complete the callback as the error listener promised.
         callbackRef.get().failed(cause);
@@ -189,10 +188,9 @@ public class ServerTimeoutsTest extends AbstractTest
     }
 
     @ParameterizedTest
-    @MethodSource("transportsNoFCGI")
+    @MethodSource("transports")
     public void testIdleTimeoutErrorListenerReturnsFalseThenTrue(Transport transport) throws Exception
     {
-        // TODO fix FCGI for multiple timeouts
         AtomicReference<Throwable> error = new AtomicReference<>();
         start(transport, new Handler.Abstract()
         {
@@ -209,9 +207,9 @@ public class ServerTimeoutsTest extends AbstractTest
             .timeout(IDLE_TIMEOUT * 5, TimeUnit.MILLISECONDS)
             .send();
 
-        // The first time the listener returns true, but does not complete the callback,
+        // The first time the listener returns false, but does not complete the callback,
         // so another idle timeout elapses.
-        // The second time the listener returns false and the implementation produces the response.
+        // The second time the listener returns true and the implementation produces the response.
         assertThat(response.getStatus(), is(HttpStatus.INTERNAL_SERVER_ERROR_500));
         assertThat(response.getContentAsString(), containsStringIgnoringCase("HTTP ERROR 500 java.util.concurrent.TimeoutException: Idle timeout"));
         assertThat(error.get(), instanceOf(TimeoutException.class));

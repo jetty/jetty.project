@@ -536,9 +536,10 @@ public class ResponseListeners
             Counters counters;
             try (AutoLock ignored = lock.lock())
             {
-                if (contentSource.state != State.IDLE)
+                if (contentSource.state == State.DEMANDED)
                     return;
-                contentSource.state = State.DEMANDED;
+                if (contentSource.state == State.IDLE)
+                    contentSource.state = State.DEMANDED;
                 counters = countStates();
                 if (counters.total() == listeners.size())
                 {
@@ -690,10 +691,9 @@ public class ResponseListeners
                 {
                     if (currentChunk != null && currentChunk != ALREADY_READ_CHUNK)
                         currentChunk.release();
-                    this.chunk = Content.Chunk.from(failure);
                 }
-                onDemandCallback();
                 registerFailure(this, failure);
+                onDemandCallback();
             }
 
             @Override

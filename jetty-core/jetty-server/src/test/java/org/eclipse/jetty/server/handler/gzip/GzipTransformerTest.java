@@ -15,13 +15,14 @@ package org.eclipse.jetty.server.handler.gzip;
 
 import java.io.ByteArrayOutputStream;
 import java.io.IOException;
-import java.nio.ByteBuffer;
 import java.util.concurrent.TimeoutException;
 import java.util.zip.GZIPOutputStream;
 
 import org.eclipse.jetty.io.ArrayByteBufferPool;
 import org.eclipse.jetty.io.Content;
+import org.eclipse.jetty.io.RetainableByteBuffer;
 import org.eclipse.jetty.server.TestSource;
+import org.eclipse.jetty.util.BufferUtil;
 import org.eclipse.jetty.util.compression.InflaterPool;
 import org.junit.jupiter.api.Test;
 
@@ -39,11 +40,11 @@ public class GzipTransformerTest
         TimeoutException originalFailure1 = new TimeoutException("timeout 1");
         TimeoutException originalFailure2 = new TimeoutException("timeout 2");
         TestSource originalSource = new TestSource(
-            Content.Chunk.from(gzip("AAA".getBytes(US_ASCII)), false),
+            gzipChunk(bufferPool, "AAA".getBytes(US_ASCII), false),
             Content.Chunk.from(originalFailure1, false),
-            Content.Chunk.from(gzip("BBB".getBytes(US_ASCII)), false),
+            gzipChunk(bufferPool, "BBB".getBytes(US_ASCII), false),
             Content.Chunk.from(originalFailure2, false),
-            Content.Chunk.from(gzip("CCC".getBytes(US_ASCII)), true)
+            gzipChunk(bufferPool, "CCC".getBytes(US_ASCII), true)
         );
 
         GzipRequest.GzipTransformer transformer = new GzipRequest.GzipTransformer(originalSource, new GzipRequest.Decoder(new InflaterPool(1, true), bufferPool, 1));
@@ -81,15 +82,22 @@ public class GzipTransformerTest
         assertThat(chunk.getByteBuffer().hasRemaining(), is(false));
         assertThat(chunk.isLast(), is(true));
 
+        originalSource.close();
         assertThat("Leaks: " + bufferPool.dumpLeaks(), bufferPool.getLeaks().size(), is(0));
     }
 
-    private static ByteBuffer gzip(byte[] bytes) throws IOException
+    private static Content.Chunk gzipChunk(ArrayByteBufferPool.Tracking bufferPool, byte[] bytes, boolean last) throws IOException
     {
         ByteArrayOutputStream baos = new ByteArrayOutputStream();
         GZIPOutputStream gzos = new GZIPOutputStream(baos);
         gzos.write(bytes);
         gzos.close();
-        return ByteBuffer.wrap(baos.toByteArray());
+        byte[] gzippedBytes = baos.toByteArray();
+
+        RetainableByteBuffer buffer = bufferPool.acquire(gzippedBytes.length, false);
+        int pos = BufferUtil.flipToFill(buffer.getByteBuffer());
+        buffer.getByteBuffer().put(gzippedBytes);
+        BufferUtil.flipToFlush(buffer.getByteBuffer(), pos);
+        return Content.Chunk.asChunk(buffer.getByteBuffer(), last, buffer);
     }
 }

@@ -13,15 +13,18 @@
 
 package org.eclipse.jetty.server;
 
+import java.io.Closeable;
 import java.nio.ByteBuffer;
+import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
 import java.util.Queue;
 import java.util.concurrent.ConcurrentLinkedQueue;
 
 import org.eclipse.jetty.io.Content;
+import org.eclipse.jetty.io.Retainable;
 
-public class TestSource implements Content.Source
+public class TestSource implements Content.Source, Closeable
 {
     private static final Content.Chunk SPURIOUS_WAKEUP = new Content.Chunk()
     {
@@ -37,6 +40,7 @@ public class TestSource implements Content.Source
             return false;
         }
     };
+    private final List<Retainable> retained = new ArrayList<>();
     private final Queue<Content.Chunk> chunks = new ConcurrentLinkedQueue<>();
     private Runnable demand;
 
@@ -59,6 +63,8 @@ public class TestSource implements Content.Source
                 throw new IllegalArgumentException("Non-last chunks must have their flag set to false");
             this.chunks.add(chunk);
         }
+        this.chunks.forEach(Content.Chunk::retain);
+        retained.addAll(this.chunks);
     }
 
     @Override
@@ -99,7 +105,6 @@ public class TestSource implements Content.Source
     @Override
     public void fail(Throwable failure, boolean last)
     {
-        demand = null;
         while (!chunks.isEmpty())
         {
             Content.Chunk chunk = chunks.poll();
@@ -107,5 +112,17 @@ public class TestSource implements Content.Source
                 chunk.release();
         }
         chunks.add(Content.Chunk.from(failure, last));
+
+        Runnable demand =  this.demand;
+        this.demand = null;
+        if (demand != null)
+            demand.run();
+    }
+
+    @Override
+    public void close()
+    {
+        retained.forEach(Retainable::release);
+        retained.clear();
     }
 }

@@ -70,6 +70,8 @@ public class ContentSourceCompletableFutureTest
         Content.Chunk chunk = originalSource.read();
         assertThat(chunk.isLast(), is(true));
         assertThat(chunk.getFailure(), sameInstance(originalFailure));
+
+        originalSource.close();
     }
 
     @Test
@@ -115,5 +117,7 @@ public class ContentSourceCompletableFutureTest
         Content.Chunk chunk = originalSource.read();
         assertThat(chunk.isLast(), is(true));
         assertThat(chunk.hasRemaining(), is(false));
+
+        originalSource.close();
     }
 }
