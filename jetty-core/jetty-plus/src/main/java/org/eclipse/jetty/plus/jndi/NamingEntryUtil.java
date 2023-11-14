@@ -212,11 +212,10 @@ public class NamingEntryUtil
     public static void destroyContextForScope(Object scope)
         throws NamingException
     {
-        InitialContext ic = new InitialContext();
-        NameParser parser = ic.getNameParser("");
-        Name name = parser.parse("");
-        if (scope != null)
+        Name name = getNameForScope(scope);
+        if (name != null)
         {
+            InitialContext ic = new InitialContext();
             ic.destroySubcontext(name);
         }
     }
