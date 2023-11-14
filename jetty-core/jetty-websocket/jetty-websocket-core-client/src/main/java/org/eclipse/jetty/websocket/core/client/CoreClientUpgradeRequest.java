@@ -84,7 +84,7 @@ public abstract class CoreClientUpgradeRequest implements Response.CompleteListe
     private final Configuration.ConfigurationCustomizer customizer = new Configuration.ConfigurationCustomizer();
     private final List<UpgradeListener> upgradeListeners = new ArrayList<>();
     private List<ExtensionConfig> requestedExtensions = new ArrayList<>();
-    private boolean upgraded = false;
+    private boolean upgraded;
 
     public CoreClientUpgradeRequest(WebSocketCoreClient webSocketClient, URI requestURI)
     {
@@ -238,7 +238,6 @@ public abstract class CoreClientUpgradeRequest implements Response.CompleteListe
         return futureCoreSession;
     }
 
-    @SuppressWarnings("Duplicates")
     @Override
     public void onComplete(Result result)
     {
@@ -256,7 +255,10 @@ public abstract class CoreClientUpgradeRequest implements Response.CompleteListe
             // We have failed to upgrade but have received a response, so notify the listener.
             Throwable listenerError = notifyUpgradeListeners((listener) -> listener.onHandshakeResponse(request, response));
             if (listenerError != null)
-                LOG.warn("error from listener", listenerError);
+            {
+                if (LOG.isDebugEnabled())
+                    LOG.debug("error from listener", listenerError);
+            }
         }
 
         if (result.isFailed())
@@ -298,7 +300,7 @@ public abstract class CoreClientUpgradeRequest implements Response.CompleteListe
             }
             catch (Throwable t)
             {
-                LOG.warn("FrameHandler onError threw", t);
+                LOG.info("FrameHandler onError threw", t);
             }
         }
     }
@@ -490,10 +492,10 @@ public abstract class CoreClientUpgradeRequest implements Response.CompleteListe
         WebSocketConnection wsConnection = new WebSocketConnection(endPoint, httpClient.getExecutor(), httpClient.getScheduler(), bufferPool, coreSession);
         coreSession.setWebSocketConnection(wsConnection);
         wsClient.getEventListeners().forEach(wsConnection::addEventListener);
-        upgraded = true;
         Throwable listenerError = notifyUpgradeListeners((listener) -> listener.onHandshakeResponse(request, response));
         if (listenerError != null)
             throw new WebSocketException("onHandshakeResponse error", listenerError);
+        upgraded = true;
 
         // Now swap out the connection
         try
