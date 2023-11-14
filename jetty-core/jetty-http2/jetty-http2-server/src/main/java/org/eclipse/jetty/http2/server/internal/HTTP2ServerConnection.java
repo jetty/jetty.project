@@ -72,6 +72,7 @@ public class HTTP2ServerConnection extends HTTP2Connection implements Connection
     private final String id;
     private final SocketAddress localSocketAddress;
     private final SocketAddress remoteSocketAddress;
+    private boolean recycleHttpChannels;
 
     public HTTP2ServerConnection(Connector connector, EndPoint endPoint, HttpConfiguration httpConfig, HTTP2ServerSession session, int inputBufferSize, ServerSessionListener listener)
     {
@@ -82,6 +83,17 @@ public class HTTP2ServerConnection extends HTTP2Connection implements Connection
         this.id = StringUtil.randomAlphaNumeric(16);
         localSocketAddress = httpConfig.getLocalAddress() != null ? httpConfig.getLocalAddress() : endPoint.getLocalSocketAddress();
         remoteSocketAddress = endPoint.getRemoteSocketAddress();
+        setRecycleHttpChannels(true);
+    }
+
+    public boolean isRecycleHttpChannels()
+    {
+        return recycleHttpChannels;
+    }
+
+    public void setRecycleHttpChannels(boolean recycleHttpChannels)
+    {
+        this.recycleHttpChannels = recycleHttpChannels;
     }
 
     @Override
@@ -241,7 +253,9 @@ public class HTTP2ServerConnection extends HTTP2Connection implements Connection
 
     private HttpChannel pollHttpChannel()
     {
-        HttpChannel httpChannel = httpChannels.poll();
+        HttpChannel httpChannel = null;
+        if (isRecycleHttpChannels())
+            httpChannel = httpChannels.poll();
         if (httpChannel == null)
             httpChannel = httpChannelFactory.newHttpChannel(this);
         return httpChannel;
@@ -249,7 +263,8 @@ public class HTTP2ServerConnection extends HTTP2Connection implements Connection
 
     void offerHttpChannel(HttpChannel channel)
     {
-        httpChannels.offer(channel);
+        if (isRecycleHttpChannels())
+            httpChannels.offer(channel);
     }
 
     public boolean upgrade(Request request, HttpFields.Mutable responseFields)
