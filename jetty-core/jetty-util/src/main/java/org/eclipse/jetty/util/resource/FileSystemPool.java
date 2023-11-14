@@ -129,7 +129,7 @@ public class FileSystemPool implements Dumpable
             }
             // use root FS URI so that pool key/release/sweep is sane
             URI rootURI = fileSystem.getPath("/").toUri();
-            Mount mount = new Mount(rootURI, new MountedPathResource(uri));
+            Mount mount = new Mount(rootURI, new MountedPathResource(jarURIRoot));
             retain(rootURI, fileSystem, mount);
             return mount;
         }

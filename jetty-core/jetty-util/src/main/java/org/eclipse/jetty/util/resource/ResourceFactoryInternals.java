@@ -220,15 +220,8 @@ class ResourceFactoryInternals
                     FileSystemPool.Mount mount = mountIfNeeded(uri);
                     if (mount != null)
                     {
-                        Resource res = resourceFactory.newResource(uri);
-                        if (res == null)
-                        {
-                            mount.close(); // decrement
-                            return null;
-                        }
                         _mounts.add(mount);
                         onMounted(mount, uri);
-                        return res;
                     }
                 }
                 return resourceFactory.newResource(uri);
@@ -249,9 +242,20 @@ class ResourceFactoryInternals
          */
         private FileSystemPool.Mount mountIfNeeded(URI uri)
         {
+            // do not mount if it is not a jar URI
             String scheme = uri.getScheme();
             if (!"jar".equalsIgnoreCase(scheme))
                 return null;
+
+            // Do not mount if we have already mounted
+            // TODO there is probably a better way of doing this other than string comparisons
+            String uriString = uri.toASCIIString();
+            for (FileSystemPool.Mount mount : _mounts)
+            {
+                if (uriString.startsWith(mount.root().toString()))
+                    return null;
+            }
+
             try
             {
                 return FileSystemPool.INSTANCE.mount(uri);

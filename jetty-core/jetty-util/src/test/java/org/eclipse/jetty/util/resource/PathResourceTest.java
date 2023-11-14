@@ -242,6 +242,35 @@ public class PathResourceTest
         Path tmpPath = workDir.getEmptyPathDir();
         Path testJar = tmpPath.resolve("test.jar");
 
+        URI jarUri = URIUtil.uriJarPrefix(testJar.toUri(), "!/");
+
+        Map<String, String> env = new HashMap<>();
+        env.put("create", "true");
+        try (FileSystem zipfs = FileSystems.newFileSystem(jarUri, env))
+        {
+            zipfs.getPath("/");
+        }
+        try (ResourceFactory.Closeable resourceFactory = ResourceFactory.closeable())
+        {
+            Resource resBadDir = resourceFactory.newResource(jarUri.toASCIIString() + "does-not-exist/");
+            assertNull(resBadDir);
+            Resource resBadFile = resourceFactory.newResource(jarUri.toASCIIString() + "bad/file.txt");
+            assertNull(resBadFile);
+
+            if (resourceFactory instanceof ResourceFactoryInternals.Mountable mountable)
+            {
+                List<FileSystemPool.Mount> mounts = mountable.getMounts();
+                assertThat(mounts.size(), is(1));
+            }
+        }
+    }
+
+    @Test
+    public void testMountsForSameJar(WorkDir workDir) throws IOException
+    {
+        Path tmpPath = workDir.getEmptyPathDir();
+        Path testJar = tmpPath.resolve("test.jar");
+
         Map<String, String> env = new HashMap<>();
         env.put("create", "true");
 
@@ -249,31 +278,26 @@ public class PathResourceTest
         try (FileSystem zipfs = FileSystems.newFileSystem(jarUri, env))
         {
             Path root = zipfs.getPath("/");
-            Files.writeString(root.resolve("test.txt"), "Contents of test.txt", StandardCharsets.UTF_8);
+            Files.writeString(root.resolve("one.txt"), "Contents of one.txt", StandardCharsets.UTF_8);
 
             Path dir = root.resolve("datainf");
             Files.createDirectory(dir);
-            Files.writeString(dir.resolve("info.txt"), "Contents of info.txt", StandardCharsets.UTF_8);
+            Files.writeString(dir.resolve("two.txt"), "Contents of two.txt", StandardCharsets.UTF_8);
         }
 
         try (ResourceFactory.Closeable resourceFactory = ResourceFactory.closeable())
         {
-            // First reference to Resource in test.jar
-            Resource resRoot = resourceFactory.newResource(jarUri);
-            Resource resBadDir = resourceFactory.newResource(jarUri.toASCIIString() + "does-not-exist/");
-            assertNull(resBadDir);
-            Resource resBadFile = resourceFactory.newResource(jarUri.toASCIIString() + "bad/file.txt");
-            assertNull(resBadFile);
-            // Second reference to Resource in test.jar
-            Resource resInfoTxt = resourceFactory.newResource(jarUri.toASCIIString() + "datainf/info.txt");
-            assertTrue(Resources.isReadableFile(resInfoTxt));
+            Resource oneTxt = resourceFactory.newResource(jarUri.toASCIIString() + "one.txt");
+            assertTrue(Resources.isReadableFile(oneTxt));
+            Resource twoTxt = resourceFactory.newResource(jarUri.toASCIIString() + "datainf/two.txt");
+            assertTrue(Resources.isReadableFile(twoTxt));
 
             if (resourceFactory instanceof ResourceFactoryInternals.Mountable mountable)
             {
                 List<FileSystemPool.Mount> mounts = mountable.getMounts();
-                assertThat(mounts.size(), is(2));
+                assertThat(mounts.size(), is(1));
             }
-        } // close dereferences both references to test.jar
+        }
     }
 
     @Test
