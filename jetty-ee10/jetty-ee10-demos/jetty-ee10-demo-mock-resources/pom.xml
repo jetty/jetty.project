@@ -39,7 +39,7 @@
             <Bundle-SymbolicName>org.eclipse.jetty.ee10.demos.demo-mock-resources</Bundle-SymbolicName>
             <Bundle-Description>Mock resources used for testing</Bundle-Description>
             <Export-Package>org.example;version="${parsedVersion.majorVersion}.${parsedVersion.minorVersion}.${parsedVersion.incrementalVersion}"</Export-Package>
-            <Import-Package>javax.sql, jakarta.transaction;version="2.0.0"</Import-Package>
+            <Import-Package>javax.naming, javax.naming.spi, javax.sql, jakarta.transaction;version="2.0.0", org.eclipse.jetty.jndi</Import-Package>
             <_nouses>true</_nouses>
           </instructions>
         </configuration>

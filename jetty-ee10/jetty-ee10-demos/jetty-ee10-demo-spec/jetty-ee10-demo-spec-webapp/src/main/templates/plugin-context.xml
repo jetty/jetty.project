@@ -1,10 +1,10 @@
 <?xml version="1.0"?>
-<!DOCTYPE Configure PUBLIC "-//Jetty//Configure//EN" "https://www.eclipse.org/jetty/configure_10_0.dtd">
+<!DOCTYPE Configure PUBLIC "-//Jetty//Configure//EN" "https://eclipse.dev/jetty/configure_10_0.dtd">
 
-<Configure id="wac" class="org.eclipse.jetty.ee9.webapp.WebAppContext">
+<Configure id="wac" class="org.eclipse.jetty.ee10.webapp.WebAppContext">
 
-  <New id="tx" class="org.eclipse.jetty.ee9.plus.jndi.Transaction">
-    <Arg><Property name="environment" default="ee9"/></Arg>
+  <New id="tx" class="org.eclipse.jetty.ee10.plus.jndi.Transaction">
+    <Arg><Property name="environment" default="ee10"/></Arg>
     <Arg>
       <New class="org.example.MockUserTransaction" />
     </Arg>

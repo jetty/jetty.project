@@ -100,28 +100,6 @@
       </plugin>
 
       <plugin>
-        <artifactId>maven-antrun-plugin</artifactId>
-        <executions>
-          <execution>
-            <id>generate-xml-files</id>
-            <goals>
-              <goal>run</goal>
-            </goals>
-            <phase>process-resources</phase>
-            <configuration>
-              <target>
-                <concat destfile="${project.build.directory}/plugin-context.xml">
-                  <filelist dir="src/main/templates/" files="plugin-context-header.xml,env-definitions.xml"></filelist>
-                </concat>
-                <concat destfile="${project.build.directory}/test-spec.xml">
-                  <filelist dir="src/main/templates/" files="annotations-context-header.xml,env-definitions.xml"></filelist>
-                </concat>
-              </target>
-            </configuration>
-          </execution>
-        </executions>
-      </plugin>
-      <plugin>
         <groupId>org.apache.maven.plugins</groupId>
         <artifactId>maven-assembly-plugin</artifactId>
         <executions>
@@ -199,7 +177,7 @@
             <resource>
               <directory>target</directory>
               <includes>
-                <include>plugin-context.xml</include>
+                <include>src/main/templates/plugin-context.xml</include>
               </includes>
               <targetPath>META-INF</targetPath>
             </resource>

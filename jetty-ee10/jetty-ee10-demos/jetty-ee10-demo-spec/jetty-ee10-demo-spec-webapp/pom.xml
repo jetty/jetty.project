@@ -73,12 +73,12 @@
     <pluginManagement>
       <plugins>
         <plugin>
-          <groupId>org.eclipse.jetty</groupId>
-          <artifactId>jetty-maven-plugin</artifactId>
+          <groupId>org.eclipse.jetty.ee10</groupId>
+          <artifactId>jetty-ee10-maven-plugin</artifactId>
           <version>${project.version}</version>
           <configuration>
             <scan>10</scan>
-            <contextXml>${project.build.directory}/plugin-context.xml</contextXml>
+            <contextXml>src/main/templates/plugin-context.xml</contextXml>
             <webApp>
               <war>src/main/webapp</war>
               <descriptor>src/main/webapp/WEB-INF/web.xml</descriptor>
@@ -127,28 +127,6 @@
         </configuration>
       </plugin>
 
-      <plugin>
-        <artifactId>maven-antrun-plugin</artifactId>
-        <executions>
-          <execution>
-            <id>generate-xml-files</id>
-            <goals>
-              <goal>run</goal>
-            </goals>
-            <phase>process-resources</phase>
-            <configuration>
-              <target>
-                <concat destfile="${project.build.directory}/plugin-context.xml">
-                  <filelist dir="src/main/templates/" files="plugin-context-header.xml,env-definitions.xml"></filelist>
-                </concat>
-                <concat destfile="${project.build.directory}/test-spec.xml">
-                  <filelist dir="src/main/templates/" files="annotations-context-header.xml,env-definitions.xml"></filelist>
-                </concat>
-              </target>
-            </configuration>
-          </execution>
-        </executions>
-      </plugin>
       <plugin>
         <groupId>org.apache.maven.plugins</groupId>
         <artifactId>maven-assembly-plugin</artifactId>
