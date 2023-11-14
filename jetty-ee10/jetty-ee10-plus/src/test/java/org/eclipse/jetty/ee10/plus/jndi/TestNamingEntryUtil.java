@@ -110,7 +110,6 @@ public class TestNamingEntryUtil
         assertNull(NamingEntryUtil.lookupNamingEntry(wac, "yyy"));
     }
 
-
     @Test
     public void testMakeNamingEntryName() throws Exception
     {
