@@ -26,11 +26,10 @@ import org.junit.jupiter.api.Timeout;
 import org.slf4j.LoggerFactory;
 
 import static org.awaitility.Awaitility.await;
-import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
+import static org.junit.jupiter.api.Assertions.assertSame;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.api.Assertions.assertTrue;
-import static org.junit.jupiter.api.Assertions.fail;
 
 @Timeout(value = 10)
 public class BlockingTest
@@ -100,7 +99,6 @@ public class BlockingTest
              }))
         {
             thread.start();
-
             callback.block();
         }
     }
@@ -109,26 +107,22 @@ public class BlockingTest
     public void testFailedBlock()
     {
         Exception ex = new Exception("FAILED");
-        try
+        IOException actual = assertThrows(IOException.class, () ->
         {
             try (Blocker.Callback callback = Blocker.callback())
             {
                 callback.failed(ex);
                 callback.block();
             }
-            fail("Should have thrown IOException");
-        }
-        catch (IOException e)
-        {
-            assertEquals(ex, e.getCause());
-        }
+        });
+        assertSame(ex, actual.getCause());
     }
 
     @Test
     public void testBlockFailed()
     {
         Exception ex = new Exception("FAILED");
-        try
+        IOException actual = assertThrows(IOException.class, () ->
         {
             try (Blocker.Callback callback = Blocker.callback();
                  AssertingThread thread = new AssertingThread(() ->
@@ -138,15 +132,10 @@ public class BlockingTest
                  }))
             {
                 thread.start();
-
                 callback.block();
             }
-            fail("Should have thrown IOException");
-        }
-        catch (IOException e)
-        {
-            assertEquals(ex, e.getCause());
-        }
+        });
+        assertSame(ex, actual.getCause());
     }
 
     @Test
@@ -170,7 +159,6 @@ public class BlockingTest
              }))
         {
             thread.start();
-
             runnable.block();
         }
     }
@@ -212,7 +200,6 @@ public class BlockingTest
              }))
         {
             thread.start();
-
             callback.block();
         }
     }
@@ -221,26 +208,22 @@ public class BlockingTest
     public void testSharedFailedBlock()
     {
         Exception ex = new Exception("FAILED");
-        try
+        IOException actual = assertThrows(IOException.class, () ->
         {
             try (Blocker.Callback callback = _shared.callback())
             {
                 callback.failed(ex);
                 callback.block();
             }
-            fail("Should have thrown IOException");
-        }
-        catch (IOException e)
-        {
-            assertEquals(ex, e.getCause());
-        }
+        });
+        assertSame(ex, actual.getCause());
     }
 
     @Test
     public void testSharedBlockFailed()
     {
         Exception ex = new Exception("FAILED");
-        try
+        IOException actual = assertThrows(IOException.class, () ->
         {
             try (Blocker.Callback callback = _shared.callback();
                  AssertingThread thread = new AssertingThread(() ->
@@ -250,15 +233,10 @@ public class BlockingTest
                  }))
             {
                 thread.start();
-
                 callback.block();
             }
-            fail("Should have thrown IOException");
-        }
-        catch (IOException e)
-        {
-            assertEquals(ex, e.getCause());
-        }
+        });
+        assertSame(ex, actual.getCause());
     }
 
     @Test
