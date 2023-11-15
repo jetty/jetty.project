@@ -96,6 +96,11 @@
           </configuration>
           <dependencies>
             <dependency>
+              <groupId>org.eclipse.jetty.ee10</groupId>
+              <artifactId>jetty-ee10-jndi</artifactId>
+              <version>${project.version}</version>
+            </dependency>
+            <dependency>
               <groupId>org.eclipse.jetty.ee10.demos</groupId>
               <artifactId>jetty-ee10-demo-mock-resources</artifactId>
               <version>${project.version}</version>
