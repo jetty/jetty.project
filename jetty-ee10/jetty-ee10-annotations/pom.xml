@@ -49,11 +49,11 @@
       <artifactId>jakarta.transaction-api</artifactId>
       <scope>test</scope>
     </dependency>
-    <dependency>
+    <!-- dependency>
       <groupId>org.eclipse.jetty</groupId>
       <artifactId>jetty-jndi</artifactId>
       <scope>test</scope>
-    </dependency>
+    </dependency -->
     <dependency>
       <groupId>org.eclipse.jetty</groupId>
       <artifactId>jetty-slf4j-impl</artifactId>
