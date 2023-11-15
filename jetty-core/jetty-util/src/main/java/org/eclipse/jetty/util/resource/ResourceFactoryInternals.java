@@ -127,22 +127,36 @@ class ResourceFactoryInternals
         return RESOURCE_FACTORIES.getBest(str) != null;
     }
 
-    static class Closeable implements ResourceFactory.Closeable
+    interface Tracking
     {
+        int getTrackingCount();
+    }
+
+    static class Closeable implements ResourceFactory.Closeable, Tracking
+    {
+        private boolean closed = false;
         private final CompositeResourceFactory _compositeResourceFactory = new CompositeResourceFactory();
 
         @Override
         public Resource newResource(URI uri)
         {
+            if (closed)
+                throw new IllegalStateException("Unable to create new Resource on closed ResourceFactory");
             return _compositeResourceFactory.newResource(uri);
         }
 
         @Override
         public void close()
         {
+            closed = true;
             for (FileSystemPool.Mount mount : _compositeResourceFactory.getMounts())
                 IO.close(mount);
             _compositeResourceFactory.clearMounts();
+        }
+
+        public int getTrackingCount()
+        {
+            return _compositeResourceFactory.getMounts().size();
         }
     }
 
@@ -153,6 +167,7 @@ class ResourceFactoryInternals
         @Override
         public Resource newResource(URI uri)
         {
+            // TODO: add check that LifeCycle is started before allowing this method to be used?
             return _compositeResourceFactory.newResource(uri);
         }
 
@@ -227,14 +242,25 @@ class ResourceFactoryInternals
          *
          * @param uri The URI to mount that may require a FileSystem (e.g. "jar:file://tmp/some.jar!/directory/file.txt")
          * @return A reference counted {@link FileSystemPool.Mount} for that file system or null. Callers should call
-         * {@link FileSystemPool.Mount#close()} once they no longer require any resources from a mounted resource.
+         * {@link FileSystemPool.Mount#close()} once they no longer require this specific Mount.
          * @throws IllegalArgumentException If the uri could not be mounted.
          */
         private FileSystemPool.Mount mountIfNeeded(URI uri)
         {
+            // do not mount if it is not a jar URI
             String scheme = uri.getScheme();
             if (!"jar".equalsIgnoreCase(scheme))
                 return null;
+
+            // Do not mount if we have already mounted
+            // TODO there is probably a better way of doing this other than string comparisons
+            String uriString = uri.toASCIIString();
+            for (FileSystemPool.Mount mount : _mounts)
+            {
+                if (uriString.startsWith(mount.root().toString()))
+                    return null;
+            }
+
             try
             {
                 return FileSystemPool.INSTANCE.mount(uri);
