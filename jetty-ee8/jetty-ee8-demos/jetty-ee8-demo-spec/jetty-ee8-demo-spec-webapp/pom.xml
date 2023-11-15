@@ -214,7 +214,7 @@
           </archive>
           <webResources>
             <resource>
-              <directory>target</directory>
+              <directory>target/templates</directory>
               <includes>
                 <include>plugin-context.xml</include>
               </includes>
