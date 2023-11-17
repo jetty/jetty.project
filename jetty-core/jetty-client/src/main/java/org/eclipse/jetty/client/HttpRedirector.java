@@ -352,13 +352,6 @@ public class HttpRedirector
                 }
             }
 
-            redirect.onRequestBegin(request ->
-            {
-                Throwable cause = httpRequest.getAbortCause();
-                if (cause != null)
-                    request.abort(cause);
-            });
-
             redirect.send(listener);
             return redirect;
         }
