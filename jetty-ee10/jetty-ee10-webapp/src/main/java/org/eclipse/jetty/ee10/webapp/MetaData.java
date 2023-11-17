@@ -717,6 +717,8 @@ public class MetaData
         Objects.requireNonNull(jar);
         if (!_orderedContainerResources.contains(jar))
             _orderedContainerResources.add(jar);
+        else
+            LOG.warn("Duplicate Container Resource {}", jar);
     }
 
     public void setWebInfClassesResources(List<Resource> dirs)
