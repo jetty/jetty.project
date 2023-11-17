@@ -715,7 +715,8 @@ public class MetaData
     public void addContainerResource(Resource jar)
     {
         Objects.requireNonNull(jar);
-        _orderedContainerResources.add(jar);
+        if (!_orderedContainerResources.contains(jar))
+            _orderedContainerResources.add(jar);
     }
 
     public void setWebInfClassesResources(List<Resource> dirs)
