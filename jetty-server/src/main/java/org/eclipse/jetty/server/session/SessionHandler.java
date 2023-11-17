@@ -632,29 +632,26 @@ public class SessionHandler extends ScopedHandler
      */
     public HttpCookie getSessionCookie(HttpSession session, String contextPath, boolean requestIsSecure)
     {
-        if (isUsingCookies())
-        {
-            SessionCookieConfig cookieConfig = getSessionCookieConfig();
-            String sessionPath = (cookieConfig.getPath() == null) ? contextPath : cookieConfig.getPath();
-            sessionPath = (StringUtil.isEmpty(sessionPath)) ? "/" : sessionPath;
-            String id = getExtendedId(session);
-            HttpCookie cookie = null;
-
-            cookie = new HttpCookie(
-                getSessionCookieName(_cookieConfig),
-                id,
-                cookieConfig.getDomain(),
-                sessionPath,
-                cookieConfig.getMaxAge(),
-                cookieConfig.isHttpOnly(),
-                cookieConfig.isSecure() || (isSecureRequestOnly() && requestIsSecure),
-                HttpCookie.getCommentWithoutAttributes(cookieConfig.getComment()),
-                0,
-                HttpCookie.getSameSiteFromComment(cookieConfig.getComment()));
-
-            return cookie;
-        }
-        return null;
+        if (!isUsingCookies())
+            return null;
+        SessionCookieConfig cookieConfig = getSessionCookieConfig();
+        String sessionPath = (cookieConfig.getPath() == null) ? contextPath : cookieConfig.getPath();
+        sessionPath = (StringUtil.isEmpty(sessionPath)) ? "/" : sessionPath;
+        String id = getExtendedId(session);
+        String comment = cookieConfig.getComment();
+        return new HttpCookie(
+            getSessionCookieName(_cookieConfig),
+            id,
+            cookieConfig.getDomain(),
+            sessionPath,
+            cookieConfig.getMaxAge(),
+            cookieConfig.isHttpOnly(),
+            cookieConfig.isSecure() || (isSecureRequestOnly() && requestIsSecure),
+            HttpCookie.getCommentWithoutAttributes(comment),
+            0,
+            HttpCookie.getSameSiteFromComment(comment),
+            HttpCookie.isPartitionedInComment(comment)
+        );
     }
 
     @ManagedAttribute("domain of the session cookie, or null for the default")
@@ -800,6 +797,19 @@ public class SessionHandler extends ScopedHandler
     public void setHttpOnly(boolean httpOnly)
     {
         _httpOnly = httpOnly;
+    }
+
+    /**
+     * Sets whether session cookies should have the {@code Partitioned} attribute.
+     *
+     * @param partitioned whether session cookies should have the {@code Partitioned} attribute
+     * @see HttpCookie
+     */
+    public void setPartitioned(boolean partitioned)
+    {
+        // Encode in comment whilst not supported by SessionConfig,
+        // so that it can be set/saved in web.xml and quickstart.
+        _sessionComment = HttpCookie.getCommentWithAttributes(_sessionComment, false, null, partitioned);
     }
 
     /**
