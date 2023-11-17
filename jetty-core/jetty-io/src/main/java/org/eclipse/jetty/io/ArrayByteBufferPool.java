@@ -22,8 +22,10 @@ import java.util.Arrays;
 import java.util.List;
 import java.util.Set;
 import java.util.concurrent.ConcurrentHashMap;
+import java.util.concurrent.ConcurrentMap;
 import java.util.concurrent.CopyOnWriteArrayList;
 import java.util.concurrent.atomic.AtomicLong;
+import java.util.concurrent.atomic.LongAdder;
 import java.util.function.Consumer;
 import java.util.function.IntUnaryOperator;
 import java.util.stream.Collectors;
@@ -39,6 +41,7 @@ import org.eclipse.jetty.util.annotation.ManagedObject;
 import org.eclipse.jetty.util.annotation.ManagedOperation;
 import org.eclipse.jetty.util.component.Dumpable;
 import org.eclipse.jetty.util.component.DumpableCollection;
+import org.eclipse.jetty.util.component.DumpableMap;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -67,6 +70,7 @@ public class ArrayByteBufferPool implements ByteBufferPool, Dumpable
     private final AtomicLong _currentHeapMemory = new AtomicLong();
     private final AtomicLong _currentDirectMemory = new AtomicLong();
     private final IntUnaryOperator _bucketIndexFor;
+    private final ConcurrentMap<Integer, Long> _requestedBufferSizes = new ConcurrentHashMap<>();
 
     /**
      * Creates a new ArrayByteBufferPool with a default configuration.
@@ -133,6 +137,11 @@ public class ArrayByteBufferPool implements ByteBufferPool, Dumpable
      */
     protected ArrayByteBufferPool(int minCapacity, int factor, int maxCapacity, int maxBucketSize, long maxHeapMemory, long maxDirectMemory, IntUnaryOperator bucketIndexFor, IntUnaryOperator bucketCapacity)
     {
+        this(minCapacity, factor, maxCapacity, maxBucketSize, maxHeapMemory, maxDirectMemory, bucketIndexFor, bucketCapacity, ConcurrentPool.OPTIMAL_MAX_SIZE);
+    }
+
+    public ArrayByteBufferPool(int minCapacity, int factor, int maxCapacity, int maxBucketSize, long maxHeapMemory, long maxDirectMemory, IntUnaryOperator bucketIndexFor, IntUnaryOperator bucketCapacity, int concurrentPoolSize)
+    {
         if (minCapacity <= 0)
             minCapacity = 0;
         factor = factor <= 0 ? DEFAULT_FACTOR : factor;
@@ -153,8 +162,8 @@ public class ArrayByteBufferPool implements ByteBufferPool, Dumpable
         for (int i = 0; i < directArray.length; i++)
         {
             int capacity = Math.min(bucketCapacity.applyAsInt(i), maxCapacity);
-            directArray[i] = new RetainedBucket(capacity, maxBucketSize);
-            indirectArray[i] = new RetainedBucket(capacity, maxBucketSize);
+            directArray[i] = new RetainedBucket(capacity, maxBucketSize, concurrentPoolSize);
+            indirectArray[i] = new RetainedBucket(capacity, maxBucketSize, concurrentPoolSize);
         }
 
         _minCapacity = minCapacity;
@@ -257,12 +266,20 @@ public class ArrayByteBufferPool implements ByteBufferPool, Dumpable
 
     private RetainedBucket bucketFor(int capacity, boolean direct)
     {
+        _requestedBufferSizes.compute(capacity, (key, oldValue) ->
+        {
+            if (oldValue == null)
+                return 1L;
+            return oldValue + 1L;
+        });
         if (capacity < _minCapacity)
             return null;
         int idx = _bucketIndexFor.applyAsInt(capacity);
         RetainedBucket[] buckets = direct ? _direct : _indirect;
         if (idx >= buckets.length)
             return null;
+        RetainedBucket bucket = buckets[idx];
+        bucket.acquire(capacity);
         return buckets[idx];
     }
 
@@ -455,6 +472,7 @@ public class ArrayByteBufferPool implements ByteBufferPool, Dumpable
             out,
             indent,
             this,
+            DumpableMap.from("requested buffer sizes", _requestedBufferSizes, true),
             DumpableCollection.fromArray("direct", _direct),
             DumpableCollection.fromArray("indirect", _indirect));
     }
@@ -489,16 +507,19 @@ public class ArrayByteBufferPool implements ByteBufferPool, Dumpable
     private static class RetainedBucket
     {
         private final Pool<RetainableByteBuffer> _pool;
+        private final ConcurrentPool<RetainableByteBuffer> _concurrentPool;
         private final int _capacity;
+        private final LongAdder _acquisitions = new LongAdder();
+        private final LongAdder _waste = new LongAdder();
 
-        private RetainedBucket(int capacity, int poolSize)
+        private RetainedBucket(int capacity, int maxPoolSize, int concurrentPoolSize)
         {
-            if (poolSize <= ConcurrentPool.OPTIMAL_MAX_SIZE)
-                _pool = new ConcurrentPool<>(ConcurrentPool.StrategyType.THREAD_ID, poolSize, e -> 1);
+            if (maxPoolSize <= concurrentPoolSize)
+                _pool = _concurrentPool = new ConcurrentPool<>(ConcurrentPool.StrategyType.THREAD_ID, maxPoolSize, e -> 1);
             else
                 _pool = new CompoundPool<>(
-                    new ConcurrentPool<>(ConcurrentPool.StrategyType.THREAD_ID, ConcurrentPool.OPTIMAL_MAX_SIZE, e -> 1),
-                    new QueuedPool<>(poolSize - ConcurrentPool.OPTIMAL_MAX_SIZE)
+                    _concurrentPool = new ConcurrentPool<>(ConcurrentPool.StrategyType.THREAD_ID, concurrentPoolSize, e -> 1),
+                    new QueuedPool<>(maxPoolSize - concurrentPoolSize)
                 );
             _capacity = capacity;
         }
@@ -506,6 +527,12 @@ public class ArrayByteBufferPool implements ByteBufferPool, Dumpable
         private Pool<RetainableByteBuffer> getPool()
         {
             return _pool;
+        }
+
+        private void acquire(int capacity)
+        {
+            _acquisitions.increment();
+            _waste.add(_capacity - capacity);
         }
 
         @Override
@@ -520,11 +547,19 @@ public class ArrayByteBufferPool implements ByteBufferPool, Dumpable
                     inUse++;
             }
 
-            return String.format("%s{capacity=%d,inuse=%d(%d%%)}",
+            long acquisitions = _acquisitions.longValue();
+            long avgWaste = acquisitions == 0 ? 0 : _waste.longValue() / acquisitions;
+            long poolAcquisitions = _concurrentPool.getAcquisitions();
+            long poolProbes = _concurrentPool.getProbes();
+            long poolAvgProbes = poolAcquisitions == 0 ? 0 : poolProbes / poolAcquisitions;
+            return String.format("%s{capacity=%d,entries=%d,inuse=%d(%d%%),avgwaste=%d(%d),ConcurrentPool{sz=%d,acq=%d,avgprb=%d(%d),lkd=%d}}",
                 super.toString(),
                 _capacity,
+                entries,
                 inUse,
-                entries > 0 ? (inUse * 100) / entries : 0);
+                entries > 0 ? (inUse * 100) / entries : 0,
+                avgWaste, acquisitions,
+                _concurrentPool.size(), poolAcquisitions, poolAvgProbes, poolProbes, _concurrentPool.getLeaked());
         }
     }
 

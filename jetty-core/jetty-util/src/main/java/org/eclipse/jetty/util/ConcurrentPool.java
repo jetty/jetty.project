@@ -64,6 +64,8 @@ public class ConcurrentPool<P> implements Pool<P>, Dumpable
     private final AtomicInteger nextIndex;
     private final ToIntFunction<P> maxMultiplex;
     private final LongAdder leaked = new LongAdder();
+    private final LongAdder acquisitions = new LongAdder();
+    private final LongAdder probes = new LongAdder();
 
     private volatile boolean terminated;
 
@@ -130,6 +132,18 @@ public class ConcurrentPool<P> implements Pool<P>, Dumpable
     public long getLeaked()
     {
         return leaked.longValue();
+    }
+
+    @ManagedAttribute("total number of acquisitions")
+    public long getAcquisitions()
+    {
+        return acquisitions.longValue();
+    }
+
+    @ManagedAttribute("total number of entries that were probed to serve the acquisitions")
+    public long getProbes()
+    {
+        return probes.longValue();
     }
 
     /**
@@ -208,15 +222,19 @@ public class ConcurrentPool<P> implements Pool<P>, Dumpable
 
         int size = entries.size();
         if (size == 0)
+        {
+            acquisitions.increment();
             return null;
+        }
 
         int index = startIndex(size);
-
+        int probeCount = 0;
         for (int tries = size; tries-- > 0; )
         {
             try
             {
                 Holder<P> holder = entries.get(index);
+                probeCount++;
                 if (holder != null)
                 {
                     ConcurrentEntry<P> entry = (ConcurrentEntry<P>)holder.getEntry();
@@ -231,6 +249,8 @@ public class ConcurrentPool<P> implements Pool<P>, Dumpable
                     {
                         if (LOG.isDebugEnabled())
                             LOG.debug("returning entry {} for {}", entry, this);
+                        acquisitions.increment();
+                        probes.add(probeCount);
                         return entry;
                     }
                 }
@@ -249,6 +269,8 @@ public class ConcurrentPool<P> implements Pool<P>, Dumpable
                 index = 0;
         }
 
+        acquisitions.increment();
+        probes.add(probeCount);
         return null;
     }
 
