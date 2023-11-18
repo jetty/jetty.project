@@ -35,5 +35,12 @@
       <!-- Set read-execute for shell scripts -->
       <fileMode>0555</fileMode>
     </fileSet>
+    <fileSet>
+      <directory>${project.build.directory}</directory>
+      <outputDirectory></outputDirectory>
+      <includes>
+        <include>jetty-home-sbom.*</include>
+      </includes>
+    </fileSet>
   </fileSets>
 </assembly>
