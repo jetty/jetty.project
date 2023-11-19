@@ -267,6 +267,7 @@ public class Response implements HttpServletResponse
             String comment = cookie.getComment();
             // HttpOnly was supported as a comment in cookie flags before the java.net.HttpCookie implementation so need to check that
             boolean httpOnly = cookie.isHttpOnly() || HttpCookie.isHttpOnlyInComment(comment);
+            boolean partitioned = HttpCookie.isPartitionedInComment(comment);
             SameSite sameSite = HttpCookie.getSameSiteFromComment(comment);
             comment = HttpCookie.getCommentWithoutAttributes(comment);
 
@@ -280,7 +281,8 @@ public class Response implements HttpServletResponse
                 cookie.getSecure(),
                 comment,
                 cookie.getVersion(),
-                sameSite));
+                sameSite,
+                partitioned));
         }
     }
 
