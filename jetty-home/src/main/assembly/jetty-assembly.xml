@@ -39,7 +39,7 @@
       <directory>${project.build.directory}</directory>
       <outputDirectory></outputDirectory>
       <includes>
-        <include>jetty-home-sbom.*</include>
+        <include>*cyclonedx.*</include>
       </includes>
     </fileSet>
   </fileSets>

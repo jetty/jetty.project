@@ -609,7 +609,7 @@
             <phase>prepare-package</phase>
             <inherited>false</inherited>
             <configuration>
-              <outputName>jetty-home-sbom</outputName>
+              <outputName>${project.artifactId}-${project.version}-cyclonedx</outputName>
             </configuration>
           </execution>
         </executions>
