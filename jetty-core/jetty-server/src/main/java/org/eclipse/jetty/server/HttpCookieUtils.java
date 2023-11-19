@@ -46,6 +46,7 @@ public final class HttpCookieUtils
         .with(HttpCookie.PATH_ATTRIBUTE)
         .with(HttpCookie.SAME_SITE_ATTRIBUTE)
         .with(HttpCookie.SECURE_ATTRIBUTE)
+        .with(HttpCookie.PARTITIONED_ATTRIBUTE)
         .build();
     // RFC 1123 format of epoch for the Expires attribute.
     private static final String EPOCH_EXPIRES = "Thu, 01 Jan 1970 00:00:00 GMT";
@@ -187,6 +188,9 @@ public final class HttpCookieUtils
         if (httpCookie.isHttpOnly())
             builder.append(";HttpOnly");
 
+        if (httpCookie.isPartitioned())
+            builder.append(";Partitioned");
+
         HttpCookie.SameSite sameSite = httpCookie.getSameSite();
         if (sameSite != null)
             builder.append(";SameSite=").append(sameSite.getAttributeValue());
@@ -249,6 +253,8 @@ public final class HttpCookieUtils
             builder.append("; Secure");
         if (httpCookie.isHttpOnly())
             builder.append("; HttpOnly");
+        if (httpCookie.isPartitioned())
+            builder.append("; Partitioned");
 
         Map<String, String> attributes = httpCookie.getAttributes();
 
