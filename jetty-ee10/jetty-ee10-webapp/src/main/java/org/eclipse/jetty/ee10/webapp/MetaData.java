@@ -25,6 +25,7 @@ import java.util.Objects;
 import jakarta.servlet.ServletContext;
 import org.eclipse.jetty.util.URIUtil;
 import org.eclipse.jetty.util.resource.Resource;
+import org.eclipse.jetty.util.resource.Resources;
 import org.eclipse.jetty.util.thread.AutoLock;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -714,7 +715,9 @@ public class MetaData
 
     public void addContainerResource(Resource jar)
     {
-        Objects.requireNonNull(jar);
+        if (!Resources.isReadable(jar))
+            throw new IllegalArgumentException("Resource is not readable: " + jar);
+
         if (!_orderedContainerResources.contains(jar))
             _orderedContainerResources.add(jar);
         else
