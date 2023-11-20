@@ -18,6 +18,7 @@ import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.ExecutionException;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicReference;
+import java.util.function.Consumer;
 
 import org.eclipse.jetty.client.Request;
 import org.eclipse.jetty.client.Response;
@@ -30,9 +31,9 @@ import org.eclipse.jetty.websocket.api.Session;
 import org.eclipse.jetty.websocket.client.ClientUpgradeRequest;
 import org.eclipse.jetty.websocket.client.JettyUpgradeListener;
 import org.eclipse.jetty.websocket.client.WebSocketClient;
+import org.eclipse.jetty.websocket.server.ServerWebSocketContainer;
 import org.eclipse.jetty.websocket.server.WebSocketUpgradeHandler;
 import org.junit.jupiter.api.AfterEach;
-import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 
 import static org.hamcrest.MatcherAssert.assertThat;
@@ -45,16 +46,14 @@ public class JettyWebSocketNegotiationTest
     private Server server;
     private ServerConnector connector;
     private WebSocketClient client;
-    private WebSocketUpgradeHandler wsHandler;
 
-    @BeforeEach
-    public void start() throws Exception
+    public void start(Consumer<ServerWebSocketContainer> configurator) throws Exception
     {
         server = new Server();
         connector = new ServerConnector(server);
         server.addConnector(connector);
 
-        wsHandler = WebSocketUpgradeHandler.from(server);
+        WebSocketUpgradeHandler wsHandler = WebSocketUpgradeHandler.from(server, configurator);
 
         server.setHandler(wsHandler);
         server.start();
@@ -73,8 +72,7 @@ public class JettyWebSocketNegotiationTest
     @Test
     public void testBadRequest() throws Exception
     {
-        wsHandler.configure(container ->
-            container.addMapping("/", (rq, rs, cb) -> new EchoSocket()));
+        start(container -> container.addMapping("/", (rq, rs, cb) -> new EchoSocket()));
 
         URI uri = URI.create("ws://localhost:" + connector.getLocalPort() + "/filterPath");
         EventSocket socket = new EventSocket();
@@ -91,12 +89,11 @@ public class JettyWebSocketNegotiationTest
     @Test
     public void testServerError() throws Exception
     {
-        wsHandler.configure(container ->
-            container.addMapping("/", (rq, rs, cb) ->
-            {
-                rs.setAcceptedSubProtocol("errorSubProtocol");
-                return new EchoSocket();
-            }));
+        start(container -> container.addMapping("/", (rq, rs, cb) ->
+        {
+            rs.setAcceptedSubProtocol("errorSubProtocol");
+            return new EchoSocket();
+        }));
 
         URI uri = URI.create("ws://localhost:" + connector.getLocalPort() + "/filterPath");
         EventSocket socket = new EventSocket();
@@ -113,19 +110,18 @@ public class JettyWebSocketNegotiationTest
     @Test
     public void testManualNegotiationInCreator() throws Exception
     {
-        wsHandler.configure(container ->
-            container.addMapping("/", (rq, rs, cb) ->
-            {
-                long matchedExts = rq.getExtensions().stream()
-                    .filter(ec -> "permessage-deflate".equals(ec.getName()))
-                    .filter(ec -> ec.getParameters().containsKey("client_no_context_takeover"))
-                    .count();
-                assertThat(matchedExts, is(1L));
+        start(container -> container.addMapping("/", (rq, rs, cb) ->
+        {
+            long matchedExts = rq.getExtensions().stream()
+                .filter(ec -> "permessage-deflate".equals(ec.getName()))
+                .filter(ec -> ec.getParameters().containsKey("client_no_context_takeover"))
+                .count();
+            assertThat(matchedExts, is(1L));
 
-                // Manually drop the param so it is not negotiated in the extension stack.
-                rs.getHeaders().put(HttpHeader.SEC_WEBSOCKET_EXTENSIONS.asString(), "permessage-deflate");
-                return new EchoSocket();
-            }));
+            // Manually drop the param so it is not negotiated in the extension stack.
+            rs.getHeaders().put(HttpHeader.SEC_WEBSOCKET_EXTENSIONS.asString(), "permessage-deflate");
+            return new EchoSocket();
+        }));
 
         URI uri = URI.create("ws://localhost:" + connector.getLocalPort() + "/filterPath");
         EventSocket socket = new EventSocket();

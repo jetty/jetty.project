@@ -14,14 +14,12 @@
 package org.eclipse.jetty.websocket.tests;
 
 import java.net.URI;
-import java.time.Duration;
 import java.util.concurrent.TimeUnit;
 
 import org.eclipse.jetty.server.Server;
 import org.eclipse.jetty.server.ServerConnector;
+import org.eclipse.jetty.server.handler.ContextHandler;
 import org.eclipse.jetty.websocket.api.Callback;
-import org.eclipse.jetty.websocket.api.Session;
-import org.eclipse.jetty.websocket.api.StatusCode;
 import org.eclipse.jetty.websocket.client.WebSocketClient;
 import org.eclipse.jetty.websocket.server.WebSocketUpgradeHandler;
 import org.junit.jupiter.api.AfterEach;
@@ -29,29 +27,30 @@ import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 
 import static org.hamcrest.MatcherAssert.assertThat;
+import static org.hamcrest.Matchers.containsString;
 import static org.hamcrest.Matchers.equalTo;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
-public class SimpleEchoTest
+public class RestartTest
 {
     private Server _server;
-    private WebSocketClient _client;
     private ServerConnector _connector;
+    private WebSocketClient _client;
+    private WebSocketUpgradeHandler upgradeHandler;
 
     @BeforeEach
-    public void start() throws Exception
+    public void before() throws Exception
     {
         _server = new Server();
         _connector = new ServerConnector(_server);
         _server.addConnector(_connector);
 
-        WebSocketUpgradeHandler wsHandler = WebSocketUpgradeHandler.from(_server, container ->
-        {
-            container.setIdleTimeout(Duration.ZERO);
-            container.addMapping("/", (rq, rs, cb) -> new EchoSocket());
-        });
+        ContextHandler contextHandler = new ContextHandler("/");
+        upgradeHandler = WebSocketUpgradeHandler.from(_server, contextHandler,
+            container -> container.addMapping("/", (req, resp, cb) -> new EchoSocket()));
+        contextHandler.setHandler(upgradeHandler);
+        _server.setHandler(contextHandler);
 
-        _server.setHandler(wsHandler);
         _server.start();
 
         _client = new WebSocketClient();
@@ -59,31 +58,32 @@ public class SimpleEchoTest
     }
 
     @AfterEach
-    public void stop() throws Exception
+    public void after() throws Exception
     {
         _client.stop();
         _server.stop();
     }
 
     @Test
-    public void testEcho() throws Exception
+    public void test() throws Exception
     {
-        int timeout = 10000;
-        _client.setIdleTimeout(Duration.ofSeconds(timeout));
-        _client.setConnectTimeout(Duration.ofSeconds(timeout).toMillis());
+        testEcho();
+        _server.stop();
+        assertThat(upgradeHandler.getServerWebSocketContainer().dump(), containsString("PathMappings[size=0]"));
+        _server.start();
+        testEcho();
+    }
 
-        URI uri = new URI("ws://localhost:" + _connector.getLocalPort());
-        EventSocket clientEndpoint = new EventSocket();
-        Session session = _client.connect(clientEndpoint, uri).get(timeout, TimeUnit.SECONDS);
-        session.setIdleTimeout(Duration.ofSeconds(timeout));
-
-        String message = "hello world 1234";
-        session.sendText(message, Callback.NOOP);
-        String received = clientEndpoint.textMessages.poll(timeout, TimeUnit.SECONDS);
-        assertThat(received, equalTo(message));
-
-        session.close();
-        assertTrue(clientEndpoint.closeLatch.await(timeout, TimeUnit.SECONDS));
-        assertThat(clientEndpoint.closeCode, equalTo(StatusCode.NORMAL));
+    private void testEcho() throws Exception
+    {
+        EchoSocket clientEndpoint = new EchoSocket();
+        URI uri = URI.create("ws://localhost:" + _connector.getLocalPort());
+        _client.connect(clientEndpoint, uri);
+        assertTrue(clientEndpoint.openLatch.await(5, TimeUnit.SECONDS));
+        clientEndpoint.session.sendText("hello world", Callback.NOOP);
+        String message = clientEndpoint.textMessages.poll(5, TimeUnit.SECONDS);
+        assertThat(message, equalTo("hello world"));
+        clientEndpoint.session.close();
+        assertTrue(clientEndpoint.closeLatch.await(5, TimeUnit.SECONDS));
     }
 }

@@ -66,8 +66,7 @@ public class ExplicitDemandTest
         connector = new ServerConnector(server);
         server.addConnector(connector);
 
-        WebSocketUpgradeHandler wsHandler = WebSocketUpgradeHandler.from(server);
-        wsHandler.configure(container ->
+        WebSocketUpgradeHandler wsHandler = WebSocketUpgradeHandler.from(server, container ->
             container.addMapping("/suspend", (rq, rs, cb) -> serverSocket));
 
         server.setHandler(wsHandler);

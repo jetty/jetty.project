@@ -60,11 +60,13 @@ public class WebSocketMappings implements Dumpable, LifeCycle.Listener
 
     public static WebSocketMappings ensureMappings(ContextHandler contextHandler)
     {
-        WebSocketMappings mapping = getMappings(contextHandler);
-        if (mapping == null)
+        WebSocketMappings mappings = getMappings(contextHandler);
+        if (mappings == null)
         {
-            mapping = new WebSocketMappings(WebSocketServerComponents.getWebSocketComponents(contextHandler));
-            contextHandler.setAttribute(WEBSOCKET_MAPPING_ATTRIBUTE, mapping);
+            mappings = new WebSocketMappings(WebSocketServerComponents.getWebSocketComponents(contextHandler));
+            contextHandler.setAttribute(WEBSOCKET_MAPPING_ATTRIBUTE, mappings);
+            contextHandler.addBean(mappings);
+            WebSocketMappings m = mappings;
             contextHandler.addEventListener(new LifeCycle.Listener()
             {
                 @Override
@@ -72,11 +74,12 @@ public class WebSocketMappings implements Dumpable, LifeCycle.Listener
                 {
                     contextHandler.removeAttribute(WEBSOCKET_MAPPING_ATTRIBUTE);
                     contextHandler.removeEventListener(this);
+                    contextHandler.removeBean(m);
                 }
             });
         }
 
-        return mapping;
+        return mappings;
     }
 
     /**
@@ -143,15 +146,14 @@ public class WebSocketMappings implements Dumpable, LifeCycle.Listener
     }
 
     @Override
-    public void lifeCycleStopping(LifeCycle context)
+    public void lifeCycleStopping(LifeCycle event)
     {
-        ContextHandler contextHandler = (ContextHandler)context;
-        WebSocketMappings mapping = contextHandler.getBean(WebSocketMappings.class);
-        if (mapping == this)
-        {
-            contextHandler.removeBean(mapping);
-            mappings.reset();
-        }
+        clear();
+    }
+
+    public void clear()
+    {
+        mappings.reset();
     }
 
     @Override

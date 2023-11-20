@@ -55,8 +55,7 @@ public class JettyWebSocketExtensionConfigTest
         connector = new ServerConnector(server);
         server.addConnector(connector);
 
-        WebSocketUpgradeHandler wsHandler = WebSocketUpgradeHandler.from(server);
-        wsHandler.configure(container ->
+        WebSocketUpgradeHandler wsHandler = WebSocketUpgradeHandler.from(server, container ->
             container.addMapping("/", (rq, rs, cb) ->
             {
                 assertEquals(rq.getExtensions().stream().filter(e -> e.getName().equals("permessage-deflate")).count(), 1);

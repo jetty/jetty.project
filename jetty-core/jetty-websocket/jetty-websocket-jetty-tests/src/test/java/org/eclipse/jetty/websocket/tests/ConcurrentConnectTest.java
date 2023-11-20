@@ -53,8 +53,7 @@ public class ConcurrentConnectTest
         connector.setPort(0);
         server.addConnector(connector);
 
-        WebSocketUpgradeHandler wsHandler = WebSocketUpgradeHandler.from(server);
-        wsHandler.configure(container ->
+        WebSocketUpgradeHandler wsHandler = WebSocketUpgradeHandler.from(server, container ->
             container.addMapping("/", (rq, rs, cb) -> new EchoSocket()));
 
         server.setHandler(wsHandler);

@@ -100,7 +100,7 @@ public abstract class JettyWebSocketServlet extends HttpServlet
     private static final Logger LOG = LoggerFactory.getLogger(JettyWebSocketServlet.class);
     private final CustomizedWebSocketServletFactory customizer = new CustomizedWebSocketServletFactory();
 
-    private WebSocketMappings mapping;
+    private WebSocketMappings mappings;
     private WebSocketComponents components;
 
     /**
@@ -133,7 +133,7 @@ public abstract class JettyWebSocketServlet extends HttpServlet
         {
             ServletContextHandler context = ServletContextHandler.getServletContextHandler(getServletContext());
             components = WebSocketServerComponents.getWebSocketComponents(context);
-            mapping = new WebSocketMappings(components);
+            mappings = new WebSocketMappings(components);
 
             String max = getInitParameter("idleTimeout");
             if (max == null)
@@ -180,6 +180,13 @@ public abstract class JettyWebSocketServlet extends HttpServlet
     }
 
     @Override
+    public void destroy()
+    {
+        mappings.clear();
+        super.destroy();
+    }
+
+    @Override
     protected void service(HttpServletRequest req, HttpServletResponse resp)
         throws ServletException, IOException
     {
@@ -187,7 +194,7 @@ public abstract class JettyWebSocketServlet extends HttpServlet
         ServletContextResponse response = request.getServletContextResponse();
 
         // Do preliminary check before proceeding to attempt an upgrade.
-        if (mapping.getHandshaker().isWebSocketUpgradeRequest(request))
+        if (mappings.getHandshaker().isWebSocketUpgradeRequest(request))
         {
             // provide a null default customizer the customizer will be on the negotiator in the mapping
             FutureCallback callback = new FutureCallback();
@@ -198,7 +205,7 @@ public abstract class JettyWebSocketServlet extends HttpServlet
                 request.setAttribute(WebSocketConstants.WEBSOCKET_WRAPPED_REQUEST_ATTRIBUTE, req);
                 request.setAttribute(WebSocketConstants.WEBSOCKET_WRAPPED_RESPONSE_ATTRIBUTE, resp);
 
-                if (mapping.upgrade(request, response, callback, null))
+                if (mappings.upgrade(request, response, callback, null))
                 {
                     callback.block();
                     return;
@@ -226,7 +233,7 @@ public abstract class JettyWebSocketServlet extends HttpServlet
         @Override
         public void addMapping(String pathSpec, JettyWebSocketCreator creator)
         {
-            mapping.addMapping(WebSocketMappings.parsePathSpec(pathSpec), new WrappedJettyCreator(creator), getFactory(), this);
+            mappings.addMapping(WebSocketMappings.parsePathSpec(pathSpec), new WrappedJettyCreator(creator), getFactory(), this);
         }
 
         @Override
@@ -250,7 +257,7 @@ public abstract class JettyWebSocketServlet extends HttpServlet
                 }
                 catch (Throwable t)
                 {
-                    t.printStackTrace();
+                    LOG.warn("Failed to construct new Endpoint", t);
                     return null;
                 }
             };
@@ -267,7 +274,7 @@ public abstract class JettyWebSocketServlet extends HttpServlet
         @Override
         public JettyWebSocketCreator getMapping(String pathSpec)
         {
-            WebSocketCreator creator = mapping.getWebSocketCreator(WebSocketMappings.parsePathSpec(pathSpec));
+            WebSocketCreator creator = mappings.getWebSocketCreator(WebSocketMappings.parsePathSpec(pathSpec));
             if (creator instanceof WrappedJettyCreator)
                 return ((WrappedJettyCreator)creator).getJettyWebSocketCreator();
             return null;
@@ -276,18 +283,12 @@ public abstract class JettyWebSocketServlet extends HttpServlet
         @Override
         public boolean removeMapping(String pathSpec)
         {
-            return mapping.removeMapping(WebSocketMappings.parsePathSpec(pathSpec));
+            return mappings.removeMapping(WebSocketMappings.parsePathSpec(pathSpec));
         }
     }
 
-    private static class WrappedJettyCreator implements WebSocketCreator
+    private record WrappedJettyCreator(JettyWebSocketCreator creator) implements WebSocketCreator
     {
-        private final JettyWebSocketCreator creator;
-
-        private WrappedJettyCreator(JettyWebSocketCreator creator)
-        {
-            this.creator = creator;
-        }
 
         private JettyWebSocketCreator getJettyWebSocketCreator()
         {

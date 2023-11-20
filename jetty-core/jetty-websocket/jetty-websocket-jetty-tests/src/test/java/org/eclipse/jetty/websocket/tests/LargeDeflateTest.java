@@ -50,8 +50,7 @@ public class LargeDeflateTest
         _connector = new ServerConnector(_server);
         _server.addConnector(_connector);
 
-        WebSocketUpgradeHandler wsHandler = WebSocketUpgradeHandler.from(_server);
-        wsHandler.configure(container ->
+        WebSocketUpgradeHandler wsHandler = WebSocketUpgradeHandler.from(_server, container ->
         {
             container.setIdleTimeout(Duration.ofDays(1));
             container.setMaxFrameSize(Integer.MAX_VALUE);

@@ -94,8 +94,7 @@ public class JettyOnCloseTest
         connector.setPort(0);
         server.addConnector(connector);
 
-        WebSocketUpgradeHandler wsHandler = WebSocketUpgradeHandler.from(server);
-        wsHandler.configure(container ->
+        WebSocketUpgradeHandler wsHandler = WebSocketUpgradeHandler.from(server, container ->
             container.addMapping("/", (rq, rs, cb) -> serverEndpoint));
 
         server.setHandler(wsHandler);

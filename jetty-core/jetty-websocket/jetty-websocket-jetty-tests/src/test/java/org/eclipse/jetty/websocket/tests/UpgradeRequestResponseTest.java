@@ -49,8 +49,7 @@ public class UpgradeRequestResponseTest
         server.addConnector(connector);
         serverSocket = new EchoSocket();
 
-        WebSocketUpgradeHandler wsHandler = WebSocketUpgradeHandler.from(server);
-        wsHandler.configure(container ->
+        WebSocketUpgradeHandler wsHandler = WebSocketUpgradeHandler.from(server, container ->
             container.addMapping("/", (rq, rs, cb) -> serverSocket));
 
         server.setHandler(wsHandler);

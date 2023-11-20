@@ -47,8 +47,7 @@ public class ConnectionHeaderTest
         connector = new ServerConnector(server);
         server.addConnector(connector);
 
-        WebSocketUpgradeHandler wsHandler = WebSocketUpgradeHandler.from(server);
-        wsHandler.configure(container ->
+        WebSocketUpgradeHandler wsHandler = WebSocketUpgradeHandler.from(server, container ->
             container.addMapping("/echo", (rq, rs, cb) -> new EchoSocket()));
 
         server.setHandler(wsHandler);

@@ -73,8 +73,7 @@ public class WebSocketStatsTest
         connector.addBean(wsCloseListener);
         server.addConnector(connector);
 
-        WebSocketUpgradeHandler wsHandler = WebSocketUpgradeHandler.from(server);
-        wsHandler.configure(container ->
+        WebSocketUpgradeHandler wsHandler = WebSocketUpgradeHandler.from(server, container ->
         {
             container.setAutoFragment(false);
             container.addMapping("/", (rq, rs, cb) -> new EchoSocket());
