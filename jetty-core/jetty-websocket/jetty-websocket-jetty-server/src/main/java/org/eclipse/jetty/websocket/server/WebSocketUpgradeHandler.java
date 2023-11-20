@@ -89,7 +89,7 @@ public class WebSocketUpgradeHandler extends Handler.Wrapper
         ServerWebSocketContainer container = new ServerWebSocketContainer(mappings);
 
         WebSocketUpgradeHandler wsHandler = new WebSocketUpgradeHandler(container);
-        context.getContext().setAttribute(WebSocketContainer.class.getName(), wsHandler._container);
+        context.getContext().setAttribute(WebSocketContainer.class.getName(), container);
         return wsHandler;
     }
 
@@ -106,7 +106,9 @@ public class WebSocketUpgradeHandler extends Handler.Wrapper
         WebSocketMappings mappings = new WebSocketMappings(components);
         ServerWebSocketContainer container = new ServerWebSocketContainer(mappings);
 
-        return new WebSocketUpgradeHandler(container);
+        WebSocketUpgradeHandler wsHandler = new WebSocketUpgradeHandler(container);
+        server.getContext().setAttribute(WebSocketContainer.class.getName(), container);
+        return wsHandler;
     }
 
     private final ServerWebSocketContainer _container;
