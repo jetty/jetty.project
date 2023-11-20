@@ -75,8 +75,7 @@ public class DemandWithBlockingStreamsTest
     public void testBinaryStreamExplicitDemandThrows() throws Exception
     {
         StreamEndPoint serverEndPoint = new StreamEndPoint();
-        start(wsHandler -> wsHandler.configure(container ->
-            container.addMapping("/*", (rq, rs, cb) -> serverEndPoint)));
+        start(wsHandler -> wsHandler.getServerWebSocketContainer().addMapping("/*", (rq, rs, cb) -> serverEndPoint));
 
         URI uri = new URI("ws://localhost:" + connector.getLocalPort() + "/");
         EventSocket clientEndPoint = new EventSocket();
@@ -95,8 +94,7 @@ public class DemandWithBlockingStreamsTest
     public void testTextStreamExplicitDemandThrows() throws Exception
     {
         StreamEndPoint serverEndPoint = new StreamEndPoint();
-        start(wsHandler -> wsHandler.configure(container ->
-            container.addMapping("/*", (rq, rs, cb) -> serverEndPoint)));
+        start(wsHandler -> wsHandler.getServerWebSocketContainer().addMapping("/*", (rq, rs, cb) -> serverEndPoint));
 
         URI uri = new URI("ws://localhost:" + connector.getLocalPort() + "/");
         EventSocket clientEndPoint = new EventSocket();

@@ -63,13 +63,12 @@ public class ServerCloseTest
 
         ContextHandler context = new ContextHandler("/");
 
-        WebSocketUpgradeHandler wsHandler = WebSocketUpgradeHandler.from(server, context);
-        context.setHandler(wsHandler);
-        wsHandler.configure(container ->
+        WebSocketUpgradeHandler wsHandler = WebSocketUpgradeHandler.from(server, context, container ->
         {
             container.setIdleTimeout(Duration.ofSeconds(2));
             container.addMapping("/ws", serverEndpointCreator = new ServerCloseCreator());
         });
+        context.setHandler(wsHandler);
 
         server.setHandler(context);
         server.start();

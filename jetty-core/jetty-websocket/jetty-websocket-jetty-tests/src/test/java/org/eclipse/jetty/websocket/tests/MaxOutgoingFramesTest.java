@@ -63,14 +63,13 @@ public class MaxOutgoingFramesTest
 
         ContextHandler context = new ContextHandler("/");
 
-        WebSocketUpgradeHandler wsHandler = WebSocketUpgradeHandler.from(server, context);
-        context.setHandler(wsHandler);
-        wsHandler.configure(container ->
+        WebSocketUpgradeHandler wsHandler = WebSocketUpgradeHandler.from(server, context, container ->
         {
             container.addMapping("/", (rq, rs, cb) -> serverSocket);
             WebSocketComponents components = WebSocketServerComponents.getWebSocketComponents(context);
             components.getExtensionRegistry().register(BlockingOutgoingExtension.class.getName(), BlockingOutgoingExtension.class);
         });
+        context.setHandler(wsHandler);
 
         server.setHandler(context);
         server.start();

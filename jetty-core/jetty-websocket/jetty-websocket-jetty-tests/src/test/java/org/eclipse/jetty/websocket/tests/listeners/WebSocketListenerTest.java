@@ -60,9 +60,7 @@ public class WebSocketListenerTest
 
         ContextHandler context = new ContextHandler("/");
 
-        WebSocketUpgradeHandler wsHandler = WebSocketUpgradeHandler.from(server, context);
-        context.setHandler(wsHandler);
-        wsHandler.configure(container ->
+        WebSocketUpgradeHandler wsHandler = WebSocketUpgradeHandler.from(server, context, container ->
         {
             container.addMapping("/echo", (rq, rs, cb) -> new EchoSocket());
             for (Class<?> c : getClassListFromArguments(TextListeners.getTextListeners()))
@@ -74,6 +72,7 @@ public class WebSocketListenerTest
                 container.addMapping("/binary/" + c.getSimpleName(), (rq, rs, cb) -> construct(c));
             }
         });
+        context.setHandler(wsHandler);
 
         server.setHandler(context);
         server.start();
