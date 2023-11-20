@@ -95,6 +95,9 @@ public interface SessionConfig
     @ManagedAttribute("true if cookies use the http only flag")
     boolean isHttpOnly();
 
+    @ManagedAttribute("true if cookies have the Partitioned attribute")
+    boolean isPartitioned();
+
     @ManagedAttribute("if true, secure cookie flag is set on session cookies")
     boolean isSecureCookies();
 
@@ -114,6 +117,8 @@ public interface SessionConfig
         void setCheckingRemoteSessionIdEncoding(boolean value);
 
         void setHttpOnly(boolean value);
+
+        void setPartitioned(boolean value);
 
         void setMaxCookieAge(int value);
 

@@ -834,8 +834,8 @@ public abstract class AbstractSessionManager extends ContainerLifeCycle implemen
     }
 
     /**
-     * @return true if session cookies should be HTTP-only (Microsoft extension)
-     * @see org.eclipse.jetty.http.HttpCookie#isHttpOnly()
+     * @return true if session cookies should be HTTP only
+     * @see HttpCookie#isHttpOnly()
      */
     @Override
     public boolean isHttpOnly()
@@ -855,6 +855,28 @@ public abstract class AbstractSessionManager extends ContainerLifeCycle implemen
         _sessionCookieAttributes.put(HttpCookie.HTTP_ONLY_ATTRIBUTE, Boolean.toString(httpOnly));
     }
     
+    /**
+     * @return true if session cookies should have the {@code Partitioned} attribute
+     * @see HttpCookie#isPartitioned()
+     */
+    @Override
+    public boolean isPartitioned()
+    {
+        return Boolean.parseBoolean(_sessionCookieAttributes.get(HttpCookie.PARTITIONED_ATTRIBUTE));
+    }
+
+    /**
+     * Sets whether session cookies should have the {@code Partitioned} attribute
+     *
+     * @param partitioned whether session cookies should have the {@code Partitioned} attribute
+     * @see HttpCookie
+     */
+    @Override
+    public void setPartitioned(boolean partitioned)
+    {
+        _sessionCookieAttributes.put(HttpCookie.PARTITIONED_ATTRIBUTE, Boolean.toString(partitioned));
+    }
+
     /**
      * Check if id is in use by this context
      *

@@ -76,7 +76,6 @@ import static org.junit.jupiter.api.Assertions.assertTrue;
 @ExtendWith(WorkDirExtension.class)
 public class SessionHandlerTest
 {
-
     public static class SessionConsumer implements Consumer<ManagedSession>
     {
         private ManagedSession _session;
@@ -685,6 +684,7 @@ public class SessionHandlerTest
         sessionCookieConfig.setSecure(false);
         sessionCookieConfig.setPath("/foo");
         sessionCookieConfig.setMaxAge(99);
+        sessionCookieConfig.setAttribute("Partitioned", "true");
         sessionCookieConfig.setAttribute("SameSite", "Strict");
         sessionCookieConfig.setAttribute("ham", "cheese");
         
@@ -694,11 +694,12 @@ public class SessionHandlerTest
         assertEquals("/foo", cookie.getPath());
         assertFalse(cookie.isHttpOnly());
         assertFalse(cookie.isSecure());
+        assertTrue(cookie.isPartitioned());
         assertEquals(99, cookie.getMaxAge());
         assertEquals(HttpCookie.SameSite.STRICT, cookie.getSameSite());
 
         String cookieStr = HttpCookieUtils.getRFC6265SetCookie(cookie);
-        assertThat(cookieStr, containsString("; SameSite=Strict; ham=cheese"));
+        assertThat(cookieStr, containsString("; Partitioned; SameSite=Strict; ham=cheese"));
     }
 
     @Test
