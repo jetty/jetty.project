@@ -53,15 +53,14 @@ public class LargeDeflateTest
 
         ContextHandler context = new ContextHandler("/");
 
-        WebSocketUpgradeHandler wsHandler = WebSocketUpgradeHandler.from(_server, context);
-        context.setHandler(wsHandler);
-        wsHandler.configure(container ->
+        WebSocketUpgradeHandler wsHandler = WebSocketUpgradeHandler.from(_server, context, container ->
         {
             container.setIdleTimeout(Duration.ofDays(1));
             container.setMaxFrameSize(Integer.MAX_VALUE);
             container.setMaxBinaryMessageSize(Integer.MAX_VALUE);
             container.addMapping("/", (rq, rs, cb) -> _serverSocket);
         });
+        context.setHandler(wsHandler);
 
         _server.setHandler(context);
         _server.start();

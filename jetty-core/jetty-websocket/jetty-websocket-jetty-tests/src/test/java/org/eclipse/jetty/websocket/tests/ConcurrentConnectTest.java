@@ -56,10 +56,9 @@ public class ConcurrentConnectTest
 
         ContextHandler context = new ContextHandler("/");
 
-        WebSocketUpgradeHandler wsHandler = WebSocketUpgradeHandler.from(server, context);
-        context.setHandler(wsHandler);
-        wsHandler.configure(container ->
+        WebSocketUpgradeHandler wsHandler = WebSocketUpgradeHandler.from(server, context, container ->
             container.addMapping("/", (rq, rs, cb) -> new EchoSocket()));
+        context.setHandler(wsHandler);
 
         server.setHandler(context);
         server.start();

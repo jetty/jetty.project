@@ -48,13 +48,12 @@ public class SimpleEchoTest
 
         ContextHandler context = new ContextHandler("/");
 
-        WebSocketUpgradeHandler wsHandler = WebSocketUpgradeHandler.from(_server, context);
-        context.setHandler(wsHandler);
-        wsHandler.configure(container ->
+        WebSocketUpgradeHandler wsHandler = WebSocketUpgradeHandler.from(_server, context, container ->
         {
             container.setIdleTimeout(Duration.ZERO);
             container.addMapping("/", (rq, rs, cb) -> new EchoSocket());
         });
+        context.setHandler(wsHandler);
 
         _server.setHandler(context);
         _server.start();

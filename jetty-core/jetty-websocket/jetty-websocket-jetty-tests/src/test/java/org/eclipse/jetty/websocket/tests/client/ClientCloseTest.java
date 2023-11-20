@@ -108,9 +108,7 @@ public class ClientCloseTest
 
         ContextHandler context = new ContextHandler("/");
 
-        WebSocketUpgradeHandler wsHandler = WebSocketUpgradeHandler.from(server, context);
-        context.setHandler(wsHandler);
-        wsHandler.configure(container ->
+        WebSocketUpgradeHandler wsHandler = WebSocketUpgradeHandler.from(server, context, container ->
         {
             container.setIdleTimeout(Duration.ofSeconds(10));
             container.setMaxTextMessageSize(1024 * 1024 * 2);
@@ -121,6 +119,7 @@ public class ClientCloseTest
                 return endpoint;
             });
         });
+        context.setHandler(wsHandler);
 
         server.setHandler(context);
         server.start();

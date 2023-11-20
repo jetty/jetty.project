@@ -56,8 +56,7 @@ public class JettyWebSocketNegotiationTest
 
         ContextHandler context = new ContextHandler("/");
 
-        WebSocketUpgradeHandler wsHandler = WebSocketUpgradeHandler.from(server, context);
-        wsHandler.configure(configurator);
+        WebSocketUpgradeHandler wsHandler = WebSocketUpgradeHandler.from(server, context, configurator);
         context.setHandler(wsHandler);
 
         server.setHandler(context);

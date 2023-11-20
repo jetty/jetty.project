@@ -69,7 +69,7 @@ public class RestartTest
     {
         testEcho();
         _server.stop();
-        assertThat(upgradeHandler.getContainer().dump(), containsString("PathMappings[size=0]"));
+        assertThat(upgradeHandler.getServerWebSocketContainer().dump(), containsString("PathMappings[size=0]"));
         _server.start();
         testEcho();
     }

@@ -80,7 +80,6 @@ public class WebSocketUpgradeHandler extends Handler.Wrapper
      * @param server the {@link Server} object used to lookup common WebSocket components
      * @param context the {@link ContextHandler} ancestor of the returned {@link WebSocketUpgradeHandler}
      * @return a new {@link WebSocketUpgradeHandler}
-     * @see #configure(Consumer)
      */
     public static WebSocketUpgradeHandler from(Server server, ContextHandler context)
     {
@@ -115,11 +114,25 @@ public class WebSocketUpgradeHandler extends Handler.Wrapper
     private final ServerWebSocketContainer _container;
     private final Consumer<ServerWebSocketContainer> _configurator;
 
+    /**
+     * <p>Creates a new {@link WebSocketUpgradeHandler} with the given {@link ServerWebSocketContainer}.</p>
+     *
+     * @param container the {@link ServerWebSocketContainer} of this {@link WebSocketUpgradeHandler}
+     */
     public WebSocketUpgradeHandler(ServerWebSocketContainer container)
     {
         this(container, null);
     }
 
+    /**
+     * <p>Creates a new {@link WebSocketUpgradeHandler} with the given {@link ServerWebSocketContainer}
+     * and the given configurator.</p>
+     * <p>The configurator is invoked every time this {@link WebSocketUpgradeHandler} is started,
+     * see {@link #from(Server, ContextHandler, Consumer)}.</p>
+     *
+     * @param container the {@link ServerWebSocketContainer} of this {@link WebSocketUpgradeHandler}
+     * @param configurator the code to configure the {@link ServerWebSocketContainer}
+     */
     public WebSocketUpgradeHandler(ServerWebSocketContainer container, Consumer<ServerWebSocketContainer> configurator)
     {
         _container = container;
@@ -134,7 +147,7 @@ public class WebSocketUpgradeHandler extends Handler.Wrapper
      *
      * @param configurator the configuration code
      * @return this {@link WebSocketUpgradeHandler}
-     * @deprecated use {@link #getContainer()} or {@link #from(Server, ContextHandler, Consumer)}.
+     * @deprecated use {@link #getServerWebSocketContainer()} or {@link #from(Server, ContextHandler, Consumer)}.
      */
     @Deprecated
     public WebSocketUpgradeHandler configure(Consumer<ServerWebSocketContainer> configurator)
@@ -143,7 +156,7 @@ public class WebSocketUpgradeHandler extends Handler.Wrapper
         return this;
     }
 
-    public ServerWebSocketContainer getContainer()
+    public ServerWebSocketContainer getServerWebSocketContainer()
     {
         return _container;
     }

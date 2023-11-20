@@ -173,11 +173,7 @@ public class WebSocketServerDocs
         server.setHandler(contextHandler);
 
         // Create a WebSocketUpgradeHandler that implicitly creates a ServerWebSocketContainer.
-        WebSocketUpgradeHandler webSocketHandler = WebSocketUpgradeHandler.from(server, contextHandler);
-        contextHandler.setHandler(webSocketHandler);
-
-        // Here you can access the ServerWebSocketContainer through the WebSocketUpgradeHandler APIs.
-        webSocketHandler.configure(container ->
+        WebSocketUpgradeHandler webSocketHandler = WebSocketUpgradeHandler.from(server, contextHandler, container ->
         {
             // Configure the ServerWebSocketContainer.
             container.setMaxTextMessageSize(128 * 1024);
@@ -194,6 +190,7 @@ public class WebSocketServerDocs
                 return null;
             });
         });
+        contextHandler.setHandler(webSocketHandler);
 
         // Starting the Server will start the ContextHandler and the WebSocketUpgradeHandler,
         // which would run the configuration of the ServerWebSocketContainer.
@@ -285,11 +282,7 @@ public class WebSocketServerDocs
         server.setHandler(contextHandler);
 
         // Create a WebSocketUpgradeHandler.
-        WebSocketUpgradeHandler webSocketHandler = WebSocketUpgradeHandler.from(server, contextHandler);
-        contextHandler.setHandler(webSocketHandler);
-
-        // Here you can access the ServerWebSocketContainer through the WebSocketUpgradeHandler APIs.
-        webSocketHandler.configure(container ->
+        WebSocketUpgradeHandler webSocketHandler = WebSocketUpgradeHandler.from(server, contextHandler, container ->
         {
             container.addMapping("/ws/chat/{room}", (upgradeRequest, upgradeResponse, callback) ->
             {
@@ -305,6 +298,7 @@ public class WebSocketServerDocs
                 return new MyWebSocketRoomEndPoint(room);
             });
         });
+        contextHandler.setHandler(webSocketHandler);
         // end::uriTemplatePathSpec[]
     }
 

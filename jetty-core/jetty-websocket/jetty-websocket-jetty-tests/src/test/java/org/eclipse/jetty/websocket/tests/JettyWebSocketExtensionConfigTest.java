@@ -58,9 +58,7 @@ public class JettyWebSocketExtensionConfigTest
 
         ContextHandler context = new ContextHandler("/");
 
-        WebSocketUpgradeHandler wsHandler = WebSocketUpgradeHandler.from(server, context);
-        context.setHandler(wsHandler);
-        wsHandler.configure(container ->
+        WebSocketUpgradeHandler wsHandler = WebSocketUpgradeHandler.from(server, context, container ->
             container.addMapping("/", (rq, rs, cb) ->
             {
                 assertEquals(rq.getExtensions().stream().filter(e -> e.getName().equals("permessage-deflate")).count(), 1);
@@ -79,6 +77,7 @@ public class JettyWebSocketExtensionConfigTest
 
                 return new EchoSocket();
             }));
+        context.setHandler(wsHandler);
 
         server.setHandler(context);
         server.start();

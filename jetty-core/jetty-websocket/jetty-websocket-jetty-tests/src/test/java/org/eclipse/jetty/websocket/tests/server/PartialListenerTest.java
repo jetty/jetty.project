@@ -58,13 +58,12 @@ public class PartialListenerTest
 
         ContextHandler context = new ContextHandler("/");
 
-        WebSocketUpgradeHandler wsHandler = WebSocketUpgradeHandler.from(server, context);
-        context.setHandler(wsHandler);
-        wsHandler.configure(container ->
+        WebSocketUpgradeHandler wsHandler = WebSocketUpgradeHandler.from(server, context, container ->
         {
             container.setIdleTimeout(Duration.ofSeconds(2));
             container.addMapping("/ws", (rq, rs, cb) -> serverEndpoint = new PartialEndpoint());
         });
+        context.setHandler(wsHandler);
 
         server.setHandler(context);
         server.start();
