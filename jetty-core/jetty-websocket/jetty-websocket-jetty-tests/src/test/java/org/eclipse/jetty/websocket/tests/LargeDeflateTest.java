@@ -21,7 +21,6 @@ import java.util.concurrent.TimeUnit;
 
 import org.eclipse.jetty.server.Server;
 import org.eclipse.jetty.server.ServerConnector;
-import org.eclipse.jetty.server.handler.ContextHandler;
 import org.eclipse.jetty.util.BufferUtil;
 import org.eclipse.jetty.websocket.api.Callback;
 import org.eclipse.jetty.websocket.api.Session;
@@ -51,18 +50,15 @@ public class LargeDeflateTest
         _connector = new ServerConnector(_server);
         _server.addConnector(_connector);
 
-        ContextHandler context = new ContextHandler("/");
-
-        WebSocketUpgradeHandler wsHandler = WebSocketUpgradeHandler.from(_server, context, container ->
+        WebSocketUpgradeHandler wsHandler = WebSocketUpgradeHandler.from(_server, container ->
         {
             container.setIdleTimeout(Duration.ofDays(1));
             container.setMaxFrameSize(Integer.MAX_VALUE);
             container.setMaxBinaryMessageSize(Integer.MAX_VALUE);
             container.addMapping("/", (rq, rs, cb) -> _serverSocket);
         });
-        context.setHandler(wsHandler);
 
-        _server.setHandler(context);
+        _server.setHandler(wsHandler);
         _server.start();
 
         _client = new WebSocketClient();

@@ -20,7 +20,6 @@ import java.util.concurrent.TimeUnit;
 
 import org.eclipse.jetty.server.Server;
 import org.eclipse.jetty.server.ServerConnector;
-import org.eclipse.jetty.server.handler.ContextHandler;
 import org.eclipse.jetty.websocket.api.Callback;
 import org.eclipse.jetty.websocket.api.Session;
 import org.eclipse.jetty.websocket.api.annotations.WebSocket;
@@ -67,13 +66,10 @@ public class ExplicitDemandTest
         connector = new ServerConnector(server);
         server.addConnector(connector);
 
-        ContextHandler context = new ContextHandler("/");
-
-        WebSocketUpgradeHandler wsHandler = WebSocketUpgradeHandler.from(server, context, container ->
+        WebSocketUpgradeHandler wsHandler = WebSocketUpgradeHandler.from(server, container ->
             container.addMapping("/suspend", (rq, rs, cb) -> serverSocket));
-        context.setHandler(wsHandler);
 
-        server.setHandler(context);
+        server.setHandler(wsHandler);
         server.start();
 
         client.start();

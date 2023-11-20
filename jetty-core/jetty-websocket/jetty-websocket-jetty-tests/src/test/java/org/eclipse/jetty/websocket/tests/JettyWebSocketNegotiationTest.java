@@ -26,7 +26,6 @@ import org.eclipse.jetty.http.HttpHeader;
 import org.eclipse.jetty.logging.StacklessLogging;
 import org.eclipse.jetty.server.Server;
 import org.eclipse.jetty.server.ServerConnector;
-import org.eclipse.jetty.server.handler.ContextHandler;
 import org.eclipse.jetty.server.internal.HttpChannelState;
 import org.eclipse.jetty.websocket.api.Session;
 import org.eclipse.jetty.websocket.client.ClientUpgradeRequest;
@@ -54,12 +53,9 @@ public class JettyWebSocketNegotiationTest
         connector = new ServerConnector(server);
         server.addConnector(connector);
 
-        ContextHandler context = new ContextHandler("/");
+        WebSocketUpgradeHandler wsHandler = WebSocketUpgradeHandler.from(server, configurator);
 
-        WebSocketUpgradeHandler wsHandler = WebSocketUpgradeHandler.from(server, context, configurator);
-        context.setHandler(wsHandler);
-
-        server.setHandler(context);
+        server.setHandler(wsHandler);
         server.start();
 
         client = new WebSocketClient();

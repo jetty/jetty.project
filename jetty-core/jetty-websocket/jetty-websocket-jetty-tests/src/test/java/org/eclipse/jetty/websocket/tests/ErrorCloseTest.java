@@ -24,7 +24,6 @@ import java.util.concurrent.TimeUnit;
 import org.eclipse.jetty.logging.StacklessLogging;
 import org.eclipse.jetty.server.Server;
 import org.eclipse.jetty.server.ServerConnector;
-import org.eclipse.jetty.server.handler.ContextHandler;
 import org.eclipse.jetty.websocket.api.Callback;
 import org.eclipse.jetty.websocket.api.Session;
 import org.eclipse.jetty.websocket.api.WebSocketSessionListener;
@@ -59,9 +58,7 @@ public class ErrorCloseTest
         ServerConnector connector = new ServerConnector(server);
         server.addConnector(connector);
 
-        ContextHandler context = new ContextHandler("/");
-
-        WebSocketUpgradeHandler wsHandler = WebSocketUpgradeHandler.from(server, context, container ->
+        WebSocketUpgradeHandler wsHandler = WebSocketUpgradeHandler.from(server, container ->
         {
             container.addMapping("/", (rq, rs, cb) -> serverSocket);
             container.addSessionListener(new WebSocketSessionListener()
@@ -73,9 +70,8 @@ public class ErrorCloseTest
                 }
             });
         });
-        context.setHandler(wsHandler);
 
-        server.setHandler(context);
+        server.setHandler(wsHandler);
         server.start();
         serverUri = new URI("ws://localhost:" + connector.getLocalPort() + "/");
 
