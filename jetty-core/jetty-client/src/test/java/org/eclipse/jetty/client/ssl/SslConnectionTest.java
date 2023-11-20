@@ -49,7 +49,7 @@ public class SslConnectionTest
         ByteArrayEndPoint endPoint = new ByteArrayEndPoint();
         SSLEngine sslEngine = sslContextFactory.newSSLEngine();
         sslEngine.setUseClientMode(false);
-        SslConnection sslConnection = new SslConnection(bufferPool, threadPool, endPoint, sslEngine);
+        SslConnection sslConnection = new SslConnection(bufferPool, threadPool, sslContextFactory, endPoint, sslEngine);
         EndPoint sslEndPoint = sslConnection.getSslEndPoint();
         sslEndPoint.setConnection(new AbstractConnection(sslEndPoint, threadPool)
         {

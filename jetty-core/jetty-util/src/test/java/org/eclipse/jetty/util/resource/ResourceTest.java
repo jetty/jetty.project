@@ -385,6 +385,8 @@ public class ResourceTest
         Resource resourceDir = resourceBase.resolve("/foo");
         assertTrue(Resources.exists(resourceDir));
         assertThat(resourceDir.getURI(), is(foo.toUri()));
+        assertTrue(resourceBase.contains(resourceDir));
+        assertThat(resourceBase.getPathTo(resourceDir).getName(0).toString(), is("foo"));
     }
 
     @Test

@@ -44,6 +44,6 @@ public class ClusteredInvalidationSessionTest extends AbstractClusteredInvalidat
     @Override
     public SessionDataStoreFactory createSessionDataStoreFactory()
     {
-        return JdbcTestHelper.newSessionDataStoreFactory(sessionTableName);
+        return JdbcTestHelper.newSessionDataStoreFactory(sessionTableName, false);
     }
 }

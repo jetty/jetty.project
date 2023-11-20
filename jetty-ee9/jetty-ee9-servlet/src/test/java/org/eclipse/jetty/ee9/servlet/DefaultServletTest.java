@@ -745,6 +745,16 @@ public class DefaultServletTest
         assertThat(response.toString(), response.getStatus(), is(HttpStatus.MOVED_TEMPORARILY_302));
         assertThat(response, containsHeaderValue("Location", "http://0.0.0.0/context/other/"));
 
+        rawResponse = connector.getResponse("GET /context/other?a=b HTTP/1.0\r\n\r\n");
+        response = HttpTester.parseResponse(rawResponse);
+        assertThat(response.toString(), response.getStatus(), is(HttpStatus.MOVED_TEMPORARILY_302));
+        assertThat(response, containsHeaderValue("Location", "http://0.0.0.0/context/other/?a=b"));
+
+        rawResponse = connector.getResponse("GET /context?a=b HTTP/1.0\r\n\r\n");
+        response = HttpTester.parseResponse(rawResponse);
+        assertThat(response.toString(), response.getStatus(), is(HttpStatus.MOVED_PERMANENTLY_301));
+        assertThat(response, containsHeaderValue("Location", "/context/?a=b"));
+
         // Test alt default
         rawResponse = connector.getResponse("GET /context/alt/dir/ HTTP/1.0\r\n\r\n");
         response = HttpTester.parseResponse(rawResponse);

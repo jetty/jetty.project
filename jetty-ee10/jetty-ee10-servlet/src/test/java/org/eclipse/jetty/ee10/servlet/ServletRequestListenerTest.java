@@ -213,8 +213,8 @@ public class ServletRequestListenerTest
             contextHandler.setErrorHandler((request, response, callback) ->
             {
                 response.setStatus(500);
-                response.write(true, BufferUtil.toBuffer("error handled"), callback);
                 _events.add("errorHandler");
+                response.write(true, BufferUtil.toBuffer("error handled"), callback);
                 return true;
             });
 

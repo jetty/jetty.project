@@ -13,43 +13,29 @@
 
 package org.eclipse.jetty.server;
 
-import java.io.ByteArrayInputStream;
 import java.io.File;
 import java.io.IOException;
 import java.net.URI;
-import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
 import java.nio.file.InvalidPathException;
 import java.nio.file.Path;
-import java.util.ArrayList;
 import java.util.List;
 import java.util.regex.Pattern;
-import javax.xml.catalog.Catalog;
-import javax.xml.catalog.CatalogManager;
-import javax.xml.catalog.CatalogResolver;
-import javax.xml.parsers.DocumentBuilder;
-import javax.xml.parsers.DocumentBuilderFactory;
-import javax.xml.parsers.ParserConfigurationException;
 
 import org.eclipse.jetty.toolchain.test.FS;
 import org.eclipse.jetty.toolchain.test.jupiter.WorkDir;
 import org.eclipse.jetty.toolchain.test.jupiter.WorkDirExtension;
-import org.eclipse.jetty.toolchain.xhtml.CatalogXHTML;
+import org.eclipse.jetty.toolchain.xhtml.XHTMLValidator;
 import org.eclipse.jetty.util.resource.Resource;
 import org.eclipse.jetty.util.resource.ResourceFactory;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
-import org.w3c.dom.Document;
-import org.xml.sax.ErrorHandler;
-import org.xml.sax.SAXException;
-import org.xml.sax.SAXParseException;
 
 import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.Matchers.containsString;
 import static org.hamcrest.Matchers.is;
 import static org.hamcrest.Matchers.not;
-import static org.junit.jupiter.api.Assertions.assertTrue;
-import static org.junit.jupiter.api.Assertions.fail;
+import static org.junit.jupiter.api.Assertions.assertDoesNotThrow;
 import static org.junit.jupiter.api.Assumptions.assumeTrue;
 
 @ExtendWith(WorkDirExtension.class)
@@ -69,7 +55,7 @@ public class ResourceListingTest
         {
             Resource resource = resourceFactory.newResource(root);
             String content = ResourceListing.getAsXHTML(resource, "/", false, null);
-            assertTrue(isValidXHtml(content));
+            assertDoesNotThrow(() -> XHTMLValidator.validate(content));
 
             assertThat(content, containsString("entry1.txt"));
             assertThat(content, containsString("<a href=\"/entry1.txt\">"));
@@ -98,7 +84,7 @@ public class ResourceListingTest
         {
             Resource resource = resourceFactory.newResource(root);
             String content = ResourceListing.getAsXHTML(resource, "/deep/", false, null);
-            assertTrue(isValidXHtml(content));
+            assertDoesNotThrow(() -> XHTMLValidator.validate(content));
 
             assertThat(content, containsString("entry1.txt"));
             assertThat(content, containsString("<a href=\"/deep/entry1.txt\">"));
@@ -140,7 +126,7 @@ public class ResourceListingTest
             List<URI> uriRootList = List.of(docrootA.toUri(), docrootB.toUri());
             Resource resource = resourceFactory.newResource(uriRootList);
             String content = ResourceListing.getAsXHTML(resource, "/context/", false, null);
-            assertTrue(isValidXHtml(content));
+            assertDoesNotThrow(() -> XHTMLValidator.validate(content));
 
             assertThat(content, containsString("entry1.txt"));
             assertThat(content, containsString("<a href=\"/context/entry1.txt\">"));
@@ -196,7 +182,7 @@ public class ResourceListingTest
             Resource resource = resourceBase.resolve("one/deep/");
 
             String content = ResourceListing.getAsXHTML(resource, "/context/", false, null);
-            assertTrue(isValidXHtml(content));
+            assertDoesNotThrow(() -> XHTMLValidator.validate(content));
 
             assertThat(content, containsString("/foo"));
 
@@ -235,7 +221,7 @@ public class ResourceListingTest
 
             // Context
             String content = ResourceListing.getAsXHTML(resource, "/context/dir%3B/", false, null);
-            assertTrue(isValidXHtml(content));
+            assertDoesNotThrow(() -> XHTMLValidator.validate(content));
 
             // Should not see double-encoded ";"
             // First encoding: ";" -> "%3B"
@@ -266,7 +252,7 @@ public class ResourceListingTest
             Resource resource = resourceFactory.newResource(docRoot);
 
             String content = ResourceListing.getAsXHTML(resource, "/context/", false, null);
-            assertTrue(isValidXHtml(content));
+            assertDoesNotThrow(() -> XHTMLValidator.validate(content));
 
             assertThat(content, containsString("f??r"));
         }
@@ -290,67 +276,10 @@ public class ResourceListingTest
             Resource resource = resourceBase.resolve("one");
 
             String content = ResourceListing.getAsXHTML(resource, "/context/one", false, null);
-            assertTrue(isValidXHtml(content));
+            assertDoesNotThrow(() -> XHTMLValidator.validate(content));
 
             // Entry should be properly encoded
             assertThat(content, containsString("<a href=\"/context/one/onmouseclick=%27alert(oops)%27\">"));
-        }
-    }
-
-    private static boolean isValidXHtml(String content)
-    {
-        // we expect that our generated output conforms to text/xhtml is well-formed
-        try (ByteArrayInputStream inputStream = new ByteArrayInputStream(content.getBytes(StandardCharsets.UTF_8)))
-        {
-            Catalog catalog = CatalogXHTML.getCatalog();
-            CatalogResolver resolver = CatalogManager.catalogResolver(catalog);
-
-            DocumentBuilderFactory xmlDocumentBuilderFactory = DocumentBuilderFactory.newInstance();
-            xmlDocumentBuilderFactory.setValidating(true);
-            DocumentBuilder db = xmlDocumentBuilderFactory.newDocumentBuilder();
-            db.setEntityResolver(resolver);
-            List<SAXParseException> errors = new ArrayList<>();
-            db.setErrorHandler(new ErrorHandler()
-            {
-                @Override
-                public void warning(SAXParseException exception)
-                {
-                    exception.printStackTrace();
-                }
-
-                @Override
-                public void error(SAXParseException exception)
-                {
-                    errors.add(exception);
-                }
-
-                @Override
-                public void fatalError(SAXParseException exception)
-                {
-                    errors.add(exception);
-                }
-            });
-
-            // We consider this content to be XML well-formed if these 2 lines do not throw an Exception
-            Document doc = db.parse(inputStream);
-            doc.getDocumentElement().normalize();
-
-            if (errors.size() > 0)
-            {
-                IOException ioException = new IOException("Failed to validate XHTML");
-                for (SAXException saxException : errors)
-                {
-                    ioException.addSuppressed(saxException);
-                }
-                fail(ioException);
-            }
-
-            return true; // it's well-formed
-        }
-        catch (IOException | ParserConfigurationException | SAXException e)
-        {
-            e.printStackTrace(System.err);
-            return false; // XHTML has got issues
         }
     }
 

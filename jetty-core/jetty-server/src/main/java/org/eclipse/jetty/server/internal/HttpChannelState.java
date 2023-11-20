@@ -17,7 +17,6 @@ import java.io.IOException;
 import java.nio.ByteBuffer;
 import java.util.HashMap;
 import java.util.Objects;
-import java.util.Set;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.TimeoutException;
 import java.util.concurrent.atomic.LongAdder;
@@ -40,12 +39,9 @@ import org.eclipse.jetty.http.MultiPartFormData.Parts;
 import org.eclipse.jetty.http.Trailers;
 import org.eclipse.jetty.http.UriCompliance;
 import org.eclipse.jetty.io.ByteBufferPool;
-import org.eclipse.jetty.io.Connection;
 import org.eclipse.jetty.io.Content;
-import org.eclipse.jetty.io.EndPoint;
 import org.eclipse.jetty.server.Components;
 import org.eclipse.jetty.server.ConnectionMetaData;
-import org.eclipse.jetty.server.Connector;
 import org.eclipse.jetty.server.Context;
 import org.eclipse.jetty.server.Handler;
 import org.eclipse.jetty.server.HttpChannel;
@@ -198,24 +194,6 @@ public class HttpChannelState implements HttpChannel, Components
     public ConnectionMetaData getConnectionMetaData()
     {
         return _connectionMetaData;
-    }
-
-    // TODO: remove this
-    public Connection getConnection()
-    {
-        return _connectionMetaData.getConnection();
-    }
-
-    // TODO: remove this
-    public Connector getConnector()
-    {
-        return _connectionMetaData.getConnector();
-    }
-
-    // TODO: remove this
-    public EndPoint getEndPoint()
-    {
-        return getConnection().getEndPoint();
     }
 
     @Override
@@ -511,6 +489,8 @@ public class HttpChannelState implements HttpChannel, Components
             HttpStream combined = onStreamEvent.apply(stream);
             if (combined == null)
                 throw new IllegalArgumentException("Cannot remove stream");
+            if (combined == stream)
+                return;
             try (AutoLock ignored = _lock.lock())
             {
                 if (_stream != stream)
@@ -764,7 +744,7 @@ public class HttpChannelState implements HttpChannel, Components
         }
     }
 
-    public static class ChannelRequest implements Attributes, Request
+    public static class ChannelRequest extends Attributes.Lazy implements Request
     {
         private final long _headersNanoTime = NanoTime.now();
         private final ChannelCallback _callback = new ChannelCallback(this);
@@ -773,7 +753,6 @@ public class HttpChannelState implements HttpChannel, Components
         private final MetaData.Request _metaData;
         private final AutoLock _lock;
         private final LongAdder _contentBytesRead = new LongAdder();
-        private final Attributes _attributes = new Attributes.Lazy();
         private HttpChannelState _httpChannelState;
         private Request _loggedRequest;
         private HttpFields _trailers;
@@ -805,50 +784,6 @@ public class HttpChannelState implements HttpChannel, Components
         public long getContentBytesRead()
         {
             return _contentBytesRead.longValue();
-        }
-
-        @Override
-        public Object getAttribute(String name)
-        {
-            if (name.startsWith("org.eclipse.jetty"))
-            {
-                if (Server.class.getName().equals(name))
-                    return getConnectionMetaData().getConnector().getServer();
-                if (HttpChannelState.class.getName().equals(name))
-                    return getHttpChannelState();
-                // TODO: is the instanceof needed?
-                // TODO: possibly remove this if statement or move to Servlet.
-                if (HttpConnection.class.getName().equals(name) &&
-                    getConnectionMetaData().getConnection() instanceof HttpConnection)
-                    return getConnectionMetaData().getConnection();
-            }
-            return _attributes.getAttribute(name);
-        }
-
-        @Override
-        public Object removeAttribute(String name)
-        {
-            return _attributes.removeAttribute(name);
-        }
-
-        @Override
-        public Object setAttribute(String name, Object attribute)
-        {
-            if (Server.class.getName().equals(name) || HttpChannelState.class.getName().equals(name) || HttpConnection.class.getName().equals(name))
-                return null;
-            return _attributes.setAttribute(name, attribute);
-        }
-
-        @Override
-        public Set<String> getAttributeNameSet()
-        {
-            return _attributes.getAttributeNameSet();
-        }
-
-        @Override
-        public void clearAttributes()
-        {
-            _attributes.clearAttributes();
         }
 
         @Override
@@ -987,27 +922,27 @@ public class HttpChannelState implements HttpChannel, Components
         {
             boolean error;
             HttpStream stream;
+            HttpChannelState httpChannelState;
             try (AutoLock ignored = _lock.lock())
             {
-                HttpChannelState httpChannel = lockedGetHttpChannelState();
+                httpChannelState = lockedGetHttpChannelState();
 
                 if (LOG.isDebugEnabled())
-                    LOG.debug("demand {}", httpChannel);
+                    LOG.debug("demand {}", httpChannelState);
 
-                error = httpChannel._failure != null;
+                error = httpChannelState._failure != null;
                 if (!error)
                 {
-                    if (httpChannel._onContentAvailable != null)
+                    if (httpChannelState._onContentAvailable != null)
                         throw new IllegalArgumentException("demand pending");
-                    httpChannel._onContentAvailable = demandCallback;
+                    httpChannelState._onContentAvailable = demandCallback;
                 }
 
-                stream = httpChannel._stream;
+                stream = httpChannelState._stream;
             }
 
             if (error)
-                // TODO: can we avoid re-grabbing the lock to get the HttpChannel?
-                getHttpChannelState()._serializedInvoker.run(demandCallback);
+                httpChannelState._serializedInvoker.run(demandCallback);
             else
                 stream.demand();
         }

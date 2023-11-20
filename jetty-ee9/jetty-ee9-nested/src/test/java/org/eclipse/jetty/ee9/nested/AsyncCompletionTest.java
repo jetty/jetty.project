@@ -43,7 +43,6 @@ import org.eclipse.jetty.http.HttpTester;
 import org.eclipse.jetty.io.ManagedSelector;
 import org.eclipse.jetty.io.SocketChannelEndPoint;
 import org.eclipse.jetty.server.HttpConnectionFactory;
-import org.eclipse.jetty.server.HttpStream;
 import org.eclipse.jetty.server.Response;
 import org.eclipse.jetty.server.ServerConnector;
 import org.eclipse.jetty.util.BlockingArrayQueue;
@@ -119,22 +118,7 @@ public class AsyncCompletionTest extends HttpServerTestFixture
             @Override
             public boolean handle(org.eclipse.jetty.server.Request request, Response response, Callback callback) throws Exception
             {
-                request.addHttpStreamWrapper(s -> new HttpStream.Wrapper(s)
-                {
-                    @Override
-                    public void succeeded()
-                    {
-                        __transportComplete.set(true);
-                        super.succeeded();
-                    }
-
-                    @Override
-                    public void failed(Throwable x)
-                    {
-                        __transportComplete.set(true);
-                        super.failed(x);
-                    }
-                });
+                org.eclipse.jetty.server.Request.addCompletionListener(request, x -> __transportComplete.set(true));
                 return super.handle(request, response, callback);
             }
         };

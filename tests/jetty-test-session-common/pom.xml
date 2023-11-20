@@ -5,7 +5,7 @@
   <parent>
     <groupId>org.eclipse.jetty.tests</groupId>
     <artifactId>tests</artifactId>
-    <version>12.0.3-SNAPSHOT</version>
+    <version>12.0.4-SNAPSHOT</version>
   </parent>
   <artifactId>jetty-test-session-common</artifactId>
   <packaging>jar</packaging>
@@ -39,6 +39,12 @@
       <artifactId>jetty-infinispan-common</artifactId>
       <scope>compile</scope>
       <optional>true</optional>
+      <exclusions>
+        <exclusion>
+          <groupId>org.wildfly.security</groupId>
+          <artifactId>wildfly-elytron</artifactId>
+        </exclusion>
+      </exclusions>
     </dependency>
     <dependency>
       <groupId>org.eclipse.jetty</groupId>
@@ -76,6 +82,12 @@
       <artifactId>infinispan-client-hotrod</artifactId>
       <scope>compile</scope>
       <optional>true</optional>
+      <exclusions>
+        <exclusion>
+          <groupId>org.wildfly.security</groupId>
+          <artifactId>wildfly-elytron</artifactId>
+        </exclusion>
+      </exclusions>
     </dependency>
     <dependency>
       <groupId>org.infinispan</groupId>

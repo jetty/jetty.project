@@ -39,25 +39,40 @@ public class SslClientConnectionFactory implements ClientConnectionFactory
 {
     public static final String SSL_ENGINE_CONTEXT_KEY = "org.eclipse.jetty.client.ssl.engine";
 
-    private final SslContextFactory sslContextFactory;
-    private final ByteBufferPool byteBufferPool;
-    private final Executor executor;
-    private final ClientConnectionFactory connectionFactory;
+    private final SslContextFactory.Client _sslContextFactory;
+    private final ByteBufferPool _byteBufferPool;
+    private final Executor _executor;
+    private final ClientConnectionFactory _clientConnectionFactory;
     private boolean _directBuffersForEncryption = true;
     private boolean _directBuffersForDecryption = true;
     private boolean _requireCloseMessage;
 
-    public SslClientConnectionFactory(SslContextFactory sslContextFactory, ByteBufferPool byteBufferPool, Executor executor, ClientConnectionFactory connectionFactory)
+    public SslClientConnectionFactory(SslContextFactory.Client sslContextFactory, ByteBufferPool byteBufferPool, Executor executor, ClientConnectionFactory connectionFactory)
     {
-        this.sslContextFactory = Objects.requireNonNull(sslContextFactory, "Missing SslContextFactory");
-        this.byteBufferPool = byteBufferPool;
-        this.executor = executor;
-        this.connectionFactory = connectionFactory;
+        _sslContextFactory = Objects.requireNonNull(sslContextFactory, "Missing SslContextFactory");
+        _byteBufferPool = byteBufferPool;
+        _executor = executor;
+        _clientConnectionFactory = connectionFactory;
+    }
+
+    public SslContextFactory.Client getSslContextFactory()
+    {
+        return _sslContextFactory;
+    }
+
+    public ByteBufferPool getByteBufferPool()
+    {
+        return _byteBufferPool;
+    }
+
+    public Executor getExecutor()
+    {
+        return _executor;
     }
 
     public ClientConnectionFactory getClientConnectionFactory()
     {
-        return connectionFactory;
+        return _clientConnectionFactory;
     }
 
     public void setDirectBuffersForEncryption(boolean useDirectBuffers)
@@ -108,21 +123,21 @@ public class SslClientConnectionFactory implements ClientConnectionFactory
             InetSocketAddress inetRemote = (InetSocketAddress)remote;
             String host = inetRemote.getHostString();
             int port = inetRemote.getPort();
-            engine = sslContextFactory instanceof SslEngineFactory
-                ? ((SslEngineFactory)sslContextFactory).newSslEngine(host, port, context)
-                : sslContextFactory.newSSLEngine(host, port);
+            engine = _sslContextFactory instanceof SslEngineFactory
+                ? ((SslEngineFactory)_sslContextFactory).newSslEngine(host, port, context)
+                : _sslContextFactory.newSSLEngine(host, port);
         }
         else
         {
-            engine = sslContextFactory.newSSLEngine();
+            engine = _sslContextFactory.newSSLEngine();
         }
         engine.setUseClientMode(true);
         context.put(SSL_ENGINE_CONTEXT_KEY, engine);
 
-        SslConnection sslConnection = newSslConnection(byteBufferPool, executor, endPoint, engine);
+        SslConnection sslConnection = newSslConnection(endPoint, engine);
 
         EndPoint appEndPoint = sslConnection.getSslEndPoint();
-        appEndPoint.setConnection(connectionFactory.newConnection(appEndPoint, context));
+        appEndPoint.setConnection(_clientConnectionFactory.newConnection(appEndPoint, context));
 
         sslConnection.addHandshakeListener(new HTTPSHandshakeListener(context));
         customize(sslConnection, context);
@@ -130,9 +145,9 @@ public class SslClientConnectionFactory implements ClientConnectionFactory
         return sslConnection;
     }
 
-    protected SslConnection newSslConnection(ByteBufferPool byteBufferPool, Executor executor, EndPoint endPoint, SSLEngine engine)
+    protected SslConnection newSslConnection(EndPoint endPoint, SSLEngine engine)
     {
-        return new SslConnection(byteBufferPool, executor, endPoint, engine, isDirectBuffersForEncryption(), isDirectBuffersForDecryption());
+        return new SslConnection(getByteBufferPool(), getExecutor(), getSslContextFactory(), endPoint, engine, isDirectBuffersForEncryption(), isDirectBuffersForDecryption());
     }
 
     @Override
@@ -141,8 +156,8 @@ public class SslClientConnectionFactory implements ClientConnectionFactory
         if (connection instanceof SslConnection)
         {
             SslConnection sslConnection = (SslConnection)connection;
-            sslConnection.setRenegotiationAllowed(sslContextFactory.isRenegotiationAllowed());
-            sslConnection.setRenegotiationLimit(sslContextFactory.getRenegotiationLimit());
+            sslConnection.setRenegotiationAllowed(_sslContextFactory.isRenegotiationAllowed());
+            sslConnection.setRenegotiationLimit(_sslContextFactory.getRenegotiationLimit());
             sslConnection.setRequireCloseMessage(isRequireCloseMessage());
             ContainerLifeCycle client = (ContainerLifeCycle)context.get(ClientConnectionFactory.CLIENT_CONTEXT_KEY);
             if (client != null)
@@ -182,7 +197,7 @@ public class SslClientConnectionFactory implements ClientConnectionFactory
         @Override
         public void handshakeSucceeded(Event event) throws SSLException
         {
-            HostnameVerifier verifier = sslContextFactory.getHostnameVerifier();
+            HostnameVerifier verifier = _sslContextFactory.getHostnameVerifier();
             if (verifier != null)
             {
                 SocketAddress address = (SocketAddress)context.get(ClientConnector.REMOTE_SOCKET_ADDRESS_CONTEXT_KEY);

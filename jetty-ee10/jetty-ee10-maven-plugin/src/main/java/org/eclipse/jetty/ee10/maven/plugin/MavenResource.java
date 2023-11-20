@@ -130,11 +130,27 @@ public class MavenResource extends Resource
     }
 
     @Override
-    public boolean isContainedIn(Resource r)
+    public boolean isContainedIn(Resource container)
     {
         if (_resource == null)
             return false;
-        return _resource.isContainedIn(r);
+        return _resource.isContainedIn(container);
+    }
+
+    @Override
+    public boolean contains(Resource other)
+    {
+        if (_resource == null)
+            return false;
+        return _resource.contains(other);
+    }
+
+    @Override
+    public Path getPathTo(Resource other)
+    {
+        if (_resource == null)
+            return null;
+        return _resource.getPathTo(other);
     }
 
     @Override

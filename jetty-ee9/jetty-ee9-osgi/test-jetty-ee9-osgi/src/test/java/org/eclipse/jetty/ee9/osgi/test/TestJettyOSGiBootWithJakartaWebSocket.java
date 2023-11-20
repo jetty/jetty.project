@@ -120,6 +120,10 @@ public class TestJettyOSGiBootWithJakartaWebSocket
             log.info("Send message");
             assertTrue(socket.messageLatch.await(2, TimeUnit.SECONDS)); // give remote 1 second to respond
         }
+        catch (Throwable e)
+        {
+            e.printStackTrace();
+        }
         finally
         {
             assertTrue(socket.closeLatch.await(2, TimeUnit.SECONDS)); // give remote 1 second to acknowledge response
