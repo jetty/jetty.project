@@ -44,7 +44,7 @@ public class MultiplexConnectionPool extends AbstractConnectionPool
 
     public MultiplexConnectionPool(Destination destination, int maxConnections, int initialMaxMultiplex)
     {
-        this(destination, () -> new ConcurrentPool<>(ConcurrentPool.StrategyType.FIRST, maxConnections, false, newMaxMultiplexer(initialMaxMultiplex)), initialMaxMultiplex);
+        this(destination, () -> new ConcurrentPool<>(ConcurrentPool.StrategyType.FIRST, maxConnections, newMaxMultiplexer(initialMaxMultiplex)), initialMaxMultiplex);
     }
 
     protected MultiplexConnectionPool(Destination destination, Pool.Factory<Connection> poolFactory, int initialMaxMultiplex)

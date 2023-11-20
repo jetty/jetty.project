@@ -26,7 +26,10 @@ import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
 import java.util.Objects;
+import java.util.Queue;
 import java.util.Set;
+import java.util.concurrent.ConcurrentLinkedQueue;
+import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicInteger;
@@ -68,6 +71,7 @@ import org.eclipse.jetty.http.HttpCookie;
 import org.eclipse.jetty.http.HttpHeader;
 import org.eclipse.jetty.http.HttpTester;
 import org.eclipse.jetty.http.pathmap.MatchedResource;
+import org.eclipse.jetty.io.Content;
 import org.eclipse.jetty.logging.StacklessLogging;
 import org.eclipse.jetty.security.Constraint;
 import org.eclipse.jetty.security.SecurityHandler;
@@ -82,6 +86,7 @@ import org.eclipse.jetty.server.handler.ResourceHandler;
 import org.eclipse.jetty.util.Callback;
 import org.eclipse.jetty.util.DecoratedObjectFactory;
 import org.eclipse.jetty.util.Decorator;
+import org.eclipse.jetty.util.Jetty;
 import org.eclipse.jetty.util.component.AbstractLifeCycle;
 import org.eclipse.jetty.util.resource.ResourceFactory;
 import org.hamcrest.Matchers;
@@ -94,11 +99,13 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import static org.hamcrest.MatcherAssert.assertThat;
+import static org.hamcrest.Matchers.contains;
 import static org.hamcrest.Matchers.containsInAnyOrder;
 import static org.hamcrest.Matchers.containsString;
 import static org.hamcrest.Matchers.instanceOf;
 import static org.hamcrest.Matchers.notNullValue;
 import static org.hamcrest.Matchers.nullValue;
+import static org.hamcrest.Matchers.sameInstance;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertNotEquals;
@@ -1773,6 +1780,91 @@ public class ServletContextHandlerTest
     }
 
     @Test
+    public void testAfterRecycleBeforeReuse() throws Exception
+    {
+        ServletContextHandler context = new ServletContextHandler(ServletContextHandler.SESSIONS);
+        Queue<String> history = new ConcurrentLinkedQueue<>();
+        CountDownLatch complete = new CountDownLatch(2);
+
+        Handler.Singleton extra = new Handler.Wrapper()
+        {
+            @Override
+            public boolean handle(Request request, Response response, Callback callback) throws Exception
+            {
+                if (request instanceof ServletContextRequest servletContextRequest)
+                {
+                    ServletApiRequest httpServletRequest = servletContextRequest.getServletApiRequest();
+                    Request.addCompletionListener(request, x -> onStreamCompleting(httpServletRequest));
+                    return super.handle(request, response, Callback.from(() -> onCallbackCompleting(httpServletRequest), callback));
+                }
+                return false;
+            }
+
+            private void onCallbackCompleting(ServletApiRequest httpServletRequest)
+            {
+                history.add("onCallbackCompleting");
+                onCompleting(httpServletRequest);
+            }
+
+            private void onStreamCompleting(ServletApiRequest httpServletRequest)
+            {
+                history.add("onStreamCompleting");
+                onCompleting(httpServletRequest);
+            }
+
+            private void onCompleting(ServletApiRequest httpServletRequest)
+            {
+                history.add(httpServletRequest.getRequestURI());
+                history.add(httpServletRequest.getHeader("Test"));
+                history.add(httpServletRequest.getParameter("param"));
+                history.add(String.valueOf(httpServletRequest.getUserPrincipal()));
+                HttpServletResponse httpServletResponse = httpServletRequest.getServletRequestInfo().getServletChannel().getServletContextResponse().getServletApiResponse();
+                history.add(String.valueOf(httpServletResponse.getStatus()));
+                history.add(String.valueOf(httpServletResponse.getContentType()));
+                history.add(String.valueOf(httpServletResponse.getHeader("Server")));
+                complete.countDown();
+            }
+        };
+
+        context.getSessionHandler().insertHandler(extra);
+
+        context.addServlet(TestServlet.class, "/test");
+        context.setContextPath("/");
+        _server.setHandler(context);
+        _server.start();
+
+        String request = """
+            GET /test?param=query HTTP/1.0
+            Host: localhost
+            Test: header
+
+            """;
+
+        String response = _connector.getResponse(request);
+        assertThat("Response", response, containsString("Test"));
+
+        assertTrue(complete.await(10, TimeUnit.SECONDS));
+        assertThat(history, contains(
+            "onCallbackCompleting",
+            "/test",
+            "header",
+            "query",
+            "null",
+            "200",
+            "null",
+            "Jetty(" + Jetty.VERSION + ")",
+            "onStreamCompleting",
+            "/test",
+            "header",
+            "query",
+            "null",
+            "200",
+            "null",
+            "Jetty(" + Jetty.VERSION + ")"
+        ));
+    }
+
+    @Test
     public void testReplaceServletHandlerWithServlet() throws Exception
     {
         ServletContextHandler context = new ServletContextHandler();
@@ -1875,9 +1967,9 @@ public class ServletContextHandlerTest
     }
 
     @Test
-    public void testReplaceHandler() throws Exception
+    public void testInsertHandler() throws Exception
     {
-        ServletContextHandler servletContextHandler = new ServletContextHandler();
+        ServletContextHandler servletContextHandler = new ServletContextHandler(ServletContextHandler.SESSIONS | ServletContextHandler.SECURITY);
         ServletHolder sh = new ServletHolder(new TestServlet());
         servletContextHandler.addServlet(sh, "/foo");
         final AtomicBoolean contextInit = new AtomicBoolean(false);
@@ -1885,7 +1977,6 @@ public class ServletContextHandlerTest
 
         servletContextHandler.addEventListener(new ServletContextListener()
         {
-
             @Override
             public void contextInitialized(ServletContextEvent sce)
             {
@@ -1900,15 +1991,26 @@ public class ServletContextHandlerTest
                     contextDestroy.set(true);
             }
         });
-        ServletHandler shandler = servletContextHandler.getServletHandler();
-
         ResourceHandler rh = new ResourceHandler();
         rh.setBaseResource(ResourceFactory.of(rh).newResource(Paths.get(".")));
-
         servletContextHandler.insertHandler(rh);
-        assertEquals(shandler, servletContextHandler.getServletHandler());
-        assertEquals(rh, servletContextHandler.getHandler());
-        assertEquals(rh.getHandler(), shandler);
+
+        Handler last = new Handler.Abstract()
+        {
+            @Override
+            public boolean handle(Request request, Response response, Callback callback)
+            {
+                return false;
+            }
+        };
+        servletContextHandler.getServletHandler().setHandler(last);
+
+        assertThat(servletContextHandler.getHandler(), sameInstance(rh));
+        assertThat(rh.getHandler(), instanceOf(SessionHandler.class));
+        assertThat(servletContextHandler.getSessionHandler().getHandler(), instanceOf(SecurityHandler.class));
+        assertThat(servletContextHandler.getSecurityHandler().getHandler(), instanceOf(ServletHandler.class));
+        assertThat(servletContextHandler.getServletHandler().getHandler(), sameInstance(last));
+
         _server.setHandler(servletContextHandler);
         _server.start();
         assertTrue(contextInit.get());
@@ -1917,7 +2019,7 @@ public class ServletContextHandlerTest
     }
 
     @Test
-    public void testFallThrough() throws Exception
+    public void testFallThroughContextHandler() throws Exception
     {
         Handler.Sequence list = new Handler.Sequence();
         _server.setHandler(list);
@@ -1946,6 +2048,37 @@ public class ServletContextHandlerTest
 
         response = _connector.getResponse("GET /other HTTP/1.0\r\n\r\n");
         assertThat(response, Matchers.containsString("404 Fell Through"));
+    }
+
+    @Test
+    public void testFallThroughServletHandler() throws Exception
+    {
+        ServletContextHandler root = new ServletContextHandler("/", ServletContextHandler.SESSIONS | ServletContextHandler.SECURITY);
+        _server.setHandler(root);
+
+        ServletHandler servlet = root.getServletHandler();
+        servlet.setEnsureDefaultServlet(false);
+        servlet.addServletWithMapping(HelloServlet.class, "/hello/*");
+
+        servlet.setHandler(new Handler.Abstract()
+        {
+            @Override
+            public boolean handle(Request request, Response response, Callback callback) throws Exception
+            {
+                Content.Sink.write(response, true, "Fell Through Handler: " + request.getSession(true).getId(), callback);
+                return true;
+            }
+        });
+
+        _server.start();
+
+        String response = _connector.getResponse("GET /hello HTTP/1.0\r\n\r\n");
+        assertThat(response, Matchers.containsString("200 OK"));
+
+        response = _connector.getResponse("GET /other HTTP/1.0\r\n\r\n");
+        assertThat(response, Matchers.containsString("200 OK"));
+        assertThat(response, Matchers.containsString("Set-Cookie: JSESSIONID="));
+        assertThat(response, Matchers.containsString("Fell Through Handler"));
     }
 
     /**

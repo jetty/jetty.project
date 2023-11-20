@@ -5,7 +5,7 @@
   <parent>
     <groupId>org.eclipse.jetty.ee10</groupId>
     <artifactId>jetty-ee10</artifactId>
-    <version>12.0.3-SNAPSHOT</version>
+    <version>12.0.4-SNAPSHOT</version>
   </parent>
   <artifactId>jetty-ee10-webapp</artifactId>
   <name>EE10 :: WebApp</name>
@@ -87,7 +87,7 @@
         <artifactId>maven-surefire-plugin</artifactId>
         <configuration>
           <argLine>@{argLine} ${jetty.surefire.argLine}
-            --add-exports org.eclipse.jetty.ee10.webapp/org.acme.webapp=org.eclipse.jetty.ee10.servlet</argLine>
+            --add-exports org.eclipse.jetty.ee10.webapp/org.acme.webapp=org.eclipse.jetty.ee10.servlet --add-reads org.eclipse.jetty.ee10.webapp=org.eclipse.jetty.logging</argLine>
           <useManifestOnlyJar>false</useManifestOnlyJar>
           <additionalClasspathElements>
             <additionalClasspathElement>${basedir}/src/test/resources/mods/foo-bar-janb.jar</additionalClasspathElement>

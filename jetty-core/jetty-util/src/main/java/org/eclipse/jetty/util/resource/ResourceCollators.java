@@ -17,10 +17,11 @@ import java.text.Collator;
 import java.util.Collections;
 import java.util.Comparator;
 import java.util.Locale;
+import java.util.Objects;
 
 public class ResourceCollators
 {
-    private static Comparator<? super Resource> BY_NAME_ASCENDING =
+    private static final Comparator<? super Resource> BY_NAME_ASCENDING =
         new Comparator<>()
         {
             private final Collator collator = Collator.getInstance(Locale.ENGLISH);
@@ -28,11 +29,11 @@ public class ResourceCollators
             @Override
             public int compare(Resource o1, Resource o2)
             {
-                return collator.compare(o1.getName(), o2.getName());
+                return collator.compare(Objects.requireNonNullElse(o1.getName(), ""), Objects.requireNonNullElse(o2.getName(), ""));
             }
         };
 
-    private static Comparator<? super Resource> BY_FILENAME_ASCENDING =
+    private static final Comparator<? super Resource> BY_FILENAME_ASCENDING =
         new Comparator<>()
         {
             private final Collator collator = Collator.getInstance(Locale.ENGLISH);
@@ -44,22 +45,22 @@ public class ResourceCollators
             }
         };
 
-    private static Comparator<? super Resource> BY_NAME_DESCENDING =
+    private static final Comparator<? super Resource> BY_NAME_DESCENDING =
         Collections.reverseOrder(BY_NAME_ASCENDING);
 
-    private static Comparator<? super Resource> BY_FILENAME_DESCENDING =
+    private static final Comparator<? super Resource> BY_FILENAME_DESCENDING =
         Collections.reverseOrder(BY_FILENAME_ASCENDING);
 
-    private static Comparator<? super Resource> BY_LAST_MODIFIED_ASCENDING =
+    private static final Comparator<? super Resource> BY_LAST_MODIFIED_ASCENDING =
         Comparator.comparing(Resource::lastModified);
 
-    private static Comparator<? super Resource> BY_LAST_MODIFIED_DESCENDING =
+    private static final Comparator<? super Resource> BY_LAST_MODIFIED_DESCENDING =
         Collections.reverseOrder(BY_LAST_MODIFIED_ASCENDING);
 
-    private static Comparator<? super Resource> BY_SIZE_ASCENDING =
+    private static final Comparator<? super Resource> BY_SIZE_ASCENDING =
         Comparator.comparingLong(Resource::length);
 
-    private static Comparator<? super Resource> BY_SIZE_DESCENDING =
+    private static final Comparator<? super Resource> BY_SIZE_DESCENDING =
         Collections.reverseOrder(BY_SIZE_ASCENDING);
 
     public static Comparator<? super Resource> byLastModified(boolean sortOrderAscending)

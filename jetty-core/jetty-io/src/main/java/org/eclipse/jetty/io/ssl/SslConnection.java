@@ -16,6 +16,7 @@ package org.eclipse.jetty.io.ssl;
 import java.io.IOException;
 import java.net.SocketAddress;
 import java.nio.ByteBuffer;
+import java.security.cert.X509Certificate;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.concurrent.Executor;
@@ -40,8 +41,10 @@ import org.eclipse.jetty.io.RetainableByteBuffer;
 import org.eclipse.jetty.io.WriteFlusher;
 import org.eclipse.jetty.util.BufferUtil;
 import org.eclipse.jetty.util.Callback;
+import org.eclipse.jetty.util.ExceptionUtil;
 import org.eclipse.jetty.util.IO;
 import org.eclipse.jetty.util.StringUtil;
+import org.eclipse.jetty.util.ssl.SslContextFactory;
 import org.eclipse.jetty.util.thread.AutoLock;
 import org.eclipse.jetty.util.thread.Invocable;
 import org.slf4j.Logger;
@@ -111,6 +114,7 @@ public class SslConnection extends AbstractConnection implements Connection.Upgr
     private final AtomicLong _bytesOut = new AtomicLong();
     private final ByteBufferPool _bufferPool;
     private final SSLEngine _sslEngine;
+    private final SslContextFactory _sslContextFactory;
     private final SslEndPoint _sslEndPoint;
     private final boolean _encryptedDirectBuffers;
     private final boolean _decryptedDirectBuffers;
@@ -165,22 +169,35 @@ public class SslConnection extends AbstractConnection implements Connection.Upgr
         }
     };
 
+    @Deprecated
     public SslConnection(ByteBufferPool byteBufferPool, Executor executor, EndPoint endPoint, SSLEngine sslEngine)
     {
-        this(byteBufferPool, executor, endPoint, sslEngine, false, false);
+        this(byteBufferPool, executor, null, endPoint, sslEngine, false, false);
     }
 
-    public SslConnection(ByteBufferPool byteBufferPool, Executor executor, EndPoint endPoint, SSLEngine sslEngine,
+    public SslConnection(ByteBufferPool byteBufferPool, Executor executor, SslContextFactory sslContextFactory, EndPoint endPoint, SSLEngine sslEngine)
+    {
+        this(byteBufferPool, executor, sslContextFactory, endPoint, sslEngine, false, false);
+    }
+
+    @Deprecated
+    public SslConnection(ByteBufferPool byteBufferPool, Executor executor, EndPoint endPoint, SSLEngine sslEngine, boolean useDirectBuffersForEncryption, boolean useDirectBuffersForDecryption)
+    {
+        this(byteBufferPool, executor, null, endPoint, sslEngine, useDirectBuffersForEncryption, useDirectBuffersForDecryption);
+    }
+
+    public SslConnection(ByteBufferPool byteBufferPool, Executor executor, SslContextFactory sslContextFactory, EndPoint endPoint, SSLEngine sslEngine,
                          boolean useDirectBuffersForEncryption, boolean useDirectBuffersForDecryption)
     {
         // This connection does not execute calls to onFillable(), so they will be called by the selector thread.
         // onFillable() does not block and will only wakeup another thread to do the actual reading and handling.
         super(endPoint, executor);
-        this._bufferPool = byteBufferPool;
-        this._sslEngine = sslEngine;
-        this._sslEndPoint = newSslEndPoint();
-        this._encryptedDirectBuffers = useDirectBuffersForEncryption;
-        this._decryptedDirectBuffers = useDirectBuffersForDecryption;
+        _bufferPool = byteBufferPool;
+        _sslEngine = sslEngine;
+        _sslEndPoint = newSslEndPoint();
+        _sslContextFactory = sslContextFactory;
+        _encryptedDirectBuffers = useDirectBuffersForEncryption;
+        _decryptedDirectBuffers = useDirectBuffersForDecryption;
     }
 
     @Override
@@ -484,6 +501,9 @@ public class SslConnection extends AbstractConnection implements Connection.Upgr
 
     public class SslEndPoint extends AbstractEndPoint implements EndPoint.Wrapper
     {
+        // This is not a simple EndPoint.Wrapper because it has another set of the machinery
+        // from AbstractEndPoint for fillInterest and write flushing, separate to the wrapped EndPoint
+
         private final Callback _incompleteWriteCallback = new IncompleteWriteCallback();
         private Throwable _failure;
 
@@ -1541,9 +1561,9 @@ public class SslConnection extends AbstractConnection implements Connection.Upgr
                     if (LOG.isDebugEnabled())
                         LOG.debug("{} stored {} exception", this, context, x);
                 }
-                else if (x != _failure)
+                else
                 {
-                    _failure.addSuppressed(x);
+                    ExceptionUtil.addSuppressedIfNotAssociated(_failure, x);
                     if (LOG.isDebugEnabled())
                         LOG.debug("{} suppressed {} exception", this, context, x);
                 }
@@ -1622,6 +1642,28 @@ public class SslConnection extends AbstractConnection implements Connection.Upgr
             {
                 return String.format("SSL@%h.DEP.writeCallback", SslConnection.this);
             }
+        }
+
+        @Override
+        public SslSessionData getSslSessionData()
+        {
+            SSLSession sslSession = _sslEngine.getSession();
+            SslSessionData sslSessionData = (SslSessionData)sslSession.getValue(SslSessionData.ATTRIBUTE);
+            if (sslSessionData == null)
+            {
+                String cipherSuite = sslSession.getCipherSuite();
+
+                X509Certificate[] peerCertificates = _sslContextFactory != null
+                    ? _sslContextFactory.getX509CertChain(sslSession)
+                    : SslContextFactory.getCertChain(sslSession);
+
+                byte[] bytes = sslSession.getId();
+                String idStr = StringUtil.toHexString(bytes);
+
+                sslSessionData = SslSessionData.from(sslSession, idStr, cipherSuite, peerCertificates);
+                sslSession.putValue(SslSessionData.ATTRIBUTE, sslSessionData);
+            }
+            return sslSessionData;
         }
     }
 

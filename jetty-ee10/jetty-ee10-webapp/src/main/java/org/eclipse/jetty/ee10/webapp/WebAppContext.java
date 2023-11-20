@@ -772,8 +772,8 @@ public class WebAppContext extends ServletContextHandler implements WebAppClassL
             return null;
 
         // Is there a WEB-INF directory anywhere in the Resource Base?
-        // ResourceBase could be a ResourceCollection
-        // The result could be a ResourceCollection with multiple WEB-INF directories
+        // ResourceBase could be a CombinedResource
+        // The result could be a CombinedResource with multiple WEB-INF directories
         // Can return from WEB-INF/lib/foo.jar!/WEB-INF
         // Can also never return from a META-INF/versions/#/WEB-INF location
         Resource webInf = getBaseResource().resolve("WEB-INF/");

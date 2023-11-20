@@ -29,6 +29,8 @@ import jakarta.servlet.ServletOutputStream;
 import jakarta.servlet.http.HttpServlet;
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletResponse;
+import org.eclipse.jetty.util.ExceptionUtil;
+import org.eclipse.jetty.util.IO;
 import org.eclipse.jetty.util.thread.AutoLock;
 
 /**
@@ -199,17 +201,19 @@ public abstract class EventSourceServlet extends HttpServlet
                 // We could write, reschedule heartbeat
                 scheduleHeartBeat();
             }
-            catch (IOException x)
+            catch (Throwable x)
             {
+                IO.close(this::close);
+
                 try
                 {
                     // The other peer closed the connection
-                    close();
                     eventSource.onClose();
                 }
                 catch (Throwable t)
                 {
-                    t.printStackTrace();
+                    ExceptionUtil.addSuppressedIfNotAssociated(x, t);
+                    getServletContext().log("failure", x);
                 }
             }
         }

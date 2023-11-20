@@ -21,7 +21,6 @@ import jakarta.servlet.http.HttpServlet;
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletResponse;
 import jakarta.servlet.http.HttpSession;
-import org.awaitility.Awaitility;
 import org.eclipse.jetty.client.ContentResponse;
 import org.eclipse.jetty.client.HttpClient;
 import org.eclipse.jetty.client.Request;
@@ -42,6 +41,7 @@ import org.eclipse.jetty.util.component.LifeCycle;
 import org.hamcrest.Matchers;
 import org.junit.jupiter.api.Test;
 
+import static org.awaitility.Awaitility.await;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertNotNull;
 
@@ -130,7 +130,7 @@ public class DuplicateCookieTest
             assertEquals("4422", response.getContentAsString());
 
             //check session is drained of requests
-            assertEquals(0, s4422.getRequests());
+            await().atMost(5, TimeUnit.SECONDS).until(s4422::getRequests, Matchers.is(0L));
         }
         finally
         {
@@ -419,7 +419,7 @@ public class DuplicateCookieTest
             assertEquals(HttpServletResponse.SC_OK, response.getStatus());
 
             //check that all valid sessions have their request counts decremented correctly after the request, back to 0
-            Awaitility.await().atMost(30, TimeUnit.SECONDS).until(s1234::getRequests, Matchers.is(0L));
+            await().atMost(30, TimeUnit.SECONDS).until(s1234::getRequests, Matchers.is(0L));
         }
         finally
         {

@@ -52,6 +52,7 @@ import org.eclipse.jetty.util.StringUtil;
 import org.eclipse.jetty.util.TypeUtil;
 import org.eclipse.jetty.util.URIUtil;
 import org.eclipse.jetty.util.annotation.ManagedAttribute;
+import org.eclipse.jetty.util.annotation.ManagedObject;
 import org.eclipse.jetty.util.component.ClassLoaderDump;
 import org.eclipse.jetty.util.component.DumpableAttributes;
 import org.eclipse.jetty.util.component.LifeCycle;
@@ -65,6 +66,7 @@ import org.slf4j.LoggerFactory;
 /**
  * A {@link Handler} that scopes a request to a specific {@link Context}.
  */
+@ManagedObject
 public class ContextHandler extends Handler.Wrapper implements Attributes, AliasCheck
 {
     private static final Logger LOG = LoggerFactory.getLogger(ContextHandler.class);
@@ -108,11 +110,6 @@ public class ContextHandler extends Handler.Wrapper implements Attributes, Alias
         if (contextRequest == null)
             return null;
         return contextRequest.getContext() instanceof ScopedContext scoped ? scoped.getContextHandler() : null;
-    }
-
-    public static String getServerInfo()
-    {
-        return "jetty/" + Server.getVersion();
     }
 
     /*
@@ -831,11 +828,12 @@ public class ContextHandler extends Handler.Wrapper implements Attributes, Alias
 
     protected void handleMovedPermanently(Request request, Response response, Callback callback)
     {
+        // TODO: should this be a fully qualified URI? (with scheme and host?)
         String location = _contextPath + "/";
         if (request.getHttpURI().getParam() != null)
             location += ";" + request.getHttpURI().getParam();
         if (request.getHttpURI().getQuery() != null)
-            location += ";" + request.getHttpURI().getQuery();
+            location += "?" + request.getHttpURI().getQuery();
 
         response.setStatus(HttpStatus.MOVED_PERMANENTLY_301);
         response.getHeaders().add(new HttpField(HttpHeader.LOCATION, location));
@@ -869,7 +867,7 @@ public class ContextHandler extends Handler.Wrapper implements Attributes, Alias
     /**
      * @return Returns the base resource as a string.
      */
-    @ManagedAttribute("document root for context")
+    @ManagedAttribute(value = "document root for context", readonly = true)
     public Resource getBaseResource()
     {
         return _baseResource;

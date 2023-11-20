@@ -5,7 +5,7 @@
   <parent>
     <groupId>org.eclipse.jetty.ee9</groupId>
     <artifactId>jetty-ee9</artifactId>
-    <version>12.0.3-SNAPSHOT</version>
+    <version>12.0.4-SNAPSHOT</version>
   </parent>
   <artifactId>jetty-ee9-webapp</artifactId>
   <name>EE9 :: WebApp</name>
@@ -101,7 +101,8 @@
         <configuration>
           <argLine>@{argLine} ${jetty.surefire.argLine}
             --add-exports org.eclipse.jetty.ee9.webapp/org.acme.webapp=org.eclipse.jetty.ee9.servlet
-            --add-exports org.eclipse.jetty.ee9.webapp/org.acme.webapp=org.eclipse.jetty.ee9.nested</argLine>
+            --add-exports org.eclipse.jetty.ee9.webapp/org.acme.webapp=org.eclipse.jetty.ee9.nested
+            --add-reads org.eclipse.jetty.ee9.webapp=org.eclipse.jetty.logging</argLine>
           <useManifestOnlyJar>false</useManifestOnlyJar>
           <additionalClasspathElements>
             <additionalClasspathElement>${project.build.testOutputDirectory}/mods/foo-bar-janb.jar</additionalClasspathElement>

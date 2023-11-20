@@ -144,7 +144,8 @@ public class SessionData implements Serializable
                 if (LOG.isDebugEnabled())
                     LOG.debug("Deserialize {} isServerLoader={} serverLoader={} tccl={}", name, isServerClassLoader, serverLoader, contextLoader);
                 Object value = ((ClassLoadingObjectInputStream)in).readObject(isServerClassLoader ? serverLoader : contextLoader);
-                data._attributes.put(name, value);
+                if (value != null)
+                    data._attributes.put(name, value);
             }
         }
         else

@@ -109,7 +109,7 @@ public class AbstractTest
     {
         Collection<Transport> transports = transports();
         transports.remove(Transport.UNIX_DOMAIN);
-        return List.copyOf(transports);
+        return transports;
     }
 
     public static Collection<Transport> transportsTCP()
@@ -117,7 +117,14 @@ public class AbstractTest
         Collection<Transport> transports = transports();
         transports.remove(Transport.H3);
         transports.remove(Transport.UNIX_DOMAIN);
-        return List.copyOf(transports);
+        return transports;
+    }
+
+    public static Collection<Transport> transportsTLS()
+    {
+        Collection<Transport> transports = transports();
+        transports.retainAll(EnumSet.of(Transport.HTTPS, Transport.H2));
+        return transports;
     }
 
     @AfterEach
@@ -132,9 +139,14 @@ public class AbstractTest
         }
         finally
         {
-            LifeCycle.stop(client);
-            LifeCycle.stop(server);
+            stop();
         }
+    }
+
+    public void stop()
+    {
+        LifeCycle.stop(client);
+        LifeCycle.stop(server);
     }
 
     private void assertNoLeaks(ArrayByteBufferPool.Tracking bufferPool, TestInfo testInfo, String prefix, String msg) throws Exception

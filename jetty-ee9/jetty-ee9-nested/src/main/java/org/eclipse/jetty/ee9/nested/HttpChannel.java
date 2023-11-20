@@ -380,19 +380,8 @@ public class HttpChannel implements Runnable, HttpOutput.Interceptor
      */
     public String getLocalName()
     {
-        HttpConfiguration httpConfiguration = getHttpConfiguration();
-        if (httpConfiguration != null)
-        {
-            SocketAddress localAddress = httpConfiguration.getLocalAddress();
-            if (localAddress instanceof InetSocketAddress)
-                return ((InetSocketAddress)localAddress).getHostName();
-        }
-
-        InetSocketAddress local = getLocalAddress();
-        if (local != null)
-            return local.getHostString();
-
-        return null;
+        return getConnectionMetaData().getLocalSocketAddress() instanceof InetSocketAddress inetSocketAddress
+            ? org.eclipse.jetty.server.Request.getHostName(inetSocketAddress) : null;
     }
 
     /**
@@ -414,44 +403,20 @@ public class HttpChannel implements Runnable, HttpOutput.Interceptor
      */
     public int getLocalPort()
     {
-        HttpConfiguration httpConfiguration = getHttpConfiguration();
-        if (httpConfiguration != null)
-        {
-            SocketAddress localAddress = httpConfiguration.getLocalAddress();
-            if (localAddress instanceof InetSocketAddress)
-                return ((InetSocketAddress)localAddress).getPort();
-        }
-
-        InetSocketAddress local = getLocalAddress();
-        return local == null ? 0 : local.getPort();
+        return getConnectionMetaData().getLocalSocketAddress() instanceof InetSocketAddress inetSocketAddress
+            ? inetSocketAddress.getPort() : 0;
     }
 
     public InetSocketAddress getLocalAddress()
     {
-        HttpConfiguration httpConfiguration = getHttpConfiguration();
-        if (httpConfiguration != null)
-        {
-            SocketAddress localAddress = httpConfiguration.getLocalAddress();
-            if (localAddress instanceof InetSocketAddress inetSocketAddress)
-                return inetSocketAddress;
-        }
-
-        SocketAddress local = getConnectionMetaData().getLocalSocketAddress();
-        if (local == null)
-            local = _endPoint.getLocalSocketAddress();
-        if (local instanceof InetSocketAddress inetSocketAddress)
-            return inetSocketAddress;
-        return null;
+        return getConnectionMetaData().getLocalSocketAddress() instanceof InetSocketAddress inetSocketAddress
+            ? inetSocketAddress : null;
     }
 
     public InetSocketAddress getRemoteAddress()
     {
-        SocketAddress remote = getConnectionMetaData().getRemoteSocketAddress();
-        if (remote == null)
-            remote = _endPoint.getRemoteSocketAddress();
-        if (remote instanceof InetSocketAddress inetSocketAddress)
-            return inetSocketAddress;
-        return null;
+        return getConnectionMetaData().getRemoteSocketAddress() instanceof InetSocketAddress inetSocketAddress
+            ? inetSocketAddress : null;
     }
 
     /**
