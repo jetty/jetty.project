@@ -54,7 +54,8 @@ public class Parser
     private int maxSettingsKeys = SettingsFrame.DEFAULT_MAX_KEYS;
     private boolean continuation;
     private State state = State.HEADER;
-    protected long beginNanoTime = Long.MIN_VALUE;
+    private long beginNanoTime = Long.MIN_VALUE;
+    private boolean nanoTimeRead = true;
 
     public Parser(ByteBufferPool bufferPool, int maxHeaderSize)
     {
@@ -65,7 +66,11 @@ public class Parser
     {
         this.bufferPool = bufferPool;
         this.headerParser = new HeaderParser(rateControl == null ? RateControl.NO_RATE_CONTROL : rateControl);
-        this.hpackDecoder = new HpackDecoder(maxHeaderSize, () -> beginNanoTime);
+        this.hpackDecoder = new HpackDecoder(maxHeaderSize, () ->
+        {
+            nanoTimeRead = true;
+            return beginNanoTime;
+        });
         this.bodyParsers = new BodyParser[FrameType.values().length];
     }
 
@@ -104,6 +109,18 @@ public class Parser
         headerParser.reset();
         state = State.HEADER;
         beginNanoTime = Long.MIN_VALUE;
+        nanoTimeRead = true;
+    }
+
+    protected void takeNanoTime()
+    {
+        if (nanoTimeRead)
+        {
+            beginNanoTime = NanoTime.now(); // TODO #9900 check beginNanoTime's accuracy
+            if (beginNanoTime == Long.MIN_VALUE)
+                beginNanoTime++;
+            nanoTimeRead = false;
+        }
     }
 
     /**
@@ -121,13 +138,13 @@ public class Parser
     {
         try
         {
+            takeNanoTime();
             while (true)
             {
                 switch (state)
                 {
                     case HEADER:
                     {
-                        beginNanoTime = NanoTime.now(); // TODO #9900 check beginNanoTime's accuracy
                         if (!parseHeader(buffer))
                             return;
                         break;

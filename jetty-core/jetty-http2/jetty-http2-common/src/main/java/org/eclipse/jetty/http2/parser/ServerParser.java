@@ -21,7 +21,6 @@ import org.eclipse.jetty.http2.RateControl;
 import org.eclipse.jetty.http2.frames.FrameType;
 import org.eclipse.jetty.io.ByteBufferPool;
 import org.eclipse.jetty.util.BufferUtil;
-import org.eclipse.jetty.util.NanoTime;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -87,14 +86,13 @@ public class ServerParser extends Parser
         {
             if (LOG.isDebugEnabled())
                 LOG.debug("Parsing {}", buffer);
-
+            takeNanoTime();
             while (true)
             {
                 switch (state)
                 {
                     case PREFACE:
                     {
-                        beginNanoTime = NanoTime.now(); // TODO #9900 check beginNanoTime's accuracy
                         if (!prefaceParser.parse(buffer))
                             return;
                         if (notifyPreface)
