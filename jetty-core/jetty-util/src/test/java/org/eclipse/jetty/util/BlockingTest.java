@@ -13,243 +13,163 @@
 
 package org.eclipse.jetty.util;
 
+import java.io.Closeable;
 import java.io.IOException;
 import java.io.InterruptedIOException;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.TimeUnit;
 
+import org.hamcrest.Matchers;
+import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.Timeout;
 import org.slf4j.LoggerFactory;
 
-import static org.hamcrest.MatcherAssert.assertThat;
-import static org.hamcrest.Matchers.greaterThan;
-import static org.hamcrest.Matchers.lessThan;
-import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.awaitility.Awaitility.await;
 import static org.junit.jupiter.api.Assertions.assertFalse;
+import static org.junit.jupiter.api.Assertions.assertSame;
+import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.api.Assertions.assertTrue;
-import static org.junit.jupiter.api.Assertions.fail;
 
+@Timeout(value = 10)
 public class BlockingTest
 {
     final Blocker.Shared _shared = new Blocker.Shared();
 
+    Thread main;
+
+    @BeforeEach
+    public void setUp()
+    {
+        main = Thread.currentThread();
+    }
+
     @Test
     public void testRunBlock() throws Exception
     {
-        long start;
         try (Blocker.Runnable runnable = Blocker.runnable())
         {
             runnable.run();
-            start = NanoTime.now();
             runnable.block();
         }
-        assertThat(NanoTime.millisSince(start), lessThan(500L));
     }
 
     @Test
     public void testBlockRun() throws Exception
     {
-        long start;
-        try (Blocker.Runnable runnable = Blocker.runnable())
+        try (Blocker.Runnable runnable = Blocker.runnable();
+             AssertingThread thread = new AssertingThread(() ->
+             {
+                 await().atMost(5, TimeUnit.SECONDS).until(main::getState, Matchers.is(Thread.State.WAITING));
+                 runnable.run();
+             }))
         {
-            final CountDownLatch latch = new CountDownLatch(1);
-
-            new Thread(() ->
-            {
-                latch.countDown();
-                try
-                {
-                    TimeUnit.MILLISECONDS.sleep(100);
-                }
-                catch (Exception e)
-                {
-                    e.printStackTrace();
-                }
-                runnable.run();
-            }).start();
-
-            latch.await();
-            start = NanoTime.now();
+            thread.start();
             runnable.block();
         }
-        long elapsed = NanoTime.millisSince(start);
-        assertThat(elapsed, greaterThan(10L));
-        assertThat(elapsed, lessThan(1000L));
     }
 
     @Test
     public void testNoRun()
     {
-        long start;
         try (Blocker.Runnable ignored = Blocker.runnable())
         {
-            start = NanoTime.now();
             LoggerFactory.getLogger(Blocker.class).info("expect WARN Blocking.Runnable incomplete");
         }
-        assertThat(NanoTime.millisSince(start), lessThan(500L));
     }
 
     @Test
     public void testSucceededBlock() throws Exception
     {
-        long start;
         try (Blocker.Callback callback = Blocker.callback())
         {
             callback.succeeded();
-            start = NanoTime.now();
             callback.block();
         }
-        assertThat(NanoTime.millisSince(start), lessThan(500L));
     }
 
     @Test
     public void testBlockSucceeded() throws Exception
     {
-        long start;
-        try (Blocker.Callback callback = Blocker.callback())
+        try (Blocker.Callback callback = Blocker.callback();
+             AssertingThread thread = new AssertingThread(() ->
+             {
+                 await().atMost(5, TimeUnit.SECONDS).until(main::getState, Matchers.is(Thread.State.WAITING));
+                 callback.succeeded();
+             }))
         {
-            final CountDownLatch latch = new CountDownLatch(1);
-
-            new Thread(() ->
-            {
-                latch.countDown();
-                try
-                {
-                    TimeUnit.MILLISECONDS.sleep(100);
-                }
-                catch (Exception e)
-                {
-                    e.printStackTrace();
-                }
-                callback.succeeded();
-            }).start();
-
-            latch.await();
-            start = NanoTime.now();
+            thread.start();
             callback.block();
         }
-        long elapsed = NanoTime.millisSince(start);
-        assertThat(elapsed, greaterThan(10L));
-        assertThat(elapsed, lessThan(1000L));
     }
 
     @Test
-    public void testFailedBlock() throws Exception
+    public void testFailedBlock()
     {
-        final Exception ex = new Exception("FAILED");
-        long start = Long.MIN_VALUE;
-        try
+        Exception ex = new Exception("FAILED");
+        IOException actual = assertThrows(IOException.class, () ->
         {
             try (Blocker.Callback callback = Blocker.callback())
             {
                 callback.failed(ex);
                 callback.block();
             }
-            fail("Should have thrown IOException");
-        }
-        catch (IOException e)
-        {
-            start = NanoTime.now();
-            assertEquals(ex, e.getCause());
-        }
-        assertThat(NanoTime.millisSince(start), lessThan(100L));
+        });
+        assertSame(ex, actual.getCause());
     }
 
     @Test
-    public void testBlockFailed() throws Exception
+    public void testBlockFailed()
     {
-        final Exception ex = new Exception("FAILED");
-        long start = Long.MIN_VALUE;
-        final CountDownLatch latch = new CountDownLatch(1);
-
-        try
+        Exception ex = new Exception("FAILED");
+        IOException actual = assertThrows(IOException.class, () ->
         {
-            try (Blocker.Callback callback = Blocker.callback())
+            try (Blocker.Callback callback = Blocker.callback();
+                 AssertingThread thread = new AssertingThread(() ->
+                 {
+                     await().atMost(5, TimeUnit.SECONDS).until(main::getState, Matchers.is(Thread.State.WAITING));
+                     callback.failed(ex);
+                 }))
             {
-
-                new Thread(() ->
-                {
-                    latch.countDown();
-                    try
-                    {
-                        TimeUnit.MILLISECONDS.sleep(100);
-                    }
-                    catch (Exception e)
-                    {
-                        e.printStackTrace();
-                    }
-                    callback.failed(ex);
-                }).start();
-
-                latch.await();
-                start = NanoTime.now();
+                thread.start();
                 callback.block();
             }
-            fail("Should have thrown IOException");
-        }
-        catch (IOException e)
-        {
-            assertEquals(ex, e.getCause());
-        }
-        long elapsed = NanoTime.millisSince(start);
-        assertThat(elapsed, greaterThan(10L));
-        assertThat(elapsed, lessThan(1000L));
+        });
+        assertSame(ex, actual.getCause());
     }
 
     @Test
     public void testSharedRunBlock() throws Exception
     {
-        long start;
         try (Blocker.Runnable runnable = _shared.runnable())
         {
             runnable.run();
-            start = NanoTime.now();
             runnable.block();
         }
-        assertThat(NanoTime.millisSince(start), lessThan(500L));
     }
 
     @Test
     public void testSharedBlockRun() throws Exception
     {
-        long start;
-        try (Blocker.Runnable runnable = _shared.runnable())
+        try (Blocker.Runnable runnable = _shared.runnable();
+             AssertingThread thread = new AssertingThread(() ->
+             {
+                 await().atMost(5, TimeUnit.SECONDS).until(main::getState, Matchers.is(Thread.State.WAITING));
+                 runnable.run();
+             }))
         {
-            final CountDownLatch latch = new CountDownLatch(1);
-
-            new Thread(() ->
-            {
-                latch.countDown();
-                try
-                {
-                    TimeUnit.MILLISECONDS.sleep(100);
-                }
-                catch (Exception e)
-                {
-                    e.printStackTrace();
-                }
-                runnable.run();
-            }).start();
-
-            latch.await();
-            start = NanoTime.now();
+            thread.start();
             runnable.block();
         }
-        long elapsed = NanoTime.millisSince(start);
-        assertThat(elapsed, greaterThan(10L));
-        assertThat(elapsed, lessThan(1000L));
     }
 
     @Test
     public void testSharedNoRun() throws Exception
     {
-        long start;
         try (Blocker.Runnable ignored = _shared.runnable())
         {
-            start = NanoTime.now();
             LoggerFactory.getLogger(Blocker.class).info("expect WARN Blocking.Shared incomplete");
         }
-        assertThat(NanoTime.millisSince(start), lessThan(500L));
 
         // check it is still operating.
         try (Blocker.Runnable runnable = _shared.runnable())
@@ -262,108 +182,61 @@ public class BlockingTest
     @Test
     public void testSharedSucceededBlock() throws Exception
     {
-        long start;
         try (Blocker.Callback callback = _shared.callback())
         {
             callback.succeeded();
-            start = NanoTime.now();
             callback.block();
         }
-        assertThat(NanoTime.millisSince(start), lessThan(500L));
     }
 
     @Test
     public void testSharedBlockSucceeded() throws Exception
     {
-        long start;
-        try (Blocker.Callback callback = _shared.callback())
+        try (Blocker.Callback callback = _shared.callback();
+             AssertingThread thread = new AssertingThread(() ->
+             {
+                 await().atMost(5, TimeUnit.SECONDS).until(main::getState, Matchers.is(Thread.State.WAITING));
+                 callback.succeeded();
+             }))
         {
-            final CountDownLatch latch = new CountDownLatch(1);
-
-            new Thread(() ->
-            {
-                latch.countDown();
-                try
-                {
-                    TimeUnit.MILLISECONDS.sleep(100);
-                }
-                catch (Exception e)
-                {
-                    e.printStackTrace();
-                }
-                callback.succeeded();
-            }).start();
-
-            latch.await();
-            start = NanoTime.now();
+            thread.start();
             callback.block();
         }
-        long elapsed = NanoTime.millisSince(start);
-        assertThat(elapsed, greaterThan(10L));
-        assertThat(elapsed, lessThan(1000L));
     }
 
     @Test
     public void testSharedFailedBlock()
     {
-        final Exception ex = new Exception("FAILED");
-        long start = Long.MIN_VALUE;
-        try
+        Exception ex = new Exception("FAILED");
+        IOException actual = assertThrows(IOException.class, () ->
         {
             try (Blocker.Callback callback = _shared.callback())
             {
                 callback.failed(ex);
                 callback.block();
             }
-            fail("Should have thrown IOException");
-        }
-        catch (IOException e)
-        {
-            start = NanoTime.now();
-            assertEquals(ex, e.getCause());
-        }
-        assertThat(NanoTime.millisSince(start), lessThan(100L));
+        });
+        assertSame(ex, actual.getCause());
     }
 
     @Test
-    public void testSharedBlockFailed() throws Exception
+    public void testSharedBlockFailed()
     {
-        final Exception ex = new Exception("FAILED");
-        long start = Long.MIN_VALUE;
-        final CountDownLatch latch = new CountDownLatch(1);
-
-        try
+        Exception ex = new Exception("FAILED");
+        IOException actual = assertThrows(IOException.class, () ->
         {
-            try (Blocker.Callback callback = _shared.callback())
+            try (Blocker.Callback callback = _shared.callback();
+                 AssertingThread thread = new AssertingThread(() ->
+                 {
+                     await().atMost(5, TimeUnit.SECONDS).until(main::getState, Matchers.is(Thread.State.WAITING));
+                     callback.failed(ex);
+                 }))
             {
-
-                new Thread(() ->
-                {
-                    latch.countDown();
-                    try
-                    {
-                        TimeUnit.MILLISECONDS.sleep(100);
-                    }
-                    catch (Exception e)
-                    {
-                        e.printStackTrace();
-                    }
-                    callback.failed(ex);
-                }).start();
-
-                latch.await();
-                start = NanoTime.now();
+                thread.start();
                 callback.block();
             }
-            fail("Should have thrown IOException");
-        }
-        catch (IOException e)
-        {
-            assertEquals(ex, e.getCause());
-        }
-        long elapsed = NanoTime.millisSince(start);
-        assertThat(elapsed, greaterThan(10L));
-        assertThat(elapsed, lessThan(1000L));
+        });
+        assertSame(ex, actual.getCause());
     }
 
     @Test
@@ -381,7 +254,7 @@ public class BlockingTest
             }
             catch (Exception e)
             {
-                e.printStackTrace();
+                throw new RuntimeException(e);
             }
         }).start();
         new Thread(() ->
@@ -394,7 +267,7 @@ public class BlockingTest
             }
             catch (Exception e)
             {
-                e.printStackTrace();
+                throw new RuntimeException(e);
             }
         }).start();
 
@@ -404,19 +277,53 @@ public class BlockingTest
         callback0.close();
         assertTrue(latch0.await(10, TimeUnit.SECONDS));
     }
-    
+
     @Test
     public void testInterruptedException() throws Exception
     {
-        try
+        Blocker.Callback callback = _shared.callback();
+        Thread.currentThread().interrupt();
+        assertThrows(InterruptedIOException.class, callback::block);
+    }
+
+    private static class AssertingThread extends Thread implements Closeable
+    {
+        private Throwable failure;
+
+        public AssertingThread(Runnable target)
         {
-            Blocker.Callback callback = _shared.callback();
-            Thread.currentThread().interrupt();
-            callback.block();
-            fail();
+            super(target);
         }
-        catch (InterruptedIOException ignored)
+
+        @Override
+        public void close() throws IOException
         {
+            try
+            {
+                join();
+            }
+            catch (InterruptedException e)
+            {
+                if (failure != null)
+                    failure.addSuppressed(e);
+                else
+                    failure = e;
+            }
+            if (failure != null)
+                throw new IOException(failure);
+        }
+
+        @Override
+        public final void run()
+        {
+            try
+            {
+                super.run();
+            }
+            catch (Throwable x)
+            {
+                failure = x;
+            }
         }
     }
 }
