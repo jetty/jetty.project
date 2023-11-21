@@ -66,7 +66,7 @@ public class Parser
     {
         this.bufferPool = bufferPool;
         this.headerParser = new HeaderParser(rateControl == null ? RateControl.NO_RATE_CONTROL : rateControl);
-        this.hpackDecoder = new HpackDecoder(maxHeaderSize, this::loadAndClearBeginNanoTime);
+        this.hpackDecoder = new HpackDecoder(maxHeaderSize, this::getBeginNanoTime);
         this.bodyParsers = new BodyParser[FrameType.values().length];
     }
 
@@ -104,14 +104,16 @@ public class Parser
     {
         headerParser.reset();
         state = State.HEADER;
-        nanoTimeStored = false;
     }
 
-    private long loadAndClearBeginNanoTime()
+    public long getBeginNanoTime()
     {
-        long beginNanoTime = this.beginNanoTime;
-        nanoTimeStored = false;
         return beginNanoTime;
+    }
+
+    private void clearBeginNanoTime()
+    {
+        nanoTimeStored = false;
     }
 
     private void storeBeginNanoTime()
@@ -140,11 +142,11 @@ public class Parser
         {
             while (true)
             {
-                storeBeginNanoTime();
                 switch (state)
                 {
                     case HEADER:
                     {
+                        storeBeginNanoTime();
                         if (!parseHeader(buffer))
                             return;
                         break;
@@ -153,6 +155,8 @@ public class Parser
                     {
                         if (!parseBody(buffer))
                             return;
+                        if (!continuation)
+                            clearBeginNanoTime();
                         break;
                     }
                     default:
