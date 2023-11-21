@@ -86,7 +86,6 @@ public class ServerParser extends Parser
         {
             if (LOG.isDebugEnabled())
                 LOG.debug("Parsing {}", buffer);
-            takeNanoTime();
             while (true)
             {
                 switch (state)
