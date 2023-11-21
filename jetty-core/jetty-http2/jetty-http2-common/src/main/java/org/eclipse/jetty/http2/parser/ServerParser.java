@@ -86,6 +86,7 @@ public class ServerParser extends Parser
         {
             if (LOG.isDebugEnabled())
                 LOG.debug("Parsing {}", buffer);
+
             while (true)
             {
                 switch (state)
