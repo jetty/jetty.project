@@ -56,7 +56,7 @@ public class ServerTimeoutsTest extends AbstractTest
         setStreamIdleTimeout(IDLE_TIMEOUT);
     }
 
-    public static Stream<Arguments> transportsAndBooleans()
+    public static Stream<Arguments> transportsAndIdleTimeoutListener()
     {
         Collection<Transport> transports = transports();
         return Stream.concat(
@@ -65,8 +65,8 @@ public class ServerTimeoutsTest extends AbstractTest
     }
 
     @ParameterizedTest
-    @MethodSource("transportsAndBooleans")
-    public void testIdleTimeout(Transport transport, boolean listener) throws Exception
+    @MethodSource("transportsAndIdleTimeoutListener")
+    public void testIdleTimeout(Transport transport, boolean addIdleTimeoutListener) throws Exception
     {
         AtomicBoolean listenerCalled = new AtomicBoolean();
         start(transport, new Handler.Abstract()
@@ -74,8 +74,7 @@ public class ServerTimeoutsTest extends AbstractTest
             @Override
             public boolean handle(Request request, Response response, Callback callback)
             {
-
-                if (listener)
+                if (addIdleTimeoutListener)
                 {
                     request.addIdleTimeoutListener(t -> listenerCalled.compareAndSet(false, true));
                     request.addFailureListener(callback::failed);
@@ -92,13 +91,13 @@ public class ServerTimeoutsTest extends AbstractTest
 
         assertThat(response.getStatus(), is(HttpStatus.INTERNAL_SERVER_ERROR_500));
         assertThat(response.getContentAsString(), containsStringIgnoringCase("HTTP ERROR 500 java.util.concurrent.TimeoutException: Idle timeout"));
-        if (listener)
+        if (addIdleTimeoutListener)
             assertTrue(listenerCalled.get());
     }
 
     @ParameterizedTest
-    @MethodSource("transportsAndBooleans")
-    public void testIdleTimeoutWithDemand(Transport transport, boolean listener) throws Exception
+    @MethodSource("transportsAndIdleTimeoutListener")
+    public void testIdleTimeoutWithDemand(Transport transport, boolean addIdleTimeoutListener) throws Exception
     {
         AtomicBoolean listenerCalled = new AtomicBoolean();
         CountDownLatch demanded = new CountDownLatch(1);
@@ -109,8 +108,7 @@ public class ServerTimeoutsTest extends AbstractTest
             @Override
             public boolean handle(Request request, Response response, Callback callback)
             {
-
-                if (listener)
+                if (addIdleTimeoutListener)
                     request.addIdleTimeoutListener(t -> listenerCalled.compareAndSet(false, true));
                 requestRef.set(request);
                 callbackRef.set(callback);

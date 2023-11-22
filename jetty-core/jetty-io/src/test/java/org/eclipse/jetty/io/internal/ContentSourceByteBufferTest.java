@@ -25,6 +25,7 @@ import org.junit.jupiter.api.Test;
 import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.Matchers.is;
 import static org.hamcrest.Matchers.sameInstance;
+import static org.junit.jupiter.api.Assertions.fail;
 
 public class ContentSourceByteBufferTest
 {
@@ -47,6 +48,7 @@ public class ContentSourceByteBufferTest
         try
         {
             promise.get();
+            fail();
         }
         catch (ExecutionException e)
         {

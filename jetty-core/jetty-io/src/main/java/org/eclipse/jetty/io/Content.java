@@ -115,12 +115,19 @@ public class Content
      *         }
      *
      *         // The chunk is a failure.
-     *         if (Content.Chunk.isFailure(chunk)) {
-     *             // Handle the failure.
-     *             Throwable cause = chunk.getFailure();
-     *             boolean transient = !chunk.isLast();
-     *             // ...
-     *             return;
+     *         if (Content.Chunk.isFailure(chunk))
+     *         {
+     *             boolean fatal = chunk.isLast();
+     *             if (fatal)
+     *             {
+     *                 handleFatalFailure(chunk.getFailure());
+     *                 return;
+     *             }
+     *             else
+     *             {
+     *                 handleTransientFailure(chunk.getFailure());
+     *                 continue;
+     *             }
      *         }
      *
      *         // It's a valid chunk, consume the chunk's bytes.
@@ -129,6 +136,10 @@ public class Content
      *
      *         // Release the chunk when it has been consumed.
      *         chunk.release();
+     *
+     *         // Exit if the Content.Source is fully consumed.
+     *         if (chunk.isLast())
+     *             break;
      *     }
      * }
      * }</pre>

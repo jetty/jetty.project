@@ -260,7 +260,7 @@ public class ProxyServlet extends AbstractProxyServlet
             if (Content.Chunk.isFailure(chunk))
             {
                 if (!chunk.isLast())
-                    super.fail(chunk.getFailure());
+                    fail(chunk.getFailure());
                 onClientRequestFailure(request, proxyRequest, response, chunk.getFailure());
             }
             else
