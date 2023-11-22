@@ -102,15 +102,17 @@ public class ContentDocs
                 return;
             }
 
-            // If there is any sort of failure reading, handle it
-            // by treating it as fatal.
+            // If there is a failure reading, always treat it as fatal.
             if (Content.Chunk.isFailure(chunk))
             {
-                // If the failure wasn't actually fatal, we have to notify
-                // the source that we're giving up.
+                // If the failure is transient, fail the source
+                // to indicate that there will be no more reads.
                 if (!chunk.isLast())
                     source.fail(chunk.getFailure());
-                throw new RuntimeException("Failed reading from source", chunk.getFailure());
+
+                // Handle the failure and stop reading by not demanding.
+                handleFatalFailure(chunk.getFailure());
+                return;
             }
 
             // Consume the chunk asynchronously, and do not
