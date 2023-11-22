@@ -14,14 +14,16 @@
 package org.eclipse.jetty.server.handler.gzip;
 
 import java.io.ByteArrayOutputStream;
+import java.io.Closeable;
 import java.io.IOException;
+import java.util.Arrays;
 import java.util.concurrent.TimeoutException;
 import java.util.zip.GZIPOutputStream;
 
 import org.eclipse.jetty.io.ArrayByteBufferPool;
 import org.eclipse.jetty.io.Content;
 import org.eclipse.jetty.io.RetainableByteBuffer;
-import org.eclipse.jetty.server.TestSource;
+import org.eclipse.jetty.io.content.ChunksContentSource;
 import org.eclipse.jetty.util.BufferUtil;
 import org.eclipse.jetty.util.compression.InflaterPool;
 import org.junit.jupiter.api.Test;
@@ -99,5 +101,29 @@ public class GzipTransformerTest
         buffer.getByteBuffer().put(gzippedBytes);
         BufferUtil.flipToFlush(buffer.getByteBuffer(), pos);
         return Content.Chunk.asChunk(buffer.getByteBuffer(), last, buffer);
+    }
+
+    private static class TestSource extends ChunksContentSource implements Closeable
+    {
+        private Content.Chunk[] chunks;
+
+        public TestSource(Content.Chunk... chunks)
+        {
+            super(Arrays.asList(chunks));
+            this.chunks = chunks;
+        }
+
+        @Override
+        public void close()
+        {
+            if (chunks != null)
+            {
+                for (Content.Chunk chunk : chunks)
+                {
+                    chunk.release();
+                }
+                chunks = null;
+            }
+        }
     }
 }

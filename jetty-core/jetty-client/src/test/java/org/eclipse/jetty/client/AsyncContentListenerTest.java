@@ -13,15 +13,18 @@
 
 package org.eclipse.jetty.client;
 
+import java.io.Closeable;
 import java.net.URI;
 import java.nio.ByteBuffer;
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.List;
 
 import org.eclipse.jetty.client.transport.HttpConversation;
 import org.eclipse.jetty.client.transport.HttpRequest;
 import org.eclipse.jetty.client.transport.HttpResponse;
 import org.eclipse.jetty.io.Content;
+import org.eclipse.jetty.io.content.ChunksContentSource;
 import org.junit.jupiter.api.Test;
 
 import static org.hamcrest.MatcherAssert.assertThat;
@@ -65,5 +68,30 @@ public class AsyncContentListenerTest
 
         collectedChunks.forEach(Content.Chunk::release);
         originalSource.close();
+    }
+
+    private static class TestSource extends ChunksContentSource implements Closeable
+    {
+        private Content.Chunk[] chunks;
+
+        public TestSource(Content.Chunk... chunks)
+        {
+            super(Arrays.asList(chunks));
+            this.chunks = chunks;
+        }
+
+        @Override
+        public void close()
+        {
+            if (chunks != null)
+            {
+                for (Content.Chunk chunk : chunks)
+                {
+                    if (chunk != null)
+                      chunk.release();
+                }
+                chunks = null;
+            }
+        }
     }
 }

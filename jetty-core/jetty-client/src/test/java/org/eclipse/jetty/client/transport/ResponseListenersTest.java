@@ -13,15 +13,16 @@
 
 package org.eclipse.jetty.client.transport;
 
-import java.io.IOException;
+import java.io.Closeable;
 import java.nio.ByteBuffer;
+import java.util.Arrays;
 import java.util.List;
 import java.util.concurrent.CopyOnWriteArrayList;
 import java.util.concurrent.TimeoutException;
 
 import org.eclipse.jetty.client.Response;
-import org.eclipse.jetty.client.TestSource;
 import org.eclipse.jetty.io.Content;
+import org.eclipse.jetty.io.content.ChunksContentSource;
 import org.junit.jupiter.api.Test;
 
 import static org.hamcrest.MatcherAssert.assertThat;
@@ -168,7 +169,7 @@ public class ResponseListenersTest
             null,
             Content.Chunk.from(ByteBuffer.wrap(new byte[]{2}), false),
             null,
-            Content.Chunk.from(new IOException("boom"), true)
+            Content.Chunk.from(new ArithmeticException(), true)
         );
 
         List<Content.Chunk> chunks = new CopyOnWriteArrayList<>();
@@ -211,15 +212,43 @@ public class ResponseListenersTest
         assertThat(chunks.get(3).getByteBuffer().get(), is((byte)2));
         assertThat(chunks.get(3).isLast(), is(false));
         assertThat(Content.Chunk.isFailure(chunks.get(4), true), is(true));
-        assertThat(chunks.get(4).getFailure(), instanceOf(IOException.class));
+        assertThat(chunks.get(4).getFailure(), instanceOf(ArithmeticException.class));
         assertThat(Content.Chunk.isFailure(chunks.get(5), true), is(true));
-        assertThat(chunks.get(5).getFailure(), instanceOf(IOException.class));
+        assertThat(chunks.get(5).getFailure(), instanceOf(ArithmeticException.class));
 
         Content.Chunk chunk = contentSource.read();
         assertThat(Content.Chunk.isFailure(chunk, true), is(true));
-        assertThat(chunk.getFailure(), instanceOf(NumberFormatException.class));
+        assertThat(chunk.getFailure(), instanceOf(ArithmeticException.class));
+        assertThat(chunk.getFailure().getSuppressed().length, is(2));
+        assertThat(chunk.getFailure().getSuppressed()[0], instanceOf(NumberFormatException.class));
+        assertThat(chunk.getFailure().getSuppressed()[1], instanceOf(NumberFormatException.class));
 
         chunks.forEach(Content.Chunk::release);
         contentSource.close();
+    }
+
+    private static class TestSource extends ChunksContentSource implements Closeable
+    {
+        private Content.Chunk[] chunks;
+
+        public TestSource(Content.Chunk... chunks)
+        {
+            super(Arrays.asList(chunks));
+            this.chunks = chunks;
+        }
+
+        @Override
+        public void close()
+        {
+            if (chunks != null)
+            {
+                for (Content.Chunk chunk : chunks)
+                {
+                    if (chunk != null)
+                        chunk.release();
+                }
+                chunks = null;
+            }
+        }
     }
 }

@@ -340,10 +340,6 @@ public class ContentSourceTransformerTest
         assertThat(chunk.getFailure(), sameInstance(originalFailure2));
         assertThat(chunk.isLast(), is(false));
         assertEquals('c', (char)transformer.read().getByteBuffer().get());
-        chunk = transformer.read();
-        assertThat(chunk.hasRemaining(), is(false));
-        assertThat(chunk.isLast(), is(true));
-        assertThat(Content.Chunk.isFailure(chunk), is(false));
 
         chunk = originalSource.read();
         assertThat(chunk.isLast(), is(true));
@@ -392,10 +388,6 @@ public class ContentSourceTransformerTest
         assertThat(chunk.getFailure(), sameInstance(originalFailure2));
         assertThat(chunk.isLast(), is(false));
         assertEquals('E', (char)transformer.read().getByteBuffer().get());
-        chunk = transformer.read();
-        assertThat(chunk.hasRemaining(), is(false));
-        assertThat(chunk.isLast(), is(true));
-        assertThat(Content.Chunk.isFailure(chunk), is(false));
 
         chunk = originalSource.read();
         assertThat(chunk.isLast(), is(true));

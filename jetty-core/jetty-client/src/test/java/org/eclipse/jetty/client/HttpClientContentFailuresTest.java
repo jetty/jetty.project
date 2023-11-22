@@ -13,12 +13,15 @@
 
 package org.eclipse.jetty.client;
 
+import java.io.Closeable;
 import java.nio.ByteBuffer;
+import java.util.Arrays;
 import java.util.concurrent.ExecutionException;
 import java.util.concurrent.TimeoutException;
 
 import org.eclipse.jetty.http.HttpMethod;
 import org.eclipse.jetty.io.Content;
+import org.eclipse.jetty.io.content.ChunksContentSource;
 import org.eclipse.jetty.server.Handler;
 import org.eclipse.jetty.server.Request;
 import org.eclipse.jetty.server.Response;
@@ -48,7 +51,7 @@ public class HttpClientContentFailuresTest extends AbstractHttpClientServerTest
         });
 
         Exception failure = new NumberFormatException();
-        TestSource.TestContent content = new TestSource.TestContent(
+        TestContent content = new TestContent(
             Content.Chunk.from(ByteBuffer.wrap(new byte[]{1}), false),
             Content.Chunk.from(ByteBuffer.wrap(new byte[]{2}), false),
             Content.Chunk.from(failure, true)
@@ -90,7 +93,7 @@ public class HttpClientContentFailuresTest extends AbstractHttpClientServerTest
         });
 
         Exception failure = new NumberFormatException();
-        TestSource.TestContent content = new TestSource.TestContent(
+        TestContent content = new TestContent(
             Content.Chunk.from(ByteBuffer.wrap(new byte[]{1}), false),
             Content.Chunk.from(ByteBuffer.wrap(new byte[]{2}), false),
             Content.Chunk.from(failure, false),
@@ -133,7 +136,7 @@ public class HttpClientContentFailuresTest extends AbstractHttpClientServerTest
         });
 
         Exception failure = new TimeoutException();
-        TestSource.TestContent content = new TestSource.TestContent(
+        TestContent content = new TestContent(
             Content.Chunk.from(ByteBuffer.wrap(new byte[]{1}), false),
             Content.Chunk.from(ByteBuffer.wrap(new byte[]{2}), false),
             Content.Chunk.from(failure, false),
@@ -176,7 +179,7 @@ public class HttpClientContentFailuresTest extends AbstractHttpClientServerTest
         });
 
         Exception failure = new TimeoutException();
-        TestSource.TestContent content = new TestSource.TestContent(
+        TestContent content = new TestContent(
             Content.Chunk.from(ByteBuffer.wrap(new byte[]{1}), false),
             Content.Chunk.from(ByteBuffer.wrap(new byte[]{2}), false),
             Content.Chunk.from(failure, true)
@@ -201,5 +204,30 @@ public class HttpClientContentFailuresTest extends AbstractHttpClientServerTest
         assertThat(chunk.getFailure(), sameInstance(failure));
 
         content.close();
+    }
+
+    public static class TestContent extends ChunksContentSource implements Closeable, org.eclipse.jetty.client.Request.Content
+    {
+        private Content.Chunk[] chunks;
+
+        public TestContent(Content.Chunk... chunks)
+        {
+            super(Arrays.asList(chunks));
+            this.chunks = chunks;
+        }
+
+        @Override
+        public void close()
+        {
+            if (chunks != null)
+            {
+                for (Content.Chunk chunk : chunks)
+                {
+                    if (chunk != null)
+                        chunk.release();
+                }
+                chunks = null;
+            }
+        }
     }
 }
