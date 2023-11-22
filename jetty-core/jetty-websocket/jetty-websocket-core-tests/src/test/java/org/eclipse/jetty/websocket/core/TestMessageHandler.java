@@ -75,4 +75,12 @@ public class TestMessageHandler extends MessageHandler
         binaryMessages.offer(message);
         callback.succeeded();
     }
+
+    public void sendText(String text)
+    {
+        if (LOG.isDebugEnabled())
+            LOG.debug("sendText {} ", text);
+        Frame frame = new Frame(OpCode.TEXT, text);
+        getCoreSession().sendFrame(frame, Callback.NOOP, false);
+    }
 }
