@@ -54,30 +54,19 @@ public class ContentDocs
                     return;
                 }
 
-                // If there is a fatal failure reading, handle it.
-                if (Content.Chunk.isFailure(chunk, true))
+                // If there is a failure reading, handle it.
+                if (Content.Chunk.isFailure(chunk))
                 {
-                    handleFatalFailure(chunk.getFailure());
-                    return;
-                }
-
-                // If there is a transient failure reading, handle it.
-                if (Content.Chunk.isFailure(chunk, false))
-                {
-                    boolean fatal = handleTransientFailure(chunk.getFailure());
-                    if (!fatal)
+                    boolean fatal = chunk.isLast();
+                    if (fatal)
                     {
-                        // If the failure is not fatal, demand to be called
-                        // back when there are more chunks.
-                        source.demand(() -> read(source));
+                        handleFatalFailure(chunk.getFailure());
                         return;
                     }
                     else
                     {
-                        // If the failure turns out to be fatal, fail the
-                        // source to notify it that we're giving up.
-                        source.fail(chunk.getFailure());
-                        return;
+                        handleTransientFailure(chunk.getFailure());
+                        continue;
                     }
                 }
 
@@ -157,6 +146,10 @@ public class ContentDocs
     }
 
     private static void handleFatalFailure(Throwable failure)
+    {
+    }
+
+    private static void handleTransientFailure(Throwable failure)
     {
     }
 
