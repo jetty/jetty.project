@@ -603,46 +603,41 @@ public abstract class HttpReceiver
                 if (LOG.isDebugEnabled())
                     LOG.debug("decoded: {}", decodedBuffer);
 
-                if (decodedBuffer != null)
+                if (decodedBuffer != null && decodedBuffer.hasRemaining())
                 {
-                    if (decodedBuffer.hasRemaining())
-                    {
-                        // The decoded ByteBuffer is a transformed "copy" of the
-                        // compressed one, so it has its own reference counter.
-                        if (!decodedBuffer.canRetain())
-                        {
-                            if (LOG.isDebugEnabled())
-                                LOG.debug("returning non-retainable decoded content");
-                            return Content.Chunk.from(decodedBuffer.getByteBuffer(), false);
-                        }
-                        if (LOG.isDebugEnabled())
-                            LOG.debug("returning retainable decoded content");
-                        return Content.Chunk.asChunk(decodedBuffer.getByteBuffer(), false, decodedBuffer);
-                    }
-                    else
+                    // The decoded ByteBuffer is a transformed "copy" of the
+                    // compressed one, so it has its own reference counter.
+                    if (!decodedBuffer.canRetain())
                     {
                         if (LOG.isDebugEnabled())
-                            LOG.debug("releasing empty decoded content");
-                        decodedBuffer.release();
+                            LOG.debug("returning non-retainable decoded content");
+                        return Content.Chunk.from(decodedBuffer.getByteBuffer(), false);
                     }
-                }
-
-                if (LOG.isDebugEnabled())
-                    LOG.debug("decoding produced no content");
-
-                if (!_chunk.hasRemaining())
-                {
-                    Content.Chunk result = _chunk.isLast() ? Content.Chunk.EOF : null;
                     if (LOG.isDebugEnabled())
-                        LOG.debug("Could not decode more from this chunk, releasing it, r={}", result);
-                    _chunk.release();
-                    _chunk = null;
-                    return result;
+                        LOG.debug("returning decoded content");
+                    return Content.Chunk.asChunk(decodedBuffer.getByteBuffer(), false, decodedBuffer);
                 }
                 else
                 {
                     if (LOG.isDebugEnabled())
-                        LOG.debug("retrying transformation");
+                        LOG.debug("decoding produced no content");
+                    if (decodedBuffer != null)
+                        decodedBuffer.release();
+
+                    if (!_chunk.hasRemaining())
+                    {
+                        Content.Chunk result = _chunk.isLast() ? Content.Chunk.EOF : null;
+                        if (LOG.isDebugEnabled())
+                            LOG.debug("Could not decode more from this chunk, releasing it, r={}", result);
+                        _chunk.release();
+                        _chunk = null;
+                        return result;
+                    }
+                    else
+                    {
+                        if (LOG.isDebugEnabled())
+                            LOG.debug("retrying transformation");
+                    }
                 }
             }
         }

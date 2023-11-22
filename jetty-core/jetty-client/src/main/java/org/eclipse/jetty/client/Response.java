@@ -209,6 +209,7 @@ public interface Response
             {
                 chunk.release();
                 response.abort(x);
+                contentSource.fail(x);
             }
         }
     }

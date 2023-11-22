@@ -97,7 +97,7 @@ public class Content
      * <p>A source of content that can be read with a read/demand model.</p>
      * <p>To avoid leaking its resources, a source <b>must</b> either:</p>
      * <ul>
-     * <li>be read until it returns the {@link Chunk#isLast() last chunk}</li>
+     * <li>be read until it returns a {@link Chunk#isLast() last chunk}, either EOF or a terminal failure</li>
      * <li>be {@link #fail(Throwable) failed}</li>
      * </ul>
      * <h2><a id="idiom">Idiomatic usage</a></h2>
