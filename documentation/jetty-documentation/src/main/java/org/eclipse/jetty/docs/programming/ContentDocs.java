@@ -54,11 +54,31 @@ public class ContentDocs
                     return;
                 }
 
-                // If there is a failure reading, handle it.
-                if (Content.Chunk.isFailure(chunk))
+                // If there is a fatal failure reading, handle it.
+                if (Content.Chunk.isFailure(chunk, true))
                 {
-                    handleFailure(chunk.getFailure());
+                    handleFatalFailure(chunk.getFailure());
                     return;
+                }
+
+                // If there is a transient failure reading, handle it.
+                if (Content.Chunk.isFailure(chunk, false))
+                {
+                    boolean fatal = handleTransientFailure(chunk.getFailure());
+                    if (!fatal)
+                    {
+                        // If the failure is not fatal, demand to be called
+                        // back when there are more chunks.
+                        source.demand(() -> read(source));
+                        return;
+                    }
+                    else
+                    {
+                        // If the failure turns out to be fatal, fail the
+                        // source to notify it that we're giving up.
+                        source.fail(chunk.getFailure());
+                        return;
+                    }
                 }
 
                 // A normal chunk of content, consume it.
@@ -93,11 +113,15 @@ public class ContentDocs
                 return;
             }
 
-            // If there is a failure reading, handle it.
+            // If there is any sort of failure reading, handle it
+            // by treating it as fatal.
             if (Content.Chunk.isFailure(chunk))
             {
-                handleFailure(chunk.getFailure());
-                return;
+                // If the failure wasn't actually fatal, we have to notify
+                // the source that we're giving up.
+                if (!chunk.isLast())
+                    source.fail(chunk.getFailure());
+                throw new RuntimeException("Failed reading from source", chunk.getFailure());
             }
 
             // Consume the chunk asynchronously, and do not
@@ -120,7 +144,7 @@ public class ContentDocs
                 {
                     // If there is a failure reading, handle it,
                     // and stop reading by not demanding.
-                    handleFailure(failure);
+                    handleFatalFailure(failure);
                 }
             });
         }
@@ -132,7 +156,7 @@ public class ContentDocs
         }
     }
 
-    private static void handleFailure(Throwable failure)
+    private static void handleFatalFailure(Throwable failure)
     {
     }
 
@@ -189,7 +213,7 @@ public class ContentDocs
 
                 if (Content.Chunk.isFailure(chunk))
                 {
-                    handleFailure(chunk.getFailure());
+                    handleFatalFailure(chunk.getFailure());
                     return;
                 }
 

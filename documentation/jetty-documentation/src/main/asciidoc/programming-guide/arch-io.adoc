@@ -231,11 +231,21 @@ The high-level abstraction that Jetty offers to read bytes is `org.eclipse.jetty
 
 `Content.Source` offers a non-blocking demand/read model where a read returns a `Content.Chunk` (see also xref:pg-arch-io-content-source-chunk[this section]).
 
+IMPORTANT: A `Content.Source` must be fully consumed or failed otherwise it may leak some resources.
+
+Fully consuming a `Content.Source` means reading it until it returns a `Content.Chunk` whose `last` flag is `true`. Reading or demanding from a fully consumed `Content.Source` always is immediately serviced with the last state of the `Content.Source`: a `Content.Chunk` with the `last` flag set to `true`, eventually containing a failure.
+
+Failing a `Content.Source` via its `failed(Throwable)` method makes it free all its internal resources and registers a `Content.Chunk` whose `last` flag is `true` and whose `getFailure()` method returns the exception passed to `failed()`. Once failed, a `Content.Source` is considered fully consumed.
+
 A `Content.Chunk` groups the following information:
 
 * A `ByteBuffer` with the bytes that have been read; it may be empty.
-* Whether the read reached end-of-file.
-* A failure that might have happened during the read.
+* Whether the read reached end-of-file, via its `last` flag.
+* A failure that might have happened during the read, via its `getFailure()` method.
+
+A `Content.Chunk` carrying a failure can have its last flag set either to `true` or `false` depending if the failure is terminal or transient. Transient failures may be ignored; a `Content.Source` that returned one can be read or demanded from again.
+
+IMPORTANT: A failure `Content.Chunk` always has an empty buffer.
 
 The ``Content.Chunk``'s `ByteBuffer` is typically a slice of a different `ByteBuffer` that has been read by a lower layer.
 There may be multiple layers between the bottom layer (where the initial read typically happens) and the application layer.
@@ -247,7 +257,7 @@ Consuming the chunk means that the bytes in the `ByteBuffer` are read (or ignore
 
 `Content.Chunk` offers a retain/release model to deal with the `ByteBuffer` lifecycle, with a simple rule:
 
-IMPORTANT: A `Content.Chunk` returned by a call to `Content.Source.read()` **must** be released.
+IMPORTANT: A `Content.Chunk` returned by a call to `Content.Source.read()` **must** be released, with the exception of `Content.Chunk` that are failures. The latter type __can__ be released but does not __need__ to.
 
 The example below is the idiomatic way to read from a `Content.Source`:
 
