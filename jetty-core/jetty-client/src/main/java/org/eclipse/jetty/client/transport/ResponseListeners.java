@@ -26,6 +26,7 @@ import org.eclipse.jetty.client.Result;
 import org.eclipse.jetty.http.HttpField;
 import org.eclipse.jetty.io.Content;
 import org.eclipse.jetty.io.content.ByteBufferContentSource;
+import org.eclipse.jetty.util.ExceptionUtil;
 import org.eclipse.jetty.util.thread.AutoLock;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -679,12 +680,20 @@ public class ResponseListeners
                 if (LOG.isDebugEnabled())
                     LOG.debug("Content source #{} fail while current chunk is {}", index, currentChunk);
                 if (Content.Chunk.isFailure(currentChunk))
-                    return;
-                if (currentChunk != null && currentChunk != ALREADY_READ_CHUNK)
-                    currentChunk.release();
-                this.chunk = Content.Chunk.from(failure);
-                onDemandCallback();
+                {
+                    Throwable cause = currentChunk.getFailure();
+                    if (!currentChunk.isLast())
+                        chunk = Content.Chunk.from(cause, true);
+                    ExceptionUtil.addSuppressedIfNotAssociated(cause, failure);
+                }
+                else
+                {
+                    if (currentChunk != null && currentChunk != ALREADY_READ_CHUNK)
+                        currentChunk.release();
+                    this.chunk = Content.Chunk.from(failure);
+                }
                 registerFailure(this, failure);
+                onDemandCallback();
             }
 
             @Override

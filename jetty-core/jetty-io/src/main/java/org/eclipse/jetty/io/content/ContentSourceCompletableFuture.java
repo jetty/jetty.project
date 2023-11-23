@@ -48,7 +48,9 @@ import org.eclipse.jetty.io.Content;
  *     }
  * }
  * 
- * new CompletableUTF8String(source).thenAccept(System.err::println);
+ * CompletableUTF8String cs = new CompletableUTF8String(source);
+ * cs.parse();
+ * String s = cs.get();
  * }</pre>
  */
 public abstract class ContentSourceCompletableFuture<X> extends CompletableFuture<X>
@@ -83,9 +85,17 @@ public abstract class ContentSourceCompletableFuture<X> extends CompletableFutur
             }
             if (Content.Chunk.isFailure(chunk))
             {
-                if (!chunk.isLast() && onTransientFailure(chunk.getFailure()))
-                    continue;
-                completeExceptionally(chunk.getFailure());
+                if (chunk.isLast())
+                {
+                    completeExceptionally(chunk.getFailure());
+                }
+                else
+                {
+                    if (onTransientFailure(chunk.getFailure()))
+                        continue;
+                    _content.fail(chunk.getFailure());
+                    completeExceptionally(chunk.getFailure());
+                }
                 return;
             }
 

@@ -50,7 +50,7 @@ public class GzipRequest extends Request.Wrapper
         {
             Components components = getComponents();
             _decoder = new Decoder(__inflaterPool, components.getByteBufferPool(), inflateBufferSize);
-            _gzipTransformer = new GzipTransformer(getWrapped());
+            _gzipTransformer = new GzipTransformer(getWrapped(), _decoder);
         }
     }
 
@@ -141,13 +141,15 @@ public class GzipRequest extends Request.Wrapper
             _decoder.destroy();
     }
 
-    private class GzipTransformer extends ContentSourceTransformer
+    static class GzipTransformer extends ContentSourceTransformer
     {
+        private final Decoder _decoder;
         private Content.Chunk _chunk;
 
-        public GzipTransformer(Content.Source source)
+        GzipTransformer(Content.Source source, Decoder decoder)
         {
             super(source);
+            _decoder = decoder;
         }
 
         @Override
@@ -159,7 +161,11 @@ public class GzipRequest extends Request.Wrapper
             if (_chunk == null)
                 return null;
             if (Content.Chunk.isFailure(_chunk))
-                return _chunk;
+            {
+                Content.Chunk failure = _chunk;
+                _chunk = Content.Chunk.next(failure);
+                return failure;
+            }
             if (_chunk.isLast() && !_chunk.hasRemaining())
                 return Content.Chunk.EOF;
 
@@ -187,11 +193,11 @@ public class GzipRequest extends Request.Wrapper
         }
     }
 
-    private static class Decoder extends GZIPContentDecoder
+    static class Decoder extends GZIPContentDecoder
     {
         private RetainableByteBuffer _decoded;
 
-        private Decoder(InflaterPool inflaterPool, ByteBufferPool bufferPool, int bufferSize)
+        Decoder(InflaterPool inflaterPool, ByteBufferPool bufferPool, int bufferSize)
         {
             super(inflaterPool, bufferPool, bufferSize);
         }

@@ -17,6 +17,7 @@ import java.util.ArrayList;
 import java.util.Collection;
 import java.util.Iterator;
 import java.util.List;
+import java.util.Objects;
 
 import org.eclipse.jetty.io.Content;
 import org.eclipse.jetty.util.thread.AutoLock;
@@ -40,9 +41,23 @@ public class ChunksContentSource implements Content.Source
 
     public ChunksContentSource(Collection<Content.Chunk> chunks)
     {
-        chunks.forEach(Content.Chunk::retain);
+        long sum = 0L;
+        Iterator<Content.Chunk> it = chunks.iterator();
+        while (it.hasNext())
+        {
+            Content.Chunk chunk = it.next();
+            if (chunk != null)
+            {
+                if (it.hasNext() && chunk.isLast())
+                    throw new IllegalArgumentException("Collection cannot contain a last Content.Chunk that is not at the last position: " + chunk);
+                sum += chunk.getByteBuffer().remaining();
+            }
+        }
+        // Only retain after the previous loop checked the collection is valid.
+        chunks.stream().filter(Objects::nonNull).forEach(Content.Chunk::retain);
+
         this.chunks = chunks;
-        this.length = chunks.stream().mapToLong(c -> c.getByteBuffer().remaining()).sum();
+        this.length = sum;
     }
 
     public Collection<Content.Chunk> getChunks()
@@ -60,18 +75,16 @@ public class ChunksContentSource implements Content.Source
     public Content.Chunk read()
     {
         Content.Chunk chunk;
-        boolean last;
         try (AutoLock ignored = lock.lock())
         {
             if (terminated != null)
                 return terminated;
             if (iterator == null)
                 iterator = chunks.iterator();
-            if (!iterator.hasNext())
-                return terminated = Content.Chunk.EOF;
             chunk = iterator.next();
-            last = !iterator.hasNext();
-            if (last)
+            if (chunk != null && chunk.isLast())
+                terminated = Content.Chunk.next(chunk);
+            if (terminated == null && !iterator.hasNext())
                 terminated = Content.Chunk.EOF;
         }
         return chunk;
@@ -132,6 +145,6 @@ public class ChunksContentSource implements Content.Source
                 chunksToRelease = List.copyOf(chunks);
             }
         }
-        chunksToRelease.forEach(Content.Chunk::release);
+        chunksToRelease.stream().filter(Objects::nonNull).forEach(Content.Chunk::release);
     }
 }
