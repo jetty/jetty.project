@@ -373,13 +373,17 @@ public class HttpChannelState implements HttpChannel, Components
                     });
                 }
 
+/*
                 // otherwise, if there is no failure listener, then we can fail the callback directly without a double lock
                 ChannelRequest request = _request;
                 if (_onFailure == null && request != null)
                 {
+                    // TODO Should the failure listener be called? Write a test case, then delete this if() block,
+                    //  try replacing it with return null or let it trickle down to onFailure.
                     _failure = Content.Chunk.from(t, true);
                     return () -> request._callback.failed(t);
                 }
+*/
             }
         }
 
