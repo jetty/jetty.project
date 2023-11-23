@@ -151,6 +151,13 @@ public class MetaData implements Iterable<HttpField>
                 version, fields, contentLength);
         }
 
+        public Request(long beginNanoTime, String method, String scheme, HostPortHttpField authority, String uri, HttpVersion version, HttpFields fields, long contentLength)
+        {
+            this(beginNanoTime, method,
+                HttpURI.build().scheme(scheme).host(authority == null ? null : authority.getHost()).port(authority == null ? -1 : authority.getPort()).pathQuery(uri),
+                version, fields, contentLength);
+        }
+
         public Request(String method, HttpURI uri, HttpVersion version, HttpFields fields, long contentLength, Supplier<HttpFields> trailers)
         {
             this(NanoTime.now(), method, uri, version, fields, contentLength, trailers);
@@ -222,9 +229,19 @@ public class MetaData implements Iterable<HttpField>
             this(scheme == null ? null : scheme.asString(), authority, path, fields, protocol);
         }
 
+        public ConnectRequest(long beginNanoTime, HttpScheme scheme, HostPortHttpField authority, String path, HttpFields fields, String protocol)
+        {
+            this(beginNanoTime, scheme == null ? null : scheme.asString(), authority, path, fields, protocol);
+        }
+
         public ConnectRequest(String scheme, HostPortHttpField authority, String path, HttpFields fields, String protocol)
         {
-            super(HttpMethod.CONNECT.asString(),
+            this(NanoTime.now(), scheme, authority, path, fields, protocol);
+        }
+
+        public ConnectRequest(long beginNanoTime, String scheme, HostPortHttpField authority, String path, HttpFields fields, String protocol)
+        {
+            super(beginNanoTime, HttpMethod.CONNECT.asString(),
                 HttpURI.build().scheme(scheme).host(authority == null ? null : authority.getHost()).port(authority == null ? -1 : authority.getPort()).pathQuery(path),
                 HttpVersion.HTTP_2, fields, Long.MIN_VALUE, null);
             _protocol = protocol;
