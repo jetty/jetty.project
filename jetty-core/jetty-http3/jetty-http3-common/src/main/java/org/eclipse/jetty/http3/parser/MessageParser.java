@@ -44,9 +44,9 @@ public class MessageParser
     private final BooleanSupplier isLast;
     private BodyParser unknownBodyParser;
     private State state = State.HEADER;
+    private boolean dataMode;
     private long beginNanoTime;
     private boolean beginNanoTimeStored;
-    protected boolean dataMode;
 
     public MessageParser(ParserListener listener, QpackDecoder decoder, long streamId, BooleanSupplier isLast)
     {
