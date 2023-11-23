@@ -692,8 +692,8 @@ public class ResponseListeners
                         currentChunk.release();
                     this.chunk = Content.Chunk.from(failure);
                 }
-                onDemandCallback();
                 registerFailure(this, failure);
+                onDemandCallback();
             }
 
             @Override

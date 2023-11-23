@@ -607,15 +607,18 @@ public abstract class HttpReceiver
                 {
                     // The decoded ByteBuffer is a transformed "copy" of the
                     // compressed one, so it has its own reference counter.
-                    if (!decodedBuffer.canRetain())
+                    if (decodedBuffer.canRetain())
+                    {
+                        if (LOG.isDebugEnabled())
+                            LOG.debug("returning decoded content");
+                        return Content.Chunk.asChunk(decodedBuffer.getByteBuffer(), false, decodedBuffer);
+                    }
+                    else
                     {
                         if (LOG.isDebugEnabled())
                             LOG.debug("returning non-retainable decoded content");
                         return Content.Chunk.from(decodedBuffer.getByteBuffer(), false);
                     }
-                    if (LOG.isDebugEnabled())
-                        LOG.debug("returning decoded content");
-                    return Content.Chunk.asChunk(decodedBuffer.getByteBuffer(), false, decodedBuffer);
                 }
                 else
                 {
