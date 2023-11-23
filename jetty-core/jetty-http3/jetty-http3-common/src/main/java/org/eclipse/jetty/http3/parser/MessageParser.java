@@ -44,20 +44,17 @@ public class MessageParser
     private final BooleanSupplier isLast;
     private BodyParser unknownBodyParser;
     private State state = State.HEADER;
-    protected boolean dataMode;
+    private boolean dataMode;
     private long beginNanoTime;
+    private boolean beginNanoTimeStored;
 
     public MessageParser(ParserListener listener, QpackDecoder decoder, long streamId, BooleanSupplier isLast)
     {
         this.listener = listener;
         this.decoder = decoder;
+        decoder.setBeginNanoTimeSupplier(this::getBeginNanoTime);
         this.streamId = streamId;
         this.isLast = isLast;
-    }
-
-    public long getBeginNanoTime()
-    {
-        return beginNanoTime;
     }
 
     public void init(UnaryOperator<ParserListener> wrapper)
@@ -73,6 +70,21 @@ public class MessageParser
     {
         headerParser.reset();
         state = State.HEADER;
+        beginNanoTimeStored = false;
+    }
+
+    private void storeBeginNanoTime()
+    {
+        if (!beginNanoTimeStored)
+        {
+            beginNanoTime = NanoTime.now();
+            beginNanoTimeStored = true;
+        }
+    }
+
+    private long getBeginNanoTime()
+    {
+        return beginNanoTime;
     }
 
     public ParserListener getListener()
@@ -108,6 +120,7 @@ public class MessageParser
                 {
                     case HEADER ->
                     {
+                        storeBeginNanoTime();
                         if (headerParser.parse(buffer))
                         {
                             state = State.BODY;
@@ -124,7 +137,6 @@ public class MessageParser
                     {
                         BodyParser bodyParser = null;
                         long frameType = headerParser.getFrameType();
-                        beginNanoTime = NanoTime.now(); // TODO #9900 check beginNanoTime's accuracy
                         if (frameType >= 0 && frameType < bodyParsers.length)
                             bodyParser = bodyParsers[(int)frameType];
 

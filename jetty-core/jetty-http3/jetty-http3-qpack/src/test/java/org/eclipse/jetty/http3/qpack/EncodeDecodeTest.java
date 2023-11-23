@@ -28,6 +28,7 @@ import org.eclipse.jetty.http3.qpack.internal.instruction.SetCapacityInstruction
 import org.eclipse.jetty.http3.qpack.internal.parser.DecoderInstructionParser;
 import org.eclipse.jetty.http3.qpack.internal.parser.EncoderInstructionParser;
 import org.eclipse.jetty.util.BufferUtil;
+import org.eclipse.jetty.util.NanoTime;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Disabled;
 import org.junit.jupiter.api.Test;
@@ -65,6 +66,7 @@ public class EncodeDecodeTest
             }
         };
         _decoder = new QpackDecoder(_decoderHandler);
+        _decoder.setBeginNanoTimeSupplier(NanoTime::now);
 
         _encoderInstructionParser = new EncoderInstructionParser(new EncoderParserDebugHandler(_encoder));
         _decoderInstructionParser = new DecoderInstructionParser(new DecoderParserDebugHandler(_decoder));
