@@ -23,6 +23,7 @@ import org.eclipse.jetty.http3.internal.Grease;
 import org.eclipse.jetty.http3.internal.HTTP3ErrorCode;
 import org.eclipse.jetty.http3.qpack.QpackDecoder;
 import org.eclipse.jetty.util.BufferUtil;
+import org.eclipse.jetty.util.NanoTime;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -43,12 +44,15 @@ public class MessageParser
     private final BooleanSupplier isLast;
     private BodyParser unknownBodyParser;
     private State state = State.HEADER;
-    protected boolean dataMode;
+    private boolean dataMode;
+    private long beginNanoTime;
+    private boolean beginNanoTimeStored;
 
     public MessageParser(ParserListener listener, QpackDecoder decoder, long streamId, BooleanSupplier isLast)
     {
         this.listener = listener;
         this.decoder = decoder;
+        decoder.setBeginNanoTimeSupplier(this::getBeginNanoTime);
         this.streamId = streamId;
         this.isLast = isLast;
     }
@@ -66,6 +70,21 @@ public class MessageParser
     {
         headerParser.reset();
         state = State.HEADER;
+        beginNanoTimeStored = false;
+    }
+
+    private void storeBeginNanoTime()
+    {
+        if (!beginNanoTimeStored)
+        {
+            beginNanoTime = NanoTime.now();
+            beginNanoTimeStored = true;
+        }
+    }
+
+    private long getBeginNanoTime()
+    {
+        return beginNanoTime;
     }
 
     public ParserListener getListener()
@@ -101,6 +120,7 @@ public class MessageParser
                 {
                     case HEADER:
                     {
+                        storeBeginNanoTime();
                         if (headerParser.parse(buffer))
                         {
                             state = State.BODY;

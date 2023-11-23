@@ -23,9 +23,11 @@ import org.eclipse.jetty.http3.frames.DataFrame;
 import org.eclipse.jetty.http3.internal.generator.MessageGenerator;
 import org.eclipse.jetty.http3.internal.parser.MessageParser;
 import org.eclipse.jetty.http3.internal.parser.ParserListener;
+import org.eclipse.jetty.http3.qpack.QpackDecoder;
 import org.eclipse.jetty.io.ByteBufferPool;
 import org.eclipse.jetty.io.NullByteBufferPool;
 import org.eclipse.jetty.util.BufferUtil;
+import org.eclipse.jetty.util.NanoTime;
 import org.junit.jupiter.api.Test;
 
 import static org.junit.jupiter.api.Assertions.assertArrayEquals;
@@ -58,6 +60,8 @@ public class DataGenerateParseTest
         new MessageGenerator(null, true).generate(lease, 0, input, null);
 
         List<DataFrame> frames = new ArrayList<>();
+        QpackDecoder decoder = new QpackDecoder(instructions -> {});
+        decoder.setBeginNanoTimeSupplier(NanoTime::now);
         MessageParser parser = new MessageParser(new ParserListener()
         {
             @Override
@@ -65,7 +69,7 @@ public class DataGenerateParseTest
             {
                 frames.add(frame);
             }
-        }, null, 13, () -> true);
+        }, decoder, 13, () -> true);
         parser.init(UnaryOperator.identity());
         for (ByteBuffer buffer : lease.getByteBuffers())
         {
