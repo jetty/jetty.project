@@ -86,7 +86,7 @@ public class ErrorHandler implements Request.Handler
     }
 
     @Override
-    public boolean handle(Request request, Response response, Callback callback)
+    public boolean handle(Request request, Response response, Callback callback) throws Exception
     {
         if (LOG.isDebugEnabled())
             LOG.debug("handle({}, {}, {})", request, response, callback);
@@ -112,16 +112,7 @@ public class ErrorHandler implements Request.Handler
         {
             if (message == null)
                 message = cause == null ? HttpStatus.getMessage(code) : cause.toString();
-
-            try
-            {
-                generateResponse(request, response, code, message, cause, callback);
-            }
-            catch (Throwable x)
-            {
-                // TODO: cannot write the error response, give up and close the stream.
-                LOG.warn("Failure whilst generate error response", x);
-            }
+            generateResponse(request, response, code, message, cause, callback);
         }
         return true;
     }

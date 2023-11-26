@@ -156,6 +156,49 @@ It is therefore mandatory to use `CompletableFuture` APIs that are invoked even 
 Failing to do so may result in the `Handler` `callback` parameter to never be completed, causing the request processing to hang forever.
 ====
 
+[[pg-server-http-handler-impl-request-listeners]]
+====== `Request` Listeners
+
+Application may add listeners to the `Request` object to be notified of particular events happening during the request/response processing.
+
+`Request.addIdleTimeoutListener(Predicate<TimeoutException>)` allows you to add an idle timeout listener, which is invoked when an idle timeout period elapses during the request/response processing, if the idle timeout event is not notified otherwise.
+
+The idle timeout listener is invoked only when:
+
+* There is no pending demand for request content; that is, there is not an outstanding call to `Request.demand(Runnable)`.
+* There is no pending response write; that is, there is not an outstanding call to `Response.write(boolean, ByteBuffer, Callback)`.
+
+In the above cases, the application is notified of the idle timeout so there is no need to call the idle timeout listeners.
+In the first case, the demand `Runnable` is invoked and the application will see the idle timeout failure by reading from the `Request`, obtaining a xref:pg-arch-io-content-source[transient failure chunk].
+In the second case, the response write `Callback` will be failed.
+
+The idle timeout listeners are therefore invoked only when the application is really idle, neither trying to read nor trying to write.
+
+An idle timeout listener may return `false` to indicate to the Jetty implementation that the idle timeout should be ignored, and `true` to indicate that the idle timeout should be treated as a fatal failure of the request/response processing.
+When an idle timeout listener returns `false`, and another idle timeout period elapses, and the application is idle, the listener is invoked again.
+
+In case of many idle timeout listeners, they are invoked in the same order they have been added.
+The first idle timeout listener that returns `true` stops the Jetty implementation from invoking the idle timeout listeners that follow.
+
+`Request.addFailureListener(Consumer<Throwable>)` allows you to add a failure listener, which is invoked when a failure happens during the request/response processing.
+
+When a failure happens during the request/response processing, then:
+
+* The pending demand for request content, if any, is invoked; that is, the `Runnable` passed to `Request.demand(Runnable)` is invoked.
+* The callback of an outstanding call to `Response.write(boolean, ByteBuffer, Callback)`, if any, is failed.
+* The failure listeners are invoked, in the same order they have been added.
+
+Failures reported to a failure listener are always fatal failures; see also xref:pg-arch-io-content-source[this section] about fatal versus transient failures.
+
+`Request.addCompletionListener(Consumer<Throwable>)` allows you to add a completion listener, which is invoked at the very end of the request/response processing.
+This is equivalent to adding an `HttpStream` wrapper and overriding both `HttpStream.succeeded()` and `HttpStream.failed(Throwable)`.
+
+Completion listeners are typically (but not only) used to recycle or dispose resources used during the request/response processing, or get a precise timing for when the request/response processing finishes, to be paired with `Request.getBeginNanoTime()`.
+
+Note that while failure listeners are invoked as soon as the failure happens, completion listeners are invoked only at the very end of the request/response processing.
+
+In case of many completion listeners, they are invoked in the reverse order they have been added.
+
 [[pg-server-http-handler-impl-response]]
 ====== Using the `Response`
 

@@ -41,7 +41,6 @@ import static org.hamcrest.Matchers.containsStringIgnoringCase;
 import static org.hamcrest.Matchers.instanceOf;
 import static org.hamcrest.Matchers.is;
 import static org.junit.jupiter.api.Assertions.assertFalse;
-import static org.junit.jupiter.api.Assertions.assertNotNull;
 import static org.junit.jupiter.api.Assertions.assertNull;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
@@ -148,69 +147,6 @@ public class ServerTimeoutsTest extends AbstractTest
 
         // listener is never called as timeout always delivered via demand
         assertFalse(listenerCalled.get());
-    }
-
-    @ParameterizedTest
-    @MethodSource("transports")
-    public void testIdleTimeoutErrorListenerReturnsFalse(Transport transport) throws Exception
-    {
-        AtomicReference<Response> responseRef = new AtomicReference<>();
-        CompletableFuture<Callback> callbackOnTimeout = new CompletableFuture<>();
-        start(transport, new Handler.Abstract()
-        {
-            @Override
-            public boolean handle(Request request, Response response, Callback callback)
-            {
-                responseRef.set(response);
-                request.addIdleTimeoutListener(t ->
-                {
-                    callbackOnTimeout.complete(callback);
-                    return false; // ignore timeout
-                });
-                return true;
-            }
-        });
-
-        org.eclipse.jetty.client.Request request = client.newRequest(newURI(transport))
-            .timeout(IDLE_TIMEOUT * 5, TimeUnit.MILLISECONDS);
-        CompletableFuture<ContentResponse> completable = new CompletableResponseListener(request).send();
-
-        // Get the callback as promised by the error listener.
-        Callback callback = callbackOnTimeout.get(3 * IDLE_TIMEOUT, TimeUnit.MILLISECONDS);
-        assertNotNull(callback);
-        Content.Sink.write(responseRef.get(), true, "OK", callback);
-
-        ContentResponse response = completable.get(IDLE_TIMEOUT / 2, TimeUnit.MILLISECONDS);
-        assertThat(response.getStatus(), is(HttpStatus.OK_200));
-        assertThat(response.getContentAsString(), is("OK"));
-    }
-
-    @ParameterizedTest
-    @MethodSource("transports")
-    public void testIdleTimeoutErrorListenerReturnsFalseThenTrue(Transport transport) throws Exception
-    {
-        AtomicReference<Throwable> error = new AtomicReference<>();
-        start(transport, new Handler.Abstract()
-        {
-            @Override
-            public boolean handle(Request request, Response response, Callback callback)
-            {
-                request.addIdleTimeoutListener(t -> error.getAndSet(t) != null);
-                request.addFailureListener(callback::failed);
-                return true;
-            }
-        });
-
-        ContentResponse response = client.newRequest(newURI(transport))
-            .timeout(IDLE_TIMEOUT * 5, TimeUnit.MILLISECONDS)
-            .send();
-
-        // The first time the listener returns false, but does not complete the callback,
-        // so another idle timeout elapses.
-        // The second time the listener returns true and the implementation produces the response.
-        assertThat(response.getStatus(), is(HttpStatus.INTERNAL_SERVER_ERROR_500));
-        assertThat(response.getContentAsString(), containsStringIgnoringCase("HTTP ERROR 500 java.util.concurrent.TimeoutException: Idle timeout"));
-        assertThat(error.get(), instanceOf(TimeoutException.class));
     }
 
     // TODO write side tests

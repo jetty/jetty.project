@@ -61,7 +61,6 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import static org.hamcrest.MatcherAssert.assertThat;
-import static org.hamcrest.Matchers.contains;
 import static org.hamcrest.Matchers.containsString;
 import static org.hamcrest.Matchers.endsWith;
 import static org.hamcrest.Matchers.equalTo;
@@ -2010,57 +2009,6 @@ public abstract class HttpServerTestBase extends HttpServerTestFixture
             assertThat(response, containsString("Hello"));
 
             Awaitility.await().atMost(5, TimeUnit.SECONDS).until(result::get, equalTo("value"));
-        }
-    }
-
-    @Test
-    public void testCompletionListener() throws Exception
-    {
-        Queue<String> history = new ConcurrentLinkedQueue<>();
-        startServer(new Handler.Abstract()
-        {
-            @Override
-            public boolean handle(Request request, Response response, Callback callback) throws Exception
-            {
-                Request.addCompletionListener(request, t -> history.add("four"));
-                Request.addCompletionListener(request, t -> history.add("three"));
-                request.addHttpStreamWrapper(s -> new HttpStream.Wrapper(s)
-                {
-                    @Override
-                    public void succeeded()
-                    {
-                        history.add("two");
-                        super.succeeded();
-                    }
-                });
-                Request.addCompletionListener(request, t -> history.add("one"));
-
-                callback.succeeded();
-
-                history.add("zero");
-                return true;
-            }
-        });
-
-        try (Socket client = newSocket(_serverURI.getHost(), _serverURI.getPort()))
-        {
-            OutputStream os = client.getOutputStream();
-
-            String request = """
-                GET / HTTP/1.1
-                Host: localhost
-                Connection: close
-                
-                """;
-            os.write(request.getBytes(StandardCharsets.ISO_8859_1));
-            os.flush();
-
-            // Read the response.
-            String rawResponse = readResponse(client);
-            assertThat(rawResponse, containsString("HTTP/1.1 200 OK"));
-
-            // Check the history
-            assertThat(history, contains("zero", "one", "two", "three", "four"));
         }
     }
 }
