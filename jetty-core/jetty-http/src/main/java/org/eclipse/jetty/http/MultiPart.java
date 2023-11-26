@@ -1326,6 +1326,7 @@ public class MultiPart
                         // The boundary was fully matched.
                         buffer.position(buffer.position() + boundaryMatch - partialBoundaryMatch);
                         partialBoundaryMatch = 0;
+                        crContent = false;
                         notifyPartContent(Content.Chunk.EOF);
                         notifyPartEnd();
                         return true;
