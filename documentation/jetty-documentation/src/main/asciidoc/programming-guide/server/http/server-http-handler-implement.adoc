@@ -188,7 +188,18 @@ When a failure happens during the request/response processing, then:
 * The callback of an outstanding call to `Response.write(boolean, ByteBuffer, Callback)`, if any, is failed.
 * The failure listeners are invoked, in the same order they have been added.
 
+Failure listeners are invoked also in case of idle timeouts, in the following cases:
+
+* At least one idle timeout listener returned `true` to indicate to the Jetty implementation to treat the idle timeout as a fatal failure.
+* There are no idle timeout listeners.
+
 Failures reported to a failure listener are always fatal failures; see also xref:pg-arch-io-content-source[this section] about fatal versus transient failures.
+
+[NOTE]
+====
+Applications are always required to complete the `Handler` callback, as described xref:pg-server-http-handler-impl[here].
+In case of asynchronous failures, failure listeners are a good place to complete (typically by failing it) the `Handler` callback.
+====
 
 `Request.addCompletionListener(Consumer<Throwable>)` allows you to add a completion listener, which is invoked at the very end of the request/response processing.
 This is equivalent to adding an `HttpStream` wrapper and overriding both `HttpStream.succeeded()` and `HttpStream.failed(Throwable)`.

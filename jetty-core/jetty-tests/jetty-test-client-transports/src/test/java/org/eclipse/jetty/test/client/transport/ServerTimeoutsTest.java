@@ -74,10 +74,8 @@ public class ServerTimeoutsTest extends AbstractTest
             public boolean handle(Request request, Response response, Callback callback)
             {
                 if (addIdleTimeoutListener)
-                {
                     request.addIdleTimeoutListener(t -> listenerCalled.compareAndSet(false, true));
-                    request.addFailureListener(callback::failed);
-                }
+                request.addFailureListener(callback::failed);
 
                 // Do not complete the callback, so it idle times out.
                 return true;
