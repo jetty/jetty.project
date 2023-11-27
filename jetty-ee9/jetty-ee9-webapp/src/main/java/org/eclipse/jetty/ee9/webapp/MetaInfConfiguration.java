@@ -360,7 +360,7 @@ public class MetaInfConfiguration extends AbstractConfiguration
         //Scan jars for META-INF information
         if (jars != null)
         {
-            try (ResourceFactory.Closeable closeable = ResourceFactory.closeable())
+            try (ResourceFactory.Closeable scanResourceFactory = ResourceFactory.closeable())
             {
                 for (Resource r : jars)
                 {
@@ -368,8 +368,9 @@ public class MetaInfConfiguration extends AbstractConfiguration
 
                     try
                     {
+                        //if not already a directory, convert it by mounting as jar file
                         if (!dir.isDirectory())
-                            dir = closeable.newJarFileResource(dir.getURI());
+                            dir = scanResourceFactory.newJarFileResource(dir.getURI());
                     }
                     catch (Exception e)
                     {
@@ -429,7 +430,7 @@ public class MetaInfConfiguration extends AbstractConfiguration
             if (isEmptyResource(resourcesDir))
                 return;
 
-            //convert to a Resource tied to the Context lifecycle
+            //convert from an ephemeral Resource to one that is associated with the context's lifecycle
             resourcesDir = context.getResourceFactory().newResource(resourcesDir.getURI());
 
             if (cache != null)
@@ -493,7 +494,7 @@ public class MetaInfConfiguration extends AbstractConfiguration
             if (isEmptyFragment(webFrag))
                 return;
 
-            //convert webFragment Resource to one tied to the Context lifecycle
+            //convert ephemeral Resource to one associated with the context's lifecycle ResourceFactory
             webFrag = context.getResourceFactory().newResource(webFrag.getURI());
 
             if (cache != null)
@@ -515,7 +516,7 @@ public class MetaInfConfiguration extends AbstractConfiguration
 
         if (dir instanceof MountedPathResource)
         {
-            //ensure we get the original .jar rather than jar:file:
+            //ensure we link from the original .jar rather than jar:file:
             dir = context.getResourceFactory().newResource(((MountedPathResource)dir).getContainerPath());
         }
 
