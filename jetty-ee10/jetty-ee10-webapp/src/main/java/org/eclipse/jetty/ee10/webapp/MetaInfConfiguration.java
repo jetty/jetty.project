@@ -354,7 +354,7 @@ public class MetaInfConfiguration extends AbstractConfiguration
         //Scan jars for META-INF information
         if (jars != null)
         {
-            try (ResourceFactory.Closeable closeable = ResourceFactory.closeable())
+            try (ResourceFactory.Closeable scanResourceFactory = ResourceFactory.closeable())
             {
                 for (Resource r : jars)
                 {
