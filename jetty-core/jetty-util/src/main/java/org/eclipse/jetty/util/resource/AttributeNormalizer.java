@@ -215,6 +215,9 @@ public class AttributeNormalizer
 
     public String normalize(Object o)
     {
+        if (_normalizers.size() == 1)
+            return _normalizers.get(0).normalize(o);
+
         for (Normalizer normalizer : _normalizers)
         {
             try
@@ -237,6 +240,9 @@ public class AttributeNormalizer
 
     protected String normalizeUri(URI uri)
     {
+        if (_normalizers.size() == 1)
+            return _normalizers.get(0).normalizeUri(uri);
+
         for (Normalizer normalizer : _normalizers)
         {
             try
@@ -259,6 +265,9 @@ public class AttributeNormalizer
 
     protected String normalizePath(Path path)
     {
+        if (_normalizers.size() == 1)
+            return _normalizers.get(0).normalizePath(path);
+
         for (Normalizer normalizer : _normalizers)
         {
             try
@@ -281,6 +290,9 @@ public class AttributeNormalizer
 
     public String expand(String str)
     {
+        if (_normalizers.size() == 1)
+            return _normalizers.get(0).expand(str);
+
         for (Normalizer normalizer : _normalizers)
         {
             try
