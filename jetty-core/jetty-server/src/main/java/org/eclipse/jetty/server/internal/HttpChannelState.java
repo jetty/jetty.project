@@ -91,7 +91,7 @@ public class HttpChannelState implements HttpChannel, Components
     }
 
     private static final Logger LOG = LoggerFactory.getLogger(HttpChannelState.class);
-    private static final Throwable DO_NOT_SEND = new Throwable("No Send");
+    private static final Throwable NOTHING_TO_SEND = new Throwable("nothing_to_send");
     private static final HttpField SERVER_VERSION = new ResponseHttpFields.PersistentPreEncodedHttpField(HttpHeader.SERVER, HttpConfiguration.SERVER_VERSION);
     private static final HttpField POWERED_BY = new ResponseHttpFields.PersistentPreEncodedHttpField(HttpHeader.X_POWERED_BY, HttpConfiguration.SERVER_VERSION);
 
@@ -496,7 +496,7 @@ public class HttpChannelState implements HttpChannel, Components
             // they are flushed. The DO_NOT_SEND option supports these by turning such writes into a NOOP.
             case LAST_SENDING, LAST_COMPLETE -> (length > 0)
                 ? new IllegalStateException("last already written")
-                : DO_NOT_SEND;
+                : NOTHING_TO_SEND;
         };
     }
 
@@ -1151,16 +1151,16 @@ public class HttpChannelState implements HttpChannel, Components
                     }
                 }
 
-                // If no failure by this point, we can try to send.
+                // If no failure by this point, we can try to switch to sending state.
                 if (failure == null)
                     failure = httpChannelState.lockedStreamSend(last, length);
 
-                // Have we failed in some way?
-                if (failure == DO_NOT_SEND)
+                if (failure == NOTHING_TO_SEND)
                 {
                     httpChannelState._serializedInvoker.run(callback::succeeded);
                     return;
                 }
+                // Have we failed in some way?
                 if (failure != null)
                 {
                     Throwable throwable = failure;
@@ -1168,7 +1168,7 @@ public class HttpChannelState implements HttpChannel, Components
                     return;
                 }
 
-                // We have not failed, so we will do a stream send.
+                // No failure, do the actual stream send using the ChannelResponse as the callback.
                 _writeCallback = callback;
                 _contentBytesWritten = totalWritten;
                 stream = httpChannelState._stream;
