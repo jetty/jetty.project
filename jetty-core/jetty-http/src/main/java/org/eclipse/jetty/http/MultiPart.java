@@ -1350,7 +1350,7 @@ public class MultiPart
                         return false;
                     }
 
-                    // Must output as content the previous partial match.
+                    // Output as content the previous partial match.
                     if (crContent)
                     {
                         crContent = false;
@@ -1371,6 +1371,15 @@ public class MultiPart
             int boundaryOffset = boundaryFinder.match(buffer);
             if (boundaryOffset >= 0)
             {
+                // Output as content the previous partial match, if any.
+                if (crContent)
+                {
+                    crContent = false;
+                    Content.Chunk partContentChunk = Content.Chunk.from(CR.slice(), false);
+                    notifyPartContent(partContentChunk);
+                    partContentChunk.release();
+                }
+
                 int position = buffer.position();
                 int length = boundaryOffset;
                 // BoundaryFinder is configured to search for '\n--Boundary';
@@ -1407,6 +1416,8 @@ public class MultiPart
             }
 
             // There is normal content with no boundary.
+
+            // Output as content the previous partial match, if any.
             if (crContent)
             {
                 crContent = false;
