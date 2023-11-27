@@ -719,7 +719,7 @@ public class ContextHandler extends Handler.Wrapper implements Attributes, Alias
         if (_vhosts.isEmpty())
             return true;
 
-        String host = normalizeHostname(request.getHttpURI().getHost());
+        String host = Request.getServerName(request);
         String connectorName = request.getConnectionMetaData().getConnector().getName();
 
         for (VHost vhost : _vhosts)
@@ -733,21 +733,17 @@ public class ContextHandler extends Handler.Wrapper implements Attributes, Alias
                     continue;
 
                 if (contextVhost == null)
-                {
                     return true;
-                }
             }
 
-            if (contextVhost != null)
+            if (contextVhost != null && host != null)
             {
                 if (vhost._wild)
                 {
                     // wildcard only at the beginning, and only for one additional subdomain level
                     int index = host.indexOf(".");
                     if (index >= 0 && host.substring(index).equalsIgnoreCase(contextVhost))
-                    {
                         return true;
-                    }
                 }
                 else if (host.equalsIgnoreCase(contextVhost))
                 {
