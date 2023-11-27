@@ -274,7 +274,7 @@ public class AbstractTest
     {
         if (transport == Transport.UNIX_DOMAIN)
         {
-            String unixDomainDir = System.getProperty("jetty.unixdomain.dir", workDir.getEmptyPathDir().toString());
+            String unixDomainDir = System.getProperty("jetty.unixdomain.dir", System.getProperty("java.io.tmpdir"));
             unixDomainPath = Files.createTempFile(Path.of(unixDomainDir), "unix_", ".sock");
             assertTrue(unixDomainPath.toAbsolutePath().toString().length() < UnixDomainServerConnector.MAX_UNIX_DOMAIN_PATH_LENGTH, "Unix-Domain path too long");
             Files.delete(unixDomainPath);
