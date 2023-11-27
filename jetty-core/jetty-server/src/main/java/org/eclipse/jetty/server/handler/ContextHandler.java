@@ -325,25 +325,7 @@ public class ContextHandler extends Handler.Wrapper implements Attributes, Alias
             {
                 if (vhost == null)
                     continue;
-                boolean wild = false;
-                String connector = null;
-                int at = vhost.indexOf('@');
-                if (at >= 0)
-                {
-                    connector = vhost.substring(at + 1);
-                    vhost = vhost.substring(0, at);
-                }
-
-                if (StringUtil.isBlank(vhost))
-                {
-                    vhost = null;
-                }
-                else if (vhost.startsWith("*."))
-                {
-                    vhost = vhost.substring(1);
-                    wild = true;
-                }
-                _vhosts.add(new VHost(normalizeHostname(vhost), wild, connector));
+                _vhosts.add(new VHost(vhost));
             }
         }
     }
@@ -387,9 +369,7 @@ public class ContextHandler extends Handler.Wrapper implements Attributes, Alias
             return; // do nothing
 
         for (String vh : virtualHosts)
-        {
-            vhosts.remove(normalizeHostname(vh));
-        }
+            _vhosts.remove(new VHost(vh));
     }
 
     /**
@@ -719,7 +699,9 @@ public class ContextHandler extends Handler.Wrapper implements Attributes, Alias
         if (_vhosts.isEmpty())
             return true;
 
-        String host = Request.getServerName(request);
+        // TODO check why normalizeVirtualHostname is necessary to pass ContextHandlerCollectionTest
+        //      specifically is it valid for a request hostname to end with '.'
+        String host = normalizeVirtualHostname(Request.getServerName(request));
         String connectorName = request.getConnectionMetaData().getConnector().getName();
 
         for (VHost vhost : _vhosts)
@@ -1101,24 +1083,12 @@ public class ContextHandler extends Handler.Wrapper implements Attributes, Alias
         return b.toString();
     }
 
-    private String normalizeHostname(String host)
+    private static String normalizeVirtualHostname(String host)
     {
-        // TODO is this needed? if so, should be it somewhere eles?
         if (host == null)
             return null;
-        int connectorIndex = host.indexOf('@');
-        String connector = null;
-        if (connectorIndex > 0)
-        {
-            host = host.substring(0, connectorIndex);
-            connector = host.substring(connectorIndex);
-        }
-
         if (host.endsWith("."))
             host = host.substring(0, host.length() - 1);
-        if (connector != null)
-            host += connector;
-
         return host;
     }
 
@@ -1331,11 +1301,30 @@ public class ContextHandler extends Handler.Wrapper implements Attributes, Alias
         private final boolean _wild;
         private final String _vConnector;
 
-        private VHost(String vHost, boolean wild, String vConnector)
+        public VHost(String vhost)
         {
-            _vHost = vHost;
+            boolean wild = false;
+            String connector = null;
+            int at = vhost.indexOf('@');
+            if (at >= 0)
+            {
+                connector = vhost.substring(at + 1);
+                vhost = vhost.substring(0, at);
+            }
+
+            if (StringUtil.isBlank(vhost))
+            {
+                vhost = null;
+            }
+            else if (vhost.startsWith("*."))
+            {
+                vhost = vhost.substring(1);
+                wild = true;
+            }
+
+            _vHost = normalizeVirtualHostname(vhost);
             _wild = wild;
-            _vConnector = vConnector;
+            _vConnector = connector;
         }
 
         String getVHost()
@@ -1349,6 +1338,21 @@ public class ContextHandler extends Handler.Wrapper implements Attributes, Alias
                 return '@' + _vConnector;
             else
                 return _vHost;
+        }
+
+        @Override
+        public int hashCode()
+        {
+            return Objects.hash(_vHost, _wild, _vConnector);
+        }
+
+        @Override
+        public boolean equals(Object o)
+        {
+            return o instanceof VHost vhost &&
+                Objects.equals(_vHost, vhost._vHost) &&
+                Objects.equals(_wild, vhost._wild) &&
+                Objects.equals(_vConnector, vhost._vConnector);
         }
 
         @Override
