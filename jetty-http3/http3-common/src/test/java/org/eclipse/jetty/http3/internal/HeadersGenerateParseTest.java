@@ -31,6 +31,7 @@ import org.eclipse.jetty.http3.qpack.QpackDecoder;
 import org.eclipse.jetty.http3.qpack.QpackEncoder;
 import org.eclipse.jetty.io.ByteBufferPool;
 import org.eclipse.jetty.io.NullByteBufferPool;
+import org.eclipse.jetty.util.NanoTime;
 import org.junit.jupiter.api.Test;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
@@ -54,6 +55,7 @@ public class HeadersGenerateParseTest
 
         QpackDecoder decoder = new QpackDecoder(instructions -> {});
         decoder.setMaxHeadersSize(4 * 1024);
+        decoder.setBeginNanoTimeSupplier(NanoTime::now);
         List<HeadersFrame> frames = new ArrayList<>();
         MessageParser parser = new MessageParser(new ParserListener()
         {

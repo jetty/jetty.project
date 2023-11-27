@@ -21,6 +21,7 @@ import java.util.Iterator;
 import java.util.List;
 import java.util.Map;
 import java.util.concurrent.atomic.AtomicInteger;
+import java.util.function.LongSupplier;
 
 import org.eclipse.jetty.http.HttpField;
 import org.eclipse.jetty.http.MetaData;
@@ -59,6 +60,7 @@ public class QpackDecoder implements Dumpable
     private int _maxHeadersSize;
     private int _maxBlockedStreams;
     private int _maxTableCapacity;
+    private LongSupplier _beginNanoTimeSupplier;
 
     private static class MetaDataNotification
     {
@@ -101,6 +103,11 @@ public class QpackDecoder implements Dumpable
     public int getMaxHeadersSize()
     {
         return _maxHeadersSize;
+    }
+
+    public void setBeginNanoTimeSupplier(LongSupplier beginNanoTimeSupplier)
+    {
+        _beginNanoTimeSupplier = beginNanoTimeSupplier;
     }
 
     /**
@@ -180,7 +187,7 @@ public class QpackDecoder implements Dumpable
         {
             // Parse the buffer into an Encoded Field Section.
             int base = signBit ? requiredInsertCount - deltaBase - 1 : requiredInsertCount + deltaBase;
-            EncodedFieldSection encodedFieldSection = new EncodedFieldSection(streamId, handler, requiredInsertCount, base, buffer);
+            EncodedFieldSection encodedFieldSection = new EncodedFieldSection(streamId, handler, requiredInsertCount, base, buffer, _beginNanoTimeSupplier.getAsLong());
 
             // Decode it straight away if we can, otherwise add it to the list of EncodedFieldSections.
             if (requiredInsertCount <= insertCount)

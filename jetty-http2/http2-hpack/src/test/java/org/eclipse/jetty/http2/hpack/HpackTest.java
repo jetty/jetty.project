@@ -24,6 +24,7 @@ import org.eclipse.jetty.http.MetaData;
 import org.eclipse.jetty.http.MetaData.Response;
 import org.eclipse.jetty.http.PreEncodedHttpField;
 import org.eclipse.jetty.util.BufferUtil;
+import org.eclipse.jetty.util.NanoTime;
 import org.junit.jupiter.api.Test;
 
 import static org.hamcrest.MatcherAssert.assertThat;
@@ -43,7 +44,7 @@ public class HpackTest
     public void encodeDecodeResponseTest() throws Exception
     {
         HpackEncoder encoder = new HpackEncoder();
-        HpackDecoder decoder = new HpackDecoder(8192);
+        HpackDecoder decoder = new HpackDecoder(8192, NanoTime::now);
         ByteBuffer buffer = BufferUtil.allocateDirect(16 * 1024);
 
         HttpFields.Mutable fields0 = HttpFields.build()
@@ -98,7 +99,7 @@ public class HpackTest
     public void encodeDecodeTooLargeTest() throws Exception
     {
         HpackEncoder encoder = new HpackEncoder();
-        HpackDecoder decoder = new HpackDecoder(164);
+        HpackDecoder decoder = new HpackDecoder(164, NanoTime::now);
         ByteBuffer buffer = BufferUtil.allocateDirect(16 * 1024);
 
         HttpFields fields0 = HttpFields.build()
@@ -158,7 +159,7 @@ public class HpackTest
     @Test
     public void evictReferencedFieldTest() throws Exception
     {
-        HpackDecoder decoder = new HpackDecoder(1024);
+        HpackDecoder decoder = new HpackDecoder(1024, NanoTime::now);
         decoder.setMaxTableCapacity(200);
         HpackEncoder encoder = new HpackEncoder();
         encoder.setMaxTableCapacity(decoder.getMaxTableCapacity());
@@ -205,7 +206,7 @@ public class HpackTest
     public void testHopHeadersAreRemoved() throws Exception
     {
         HpackEncoder encoder = new HpackEncoder();
-        HpackDecoder decoder = new HpackDecoder(16384);
+        HpackDecoder decoder = new HpackDecoder(16384, NanoTime::now);
 
         HttpFields input = HttpFields.build()
             .add(HttpHeader.ACCEPT, "*")
@@ -232,7 +233,7 @@ public class HpackTest
     public void testTETrailers() throws Exception
     {
         HpackEncoder encoder = new HpackEncoder();
-        HpackDecoder decoder = new HpackDecoder(16384);
+        HpackDecoder decoder = new HpackDecoder(16384, NanoTime::now);
 
         String teValue = "trailers";
         String trailerValue = "Custom";
@@ -257,7 +258,7 @@ public class HpackTest
     public void testColonHeaders() throws Exception
     {
         HpackEncoder encoder = new HpackEncoder();
-        HpackDecoder decoder = new HpackDecoder(16384);
+        HpackDecoder decoder = new HpackDecoder(16384, NanoTime::now);
 
         HttpFields input = HttpFields.build()
             .add(":status", "200")

@@ -18,6 +18,7 @@ import java.nio.ByteBuffer;
 import org.eclipse.jetty.http3.qpack.QpackException.SessionException;
 import org.eclipse.jetty.http3.qpack.internal.instruction.SectionAcknowledgmentInstruction;
 import org.eclipse.jetty.util.BufferUtil;
+import org.eclipse.jetty.util.NanoTime;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 
@@ -48,6 +49,7 @@ public class SectionAcknowledgmentTest
         _decoderHandler = new TestDecoderHandler();
         _encoder = new QpackEncoder(_encoderHandler, MAX_BLOCKED_STREAMS);
         _decoder = new QpackDecoder(_decoderHandler, MAX_HEADER_SIZE);
+        _decoder.setBeginNanoTimeSupplier(NanoTime::now);
     }
 
     @Test

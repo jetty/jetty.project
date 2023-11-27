@@ -22,6 +22,7 @@ import org.eclipse.jetty.http.HttpScheme;
 import org.eclipse.jetty.http.HttpVersion;
 import org.eclipse.jetty.http.MetaData;
 import org.eclipse.jetty.http2.hpack.HpackException.SessionException;
+import org.eclipse.jetty.util.NanoTime;
 
 public class MetaDataBuilder
 {
@@ -38,6 +39,7 @@ public class MetaDataBuilder
     private HpackException.StreamException _streamException;
     private boolean _request;
     private boolean _response;
+    private long _beginNanoTime = Long.MIN_VALUE;
 
     /**
      * @param maxHeadersSize The maximum size of the headers, expressed as total name and value characters.
@@ -58,6 +60,13 @@ public class MetaDataBuilder
     public void setMaxSize(int maxSize)
     {
         _maxSize = maxSize;
+    }
+
+    public void setBeginNanoTime(long beginNanoTime)
+    {
+        if (beginNanoTime == Long.MIN_VALUE)
+            beginNanoTime++;
+        _beginNanoTime = beginNanoTime;
     }
 
     /**
@@ -248,10 +257,13 @@ public class MetaDataBuilder
                     if (_path == null)
                         throw new HpackException.StreamException("No Path");
                 }
+                long nanoTime = _beginNanoTime == Long.MIN_VALUE ? NanoTime.now() : _beginNanoTime;
+                _beginNanoTime = Long.MIN_VALUE;
                 if (isConnect)
-                    return new MetaData.ConnectRequest(_scheme, _authority, _path, fields, _protocol);
+                    return new MetaData.ConnectRequest(nanoTime, _scheme, _authority, _path, fields, _protocol);
                 else
                     return new MetaData.Request(
+                        nanoTime,
                         _method,
                         _scheme.asString(),
                         _authority,
