@@ -1351,13 +1351,7 @@ public class MultiPart
                     }
 
                     // Output as content the previous partial match.
-                    if (crContent)
-                    {
-                        crContent = false;
-                        Content.Chunk partContentChunk = Content.Chunk.from(CR.slice(), false);
-                        notifyPartContent(partContentChunk);
-                        partContentChunk.release();
-                    }
+                    notifyCRContent();
                     ByteBuffer content = ByteBuffer.wrap(boundaryFinder.getPattern(), 0, partialBoundaryMatch);
                     partialBoundaryMatch = 0;
                     Content.Chunk partContentChunk = Content.Chunk.from(content, false);
@@ -1372,14 +1366,7 @@ public class MultiPart
             if (boundaryOffset >= 0)
             {
                 // Output as content the previous partial match, if any.
-                if (crContent)
-                {
-                    crContent = false;
-                    Content.Chunk partContentChunk = Content.Chunk.from(CR.slice(), false);
-                    notifyPartContent(partContentChunk);
-                    partContentChunk.release();
-                }
-
+                notifyCRContent();
                 int position = buffer.position();
                 int length = boundaryOffset;
                 // BoundaryFinder is configured to search for '\n--Boundary';
@@ -1418,11 +1405,7 @@ public class MultiPart
             // There is normal content with no boundary.
 
             // Output as content the previous partial match, if any.
-            if (crContent)
-            {
-                crContent = false;
-                notifyPartContent(Content.Chunk.from(CR.slice(), false));
-            }
+            notifyCRContent();
             // If '\r' is found at the end of the buffer, it may
             // not be content but the beginning of a '\r\n--Boundary';
             // remember it in case it is truly normal content.
@@ -1438,6 +1421,16 @@ public class MultiPart
             if (content.hasRemaining())
                 notifyPartContent(content);
             return false;
+        }
+
+        private void notifyCRContent()
+        {
+            if (!crContent)
+                return;
+            crContent = false;
+            Content.Chunk partContentChunk = Content.Chunk.from(CR.slice(), false);
+            notifyPartContent(partContentChunk);
+            partContentChunk.release();
         }
 
         private Content.Chunk asSlice(Content.Chunk chunk, int position, int length, boolean last)
