@@ -42,6 +42,7 @@ public class EvictionTest
         _decoder.setBeginNanoTimeSupplier(NanoTime::now);
         _decoder.setMaxHeadersSize(1024);
         _decoder.setMaxTableCapacity(4 * 1024);
+        _decoder.setBeginNanoTimeSupplier(NanoTime::now);
 
         _encoder = new QpackEncoder(_encoderHandler)
         {
