@@ -699,39 +699,13 @@ public class ContextHandler extends Handler.Wrapper implements Attributes, Alias
         if (_vhosts.isEmpty())
             return true;
 
-        // TODO check why normalizeVirtualHostname is necessary to pass ContextHandlerCollectionTest
-        //      specifically is it valid for a request hostname to end with '.'
-        String host = normalizeVirtualHostname(Request.getServerName(request));
+        String host = Request.getServerName(request);
         String connectorName = request.getConnectionMetaData().getConnector().getName();
 
         for (VHost vhost : _vhosts)
         {
-            String contextVhost = vhost._vHost;
-            String contextVConnector = vhost._vConnector;
-
-            if (contextVConnector != null)
-            {
-                if (!contextVConnector.equalsIgnoreCase(connectorName))
-                    continue;
-
-                if (contextVhost == null)
-                    return true;
-            }
-
-            if (contextVhost != null && host != null)
-            {
-                if (vhost._wild)
-                {
-                    // wildcard only at the beginning, and only for one additional subdomain level
-                    int index = host.indexOf(".");
-                    if (index >= 0 && host.substring(index).equalsIgnoreCase(contextVhost))
-                        return true;
-                }
-                else if (host.equalsIgnoreCase(contextVhost))
-                {
-                    return true;
-                }
-            }
+            if (vhost.matches(connectorName, host))
+                return true;
         }
         return false;
     }
@@ -1087,6 +1061,7 @@ public class ContextHandler extends Handler.Wrapper implements Attributes, Alias
     {
         if (host == null)
             return null;
+        // names with trailing "." are absolute and not searched for in any local resolv.conf domain
         if (host.endsWith("."))
             host = host.substring(0, host.length() - 1);
         return host;
@@ -1325,6 +1300,37 @@ public class ContextHandler extends Handler.Wrapper implements Attributes, Alias
             _vHost = normalizeVirtualHostname(vhost);
             _wild = wild;
             _vConnector = connector;
+        }
+
+        public boolean matches(String connectorName, String host)
+        {
+            // Do we have a connector name to match
+            if (_vConnector != null)
+            {
+                // then it must match
+                if (!_vConnector.equalsIgnoreCase(connectorName))
+                    return false;
+
+                // if we don't also have a vhost then we are match, otherwise check the vhost as well
+                if (_vHost == null)
+                    return true;
+            }
+
+            // if we have a vhost
+            if (_vHost != null && host != null)
+            {
+                // vHost pattern must be last or next to last if the host ends with '.' (indicates absolute DNS name)
+                int offset = host.length() - _vHost.length() - (host.charAt(host.length() - 1) == '.' ? 1 : 0);
+                if (host.regionMatches(true, offset, _vHost, 0, _vHost.length()))
+                {
+                    // if wild then we only match one level, so check for no more dots
+                    if (_wild)
+                        return host.lastIndexOf('.', offset - 1) < 0;
+                    // otherwise the offset must be 0 for a complete match
+                    return offset == 0;
+                }
+            }
+            return false;
         }
 
         String getVHost()
