@@ -804,7 +804,7 @@ public class HTTP2Stream implements Stream, Attachable, Closeable, Callback, Dum
     @Override
     public InvocationType getInvocationType()
     {
-        synchronized (this)
+        try (AutoLock ignored = lock.lock())
         {
             return sendCallback != null ? sendCallback.getInvocationType() : Callback.super.getInvocationType();
         }
