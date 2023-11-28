@@ -512,8 +512,8 @@ public class ServletChannel
                                 // We do not notify ServletRequestListener on this dispatch because it might not
                                 // be dispatched to an error page, so we delegate this responsibility to the ErrorHandler.
                                 reopen();
-                                _state.completing();
-                                errorHandler.handle(getServletContextRequest(), getServletContextResponse(), Callback.from(NON_BLOCKING, () -> _state.completed(null), _state::completed));
+                                _state.errorHandling();
+                                errorHandler.handle(getServletContextRequest(), getServletContextResponse(), Callback.from(_state::errorHandlingComplete));
                             }
                         }
                         catch (Throwable x)

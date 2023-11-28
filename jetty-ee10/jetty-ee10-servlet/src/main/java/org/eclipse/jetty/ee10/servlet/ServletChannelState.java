@@ -71,6 +71,7 @@ public class ServletChannelState
     /*
      * The state of the request processing lifecycle.
      * <pre>
+     *       ERRORING
      *       BLOCKING <----> COMPLETING ---> COMPLETED
      *       ^  |  ^            ^
      *      /   |   \           |
@@ -89,6 +90,7 @@ public class ServletChannelState
     private enum RequestState
     {
         BLOCKING,    // Blocking request dispatched
+        ERRORING,    // Request passed to ErrorHandler (may execute Servlets)
         ASYNC,       // AsyncContext.startAsync() has been called
         DISPATCH,    // AsyncContext.dispatch() has been called
         EXPIRE,      // AsyncContext timeout has happened
@@ -484,6 +486,7 @@ public class ServletChannelState
                 _requestState = RequestState.COMPLETING;
                 return Action.COMPLETE;
 
+            case ERRORING:
             case COMPLETING:
                 _state = State.WAITING;
                 return Action.WAIT;
@@ -505,7 +508,7 @@ public class ServletChannelState
         {
             if (LOG.isDebugEnabled())
                 LOG.debug("startAsync {}", toStringLocked());
-            if (_state != State.HANDLING || _requestState != RequestState.BLOCKING)
+            if (_state != State.HANDLING || (_requestState != RequestState.BLOCKING && _requestState != RequestState.ERRORING))
                 throw new IllegalStateException(this.getStatusStringLocked());
 
             _requestState = RequestState.ASYNC;
@@ -544,6 +547,34 @@ public class ServletChannelState
 
             runInContext(event, callback);
         }
+    }
+
+    public void errorHandling()
+    {
+        try (AutoLock ignored = lock())
+        {
+            if (LOG.isDebugEnabled())
+                LOG.debug("errorHandling {}", toStringLocked());
+            _requestState = RequestState.ERRORING;
+        }
+    }
+
+    public void errorHandlingComplete()
+    {
+        boolean handle;
+        try (AutoLock ignored = lock())
+        {
+            if (LOG.isDebugEnabled())
+                LOG.debug("errorHandlingComplete {}", toStringLocked());
+
+            handle = _state == State.WAITING;
+            if (handle)
+                _state = State.WOKEN;
+            if (_requestState == RequestState.ERRORING)
+                _requestState = RequestState.COMPLETE;
+        }
+        if (handle)
+            scheduleDispatch();
     }
 
     public void dispatch(ServletContext context, String path)
