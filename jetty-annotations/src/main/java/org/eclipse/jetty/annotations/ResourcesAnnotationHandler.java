@@ -49,7 +49,7 @@ public class ResourcesAnnotationHandler extends AbstractIntrospectableAnnotation
                 String name = resArray[j].name();
                 String mappedName = resArray[j].mappedName();
 
-                if (name == null || name.trim().equals(""))
+                if (name == null || name.trim().isEmpty())
                     throw new IllegalStateException("Class level Resource annotations must contain a name (Common Annotations Spec Section 2.3)");
 
                 try

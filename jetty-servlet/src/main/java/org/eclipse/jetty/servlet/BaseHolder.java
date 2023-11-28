@@ -86,7 +86,7 @@ public abstract class BaseHolder<T> extends AbstractLifeCycle implements Dumpabl
         throws Exception
     {
         //if no class already loaded and no classname, make permanently unavailable
-        if (_class == null && (_className == null || _className.equals("")))
+        if (_class == null && (_className == null || _className.isEmpty()))
             throw new UnavailableException("No class in holder " + toString());
 
         //try to load class

@@ -48,7 +48,7 @@ public class NamingEntryUtil
     public static boolean bindToENC(Object scope, String asName, String mappedName)
         throws NamingException
     {
-        if (asName == null || asName.trim().equals(""))
+        if (asName == null || asName.trim().isEmpty())
             throw new NamingException("No name for NamingEntry");
 
         if (mappedName == null || "".equals(mappedName))
