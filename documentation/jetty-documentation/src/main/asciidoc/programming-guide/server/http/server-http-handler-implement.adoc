@@ -53,7 +53,7 @@ include::../../{doc_code}/org/eclipse/jetty/docs/programming/server/http/HTTPSer
 Such a simple `Handler` can access the request and response main features, such as xref:pg-server-http-handler-impl-request[reading request headers and content], or xref:pg-server-http-handler-impl-response[writing response headers and content].
 
 Note how `HelloWorldHandler` extends from `Handler.Abstract.NonBlocking`.
-This is a declaration that `HelloWorldHandler` does not use blocking APIs (of any kind) to perform its logic, allowing Jetty to apply optimizations that are not applied to ``Handler``s that declare themselves as blocking.
+This is a declaration that `HelloWorldHandler` does not use blocking APIs (of any kind) to perform its logic, allowing Jetty to apply optimizations (see xref:pg-server-http-handler[here]) that are not applied to ``Handler``s that declare themselves as blocking.
 
 If your `Handler` implementation uses blocking APIs (of any kind), extend from `Handler.Abstract`.
 
