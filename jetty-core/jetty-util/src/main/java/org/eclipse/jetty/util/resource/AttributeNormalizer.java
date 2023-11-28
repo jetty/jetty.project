@@ -343,10 +343,6 @@ public class AttributeNormalizer
         {
             if (baseResource == null)
                 throw new IllegalArgumentException("No base resource!");
-            // Combined resources currently are not supported (see #8921) but such support
-            // could be added. That would require some form of (potentially expensive)
-            // existence check in expand() to figure out which URIAttribute actually
-            // contains the resource.
             if (Resources.isCombined(baseResource))
                 throw new IllegalArgumentException("Base resource cannot be combined!");
 
