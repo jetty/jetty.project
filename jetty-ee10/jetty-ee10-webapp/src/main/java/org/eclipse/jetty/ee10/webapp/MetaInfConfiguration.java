@@ -356,10 +356,8 @@ public class MetaInfConfiguration extends AbstractConfiguration
         {
             try (ResourceFactory.Closeable scanResourceFactory = ResourceFactory.closeable())
             {
-                for (Resource r : jars)
+                for (Resource dir : jars)
                 {
-                    Resource dir = r;
-
                     try
                     {
                         //If not already a directory, convert by mounting as jar file
