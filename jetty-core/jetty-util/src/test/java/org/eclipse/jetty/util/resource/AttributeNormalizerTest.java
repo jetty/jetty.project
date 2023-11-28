@@ -105,7 +105,7 @@ public class AttributeNormalizerTest
 
     private static Resource asTargetResource(String title, String subpath)
     {
-        return ResourceFactory.root().newResource(asTargetPath(title, subpath));
+        return resourceFactory.newResource(asTargetPath(title, subpath));
     }
 
     private static final Map<String, String> originalEnv = new HashMap<>();

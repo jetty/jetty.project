@@ -200,16 +200,9 @@ public class AttributeNormalizer
 
     public AttributeNormalizer(Resource baseResource)
     {
-        if (baseResource instanceof CombinedResource combinedResource)
+        for (Resource resource : baseResource)
         {
-            for (Resource resource : combinedResource.getResources())
-            {
-                _normalizers.add(new Normalizer(resource));
-            }
-        }
-        else
-        {
-            _normalizers.add(new Normalizer(baseResource));
+            _normalizers.add(new Normalizer(resource));
         }
     }
 
@@ -272,9 +265,9 @@ public class AttributeNormalizer
         {
             try
             {
-                String expanded = normalizer.normalizePath(path);
-                if (exists(expanded))
-                    return expanded;
+                String normalizedPath = normalizer.normalizePath(path);
+                if (exists(normalizedPath))
+                    return normalizedPath;
             }
             catch (Throwable t)
             {
