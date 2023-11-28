@@ -29,6 +29,7 @@ import java.util.regex.Pattern;
 import java.util.stream.Stream;
 
 import org.eclipse.jetty.util.StringUtil;
+import org.eclipse.jetty.util.URIUtil;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -211,9 +212,6 @@ public class AttributeNormalizer
         addSystemProperty("user.home", 7);
         addSystemProperty("user.dir", 6);
 
-        paths.sort(attrComparator);
-        uris.sort(attrComparator);
-
         int weight = 9;
         for (Resource base : baseResource)
         {
@@ -231,6 +229,9 @@ public class AttributeNormalizer
             uris.add(new URIAttribute("WAR", warURI, weight - 2)); // legacy encoding
             weight += 3;
         }
+
+        paths.sort(attrComparator);
+        uris.sort(attrComparator);
 
         if (LOG.isDebugEnabled())
             Stream.concat(paths.stream(), uris.stream()).map(Object::toString).forEach(LOG::debug);
@@ -411,14 +412,16 @@ public class AttributeNormalizer
             case "WAR", "WAR.path" ->
             {
                 Resource r = baseResource.resolve(suffix);
-                if (r != null && r.exists())
-                    return prefix + r.getPath();
+                if (r == null)
+                    return prefix + URIUtil.addPaths(baseResource.iterator().next().getPath().toString(), suffix);
+                return prefix + r.getPath();
             }
             case "WAR.uri" ->
             {
                 Resource r = baseResource.resolve(suffix);
-                if (r != null && r.exists())
-                    return prefix + r.getURI();
+                if (r == null)
+                    return prefix + URIUtil.addPaths(baseResource.iterator().next().getURI().toString(), suffix);
+                return prefix + r.getURI();
             }
         }
 

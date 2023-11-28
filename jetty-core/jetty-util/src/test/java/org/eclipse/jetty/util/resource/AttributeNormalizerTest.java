@@ -338,6 +338,7 @@ public class AttributeNormalizerTest
         assertThat(normalizer.expand("${WAR.path}/file1"), containsString("/dir1/file1"));
         assertThat(normalizer.expand("${WAR.path}/file2"), containsString("/dir2/file2"));
         assertThat(normalizer.expand("${WAR.path}/file3"), containsString("/dir3/file3"));
+
         // If file cannot be found it just uses the first resource.
         assertThat(normalizer.expand("${WAR.uri}/file4"), containsString("/dir1/file4"));
         assertThat(normalizer.expand("${WAR.path}/file4"), containsString("/dir1/file4"));
