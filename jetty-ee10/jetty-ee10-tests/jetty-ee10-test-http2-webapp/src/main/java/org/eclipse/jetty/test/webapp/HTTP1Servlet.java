@@ -38,7 +38,7 @@ import org.eclipse.jetty.util.ssl.SslContextFactory;
 
 public class HTTP1Servlet extends HttpServlet
 {
-    private SslContextFactory sslContextFactory;
+    private SslContextFactory.Client sslContextFactory;
     private HTTP2Client http2Client;
 
     @Override

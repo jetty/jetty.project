@@ -63,14 +63,13 @@ public class BadNetworkTest
 
         ContextHandler context = new ContextHandler("/");
 
-        WebSocketUpgradeHandler wsHandler = WebSocketUpgradeHandler.from(server, context);
-        context.setHandler(wsHandler);
-        wsHandler.configure(container ->
+        WebSocketUpgradeHandler wsHandler = WebSocketUpgradeHandler.from(server, context, container ->
         {
             container.setIdleTimeout(Duration.ofSeconds(10));
             container.setMaxTextMessageSize(1024 * 1024 * 2);
             container.addMapping("/ws", (upgradeRequest, upgradeResponse, callback) -> new ServerEndpoint());
         });
+        context.setHandler(wsHandler);
 
         server.setHandler(context);
         server.start();

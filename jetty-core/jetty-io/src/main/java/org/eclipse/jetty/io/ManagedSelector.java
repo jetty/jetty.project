@@ -556,30 +556,33 @@ public class ManagedSelector extends ContainerLifeCycle implements Dumpable
             if (LOG.isDebugEnabled())
                 LOG.debug("updateable {}", _updateable.size());
 
-            for (SelectorUpdate update : _updateable)
+            Selector selector = _selector;
+            while (true)
             {
-                if (_selector == null)
+                SelectorUpdate update = _updateable.pollFirst();
+                if (update == null)
+                    break;
+                if (selector == null)
                     break;
                 try
                 {
                     if (LOG.isDebugEnabled())
                         LOG.debug("update {}", update);
-                    update.update(_selector);
+                    update.update(selector);
                 }
                 catch (Throwable x)
                 {
                     LOG.warn("Cannot update selector {}", ManagedSelector.this, x);
                 }
             }
-            _updateable.clear();
 
-            Selector selector;
             int updates;
             try (AutoLock l = _lock.lock())
             {
                 updates = _updates.size();
                 _selecting = updates == 0;
-                selector = _selecting ? null : _selector;
+                if (_selecting)
+                    selector = null;
             }
 
             if (LOG.isDebugEnabled())

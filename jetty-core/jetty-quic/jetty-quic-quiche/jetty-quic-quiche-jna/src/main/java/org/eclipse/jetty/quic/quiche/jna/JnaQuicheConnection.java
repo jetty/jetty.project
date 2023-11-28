@@ -689,14 +689,48 @@ public class JnaQuicheConnection extends QuicheConnection
         {
             if (quicheConn == null)
                 throw new IOException("connection was released");
-            int written = LibQuiche.INSTANCE.quiche_conn_stream_send(quicheConn, new uint64_t(streamId), buffer, new size_t(buffer.remaining()), last).intValue();
+            int written = LibQuiche.INSTANCE.quiche_conn_stream_send(quicheConn, new uint64_t(streamId), jnaBuffer(buffer), new size_t(buffer.remaining()), last).intValue();
             if (written == quiche_error.QUICHE_ERR_DONE)
+            {
+                int rc = LibQuiche.INSTANCE.quiche_conn_stream_writable(quicheConn, new uint64_t(streamId), new size_t(buffer.remaining()));
+                if (rc < 0)
+                    throw new IOException("failed to write to stream " + streamId + "; quiche_err=" + quiche_error.errToString(rc));
                 return 0;
+            }
             if (written < 0L)
                 throw new IOException("failed to write to stream " + streamId + "; quiche_err=" + quiche_error.errToString(written));
             buffer.position(buffer.position() + written);
             return written;
         }
+    }
+
+    /**
+     * JNA requires ByteBuffers that are either direct or backed by an array.
+     * Read-only heap buffer are not direct and are considered not backed by an
+     * array, so buffer.hasArray() returns false for then an JNA rejects them
+     * by throwing IllegalStateException with the message <code>"Buffer arguments
+     * must be direct or have a primitive backing array"</code> from this native
+     * method in <code>dispatch.c:615</code>:
+     * <pre>
+     * static void
+     * dispatch(JNIEnv *env, void* func, jint flags, jobjectArray args,
+     *          ffi_type *return_type, void *presult)
+     * </pre>
+     * so this method ensures the buffer fulfils JNA's conditions, or it copies
+     * the given buffer into a new heap buffer and returns the copy, while also
+     * keeping the limit and position of the original buffer and setting them
+     * on the new buffer in a way comparable to the original buffer's.
+     */
+    private static ByteBuffer jnaBuffer(ByteBuffer buffer)
+    {
+        if (buffer.isDirect() || buffer.hasArray())
+            return buffer;
+        ByteBuffer jnaBuffer = ByteBuffer.allocate(buffer.remaining());
+        int oldPosition = buffer.position();
+        jnaBuffer.put(buffer);
+        jnaBuffer.flip();
+        buffer.position(oldPosition);
+        return jnaBuffer;
     }
 
     @Override

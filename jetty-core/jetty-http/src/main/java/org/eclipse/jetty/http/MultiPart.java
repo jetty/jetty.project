@@ -407,7 +407,12 @@ public class MultiPart
                 // because the content sources may not be read, or their chunks could be
                 // further retained, so those chunks must not be linked to the original ones.
                 List<Content.Chunk> chunks = content.stream()
-                    .map(chunk -> Content.Chunk.from(chunk.getByteBuffer().slice(), chunk.isLast()))
+                    .map(chunk ->
+                    {
+                        if (Content.Chunk.isFailure(chunk))
+                            return chunk;
+                        return Content.Chunk.from(chunk.getByteBuffer().slice(), chunk.isLast());
+                    })
                     .toList();
                 ChunksContentSource newContentSource = new ChunksContentSource(chunks);
                 chunks.forEach(Content.Chunk::release);
@@ -759,8 +764,16 @@ public class MultiPart
                 case CONTENT ->
                 {
                     Content.Chunk chunk = part.getContentSource().read();
-                    if (chunk == null || Content.Chunk.isFailure(chunk))
+                    if (chunk == null)
+                        yield null;
+                    if (Content.Chunk.isFailure(chunk, true))
+                    {
+                        try (AutoLock ignored = lock.lock())
+                        {
+                            errorChunk = chunk;
+                        }
                         yield chunk;
+                    }
                     if (!chunk.isLast())
                         yield chunk;
                     state = State.MIDDLE;

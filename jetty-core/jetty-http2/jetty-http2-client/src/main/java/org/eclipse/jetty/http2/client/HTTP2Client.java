@@ -412,17 +412,17 @@ public class HTTP2Client extends ContainerLifeCycle
         connect(null, address, listener, promise);
     }
 
-    public CompletableFuture<Session> connect(SslContextFactory sslContextFactory, SocketAddress address, Session.Listener listener)
+    public CompletableFuture<Session> connect(SslContextFactory.Client sslContextFactory, SocketAddress address, Session.Listener listener)
     {
         return Promise.Completable.with(p -> connect(sslContextFactory, address, listener, p));
     }
 
-    public void connect(SslContextFactory sslContextFactory, SocketAddress address, Session.Listener listener, Promise<Session> promise)
+    public void connect(SslContextFactory.Client sslContextFactory, SocketAddress address, Session.Listener listener, Promise<Session> promise)
     {
         connect(sslContextFactory, address, listener, promise, null);
     }
 
-    public void connect(SslContextFactory sslContextFactory, SocketAddress address, Session.Listener listener, Promise<Session> promise, Map<String, Object> context)
+    public void connect(SslContextFactory.Client sslContextFactory, SocketAddress address, Session.Listener listener, Promise<Session> promise, Map<String, Object> context)
     {
         ClientConnectionFactory factory = newClientConnectionFactory(sslContextFactory);
         connect(address, factory, listener, promise, context);
@@ -435,7 +435,7 @@ public class HTTP2Client extends ContainerLifeCycle
         connector.connect(address, context);
     }
 
-    public void accept(SslContextFactory sslContextFactory, SocketChannel channel, Session.Listener listener, Promise<Session> promise)
+    public void accept(SslContextFactory.Client sslContextFactory, SocketChannel channel, Session.Listener listener, Promise<Session> promise)
     {
         ClientConnectionFactory factory = newClientConnectionFactory(sslContextFactory);
         accept(channel, factory, listener, promise);
@@ -459,7 +459,7 @@ public class HTTP2Client extends ContainerLifeCycle
         return context;
     }
 
-    private ClientConnectionFactory newClientConnectionFactory(SslContextFactory sslContextFactory)
+    private ClientConnectionFactory newClientConnectionFactory(SslContextFactory.Client sslContextFactory)
     {
         ClientConnectionFactory factory = new HTTP2ClientConnectionFactory();
         if (sslContextFactory != null)

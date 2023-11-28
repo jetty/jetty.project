@@ -43,188 +43,186 @@ public class ServletRequestHttpWrapper extends ServletRequestWrapper implements 
     @Override
     public String getAuthType()
     {
-        return null;
+        throw new UnsupportedOperationException();
     }
 
     @Override
     public Cookie[] getCookies()
     {
-        return null;
+        throw new UnsupportedOperationException();
     }
 
     @Override
     public long getDateHeader(String name)
     {
-        return 0;
+        throw new UnsupportedOperationException();
     }
 
     @Override
     public String getHeader(String name)
     {
-        return null;
-    }
-
-    @Override
-    public Enumeration<String> getHeaders(String name)
-    {
-        return null;
+        throw new UnsupportedOperationException();
     }
 
     @Override
     public Enumeration<String> getHeaderNames()
     {
-        return null;
+        throw new UnsupportedOperationException();
+    }
+
+    @Override
+    public Enumeration<String> getHeaders(String name)
+    {
+        throw new UnsupportedOperationException();
     }
 
     @Override
     public int getIntHeader(String name)
     {
-        return 0;
+        throw new UnsupportedOperationException();
     }
 
     @Override
     public String getMethod()
     {
-        return null;
+        throw new UnsupportedOperationException();
     }
 
     @Override
     public String getPathInfo()
     {
-        return null;
+        throw new UnsupportedOperationException();
     }
 
     @Override
     public String getPathTranslated()
     {
-        return null;
+        throw new UnsupportedOperationException();
     }
 
     @Override
     public String getContextPath()
     {
-        return null;
+        throw new UnsupportedOperationException();
     }
 
     @Override
     public String getQueryString()
     {
-        return null;
+        throw new UnsupportedOperationException();
     }
 
     @Override
     public String getRemoteUser()
     {
-        return null;
+        throw new UnsupportedOperationException();
     }
 
     @Override
     public boolean isUserInRole(String role)
     {
-        return false;
+        throw new UnsupportedOperationException();
     }
 
     @Override
     public Principal getUserPrincipal()
     {
-        return null;
+        throw new UnsupportedOperationException();
     }
 
     @Override
     public String getRequestedSessionId()
     {
-        return null;
+        throw new UnsupportedOperationException();
     }
 
     @Override
     public String getRequestURI()
     {
-        return null;
+        throw new UnsupportedOperationException();
     }
 
     @Override
     public StringBuffer getRequestURL()
     {
-        return null;
+        throw new UnsupportedOperationException();
     }
 
     @Override
     public String getServletPath()
     {
-        return null;
+        throw new UnsupportedOperationException();
     }
 
     @Override
     public HttpSession getSession(boolean create)
     {
-        return null;
+        throw new UnsupportedOperationException();
     }
 
     @Override
     public HttpSession getSession()
     {
-        return null;
+        throw new UnsupportedOperationException();
     }
 
     @Override
     public boolean isRequestedSessionIdValid()
     {
-        return false;
+        throw new UnsupportedOperationException();
     }
 
     @Override
     public boolean isRequestedSessionIdFromCookie()
     {
-        return false;
+        throw new UnsupportedOperationException();
     }
 
     @Override
     public boolean isRequestedSessionIdFromURL()
     {
-        return false;
+        throw new UnsupportedOperationException();
     }
 
     @Override
     public boolean authenticate(HttpServletResponse response) throws IOException, ServletException
     {
-        return false;
+        throw new UnsupportedOperationException();
     }
 
     @Override
     public Part getPart(String name) throws IOException, ServletException
     {
-        return null;
+        throw new UnsupportedOperationException();
     }
 
     @Override
     public Collection<Part> getParts() throws IOException, ServletException
     {
-        return null;
+        throw new UnsupportedOperationException();
     }
 
     @Override
     public void login(String username, String password) throws ServletException
     {
-
+        throw new UnsupportedOperationException();
     }
 
     @Override
     public void logout() throws ServletException
     {
-
+        throw new UnsupportedOperationException();
     }
 
     @Override
     public String changeSessionId()
     {
-        // TODO 3.1 Auto-generated method stub
-        return null;
+        throw new UnsupportedOperationException();
     }
 
     @Override
     public <T extends HttpUpgradeHandler> T upgrade(Class<T> handlerClass) throws IOException, ServletException
     {
-        // TODO 3.1 Auto-generated method stub
-        return null;
+        throw new UnsupportedOperationException();
     }
 }

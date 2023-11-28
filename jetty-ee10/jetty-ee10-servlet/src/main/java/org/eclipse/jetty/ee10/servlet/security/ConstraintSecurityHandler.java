@@ -33,8 +33,6 @@ import jakarta.servlet.ServletSecurityElement;
 import jakarta.servlet.annotation.ServletSecurity.EmptyRoleSemantic;
 import jakarta.servlet.annotation.ServletSecurity.TransportGuarantee;
 import org.eclipse.jetty.ee10.servlet.ServletContextHandler;
-import org.eclipse.jetty.ee10.servlet.security.ConstraintAware;
-import org.eclipse.jetty.ee10.servlet.security.ConstraintMapping;
 import org.eclipse.jetty.http.pathmap.MappedResource;
 import org.eclipse.jetty.http.pathmap.MatchedResource;
 import org.eclipse.jetty.http.pathmap.PathMappings;
@@ -186,7 +184,7 @@ public class ConstraintSecurityHandler extends SecurityHandler implements Constr
     }
 
     /**
-     * Generate Constraints and ContraintMappings for the given url pattern and ServletSecurityElement
+     * Generate Constraints and ConstraintMappings for the given url pattern and ServletSecurityElement
      *
      * @param name the name
      * @param pathSpec the path spec

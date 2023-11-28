@@ -317,6 +317,12 @@ public class SessionHandler extends ScopedHandler implements SessionConfig.Mutab
     }
 
     @Override
+    public boolean isPartitioned()
+    {
+        return _sessionManager.isPartitioned();
+    }
+
+    @Override
     public boolean isSecureCookies()
     {
         return _sessionManager.isSecureCookies();
@@ -350,6 +356,12 @@ public class SessionHandler extends ScopedHandler implements SessionConfig.Mutab
     public void setHttpOnly(boolean value)
     {
         _sessionManager.setHttpOnly(value);
+    }
+
+    @Override
+    public void setPartitioned(boolean value)
+    {
+        _sessionManager.setPartitioned(value);
     }
 
     @Override

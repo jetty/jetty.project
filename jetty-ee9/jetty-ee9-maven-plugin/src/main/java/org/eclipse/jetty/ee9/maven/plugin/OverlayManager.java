@@ -15,12 +15,18 @@ package org.eclipse.jetty.ee9.maven.plugin;
 
 import java.io.File;
 import java.io.IOException;
+import java.nio.file.Path;
+import java.nio.file.Paths;
 import java.util.ArrayList;
 import java.util.HashSet;
 import java.util.List;
+import java.util.Objects;
 import java.util.Set;
 
 import org.apache.maven.artifact.Artifact;
+import org.eclipse.jetty.ee9.webapp.WebAppContext;
+import org.eclipse.jetty.util.URIUtil;
+import org.eclipse.jetty.util.resource.MountedPathResource;
 import org.eclipse.jetty.util.resource.Resource;
 import org.eclipse.jetty.util.resource.ResourceFactory;
 
@@ -32,7 +38,7 @@ import org.eclipse.jetty.util.resource.ResourceFactory;
  */
 public class OverlayManager
 {
-    private WarPluginInfo warPlugin;
+    private final WarPluginInfo warPlugin;
 
     public OverlayManager(WarPluginInfo warPlugin)
     {
@@ -44,7 +50,7 @@ public class OverlayManager
     {
         List<Resource> resourceBases = new ArrayList<Resource>();
 
-        for (Overlay o : getOverlays())
+        for (Overlay o : getOverlays(webApp))
         {
             //can refer to the current project in list of overlays for ordering purposes
             if (o.getConfig() != null && o.getConfig().isCurrentProject() && webApp.getBaseResource().exists())
@@ -53,7 +59,7 @@ public class OverlayManager
                 continue;
             }
             //add in the selectively unpacked overlay in the correct order to the webapp's resource base
-            resourceBases.add(unpackOverlay(o));
+            resourceBases.add(unpackOverlay(webApp, o));
         }
 
         if (!resourceBases.contains(webApp.getBaseResource()) && webApp.getBaseResource().exists())
@@ -70,9 +76,11 @@ public class OverlayManager
     /**
      * Generate an ordered list of overlays
      */
-    protected List<Overlay> getOverlays()
+    protected List<Overlay> getOverlays(WebAppContext webApp)
         throws Exception
-    {        
+    {
+        Objects.requireNonNull(webApp);
+
         Set<Artifact> matchedWarArtifacts = new HashSet<Artifact>();
         List<Overlay> overlays = new ArrayList<Overlay>();
         
@@ -96,7 +104,7 @@ public class OverlayManager
             if (a != null)
             {   
                 matchedWarArtifacts.add(a);
-                Resource resource = ResourceFactory.root().newJarFileResource(a.getFile().toPath().toUri()); // TODO leak
+                Resource resource = webApp.getResourceFactory().newJarFileResource(a.getFile().toPath().toUri());
                 SelectiveJarResource r = new SelectiveJarResource(resource);
                 r.setIncludes(config.getIncludes());
                 r.setExcludes(config.getExcludes());
@@ -110,7 +118,7 @@ public class OverlayManager
         {
             if (!matchedWarArtifacts.contains(a))
             {
-                Resource resource = ResourceFactory.root().newJarFileResource(a.getFile().toPath().toUri()); // TODO leak
+                Resource resource = webApp.getResourceFactory().newJarFileResource(a.getFile().toPath().toUri());
                 Overlay overlay = new Overlay(null, resource);
                 overlays.add(overlay);
             }
@@ -125,17 +133,23 @@ public class OverlayManager
      * @return the location to which it was unpacked
      * @throws IOException if there is an IO problem
      */
-    protected  Resource unpackOverlay(Overlay overlay)
+    protected Resource unpackOverlay(WebAppContext webApp, Overlay overlay)
         throws IOException
     {
+        Objects.requireNonNull(webApp);
+        Objects.requireNonNull(overlay);
+
         if (overlay.getResource() == null)
             return null; //nothing to unpack
 
         //Get the name of the overlayed war and unpack it to a dir of the
         //same name in the temporary directory
-        String name = overlay.getResource().getFileName();
+        //We know it is a war because it came from the maven repo
+        assert overlay.getResource() instanceof MountedPathResource;
+        Path p = Paths.get(URIUtil.unwrapContainer(overlay.getResource().getURI()));
+        String name = p.getName(p.getNameCount() - 1).toString();
         name = name.replace('.', '_');
- 
+
         File overlaysDir = new File(warPlugin.getProject().getBuild().getDirectory(), "jetty_overlays");
         File dir = new File(overlaysDir, name);
 
@@ -147,6 +161,6 @@ public class OverlayManager
         overlay.unpackTo(unpackDir);
         
         //use top level of unpacked content
-        return ResourceFactory.root().newResource(unpackDir.getCanonicalPath()); // TODO leak
+        return webApp.getResourceFactory().newResource(unpackDir.getCanonicalPath());
     }
 }

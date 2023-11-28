@@ -29,9 +29,6 @@ import static org.junit.jupiter.api.Assertions.assertNull;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
-/**
- *
- */
 public class AbstractSessionManagerTest
 {
     @Test
@@ -174,6 +171,7 @@ public class AbstractSessionManagerTest
         assertEquals("/test", cookie.getPath());
         assertFalse(cookie.isSecure());
         assertFalse(cookie.isHttpOnly());
+        assertFalse(cookie.isPartitioned());
 
         //check cookie with httpOnly and secure
         sessionManager.setHttpOnly(true);

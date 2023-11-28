@@ -44,7 +44,6 @@ class ImmutableHttpFields implements HttpFields
 
     protected ImmutableHttpFields(HttpField[] fields, int size)
     {
-        Objects.requireNonNull(fields);
         _fields = fields;
         _size = size;
     }
@@ -58,8 +57,8 @@ class ImmutableHttpFields implements HttpFields
     @Override
     public int hashCode()
     {
-        int hash = 0;
-        for (int i = _fields.length; i-- > 0; )
+        int hash = 1993; // prime
+        for (int i = _size; i-- > 0; )
         {
             hash ^= _fields[i].hashCode();
         }
@@ -128,7 +127,7 @@ class ImmutableHttpFields implements HttpFields
     @Override
     public HttpField getField(int index)
     {
-        if (index >= _fields.length)
+        if (index >= _size)
             throw new NoSuchElementException();
         return _fields[index];
     }

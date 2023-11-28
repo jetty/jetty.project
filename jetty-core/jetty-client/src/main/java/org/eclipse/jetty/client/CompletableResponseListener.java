@@ -51,6 +51,14 @@ public class CompletableResponseListener extends BufferingResponseListener
         this.completable.whenComplete(this::handleExternalFailure);
     }
 
+    /**
+     * @return the {@link Request} associated with this listener
+     */
+    public Request getRequest()
+    {
+        return request;
+    }
+
     private void handleExternalFailure(ContentResponse response, Throwable failure)
     {
         // External failures applied to the CompletableFuture,

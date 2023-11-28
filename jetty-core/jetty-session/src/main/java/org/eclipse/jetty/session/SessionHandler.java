@@ -117,7 +117,7 @@ public class SessionHandler extends AbstractSessionManager implements Handler.Si
                 session = _session.get();
                 HttpCookie cookie = getSessionCookie(session, getConnectionMetaData().isSecure());
                 if (cookie != null)
-                    Response.replaceCookie(_response, cookie);
+                    Response.putCookie(_response, cookie);
             }
 
             return session == null || !session.isValid() ? null : session;
@@ -136,7 +136,7 @@ public class SessionHandler extends AbstractSessionManager implements Handler.Si
                 _session.set(session);
                 HttpCookie cookie = access(session, getConnectionMetaData().isSecure());
                 if (cookie != null)
-                    Response.replaceCookie(_response, cookie);
+                    Response.putCookie(_response, cookie);
             }
 
             return handler.handle(this, _response, callback);

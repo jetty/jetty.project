@@ -60,6 +60,8 @@ import org.eclipse.jetty.server.SecureRequestCustomizer;
 import org.eclipse.jetty.server.Server;
 import org.eclipse.jetty.server.ServerConnector;
 import org.eclipse.jetty.server.SslConnectionFactory;
+import org.eclipse.jetty.toolchain.test.jupiter.WorkDir;
+import org.eclipse.jetty.toolchain.test.jupiter.WorkDirExtension;
 import org.eclipse.jetty.unixdomain.server.UnixDomainServerConnector;
 import org.eclipse.jetty.util.SocketAddressResolver;
 import org.eclipse.jetty.util.component.LifeCycle;
@@ -71,13 +73,17 @@ import org.junit.jupiter.api.Tag;
 import org.junit.jupiter.api.Tags;
 import org.junit.jupiter.api.TestInfo;
 import org.junit.jupiter.api.extension.BeforeTestExecutionCallback;
+import org.junit.jupiter.api.extension.ExtendWith;
 import org.junit.jupiter.api.extension.RegisterExtension;
 
 import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.junit.jupiter.api.Assertions.fail;
 
+@ExtendWith(WorkDirExtension.class)
 public class AbstractTest
 {
+    public WorkDir workDir;
+
     @RegisterExtension
     public final BeforeTestExecutionCallback printMethodName = context ->
         System.err.printf("Running %s.%s() %s%n", context.getRequiredTestClass().getSimpleName(), context.getRequiredTestMethod().getName(), context.getDisplayName());
@@ -109,7 +115,7 @@ public class AbstractTest
     {
         Collection<Transport> transports = transports();
         transports.remove(Transport.UNIX_DOMAIN);
-        return List.copyOf(transports);
+        return transports;
     }
 
     public static Collection<Transport> transportsTCP()
@@ -117,7 +123,14 @@ public class AbstractTest
         Collection<Transport> transports = transports();
         transports.remove(Transport.H3);
         transports.remove(Transport.UNIX_DOMAIN);
-        return List.copyOf(transports);
+        return transports;
+    }
+
+    public static Collection<Transport> transportsTLS()
+    {
+        Collection<Transport> transports = transports();
+        transports.retainAll(EnumSet.of(Transport.HTTPS, Transport.H2));
+        return transports;
     }
 
     @AfterEach
@@ -132,9 +145,14 @@ public class AbstractTest
         }
         finally
         {
-            LifeCycle.stop(client);
-            LifeCycle.stop(server);
+            stop();
         }
+    }
+
+    public void stop()
+    {
+        LifeCycle.stop(client);
+        LifeCycle.stop(server);
     }
 
     private void assertNoLeaks(ArrayByteBufferPool.Tracking bufferPool, TestInfo testInfo, String prefix, String msg) throws Exception
@@ -322,7 +340,7 @@ public class AbstractTest
                 yield new ServerConnector(server, 1, 1, newServerConnectionFactory(transport));
             case H3:
                 HTTP3ServerConnector h3Connector = new HTTP3ServerConnector(server, sslContextFactoryServer, newServerConnectionFactory(transport));
-                h3Connector.getQuicConfiguration().setPemWorkDirectory(Path.of(System.getProperty("java.io.tmpdir")));
+                h3Connector.getQuicConfiguration().setPemWorkDirectory(workDir.getEmptyPathDir());
                 yield h3Connector;
             case UNIX_DOMAIN:
                 UnixDomainServerConnector unixConnector = new UnixDomainServerConnector(server, 1, 1, newServerConnectionFactory(transport));

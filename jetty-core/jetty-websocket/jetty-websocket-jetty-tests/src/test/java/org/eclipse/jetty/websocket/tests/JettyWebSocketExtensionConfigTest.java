@@ -24,7 +24,6 @@ import org.eclipse.jetty.client.Response;
 import org.eclipse.jetty.http.HttpHeader;
 import org.eclipse.jetty.server.Server;
 import org.eclipse.jetty.server.ServerConnector;
-import org.eclipse.jetty.server.handler.ContextHandler;
 import org.eclipse.jetty.websocket.api.Callback;
 import org.eclipse.jetty.websocket.api.ExtensionConfig;
 import org.eclipse.jetty.websocket.api.Session;
@@ -56,11 +55,7 @@ public class JettyWebSocketExtensionConfigTest
         connector = new ServerConnector(server);
         server.addConnector(connector);
 
-        ContextHandler context = new ContextHandler("/");
-
-        WebSocketUpgradeHandler wsHandler = WebSocketUpgradeHandler.from(server, context);
-        context.setHandler(wsHandler);
-        wsHandler.configure(container ->
+        WebSocketUpgradeHandler wsHandler = WebSocketUpgradeHandler.from(server, container ->
             container.addMapping("/", (rq, rs, cb) ->
             {
                 assertEquals(rq.getExtensions().stream().filter(e -> e.getName().equals("permessage-deflate")).count(), 1);
@@ -80,7 +75,7 @@ public class JettyWebSocketExtensionConfigTest
                 return new EchoSocket();
             }));
 
-        server.setHandler(context);
+        server.setHandler(wsHandler);
         server.start();
 
         client = new WebSocketClient();

@@ -23,6 +23,7 @@
                   </Arg>
                 </Call>
               </Set>
+              <Set name="deferInitialScan" property="jetty.deploy.deferInitialScan"/>
               <Set name="scanInterval" property="jetty.deploy.scanInterval"/>
               <Call name="loadPropertiesFromString">
                 <Arg>

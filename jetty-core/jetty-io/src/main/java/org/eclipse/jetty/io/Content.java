@@ -95,6 +95,11 @@ public class Content
 
     /**
      * <p>A source of content that can be read with a read/demand model.</p>
+     * <p>To avoid leaking its resources, a source <b>must</b> either:</p>
+     * <ul>
+     * <li>be read until it returns a {@link Chunk#isLast() last chunk}, either EOF or a terminal failure</li>
+     * <li>be {@link #fail(Throwable) failed}</li>
+     * </ul>
      * <h2><a id="idiom">Idiomatic usage</a></h2>
      * <p>The read/demand model typical usage is the following:</p>
      * <pre>{@code
@@ -110,12 +115,19 @@ public class Content
      *         }
      *
      *         // The chunk is a failure.
-     *         if (Content.Chunk.isFailure(chunk)) {
-     *             // Handle the failure.
-     *             Throwable cause = chunk.getFailure();
-     *             boolean transient = !chunk.isLast();
-     *             // ...
-     *             return;
+     *         if (Content.Chunk.isFailure(chunk))
+     *         {
+     *             boolean fatal = chunk.isLast();
+     *             if (fatal)
+     *             {
+     *                 handleFatalFailure(chunk.getFailure());
+     *                 return;
+     *             }
+     *             else
+     *             {
+     *                 handleTransientFailure(chunk.getFailure());
+     *                 continue;
+     *             }
      *         }
      *
      *         // It's a valid chunk, consume the chunk's bytes.
@@ -124,6 +136,10 @@ public class Content
      *
      *         // Release the chunk when it has been consumed.
      *         chunk.release();
+     *
+     *         // Exit if the Content.Source is fully consumed.
+     *         if (chunk.isLast())
+     *             break;
      *     }
      * }
      * }</pre>
@@ -859,9 +875,11 @@ public class Content
          */
         default Chunk asReadOnly()
         {
-            if (!canRetain())
+            if (getByteBuffer().isReadOnly())
                 return this;
-            return asChunk(getByteBuffer().asReadOnlyBuffer(), isLast(), this);
+            if (canRetain())
+                return asChunk(getByteBuffer().asReadOnlyBuffer(), isLast(), this);
+            return from(getByteBuffer().asReadOnlyBuffer(), isLast());
         }
 
         /**

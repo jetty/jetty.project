@@ -42,6 +42,7 @@ import static org.hamcrest.Matchers.instanceOf;
 import static org.hamcrest.Matchers.is;
 import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertNotNull;
+import static org.junit.jupiter.api.Assertions.assertNull;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
 public class ServerTimeoutsTest extends AbstractTest
@@ -55,7 +56,7 @@ public class ServerTimeoutsTest extends AbstractTest
         setStreamIdleTimeout(IDLE_TIMEOUT);
     }
 
-    public static Stream<Arguments> transportsAndTrueIdleTimeoutListeners()
+    public static Stream<Arguments> transportsAndIdleTimeoutListener()
     {
         Collection<Transport> transports = transports();
         return Stream.concat(
@@ -64,8 +65,8 @@ public class ServerTimeoutsTest extends AbstractTest
     }
 
     @ParameterizedTest
-    @MethodSource("transportsAndTrueIdleTimeoutListeners")
-    public void testIdleTimeout(Transport transport, boolean listener) throws Exception
+    @MethodSource("transportsAndIdleTimeoutListener")
+    public void testIdleTimeout(Transport transport, boolean addIdleTimeoutListener) throws Exception
     {
         AtomicBoolean listenerCalled = new AtomicBoolean();
         start(transport, new Handler.Abstract()
@@ -73,9 +74,11 @@ public class ServerTimeoutsTest extends AbstractTest
             @Override
             public boolean handle(Request request, Response response, Callback callback)
             {
-
-                if (listener)
+                if (addIdleTimeoutListener)
+                {
                     request.addIdleTimeoutListener(t -> listenerCalled.compareAndSet(false, true));
+                    request.addFailureListener(callback::failed);
+                }
 
                 // Do not complete the callback, so it idle times out.
                 return true;
@@ -88,13 +91,13 @@ public class ServerTimeoutsTest extends AbstractTest
 
         assertThat(response.getStatus(), is(HttpStatus.INTERNAL_SERVER_ERROR_500));
         assertThat(response.getContentAsString(), containsStringIgnoringCase("HTTP ERROR 500 java.util.concurrent.TimeoutException: Idle timeout"));
-        if (listener)
+        if (addIdleTimeoutListener)
             assertTrue(listenerCalled.get());
     }
 
     @ParameterizedTest
-    @MethodSource("transportsAndTrueIdleTimeoutListeners")
-    public void testIdleTimeoutWithDemand(Transport transport, boolean listener) throws Exception
+    @MethodSource("transportsAndIdleTimeoutListener")
+    public void testIdleTimeoutWithDemand(Transport transport, boolean addIdleTimeoutListener) throws Exception
     {
         AtomicBoolean listenerCalled = new AtomicBoolean();
         CountDownLatch demanded = new CountDownLatch(1);
@@ -105,8 +108,7 @@ public class ServerTimeoutsTest extends AbstractTest
             @Override
             public boolean handle(Request request, Response response, Callback callback)
             {
-
-                if (listener)
+                if (addIdleTimeoutListener)
                     request.addIdleTimeoutListener(t -> listenerCalled.compareAndSet(false, true));
                 requestRef.set(request);
                 callbackRef.set(callback);
@@ -130,15 +132,12 @@ public class ServerTimeoutsTest extends AbstractTest
 
         // Reads should yield the idle timeout.
         Content.Chunk chunk = requestRef.get().read();
-        // TODO change last to false in the next line if timeouts are transients
-        assertTrue(Content.Chunk.isFailure(chunk, true));
+        assertTrue(Content.Chunk.isFailure(chunk, false));
         Throwable cause = chunk.getFailure();
         assertThat(cause, instanceOf(TimeoutException.class));
 
-        /* TODO if transient timeout failures are supported then add this check
         // Can read again
         assertNull(requestRef.get().read());
-        */
 
         // Complete the callback as the error listener promised.
         callbackRef.get().failed(cause);
@@ -187,10 +186,9 @@ public class ServerTimeoutsTest extends AbstractTest
     }
 
     @ParameterizedTest
-    @MethodSource("transportsNoFCGI")
+    @MethodSource("transports")
     public void testIdleTimeoutErrorListenerReturnsFalseThenTrue(Transport transport) throws Exception
     {
-        // TODO fix FCGI for multiple timeouts
         AtomicReference<Throwable> error = new AtomicReference<>();
         start(transport, new Handler.Abstract()
         {
@@ -198,6 +196,7 @@ public class ServerTimeoutsTest extends AbstractTest
             public boolean handle(Request request, Response response, Callback callback)
             {
                 request.addIdleTimeoutListener(t -> error.getAndSet(t) != null);
+                request.addFailureListener(callback::failed);
                 return true;
             }
         });
@@ -206,9 +205,9 @@ public class ServerTimeoutsTest extends AbstractTest
             .timeout(IDLE_TIMEOUT * 5, TimeUnit.MILLISECONDS)
             .send();
 
-        // The first time the listener returns true, but does not complete the callback,
+        // The first time the listener returns false, but does not complete the callback,
         // so another idle timeout elapses.
-        // The second time the listener returns false and the implementation produces the response.
+        // The second time the listener returns true and the implementation produces the response.
         assertThat(response.getStatus(), is(HttpStatus.INTERNAL_SERVER_ERROR_500));
         assertThat(response.getContentAsString(), containsStringIgnoringCase("HTTP ERROR 500 java.util.concurrent.TimeoutException: Idle timeout"));
         assertThat(error.get(), instanceOf(TimeoutException.class));

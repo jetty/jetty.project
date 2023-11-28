@@ -58,6 +58,18 @@ public class ResponseHttpFields implements HttpFields.Mutable
     }
 
     @Override
+    public HttpField getField(String name)
+    {
+        return _fields.getField(name);
+    }
+
+    @Override
+    public HttpField getField(HttpHeader header)
+    {
+        return _fields.getField(header);
+    }
+
+    @Override
     public HttpField getField(int index)
     {
         return _fields.getField(index);
@@ -116,9 +128,9 @@ public class ResponseHttpFields implements HttpFields.Mutable
     @Override
     public Iterator<HttpField> iterator()
     {
-        Iterator<HttpField> i = _fields.iterator();
         return new Iterator<>()
         {
+            private final Iterator<HttpField> i = _fields.iterator();
             private HttpField _current;
 
             @Override

@@ -17,7 +17,6 @@ import java.nio.charset.Charset;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.EventListener;
-import java.util.HashSet;
 import java.util.List;
 import java.util.Set;
 
@@ -32,16 +31,17 @@ import org.eclipse.jetty.http.HttpMethod;
 import org.eclipse.jetty.http.HttpURI;
 import org.eclipse.jetty.http.UriCompliance;
 import org.eclipse.jetty.http.pathmap.MatchedResource;
+import org.eclipse.jetty.io.EndPoint;
 import org.eclipse.jetty.server.FormFields;
 import org.eclipse.jetty.server.Request;
 import org.eclipse.jetty.server.Response;
-import org.eclipse.jetty.server.SecureRequestCustomizer;
 import org.eclipse.jetty.server.Session;
 import org.eclipse.jetty.server.handler.ContextHandler;
 import org.eclipse.jetty.server.handler.ContextRequest;
 import org.eclipse.jetty.session.AbstractSessionManager;
 import org.eclipse.jetty.session.ManagedSession;
 import org.eclipse.jetty.session.SessionManager;
+import org.eclipse.jetty.util.Attributes;
 import org.eclipse.jetty.util.Fields;
 import org.eclipse.jetty.util.URIUtil;
 
@@ -57,6 +57,20 @@ import org.eclipse.jetty.util.URIUtil;
 public class ServletContextRequest extends ContextRequest implements ServletContextHandler.ServletRequestInfo, Request.ServeAs
 {
     public static final String MULTIPART_CONFIG_ELEMENT = "org.eclipse.jetty.multipartConfig";
+    public static final String SSL_CIPHER_SUITE = "jakarta.servlet.request.cipher_suite";
+    public static final String SSL_KEY_SIZE = "jakarta.servlet.request.key_size";
+    public static final String SSL_SESSION_ID = "jakarta.servlet.request.ssl_session_id";
+    public static final String PEER_CERTIFICATES = "jakarta.servlet.request.X509Certificate";
+
+    private static final Set<String> ATTRIBUTES = Set.of(
+        SSL_CIPHER_SUITE,
+        SSL_KEY_SIZE,
+        SSL_SESSION_ID,
+        PEER_CERTIFICATES,
+        MULTIPART_CONFIG_ELEMENT,
+        FormFields.MAX_FIELDS_ATTRIBUTE,
+        FormFields.MAX_LENGTH_ATTRIBUTE);
+
     static final int INPUT_NONE = 0;
     static final int INPUT_STREAM = 1;
     static final int INPUT_READER = 2;
@@ -85,7 +99,6 @@ public class ServletContextRequest extends ContextRequest implements ServletCont
         throw new IllegalStateException("could not find %s for %s".formatted(ServletContextRequest.class.getSimpleName(), request));
     }
 
-    private final List<ServletRequestAttributeListener> _requestAttributeListeners = new ArrayList<>();
     private final ServletApiRequest _servletApiRequest;
     private final ServletContextResponse _response;
     private final MatchedResource<ServletHandler.MappedServlet> _matchedResource;
@@ -93,6 +106,9 @@ public class ServletContextRequest extends ContextRequest implements ServletCont
     private final String _decodedPathInContext;
     private final ServletChannel _servletChannel;
     private final SessionManager _sessionManager;
+    private final Attributes _attributes;
+
+    private List<ServletRequestAttributeListener> _requestAttributeListeners;
     private Charset _queryEncoding;
     private HttpFields _trailers;
     private ManagedSession _managedSession;
@@ -115,6 +131,30 @@ public class ServletContextRequest extends ContextRequest implements ServletCont
         _decodedPathInContext = decodedPathInContext;
         _response =  newServletContextResponse(response);
         _sessionManager = sessionManager;
+        _attributes = new Attributes.Synthetic(request)
+        {
+            @Override
+            protected Object getSyntheticAttribute(String name)
+            {
+                return switch (name)
+                {
+                    case SSL_CIPHER_SUITE -> super.getAttribute(EndPoint.SslSessionData.ATTRIBUTE) instanceof EndPoint.SslSessionData data ? data.cipherSuite() : null;
+                    case SSL_KEY_SIZE -> super.getAttribute(EndPoint.SslSessionData.ATTRIBUTE) instanceof EndPoint.SslSessionData data ? data.keySize() : null;
+                    case SSL_SESSION_ID -> super.getAttribute(EndPoint.SslSessionData.ATTRIBUTE) instanceof EndPoint.SslSessionData data ? data.sslSessionId() : null;
+                    case PEER_CERTIFICATES -> super.getAttribute(EndPoint.SslSessionData.ATTRIBUTE) instanceof EndPoint.SslSessionData data ? data.peerCertificates() : null;
+                    case ServletContextRequest.MULTIPART_CONFIG_ELEMENT -> _matchedResource.getResource().getServletHolder().getMultipartConfigElement();
+                    case FormFields.MAX_FIELDS_ATTRIBUTE -> getServletContext().getServletContextHandler().getMaxFormKeys();
+                    case FormFields.MAX_LENGTH_ATTRIBUTE -> getServletContext().getServletContextHandler().getMaxFormContentSize();
+                    default -> null;
+                };
+            }
+
+            @Override
+            protected Set<String> getSyntheticNameSet()
+            {
+                return ATTRIBUTES;
+            }
+        };
         addIdleTimeoutListener(_servletChannel.getServletRequestState()::onIdleTimeout);
     }
 
@@ -264,38 +304,25 @@ public class ServletContextRequest extends ContextRequest implements ServletCont
     @Override
     public Object getAttribute(String name)
     {
-        return switch (name)
-        {
-            case "jakarta.servlet.request.cipher_suite" -> super.getAttribute(SecureRequestCustomizer.CIPHER_SUITE_ATTRIBUTE);
-            case "jakarta.servlet.request.key_size" -> super.getAttribute(SecureRequestCustomizer.KEY_SIZE_ATTRIBUTE);
-            case "jakarta.servlet.request.ssl_session_id" -> super.getAttribute(SecureRequestCustomizer.SSL_SESSION_ID_ATTRIBUTE);
-            case "jakarta.servlet.request.X509Certificate" -> super.getAttribute(SecureRequestCustomizer.PEER_CERTIFICATES_ATTRIBUTE);
-            case ServletContextRequest.MULTIPART_CONFIG_ELEMENT -> _matchedResource.getResource().getServletHolder().getMultipartConfigElement();
-            case FormFields.MAX_FIELDS_ATTRIBUTE -> getServletContext().getServletContextHandler().getMaxFormKeys();
-            case FormFields.MAX_LENGTH_ATTRIBUTE -> getServletContext().getServletContextHandler().getMaxFormContentSize();
-            default -> super.getAttribute(name);
-        };
+        return _attributes.getAttribute(name);
+    }
+
+    @Override
+    public Object removeAttribute(String name)
+    {
+        return _attributes.removeAttribute(name);
+    }
+
+    @Override
+    public Object setAttribute(String name, Object value)
+    {
+        return _attributes.setAttribute(name, value);
     }
 
     @Override
     public Set<String> getAttributeNameSet()
     {
-        Set<String> names = new HashSet<>(super.getAttributeNameSet());
-        if (names.contains(SecureRequestCustomizer.CIPHER_SUITE_ATTRIBUTE))
-            names.add("jakarta.servlet.request.cipher_suite");
-        if (names.contains(SecureRequestCustomizer.KEY_SIZE_ATTRIBUTE))
-            names.add("jakarta.servlet.request.key_size");
-        if (names.contains(SecureRequestCustomizer.SSL_SESSION_ID_ATTRIBUTE))
-            names.add("jakarta.servlet.request.ssl_session_id");
-        if (names.contains(SecureRequestCustomizer.PEER_CERTIFICATES_ATTRIBUTE))
-            names.add("jakarta.servlet.request.X509Certificate");
-        if (_matchedResource.getResource().getServletHolder().getMultipartConfigElement() != null)
-            names.add(ServletContextRequest.MULTIPART_CONFIG_ELEMENT);
-        if (getServletContext().getServletContextHandler().getMaxFormKeys() >= 0)
-            names.add(FormFields.MAX_FIELDS_ATTRIBUTE);
-        if (getServletContext().getServletContextHandler().getMaxFormContentSize() >= 0L)
-            names.add(FormFields.MAX_FIELDS_ATTRIBUTE);
-        return names;
+        return _attributes.getAttributeNameSet();
     }
 
     /**
@@ -339,20 +366,27 @@ public class ServletContextRequest extends ContextRequest implements ServletCont
     @Override
     public List<ServletRequestAttributeListener> getRequestAttributeListeners()
     {
+        if (_requestAttributeListeners == null)
+            _requestAttributeListeners = new ArrayList<>();
         return _requestAttributeListeners;
     }
 
-    public void addEventListener(final EventListener listener)
+    public void addEventListener(EventListener listener)
     {
-        if (listener instanceof ServletRequestAttributeListener)
-            _requestAttributeListeners.add((ServletRequestAttributeListener)listener);
+        if (listener instanceof ServletRequestAttributeListener attributeListener)
+        {
+            if (_requestAttributeListeners == null)
+                _requestAttributeListeners = new ArrayList<>();
+            _requestAttributeListeners.add(attributeListener);
+        }
         if (listener instanceof AsyncListener)
             throw new IllegalArgumentException(listener.getClass().toString());
     }
 
-    public void removeEventListener(final EventListener listener)
+    public void removeEventListener(EventListener listener)
     {
-        _requestAttributeListeners.remove(listener);
+        if (_requestAttributeListeners != null)
+            _requestAttributeListeners.remove(listener);
     }
 
     /**
@@ -426,7 +460,7 @@ public class ServletContextRequest extends ContextRequest implements ServletCont
 
         HttpCookie cookie = _sessionManager.getSessionCookie(_managedSession, isSecure());
         if (cookie != null)
-            Response.replaceCookie(_response, cookie);
+            Response.putCookie(_response, cookie);
 
         return _managedSession;
     }

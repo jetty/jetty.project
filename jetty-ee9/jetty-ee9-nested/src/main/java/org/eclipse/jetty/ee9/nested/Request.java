@@ -104,7 +104,21 @@ import org.slf4j.LoggerFactory;
  */
 public class Request implements HttpServletRequest
 {
-    public static final String __MULTIPART_CONFIG_ELEMENT = "org.eclipse.jetty.multipartConfig";
+    /**
+     * The name of the MultiPartConfig request attribute
+     */
+    public static final String MULTIPART_CONFIG_ELEMENT = "org.eclipse.jetty.multipartConfig";
+
+    /**
+     * @deprecated use {@link #MULTIPART_CONFIG_ELEMENT}
+     */
+    @Deprecated
+    public static final String __MULTIPART_CONFIG_ELEMENT = MULTIPART_CONFIG_ELEMENT;
+
+    public static final String SSL_CIPHER_SUITE = "jakarta.servlet.request.cipher_suite";
+    public static final String SSL_KEY_SIZE = "jakarta.servlet.request.key_size";
+    public static final String SSL_SESSION_ID = "jakarta.servlet.request.ssl_session_id";
+    public static final String PEER_CERTIFICATES = "jakarta.servlet.request.X509Certificate";
 
     private static final Logger LOG = LoggerFactory.getLogger(Request.class);
     private static final SetCookieParser SET_COOKIE_PARSER = SetCookieParser.newInstance();
@@ -438,7 +452,7 @@ public class Request implements HttpServletRequest
                     extractFormParameters(_contentParameters);
                 }
                 else if (MimeTypes.Type.MULTIPART_FORM_DATA.is(baseType) &&
-                    getAttribute(__MULTIPART_CONFIG_ELEMENT) != null &&
+                    getAttribute(MULTIPART_CONFIG_ELEMENT) != null &&
                     _multiParts == null)
                 {
                     try
@@ -1892,7 +1906,7 @@ public class Request implements HttpServletRequest
     {
         if (_multiParts == null)
         {
-            MultipartConfigElement config = (MultipartConfigElement)getAttribute(__MULTIPART_CONFIG_ELEMENT);
+            MultipartConfigElement config = (MultipartConfigElement)getAttribute(MULTIPART_CONFIG_ELEMENT);
             if (config == null)
                 throw new IllegalStateException("No multipart config for servlet");
 
@@ -1997,7 +2011,7 @@ public class Request implements HttpServletRequest
     private MultiPartFormInputStream newMultiParts(MultipartConfigElement config, int maxParts) throws IOException
     {
         return new MultiPartFormInputStream(getInputStream(), getContentType(), config,
-            (_context != null ? (File)_context.getAttribute("jakarta.servlet.context.tempdir") : null), maxParts);
+            (_context != null ? (File)_context.getAttribute(ServletContext.TEMPDIR) : null), maxParts);
     }
 
     @Override

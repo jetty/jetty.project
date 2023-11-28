@@ -953,6 +953,7 @@ public class ServletContextHandler extends ContextHandler
             if (handler != null)
                 LOG.warn("ServletContextHandler.setHandler should not be called directly. Use insertHandler or setSessionHandler etc.");
             super.setHandler(handler);
+            relinkHandlers();
         }
     }
 
@@ -1128,7 +1129,7 @@ public class ServletContextHandler extends ContextHandler
     }
 
     @Override
-    protected ServletContextRequest wrapRequest(Request request, Response response)
+    protected ContextRequest wrapRequest(Request request, Response response)
     {
         // Need to ask directly to the Context for the pathInContext, rather than using
         // Request.getPathInContext(), as the request is not yet wrapped in this Context.
@@ -1136,10 +1137,10 @@ public class ServletContextHandler extends ContextHandler
 
         MatchedResource<ServletHandler.MappedServlet> matchedResource = _servletHandler.getMatchedServlet(decodedPathInContext);
         if (matchedResource == null)
-            return null;
+            return wrapNoServlet(request, response);
         ServletHandler.MappedServlet mappedServlet = matchedResource.getResource();
         if (mappedServlet == null)
-            return null;
+            return wrapNoServlet(request, response);
 
         // Get a servlet request, possibly from a cached version in the channel attributes.
         Attributes cache = request.getComponents().getCache();
@@ -1157,7 +1158,16 @@ public class ServletContextHandler extends ContextHandler
 
         ServletContextRequest servletContextRequest = newServletContextRequest(servletChannel, request, response, decodedPathInContext, matchedResource);
         servletChannel.associate(servletContextRequest);
+        Request.addCompletionListener(request, servletChannel::recycle);
         return servletContextRequest;
+    }
+
+    private ContextRequest wrapNoServlet(Request request, Response response)
+    {
+        Handler next = getServletHandler().getHandler();
+        if (next == null)
+            return null;
+        return super.wrapRequest(request, response);
     }
 
     @Override
@@ -1165,7 +1175,7 @@ public class ServletContextHandler extends ContextHandler
     {
         if (request instanceof ServletContextRequest servletContextRequest)
             return servletContextRequest.getServletContextResponse();
-        throw new IllegalArgumentException();
+        return super.wrapResponse(request, response);
     }
 
     @Override
@@ -1661,26 +1671,17 @@ public class ServletContextHandler extends ContextHandler
             setServletHandler((ServletHandler)handler);
         else
         {
+            // We cannot call super.insertHandler here, because it uses this.setHandler
+            // which sets the servletHandlers next handler.
+            // This is the same insert code, but uses super.setHandler, which sets this
+            // handler's next handler.
             Singleton tail = handler.getTail();
             if (tail.getHandler() != null)
                 throw new IllegalArgumentException("bad tail of inserted wrapper chain");
-
-            // Skip any injected handlers
-            Singleton h = this;
-            while (h.getHandler() instanceof Singleton wrapper)
-            {
-                if (wrapper instanceof SessionHandler ||
-                    wrapper instanceof SecurityHandler ||
-                    wrapper instanceof ServletHandler)
-                    break;
-                h = wrapper;
-            }
-
-            Handler next = h.getHandler();
-            doSetHandler(h, handler);
-            doSetHandler(tail, next);
+            tail.setHandler(getHandler());
+            super.setHandler(handler);
+            relinkHandlers();
         }
-        relinkHandlers();
     }
 
     /**

@@ -410,7 +410,6 @@ public abstract class QuicSession extends ContainerLifeCycle
         try
         {
             endPoints.clear();
-            flusher.close();
             getQuicConnection().outwardClose(this, failure);
         }
         finally
@@ -453,13 +452,6 @@ public abstract class QuicSession extends ContainerLifeCycle
                     getExecutor().execute(() -> iterate());
                 }
             };
-        }
-
-        @Override
-        public void close()
-        {
-            super.close();
-            timeout.destroy();
         }
 
         @Override
@@ -515,8 +507,7 @@ public abstract class QuicSession extends ContainerLifeCycle
         {
             if (LOG.isDebugEnabled())
                 LOG.debug("connection closed {}", QuicSession.this);
-            cipherBuffer.release();
-            finishOutwardClose(new ClosedChannelException());
+            finish(new ClosedChannelException());
         }
 
         @Override
@@ -524,8 +515,14 @@ public abstract class QuicSession extends ContainerLifeCycle
         {
             if (LOG.isDebugEnabled())
                 LOG.debug("failed to write cipher bytes, closing session on {}", QuicSession.this, failure);
+            finish(failure);
+        }
+
+        private void finish(Throwable failure)
+        {
             cipherBuffer.release();
             finishOutwardClose(failure);
+            timeout.destroy();
         }
     }
 

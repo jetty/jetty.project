@@ -20,6 +20,7 @@ import javax.xml.parsers.SAXParserFactory;
 
 import org.eclipse.jetty.toolchain.test.MavenTestingUtils;
 import org.junit.jupiter.api.Test;
+import org.xml.sax.InputSource;
 import org.xml.sax.SAXException;
 import org.xml.sax.XMLReader;
 
@@ -35,7 +36,16 @@ public class XmlParserTest
     {
         // we want to parse a simple XML, no dtds, no xsds.
         // just do it, without validation
-        XmlParser parser = new XmlParser(false);
+        XmlParser parser = new XmlParser(false)
+        {
+            @Override
+            protected InputSource resolveEntity(String pid, String sid)
+            {
+                InputSource inputSource = super.resolveEntity(pid, sid);
+                assertNotNull(inputSource, "You are using entities in your XML that don't match your redirectEntity mappings: pid=" + pid + ", sid=" + sid);
+                return inputSource;
+            }
+        };
         URL url = XmlParserTest.class.getResource("configureSimple.xml");
         assertNotNull(url);
         XmlParser.Node testDoc = parser.parse(url.toString());

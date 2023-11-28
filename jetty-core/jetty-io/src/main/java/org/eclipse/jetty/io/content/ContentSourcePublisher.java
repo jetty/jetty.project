@@ -128,6 +128,8 @@ public class ContentSourcePublisher implements Flow.Publisher<Content.Chunk>
                 if (Content.Chunk.isFailure(chunk))
                 {
                     terminate();
+                    if (!chunk.isLast())
+                        content.fail(chunk.getFailure());
                     subscriber.onError(chunk.getFailure());
                     return;
                 }

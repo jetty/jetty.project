@@ -23,22 +23,34 @@ import org.eclipse.jetty.util.BufferUtil;
 public class HeaderBlockFragments
 {
     private final ByteBufferPool bufferPool;
+    private final int maxCapacity;
     private PriorityFrame priorityFrame;
-    private boolean endStream;
     private int streamId;
+    private boolean endStream;
     private RetainableByteBuffer storage;
 
-    public HeaderBlockFragments(ByteBufferPool bufferPool)
+    public HeaderBlockFragments(ByteBufferPool bufferPool, int maxCapacity)
     {
         this.bufferPool = bufferPool;
+        this.maxCapacity = maxCapacity;
     }
 
-    public void storeFragment(ByteBuffer fragment, int length, boolean last)
+    void reset()
+    {
+        priorityFrame = null;
+        streamId = 0;
+        endStream = false;
+        storage = null;
+    }
+
+    public boolean storeFragment(ByteBuffer fragment, int length, boolean last)
     {
         if (storage == null)
         {
-            int space = last ? length : length * 2;
-            storage = bufferPool.acquire(space, fragment.isDirect());
+            if (length > maxCapacity)
+                return false;
+            int capacity = last ? length : length * 2;
+            storage = bufferPool.acquire(capacity, fragment.isDirect());
             BufferUtil.flipToFill(storage.getByteBuffer());
         }
 
@@ -46,6 +58,8 @@ public class HeaderBlockFragments
         if (storage.remaining() < length)
         {
             ByteBuffer byteBuffer = storage.getByteBuffer();
+            if (byteBuffer.position() + length > maxCapacity)
+                return false;
             int space = last ? length : length * 2;
             int capacity = byteBuffer.position() + space;
             RetainableByteBuffer newStorage = bufferPool.acquire(capacity, storage.isDirect());
@@ -61,6 +75,7 @@ public class HeaderBlockFragments
         fragment.limit(fragment.position() + length);
         storage.getByteBuffer().put(fragment);
         fragment.limit(limit);
+        return true;
     }
 
     public PriorityFrame getPriorityFrame()
@@ -85,10 +100,8 @@ public class HeaderBlockFragments
 
     public RetainableByteBuffer complete()
     {
-        RetainableByteBuffer result = storage;
-        storage = null;
-        result.getByteBuffer().flip();
-        return result;
+        storage.getByteBuffer().flip();
+        return storage;
     }
 
     public int getStreamId()
