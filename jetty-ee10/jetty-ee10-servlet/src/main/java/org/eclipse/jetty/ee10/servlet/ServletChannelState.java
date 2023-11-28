@@ -1190,7 +1190,7 @@ public class ServletChannelState
         try (AutoLock ignored = lock())
         {
             if (_state == State.HANDLING)
-                return _requestState != RequestState.BLOCKING;
+                return _requestState != RequestState.BLOCKING && _requestState != RequestState.ERRORING;
             return _requestState == RequestState.ASYNC || _requestState == RequestState.EXPIRING;
         }
     }
@@ -1199,7 +1199,7 @@ public class ServletChannelState
     {
         try (AutoLock ignored = lock())
         {
-            return !_initial || _requestState != RequestState.BLOCKING;
+            return !_initial || (_requestState != RequestState.BLOCKING && _requestState != RequestState.ERRORING);
         }
     }
 
