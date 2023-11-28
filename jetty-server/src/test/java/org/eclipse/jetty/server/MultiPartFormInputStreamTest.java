@@ -549,6 +549,26 @@ public class MultiPartFormInputStreamTest
     }
 
     @Test
+    public void testPartTmpFileCreationWithDefaultConfig() throws Exception
+    {
+        MultipartConfigElement config = new MultipartConfigElement(_dirname);
+        MultiPartFormInputStream mpis = new MultiPartFormInputStream(new ByteArrayInputStream(createMultipartRequestString("tptfcwdc").getBytes()),
+                _contentType,
+                config,
+                _tmpDir);
+        mpis.setDeleteOnExit(true);
+        mpis.getParts();
+
+        MultiPart part = (MultiPart)mpis.getPart("stuff");
+        File stuff = part.getFile();
+        assertThat(stuff, notNullValue()); // should write to disk by default
+        assertThat(stuff.exists(), is(true));
+        part.cleanUp();
+        assertThat(stuff.exists(), is(false));  //tmp file was removed after cleanup
+        stuff.deleteOnExit(); //clean up test
+    }
+
+    @Test
     public void testPartTmpFileDeletion() throws Exception
     {
         MultipartConfigElement config = new MultipartConfigElement(_dirname, 1024, 3072, 50);
@@ -878,8 +898,8 @@ public class MultiPartFormInputStreamTest
         assertThat(f, notNullValue()); // longer than 100 bytes, should already be a tmp file
 
         Part stuff = mpis.getPart("stuff");
-        f = ((MultiPartFormInputStream.MultiPart)stuff).getFile(); //should only be in memory, no filename
-        assertThat(f, nullValue());
+        f = ((MultiPartFormInputStream.MultiPart)stuff).getFile(); //should be written to a file by default
+        assertThat(f, notNullValue());
     }
 
     private void testMulti(String filename) throws IOException

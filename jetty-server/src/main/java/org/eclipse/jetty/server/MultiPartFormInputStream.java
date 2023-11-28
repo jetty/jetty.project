@@ -172,7 +172,7 @@ public class MultiPartFormInputStream
             if (MultiPartFormInputStream.this._config.getMaxFileSize() > 0 && _size + 1 > MultiPartFormInputStream.this._config.getMaxFileSize())
                 throw new IllegalStateException("Multipart Mime part " + _name + " exceeds max filesize");
 
-            if (MultiPartFormInputStream.this._config.getFileSizeThreshold() > 0 &&
+            if (MultiPartFormInputStream.this._config.getFileSizeThreshold() >= 0 &&
                 _size + 1 > MultiPartFormInputStream.this._config.getFileSizeThreshold() && _file == null)
                 createFile();
 
@@ -185,7 +185,7 @@ public class MultiPartFormInputStream
             if (MultiPartFormInputStream.this._config.getMaxFileSize() > 0 && _size + length > MultiPartFormInputStream.this._config.getMaxFileSize())
                 throw new IllegalStateException("Multipart Mime part " + _name + " exceeds max filesize");
 
-            if (MultiPartFormInputStream.this._config.getFileSizeThreshold() > 0 &&
+            if (MultiPartFormInputStream.this._config.getFileSizeThreshold() >= 0 &&
                 _size + length > MultiPartFormInputStream.this._config.getFileSizeThreshold() && _file == null)
                 createFile();
 
