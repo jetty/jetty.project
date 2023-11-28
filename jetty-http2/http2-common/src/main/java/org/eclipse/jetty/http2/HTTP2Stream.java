@@ -769,7 +769,7 @@ public class HTTP2Stream implements IStream, Callback, Dumpable, CyclicTimeouts.
     @Override
     public InvocationType getInvocationType()
     {
-        synchronized (this)
+        try (AutoLock ignored = lock.lock())
         {
             return sendCallback != null ? sendCallback.getInvocationType() : Callback.super.getInvocationType();
         }
