@@ -1363,6 +1363,8 @@ public class MultiPart
 
             // Search for a full boundary.
             int boundaryOffset = boundaryFinder.match(buffer);
+            if (boundaryOffset == 0)
+                crContent = false;
             if (boundaryOffset >= 0)
             {
                 // Output as content the previous partial match, if any.

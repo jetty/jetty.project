@@ -392,4 +392,62 @@ public class MultiPartFormDataHandlerTest
             assertEquals(HttpStatus.OK_200, response.getStatus());
         }
     }
+
+    @Test
+    public void testMultiPartWithTransferEncodingChunkedBoundaryOnNewChunk() throws Exception
+    {
+        start(new Handler.Abstract.NonBlocking()
+        {
+            @Override
+            public boolean handle(Request request, Response response, Callback callback) throws Exception
+            {
+                String boundary = MultiPart.extractBoundary(request.getHeaders().get(HttpHeader.CONTENT_TYPE));
+                MultiPartFormData.Parser parser = new MultiPartFormData.Parser(boundary);
+                parser.setMaxMemoryFileSize(-1);
+                MultiPartFormData.Parts parts = parser.parse(request).get(5, TimeUnit.SECONDS);
+
+                assertEquals(2, parts.size());
+                MultiPart.Part part0 = parts.get(0);
+                String part0Content = part0.getContentAsString(StandardCharsets.ISO_8859_1);
+                assertEquals("text_one", part0Content);
+                MultiPart.Part part1 = parts.get(1);
+                String part1Content = part1.getContentAsString(StandardCharsets.US_ASCII);
+                assertEquals("text_two", part1Content);
+                callback.succeeded();
+                return true;
+            }
+        });
+
+        try (SocketChannel client = SocketChannel.open(new InetSocketAddress("localhost", connector.getLocalPort())))
+        {
+            String request = """
+                POST / HTTP/1.1\r
+                Host: localhost\r
+                Content-Type: multipart/form-data; boundary=A1B2C3\r
+                Transfer-Encoding: chunked\r
+                \r
+                6A\r
+                --A1B2C3\r
+                Content-Disposition: form-data; name="one"\r
+                Content-Type: text/plain; charset=UTF-8\r
+                \r
+                text_one\r\r
+                76\r
+                \n--A1B2C3\r
+                Content-Disposition: form-data; name="two"\r
+                Content-Type: text/plain; charset=UTF-8\r
+                \r
+                text_two\r
+                --A1B2C3--\r
+                0\r
+                \r
+                """;
+
+            client.write(UTF_8.encode(request));
+
+            HttpTester.Response response = HttpTester.parseResponse(HttpTester.from(client));
+            assertNotNull(response);
+            assertEquals(HttpStatus.OK_200, response.getStatus());
+        }
+    }
 }
