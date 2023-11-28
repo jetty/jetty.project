@@ -128,6 +128,9 @@ def mavenBuild(jdk, cmdline, mvnName) {
             }
           }
           sh "mvn $extraArgs -DsettingsPath=$GLOBAL_MVN_SETTINGS -Dmaven.repo.uri=http://nexus-service.nexus.svc.cluster.local:8081/repository/maven-public/ -ntp -s $GLOBAL_MVN_SETTINGS -Dmaven.repo.local=.repository -Pci -V -B -e -U $cmdline"
+          if(saveHome()) {
+            archiveArtifacts artifacts: "**/jetty-home/target/jetty-home-*", allowEmptyArchive: true, onlyIfSuccessful: false
+          }
         }
       }
     }
@@ -150,6 +153,13 @@ def useBuildCache() {
   return !noBuildCache;
   // want to skip build cache
   // return false
+}
+
+def saveHome() {
+  if (env.BRANCH_NAME ==~ /PR-\d+/) {
+    return pullRequest.labels.contains("save-home")
+  }
+  return false;
 }
 
 // vim: et:ts=2:sw=2:ft=groovy
