@@ -21,7 +21,6 @@ import java.net.URL;
 import java.nio.file.FileSystems;
 import java.nio.file.Files;
 import java.nio.file.Path;
-import java.nio.file.Paths;
 import java.util.ArrayList;
 import java.util.Comparator;
 import java.util.List;
@@ -196,363 +195,254 @@ public class AttributeNormalizer
         return o2.weight - o1.weight;
     };
 
-    private final List<Normalizer> _normalizers = new ArrayList<>();
+    private final Resource baseResource;
+    private final List<PathAttribute> paths = new ArrayList<>();
+    private final List<URIAttribute> uris = new ArrayList<>();
 
     public AttributeNormalizer(Resource baseResource)
     {
-        for (Resource resource : baseResource)
+        if (baseResource == null)
+            throw new IllegalArgumentException("No base resource!");
+
+        this.baseResource = baseResource;
+
+        addSystemProperty("jetty.base", 9);
+        addSystemProperty("jetty.home", 8);
+        addSystemProperty("user.home", 7);
+        addSystemProperty("user.dir", 6);
+
+        paths.sort(attrComparator);
+        uris.sort(attrComparator);
+
+        int weight = 9;
+        for (Resource base : baseResource)
         {
-            _normalizers.add(new Normalizer(resource));
+            URI uri = base.getURI();
+            if (uri == null)
+                continue;
+            URI warURI = toCanonicalURI(uri);
+            if (!warURI.isAbsolute())
+                throw new IllegalArgumentException("WAR URI is not absolute: " + warURI);
+
+            Path path = base.getPath();
+            if (path != null)
+                paths.add(new PathAttribute("WAR.path", toCanonicalPath(path), weight));
+            uris.add(new URIAttribute("WAR.uri", warURI, weight - 1)); // preferred encoding
+            uris.add(new URIAttribute("WAR", warURI, weight - 2)); // legacy encoding
+            weight += 3;
+        }
+
+        if (LOG.isDebugEnabled())
+            Stream.concat(paths.stream(), uris.stream()).map(Object::toString).forEach(LOG::debug);
+    }
+
+    private void addSystemProperty(String key, int weight)
+    {
+        String value = System.getProperty(key);
+        if (value != null)
+        {
+            Path path = toCanonicalPath(value);
+            paths.add(new PathAttribute(key, path, weight));
+            uris.add(new URIAttribute(key + ".uri", path.toUri(), weight));
         }
     }
 
+    /**
+     * Normalize a URI, URL, or File reference by replacing known attributes with ${key} attributes.
+     *
+     * @param o the object to normalize into a string
+     * @return the string representation of the object, with expansion keys.
+     */
     public String normalize(Object o)
     {
-        if (_normalizers.size() == 1)
-            return _normalizers.get(0).normalize(o);
-
-        for (Normalizer normalizer : _normalizers)
+        try
         {
-            try
+            // Find a URI
+            URI uri = null;
+            Path path = null;
+            if (o instanceof URI)
+                uri = toCanonicalURI(((URI)o));
+            else if (o instanceof Resource)
+                uri = toCanonicalURI(((Resource)o).getURI());
+            else if (o instanceof URL)
+                uri = toCanonicalURI(((URL)o).toURI());
+            else if (o instanceof File)
+                path = ((File)o).getAbsoluteFile().getCanonicalFile().toPath();
+            else if (o instanceof Path)
+                path = (Path)o;
+            else
             {
-                String expanded = normalizer.normalize(o);
-                if (exists(expanded))
-                    return expanded;
+                String s = o.toString();
+                try
+                {
+                    uri = new URI(s);
+                    if (uri.getScheme() == null)
+                    {
+                        // Unknown scheme? not relevant to normalize
+                        return s;
+                    }
+                }
+                catch (URISyntaxException e)
+                {
+                    // This path occurs for many reasons, but most common is when this
+                    // is executed on MS Windows, on a string like "D:\jetty"
+                    // and the new URI() fails for
+                    // java.net.URISyntaxException: Illegal character in opaque part at index 2: D:\jetty
+                    return s;
+                }
             }
-            catch (Throwable t)
-            {
-                if (LOG.isDebugEnabled())
-                    LOG.debug("Error determining existence", t);
-            }
-        }
 
-        if (!_normalizers.isEmpty())
-            return _normalizers.get(0).normalize(o);
-        return null;
+            if (uri != null)
+            {
+                if ("jar".equalsIgnoreCase(uri.getScheme()))
+                {
+                    String raw = uri.getRawSchemeSpecificPart();
+                    int bang = raw.indexOf("!/");
+                    String normal = normalize(raw.substring(0, bang));
+                    String suffix = raw.substring(bang);
+                    return "jar:" + normal + suffix;
+                }
+                else
+                {
+                    if (uri.isAbsolute())
+                    {
+                        return normalizeUri(uri);
+                    }
+                }
+            }
+            else if (path != null)
+                return normalizePath(path);
+        }
+        catch (Exception e)
+        {
+            LOG.warn("Failed to normalize {}", o, e);
+        }
+        return String.valueOf(o);
     }
 
     protected String normalizeUri(URI uri)
     {
-        if (_normalizers.size() == 1)
-            return _normalizers.get(0).normalizeUri(uri);
-
-        for (Normalizer normalizer : _normalizers)
+        for (URIAttribute a : uris)
         {
-            try
-            {
-                String expanded = normalizer.normalizeUri(uri);
-                if (exists(expanded))
-                    return expanded;
-            }
-            catch (Throwable t)
-            {
-                if (LOG.isDebugEnabled())
-                    LOG.debug("Error determining existence", t);
-            }
-        }
+            if (uri.compareTo(a.uri) == 0)
+                return String.format("${%s}", a.key);
 
-        if (!_normalizers.isEmpty())
-            return _normalizers.get(0).normalizeUri(uri);
-        return null;
+            if (!a.uri.getScheme().equalsIgnoreCase(uri.getScheme()))
+                continue;
+            if (a.uri.getHost() == null && uri.getHost() != null)
+                continue;
+            if (a.uri.getHost() != null && !a.uri.getHost().equals(uri.getHost()))
+                continue;
+
+            String aPath = a.uri.getPath();
+            String uPath = uri.getPath();
+            if (aPath.equals(uPath))
+                return a.value;
+
+            if (!uPath.startsWith(aPath))
+                continue;
+
+            if (uPath.length() == aPath.length())
+                return String.format("${%s}", a.key);
+
+            String s = uPath.substring(aPath.length());
+            if (s.charAt(0) != '/')
+                continue;
+
+            return String.format("${%s}%s", a.key, s);
+        }
+        return uri.toASCIIString();
     }
 
     protected String normalizePath(Path path)
     {
-        if (_normalizers.size() == 1)
-            return _normalizers.get(0).normalizePath(path);
-
-        for (Normalizer normalizer : _normalizers)
+        for (PathAttribute a : paths)
         {
             try
             {
-                String normalizedPath = normalizer.normalizePath(path);
-                if (exists(normalizedPath))
-                    return normalizedPath;
+                if (path.equals(a.path) || Files.isSameFile(path, a.path))
+                    return String.format("${%s}", a.key);
             }
-            catch (Throwable t)
+            catch (IOException x)
             {
-                if (LOG.isDebugEnabled())
-                    LOG.debug("Error determining existence", t);
+                LOG.trace("IGNORED", x);
             }
+
+            if (path.startsWith(a.path))
+                return String.format("${%s}%c%s", a.key, File.separatorChar, a.path.relativize(path));
         }
 
-        if (!_normalizers.isEmpty())
-            return _normalizers.get(0).normalizePath(path);
-        return null;
+        return path.toString();
     }
 
     public String expand(String str)
     {
-        if (_normalizers.size() == 1)
-            return _normalizers.get(0).expand(str);
-
-        for (Normalizer normalizer : _normalizers)
+        if (str == null)
         {
-            try
-            {
-                String expanded = normalizer.expand(str);
-                if (exists(expanded))
-                    return expanded;
-            }
-            catch (Throwable t)
-            {
-                if (LOG.isDebugEnabled())
-                    LOG.debug("Error determining existence", t);
-            }
+            return str;
         }
 
-        if (!_normalizers.isEmpty())
-            return _normalizers.get(0).expand(str);
-        return null;
+        if (!str.contains("${"))
+        {
+            // Contains no potential expressions.
+            return str;
+        }
+
+        Matcher mat = __propertyPattern.matcher(str);
+
+        if (mat.find(0))
+        {
+            String prefix = str.substring(0, mat.start());
+            String property = mat.group(1);
+            String suffix = str.substring(mat.end());
+            str = expand(prefix, property, suffix);
+        }
+
+        return StringUtil.replace(str, "$$", "$");
     }
 
-    private static boolean exists(String str)
+    private String expand(String prefix, String property, String suffix)
     {
-        try
+        if (property == null)
+            return null;
+
+        switch (property)
         {
-            return Files.exists(Paths.get(URI.create(str)));
-        }
-        catch (Throwable t)
-        {
-            try
+            case "WAR", "WAR.path" ->
             {
-                return Files.exists(Paths.get(str));
+                Resource r = baseResource.resolve(suffix);
+                if (r != null && r.exists())
+                    return prefix + r.getPath();
             }
-            catch (Throwable x)
+            case "WAR.uri" ->
             {
-                x.addSuppressed(t);
-                LOG.warn("Could not check existence of {}", str, x);
-                return false;
-            }
-        }
-    }
-
-    private static class Normalizer
-    {
-        private final List<PathAttribute> paths = new ArrayList<>();
-        private final List<URIAttribute> uris = new ArrayList<>();
-
-        public Normalizer(Resource baseResource)
-        {
-            if (baseResource == null)
-                throw new IllegalArgumentException("No base resource!");
-            if (Resources.isCombined(baseResource))
-                throw new IllegalArgumentException("Base resource cannot be combined!");
-
-            addSystemProperty("jetty.base", 9);
-            addSystemProperty("jetty.home", 8);
-            addSystemProperty("user.home", 7);
-            addSystemProperty("user.dir", 6);
-
-            URI warURI = toCanonicalURI(baseResource.getURI());
-            if (!warURI.isAbsolute())
-                throw new IllegalArgumentException("WAR URI is not absolute: " + warURI);
-
-            Path path = baseResource.getPath();
-            if (path != null)
-                paths.add(new PathAttribute("WAR.path", toCanonicalPath(path), 10));
-            uris.add(new URIAttribute("WAR.uri", warURI, 9)); // preferred encoding
-            uris.add(new URIAttribute("WAR", warURI, 8)); // legacy encoding
-
-            paths.sort(attrComparator);
-            uris.sort(attrComparator);
-
-            if (LOG.isDebugEnabled())
-                Stream.concat(paths.stream(), uris.stream()).map(Object::toString).forEach(LOG::debug);
-        }
-
-        private void addSystemProperty(String key, int weight)
-        {
-            String value = System.getProperty(key);
-            if (value != null)
-            {
-                Path path = toCanonicalPath(value);
-                paths.add(new PathAttribute(key, path, weight));
-                uris.add(new URIAttribute(key + ".uri", path.toUri(), weight));
+                Resource r = baseResource.resolve(suffix);
+                if (r != null && r.exists())
+                    return prefix + r.getURI();
             }
         }
 
-        /**
-         * Normalize a URI, URL, or File reference by replacing known attributes with ${key} attributes.
-         *
-         * @param o the object to normalize into a string
-         * @return the string representation of the object, with expansion keys.
-         */
-        public String normalize(Object o)
+        // Check for URI matches
+        for (URIAttribute attr : uris)
         {
-            try
-            {
-                // Find a URI
-                URI uri = null;
-                Path path = null;
-                if (o instanceof URI)
-                    uri = toCanonicalURI(((URI)o));
-                else if (o instanceof Resource)
-                    uri = toCanonicalURI(((Resource)o).getURI());
-                else if (o instanceof URL)
-                    uri = toCanonicalURI(((URL)o).toURI());
-                else if (o instanceof File)
-                    path = ((File)o).getAbsoluteFile().getCanonicalFile().toPath();
-                else if (o instanceof Path)
-                    path = (Path)o;
-                else
-                {
-                    String s = o.toString();
-                    try
-                    {
-                        uri = new URI(s);
-                        if (uri.getScheme() == null)
-                        {
-                            // Unknown scheme? not relevant to normalize
-                            return s;
-                        }
-                    }
-                    catch (URISyntaxException e)
-                    {
-                        // This path occurs for many reasons, but most common is when this
-                        // is executed on MS Windows, on a string like "D:\jetty"
-                        // and the new URI() fails for
-                        // java.net.URISyntaxException: Illegal character in opaque part at index 2: D:\jetty
-                        return s;
-                    }
-                }
-
-                if (uri != null)
-                {
-                    if ("jar".equalsIgnoreCase(uri.getScheme()))
-                    {
-                        String raw = uri.getRawSchemeSpecificPart();
-                        int bang = raw.indexOf("!/");
-                        String normal = normalize(raw.substring(0, bang));
-                        String suffix = raw.substring(bang);
-                        return "jar:" + normal + suffix;
-                    }
-                    else
-                    {
-                        if (uri.isAbsolute())
-                        {
-                            return normalizeUri(uri);
-                        }
-                    }
-                }
-                else if (path != null)
-                    return normalizePath(path);
-            }
-            catch (Exception e)
-            {
-                LOG.warn("Failed to normalize {}", o, e);
-            }
-            return String.valueOf(o);
+            if (property.equals(attr.key))
+                return prefix + attr.value + suffix;
         }
 
-        protected String normalizeUri(URI uri)
+        // Check for path matches
+        for (PathAttribute attr : paths)
         {
-            for (URIAttribute a : uris)
-            {
-                if (uri.compareTo(a.uri) == 0)
-                    return String.format("${%s}", a.key);
-
-                if (!a.uri.getScheme().equalsIgnoreCase(uri.getScheme()))
-                    continue;
-                if (a.uri.getHost() == null && uri.getHost() != null)
-                    continue;
-                if (a.uri.getHost() != null && !a.uri.getHost().equals(uri.getHost()))
-                    continue;
-
-                String aPath = a.uri.getPath();
-                String uPath = uri.getPath();
-                if (aPath.equals(uPath))
-                    return a.value;
-
-                if (!uPath.startsWith(aPath))
-                    continue;
-
-                if (uPath.length() == aPath.length())
-                    return String.format("${%s}", a.key);
-
-                String s = uPath.substring(aPath.length());
-                if (s.charAt(0) != '/')
-                    continue;
-
-                return String.format("${%s}%s", a.key, s);
-            }
-            return uri.toASCIIString();
+            if (property.equals(attr.key))
+                return prefix + attr.value + suffix;
         }
 
-        protected String normalizePath(Path path)
-        {
-            for (PathAttribute a : paths)
-            {
-                try
-                {
-                    if (path.equals(a.path) || Files.isSameFile(path, a.path))
-                        return String.format("${%s}", a.key);
-                }
-                catch (IOException x)
-                {
-                    LOG.trace("IGNORED", x);
-                }
+        // Use system properties next
+        String system = System.getProperty(property);
+        if (system != null)
+            return prefix + system + suffix;
 
-                if (path.startsWith(a.path))
-                    return String.format("${%s}%c%s", a.key, File.separatorChar, a.path.relativize(path));
-            }
-
-            return path.toString();
-        }
-
-        public String expand(String str)
-        {
-            if (str == null)
-            {
-                return str;
-            }
-
-            if (!str.contains("${"))
-            {
-                // Contains no potential expressions.
-                return str;
-            }
-
-            Matcher mat = __propertyPattern.matcher(str);
-
-            if (mat.find(0))
-            {
-                String prefix = str.substring(0, mat.start());
-                String property = mat.group(1);
-                String suffix = str.substring(mat.end());
-                str = expand(prefix, property, suffix);
-            }
-
-            return StringUtil.replace(str, "$$", "$");
-        }
-
-        private String expand(String prefix, String property, String suffix)
-        {
-            if (property == null)
-                return null;
-
-            // Check for URI matches
-            for (URIAttribute attr : uris)
-            {
-                if (property.equals(attr.key))
-                    return prefix + attr.value + suffix;
-            }
-
-            // Check for path matches
-            for (PathAttribute attr : paths)
-            {
-                if (property.equals(attr.key))
-                    return prefix + attr.value + suffix;
-            }
-
-            // Use system properties next
-            String system = System.getProperty(property);
-            if (system != null)
-                return prefix + system + suffix;
-
-            String unexpanded = prefix + "${" + property + "}" + suffix;
-            LOG.warn("Cannot expand: {}", unexpanded);
-            return unexpanded;
-        }
+        String unexpanded = prefix + "${" + property + "}" + suffix;
+        LOG.warn("Cannot expand: {}", unexpanded);
+        return unexpanded;
     }
 }
