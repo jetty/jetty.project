@@ -17,7 +17,6 @@ import java.io.IOException;
 import java.net.InetSocketAddress;
 import java.net.SocketAddress;
 import java.util.concurrent.TimeoutException;
-import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicLong;
 
 import jakarta.servlet.RequestDispatcher;
@@ -199,7 +198,9 @@ public class ServletChannel
         return _state.isSendError();
     }
 
-    /** Format the address or host returned from Request methods
+    /**
+     * Format the address or host returned from Request methods
+     *
      * @param addr The address or host
      * @return Default implementation returns {@link HostPort#normalizeHost(String)}
      */
@@ -508,22 +509,11 @@ public class ServletChannel
                             }
                             else
                             {
-                                AtomicBoolean asyncCompletion = new AtomicBoolean(false);
-                                Callback errorCallback = Callback.from(() ->
-                                {
-                                    if (!asyncCompletion.compareAndSet(false, true))
-                                        _state.scheduleDispatch();
-                                });
-
                                 // We do not notify ServletRequestListener on this dispatch because it might not
                                 // be dispatched to an error page, so we delegate this responsibility to the ErrorHandler.
                                 reopen();
-                                errorHandler.handle(getServletContextRequest(), getServletContextResponse(), errorCallback);
-
-                                // If the callback has already been completed we should continue in handle loop.
-                                // Otherwise, the callback will schedule a dispatch to handle().
-                                if (asyncCompletion.compareAndSet(false, true))
-                                    return;
+                                _state.errorHandling();
+                                errorHandler.handle(getServletContextRequest(), getServletContextResponse(), Callback.from(_state::errorHandlingComplete));
                             }
                         }
                         catch (Throwable x)
