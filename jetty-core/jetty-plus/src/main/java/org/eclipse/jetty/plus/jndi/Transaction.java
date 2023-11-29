@@ -49,6 +49,17 @@ public class Transaction extends NamingEntry
         }
     }
 
+    /**
+     * @param scope the environment in which to bind the UserTransaction
+     * @param entry a UserTransaction or a Reference to a UserTransaction
+     * @throws NamingException if there was a problem re
+     */
+    protected Transaction(String scope, Object entry)
+        throws NamingException
+    {
+        super(scope, USER_TRANSACTION, entry);
+    }
+
     /** 
      * @param scope the environment in which to bind the UserTransaction
      * @param userTransactionRef a Reference to a UserTransaction
@@ -57,7 +68,7 @@ public class Transaction extends NamingEntry
     public Transaction(String scope, Reference userTransactionRef)
         throws NamingException
     {
-        super(scope, USER_TRANSACTION, userTransactionRef);
+        this(scope, (Object)userTransactionRef);
     }
 
     /**
