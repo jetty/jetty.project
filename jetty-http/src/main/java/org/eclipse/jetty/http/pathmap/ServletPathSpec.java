@@ -290,7 +290,7 @@ public class ServletPathSpec extends AbstractPathSpec
 
     private static void assertValidServletPathSpec(String servletPathSpec)
     {
-        if ((servletPathSpec == null) || servletPathSpec.equals(""))
+        if ((servletPathSpec == null) || servletPathSpec.isEmpty())
         {
             return; // empty path spec
         }

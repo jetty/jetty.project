@@ -77,7 +77,7 @@ public class WebFilterAnnotation extends DiscoveredAnnotation
             return;
         }
 
-        String name = (filterAnnotation.filterName().equals("") ? clazz.getName() : filterAnnotation.filterName());
+        String name = (filterAnnotation.filterName().isEmpty() ? clazz.getName() : filterAnnotation.filterName());
         String[] urlPatterns = filterAnnotation.value();
         if (urlPatterns.length == 0)
             urlPatterns = filterAnnotation.urlPatterns();

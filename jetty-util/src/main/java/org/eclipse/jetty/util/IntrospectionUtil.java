@@ -48,7 +48,7 @@ public class IntrospectionUtil
     {
         if (clazz == null)
             throw new NoSuchMethodException("No class");
-        if (methodName == null || methodName.trim().equals(""))
+        if (methodName == null || methodName.trim().isEmpty())
             throw new NoSuchMethodException("No method name");
 
         Method method = null;
