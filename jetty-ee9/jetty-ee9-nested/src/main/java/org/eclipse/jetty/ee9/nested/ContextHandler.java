@@ -1599,26 +1599,6 @@ public class ContextHandler extends ScopedHandler implements Attributes, Supplie
         return Collections.emptySet();
     }
 
-    private String normalizeHostname(String host)
-    {
-        if (host == null)
-            return null;
-        int connectorIndex = host.indexOf('@');
-        String connector = null;
-        if (connectorIndex > 0)
-        {
-            host = host.substring(0, connectorIndex);
-            connector = host.substring(connectorIndex);
-        }
-
-        if (host.endsWith("."))
-            host = host.substring(0, host.length() - 1);
-        if (connector != null)
-            host += connector;
-
-        return host;
-    }
-
     /**
      * Add an AliasCheck instance to possibly permit aliased resources
      *
