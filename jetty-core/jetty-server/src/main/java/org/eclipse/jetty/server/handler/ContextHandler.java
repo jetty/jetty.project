@@ -325,25 +325,7 @@ public class ContextHandler extends Handler.Wrapper implements Attributes, Alias
             {
                 if (vhost == null)
                     continue;
-                boolean wild = false;
-                String connector = null;
-                int at = vhost.indexOf('@');
-                if (at >= 0)
-                {
-                    connector = vhost.substring(at + 1);
-                    vhost = vhost.substring(0, at);
-                }
-
-                if (StringUtil.isBlank(vhost))
-                {
-                    vhost = null;
-                }
-                else if (vhost.startsWith("*."))
-                {
-                    vhost = vhost.substring(1);
-                    wild = true;
-                }
-                _vhosts.add(new VHost(normalizeHostname(vhost), wild, connector));
+                _vhosts.add(new VHost(vhost));
             }
         }
     }
@@ -387,9 +369,7 @@ public class ContextHandler extends Handler.Wrapper implements Attributes, Alias
             return; // do nothing
 
         for (String vh : virtualHosts)
-        {
-            vhosts.remove(normalizeHostname(vh));
-        }
+            _vhosts.remove(new VHost(vh));
     }
 
     /**
@@ -719,41 +699,13 @@ public class ContextHandler extends Handler.Wrapper implements Attributes, Alias
         if (_vhosts.isEmpty())
             return true;
 
-        String host = normalizeHostname(request.getHttpURI().getHost());
+        String host = Request.getServerName(request);
         String connectorName = request.getConnectionMetaData().getConnector().getName();
 
         for (VHost vhost : _vhosts)
         {
-            String contextVhost = vhost._vHost;
-            String contextVConnector = vhost._vConnector;
-
-            if (contextVConnector != null)
-            {
-                if (!contextVConnector.equalsIgnoreCase(connectorName))
-                    continue;
-
-                if (contextVhost == null)
-                {
-                    return true;
-                }
-            }
-
-            if (contextVhost != null)
-            {
-                if (vhost._wild)
-                {
-                    // wildcard only at the beginning, and only for one additional subdomain level
-                    int index = host.indexOf(".");
-                    if (index >= 0 && host.substring(index).equalsIgnoreCase(contextVhost))
-                    {
-                        return true;
-                    }
-                }
-                else if (host.equalsIgnoreCase(contextVhost))
-                {
-                    return true;
-                }
-            }
+            if (vhost.matches(connectorName, host))
+                return true;
         }
         return false;
     }
@@ -1105,24 +1057,13 @@ public class ContextHandler extends Handler.Wrapper implements Attributes, Alias
         return b.toString();
     }
 
-    private String normalizeHostname(String host)
+    private static String normalizeVirtualHostname(String host)
     {
-        // TODO is this needed? if so, should be it somewhere eles?
         if (host == null)
             return null;
-        int connectorIndex = host.indexOf('@');
-        String connector = null;
-        if (connectorIndex > 0)
-        {
-            host = host.substring(0, connectorIndex);
-            connector = host.substring(connectorIndex);
-        }
-
+        // names with trailing "." are absolute and not searched for in any local resolv.conf domain
         if (host.endsWith("."))
             host = host.substring(0, host.length() - 1);
-        if (connector != null)
-            host += connector;
-
         return host;
     }
 
@@ -1335,11 +1276,61 @@ public class ContextHandler extends Handler.Wrapper implements Attributes, Alias
         private final boolean _wild;
         private final String _vConnector;
 
-        private VHost(String vHost, boolean wild, String vConnector)
+        public VHost(String vhost)
         {
-            _vHost = vHost;
+            boolean wild = false;
+            String connector = null;
+            int at = vhost.indexOf('@');
+            if (at >= 0)
+            {
+                connector = vhost.substring(at + 1);
+                vhost = vhost.substring(0, at);
+            }
+
+            if (StringUtil.isBlank(vhost))
+            {
+                vhost = null;
+            }
+            else if (vhost.startsWith("*."))
+            {
+                vhost = vhost.substring(1);
+                wild = true;
+            }
+
+            _vHost = normalizeVirtualHostname(vhost);
             _wild = wild;
-            _vConnector = vConnector;
+            _vConnector = connector;
+        }
+
+        public boolean matches(String connectorName, String host)
+        {
+            // Do we have a connector name to match
+            if (_vConnector != null)
+            {
+                // then it must match
+                if (!_vConnector.equalsIgnoreCase(connectorName))
+                    return false;
+
+                // if we don't also have a vhost then we are match, otherwise check the vhost as well
+                if (_vHost == null)
+                    return true;
+            }
+
+            // if we have a vhost
+            if (_vHost != null && host != null)
+            {
+                // vHost pattern must be last or next to last if the host ends with '.' (indicates absolute DNS name)
+                int offset = host.length() - _vHost.length() - (host.charAt(host.length() - 1) == '.' ? 1 : 0);
+                if (host.regionMatches(true, offset, _vHost, 0, _vHost.length()))
+                {
+                    // if wild then we only match one level, so check for no more dots
+                    if (_wild)
+                        return host.lastIndexOf('.', offset - 1) < 0;
+                    // otherwise the offset must be 0 for a complete match
+                    return offset == 0;
+                }
+            }
+            return false;
         }
 
         String getVHost()
@@ -1353,6 +1344,21 @@ public class ContextHandler extends Handler.Wrapper implements Attributes, Alias
                 return '@' + _vConnector;
             else
                 return _vHost;
+        }
+
+        @Override
+        public int hashCode()
+        {
+            return Objects.hash(_vHost, _wild, _vConnector);
+        }
+
+        @Override
+        public boolean equals(Object o)
+        {
+            return o instanceof VHost vhost &&
+                Objects.equals(_vHost, vhost._vHost) &&
+                Objects.equals(_wild, vhost._wild) &&
+                Objects.equals(_vConnector, vhost._vConnector);
         }
 
         @Override

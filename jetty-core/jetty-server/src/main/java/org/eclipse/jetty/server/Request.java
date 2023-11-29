@@ -287,36 +287,34 @@ public interface Request extends Attributes, Content.Source
     /**
      * <p>Adds a listener for idle timeouts.</p>
      * <p>The listener is a predicate function that should return {@code true} to indicate
-     * that the idle timeout should be handled by the container as a hard failure
-     * (see {@link #addFailureListener(Consumer)}); or {@code false} to ignore that specific timeout and for another timeout
-     * to occur after another idle period.</p>
-     * <p>Any pending {@link #demand(Runnable)} or {@link Response#write(boolean, ByteBuffer, Callback)} operations
-     * are not affected by this call. Applications need to be mindful of any such pending operations if attempting
-     * to make new operations.</p>
-     * <p>Listeners are processed in sequence, and the first that returns {@code true}
-     * stops the processing of subsequent listeners, which are therefore not invoked.</p>
+     * that the idle timeout should be handled by the container as a fatal failure
+     * (see {@link #addFailureListener(Consumer)}); or {@code false} to ignore that specific
+     * timeout and for another timeout to occur after another idle period.</p>
+     * <p>Idle timeout listeners are only invoked if there are no pending
+     * {@link #demand(Runnable)} or {@link Response#write(boolean, ByteBuffer, Callback)}
+     * operations.</p>
+     * <p>Listeners are processed in the same order they are added, and the first that
+     * returns {@code true} stops the processing of subsequent listeners, which are
+     * therefore not invoked.</p>
      *
-     * @param onIdleTimeout the predicate function
+     * @param onIdleTimeout the idle timeout listener as a predicate function
      * @see #addFailureListener(Consumer)
      */
     void addIdleTimeoutListener(Predicate<TimeoutException> onIdleTimeout);
 
     /**
-     * <p>Adds a listener for asynchronous hard errors.</p>
-     * <p>When a listener is called, the effects of the error will already have taken place:</p>
+     * <p>Adds a listener for asynchronous fatal failures.</p>
+     * <p>When a listener is called, the effects of the failure have already taken place:</p>
      * <ul>
-     *     <li>Pending {@link #demand(Runnable)} will be woken up.</li>
-     *     <li>Calls to {@link #read()} will return the {@code Throwable}.</li>
-     *     <li>Pending and new {@link Response#write(boolean, ByteBuffer, Callback)} calls will be failed by
-     *     calling {@link Callback#failed(Throwable)} on the callback passed to {@code write(...)}.</li>
-     *     <li>Any call to {@link Callback#succeeded()} on the callback passed to
-     *     {@link Handler#handle(Request, Response, Callback)} will effectively be a call to {@link Callback#failed(Throwable)}
-     *     with the notified {@link Throwable}.</li>
+     *     <li>Pending {@link #demand(Runnable)} have been woken up.</li>
+     *     <li>Calls to {@link #read()} will return the {@code Throwable} failure.</li>
+     *     <li>Pending and new {@link Response#write(boolean, ByteBuffer, Callback)} calls
+     *     will be failed by calling {@link Callback#failed(Throwable)} on the callback
+     *     passed to {@link Response#write(boolean, ByteBuffer, Callback)}.</li>
      * </ul>
-     * <p>Listeners are processed in sequence. When all listeners are invoked then {@link Callback#failed(Throwable)}
-     * will be called on the callback passed to {@link Handler#handle(Request, Response, Callback)}.</p>
+     * <p>Listeners are processed in the same order they are added.</p>
      *
-     * @param onFailure the consumer function
+     * @param onFailure the failure listener as a consumer function
      * @see #addIdleTimeoutListener(Predicate)
      */
     void addFailureListener(Consumer<Throwable> onFailure);
@@ -331,15 +329,17 @@ public interface Request extends Attributes, Content.Source
     void addHttpStreamWrapper(Function<HttpStream, HttpStream> wrapper);
 
     /**
-     * Adds a completion listener that is an optimized equivalent to overriding the
-     * {@link HttpStream#succeeded()} and {@link HttpStream#failed(Throwable)} methods
-     * of a {@link HttpStream.Wrapper} created by a call to {@link #addHttpStreamWrapper(Function)}.
-     * In the case of a failure, the {@link Throwable} cause is passed to the listener, but unlike
+     * <p>Adds a completion listener that is an optimized equivalent to overriding the
+     * {@link HttpStream#succeeded()} and {@link HttpStream#failed(Throwable)} methods of a
+     * {@link HttpStream.Wrapper} created by a call to {@link #addHttpStreamWrapper(Function)}.</p>
+     * <p>Because adding completion listeners relies on {@link HttpStream} wrapping,
+     * the completion listeners are invoked in reverse order they are added.</p>
+     * <p>In the case of a failure, the {@link Throwable} cause is passed to the listener, but unlike
      * {@link #addFailureListener(Consumer)} listeners, which are called when the failure occurs, completion
-     * listeners are called only once the {@link HttpStream} is completed at the very end of processing.
+     * listeners are called only once the {@link HttpStream} is completed at the very end of processing.</p>
      *
-     * @param listener A {@link Consumer} of {@link Throwable} to call when the request handling is complete. The
-     * listener is passed a null {@link Throwable} on success.
+     * @param listener A {@link Consumer} of {@link Throwable} to call when the request handling is complete.
+     * The listener is passed a {@code null} {@link Throwable} on success.
      * @see #addHttpStreamWrapper(Function)
      */
     static void addCompletionListener(Request request, Consumer<Throwable> listener)
