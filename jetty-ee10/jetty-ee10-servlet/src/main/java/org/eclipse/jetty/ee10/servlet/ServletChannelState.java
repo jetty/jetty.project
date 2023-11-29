@@ -151,6 +151,7 @@ public class ServletChannelState
     private long _timeoutMs = DEFAULT_TIMEOUT;
     private AsyncContextEvent _event;
     private Thread _onTimeoutThread;
+    private boolean _failureListener;
 
     protected ServletChannelState(ServletChannel servletChannel)
     {
@@ -511,6 +512,11 @@ public class ServletChannelState
             if (_state != State.HANDLING || (_requestState != RequestState.BLOCKING && _requestState != RequestState.ERRORING))
                 throw new IllegalStateException(this.getStatusStringLocked());
 
+            if (!_failureListener)
+            {
+                _failureListener = true;
+                _servletChannel.getRequest().addFailureListener(this::asyncError);
+            }
             _requestState = RequestState.ASYNC;
             _event = event;
             lastAsyncListeners = _asyncListeners;
@@ -1078,7 +1084,7 @@ public class ServletChannelState
         try (AutoLock ignored = lock())
         {
             if (LOG.isDebugEnabled())
-                LOG.debug("recycle {}", toStringLocked());
+                LOG.debug("recycle {}", toStringLocked())
 
             switch (_state)
             {
@@ -1099,6 +1105,7 @@ public class ServletChannelState
             _asyncWritePossible = false;
             _timeoutMs = DEFAULT_TIMEOUT;
             _event = null;
+            _failureListener = false;
         }
     }
 
