@@ -55,9 +55,8 @@ public class ReadWriteFailuresTest
         LifeCycle.stop(server);
     }
 
-    @ParameterizedTest
-    @ValueSource(booleans = {false, true})
-    public void testReadFailureDoesNotImpactSubsequentWrite(boolean fatal) throws Exception
+    @Test
+    public void testReadFailureDoesNotImpactSubsequentWrite() throws Exception
     {
         long idleTimeout = 1000;
         String content = "no impact :)";
@@ -66,17 +65,22 @@ public class ReadWriteFailuresTest
             @Override
             public boolean handle(Request request, Response response, Callback callback)
             {
-                request.addIdleTimeoutListener(x -> fatal);
-                try
+                // Upon idle timeout, the demand callback is invoked.
+                request.demand(() ->
                 {
-                    Content.Source.asString(request);
-                    callback.failed(new Exception());
-                }
-                catch (IOException ignored)
-                {
-                    response.setStatus(HttpStatus.ACCEPTED_202);
-                    Content.Sink.write(response, true, content, callback);
-                }
+                    try
+                    {
+                        Content.Chunk chunk = request.read();
+                        assertTrue(Content.Chunk.isFailure(chunk, false));
+
+                        response.setStatus(HttpStatus.ACCEPTED_202);
+                        Content.Sink.write(response, true, content, callback);
+                    }
+                    catch (Throwable x)
+                    {
+                        callback.failed(x);
+                    }
+                });
                 return true;
             }
         });

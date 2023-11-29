@@ -333,7 +333,7 @@ public class HttpChannelState implements HttpChannel, Components
                     _readFailure = Content.Chunk.from(t, false);
 
                 // If a write call is in progress, take the writeCallback to fail below
-                Runnable invokeWriteFailure = _response.lockedFailWrite(t);
+                Runnable invokeWriteFailure = _response.lockedFailWrite(t, false);
 
                 // If there was an IO operation, just deliver the idle timeout via them
                 if (invokeOnContentAvailable != null || invokeWriteFailure != null)
@@ -403,7 +403,7 @@ public class HttpChannelState implements HttpChannel, Components
                 _onContentAvailable = null;
 
                 // If a write call is in progress, take the writeCallback to fail below.
-                Runnable invokeWriteFailure = _response.lockedFailWrite(x);
+                Runnable invokeWriteFailure = _response.lockedFailWrite(x, true);
 
                 // Notify the failure listeners only once.
                 Consumer<Throwable> onFailure = _onFailure;
@@ -1047,14 +1047,15 @@ public class HttpChannelState implements HttpChannel, Components
             return _writeCallback != null;
         }
 
-        private Runnable lockedFailWrite(Throwable x)
+        private Runnable lockedFailWrite(Throwable x, boolean fatal)
         {
             assert _request._lock.isHeldByCurrentThread();
             Callback writeCallback = _writeCallback;
             _writeCallback = null;
+            if (writeCallback != null || fatal)
+                _writeFailure = x;
             if (writeCallback == null)
                 return null;
-            _writeFailure = x;
             return () -> writeCallback.failed(x);
         }
 

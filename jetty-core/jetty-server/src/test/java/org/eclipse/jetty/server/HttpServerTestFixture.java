@@ -208,7 +208,7 @@ public class HttpServerTestFixture
             response.setStatus(200);
             Content.Source.asString(request, StandardCharsets.UTF_8, Promise.from(
                 s -> Content.Sink.write(response, true, "read %d%n" + s.length(), callback),
-                t -> Content.Sink.write(response, true, String.format("caught %s%n", t), callback)
+                callback::failed
             ));
             return true;
         }
