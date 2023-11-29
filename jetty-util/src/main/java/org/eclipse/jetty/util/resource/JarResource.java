@@ -175,7 +175,7 @@ public class JarResource extends URLResource
                         //directory. Remove the name of the subdirectory so
                         //that we don't wind up creating it too.
                         entryName = entryName.substring(subEntryName.length());
-                        if (!entryName.equals(""))
+                        if (!entryName.isEmpty())
                         {
                             //the entry is
                             shouldExtract = true;

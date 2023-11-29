@@ -148,7 +148,7 @@ public class localContextRoot implements Context
     {
         String firstComponent = cname.get(0);
 
-        if (firstComponent.equals(""))
+        if (firstComponent.isEmpty())
             return this;
 
         Binding binding = __root.getBinding(firstComponent);
