@@ -1326,6 +1326,7 @@ public class MultiPart
                         // The boundary was fully matched.
                         buffer.position(buffer.position() + boundaryMatch - partialBoundaryMatch);
                         partialBoundaryMatch = 0;
+                        crContent = false;
                         notifyPartContent(Content.Chunk.EOF);
                         notifyPartEnd();
                         return true;
@@ -1349,14 +1350,8 @@ public class MultiPart
                         return false;
                     }
 
-                    // Must output as content the previous partial match.
-                    if (crContent)
-                    {
-                        crContent = false;
-                        Content.Chunk partContentChunk = Content.Chunk.from(CR.slice(), false);
-                        notifyPartContent(partContentChunk);
-                        partContentChunk.release();
-                    }
+                    // Output as content the previous partial match.
+                    notifyCRContent();
                     ByteBuffer content = ByteBuffer.wrap(boundaryFinder.getPattern(), 0, partialBoundaryMatch);
                     partialBoundaryMatch = 0;
                     Content.Chunk partContentChunk = Content.Chunk.from(content, false);
@@ -1368,8 +1363,12 @@ public class MultiPart
 
             // Search for a full boundary.
             int boundaryOffset = boundaryFinder.match(buffer);
+            if (boundaryOffset == 0)
+                crContent = false;
             if (boundaryOffset >= 0)
             {
+                // Output as content the previous partial match, if any.
+                notifyCRContent();
                 int position = buffer.position();
                 int length = boundaryOffset;
                 // BoundaryFinder is configured to search for '\n--Boundary';
@@ -1406,11 +1405,9 @@ public class MultiPart
             }
 
             // There is normal content with no boundary.
-            if (crContent)
-            {
-                crContent = false;
-                notifyPartContent(Content.Chunk.from(CR.slice(), false));
-            }
+
+            // Output as content the previous partial match, if any.
+            notifyCRContent();
             // If '\r' is found at the end of the buffer, it may
             // not be content but the beginning of a '\r\n--Boundary';
             // remember it in case it is truly normal content.
@@ -1426,6 +1423,16 @@ public class MultiPart
             if (content.hasRemaining())
                 notifyPartContent(content);
             return false;
+        }
+
+        private void notifyCRContent()
+        {
+            if (!crContent)
+                return;
+            crContent = false;
+            Content.Chunk partContentChunk = Content.Chunk.from(CR.slice(), false);
+            notifyPartContent(partContentChunk);
+            partContentChunk.release();
         }
 
         private Content.Chunk asSlice(Content.Chunk chunk, int position, int length, boolean last)
