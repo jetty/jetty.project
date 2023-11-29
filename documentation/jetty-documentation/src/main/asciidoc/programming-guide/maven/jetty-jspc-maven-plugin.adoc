@@ -19,7 +19,7 @@ This plugin will pre-compile your JSP and works in conjunction with the Maven wa
 [[jspc-config]]
 ==== Configuration
 
-Here's the basic setup required to put the JSPC plugin into your build:
+Here's the basic setup required to put the JSPC plugin into your build for the Jakarta EE {ee-current} environment:
 
 [source,xml,subs="verbatim,attributes"]
 ----
