@@ -506,6 +506,8 @@ public class HttpChannelTest
             @Override
             public boolean handle(Request request, Response response, Callback callback)
             {
+                request.addFailureListener(callback::failed);
+
                 response.setStatus(200);
                 response.getHeaders().put(HttpHeader.CONTENT_LENGTH, 10);
                 response.write(false, null, Callback.from(() ->
