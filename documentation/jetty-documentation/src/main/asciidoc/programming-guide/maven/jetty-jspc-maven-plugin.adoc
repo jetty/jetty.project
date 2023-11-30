@@ -14,18 +14,18 @@
 [[jetty-jspc-maven-plugin]]
 === Jetty Jspc Maven Plugin
 
-This plugin will help you pre-compile your JSP and works in conjunction with the Maven war plugin to put them inside an assembled war.
+This plugin will pre-compile your JSP and works in conjunction with the Maven war plugin to put them inside an assembled war.
 
 [[jspc-config]]
 ==== Configuration
 
-Here's the basic setup required to put the jspc plugin into your build:
+Here's the basic setup required to put the JSPC plugin into your build for the Jakarta EE {ee-current} environment:
 
 [source,xml,subs="verbatim,attributes"]
 ----
 <plugin>
-  <groupId>org.eclipse.jetty</groupId>
-   <artifactId>jetty-jspc-maven-plugin</artifactId>
+  <groupId>org.eclipse.jetty.{ee-current}</groupId>
+   <artifactId>jetty-{ee-current}-jspc-maven-plugin</artifactId>
    <version>{version}</version>
    <executions>
      <execution>
@@ -101,13 +101,13 @@ Default value: true
 +
 Determines if the manifest of JAR files found on the classpath should be scanned.
 sourceVersion::
-Introduced in Jetty 9.3.6.
 Java version of jsp source files.
-Defaults to 1.7.
+The default value depends on the version of the `jetty-{ee-current}-jspc-maven-plugin`.
+
 targetVersion::
-Introduced in Jetty 9.3.6.
 Java version of class files generated from jsps.
-Defaults to 1.7.
+The default value depends on the version of the `jetty-{ee-current}-jspc-maven-plugin`.
+
 tldJarNamePatterns::
 Default value: `+.*taglibs[^/]*\.jar|.*jstl[^/]*\.jar$+`
 +
@@ -118,7 +118,6 @@ Default value: the `org.apache.jasper.JspC` instance being configured.
 +
 The JspC class actually performs the pre-compilation.
 All setters on the JspC class are available.
-You can download the javadoc https://repo1.maven.org/maven2/org/glassfish/web/jakarta.servlet.jsp/2.3.2/jakarta.servlet.jsp-2.3.2-javadoc.jar[here].
 
 Taking all the default settings, here's how to configure the war plugin to use the generated `web.xml` that includes all of the jsp servlet declarations:
 
@@ -151,8 +150,8 @@ For example, the following profile will only be invoked if the flag `-Dprod` is 
     <build>
     <plugins>
       <plugin>
-        <groupId>org.eclipse.jetty</groupId>
-        <artifactId>jetty-jspc-maven-plugin</artifactId>
+        <groupId>org.eclipse.jetty.{ee-current}</groupId>
+        <artifactId>jetty-{ee-current}-jspc-maven-plugin</artifactId>
         <version>{version}</version>
         <!-- put your configuration in here -->
       </plugin>
@@ -177,13 +176,12 @@ $ mvn -Dprod package
 ==== Precompiling Jsps with Overlaid Wars
 
 Precompiling jsps with an overlaid war requires a bit more configuration.
-This is because you need to separate the steps of unpacking the overlaid war and then repacking the final target war so the jetty-jspc-maven-plugin has the opportunity to access the overlaid resources.
+This is because you need to separate the steps of unpacking the overlaid war and then repacking the final target war so the `jetty-{ee-current}-jspc-maven-plugin` has the opportunity to access the overlaid resources.
 
-In the example we'll show, we will use an overlaid war.
-The overlaid war will provide the `web.xml` file but the jsps will be in `src/main/webapp` (i.e. part of the project that uses the overlay).
-We will unpack the overlaid war file, compile the jsps and merge their servlet definitions into the extracted `web.xml`, then pack everything into a war.
+In the following example the overlaid war will provide the `web.xml` file but the jsps will be in `src/main/webapp` (i.e. part of the project that uses the overlay).
+The overlaid war file will be unpacked, the jsps compiled and their servlet definitions merged into the extracted `web.xml`, and everything packed into a war.
 
-Here's an example configuration of the war plugin that separate those phases into an unpack phase, and then a packing phase:
+An example configuration of the war plugin that separates those phases into an unpack phase, and then a packing phase:
 
 [source,xml]
 ----
@@ -199,8 +197,8 @@ Here's an example configuration of the war plugin that separate those phases int
         <overlays>
           <overlay />
           <overlay>
-            <groupId>org.eclipse.jetty.demos</groupId>
-            <artifactId>demo-jetty-webapp</artifactId>
+            <groupId>org.eclipse.jetty.{ee-current}.demos</groupId>
+            <artifactId>jetty-{ee-current}-demo-jetty-webapp</artifactId>
           </overlay>
         </overlays>
       </configuration>
@@ -218,15 +216,15 @@ Here's an example configuration of the war plugin that separate those phases int
 </plugin>
 ----
 
-Now you also need to configure the `jetty-jspc-maven-plugin` so that it can use the web.xml that was extracted by the war unpacking and merge in the generated definitions of the servlets.
+Now you also need to configure the `jetty-{ee-current}-jspc-maven-plugin` so that it can use the web.xml that was extracted by the war unpacking and merge in the generated definitions of the servlets.
 This is in `target/foo/WEB-INF/web.xml`.
 Using the default settings, the `web.xml` merged with the jsp servlet definitions will be put into `target/web.xml`.
 
 [source,xml,subs="verbatim,attributes"]
 ----
 <plugin>
-  <groupId>org.eclipse.jetty</groupId>
-   <artifactId>jetty-jspc-maven-plugin</artifactId>
+  <groupId>org.eclipse.jetty.{ee-current}</groupId>
+   <artifactId>jetty-{ee-current}-jspc-maven-plugin</artifactId>
    <version>{version}</version>
    <executions>
      <execution>
