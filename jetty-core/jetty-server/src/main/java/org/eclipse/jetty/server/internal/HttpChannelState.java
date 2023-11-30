@@ -1053,7 +1053,12 @@ public class HttpChannelState implements HttpChannel, Components
             Callback writeCallback = _writeCallback;
             _writeCallback = null;
             if (writeCallback != null || fatal)
-                _writeFailure = x;
+            {
+                if (_writeFailure == null)
+                    _writeFailure = x;
+                else
+                    ExceptionUtil.addSuppressedIfNotAssociated(_writeFailure, x);
+            }
             if (writeCallback == null)
                 return null;
             return () -> writeCallback.failed(x);
@@ -1636,15 +1641,11 @@ public class HttpChannelState implements HttpChannel, Components
         protected void onError(Runnable task, Throwable failure)
         {
             ChannelRequest request;
-            Throwable error;
             boolean callbackCompleted;
             try (AutoLock ignore = _lock.lock())
             {
                 callbackCompleted = _callbackCompleted;
                 request = _request;
-                error = _response == null ? null : _response._writeFailure;
-                if (error == null)
-                    error = _readFailure == null ? null : _readFailure.getFailure();
             }
 
             if (request == null || callbackCompleted)
@@ -1654,26 +1655,9 @@ public class HttpChannelState implements HttpChannel, Components
                 return;
             }
 
-            if (error == null)
-            {
-                // Try to fail the request, but we might lose the race.
-                try
-                {
-                    request._callback.failed(failure);
-                }
-                catch (Throwable t)
-                {
-                    ExceptionUtil.addSuppressedIfNotAssociated(failure, t);
-                    super.onError(task, failure);
-                }
-            }
-            else
-            {
-                // We are already in error, so we will not handle this one,
-                // but we will add as suppressed if we have not seen it already.
-                ExceptionUtil.addSuppressedIfNotAssociated(error, failure);
-                super.onError(task, failure);
-            }
+            Runnable failureTask = onFailure(failure);
+            if (failureTask != null)
+                failureTask.run();
         }
     }
 }

@@ -23,6 +23,7 @@ import org.eclipse.jetty.http.HttpStatus;
 import org.eclipse.jetty.http.HttpTester;
 import org.eclipse.jetty.http.MetaData;
 import org.eclipse.jetty.io.Content;
+import org.eclipse.jetty.io.QuietException;
 import org.eclipse.jetty.util.Callback;
 import org.eclipse.jetty.util.component.LifeCycle;
 import org.junit.jupiter.api.AfterEach;
@@ -30,6 +31,8 @@ import org.junit.jupiter.api.Test;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.ValueSource;
 
+import static org.hamcrest.MatcherAssert.assertThat;
+import static org.hamcrest.Matchers.containsString;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertSame;
 import static org.junit.jupiter.api.Assertions.assertThrows;
@@ -206,5 +209,37 @@ public class ReadWriteFailuresTest
             endPoint.waitUntilClosedOrIdleFor(5, TimeUnit.SECONDS);
             assertTrue(latch.await(5, TimeUnit.SECONDS));
         }
+    }
+
+    @Test
+    public void testDemandCallbackThrows() throws Exception
+    {
+        start(new Handler.Abstract()
+        {
+            @Override
+            public boolean handle(Request request, Response response, Callback callback)
+            {
+                request.addFailureListener(callback::failed);
+                request.demand(() ->
+                {
+                    // Results in a fatal failure, and failure listener is invoked.
+                    throw new QuietException.RuntimeException();
+                });
+                return true;
+            }
+        });
+
+        String content = "hello world";
+        String request = """
+            POST / HTTP/1.1
+            Host: localhost
+            Content-Length: %d
+                        
+            %s
+            """.formatted(content.length(), content);
+        HttpTester.Response response = HttpTester.parseResponse(connector.getResponse(request, 5, TimeUnit.SECONDS));
+
+        assertEquals(HttpStatus.INTERNAL_SERVER_ERROR_500, response.getStatus());
+        assertThat(response.getContent(), containsString("QuietException"));
     }
 }
