@@ -825,10 +825,6 @@ public class Request implements HttpServletRequest
         if (_inputState != INPUT_NONE && _inputState != INPUT_STREAM)
             throw new IllegalStateException("READER");
         _inputState = INPUT_STREAM;
-
-        if (_channel.isExpecting100Continue())
-            _channel.send100Continue(_input.available());
-
         return _input;
     }
 
@@ -1064,10 +1060,6 @@ public class Request implements HttpServletRequest
                     in.close();
                 }
             };
-        }
-        else if (_channel.isExpecting100Continue())
-        {
-            _channel.send100Continue(_input.available());
         }
         _inputState = INPUT_READER;
         return _reader;
