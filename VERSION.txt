@@ -1,4 +1,24 @@
-jetty-12.0.4-SNAPSHOT
+jetty-12.0.4 - 30 November 2023
+ + 9502 Produce SBOM and deploy to Maven Central
+ + 9900 Improve `Request.getBeginNanoTime()` accuracy
+ + 10234 Make idle timeouts transient
+ + 10384 ServletChannel now using proper state changes for calls to
+   ErrorHandler to avoid IllegalStateExceptions
+ + 10687 Jetty WebSocket remembers mappings on restart
+ + 10749 WebSocketClient should expose upgrade request/response
+ + 10775 Review ConnectionMetaData.isSecure()
+ + 10781 Investigate if the `secondary_super_cache` is stable
+ + 10797 Multiple identical `Set-Cookie` response lines produced
+ + 10812 jetty-deploy has unnecessary dependency on awaitility/hamcrest pulled
+   in at runtime
+ + 10829 Expired Session timing issue leads to Warning: "Invalidating session
+   {} found to be expired when requested"
+ + 10879 Improve redirect handling with reproducible content
+ + 10891 Support the "Partitioned" cookie attribute
+ + 10919 EE10 multipart parsing may include '\r' at the front under certain
+   conditions
+ + 10922 Fix NPE on null host when checking virtual host
+ + 10926 AttributeNormalizer does not support combined resources
 
 jetty-12.0.3 - 26 October 2023
  + 1256 DoSFilter leaks USER_AUTH entries
