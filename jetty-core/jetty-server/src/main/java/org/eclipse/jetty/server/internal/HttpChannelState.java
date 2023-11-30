@@ -385,12 +385,6 @@ public class HttpChannelState implements HttpChannel, Components
                 _response = new ChannelResponse(_request);
             }
 
-            // Set the error to arrange for any subsequent reads, demands or writes to fail.
-            if (_readFailure == null)
-                _readFailure = Content.Chunk.from(x, true);
-            else if (ExceptionUtil.areNotAssociated(_readFailure.getFailure(), x) && _readFailure.getFailure().getClass() != x.getClass())
-                _readFailure.getFailure().addSuppressed(x);
-
             // If not handled, then we just fail the request callback
             if (!_handled && _handling == null)
             {
@@ -398,6 +392,12 @@ public class HttpChannelState implements HttpChannel, Components
             }
             else
             {
+                // Set the failure to arrange for any subsequent reads or demands to fail.
+                if (_readFailure == null)
+                    _readFailure = Content.Chunk.from(x, true);
+                else
+                    ExceptionUtil.addSuppressedIfNotAssociated(_readFailure.getFailure(), x);
+
                 // If there is demand, take the onContentAvailable runnable to invoke below.
                 Runnable invokeOnContentAvailable = _onContentAvailable;
                 _onContentAvailable = null;
