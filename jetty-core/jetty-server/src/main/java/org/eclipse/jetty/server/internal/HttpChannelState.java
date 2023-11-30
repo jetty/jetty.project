@@ -321,43 +321,43 @@ public class HttpChannelState implements HttpChannel, Components
             if (LOG.isDebugEnabled())
                 LOG.debug("onIdleTimeout {}", this, t);
 
-            // if not already a failure,
+            Runnable invokeOnContentAvailable = null;
             if (_readFailure == null)
             {
-                // if we are currently demanding, take the onContentAvailable runnable to invoke below.
-                Runnable invokeOnContentAvailable = _onContentAvailable;
+                // If there is demand, take the onContentAvailable runnable to invoke below.
+                invokeOnContentAvailable = _onContentAvailable;
                 _onContentAvailable = null;
 
-                // If demand was in process, then arrange for the next read to return the idle timeout, if no other error
+                // If there was demand, then arrange for the next read to return a transient chunk failure.
                 if (invokeOnContentAvailable != null)
                     _readFailure = Content.Chunk.from(t, false);
+            }
 
-                // If a write call is in progress, take the writeCallback to fail below
-                Runnable invokeWriteFailure = _response.lockedFailWrite(t, false);
+            // If a write call is pending, take the writeCallback to fail below.
+            Runnable invokeWriteFailure = _response.lockedFailWrite(t, false);
 
-                // If there was an IO operation, just deliver the idle timeout via them
-                if (invokeOnContentAvailable != null || invokeWriteFailure != null)
-                    return _serializedInvoker.offer(invokeOnContentAvailable, invokeWriteFailure);
+            // If there was a pending IO operation, deliver the idle timeout via them.
+            if (invokeOnContentAvailable != null || invokeWriteFailure != null)
+                return _serializedInvoker.offer(invokeOnContentAvailable, invokeWriteFailure);
 
-                // otherwise, if there is an idle timeout listener, we ask if if we should call onFailure or not
-                Predicate<TimeoutException> onIdleTimeout = _onIdleTimeout;
-                if (onIdleTimeout != null)
+            // Otherwise, if there are idle timeout listeners, ask them whether we should call onFailure.
+            Predicate<TimeoutException> onIdleTimeout = _onIdleTimeout;
+            if (onIdleTimeout != null)
+            {
+                return _serializedInvoker.offer(() ->
                 {
-                    return _serializedInvoker.offer(() ->
+                    if (onIdleTimeout.test(t))
                     {
-                        if (onIdleTimeout.test(t))
-                        {
-                            // If the idle timeout listener(s) return true, then we call onFailure and run any task it returns.
-                            Runnable task = onFailure(t);
-                            if (task != null)
-                                task.run();
-                        }
-                    });
-                }
+                        // If the idle timeout listener(s) return true, then we call onFailure and run any task it returns.
+                        Runnable task = onFailure(t);
+                        if (task != null)
+                            task.run();
+                    }
+                });
             }
         }
 
-        // otherwise treat as a failure
+        // Otherwise treat as a failure.
         return onFailure(t);
     }
 
