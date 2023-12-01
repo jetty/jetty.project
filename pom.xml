@@ -33,9 +33,9 @@
     <build-support.version>1.5</build-support.version>
     <checkstyle.version>9.3</checkstyle.version>
     <commons-codec.version>1.16.0</commons-codec.version>
-    <commons.compress.version>1.24.0</commons.compress.version>
-    <commons.io.version>2.15.0</commons.io.version>
-    <commons.lang3.version>3.13.0</commons.lang3.version>
+    <commons.compress.version>1.25.0</commons.compress.version>
+    <commons.io.version>2.15.1</commons.io.version>
+    <commons.lang3.version>3.14.0</commons.lang3.version>
     <conscrypt.version>2.5.2</conscrypt.version>
     <disruptor.version>3.4.4</disruptor.version>
     <findbugs.jsr305.version>3.0.2</findbugs.jsr305.version>
@@ -76,8 +76,8 @@
     <junit.version>5.9.1</junit.version>
     <log4j2.version>2.17.1</log4j2.version>
     <logback.version>1.2.12</logback.version>
-    <maven.plugin-tools.version>3.10.1</maven.plugin-tools.version>
-    <maven.resolver.version>1.9.16</maven.resolver.version>
+    <maven.plugin-tools.version>3.10.2</maven.plugin-tools.version>
+    <maven.resolver.version>1.9.18</maven.resolver.version>
     <maven.version>3.9.0</maven.version>
     <mongodb.version>2.14.3</mongodb.version>
     <osgi.annotation.version>8.1.0</osgi.annotation.version>
@@ -90,10 +90,10 @@
     <slf4j.version>1.7.36</slf4j.version>
     <taglibs-standard-impl.version>1.2.5</taglibs-standard-impl.version>
     <taglibs-standard-spec.version>1.2.5</taglibs-standard-spec.version>
-    <testcontainers.version>1.19.1</testcontainers.version>
+    <testcontainers.version>1.19.3</testcontainers.version>
     <weld.version>3.1.9.Final</weld.version>
     <wildfly.elytron.version>2.2.2.Final</wildfly.elytron.version>
-    <xmemcached.version>2.4.7</xmemcached.version>
+    <xmemcached.version>2.4.8</xmemcached.version>
 
     <!-- some maven plugins versions -->
     <asciidoctor.plugin.version>2.2.4</asciidoctor.plugin.version>
@@ -101,7 +101,7 @@
     <build-helper.plugin.version>3.3.0</build-helper.plugin.version>
     <buildnumber.plugin.version>3.0.0</buildnumber.plugin.version>
     <docbkx.plugin.version>2.0.17</docbkx.plugin.version>
-    <exec.plugin.version>3.0.0</exec.plugin.version>
+    <exec.plugin.version>3.1.1</exec.plugin.version>
     <felix-bundle.plugin.version>3.5.1</felix-bundle.plugin.version>
     <h2spec.plugin.version>1.0.9</h2spec.plugin.version>
     <jacoco.plugin.version>0.8.8</jacoco.plugin.version>
@@ -110,7 +110,7 @@
     <maven.antrun.plugin.version>3.1.0</maven.antrun.plugin.version>
     <maven.assembly.plugin.version>3.6.0</maven.assembly.plugin.version>
     <maven.invoker.plugin.version>3.6.0</maven.invoker.plugin.version>
-    <maven.surefire.plugin.version>3.2.1</maven.surefire.plugin.version>
+    <maven.surefire.plugin.version>3.2.2</maven.surefire.plugin.version>
     <maven.checkstyle.plugin.version>3.3.1</maven.checkstyle.plugin.version>
     <maven.clean.plugin.version>3.3.2</maven.clean.plugin.version>
     <maven.compiler.plugin.version>3.11.0</maven.compiler.plugin.version>
@@ -120,7 +120,7 @@
     <maven.jar.plugin.version>3.3.0</maven.jar.plugin.version>
     <maven.javadoc.plugin.version>3.3.1</maven.javadoc.plugin.version>
     <maven.jxr.plugin.version>3.3.1</maven.jxr.plugin.version>
-    <maven.plugin.plugin.version>3.10.1</maven.plugin.plugin.version>
+    <maven.plugin.plugin.version>3.10.2</maven.plugin.plugin.version>
     <maven.release.plugin.version>3.0.1</maven.release.plugin.version>
     <maven.remote-resources.plugin.version>3.1.0</maven.remote-resources.plugin.version>
     <maven.resources.plugin.version>3.3.1</maven.resources.plugin.version>
@@ -1619,7 +1619,7 @@
         </property>
       </activation>
       <properties>
-        <cbi-plugins.version>1.4.2</cbi-plugins.version>
+        <cbi-plugins.version>1.4.3</cbi-plugins.version>
       </properties>
       <build>
         <plugins>
