@@ -740,26 +740,18 @@ public class HttpConnection extends AbstractMetaDataConnection implements Runnab
                 _lastContent = last;
                 _callback = callback;
                 _header = null;
-
                 if (getConnector().isShutdown())
                     _generator.setPersistent(false);
-
                 return true;
             }
-
-            if (isClosed() && response == null && last && content == null)
+            else
             {
-                callback.succeeded();
+                if (isClosed())
+                    callback.failed(new EofException());
+                else
+                    callback.failed(new WritePendingException());
                 return false;
             }
-
-            LOG.warn("reset failed {}", this);
-
-            if (isClosed())
-                callback.failed(new EofException());
-            else
-                callback.failed(new WritePendingException());
-            return false;
         }
 
         @Override

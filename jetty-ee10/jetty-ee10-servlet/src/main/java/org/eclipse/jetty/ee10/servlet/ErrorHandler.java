@@ -350,7 +350,7 @@ public class ErrorHandler implements Request.Handler
         }
 
         // Do an asynchronous completion.
-        baseRequest.getServletChannel().sendResponseAndComplete();
+        baseRequest.getServletChannel().sendErrorResponseAndComplete();
     }
 
     protected void handleErrorPage(HttpServletRequest request, Writer writer, int code, String message) throws IOException

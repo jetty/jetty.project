@@ -151,6 +151,7 @@ public class ServletChannelState
     private long _timeoutMs = DEFAULT_TIMEOUT;
     private AsyncContextEvent _event;
     private Thread _onTimeoutThread;
+    private Throwable _failure;
 
     protected ServletChannelState(ServletChannel servletChannel)
     {
@@ -292,19 +293,13 @@ public class ServletChannelState
         }
     }
 
-    public boolean completeResponse()
+    public Throwable completeResponse()
     {
         try (AutoLock ignored = lock())
         {
-            switch (_outputState)
-            {
-                case OPEN:
-                    _outputState = OutputState.COMPLETED;
-                    return true;
-
-                default:
-                    return false;
-            }
+            if (_outputState == OutputState.OPEN)
+                _outputState = OutputState.COMPLETED;
+            return _failure;
         }
     }
 
@@ -321,7 +316,7 @@ public class ServletChannelState
         }
     }
 
-    public boolean abortResponse()
+    public boolean abortResponse(Throwable failure)
     {
         try (AutoLock ignored = lock())
         {
@@ -334,10 +329,12 @@ public class ServletChannelState
                 case OPEN:
                     _servletChannel.getServletContextResponse().setStatus(HttpStatus.INTERNAL_SERVER_ERROR_500);
                     _outputState = OutputState.ABORTED;
+                    _failure = failure;
                     return true;
 
                 default:
                     _outputState = OutputState.ABORTED;
+                    _failure = failure;
                     return true;
             }
         }
@@ -559,19 +556,25 @@ public class ServletChannelState
         }
     }
 
-    public void errorHandlingComplete()
+    public void errorHandlingComplete(Throwable failure)
     {
         boolean handle;
         try (AutoLock ignored = lock())
         {
             if (LOG.isDebugEnabled())
-                LOG.debug("errorHandlingComplete {}", toStringLocked());
+                LOG.debug("errorHandlingComplete {}", toStringLocked(), failure);
 
             handle = _state == State.WAITING;
             if (handle)
                 _state = State.WOKEN;
+
+            // If there is a failure while trying to
+            // handle a previous failure, just bail out.
+            if (failure != null)
+                abortResponse(failure);
+
             if (_requestState == RequestState.ERRORING)
-                _requestState = RequestState.COMPLETE;
+                _requestState = failure == null ? RequestState.COMPLETE : RequestState.COMPLETED;
         }
         if (handle)
             scheduleDispatch();
