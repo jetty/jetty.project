@@ -1459,13 +1459,11 @@ public class HttpChannelState implements HttpChannel, Components
 
                 ChannelResponse response = httpChannelState._response;
                 if (LOG.isDebugEnabled())
-                {
-                    LOG.debug("failed stream.isCommitted={}, response.isCommitted={} {}", httpChannelState._stream.isCommitted(), response.isCommitted(), this);
-                }
+                    LOG.debug("failed stream.isCommitted={}, response.isCommitted={} {}", stream.isCommitted(), response.isCommitted(), this);
 
                 // There may have been an attempt to write an error response that failed.
                 // Do not try to write again an error response if already committed.
-                if (!response.isCommitted())
+                if (!stream.isCommitted())
                     errorResponse = new ErrorResponse(request);
             }
 
