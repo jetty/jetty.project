@@ -316,7 +316,7 @@ public class ServletChannelState
         }
     }
 
-    public boolean abortResponse(Throwable failure)
+    private boolean abortResponse(Throwable failure)
     {
         try (AutoLock ignored = lock())
         {
@@ -338,6 +338,26 @@ public class ServletChannelState
                     return true;
             }
         }
+    }
+
+    public void abort(Throwable failure)
+    {
+        boolean handle = false;
+        try (AutoLock ignored = lock())
+        {
+            boolean aborted = abortResponse(failure);
+            if (LOG.isDebugEnabled())
+                LOG.debug("abort={} {}", aborted, this, failure);
+            if (aborted)
+            {
+                handle = _state == State.WAITING;
+                if (handle)
+                    _state = State.WOKEN;
+                _requestState = RequestState.COMPLETED;
+            }
+        }
+        if (handle)
+            scheduleDispatch();
     }
 
     /**

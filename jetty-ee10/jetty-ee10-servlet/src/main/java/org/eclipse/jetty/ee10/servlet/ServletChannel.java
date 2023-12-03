@@ -813,10 +813,8 @@ public class ServletChannel
      */
     public void abort(Throwable failure)
     {
-        // Callback will failed in onCompleted().
-        boolean aborted = _state.abortResponse(failure);
-        if (LOG.isDebugEnabled())
-            LOG.debug("abort={} {}", aborted, this, failure);
+        // Callback will be failed in onCompleted().
+        _state.abort(failure);
     }
 
     private void dispatch() throws Exception
