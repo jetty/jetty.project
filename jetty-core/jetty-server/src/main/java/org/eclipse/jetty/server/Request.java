@@ -255,6 +255,14 @@ public interface Request extends Attributes, Content.Source
     boolean isSecure();
 
     /**
+     * Signal the intention to read the request content for the purposes of 100-Continues processing.
+     * @see HttpStream#willRead()
+     */
+    default void willRead()
+    {
+    }
+
+    /**
      * {@inheritDoc}
      * <p>In addition, the returned {@link Content.Chunk} may be a
      * {@link Trailers} instance, in case of request content trailers.</p>
@@ -832,6 +840,12 @@ public interface Request extends Attributes, Content.Source
         public long getLength()
         {
             return getWrapped().getLength();
+        }
+
+        @Override
+        public void willRead()
+        {
+            getWrapped().willRead();
         }
 
         @Override

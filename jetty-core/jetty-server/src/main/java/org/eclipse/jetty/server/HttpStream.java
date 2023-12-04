@@ -47,6 +47,22 @@ public interface HttpStream extends Callback
     String getId();
 
     /**
+     * Signal the intention to read the request content for the purposes of 100-Continues processing as follows: <ul>
+     *     <li>If a {@code 100-Continue} response is expected, then calling this method will send that response and the expectation
+     *     is satisfied. Otherwise this method is a {@code noop}.</li>
+     *     <li>There is an implied call to {@code willRead()} when {@link #demand()} is called.</li>
+     *     <li>If a {@link #read()} is attempted before calling this method and some content is available, then
+     *         any 100-Continues expectation is cancelled.</li>
+     *     <li>If a {@link #send(MetaData.Request, MetaData.Response, boolean, ByteBuffer, Callback)} is done prior to
+     *     a call to {@code willRead()}, then any expectation is cancelled and the connection put into a protocol dependent
+     *     state to not expect the request content to be sent and to ignore any further content sent on the channel</li>
+     * </ul>
+     */
+    default void willRead()
+    {
+    }
+
+    /**
      * <p>Reads a chunk of content, with the same semantic as {@link Content.Source#read()}.</p>
      * <p>This method is called from the implementation of {@link Request#read()}.</p>
      *
@@ -153,6 +169,12 @@ public interface HttpStream extends Callback
         public final String getId()
         {
             return getWrapped().getId();
+        }
+
+        @Override
+        public void willRead()
+        {
+            getWrapped().willRead();
         }
 
         @Override

@@ -144,6 +144,16 @@ public class HttpStreamOverHTTP2 implements HttpStream, HTTP2Channel.Server
     }
 
     @Override
+    public void willRead()
+    {
+        if (_expects100Continue)
+        {
+            _expects100Continue = false;
+            send(_requestMetaData, HttpGenerator.CONTINUE_100_INFO, false, null, Callback.NOOP);
+        }
+    }
+
+    @Override
     public Content.Chunk read()
     {
         // Tunnel requests do not have HTTP content, avoid
@@ -218,11 +228,7 @@ public class HttpStreamOverHTTP2 implements HttpStream, HTTP2Channel.Server
         }
         else if (demand)
         {
-            if (_expects100Continue)
-            {
-                _expects100Continue = false;
-                send(_requestMetaData, HttpGenerator.CONTINUE_100_INFO, false, null, Callback.NOOP);
-            }
+            willRead();
             _stream.demand();
         }
     }

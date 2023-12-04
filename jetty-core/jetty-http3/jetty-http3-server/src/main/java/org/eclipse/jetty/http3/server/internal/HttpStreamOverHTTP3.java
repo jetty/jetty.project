@@ -134,6 +134,16 @@ public class HttpStreamOverHTTP3 implements HttpStream
     }
 
     @Override
+    public void willRead()
+    {
+        if (expects100Continue)
+        {
+            expects100Continue = false;
+            send(requestMetaData, HttpGenerator.CONTINUE_100_INFO, false, null, Callback.NOOP);
+        }
+    }
+
+    @Override
     public Content.Chunk read()
     {
         while (true)
@@ -186,11 +196,7 @@ public class HttpStreamOverHTTP3 implements HttpStream
         }
         else
         {
-            if (expects100Continue)
-            {
-                expects100Continue = false;
-                send(requestMetaData, HttpGenerator.CONTINUE_100_INFO, false, null, Callback.NOOP);
-            }
+            willRead();
             stream.demand();
         }
     }

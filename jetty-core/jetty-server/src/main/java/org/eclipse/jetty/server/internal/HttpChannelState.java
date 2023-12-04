@@ -843,6 +843,19 @@ public class HttpChannelState implements HttpChannel, Components
         }
 
         @Override
+        public void willRead()
+        {
+            HttpStream stream;
+            try (AutoLock ignored = _lock.lock())
+            {
+                HttpChannelState httpChannel = lockedGetHttpChannelState();
+                stream = httpChannel._stream;
+            }
+
+            stream.willRead();
+        }
+
+        @Override
         public Content.Chunk read()
         {
             HttpStream stream;

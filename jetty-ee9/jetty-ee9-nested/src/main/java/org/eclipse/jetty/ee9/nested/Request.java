@@ -825,6 +825,7 @@ public class Request implements HttpServletRequest
         if (_inputState != INPUT_NONE && _inputState != INPUT_STREAM)
             throw new IllegalStateException("READER");
         _inputState = INPUT_STREAM;
+        _channel.getCoreRequest().willRead();
         return _input;
     }
 
@@ -1046,7 +1047,11 @@ public class Request implements HttpServletRequest
         if (encoding == null)
             encoding = MimeTypes.ISO_8859_1;
 
-        if (_reader == null || !encoding.equalsIgnoreCase(_readerEncoding))
+        if (_reader != null && encoding.equalsIgnoreCase(_readerEncoding))
+        {
+            _channel.getCoreRequest().willRead();
+        }
+        else
         {
             ServletInputStream in = getInputStream();
             _readerEncoding = encoding;

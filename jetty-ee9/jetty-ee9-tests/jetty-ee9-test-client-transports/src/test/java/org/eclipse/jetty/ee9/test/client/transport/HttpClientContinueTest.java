@@ -120,10 +120,8 @@ public class HttpClientContinueTest extends AbstractTest
             @Override
             protected void service(HttpServletRequest request, HttpServletResponse response) throws IOException
             {
-                // read/write first byte to send 100-Continue
+                // Send 100-Continue and copy the content back
                 ServletInputStream input = request.getInputStream();
-                response.getOutputStream().write(input.read());
-
                 // Make sure we chunk the response too
                 response.flushBuffer();
                 IO.copy(input, response.getOutputStream());
