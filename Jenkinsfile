@@ -107,7 +107,7 @@ def mavenBuild(jdk, cmdline, mvnName) {
     try {
       withEnv(["JAVA_HOME=${ tool "$jdk" }",
                "PATH+MAVEN=${ tool "$jdk" }/bin:${tool "$mvnName"}/bin",
-               "MAVEN_OPTS=-Xms2g -Xmx4g -Djava.awt.headless=true"]) {
+               "MAVEN_OPTS=-Xms3072m -Xmx5120m -Djava.awt.headless=true -client -XX:+UnlockDiagnosticVMOptions -XX:GCLockerRetryAllocationCount=100"]) {
       configFileProvider(
         [configFile(fileId: 'oss-settings.xml', variable: 'GLOBAL_MVN_SETTINGS'),
           configFile(fileId: 'maven-build-cache-config.xml', variable: 'MVN_BUILD_CACHE_CONFIG')]) {
@@ -128,6 +128,9 @@ def mavenBuild(jdk, cmdline, mvnName) {
             }
           }
           sh "mvn $extraArgs -DsettingsPath=$GLOBAL_MVN_SETTINGS -Dmaven.repo.uri=http://nexus-service.nexus.svc.cluster.local:8081/repository/maven-public/ -ntp -s $GLOBAL_MVN_SETTINGS -Dmaven.repo.local=.repository -Pci -V -B -e -U $cmdline"
+          if(saveHome()) {
+            archiveArtifacts artifacts: ".repository/org/eclipse/jetty/jetty-home/**/jetty-home-*", allowEmptyArchive: true, onlyIfSuccessful: false
+          }
         }
       }
     }
@@ -150,6 +153,13 @@ def useBuildCache() {
   return !noBuildCache;
   // want to skip build cache
   // return false
+}
+
+def saveHome() {
+  if (env.BRANCH_NAME ==~ /PR-\d+/) {
+    return pullRequest.labels.contains("save-home")
+  }
+  return false;
 }
 
 // vim: et:ts=2:sw=2:ft=groovy

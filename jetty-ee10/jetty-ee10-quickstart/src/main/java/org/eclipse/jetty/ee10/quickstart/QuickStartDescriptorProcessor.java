@@ -168,7 +168,7 @@ public class QuickStartDescriptorProcessor extends IterativeDescriptorProcessor 
                 if (o instanceof Collection<?>)
                     libs.addAll((Collection<?>)o);
                 libs.addAll(values);
-                if (libs.size() > 0)
+                if (!libs.isEmpty())
                     context.setAttribute(ServletContext.ORDERED_LIBS, libs);
             }
             case AnnotationConfiguration.CONTAINER_INITIALIZERS ->

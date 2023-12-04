@@ -549,7 +549,7 @@ public class XmlParser
                 for (int i = 0; i < attrs.getLength(); i++)
                 {
                     String name = attrs.getLocalName(i);
-                    if (name == null || name.equals(""))
+                    if (name == null || name.isEmpty())
                         name = attrs.getQName(i);
                     _attrs[i] = new Attribute(name, attrs.getValue(i));
                 }

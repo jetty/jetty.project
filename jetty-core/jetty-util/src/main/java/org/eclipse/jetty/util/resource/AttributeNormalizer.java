@@ -29,6 +29,7 @@ import java.util.regex.Pattern;
 import java.util.stream.Stream;
 
 import org.eclipse.jetty.util.StringUtil;
+import org.eclipse.jetty.util.URIUtil;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -195,6 +196,7 @@ public class AttributeNormalizer
         return o2.weight - o1.weight;
     };
 
+    private final Resource baseResource;
     private final List<PathAttribute> paths = new ArrayList<>();
     private final List<URIAttribute> uris = new ArrayList<>();
 
@@ -202,27 +204,31 @@ public class AttributeNormalizer
     {
         if (baseResource == null)
             throw new IllegalArgumentException("No base resource!");
-        // Combined resources currently are not supported (see #8921) but such support
-        // could be added. That would require some form of (potentially expensive)
-        // existence check in expand() to figure out which URIAttribute actually
-        // contains the resource.
-        if (Resources.isCombined(baseResource))
-            throw new IllegalArgumentException("Base resource cannot be combined!");
+
+        this.baseResource = baseResource;
 
         addSystemProperty("jetty.base", 9);
         addSystemProperty("jetty.home", 8);
         addSystemProperty("user.home", 7);
         addSystemProperty("user.dir", 6);
 
-        URI warURI = toCanonicalURI(baseResource.getURI());
-        if (!warURI.isAbsolute())
-            throw new IllegalArgumentException("WAR URI is not absolute: " + warURI);
+        int weight = 9;
+        for (Resource base : baseResource)
+        {
+            URI uri = base.getURI();
+            if (uri == null)
+                continue;
+            URI warURI = toCanonicalURI(uri);
+            if (!warURI.isAbsolute())
+                throw new IllegalArgumentException("WAR URI is not absolute: " + warURI);
 
-        Path path = baseResource.getPath();
-        if (path != null)
-            paths.add(new PathAttribute("WAR.path", toCanonicalPath(path), 10));
-        uris.add(new URIAttribute("WAR.uri", warURI, 9)); // preferred encoding
-        uris.add(new URIAttribute("WAR", warURI, 8)); // legacy encoding
+            Path path = base.getPath();
+            if (path != null)
+                paths.add(new PathAttribute("WAR.path", toCanonicalPath(path), weight));
+            uris.add(new URIAttribute("WAR.uri", warURI, weight - 1)); // preferred encoding
+            uris.add(new URIAttribute("WAR", warURI, weight - 2)); // legacy encoding
+            weight += 3;
+        }
 
         paths.sort(attrComparator);
         uris.sort(attrComparator);
@@ -400,6 +406,24 @@ public class AttributeNormalizer
     {
         if (property == null)
             return null;
+
+        switch (property)
+        {
+            case "WAR", "WAR.path" ->
+            {
+                Resource r = baseResource.resolve(suffix);
+                if (r == null)
+                    return prefix + URIUtil.addPaths(baseResource.iterator().next().getPath().toString(), suffix);
+                return prefix + r.getPath();
+            }
+            case "WAR.uri" ->
+            {
+                Resource r = baseResource.resolve(suffix);
+                if (r == null)
+                    return prefix + URIUtil.addPaths(baseResource.iterator().next().getURI().toString(), suffix);
+                return prefix + r.getURI();
+            }
+        }
 
         // Check for URI matches
         for (URIAttribute attr : uris)

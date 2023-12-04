@@ -116,9 +116,9 @@ public class JDBCLoginService extends AbstractLoginService
         final String userRoleTableUserKey = properties.getProperty("userroletableuserkey");
         final String userRoleTableRoleKey = properties.getProperty("userroletablerolekey");
 
-        if (_jdbcDriver == null || _jdbcDriver.equals("") ||
-            _url == null || _url.equals("") ||
-            _userName == null || _userName.equals("") ||
+        if (_jdbcDriver == null || _jdbcDriver.isEmpty() ||
+            _url == null || _url.isEmpty() ||
+            _userName == null || _userName.isEmpty() ||
             _password == null)
         {
             LOG.warn("UserRealm {} has not been properly configured", getName());
