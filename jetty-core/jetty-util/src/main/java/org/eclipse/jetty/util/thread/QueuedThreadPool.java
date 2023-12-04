@@ -971,6 +971,11 @@ public class QueuedThreadPool extends ContainerLifeCycle implements ThreadFactor
         job.run();
     }
 
+    protected void onJobFailure(Throwable x)
+    {
+        LOG.warn("Job failed", x);
+    }
+
     /**
      * <p>Determines whether to evict the current thread from the pool.</p>
      *
@@ -1197,7 +1202,7 @@ public class QueuedThreadPool extends ContainerLifeCycle implements ThreadFactor
             }
             catch (Throwable e)
             {
-                LOG.warn("Job failed", e);
+                onJobFailure(e);
             }
             finally
             {

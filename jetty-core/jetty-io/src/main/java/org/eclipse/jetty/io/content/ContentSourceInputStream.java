@@ -56,9 +56,9 @@ public class ContentSourceInputStream extends InputStream
             {
                 if (Content.Chunk.isFailure(chunk))
                 {
-                    Content.Chunk c = chunk;
-                    chunk = Content.Chunk.next(c);
-                    throw IO.rethrow(c.getFailure());
+                    Content.Chunk failure = chunk;
+                    chunk = Content.Chunk.next(failure);
+                    throw IO.rethrow(failure.getFailure());
                 }
 
                 ByteBuffer byteBuffer = chunk.getByteBuffer();
@@ -125,9 +125,11 @@ public class ContentSourceInputStream extends InputStream
                 // Handle a failure as read would
                 if (Content.Chunk.isFailure(chunk))
                 {
-                    Content.Chunk c = chunk;
-                    chunk = Content.Chunk.next(c);
-                    throw IO.rethrow(c.getFailure());
+                    Content.Chunk failure = chunk;
+                    chunk = Content.Chunk.next(failure);
+                    if (!failure.isLast())
+                        content.fail(failure.getFailure());
+                    throw IO.rethrow(failure.getFailure());
                 }
 
                 contentSkipped = chunk.hasRemaining();

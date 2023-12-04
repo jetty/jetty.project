@@ -676,6 +676,55 @@ public class HttpClientContinueTest extends AbstractTest
         assertTrue(latch.await(5, TimeUnit.SECONDS));
     }
 
+    @ParameterizedTest
+    @MethodSource("transportsNoFCGI")
+    public void test100ContinueThenTimeoutThenSendError(Transport transport) throws Exception
+    {
+        long idleTimeout = 1000;
+
+        CountDownLatch serverLatch = new CountDownLatch(1);
+        startServer(transport, new HttpServlet()
+        {
+            @Override
+            protected void service(HttpServletRequest request, HttpServletResponse response) throws IOException
+            {
+                // Send the 100 Continue.
+                ServletInputStream input = request.getInputStream();
+                try
+                {
+                    // Echo the content.
+                    IO.copy(input, response.getOutputStream());
+                }
+                catch (IOException x)
+                {
+                    // The copy failed b/c of idle timeout, time to try
+                    // to send an error which should have no effect.
+                    response.sendError(HttpStatus.IM_A_TEAPOT_418);
+                    serverLatch.countDown();
+                }
+            }
+        });
+        startClient(transport, httpClient -> httpClient.setIdleTimeout(idleTimeout));
+
+        AsyncRequestContent requestContent = new AsyncRequestContent();
+        requestContent.write(ByteBuffer.wrap(new byte[512]), Callback.NOOP);
+        CountDownLatch clientLatch = new CountDownLatch(1);
+        client.newRequest(newURI(transport))
+            .headers(headers -> headers.put(HttpHeader.EXPECT, HttpHeaderValue.CONTINUE.asString()))
+            .body(requestContent)
+            .send(result ->
+            {
+                if (result.isFailed() && result.getResponse().getStatus() == HttpStatus.CONTINUE_100)
+                    clientLatch.countDown();
+            });
+
+        // Wait more than the idle timeout to break the connection.
+        Thread.sleep(2 * idleTimeout);
+
+        assertTrue(serverLatch.await(5, TimeUnit.SECONDS));
+        assertTrue(clientLatch.await(5, TimeUnit.SECONDS));
+    }
+
     @Test
     public void testExpect100ContinueWithTwoResponsesInOneRead() throws Exception
     {

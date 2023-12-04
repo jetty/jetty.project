@@ -491,30 +491,16 @@ public class HttpRequestAbortTest extends AbstractHttpClientServerTest
             }
         });
 
-        // The test may fail to abort the request in this way:
-        // T1 aborts the request, which aborts the sender, which shuts down the output;
-        // server reads -1 and closes; T2 reads -1 and the receiver fails the response with an EOFException;
-        // T1 tries to abort the receiver, but it's already failed.
-
-        final Throwable cause = new Exception();
-        final AtomicBoolean aborted = new AtomicBoolean();
-        final CountDownLatch latch = new CountDownLatch(1);
+        Throwable cause = new Exception();
         client.getProtocolHandlers().clear();
         client.getProtocolHandlers().put(new RedirectProtocolHandler(client)
         {
             @Override
             public void onComplete(Result result)
             {
-                // Abort the request after the 3xx response but before issuing the next request
-                if (!result.isFailed())
-                {
-                    result.getRequest().abort(cause).thenAccept(b ->
-                    {
-                        aborted.set(b);
-                        latch.countDown();
-                    });
-                }
-                super.onComplete(result);
+                // Fake the fact that the redirect failed.
+                Result newResult = new Result(result, cause);
+                super.onComplete(newResult);
             }
         });
 
@@ -526,8 +512,6 @@ public class HttpRequestAbortTest extends AbstractHttpClientServerTest
                     .timeout(5, TimeUnit.SECONDS)
                     .send();
         });
-        assertTrue(latch.await(5, TimeUnit.SECONDS));
-        if (aborted.get())
-            assertSame(cause, e.getCause());
+        assertSame(cause, e.getCause());
     }
 }

@@ -73,11 +73,18 @@ public class Response implements HttpServletResponse
     public static final int USE_KNOWN_CONTENT_LENGTH = -2;
 
     /**
-     * If this string is found within a cookie comment, then the cookie is HttpOnly
+     * String used in the {@code Comment} attribute of {@link Cookie}
+     * to support the {@code HttpOnly} attribute.
      **/
     private static final String HTTP_ONLY_COMMENT = "__HTTP_ONLY__";
     /**
-     * These strings are used by to check for a SameSite specifier in a cookie comment
+     * String used in the {@code Comment} attribute of {@link Cookie}
+     * to support the {@code Partitioned} attribute.
+     **/
+    private static final String PARTITIONED_COMMENT = "__PARTITIONED__";
+    /**
+     * The strings used in the {@code Comment} attribute of {@link Cookie}
+     * to support the {@code SameSite} attribute.
      **/
     private static final String SAME_SITE_COMMENT = "__SAME_SITE_";
     private static final String SAME_SITE_NONE_COMMENT = SAME_SITE_COMMENT + "NONE__";
@@ -1480,16 +1487,16 @@ public class Response implements HttpServletResponse
         private final String _comment;
         private final boolean _httpOnly;
         private final SameSite _sameSite;
+        private final boolean _partitioned;
 
         public HttpCookieFacade(Cookie cookie)
         {
             _cookie = cookie;
-
             String comment = cookie.getComment();
-
-            // HttpOnly was supported as a comment in cookie flags before the java.net.HttpCookie implementation so need to check that
+            // HttpOnly was supported as a comment in cookie flags before the Cookie implementation so need to check that.
             _httpOnly = cookie.isHttpOnly() || isHttpOnlyInComment(comment);
             _sameSite = getSameSiteFromComment(comment);
+            _partitioned = isPartitionedInComment(comment);
             _comment = getCommentWithoutAttributes(comment);
         }
 
@@ -1554,6 +1561,12 @@ public class Response implements HttpServletResponse
         }
 
         @Override
+        public boolean isPartitioned()
+        {
+            return _partitioned;
+        }
+
+        @Override
         public Map<String, String> getAttributes()
         {
             Map<String, String> attributes = new TreeMap<>(String.CASE_INSENSITIVE_ORDER);
@@ -1568,6 +1581,8 @@ public class Response implements HttpServletResponse
                 attributes.put(SAME_SITE_ATTRIBUTE, _sameSite.getAttributeValue());
             if (isSecure())
                 attributes.put(SECURE_ATTRIBUTE, Boolean.TRUE.toString());
+            if (isPartitioned())
+                attributes.put(PARTITIONED_ATTRIBUTE, Boolean.TRUE.toString());
             return attributes;
         }
 
@@ -1589,47 +1604,43 @@ public class Response implements HttpServletResponse
             return HttpCookie.toString(this);
         }
 
-        static boolean isHttpOnlyInComment(String comment)
+        private static boolean isHttpOnlyInComment(String comment)
         {
             return comment != null && comment.contains(HTTP_ONLY_COMMENT);
         }
 
-        static SameSite getSameSiteFromComment(String comment)
+        private static boolean isPartitionedInComment(String comment)
         {
-            if (comment != null)
-            {
-                if (comment.contains(SAME_SITE_STRICT_COMMENT))
-                {
-                    return SameSite.STRICT;
-                }
-                if (comment.contains(SAME_SITE_LAX_COMMENT))
-                {
-                    return SameSite.LAX;
-                }
-                if (comment.contains(SAME_SITE_NONE_COMMENT))
-                {
-                    return SameSite.NONE;
-                }
-            }
+            return comment != null && comment.contains(PARTITIONED_COMMENT);
+        }
 
+        private static SameSite getSameSiteFromComment(String comment)
+        {
+            if (comment == null)
+                return null;
+            if (comment.contains(SAME_SITE_STRICT_COMMENT))
+                return SameSite.STRICT;
+            if (comment.contains(SAME_SITE_LAX_COMMENT))
+                return SameSite.LAX;
+            if (comment.contains(SAME_SITE_NONE_COMMENT))
+                return SameSite.NONE;
             return null;
         }
 
         private static String getCommentWithoutAttributes(String comment)
         {
             if (comment == null)
-            {
                 return null;
-            }
 
             String strippedComment = comment.trim();
 
             strippedComment = StringUtil.strip(strippedComment, HTTP_ONLY_COMMENT);
+            strippedComment = StringUtil.strip(strippedComment, PARTITIONED_COMMENT);
             strippedComment = StringUtil.strip(strippedComment, SAME_SITE_NONE_COMMENT);
             strippedComment = StringUtil.strip(strippedComment, SAME_SITE_LAX_COMMENT);
             strippedComment = StringUtil.strip(strippedComment, SAME_SITE_STRICT_COMMENT);
 
-            return strippedComment.length() == 0 ? null : strippedComment;
+            return strippedComment.isEmpty() ? null : strippedComment;
         }
     }
 }

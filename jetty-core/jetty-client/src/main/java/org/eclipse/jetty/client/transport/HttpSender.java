@@ -504,7 +504,11 @@ public abstract class HttpSender
             }
 
             if (Content.Chunk.isFailure(chunk))
-                throw chunk.getFailure();
+            {
+                Content.Chunk failure = chunk;
+                chunk = Content.Chunk.next(failure);
+                throw failure.getFailure();
+            }
 
             ByteBuffer buffer = chunk.getByteBuffer();
             contentBuffer = buffer.asReadOnlyBuffer();

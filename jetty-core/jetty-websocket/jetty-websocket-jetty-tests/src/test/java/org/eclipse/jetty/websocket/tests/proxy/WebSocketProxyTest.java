@@ -69,9 +69,7 @@ public class WebSocketProxyTest
 
         ContextHandler context = new ContextHandler();
 
-        WebSocketUpgradeHandler wsHandler = WebSocketUpgradeHandler.from(server, context);
-        context.setHandler(wsHandler);
-        wsHandler.configure(container ->
+        WebSocketUpgradeHandler wsHandler = WebSocketUpgradeHandler.from(server, context, container ->
         {
             container.addMapping("/proxy", (rq, rs, cb) -> webSocketProxy.getSessionListener());
             serverSocket = new EchoSocket();
@@ -82,6 +80,7 @@ public class WebSocketProxyTest
                 return serverSocket;
             });
         });
+        context.setHandler(wsHandler);
 
         server.setHandler(context);
         server.start();

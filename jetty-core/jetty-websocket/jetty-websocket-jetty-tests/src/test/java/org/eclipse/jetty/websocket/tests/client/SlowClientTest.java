@@ -62,10 +62,9 @@ public class SlowClientTest
 
         ContextHandler context = new ContextHandler("/");
 
-        WebSocketUpgradeHandler wsHandler = WebSocketUpgradeHandler.from(server, context);
-        context.setHandler(wsHandler);
-        wsHandler.configure(container ->
+        WebSocketUpgradeHandler wsHandler = WebSocketUpgradeHandler.from(server, context, container ->
             container.addMapping("/ws", (upgradeRequest, upgradeResponse, callback) -> new EchoSocket()));
+        context.setHandler(wsHandler);
 
         server.setHandler(context);
         server.start();

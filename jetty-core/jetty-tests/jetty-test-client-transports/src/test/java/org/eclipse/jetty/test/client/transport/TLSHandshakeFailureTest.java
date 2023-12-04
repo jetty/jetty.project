@@ -16,7 +16,6 @@ package org.eclipse.jetty.test.client.transport;
 import java.nio.ByteBuffer;
 import java.util.List;
 import java.util.concurrent.ExecutionException;
-import java.util.concurrent.Executor;
 import java.util.concurrent.ScheduledThreadPoolExecutor;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicInteger;
@@ -25,7 +24,6 @@ import javax.net.ssl.SSLEngineResult;
 import javax.net.ssl.SSLException;
 
 import org.eclipse.jetty.client.HttpClient;
-import org.eclipse.jetty.io.ByteBufferPool;
 import org.eclipse.jetty.io.ClientConnectionFactory;
 import org.eclipse.jetty.io.EndPoint;
 import org.eclipse.jetty.io.SelectorManager;
@@ -99,9 +97,9 @@ public class TLSHandshakeFailureTest extends AbstractTest
                 return new SslClientConnectionFactory(sslContextFactory, getByteBufferPool(), getExecutor(), connectionFactory)
                 {
                     @Override
-                    protected SslConnection newSslConnection(ByteBufferPool byteBufferPool, Executor executor, EndPoint endPoint, SSLEngine engine)
+                    protected SslConnection newSslConnection(EndPoint endPoint, SSLEngine engine)
                     {
-                        return new SslConnection(byteBufferPool, executor, endPoint, engine, isDirectBuffersForEncryption(), isDirectBuffersForDecryption())
+                        return new SslConnection(getByteBufferPool(), getExecutor(), getSslContextFactory(), endPoint, engine, isDirectBuffersForEncryption(), isDirectBuffersForDecryption())
                         {
                             private final AtomicInteger wraps = new AtomicInteger();
 
@@ -175,9 +173,9 @@ public class TLSHandshakeFailureTest extends AbstractTest
                 return new SslClientConnectionFactory(sslContextFactory, getByteBufferPool(), getExecutor(), connectionFactory)
                 {
                     @Override
-                    protected SslConnection newSslConnection(ByteBufferPool byteBufferPool, Executor executor, EndPoint endPoint, SSLEngine engine)
+                    protected SslConnection newSslConnection(EndPoint endPoint, SSLEngine engine)
                     {
-                        return new SslConnection(byteBufferPool, executor, endPoint, engine, isDirectBuffersForEncryption(), isDirectBuffersForDecryption())
+                        return new SslConnection(getByteBufferPool(), getExecutor(), getSslContextFactory(), endPoint, engine, isDirectBuffersForEncryption(), isDirectBuffersForDecryption())
                         {
                             private final AtomicInteger unwraps = new AtomicInteger();
 

@@ -535,6 +535,11 @@ public class ContextHandlerTest
         HttpFields fields = HttpFields.build().asImmutable();
 
         MockHttpStream stream = new MockHttpStream(channel);
+        channel.onRequest(new MetaData.Request("GET", HttpURI.from("/ctx/"), HttpVersion.HTTP_1_0, fields, 0)).run();
+        assertThat(stream.isComplete(), is(true));
+        assertThat(stream.getResponse().getStatus(), equalTo(404));
+
+        stream = new MockHttpStream(channel);
         channel.onRequest(new MetaData.Request("GET", HttpURI.from("http://localhost/ctx/"), HttpVersion.HTTP_1_1, fields, 0)).run();
         assertThat(stream.isComplete(), is(true));
         assertThat(stream.getResponse().getStatus(), equalTo(404));

@@ -530,7 +530,7 @@ public interface Response extends Content.Sink
                 if (errorHandler.handle(errorRequest, response, callback))
                     return;
             }
-            catch (Exception e)
+            catch (Throwable e)
             {
                 if (cause != null && cause != e)
                     cause.addSuppressed(e);

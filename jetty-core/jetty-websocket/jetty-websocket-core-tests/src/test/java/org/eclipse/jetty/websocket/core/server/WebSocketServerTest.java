@@ -43,6 +43,7 @@ import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertNotNull;
 import static org.junit.jupiter.api.Assertions.assertNull;
 import static org.junit.jupiter.api.Assertions.assertTrue;
+import static org.testcontainers.shaded.org.awaitility.Awaitility.await;
 
 /**
  * Tests of a core server with a fake client
@@ -247,8 +248,9 @@ public class WebSocketServerTest extends WebSocketTester
             public void onFrame(Frame frame, Callback callback)
             {
                 LOG.info("onFrame: " + BufferUtil.toDetailString(frame.getPayload()));
-                receivedFrames.offer(frame);
+                // Update receivedCallbacks first as its size is asserted right after receivedFrames is polled.
                 receivedCallbacks.offer(callback);
+                receivedFrames.offer(frame);
             }
 
             @Override
@@ -269,14 +271,15 @@ public class WebSocketServerTest extends WebSocketTester
             BufferUtil.append(buffer, RawFrameBuilder.buildText("World", true), 0, 6 + 5);
             client.getOutputStream().write(BufferUtil.toArray(buffer));
 
-            long start = NanoTime.now();
+            // Make sure serverHandler got called before moving on.
+            await().atMost(10, TimeUnit.SECONDS).until(() -> serverHandler.getCoreSession() != null);
+
             for (int i = 0; i < 3; i++)
             {
                 serverHandler.getCoreSession().demand();
                 Frame frame = serverHandler.receivedFrames.poll(5, TimeUnit.SECONDS);
                 assertNotNull(frame);
             }
-            assertThat(NanoTime.secondsSince(start), Matchers.lessThan(10L));
             assertThat(receivedCallbacks.size(), is(3));
 
             client.close();

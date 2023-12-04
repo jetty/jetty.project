@@ -15,7 +15,9 @@
   <properties>
     <!-- versions for these plugins are not based on parent pom -->
     <maven.deploy.plugin.version>3.1.1</maven.deploy.plugin.version>
+    <maven.deploy.skip>true</maven.deploy.skip>
     <maven.javadoc.plugin.version>3.4.0</maven.javadoc.plugin.version>
+    <maven.javadoc.skip>true</maven.javadoc.skip>
     <maven.remote-resources.plugin.version>3.1.0</maven.remote-resources.plugin.version>
     <maven.surefire.plugin.version>3.2.1</maven.surefire.plugin.version>
     <project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>

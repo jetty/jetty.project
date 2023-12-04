@@ -386,7 +386,17 @@ public class SessionHandler extends AbstractSessionManager implements Handler.Si
     @Override
     public ManagedSession getManagedSession(Request request)
     {
-        return Request.as(request, ServletContextRequest.class).getManagedSession();
+        ServletContextRequest servletContextRequest = Request.as(request, ServletContextRequest.class);
+        if (servletContextRequest != null)
+            return servletContextRequest.getManagedSession();
+
+        NonServletSessionRequest nonServletSessionRequest = Request.as(request, NonServletSessionRequest.class);
+        if (nonServletSessionRequest != null)
+            return nonServletSessionRequest.getManagedSession();
+
+        if (request.getSession(false) instanceof ManagedSession managedSession)
+            return managedSession;
+        return null;
     }
 
     /**
@@ -674,21 +684,61 @@ public class SessionHandler extends AbstractSessionManager implements Handler.Si
         if (next == null)
             return false;
 
-        ServletContextRequest servletContextRequest = Request.as(request, ServletContextRequest.class);
         addSessionStreamWrapper(request);
 
         // find and set the session if one exists
         RequestedSession requestedSession = resolveRequestedSessionId(request);
-        servletContextRequest.setRequestedSession(requestedSession);
+
+        ServletContextRequest servletContextRequest = Request.as(request, ServletContextRequest.class);
+        if (servletContextRequest == null)
+            request = new NonServletSessionRequest(request, response, requestedSession);
+        else
+            servletContextRequest.setRequestedSession(requestedSession);
 
         // Handle changed ID or max-age refresh, but only if this is not a redispatched request
         HttpCookie cookie = access(requestedSession.session(), request.getConnectionMetaData().isSecure());
         if (cookie != null)
-        {
-            ServletContextResponse servletContextResponse = servletContextRequest.getServletContextResponse();
-            Response.putCookie(servletContextResponse, cookie);
-        }
+            Response.putCookie(response, cookie);
 
         return next.handle(request, response, callback);
+    }
+
+    private class NonServletSessionRequest extends Request.Wrapper
+    {
+        private final Response _response;
+        private RequestedSession _session;
+
+        public NonServletSessionRequest(Request request, Response response, RequestedSession requestedSession)
+        {
+            super(request);
+            _response = response;
+            _session = requestedSession;
+        }
+
+        @Override
+        public Session getSession(boolean create)
+        {
+            ManagedSession session = _session.session();
+
+            if (session != null || !create)
+                return session;
+
+            newSession(getWrapped(), _session.sessionId(), ms ->
+                _session = new RequestedSession(ms, _session.sessionId(), true));
+
+            session = _session.session();
+            if (session == null)
+                throw new IllegalStateException("Create session failed");
+
+            HttpCookie cookie = getSessionCookie(session, isSecure());
+            if (cookie != null)
+                Response.replaceCookie(_response, cookie);
+            return session;
+        }
+
+        ManagedSession getManagedSession()
+        {
+            return _session.session();
+        }
     }
 }

@@ -96,7 +96,7 @@ public class WebServletAnnotation extends DiscoveredAnnotation
             urlPatternList.add(ServletPathSpec.normalize(p));
         }
 
-        String servletName = (annotation.name().equals("") ? clazz.getName() : annotation.name());
+        String servletName = (annotation.name().isEmpty() ? clazz.getName() : annotation.name());
 
         MetaData metaData = _context.getMetaData();
         ServletMapping mapping = null; //the new mapping

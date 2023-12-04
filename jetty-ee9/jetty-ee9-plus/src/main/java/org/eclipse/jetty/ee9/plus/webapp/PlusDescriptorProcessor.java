@@ -532,12 +532,12 @@ public class PlusDescriptorProcessor extends IterativeDescriptorProcessor
         String className = node.getString("lifecycle-callback-class", false, true);
         String methodName = node.getString("lifecycle-callback-method", false, true);
 
-        if (className == null || className.equals(""))
+        if (className == null || className.isEmpty())
         {
             LOG.warn("No lifecycle-callback-class specified");
             return;
         }
-        if (methodName == null || methodName.equals(""))
+        if (methodName == null || methodName.isEmpty())
         {
             LOG.warn("No lifecycle-callback-method specified for class {}", className);
             return;
@@ -610,12 +610,12 @@ public class PlusDescriptorProcessor extends IterativeDescriptorProcessor
     {
         String className = node.getString("lifecycle-callback-class", false, true);
         String methodName = node.getString("lifecycle-callback-method", false, true);
-        if (className == null || className.equals(""))
+        if (className == null || className.isEmpty())
         {
             LOG.warn("No lifecycle-callback-class specified for pre-destroy");
             return;
         }
-        if (methodName == null || methodName.equals(""))
+        if (methodName == null || methodName.isEmpty())
         {
             LOG.warn("No lifecycle-callback-method specified for pre-destroy class {}", className);
             return;
@@ -697,12 +697,12 @@ public class PlusDescriptorProcessor extends IterativeDescriptorProcessor
             XmlParser.Node injectionNode = itor.next();
             String targetClassName = injectionNode.getString("injection-target-class", false, true);
             String targetName = injectionNode.getString("injection-target-name", false, true);
-            if ((targetClassName == null) || targetClassName.equals(""))
+            if ((targetClassName == null) || targetClassName.isEmpty())
             {
                 LOG.warn("No classname found in injection-target");
                 continue;
             }
-            if ((targetName == null) || targetName.equals(""))
+            if ((targetName == null) || targetName.isEmpty())
             {
                 LOG.warn("No field or method name in injection-target");
                 continue;

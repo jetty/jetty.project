@@ -44,13 +44,15 @@ public class EncodedFieldSection
     private final int _requiredInsertCount;
     private final int _base;
     private final QpackDecoder.Handler _handler;
+    private final long _beginNanoTime;
 
-    public EncodedFieldSection(long streamId, QpackDecoder.Handler handler, int requiredInsertCount, int base, ByteBuffer content) throws QpackException
+    public EncodedFieldSection(long streamId, QpackDecoder.Handler handler, int requiredInsertCount, int base, ByteBuffer content, long beginNanoTime) throws QpackException
     {
         _streamId = streamId;
         _requiredInsertCount = requiredInsertCount;
         _base = base;
         _handler = handler;
+        _beginNanoTime = beginNanoTime;
 
         try
         {
@@ -104,6 +106,7 @@ public class EncodedFieldSection
             HttpField decodedField = encodedField.decode(context);
             metaDataBuilder.emit(decodedField);
         }
+        metaDataBuilder.setBeginNanoTime(_beginNanoTime);
         return metaDataBuilder.build();
     }
 
