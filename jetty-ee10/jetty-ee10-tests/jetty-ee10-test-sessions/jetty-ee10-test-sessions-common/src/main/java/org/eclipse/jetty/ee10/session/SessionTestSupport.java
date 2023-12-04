@@ -16,6 +16,7 @@ package org.eclipse.jetty.ee10.session;
 import org.eclipse.jetty.ee10.servlet.ServletContextHandler;
 import org.eclipse.jetty.ee10.servlet.SessionHandler;
 import org.eclipse.jetty.ee10.webapp.WebAppContext;
+import org.eclipse.jetty.server.Handler;
 import org.eclipse.jetty.server.NetworkConnector;
 import org.eclipse.jetty.server.Server;
 import org.eclipse.jetty.server.ServerConnector;
@@ -96,6 +97,11 @@ public class SessionTestSupport
         return h;
     }
 
+    public void insertHandler(Handler.Singleton handler)
+    {
+        _server.insertHandler(handler);
+    }
+
     public ServerConnector getServerConnector()
     {
         return _server.getBean(ServerConnector.class);
@@ -104,7 +110,7 @@ public class SessionTestSupport
     public void start() throws Exception
     {
         // server -> contexts collection -> context handler -> session handler -> servlet handler
-        _server.setHandler(_contexts);
+         _server.getTail().setHandler(_contexts);
         _server.start();
     }
 
