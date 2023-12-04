@@ -34,6 +34,7 @@ public class HostHeaderCustomizerTest
     {
         Server server = new Server();
         HttpConfiguration httpConfig = new HttpConfiguration();
+        httpConfig.setRelativeRedirectAllowed(false);
         final String serverName = "test_server_name";
         final int serverPort = 23232;
         final String redirectPath = "/redirect";
@@ -98,6 +99,7 @@ public class HostHeaderCustomizerTest
     {
         Server server = new Server();
         HttpConfiguration httpConfig = new HttpConfiguration();
+        httpConfig.setRelativeRedirectAllowed(false);
         final String serverName = "127.0.0.1";
         final String redirectPath = "/redirect";
         httpConfig.addCustomizer(new HostHeaderCustomizer());
