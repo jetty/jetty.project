@@ -75,7 +75,13 @@ public class ContentSourceInputStream extends InputStream
                 return l;
             }
 
-            chunk = content.read();
+            // Skip empty chunks.
+            while (true)
+            {
+                chunk = content.read();
+                if (chunk == null || chunk.hasRemaining() || chunk.isLast() || Content.Chunk.isFailure(chunk))
+                    break;
+            }
 
             if (chunk == null)
             {
