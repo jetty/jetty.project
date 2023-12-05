@@ -1980,6 +1980,7 @@
           <excludes>
             <!-- build tools -->
             <exclude>**/org/eclipse/jetty/ant/**</exclude>
+            <exclude>*/org/eclipse/jetty/maven/its/**</exclude>
             <!-- example code / documentation -->
             <exclude>**/org/eclipse/jetty/embedded/**</exclude>
             <exclude>**/org/eclipse/jetty/asyncrest/**</exclude>
