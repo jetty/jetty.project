@@ -38,7 +38,4 @@
     </dependency>
   </dependencies>
 
-  <build>
-    <finalName>jetty-ee9-test-weld-cdi-demo</finalName>
-  </build>
 </project>

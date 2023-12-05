@@ -28,6 +28,11 @@ import javax.naming.Referenceable;
 import javax.naming.StringRefAddr;
 import javax.naming.spi.ObjectFactory;
 
+import org.eclipse.jetty.plus.jndi.EnvEntry;
+import org.eclipse.jetty.plus.jndi.Link;
+import org.eclipse.jetty.plus.jndi.NamingEntry;
+import org.eclipse.jetty.plus.jndi.NamingEntryUtil;
+import org.eclipse.jetty.plus.jndi.Resource;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
@@ -37,6 +42,7 @@ import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertNotNull;
 import static org.junit.jupiter.api.Assertions.assertNull;
+import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.junit.jupiter.api.Assertions.fail;
 
@@ -164,6 +170,18 @@ public class TestNamingEntries
     }
 
     @Test
+    public void testBindToENCWithEmptyStringAndBindToENCThrowsNamingException()
+    {
+        assertThrows(NamingException.class, () -> NamingEntryUtil.bindToENC(new Object(), "", ""));
+    }
+
+    @Test
+    public void testBindToENCWithNullAndNullThrowsNamingException()
+    {
+        assertThrows(NamingException.class, () -> NamingEntryUtil.bindToENC(null, null, "@=<9"));
+    }
+
+    @Test
     public void testEnvEntryNoScope() throws Exception
     {
         EnvEntry ee = new EnvEntry("nameZ", "zstring", true);
@@ -190,8 +208,6 @@ public class TestNamingEntries
 
         Context scopeContext = NamingEntryUtil.getContextForScope(scope);
         assertNotNull(scopeContext);
-        Context namingEntriesContext = NamingEntryUtil.getContextForNamingEntries(scope);
-        assertNotNull(namingEntriesContext);
         assertEquals(someObject, scopeContext.lookup("nameA"));
     }
 
@@ -208,8 +224,6 @@ public class TestNamingEntries
 
         Context scopeContext = NamingEntryUtil.getContextForScope(scope);
         assertNotNull(scopeContext);
-        Context namingEntriesContext = NamingEntryUtil.getContextForNamingEntries(scope);
-        assertNotNull(namingEntriesContext);
         assertEquals(someObject, scopeContext.lookup("nameA"));
     }
 

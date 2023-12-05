@@ -46,7 +46,7 @@
                 <Bundle-SymbolicName>org.eclipse.jetty.ee8.demos.ee8-demo-mock-resources</Bundle-SymbolicName>
                 <Bundle-Description>Mock resources used for testing</Bundle-Description>
                 <Export-Package>org.example;version="${parsedVersion.majorVersion}.${parsedVersion.minorVersion}.${parsedVersion.incrementalVersion}"</Export-Package>
-                <Import-Package>javax.sql, javax.transaction;version="1.3.3"</Import-Package>
+                <Import-Package>javax.naming, javax.naming.spi, javax.sql, javax.transaction;version="1.3.3"</Import-Package>
                 <_nouses>true</_nouses>
               </instructions>
             </configuration>

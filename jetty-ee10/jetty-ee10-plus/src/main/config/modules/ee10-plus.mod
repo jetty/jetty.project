@@ -7,6 +7,7 @@ ee10
 [depend]
 server
 jndi
+plus
 ee10-security
 ee10-webapp
 

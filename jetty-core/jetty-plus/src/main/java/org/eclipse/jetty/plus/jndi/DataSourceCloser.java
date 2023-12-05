@@ -11,7 +11,7 @@
 // ========================================================================
 //
 
-package org.eclipse.jetty.jndi;
+package org.eclipse.jetty.plus.jndi;
 
 import java.lang.reflect.Method;
 import java.sql.Connection;

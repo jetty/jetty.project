@@ -29,6 +29,7 @@
     <module>jetty-keystore</module>
     <module>jetty-openid</module>
     <module>jetty-osgi</module>
+    <module>jetty-plus</module>
     <module>jetty-proxy</module>
     <module>jetty-quic</module>
     <module>jetty-rewrite</module>
