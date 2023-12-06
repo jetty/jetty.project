@@ -22,8 +22,9 @@ For each specific Jakarta EE _environment_ there is a specific `plus` module tha
 
 If you have already enabled an xref:og-annotations[`annotations`] module suitable for your environment, an appropriate `plus` module will already have been enabled and you do not need to explicitly enable a `plus` module.
 
-If you have extra jars associated with your JNDI resources, eg database drivers etc, that are not located inside your webapp then you should place those jars into your `$jetty.base/lib/ext` directory.
-If your base doesn't already contain this directory, then enable the `ext` module, and Jetty will create the directory for you and ensure its contents are on the server's classpath.
+If you have extra jars associated with your JNDI resources, eg database drivers etc, that are not located inside your webapp then you must ensure they are on either the container classpath or a Jakarta EE environment classpath.
+You can enable the `ext` module and place your jars in `${jetty.base}/lib/ext` to make them visible on the container classpath.
+To make them visible on an environment classpath you should create a custom, environment-specific module.
 
 You can now declare JNDI resources and reference them within your webapps.
 
@@ -62,7 +63,7 @@ Declarations of each of these types follow a similar pattern:
 ----
 <1> Defines a resource to Jetty.
 <2> Specifies the xref:og-jndi-scope[scope] of the resource.
-<3> Specifies the name of the resource which will be looked up by the webapp relative to the `java:comp/` namespace.
+<3> Specifies the name of the resource which will be looked up by the webapp relative to the `java:comp/` or `java:comp/env` namespace.
 <4> Specifies the value of the resource.
 
 
@@ -345,14 +346,15 @@ You can define naming resources in three places:
 
 Server XML file::
 Naming resources defined in a server XML file are xref:og-jndi-scope[scoped] at the JVM, `org.eclipse.jetty.server.Server` or environment level.
-The classes for the resource _must_ be visible at the Jetty *container* level.
-If instead the classes for the resource only exist inside your webapp, you must declare it in a `WEB-INF/jetty-env.xml` file.
+Note that the classes for the resource _must_ be visible at the point in time that the XML executes.
+For example, environment level resources should be declared in an XML file that is referenced by a custom module that contains an `[environment]` clause at the matching environment level to ensure the classpath for that environment is available.
+
 Context XML file::
 Entries in a context XML file should be xref:og-jndi-scope[scoped] at the level of the webapp to which they apply (it is possible to use a less strict scoping level of Server or JVM, but not recommended).
-As with resources declared in a server XML file, classes associated with the resource _must_ be visible on the *container's* classpath.
+As a context XML file executes _before_ the webapp's classes are available, the classes for your resource must be external to the webapp and on either the container or environment classpath.
+
 WEB-INF/jetty-env.xml::
 Naming resources in a `WEB-INF/jetty-env.xml` file are xref:og-jndi-scope[scoped] to the webapp in which the file resides.
-While you can enter JVM or Server scopes if you choose, we do not recommend doing so.
 The resources defined here may use classes from inside your webapp.
 
 [[og-jndi-scope]]
