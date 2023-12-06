@@ -4,7 +4,7 @@
   <parent>
     <groupId>org.eclipse.jetty.ee8.demos</groupId>
     <artifactId>jetty-ee8-demos</artifactId>
-    <version>12.0.4-SNAPSHOT</version>
+    <version>12.0.5-SNAPSHOT</version>
   </parent>
   <artifactId>jetty-ee8-demo-jndi-webapp</artifactId>
   <packaging>war</packaging>
@@ -39,8 +39,8 @@
     <pluginManagement>
       <plugins>
         <plugin>
-          <groupId>org.eclipse.jetty</groupId>
-          <artifactId>jetty-maven-plugin</artifactId>
+          <groupId>org.eclipse.jetty.ee8</groupId>
+          <artifactId>jetty-ee8-maven-plugin</artifactId>
           <version>${project.version}</version>
           <configuration>
             <contextXml>${project.build.directory}/plugin-context.xml</contextXml>
@@ -61,28 +61,6 @@
       </plugins>
     </pluginManagement>
     <plugins>
-      <plugin>
-        <artifactId>maven-antrun-plugin</artifactId>
-        <executions>
-          <execution>
-            <id>generate-xml-files</id>
-            <goals>
-              <goal>run</goal>
-            </goals>
-            <phase>process-resources</phase>
-            <configuration>
-              <target>
-                <concat destfile="${project.build.directory}/plugin-context.xml">
-                  <filelist dir="${project.build.directory}/templates" files="plugin-context-header.xml,env-definitions.xml"></filelist>
-                </concat>
-                <concat destfile="${project.build.directory}/test-jndi.xml">
-                  <filelist dir="${project.build.directory}/templates" files="jetty-test-jndi-header.xml,env-definitions.xml"></filelist>
-                </concat>
-              </target>
-            </configuration>
-          </execution>
-        </executions>
-      </plugin>
       <plugin>
         <groupId>org.apache.maven.plugins</groupId>
         <artifactId>maven-dependency-plugin</artifactId>

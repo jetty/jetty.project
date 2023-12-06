@@ -13,6 +13,8 @@
 
 package org.example;
 
+import javax.naming.Reference;
+
 import jakarta.transaction.HeuristicMixedException;
 import jakarta.transaction.HeuristicRollbackException;
 import jakarta.transaction.NotSupportedException;
@@ -23,8 +25,13 @@ import jakarta.transaction.UserTransaction;
 /**
  * MockUserTransaction
  */
-public class MockUserTransaction implements UserTransaction
+public class MockUserTransaction extends Reference implements UserTransaction
 {
+
+    public MockUserTransaction()
+    {
+        super("org.example.MockUserTransaction", "org.example.MockUserTransactionFactory", null);
+    }
 
     @Override
     public void begin() throws NotSupportedException, SystemException

@@ -5,7 +5,7 @@
   <parent>
     <groupId>org.eclipse.jetty</groupId>
     <artifactId>jetty-project</artifactId>
-    <version>12.0.4-SNAPSHOT</version>
+    <version>12.0.5-SNAPSHOT</version>
   </parent>
   <artifactId>jetty-core</artifactId>
   <packaging>pom</packaging>
@@ -29,6 +29,7 @@
     <module>jetty-keystore</module>
     <module>jetty-openid</module>
     <module>jetty-osgi</module>
+    <module>jetty-plus</module>
     <module>jetty-proxy</module>
     <module>jetty-quic</module>
     <module>jetty-rewrite</module>

@@ -73,8 +73,8 @@ public class DataSourceLoginServiceTest
         ds.setUser(DatabaseLoginServiceTestServer.MARIA_DB_USER);
         ds.setPassword(DatabaseLoginServiceTestServer.MARIA_DB_PASSWORD);
         ds.setUrl(DatabaseLoginServiceTestServer.MARIA_DB_FULL_URL);
-        org.eclipse.jetty.ee10.plus.jndi.Resource binding = 
-            new org.eclipse.jetty.ee10.plus.jndi.Resource(null, "dstest", ds);
+        org.eclipse.jetty.plus.jndi.Resource binding = 
+            new org.eclipse.jetty.plus.jndi.Resource(null, "dstest", ds);
         
         __testServer = new DatabaseLoginServiceTestServer();
         

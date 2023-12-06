@@ -5,7 +5,7 @@
   <parent>
     <groupId>org.eclipse.jetty</groupId>
     <artifactId>jetty-core</artifactId>
-    <version>12.0.4-SNAPSHOT</version>
+    <version>12.0.5-SNAPSHOT</version>
   </parent>
   <artifactId>jetty-security</artifactId>
   <name>Core :: Security</name>
@@ -20,21 +20,6 @@
 
   <dependencies>
     <dependency>
-      <groupId>org.apache.directory.api</groupId>
-      <artifactId>api-asn1-api</artifactId>
-      <version>${apache.directory.api.version}</version>
-    </dependency>
-    <dependency>
-      <groupId>org.apache.directory.api</groupId>
-      <artifactId>api-ldap-model</artifactId>
-      <version>${apache.directory.api.version}</version>
-    </dependency>
-    <dependency>
-      <groupId>org.apache.directory.api</groupId>
-      <artifactId>api-util</artifactId>
-      <version>${apache.directory.api.version}</version>
-    </dependency>
-    <dependency>
       <groupId>org.eclipse.jetty</groupId>
       <artifactId>jetty-server</artifactId>
     </dependency>
@@ -44,7 +29,25 @@
     </dependency>
     <dependency>
       <groupId>org.apache.directory.api</groupId>
+      <artifactId>api-asn1-api</artifactId>
+      <version>${apache.directory.api.version}</version>
+      <scope>test</scope>
+    </dependency>
+    <dependency>
+      <groupId>org.apache.directory.api</groupId>
+      <artifactId>api-ldap-model</artifactId>
+      <version>${apache.directory.api.version}</version>
+      <scope>test</scope>
+    </dependency>
+    <dependency>
+      <groupId>org.apache.directory.api</groupId>
       <artifactId>api-ldap-schema-data</artifactId>
+      <version>${apache.directory.api.version}</version>
+      <scope>test</scope>
+    </dependency>
+    <dependency>
+      <groupId>org.apache.directory.api</groupId>
+      <artifactId>api-util</artifactId>
       <version>${apache.directory.api.version}</version>
       <scope>test</scope>
     </dependency>

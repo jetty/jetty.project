@@ -27,7 +27,6 @@ import org.eclipse.jetty.ee10.webapp.JettyWebXmlConfiguration;
 import org.eclipse.jetty.ee10.webapp.MetaInfConfiguration;
 import org.eclipse.jetty.ee10.webapp.WebAppContext;
 import org.eclipse.jetty.ee10.webapp.WebXmlConfiguration;
-import org.eclipse.jetty.jndi.NamingContext;
 import org.eclipse.jetty.util.NanoTime;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -88,7 +87,14 @@ public class PlusConfiguration extends AbstractConfiguration
         }
         catch (NameNotFoundException e)
         {
-            LOG.debug("No Transaction manager found - if your webapp requires one, please configure one.");
+            try
+            {
+                org.eclipse.jetty.plus.jndi.Transaction.bindTransactionToENC(ServletContextHandler.__environment.getName());
+            }
+            catch (NameNotFoundException x)
+            {
+                LOG.debug("No Transaction manager found - if your webapp requires one, please configure one.");
+            }
         }
     }
 
@@ -103,7 +109,7 @@ public class PlusConfiguration extends AbstractConfiguration
             Context context = new InitialContext();
             Context compCtx = (Context)context.lookup("java:comp");
             wac.setAttribute(LOCK_JNDI_KEY, key);
-            compCtx.addToEnvironment(NamingContext.LOCK_PROPERTY, key);
+            compCtx.addToEnvironment("org.eclipse.jetty.jndi.lock", key);
         }
         finally
         {

@@ -11,7 +11,7 @@
 // ========================================================================
 //
 
-package org.eclipse.jetty.ee9.plus.jndi;
+package org.eclipse.jetty.plus.jndi;
 
 import java.util.ArrayList;
 import java.util.Collections;
@@ -34,7 +34,7 @@ public class NamingEntryUtil
     private static final Logger LOG = LoggerFactory.getLogger(NamingEntryUtil.class);
 
     /**
-     * Link a name in a webapp's java:/comp/evn namespace to a pre-existing
+     * Link a name in a webapp's java:/comp/env namespace to a pre-existing
      * resource. The pre-existing resource can be either in the webapp's
      * naming environment, or in the container's naming environment. Webapp's
      * environment takes precedence over the server's namespace.
@@ -209,11 +209,15 @@ public class NamingEntryUtil
         return (Context)ic.lookup(name);
     }
 
-    public static Context getContextForNamingEntries(Object scope)
+    public static void destroyContextForScope(Object scope)
         throws NamingException
     {
-        Context scopeContext = getContextForScope(scope);
-        return (Context)scopeContext.lookup(NamingEntry.__contextName);
+        Name name = getNameForScope(scope);
+        if (name != null)
+        {
+            InitialContext ic = new InitialContext();
+            ic.destroySubcontext(name);
+        }
     }
 
     private static String canonicalizeScope(Object scope)

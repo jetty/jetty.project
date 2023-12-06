@@ -11,7 +11,7 @@
 // ========================================================================
 //
 
-package org.eclipse.jetty.jndi;
+package org.eclipse.jetty.util.jndi;
 
 import java.util.HashMap;
 import java.util.Map;
@@ -81,7 +81,7 @@ public class NamingUtil
         throws NamingException
     {
         //unbind everything in the context and all of its subdirectories
-        NamingEnumeration ne = ctx.listBindings(ctx.getNameInNamespace());
+        NamingEnumeration<Binding> ne = ctx.listBindings(ctx.getNameInNamespace());
 
         while (ne.hasMoreElements())
         {
@@ -95,6 +95,30 @@ public class NamingUtil
         }
     }
 
+    public static void unbind(Context context, String name, boolean deep)
+        throws NamingException
+    {
+        NameParser parser = context.getNameParser("");
+        Name parsedName = parser.parse(name);
+
+        //step backwards through the compound name, checking if intermediate contexts are now empty, and removing if so
+        while (parsedName.size() > 0)
+        {
+
+            Object o = context.lookup(parsedName);
+            if (o instanceof Context)
+            {
+                if (!((Context)o).listBindings("").hasMore())
+                    context.unbind(parsedName);
+            }
+            else
+                context.unbind(parsedName);
+            parsedName.remove(parsedName.size() - 1);
+            if (!deep)
+                break;
+        }
+    }
+
     /**
      * Do a deep listing of the bindings for a context.
      *
@@ -103,18 +127,25 @@ public class NamingUtil
      * @return map: key is fully qualified name, value is the bound object
      * @throws NamingException if unable to flatten bindings
      */
-    public static Map flattenBindings(Context ctx, String name)
+    public static Map<String, Object> flattenBindings(Context ctx, String name)
         throws NamingException
     {
-        HashMap map = new HashMap();
+        HashMap<String, Object> map = new HashMap<>();
 
         //the context representation of name arg
         Context c = (Context)ctx.lookup(name);
         NameParser parser = c.getNameParser("");
-        NamingEnumeration enm = ctx.listBindings(name);
+        NamingEnumeration<Binding> enm = ctx.listBindings(name);
+        //empty context, add it to the map
+        if (!enm.hasMore())
+        {
+            map.put(parser.parse(c.getNameInNamespace()).toString(), c);
+            return map;
+        }
+
         while (enm.hasMore())
         {
-            Binding b = (Binding)enm.next();
+            Binding b = enm.next();
 
             if (b.getObject() instanceof Context)
             {
