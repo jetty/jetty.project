@@ -13,44 +13,9 @@
 
 package org.eclipse.jetty.server;
 
-import java.io.IOException;
-import java.io.PrintWriter;
-import java.nio.channels.IllegalSelectorException;
-import java.util.Collection;
-import java.util.Collections;
-import java.util.EnumSet;
-import java.util.Iterator;
-import java.util.ListIterator;
-import java.util.Locale;
-import java.util.Map;
-import java.util.function.Supplier;
-import javax.servlet.ServletOutputStream;
-import javax.servlet.ServletResponse;
-import javax.servlet.ServletResponseWrapper;
-import javax.servlet.http.Cookie;
-import javax.servlet.http.HttpServletRequest;
-import javax.servlet.http.HttpServletResponse;
-import javax.servlet.http.HttpServletResponseWrapper;
-import javax.servlet.http.HttpSession;
-
-import org.eclipse.jetty.http.CookieCompliance;
-import org.eclipse.jetty.http.DateGenerator;
-import org.eclipse.jetty.http.HttpContent;
-import org.eclipse.jetty.http.HttpCookie;
+import org.eclipse.jetty.http.*;
 import org.eclipse.jetty.http.HttpCookie.SameSite;
 import org.eclipse.jetty.http.HttpCookie.SetCookieHttpField;
-import org.eclipse.jetty.http.HttpField;
-import org.eclipse.jetty.http.HttpFields;
-import org.eclipse.jetty.http.HttpGenerator;
-import org.eclipse.jetty.http.HttpHeader;
-import org.eclipse.jetty.http.HttpHeaderValue;
-import org.eclipse.jetty.http.HttpScheme;
-import org.eclipse.jetty.http.HttpStatus;
-import org.eclipse.jetty.http.HttpURI;
-import org.eclipse.jetty.http.HttpVersion;
-import org.eclipse.jetty.http.MetaData;
-import org.eclipse.jetty.http.MimeTypes;
-import org.eclipse.jetty.http.PreEncodedHttpField;
 import org.eclipse.jetty.io.RuntimeIOException;
 import org.eclipse.jetty.server.handler.ContextHandler.Context;
 import org.eclipse.jetty.server.session.SessionHandler;
@@ -58,6 +23,16 @@ import org.eclipse.jetty.util.AtomicBiInteger;
 import org.eclipse.jetty.util.Callback;
 import org.eclipse.jetty.util.StringUtil;
 import org.eclipse.jetty.util.URIUtil;
+
+import javax.servlet.ServletOutputStream;
+import javax.servlet.ServletResponse;
+import javax.servlet.ServletResponseWrapper;
+import javax.servlet.http.*;
+import java.io.IOException;
+import java.io.PrintWriter;
+import java.nio.channels.IllegalSelectorException;
+import java.util.*;
+import java.util.function.Supplier;
 
 /**
  * <p>{@link Response} provides the implementation for {@link HttpServletResponse}.</p>
@@ -581,7 +556,7 @@ public class Response implements HttpServletResponse
         if (!isMutable())
             return;
 
-        location = toRedirectURL(_channel.getRequest(), location);
+        location = toRedirectURI(_channel.getRequest(), location);
 
         resetBuffer();
         setHeader(HttpHeader.LOCATION, location);
@@ -600,10 +575,11 @@ public class Response implements HttpServletResponse
      *
      * @param request the request the redirect should be based on (needed when relative locations are provided, so that
      * server name, scheme, port can be built out properly)
-     * @param location the location URL to redirect to (can be a relative path)
+     * @param location the location as an absolute URI or an encoded relative path. A relative path starting with '/'
+     *                 is relative to the root, otherwise it is relative to the request path.
      * @return the full redirect "Location" URL (including scheme, host, port, path, etc...)
      */
-    public static String toRedirectURL(final HttpServletRequest request, String location)
+    public static String toRedirectURI(final HttpServletRequest request, String location)
     {
         // is the URI absolute already?
         if (!URIUtil.hasScheme(location))

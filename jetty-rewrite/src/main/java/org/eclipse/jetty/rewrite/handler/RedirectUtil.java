@@ -13,9 +13,9 @@
 
 package org.eclipse.jetty.rewrite.handler;
 
-import javax.servlet.http.HttpServletRequest;
-
 import org.eclipse.jetty.server.Response;
+
+import javax.servlet.http.HttpServletRequest;
 
 /**
  * Utility for managing redirect based rules
@@ -32,6 +32,6 @@ public final class RedirectUtil
      */
     public static String toRedirectURL(final HttpServletRequest request, String location)
     {
-        return Response.toRedirectURL(request, location);
+        return Response.toRedirectURI(request, location);
     }
 }
