@@ -32,8 +32,16 @@
               </Arg>
             </Call>
           </Set>
+          <Set name="defaultsDescriptor">
+            <Property>
+              <Name>jetty.deploy.defaultsDescriptorPath</Name>
+              <Deprecated>jetty.deploy.defaultsDescriptor</Deprecated>
+              <Default>
+                <Property name="jetty.base" default="." />/etc/webdefault-ee9.xml
+              </Default>
+            </Property>
+          </Set>
           <Set name="scanInterval" property="jetty.deploy.scanInterval"/>
-          <Set name="defaultsDescriptor" property="jetty.deploy.defaultsDescriptor"/>
           <Set name="extractWars" property="jetty.deploy.extractWars" />
           <Set name="parentLoaderPriority" property="jetty.deploy.parentLoaderPriority" />
           <Set name="configurationClasses" property="jetty.deploy.configurationClasses" />
