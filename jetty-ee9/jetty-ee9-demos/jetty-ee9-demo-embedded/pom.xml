@@ -4,7 +4,7 @@
   <parent>
     <groupId>org.eclipse.jetty.ee9.demos</groupId>
     <artifactId>jetty-ee9-demos</artifactId>
-    <version>12.0.4-SNAPSHOT</version>
+    <version>12.0.5-SNAPSHOT</version>
   </parent>
   <artifactId>jetty-ee9-demo-embedded</artifactId>
   <name>EE9 :: Demo :: Embedded Jetty</name>
@@ -41,6 +41,10 @@
     </dependency>
     <dependency>
       <groupId>org.eclipse.jetty</groupId>
+      <artifactId>jetty-plus</artifactId>
+    </dependency>
+    <dependency>
+      <groupId>org.eclipse.jetty</groupId>
       <artifactId>jetty-rewrite</artifactId>
     </dependency>
     <dependency>
@@ -62,6 +66,12 @@
     <dependency>
       <groupId>org.eclipse.jetty.ee9</groupId>
       <artifactId>jetty-ee9-plus</artifactId>
+      <exclusions>
+        <exclusion>
+          <groupId>jakarta.el</groupId>
+          <artifactId>jakarta.el-api</artifactId>
+        </exclusion>
+      </exclusions>
     </dependency>
     <dependency>
       <groupId>org.eclipse.jetty.ee9</groupId>
@@ -85,15 +95,6 @@
       <version>${project.version}</version>
       <type>war</type>
     </dependency>
-    <!-- sounds cyclic -->
-    <!--
-    <dependency>
-      <groupId>org.eclipse.jetty</groupId>
-      <artifactId>jetty-home</artifactId>
-      <type>zip</type>
-      <scope>test</scope>
-    </dependency>
-    -->
     <dependency>
       <groupId>org.eclipse.jetty.ee9.demos</groupId>
       <artifactId>jetty-ee9-demo-jndi-webapp</artifactId>

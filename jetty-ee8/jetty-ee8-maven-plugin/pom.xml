@@ -4,7 +4,7 @@
   <parent>
     <groupId>org.eclipse.jetty.ee8</groupId>
     <artifactId>jetty-ee8</artifactId>
-    <version>12.0.4-SNAPSHOT</version>
+    <version>12.0.5-SNAPSHOT</version>
   </parent>
   <artifactId>jetty-ee8-maven-plugin</artifactId>
   <packaging>maven-plugin</packaging>
@@ -27,11 +27,6 @@
     <dependency>
       <groupId>org.apache.maven.plugin-tools</groupId>
       <artifactId>maven-plugin-tools-api</artifactId>
-    </dependency>
-    <dependency>
-      <groupId>org.apache.maven.shared</groupId>
-      <artifactId>maven-artifact-transfer</artifactId>
-      <version>${maven-artifact-transfer.version}</version>
     </dependency>
     <dependency>
       <groupId>org.codehaus.plexus</groupId>

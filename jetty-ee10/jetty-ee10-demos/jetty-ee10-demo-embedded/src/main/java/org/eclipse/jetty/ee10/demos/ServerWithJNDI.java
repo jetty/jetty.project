@@ -57,7 +57,7 @@ public class ServerWithJNDI
         // <env-entry-type>java.lang.Integer</env-entry-type>
         // <env-entry-value>4000</env-entry-value>
         // </env-entry>
-        new org.eclipse.jetty.ee10.plus.jndi.EnvEntry("ee10", "woggle", 4000, false);
+        new org.eclipse.jetty.plus.jndi.EnvEntry("ee10", "woggle", 4000, false);
 
         // Define an env entry with webapp scope.
         // At runtime, the webapp accesses this as java:comp/env/wiggle
@@ -70,7 +70,7 @@ public class ServerWithJNDI
         // Note that the last arg of "true" means that this definition for
         // "wiggle" would override an entry of the
         // same name in web.xml
-        new org.eclipse.jetty.ee10.plus.jndi.EnvEntry(webapp, "wiggle", 100d, true);
+        new org.eclipse.jetty.plus.jndi.EnvEntry(webapp, "wiggle", 100d, true);
 
         // Register a mock DataSource scoped to the webapp
         // This must be linked to the webapp via an entry in web.xml:
@@ -81,7 +81,7 @@ public class ServerWithJNDI
         // </resource-ref>
         // At runtime the webapp accesses this as
         // java:comp/env/jdbc/mydatasource
-        new org.eclipse.jetty.ee10.plus.jndi.Resource(
+        new org.eclipse.jetty.plus.jndi.Resource(
             webapp, "jdbc/mydatasource", new org.example.MockDataSource());
         return server;
     }

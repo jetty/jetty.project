@@ -26,6 +26,7 @@ import org.junit.jupiter.api.Test;
 
 import static java.util.concurrent.TimeUnit.MILLISECONDS;
 import static java.util.concurrent.TimeUnit.SECONDS;
+import static org.awaitility.Awaitility.await;
 import static org.awaitility.Awaitility.waitAtMost;
 import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.Matchers.greaterThan;
@@ -200,12 +201,41 @@ public class ReservedThreadExecutorTest
         int available = _reservedExecutor.getAvailable();
         assertThat(available, is(2));
 
-        for (int i = 10; i-- > 0;)
+        CountDownLatch latch = new CountDownLatch(1);
+        assertThat(_reservedExecutor.tryExecute(() ->
         {
+            try
+            {
+                latch.await();
+            }
+            catch (InterruptedException e)
+            {
+                throw new RuntimeException(e);
+            }
+        }), is(true));
+
+        // Submit tasks for a period of one idle timeout.
+        // One reserved thread is busy above waiting on the
+        // latch, while this reserved thread will be on/off
+        // busy with short tasks. It will not be evicted
+        // because it is the only available reserved thread.
+        for (int i = 0; i < 10; i++)
+        {
+            Thread.sleep(IDLE / 10);
             assertThat(_reservedExecutor.tryExecute(NOOP), is(true));
-            waitAtMost(10, SECONDS).until(_reservedExecutor::getAvailable, greaterThan(0));
         }
-        assertThat(_reservedExecutor.getAvailable(), is(1));
+        waitAtMost(10, SECONDS).until(_reservedExecutor::getAvailable, is(1));
+
+        latch.countDown();
+
+        // The reserved thread that run the task that
+        // awaited must have been immediately evicted,
+        // because the other threads is available and
+        // reserved threads are aggressively evicted.
+        await()
+            .atLeast(IDLE / 4, MILLISECONDS)
+            .atMost(10, SECONDS)
+            .until(_reservedExecutor::getAvailable, is(1));
     }
 
     @Test

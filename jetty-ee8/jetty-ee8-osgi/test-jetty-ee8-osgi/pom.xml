@@ -4,7 +4,7 @@
   <parent>
     <groupId>org.eclipse.jetty.ee8.osgi</groupId>
     <artifactId>jetty-ee8-osgi</artifactId>
-    <version>12.0.4-SNAPSHOT</version>
+    <version>12.0.5-SNAPSHOT</version>
   </parent>
   <artifactId>test-jetty-ee8-osgi</artifactId>
   <name>EE8 :: OSGi :: Test</name>
@@ -15,6 +15,8 @@
     <assembly-directory>target/distribution</assembly-directory>
     <bundle-symbolic-name>${project.groupId}.boot.test.osgi</bundle-symbolic-name>
     <bundle.debug>true</bundle.debug>
+    <!-- too many duplicates with osgi jars... -->
+    <duplicate-finder.skip>true</duplicate-finder.skip>
     <ee9.module>jetty-ee9-osgi/test-jetty-ee9-osgi</ee9.module>
     <el.artifactId>apache-el</el.artifactId>
     <el.groupId>org.mortbay.jasper</el.groupId>
@@ -118,6 +120,16 @@
     <dependency>
       <groupId>org.eclipse.jetty</groupId>
       <artifactId>jetty-jmx</artifactId>
+      <scope>runtime</scope>
+    </dependency>
+    <dependency>
+      <groupId>org.eclipse.jetty</groupId>
+      <artifactId>jetty-jndi</artifactId>
+      <scope>runtime</scope>
+    </dependency>
+    <dependency>
+      <groupId>org.eclipse.jetty</groupId>
+      <artifactId>jetty-plus</artifactId>
       <scope>runtime</scope>
     </dependency>
     <dependency>

@@ -61,14 +61,7 @@ public class ContentCopier extends IteratingNestedCallback
             return Action.SCHEDULED;
 
         if (Content.Chunk.isFailure(current))
-        {
-            if (current.isLast())
-                throw current.getFailure();
-            if (LOG.isDebugEnabled())
-                LOG.debug("ignored transient failure", current.getFailure());
-            succeeded();
-            return Action.SCHEDULED;
-        }
+            throw current.getFailure();
 
         sink.write(current.isLast(), current.getByteBuffer(), this);
         return Action.SCHEDULED;

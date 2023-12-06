@@ -590,6 +590,12 @@ public class ServletApiResponse implements HttpServletResponse
         }
 
         @Override
+        public boolean isPartitioned()
+        {
+            return Boolean.parseBoolean(getAttributes().get(HttpCookie.PARTITIONED_ATTRIBUTE));
+        }
+
+        @Override
         public Map<String, String> getAttributes()
         {
             return _cookie.getAttributes();

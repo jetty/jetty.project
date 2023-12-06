@@ -31,6 +31,7 @@ import org.eclipse.jetty.http2.frames.SettingsFrame;
 import org.eclipse.jetty.http2.frames.WindowUpdateFrame;
 import org.eclipse.jetty.http2.hpack.HpackDecoder;
 import org.eclipse.jetty.io.ByteBufferPool;
+import org.eclipse.jetty.util.NanoTime;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -53,6 +54,8 @@ public class Parser
     private int maxSettingsKeys = SettingsFrame.DEFAULT_MAX_KEYS;
     private boolean continuation;
     private State state = State.HEADER;
+    private long beginNanoTime;
+    private boolean nanoTimeStored;
 
     public Parser(ByteBufferPool bufferPool, int maxHeaderSize)
     {
@@ -63,7 +66,7 @@ public class Parser
     {
         this.bufferPool = bufferPool;
         this.headerParser = new HeaderParser(rateControl == null ? RateControl.NO_RATE_CONTROL : rateControl);
-        this.hpackDecoder = new HpackDecoder(maxHeaderSize);
+        this.hpackDecoder = new HpackDecoder(maxHeaderSize, this::getBeginNanoTime);
         this.bodyParsers = new BodyParser[FrameType.values().length];
     }
 
@@ -103,6 +106,25 @@ public class Parser
         state = State.HEADER;
     }
 
+    public long getBeginNanoTime()
+    {
+        return beginNanoTime;
+    }
+
+    private void clearBeginNanoTime()
+    {
+        nanoTimeStored = false;
+    }
+
+    private void storeBeginNanoTime()
+    {
+        if (!nanoTimeStored)
+        {
+            beginNanoTime = NanoTime.now();
+            nanoTimeStored = true;
+        }
+    }
+
     /**
      * <p>Parses the given {@code buffer} bytes and emit events to a {@link Listener}.</p>
      * <p>When this method returns, the buffer may not be fully consumed, so invocations
@@ -124,6 +146,7 @@ public class Parser
                 {
                     case HEADER:
                     {
+                        storeBeginNanoTime();
                         if (!parseHeader(buffer))
                             return;
                         break;
@@ -132,6 +155,8 @@ public class Parser
                     {
                         if (!parseBody(buffer))
                             return;
+                        if (!continuation)
+                            clearBeginNanoTime();
                         break;
                     }
                     default:

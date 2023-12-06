@@ -4,7 +4,7 @@
   <modelVersion>4.0.0</modelVersion>
   <groupId>org.eclipse.jetty</groupId>
   <artifactId>jetty-project</artifactId>
-  <version>12.0.4-SNAPSHOT</version>
+  <version>12.0.5-SNAPSHOT</version>
   <packaging>pom</packaging>
   <name>Jetty :: Project</name>
   <description>The Eclipse Jetty Project</description>
@@ -126,14 +126,14 @@
   </modules>
 
   <scm>
-    <connection>scm:git:https://github.com/eclipse/jetty.project.git</connection>
-    <developerConnection>scm:git:git@github.com:eclipse/jetty.project.git</developerConnection>
-    <url>https://github.com/eclipse/jetty.project</url>
+    <connection>scm:git:https://github.com/jetty/jetty.project.git</connection>
+    <developerConnection>scm:git:git@github.com:jetty/jetty.project.git</developerConnection>
+    <url>https://github.com/jetty/jetty.project</url>
   </scm>
 
   <issueManagement>
     <system>github</system>
-    <url>https://github.com/eclipse/jetty.project/issues</url>
+    <url>https://github.com/jetty/jetty.project/issues</url>
   </issueManagement>
 
   <distributionManagement>
@@ -169,11 +169,12 @@
     <commons-codec.version>1.16.0</commons-codec.version>
     <commons-lang3.version>3.13.0</commons-lang3.version>
     <commons.compress.version>1.24.0</commons.compress.version>
-    <commons.io.version>2.14.0</commons.io.version>
+    <commons.io.version>2.15.0</commons.io.version>
     <compiler.release>17</compiler.release>
     <compiler.source>17</compiler.source>
     <compiler.target>17</compiler.target>
     <conscrypt.version>2.5.2</conscrypt.version>
+    <cyclonedx.maven.plugin.version>2.7.10</cyclonedx.maven.plugin.version>
     <depends.maven.plugin.version>1.5.0</depends.maven.plugin.version>
     <disruptor.version>3.4.2</disruptor.version>
     <equinox-http-servlet-version>1.0.0-v20070606</equinox-http-servlet-version>
@@ -258,16 +259,16 @@
     <mariadb.docker.version>10.3.6</mariadb.docker.version>
     <mariadb.version>3.2.0</mariadb.version>
     <maven-artifact-transfer.version>0.13.1</maven-artifact-transfer.version>
-    <maven-build-cache.version>1.0.1</maven-build-cache.version>
-    <maven-plugin.plugin.version>3.9.0</maven-plugin.plugin.version>
+    <maven-build-cache.version>1.1.0</maven-build-cache.version>
+    <maven-plugin.plugin.version>3.10.1</maven-plugin.plugin.version>
     <maven.antrun.plugin.version>3.1.0</maven.antrun.plugin.version>
     <maven.assembly.plugin.version>3.6.0</maven.assembly.plugin.version>
     <maven.bundle.plugin.version>5.1.9</maven.bundle.plugin.version>
-    <maven.checkstyle.plugin.version>3.3.0</maven.checkstyle.plugin.version>
-    <maven.clean.plugin.version>3.3.1</maven.clean.plugin.version>
+    <maven.checkstyle.plugin.version>3.3.1</maven.checkstyle.plugin.version>
+    <maven.clean.plugin.version>3.3.2</maven.clean.plugin.version>
     <maven.compiler.createMissingPackageInfoClass>false</maven.compiler.createMissingPackageInfoClass>
     <maven.compiler.plugin.version>3.11.0</maven.compiler.plugin.version>
-    <maven.dependency.plugin.version>3.6.0</maven.dependency.plugin.version>
+    <maven.dependency.plugin.version>3.6.1</maven.dependency.plugin.version>
     <maven.deploy.plugin.version>3.1.1</maven.deploy.plugin.version>
     <maven.deps.version>3.9.4</maven.deps.version>
     <maven.enforcer.plugin.version>3.4.1</maven.enforcer.plugin.version>
@@ -277,13 +278,14 @@
     <maven.invoker.plugin.version>3.6.0</maven.invoker.plugin.version>
     <maven.jar.plugin.version>3.3.0</maven.jar.plugin.version>
     <maven.javadoc.plugin.version>3.6.0</maven.javadoc.plugin.version>
-    <maven.plugin-tools.version>3.9.0</maven.plugin-tools.version>
+    <maven.plugin-tools.version>3.10.1</maven.plugin-tools.version>
     <maven.release.plugin.version>3.0.1</maven.release.plugin.version>
     <maven.remote-resources-plugin.version>3.1.0</maven.remote-resources-plugin.version>
     <maven.resolver.version>1.9.16</maven.resolver.version>
     <maven.resources.plugin.version>3.3.1</maven.resources.plugin.version>
     <maven.shade.plugin.version>3.5.1</maven.shade.plugin.version>
     <maven.source.plugin.version>3.3.0</maven.source.plugin.version>
+    <!-- do not upgrade as jpms issue with ee10 annotations -->
     <maven.surefire.plugin.version>3.1.2</maven.surefire.plugin.version>
     <maven.version>3.9.0</maven.version>
     <maven.war.plugin.version>3.4.0</maven.war.plugin.version>
@@ -727,6 +729,11 @@
       <dependency>
         <groupId>org.eclipse.jetty</groupId>
         <artifactId>jetty-osgi</artifactId>
+        <version>${project.version}</version>
+      </dependency>
+      <dependency>
+        <groupId>org.eclipse.jetty</groupId>
+        <artifactId>jetty-plus</artifactId>
         <version>${project.version}</version>
       </dependency>
       <dependency>
@@ -1179,9 +1186,15 @@
         <version>${slf4j.version}</version>
       </dependency>
       <dependency>
-        <groupId>org.wildfly.security</groupId>
-        <artifactId>wildfly-elytron</artifactId>
-        <version>${wildfly.elytron.version}</version>
+        <groupId>org.testcontainers</groupId>
+        <artifactId>testcontainers</artifactId>
+        <version>${testcontainers.version}</version>
+        <exclusions>
+          <exclusion>
+            <groupId>org.hamcrest</groupId>
+            <artifactId>hamcrest-core</artifactId>
+          </exclusion>
+        </exclusions>
       </dependency>
       <dependency>
         <groupId>org.apache.maven.plugin-tools</groupId>
@@ -1211,6 +1224,48 @@
         <groupId>org.osgi</groupId>
         <artifactId>org.osgi.util.xml</artifactId>
         <version>${osgi-util-xml-version}</version>
+        <scope>test</scope>
+      </dependency>
+      <dependency>
+        <groupId>org.wildfly.security</groupId>
+        <artifactId>wildfly-elytron-sasl-digest</artifactId>
+        <version>2.2.2.Final</version>
+        <scope>test</scope>
+      </dependency>
+      <dependency>
+        <groupId>org.wildfly.security</groupId>
+        <artifactId>wildfly-elytron-sasl-external</artifactId>
+        <version>2.2.2.Final</version>
+        <scope>test</scope>
+      </dependency>
+      <dependency>
+        <groupId>org.wildfly.security</groupId>
+        <artifactId>wildfly-elytron-sasl-gs2</artifactId>
+        <version>2.2.2.Final</version>
+        <scope>test</scope>
+      </dependency>
+      <dependency>
+        <groupId>org.wildfly.security</groupId>
+        <artifactId>wildfly-elytron-sasl-gssapi</artifactId>
+        <version>2.2.2.Final</version>
+        <scope>test</scope>
+      </dependency>
+      <dependency>
+        <groupId>org.wildfly.security</groupId>
+        <artifactId>wildfly-elytron-sasl-oauth2</artifactId>
+        <version>2.2.2.Final</version>
+        <scope>test</scope>
+      </dependency>
+      <dependency>
+        <groupId>org.wildfly.security</groupId>
+        <artifactId>wildfly-elytron-sasl-plain</artifactId>
+        <version>2.2.2.Final</version>
+        <scope>test</scope>
+      </dependency>
+      <dependency>
+        <groupId>org.wildfly.security</groupId>
+        <artifactId>wildfly-elytron-sasl-scram</artifactId>
+        <version>2.2.2.Final</version>
         <scope>test</scope>
       </dependency>
     </dependencies>
@@ -1539,8 +1594,8 @@
             <attributes>
               <JDURL>https://eclipse.dev/jetty/javadoc/jetty-12</JDURL>
               <SRCDIR>${basedir}/..</SRCDIR>
-              <GITBROWSEURL>https://github.com/eclipse/jetty.project/tree/jetty-12.0.x</GITBROWSEURL>
-              <GITDOCURL>https://github.com/eclipse/jetty.project/tree/jetty-12.0.x/documentation/jetty-documentation/src/main/asciidoc</GITDOCURL>
+              <GITBROWSEURL>https://github.com/jetty/jetty.project/tree/jetty-12.0.x</GITBROWSEURL>
+              <GITDOCURL>https://github.com/jetty/jetty.project/tree/jetty-12.0.x/documentation/jetty-documentation/src/main/asciidoc</GITDOCURL>
               <MVNCENTRAL>http://central.maven.org/maven2</MVNCENTRAL>
               <VERSION>${project.version}</VERSION>
               <TIMESTAMP>${maven.build.timestamp}</TIMESTAMP>
@@ -1610,6 +1665,18 @@
             <processDependencyManagement>true</processDependencyManagement>
             <processPluginDependencies>true</processPluginDependencies>
             <processPluginDependenciesInPluginManagement>true</processPluginDependenciesInPluginManagement>
+          </configuration>
+        </plugin>
+        <plugin>
+          <groupId>org.cyclonedx</groupId>
+          <artifactId>cyclonedx-maven-plugin</artifactId>
+          <version>${cyclonedx.maven.plugin.version}</version>
+          <configuration>
+            <includeCompileScope>true</includeCompileScope>
+            <includeProvidedScope>true</includeProvidedScope>
+            <includeRuntimeScope>true</includeRuntimeScope>
+            <includeSystemScope>true</includeSystemScope>
+            <includeTestScope>false</includeTestScope>
           </configuration>
         </plugin>
         <plugin>
@@ -2298,6 +2365,46 @@
                   <goal>javadoc-no-fork</goal>
                 </goals>
                 <phase>package</phase>
+              </execution>
+            </executions>
+          </plugin>
+          <plugin>
+            <groupId>org.basepom.maven</groupId>
+            <artifactId>duplicate-finder-maven-plugin</artifactId>
+            <version>2.0.0</version>
+            <executions>
+              <execution>
+                <id>default</id>
+                <goals>
+                  <goal>check</goal>
+                </goals>
+                <phase>verify</phase>
+                <configuration>
+                  <!--                  <failBuildInCaseOfConflict>true</failBuildInCaseOfConflict>-->
+                  <failBuildInCaseOfDifferentContentConflict>true</failBuildInCaseOfDifferentContentConflict>
+                  <ignoredResourcePatterns>
+                    <ignoredResourcePattern>org/eclipse/jetty/version/build.properties</ignoredResourcePattern>
+                    <ignoredResourcePattern>about.html</ignoredResourcePattern>
+                    <ignoredResourcePattern>.api_description</ignoredResourcePattern>
+                    <ignoredResourcePattern>about_files/LICENSE-2.0.txt</ignoredResourcePattern>
+                    <!-- maybe we should not ignore but fix it as it makes logging configuration possibly random -->
+                    <ignoredResourcePattern>jetty-logging.properties</ignoredResourcePattern>
+                    <ignoredResourcePattern>features.xml</ignoredResourcePattern>
+                    <ignoredResourcePattern>plugin.properties</ignoredResourcePattern>
+                    <ignoredResourcePattern>plugin.xml</ignoredResourcePattern>
+                  </ignoredResourcePatterns>
+                  <ignoredClassPatterns>
+                    <!-- some classes with different content are in osgi-core AND osgi tracker -->
+                    <ignoredClassPattern>org.osgi.util.tracker.*</ignoredClassPattern>
+                    <!--
+                    no idea which one is to use so ignore the warning...
+[WARNING] Found duplicate and different classes in [org.infinispan:infinispan-commons:11.0.17.Final, org.infinispan:infinispan-objectfilter:11.0.17.Final]:
+[WARNING]   org.infinispan.commons.util.CloseableIterator
+[WARNING] Found duplicate classes/resources in compile classpath.
+                    -->
+                    <ignoredClassPattern>org.infinispan.commons.util.CloseableIterator</ignoredClassPattern>
+                  </ignoredClassPatterns>
+                </configuration>
               </execution>
             </executions>
           </plugin>

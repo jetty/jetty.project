@@ -18,7 +18,9 @@ pipeline {
             timeout( time: 180, unit: 'MINUTES' ) {
               checkout scm
               mavenBuild( "jdk21", "clean install -Dspotbugs.skip=true -Djacoco.skip=true", "maven3")
-              recordIssues id: "jdk21", name: "Static Analysis jdk21", aggregatingResults: true, enabledForFailure: true, tools: [mavenConsole(), java(), checkStyle(), javaDoc()]
+              recordIssues id: "jdk21", name: "Static Analysis jdk21", aggregatingResults: true, enabledForFailure: true,
+                            tools: [mavenConsole(), java(), checkStyle(), javaDoc()],
+                            skipPublishingChecks: true, blameDisabled: true
             }
           }
         }
@@ -51,7 +53,9 @@ pipeline {
                      execPattern: '**/target/jacoco.exec',
                      classPattern: '**/target/classes',
                      sourcePattern: '**/src/main/java'
-              recordIssues id: "jdk17", name: "Static Analysis jdk17", aggregatingResults: true, enabledForFailure: true, tools: [mavenConsole(), java(), checkStyle(), errorProne(), spotBugs(), javaDoc()]
+              recordIssues id: "jdk17", name: "Static Analysis jdk17", aggregatingResults: true, enabledForFailure: true,
+                            tools: [mavenConsole(), java(), checkStyle(), errorProne(), spotBugs(), javaDoc()],
+                            skipPublishingChecks: true, blameDisabled: true
             }
           }
         }
@@ -103,7 +107,7 @@ def mavenBuild(jdk, cmdline, mvnName) {
     try {
       withEnv(["JAVA_HOME=${ tool "$jdk" }",
                "PATH+MAVEN=${ tool "$jdk" }/bin:${tool "$mvnName"}/bin",
-               "MAVEN_OPTS=-Xms2g -Xmx4g -Djava.awt.headless=true"]) {
+               "MAVEN_OPTS=-Xms3072m -Xmx5120m -Djava.awt.headless=true -client -XX:+UnlockDiagnosticVMOptions -XX:GCLockerRetryAllocationCount=100"]) {
       configFileProvider(
         [configFile(fileId: 'oss-settings.xml', variable: 'GLOBAL_MVN_SETTINGS'),
           configFile(fileId: 'maven-build-cache-config.xml', variable: 'MVN_BUILD_CACHE_CONFIG')]) {
@@ -124,6 +128,9 @@ def mavenBuild(jdk, cmdline, mvnName) {
             }
           }
           sh "mvn $extraArgs -DsettingsPath=$GLOBAL_MVN_SETTINGS -Dmaven.repo.uri=http://nexus-service.nexus.svc.cluster.local:8081/repository/maven-public/ -ntp -s $GLOBAL_MVN_SETTINGS -Dmaven.repo.local=.repository -Pci -V -B -e -U $cmdline"
+          if(saveHome()) {
+            archiveArtifacts artifacts: ".repository/org/eclipse/jetty/jetty-home/**/jetty-home-*", allowEmptyArchive: true, onlyIfSuccessful: false
+          }
         }
       }
     }
@@ -146,6 +153,13 @@ def useBuildCache() {
   return !noBuildCache;
   // want to skip build cache
   // return false
+}
+
+def saveHome() {
+  if (env.BRANCH_NAME ==~ /PR-\d+/) {
+    return pullRequest.labels.contains("save-home")
+  }
+  return false;
 }
 
 // vim: et:ts=2:sw=2:ft=groovy

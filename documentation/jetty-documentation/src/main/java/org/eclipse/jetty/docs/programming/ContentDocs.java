@@ -57,8 +57,17 @@ public class ContentDocs
                 // If there is a failure reading, handle it.
                 if (Content.Chunk.isFailure(chunk))
                 {
-                    handleFailure(chunk.getFailure());
-                    return;
+                    boolean fatal = chunk.isLast();
+                    if (fatal)
+                    {
+                        handleFatalFailure(chunk.getFailure());
+                        return;
+                    }
+                    else
+                    {
+                        handleTransientFailure(chunk.getFailure());
+                        continue;
+                    }
                 }
 
                 // A normal chunk of content, consume it.
@@ -93,10 +102,16 @@ public class ContentDocs
                 return;
             }
 
-            // If there is a failure reading, handle it.
+            // If there is a failure reading, always treat it as fatal.
             if (Content.Chunk.isFailure(chunk))
             {
-                handleFailure(chunk.getFailure());
+                // If the failure is transient, fail the source
+                // to indicate that there will be no more reads.
+                if (!chunk.isLast())
+                    source.fail(chunk.getFailure());
+
+                // Handle the failure and stop reading by not demanding.
+                handleFatalFailure(chunk.getFailure());
                 return;
             }
 
@@ -120,7 +135,7 @@ public class ContentDocs
                 {
                     // If there is a failure reading, handle it,
                     // and stop reading by not demanding.
-                    handleFailure(failure);
+                    handleFatalFailure(failure);
                 }
             });
         }
@@ -132,7 +147,11 @@ public class ContentDocs
         }
     }
 
-    private static void handleFailure(Throwable failure)
+    private static void handleFatalFailure(Throwable failure)
+    {
+    }
+
+    private static void handleTransientFailure(Throwable failure)
     {
     }
 
@@ -189,7 +208,7 @@ public class ContentDocs
 
                 if (Content.Chunk.isFailure(chunk))
                 {
-                    handleFailure(chunk.getFailure());
+                    handleFatalFailure(chunk.getFailure());
                     return;
                 }
 

@@ -54,7 +54,7 @@ public class ConscryptHTTP2ClientTest
         Assumptions.assumeTrue(canConnectTo(host, port));
 
         Security.insertProviderAt(new OpenSSLProvider(), 1);
-        SslContextFactory sslContextFactory = new SslContextFactory.Client();
+        SslContextFactory.Client sslContextFactory = new SslContextFactory.Client();
         sslContextFactory.setProvider("Conscrypt");
         Conscrypt.setDefaultHostnameVerifier((certs, hostname, session) -> true);
 

@@ -95,7 +95,6 @@ public class ThreadStarvationTest
             ServerConnector connector = new ServerConnector(server, null, null, pool, acceptors, selectors,
                 AbstractConnectionFactory.getFactories(sslContextFactory, httpConnectionFactory));
             SecureRequestCustomizer secureRequestCustomer = new SecureRequestCustomizer();
-            secureRequestCustomer.setSslSessionAttribute("SSL_SESSION");
             httpConnectionFactory.getHttpConfiguration().addCustomizer(secureRequestCustomer);
             return connector;
         };

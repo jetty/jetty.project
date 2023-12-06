@@ -21,6 +21,7 @@ import java.security.KeyStore;
 import java.util.Collection;
 import java.util.EnumSet;
 import java.util.List;
+import java.util.function.Consumer;
 
 import jakarta.servlet.http.HttpServlet;
 import org.eclipse.jetty.alpn.server.ALPNServerConnectionFactory;
@@ -171,11 +172,18 @@ public class AbstractTest
 
     protected void startClient(Transport transport) throws Exception
     {
+        startClient(transport, null);
+    }
+
+    protected void startClient(Transport transport, Consumer<HttpClient> consumer) throws Exception
+    {
         QueuedThreadPool clientThreads = new QueuedThreadPool();
         clientThreads.setName("client");
         client = new HttpClient(newHttpClientTransport(transport));
         client.setExecutor(clientThreads);
         client.setSocketAddressResolver(new SocketAddressResolver.Sync());
+        if (consumer != null)
+            consumer.accept(client);
         client.start();
     }
 

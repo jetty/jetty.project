@@ -736,7 +736,7 @@ public class ServletHolder extends Holder<Servlet> implements UserIdentityScope,
         {
             MultipartConfigElement mpce = ((Registration)_registration).getMultipartConfig();
             if (mpce != null)
-                baseRequest.setAttribute(Request.__MULTIPART_CONFIG_ELEMENT, mpce);
+                baseRequest.setAttribute(Request.MULTIPART_CONFIG_ELEMENT, mpce);
         }
     }
 

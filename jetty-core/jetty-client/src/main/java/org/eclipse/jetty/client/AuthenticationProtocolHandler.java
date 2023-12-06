@@ -68,7 +68,7 @@ public abstract class AuthenticationProtocolHandler implements ProtocolHandler
     @Override
     public Response.Listener getResponseListener()
     {
-        // Return new instances every time to keep track of the response content
+        // Return new instances every time to keep track of the response content.
         return new AuthenticationListener();
     }
 
@@ -123,6 +123,14 @@ public abstract class AuthenticationProtocolHandler implements ProtocolHandler
         }
 
         @Override
+        public void onSuccess(Response response)
+        {
+            // The request may still be sending content, stop it.
+            Request request = response.getRequest();
+            request.abort(new HttpRequestException("Aborting request after receiving a %d response".formatted(response.getStatus()), request));
+        }
+
+        @Override
         public void onComplete(Result result)
         {
             HttpRequest request = (HttpRequest)result.getRequest();
@@ -159,16 +167,13 @@ public abstract class AuthenticationProtocolHandler implements ProtocolHandler
             Authentication authentication = null;
             Authentication.HeaderInfo headerInfo = null;
             URI authURI = resolveURI(request, getAuthenticationURI(request));
-            if (authURI != null)
+            for (HeaderInfo element : headerInfos)
             {
-                for (Authentication.HeaderInfo element : headerInfos)
+                authentication = client.getAuthenticationStore().findAuthentication(element.getType(), authURI, element.getRealm());
+                if (authentication != null)
                 {
-                    authentication = client.getAuthenticationStore().findAuthentication(element.getType(), authURI, element.getRealm());
-                    if (authentication != null)
-                    {
-                        headerInfo = element;
-                        break;
-                    }
+                    headerInfo = element;
+                    break;
                 }
             }
             if (authentication == null)

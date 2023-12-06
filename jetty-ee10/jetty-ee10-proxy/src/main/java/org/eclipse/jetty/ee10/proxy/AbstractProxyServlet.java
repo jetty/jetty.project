@@ -640,12 +640,10 @@ public abstract class AbstractProxyServlet extends HttpServlet
     {
         proxyRequest.abort(failure).whenComplete((aborted, x) ->
         {
-            // The variable 'aborted' could be null.
-            if (aborted == Boolean.FALSE)
-            {
-                int status = clientRequestStatus(failure);
-                sendProxyResponseError(clientRequest, proxyResponse, status);
-            }
+            if (aborted)
+                return;
+            int status = clientRequestStatus(failure);
+            sendProxyResponseError(clientRequest, proxyResponse, status);
         });
     }
 

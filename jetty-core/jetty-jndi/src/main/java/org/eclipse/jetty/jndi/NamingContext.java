@@ -227,7 +227,7 @@ public class NamingContext implements Context, Dumpable
     {
         String firstComponent = cname.get(0);
 
-        if (firstComponent.equals(""))
+        if (firstComponent.isEmpty())
             return this;
 
         Binding binding = getBinding(firstComponent);
@@ -293,7 +293,7 @@ public class NamingContext implements Context, Dumpable
             String firstComponent = cname.get(0);
             Object ctx = null;
 
-            if (firstComponent.equals(""))
+            if (firstComponent.isEmpty())
                 ctx = this;
             else
             {
@@ -1028,10 +1028,10 @@ public class NamingContext implements Context, Dumpable
         {
             if (canonicalName.size() > 1)
             {
-                if (canonicalName.get(0).equals(""))
+                if (canonicalName.get(0).isEmpty())
                     canonicalName = canonicalName.getSuffix(1);
 
-                if (canonicalName.get(canonicalName.size() - 1).equals(""))
+                if (canonicalName.get(canonicalName.size() - 1).isEmpty())
                     canonicalName = canonicalName.getPrefix(canonicalName.size() - 1);
             }
         }

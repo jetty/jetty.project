@@ -5,7 +5,7 @@
   <parent>
     <groupId>org.eclipse.jetty</groupId>
     <artifactId>jetty-project</artifactId>
-    <version>12.0.4-SNAPSHOT</version>
+    <version>12.0.5-SNAPSHOT</version>
   </parent>
   <artifactId>javadoc</artifactId>
   <packaging>jar</packaging>
@@ -13,6 +13,7 @@
 
   <properties>
     <checkstyle.skip>true</checkstyle.skip>
+    <duplicate-finder.skip>true</duplicate-finder.skip>
     <maven.deploy.skip>true</maven.deploy.skip>
     <pmd.skip>true</pmd.skip>
     <sonar.skip>true</sonar.skip>
