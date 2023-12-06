@@ -17,6 +17,7 @@ import java.io.IOException;
 
 import org.eclipse.jetty.http.HttpHeader;
 import org.eclipse.jetty.http.HttpStatus;
+import org.eclipse.jetty.server.HttpConnectionFactory;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 
@@ -62,5 +63,35 @@ public class RedirectPatternRuleTest extends AbstractRuleTestCase
 
         rule.apply("/api/rest?foo=1", _request, _response);
         assertRedirectResponse(HttpStatus.MOVED_PERMANENTLY_301, location);
+    }
+
+    @Test
+    public void testRelativeRedirect() throws IOException
+    {
+        _connector.getConnectionFactory(HttpConnectionFactory.class).getHttpConfiguration().setRelativeRedirectAllowed(true);
+        String location = "/foo/bar";
+
+        RedirectPatternRule rule = new RedirectPatternRule();
+        rule.setPattern("/api/*");
+        rule.setLocation(location);
+        rule.setStatusCode(HttpStatus.MOVED_PERMANENTLY_301);
+
+        rule.apply("/api/rest?foo=1", _request, _response);
+        assertRedirectResponse(HttpStatus.MOVED_PERMANENTLY_301, location);
+    }
+
+    @Test
+    public void testAbsoluteRedirect() throws IOException
+    {
+        _connector.getConnectionFactory(HttpConnectionFactory.class).getHttpConfiguration().setRelativeRedirectAllowed(false);
+        String location = "/foo/bar";
+
+        RedirectPatternRule rule = new RedirectPatternRule();
+        rule.setPattern("/api/*");
+        rule.setLocation(location);
+        rule.setStatusCode(HttpStatus.MOVED_PERMANENTLY_301);
+
+        rule.apply("/api/rest?foo=1", _request, _response);
+        assertRedirectResponse(HttpStatus.MOVED_PERMANENTLY_301, "http://0.0.0.0" + location);
     }
 }

@@ -14,7 +14,7 @@
 package org.eclipse.jetty.rewrite.handler;
 
 import jakarta.servlet.http.HttpServletRequest;
-import org.eclipse.jetty.util.URIUtil;
+import org.eclipse.jetty.server.Response;
 
 /**
  * Utility for managing redirect based rules
@@ -29,35 +29,8 @@ public final class RedirectUtil
      * @param location the location URL to redirect to (can be a relative path)
      * @return the full redirect "Location" URL (including scheme, host, port, path, etc...)
      */
-    public static String toRedirectURL(final HttpServletRequest request, String location)
+    public static String toRedirectURL(HttpServletRequest request, String location)
     {
-        if (!URIUtil.hasScheme(location))
-        {
-            StringBuilder url = new StringBuilder(128);
-            URIUtil.appendSchemeHostPort(url, request.getScheme(), request.getServerName(), request.getServerPort());
-
-            if (location.startsWith("/"))
-            {
-                // absolute in context
-                location = URIUtil.canonicalURI(location);
-            }
-            else
-            {
-                // relative to request
-                String path = request.getRequestURI();
-                String parent = (path.endsWith("/")) ? path : URIUtil.parentPath(path);
-                location = URIUtil.canonicalURI(URIUtil.addEncodedPaths(parent, location));
-                if (location != null && !location.startsWith("/"))
-                    url.append('/');
-            }
-
-            if (location == null)
-                throw new IllegalStateException("redirect path cannot be above root");
-            url.append(location);
-
-            location = url.toString();
-        }
-
-        return location;
+        return Response.toRedirectURI(request, location);
     }
 }

@@ -29,6 +29,7 @@ import jakarta.servlet.ServletOutputStream;
 import jakarta.servlet.ServletResponse;
 import jakarta.servlet.ServletResponseWrapper;
 import jakarta.servlet.http.Cookie;
+import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletResponse;
 import jakarta.servlet.http.HttpServletResponseWrapper;
 import jakarta.servlet.http.HttpSession;
@@ -580,35 +581,7 @@ public class Response implements HttpServletResponse
         if (!isMutable())
             return;
 
-        if (location == null)
-            throw new IllegalArgumentException();
-
-        if (!URIUtil.hasScheme(location))
-        {
-            StringBuilder buf = _channel.getHttpConfiguration().isRelativeRedirectAllowed()
-                ? new StringBuilder()
-                : _channel.getRequest().getRootURL();
-            if (location.startsWith("/"))
-            {
-                // absolute in context
-                location = URIUtil.canonicalURI(location);
-            }
-            else
-            {
-                // relative to request
-                String path = _channel.getRequest().getRequestURI();
-                String parent = (path.endsWith("/")) ? path : URIUtil.parentPath(path);
-                location = URIUtil.canonicalURI(URIUtil.addEncodedPaths(parent, location));
-                if (location != null && !location.startsWith("/"))
-                    buf.append('/');
-            }
-
-            if (location == null)
-                throw new IllegalStateException("path cannot be above root");
-            buf.append(location);
-
-            location = buf.toString();
-        }
+        location = toRedirectURI(_channel.getRequest(), location);
 
         resetBuffer();
         setHeader(HttpHeader.LOCATION, location);
@@ -620,6 +593,49 @@ public class Response implements HttpServletResponse
     public void sendRedirect(String location) throws IOException
     {
         sendRedirect(HttpServletResponse.SC_MOVED_TEMPORARILY, location);
+    }
+
+    /**
+     * Common point to generate a proper "Location" header for redirects.
+     *
+     * @param request the request the redirect should be based on (needed when relative locations are provided, so that
+     * server name, scheme, port can be built out properly)
+     * @param location the location as an absolute URI or an encoded relative path. A relative path starting with '/'
+     *                 is relative to the root, otherwise it is relative to the request path.
+     * @return the full redirect "Location" URL (including scheme, host, port, path, etc...)
+     */
+    public static String toRedirectURI(HttpServletRequest request, String location)
+    {
+        // is the URI absolute already?
+        if (!URIUtil.hasScheme(location))
+        {
+            // The location is relative
+
+            // Is it relative to the request?
+            if (!location.startsWith("/"))
+            {
+                String path = request.getRequestURI();
+                String parent = (path.endsWith("/")) ? path : URIUtil.parentPath(path);
+                location = URIUtil.addEncodedPaths(parent, location);
+            }
+
+            // Normalize out any dot dot segments
+            location = URIUtil.canonicalURI(location);
+            if (location == null)
+                throw new IllegalStateException("redirect path cannot be above root");
+
+            // if relative redirects are not allowed?
+            Request baseRequest = Request.getBaseRequest(request);
+            if (baseRequest == null || !baseRequest.getHttpChannel().getHttpConfiguration().isRelativeRedirectAllowed())
+            {
+                // make the location an absolute URI
+                StringBuilder url = new StringBuilder(128);
+                URIUtil.appendSchemeHostPort(url, request.getScheme(), request.getServerName(), request.getServerPort());
+                url.append(location);
+                location = url.toString();
+            }
+        }
+        return location;
     }
 
     @Override
