@@ -13,9 +13,9 @@
 
 package org.eclipse.jetty.rewrite.handler;
 
-import org.eclipse.jetty.server.Response;
-
 import javax.servlet.http.HttpServletRequest;
+
+import org.eclipse.jetty.server.Response;
 
 /**
  * Utility for managing redirect based rules
