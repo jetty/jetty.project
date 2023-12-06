@@ -1329,7 +1329,7 @@ public class RequestTest
             "Connection: close\n" +
             "\n");
         assertThat(response, containsString(" 302 Found"));
-        assertThat(response, containsString("Location: http://myhost/foo"));
+        assertThat(response, containsString("Location: /foo"));
     }
 
     @Test

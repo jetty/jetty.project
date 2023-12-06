@@ -18,7 +18,6 @@ import java.util.regex.Matcher;
 
 import org.eclipse.jetty.http.HttpHeader;
 import org.eclipse.jetty.http.HttpStatus;
-import org.eclipse.jetty.server.Request;
 import org.eclipse.jetty.server.Response;
 import org.eclipse.jetty.util.Callback;
 import org.eclipse.jetty.util.annotation.Name;
@@ -86,7 +85,7 @@ public class RedirectRegexRule extends RegexRule
             {
                 String target = matcher.replaceAll(getLocation());
                 response.setStatus(_statusCode);
-                response.getHeaders().put(HttpHeader.LOCATION, Request.toRedirectURI(this, target));
+                response.getHeaders().put(HttpHeader.LOCATION, Response.toRedirectURI(this, target));
                 callback.succeeded();
                 return true;
             }

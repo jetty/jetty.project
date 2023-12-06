@@ -3636,7 +3636,7 @@ public class ResourceHandlerTest
             """);
         response = HttpTester.parseResponse(rawResponse);
         assertThat(response.toString(), response.getStatus(), is(HttpStatus.MOVED_TEMPORARILY_302));
-        assertThat(response, headerValue("Location", "http://local/context/dir/index.html"));
+        assertThat(response, headerValue("Location", "/context/dir/index.html"));
 
         Files.writeString(inde, "<h1>Hello Inde</h1>", UTF_8);
         rawResponse = _local.getResponse("""
@@ -3647,7 +3647,7 @@ public class ResourceHandlerTest
             """);
         response = HttpTester.parseResponse(rawResponse);
         assertThat(response.toString(), response.getStatus(), is(HttpStatus.MOVED_TEMPORARILY_302));
-        assertThat(response, headerValue("Location", "http://local/context/dir/"));
+        assertThat(response, headerValue("Location", "/context/dir/"));
 
         rawResponse = _local.getResponse("""
             GET /context/dir/ HTTP/1.1\r
@@ -3657,7 +3657,7 @@ public class ResourceHandlerTest
             """);
         response = HttpTester.parseResponse(rawResponse);
         assertThat(response.toString(), response.getStatus(), is(HttpStatus.MOVED_TEMPORARILY_302));
-        assertThat(response, headerValue("Location", "http://local/context/dir/index.html"));
+        assertThat(response, headerValue("Location", "/context/dir/index.html"));
 
         if (deleteFile(index))
         {
@@ -3669,7 +3669,7 @@ public class ResourceHandlerTest
                 """);
             response = HttpTester.parseResponse(rawResponse);
             assertThat(response.toString(), response.getStatus(), is(HttpStatus.MOVED_TEMPORARILY_302));
-            assertThat(response, headerValue("Location", "http://local/context/dir/index.htm"));
+            assertThat(response, headerValue("Location", "/context/dir/index.htm"));
 
             if (deleteFile(inde))
             {
@@ -3721,7 +3721,7 @@ public class ResourceHandlerTest
             """);
         response = HttpTester.parseResponse(rawResponse);
         assertThat(response.toString(), response.getStatus(), is(HttpStatus.MOVED_TEMPORARILY_302));
-        assertThat(response, containsHeaderValue("Location", "http://local/context/dir%3F/"));
+        assertThat(response, containsHeaderValue("Location", "/context/dir%3F/"));
 
         rawResponse = _local.getResponse("""
             GET /context/dir%3F/ HTTP/1.1\r
@@ -3731,7 +3731,7 @@ public class ResourceHandlerTest
             """);
         response = HttpTester.parseResponse(rawResponse);
         assertThat(response.toString(), response.getStatus(), is(HttpStatus.MOVED_TEMPORARILY_302));
-        assertThat(response, containsHeaderValue("Location", "http://local/context/dir%3F/index.html"));
+        assertThat(response, containsHeaderValue("Location", "/context/dir%3F/index.html"));
     }
 
     /**
@@ -3761,7 +3761,7 @@ public class ResourceHandlerTest
             """);
         response = HttpTester.parseResponse(rawResponse);
         assertThat(response.toString(), response.getStatus(), is(HttpStatus.MOVED_TEMPORARILY_302));
-        assertThat(response, containsHeaderValue("Location", "http://local/context/dir%3B/"));
+        assertThat(response, containsHeaderValue("Location", "/context/dir%3B/"));
 
         rawResponse = _local.getResponse("""
             GET /context/dir%3B/ HTTP/1.1\r
@@ -3771,7 +3771,7 @@ public class ResourceHandlerTest
             """);
         response = HttpTester.parseResponse(rawResponse);
         assertThat(response.toString(), response.getStatus(), is(HttpStatus.MOVED_TEMPORARILY_302));
-        assertThat(response, containsHeaderValue("Location", "http://local/context/dir%3B/index.html"));
+        assertThat(response, containsHeaderValue("Location", "/context/dir%3B/index.html"));
     }
 
     @Test

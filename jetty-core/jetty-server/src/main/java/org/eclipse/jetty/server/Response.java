@@ -29,6 +29,7 @@ import org.eclipse.jetty.http.HttpHeader;
 import org.eclipse.jetty.http.HttpHeaderValue;
 import org.eclipse.jetty.http.HttpMethod;
 import org.eclipse.jetty.http.HttpStatus;
+import org.eclipse.jetty.http.HttpURI;
 import org.eclipse.jetty.http.HttpVersion;
 import org.eclipse.jetty.http.Trailers;
 import org.eclipse.jetty.io.ByteBufferPool;
@@ -38,6 +39,7 @@ import org.eclipse.jetty.server.handler.ErrorHandler;
 import org.eclipse.jetty.server.internal.HttpChannelState;
 import org.eclipse.jetty.util.Callback;
 import org.eclipse.jetty.util.StringUtil;
+import org.eclipse.jetty.util.URIUtil;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -238,7 +240,7 @@ public interface Response extends Content.Sink
      * @param request the HTTP request
      * @param response the HTTP response
      * @param callback the callback to complete
-     * @param location the redirect location
+     * @param location the redirect location as an absolute URI or encoded relative URI path.
      * @see #sendRedirect(Request, Response, Callback, int, String, boolean)
      */
     static void sendRedirect(Request request, Response response, Callback callback, String location)
@@ -256,7 +258,7 @@ public interface Response extends Content.Sink
      * @param request the HTTP request
      * @param response the HTTP response
      * @param callback the callback to complete
-     * @param location the redirect location
+     * @param location the redirect location as an absolute URI or encoded relative URI path.
      * @param consumeAvailable whether to consumer the available request content
      * @see #sendRedirect(Request, Response, Callback, int, String, boolean)
      */
@@ -275,9 +277,9 @@ public interface Response extends Content.Sink
      * @param response the HTTP response
      * @param callback the callback to complete
      * @param code the redirect HTTP status code
-     * @param location the redirect location
+     * @param location the redirect location as an absolute URI or encoded relative URI path.
      * @param consumeAvailable whether to consumer the available request content
-     * @see Request#toRedirectURI(Request, String)
+     * @see #toRedirectURI(Request, String)
      * @throws IllegalArgumentException if the status code is not a redirect, or the location is {@code null}
      * @throws IllegalStateException if the response is already {@link #isCommitted() committed}
      */
@@ -317,9 +319,52 @@ public interface Response extends Content.Sink
             }
         }
 
-        response.getHeaders().put(HttpHeader.LOCATION, Request.toRedirectURI(request, location));
+        response.getHeaders().put(HttpHeader.LOCATION, toRedirectURI(request, location));
         response.setStatus(code);
         response.write(true, null, callback);
+    }
+
+    /**
+     * Common point to generate a proper "Location" header for redirects.
+     *
+     * @param request the request the redirect should be based on (needed when relative locations are provided, so that
+     * server name, scheme, port can be built out properly)
+     * @param location the redirect location as an absolute URI or encoded relative URI path. If a relative path starts
+     *                 with '/', then it is relative to the root, otherwise it is relative to the request.
+     * @return the full redirect "Location" URL (including scheme, host, port, path, etc...)
+     */
+    static String toRedirectURI(Request request, String location)
+    {
+        // is the URI absolute already?
+        if (!URIUtil.hasScheme(location))
+        {
+            // The location is relative
+            HttpURI uri = request.getHttpURI();
+
+            // Is it relative to the request?
+            if (!location.startsWith("/"))
+            {
+                String path = uri.getPath();
+                String parent = (path.endsWith("/")) ? path : URIUtil.parentPath(path);
+                location = URIUtil.addEncodedPaths(parent, location);
+            }
+
+            // Normalize out any dot dot segments
+            location = URIUtil.normalizePathQuery(location);
+            if (location == null)
+                throw new IllegalStateException("redirect path cannot be above root");
+
+            // if relative redirects are not allowed?
+            if (!request.getConnectionMetaData().getHttpConfiguration().isRelativeRedirectAllowed())
+            {
+                // make the location an absolute URI
+                StringBuilder url = new StringBuilder(128);
+                URIUtil.appendSchemeHostPort(url, uri.getScheme(), Request.getServerName(request), Request.getServerPort(request));
+                url.append(location);
+                location = url.toString();
+            }
+        }
+        return location;
     }
 
     /**
