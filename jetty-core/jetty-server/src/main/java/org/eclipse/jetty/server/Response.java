@@ -13,25 +13,7 @@
 
 package org.eclipse.jetty.server;
 
-import java.io.OutputStream;
-import java.nio.ByteBuffer;
-import java.util.ListIterator;
-import java.util.concurrent.CompletableFuture;
-import java.util.concurrent.TimeoutException;
-import java.util.function.Supplier;
-
-import org.eclipse.jetty.http.CookieCompliance;
-import org.eclipse.jetty.http.HttpCookie;
-import org.eclipse.jetty.http.HttpException;
-import org.eclipse.jetty.http.HttpField;
-import org.eclipse.jetty.http.HttpFields;
-import org.eclipse.jetty.http.HttpHeader;
-import org.eclipse.jetty.http.HttpHeaderValue;
-import org.eclipse.jetty.http.HttpMethod;
-import org.eclipse.jetty.http.HttpStatus;
-import org.eclipse.jetty.http.HttpURI;
-import org.eclipse.jetty.http.HttpVersion;
-import org.eclipse.jetty.http.Trailers;
+import org.eclipse.jetty.http.*;
 import org.eclipse.jetty.io.ByteBufferPool;
 import org.eclipse.jetty.io.Content;
 import org.eclipse.jetty.io.QuietException;
@@ -42,6 +24,13 @@ import org.eclipse.jetty.util.StringUtil;
 import org.eclipse.jetty.util.URIUtil;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+
+import java.io.OutputStream;
+import java.nio.ByteBuffer;
+import java.util.ListIterator;
+import java.util.concurrent.CompletableFuture;
+import java.util.concurrent.TimeoutException;
+import java.util.function.Supplier;
 
 /**
  * <p>The representation of an HTTP response, for any protocol version (HTTP/1.1, HTTP/2, HTTP/3).</p>
@@ -240,7 +229,7 @@ public interface Response extends Content.Sink
      * @param request the HTTP request
      * @param response the HTTP response
      * @param callback the callback to complete
-     * @param location the redirect location
+     * @param location the redirect location as an absolute URI or encoded relative URI path.
      * @see #sendRedirect(Request, Response, Callback, int, String, boolean)
      */
     static void sendRedirect(Request request, Response response, Callback callback, String location)
@@ -258,7 +247,7 @@ public interface Response extends Content.Sink
      * @param request the HTTP request
      * @param response the HTTP response
      * @param callback the callback to complete
-     * @param location the redirect location
+     * @param location the redirect location as an absolute URI or encoded relative URI path.
      * @param consumeAvailable whether to consumer the available request content
      * @see #sendRedirect(Request, Response, Callback, int, String, boolean)
      */
@@ -277,7 +266,7 @@ public interface Response extends Content.Sink
      * @param response the HTTP response
      * @param callback the callback to complete
      * @param code the redirect HTTP status code
-     * @param location the redirect location
+     * @param location the redirect location as an absolute URI or encoded relative URI path.
      * @param consumeAvailable whether to consumer the available request content
      * @see #toRedirectURI(Request, String)
      * @throws IllegalArgumentException if the status code is not a redirect, or the location is {@code null}
@@ -329,7 +318,8 @@ public interface Response extends Content.Sink
      *
      * @param request the request the redirect should be based on (needed when relative locations are provided, so that
      * server name, scheme, port can be built out properly)
-     * @param location the location URL to redirect to (can be a relative path)
+     * @param location the redirect location as an absolute URI or encoded relative URI path. If a relative path starts
+     *                 with '/', then it is relative to the root, otherwise it is relative to the request.
      * @return the full redirect "Location" URL (including scheme, host, port, path, etc...)
      */
     static String toRedirectURI(Request request, String location)

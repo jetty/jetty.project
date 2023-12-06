@@ -13,17 +13,7 @@
 
 package org.eclipse.jetty.server;
 
-import java.util.Iterator;
-import java.util.List;
-import java.util.ListIterator;
-
-import org.eclipse.jetty.http.HttpCookie;
-import org.eclipse.jetty.http.HttpField;
-import org.eclipse.jetty.http.HttpFields;
-import org.eclipse.jetty.http.HttpHeader;
-import org.eclipse.jetty.http.HttpStatus;
-import org.eclipse.jetty.http.HttpTester;
-import org.eclipse.jetty.http.SetCookieParser;
+import org.eclipse.jetty.http.*;
 import org.eclipse.jetty.io.Content;
 import org.eclipse.jetty.util.Callback;
 import org.eclipse.jetty.util.component.LifeCycle;
@@ -31,13 +21,13 @@ import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 
+import java.util.Iterator;
+import java.util.List;
+import java.util.ListIterator;
+
 import static org.hamcrest.MatcherAssert.assertThat;
-import static org.hamcrest.Matchers.containsInAnyOrder;
-import static org.hamcrest.Matchers.is;
-import static org.hamcrest.Matchers.notNullValue;
-import static org.junit.jupiter.api.Assertions.assertEquals;
-import static org.junit.jupiter.api.Assertions.assertFalse;
-import static org.junit.jupiter.api.Assertions.assertThrows;
+import static org.hamcrest.Matchers.*;
+import static org.junit.jupiter.api.Assertions.*;
 
 public class ResponseTest
 {
@@ -197,6 +187,32 @@ public class ResponseTest
         response = HttpTester.parseResponse(connector.getResponse(request));
         assertEquals(HttpStatus.MOVED_TEMPORARILY_302, response.getStatus());
         assertThat(response.get(HttpHeader.LOCATION), is("http://hostname/somewhere/else"));
+    }
+
+    @Test
+    public void testEncodedRedirectGET() throws Exception
+    {
+        server.getConnectors()[0].getConnectionFactory(HttpConnectionFactory.class)
+                .getHttpConfiguration().setRelativeRedirectAllowed(false);
+        server.setHandler(new Handler.Abstract()
+        {
+            @Override
+            public boolean handle(Request request, Response response, Callback callback)
+            {
+                Response.sendRedirect(request, response, callback, "somewh%65r%65?else+entirely");
+                return true;
+            }
+        });
+        server.start();
+
+        String request = """
+                GET /p%61th/ HTTP/1.0\r
+                Host: hostname\r
+                \r
+                """;
+        HttpTester.Response response = HttpTester.parseResponse(connector.getResponse(request));
+        assertEquals(HttpStatus.MOVED_TEMPORARILY_302, response.getStatus());
+        assertThat(response.get(HttpHeader.LOCATION), is("http://hostname/p%61th/somewh%65r%65?else+entirely"));
     }
 
     @Test
