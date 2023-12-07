@@ -11,7 +11,7 @@
 // ========================================================================
 //
 
-package org.eclipse.jetty.ee10.plus.security;
+package org.eclipse.jetty.plus.security;
 
 import java.sql.Connection;
 import java.sql.DatabaseMetaData;
@@ -67,7 +67,7 @@ public class DataSourceLoginService extends AbstractLoginService
     /**
      * DBUser
      */
-    public class DBUserPrincipal extends UserPrincipal
+    public static class DBUserPrincipal extends UserPrincipal
     {
         private int _key;
 
@@ -306,12 +306,6 @@ public class DataSourceLoginService extends AbstractLoginService
     {
         if (_datasource != null)
             return;
-
-        @SuppressWarnings("unused")
-        InitialContext ic = new InitialContext();
-        assert ic != null;
-
-        // TODO Should we try webapp scope too?
 
         // try finding the datasource in the Server scope
         if (_server != null)

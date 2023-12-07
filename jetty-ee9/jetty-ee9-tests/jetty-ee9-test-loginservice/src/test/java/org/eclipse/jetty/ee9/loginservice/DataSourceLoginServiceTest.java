@@ -26,7 +26,7 @@ import org.eclipse.jetty.client.AuthenticationStore;
 import org.eclipse.jetty.client.BasicAuthentication;
 import org.eclipse.jetty.client.ContentResponse;
 import org.eclipse.jetty.client.HttpClient;
-import org.eclipse.jetty.ee9.plus.security.DataSourceLoginService;
+import org.eclipse.jetty.plus.security.DataSourceLoginService;
 import org.eclipse.jetty.toolchain.test.FS;
 import org.eclipse.jetty.toolchain.test.MavenTestingUtils;
 import org.eclipse.jetty.util.Loader;

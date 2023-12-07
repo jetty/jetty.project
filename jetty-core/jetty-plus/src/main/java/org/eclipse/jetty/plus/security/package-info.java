@@ -12,6 +12,6 @@
 //
 
 /**
- * Jetty Plus : Limited JEE Annotation Support
+ * Jetty Plus : Limited JEE Security Support
  */
-package org.eclipse.jetty.ee10.plus.annotation;
+package org.eclipse.jetty.plus.security;
