@@ -124,10 +124,13 @@ public class HTTP2Stream implements Stream, Attachable, Closeable, Callback, Dum
         boolean sendResetNoError = false;
         try (AutoLock ignored = lock.lock())
         {
-            switch (closeState)
+            if (!localReset && !remoteReset && !resetNoError)
             {
-                case LOCALLY_CLOSED -> sendResetNoError = true;
-                case NOT_CLOSED, LOCALLY_CLOSING -> resetNoError = true;
+                switch (closeState)
+                {
+                    case LOCALLY_CLOSED -> sendResetNoError = true; // send it now
+                    case NOT_CLOSED, LOCALLY_CLOSING -> resetNoError = true; // send it later
+                }
             }
         }
         if (sendResetNoError)
@@ -184,7 +187,8 @@ public class HTTP2Stream implements Stream, Attachable, Closeable, Callback, Dum
         Throwable resetFailure = null;
         try (AutoLock ignored = lock.lock())
         {
-            System.err.println("RESET " + ErrorCode.from(frame.getError()));
+            // TODO remove
+            new Throwable("RESET " + ErrorCode.from(frame.getError())).printStackTrace();
             resetNoError = false;
             if (isReset())
             {
