@@ -178,9 +178,9 @@ public class JakartaWebSocketServerContainer extends JakartaWebSocketClientConta
             throw new DeploymentException("Unable to deploy null endpoint class from ServerEndpointConfig: " + config.getClass().getName());
         }
 
-        if (!(jakarta.websocket.Endpoint.class.isAssignableFrom(endpointClass))
-            && endpointClass.getAnnotation(ServerEndpoint.class) == null
-            && endpointClass.getAnnotation(ClientEndpoint.class) == null)
+        if (!(jakarta.websocket.Endpoint.class.isAssignableFrom(endpointClass)) &&
+            endpointClass.getAnnotation(ServerEndpoint.class) == null &&
+            endpointClass.getAnnotation(ClientEndpoint.class) == null)
         {
             throw new DeploymentException("Unable to deploy unknown endpoint class: " + endpointClass.getName());
         }
