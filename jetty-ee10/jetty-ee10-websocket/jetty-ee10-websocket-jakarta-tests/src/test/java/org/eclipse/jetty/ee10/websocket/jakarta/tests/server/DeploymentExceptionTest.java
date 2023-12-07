@@ -20,6 +20,7 @@ import java.util.stream.Stream;
 import jakarta.websocket.DeploymentException;
 import jakarta.websocket.server.ServerContainer;
 import jakarta.websocket.server.ServerEndpoint;
+import jakarta.websocket.server.ServerEndpointConfig;
 import org.eclipse.jetty.ee10.servlet.ServletContextHandler;
 import org.eclipse.jetty.ee10.websocket.jakarta.server.config.JakartaWebSocketServletContainerInitializer;
 import org.eclipse.jetty.ee10.websocket.jakarta.tests.server.sockets.BadEndpoint;
@@ -123,7 +124,10 @@ public class DeploymentExceptionTest
             ServerContainer serverContainer = (ServerContainer)context.getServletContext().getAttribute(ServerContainer.class.getName());
 
             // We cannot deploy this because it does not extend Endpoint and has no @ServerEndpoint/@ClientEndpoint annotation.
-            assertThrows(DeploymentException.class, () -> serverContainer.addEndpoint(BadEndpoint.class));
+            assertThrows(DeploymentException.class, () ->
+                serverContainer.addEndpoint(BadEndpoint.class));
+            assertThrows(DeploymentException.class, () ->
+                serverContainer.addEndpoint(ServerEndpointConfig.Builder.create(BadEndpoint.class, "/ws").build()));
         }
         finally
         {
