@@ -54,16 +54,16 @@ public class HttpStreamOverHTTP2 implements HttpStream, HTTP2Channel.Server
 {
     private static final Logger LOG = LoggerFactory.getLogger(HttpStreamOverHTTP2.class);
 
-    private final AutoLock lock = new AutoLock();
+    private final AutoLock _lock = new AutoLock();
     private final HTTP2ServerConnection _connection;
     private final HttpChannel _httpChannel;
     private final HTTP2Stream _stream;
     private MetaData.Request _requestMetaData;
     private MetaData.Response _responseMetaData;
-    private TunnelSupport tunnelSupport;
+    private TunnelSupport _tunnelSupport;
     private Content.Chunk _chunk;
     private Content.Chunk _trailer;
-    private boolean committed;
+    private boolean _committed;
     private boolean _demand;
     private boolean _expects100Continue;
 
@@ -90,7 +90,7 @@ public class HttpStreamOverHTTP2 implements HttpStream, HTTP2Channel.Server
 
             if (frame.isEndStream())
             {
-                try (AutoLock ignored = lock.lock())
+                try (AutoLock ignored = _lock.lock())
                 {
                     _chunk = Content.Chunk.EOF;
                 }
@@ -101,7 +101,7 @@ public class HttpStreamOverHTTP2 implements HttpStream, HTTP2Channel.Server
             _expects100Continue = fields.contains(HttpHeader.EXPECT, HttpHeaderValue.CONTINUE.asString());
 
             if (_requestMetaData instanceof MetaData.ConnectRequest)
-                tunnelSupport = new TunnelSupportOverHTTP2(_requestMetaData.getProtocol());
+                _tunnelSupport = new TunnelSupportOverHTTP2(_requestMetaData.getProtocol());
 
             if (LOG.isDebugEnabled())
             {
@@ -158,12 +158,12 @@ public class HttpStreamOverHTTP2 implements HttpStream, HTTP2Channel.Server
     {
         // Tunnel requests do not have HTTP content, avoid
         // returning chunks meant for a different protocol.
-        if (tunnelSupport != null)
+        if (_tunnelSupport != null)
             return null;
 
         // Check if there already is a chunk, e.g. EOF.
         Content.Chunk chunk;
-        try (AutoLock ignored = lock.lock())
+        try (AutoLock ignored = _lock.lock())
         {
             chunk = _chunk;
             _chunk = Content.Chunk.next(chunk);
@@ -179,7 +179,7 @@ public class HttpStreamOverHTTP2 implements HttpStream, HTTP2Channel.Server
         if (data.frame().isEndStream())
         {
             Content.Chunk trailer;
-            try (AutoLock ignored = lock.lock())
+            try (AutoLock ignored = _lock.lock())
             {
                 trailer = _trailer;
                 if (trailer != null)
@@ -201,7 +201,7 @@ public class HttpStreamOverHTTP2 implements HttpStream, HTTP2Channel.Server
         if (_expects100Continue && chunk.hasRemaining())
             _expects100Continue = false;
 
-        try (AutoLock ignored = lock.lock())
+        try (AutoLock ignored = _lock.lock())
         {
             _chunk = Content.Chunk.next(chunk);
         }
@@ -213,7 +213,7 @@ public class HttpStreamOverHTTP2 implements HttpStream, HTTP2Channel.Server
     {
         boolean notify = false;
         boolean demand = false;
-        try (AutoLock ignored = lock.lock())
+        try (AutoLock ignored = _lock.lock())
         {
             if (_chunk != null || _trailer != null)
                 notify = true;
@@ -236,7 +236,7 @@ public class HttpStreamOverHTTP2 implements HttpStream, HTTP2Channel.Server
     @Override
     public Runnable onDataAvailable()
     {
-        try (AutoLock ignored = lock.lock())
+        try (AutoLock ignored = _lock.lock())
         {
             _demand = false;
         }
@@ -255,7 +255,7 @@ public class HttpStreamOverHTTP2 implements HttpStream, HTTP2Channel.Server
     public Runnable onTrailer(HeadersFrame frame)
     {
         HttpFields trailers = frame.getMetaData().getHttpFields().asImmutable();
-        try (AutoLock ignored = lock.lock())
+        try (AutoLock ignored = _lock.lock())
         {
             _trailer = new Trailers(trailers);
         }
@@ -325,7 +325,7 @@ public class HttpStreamOverHTTP2 implements HttpStream, HTTP2Channel.Server
         }
         else
         {
-            committed = true;
+            _committed = true;
             if (last)
             {
                 long realContentLength = BufferUtil.length(content);
@@ -556,7 +556,7 @@ public class HttpStreamOverHTTP2 implements HttpStream, HTTP2Channel.Server
     @Override
     public boolean isCommitted()
     {
-        return committed;
+        return _committed;
     }
 
     @Override
@@ -569,23 +569,17 @@ public class HttpStreamOverHTTP2 implements HttpStream, HTTP2Channel.Server
     @Override
     public TunnelSupport getTunnelSupport()
     {
-        return tunnelSupport;
+        return _tunnelSupport;
     }
 
     @Override
     public Throwable consumeAvailable()
     {
-        if (tunnelSupport != null)
+        if (_tunnelSupport != null)
             return null;
-        Throwable result = HttpStream.consumeAvailable(this, _httpChannel.getConnectionMetaData().getHttpConfiguration());
-        if (result != null)
-        {
-            _trailer = null;
-            if (_chunk != null)
-                _chunk.release();
-            _chunk = Content.Chunk.from(result, true);
-        }
-        return result;
+
+        _stream.resetNoError();
+        return null;
     }
 
     @Override
@@ -624,7 +618,7 @@ public class HttpStreamOverHTTP2 implements HttpStream, HTTP2Channel.Server
                 }
                 else
                 {
-                    EndPoint endPoint = tunnelSupport.getEndPoint();
+                    EndPoint endPoint = _tunnelSupport.getEndPoint();
                     _stream.setAttachment(endPoint);
                     endPoint.upgrade(connection);
                 }
