@@ -22,6 +22,7 @@ import jakarta.websocket.server.ServerContainer;
 import jakarta.websocket.server.ServerEndpoint;
 import org.eclipse.jetty.ee10.servlet.ServletContextHandler;
 import org.eclipse.jetty.ee10.websocket.jakarta.server.config.JakartaWebSocketServletContainerInitializer;
+import org.eclipse.jetty.ee10.websocket.jakarta.tests.server.sockets.BadEndpoint;
 import org.eclipse.jetty.ee10.websocket.jakarta.tests.server.sockets.InvalidCloseIntSocket;
 import org.eclipse.jetty.ee10.websocket.jakarta.tests.server.sockets.InvalidErrorErrorSocket;
 import org.eclipse.jetty.ee10.websocket.jakarta.tests.server.sockets.InvalidErrorIntSocket;
@@ -33,6 +34,7 @@ import org.eclipse.jetty.server.Server;
 import org.eclipse.jetty.websocket.core.exception.InvalidSignatureException;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.Test;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.Arguments;
 import org.junit.jupiter.params.provider.MethodSource;
@@ -100,6 +102,28 @@ public class DeploymentExceptionTest
             ServerContainer serverContainer = (ServerContainer)context.getServletContext().getAttribute(ServerContainer.class.getName());
             Exception e = assertThrows(DeploymentException.class, () -> serverContainer.addEndpoint(pojo));
             assertThat(e.getCause(), instanceOf(InvalidSignatureException.class));
+        }
+        finally
+        {
+            context.stop();
+        }
+    }
+
+    @Test
+    public void testDeploymentException() throws Exception
+    {
+        ServletContextHandler context = new ServletContextHandler();
+        context.setServer(server);
+        JakartaWebSocketServletContainerInitializer.configure(context, null);
+
+        contexts.addHandler(context);
+        try
+        {
+            context.start();
+            ServerContainer serverContainer = (ServerContainer)context.getServletContext().getAttribute(ServerContainer.class.getName());
+
+            // We cannot deploy this because it does not extend Endpoint and has no @ServerEndpoint/@ClientEndpoint annotation.
+            assertThrows(DeploymentException.class, () -> serverContainer.addEndpoint(BadEndpoint.class));
         }
         finally
         {
