@@ -17,10 +17,12 @@ pipeline {
           steps {
             timeout( time: 180, unit: 'MINUTES' ) {
               checkout scm
-              mavenBuild( "jdk21", "clean install -Dspotbugs.skip=true -Djacoco.skip=true", "maven3")
+              mavenBuild( "jdk21", "clean install -Dspotbugs.skip=true", "maven3")
               recordIssues id: "jdk21", name: "Static Analysis jdk21", aggregatingResults: true, enabledForFailure: true,
                             tools: [mavenConsole(), java(), checkStyle(), javaDoc()],
                             skipPublishingChecks: true, blameDisabled: true
+              recordCoverage id: "coverage-jdk21", name: "Coverage jdk21", tools: [[parser: 'JACOCO']], sourceCodeRetention: 'LAST_BUILD',
+                      sourceDirectories: [[path: 'src/main/java'], [path: 'target/generated-sources/ee8']]
             }
           }
         }
@@ -30,9 +32,9 @@ pipeline {
           steps {
             timeout( time: 180, unit: 'MINUTES' ) {
               checkout scm
-              mavenBuild( "jdk17", "clean install -Perrorprone", "maven3") // javadoc:javadoc
+              mavenBuild( "jdk17", "clean install", "maven3") // javadoc:javadoc
               recordIssues id: "analysis-jdk17", name: "Static Analysis jdk17", aggregatingResults: true, enabledForFailure: true,
-                            tools: [mavenConsole(), java(), checkStyle(), errorProne(), spotBugs(), javaDoc()],
+                            tools: [mavenConsole(), java(), checkStyle(), spotBugs(), javaDoc()],
                             skipPublishingChecks: true, blameDisabled: true
               recordCoverage id: "coverage-jdk17", name: "Coverage jdk17", tools: [[parser: 'JACOCO']], sourceCodeRetention: 'LAST_BUILD',
                              sourceDirectories: [[path: 'src/main/java'], [path: 'target/generated-sources/ee8']]

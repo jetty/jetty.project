@@ -181,7 +181,6 @@
     <felix.version>7.0.5</felix.version>
     <findbugs.jsr305.version>3.0.2</findbugs.jsr305.version>
     <flatten.maven.plugin.version>1.3.0</flatten.maven.plugin.version>
-    <google.errorprone.version>2.23.0</google.errorprone.version>
     <groovy.version>4.0.6</groovy.version>
     <groovy.version>4.0.6</groovy.version>
     <grpc.version>1.59.0</grpc.version>
@@ -391,11 +390,6 @@
         <groupId>com.google.code.gson</groupId>
         <artifactId>gson</artifactId>
         <version>${gson.version}</version>
-      </dependency>
-      <dependency>
-        <groupId>com.google.errorprone</groupId>
-        <artifactId>error_prone_annotations</artifactId>
-        <version>${google.errorprone.version}</version>
       </dependency>
       <dependency>
         <groupId>com.google.guava</groupId>
@@ -2056,35 +2050,6 @@
       <properties>
         <jetty.unixdomain.dir>${user.home}</jetty.unixdomain.dir>
       </properties>
-    </profile>
-    <profile>
-      <id>errorprone</id>
-      <build>
-        <pluginManagement>
-          <plugins>
-            <!-- FIXME: Not compatible with JDK 17
-            <plugin>
-              <groupId>org.apache.maven.plugins</groupId>
-              <artifactId>maven-compiler-plugin</artifactId>
-              <configuration>
-                <showWarnings>true</showWarnings>
-                <compilerArgs combine.children="append">
-                  <arg>-XDcompilePolicy=simple</arg>
-                  <arg>-Xplugin:ErrorProne -XepAllErrorsAsWarnings</arg>
-                </compilerArgs>
-                <annotationProcessorPaths>
-                  <path>
-                    <groupId>com.google.errorprone</groupId>
-                    <artifactId>error_prone_core</artifactId>
-                    <version>${google.errorprone.version}</version>
-                  </path>
-                </annotationProcessorPaths>
-              </configuration>
-            </plugin>
-             -->
-          </plugins>
-        </pluginManagement>
-      </build>
     </profile>
     <profile>
       <id>config</id>
