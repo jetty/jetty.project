@@ -37,7 +37,7 @@
               <Name>jetty.deploy.defaultsDescriptorPath</Name>
               <Deprecated>jetty.deploy.defaultsDescriptor</Deprecated>
               <Default>
-                <Property name="jetty.base" default="." />/etc/webdefault-ee9.xml
+                <Property name="jetty.home" default="." />/etc/webdefault-ee9.xml
               </Default>
             </Property>
           </Set>
