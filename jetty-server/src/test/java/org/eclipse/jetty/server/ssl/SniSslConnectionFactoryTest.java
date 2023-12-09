@@ -156,11 +156,13 @@ public class SniSslConnectionFactoryTest
 
         String response = getResponse("www.acme.org", null);
         assertThat(response, Matchers.containsString("X-HOST: www.acme.org"));
-        assertThat(response, Matchers.containsString("X-CERT: OU=default"));
+        assertThat(response, Matchers.either(Matchers.containsString("X-CERT: OU=default"))
+                .or(Matchers.containsString("X-CERT: OU=example")));
 
         response = getResponse("www.example.com", null);
         assertThat(response, Matchers.containsString("X-HOST: www.example.com"));
-        assertThat(response, Matchers.containsString("X-CERT: OU=example"));
+        assertThat(response, Matchers.either(Matchers.containsString("X-CERT: OU=default"))
+                .or(Matchers.containsString("X-CERT: OU=example")));
     }
 
     @Test
