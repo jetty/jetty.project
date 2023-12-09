@@ -51,10 +51,16 @@ public interface Connection extends Closeable
     /**
      * @return the local socket address associated with the connection
      */
-    SocketAddress getLocalSocketAddress();
+    default SocketAddress getLocalSocketAddress()
+    {
+        return null;
+    }
 
     /**
      * @return the remote socket address associated with the connection
      */
-    SocketAddress getRemoteSocketAddress();
+    default SocketAddress getRemoteSocketAddress()
+    {
+        return null;
+    }
 }
