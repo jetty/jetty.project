@@ -835,6 +835,25 @@ public class  HttpClientTest extends AbstractTest<TransportScenario>
         assertEquals(200, response.getStatus());
     }
 
+    @ParameterizedTest
+    @ArgumentsSource(TransportProvider.class)
+    public void testRequestConnection(Transport transport) throws Exception
+    {
+        init(transport);
+
+        scenario.start(new EmptyServerHandler());
+
+        ContentResponse response = scenario.client.newRequest(scenario.newURI())
+            .onRequestBegin(r ->
+            {
+                if (r.getConnection() == null)
+                    r.abort(new IllegalStateException());
+            })
+            .send();
+
+        assertEquals(200, response.getStatus());
+    }
+
     private void sleep(long time) throws IOException
     {
         try

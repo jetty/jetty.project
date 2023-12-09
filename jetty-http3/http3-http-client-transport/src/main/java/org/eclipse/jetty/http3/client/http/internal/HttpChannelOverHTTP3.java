@@ -18,6 +18,7 @@ import org.eclipse.jetty.client.HttpDestination;
 import org.eclipse.jetty.client.HttpExchange;
 import org.eclipse.jetty.client.HttpReceiver;
 import org.eclipse.jetty.client.HttpSender;
+import org.eclipse.jetty.client.api.Connection;
 import org.eclipse.jetty.client.api.Result;
 import org.eclipse.jetty.http3.api.Stream;
 import org.eclipse.jetty.http3.client.internal.HTTP3SessionClient;
@@ -48,6 +49,12 @@ public class HttpChannelOverHTTP3 extends HttpChannel
     public Stream.Client.Listener getStreamListener()
     {
         return receiver;
+    }
+
+    @Override
+    protected Connection getConnection()
+    {
+        return connection;
     }
 
     @Override

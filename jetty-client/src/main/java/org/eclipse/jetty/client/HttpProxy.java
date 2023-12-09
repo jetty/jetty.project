@@ -15,6 +15,7 @@ package org.eclipse.jetty.client;
 
 import java.io.IOException;
 import java.net.InetSocketAddress;
+import java.net.SocketAddress;
 import java.net.URI;
 import java.util.List;
 import java.util.Map;
@@ -275,6 +276,18 @@ public class HttpProxy extends ProxyConfiguration.Proxy
             this.destination = destination;
             this.connection = connection;
             this.promise = promise;
+        }
+
+        @Override
+        public SocketAddress getLocalSocketAddress()
+        {
+            return connection.getLocalSocketAddress();
+        }
+
+        @Override
+        public SocketAddress getRemoteSocketAddress()
+        {
+            return connection.getRemoteSocketAddress();
         }
 
         @Override
