@@ -218,8 +218,6 @@ public abstract class HttpSender
 
     private void executeAbort(HttpExchange exchange, Throwable failure)
     {
-        // TODO remove
-        new Throwable(failure).printStackTrace();
         try
         {
             Executor executor = getHttpChannel().getHttpDestination().getHttpClient().getExecutor();

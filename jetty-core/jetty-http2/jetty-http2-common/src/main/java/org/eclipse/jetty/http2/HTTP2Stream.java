@@ -187,8 +187,6 @@ public class HTTP2Stream implements Stream, Attachable, Closeable, Callback, Dum
         Throwable resetFailure = null;
         try (AutoLock ignored = lock.lock())
         {
-            // TODO remove
-            new Throwable("RESET " + ErrorCode.from(frame.getError())).printStackTrace();
             resetNoError = false;
             if (isReset())
             {
