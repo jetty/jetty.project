@@ -116,16 +116,16 @@ public class HttpClientContinueTest extends AbstractTest
     @MethodSource("transportsNoFCGI")
     public void testExpect100ContinueWithMultipleContentsRespond100ContinueBlocking(Transport transport) throws Exception
     {
-        testExpect100ContinueRespond100ContinueBlocking(transport, "data1".getBytes(StandardCharsets.UTF_8), "data2".getBytes(StandardCharsets.UTF_8), "data3".getBytes(StandardCharsets.UTF_8));
-    }
-
-    private void testExpect100ContinueRespond100ContinueBlocking(Transport transport, byte[]... contents) throws Exception
-    {
+        byte[][] contents = new byte[][]{
+            "data1".getBytes(StandardCharsets.UTF_8), "data2".getBytes(StandardCharsets.UTF_8), "data3".getBytes(StandardCharsets.UTF_8)
+        };
+        AtomicReference<Thread> readerThreadRef = new AtomicReference<>();
         start(transport, new HttpServlet()
         {
             @Override
             protected void service(HttpServletRequest request, HttpServletResponse response) throws IOException
             {
+                readerThreadRef.set(Thread.currentThread());
                 // Send 100-Continue and copy the content back
                 IO.copy(request.getInputStream(), response.getOutputStream());
             }
@@ -140,8 +140,14 @@ public class HttpClientContinueTest extends AbstractTest
                 {
                     try
                     {
-                        // Sleep here to ensure that sometimes the reader will block/pause even after sending 100.
-                        Thread.sleep(100);
+                        // ensure that the reader will block/pause even after sending 100.
+                        await().atMost(5, TimeUnit.SECONDS).until(() ->
+                        {
+                            Thread thread = readerThreadRef.get();
+                            if (thread == null)
+                                return false;
+                            return thread.getState() == Thread.State.WAITING;
+                        });
                         Callback.Completable callback = new Callback.Completable();
                         content.write(b == contents[contents.length - 1], ByteBuffer.wrap(b), callback);
                         callback.get();
