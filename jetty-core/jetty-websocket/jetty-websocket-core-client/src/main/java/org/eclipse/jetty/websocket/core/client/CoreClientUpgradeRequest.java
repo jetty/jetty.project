@@ -250,17 +250,6 @@ public abstract class CoreClientUpgradeRequest implements Response.CompleteListe
         int status = response.getStatus();
         String responseLine = status + " " + response.getReason();
 
-        if (!upgraded)
-        {
-            // We have failed to upgrade but have received a response, so notify the listener.
-            Throwable listenerError = notifyUpgradeListeners((listener) -> listener.onHandshakeResponse(request, response));
-            if (listenerError != null)
-            {
-                if (LOG.isDebugEnabled())
-                    LOG.debug("error from listener", listenerError);
-            }
-        }
-
         if (result.isFailed())
         {
             if (LOG.isDebugEnabled())
@@ -279,6 +268,17 @@ public abstract class CoreClientUpgradeRequest implements Response.CompleteListe
                 failure = new UpgradeException(requestURI, status, responseLine, failure);
             handleException(failure);
             return;
+        }
+
+        if (!upgraded)
+        {
+            // We have failed to upgrade but have received a response, so notify the listener.
+            Throwable listenerError = notifyUpgradeListeners((listener) -> listener.onHandshakeResponse(request, response));
+            if (listenerError != null)
+            {
+                if (LOG.isDebugEnabled())
+                    LOG.debug("error from listener", listenerError);
+            }
         }
 
         if (status != HttpStatus.SWITCHING_PROTOCOLS_101)
