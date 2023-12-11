@@ -29,7 +29,6 @@ import org.eclipse.jetty.http.HttpScheme;
 import org.eclipse.jetty.http.HttpURI;
 import org.eclipse.jetty.http.QuotedCSVParser;
 import org.eclipse.jetty.io.EndPoint;
-import org.eclipse.jetty.server.internal.HttpConnection;
 import org.eclipse.jetty.util.Attributes;
 import org.eclipse.jetty.util.HostPort;
 import org.eclipse.jetty.util.Index;

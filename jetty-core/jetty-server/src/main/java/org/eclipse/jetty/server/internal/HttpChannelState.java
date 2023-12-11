@@ -47,6 +47,7 @@ import org.eclipse.jetty.server.Context;
 import org.eclipse.jetty.server.Handler;
 import org.eclipse.jetty.server.HttpChannel;
 import org.eclipse.jetty.server.HttpConfiguration;
+import org.eclipse.jetty.server.HttpConnection;
 import org.eclipse.jetty.server.HttpStream;
 import org.eclipse.jetty.server.Request;
 import org.eclipse.jetty.server.RequestLog;
@@ -1209,7 +1210,12 @@ public class HttpChannelState implements HttpChannel, Components
                 httpChannel.lockedStreamSendCompleted(true);
             }
             if (callback != null)
-                httpChannel._serializedInvoker.run(callback::succeeded);
+            {
+                // Do not use SerializedInvoker here because application code running within
+                // SerializedInvoker could issue blocking write() or close() that would deadlock.
+                // We must execute in case of recursive write within the callback.
+                getRequest().getContext().execute(callback::succeeded);
+            }
         }
 
         /**
@@ -1237,7 +1243,12 @@ public class HttpChannelState implements HttpChannel, Components
                 httpChannel.lockedStreamSendCompleted(false);
             }
             if (callback != null)
-                httpChannel._serializedInvoker.run(() -> callback.failed(x));
+            {
+                // Do not use SerializedInvoker here because application code running within
+                // SerializedInvoker could issue blocking write() or close() that would deadlock.
+                // We must execute in case of recursive write within the callback.
+                getRequest().getContext().execute(() -> callback.failed(x));
+            }
         }
 
         @Override

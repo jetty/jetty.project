@@ -1920,8 +1920,8 @@ public class HttpParser
 
     public void servletUpgrade()
     {
-        setState(State.CONTENT);
-        _endOfContent = EndOfContent.UNKNOWN_CONTENT;
+        setState(State.EOF_CONTENT);
+        _endOfContent = EndOfContent.EOF_CONTENT;
         _contentLength = -1;
     }
 
