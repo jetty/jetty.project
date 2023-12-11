@@ -358,12 +358,14 @@ public class ConcurrentPool<P> implements Pool<P>, Dumpable
     @Override
     public String toString()
     {
-        return String.format("%s@%x[inUse=%d,size=%d,max=%d,terminated=%b]",
+        return String.format("%s@%x[strategy=%s,inUse=%d,size=%d,max=%d,leaked=%d,terminated=%b]",
             getClass().getSimpleName(),
             hashCode(),
+            strategyType,
             getInUseCount(),
             size(),
             getMaxSize(),
+            getLeaked(),
             isTerminated());
     }
 
@@ -705,7 +707,9 @@ public class ConcurrentPool<P> implements Pool<P>, Dumpable
         @Override
         public String toString()
         {
-            return "%s@%x{%s,%s}".formatted(this.getClass().getSimpleName(), hashCode(), _weak.get(), _strong);
+            ConcurrentEntry<P> weakEntry = _weak.get();
+            ConcurrentEntry<P> strongEntry = _strong;
+            return "%s@%x{w=%s,s=%s,e=%s}".formatted(this.getClass().getSimpleName(), hashCode(), weakEntry == null ? "null" : "non-null", strongEntry == null ? "null" : "non-null", weakEntry);
         }
     }
 }
