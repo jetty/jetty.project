@@ -167,9 +167,9 @@
     <buildnumber.maven.plugin.version>3.2.0</buildnumber.maven.plugin.version>
     <checkstyle.version>10.6.0</checkstyle.version>
     <commons-codec.version>1.16.0</commons-codec.version>
-    <commons-lang3.version>3.13.0</commons-lang3.version>
-    <commons.compress.version>1.24.0</commons.compress.version>
-    <commons.io.version>2.15.0</commons.io.version>
+    <commons-lang3.version>3.14.0</commons-lang3.version>
+    <commons.compress.version>1.25.0</commons.compress.version>
+    <commons.io.version>2.15.1</commons.io.version>
     <compiler.release>17</compiler.release>
     <compiler.source>17</compiler.source>
     <compiler.target>17</compiler.target>
@@ -254,13 +254,14 @@
     <kerb-simplekdc.version>2.0.3</kerb-simplekdc.version>
     <license.maven.plugin.version>4.1</license.maven.plugin.version>
     <localRepoPath>${project.build.directory}/local-repo</localRepoPath>
-    <log4j2.version>2.21.1</log4j2.version>
-    <logback.version>1.4.11</logback.version>
+    <log4j2.version>2.22.0</log4j2.version>
+    <logback.version>1.4.14</logback.version>
     <mariadb.docker.version>10.3.6</mariadb.docker.version>
     <mariadb.version>3.2.0</mariadb.version>
     <maven-artifact-transfer.version>0.13.1</maven-artifact-transfer.version>
-    <maven-build-cache.version>1.0.1</maven-build-cache.version>
+    <maven-build-cache.version>1.1.0</maven-build-cache.version>
     <maven-plugin.plugin.version>3.10.1</maven-plugin.plugin.version>
+    <maven-plugin.plugin.version>3.10.2</maven-plugin.plugin.version>
     <maven.antrun.plugin.version>3.1.0</maven.antrun.plugin.version>
     <maven.assembly.plugin.version>3.6.0</maven.assembly.plugin.version>
     <maven.bundle.plugin.version>5.1.9</maven.bundle.plugin.version>
@@ -272,16 +273,16 @@
     <maven.deploy.plugin.version>3.1.1</maven.deploy.plugin.version>
     <maven.deps.version>3.9.4</maven.deps.version>
     <maven.enforcer.plugin.version>3.4.1</maven.enforcer.plugin.version>
-    <maven.exec.plugin.version>3.1.0</maven.exec.plugin.version>
+    <maven.exec.plugin.version>3.1.1</maven.exec.plugin.version>
     <maven.gpg.plugin.version>3.1.0</maven.gpg.plugin.version>
     <maven.install.plugin.version>3.1.1</maven.install.plugin.version>
     <maven.invoker.plugin.version>3.6.0</maven.invoker.plugin.version>
     <maven.jar.plugin.version>3.3.0</maven.jar.plugin.version>
-    <maven.javadoc.plugin.version>3.6.0</maven.javadoc.plugin.version>
-    <maven.plugin-tools.version>3.10.1</maven.plugin-tools.version>
+    <maven.javadoc.plugin.version>3.6.2</maven.javadoc.plugin.version>
+    <maven.plugin-tools.version>3.10.2</maven.plugin-tools.version>
     <maven.release.plugin.version>3.0.1</maven.release.plugin.version>
     <maven.remote-resources-plugin.version>3.1.0</maven.remote-resources-plugin.version>
-    <maven.resolver.version>1.9.16</maven.resolver.version>
+    <maven.resolver.version>1.9.18</maven.resolver.version>
     <maven.resources.plugin.version>3.3.1</maven.resources.plugin.version>
     <maven.shade.plugin.version>3.5.1</maven.shade.plugin.version>
     <maven.source.plugin.version>3.3.0</maven.source.plugin.version>
@@ -326,12 +327,12 @@
     <swissbox.version>1.8.3</swissbox.version>
     <taglibs-standard-impl.version>1.2.5</taglibs-standard-impl.version>
     <taglibs-standard-spec.version>1.2.5</taglibs-standard-spec.version>
-    <testcontainers.version>1.19.1</testcontainers.version>
+    <testcontainers.version>1.19.3</testcontainers.version>
     <tinybundles.version>3.0.0</tinybundles.version>
     <versions.maven.plugin.version>2.14.2</versions.maven.plugin.version>
-    <wildfly.common.version>1.6.0.Final</wildfly.common.version>
+    <wildfly.common.version>1.7.0.Final</wildfly.common.version>
     <wildfly.elytron.version>2.2.2.Final</wildfly.elytron.version>
-    <xmemcached.version>2.4.7</xmemcached.version>
+    <xmemcached.version>2.4.8</xmemcached.version>
   </properties>
 
   <dependencyManagement>
@@ -729,6 +730,11 @@
       <dependency>
         <groupId>org.eclipse.jetty</groupId>
         <artifactId>jetty-osgi</artifactId>
+        <version>${project.version}</version>
+      </dependency>
+      <dependency>
+        <groupId>org.eclipse.jetty</groupId>
+        <artifactId>jetty-plus</artifactId>
         <version>${project.version}</version>
       </dependency>
       <dependency>
@@ -1975,6 +1981,7 @@
           <excludes>
             <!-- build tools -->
             <exclude>**/org/eclipse/jetty/ant/**</exclude>
+            <exclude>*/org/eclipse/jetty/maven/its/**</exclude>
             <!-- example code / documentation -->
             <exclude>**/org/eclipse/jetty/embedded/**</exclude>
             <exclude>**/org/eclipse/jetty/asyncrest/**</exclude>
@@ -2523,7 +2530,7 @@
         </property>
       </activation>
       <properties>
-        <cbi-plugins.version>1.4.2</cbi-plugins.version>
+        <cbi-plugins.version>1.4.3</cbi-plugins.version>
       </properties>
       <pluginRepositories>
         <pluginRepository>

@@ -40,24 +40,6 @@
       <artifactId>jetty-test-helper</artifactId>
       <scope>test</scope>
     </dependency>
-    <!--<dependency>
-      <groupId>org.eclipse.jetty.ee9</groupId>
-      <artifactId>jetty-ee9-security</artifactId>
-      <scope>provided</scope>
-    </dependency>-->
-    <!--<dependency>
-      <groupId>jakarta.activation</groupId>
-      <artifactId>jakarta.activation-api</artifactId>
-      <optional>true</optional>
-    </dependency>
-     -->
-    <!-- TODO: REMOVE -->
-    <!--<dependency>
-      <groupId>jakarta.mail</groupId>
-      <artifactId>jakarta.mail-api</artifactId>
-      <version>${project.version}</version>
-      <optional>true</optional>
-    </dependency>-->
   </dependencies>
 
   <build>
@@ -68,7 +50,7 @@
         <extensions>true</extensions>
         <configuration>
           <instructions>
-            <Import-Package>${osgi.slf4j.import.packages},jakarta.mail.*;resolution:=optional,*</Import-Package>
+            <Import-Package>${osgi.slf4j.import.packages},*</Import-Package>
           </instructions>
         </configuration>
       </plugin>

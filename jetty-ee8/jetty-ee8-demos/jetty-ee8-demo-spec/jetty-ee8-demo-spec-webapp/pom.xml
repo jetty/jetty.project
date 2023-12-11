@@ -39,20 +39,6 @@
       <scope>provided</scope>
     </dependency>
 
-    <!-- deliberately old version to test classloading -->
-    <!-- TODO uncomment and update the following once 9.4.19 is released with a fix for #3726
-    <dependency>
-      <groupId>org.eclipse.jetty</groupId>
-      <artifactId>jetty-util</artifactId>
-      <version>9.4.19.vXXXXXXXX</version>
-      <exclusions>
-        <exclusion>
-          <groupId>jakarta.servlet</groupId>
-          <artifactId>jakarta.servlet-api</artifactId>
-        </exclusion>
-      </exclusions>
-    </dependency>
- -->
   </dependencies>
   <build>
     <pluginManagement>
@@ -111,28 +97,6 @@
             <Jetty-Environment>ee8</Jetty-Environment>
           </instructions>
         </configuration>
-      </plugin>
-      <plugin>
-        <artifactId>maven-antrun-plugin</artifactId>
-        <executions>
-          <execution>
-            <id>generate-xml-files</id>
-            <goals>
-              <goal>run</goal>
-            </goals>
-            <phase>process-resources</phase>
-            <configuration>
-              <target>
-                <concat destfile="${project.build.directory}/plugin-context.xml">
-                  <filelist dir="${project.build.directory}/templates" files="plugin-context-header.xml,env-definitions.xml"></filelist>
-                </concat>
-                <concat destfile="${project.build.directory}/test-spec.xml">
-                  <filelist dir="${project.build.directory}/templates" files="annotations-context-header.xml,env-definitions.xml"></filelist>
-                </concat>
-              </target>
-            </configuration>
-          </execution>
-        </executions>
       </plugin>
       <plugin>
         <groupId>org.apache.maven.plugins</groupId>
@@ -250,7 +214,7 @@
           </archive>
           <webResources>
             <resource>
-              <directory>target</directory>
+              <directory>target/templates</directory>
               <includes>
                 <include>plugin-context.xml</include>
               </includes>

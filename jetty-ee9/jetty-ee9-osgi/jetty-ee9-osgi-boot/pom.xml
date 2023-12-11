@@ -90,6 +90,7 @@
               org.xml.sax,
               org.xml.sax.helpers,
               org.eclipse.jetty.ee9.annotations;resolution:=optional,
+              org.eclipse.jetty.jndi;resolution:=optional,
               *</Import-Package>
             <Require-Capability>osgi.extender; filter:="(osgi.extender=osgi.serviceloader.registrar)"</Require-Capability>
             <Provide-Capability>osgi.serviceloader; osgi.serviceloader=org.eclipse.jetty.ee9.webapp.Configuration</Provide-Capability>

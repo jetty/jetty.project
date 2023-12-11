@@ -743,12 +743,12 @@ public class DefaultServletTest
         rawResponse = connector.getResponse("GET /context/other HTTP/1.0\r\n\r\n");
         response = HttpTester.parseResponse(rawResponse);
         assertThat(response.toString(), response.getStatus(), is(HttpStatus.MOVED_TEMPORARILY_302));
-        assertThat(response, containsHeaderValue("Location", "http://0.0.0.0/context/other/"));
+        assertThat(response, containsHeaderValue("Location", "/context/other/"));
 
         rawResponse = connector.getResponse("GET /context/other?a=b HTTP/1.0\r\n\r\n");
         response = HttpTester.parseResponse(rawResponse);
         assertThat(response.toString(), response.getStatus(), is(HttpStatus.MOVED_TEMPORARILY_302));
-        assertThat(response, containsHeaderValue("Location", "http://0.0.0.0/context/other/?a=b"));
+        assertThat(response, containsHeaderValue("Location", "/context/other/?a=b"));
 
         rawResponse = connector.getResponse("GET /context?a=b HTTP/1.0\r\n\r\n");
         response = HttpTester.parseResponse(rawResponse);
@@ -899,25 +899,25 @@ public class DefaultServletTest
         rawResponse = connector.getResponse("GET /context/dir/ HTTP/1.0\r\n\r\n");
         response = HttpTester.parseResponse(rawResponse);
         assertThat(response.toString(), response.getStatus(), is(HttpStatus.MOVED_TEMPORARILY_302));
-        assertThat(response, headerValue("Location", "http://0.0.0.0/context/dir/index.html"));
+        assertThat(response, headerValue("Location", "/context/dir/index.html"));
 
         createFile(inde, "<h1>Hello Inde</h1>");
         rawResponse = connector.getResponse("GET /context/dir HTTP/1.0\r\n\r\n");
         response = HttpTester.parseResponse(rawResponse);
         assertThat(response.toString(), response.getStatus(), is(HttpStatus.MOVED_TEMPORARILY_302));
-        assertThat(response, headerValue("Location", "http://0.0.0.0/context/dir/"));
+        assertThat(response, headerValue("Location", "/context/dir/"));
 
         rawResponse = connector.getResponse("GET /context/dir/ HTTP/1.0\r\n\r\n");
         response = HttpTester.parseResponse(rawResponse);
         assertThat(response.toString(), response.getStatus(), is(HttpStatus.MOVED_TEMPORARILY_302));
-        assertThat(response, headerValue("Location", "http://0.0.0.0/context/dir/index.html"));
+        assertThat(response, headerValue("Location", "/context/dir/index.html"));
 
         if (deleteFile(index))
         {
             rawResponse = connector.getResponse("GET /context/dir/ HTTP/1.0\r\n\r\n");
             response = HttpTester.parseResponse(rawResponse);
             assertThat(response.toString(), response.getStatus(), is(HttpStatus.MOVED_TEMPORARILY_302));
-            assertThat(response, headerValue("Location", "http://0.0.0.0/context/dir/index.htm"));
+            assertThat(response, headerValue("Location", "/context/dir/index.htm"));
 
             if (deleteFile(inde))
             {
@@ -992,12 +992,12 @@ public class DefaultServletTest
         rawResponse = connector.getResponse("GET /context/dir%3F HTTP/1.0\r\n\r\n");
         response = HttpTester.parseResponse(rawResponse);
         assertThat(response.toString(), response.getStatus(), is(HttpStatus.MOVED_TEMPORARILY_302));
-        assertThat(response, containsHeaderValue("Location", "http://0.0.0.0/context/dir%3F/"));
+        assertThat(response, containsHeaderValue("Location", "/context/dir%3F/"));
 
         rawResponse = connector.getResponse("GET /context/dir%3F/ HTTP/1.0\r\n\r\n");
         response = HttpTester.parseResponse(rawResponse);
         assertThat(response.toString(), response.getStatus(), is(HttpStatus.MOVED_TEMPORARILY_302));
-        assertThat(response, containsHeaderValue("Location", "http://0.0.0.0/context/dir%3F/index.html"));
+        assertThat(response, containsHeaderValue("Location", "/context/dir%3F/index.html"));
     }
 
     /**
@@ -1024,12 +1024,12 @@ public class DefaultServletTest
         rawResponse = connector.getResponse("GET /context/dir%3B HTTP/1.0\r\n\r\n");
         response = HttpTester.parseResponse(rawResponse);
         assertThat(response.toString(), response.getStatus(), is(HttpStatus.MOVED_TEMPORARILY_302));
-        assertThat(response, containsHeaderValue("Location", "http://0.0.0.0/context/dir%3B/"));
+        assertThat(response, containsHeaderValue("Location", "/context/dir%3B/"));
 
         rawResponse = connector.getResponse("GET /context/dir%3B/ HTTP/1.0\r\n\r\n");
         response = HttpTester.parseResponse(rawResponse);
         assertThat(response.toString(), response.getStatus(), is(HttpStatus.MOVED_TEMPORARILY_302));
-        assertThat(response, containsHeaderValue("Location", "http://0.0.0.0/context/dir%3B/index.html"));
+        assertThat(response, containsHeaderValue("Location", "/context/dir%3B/index.html"));
     }
 
     @Test
