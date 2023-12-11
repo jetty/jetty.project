@@ -76,7 +76,9 @@ class ResourceFactoryInternals
                 resourceFactory = url.toString().contains("!/") ? mountedPathResourceFactory : pathResourceFactory;
             }
 
-            RESOURCE_FACTORIES.put(url.getProtocol(), resourceFactory);
+            String protocol = url.getProtocol();
+            PathResource.SUPPORTED_SCHEMES = PathResource.initSupportedSchemes(protocol);
+            RESOURCE_FACTORIES.put(protocol, resourceFactory);
         }
     }
 

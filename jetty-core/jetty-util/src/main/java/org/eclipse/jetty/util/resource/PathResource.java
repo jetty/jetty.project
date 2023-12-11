@@ -40,11 +40,7 @@ public class PathResource extends Resource
 {
     private static final Logger LOG = LoggerFactory.getLogger(PathResource.class);
 
-    public static Index<String> SUPPORTED_SCHEMES = new Index.Builder<String>()
-        .caseSensitive(false)
-        .with("file")
-        .with("jrt")
-        .build();
+    public static Index<String> SUPPORTED_SCHEMES = initSupportedSchemes(null);
 
     // The path object represented by this instance
     private final Path path;
@@ -540,5 +536,19 @@ public class PathResource extends Resource
     public String toString()
     {
         return this.uri.toASCIIString();
+    }
+
+    static Index<String> initSupportedSchemes(String extraScheme)
+    {
+        Index.Builder<String> builder = new Index.Builder<String>()
+            .caseSensitive(false)
+            .with("file")
+            .with("jrt");
+        if (extraScheme != null)
+        {
+            builder = builder.with(extraScheme);
+        }
+
+        return builder.build();
     }
 }
