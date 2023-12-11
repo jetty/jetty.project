@@ -243,7 +243,7 @@ public abstract class HttpSender
         dispose();
 
         if (LOG.isDebugEnabled())
-            LOG.debug("Request abort {} {} on {}: {}", request, exchange, getHttpChannel(), failure);
+            LOG.debug("Request abort {} {} on {}", request, exchange, getHttpChannel(), failure);
         request.notifyFailure(failure);
 
         // Mark atomically the request as terminated, with
@@ -358,8 +358,8 @@ public abstract class HttpSender
 
         if (abort)
         {
-            abortRequest(exchange);
-            promise.succeeded(true);
+            contentSender.abort = promise;
+            contentSender.abort(this.failure.get());
         }
         else
         {
@@ -449,6 +449,7 @@ public abstract class HttpSender
         private boolean committed;
         private boolean success;
         private boolean complete;
+        private Promise<Boolean> abort;
 
         @Override
         public boolean reset()
@@ -460,6 +461,7 @@ public abstract class HttpSender
             committed = false;
             success = false;
             complete = false;
+            abort = null;
             return super.reset();
         }
 
@@ -571,7 +573,7 @@ public abstract class HttpSender
         }
 
         @Override
-        public void failed(Throwable x)
+        protected void onCompleteFailure(Throwable x)
         {
             if (chunk != null)
             {
@@ -584,8 +586,13 @@ public abstract class HttpSender
             if (content != null)
                 content.fail(x);
 
+            abortRequest(exchange);
+
             anyToFailure(x);
-            super.failed(x);
+
+            Promise<Boolean> promise = abort;
+            if (promise != null)
+                promise.succeeded(true);
         }
 
         @Override

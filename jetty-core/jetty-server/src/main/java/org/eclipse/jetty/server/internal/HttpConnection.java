@@ -640,7 +640,7 @@ public class HttpConnection extends AbstractMetaDataConnection implements Runnab
         if (cause == null)
             _sendCallback.close();
         else
-            _sendCallback.failed(cause);
+            _sendCallback.abort(cause);
         super.onClose(cause);
     }
 
