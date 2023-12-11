@@ -1329,7 +1329,7 @@ public class RequestTest
             "Connection: close\n" +
             "\n");
         assertThat(response, containsString(" 302 Found"));
-        assertThat(response, containsString("Location: http://myhost/foo"));
+        assertThat(response, containsString("Location: /foo"));
     }
 
     @Test
@@ -2263,7 +2263,7 @@ public class RequestTest
             try
             {
                 MultipartConfigElement mpce = new MultipartConfigElement(tmpDir.getAbsolutePath(), -1, -1, 2);
-                request.setAttribute(Request.__MULTIPART_CONFIG_ELEMENT, mpce);
+                request.setAttribute(Request.MULTIPART_CONFIG_ELEMENT, mpce);
 
                 String field1 = request.getParameter("field1");
                 assertNotNull(field1);
@@ -2319,7 +2319,7 @@ public class RequestTest
             try
             {
                 MultipartConfigElement mpce = new MultipartConfigElement(tmpDir.toString(), -1, -1, 2);
-                request.setAttribute(Request.__MULTIPART_CONFIG_ELEMENT, mpce);
+                request.setAttribute(Request.MULTIPART_CONFIG_ELEMENT, mpce);
 
                 //We should get an error when we getParams if there was a problem parsing the multipart
                 request.getPart("xxx");

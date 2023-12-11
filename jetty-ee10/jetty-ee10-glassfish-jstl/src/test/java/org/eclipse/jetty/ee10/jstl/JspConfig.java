@@ -17,6 +17,7 @@ import java.io.File;
 import java.net.URI;
 import java.nio.file.Path;
 
+import jakarta.servlet.ServletContext;
 import org.eclipse.jetty.ee10.webapp.WebAppContext;
 
 /**
@@ -27,7 +28,7 @@ public class JspConfig
 {
     public static void init(WebAppContext context, URI baseUri, File scratchDir)
     {
-        context.setAttribute("jakarta.servlet.context.tempdir", scratchDir);
+        context.setAttribute(ServletContext.TEMPDIR, scratchDir);
         context.setAttribute("org.eclipse.jetty.server.webapp.ContainerIncludeJarPattern",
             ".*/jetty-jakarta-servlet-api-[^/]*\\.jar$|.*jakarta.servlet.jsp.jstl-[^/]*\\.jar|.*taglibs-standard.*\\.jar");
         context.setWar(baseUri.toASCIIString());

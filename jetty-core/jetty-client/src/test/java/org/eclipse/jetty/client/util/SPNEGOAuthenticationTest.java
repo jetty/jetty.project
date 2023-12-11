@@ -48,6 +48,7 @@ import org.eclipse.jetty.util.IO;
 import org.eclipse.jetty.util.resource.ResourceFactory;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.parallel.Isolated;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.ArgumentsSource;
 import org.slf4j.Logger;
@@ -57,6 +58,7 @@ import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertNotNull;
 import static org.junit.jupiter.api.Assertions.assertNull;
 
+@Isolated("SimpleKdcServer running on a specific port")
 public class SPNEGOAuthenticationTest extends AbstractHttpClientServerTest
 {
     private static final Logger LOG = LoggerFactory.getLogger(SPNEGOAuthenticationTest.class);

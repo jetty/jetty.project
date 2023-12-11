@@ -49,6 +49,7 @@ import org.junit.jupiter.api.Tag;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.condition.EnabledOnOs;
 import org.junit.jupiter.api.extension.ExtendWith;
+import org.junit.jupiter.api.parallel.Isolated;
 
 import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.Matchers.containsInAnyOrder;
@@ -70,6 +71,7 @@ import static org.junit.jupiter.api.condition.OS.MAC;
 import static org.junit.jupiter.api.condition.OS.WINDOWS;
 
 @ExtendWith(WorkDirExtension.class)
+@Isolated("Access static FileSystemPool.INSTANCE.mounts()")
 public class FileSystemResourceTest
 {
 
@@ -359,6 +361,9 @@ public class FileSystemResourceTest
         Resource base = ResourceFactory.root().newResource(dir);
         Resource res = base.resolve("foo");
         assertThat("is contained in", res.isContainedIn(base), is(true));
+        assertThat(base.contains(res), is(true));
+        assertThat(base.getPathTo(res).getNameCount(), is(1));
+        assertThat(base.getPathTo(res).getName(0).toString(), is("foo"));
     }
 
     @Test

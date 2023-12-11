@@ -51,6 +51,11 @@ class AsyncContentProducer implements ContentProducer
         _lock = lock;
     }
 
+    ServletChannel getServletChannel()
+    {
+        return _servletChannel;
+    }
+
     @Override
     public void recycle()
     {
@@ -101,7 +106,7 @@ class AsyncContentProducer implements ContentProducer
     public boolean isError()
     {
         assertLocked();
-        boolean failure = Content.Chunk.isFailure(_chunk);
+        boolean failure = Content.Chunk.isFailure(_chunk, true);
         if (LOG.isDebugEnabled())
             LOG.debug("isFailure = {} {}", failure, this);
         return failure;
@@ -200,7 +205,11 @@ class AsyncContentProducer implements ContentProducer
         if (LOG.isDebugEnabled())
             LOG.debug("nextChunk = {} {}", chunk, this);
         if (chunk != null)
+        {
             _servletChannel.getServletRequestState().onReadIdle();
+            if (Content.Chunk.isFailure(chunk, false))
+                _chunk = Content.Chunk.next(chunk);
+        }
         return chunk;
     }
 
@@ -244,6 +253,9 @@ class AsyncContentProducer implements ContentProducer
         {
             if (LOG.isDebugEnabled())
                 LOG.debug("isReady() demand callback {}", this);
+            // We could call this.onContentProducible() directly but this
+            // would mean we would need to take the lock here while it
+            // is the responsibility of the HttpInput to take it.
             if (_servletChannel.getHttpInput().onContentProducible())
                 _servletChannel.handle();
         });
@@ -267,19 +279,24 @@ class AsyncContentProducer implements ContentProducer
         {
             if (_chunk != null)
             {
+                if (Content.Chunk.isFailure(_chunk, false))
+                {
+                    // We return the transient failure here without _chunk = Content.Chunk.next(_chunk)
+                    // because this method may be called by available() or isReady(), which do not consume the
+                    // chunk.  Only a call from nextChunk() consumes the chunk produced here, so the call to next
+                    // is done there.
+                    return _chunk;
+                }
                 if (_chunk.isLast() || _chunk.hasRemaining())
                 {
                     if (LOG.isDebugEnabled())
                         LOG.debug("chunk not yet depleted, returning it {}", this);
                     return _chunk;
                 }
-                else
-                {
-                    if (LOG.isDebugEnabled())
-                        LOG.debug("current chunk depleted {}", this);
-                    _chunk.release();
-                    _chunk = null;
-                }
+                if (LOG.isDebugEnabled())
+                    LOG.debug("current chunk depleted {}", this);
+                _chunk.release();
+                _chunk = null;
             }
             else
             {
@@ -292,19 +309,7 @@ class AsyncContentProducer implements ContentProducer
                         LOG.debug("channel has no new chunk {}", this);
                     return null;
                 }
-                else
-                {
-                    _servletChannel.getServletRequestState().onContentAdded();
-                }
-            }
-
-            // Release the chunk immediately, if it is empty.
-            if (_chunk != null && !_chunk.hasRemaining() && !_chunk.isLast())
-            {
-                if (LOG.isDebugEnabled())
-                    LOG.debug("releasing empty chunk {}", this);
-                _chunk.release();
-                _chunk = null;
+                _servletChannel.getServletRequestState().onContentAdded();
             }
         }
     }

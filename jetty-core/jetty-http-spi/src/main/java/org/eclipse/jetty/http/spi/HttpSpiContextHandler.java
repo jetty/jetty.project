@@ -45,6 +45,9 @@ public class HttpSpiContextHandler extends ContextHandler
     {
         this._httpContext = httpContext;
         this._httpHandler = httpHandler;
+        // The default jax-ws web server allows posting to URLs that do not end
+        // with a trailing '/'; allow it too to be a drop-in replacement.
+        setAllowNullPathInContext(true);
         super.setHandler(new Handler.Abstract()
         {
             @Override

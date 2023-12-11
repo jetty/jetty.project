@@ -7,6 +7,7 @@ Enables Annotation scanning for deployed web applications.
 ee8
 
 [depend]
+plus
 ee8-plus
 
 [lib]

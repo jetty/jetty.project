@@ -21,7 +21,6 @@ import java.util.concurrent.TimeUnit;
 
 import org.eclipse.jetty.server.Server;
 import org.eclipse.jetty.server.ServerConnector;
-import org.eclipse.jetty.server.handler.ContextHandler;
 import org.eclipse.jetty.websocket.api.Callback;
 import org.eclipse.jetty.websocket.api.Session;
 import org.eclipse.jetty.websocket.api.StatusCode;
@@ -54,14 +53,10 @@ public class ConcurrentConnectTest
         connector.setPort(0);
         server.addConnector(connector);
 
-        ContextHandler context = new ContextHandler("/");
-
-        WebSocketUpgradeHandler wsHandler = WebSocketUpgradeHandler.from(server, context);
-        context.setHandler(wsHandler);
-        wsHandler.configure(container ->
+        WebSocketUpgradeHandler wsHandler = WebSocketUpgradeHandler.from(server, container ->
             container.addMapping("/", (rq, rs, cb) -> new EchoSocket()));
 
-        server.setHandler(context);
+        server.setHandler(wsHandler);
         server.start();
         uri = new URI("ws://localhost:" + connector.getLocalPort());
 

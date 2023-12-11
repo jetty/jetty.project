@@ -29,6 +29,7 @@ import org.eclipse.jetty.http.HttpHeader;
 import org.eclipse.jetty.http.HttpHeaderValue;
 import org.eclipse.jetty.http.HttpMethod;
 import org.eclipse.jetty.http.HttpStatus;
+import org.eclipse.jetty.http.HttpURI;
 import org.eclipse.jetty.http.HttpVersion;
 import org.eclipse.jetty.http.Trailers;
 import org.eclipse.jetty.io.ByteBufferPool;
@@ -38,6 +39,7 @@ import org.eclipse.jetty.server.handler.ErrorHandler;
 import org.eclipse.jetty.server.internal.HttpChannelState;
 import org.eclipse.jetty.util.Callback;
 import org.eclipse.jetty.util.StringUtil;
+import org.eclipse.jetty.util.URIUtil;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -238,7 +240,7 @@ public interface Response extends Content.Sink
      * @param request the HTTP request
      * @param response the HTTP response
      * @param callback the callback to complete
-     * @param location the redirect location
+     * @param location the redirect location as an absolute URI or encoded relative URI path.
      * @see #sendRedirect(Request, Response, Callback, int, String, boolean)
      */
     static void sendRedirect(Request request, Response response, Callback callback, String location)
@@ -256,7 +258,7 @@ public interface Response extends Content.Sink
      * @param request the HTTP request
      * @param response the HTTP response
      * @param callback the callback to complete
-     * @param location the redirect location
+     * @param location the redirect location as an absolute URI or encoded relative URI path.
      * @param consumeAvailable whether to consumer the available request content
      * @see #sendRedirect(Request, Response, Callback, int, String, boolean)
      */
@@ -275,9 +277,9 @@ public interface Response extends Content.Sink
      * @param response the HTTP response
      * @param callback the callback to complete
      * @param code the redirect HTTP status code
-     * @param location the redirect location
+     * @param location the redirect location as an absolute URI or encoded relative URI path.
      * @param consumeAvailable whether to consumer the available request content
-     * @see Request#toRedirectURI(Request, String)
+     * @see #toRedirectURI(Request, String)
      * @throws IllegalArgumentException if the status code is not a redirect, or the location is {@code null}
      * @throws IllegalStateException if the response is already {@link #isCommitted() committed}
      */
@@ -317,16 +319,60 @@ public interface Response extends Content.Sink
             }
         }
 
-        response.getHeaders().put(HttpHeader.LOCATION, Request.toRedirectURI(request, location));
+        response.getHeaders().put(HttpHeader.LOCATION, toRedirectURI(request, location));
         response.setStatus(code);
         response.write(true, null, callback);
     }
 
     /**
-     * <p>Adds an HTTP cookie to the response.</p>
+     * Common point to generate a proper "Location" header for redirects.
+     *
+     * @param request the request the redirect should be based on (needed when relative locations are provided, so that
+     * server name, scheme, port can be built out properly)
+     * @param location the redirect location as an absolute URI or encoded relative URI path. If a relative path starts
+     *                 with '/', then it is relative to the root, otherwise it is relative to the request.
+     * @return the full redirect "Location" URL (including scheme, host, port, path, etc...)
+     */
+    static String toRedirectURI(Request request, String location)
+    {
+        // is the URI absolute already?
+        if (!URIUtil.hasScheme(location))
+        {
+            // The location is relative
+            HttpURI uri = request.getHttpURI();
+
+            // Is it relative to the request?
+            if (!location.startsWith("/"))
+            {
+                String path = uri.getPath();
+                String parent = (path.endsWith("/")) ? path : URIUtil.parentPath(path);
+                location = URIUtil.addEncodedPaths(parent, location);
+            }
+
+            // Normalize out any dot dot segments
+            location = URIUtil.normalizePathQuery(location);
+            if (location == null)
+                throw new IllegalStateException("redirect path cannot be above root");
+
+            // if relative redirects are not allowed?
+            if (!request.getConnectionMetaData().getHttpConfiguration().isRelativeRedirectAllowed())
+            {
+                // make the location an absolute URI
+                StringBuilder url = new StringBuilder(128);
+                URIUtil.appendSchemeHostPort(url, uri.getScheme(), Request.getServerName(request), Request.getServerPort(request));
+                url.append(location);
+                location = url.toString();
+            }
+        }
+        return location;
+    }
+
+    /**
+     * <p>Adds an HTTP {@link HttpHeader#SET_COOKIE} header to the response.</p>
      *
      * @param response the HTTP response
      * @param cookie the HTTP cookie to add
+     * @see #putCookie(Response, HttpCookie)
      */
     static void addCookie(Response response, HttpCookie cookie)
     {
@@ -334,52 +380,90 @@ public interface Response extends Content.Sink
             throw new IllegalArgumentException("Cookie.name cannot be blank/null");
 
         Request request = response.getRequest();
-        response.getHeaders().add(new HttpCookieUtils.SetCookieHttpField(HttpCookieUtils.checkSameSite(cookie, request.getContext()),
-            request.getConnectionMetaData().getHttpConfiguration().getResponseCookieCompliance()));
+        CookieCompliance compliance = request.getConnectionMetaData().getHttpConfiguration().getResponseCookieCompliance();
+        response.getHeaders().add(new HttpCookieUtils.SetCookieHttpField(HttpCookieUtils.checkSameSite(cookie, request.getContext()), compliance));
 
-        // Expire responses with set-cookie headers so they do not get cached.
-        response.getHeaders().put(HttpFields.EXPIRES_01JAN1970);
+        // Expire responses with set-cookie headers, so they do not get cached.
+        if (!response.getHeaders().contains(HttpHeader.EXPIRES))
+            response.getHeaders().add(HttpFields.EXPIRES_01JAN1970);
     }
 
     /**
-     * <p>Replaces (if already exists, otherwise adds) an HTTP cookie to the response.</p>
+     * <p>Put a HTTP {@link HttpHeader#SET_COOKIE} header to the response.</p>
+     * <p>If a matching {@link HttpHeader#SET_COOKIE} already exists for matching name, path, domain etc.
+     * then it will be replaced.</p>
      *
      * @param response the HTTP response
-     * @param cookie the HTTP cookie to replace or add
+     * @param cookie the HTTP cookie to add
+     * @see #addCookie(Response, HttpCookie)
      */
-    static void replaceCookie(Response response, HttpCookie cookie)
+    static void putCookie(Response response, HttpCookie cookie)
     {
         if (StringUtil.isBlank(cookie.getName()))
             throw new IllegalArgumentException("Cookie.name cannot be blank/null");
 
         Request request = response.getRequest();
         HttpConfiguration httpConfiguration = request.getConnectionMetaData().getHttpConfiguration();
+        CookieCompliance compliance = httpConfiguration.getResponseCookieCompliance();
+        HttpField setCookie = new HttpCookieUtils.SetCookieHttpField(HttpCookieUtils.checkSameSite(cookie, request.getContext()), compliance);
+
+        boolean expires = false;
 
         for (ListIterator<HttpField> i = response.getHeaders().listIterator(); i.hasNext(); )
         {
             HttpField field = i.next();
+            HttpHeader header = field.getHeader();
+            if (header == null)
+                continue;
 
-            if (field.getHeader() == HttpHeader.SET_COOKIE)
+            switch (header)
             {
-                CookieCompliance compliance = httpConfiguration.getResponseCookieCompliance();
-                if (field instanceof HttpCookieUtils.SetCookieHttpField)
+                case SET_COOKIE ->
                 {
-                    if (!HttpCookieUtils.match(((HttpCookieUtils.SetCookieHttpField)field).getHttpCookie(), cookie.getName(), cookie.getDomain(), cookie.getPath()))
-                        continue;
-                }
-                else
-                {
-                    if (!HttpCookieUtils.match(field.getValue(), cookie.getName(), cookie.getDomain(), cookie.getPath()))
-                        continue;
+                    if (field instanceof HttpCookieUtils.SetCookieHttpField setCookieHttpField)
+                    {
+                        if (!HttpCookieUtils.match(setCookieHttpField.getHttpCookie(), cookie.getName(), cookie.getDomain(), cookie.getPath()))
+                            continue;
+                    }
+                    else
+                    {
+                        if (!HttpCookieUtils.match(field.getValue(), cookie.getName(), cookie.getDomain(), cookie.getPath()))
+                            continue;
+                    }
+
+                    if (setCookie == null)
+                    {
+                        i.remove();
+                    }
+                    else
+                    {
+                        i.set(setCookie);
+                        setCookie = null;
+                    }
                 }
 
-                i.set(new HttpCookieUtils.SetCookieHttpField(HttpCookieUtils.checkSameSite(cookie, request.getContext()), compliance));
-                return;
+                case EXPIRES -> expires = true;
             }
         }
 
-        // Not replaced, so add normally
-        addCookie(response, cookie);
+        if (setCookie != null)
+            response.getHeaders().add(setCookie);
+
+        // Expire responses with set-cookie headers, so they do not get cached.
+        if (!expires)
+            response.getHeaders().add(HttpFields.EXPIRES_01JAN1970);
+    }
+
+    /**
+     * Replace a cookie
+     * @param response the HTTP response
+     * @param cookie the HTTP cookie to add
+     * @deprecated use {@link #putCookie(Response, HttpCookie)}
+     */
+    @Deprecated
+    static void replaceCookie(Response response, HttpCookie cookie)
+    {
+        putCookie(response, cookie);
     }
 
     /**
@@ -491,7 +575,7 @@ public interface Response extends Content.Sink
                 if (errorHandler.handle(errorRequest, response, callback))
                     return;
             }
-            catch (Exception e)
+            catch (Throwable e)
             {
                 if (cause != null && cause != e)
                     cause.addSuppressed(e);

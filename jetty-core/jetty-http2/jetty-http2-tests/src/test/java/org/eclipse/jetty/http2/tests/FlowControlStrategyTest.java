@@ -723,7 +723,6 @@ public class FlowControlStrategyTest
     public void testClientExceedingSessionWindow(FlowControlStrategyType type) throws Exception
     {
         // On server, we don't consume the data.
-        List<Stream.Data> dataList = new ArrayList<>();
         CountDownLatch serverCloseLatch = new CountDownLatch(1);
         start(type, new ServerSessionListener()
         {
@@ -735,11 +734,7 @@ public class FlowControlStrategyTest
                     @Override
                     public void onDataAvailable(Stream stream)
                     {
-                        // Read but do not release the Data.
-                        Stream.Data data = stream.readData();
-                        if (!data.frame().isEndStream())
-                            stream.demand();
-                        dataList.add(data);
+                        // Do not read to stall the flow control.
                     }
                 };
             }
@@ -816,8 +811,6 @@ public class FlowControlStrategyTest
         assertTrue(clientGoAwayLatch.await(5, TimeUnit.SECONDS));
         assertTrue(clientCloseLatch.await(5, TimeUnit.SECONDS));
         assertTrue(serverCloseLatch.await(5, TimeUnit.SECONDS));
-
-        dataList.forEach(Stream.Data::release);
     }
 
     @ParameterizedTest
@@ -825,7 +818,6 @@ public class FlowControlStrategyTest
     public void testClientExceedingStreamWindow(FlowControlStrategyType type) throws Exception
     {
         // On server, we don't consume the data.
-        List<Stream.Data> dataList = new ArrayList<>();
         CountDownLatch serverCloseLatch = new CountDownLatch(1);
         start(type, new ServerSessionListener()
         {
@@ -845,11 +837,7 @@ public class FlowControlStrategyTest
                     @Override
                     public void onDataAvailable(Stream stream)
                     {
-                        // Read but do not release the Data.
-                        Stream.Data data = stream.readData();
-                        if (!data.frame().isEndStream())
-                            stream.demand();
-                        dataList.add(data);
+                        // Do not read to stall the flow control.
                     }
                 };
             }
@@ -922,8 +910,6 @@ public class FlowControlStrategyTest
         assertTrue(clientGoAwayLatch.await(5, TimeUnit.SECONDS));
         assertTrue(clientCloseLatch.await(5, TimeUnit.SECONDS));
         assertTrue(serverCloseLatch.await(5, TimeUnit.SECONDS));
-
-        dataList.forEach(Stream.Data::release);
     }
 
     @ParameterizedTest

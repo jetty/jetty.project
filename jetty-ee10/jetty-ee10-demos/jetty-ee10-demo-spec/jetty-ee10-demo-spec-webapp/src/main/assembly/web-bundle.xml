@@ -14,5 +14,12 @@
         <include>**/*.*</include>
       </includes>
     </fileSet>
+    <fileSet>
+      <directory>${basedir}/src/main/templates</directory>
+      <outputDirectory>META-INF</outputDirectory>
+      <includes>
+        <include>**/plugin-context.xml</include>
+      </includes>
+    </fileSet>
   </fileSets>
 </assembly>

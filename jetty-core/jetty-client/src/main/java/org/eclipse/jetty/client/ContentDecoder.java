@@ -41,11 +41,11 @@ public interface ContentDecoder
 
     /**
      * <p>Decodes the bytes in the given {@code buffer} and returns the decoded bytes.</p>
-     * <p>The returned {@link RetainableByteBuffer} containing the decoded bytes may
-     * be empty and <b>must</b> be released via {@link RetainableByteBuffer#release()}.</p>
+     * <p>The returned {@link RetainableByteBuffer} <b>will</b> eventually be released via
+     * {@link RetainableByteBuffer#release()} by the code that called this method.</p>
      *
      * @param buffer the buffer containing encoded bytes
-     * @return a buffer containing decoded bytes that must be released
+     * @return a buffer containing decoded bytes
      */
     public abstract RetainableByteBuffer decode(ByteBuffer buffer);
 

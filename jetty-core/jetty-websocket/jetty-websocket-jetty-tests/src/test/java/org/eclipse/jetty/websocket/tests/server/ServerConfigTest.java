@@ -71,11 +71,11 @@ public class ServerConfigTest
     private EventSocket getServerEndpoint(String path)
     {
         return switch (path)
-            {
-                case "servletConfig", "containerConfig" -> standardEndpoint;
-                case "sessionConfig" -> sessionConfigEndpoint;
-                default -> throw new IllegalStateException();
-            };
+        {
+            case "servletConfig", "containerConfig" -> standardEndpoint;
+            case "sessionConfig" -> sessionConfigEndpoint;
+            default -> throw new IllegalStateException();
+        };
     }
 
     public static Stream<Arguments> data()
@@ -101,15 +101,14 @@ public class ServerConfigTest
     {
         public static WebSocketUpgradeHandler from(Server server, ContextHandler context, Object wsEndPoint)
         {
-            return WebSocketUpgradeHandler.from(server, context)
-                .configure(container ->
-                {
-                    container.setIdleTimeout(Duration.ofMillis(IDLE_TIMEOUT));
-                    container.setMaxTextMessageSize(MAX_MESSAGE_SIZE);
-                    container.setMaxBinaryMessageSize(MAX_MESSAGE_SIZE);
-                    container.setInputBufferSize(INPUT_BUFFER_SIZE);
-                    container.addMapping("/", (rq, rs, cb) -> wsEndPoint);
-                });
+            return WebSocketUpgradeHandler.from(server, context, container ->
+            {
+                container.setIdleTimeout(Duration.ofMillis(IDLE_TIMEOUT));
+                container.setMaxTextMessageSize(MAX_MESSAGE_SIZE);
+                container.setMaxBinaryMessageSize(MAX_MESSAGE_SIZE);
+                container.setInputBufferSize(INPUT_BUFFER_SIZE);
+                container.addMapping("/", (rq, rs, cb) -> wsEndPoint);
+            });
         }
     }
 
@@ -117,9 +116,8 @@ public class ServerConfigTest
     {
         public static WebSocketUpgradeHandler from(Server server, ContextHandler context, Object wsEndPoint)
         {
-            return WebSocketUpgradeHandler.from(server, context)
-                .configure(container ->
-                    container.addMapping("/", (rq, rs, cb) -> wsEndPoint));
+            return WebSocketUpgradeHandler.from(server, context, container ->
+                container.addMapping("/", (rq, rs, cb) -> wsEndPoint));
         }
     }
 
@@ -163,15 +161,14 @@ public class ServerConfigTest
         context.setHandler(pathsHandler);
         pathsHandler.addMapping(new ServletPathSpec("/servletConfig"), ConfigWebSocketUpgradeHandler.from(server, context, standardEndpoint));
         pathsHandler.addMapping(new ServletPathSpec("/sessionConfig"), SessionConfigWebSocketUpgradeHandler.from(server, context, sessionConfigEndpoint));
-        pathsHandler.addMapping(new ServletPathSpec("/"), WebSocketUpgradeHandler.from(server, context)
-            .configure(container ->
-            {
-                container.setIdleTimeout(Duration.ofMillis(IDLE_TIMEOUT));
-                container.setMaxTextMessageSize(MAX_MESSAGE_SIZE);
-                container.setMaxBinaryMessageSize(MAX_MESSAGE_SIZE);
-                container.setInputBufferSize(INPUT_BUFFER_SIZE);
-                container.addMapping("/containerConfig", (rq, rs, cb) -> standardEndpoint);
-            }));
+        pathsHandler.addMapping(new ServletPathSpec("/"), WebSocketUpgradeHandler.from(server, context, container ->
+        {
+            container.setIdleTimeout(Duration.ofMillis(IDLE_TIMEOUT));
+            container.setMaxTextMessageSize(MAX_MESSAGE_SIZE);
+            container.setMaxBinaryMessageSize(MAX_MESSAGE_SIZE);
+            container.setInputBufferSize(INPUT_BUFFER_SIZE);
+            container.addMapping("/containerConfig", (rq, rs, cb) -> standardEndpoint);
+        }));
 
         server.setHandler(context);
         server.start();

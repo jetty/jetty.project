@@ -1,3 +1,5 @@
+import groovy.xml.XmlSlurper
+
 System.out.println( "running postbuild.groovy" )
 
 File webfrag = new File(basedir, 'target/webfrag.xml')

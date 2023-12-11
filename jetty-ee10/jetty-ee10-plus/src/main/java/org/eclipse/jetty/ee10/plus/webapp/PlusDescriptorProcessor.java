@@ -25,18 +25,18 @@ import org.eclipse.jetty.ee10.plus.annotation.LifeCycleCallback;
 import org.eclipse.jetty.ee10.plus.annotation.LifeCycleCallbackCollection;
 import org.eclipse.jetty.ee10.plus.annotation.PostConstructCallback;
 import org.eclipse.jetty.ee10.plus.annotation.PreDestroyCallback;
-import org.eclipse.jetty.ee10.plus.jndi.EnvEntry;
-import org.eclipse.jetty.ee10.plus.jndi.Link;
-import org.eclipse.jetty.ee10.plus.jndi.NamingEntry;
-import org.eclipse.jetty.ee10.plus.jndi.NamingEntryUtil;
 import org.eclipse.jetty.ee10.webapp.Descriptor;
 import org.eclipse.jetty.ee10.webapp.FragmentDescriptor;
 import org.eclipse.jetty.ee10.webapp.IterativeDescriptorProcessor;
 import org.eclipse.jetty.ee10.webapp.Origin;
 import org.eclipse.jetty.ee10.webapp.WebAppContext;
-import org.eclipse.jetty.jndi.NamingUtil;
+import org.eclipse.jetty.plus.jndi.EnvEntry;
+import org.eclipse.jetty.plus.jndi.Link;
+import org.eclipse.jetty.plus.jndi.NamingEntry;
+import org.eclipse.jetty.plus.jndi.NamingEntryUtil;
 import org.eclipse.jetty.util.StringUtil;
 import org.eclipse.jetty.util.TypeUtil;
+import org.eclipse.jetty.util.jndi.NamingUtil;
 import org.eclipse.jetty.xml.XmlParser;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -532,12 +532,12 @@ public class PlusDescriptorProcessor extends IterativeDescriptorProcessor
         String className = node.getString("lifecycle-callback-class", false, true);
         String methodName = node.getString("lifecycle-callback-method", false, true);
 
-        if (className == null || className.equals(""))
+        if (className == null || className.isEmpty())
         {
             LOG.warn("No lifecycle-callback-class specified");
             return;
         }
-        if (methodName == null || methodName.equals(""))
+        if (methodName == null || methodName.isEmpty())
         {
             LOG.warn("No lifecycle-callback-method specified for class {}", className);
             return;
@@ -610,12 +610,12 @@ public class PlusDescriptorProcessor extends IterativeDescriptorProcessor
     {
         String className = node.getString("lifecycle-callback-class", false, true);
         String methodName = node.getString("lifecycle-callback-method", false, true);
-        if (className == null || className.equals(""))
+        if (className == null || className.isEmpty())
         {
             LOG.warn("No lifecycle-callback-class specified for pre-destroy");
             return;
         }
-        if (methodName == null || methodName.equals(""))
+        if (methodName == null || methodName.isEmpty())
         {
             LOG.warn("No lifecycle-callback-method specified for pre-destroy class {}", className);
             return;
@@ -697,12 +697,12 @@ public class PlusDescriptorProcessor extends IterativeDescriptorProcessor
             XmlParser.Node injectionNode = itor.next();
             String targetClassName = injectionNode.getString("injection-target-class", false, true);
             String targetName = injectionNode.getString("injection-target-name", false, true);
-            if ((targetClassName == null) || targetClassName.equals(""))
+            if ((targetClassName == null) || targetClassName.isEmpty())
             {
                 LOG.warn("No classname found in injection-target");
                 continue;
             }
-            if ((targetName == null) || targetName.equals(""))
+            if ((targetName == null) || targetName.isEmpty())
             {
                 LOG.warn("No field or method name in injection-target");
                 continue;
@@ -771,7 +771,7 @@ public class PlusDescriptorProcessor extends IterativeDescriptorProcessor
             {
                 //There is an empty or missing value in the env-entry:
                 //If there is an existing EnvEntry (eg from a declaration in jetty-env.xml) that is override=true, then
-                //we make the injection, but we can skip the rebinding becase we want to use the value already bound.
+                //we make the injection, but we can skip the rebinding because we want to use the value already bound.
                 //If there isn't an existing EnvEntry then there is nothing to do: according to the spec we do not make
                 //an injection if the env-entry value is missing, and of course there is no value to rebind.
                 if (envEntry != null && envEntry.isOverrideWebXml())

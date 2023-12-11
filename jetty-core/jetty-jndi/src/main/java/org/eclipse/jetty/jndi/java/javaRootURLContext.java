@@ -320,7 +320,7 @@ public class javaRootURLContext implements Context
     {
         String newName = name;
 
-        if ((name != null) && (!name.equals("")))
+        if ((name != null) && (!name.isEmpty()))
         {
             if (name.startsWith(URL_PREFIX))
                 newName = name.substring(URL_PREFIX.length());

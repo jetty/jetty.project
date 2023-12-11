@@ -29,6 +29,7 @@ import org.eclipse.jetty.io.Content;
 import org.eclipse.jetty.io.content.AsyncContent;
 import org.eclipse.jetty.toolchain.test.FS;
 import org.eclipse.jetty.toolchain.test.MavenTestingUtils;
+import org.eclipse.jetty.util.BufferUtil;
 import org.eclipse.jetty.util.Callback;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
@@ -36,6 +37,7 @@ import org.junit.jupiter.api.Disabled;
 import org.junit.jupiter.api.Test;
 
 import static java.nio.charset.StandardCharsets.ISO_8859_1;
+import static java.nio.charset.StandardCharsets.US_ASCII;
 import static java.nio.charset.StandardCharsets.UTF_8;
 import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.Matchers.containsStringIgnoringCase;
@@ -803,6 +805,111 @@ public class MultiPartFormDataTest
             assertEquals("stuff2.txt", part2.getFileName());
             assertEquals("AAAAA", part2.getContentAsString(formData.getDefaultCharset()));
         }
+    }
+
+    @Test
+    public void testContentSourceCanBeFailed()
+    {
+        MultiPartFormData.ContentSource source = new MultiPartFormData.ContentSource("boundary");
+        source.addPart(new MultiPart.ChunksPart("part1", "file1", HttpFields.EMPTY, List.of(
+            Content.Chunk.from(ByteBuffer.wrap("the answer".getBytes(US_ASCII)), false),
+            Content.Chunk.from(new NumberFormatException(), false),
+            Content.Chunk.from(ByteBuffer.wrap(" is 42".getBytes(US_ASCII)), true)
+        )));
+        source.close();
+
+        Content.Chunk chunk;
+        chunk = source.read();
+        assertThat(chunk.isLast(), is(false));
+        assertThat(BufferUtil.toString(chunk.getByteBuffer(), UTF_8), is("--boundary\r\n"));
+        chunk = source.read();
+        assertThat(chunk.isLast(), is(false));
+        assertThat(BufferUtil.toString(chunk.getByteBuffer(), UTF_8), is("Content-Disposition: form-data; name=\"part1\"; filename=\"file1\"\r\n\r\n"));
+        chunk = source.read();
+        assertThat(chunk.isLast(), is(false));
+        assertThat(BufferUtil.toString(chunk.getByteBuffer(), UTF_8), is("the answer"));
+
+        chunk = source.read();
+        assertThat(Content.Chunk.isFailure(chunk, false), is(true));
+        assertThat(chunk.getFailure(), instanceOf(NumberFormatException.class));
+        source.fail(chunk.getFailure());
+
+        chunk = source.read();
+        assertThat(Content.Chunk.isFailure(chunk, true), is(true));
+        assertThat(chunk.getFailure(), instanceOf(NumberFormatException.class));
+    }
+
+    @Test
+    public void testTransientFailuresAreReturned()
+    {
+        MultiPartFormData.ContentSource source = new MultiPartFormData.ContentSource("boundary");
+        source.addPart(new MultiPart.ChunksPart("part1", "file1", HttpFields.EMPTY, List.of(
+            Content.Chunk.from(ByteBuffer.wrap("the answer".getBytes(US_ASCII)), false),
+            Content.Chunk.from(new NumberFormatException(), false),
+            Content.Chunk.from(ByteBuffer.wrap(" is 42".getBytes(US_ASCII)), true)
+        )));
+        source.close();
+
+        Content.Chunk chunk;
+        chunk = source.read();
+        assertThat(chunk.isLast(), is(false));
+        assertThat(BufferUtil.toString(chunk.getByteBuffer(), UTF_8), is("--boundary\r\n"));
+        chunk = source.read();
+        assertThat(chunk.isLast(), is(false));
+        assertThat(BufferUtil.toString(chunk.getByteBuffer(), UTF_8), is("Content-Disposition: form-data; name=\"part1\"; filename=\"file1\"\r\n\r\n"));
+        chunk = source.read();
+        assertThat(chunk.isLast(), is(false));
+        assertThat(BufferUtil.toString(chunk.getByteBuffer(), UTF_8), is("the answer"));
+
+        chunk = source.read();
+        assertThat(Content.Chunk.isFailure(chunk, false), is(true));
+        assertThat(chunk.getFailure(), instanceOf(NumberFormatException.class));
+
+        chunk = source.read();
+        assertThat(chunk.isLast(), is(false));
+        assertThat(BufferUtil.toString(chunk.getByteBuffer(), UTF_8), is(" is 42"));
+        chunk = source.read();
+        assertThat(chunk.isLast(), is(true));
+        assertThat(BufferUtil.toString(chunk.getByteBuffer(), UTF_8), is("\r\n--boundary--\r\n"));
+
+        chunk = source.read();
+        assertThat(chunk.isLast(), is(true));
+        assertThat(Content.Chunk.isFailure(chunk), is(false));
+        assertThat(chunk.hasRemaining(), is(false));
+    }
+
+    @Test
+    public void testTerminalFailureIsTerminal()
+    {
+        MultiPartFormData.ContentSource source = new MultiPartFormData.ContentSource("boundary");
+        source.addPart(new MultiPart.ChunksPart("part1", "file1", HttpFields.EMPTY, List.of(
+            Content.Chunk.from(ByteBuffer.wrap("the answer".getBytes(US_ASCII)), false),
+            Content.Chunk.from(ByteBuffer.wrap(" is 42".getBytes(US_ASCII)), false),
+            Content.Chunk.from(new NumberFormatException(), true)
+        )));
+        source.close();
+
+        Content.Chunk chunk;
+        chunk = source.read();
+        assertThat(chunk.isLast(), is(false));
+        assertThat(BufferUtil.toString(chunk.getByteBuffer(), UTF_8), is("--boundary\r\n"));
+        chunk = source.read();
+        assertThat(chunk.isLast(), is(false));
+        assertThat(BufferUtil.toString(chunk.getByteBuffer(), UTF_8), is("Content-Disposition: form-data; name=\"part1\"; filename=\"file1\"\r\n\r\n"));
+        chunk = source.read();
+        assertThat(chunk.isLast(), is(false));
+        assertThat(BufferUtil.toString(chunk.getByteBuffer(), UTF_8), is("the answer"));
+        chunk = source.read();
+        assertThat(chunk.isLast(), is(false));
+        assertThat(BufferUtil.toString(chunk.getByteBuffer(), UTF_8), is(" is 42"));
+
+        chunk = source.read();
+        assertThat(Content.Chunk.isFailure(chunk, true), is(true));
+        assertThat(chunk.getFailure(), instanceOf(NumberFormatException.class));
+
+        chunk = source.read();
+        assertThat(Content.Chunk.isFailure(chunk, true), is(true));
+        assertThat(chunk.getFailure(), instanceOf(NumberFormatException.class));
     }
 
     private class TestContent extends AsyncContent

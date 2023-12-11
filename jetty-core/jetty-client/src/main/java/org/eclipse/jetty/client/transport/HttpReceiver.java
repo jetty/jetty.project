@@ -31,6 +31,7 @@ import org.eclipse.jetty.http.QuotedCSV;
 import org.eclipse.jetty.io.Content;
 import org.eclipse.jetty.io.RetainableByteBuffer;
 import org.eclipse.jetty.io.content.ContentSourceTransformer;
+import org.eclipse.jetty.util.ExceptionUtil;
 import org.eclipse.jetty.util.Promise;
 import org.eclipse.jetty.util.component.Destroyable;
 import org.eclipse.jetty.util.thread.AutoLock;
@@ -587,7 +588,11 @@ public abstract class HttpReceiver
                 if (_chunk == null)
                     return null;
                 if (Content.Chunk.isFailure(_chunk))
-                    return _chunk;
+                {
+                    Content.Chunk failure = _chunk;
+                    _chunk = Content.Chunk.next(failure);
+                    return failure;
+                }
 
                 // Retain the input chunk because its ByteBuffer will be referenced by the Inflater.
                 if (retain)
@@ -602,14 +607,25 @@ public abstract class HttpReceiver
                 {
                     // The decoded ByteBuffer is a transformed "copy" of the
                     // compressed one, so it has its own reference counter.
-                    if (LOG.isDebugEnabled())
-                        LOG.debug("returning decoded content");
-                    return Content.Chunk.asChunk(decodedBuffer.getByteBuffer(), false, decodedBuffer);
+                    if (decodedBuffer.canRetain())
+                    {
+                        if (LOG.isDebugEnabled())
+                            LOG.debug("returning decoded content");
+                        return Content.Chunk.asChunk(decodedBuffer.getByteBuffer(), false, decodedBuffer);
+                    }
+                    else
+                    {
+                        if (LOG.isDebugEnabled())
+                            LOG.debug("returning non-retainable decoded content");
+                        return Content.Chunk.from(decodedBuffer.getByteBuffer(), false);
+                    }
                 }
                 else
                 {
                     if (LOG.isDebugEnabled())
                         LOG.debug("decoding produced no content");
+                    if (decodedBuffer != null)
+                        decodedBuffer.release();
 
                     if (!_chunk.hasRemaining())
                     {
@@ -788,7 +804,13 @@ public abstract class HttpReceiver
             try (AutoLock ignored = lock.lock())
             {
                 if (Content.Chunk.isFailure(currentChunk))
+                {
+                    Throwable cause = currentChunk.getFailure();
+                    if (!currentChunk.isLast())
+                        currentChunk = Content.Chunk.from(cause, true);
+                    ExceptionUtil.addSuppressedIfNotAssociated(cause, failure);
                     return false;
+                }
                 if (currentChunk != null)
                     currentChunk.release();
                 currentChunk = Content.Chunk.from(failure);

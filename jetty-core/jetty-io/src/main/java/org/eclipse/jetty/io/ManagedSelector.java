@@ -484,12 +484,16 @@ public class ManagedSelector extends ContainerLifeCycle implements Dumpable
     public String toString()
     {
         Selector selector = _selector;
-        return String.format("%s id=%s keys=%d selected=%d updates=%d",
+        return String.format("%s[id=%s keys=%d selected=%d updates=%d selection:tot=%d/avg=%.2f/max=%d]",
             super.toString(),
             _id,
             selector != null && selector.isOpen() ? selector.keys().size() : -1,
             selector != null && selector.isOpen() ? selector.selectedKeys().size() : -1,
-            getActionSize());
+            getActionSize(),
+            getSelectCount(),
+            getAverageSelectedKeys(),
+            getMaxSelectedKeys()
+        );
     }
 
     /**
@@ -556,30 +560,33 @@ public class ManagedSelector extends ContainerLifeCycle implements Dumpable
             if (LOG.isDebugEnabled())
                 LOG.debug("updateable {}", _updateable.size());
 
-            for (SelectorUpdate update : _updateable)
+            Selector selector = _selector;
+            while (true)
             {
-                if (_selector == null)
+                SelectorUpdate update = _updateable.pollFirst();
+                if (update == null)
+                    break;
+                if (selector == null)
                     break;
                 try
                 {
                     if (LOG.isDebugEnabled())
                         LOG.debug("update {}", update);
-                    update.update(_selector);
+                    update.update(selector);
                 }
                 catch (Throwable x)
                 {
                     LOG.warn("Cannot update selector {}", ManagedSelector.this, x);
                 }
             }
-            _updateable.clear();
 
-            Selector selector;
             int updates;
             try (AutoLock l = _lock.lock())
             {
                 updates = _updates.size();
                 _selecting = updates == 0;
-                selector = _selecting ? null : _selector;
+                if (_selecting)
+                    selector = null;
             }
 
             if (LOG.isDebugEnabled())

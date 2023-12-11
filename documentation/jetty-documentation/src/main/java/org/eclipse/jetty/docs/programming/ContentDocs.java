@@ -57,8 +57,17 @@ public class ContentDocs
                 // If there is a failure reading, handle it.
                 if (Content.Chunk.isFailure(chunk))
                 {
-                    handleFailure(chunk);
-                    return;
+                    boolean fatal = chunk.isLast();
+                    if (fatal)
+                    {
+                        handleFatalFailure(chunk.getFailure());
+                        return;
+                    }
+                    else
+                    {
+                        handleTransientFailure(chunk.getFailure());
+                        continue;
+                    }
                 }
 
                 // A normal chunk of content, consume it.
@@ -93,10 +102,16 @@ public class ContentDocs
                 return;
             }
 
-            // If there is a failure reading, handle it.
+            // If there is a failure reading, always treat it as fatal.
             if (Content.Chunk.isFailure(chunk))
             {
-                handleFailure(chunk);
+                // If the failure is transient, fail the source
+                // to indicate that there will be no more reads.
+                if (!chunk.isLast())
+                    source.fail(chunk.getFailure());
+
+                // Handle the failure and stop reading by not demanding.
+                handleFatalFailure(chunk.getFailure());
                 return;
             }
 
@@ -104,15 +119,14 @@ public class ContentDocs
             // read more chunks until this has been consumed.
             CompletableFuture<Void> consumed = consumeAsync(chunk);
 
-            // Only when the chunk has been consumed
-            // release it and try to read more.
+            // Release the chunk.
+            chunk.release(); // <2>
+
+            // Only when the chunk has been consumed try to read more.
             consumed.whenComplete((result, failure) ->
             {
                 if (failure == null)
                 {
-                    // Release the chunk.
-                    chunk.release(); // <2>
-
                     // Continue reading if EOF was not reached.
                     if (!chunk.isLast())
                         source.demand(() -> read(source));
@@ -121,7 +135,7 @@ public class ContentDocs
                 {
                     // If there is a failure reading, handle it,
                     // and stop reading by not demanding.
-                    handleFailure(chunk);
+                    handleFatalFailure(failure);
                 }
             });
         }
@@ -133,7 +147,11 @@ public class ContentDocs
         }
     }
 
-    private static void handleFailure(Content.Chunk chunk)
+    private static void handleFatalFailure(Throwable failure)
+    {
+    }
+
+    private static void handleTransientFailure(Throwable failure)
     {
     }
 
@@ -190,7 +208,7 @@ public class ContentDocs
 
                 if (Content.Chunk.isFailure(chunk))
                 {
-                    handleFailure(chunk);
+                    handleFatalFailure(chunk.getFailure());
                     return;
                 }
 

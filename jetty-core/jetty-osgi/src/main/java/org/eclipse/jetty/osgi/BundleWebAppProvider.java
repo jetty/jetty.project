@@ -64,7 +64,7 @@ public class BundleWebAppProvider extends AbstractContextProvider implements Bun
         {
             try
             {
-                String serverName = (String)bundle.getHeaders().get(OSGiServerConstants.MANAGED_JETTY_SERVER_NAME);
+                String serverName = bundle.getHeaders().get(OSGiServerConstants.MANAGED_JETTY_SERVER_NAME);
                 
                 if ((StringUtil.isBlank(serverName) && _managedServerName.equals(OSGiServerConstants.MANAGED_JETTY_SERVER_DEFAULT_NAME)) ||
                     (!StringUtil.isBlank(serverName) && (serverName.equals(_managedServerName))))

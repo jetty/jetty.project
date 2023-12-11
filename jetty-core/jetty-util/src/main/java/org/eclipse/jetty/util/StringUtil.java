@@ -225,18 +225,27 @@ public class StringUtil
         return String.valueOf(chars);
     }
 
-    public static boolean startsWithIgnoreCase(String s, String w)
+    /**
+     * Check for string equality, ignoring {@link StandardCharsets#US_ASCII} case differences.
+     * @param string The string to check
+     * @param other The other string to check
+     * @return true if the strings are equal, ignoring {@link StandardCharsets#US_ASCII}  case differences.
+     */
+    public static boolean asciiEqualsIgnoreCase(String string, String other)
     {
-        if (w == null)
-            return true;
+        if (string == null)
+            return other == null;
 
-        if (s == null || s.length() < w.length())
+        if (other == null)
             return false;
 
-        for (int i = 0; i < w.length(); i++)
+        if (string.length() != other.length())
+            return false;
+
+        for (int i = 0; i < string.length(); i++)
         {
-            char c1 = s.charAt(i);
-            char c2 = w.charAt(i);
+            char c1 = string.charAt(i);
+            char c2 = other.charAt(i);
             if (c1 != c2)
             {
                 if (c1 <= 127)
@@ -250,23 +259,86 @@ public class StringUtil
         return true;
     }
 
-    public static boolean endsWithIgnoreCase(String s, String w)
+    /**
+     * Check for a string prefix, ignoring {@link StandardCharsets#US_ASCII} case differences.
+     * @param string The string to check
+     * @param prefix The sub string to look for as a prefix
+     * @return true if the string ends with the substring, ignoring {@link StandardCharsets#US_ASCII}  case differences.
+     * @deprecated Use {@link #asciiEndsWithIgnoreCase(String, String)}
+     */
+    @Deprecated
+    public static boolean startsWithIgnoreCase(String string, String prefix)
     {
-        if (w == null)
+        return asciiStartsWithIgnoreCase(string, prefix);
+    }
+
+    /**
+     * Check for a string prefix, ignoring {@link StandardCharsets#US_ASCII} case differences.
+     * @param string The string to check
+     * @param prefix The sub string to look for as a prefix
+     * @return true if the string ends with the substring, ignoring {@link StandardCharsets#US_ASCII}  case differences.
+     */
+    public static boolean asciiStartsWithIgnoreCase(String string, String prefix)
+    {
+        if (isEmpty(prefix))
             return true;
-        if (s == null)
+
+        if (string == null || string.length() < prefix.length())
             return false;
 
-        int sl = s.length();
-        int wl = w.length();
-
-        if (sl < wl)
-            return false;
-
-        for (int i = wl; i-- > 0; )
+        for (int i = 0; i < prefix.length(); i++)
         {
-            char c1 = s.charAt(--sl);
-            char c2 = w.charAt(i);
+            char c1 = string.charAt(i);
+            char c2 = prefix.charAt(i);
+            if (c1 != c2)
+            {
+                if (c1 <= 127)
+                    c1 = LOWERCASES[c1];
+                if (c2 <= 127)
+                    c2 = LOWERCASES[c2];
+                if (c1 != c2)
+                    return false;
+            }
+        }
+        return true;
+    }
+
+    /**
+     * Check for a string suffix, ignoring {@link StandardCharsets#US_ASCII} case differences.
+     * @param string The string to check
+     * @param suffix The sub string to look for as a suffix
+     * @return true if the string ends with the substring, ignoring {@link StandardCharsets#US_ASCII}  case differences.
+     * @deprecated Use {@link #asciiEndsWithIgnoreCase(String, String)}
+     */
+    @Deprecated
+    public static boolean endsWithIgnoreCase(String string, String suffix)
+    {
+        return asciiEndsWithIgnoreCase(string, suffix);
+    }
+
+    /**
+     * Check for a string suffix, ignoring {@link StandardCharsets#US_ASCII} case differences.
+     * @param string The string to check
+     * @param suffix The sub string to look for as a suffix
+     * @return true if the string ends with the substring, ignoring {@link StandardCharsets#US_ASCII}  case differences.
+     */
+    public static boolean asciiEndsWithIgnoreCase(String string, String suffix)
+    {
+        if (isEmpty(suffix))
+            return true;
+        if (string == null)
+            return false;
+
+        int stringLength = string.length();
+        int suffixLength = suffix.length();
+
+        if (stringLength < suffixLength)
+            return false;
+
+        for (int i = suffixLength; i-- > 0; )
+        {
+            char c1 = string.charAt(--stringLength);
+            char c2 = suffix.charAt(i);
             if (c1 != c2)
             {
                 if (c1 <= 127)

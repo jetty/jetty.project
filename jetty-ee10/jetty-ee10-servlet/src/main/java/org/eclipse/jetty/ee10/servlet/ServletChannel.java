@@ -17,7 +17,6 @@ import java.io.IOException;
 import java.net.InetSocketAddress;
 import java.net.SocketAddress;
 import java.util.concurrent.TimeoutException;
-import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicLong;
 
 import jakarta.servlet.RequestDispatcher;
@@ -59,7 +58,7 @@ import static org.eclipse.jetty.util.thread.Invocable.InvocationType.NON_BLOCKIN
  * {@link jakarta.servlet.ServletInputStream}.
  * <p>
  * This class is reusable over multiple requests for the same {@link ServletContextHandler}
- * and is {@link #recycle() recycled} after each use before being
+ * and is {@link #recycle(Throwable) recycled} after each use before being
  * {@link #associate(ServletContextRequest) associated} with a new {@link ServletContextRequest}
  * and then {@link #associate(Request, Response, Callback) associated} with possibly wrapped
  * request, response and callback.
@@ -76,7 +75,7 @@ public class ServletChannel
     private final ServletContextHandler.ServletContextApi _servletContextApi;
     private final ConnectionMetaData _connectionMetaData;
     private final AtomicLong _requests = new AtomicLong();
-    private final HttpInput _httpInput;
+    final HttpInput _httpInput;
     private final HttpOutput _httpOutput;
     private ServletContextRequest _servletContextRequest;
     private Request _request;
@@ -112,16 +111,13 @@ public class ServletChannel
     /**
      * Associate this channel with a specific request.
      * This method is called by the {@link ServletContextHandler} when a core {@link Request} is accepted and associated with
-     * a servlet mapping. The association remains until {@link #recycle()} is called.
+     * a servlet mapping. The association remains functional until {@link #recycle(Throwable)} is called,
+     * and it remains readable until a call to {@link #recycle(Throwable)} or a subsequent call to {@code associate}.
      * @param servletContextRequest The servlet context request to associate
-     * @see #recycle()
+     * @see #recycle(Throwable)
      */
     public void associate(ServletContextRequest servletContextRequest)
     {
-        // We need to recycle here sometimes as requests that are handled before the
-        // ServletHandler (e.g. by SecurityHandler) are not recycled.
-        if (_servletContextRequest != null)
-            recycle();
         _httpInput.reopen();
         _request = _servletContextRequest = servletContextRequest;
         _response = _servletContextRequest.getServletContextResponse();
@@ -202,7 +198,9 @@ public class ServletChannel
         return _state.isSendError();
     }
 
-    /** Format the address or host returned from Request methods
+    /**
+     * Format the address or host returned from Request methods
+     *
      * @param addr The address or host
      * @return Default implementation returns {@link HostPort#normalizeHost(String)}
      */
@@ -327,18 +325,9 @@ public class ServletChannel
      */
     public String getLocalName()
     {
-        HttpConfiguration httpConfiguration = getHttpConfiguration();
-        if (httpConfiguration != null)
-        {
-            SocketAddress localAddress = httpConfiguration.getLocalAddress();
-            if (localAddress instanceof InetSocketAddress)
-                return ((InetSocketAddress)localAddress).getHostName();
-        }
-
         InetSocketAddress local = getLocalAddress();
         if (local != null)
-            return local.getHostString();
-
+            return Request.getHostName(local);
         return null;
     }
 
@@ -361,40 +350,20 @@ public class ServletChannel
      */
     public int getLocalPort()
     {
-        HttpConfiguration httpConfiguration = getHttpConfiguration();
-        if (httpConfiguration != null)
-        {
-            SocketAddress localAddress = httpConfiguration.getLocalAddress();
-            if (localAddress instanceof InetSocketAddress)
-                return ((InetSocketAddress)localAddress).getPort();
-        }
-
         InetSocketAddress local = getLocalAddress();
         return local == null ? 0 : local.getPort();
     }
 
     public InetSocketAddress getLocalAddress()
     {
-        HttpConfiguration httpConfiguration = getHttpConfiguration();
-        if (httpConfiguration != null)
-        {
-            SocketAddress localAddress = httpConfiguration.getLocalAddress();
-            if (localAddress instanceof InetSocketAddress)
-                return ((InetSocketAddress)localAddress);
-        }
-
-        SocketAddress local = getEndPoint().getLocalSocketAddress();
-        if (local instanceof InetSocketAddress)
-            return (InetSocketAddress)local;
-        return null;
+        return getRequest().getConnectionMetaData().getLocalSocketAddress() instanceof InetSocketAddress inetSocketAddress
+            ? inetSocketAddress : null;
     }
 
     public InetSocketAddress getRemoteAddress()
     {
-        SocketAddress remote = getEndPoint().getRemoteSocketAddress();
-        if (remote instanceof InetSocketAddress)
-            return (InetSocketAddress)remote;
-        return null;
+        return getRequest().getConnectionMetaData().getRemoteSocketAddress() instanceof InetSocketAddress inetSocketAddress
+            ? inetSocketAddress : null;
     }
 
     /**
@@ -440,14 +409,17 @@ public class ServletChannel
     }
 
     /**
+     * Prepare to be reused.
+     * @param x Any completion exception, or null for successful completion.
      * @see #associate(ServletContextRequest)
      */
-    private void recycle()
+    void recycle(Throwable x)
     {
         _state.recycle();
         _httpInput.recycle();
         _httpOutput.recycle();
-        _request = _servletContextRequest = null;
+        _servletContextRequest = null;
+        _request = null;
         _response = null;
         _callback = null;
         _expects100Continue = false;
@@ -537,22 +509,11 @@ public class ServletChannel
                             }
                             else
                             {
-                                AtomicBoolean asyncCompletion = new AtomicBoolean(false);
-                                Callback errorCallback = Callback.from(() ->
-                                {
-                                    if (!asyncCompletion.compareAndSet(false, true))
-                                        _state.scheduleDispatch();
-                                });
-
                                 // We do not notify ServletRequestListener on this dispatch because it might not
                                 // be dispatched to an error page, so we delegate this responsibility to the ErrorHandler.
                                 reopen();
-                                errorHandler.handle(getServletContextRequest(), getServletContextResponse(), errorCallback);
-
-                                // If the callback has already been completed we should continue in handle loop.
-                                // Otherwise, the callback will schedule a dispatch to handle().
-                                if (asyncCompletion.compareAndSet(false, true))
-                                    return;
+                                _state.errorHandling();
+                                errorHandler.handle(getServletContextRequest(), getServletContextResponse(), Callback.from(_state::errorHandlingComplete));
                             }
                         }
                         catch (Throwable x)
@@ -817,16 +778,7 @@ public class ServletChannel
         // Callback will either be succeeded here or failed in abort().
         Callback callback = _callback;
         if (_state.completeResponse())
-        {
-            // Must recycle before callback notification to allow for reuse.
-            recycle();
             callback.succeeded();
-        }
-        else
-        {
-            // Recycle always done here even if an abort is called.
-            recycle();
-        }
     }
 
     public boolean isCommitted()

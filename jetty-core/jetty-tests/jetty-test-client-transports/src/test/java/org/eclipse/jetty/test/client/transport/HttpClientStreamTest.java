@@ -481,9 +481,7 @@ public class HttpClientStreamTest extends AbstractTest
 
     @ParameterizedTest
     @MethodSource("transports")
-    @Tag("DisableLeakTracking:client:HTTP")
-    @Tag("DisableLeakTracking:client:HTTPS")
-    @Tag("DisableLeakTracking:client:UNIX_DOMAIN")
+    @Tag("DisableLeakTracking:client")
     @Tag("DisableLeakTracking:server:FCGI")
     public void testInputStreamContentProviderThrowingWhileReading(Transport transport) throws Exception
     {
@@ -518,8 +516,11 @@ public class HttpClientStreamTest extends AbstractTest
 
     @ParameterizedTest
     @MethodSource("transports")
+    @Tag("DisableLeakTracking:client:HTTP")
+    @Tag("DisableLeakTracking:client:HTTPS")
     @Tag("DisableLeakTracking:client:H3")
     @Tag("DisableLeakTracking:client:FCGI")
+    @Tag("DisableLeakTracking:client:UNIX_DOMAIN")
     @Tag("flaky")
     public void testDownloadWithCloseBeforeContent(Transport transport) throws Exception
     {
@@ -568,6 +569,7 @@ public class HttpClientStreamTest extends AbstractTest
     @ParameterizedTest
     @Tag("flaky")
     @Tag("DisableLeakTracking:client:HTTP")
+    @Tag("DisableLeakTracking:client:HTTPS")
     @Tag("DisableLeakTracking:client:FCGI")
     @Tag("DisableLeakTracking:client:UNIX_DOMAIN")
     @MethodSource("transports")
@@ -996,7 +998,7 @@ public class HttpClientStreamTest extends AbstractTest
     @MethodSource("transports")
     @Tag("DisableLeakTracking:server:HTTP")
     @Tag("DisableLeakTracking:server:HTTPS")
-    @Tag("DisableLeakTracking:client:H3")
+    @Tag("DisableLeakTracking:H3")
     @Tag("DisableLeakTracking:server:FCGI")
     @Tag("DisableLeakTracking:server:UNIX_DOMAIN")
     public void testUploadWithConcurrentServerCloseClosesStream(Transport transport) throws Exception

@@ -18,6 +18,7 @@ import java.lang.invoke.MethodHandles;
 import java.lang.invoke.MethodType;
 import java.net.InetSocketAddress;
 import java.net.SocketAddress;
+import java.util.Set;
 
 import org.eclipse.jetty.http.BadMessageException;
 import org.eclipse.jetty.http.HostPortHttpField;
@@ -27,6 +28,8 @@ import org.eclipse.jetty.http.HttpHeader;
 import org.eclipse.jetty.http.HttpScheme;
 import org.eclipse.jetty.http.HttpURI;
 import org.eclipse.jetty.http.QuotedCSVParser;
+import org.eclipse.jetty.io.EndPoint;
+import org.eclipse.jetty.util.Attributes;
 import org.eclipse.jetty.util.HostPort;
 import org.eclipse.jetty.util.Index;
 import org.eclipse.jetty.util.StringUtil;
@@ -608,7 +611,23 @@ public class ForwardedRequestCustomizer implements HttpConfiguration.Customizer
             ? request.getHeaders()
             : HttpFields.build(request.getHeaders(), authority);
 
-        return new Request.Wrapper(request)
+        EndPoint.SslSessionData sslSessionData = forwarded._sslSessionData;
+        return new Request.AttributesWrapper(request, sslSessionData == null ? request : new Attributes.Synthetic(request)
+        {
+            private static final Set<String> ATTRIBUTES = Set.of(EndPoint.SslSessionData.ATTRIBUTE);
+
+            @Override
+            protected Object getSyntheticAttribute(String name)
+            {
+                return EndPoint.SslSessionData.ATTRIBUTE.equals(name) ? sslSessionData : null;
+            }
+
+            @Override
+            protected Set<String> getSyntheticNameSet()
+            {
+                return ATTRIBUTES;
+            }
+        })
         {
             @Override
             public HttpURI getHttpURI()
@@ -823,6 +842,7 @@ public class ForwardedRequestCustomizer implements HttpConfiguration.Customizer
         Source _protoSource = Source.UNSET;
         Boolean _secure;
         boolean _secureScheme = false;
+        EndPoint.SslSessionData _sslSessionData;
 
         public Forwarded(Request request, HttpConfiguration config)
         {
@@ -871,7 +891,7 @@ public class ForwardedRequestCustomizer implements HttpConfiguration.Customizer
          */
         public void handleCipherSuite(HttpField field)
         {
-            _request.setAttribute("jakarta.servlet.request.cipher_suite", field.getValue());
+            _sslSessionData = EndPoint.SslSessionData.withCipherSuite(_sslSessionData, field.getValue());
 
             // Is ForwardingRequestCustomizer configured to trigger isSecure and scheme change on this header?
             if (isSslIsSecure())
@@ -887,7 +907,7 @@ public class ForwardedRequestCustomizer implements HttpConfiguration.Customizer
          */
         public void handleSslSessionId(HttpField field)
         {
-            _request.setAttribute("jakarta.servlet.request.ssl_session_id", field.getValue());
+            _sslSessionData = EndPoint.SslSessionData.withSslSessionId(_sslSessionData, field.getValue());
 
             // Is ForwardingRequestCustomizer configured to trigger isSecure and scheme change on this header?
             if (isSslIsSecure())

@@ -96,7 +96,7 @@ public abstract class CompressionPool<T> extends ContainerLifeCycle
     {
         if (_capacity > 0)
         {
-            _pool = new ConcurrentPool<>(ConcurrentPool.StrategyType.THREAD_ID, _capacity, true);
+            _pool = new ConcurrentPool<>(ConcurrentPool.StrategyType.THREAD_ID, _capacity);
             addBean(_pool);
         }
         super.doStart();

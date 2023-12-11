@@ -19,7 +19,6 @@ import java.nio.channels.ReadPendingException;
 import java.util.concurrent.atomic.AtomicReference;
 
 import org.eclipse.jetty.util.Callback;
-import org.eclipse.jetty.util.thread.Invocable;
 import org.eclipse.jetty.util.thread.Invocable.InvocationType;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -116,7 +115,8 @@ public abstract class FillInterest
     public InvocationType getCallbackInvocationType()
     {
         Callback callback = _interested.get();
-        return Invocable.getInvocationType(callback);
+        // Identical to Invocable.getInvocationType(callback) except that the cast is costly here.
+        return callback == null ? InvocationType.BLOCKING : callback.getInvocationType();
     }
 
     /**

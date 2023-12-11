@@ -76,7 +76,7 @@ public class JettyJasperInitializer extends JasperInitializer
     public TldScanner newTldScanner(ServletContext context, boolean namespaceAware, boolean validate, boolean blockExternal)
     {
         String tmp = context.getInitParameter("org.eclipse.jetty.ee9.jsp.precompiled");
-        if (tmp != null && !tmp.equals("") && Boolean.valueOf(tmp))
+        if (tmp != null && !tmp.isEmpty() && Boolean.valueOf(tmp))
         {
             if (LOG.isDebugEnabled())
                 LOG.debug("Jsp precompilation detected");

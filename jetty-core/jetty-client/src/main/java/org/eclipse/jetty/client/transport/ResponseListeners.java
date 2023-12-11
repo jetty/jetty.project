@@ -26,6 +26,7 @@ import org.eclipse.jetty.client.Result;
 import org.eclipse.jetty.http.HttpField;
 import org.eclipse.jetty.io.Content;
 import org.eclipse.jetty.io.content.ByteBufferContentSource;
+import org.eclipse.jetty.util.ExceptionUtil;
 import org.eclipse.jetty.util.thread.AutoLock;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -483,10 +484,17 @@ public class ResponseListeners
                 LOG.debug("Original content source's demand calling back");
 
             Content.Chunk chunk = originalContentSource.read();
-            // Demultiplexer content sources are invoked sequentially to be consistent with other listeners,
-            // applications can parallelize from the listeners they register if needed.
             if (LOG.isDebugEnabled())
                 LOG.debug("Read from original content source {}", chunk);
+            if (chunk == null)
+            {
+                // Retry the demand on spurious wakeup to avoid passing
+                // a null chunk to the demultiplexer's ContentSources.
+                originalContentSource.demand(this::onDemandCallback);
+                return;
+            }
+            // Demultiplexer content sources are invoked sequentially to be consistent with other listeners,
+            // applications can parallelize from the listeners they register if needed.
             for (ContentSource demultiplexerContentSource : contentSources)
             {
                 demultiplexerContentSource.onChunk(chunk);
@@ -672,12 +680,20 @@ public class ResponseListeners
                 if (LOG.isDebugEnabled())
                     LOG.debug("Content source #{} fail while current chunk is {}", index, currentChunk);
                 if (Content.Chunk.isFailure(currentChunk))
-                    return;
-                if (currentChunk != null)
-                    currentChunk.release();
-                this.chunk = Content.Chunk.from(failure);
-                onDemandCallback();
+                {
+                    Throwable cause = currentChunk.getFailure();
+                    if (!currentChunk.isLast())
+                        chunk = Content.Chunk.from(cause, true);
+                    ExceptionUtil.addSuppressedIfNotAssociated(cause, failure);
+                }
+                else
+                {
+                    if (currentChunk != null && currentChunk != ALREADY_READ_CHUNK)
+                        currentChunk.release();
+                    this.chunk = Content.Chunk.from(failure);
+                }
                 registerFailure(this, failure);
+                onDemandCallback();
             }
 
             @Override

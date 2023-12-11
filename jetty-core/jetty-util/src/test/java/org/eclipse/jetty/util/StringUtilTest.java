@@ -29,55 +29,65 @@ import static org.hamcrest.Matchers.sameInstance;
 import static org.junit.jupiter.api.Assertions.assertArrayEquals;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
+import static org.junit.jupiter.api.Assertions.assertSame;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
 // @checkstyle-disable-check : AvoidEscapedUnicodeCharactersCheck
 public class StringUtilTest
 {
-
     @Test
     @SuppressWarnings("ReferenceEquality")
     public void testAsciiToLowerCase()
     {
         String lc = "\u0690bc def 1\u06903";
         assertEquals(StringUtil.asciiToLowerCase("\u0690Bc DeF 1\u06903"), lc);
-        assertTrue(StringUtil.asciiToLowerCase(lc) == lc);
+        assertSame(StringUtil.asciiToLowerCase(lc), lc);
     }
 
     @Test
-    public void testStartsWithIgnoreCase()
+    public void testAsciiEqualsIgnoreCase()
     {
+        assertTrue(StringUtil.asciiEqualsIgnoreCase(null, null));
+        assertTrue(StringUtil.asciiEqualsIgnoreCase("", ""));
+        assertTrue(StringUtil.asciiEqualsIgnoreCase("AbC", "aBc"));
 
-        assertTrue(StringUtil.startsWithIgnoreCase("\u0690b\u0690defg", "\u0690b\u0690"));
-        assertTrue(StringUtil.startsWithIgnoreCase("\u0690bcdefg", "\u0690bc"));
-        assertTrue(StringUtil.startsWithIgnoreCase("\u0690bcdefg", "\u0690Bc"));
-        assertTrue(StringUtil.startsWithIgnoreCase("\u0690Bcdefg", "\u0690bc"));
-        assertTrue(StringUtil.startsWithIgnoreCase("\u0690Bcdefg", "\u0690Bc"));
-        assertTrue(StringUtil.startsWithIgnoreCase("\u0690bcdefg", ""));
-        assertTrue(StringUtil.startsWithIgnoreCase("\u0690bcdefg", null));
-        assertTrue(StringUtil.startsWithIgnoreCase("\u0690bcdefg", "\u0690bcdefg"));
-
-        assertFalse(StringUtil.startsWithIgnoreCase(null, "xyz"));
-        assertFalse(StringUtil.startsWithIgnoreCase("\u0690bcdefg", "xyz"));
-        assertFalse(StringUtil.startsWithIgnoreCase("\u0690", "xyz"));
+        assertFalse(StringUtil.asciiEqualsIgnoreCase("AbC", "aBcd"));
+        assertFalse(StringUtil.asciiEqualsIgnoreCase("AbCd", "aBc"));
     }
 
     @Test
-    public void testEndsWithIgnoreCase()
+    public void testAsciiStartsWithIgnoreCase()
     {
-        assertTrue(StringUtil.endsWithIgnoreCase("\u0690bcd\u0690f\u0690", "\u0690f\u0690"));
-        assertTrue(StringUtil.endsWithIgnoreCase("\u0690bcdefg", "efg"));
-        assertTrue(StringUtil.endsWithIgnoreCase("\u0690bcdefg", "eFg"));
-        assertTrue(StringUtil.endsWithIgnoreCase("\u0690bcdeFg", "efg"));
-        assertTrue(StringUtil.endsWithIgnoreCase("\u0690bcdeFg", "eFg"));
-        assertTrue(StringUtil.endsWithIgnoreCase("\u0690bcdefg", ""));
-        assertTrue(StringUtil.endsWithIgnoreCase("\u0690bcdefg", null));
-        assertTrue(StringUtil.endsWithIgnoreCase("\u0690bcdefg", "\u0690bcdefg"));
+        assertTrue(StringUtil.asciiStartsWithIgnoreCase("\u0690b\u0690defg", "\u0690b\u0690"));
+        assertTrue(StringUtil.asciiStartsWithIgnoreCase("\u0690bcdefg", "\u0690bc"));
+        assertTrue(StringUtil.asciiStartsWithIgnoreCase("\u0690bcdefg", "\u0690Bc"));
+        assertTrue(StringUtil.asciiStartsWithIgnoreCase("\u0690Bcdefg", "\u0690bc"));
+        assertTrue(StringUtil.asciiStartsWithIgnoreCase("\u0690Bcdefg", "\u0690Bc"));
+        assertTrue(StringUtil.asciiStartsWithIgnoreCase("\u0690bcdefg", ""));
+        assertTrue(StringUtil.asciiStartsWithIgnoreCase("\u0690bcdefg", null));
+        assertTrue(StringUtil.asciiStartsWithIgnoreCase("\u0690bcdefg", "\u0690bcdefg"));
 
-        assertFalse(StringUtil.endsWithIgnoreCase(null, "xyz"));
-        assertFalse(StringUtil.endsWithIgnoreCase("\u0690bcdefg", "xyz"));
-        assertFalse(StringUtil.endsWithIgnoreCase("\u0690", "xyz"));
+        assertFalse(StringUtil.asciiStartsWithIgnoreCase(null, "xyz"));
+        assertFalse(StringUtil.asciiStartsWithIgnoreCase("\u0690bcdefg", "xyz"));
+        assertFalse(StringUtil.asciiStartsWithIgnoreCase("\u0690", "xyz"));
+    }
+
+    @Test
+    public void testAsciiEndsWithIgnoreCase()
+    {
+        assertTrue(StringUtil.asciiEndsWithIgnoreCase("\u0690bcd\u0690f\u0690", "\u0690f\u0690"));
+        assertTrue(StringUtil.asciiEndsWithIgnoreCase("\u0690bcdefg", "efg"));
+        assertTrue(StringUtil.asciiEndsWithIgnoreCase("\u0690bcdefg", "eFg"));
+        assertTrue(StringUtil.asciiEndsWithIgnoreCase("\u0690bcdeFg", "efg"));
+        assertTrue(StringUtil.asciiEndsWithIgnoreCase("\u0690bcdeFg", "eFg"));
+        assertTrue(StringUtil.asciiEndsWithIgnoreCase("\u0690bcdefg", ""));
+        assertTrue(StringUtil.asciiEndsWithIgnoreCase("\u0690bcdefg", null));
+        assertTrue(StringUtil.asciiEndsWithIgnoreCase("\u0690bcdefg", "\u0690bcdefg"));
+
+        assertFalse(StringUtil.asciiEndsWithIgnoreCase(null, "xyz"));
+        assertFalse(StringUtil.asciiEndsWithIgnoreCase("\u0690bcdefg", "xyz"));
+        assertFalse(StringUtil.asciiEndsWithIgnoreCase("\u0690", "xyz"));
     }
 
     @Test

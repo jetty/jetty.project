@@ -470,7 +470,7 @@ public class ContextProvider extends ScanningAppProvider
             contextPath = "/";
         }
         // handle root with virtual host form
-        else if (StringUtil.startsWithIgnoreCase(contextPath, "root-"))
+        else if (StringUtil.asciiStartsWithIgnoreCase(contextPath, "root-"))
         {
             int dash = contextPath.indexOf('-');
             String virtual = contextPath.substring(dash + 1);

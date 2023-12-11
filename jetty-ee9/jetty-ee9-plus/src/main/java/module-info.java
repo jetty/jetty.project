@@ -16,10 +16,11 @@ import org.eclipse.jetty.ee9.plus.webapp.PlusConfiguration;
 
 module org.eclipse.jetty.ee9.plus
 {
-    requires org.eclipse.jetty.jndi;
+    requires org.eclipse.jetty.util;
     requires org.slf4j;
 
     requires transitive org.eclipse.jetty.ee9.webapp;
+    requires transitive org.eclipse.jetty.plus;
 
     // Only required if using DataSourceLoginService.
     requires static java.sql;

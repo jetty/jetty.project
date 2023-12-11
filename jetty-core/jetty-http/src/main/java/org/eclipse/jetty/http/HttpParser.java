@@ -653,21 +653,19 @@ public class HttpParser
                             _length = _string.length();
                             _methodString = takeString();
 
-                            if (Violation.CASE_INSENSITIVE_METHOD.isAllowedBy(_complianceMode))
+                            HttpMethod method = HttpMethod.CACHE.get(_methodString);
+                            if (method != null)
                             {
-                                HttpMethod method = HttpMethod.INSENSITIVE_CACHE.get(_methodString);
+                                _methodString = method.asString();
+                            }
+                            else if (Violation.CASE_INSENSITIVE_METHOD.isAllowedBy(_complianceMode))
+                            {
+                                method = HttpMethod.INSENSITIVE_CACHE.get(_methodString);
                                 if (method != null)
                                 {
-                                    if (!method.asString().equals(_methodString))
-                                        reportComplianceViolation(Violation.CASE_INSENSITIVE_METHOD, _methodString);
                                     _methodString = method.asString();
+                                    reportComplianceViolation(Violation.CASE_INSENSITIVE_METHOD, _methodString);
                                 }
-                            }
-                            else
-                            {
-                                HttpMethod method = HttpMethod.CACHE.get(_methodString);
-                                if (method != null)
-                                    _methodString = method.asString();
                             }
 
                             setState(State.SPACE1);

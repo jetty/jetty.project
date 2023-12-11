@@ -71,7 +71,7 @@ public class RedirectRegexRuleTest extends AbstractRuleTest
 
         HttpTester.Response response = HttpTester.parseResponse(_connector.getResponse(request));
         assertEquals(HttpStatus.FOUND_302, response.getStatus());
-        assertEquals("http://localhost/docs/top.html", response.get(HttpHeader.LOCATION));
+        assertEquals("/docs/top.html", response.get(HttpHeader.LOCATION));
     }
 
     @Test

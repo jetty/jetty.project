@@ -54,6 +54,7 @@ import static org.hamcrest.Matchers.nullValue;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertThrows;
+import static org.junit.jupiter.api.Assertions.assertTrue;
 
 public class SessionHandlerTest
 {
@@ -124,6 +125,7 @@ public class SessionHandlerTest
                             if (session == null)
                                 throw new IllegalStateException("No Session");
                             session.invalidate();
+                            session = null;
                         }
 
                         case "change" ->
@@ -192,6 +194,7 @@ public class SessionHandlerTest
         //for < ee10, SameSite cannot be set on the SessionCookieConfig, only on the SessionManager, or 
         //a default value on the context attribute org.eclipse.jetty.cookie.sameSiteDefault
         mgr.setSameSite(HttpCookie.SameSite.STRICT);
+        mgr.setPartitioned(true);
         
         HttpCookie cookie = mgr.getSessionManager().getSessionCookie(session, false);
         assertEquals("SPECIAL", cookie.getName());
@@ -199,11 +202,12 @@ public class SessionHandlerTest
         assertEquals("/foo", cookie.getPath());
         assertFalse(cookie.isHttpOnly());
         assertFalse(cookie.isSecure());
+        assertTrue(cookie.isPartitioned());
         assertEquals(99, cookie.getMaxAge());
         assertEquals(HttpCookie.SameSite.STRICT, cookie.getSameSite());
 
         String cookieStr = HttpCookieUtils.getRFC6265SetCookie(cookie);
-        assertThat(cookieStr, containsString("; SameSite=Strict"));
+        assertThat(cookieStr, containsString("; Partitioned; SameSite=Strict"));
     }
 
     @Test
@@ -432,6 +436,16 @@ public class SessionHandlerTest
             """.formatted(id));
         response = HttpTester.parseResponse(endPoint.getResponse());
         assertThat(response.getContent(), containsString("requestedSessionIdValid=true"));
+
+        //Invalidate and check requestedSessionId is invalid
+        endPoint.addInput("""
+            GET /invalidate HTTP/1.1
+            Host: localhost
+            Cookie: JSESSIONID=%s
+                        
+            """.formatted(id));
+        response = HttpTester.parseResponse(endPoint.getResponse());
+        assertThat(response.getContent(), containsString("requestedSessionIdValid=false"));
     }
 
     @Test

@@ -154,15 +154,20 @@ public class SniSslConnectionFactoryTest
     {
         start((ssl, customizer) ->
         {
-            // Disable the host check because this keystore has no CN and no SAN.
+            // Disable the host check because this keystore has no CN and a SAN only for www.example.com.
             ssl.setKeyStorePath("src/test/resources/keystore_sni_nowild.p12");
             customizer.setSniHostCheck(false);
         });
 
+        // This request won't match any CN or SAN, so the "default" certificate will be returned.
         String response = getResponse("www.acme.org", null);
         assertThat(response, Matchers.containsString("X-HOST: www.acme.org"));
-        assertThat(response, Matchers.containsString("X-CERT: OU=default"));
+        // The JDK implementation may return aliases in random order, so the
+        // "default" certificate could be any of the two present in the KeyStore.
+        assertThat(response, Matchers.either(Matchers.containsString("X-CERT: OU=default"))
+                .or(Matchers.containsString("X-CERT: OU=example")));
 
+        // This request matches a SAN in the KeyStore.
         response = getResponse("www.example.com", null);
         assertThat(response, Matchers.containsString("X-HOST: www.example.com"));
         assertThat(response, Matchers.containsString("X-CERT: OU=example"));

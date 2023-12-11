@@ -14,6 +14,7 @@
 package org.eclipse.jetty.http2.hpack;
 
 import java.nio.ByteBuffer;
+import java.util.function.LongSupplier;
 
 import org.eclipse.jetty.http.HttpField;
 import org.eclipse.jetty.http.HttpFields;
@@ -43,14 +44,18 @@ public class HpackDecoder
     private final MetaDataBuilder _builder;
     private final HuffmanDecoder _huffmanDecoder;
     private final NBitIntegerDecoder _integerDecoder;
+    private final LongSupplier _beginNanoTimeSupplier;
     private int _maxTableCapacity;
 
     /**
      * @param maxHeaderSize The maximum allowed size of a decoded headers block,
      * expressed as total of all name and value bytes, plus 32 bytes per field
+     * @param beginNanoTimeSupplier The supplier of a nano timestamp taken at
+     * the time the first byte was read
      */
-    public HpackDecoder(int maxHeaderSize)
+    public HpackDecoder(int maxHeaderSize, LongSupplier beginNanoTimeSupplier)
     {
+        _beginNanoTimeSupplier = beginNanoTimeSupplier;
         _context = new HpackContext(HpackContext.DEFAULT_MAX_TABLE_CAPACITY);
         _builder = new MetaDataBuilder(maxHeaderSize);
         _huffmanDecoder = new HuffmanDecoder();
@@ -296,6 +301,7 @@ public class HpackDecoder
             }
         }
 
+        _builder.setBeginNanoTime(_beginNanoTimeSupplier.getAsLong());
         return _builder.build();
     }
 

@@ -146,13 +146,12 @@ public class AnnotatedPartialListenerTest
         ServerConnector connector = new ServerConnector(server);
         server.addConnector(connector);
         ContextHandler context = new ContextHandler("/");
-        WebSocketUpgradeHandler wsHandler = WebSocketUpgradeHandler.from(server, context);
-        context.setHandler(wsHandler);
-        wsHandler.configure(container ->
+        WebSocketUpgradeHandler wsHandler = WebSocketUpgradeHandler.from(server, context, container ->
         {
             container.setAutoFragment(false);
             container.addMapping("/", (rq, rs, cb) -> new PartialEchoSocket());
         });
+        context.setHandler(wsHandler);
         server.setHandler(context);
         server.start();
         serverUri = URI.create("ws://localhost:" + connector.getLocalPort() + "/");

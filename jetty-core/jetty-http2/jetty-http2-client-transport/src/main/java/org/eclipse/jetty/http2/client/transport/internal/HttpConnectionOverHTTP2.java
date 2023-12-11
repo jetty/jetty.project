@@ -210,7 +210,6 @@ public class HttpConnectionOverHTTP2 extends HttpConnection implements Sweeper.S
     public void close()
     {
         close(new AsynchronousCloseException());
-        destroy();
     }
 
     protected void close(Throwable failure)
@@ -229,6 +228,8 @@ public class HttpConnectionOverHTTP2 extends HttpConnection implements Sweeper.S
                 channel.destroy();
                 channel = idleChannels.poll();
             }
+
+            destroy();
         }
     }
 
