@@ -1237,7 +1237,14 @@ public class HttpConnection extends AbstractMetaDataConnection implements Runnab
                 _uri.path("/");
             }
 
-            _request = new MetaData.Request(_parser.getBeginNanoTime(), _method, _uri.asImmutable(), _version, _headerBuilder, _contentLength);
+            _request = new MetaData.Request(_parser.getBeginNanoTime(), _method, _uri.asImmutable(), _version, _headerBuilder, _contentLength)
+            {
+                @Override
+                public boolean is100ContinueExpected()
+                {
+                    return _expects100Continue;
+                }
+            };
 
             Runnable handle = _httpChannel.onRequest(_request);
             ++_requests;
@@ -1332,16 +1339,6 @@ public class HttpConnection extends AbstractMetaDataConnection implements Runnab
         }
 
         @Override
-        public void willRead()
-        {
-            if (_expects100Continue)
-            {
-                _expects100Continue = false;
-                send(_request, HttpGenerator.CONTINUE_100_INFO, false, null, Callback.NOOP);
-            }
-        }
-
-        @Override
         public Content.Chunk read()
         {
             if (_chunk == null)
@@ -1382,8 +1379,6 @@ public class HttpConnection extends AbstractMetaDataConnection implements Runnab
                     onContentAvailable.run();
                 return;
             }
-
-            willRead();
 
             tryFillInterested(_demandContentCallback);
         }

@@ -790,7 +790,8 @@ public class ServletApiRequest implements HttpServletRequest
         if (_inputState != ServletContextRequest.INPUT_NONE && _inputState != ServletContextRequest.INPUT_STREAM)
             throw new IllegalStateException("READER");
         _inputState = ServletContextRequest.INPUT_STREAM;
-        _servletChannel.getRequest().willRead();
+        // write a 100 continue, but ignore the response if it was not expected.
+        _servletChannel.getResponse().writeInterim(100, HttpFields.EMPTY);
         return getServletRequestInfo().getHttpInput();
     }
 
@@ -1073,7 +1074,8 @@ public class ServletApiRequest implements HttpServletRequest
 
         if (_reader != null && charset.equals(_readerCharset))
         {
-            _servletChannel.getRequest().willRead();
+            // write a 100 continue, but ignore the response if it was not expected.
+            _servletChannel.getResponse().writeInterim(100, HttpFields.EMPTY);
         }
         else
         {
