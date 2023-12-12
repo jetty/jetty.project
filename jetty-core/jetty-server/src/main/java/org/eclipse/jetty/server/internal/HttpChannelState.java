@@ -116,6 +116,7 @@ public class HttpChannelState implements HttpChannel, Components
     private Consumer<Throwable> _onFailure;
     private Throwable _callbackFailure;
     private Attributes _cache;
+    private boolean _expects100Continue;
 
     public HttpChannelState(ConnectionMetaData connectionMetaData)
     {
@@ -153,6 +154,7 @@ public class HttpChannelState implements HttpChannel, Components
             _readFailure = null;
             _onFailure = null;
             _callbackFailure = null;
+            _expects100Continue = false;
         }
     }
 
@@ -241,6 +243,7 @@ public class HttpChannelState implements HttpChannel, Components
                 throw new IllegalStateException("duplicate request");
             _request = new ChannelRequest(this, request);
             _response = new ChannelResponse(_request);
+            _expects100Continue = request.is100ContinueExpected();
 
             HttpConfiguration httpConfiguration = getHttpConfiguration();
             HttpFields.Mutable responseHeaders = _response.getHeaders();
@@ -883,28 +886,43 @@ public class HttpChannelState implements HttpChannel, Components
             boolean error;
             HttpStream stream;
             HttpChannelState httpChannelState;
+            InterimCallback interimCallback = null;
             try (AutoLock ignored = _lock.lock())
             {
                 httpChannelState = lockedGetHttpChannelState();
+                stream = httpChannelState._stream;
+                error = httpChannelState._readFailure != null;
 
                 if (LOG.isDebugEnabled())
                     LOG.debug("demand {}", httpChannelState);
 
-                error = httpChannelState._readFailure != null;
                 if (!error)
                 {
                     if (httpChannelState._onContentAvailable != null)
                         throw new IllegalArgumentException("demand pending");
                     httpChannelState._onContentAvailable = demandCallback;
-                }
 
-                stream = httpChannelState._stream;
+                    if (httpChannelState._expects100Continue && httpChannelState._response._writeCallback == null)
+                    {
+                        httpChannelState._response._writeCallback = interimCallback = new InterimCallback(httpChannelState);
+                        httpChannelState._expects100Continue = false;
+                    }
+                }
             }
 
             if (error)
+            {
                 httpChannelState._serializedInvoker.run(demandCallback);
-            else
+            }
+            else if (interimCallback == null)
+            {
                 stream.demand();
+            }
+            else
+            {
+                stream.send(_metaData, new MetaData.Response(HttpStatus.CONTINUE_100, null, getConnectionMetaData().getHttpVersion(), HttpFields.EMPTY), false, null, interimCallback);
+                interimCallback.whenComplete((v, t) -> stream.demand());
+            }
         }
 
         @Override
@@ -1017,6 +1035,8 @@ public class HttpChannelState implements HttpChannel, Components
      */
     public static class ChannelResponse implements Response, Callback
     {
+        private static final CompletableFuture<Void> UNEXPECTED_100_CONTINUE = CompletableFuture.failedFuture(new IllegalStateException("100 not expected"));
+        private static final CompletableFuture<Void> COMMITTED_100_CONTINUE = CompletableFuture.failedFuture(new IllegalStateException("Committed"));
         private final ChannelRequest _request;
         private final ResponseHttpFields _httpFields;
         protected int _status;
@@ -1117,13 +1137,13 @@ public class HttpChannelState implements HttpChannel, Components
         {
             long length = BufferUtil.length(content);
 
-            HttpChannelState httpChannel;
+            HttpChannelState httpChannelState;
             HttpStream stream;
             Throwable writeFailure;
             MetaData.Response responseMetaData = null;
             try (AutoLock ignored = _request._lock.lock())
             {
-                httpChannel = _request.lockedGetHttpChannelState();
+                httpChannelState = _request.lockedGetHttpChannelState();
                 long totalWritten = _contentBytesWritten + length;
                 writeFailure = _writeFailure;
 
@@ -1131,11 +1151,17 @@ public class HttpChannelState implements HttpChannel, Components
                 {
                     if (_writeCallback != null)
                     {
+                        if (_writeCallback instanceof InterimCallback interimCallback)
+                        {
+                            // Do this write after the interim callback.
+                            interimCallback.whenComplete((v, t) -> write(last, content, callback));
+                            return;
+                        }
                         writeFailure = new WritePendingException();
                     }
                     else
                     {
-                        long committedContentLength = httpChannel._committedContentLength;
+                        long committedContentLength = httpChannelState._committedContentLength;
                         long contentLength = committedContentLength >= 0 ? committedContentLength : getHeaders().getLongField(HttpHeader.CONTENT_LENGTH);
 
                         if (contentLength >= 0 && totalWritten != contentLength)
@@ -1159,27 +1185,27 @@ public class HttpChannelState implements HttpChannel, Components
 
                 // If no failure by this point, we can try to switch to sending state.
                 if (writeFailure == null)
-                    writeFailure = httpChannel.lockedStreamSend(last, length);
+                    writeFailure = httpChannelState.lockedStreamSend(last, length);
 
                 if (writeFailure == NOTHING_TO_SEND)
                 {
-                    httpChannel._serializedInvoker.run(callback::succeeded);
+                    httpChannelState._serializedInvoker.run(callback::succeeded);
                     return;
                 }
                 // Have we failed in some way?
                 if (writeFailure != null)
                 {
                     Throwable failure = writeFailure;
-                    httpChannel._serializedInvoker.run(() -> callback.failed(failure));
+                    httpChannelState._serializedInvoker.run(() -> callback.failed(failure));
                     return;
                 }
 
                 // No failure, do the actual stream send using the ChannelResponse as the callback.
                 _writeCallback = callback;
                 _contentBytesWritten = totalWritten;
-                stream = httpChannel._stream;
+                stream = httpChannelState._stream;
                 if (_httpFields.commit())
-                    responseMetaData = lockedPrepareResponse(httpChannel, last);
+                    responseMetaData = lockedPrepareResponse(httpChannelState, last);
             }
 
             if (LOG.isDebugEnabled())
@@ -1288,19 +1314,36 @@ public class HttpChannelState implements HttpChannel, Components
         @Override
         public CompletableFuture<Void> writeInterim(int status, HttpFields headers)
         {
-            Completable completable = new Completable();
-            if (HttpStatus.isInterim(status))
+            if (!HttpStatus.isInterim(status))
+                return CompletableFuture.failedFuture(new IllegalArgumentException("Invalid interim status code: " + status));
+
+            HttpStream stream;
+            MetaData.Response response;
+            InterimCallback interimCallback;
+            try (AutoLock ignored = _request._lock.lock())
             {
-                HttpChannelState channel = _request.getHttpChannelState();
-                HttpVersion version = channel.getConnectionMetaData().getHttpVersion();
-                MetaData.Response response = new MetaData.Response(status, null, version, headers);
-                channel._stream.send(_request._metaData, response, false, null, completable);
+                HttpChannelState httpChannelState = _request.lockedGetHttpChannelState();
+                stream = httpChannelState._stream;
+
+                if (status == HttpStatus.CONTINUE_100)
+                {
+                    if (!httpChannelState._expects100Continue)
+                        return UNEXPECTED_100_CONTINUE;
+                    httpChannelState._expects100Continue = false;
+                }
+
+                if (_httpFields.isCommitted())
+                    return status == HttpStatus.CONTINUE_100 ? COMMITTED_100_CONTINUE : CompletableFuture.failedFuture(new IllegalStateException("Committed"));
+                if (_writeCallback != null)
+                    return CompletableFuture.failedFuture(new WritePendingException());
+
+                _writeCallback = interimCallback = new InterimCallback(httpChannelState);
+                HttpVersion version = httpChannelState.getConnectionMetaData().getHttpVersion();
+                response = new MetaData.Response(status, null, version, headers);
             }
-            else
-            {
-                completable.failed(new IllegalArgumentException("Invalid interim status code: " + status));
-            }
-            return completable;
+
+            stream.send(_request._metaData, response, false, null, interimCallback);
+            return interimCallback;
         }
 
         MetaData.Response lockedPrepareResponse(HttpChannelState httpChannel, boolean last)
@@ -1632,6 +1675,40 @@ public class HttpChannelState implements HttpChannel, Components
         public String toString()
         {
             return "%s@%x".formatted(getClass().getSimpleName(), hashCode());
+        }
+    }
+
+    private static class InterimCallback extends Callback.Completable
+    {
+        private final HttpChannelState _httpChannelState;
+
+        private InterimCallback(HttpChannelState httpChannelState)
+        {
+            _httpChannelState = httpChannelState;
+        }
+
+        @Override
+        public void succeeded()
+        {
+            completing();
+            super.succeeded();
+        }
+
+        @Override
+        public void failed(Throwable x)
+        {
+            completing();
+            super.failed(x);
+        }
+
+        private void completing()
+        {
+            try (AutoLock ignore = _httpChannelState._lock.lock())
+            {
+                // Allow other writes to proceed
+                if (_httpChannelState._response._writeCallback == this)
+                    _httpChannelState._response._writeCallback = null;
+            }
         }
     }
 
