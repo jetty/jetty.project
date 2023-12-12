@@ -26,6 +26,7 @@ import org.eclipse.jetty.server.RequestLog;
 import org.eclipse.jetty.server.Server;
 import org.eclipse.jetty.server.ShutdownMonitor;
 import org.eclipse.jetty.server.handler.ContextHandler;
+import org.eclipse.jetty.servlet.ServletHandler;
 import org.eclipse.jetty.util.component.AbstractLifeCycle;
 import org.eclipse.jetty.util.resource.Resource;
 
@@ -227,6 +228,12 @@ public class JettyEmbedder extends AbstractLifeCycle
     {
         if (!webApp.isStopped())
             webApp.stop();
+
+        //clear the ServletHandler, which may have
+        //remembered "durable" Servlets, Filters, Listeners
+        //from the context xml file, but as we will re-apply
+        //the context xml, we should not retain them
+        webApp.setServletHandler(new ServletHandler());
         
         //regenerate config properties
         applyWebAppProperties();

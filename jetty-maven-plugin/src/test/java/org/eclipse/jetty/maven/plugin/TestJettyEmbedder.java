@@ -21,6 +21,7 @@ import java.util.Map;
 import org.eclipse.jetty.server.Server;
 import org.eclipse.jetty.server.handler.ContextHandler;
 import org.eclipse.jetty.server.handler.ContextHandlerCollection;
+import org.eclipse.jetty.servlet.ListenerHolder;
 import org.eclipse.jetty.toolchain.test.MavenTestingUtils;
 import org.eclipse.jetty.toolchain.test.jupiter.WorkDir;
 import org.eclipse.jetty.toolchain.test.jupiter.WorkDirExtension;
@@ -29,9 +30,12 @@ import org.eclipse.jetty.util.resource.Resource;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 
+import static org.hamcrest.MatcherAssert.assertThat;
+import static org.hamcrest.Matchers.is;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertNotNull;
 import static org.junit.jupiter.api.Assertions.assertTrue;
+import static org.junit.jupiter.api.Assertions.fail;
 
 @ExtendWith(WorkDirExtension.class)
 public class TestJettyEmbedder
@@ -117,6 +121,37 @@ public class TestJettyEmbedder
             assertNotNull(contexts);
             assertTrue(contexts.contains(otherHandler));
             assertTrue(contexts.contains(webApp));
+
+            //stop the webapp and check durable listener retained
+            jetty.getWebApp().stop();
+            boolean someListener = false;
+            for (ListenerHolder h : webApp.getServletHandler().getListeners())
+            {
+                if (h.getHeldClass() != null && "org.eclipse.jetty.maven.plugin.SomeListener".equalsIgnoreCase(h.getHeldClass().getName()))
+                {
+                    if (someListener)
+                        fail("Duplicate listeners");
+                    else
+                        someListener = true;
+                }
+            }
+
+
+            //restart the webapp
+            jetty.redeployWebApp();
+            someListener = false;
+
+            //ensure still only 1 listener
+            for (ListenerHolder h : webApp.getServletHandler().getListeners())
+            {
+                if (h.getHeldClass() != null && "org.eclipse.jetty.maven.plugin.SomeListener".equalsIgnoreCase(h.getHeldClass().getName()))
+                {
+                    if (someListener)
+                        fail("Duplicate listeners");
+                    else
+                        someListener = true;
+                }
+            }
         }
         finally
         {
