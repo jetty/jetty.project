@@ -13,8 +13,11 @@
 
 package org.eclipse.jetty.server;
 
+import java.io.IOException;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.concurrent.CountDownLatch;
+import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicReference;
 import java.util.stream.Stream;
 
@@ -30,6 +33,7 @@ import org.eclipse.jetty.server.handler.ContextHandler;
 import org.eclipse.jetty.server.internal.HttpChannelState;
 import org.eclipse.jetty.server.internal.HttpConnection;
 import org.eclipse.jetty.util.Blocker;
+import org.eclipse.jetty.util.BufferUtil;
 import org.eclipse.jetty.util.Callback;
 import org.eclipse.jetty.util.component.LifeCycle;
 import org.eclipse.jetty.util.thread.Invocable;
@@ -44,6 +48,7 @@ import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.Matchers.containsString;
 import static org.hamcrest.Matchers.is;
 import static org.hamcrest.Matchers.not;
+import static org.junit.jupiter.api.Assertions.assertTrue;
 
 public class ServerTest
 {
@@ -133,6 +138,53 @@ public class ServerTest
         assertThat(response.getStatus(), is(HttpStatus.OK_200));
         assertThat(response.getContent(), is("Hello"));
     }
+
+    @Test
+    public void testAsyncReadBlockingWrite() throws Exception
+    {
+        CountDownLatch countDownLatch = new CountDownLatch(1);
+
+        _context.setHandler(new Handler.Abstract()
+        {
+
+            @Override
+            public boolean handle(Request request, Response response, Callback callback)
+            {
+                request.demand(() ->
+                {
+                    try
+                    {
+                        Content.Sink.write(response, true, BufferUtil.toBuffer("ok"));
+                        callback.succeeded();
+                        countDownLatch.countDown();
+                    }
+                    catch (IOException e)
+                    {
+                        e.printStackTrace(System.err);
+                        callback.failed(e);
+                    }
+                });
+
+                return true;
+            }
+        });
+        _server.start();
+
+        String request = """
+                GET /path HTTP/1.0\r
+                Host: hostname\r
+                \r
+                """;
+
+        try (LocalConnector.LocalEndPoint localEndPoint = _connector.executeRequest(request))
+        {
+            assertTrue(countDownLatch.await(5, TimeUnit.SECONDS));
+            HttpTester.Response response = HttpTester.parseResponse(localEndPoint.getResponse());
+            assertThat(response.getStatus(), is(HttpStatus.OK_200));
+            assertThat(response.getContent(), is("ok"));
+        }
+    }
+
 
     public static Stream<Arguments> completionScenarios()
     {

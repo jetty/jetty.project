@@ -99,7 +99,6 @@ public class HttpChannelState implements HttpChannel, Components
     private final AutoLock _lock = new AutoLock();
     private final HandlerInvoker _handlerInvoker = new HandlerInvoker();
     private final ConnectionMetaData _connectionMetaData;
-    private final SerializedInvoker _serializedInvoker;
     private final ResponseHttpFields _responseHeaders = new ResponseHttpFields();
     private Thread _handling;
     private boolean _handled;
@@ -120,8 +119,6 @@ public class HttpChannelState implements HttpChannel, Components
     public HttpChannelState(ConnectionMetaData connectionMetaData)
     {
         _connectionMetaData = connectionMetaData;
-        // The SerializedInvoker is used to prevent infinite recursion of callbacks calling methods calling callbacks etc.
-        _serializedInvoker = new HttpChannelSerializedInvoker();
     }
 
     @Override
@@ -295,7 +292,7 @@ public class HttpChannelState implements HttpChannel, Components
             onContent = _onContentAvailable;
             _onContentAvailable = null;
         }
-        return _serializedInvoker.offer(onContent);
+        return onContent;
     }
 
     @Override
@@ -338,13 +335,13 @@ public class HttpChannelState implements HttpChannel, Components
 
             // If there was a pending IO operation, deliver the idle timeout via them.
             if (invokeOnContentAvailable != null || invokeWriteFailure != null)
-                return _serializedInvoker.offer(invokeOnContentAvailable, invokeWriteFailure);
+                return offer(invokeOnContentAvailable, invokeWriteFailure);
 
             // Otherwise, if there are idle timeout listeners, ask them whether we should call onFailure.
             Predicate<TimeoutException> onIdleTimeout = _onIdleTimeout;
             if (onIdleTimeout != null)
             {
-                return _serializedInvoker.offer(() ->
+                return () ->
                 {
                     if (onIdleTimeout.test(t))
                     {
@@ -353,7 +350,7 @@ public class HttpChannelState implements HttpChannel, Components
                         if (task != null)
                             task.run();
                     }
-                });
+                };
             }
         }
 
@@ -423,7 +420,7 @@ public class HttpChannelState implements HttpChannel, Components
                 };
 
                 // Serialize all the error actions.
-                task = _serializedInvoker.offer(invokeOnContentAvailable, invokeWriteFailure, invokeOnFailureListeners);
+                task = offer(invokeOnContentAvailable, invokeWriteFailure, invokeOnFailureListeners);
             }
         }
 
@@ -513,6 +510,18 @@ public class HttpChannelState implements HttpChannel, Components
 
         _streamSendState = StreamSendState.LAST_SENDING;
         return true;
+    }
+
+    private static Runnable offer(Runnable ...tasks)
+    {
+        return () ->
+        {
+            for (Runnable runnable : tasks)
+            {
+                if (runnable != null)
+                    runnable.run();
+            }
+        };
     }
 
     @Override
@@ -902,7 +911,7 @@ public class HttpChannelState implements HttpChannel, Components
             }
 
             if (error)
-                httpChannelState._serializedInvoker.run(demandCallback);
+                demandCallback.run();
             else
                 stream.demand();
         }
@@ -1163,14 +1172,14 @@ public class HttpChannelState implements HttpChannel, Components
 
                 if (writeFailure == NOTHING_TO_SEND)
                 {
-                    httpChannel._serializedInvoker.run(callback::succeeded);
+                    callback.succeeded();
                     return;
                 }
                 // Have we failed in some way?
                 if (writeFailure != null)
                 {
                     Throwable failure = writeFailure;
-                    httpChannel._serializedInvoker.run(() -> callback.failed(failure));
+                    callback.failed(failure);
                     return;
                 }
 
@@ -1209,7 +1218,7 @@ public class HttpChannelState implements HttpChannel, Components
                 httpChannel.lockedStreamSendCompleted(true);
             }
             if (callback != null)
-                httpChannel._serializedInvoker.run(callback::succeeded);
+                callback.succeeded();
         }
 
         /**
@@ -1237,7 +1246,7 @@ public class HttpChannelState implements HttpChannel, Components
                 httpChannel.lockedStreamSendCompleted(false);
             }
             if (callback != null)
-                httpChannel._serializedInvoker.run(() -> callback.failed(x));
+                callback.failed(x);
         }
 
         @Override
