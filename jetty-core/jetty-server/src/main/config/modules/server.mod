@@ -63,7 +63,7 @@ etc/jetty.xml
 # jetty.httpConfig.maxErrorDispatches=10
 
 ## Relative Redirect Locations allowed
-# jetty.httpConfig.relativeRedirectAllowed=false
+# jetty.httpConfig.relativeRedirectAllowed=true
 
 ## Whether to use direct ByteBuffers for reading or writing
 # jetty.httpConfig.useInputDirectByteBuffers=true

@@ -506,6 +506,8 @@ public class HttpChannelTest
             @Override
             public boolean handle(Request request, Response response, Callback callback)
             {
+                request.addFailureListener(callback::failed);
+
                 response.setStatus(200);
                 response.getHeaders().put(HttpHeader.CONTENT_LENGTH, 10);
                 response.write(false, null, Callback.from(() ->
@@ -1164,7 +1166,7 @@ public class HttpChannelTest
     }
 
     @Test
-    public void testOnError() throws Exception
+    public void testOnFailure() throws Exception
     {
         AtomicReference<Response> handling = new AtomicReference<>();
         AtomicReference<Throwable> error = new AtomicReference<>();
@@ -1193,24 +1195,24 @@ public class HttpChannelTest
         Runnable onRequest = channel.onRequest(request);
         onRequest.run();
 
-        // check we are handling
+        // Check we are handling.
         assertNotNull(handling.get());
         assertThat(stream.isComplete(), is(false));
         assertThat(stream.getFailure(), nullValue());
         assertThat(stream.getResponse(), nullValue());
 
-        // failure happens
+        // Failure happens.
         IOException failure = new IOException("Testing");
-        Runnable onError = channel.onFailure(failure);
-        assertNotNull(onError);
+        Runnable onFailure = channel.onFailure(failure);
+        assertNotNull(onFailure);
 
-        // onError not yet called
+        // Failure listeners not yet called.
         assertThat(error.get(), nullValue());
 
-        // request still handling
+        // Request still handling.
         assertFalse(stream.isComplete());
 
-        // but now we cannot read, demand nor write
+        // Can read the failure.
         Request rq = handling.get().getRequest();
         Content.Chunk chunk = rq.read();
         assertTrue(chunk.isLast());
@@ -1218,30 +1220,30 @@ public class HttpChannelTest
         assertThat(chunk.getFailure(), sameInstance(failure));
 
         CountDownLatch demand = new CountDownLatch(1);
-        // Callback serialized until after onError task
+        // Demand callback serialized until after onFailure listeners.
         rq.demand(demand::countDown);
         assertThat(demand.getCount(), is(1L));
 
         FuturePromise<Throwable> callback = new FuturePromise<>();
-        // Callback serialized until after onError task
+        // Write callback serialized until after onFailure listeners.
         handling.get().write(false, null, Callback.from(() ->
         {}, callback::succeeded));
         assertFalse(callback.isDone());
 
-        // process error callback
+        // Process onFailure task.
         try (StacklessLogging ignore = new StacklessLogging(Response.class))
         {
-            onError.run();
+            onFailure.run();
         }
 
-        // onError was called
+        // onFailure listeners were called.
         assertThat(error.get(), sameInstance(failure));
-        // demand callback was called
+        // Demand callback was called.
         assertTrue(demand.await(5, TimeUnit.SECONDS));
-        // write callback was failed
+        // Write callback was failed.
         assertThat(callback.get(5, TimeUnit.SECONDS), sameInstance(failure));
 
-        // request completed handling
+        // Request handling was completed.
         assertTrue(stream.isComplete());
     }
 

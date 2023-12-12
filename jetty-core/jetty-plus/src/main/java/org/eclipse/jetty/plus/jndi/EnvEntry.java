@@ -11,7 +11,7 @@
 // ========================================================================
 //
 
-package org.eclipse.jetty.ee9.plus.jndi;
+package org.eclipse.jetty.plus.jndi;
 
 import javax.naming.NamingException;
 
@@ -25,16 +25,14 @@ public class EnvEntry extends NamingEntry
     public EnvEntry(Object scope, String jndiName, Object objToBind, boolean overrideWebXml)
         throws NamingException
     {
-        super(scope, jndiName);
-        save(objToBind);
+        super(scope, jndiName, objToBind);
         this.overrideWebXml = overrideWebXml;
     }
 
     public EnvEntry(String jndiName, Object objToBind, boolean overrideWebXml)
         throws NamingException
     {
-        super(jndiName);
-        save(objToBind);
+        super(null, jndiName, objToBind);
         this.overrideWebXml = overrideWebXml;
     }
 

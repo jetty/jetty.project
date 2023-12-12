@@ -129,17 +129,17 @@ public class FormAuthenticatorTest
 
         response = _connector.getResponse("GET /ctx/any/user HTTP/1.0\r\nHost:host:8888\r\n\r\n");
         assertThat(response, containsString("HTTP/1.1 302 Found"));
-        assertThat(response, containsString("Location: http://host:8888/ctx/login"));
+        assertThat(response, containsString("Location: /ctx/login"));
         assertThat(response, containsString("Set-Cookie: JSESSIONID="));
 
         response = _connector.getResponse("GET /ctx/known/user HTTP/1.0\r\nHost:host:8888\r\n\r\n");
         assertThat(response, containsString("HTTP/1.1 302 Found"));
-        assertThat(response, containsString("Location: http://host:8888/ctx/login"));
+        assertThat(response, containsString("Location: /ctx/login"));
         assertThat(response, containsString("Set-Cookie: JSESSIONID="));
 
         response = _connector.getResponse("GET /ctx/admin/user HTTP/1.0\r\nHost:host:8888\r\n\r\n");
         assertThat(response, containsString("HTTP/1.1 302 Found"));
-        assertThat(response, containsString("Location: http://host:8888/ctx/login"));
+        assertThat(response, containsString("Location: /ctx/login"));
         assertThat(response, containsString("Set-Cookie: JSESSIONID="));
     }
 
@@ -167,7 +167,7 @@ public class FormAuthenticatorTest
 
         response = _connector.getResponse("GET /ctx/any/user HTTP/1.0\r\nHost:host:8888\r\nCookie: JSESSIONID=" + sessionId + "\r\n\r\n");
         assertThat(response, containsString("HTTP/1.1 302 Found"));
-        assertThat(response, containsString("Location: http://host:8888/ctx/login"));
+        assertThat(response, containsString("Location: /ctx/login"));
         assertThat(response, not(containsString("Set-Cookie: JSESSIONID=")));
     }
 
@@ -182,13 +182,13 @@ public class FormAuthenticatorTest
         String sessionId = "unknown";
         response = _connector.getResponse("GET /ctx/any/user HTTP/1.0\r\nHost:host:8888\r\nCookie: JSESSIONID=" + sessionId + "\r\n\r\n");
         assertThat(response, containsString("HTTP/1.1 302 Found"));
-        assertThat(response, containsString("Location: http://host:8888/ctx/login"));
+        assertThat(response, containsString("Location: /ctx/login"));
         assertThat(response, containsString("Set-Cookie: JSESSIONID="));
         sessionId = sessionId(response);
 
         response = _connector.getResponse("GET /ctx/j_security_check?j_username=user&j_password=wrong HTTP/1.0\r\nHost:host:8888\r\nCookie: JSESSIONID=" + sessionId + "\r\n\r\n");
         assertThat(response, containsString("HTTP/1.1 302 Found"));
-        assertThat(response, containsString("Location: http://host:8888/ctx/error"));
+        assertThat(response, containsString("Location: /ctx/error"));
         assertThat(response, not(containsString("Set-Cookie: JSESSIONID=")));
 
         response = _connector.getResponse("""
@@ -201,7 +201,7 @@ public class FormAuthenticatorTest
             j_username=user&j_password=wrong
             """);
         assertThat(response, containsString("HTTP/1.1 302 Found"));
-        assertThat(response, containsString("Location: http://host:8888/ctx/error"));
+        assertThat(response, containsString("Location: /ctx/error"));
         assertThat(response, not(containsString("Set-Cookie: JSESSIONID=")));
     }
 
@@ -216,13 +216,13 @@ public class FormAuthenticatorTest
         String sessionId = "unknown";
         response = _connector.getResponse("GET /ctx/any/user HTTP/1.0\r\nHost:host:8888\r\nCookie: JSESSIONID=" + sessionId + "\r\n\r\n");
         assertThat(response, containsString("HTTP/1.1 302 Found"));
-        assertThat(response, containsString("Location: http://host:8888/ctx/login"));
+        assertThat(response, containsString("Location: /ctx/login"));
         assertThat(response, containsString("Set-Cookie: JSESSIONID="));
         sessionId = sessionId(response);
 
         response = _connector.getResponse("GET /ctx/j_security_check?j_username=user&j_password=password HTTP/1.0\r\nHost:host:8888\r\nCookie: JSESSIONID=" + sessionId + "\r\n\r\n");
         assertThat(response, containsString("HTTP/1.1 302 Found"));
-        assertThat(response, containsString("Location: http://host:8888/ctx/any/user"));
+        assertThat(response, containsString("Location: /ctx/any/user"));
         assertThat(response, containsString("Set-Cookie: JSESSIONID="));
         String unsafeSessionId = sessionId;
         sessionId = sessionId(response);
@@ -240,7 +240,7 @@ public class FormAuthenticatorTest
 
         response = _connector.getResponse("GET /ctx/any/user HTTP/1.0\r\nHost:host:8888\r\nCookie: JSESSIONID=" + unsafeSessionId + "\r\n\r\n");
         assertThat(response, containsString("HTTP/1.1 302 Found"));
-        assertThat(response, containsString("Location: http://host:8888/ctx/login"));
+        assertThat(response, containsString("Location: /ctx/login"));
         assertThat(response, containsString("Set-Cookie: JSESSIONID="));
     }
 
@@ -255,7 +255,7 @@ public class FormAuthenticatorTest
         String sessionId = "unknown";
         response = _connector.getResponse("GET /ctx/any/user HTTP/1.0\r\nHost:host:8888\r\nCookie: JSESSIONID=" + sessionId + "\r\n\r\n");
         assertThat(response, containsString("HTTP/1.1 302 Found"));
-        assertThat(response, containsString("Location: http://host:8888/ctx/login"));
+        assertThat(response, containsString("Location: /ctx/login"));
         assertThat(response, containsString("Set-Cookie: JSESSIONID="));
         sessionId = sessionId(response);
 
@@ -269,7 +269,7 @@ public class FormAuthenticatorTest
             j_username=user&j_password=password
             """.formatted(sessionId));
         assertThat(response, containsString("HTTP/1.1 302 Found"));
-        assertThat(response, containsString("Location: http://host:8888/ctx/any/user"));
+        assertThat(response, containsString("Location: /ctx/any/user"));
         assertThat(response, containsString("Set-Cookie: JSESSIONID="));
         String unsafeSessionId = sessionId;
         sessionId = sessionId(response);
@@ -287,7 +287,7 @@ public class FormAuthenticatorTest
 
         response = _connector.getResponse("GET /ctx/any/user HTTP/1.0\r\nHost:host:8888\r\nCookie: JSESSIONID=" + unsafeSessionId + "\r\n\r\n");
         assertThat(response, containsString("HTTP/1.1 302 Found"));
-        assertThat(response, containsString("Location: http://host:8888/ctx/login"));
+        assertThat(response, containsString("Location: /ctx/login"));
         assertThat(response, containsString("Set-Cookie: JSESSIONID="));
     }
 
@@ -311,13 +311,13 @@ public class FormAuthenticatorTest
             name1=value1&name2=value2\r
             """.formatted(sessionId));
         assertThat(response, containsString("HTTP/1.1 303 See Other"));
-        assertThat(response, containsString("Location: http://host:8888/ctx/login"));
+        assertThat(response, containsString("Location: /ctx/login"));
         assertThat(response, containsString("Set-Cookie: JSESSIONID="));
         sessionId = sessionId(response);
 
         response = _connector.getResponse("GET /ctx/j_security_check?j_username=user&j_password=password HTTP/1.0\r\nHost:host:8888\r\nCookie: JSESSIONID=" + sessionId + "\r\n\r\n");
         assertThat(response, containsString("HTTP/1.1 302 Found"));
-        assertThat(response, containsString("Location: http://host:8888/ctx/any/user?action=form"));
+        assertThat(response, containsString("Location: /ctx/any/user?action=form"));
         assertThat(response, containsString("Set-Cookie: JSESSIONID="));
         String unsafeSessionId = sessionId;
         sessionId = sessionId(response);

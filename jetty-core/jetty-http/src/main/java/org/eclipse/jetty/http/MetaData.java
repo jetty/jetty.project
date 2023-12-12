@@ -217,6 +217,11 @@ public class MetaData implements Iterable<HttpField>
             return null;
         }
 
+        public boolean is100ContinueExpected()
+        {
+            return getHttpFields().contains(HttpHeader.EXPECT, HttpHeaderValue.CONTINUE.asString());
+        }
+
         @Override
         public String toString()
         {

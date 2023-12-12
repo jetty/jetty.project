@@ -22,9 +22,6 @@ import java.util.function.Supplier;
 
 import org.eclipse.jetty.http.HttpException;
 import org.eclipse.jetty.http.HttpFields;
-import org.eclipse.jetty.http.HttpGenerator;
-import org.eclipse.jetty.http.HttpHeader;
-import org.eclipse.jetty.http.HttpHeaderValue;
 import org.eclipse.jetty.http.HttpMethod;
 import org.eclipse.jetty.http.HttpStatus;
 import org.eclipse.jetty.http.HttpVersion;
@@ -56,7 +53,6 @@ public class HttpStreamOverHTTP3 implements HttpStream
     private MetaData.Response responseMetaData;
     private Content.Chunk chunk;
     private boolean committed;
-    private boolean expects100Continue;
 
     public HttpStreamOverHTTP3(ServerHTTP3StreamConnection connection, HttpChannel httpChannel, HTTP3StreamServer stream)
     {
@@ -88,8 +84,6 @@ public class HttpStreamOverHTTP3 implements HttpStream
             }
 
             HttpFields fields = requestMetaData.getHttpFields();
-
-            expects100Continue = fields.contains(HttpHeader.EXPECT, HttpHeaderValue.CONTINUE.asString());
 
             if (LOG.isDebugEnabled())
             {
@@ -156,12 +150,6 @@ public class HttpStreamOverHTTP3 implements HttpStream
             // the two actions cancel each other, no need to further retain or release.
             chunk = createChunk(data);
 
-            // Some content is read, but the 100 Continue interim
-            // response has not been sent yet, then don't bother
-            // sending it later, as the client already sent the content.
-            if (expects100Continue && chunk.hasRemaining())
-                expects100Continue = false;
-
             try (AutoLock ignored = lock.lock())
             {
                 this.chunk = chunk;
@@ -186,11 +174,6 @@ public class HttpStreamOverHTTP3 implements HttpStream
         }
         else
         {
-            if (expects100Continue)
-            {
-                expects100Continue = false;
-                send(requestMetaData, HttpGenerator.CONTINUE_100_INFO, false, null, Callback.NOOP);
-            }
             stream.demand();
         }
     }
@@ -284,9 +267,6 @@ public class HttpStreamOverHTTP3 implements HttpStream
                 callback.failed(new IllegalStateException("Interim response cannot have content"));
                 return;
             }
-
-            if (expects100Continue && response.getStatus() == HttpStatus.CONTINUE_100)
-                expects100Continue = false;
 
             headersFrame = new HeadersFrame(response, false);
         }

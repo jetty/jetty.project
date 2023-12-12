@@ -790,10 +790,8 @@ public class ServletApiRequest implements HttpServletRequest
         if (_inputState != ServletContextRequest.INPUT_NONE && _inputState != ServletContextRequest.INPUT_STREAM)
             throw new IllegalStateException("READER");
         _inputState = ServletContextRequest.INPUT_STREAM;
-
-        if (getServletRequestInfo().getServletChannel().isExpecting100Continue())
-            getServletRequestInfo().getServletChannel().continue100(getServletRequestInfo().getHttpInput().available());
-
+        // Try to write a 100 continue, ignoring failure result if it was not necessary.
+        _servletChannel.getResponse().writeInterim(HttpStatus.CONTINUE_100, HttpFields.EMPTY);
         return getServletRequestInfo().getHttpInput();
     }
 
@@ -1074,7 +1072,12 @@ public class ServletApiRequest implements HttpServletRequest
             };
         }
 
-        if (_reader == null || !charset.equals(_readerCharset))
+        if (_reader != null && charset.equals(_readerCharset))
+        {
+            // Try to write a 100 continue, ignoring failure result if it was not necessary.
+            _servletChannel.getResponse().writeInterim(HttpStatus.CONTINUE_100, HttpFields.EMPTY);
+        }
+        else
         {
             ServletInputStream in = getInputStream();
             _readerCharset = charset;
@@ -1088,10 +1091,6 @@ public class ServletApiRequest implements HttpServletRequest
                     in.close();
                 }
             };
-        }
-        else if (getServletRequestInfo().getServletChannel().isExpecting100Continue())
-        {
-            getServletRequestInfo().getServletChannel().continue100(getServletRequestInfo().getHttpInput().available());
         }
         _inputState = ServletContextRequest.INPUT_READER;
         return _reader;

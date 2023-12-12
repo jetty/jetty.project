@@ -11,7 +11,7 @@
 // ========================================================================
 //
 
-package org.eclipse.jetty.ee9.plus.jndi;
+package org.eclipse.jetty.plus.jndi;
 
 import javax.naming.NamingException;
 
@@ -23,15 +23,13 @@ public class Link extends NamingEntry
     {
         //jndiName is the name according to the web.xml
         //objectToBind is the name in the environment
-        super(scope, jndiName);
-        save(link);
+        super(scope, jndiName, link);
         _link = link;
     }
 
     public Link(String jndiName, String link) throws NamingException
     {
-        super(jndiName);
-        save(link);
+        super(null, jndiName, link);
         _link = link;
     }
 

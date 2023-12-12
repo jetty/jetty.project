@@ -28,7 +28,7 @@ import javax.naming.NameNotFoundException;
 import javax.naming.NamingException;
 import javax.sql.DataSource;
 
-import org.eclipse.jetty.ee10.plus.jndi.NamingEntryUtil;
+import org.eclipse.jetty.plus.jndi.NamingEntryUtil;
 import org.eclipse.jetty.security.AbstractLoginService;
 import org.eclipse.jetty.security.IdentityService;
 import org.eclipse.jetty.security.RolePrincipal;

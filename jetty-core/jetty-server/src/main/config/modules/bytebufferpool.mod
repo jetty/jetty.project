@@ -31,9 +31,3 @@ etc/jetty-bytebufferpool.xml
 
 ## Maximum direct memory held idle by the pool (0 for heuristic, -1 for unlimited).
 #jetty.byteBufferPool.maxDirectMemory=0
-
-## Maximum heap memory retained whilst in use by the pool (0 for heuristic, -1 for unlimited, -2 for no retained).
-#jetty.byteBufferPool.retainedHeapMemory=0
-
-## Maximum direct memory retained whilst in use by the pool (0 for heuristic, -1 for unlimited, -2 for no retained).
-#jetty.byteBufferPool.retainedDirectMemory=0

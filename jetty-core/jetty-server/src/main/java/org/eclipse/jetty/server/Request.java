@@ -604,45 +604,18 @@ public interface Request extends Attributes, Content.Source
     }
 
     /**
-     * Common point to generate a proper "Location" header for redirects.
+     * Generate a proper "Location" header for redirects.
      *
      * @param request the request the redirect should be based on (needed when relative locations are provided, so that
      * server name, scheme, port can be built out properly)
      * @param location the location URL to redirect to (can be a relative path)
      * @return the full redirect "Location" URL (including scheme, host, port, path, etc...)
+     * @deprecated use {@link Response#toRedirectURI(Request, String)}
      */
+    @Deprecated
     static String toRedirectURI(Request request, String location)
     {
-        if (!URIUtil.hasScheme(location) && !request.getConnectionMetaData().getHttpConfiguration().isRelativeRedirectAllowed())
-        {
-            StringBuilder url = new StringBuilder(128);
-            HttpURI uri = request.getHttpURI();
-            URIUtil.appendSchemeHostPort(url, uri.getScheme(), Request.getServerName(request), Request.getServerPort(request));
-
-            if (location.startsWith("/"))
-            {
-                // absolute in context
-                location = URIUtil.normalizePathQuery(location);
-            }
-            else
-            {
-                // relative to request
-                String path = uri.getPath();
-                String parent = (path.endsWith("/")) ? path : URIUtil.parentPath(path);
-                location = URIUtil.normalizePathQuery(URIUtil.addEncodedPaths(parent, location));
-                if (location != null && !location.startsWith("/"))
-                    url.append('/');
-            }
-
-            if (location == null)
-                throw new IllegalStateException("redirect path cannot be above root");
-            url.append(location);
-
-            location = url.toString();
-        }
-        // TODO do we need to do request relative without scheme?
-
-        return location;
+        return Response.toRedirectURI(request, location);
     }
 
     /**
