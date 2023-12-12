@@ -825,10 +825,8 @@ public class Request implements HttpServletRequest
         if (_inputState != INPUT_NONE && _inputState != INPUT_STREAM)
             throw new IllegalStateException("READER");
         _inputState = INPUT_STREAM;
-
-        if (_channel.isExpecting100Continue())
-            _channel.send100Continue(_input.available());
-
+        // Try to write a 100 continue, ignoring failure result if it was not necessary.
+        _channel.getCoreResponse().writeInterim(HttpStatus.CONTINUE_100, HttpFields.EMPTY);
         return _input;
     }
 
@@ -1050,7 +1048,12 @@ public class Request implements HttpServletRequest
         if (encoding == null)
             encoding = MimeTypes.ISO_8859_1;
 
-        if (_reader == null || !encoding.equalsIgnoreCase(_readerEncoding))
+        if (_reader != null && encoding.equalsIgnoreCase(_readerEncoding))
+        {
+            // Try to write a 100 continue, ignoring failure result if it was not necessary.
+            _channel.getCoreResponse().writeInterim(HttpStatus.CONTINUE_100, HttpFields.EMPTY);
+        }
+        else
         {
             ServletInputStream in = getInputStream();
             _readerEncoding = encoding;
@@ -1064,10 +1067,6 @@ public class Request implements HttpServletRequest
                     in.close();
                 }
             };
-        }
-        else if (_channel.isExpecting100Continue())
-        {
-            _channel.send100Continue(_input.available());
         }
         _inputState = INPUT_READER;
         return _reader;
