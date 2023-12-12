@@ -920,7 +920,7 @@ public class HttpChannelState implements HttpChannel, Components
             }
             else
             {
-                stream.send(_metaData, new MetaData.Response(100, null, getConnectionMetaData().getHttpVersion(), HttpFields.EMPTY), false, null, interimCallback);
+                stream.send(_metaData, new MetaData.Response(HttpStatus.CONTINUE_100, null, getConnectionMetaData().getHttpVersion(), HttpFields.EMPTY), false, null, interimCallback);
                 interimCallback.whenComplete((v, t) -> stream.demand());
             }
         }
@@ -1325,7 +1325,7 @@ public class HttpChannelState implements HttpChannel, Components
                 HttpChannelState httpChannelState = _request.lockedGetHttpChannelState();
                 stream = httpChannelState._stream;
 
-                if (status == 100)
+                if (status == HttpStatus.CONTINUE_100)
                 {
                     if (!httpChannelState._expects100Continue)
                         return UNEXPECTED_100_CONTINUE;
@@ -1333,7 +1333,7 @@ public class HttpChannelState implements HttpChannel, Components
                 }
 
                 if (_httpFields.isCommitted())
-                    return status == 100 ? COMMITTED_100_CONTINUE : CompletableFuture.failedFuture(new IllegalStateException("Committed"));
+                    return status == HttpStatus.CONTINUE_100 ? COMMITTED_100_CONTINUE : CompletableFuture.failedFuture(new IllegalStateException("Committed"));
                 if (_writeCallback != null)
                     return CompletableFuture.failedFuture(new WritePendingException());
 
