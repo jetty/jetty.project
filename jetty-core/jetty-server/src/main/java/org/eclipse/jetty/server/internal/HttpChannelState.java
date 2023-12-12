@@ -1036,6 +1036,7 @@ public class HttpChannelState implements HttpChannel, Components
     public static class ChannelResponse implements Response, Callback
     {
         public static final CompletableFuture<Void> UNEXPECTED_100_CONTINUE = CompletableFuture.failedFuture(new IllegalStateException("100 not expected"));
+        public static final CompletableFuture<Void> COMMITTED_100_CONTINUE = CompletableFuture.failedFuture(new IllegalStateException("Committed"));
         private final ChannelRequest _request;
         private final ResponseHttpFields _httpFields;
         protected int _status;
@@ -1199,9 +1200,6 @@ public class HttpChannelState implements HttpChannel, Components
                     return;
                 }
 
-                // We are writing a response now, so cannot send a 100
-                httpChannelState._expects100Continue = false;
-
                 // No failure, do the actual stream send using the ChannelResponse as the callback.
                 _writeCallback = callback;
                 _contentBytesWritten = totalWritten;
@@ -1327,15 +1325,17 @@ public class HttpChannelState implements HttpChannel, Components
                 HttpChannelState httpChannelState = _request.lockedGetHttpChannelState();
                 stream = httpChannelState._stream;
 
-                if (_writeCallback != null)
-                    return CompletableFuture.failedFuture(new WritePendingException());
-
                 if (status == 100)
                 {
                     if (!httpChannelState._expects100Continue)
                         return UNEXPECTED_100_CONTINUE;
                     httpChannelState._expects100Continue = false;
                 }
+
+                if (_httpFields.isCommitted())
+                    return status == 100 ? COMMITTED_100_CONTINUE : CompletableFuture.failedFuture(new IllegalStateException("Committed"));
+                if (_writeCallback != null)
+                    return CompletableFuture.failedFuture(new WritePendingException());
 
                 _writeCallback = interimCallback = new InterimCallback(httpChannelState);
                 HttpVersion version = httpChannelState.getConnectionMetaData().getHttpVersion();
