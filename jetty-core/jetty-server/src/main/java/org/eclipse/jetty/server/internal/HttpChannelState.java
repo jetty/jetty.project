@@ -512,7 +512,7 @@ public class HttpChannelState implements HttpChannel, Components
         return true;
     }
 
-    private static Runnable offer(Runnable ...tasks)
+    private static Runnable offer(Runnable... tasks)
     {
         return () ->
         {

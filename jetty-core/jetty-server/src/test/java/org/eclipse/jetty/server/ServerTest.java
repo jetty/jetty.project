@@ -185,7 +185,6 @@ public class ServerTest
         }
     }
 
-
     public static Stream<Arguments> completionScenarios()
     {
         List<Arguments> arguments = new ArrayList<>();
