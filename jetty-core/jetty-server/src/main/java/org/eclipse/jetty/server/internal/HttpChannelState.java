@@ -921,7 +921,7 @@ public class HttpChannelState implements HttpChannel, Components
             else
             {
                 stream.send(_metaData, new MetaData.Response(100, null, getConnectionMetaData().getHttpVersion(), HttpFields.EMPTY), false, null, interimCallback);
-                interimCallback.thenRun(stream::demand);
+                interimCallback.whenComplete((v, t) -> stream.demand());
             }
         }
 
@@ -1035,8 +1035,8 @@ public class HttpChannelState implements HttpChannel, Components
      */
     public static class ChannelResponse implements Response, Callback
     {
-        public static final CompletableFuture<Void> UNEXPECTED_100_CONTINUE = CompletableFuture.failedFuture(new IllegalStateException("100 not expected"));
-        public static final CompletableFuture<Void> COMMITTED_100_CONTINUE = CompletableFuture.failedFuture(new IllegalStateException("Committed"));
+        private static final CompletableFuture<Void> UNEXPECTED_100_CONTINUE = CompletableFuture.failedFuture(new IllegalStateException("100 not expected"));
+        private static final CompletableFuture<Void> COMMITTED_100_CONTINUE = CompletableFuture.failedFuture(new IllegalStateException("Committed"));
         private final ChannelRequest _request;
         private final ResponseHttpFields _httpFields;
         protected int _status;
@@ -1154,7 +1154,7 @@ public class HttpChannelState implements HttpChannel, Components
                         if (_writeCallback instanceof InterimCallback interimCallback)
                         {
                             // Do this write after the interim callback.
-                            interimCallback.thenRun(() -> write(last, content, callback));
+                            interimCallback.whenComplete((v, t) -> write(last, content, callback));
                             return;
                         }
                         writeFailure = new WritePendingException();

@@ -825,8 +825,8 @@ public class Request implements HttpServletRequest
         if (_inputState != INPUT_NONE && _inputState != INPUT_STREAM)
             throw new IllegalStateException("READER");
         _inputState = INPUT_STREAM;
-        // write a 100 continue, but ignore the response if it was not expected.
-        _channel.getCoreResponse().writeInterim(100, HttpFields.EMPTY);
+        // Try to write a 100 continue, ignoring failure result if it was not necessary.
+        _channel.getCoreResponse().writeInterim(HttpStatus.CONTINUE_100, HttpFields.EMPTY);
         return _input;
     }
 
@@ -1050,8 +1050,8 @@ public class Request implements HttpServletRequest
 
         if (_reader != null && encoding.equalsIgnoreCase(_readerEncoding))
         {
-            // write a 100 continue, but ignore the response if it was not expected.
-            _channel.getCoreResponse().writeInterim(100, HttpFields.EMPTY);
+            // Try to write a 100 continue, ignoring failure result if it was not necessary.
+            _channel.getCoreResponse().writeInterim(HttpStatus.CONTINUE_100, HttpFields.EMPTY);
         }
         else
         {
