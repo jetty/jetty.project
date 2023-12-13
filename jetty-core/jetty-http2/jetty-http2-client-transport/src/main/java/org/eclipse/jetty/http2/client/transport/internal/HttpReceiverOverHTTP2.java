@@ -219,9 +219,9 @@ public class HttpReceiverOverHTTP2 extends HttpReceiver implements HTTP2Channel.
             return;
         int error = frame.getError();
         String message = ErrorCode.toString(error, "reset_code_" + error);
-        Throwable failure = error == ErrorCode.NO_ERROR.code ?
-            new HttpRequestException.NoErrorException(message, exchange.getRequest()) :
-            new IOException(message);
+        Throwable failure = error == ErrorCode.NO_ERROR.code
+            ? new HttpRequestException.NoErrorException(message, exchange.getRequest())
+            : new IOException(message);
         exchange.getRequest().abort(failure);
     }
 
