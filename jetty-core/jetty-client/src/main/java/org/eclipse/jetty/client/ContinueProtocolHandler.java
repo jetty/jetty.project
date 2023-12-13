@@ -85,12 +85,12 @@ public class ContinueProtocolHandler implements ProtocolHandler
             else
             {
                 // Server either does not support 100 Continue,
-                // or it does and wants to refuse the request content,
+                // or it does but does not want to read the request content,
                 // or we got some other HTTP status code like a redirect.
                 ResponseListeners listeners = exchange.getResponseListeners();
                 HttpContentResponse contentResponse = new HttpContentResponse(response, getContent(), getMediaType(), getEncoding());
                 listeners.emitSuccess(contentResponse);
-                exchange.proceed(new HttpRequestException("Expectation failed", request));
+                exchange.proceed(null);
             }
         }
 
