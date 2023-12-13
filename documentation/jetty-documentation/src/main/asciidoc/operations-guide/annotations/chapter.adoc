@@ -71,7 +71,7 @@ Sometimes, you may have third party libraries on the container's classpath that 
 In this case, use the `org.eclipse.jetty.server.webapp.ContainerIncludeJarPattern` context attribute to define which container jars and class directories to scan.
 The value of this attribute is a regular expression.
 
-Here's an example from a context XML file that includes any jar whose name starts with `"foo-"` or `"bar-"`, or a directory named `"classes"`:
+Here's an example from a context XML file that includes any jar whose name starts with `foo-` or `bar-`, or a directory named `classes`:
 
 [source,xml,subs="verbatim,attributes"]
 ----
