@@ -235,6 +235,8 @@ public abstract class HttpSender
     {
         Throwable failure = this.failure.get();
 
+        // Applications could be blocked providing
+        // request content, notify them of the failure.
         HttpRequest request = exchange.getRequest();
         Content.Source content = request.getBody();
         if (content != null)
@@ -243,7 +245,7 @@ public abstract class HttpSender
         dispose();
 
         if (LOG.isDebugEnabled())
-            LOG.debug("Request abort {} {} on {}: {}", request, exchange, getHttpChannel(), failure);
+            LOG.debug("Request abort {} {} on {}", request, exchange, getHttpChannel(), failure);
         request.notifyFailure(failure);
 
         // Mark atomically the request as terminated, with

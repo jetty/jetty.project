@@ -609,7 +609,7 @@ public class HttpStreamOverHTTP2 implements HttpStream, HTTP2Channel.Server
                 // Send a reset to the other end so that it stops sending data.
                 if (LOG.isDebugEnabled())
                     LOG.debug("HTTP2 response #{}/{}: unconsumed request content, resetting stream", _stream.getId(), Integer.toHexString(_stream.getSession().hashCode()));
-                _stream.reset(new ResetFrame(_stream.getId(), ErrorCode.CANCEL_STREAM_ERROR.code), Callback.NOOP);
+                _stream.reset(new ResetFrame(_stream.getId(), ErrorCode.NO_ERROR.code), Callback.NOOP);
             }
         }
         _httpChannel.recycle();
@@ -619,9 +619,10 @@ public class HttpStreamOverHTTP2 implements HttpStream, HTTP2Channel.Server
     @Override
     public void failed(Throwable x)
     {
+        ErrorCode errorCode = x == HttpStream.CONTENT_NOT_CONSUMED ? ErrorCode.NO_ERROR : ErrorCode.CANCEL_STREAM_ERROR;
         if (LOG.isDebugEnabled())
-            LOG.debug("HTTP2 response #{}/{} aborted", _stream.getId(), Integer.toHexString(_stream.getSession().hashCode()));
-        _stream.reset(new ResetFrame(_stream.getId(), ErrorCode.CANCEL_STREAM_ERROR.code), Callback.NOOP);
+            LOG.debug("HTTP2 response #{}/{} failed {}", _stream.getId(), Integer.toHexString(_stream.getSession().hashCode()), errorCode, x);
+        _stream.reset(new ResetFrame(_stream.getId(), errorCode.code), Callback.NOOP);
     }
 
     private class SendTrailers extends Callback.Nested
