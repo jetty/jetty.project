@@ -1084,7 +1084,7 @@ public class ServletChannelState
         try (AutoLock ignored = lock())
         {
             if (LOG.isDebugEnabled())
-                LOG.debug("recycle {}", toStringLocked())
+                LOG.debug("recycle {}", toStringLocked());
 
             switch (_state)
             {

@@ -1225,10 +1225,10 @@ public class HttpChannelTest
         assertThat(demand.getCount(), is(1L));
 
         FuturePromise<Throwable> callback = new FuturePromise<>();
-        // Write callback serialized until after onFailure listeners.
+        // Write callback not serialized until after onFailure listeners.
         handling.get().write(false, null, Callback.from(() ->
         {}, callback::succeeded));
-        assertFalse(callback.isDone());
+        assertTrue(callback.isDone());
 
         // Process onFailure task.
         try (StacklessLogging ignore = new StacklessLogging(Response.class))
