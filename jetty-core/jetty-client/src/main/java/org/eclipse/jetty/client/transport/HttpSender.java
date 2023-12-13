@@ -201,7 +201,7 @@ public abstract class HttpSender
         };
     }
 
-    private void anyToFailure(Throwable failure)
+    private void anyToFailure(Throwable failure, boolean abort)
     {
         HttpExchange exchange = getHttpExchange();
         if (exchange == null)
@@ -212,7 +212,8 @@ public abstract class HttpSender
 
         // Mark atomically the request as completed, with respect
         // to concurrency between request success and request failure.
-        if (exchange.requestComplete(failure))
+        boolean complete = exchange.requestComplete(failure);
+        if (complete && abort)
             executeAbort(exchange, failure);
     }
 
@@ -328,10 +329,15 @@ public abstract class HttpSender
         if (failure == null)
             contentSender.iterate();
         else
-            anyToFailure(failure);
+            anyToFailure(failure, true);
     }
 
     public void abort(HttpExchange exchange, Throwable failure, Promise<Boolean> promise)
+    {
+        externalAbort(failure, promise);
+    }
+
+    private boolean localAbort(Throwable failure)
     {
         // Store only the first failure.
         this.failure.compareAndSet(null, failure);
@@ -343,8 +349,8 @@ public abstract class HttpSender
             RequestState current = requestState.get();
             if (current == RequestState.FAILURE)
             {
-                promise.succeeded(false);
-                return;
+                abort = false;
+                break;
             }
             else
             {
@@ -355,7 +361,12 @@ public abstract class HttpSender
                 }
             }
         }
+        return abort;
+    }
 
+    private void externalAbort(Throwable failure, Promise<Boolean> promise)
+    {
+        boolean abort = localAbort(failure);
         if (abort)
         {
             contentSender.abort = promise;
@@ -367,6 +378,12 @@ public abstract class HttpSender
                 LOG.debug("Concurrent failure: request termination skipped, performed by helpers");
             promise.succeeded(false);
         }
+    }
+
+    private void internalAbort(HttpExchange exchange, Throwable failure)
+    {
+        if (localAbort(failure))
+            abortRequest(exchange);
     }
 
     private boolean updateRequestState(RequestState from, RequestState to)
@@ -578,17 +595,11 @@ public abstract class HttpSender
             if (chunk != null)
             {
                 chunk.release();
-                chunk = null;
+                chunk = Content.Chunk.next(chunk);
             }
 
-            HttpRequest request = exchange.getRequest();
-            Content.Source content = request.getBody();
-            if (content != null)
-                content.fail(x);
-
-            abortRequest(exchange);
-
-            anyToFailure(x);
+            anyToFailure(x, false);
+            internalAbort(exchange, x);
 
             Promise<Boolean> promise = abort;
             if (promise != null)
