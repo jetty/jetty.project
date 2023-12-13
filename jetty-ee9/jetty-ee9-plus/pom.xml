@@ -67,6 +67,12 @@
           </instructions>
         </configuration>
       </plugin>
+      <plugin>
+        <artifactId>maven-surefire-plugin</artifactId>
+        <configuration>
+          <argLine>@{argLine} ${jetty.surefire.argLine} --add-exports=org.eclipse.jetty.ee9.plus/org.eclipse.jetty.ee9.plus.annotation=org.eclipse.jetty.ee9.nested --add-opens org.eclipse.jetty.ee9.plus/org.eclipse.jetty.ee9.plus.annotation=org.eclipse.jetty.plus</argLine>
+        </configuration>
+      </plugin>
     </plugins>
   </build>
 

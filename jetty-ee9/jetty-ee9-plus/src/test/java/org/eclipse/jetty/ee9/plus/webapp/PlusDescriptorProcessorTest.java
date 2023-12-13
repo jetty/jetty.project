@@ -19,8 +19,6 @@ import javax.naming.Context;
 import javax.naming.InitialContext;
 import javax.naming.Name;
 
-import org.eclipse.jetty.ee9.plus.annotation.Injection;
-import org.eclipse.jetty.ee9.plus.annotation.InjectionCollection;
 import org.eclipse.jetty.ee9.webapp.Configuration;
 import org.eclipse.jetty.ee9.webapp.Descriptor;
 import org.eclipse.jetty.ee9.webapp.FragmentDescriptor;
@@ -28,6 +26,8 @@ import org.eclipse.jetty.ee9.webapp.Origin;
 import org.eclipse.jetty.ee9.webapp.WebAppClassLoader;
 import org.eclipse.jetty.ee9.webapp.WebAppContext;
 import org.eclipse.jetty.ee9.webapp.WebDescriptor;
+import org.eclipse.jetty.plus.annotation.Injection;
+import org.eclipse.jetty.plus.annotation.InjectionCollection;
 import org.eclipse.jetty.plus.jndi.EnvEntry;
 import org.eclipse.jetty.plus.jndi.NamingEntryUtil;
 import org.eclipse.jetty.plus.jndi.Resource;
