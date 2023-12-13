@@ -14,6 +14,7 @@
 package org.eclipse.jetty.fcgi.client.http;
 
 import java.io.EOFException;
+import java.net.SocketAddress;
 import java.nio.ByteBuffer;
 import java.nio.channels.AsynchronousCloseException;
 import java.util.Collections;
@@ -85,6 +86,18 @@ public class HttpConnectionOverFCGI extends AbstractConnection implements IConne
     public HttpDestination getHttpDestination()
     {
         return destination;
+    }
+
+    @Override
+    public SocketAddress getLocalSocketAddress()
+    {
+        return delegate.getLocalSocketAddress();
+    }
+
+    @Override
+    public SocketAddress getRemoteSocketAddress()
+    {
+        return delegate.getRemoteSocketAddress();
     }
 
     protected Flusher getFlusher()
@@ -319,7 +332,7 @@ public class HttpConnectionOverFCGI extends AbstractConnection implements IConne
 
     private int acquireRequest()
     {
-        try (AutoLock l = lock.lock())
+        try (AutoLock ignored = lock.lock())
         {
             int last = requests.getLast();
             int request = last + 1;
@@ -330,7 +343,7 @@ public class HttpConnectionOverFCGI extends AbstractConnection implements IConne
 
     private void releaseRequest(int request)
     {
-        try (AutoLock l = lock.lock())
+        try (AutoLock ignored = lock.lock())
         {
             requests.removeFirstOccurrence(request);
         }
@@ -371,6 +384,18 @@ public class HttpConnectionOverFCGI extends AbstractConnection implements IConne
         {
             HttpChannel channel = HttpConnectionOverFCGI.this.channel;
             return channel == null ? Collections.emptyIterator() : Collections.singleton(channel).iterator();
+        }
+
+        @Override
+        public SocketAddress getLocalSocketAddress()
+        {
+            return getEndPoint().getLocalSocketAddress();
+        }
+
+        @Override
+        public SocketAddress getRemoteSocketAddress()
+        {
+            return getEndPoint().getRemoteSocketAddress();
         }
 
         @Override

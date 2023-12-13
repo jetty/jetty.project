@@ -18,6 +18,7 @@ import org.eclipse.jetty.client.HttpDestination;
 import org.eclipse.jetty.client.HttpExchange;
 import org.eclipse.jetty.client.HttpReceiver;
 import org.eclipse.jetty.client.HttpSender;
+import org.eclipse.jetty.client.api.Connection;
 import org.eclipse.jetty.client.api.Result;
 import org.eclipse.jetty.http2.ErrorCode;
 import org.eclipse.jetty.http2.HTTP2Channel;
@@ -65,6 +66,12 @@ public class HttpChannelOverHTTP2 extends HttpChannel
     public Stream.Listener getStreamListener()
     {
         return listener;
+    }
+
+    @Override
+    protected Connection getConnection()
+    {
+        return connection;
     }
 
     @Override

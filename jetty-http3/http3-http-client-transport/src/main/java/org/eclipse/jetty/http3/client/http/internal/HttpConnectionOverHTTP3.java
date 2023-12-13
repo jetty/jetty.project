@@ -13,6 +13,7 @@
 
 package org.eclipse.jetty.http3.client.http.internal;
 
+import java.net.SocketAddress;
 import java.nio.channels.AsynchronousCloseException;
 import java.util.Iterator;
 import java.util.Set;
@@ -48,6 +49,18 @@ public class HttpConnectionOverHTTP3 extends HttpConnection implements Connectio
     public HTTP3SessionClient getSession()
     {
         return session;
+    }
+
+    @Override
+    public SocketAddress getLocalSocketAddress()
+    {
+        return session.getLocalSocketAddress();
+    }
+
+    @Override
+    public SocketAddress getRemoteSocketAddress()
+    {
+        return session.getRemoteSocketAddress();
     }
 
     @Override
