@@ -349,7 +349,7 @@ public class HttpChannelState implements HttpChannel, Components
             Predicate<TimeoutException> onIdleTimeout = _onIdleTimeout;
             if (onIdleTimeout != null)
             {
-                return _readInvoker.offer(() ->
+                return () ->
                 {
                     if (onIdleTimeout.test(t))
                     {
@@ -358,7 +358,7 @@ public class HttpChannelState implements HttpChannel, Components
                         if (task != null)
                             task.run();
                     }
-                });
+                };
             }
         }
 
@@ -428,8 +428,7 @@ public class HttpChannelState implements HttpChannel, Components
                 };
 
                 // Serialize all the error actions.
-                task = Invocable.combine(_readInvoker.offer(invokeOnContentAvailable), _writeInvoker.offer(invokeWriteFailure),
-                    (invokeWriteFailure == null ? _readInvoker : _writeInvoker).offer(invokeOnFailureListeners));
+                task = Invocable.combine(_readInvoker.offer(invokeOnContentAvailable), _writeInvoker.offer(invokeWriteFailure), invokeOnFailureListeners);
             }
         }
 
