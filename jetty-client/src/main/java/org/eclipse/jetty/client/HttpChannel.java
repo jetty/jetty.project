@@ -13,6 +13,7 @@
 
 package org.eclipse.jetty.client;
 
+import org.eclipse.jetty.client.api.Connection;
 import org.eclipse.jetty.client.api.Result;
 import org.eclipse.jetty.io.CyclicTimeouts;
 import org.eclipse.jetty.util.thread.AutoLock;
@@ -53,7 +54,7 @@ public abstract class HttpChannel implements CyclicTimeouts.Expirable
     {
         boolean result = false;
         boolean abort = true;
-        try (AutoLock l = _lock.lock())
+        try (AutoLock ignored = _lock.lock())
         {
             if (_exchange == null)
             {
@@ -64,12 +65,14 @@ public abstract class HttpChannel implements CyclicTimeouts.Expirable
             }
         }
 
+        HttpRequest request = exchange.getRequest();
         if (abort)
         {
-            exchange.getRequest().abort(new UnsupportedOperationException("Pipelined requests not supported"));
+            request.abort(new UnsupportedOperationException("Pipelined requests not supported"));
         }
         else
         {
+            request.setConnection(getConnection());
             if (LOG.isDebugEnabled())
                 LOG.debug("{} associated {} to {}", exchange, result, this);
         }
@@ -80,7 +83,7 @@ public abstract class HttpChannel implements CyclicTimeouts.Expirable
     public boolean disassociate(HttpExchange exchange)
     {
         boolean result = false;
-        try (AutoLock l = _lock.lock())
+        try (AutoLock ignored = _lock.lock())
         {
             HttpExchange existing = _exchange;
             _exchange = null;
@@ -98,11 +101,13 @@ public abstract class HttpChannel implements CyclicTimeouts.Expirable
 
     public HttpExchange getHttpExchange()
     {
-        try (AutoLock l = _lock.lock())
+        try (AutoLock ignored = _lock.lock())
         {
             return _exchange;
         }
     }
+
+    protected abstract Connection getConnection();
 
     @Override
     public long getExpireNanoTime()

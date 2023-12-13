@@ -21,6 +21,7 @@ import java.util.concurrent.ExecutionException;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicReference;
 
+import org.eclipse.jetty.client.api.Request;
 import org.eclipse.jetty.client.http.HttpClientTransportOverHTTP;
 import org.eclipse.jetty.client.http.HttpConnectionOverHTTP;
 import org.eclipse.jetty.client.util.AsyncRequestContent;
@@ -68,26 +69,16 @@ public class HttpClientFailureTest
     {
         startServer(new EmptyServerHandler());
 
-        final AtomicReference<HttpConnectionOverHTTP> connectionRef = new AtomicReference<>();
-        client = new HttpClient(new HttpClientTransportOverHTTP(1)
-        {
-            @Override
-            public org.eclipse.jetty.io.Connection newConnection(EndPoint endPoint, Map<String, Object> context) throws IOException
-            {
-                HttpConnectionOverHTTP connection = (HttpConnectionOverHTTP)super.newConnection(endPoint, context);
-                connectionRef.set(connection);
-                return connection;
-            }
-        });
+        client = new HttpClient(new HttpClientTransportOverHTTP(1));
         client.start();
 
-        assertThrows(ExecutionException.class, () ->
-            client.newRequest("localhost", connector.getLocalPort())
-                .onRequestHeaders(request -> connectionRef.get().getEndPoint().close())
-                .timeout(5, TimeUnit.SECONDS)
-                .send());
+        Request request = client.newRequest("localhost", connector.getLocalPort())
+            .onRequestHeaders(r -> r.getConnection().close())
+            .timeout(5, TimeUnit.SECONDS);
+        assertThrows(ExecutionException.class, request::send);
 
-        DuplexConnectionPool connectionPool = (DuplexConnectionPool)connectionRef.get().getHttpDestination().getConnectionPool();
+        HttpDestination destination = (HttpDestination)client.resolveDestination(request);
+        DuplexConnectionPool connectionPool = (DuplexConnectionPool)destination.getConnectionPool();
         assertEquals(0, connectionPool.getConnectionCount());
         assertEquals(0, connectionPool.getActiveConnections().size());
         assertEquals(0, connectionPool.getIdleConnections().size());

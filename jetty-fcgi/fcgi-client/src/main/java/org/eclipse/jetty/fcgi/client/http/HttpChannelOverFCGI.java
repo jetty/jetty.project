@@ -20,6 +20,7 @@ import org.eclipse.jetty.client.HttpChannel;
 import org.eclipse.jetty.client.HttpExchange;
 import org.eclipse.jetty.client.HttpReceiver;
 import org.eclipse.jetty.client.HttpSender;
+import org.eclipse.jetty.client.api.Connection;
 import org.eclipse.jetty.client.api.Result;
 import org.eclipse.jetty.fcgi.generator.Flusher;
 import org.eclipse.jetty.fcgi.generator.Generator;
@@ -43,7 +44,7 @@ public class HttpChannelOverFCGI extends HttpChannel
     private int request;
     private HttpVersion version;
 
-    public HttpChannelOverFCGI(final HttpConnectionOverFCGI connection, Flusher flusher, long idleTimeout)
+    public HttpChannelOverFCGI(HttpConnectionOverFCGI connection, Flusher flusher, long idleTimeout)
     {
         super(connection.getHttpDestination());
         this.connection = connection;
@@ -61,6 +62,12 @@ public class HttpChannelOverFCGI extends HttpChannel
     void setRequest(int request)
     {
         this.request = request;
+    }
+
+    @Override
+    protected Connection getConnection()
+    {
+        return connection;
     }
 
     @Override

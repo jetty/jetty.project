@@ -13,6 +13,7 @@
 
 package org.eclipse.jetty.http2.client.http;
 
+import java.net.SocketAddress;
 import java.nio.channels.AsynchronousCloseException;
 import java.util.Iterator;
 import java.util.List;
@@ -66,6 +67,18 @@ public class HttpConnectionOverHTTP2 extends HttpConnection implements Sweeper.S
     public Session getSession()
     {
         return session;
+    }
+
+    @Override
+    public SocketAddress getLocalSocketAddress()
+    {
+        return session.getLocalSocketAddress();
+    }
+
+    @Override
+    public SocketAddress getRemoteSocketAddress()
+    {
+        return session.getRemoteSocketAddress();
     }
 
     public boolean isRecycleHttpChannels()
