@@ -98,7 +98,7 @@
     <jolokia.version>1.7.1</jolokia.version>
     <json-simple.version>1.1.1</json-simple.version>
     <json-smart.version>2.5.0</json-smart.version>
-    <jsp.impl.version>9.0.52</jsp.impl.version>
+    <jsp.impl.version>9.0.83</jsp.impl.version>
     <junit.version>5.9.1</junit.version>
     <kerb-simplekdc.version>2.0.3</kerb-simplekdc.version>
     <log4j2.version>2.22.0</log4j2.version>
