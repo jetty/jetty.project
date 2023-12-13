@@ -15,6 +15,8 @@ package org.eclipse.jetty.test.client.transport;
 
 import java.net.URI;
 import java.nio.ByteBuffer;
+import java.util.Collection;
+import java.util.EnumSet;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.function.IntFunction;
@@ -32,14 +34,21 @@ import org.eclipse.jetty.server.Request;
 import org.eclipse.jetty.server.Response;
 import org.eclipse.jetty.util.Callback;
 import org.junit.jupiter.params.ParameterizedTest;
-import org.junit.jupiter.params.provider.EnumSource;
+import org.junit.jupiter.params.provider.MethodSource;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
 
 public class ServerDoesNotReadRequestContentTest extends AbstractTest
 {
+    public static Collection<Transport> transportsHTTP2()
+    {
+        Collection<Transport> transports = transports();
+        transports.retainAll(EnumSet.of(Transport.H2C, Transport.H2));
+        return transports;
+    }
+
     @ParameterizedTest
-    @EnumSource(value = Transport.class, names = {"H2C", "H2"})
+    @MethodSource("transportsHTTP2")
     public void testServerDoesNotReadRequestContent(Transport transport) throws Exception
     {
         start(transport, new Handler.Abstract()
@@ -68,7 +77,7 @@ public class ServerDoesNotReadRequestContentTest extends AbstractTest
     }
 
     @ParameterizedTest
-    @EnumSource(value = Transport.class, names = {"H2C", "H2"})
+    @MethodSource("transportsHTTP2")
     public void testServerDoesNotReadRequestContentWithExpect100Continue(Transport transport) throws Exception
     {
         start(transport, new Handler.Abstract()
@@ -98,7 +107,7 @@ public class ServerDoesNotReadRequestContentTest extends AbstractTest
     }
 
     @ParameterizedTest
-    @EnumSource(value = Transport.class, names = {"H2C", "H2"})
+    @MethodSource("transportsHTTP2")
     public void testServerDoesNotReadRequestContentWithRedirect(Transport transport) throws Exception
     {
         start(transport, new Handler.Abstract()
@@ -136,7 +145,7 @@ public class ServerDoesNotReadRequestContentTest extends AbstractTest
     }
 
     @ParameterizedTest
-    @EnumSource(value = Transport.class, names = {"H2C", "H2"})
+    @MethodSource("transportsHTTP2")
     public void testServerDoesNotReadRequestContentWithUnauthorized(Transport transport) throws Exception
     {
         start(transport, new Handler.Abstract()

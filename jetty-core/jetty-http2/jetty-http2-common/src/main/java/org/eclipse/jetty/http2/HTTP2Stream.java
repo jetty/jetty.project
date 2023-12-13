@@ -579,8 +579,7 @@ public class HTTP2Stream implements Stream, Attachable, Closeable, Callback, Dum
             failure = new EofException("reset");
             flowControlLength = drain();
         }
-        close();
-        boolean removed = session.removeStream(this);
+        boolean removed = dispose();
         session.dataConsumed(this, flowControlLength);
         if (removed)
             notifyReset(this, frame, callback);
@@ -609,8 +608,7 @@ public class HTTP2Stream implements Stream, Attachable, Closeable, Callback, Dum
             failure = frame.getFailure();
             flowControlLength = drain();
         }
-        close();
-        boolean removed = session.removeStream(this);
+        boolean removed = dispose();
         session.dataConsumed(this, flowControlLength);
         if (removed)
             notifyFailure(this, frame, callback);
@@ -766,6 +764,8 @@ public class HTTP2Stream implements Stream, Attachable, Closeable, Callback, Dum
     @Override
     public void close()
     {
+        if (LOG.isDebugEnabled())
+            LOG.debug("Close for {}", this);
         CloseState oldState = closeState.getAndSet(CloseState.CLOSED);
         if (oldState != CloseState.CLOSED)
         {
@@ -773,6 +773,12 @@ public class HTTP2Stream implements Stream, Attachable, Closeable, Callback, Dum
             updateStreamCount(-1, deltaClosing);
             onClose();
         }
+    }
+
+    public boolean dispose()
+    {
+        close();
+        return getSession().removeStream(this);
     }
 
     public void onClose()

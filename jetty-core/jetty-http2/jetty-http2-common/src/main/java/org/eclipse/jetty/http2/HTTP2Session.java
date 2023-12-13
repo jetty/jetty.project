@@ -335,11 +335,12 @@ public abstract class HTTP2Session extends ContainerLifeCycle implements Session
     @Override
     public void onReset(ResetFrame frame)
     {
-        if (LOG.isDebugEnabled())
-            LOG.debug("Received {} on {}", frame, this);
-
         int streamId = frame.getStreamId();
         HTTP2Stream stream = getStream(streamId);
+
+        if (LOG.isDebugEnabled())
+            LOG.debug("Received {} for {} on {}", frame, stream, this);
+
         if (stream != null)
         {
             stream.process(frame, new OnResetCallback());
@@ -703,10 +704,7 @@ public abstract class HTTP2Session extends ContainerLifeCycle implements Session
         control(stream, Callback.from(() ->
         {
             if (stream != null)
-            {
-                stream.close();
-                removeStream(stream);
-            }
+                stream.dispose();
         }, callback), frame);
     }
 
@@ -1273,10 +1271,7 @@ public abstract class HTTP2Session extends ContainerLifeCycle implements Session
         public void failed(Throwable x)
         {
             if (stream != null)
-            {
-                stream.close();
-                stream.getSession().removeStream(stream);
-            }
+                stream.dispose();
             super.failed(x);
         }
 
