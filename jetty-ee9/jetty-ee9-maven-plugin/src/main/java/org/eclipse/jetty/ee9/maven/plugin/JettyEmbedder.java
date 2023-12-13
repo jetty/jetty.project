@@ -23,6 +23,7 @@ import java.util.Properties;
 
 import org.eclipse.jetty.ee9.quickstart.QuickStartConfiguration;
 import org.eclipse.jetty.ee9.quickstart.QuickStartConfiguration.Mode;
+import org.eclipse.jetty.ee9.servlet.ServletHandler;
 import org.eclipse.jetty.security.LoginService;
 import org.eclipse.jetty.server.RequestLog;
 import org.eclipse.jetty.server.Server;
@@ -226,7 +227,13 @@ public class JettyEmbedder extends ContainerLifeCycle
     {
         if (!webApp.isStopped())
             webApp.stop();
-        
+
+        //clear the ServletHandler, which may have
+        //remembered "durable" Servlets, Filters, Listeners
+        //from the context xml file, but as we will re-apply
+        //the context xml, we should not retain them
+        webApp.setServletHandler(new ServletHandler());
+
         //regenerate config properties
         applyWebAppProperties();
 

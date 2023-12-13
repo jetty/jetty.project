@@ -18,8 +18,6 @@ import javax.naming.InitialContext;
 import javax.naming.NameNotFoundException;
 
 import org.eclipse.jetty.ee9.nested.ContextHandler;
-import org.eclipse.jetty.ee9.plus.annotation.InjectionCollection;
-import org.eclipse.jetty.ee9.plus.annotation.LifeCycleCallbackCollection;
 import org.eclipse.jetty.ee9.plus.jndi.Transaction;
 import org.eclipse.jetty.ee9.webapp.AbstractConfiguration;
 import org.eclipse.jetty.ee9.webapp.FragmentConfiguration;
@@ -27,6 +25,8 @@ import org.eclipse.jetty.ee9.webapp.JettyWebXmlConfiguration;
 import org.eclipse.jetty.ee9.webapp.MetaInfConfiguration;
 import org.eclipse.jetty.ee9.webapp.WebAppContext;
 import org.eclipse.jetty.ee9.webapp.WebXmlConfiguration;
+import org.eclipse.jetty.plus.annotation.InjectionCollection;
+import org.eclipse.jetty.plus.annotation.LifeCycleCallbackCollection;
 import org.eclipse.jetty.util.NanoTime;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;

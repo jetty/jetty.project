@@ -11,7 +11,11 @@
 // ========================================================================
 //
 
-/**
- * Jetty Plus : Limited JEE Annotation Support
- */
-package org.eclipse.jetty.ee10.plus.annotation;
+package org.eclipse.jetty.ee9.maven.plugin;
+
+import java.util.EventListener;
+
+public class SomeListener implements EventListener
+{
+
+}

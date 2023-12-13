@@ -283,7 +283,5 @@ public class HttpReceiverOverHTTPTest
         Response response = completable.get(5, TimeUnit.SECONDS);
         assertNotNull(response);
         assertEquals(200, response.getStatus());
-
-        Thread.sleep(2000);
     }
 }

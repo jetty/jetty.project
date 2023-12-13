@@ -11,7 +11,11 @@
 // ========================================================================
 //
 
-/**
- * Jetty Plus : Limited JEE Security Support
- */
-package org.eclipse.jetty.ee9.plus.security;
+package org.eclipse.jetty.ee10.maven.plugin;
+
+import java.util.EventListener;
+
+public class SomeListener implements EventListener
+{
+
+}
