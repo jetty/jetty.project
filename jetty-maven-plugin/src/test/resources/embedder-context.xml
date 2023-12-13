@@ -3,4 +3,16 @@
 
 <Configure class="org.eclipse.jetty.webapp.WebAppContext">
   <Set name="contextPath">/embedder</Set>
+
+  <Get name="servletHandler">
+    <Call name="addListener">
+      <Arg>
+        <New class="org.eclipse.jetty.servlet.ListenerHolder">
+          <Set name="listener">
+            <New class="org.eclipse.jetty.maven.plugin.SomeListener"/>
+          </Set>
+        </New>
+      </Arg>
+    </Call>
+  </Get>
 </Configure>

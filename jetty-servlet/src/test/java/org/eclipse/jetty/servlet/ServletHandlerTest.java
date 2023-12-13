@@ -64,6 +64,12 @@ public class ServletHandlerTest
     FilterHolder fh5 = new FilterHolder(Source.JAVAX_API);
     FilterMapping fm5 = new FilterMapping();
 
+    FilterHolder fh6 = new FilterHolder(Source.EMBEDDED);
+    FilterMapping fm6 = new FilterMapping();
+
+    FilterHolder fh7 = new FilterHolder(Source.EMBEDDED);
+    FilterMapping fm7 = new FilterMapping();
+
     ServletHolder sh1 = new ServletHolder(new Source(Source.Origin.DESCRIPTOR, "foo.xml"));
     ServletMapping sm1 = new ServletMapping();
 
@@ -72,6 +78,12 @@ public class ServletHandlerTest
 
     ServletHolder sh3 = new ServletHolder(new Source(Source.Origin.DESCRIPTOR, "foo.xml"));
     ServletMapping sm3 = new ServletMapping();
+
+    ServletHolder sh4 = new ServletHolder(Source.EMBEDDED);
+    ServletMapping sm4 = new ServletMapping();
+
+    ServletHolder sh5 = new ServletHolder(Source.EMBEDDED);
+    ServletMapping sm5 = new ServletMapping();
 
     @BeforeEach
     public void initMappings()
@@ -842,50 +854,61 @@ public class ServletHandlerTest
         ServletContextHandler context = new ServletContextHandler();
         server.setHandler(context);
         ServletHandler handler = new ServletHandler();
+        handler.setEnsureDefaultServlet(false);
         context.setHandler(handler);
         ListenerHolder lh1 = new ListenerHolder(HSListener.class);
         ListenerHolder lh2 = new ListenerHolder(SCListener.class);
 
-        fh1.setFilter(new SomeFilter());
-        fm1.setPathSpec("/sm1");
-        fm1.setFilterHolder(fh1);
-        fh2.setFilter(new SomeFilter(){});
-        fm2.setPathSpec("/sm2");
-        fm2.setFilterHolder(fh2);
-        sh1.setServlet(new SomeServlet());
-        sm1.setPathSpec("/sm1");
-        sm1.setServletName(sh1.getName());
-        sh2.setServlet(new SomeServlet());
-        sm2.setPathSpec("/sm2");
-        sm2.setServletName(sh2.getName());
+        fh6.setFilter(new SomeFilter());
+        fm6.setPathSpec("/sm4");
+        fm6.setFilterHolder(fh6);
+        fh7.setFilter(new SomeFilter(){});
+        fm7.setPathSpec("/sm5");
+        fm7.setFilterHolder(fh7);
+        sh4.setServlet(new SomeServlet());
+        sm4.setPathSpec("/sm4");
+        sm4.setServletName(sh4.getName());
+        sh5.setServlet(new SomeServlet());
+        sm5.setPathSpec("/sm5");
+        sm5.setServletName(sh5.getName());
 
         handler.setListeners(new ListenerHolder[] {lh1});
-        handler.setFilters(new FilterHolder[] {fh1});
-        handler.setFilterMappings(new FilterMapping[] {fm1});
-        handler.setServlets(new ServletHolder[] {sh1});
-        handler.setServletMappings(new ServletMapping[] {sm1});
+        handler.setFilters(new FilterHolder[] {fh6});
+        handler.setFilterMappings(new FilterMapping[] {fm6});
+        handler.setServlets(new ServletHolder[] {sh4});
+        handler.setServletMappings(new ServletMapping[] {sm4});
 
         server.start();
 
+        //emulate some listeners, servlets and filters added after the ServletHandler has started,
+        //these cannot be durable
         handler.setListeners(new ListenerHolder[] {lh1, lh2});
-        handler.setFilters(new FilterHolder[] {fh1, fh2});
-        handler.setFilterMappings(new FilterMapping[] {fm1, fm2});
-        handler.setServlets(new ServletHolder[] {sh1, sh2});
-        handler.setServletMappings(new ServletMapping[] {sm1, sm2});
+        handler.setFilters(new FilterHolder[] {fh6, fh7});
+        handler.setFilterMappings(new FilterMapping[] {fm6, fm7});
+        handler.setServlets(new ServletHolder[] {sh4, sh5});
+        handler.setServletMappings(new ServletMapping[] {sm4, sm5});
 
         assertThat(Arrays.asList(handler.getListeners()), contains(lh1, lh2));
-        assertThat(Arrays.asList(handler.getFilters()), contains(fh1, fh2));
-        assertThat(Arrays.asList(handler.getFilterMappings()), contains(fm1, fm2));
-        assertThat(Arrays.asList(handler.getServlets()), contains(sh1, sh2));
-        assertThat(Arrays.asList(handler.getServletMappings()), contains(sm1, sm2));
+        assertThat(Arrays.asList(handler.getFilters()), contains(fh6, fh7));
+        assertThat(Arrays.asList(handler.getFilterMappings()), contains(fm6, fm7));
+        assertThat(Arrays.asList(handler.getServlets()), contains(sh4, sh5));
+        assertThat(Arrays.asList(handler.getServletMappings()), contains(sm4, sm5));
 
         server.stop();
 
         assertThat(Arrays.asList(handler.getListeners()), contains(lh1));
-        assertThat(Arrays.asList(handler.getFilters()), contains(fh1));
-        assertThat(Arrays.asList(handler.getFilterMappings()), contains(fm1));
-        assertThat(Arrays.asList(handler.getServlets()), contains(sh1));
-        assertThat(Arrays.asList(handler.getServletMappings()), contains(sm1));
+        assertThat(Arrays.asList(handler.getFilters()), contains(fh6));
+        assertThat(Arrays.asList(handler.getFilterMappings()), contains(fm6));
+        assertThat(Arrays.asList(handler.getServlets()), contains(sh4));
+        assertThat(Arrays.asList(handler.getServletMappings()), contains(sm4));
+
+        server.start();
+
+        assertThat(handler.getListeners().length, is(1));
+        assertThat(handler.getFilters().length, is(1));
+        assertThat(handler.getFilterMappings().length, is(1));
+        assertThat(handler.getServlets().length, is(1));
+        assertThat(handler.getServletMappings().length, is(1));
     }
 
     public static class HSListener implements HttpSessionListener
