@@ -110,7 +110,8 @@ public class SizeLimitHandler extends Handler.Wrapper
         private final HttpFields.Mutable _httpFields;
         private long _written = 0;
 
-        public SizeLimitResponseWrapper(Request request, Response wrapped) {
+        public SizeLimitResponseWrapper(Request request, Response wrapped)
+        {
             super(request, wrapped);
 
             _httpFields = new HttpFields.Mutable.Wrapper(wrapped.getHeaders())
@@ -130,7 +131,8 @@ public class SizeLimitHandler extends Handler.Wrapper
         }
 
         @Override
-        public HttpFields.Mutable getHeaders() {
+        public HttpFields.Mutable getHeaders()
+        {
             return _httpFields;
         }
 
