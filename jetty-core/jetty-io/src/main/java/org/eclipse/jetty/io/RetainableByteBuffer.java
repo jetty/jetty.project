@@ -108,12 +108,6 @@ public interface RetainableByteBuffer extends Retainable
     }
 
     /**
-     * @return whether this instance is retained
-     * @see ReferenceCounter#isRetained()
-     */
-    boolean isRetained();
-
-    /**
      * Get the wrapped, not {@code null}, {@code ByteBuffer}.
      * @return the wrapped, not {@code null}, {@code ByteBuffer}
      */

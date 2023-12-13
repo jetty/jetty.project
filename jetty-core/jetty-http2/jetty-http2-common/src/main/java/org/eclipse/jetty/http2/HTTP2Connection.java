@@ -479,6 +479,12 @@ public class HTTP2Connection extends AbstractConnection implements Parser.Listen
         }
 
         @Override
+        public boolean isRetained()
+        {
+            return retainable.isRetained();
+        }
+
+        @Override
         public void retain()
         {
             retainable.retain();

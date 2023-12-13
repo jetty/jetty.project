@@ -439,6 +439,12 @@ public abstract class HTTP3StreamConnection extends AbstractConnection
         }
 
         @Override
+        public boolean isRetained()
+        {
+            return retainable.isRetained();
+        }
+
+        @Override
         public void retain()
         {
             retainable.retain();

@@ -105,6 +105,15 @@ public class ByteBufferAccumulator implements AutoCloseable
         }
     }
 
+    public void addBuffer(RetainableByteBuffer buffer)
+    {
+        if (buffer != null && buffer.hasRemaining())
+        {
+            buffer.retain();
+            _buffers.add(buffer);
+        }
+    }
+
     /**
      * Take the combined buffer containing all content written to the accumulator.
      * The caller is responsible for releasing this {@link RetainableByteBuffer}.

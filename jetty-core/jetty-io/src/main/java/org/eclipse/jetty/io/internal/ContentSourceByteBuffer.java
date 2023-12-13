@@ -52,7 +52,7 @@ public class ContentSourceByteBuffer implements Runnable
                 return;
             }
 
-            accumulator.copyBuffer(chunk.getByteBuffer());
+            accumulator.addBuffer(chunk);
             chunk.release();
 
             if (chunk.isLast())

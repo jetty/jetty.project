@@ -557,7 +557,7 @@ public class Content
      * to release the {@code ByteBuffer} back into a pool), or the
      * {@link #release()} method overridden.</p>
      */
-    public interface Chunk extends Retainable
+    public interface Chunk extends RetainableByteBuffer
     {
         /**
          * <p>An empty, non-last, chunk.</p>
@@ -794,11 +794,6 @@ public class Content
         }
 
         /**
-         * @return the ByteBuffer of this Chunk
-         */
-        ByteBuffer getByteBuffer();
-
-        /**
          * Get a failure (which may be from a {@link Source#fail(Throwable) failure} or
          * a {@link Source#fail(Throwable, boolean) warning}), if any, associated with the chunk.
          * <ul>
@@ -819,22 +814,6 @@ public class Content
          * @return whether this is the last Chunk
          */
         boolean isLast();
-
-        /**
-         * @return the number of bytes remaining in this Chunk
-         */
-        default int remaining()
-        {
-            return getByteBuffer().remaining();
-        }
-
-        /**
-         * @return whether this Chunk has remaining bytes
-         */
-        default boolean hasRemaining()
-        {
-            return getByteBuffer().hasRemaining();
-        }
 
         /**
          * <p>Copies the bytes from this Chunk to the given byte array.</p>
