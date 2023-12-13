@@ -1018,6 +1018,23 @@ public class HttpClientTest extends AbstractTest
         assertThat(listener.result.getFailure().getMessage(), is("Synthetic Failure"));
     }
 
+    @ParameterizedTest
+    @MethodSource("transports")
+    public void testRequestConnection(Transport transport) throws Exception
+    {
+        start(transport, new EmptyServerHandler());
+
+        ContentResponse response = client.newRequest(newURI(transport))
+            .onRequestBegin(r ->
+            {
+                if (r.getConnection() == null)
+                    r.abort(new IllegalStateException());
+            })
+            .send();
+
+        assertEquals(200, response.getStatus());
+    }
+
     private static void sleep(long time) throws IOException
     {
         try

@@ -13,6 +13,7 @@
 
 package org.eclipse.jetty.fcgi.client.transport.internal;
 
+import org.eclipse.jetty.client.Connection;
 import org.eclipse.jetty.client.Result;
 import org.eclipse.jetty.client.transport.HttpChannel;
 import org.eclipse.jetty.client.transport.HttpExchange;
@@ -55,6 +56,12 @@ public class HttpChannelOverFCGI extends HttpChannel
     void setRequest(int request)
     {
         this.request = request;
+    }
+
+    @Override
+    protected Connection getConnection()
+    {
+        return connection;
     }
 
     @Override
