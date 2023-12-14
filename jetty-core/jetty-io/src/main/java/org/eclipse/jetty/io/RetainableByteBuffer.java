@@ -84,7 +84,7 @@ public interface RetainableByteBuffer extends Retainable
             @Override
             public boolean isRetained()
             {
-                throw new UnsupportedOperationException();
+                return retainable.isRetained();
             }
 
             @Override

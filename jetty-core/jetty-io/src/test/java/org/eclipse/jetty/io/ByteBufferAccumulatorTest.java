@@ -26,7 +26,9 @@ import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.Matchers.greaterThan;
 import static org.hamcrest.Matchers.greaterThanOrEqualTo;
 import static org.hamcrest.Matchers.is;
+import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertThrows;
+import static org.junit.jupiter.api.Assertions.assertTrue;
 
 public class ByteBufferAccumulatorTest
 {
@@ -175,7 +177,7 @@ public class ByteBufferAccumulatorTest
     {
         RetainableByteBuffer combinedBuffer = accumulator.toRetainableByteBuffer();
         assertThat(combinedBuffer.remaining(), is(0));
-        assertThat(bufferPool.getAcquireCount(), is(1L));
+        assertThat(bufferPool.getAcquireCount(), is(0L));
         accumulator.close();
         assertThat(bufferPool.getAcquireCount(), is(0L));
     }
@@ -186,7 +188,7 @@ public class ByteBufferAccumulatorTest
         RetainableByteBuffer combinedBuffer = accumulator.takeRetainableByteBuffer();
         assertThat(combinedBuffer.remaining(), is(0));
         accumulator.close();
-        assertThat(bufferPool.getAcquireCount(), is(1L));
+        assertThat(bufferPool.getAcquireCount(), is(0L));
         combinedBuffer.release();
         assertThat(bufferPool.getAcquireCount(), is(0L));
     }
@@ -275,6 +277,29 @@ public class ByteBufferAccumulatorTest
         // Close the accumulator and make sure all is returned to bufferPool.
         accumulator.close();
         assertThat(bufferPool.getAcquireCount(), is(0L));
+    }
+
+    @Test
+    public void testAdd()
+    {
+        Retainable.ReferenceCounter counter = new Retainable.ReferenceCounter();
+        RetainableByteBuffer buffer = RetainableByteBuffer.wrap(BufferUtil.toBuffer("Ground Hog Day\n"), counter);
+        accumulator.addBuffer(buffer);
+        assertTrue(buffer.isRetained());
+        accumulator.addBuffer(buffer);
+        accumulator.addBuffer(buffer);
+        accumulator.addBuffer(buffer);
+
+        ByteBuffer taken = accumulator.takeByteBuffer();
+        assertFalse(buffer.isRetained());
+        assertTrue(buffer.release());
+
+        assertThat(BufferUtil.toString(taken), is("""
+            Ground Hog Day
+            Ground Hog Day
+            Ground Hog Day
+            Ground Hog Day
+            """));
     }
 
     private ByteBuffer randomBytes(int size)
