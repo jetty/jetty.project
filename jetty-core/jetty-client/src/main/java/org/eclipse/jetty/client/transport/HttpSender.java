@@ -382,8 +382,8 @@ public abstract class HttpSender
 
     private void internalAbort(HttpExchange exchange, Throwable failure)
     {
-        if (localAbort(failure))
-            abortRequest(exchange);
+        localAbort(failure);
+        abortRequest(exchange);
     }
 
     private boolean updateRequestState(RequestState from, RequestState to)
