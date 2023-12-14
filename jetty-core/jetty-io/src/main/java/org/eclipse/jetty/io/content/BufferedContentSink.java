@@ -49,7 +49,7 @@ public class BufferedContentSink implements Content.Sink
     private final int _maxBufferSize;
     private final int _maxAggregationSize;
     private final Flusher _flusher;
-    private ByteBufferAccumulator _aggregator;
+    private ByteBufferAccumulator _accumulator;
     private boolean _firstWrite = true;
     private boolean _lastWritten;
 
@@ -96,8 +96,8 @@ public class BufferedContentSink implements Content.Sink
         if (current.remaining() <= _maxAggregationSize)
         {
             // current buffer can be aggregated
-            if (_aggregator == null)
-                _aggregator = new ByteBufferAccumulator(_bufferPool, _direct, _maxBufferSize);
+            if (_accumulator == null)
+                _accumulator = new ByteBufferAccumulator(_bufferPool, _direct, _maxBufferSize);
             aggregateAndFlush(last, current, callback);
         }
         else
@@ -125,7 +125,7 @@ public class BufferedContentSink implements Content.Sink
         if (LOG.isDebugEnabled())
             LOG.debug("given buffer is greater than _maxBufferSize");
 
-        RetainableByteBuffer aggregatedBuffer = _aggregator == null ? null : _aggregator.takeRetainableByteBuffer();
+        RetainableByteBuffer aggregatedBuffer = _accumulator == null ? null : _accumulator.takeRetainableByteBuffer();
         if (aggregatedBuffer == null)
         {
             if (LOG.isDebugEnabled())
@@ -168,15 +168,15 @@ public class BufferedContentSink implements Content.Sink
      */
     private void aggregateAndFlush(boolean last, ByteBuffer currentBuffer, Callback callback)
     {
-        boolean full = _aggregator.aggregate(currentBuffer);
+        boolean full = _accumulator.aggregate(currentBuffer);
         boolean empty = !currentBuffer.hasRemaining();
         boolean flush = full || currentBuffer == FLUSH_BUFFER;
         boolean complete = last && empty;
         if (LOG.isDebugEnabled())
-            LOG.debug("aggregated current buffer, full={}, complete={}, bytes left={}, aggregator={}", full, complete, currentBuffer.remaining(), _aggregator);
+            LOG.debug("aggregated current buffer, full={}, complete={}, bytes left={}, aggregator={}", full, complete, currentBuffer.remaining(), _accumulator);
         if (complete)
         {
-            RetainableByteBuffer aggregatedBuffer = _aggregator.takeRetainableByteBuffer();
+            RetainableByteBuffer aggregatedBuffer = _accumulator.takeRetainableByteBuffer();
             if (aggregatedBuffer != null)
             {
                 if (LOG.isDebugEnabled())
@@ -192,7 +192,7 @@ public class BufferedContentSink implements Content.Sink
         }
         else if (flush)
         {
-            RetainableByteBuffer aggregatedBuffer = _aggregator.takeRetainableByteBuffer();
+            RetainableByteBuffer aggregatedBuffer = _accumulator.takeRetainableByteBuffer();
             if (LOG.isDebugEnabled())
                 LOG.debug("writing aggregated buffer: {} bytes, then {}", aggregatedBuffer.remaining(), currentBuffer.remaining());
 
@@ -230,7 +230,7 @@ public class BufferedContentSink implements Content.Sink
         else
         {
             if (LOG.isDebugEnabled())
-                LOG.debug("buffer fully aggregated, delaying writing - aggregator: {}", _aggregator);
+                LOG.debug("buffer fully aggregated, delaying writing - aggregator: {}", _accumulator);
             _flusher.offer(callback);
         }
     }
