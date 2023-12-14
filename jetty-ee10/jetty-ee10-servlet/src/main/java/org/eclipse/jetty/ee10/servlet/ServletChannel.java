@@ -729,7 +729,7 @@ public class ServletChannel
             _servletContextRequest.setAttribute(CustomRequestLog.LOG_DETAIL, logDetail);
         }
 
-        // Callback will either be succeeded here or failed in abort().
+        // Callback is completed here.
         Callback callback = _callback;
         Throwable failure = _state.completeResponse();
         if (failure == null)

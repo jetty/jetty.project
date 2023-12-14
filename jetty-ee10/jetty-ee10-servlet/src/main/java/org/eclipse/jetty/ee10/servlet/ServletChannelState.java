@@ -326,12 +326,6 @@ public class ServletChannelState
                 case ABORTED:
                     return false;
 
-                case OPEN:
-                    _servletChannel.getServletContextResponse().setStatus(HttpStatus.INTERNAL_SERVER_ERROR_500);
-                    _outputState = OutputState.ABORTED;
-                    _failure = failure;
-                    return true;
-
                 default:
                     _outputState = OutputState.ABORTED;
                     _failure = failure;
@@ -566,7 +560,12 @@ public class ServletChannelState
         }
     }
 
-    public void errorHandling()
+    /**
+     * Called when an asynchronous call to {@code ErrorHandler.handle()} is about to happen.
+     *
+     * @see #errorHandlingComplete(Throwable)
+     */
+    void errorHandling()
     {
         try (AutoLock ignored = lock())
         {
@@ -576,7 +575,13 @@ public class ServletChannelState
         }
     }
 
-    public void errorHandlingComplete(Throwable failure)
+    /**
+     * Called when the {@code Callback} passed to {@code ErrorHandler.handle()} is completed.
+     *
+     * @param failure the failure reported by the error handling,
+     * or {@code null} if there was no failure
+     */
+    void errorHandlingComplete(Throwable failure)
     {
         boolean handle;
         try (AutoLock ignored = lock())
@@ -594,7 +599,7 @@ public class ServletChannelState
                 abortResponse(failure);
 
             if (_requestState == RequestState.ERRORING)
-                _requestState = failure == null ? RequestState.COMPLETE : RequestState.COMPLETED;
+                _requestState = RequestState.COMPLETE;
         }
         if (handle)
             scheduleDispatch();
