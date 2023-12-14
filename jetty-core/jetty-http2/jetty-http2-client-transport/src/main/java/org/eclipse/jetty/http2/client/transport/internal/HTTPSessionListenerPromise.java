@@ -75,10 +75,10 @@ public class HTTPSessionListenerPromise implements Session.Listener, Promise<Ses
         HttpConnectionOverHTTP2 connection = (HttpConnectionOverHTTP2)newConnection(destination(), session);
         if (this.connection.compareAndSet(null, connection, false, true))
         {
-            // Execute rather than invoking, because this method is invoked from
-            // the read side and succeeding the promise will likely send a request,
-            // which may block, and we want to be able to read the response concurrently.
-            destination().getHttpClient().getExecutor().execute(() -> httpConnectionPromise().succeeded(connection));
+            // The connection promise must be called synchronously
+            // so that the HTTP/1 to HTTP/2 upgrade can create the
+            // HTTP/2 stream that represents the HTTP/1 request.
+            httpConnectionPromise().succeeded(connection);
         }
     }
 
