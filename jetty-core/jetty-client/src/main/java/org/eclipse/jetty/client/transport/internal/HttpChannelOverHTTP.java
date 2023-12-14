@@ -15,6 +15,7 @@ package org.eclipse.jetty.client.transport.internal;
 
 import java.util.concurrent.atomic.LongAdder;
 
+import org.eclipse.jetty.client.Connection;
 import org.eclipse.jetty.client.Response;
 import org.eclipse.jetty.client.Result;
 import org.eclipse.jetty.client.transport.HttpChannel;
@@ -53,6 +54,12 @@ public class HttpChannelOverHTTP extends HttpChannel
     protected HttpReceiverOverHTTP newHttpReceiver()
     {
         return new HttpReceiverOverHTTP(this);
+    }
+
+    @Override
+    protected Connection getConnection()
+    {
+        return connection;
     }
 
     @Override
