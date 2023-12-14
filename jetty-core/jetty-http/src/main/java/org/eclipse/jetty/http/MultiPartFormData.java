@@ -317,6 +317,21 @@ public class MultiPartFormData
             this.filesDirectory = filesDirectory;
         }
 
+        private Path findFilesDirectory()
+        {
+            Path dir = getFilesDirectory();
+            if (dir != null)
+                return dir;
+            String jettyBase = System.getProperty("jetty.base");
+            if (jettyBase != null)
+            {
+                dir = Path.of(jettyBase).resolve("work");
+                if (Files.exists(dir))
+                    return dir;
+            }
+            throw new IllegalArgumentException("No files directory configured");
+        }
+
         /**
          * @return the maximum file size in bytes, or -1 for unlimited file size
          */
@@ -627,7 +642,7 @@ public class MultiPartFormData
             {
                 try (AutoLock ignored = lock.lock())
                 {
-                    Path directory = getFilesDirectory();
+                    Path directory = findFilesDirectory();
                     Files.createDirectories(directory);
                     String fileName = "MultiPart";
                     filePath = Files.createTempFile(directory, fileName, "");
