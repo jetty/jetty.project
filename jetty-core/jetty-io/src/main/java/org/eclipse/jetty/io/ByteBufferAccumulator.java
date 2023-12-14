@@ -25,12 +25,11 @@ import org.eclipse.jetty.util.BufferUtil;
  * Accumulates data into a list of ByteBuffers which can then be combined into a single buffer or written to an OutputStream.
  * The buffer list automatically grows as data is written to it, the buffers are taken from the
  * supplied {@link ByteBufferPool} or freshly allocated if one is not supplied.
- *
- * The method {@link #ensureBuffer(int, int)} is used to write directly to the last buffer stored in the buffer list,
+ * <p>
+ * The method {@link #ensureBuffer(int, int)} can be used access a buffer that can be written to directly as the last buffer list,
  * if there is less than a certain amount of space available in that buffer then a new one will be allocated and returned instead.
- * @see #ensureBuffer(int, int)
+ * @see ByteBufferAggregator
  */
-// TODO: rename to *Aggregator to avoid confusion with RBBP.Accumulator?
 public class ByteBufferAccumulator implements AutoCloseable
 {
     private final List<RetainableByteBuffer> _buffers = new ArrayList<>();
@@ -109,8 +108,15 @@ public class ByteBufferAccumulator implements AutoCloseable
     {
         if (buffer != null && buffer.hasRemaining())
         {
-            buffer.retain();
-            _buffers.add(buffer);
+            if (buffer.canRetain())
+            {
+                buffer.retain();
+                _buffers.add(buffer);
+            }
+            else
+            {
+                copyBuffer(buffer.getByteBuffer());
+            }
         }
     }
 
@@ -122,26 +128,31 @@ public class ByteBufferAccumulator implements AutoCloseable
      */
     public RetainableByteBuffer takeRetainableByteBuffer()
     {
-        RetainableByteBuffer combinedBuffer;
-        if (_buffers.size() == 1)
+        return switch (_buffers.size())
         {
-            combinedBuffer = _buffers.get(0);
-            _buffers.clear();
-            return combinedBuffer;
-        }
-
-        int length = getLength();
-        combinedBuffer = _bufferPool.acquire(length, _direct);
-        ByteBuffer byteBuffer = combinedBuffer.getByteBuffer();
-        BufferUtil.clearToFill(byteBuffer);
-        for (RetainableByteBuffer buffer : _buffers)
-        {
-            byteBuffer.put(buffer.getByteBuffer());
-            buffer.release();
-        }
-        BufferUtil.flipToFlush(byteBuffer, 0);
-        _buffers.clear();
-        return combinedBuffer;
+            case 0 -> RetainableByteBuffer.EMPTY;
+            case 1 ->
+            {
+                RetainableByteBuffer buffer = _buffers.get(0);
+                _buffers.clear();
+                yield buffer;
+            }
+            default ->
+            {
+                int length = getLength();
+                RetainableByteBuffer combinedBuffer = _bufferPool.acquire(length, _direct);
+                ByteBuffer byteBuffer = combinedBuffer.getByteBuffer();
+                BufferUtil.clearToFill(byteBuffer);
+                for (RetainableByteBuffer buffer : _buffers)
+                {
+                    byteBuffer.put(buffer.getByteBuffer());
+                    buffer.release();
+                }
+                BufferUtil.flipToFlush(byteBuffer, 0);
+                _buffers.clear();
+                yield combinedBuffer;
+            }
+        };
     }
 
     public ByteBuffer takeByteBuffer()
