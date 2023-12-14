@@ -224,6 +224,27 @@ Server
         └── ContextHandler N
 ----
 
+[[pg-server-http-handler-use-sizelimit]]
+====== SizeLimitHandler
+
+`SizeLimitHandler` tracks the sizes of request content and response content, and fails the request processing with an HTTP status code of link:https://www.rfc-editor.org/rfc/rfc9110.html#name-413-content-too-large[`413 Content Too Large`].
+
+Server applications can set up the `SizeLimitHandler` before or after handlers that modify the request content or response content such as xref:pg-server-http-handler-use-gzip[`GzipHandler`].
+When `SizeLimitHandler` is before `GzipHandler` in the `Handler` tree, it will limit the compressed content; when it is after, it will limit the uncompressed content.
+
+The `Handler` tree structure look like the following, to limit uncompressed content:
+
+[source,screen]
+----
+Server
+└── GzipHandler
+    └── SizeLimitHandler
+        └── ContextHandlerCollection
+            ├── ContextHandler 1
+            :── ...
+            └── ContextHandler N
+----
+
 [[pg-server-http-handler-use-statistics]]
 ====== StatisticsHandler
 

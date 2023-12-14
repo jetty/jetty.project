@@ -22,18 +22,18 @@ import org.eclipse.jetty.http.HttpFields;
 import org.eclipse.jetty.http.HttpHeader;
 import org.eclipse.jetty.http.HttpStatus;
 import org.eclipse.jetty.io.Content;
+import org.eclipse.jetty.server.handler.gzip.GzipHandler;
 import org.eclipse.jetty.util.Callback;
 
 /**
- * A handler that can limit the size of message bodies in requests and responses.
- *
+ * <p>A {@link Handler} that can limit the size of message bodies in requests and responses.</p>
  * <p>The optional request and response limits are imposed by checking the {@code Content-Length}
- * header or observing the actual bytes seen by the handler. Handler order is important, in as much
- * as if this handler is before a the {@link org.eclipse.jetty.server.handler.gzip.GzipHandler},
- * then it will limit compressed sized, if it as after the {@link
- * org.eclipse.jetty.server.handler.gzip.GzipHandler} then the limit is applied to uncompressed
- * bytes. If a size limit is exceeded then {@link BadMessageException} is thrown with a {@link
- * org.eclipse.jetty.http.HttpStatus#PAYLOAD_TOO_LARGE_413} status.
+ * header or observing the actual bytes seen by this Handler.</p>
+ * <p>Handler order is important; for example, if this handler is before the {@link GzipHandler},
+ * then it will limit compressed sizes, if it as after the {@link GzipHandler} then it will limit
+ * uncompressed sizes.</p>
+ * <p>If a size limit is exceeded then {@link BadMessageException} is thrown with a
+ * {@link HttpStatus#PAYLOAD_TOO_LARGE_413} status.</p>
  */
 public class SizeLimitHandler extends Handler.Wrapper
 {
