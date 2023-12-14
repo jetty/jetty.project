@@ -44,7 +44,7 @@ public class PathResource extends Resource
      * @deprecated Using ResourceFactoryInternals.isSupported() instead.
      */
     @Deprecated(since = "12.0.4", forRemoval = true)
-    public static Index<String> SUPPORTED_SCHEMES = null;
+    public static Index<String> SUPPORTED_SCHEMES = new Index.Builder<String>().build();
 
     // The path object represented by this instance
     private final Path path;
