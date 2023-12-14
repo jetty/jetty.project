@@ -17,7 +17,7 @@ import java.io.IOException;
 import java.nio.ByteBuffer;
 import java.nio.channels.WritePendingException;
 
-import org.eclipse.jetty.io.ByteBufferAggregator;
+import org.eclipse.jetty.io.ByteBufferAccumulator;
 import org.eclipse.jetty.io.ByteBufferPool;
 import org.eclipse.jetty.io.Content;
 import org.eclipse.jetty.io.RetainableByteBuffer;
@@ -43,15 +43,13 @@ public class BufferedContentSink implements Content.Sink
 
     private static final Logger LOG = LoggerFactory.getLogger(BufferedContentSink.class);
 
-    private static final int START_BUFFER_SIZE = 1024;
-
     private final Content.Sink _delegate;
     private final ByteBufferPool _bufferPool;
     private final boolean _direct;
     private final int _maxBufferSize;
     private final int _maxAggregationSize;
     private final Flusher _flusher;
-    private ByteBufferAggregator _aggregator;
+    private ByteBufferAccumulator _aggregator;
     private boolean _firstWrite = true;
     private boolean _lastWritten;
 
@@ -99,7 +97,7 @@ public class BufferedContentSink implements Content.Sink
         {
             // current buffer can be aggregated
             if (_aggregator == null)
-                _aggregator = new ByteBufferAggregator(_bufferPool, _direct, Math.min(START_BUFFER_SIZE, _maxBufferSize), _maxBufferSize);
+                _aggregator = new ByteBufferAccumulator(_bufferPool, _direct, _maxBufferSize);
             aggregateAndFlush(last, current, callback);
         }
         else

@@ -35,6 +35,7 @@ public class ByteBufferAccumulator implements AutoCloseable
     private final List<RetainableByteBuffer> _buffers = new ArrayList<>();
     private final ByteBufferPool _bufferPool;
     private final boolean _direct;
+    private final long _maxLength;
 
     public ByteBufferAccumulator()
     {
@@ -43,8 +44,14 @@ public class ByteBufferAccumulator implements AutoCloseable
 
     public ByteBufferAccumulator(ByteBufferPool bufferPool, boolean direct)
     {
+        this(bufferPool, direct, -1);
+    }
+
+    public ByteBufferAccumulator(ByteBufferPool bufferPool, boolean direct, long maxLength)
+    {
         _bufferPool = (bufferPool == null) ? new ByteBufferPool.NonPooling() : bufferPool;
         _direct = direct;
+        _maxLength = maxLength;
     }
 
     /**
@@ -52,9 +59,9 @@ public class ByteBufferAccumulator implements AutoCloseable
      * This will add up the remaining of each buffer in the accumulator.
      * @return the total length of the content in the accumulator.
      */
-    public int getLength()
+    public long getLength()
     {
-        int length = 0;
+        long length = 0;
         for (RetainableByteBuffer buffer : _buffers)
             length = Math.addExact(length, buffer.remaining());
         return length;
@@ -87,6 +94,14 @@ public class ByteBufferAccumulator implements AutoCloseable
         return buffer;
     }
 
+    private boolean maxLengthExceeded(long extraLength)
+    {
+        if (_maxLength < 0)
+            return false;
+        long length = Math.addExact(getLength(), extraLength);
+        return length > _maxLength;
+    }
+
     public void copyBytes(byte[] buf, int offset, int length)
     {
         copyBuffer(BufferUtil.toBuffer(buf, offset, length));
@@ -94,6 +109,8 @@ public class ByteBufferAccumulator implements AutoCloseable
 
     public void copyBuffer(ByteBuffer source)
     {
+        if (maxLengthExceeded(source.remaining()))
+            throw new IllegalArgumentException("maxLength exceeded");
         while (source.hasRemaining())
         {
             RetainableByteBuffer buffer = ensureBuffer(source.remaining());
@@ -108,6 +125,9 @@ public class ByteBufferAccumulator implements AutoCloseable
     {
         if (buffer != null && buffer.hasRemaining())
         {
+            if (maxLengthExceeded(buffer.remaining()))
+                throw new IllegalArgumentException("maxLength exceeded");
+
             if (buffer.canRetain())
             {
                 buffer.retain();
@@ -118,6 +138,75 @@ public class ByteBufferAccumulator implements AutoCloseable
                 copyBuffer(buffer.getByteBuffer());
             }
         }
+    }
+
+    /**
+     * Aggregates the given ByteBuffer into the last buffer of this accumulation, growing the buffer in size if
+     * necessary. This copies bytes up to the specified maximum size into the
+     * last buffer in the accumulation, at which time this method returns {@code true}
+     * and {@link #takeRetainableByteBuffer()} must be called for this method to accept aggregating again.
+     * @param source the buffer to copy into this aggregator; its position is updated according to
+     * the number of aggregated bytes
+     * @return true if the aggregator's buffer is full and should be taken, false otherwise
+     */
+    public boolean aggregate(ByteBuffer source)
+    {
+        if (BufferUtil.isEmpty(source))
+            return false;
+
+        // How much of the buffer can be aggregated?
+        int toCopy = source.remaining();
+        boolean full = false;
+        if (_maxLength >= 0)
+        {
+            long space = _maxLength - getLength();
+            if (space == 0)
+                return true;
+            if (toCopy >= space)
+            {
+                full = true;
+                toCopy = (int)space;
+            }
+        }
+
+        // Do we need to allocate a new buffer?
+        RetainableByteBuffer buffer = _buffers.isEmpty() ? null : _buffers.get(_buffers.size() - 1);
+        if (buffer == null || buffer.isRetained() || BufferUtil.space(buffer.getByteBuffer()) < toCopy)
+        {
+            int prefix = buffer == null ? 0 : buffer.remaining();
+            int minSize = prefix + toCopy;
+            int allocSize = (int)Math.min(_maxLength, ceilToNextPowerOfTwo(minSize));
+            RetainableByteBuffer next = _bufferPool.acquire(allocSize, _direct);
+
+            if (prefix > 0)
+                BufferUtil.append(next.getByteBuffer(), buffer.getByteBuffer());
+
+            if (buffer == null)
+                _buffers.add(next);
+            else
+            {
+                _buffers.set(_buffers.size() - 1, next);
+                buffer.release();
+            }
+            buffer = next;
+        }
+
+        // Aggregate the bytes into the prepared space
+        ByteBuffer target = buffer.getByteBuffer();
+        int p = BufferUtil.flipToFill(target);
+        int tp = target.position();
+        target.put(tp, source, 0, toCopy);
+        source.position(source.position() + toCopy);
+        target.position(tp + toCopy);
+        BufferUtil.flipToFlush(target, p);
+
+        return full;
+    }
+
+    private static int ceilToNextPowerOfTwo(int val)
+    {
+        int result = 1 << (Integer.SIZE - Integer.numberOfLeadingZeros(val - 1));
+        return result > 0 ? result : Integer.MAX_VALUE;
     }
 
     /**
@@ -139,8 +228,10 @@ public class ByteBufferAccumulator implements AutoCloseable
             }
             default ->
             {
-                int length = getLength();
-                RetainableByteBuffer combinedBuffer = _bufferPool.acquire(length, _direct);
+                long length = getLength();
+                if (length > Integer.MAX_VALUE)
+                    throw new IllegalStateException("too large for ByteBuffer");
+                RetainableByteBuffer combinedBuffer = _bufferPool.acquire((int)length, _direct);
                 ByteBuffer byteBuffer = combinedBuffer.getByteBuffer();
                 BufferUtil.clearToFill(byteBuffer);
                 for (RetainableByteBuffer buffer : _buffers)
@@ -182,11 +273,12 @@ public class ByteBufferAccumulator implements AutoCloseable
      */
     public byte[] toByteArray()
     {
-        int length = getLength();
+        long length = getLength();
         if (length == 0)
             return new byte[0];
-
-        byte[] bytes = new byte[length];
+        if (length > Integer.MAX_VALUE)
+            throw new IllegalStateException("too large for array");
+        byte[] bytes = new byte[(int)length];
         ByteBuffer buffer = BufferUtil.toBuffer(bytes);
         BufferUtil.clear(buffer);
         writeTo(buffer);
@@ -197,9 +289,7 @@ public class ByteBufferAccumulator implements AutoCloseable
     {
         int pos = BufferUtil.flipToFill(byteBuffer);
         for (RetainableByteBuffer buffer : _buffers)
-        {
             byteBuffer.put(buffer.getByteBuffer().slice());
-        }
         BufferUtil.flipToFlush(byteBuffer, pos);
     }
 
