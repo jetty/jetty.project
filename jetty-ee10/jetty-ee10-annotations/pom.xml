@@ -5,7 +5,7 @@
   <parent>
     <groupId>org.eclipse.jetty.ee10</groupId>
     <artifactId>jetty-ee10</artifactId>
-    <version>12.0.4-SNAPSHOT</version>
+    <version>12.0.5-SNAPSHOT</version>
   </parent>
   <artifactId>jetty-ee10-annotations</artifactId>
   <name>EE10 :: Servlet Annotations</name>
@@ -51,11 +51,6 @@
     </dependency>
     <dependency>
       <groupId>org.eclipse.jetty</groupId>
-      <artifactId>jetty-jndi</artifactId>
-      <scope>test</scope>
-    </dependency>
-    <dependency>
-      <groupId>org.eclipse.jetty</groupId>
       <artifactId>jetty-slf4j-impl</artifactId>
       <scope>test</scope>
     </dependency>
@@ -85,7 +80,7 @@
         <configuration>
           <argLine>@{argLine} ${jetty.surefire.argLine} 
             --add-reads org.eclipse.jetty.ee10.annotations=org.eclipse.jetty.logging 
-            --add-opens org.eclipse.jetty.ee10.annotations/org.eclipse.jetty.ee10.annotations.resources=org.eclipse.jetty.ee10.plus</argLine>
+            --add-opens org.eclipse.jetty.ee10.annotations/org.eclipse.jetty.ee10.annotations.resources=org.eclipse.jetty.plus</argLine>
         </configuration>
       </plugin>
     </plugins>

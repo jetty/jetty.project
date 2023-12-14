@@ -31,8 +31,8 @@ import org.eclipse.jetty.util.IO;
 public class ContentSourceInputStream extends InputStream
 {
     private final Blocker.Shared blocking = new Blocker.Shared();
-    private final byte[] oneByte = new byte[1];
     private final Content.Source content;
+    private byte[] oneByte;
     private Content.Chunk chunk;
 
     public ContentSourceInputStream(Content.Source content)
@@ -43,6 +43,8 @@ public class ContentSourceInputStream extends InputStream
     @Override
     public int read() throws IOException
     {
+        if (oneByte == null)
+            oneByte = new byte[1];
         int read = read(oneByte, 0, 1);
         return read < 0 ? -1 : oneByte[0] & 0xFF;
     }
@@ -75,7 +77,13 @@ public class ContentSourceInputStream extends InputStream
                 return l;
             }
 
-            chunk = content.read();
+            // Skip empty chunks.
+            while (true)
+            {
+                chunk = content.read();
+                if (chunk == null || chunk.hasRemaining() || chunk.isLast() || Content.Chunk.isFailure(chunk))
+                    break;
+            }
 
             if (chunk == null)
             {

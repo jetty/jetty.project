@@ -98,7 +98,6 @@ public class HttpChannel implements Runnable, HttpOutput.Interceptor
     private ContextHandler.CoreContextRequest _coreRequest;
     private org.eclipse.jetty.server.Response _coreResponse;
     private Callback _coreCallback;
-    private boolean _expects100Continue;
 
     public HttpChannel(ContextHandler contextHandler, ConnectionMetaData connectionMetaData)
     {
@@ -430,35 +429,6 @@ public class HttpChannel implements Runnable, HttpOutput.Interceptor
             return httpConfiguration.getServerAuthority();
 
         return null;
-    }
-
-    /**
-     * If the associated response has the Expect header set to 100 Continue,
-     * then accessing the input stream indicates that the handler/servlet
-     * is ready for the request body and thus a 100 Continue response is sent.
-     *
-     * @param available estimate of the number of bytes that are available
-     * @throws IOException if the InputStream cannot be created
-     */
-    public void send100Continue(int available) throws IOException
-    {
-        if (isExpecting100Continue())
-        {
-            _expects100Continue = false;
-            if (available == 0)
-            {
-                if (isCommitted())
-                    throw new IOException("Committed before 100 Continue");
-                try
-                {
-                    _coreResponse.writeInterim(HttpStatus.CONTINUE_100, HttpFields.EMPTY).get();
-                }
-                catch (Throwable x)
-                {
-                    throw IO.rethrow(x);
-                }
-            }
-        }
     }
 
     public void send102Processing(HttpFields headers) throws IOException
@@ -863,11 +833,6 @@ public class HttpChannel implements Runnable, HttpOutput.Interceptor
         }
     }
 
-    public boolean isExpecting100Continue()
-    {
-        return _expects100Continue;
-    }
-
     @Override
     public String toString()
     {
@@ -890,7 +855,6 @@ public class HttpChannel implements Runnable, HttpOutput.Interceptor
         _coreRequest.addIdleTimeoutListener(_state::onIdleTimeout);
         _requests.incrementAndGet();
         _request.onRequest(coreRequest);
-        _expects100Continue = coreRequest.getHeaders().contains(HttpHeader.EXPECT, HttpHeaderValue.CONTINUE.asString());
         _combinedListener.onRequestBegin(_request);
         if (LOG.isDebugEnabled())
         {

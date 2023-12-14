@@ -19,7 +19,7 @@ etc/jetty-ee8-deploy.xml
 # jetty.deploy.monitoredDir=webapps
 
 ## Defaults Descriptor for all deployed webapps
-# jetty.deploy.defaultsDescriptor=${jetty.base}/etc/webdefault-ee8.xml
+# jetty.deploy.defaultsDescriptorPath=${jetty.base}/etc/webdefault-ee8.xml
 
 ## Monitored directory scan period (seconds)
 # jetty.deploy.scanInterval=1

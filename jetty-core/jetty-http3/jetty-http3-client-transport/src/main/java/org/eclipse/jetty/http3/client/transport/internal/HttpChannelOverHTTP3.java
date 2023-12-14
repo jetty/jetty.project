@@ -13,6 +13,7 @@
 
 package org.eclipse.jetty.http3.client.transport.internal;
 
+import org.eclipse.jetty.client.Connection;
 import org.eclipse.jetty.client.Result;
 import org.eclipse.jetty.client.transport.HttpChannel;
 import org.eclipse.jetty.client.transport.HttpExchange;
@@ -52,6 +53,12 @@ public class HttpChannelOverHTTP3 extends HttpChannel
     public Stream.Client.Listener getStreamListener()
     {
         return receiver;
+    }
+
+    @Override
+    protected Connection getConnection()
+    {
+        return connection;
     }
 
     @Override

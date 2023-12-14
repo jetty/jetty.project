@@ -40,6 +40,7 @@ import java.util.function.Consumer;
 import java.util.function.Supplier;
 
 import org.eclipse.jetty.client.CompletableResponseListener;
+import org.eclipse.jetty.client.Connection;
 import org.eclipse.jetty.client.ContentResponse;
 import org.eclipse.jetty.client.Destination;
 import org.eclipse.jetty.client.HttpClient;
@@ -70,6 +71,7 @@ public class HttpRequest implements Request
     private final AtomicReference<Throwable> aborted = new AtomicReference<>();
     private final HttpClient client;
     private final HttpConversation conversation;
+    private Connection connection;
     private String scheme;
     private String host;
     private int port;
@@ -160,6 +162,17 @@ public class HttpRequest implements Request
     public HttpConversation getConversation()
     {
         return conversation;
+    }
+
+    @Override
+    public Connection getConnection()
+    {
+        return connection;
+    }
+
+    void setConnection(Connection connection)
+    {
+        this.connection = connection;
     }
 
     @Override

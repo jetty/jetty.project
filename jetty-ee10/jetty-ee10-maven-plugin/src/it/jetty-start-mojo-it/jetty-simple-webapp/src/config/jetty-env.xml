@@ -3,7 +3,7 @@
 <Configure id='wac' class="org.eclipse.jetty.ee10.webapp.WebAppContext">
 
   <!-- Add an EnvEntry only valid for this webapp               -->
-  <New id="foo"  class="org.eclipse.jetty.ee10.plus.jndi.EnvEntry">
+  <New id="foo"  class="org.eclipse.jetty.plus.jndi.EnvEntry">
     <Arg><Ref refid='wac'/></Arg>
     <Arg>fooBoolean</Arg>
     <Arg type="java.lang.Double">100</Arg>

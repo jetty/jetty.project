@@ -76,7 +76,7 @@ public class HttpConfiguration implements Dumpable
     private CookieCompliance _requestCookieCompliance = CookieCompliance.RFC6265;
     private CookieCompliance _responseCookieCompliance = CookieCompliance.RFC6265;
     private boolean _notifyRemoteAsyncErrors = true;
-    private boolean _relativeRedirectAllowed;
+    private boolean _relativeRedirectAllowed = true;
     private HostPort _serverAuthority;
     private SocketAddress _localAddress;
     private int _maxUnconsumedRequestContentReads = 16;

@@ -23,8 +23,6 @@ import jakarta.servlet.RequestDispatcher;
 import org.eclipse.jetty.ee10.servlet.ServletChannelState.Action;
 import org.eclipse.jetty.http.BadMessageException;
 import org.eclipse.jetty.http.HttpFields;
-import org.eclipse.jetty.http.HttpHeader;
-import org.eclipse.jetty.http.HttpHeaderValue;
 import org.eclipse.jetty.http.HttpStatus;
 import org.eclipse.jetty.http.HttpURI;
 import org.eclipse.jetty.io.Connection;
@@ -42,7 +40,6 @@ import org.eclipse.jetty.server.handler.ContextRequest;
 import org.eclipse.jetty.util.Callback;
 import org.eclipse.jetty.util.ExceptionUtil;
 import org.eclipse.jetty.util.HostPort;
-import org.eclipse.jetty.util.IO;
 import org.eclipse.jetty.util.URIUtil;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -81,7 +78,6 @@ public class ServletChannel
     private Request _request;
     private Response _response;
     private Callback _callback;
-    private boolean _expects100Continue;
 
     public ServletChannel(ServletContextHandler servletContextHandler, Request request)
     {
@@ -121,7 +117,6 @@ public class ServletChannel
         _httpInput.reopen();
         _request = _servletContextRequest = servletContextRequest;
         _response = _servletContextRequest.getServletContextResponse();
-        _expects100Continue = servletContextRequest.getHeaders().contains(HttpHeader.EXPECT, HttpHeaderValue.CONTINUE.asString());
 
         if (LOG.isDebugEnabled())
             LOG.debug("associate {} -> {} : {}",
@@ -380,35 +375,6 @@ public class ServletChannel
     }
 
     /**
-     * If the associated response has the Expect header set to 100 Continue,
-     * then accessing the input stream indicates that the handler/servlet
-     * is ready for the request body and thus a 100 Continue response is sent.
-     *
-     * @param available estimate of the number of bytes that are available
-     * @throws IOException if the InputStream cannot be created
-     */
-    public void continue100(int available) throws IOException
-    {
-        if (isExpecting100Continue())
-        {
-            _expects100Continue = false;
-            if (available == 0)
-            {
-                if (isCommitted())
-                    throw new IOException("Committed before 100 Continue");
-                try
-                {
-                    getServletContextResponse().writeInterim(HttpStatus.CONTINUE_100, HttpFields.EMPTY).get();
-                }
-                catch (Throwable x)
-                {
-                    throw IO.rethrow(x);
-                }
-            }
-        }
-    }
-
-    /**
      * Prepare to be reused.
      * @param x Any completion exception, or null for successful completion.
      * @see #associate(ServletContextRequest)
@@ -422,7 +388,6 @@ public class ServletChannel
         _request = null;
         _response = null;
         _callback = null;
-        _expects100Continue = false;
     }
 
     /**
@@ -717,11 +682,6 @@ public class ServletChannel
             abort(x);
             _state.completed(x);
         }
-    }
-
-    public boolean isExpecting100Continue()
-    {
-        return _expects100Continue;
     }
 
     @Override

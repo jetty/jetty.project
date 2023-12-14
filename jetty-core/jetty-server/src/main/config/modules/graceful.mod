@@ -11,8 +11,3 @@ server
 
 [xml]
 etc/jetty-graceful.xml
-
-[ini-template]
-
-## If the Graceful shutdown should wait for async requests as well as the currently dispatched ones.
-# jetty.statistics.gracefulShutdownWaitsForRequests=true
