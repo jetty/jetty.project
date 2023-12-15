@@ -83,6 +83,7 @@ public class ServletTest
     @Test
     public void testSimpleIdleIgnored() throws Exception
     {
+        long idleTimeout = 1000;
         _context.addServlet(new HttpServlet()
         {
             @Override
@@ -90,7 +91,7 @@ public class ServletTest
             {
                 try
                 {
-                    Thread.sleep(1000);
+                    Thread.sleep(2 * idleTimeout);
                 }
                 catch (InterruptedException e)
                 {
@@ -100,13 +101,13 @@ public class ServletTest
             }
         }, "/get");
 
-        _connector.setIdleTimeout(250);
+        _connector.setIdleTimeout(idleTimeout);
         _server.start();
 
         String response = _connector.getResponse("""
             GET /ctx/get HTTP/1.0
             
-            """, 5, TimeUnit.SECONDS);
+            """, 5 * idleTimeout, TimeUnit.MILLISECONDS);
         assertThat(response, containsString(" 200 OK"));
         assertThat(response, containsString("Hello!"));
     }
@@ -114,6 +115,7 @@ public class ServletTest
     @Test
     public void testSimpleIdleRead() throws Exception
     {
+        long idleTimeout = 1000;
         _context.addServlet(new HttpServlet()
         {
             @Override
@@ -124,7 +126,7 @@ public class ServletTest
             }
         }, "/post");
 
-        _connector.setIdleTimeout(250);
+        _connector.setIdleTimeout(idleTimeout);
         _server.start();
 
         try (LocalConnector.LocalEndPoint endPoint = _connector.connect())
@@ -148,7 +150,7 @@ public class ServletTest
             assertThat(response, containsString("Hello 1234567890"));
 
             endPoint.addInputAndExecute(request);
-            response = endPoint.getResponse(false, 5, TimeUnit.SECONDS);
+            response = endPoint.getResponse(false, 2 * idleTimeout, TimeUnit.MILLISECONDS);
             assertThat(response, containsString(" 500 "));
             assertThat(response, containsString("Connection: close"));
         }
@@ -166,7 +168,8 @@ public class ServletTest
             }
         }, "/get");
 
-        _connector.setIdleTimeout(250);
+        long idleTimeout = 1000;
+        _connector.setIdleTimeout(idleTimeout);
         _server.start();
 
         try (LocalConnector.LocalEndPoint endPoint = _connector.connect())
@@ -177,15 +180,15 @@ public class ServletTest
                      
                 """;
             endPoint.addInput(request);
-            String response = endPoint.getResponse();
+            String response = endPoint.getResponse(false, 5, TimeUnit.SECONDS);
             assertThat(response, containsString(" 200 OK"));
             assertThat(response, containsString("Hello!"));
             endPoint.addInput(request);
-            response = endPoint.getResponse();
+            response = endPoint.getResponse(false, 5, TimeUnit.SECONDS);
             assertThat(response, containsString(" 200 OK"));
             assertThat(response, containsString("Hello!"));
 
-            Thread.sleep(500);
+            Thread.sleep(2 * idleTimeout);
 
             assertFalse(endPoint.isOpen());
         }

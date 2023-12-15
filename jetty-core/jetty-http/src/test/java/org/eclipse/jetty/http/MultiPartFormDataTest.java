@@ -912,6 +912,28 @@ public class MultiPartFormDataTest
         assertThat(chunk.getFailure(), instanceOf(NumberFormatException.class));
     }
 
+    @Test
+    public void testMissingFilesDirectory()
+    {
+        AsyncContent source = new TestContent();
+        MultiPartFormData.Parser formData = new MultiPartFormData.Parser("AaB03x");
+        // Always save to disk.
+        formData.setMaxMemoryFileSize(0);
+
+        String body = """
+            --AaB03x\r
+            Content-Disposition: form-data; name="file1"; filename="file.txt"\r
+            Content-Type: text/plain\r
+            \r
+            ABCDEFGHIJKLMNOPQRSTUVWXYZ\r
+            --AaB03x--\r
+            """;
+        Content.Sink.write(source, true, body, Callback.NOOP);
+
+        Throwable cause = assertThrows(ExecutionException.class, () -> formData.parse(source).get(5, TimeUnit.SECONDS)).getCause();
+        assertInstanceOf(IllegalArgumentException.class, cause);
+    }
+
     private class TestContent extends AsyncContent
     {
         @Override

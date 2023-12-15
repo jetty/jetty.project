@@ -125,7 +125,7 @@ public interface Invocable
      * @param task the Runnable
      * @return a new Task
      */
-    public static Task from(InvocationType type, Runnable task)
+    static Task from(InvocationType type, Runnable task)
     {
         return new ReadyTask(type, task);
     }
@@ -201,5 +201,44 @@ public interface Invocable
     default InvocationType getInvocationType()
     {
         return InvocationType.BLOCKING;
+    }
+
+    /**
+     * Combine {@link Runnable}s into a single {@link Runnable} that sequentially calls the others.
+     * @param runnables the {@link Runnable}s to combine
+     * @return the combined {@link Runnable} with a combined {@link InvocationType}.
+     */
+    static Runnable combine(Runnable... runnables)
+    {
+        Runnable result = null;
+        for (Runnable runnable : runnables)
+        {
+            if (runnable == null)
+                continue;
+            if (result == null)
+            {
+                result = runnable;
+            }
+            else
+            {
+                Runnable first = result;
+                result = new Task()
+                {
+                    @Override
+                    public void run()
+                    {
+                        first.run();
+                        runnable.run();
+                    }
+
+                    @Override
+                    public InvocationType getInvocationType()
+                    {
+                        return combine(Invocable.getInvocationType(first), Invocable.getInvocationType(runnable));
+                    }
+                };
+            }
+        }
+        return result;
     }
 }
