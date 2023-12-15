@@ -637,10 +637,11 @@ public class HttpConnection extends AbstractMetaDataConnection implements Runnab
     {
         // TODO: do we really need to do this?
         //  This event is fired really late, sendCallback should already be failed at this point.
+        //  Revisit whether we still need IteratingCallback.close().
         if (cause == null)
             _sendCallback.close();
         else
-            _sendCallback.failed(cause);
+            _sendCallback.abort(cause);
         super.onClose(cause);
     }
 

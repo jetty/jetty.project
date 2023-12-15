@@ -111,10 +111,7 @@ public abstract class DemandingFlusher extends IteratingCallback implements Dema
     public void closeFlusher()
     {
         if (_failure.compareAndSet(null, SENTINEL_CLOSE_EXCEPTION))
-        {
-            failed(SENTINEL_CLOSE_EXCEPTION);
-            iterate();
-        }
+            abort(SENTINEL_CLOSE_EXCEPTION);
     }
 
     /**
