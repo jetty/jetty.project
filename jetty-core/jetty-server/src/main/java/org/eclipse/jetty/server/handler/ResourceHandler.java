@@ -62,6 +62,7 @@ public class ResourceHandler extends Handler.Wrapper
     private Resource _styleSheet;
     private MimeTypes _mimeTypes;
     private List<String> _welcomes = List.of("index.html");
+    private boolean _useFileMapping = true;
 
     public ResourceHandler()
     {
@@ -123,7 +124,8 @@ public class ResourceHandler extends Handler.Wrapper
     protected HttpContent.Factory newHttpContentFactory()
     {
         HttpContent.Factory contentFactory = new ResourceHttpContentFactory(ResourceFactory.of(getBaseResource()), getMimeTypes());
-        contentFactory = new FileMappingHttpContentFactory(contentFactory);
+        if (isUseFileMapping())
+            contentFactory = new FileMappingHttpContentFactory(contentFactory);
         contentFactory = new VirtualHttpContentFactory(contentFactory, getStyleSheet(), "text/css");
         contentFactory = new PreCompressedHttpContentFactory(contentFactory, getPrecompressedFormats());
         contentFactory = new ValidatingCachingHttpContentFactory(contentFactory, Duration.ofSeconds(1).toMillis(), getByteBufferPool());
@@ -241,6 +243,11 @@ public class ResourceHandler extends Handler.Wrapper
         return _resourceService.isEtags();
     }
 
+    public boolean isUseFileMapping()
+    {
+        return _useFileMapping;
+    }
+
     /**
      * @return Precompressed resources formats that can be used to serve compressed variant of resources.
      */
@@ -349,6 +356,13 @@ public class ResourceHandler extends Handler.Wrapper
     public void setMimeTypes(MimeTypes mimeTypes)
     {
         _mimeTypes = mimeTypes;
+    }
+
+    public void setUseFileMapping(boolean useFileMapping)
+    {
+        if (isRunning())
+            throw new IllegalStateException("Unable to set useFileMapping on started " + this.getClass().getSimpleName());
+        _useFileMapping = useFileMapping;
     }
 
     public void setWelcomeMode(ResourceService.WelcomeMode welcomeMode)
