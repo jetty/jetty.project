@@ -298,8 +298,14 @@ public class ServletChannelState
     {
         try (AutoLock ignored = lock())
         {
+            // This method is called when the state machine
+            // is about to terminate the processing, just
+            // before completing the Handler's callback.
+            assert _outputState == OutputState.OPEN || _failure != null;
+
             if (_outputState == OutputState.OPEN)
                 _outputState = OutputState.COMPLETED;
+
             return _failure;
         }
     }
