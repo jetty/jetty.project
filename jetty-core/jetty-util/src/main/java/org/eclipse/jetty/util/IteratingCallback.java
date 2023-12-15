@@ -471,7 +471,8 @@ public abstract class IteratingCallback implements Callback
     /**
      * <p>Method to invoke to stop further processing iterations.</p>
      * <p>This method causes {@link #onCompleteFailure(Throwable)} to
-     * be invoked, after any call to {@link #process()} has returned.</p>
+     * ultimately be invoked, either during this call or later after
+     * any call to {@link #process()} has returned.</p>
      *
      * @param failure the cause of the abort
      * @see #isAborted()

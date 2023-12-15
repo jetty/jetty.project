@@ -201,20 +201,18 @@ public abstract class HttpSender
         };
     }
 
-    private void anyToFailure(Throwable failure, boolean abort)
+    private boolean failRequest(Throwable failure)
     {
         HttpExchange exchange = getHttpExchange();
         if (exchange == null)
-            return;
+            return false;
 
         if (LOG.isDebugEnabled())
             LOG.debug("Request failure {}", exchange.getRequest(), failure);
 
         // Mark atomically the request as completed, with respect
         // to concurrency between request success and request failure.
-        boolean complete = exchange.requestComplete(failure);
-        if (complete && abort)
-            executeAbort(exchange, failure);
+        return exchange.requestComplete(failure);
     }
 
     private void executeAbort(HttpExchange exchange, Throwable failure)
@@ -327,9 +325,14 @@ public abstract class HttpSender
 
         contentSender.expect100 = false;
         if (failure == null)
+        {
             contentSender.iterate();
+        }
         else
-            anyToFailure(failure, true);
+        {
+            if (failRequest(failure))
+                executeAbort(exchange, failure);
+        }
     }
 
     public void abort(HttpExchange exchange, Throwable failure, Promise<Boolean> promise)
@@ -337,7 +340,7 @@ public abstract class HttpSender
         externalAbort(failure, promise);
     }
 
-    private boolean localAbort(Throwable failure)
+    private boolean anyToFailure(Throwable failure)
     {
         // Store only the first failure.
         this.failure.compareAndSet(null, failure);
@@ -366,7 +369,7 @@ public abstract class HttpSender
 
     private void externalAbort(Throwable failure, Promise<Boolean> promise)
     {
-        boolean abort = localAbort(failure);
+        boolean abort = anyToFailure(failure);
         if (abort)
         {
             contentSender.abort = promise;
@@ -382,7 +385,7 @@ public abstract class HttpSender
 
     private void internalAbort(HttpExchange exchange, Throwable failure)
     {
-        localAbort(failure);
+        anyToFailure(failure);
         abortRequest(exchange);
     }
 
@@ -598,7 +601,7 @@ public abstract class HttpSender
                 chunk = Content.Chunk.next(chunk);
             }
 
-            anyToFailure(x, false);
+            failRequest(x);
             internalAbort(exchange, x);
 
             Promise<Boolean> promise = abort;
