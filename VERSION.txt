@@ -1,3 +1,5 @@
+jetty-11.0.20-SNAPSHOT
+
 jetty-11.0.19 - 15 December 2023
  + 9900 Improve `Request.getBeginNanoTime()` accuracy
  + 10812 jetty-deploy has unnecessary dependency on awaitility/hamcrest pulled
