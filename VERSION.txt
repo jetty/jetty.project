@@ -1,10 +1,20 @@
-jetty-10.0.19-SNAPSHOT
+jetty-10.0.19 - 15 December 2023
+ + 9900 Improve `Request.getBeginNanoTime()` accuracy
+ + 10812 jetty-deploy has unnecessary dependency on awaitility/hamcrest pulled
+   in at runtime
+ + 10891 Support the "Partitioned" cookie attribute
+ + 11014 RedirectRegexRule and RewritePatternRule should consider
+   relativeRedirectAllowed
+ + 11031 HttpClient should expose Connection/EndPoint used by HTTP requests
+ + 11039 Memory leak and multiple (Http|Servlet)*Listener invokations after
+   restart
+ + 11043 Update to apache jasper 9.0.83
 
 jetty-10.0.18 - 26 October 2023
  + 1256 DoSFilter leaks USER_AUTH entries
  + 10390 Jetty HTTP/3 Client fails when connecting to `nghttpx` server
  + 10519 java.lang.IllegalStateException: Flusher when using HTTP/3 with Spring
-   Boot 3.2 
+   Boot 3.2
  + 10537 HTTP/3: Incomplete Data Transfer When Used with Spring Boot WebFlux
  + 10696 jetty.sh doesn't work with JETTY_USER in Jetty 10.0.17 thru Jetty
    12.0.2
