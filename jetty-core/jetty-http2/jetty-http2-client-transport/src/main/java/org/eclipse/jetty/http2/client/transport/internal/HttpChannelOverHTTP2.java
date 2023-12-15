@@ -128,16 +128,24 @@ public class HttpChannelOverHTTP2 extends HttpChannel
         Stream stream = getStream();
         if (LOG.isDebugEnabled())
             LOG.debug("exchange terminated {} {}", result, stream);
-        if (result.isSucceeded())
+        if (result.isSucceeded() || stream == null)
         {
             release();
         }
         else
         {
-            if (stream != null)
+            if (result.getResponseFailure() != null)
+            {
+                // The response failed, try to send a RST_STREAM to
+                // the server in case it is still sending DATA frames.
                 stream.reset(new ResetFrame(stream.getId(), ErrorCode.CANCEL_STREAM_ERROR.code), new ReleaseCallback());
+            }
             else
-                release();
+            {
+                // The request failed, the server should send a RST_STREAM,
+                // but we cannot count on that, get rid of the stream here.
+                ((HTTP2Stream)stream).dispose();
+            }
         }
     }
 

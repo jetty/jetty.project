@@ -234,6 +234,8 @@ public abstract class HttpSender
     {
         Throwable failure = this.failure.get();
 
+        // Applications could be blocked providing
+        // request content, notify them of the failure.
         HttpRequest request = exchange.getRequest();
         Content.Source content = request.getBody();
         if (content != null)

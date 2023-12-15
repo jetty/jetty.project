@@ -31,7 +31,7 @@ import org.eclipse.jetty.util.StaticException;
  */
 public interface HttpStream extends Callback
 {
-    Exception CONTENT_NOT_CONSUMED = new StaticException("Content not consumed");
+    Exception CONTENT_NOT_CONSUMED = new StaticException("Unconsumed request content");
 
     /**
      * <p>Attribute name to be used as a {@link Request} attribute to store/retrieve
@@ -119,7 +119,7 @@ public interface HttpStream extends Callback
 
             // if we cannot read to EOF then fail the stream rather than wait for unconsumed content
             if (content == null)
-                return CONTENT_NOT_CONSUMED;
+                break;
 
             // Always release any returned content. This is a noop for EOF and Error content.
             content.release();

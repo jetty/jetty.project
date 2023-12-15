@@ -17,6 +17,7 @@ import java.io.IOException;
 import java.util.concurrent.TimeoutException;
 import java.util.function.BiFunction;
 
+import org.eclipse.jetty.client.HttpRequestException;
 import org.eclipse.jetty.client.HttpUpgrader;
 import org.eclipse.jetty.client.Request;
 import org.eclipse.jetty.client.Response;
@@ -217,7 +218,11 @@ public class HttpReceiverOverHTTP2 extends HttpReceiver implements HTTP2Channel.
         if (exchange == null)
             return;
         int error = frame.getError();
-        exchange.getRequest().abort(new IOException(ErrorCode.toString(error, "reset_code_" + error)));
+        String message = ErrorCode.toString(error, "reset_code_" + error);
+        Throwable failure = error == ErrorCode.NO_ERROR.code
+            ? new HttpRequestException.NoErrorException(message, exchange.getRequest())
+            : new IOException(message);
+        exchange.getRequest().abort(failure);
     }
 
     @Override

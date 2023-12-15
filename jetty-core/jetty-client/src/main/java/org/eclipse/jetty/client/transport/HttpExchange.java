@@ -13,7 +13,7 @@
 
 package org.eclipse.jetty.client.transport;
 
-import org.eclipse.jetty.client.Request;
+import org.eclipse.jetty.client.HttpRequestException;
 import org.eclipse.jetty.client.Result;
 import org.eclipse.jetty.io.CyclicTimeouts;
 import org.eclipse.jetty.util.Promise;
@@ -73,6 +73,14 @@ public class HttpExchange implements CyclicTimeouts.Expirable
         {
             return requestFailure;
         }
+    }
+
+    private Throwable resolveRequestFailure()
+    {
+        assert lock.isHeldByCurrentThread();
+        if (requestFailure instanceof HttpRequestException.NoErrorException)
+            return null;
+        return requestFailure;
     }
 
     public ResponseListeners getResponseListeners()
@@ -207,7 +215,7 @@ public class HttpExchange implements CyclicTimeouts.Expirable
             if (requestState == State.COMPLETED)
                 requestState = State.TERMINATED;
             if (requestState == State.TERMINATED && responseState == State.TERMINATED)
-                result = new Result(getRequest(), requestFailure, getResponse(), responseFailure);
+                result = new Result(getRequest(), resolveRequestFailure(), getResponse(), responseFailure);
         }
 
         if (LOG.isDebugEnabled())
@@ -224,7 +232,7 @@ public class HttpExchange implements CyclicTimeouts.Expirable
             if (responseState == State.COMPLETED)
                 responseState = State.TERMINATED;
             if (requestState == State.TERMINATED && responseState == State.TERMINATED)
-                result = new Result(getRequest(), requestFailure, getResponse(), responseFailure);
+                result = new Result(getRequest(), resolveRequestFailure(), getResponse(), responseFailure);
         }
 
         if (LOG.isDebugEnabled())
@@ -255,12 +263,6 @@ public class HttpExchange implements CyclicTimeouts.Expirable
             LOG.debug("Failed {}: req={}/rsp={}", this, abortRequest, abortResponse, failure);
 
         // We failed this exchange, deal with it.
-
-        // Applications could be blocked providing
-        // request content, notify them of the failure.
-        Request.Content body = request.getBody();
-        if (abortRequest && body != null)
-            body.fail(failure);
 
         // Case #1: exchange was in the destination queue.
         if (destination.remove(this))

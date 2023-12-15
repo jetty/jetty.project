@@ -27,4 +27,12 @@ public class HttpRequestException extends RuntimeException
     {
         return request;
     }
+
+    public static class NoErrorException extends HttpRequestException
+    {
+        public NoErrorException(String message, Request request)
+        {
+            super(message, request);
+        }
+    }
 }
