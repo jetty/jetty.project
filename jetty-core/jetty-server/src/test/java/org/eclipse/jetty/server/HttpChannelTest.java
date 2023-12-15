@@ -1220,15 +1220,15 @@ public class HttpChannelTest
         assertThat(chunk.getFailure(), sameInstance(failure));
 
         CountDownLatch demand = new CountDownLatch(1);
-        // Demand callback serialized until after onFailure listeners.
+        // Demand callback not serialized until after onFailure listeners.
         rq.demand(demand::countDown);
-        assertThat(demand.getCount(), is(1L));
+        assertThat(demand.getCount(), is(0L));
 
         FuturePromise<Throwable> callback = new FuturePromise<>();
-        // Write callback serialized until after onFailure listeners.
+        // Write callback not serialized until after onFailure listeners.
         handling.get().write(false, null, Callback.from(() ->
         {}, callback::succeeded));
-        assertFalse(callback.isDone());
+        assertTrue(callback.isDone());
 
         // Process onFailure task.
         try (StacklessLogging ignore = new StacklessLogging(Response.class))

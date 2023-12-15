@@ -152,9 +152,6 @@ public interface Response extends Content.Sink
      * has returned.</p>
      * <p>Thus a {@code Callback} should not block waiting for a callback
      * of a future call to this method.</p>
-     * <p>Furthermore, the invocation of the passed callback is serialized
-     * with invocations of the {@link Runnable} demand callback passed to
-     * {@link Request#demand(Runnable)}.</p>
      *
      * @param last whether the ByteBuffer is the last to write
      * @param byteBuffer the ByteBuffer to write

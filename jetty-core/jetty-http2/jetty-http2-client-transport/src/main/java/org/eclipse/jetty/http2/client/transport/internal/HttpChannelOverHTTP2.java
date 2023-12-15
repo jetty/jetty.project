@@ -15,6 +15,7 @@ package org.eclipse.jetty.http2.client.transport.internal;
 
 import java.util.concurrent.TimeoutException;
 
+import org.eclipse.jetty.client.Connection;
 import org.eclipse.jetty.client.Result;
 import org.eclipse.jetty.client.transport.HttpChannel;
 import org.eclipse.jetty.client.transport.HttpExchange;
@@ -66,6 +67,12 @@ public class HttpChannelOverHTTP2 extends HttpChannel
     public Stream.Listener getStreamListener()
     {
         return listener;
+    }
+
+    @Override
+    protected Connection getConnection()
+    {
+        return connection;
     }
 
     @Override

@@ -478,6 +478,13 @@ public class ServletChannel
                                 // be dispatched to an error page, so we delegate this responsibility to the ErrorHandler.
                                 reopen();
                                 _state.errorHandling();
+
+                                // TODO We currently directly call the errorHandler here, but this is not correct in the case of async errors,
+                                //      because since a failure has already occurred, the errorHandler is unable to write a response.
+                                //      Instead, we should fail the callback, so that it calls Response.writeError(...) with an ErrorResponse
+                                //      that ignores existing failures.   However, the error handler needs to be able to call servlet pages,
+                                //      so it will need to do a new call to associate(req,res,callback) or similar, to make the servlet request and
+                                //      response wrap the error request and response.  Have to think about what callback is passed.
                                 errorHandler.handle(getServletContextRequest(), getServletContextResponse(), Callback.from(_state::errorHandlingComplete));
                             }
                         }

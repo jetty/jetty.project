@@ -13,6 +13,7 @@
 
 package org.eclipse.jetty.fcgi.client.transport.internal;
 
+import java.net.SocketAddress;
 import java.nio.ByteBuffer;
 import java.nio.channels.AsynchronousCloseException;
 import java.util.Collections;
@@ -86,6 +87,18 @@ public class HttpConnectionOverFCGI extends AbstractConnection implements IConne
     public HttpDestination getHttpDestination()
     {
         return destination;
+    }
+
+    @Override
+    public SocketAddress getLocalSocketAddress()
+    {
+        return delegate.getLocalSocketAddress();
+    }
+
+    @Override
+    public SocketAddress getRemoteSocketAddress()
+    {
+        return delegate.getRemoteSocketAddress();
     }
 
     protected Flusher getFlusher()
@@ -332,6 +345,18 @@ public class HttpConnectionOverFCGI extends AbstractConnection implements IConne
         protected Iterator<HttpChannel> getHttpChannels()
         {
             return Collections.<HttpChannel>singleton(channel).iterator();
+        }
+
+        @Override
+        public SocketAddress getLocalSocketAddress()
+        {
+            return getEndPoint().getLocalSocketAddress();
+        }
+
+        @Override
+        public SocketAddress getRemoteSocketAddress()
+        {
+            return getEndPoint().getRemoteSocketAddress();
         }
 
         @Override
