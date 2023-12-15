@@ -13,7 +13,6 @@
 
 package org.eclipse.jetty.http3.server.internal;
 
-import java.io.IOException;
 import java.nio.ByteBuffer;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.TimeoutException;
@@ -494,16 +493,17 @@ public class HttpStreamOverHTTP3 implements HttpStream
         {
             if (LOG.isDebugEnabled())
                 LOG.debug("HTTP3 Response #{}/{}: unconsumed request content, resetting stream", stream.getId(), Integer.toHexString(stream.getSession().hashCode()));
-            stream.reset(HTTP3ErrorCode.REQUEST_CANCELLED_ERROR.code(), new IOException("unconsumed content"));
+            stream.reset(HTTP3ErrorCode.NO_ERROR.code(), CONTENT_NOT_CONSUMED);
         }
     }
 
     @Override
     public void failed(Throwable x)
     {
+        HTTP3ErrorCode errorCode = x == HttpStream.CONTENT_NOT_CONSUMED ? HTTP3ErrorCode.NO_ERROR : HTTP3ErrorCode.REQUEST_CANCELLED_ERROR;
         if (LOG.isDebugEnabled())
-            LOG.debug("HTTP3 Response #{}/{} aborted", stream.getId(), Integer.toHexString(stream.getSession().hashCode()));
-        stream.reset(HTTP3ErrorCode.REQUEST_CANCELLED_ERROR.code(), x);
+            LOG.debug("HTTP3 Response #{}/{} failed {}", stream.getId(), Integer.toHexString(stream.getSession().hashCode()), errorCode, x);
+        stream.reset(errorCode.code(), x);
     }
 
     public void onIdleTimeout(TimeoutException failure, BiConsumer<Runnable, Boolean> consumer)

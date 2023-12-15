@@ -793,7 +793,7 @@ public class HttpChannelTest
 
         assertThat(stream.isComplete(), is(true));
         assertThat(stream.getFailure(), notNullValue());
-        assertThat(stream.getFailure().getMessage(), containsString("Content not consumed"));
+        assertThat(stream.getFailure().getMessage(), containsString("Unconsumed request content"));
         assertThat(stream.getResponse(), notNullValue());
         assertThat(stream.getResponse().getStatus(), equalTo(200));
         assertThat(stream.getResponseHeaders().get(HttpHeader.CONTENT_TYPE), equalTo(MimeTypes.Type.TEXT_PLAIN_UTF_8.asString()));
