@@ -56,6 +56,15 @@ public abstract class HTTP3StreamConnection extends AbstractConnection
         parser.init(MessageListener::new);
     }
 
+    public void onFailure(long error, Throwable failure)
+    {
+        if (networkBuffer != null)
+        {
+            networkBuffer.release();
+            networkBuffer = null;
+        }
+    }
+
     @Override
     public QuicStreamEndPoint getEndPoint()
     {
