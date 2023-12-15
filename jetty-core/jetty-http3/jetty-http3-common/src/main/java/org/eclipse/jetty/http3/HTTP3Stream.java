@@ -372,6 +372,8 @@ public abstract class HTTP3Stream implements Stream, CyclicTimeouts.Expirable, A
 
     public void onFailure(long error, Throwable failure)
     {
+        HTTP3StreamConnection connection = (HTTP3StreamConnection)endPoint.getConnection();
+        connection.onFailure(error, failure);
         notifyFailure(error, failure);
         session.removeStream(this, failure);
     }
