@@ -361,7 +361,7 @@ public class ResourceHandler extends Handler.Wrapper
     public void setUseFileMapping(boolean useFileMapping)
     {
         if (isRunning())
-            throw new IllegalStateException("Unable to set useFileMapping on started " + this.getClass().getSimpleName());
+            throw new IllegalStateException("Unable to set useFileMapping on started " + this);
         _useFileMapping = useFileMapping;
     }
 
