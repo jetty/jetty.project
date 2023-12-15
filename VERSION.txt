@@ -1,4 +1,14 @@
-jetty-11.0.19-SNAPSHOT
+jetty-11.0.19 - 15 December 2023
+ + 9900 Improve `Request.getBeginNanoTime()` accuracy
+ + 10812 jetty-deploy has unnecessary dependency on awaitility/hamcrest pulled
+   in at runtime
+ + 10891 Support the "Partitioned" cookie attribute
+ + 11014 RedirectRegexRule and RewritePatternRule should consider
+   relativeRedirectAllowed
+ + 11031 HttpClient should expose Connection/EndPoint used by HTTP requests
+ + 11039 Memory leak and multiple (Http|Servlet)*Listener invokations after
+   restart
+ + 11044 Update jetty-11 to apache jasper 10.0.27
 
 jetty-11.0.18 - 26 October 2023
  + 1256 DoSFilter leaks USER_AUTH entries
