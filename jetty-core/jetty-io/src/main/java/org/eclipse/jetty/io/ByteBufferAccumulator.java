@@ -28,7 +28,6 @@ import org.eclipse.jetty.util.BufferUtil;
  * <p>
  * The method {@link #ensureBuffer(int, int)} can be used access a buffer that can be written to directly as the last buffer list,
  * if there is less than a certain amount of space available in that buffer then a new one will be allocated and returned instead.
- * @see ByteBufferAggregator
  */
 public class ByteBufferAccumulator implements AutoCloseable
 {

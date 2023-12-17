@@ -44,7 +44,7 @@ import org.eclipse.jetty.http2.frames.PushPromiseFrame;
 import org.eclipse.jetty.http2.frames.ResetFrame;
 import org.eclipse.jetty.http2.server.RawHTTP2ServerConnectionFactory;
 import org.eclipse.jetty.io.ArrayByteBufferPool;
-import org.eclipse.jetty.io.ByteBufferAggregator;
+import org.eclipse.jetty.io.ByteBufferAccumulator;
 import org.eclipse.jetty.io.RetainableByteBuffer;
 import org.eclipse.jetty.server.HttpConfiguration;
 import org.eclipse.jetty.server.Server;
@@ -245,7 +245,7 @@ public class RawHTTP2ProxyTest
         CountDownLatch latch1 = new CountDownLatch(1);
         Stream stream1 = clientSession.newStream(new HeadersFrame(request1, null, false), new Stream.Listener()
         {
-            private final ByteBufferAggregator aggregator = new ByteBufferAggregator(client.getByteBufferPool(), true, data1.length, data1.length * 2);
+            private final ByteBufferAccumulator accumulator = new ByteBufferAccumulator(client.getByteBufferPool(), true, data1.length * 2);
 
             @Override
             public void onHeaders(Stream stream, HeadersFrame frame)
@@ -262,14 +262,14 @@ public class RawHTTP2ProxyTest
                 DataFrame frame = data.frame();
                 if (LOGGER.isDebugEnabled())
                     LOGGER.debug("CLIENT1 received {}", frame);
-                assertFalse(aggregator.aggregate(frame.getByteBuffer()));
+                assertFalse(accumulator.aggregate(frame.getByteBuffer()));
                 data.release();
                 if (!data.frame().isEndStream())
                 {
                     stream.demand();
                     return;
                 }
-                RetainableByteBuffer buffer = aggregator.takeRetainableByteBuffer();
+                RetainableByteBuffer buffer = accumulator.takeRetainableByteBuffer();
                 assertNotNull(buffer);
                 assertEquals(buffer1.slice(), buffer.getByteBuffer());
                 buffer.release();
