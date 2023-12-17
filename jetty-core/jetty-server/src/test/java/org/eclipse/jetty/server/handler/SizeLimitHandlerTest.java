@@ -267,4 +267,29 @@ public class SizeLimitHandlerTest
             assertThat(response.getContent(), containsString("&gt;8192"));
         }
     }
+
+    @Test
+    public void testMultipleRequests() throws Exception
+    {
+        String message = "x".repeat(1024);
+        _contextHandler.setHandler(new Handler.Abstract()
+        {
+            @Override
+            public boolean handle(Request request, Response response, Callback callback) throws Exception
+            {
+                response.write(true, BufferUtil.toBuffer(message), callback);
+                return true;
+            }
+        });
+
+        _server.start();
+
+        for (int i = 0; i < 1000; i++)
+        {
+            HttpTester.Response response = HttpTester.parseResponse(
+                _local.getResponse("GET /ctx/hello HTTP/1.0\r\n\r\n"));
+            assertThat(response.getStatus(), equalTo(200));
+            assertThat(response.getContent(), equalTo(message));
+        }
+    }
 }

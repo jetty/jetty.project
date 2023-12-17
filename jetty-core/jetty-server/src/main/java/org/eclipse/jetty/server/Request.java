@@ -212,10 +212,6 @@ public interface Request extends Attributes, Content.Source
     /**
      * {@inheritDoc}
      * @param demandCallback the demand callback to invoke when there is a content chunk available.
-     *                       In addition to the invocation guarantees of {@link Content.Source#demand(Runnable)},
-     *                       this implementation serializes the invocation of the {@code Runnable} with
-     *                       invocations of any {@link Response#write(boolean, ByteBuffer, Callback)}
-     *                       {@code Callback} invocations.
      * @see Content.Source#demand(Runnable)
      */
     @Override

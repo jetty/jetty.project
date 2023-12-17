@@ -15,27 +15,32 @@ package org.eclipse.jetty.ee9.servlet;
 
 import java.io.IOException;
 import java.io.OutputStream;
+import java.net.InetSocketAddress;
 import java.net.Socket;
+import java.nio.channels.SocketChannel;
 import java.nio.charset.StandardCharsets;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.TimeUnit;
+import java.util.concurrent.atomic.AtomicReference;
 
 import jakarta.servlet.AsyncContext;
 import jakarta.servlet.ServletException;
 import jakarta.servlet.http.HttpServlet;
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletResponse;
+import org.eclipse.jetty.http.HttpStatus;
 import org.eclipse.jetty.http.HttpTester;
 import org.eclipse.jetty.server.Server;
 import org.eclipse.jetty.server.ServerConnector;
+import org.hamcrest.Matchers;
 import org.junit.jupiter.api.AfterEach;
-import org.junit.jupiter.api.Disabled;
 import org.junit.jupiter.api.Test;
 
+import static org.awaitility.Awaitility.await;
 import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertNull;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
-@Disabled // TODO
 public class AsyncServletLongPollTest
 {
     private Server server;
@@ -66,7 +71,7 @@ public class AsyncServletLongPollTest
     @Test
     public void testSuspendedRequestCompletedByAnotherRequest() throws Exception
     {
-        final CountDownLatch asyncLatch = new CountDownLatch(1);
+        CountDownLatch asyncLatch = new CountDownLatch(1);
         prepare(new HttpServlet()
         {
             private volatile AsyncContext asyncContext;
@@ -94,7 +99,7 @@ public class AsyncServletLongPollTest
                 if (param != null)
                     error = Integer.parseInt(param);
 
-                final AsyncContext asyncContext = this.asyncContext;
+                AsyncContext asyncContext = this.asyncContext;
                 if (asyncContext != null)
                 {
                     HttpServletResponse asyncResponse = (HttpServletResponse)asyncContext.getResponse();
@@ -151,6 +156,58 @@ public class AsyncServletLongPollTest
 
             HttpTester.Response response3 = HttpTester.parseResponse(input1);
             assertEquals(200, response3.getStatus());
+        }
+    }
+
+    @Test
+    public void testSuspendedRequestThenServerStop() throws Exception
+    {
+        AtomicReference<AsyncContext> asyncContextRef = new AtomicReference<>();
+        prepare(new HttpServlet()
+        {
+            @Override
+            protected void service(HttpServletRequest request, HttpServletResponse response)
+            {
+                // Suspend the request.
+                AsyncContext asyncContext = request.startAsync();
+                asyncContextRef.set(asyncContext);
+            }
+
+            @Override
+            public void destroy()
+            {
+                // Try to write an error response when shutting down.
+                AsyncContext asyncContext = asyncContextRef.get();
+                try
+                {
+                    HttpServletResponse response = (HttpServletResponse)asyncContext.getResponse();
+                    response.sendError(HttpStatus.INTERNAL_SERVER_ERROR_500);
+                }
+                catch (IOException x)
+                {
+                    throw new RuntimeException(x);
+                }
+                finally
+                {
+                    asyncContext.complete();
+                }
+            }
+        });
+
+        try (SocketChannel client = SocketChannel.open(new InetSocketAddress("localhost", connector.getLocalPort())))
+        {
+            HttpTester.Request request = HttpTester.newRequest();
+            request.setURI(uri);
+            client.write(request.generate());
+
+            await().atMost(5, TimeUnit.SECONDS).until(asyncContextRef::get, Matchers.notNullValue());
+
+            server.stop();
+
+            client.socket().setSoTimeout(1000);
+            // The connection has been closed, no response.
+            HttpTester.Response response = HttpTester.parseResponse(client);
+            assertNull(response);
         }
     }
 }

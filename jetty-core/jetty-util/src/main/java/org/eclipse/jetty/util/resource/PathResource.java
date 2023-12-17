@@ -40,11 +40,11 @@ public class PathResource extends Resource
 {
     private static final Logger LOG = LoggerFactory.getLogger(PathResource.class);
 
-    public static Index<String> SUPPORTED_SCHEMES = new Index.Builder<String>()
-        .caseSensitive(false)
-        .with("file")
-        .with("jrt")
-        .build();
+    /**
+     * @deprecated Using ResourceFactoryInternals.isSupported() instead.
+     */
+    @Deprecated(since = "12.0.4", forRemoval = true)
+    public static Index<String> SUPPORTED_SCHEMES = new Index.Builder<String>().build();
 
     // The path object represented by this instance
     private final Path path;
@@ -164,7 +164,7 @@ public class PathResource extends Resource
     {
         if (!uri.isAbsolute())
             throw new IllegalArgumentException("not an absolute uri: " + uri);
-        if (!bypassAllowedSchemeCheck && !SUPPORTED_SCHEMES.contains(uri.getScheme()))
+        if (!bypassAllowedSchemeCheck && !ResourceFactoryInternals.isSupported(uri.getScheme()))
             throw new IllegalArgumentException("not an allowed scheme: " + uri);
 
         if (Files.isDirectory(path))

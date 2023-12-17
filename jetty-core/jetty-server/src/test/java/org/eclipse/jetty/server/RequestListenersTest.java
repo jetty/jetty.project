@@ -194,7 +194,7 @@ public class RequestListenersTest
 
         int expectedStatus = succeedCallback ? HttpStatus.OK_200 : HttpStatus.INTERNAL_SERVER_ERROR_500;
         assertEquals(expectedStatus, response.getStatus());
-        assertThat(failureLatch.await(1, TimeUnit.SECONDS), is(failIdleTimeout));
+        assertThat(failureLatch.await(idleTimeout + 500, TimeUnit.MILLISECONDS), is(failIdleTimeout && !succeedCallback));
     }
 
     @ParameterizedTest

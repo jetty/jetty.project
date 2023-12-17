@@ -146,6 +146,7 @@ public class HttpChannelState
     private long _timeoutMs = DEFAULT_TIMEOUT;
     private AsyncContextEvent _event;
     private Thread _onTimeoutThread;
+    private boolean _failureListener;
 
     protected HttpChannelState(HttpChannel channel)
     {
@@ -530,6 +531,11 @@ public class HttpChannelState
             if (_state != State.HANDLING || _requestState != RequestState.BLOCKING)
                 throw new IllegalStateException(this.getStatusStringLocked());
 
+            if (!_failureListener)
+            {
+                _failureListener = true;
+                getHttpChannel().getCoreRequest().addFailureListener(this::asyncError);
+            }
             _requestState = RequestState.ASYNC;
             _event = event;
             lastAsyncListeners = _asyncListeners;
@@ -1066,6 +1072,7 @@ public class HttpChannelState
             _asyncWritePossible = false;
             _timeoutMs = DEFAULT_TIMEOUT;
             _event = null;
+            _failureListener = false;
         }
     }
 

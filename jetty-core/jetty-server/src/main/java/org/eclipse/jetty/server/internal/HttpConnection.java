@@ -637,10 +637,11 @@ public class HttpConnection extends AbstractMetaDataConnection implements Runnab
     {
         // TODO: do we really need to do this?
         //  This event is fired really late, sendCallback should already be failed at this point.
+        //  Revisit whether we still need IteratingCallback.close().
         if (cause == null)
             _sendCallback.close();
         else
-            _sendCallback.failed(cause);
+            _sendCallback.abort(cause);
         super.onClose(cause);
     }
 
@@ -740,26 +741,18 @@ public class HttpConnection extends AbstractMetaDataConnection implements Runnab
                 _lastContent = last;
                 _callback = callback;
                 _header = null;
-
                 if (getConnector().isShutdown())
                     _generator.setPersistent(false);
-
                 return true;
             }
-
-            if (isClosed() && response == null && last && content == null)
+            else
             {
-                callback.succeeded();
+                if (isClosed())
+                    callback.failed(new EofException());
+                else
+                    callback.failed(new WritePendingException());
                 return false;
             }
-
-            LOG.warn("reset failed {}", this);
-
-            if (isClosed())
-                callback.failed(new EofException());
-            else
-                callback.failed(new WritePendingException());
-            return false;
         }
 
         @Override

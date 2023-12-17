@@ -810,12 +810,24 @@ public class URIUtilTest
             FS.touch(base);
         }
         URI uri = base.toUri();
-        if (OS.MAC.isCurrentOs())
+
+        try
         {
-            // Normalize Unicode to NFD form that OSX Path/FileSystem produces
-            expectedName = Normalizer.normalize(expectedName, Normalizer.Form.NFD);
+            assertThat(URIUtil.getUriLastPathSegment(uri), is(expectedName));
         }
-        assertThat(URIUtil.getUriLastPathSegment(uri), is(expectedName));
+        catch (AssertionError e)
+        {
+            if (OS.MAC.isCurrentOs())
+            {
+                // Normalize Unicode to NFD form that OSX Path/FileSystem produces
+                expectedName = Normalizer.normalize(expectedName, Normalizer.Form.NFD);
+                assertThat(URIUtil.getUriLastPathSegment(uri), is(expectedName));
+            }
+            else
+            {
+                throw e;
+            }
+        }
     }
 
     public static Stream<Arguments> uriLastSegmentSource() throws IOException
