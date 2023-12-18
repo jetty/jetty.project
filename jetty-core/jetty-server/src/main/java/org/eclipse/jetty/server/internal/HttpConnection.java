@@ -635,14 +635,16 @@ public class HttpConnection extends AbstractMetaDataConnection implements Runnab
     @Override
     public void onClose(Throwable cause)
     {
-        if (_retainableByteBuffer != null)
+        HttpStreamOverHTTP1 stream = _stream.getAndSet(null);
+        if (stream != null)
         {
-            _retainableByteBuffer.release();
-            _retainableByteBuffer = null;
+            stream.abort(cause);
+            if (_retainableByteBuffer != null)
+            {
+                _retainableByteBuffer.release();
+                _retainableByteBuffer = null;
+            }
         }
-        HttpStreamOverHTTP1 stream = _stream.get();
-        if (stream != null && cause != null)
-            stream.failed(cause);
 
         // TODO: do we really need to do this?
         //  This event is fired really late, sendCallback should already be failed at this point.
