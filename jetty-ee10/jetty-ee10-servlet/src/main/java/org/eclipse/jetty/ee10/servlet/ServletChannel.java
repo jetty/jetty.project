@@ -470,7 +470,7 @@ public class ServletChannel
                             // If we can't have a body or have no ErrorHandler, then create a minimal error response.
                             if (HttpStatus.hasNoBody(getServletContextResponse().getStatus()) || errorHandler == null)
                             {
-                                sendResponseAndComplete();
+                                sendErrorResponseAndComplete();
                             }
                             else
                             {
@@ -485,7 +485,7 @@ public class ServletChannel
                                 //      that ignores existing failures.   However, the error handler needs to be able to call servlet pages,
                                 //      so it will need to do a new call to associate(req,res,callback) or similar, to make the servlet request and
                                 //      response wrap the error request and response.  Have to think about what callback is passed.
-                                errorHandler.handle(getServletContextRequest(), getServletContextResponse(), Callback.from(_state::errorHandlingComplete));
+                                errorHandler.handle(getServletContextRequest(), getServletContextResponse(), Callback.from(() -> _state.errorHandlingComplete(null), _state::errorHandlingComplete));
                             }
                         }
                         catch (Throwable x)
@@ -495,23 +495,16 @@ public class ServletChannel
                             else
                                 ExceptionUtil.addSuppressedIfNotAssociated(cause, x);
                             if (LOG.isDebugEnabled())
-                                LOG.debug("Could not perform ERROR dispatch, aborting", cause);
+                                LOG.debug("Could not perform error handling, aborting", cause);
                             if (_state.isResponseCommitted())
                             {
-                                abort(cause);
+                                // Perform the same behavior as when the callback is failed.
+                                _state.errorHandlingComplete(cause);
                             }
                             else
                             {
-                                try
-                                {
-                                    getServletContextResponse().resetContent();
-                                    sendResponseAndComplete();
-                                }
-                                catch (Throwable t)
-                                {
-                                    ExceptionUtil.addSuppressedIfNotAssociated(cause, t);
-                                    abort(cause);
-                                }
+                                getServletContextResponse().resetContent();
+                                sendErrorResponseAndComplete();
                             }
                         }
                         finally
@@ -684,7 +677,7 @@ public class ServletChannel
         return null;
     }
 
-    public void sendResponseAndComplete()
+    public void sendErrorResponseAndComplete()
     {
         try
         {
@@ -694,6 +687,7 @@ public class ServletChannel
         catch (Throwable x)
         {
             abort(x);
+            _state.completed(x);
         }
     }
 
@@ -742,10 +736,13 @@ public class ServletChannel
             _servletContextRequest.setAttribute(CustomRequestLog.LOG_DETAIL, logDetail);
         }
 
-        // Callback will either be succeeded here or failed in abort().
+        // Callback is completed only here.
         Callback callback = _callback;
-        if (_state.completeResponse())
+        Throwable failure = _state.completeResponse();
+        if (failure == null)
             callback.succeeded();
+        else
+            callback.failed(failure);
     }
 
     public boolean isCommitted()
@@ -783,13 +780,8 @@ public class ServletChannel
      */
     public void abort(Throwable failure)
     {
-        // Callback will either be failed here or succeeded in onCompleted().
-        if (_state.abortResponse())
-        {
-            if (LOG.isDebugEnabled())
-                LOG.debug("abort {}", this, failure);
-            _callback.failed(failure);
-        }
+        // Callback will be failed in onCompleted().
+        _state.abort(failure);
     }
 
     private void dispatch() throws Exception

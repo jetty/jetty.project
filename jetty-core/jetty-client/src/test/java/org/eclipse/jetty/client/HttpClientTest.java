@@ -97,7 +97,6 @@ import static org.junit.jupiter.api.Assertions.assertTrue;
 @ExtendWith(WorkDirExtension.class)
 public class HttpClientTest extends AbstractHttpClientServerTest
 {
-
     @ParameterizedTest
     @ArgumentsSource(ScenarioProvider.class)
     public void testStoppingClosesConnections(Scenario scenario) throws Exception
@@ -632,8 +631,8 @@ public class HttpClientTest extends AbstractHttpClientServerTest
         });
 
         AsyncRequestContent body = new AsyncRequestContent();
-        body.write(false, BufferUtil.allocate(512), Callback.NOOP);
-        body.write(false, BufferUtil.allocate(512), Callback.from(() -> body.fail(new IOException("explicitly_thrown_by_test"))));
+        body.write(false, ByteBuffer.allocate(512), Callback.NOOP);
+        body.write(false, ByteBuffer.allocate(512), Callback.from(() -> body.fail(new IOException("explicitly_thrown_by_test"))));
         CountDownLatch latch = new CountDownLatch(1);
         client.newRequest("localhost", connector.getLocalPort())
             .scheme(scenario.getScheme())

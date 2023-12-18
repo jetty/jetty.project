@@ -151,6 +151,7 @@ public class ServletChannelState
     private long _timeoutMs = DEFAULT_TIMEOUT;
     private AsyncContextEvent _event;
     private Thread _onTimeoutThread;
+    private Throwable _failure;
     private boolean _failureListener;
 
     protected ServletChannelState(ServletChannel servletChannel)
@@ -293,19 +294,19 @@ public class ServletChannelState
         }
     }
 
-    public boolean completeResponse()
+    public Throwable completeResponse()
     {
         try (AutoLock ignored = lock())
         {
-            switch (_outputState)
-            {
-                case OPEN:
-                    _outputState = OutputState.COMPLETED;
-                    return true;
+            // This method is called when the state machine
+            // is about to terminate the processing, just
+            // before completing the Handler's callback.
+            assert _outputState == OutputState.OPEN || _failure != null;
 
-                default:
-                    return false;
-            }
+            if (_outputState == OutputState.OPEN)
+                _outputState = OutputState.COMPLETED;
+
+            return _failure;
         }
     }
 
@@ -322,7 +323,7 @@ public class ServletChannelState
         }
     }
 
-    public boolean abortResponse()
+    private boolean abortResponse(Throwable failure)
     {
         try (AutoLock ignored = lock())
         {
@@ -332,16 +333,32 @@ public class ServletChannelState
                 case ABORTED:
                     return false;
 
-                case OPEN:
-                    _servletChannel.getServletContextResponse().setStatus(HttpStatus.INTERNAL_SERVER_ERROR_500);
-                    _outputState = OutputState.ABORTED;
-                    return true;
-
                 default:
                     _outputState = OutputState.ABORTED;
+                    _failure = failure;
                     return true;
             }
         }
+    }
+
+    public void abort(Throwable failure)
+    {
+        boolean handle = false;
+        try (AutoLock ignored = lock())
+        {
+            boolean aborted = abortResponse(failure);
+            if (LOG.isDebugEnabled())
+                LOG.debug("abort={} {}", aborted, this, failure);
+            if (aborted)
+            {
+                handle = _state == State.WAITING;
+                if (handle)
+                    _state = State.WOKEN;
+                _requestState = RequestState.COMPLETED;
+            }
+        }
+        if (handle)
+            scheduleDispatch();
     }
 
     /**
@@ -555,7 +572,12 @@ public class ServletChannelState
         }
     }
 
-    public void errorHandling()
+    /**
+     * Called when an asynchronous call to {@code ErrorHandler.handle()} is about to happen.
+     *
+     * @see #errorHandlingComplete(Throwable)
+     */
+    void errorHandling()
     {
         try (AutoLock ignored = lock())
         {
@@ -565,17 +587,29 @@ public class ServletChannelState
         }
     }
 
-    public void errorHandlingComplete()
+    /**
+     * Called when the {@code Callback} passed to {@code ErrorHandler.handle()} is completed.
+     *
+     * @param failure the failure reported by the error handling,
+     * or {@code null} if there was no failure
+     */
+    void errorHandlingComplete(Throwable failure)
     {
         boolean handle;
         try (AutoLock ignored = lock())
         {
             if (LOG.isDebugEnabled())
-                LOG.debug("errorHandlingComplete {}", toStringLocked());
+                LOG.debug("errorHandlingComplete {}", toStringLocked(), failure);
 
             handle = _state == State.WAITING;
             if (handle)
                 _state = State.WOKEN;
+
+            // If there is a failure while trying to
+            // handle a previous failure, just bail out.
+            if (failure != null)
+                abortResponse(failure);
+
             if (_requestState == RequestState.ERRORING)
                 _requestState = RequestState.COMPLETE;
         }

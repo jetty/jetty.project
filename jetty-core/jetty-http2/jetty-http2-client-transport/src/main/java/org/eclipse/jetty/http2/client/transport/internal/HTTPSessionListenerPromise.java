@@ -74,7 +74,12 @@ public class HTTPSessionListenerPromise implements Session.Listener, Promise<Ses
     {
         HttpConnectionOverHTTP2 connection = (HttpConnectionOverHTTP2)newConnection(destination(), session);
         if (this.connection.compareAndSet(null, connection, false, true))
+        {
+            // The connection promise must be called synchronously
+            // so that the HTTP/1 to HTTP/2 upgrade can create the
+            // HTTP/2 stream that represents the HTTP/1 request.
             httpConnectionPromise().succeeded(connection);
+        }
     }
 
     protected Connection newConnection(Destination destination, Session session)

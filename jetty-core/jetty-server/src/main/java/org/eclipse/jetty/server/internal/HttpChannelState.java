@@ -428,7 +428,7 @@ public class HttpChannelState implements HttpChannel, Components
                 };
 
                 // Serialize all the error actions.
-                task = Invocable.combine(_readInvoker.offer(invokeOnContentAvailable), _writeInvoker.offer(invokeWriteFailure), invokeOnFailureListeners);
+                task = Invocable.combine(_readInvoker.offer(invokeOnContentAvailable), _writeInvoker.offer(invokeWriteFailure), _readInvoker.offer(invokeOnFailureListeners));
             }
         }
 
@@ -1501,9 +1501,12 @@ public class HttpChannelState implements HttpChannel, Components
                 Throwable unconsumed = stream.consumeAvailable();
                 ExceptionUtil.addSuppressedIfNotAssociated(failure, unconsumed);
 
+                ChannelResponse response = httpChannelState._response;
                 if (LOG.isDebugEnabled())
-                    LOG.debug("failed stream.isCommitted={}, response.isCommitted={} {}", httpChannelState._stream.isCommitted(), httpChannelState._response.isCommitted(), this);
+                    LOG.debug("failed stream.isCommitted={}, response.isCommitted={} {}", stream.isCommitted(), response.isCommitted(), this);
 
+                // There may have been an attempt to write an error response that failed.
+                // Do not try to write again an error response if already committed.
                 if (!stream.isCommitted())
                     errorResponse = new ErrorResponse(request);
             }
